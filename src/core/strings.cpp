@@ -142,34 +142,30 @@ _String::_String(long sL) {
 
 _String::_String(const _String &source, long from, long to) {
   if (source.sLength) {
-    if (from == -1) {
-      from = 0;
-    }
-
-    if (to < 0 || to >= source.sLength) {
-      to = ((long) source.sLength) - 1;
-    }
-
-    if (to >= from) {
-      sLength = to - from + 1;
-      sData = (char *)MemAllocate(sLength + 1);
-      
+    
+    long requested_range = source.NormalizeRange(from, to);
+    
+    if (requested_range > 0L) {
+      sLength = requested_range;
+      sData = (char *)MemAllocate(sLength + 1UL);
 
       if (sLength > 32UL) {
         memcpy(sData, source.sData + from, sLength);
       } else
-        for (long k = 0; k < sLength; k++) {
+        for (unsigned long k = 0UL; k < sLength; k++) {
           sData[k] = source.sData[k + from];
         }
 
       sData[sLength] = 0;
+      return;
       
     }
-  } else {
-    sLength = 0;
-    sData = (char *)MemAllocate(1UL);
-    sData[0] = 0;
-  }
+  } 
+    
+  sLength = 0UL;
+  sData = (char *)MemAllocate(1UL);
+  sData[0] = 0;
+
 }
 
 //Stack copy contructor
@@ -274,19 +270,19 @@ void _String::operator=(const _String& s) {
 }
 
 
-// lexicographic comparison
-bool _String::operator==(_String s) { return Equal(&s); }
 
 //Append operator
 const _String _String::operator&(const _String& s)  const {
-  if (sLength + s.sLength == 0) {
+  unsigned long combined_length = sLength + s.sLength;
+
+  if (combined_length == 0UL) {
     return empty;
   }
 
-  _String res(sLength + s.sLength);
+  _String res(combined_length);
 
   if (sLength) {
-    memcpy((res.sData), sData, sLength);
+    memcpy(res.sData, sData, sLength);
   }
 
   if (s.sLength) {
@@ -301,82 +297,131 @@ const _String _String::operator&(const _String& s)  const {
 //Return good ole char*
 _String::operator const char *(void) const { return sData; }
 
-//Lexicographic comparison
+// lexicographic comparisons
+bool _String::operator==(const _String& s) const { return Compare (&s) == 0; }
 bool _String::operator>(const _String & s) const { return Compare (&s) > 0; }
-
-//Lexicographic comparison
 bool _String::operator<=(const _String & s) const { return Compare (&s) <= 0; }
-
-//Lexicographic comparison
 bool _String::operator>=(const _String & s) const { return Compare (&s) >= 0; }
-
-//Lexicographic comparison
 bool _String::operator!=(const _String & s) const { return Compare (&s) != 0; }
-
-//Lexicographic comparison
 bool _String::operator<(const _String & s) const { return Compare (&s) < 0; }
+
+
+
 
 /*
 ==============================================================
-Methods
+Manipulators
 ==============================================================
 */
 
-// Compute Adler-32 CRC for a string
-// Implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
-long _String::Adler32(void) {
-  unsigned char *data = (unsigned char *)sData;
 
-  unsigned long len = sLength, a = 1, b = 0;
+long  _String::NormalizeRange(long & from, long & to) const {
 
-  while (len) {
-    unsigned tlen = len > 5550 ? 5550 : len;
-    len -= tlen;
-    do {
-      a += *data++;
-      b += a;
-    } while (--tlen);
-    a = (a & 0xffff) + (a >> 16) * (65536 - MOD_ADLER);
-    b = (b & 0xffff) + (b >> 16) * (65536 - MOD_ADLER);
+  if (sLength == 0UL) {
+    return 0L;
   }
 
-  if (a >= MOD_ADLER) {
-    a -= MOD_ADLER;
+  if (from < 0L) {
+    from = 0L;
+  }
+  
+  if (to < 0L || to >= sLength ) {
+    to = sLength - 1UL;
+  }
+  
+  return to - from + 1L;
+  
+}
+
+//s[0]...s[sLength-1] => s[sLength-1]...s[0]
+void _String::Flip(void) {
+  for (unsigned long i = 0UL; i < (sLength >> 1); i++) {
+    char c;
+    SWAP  (sData[i], sData[sLength - 1 - i], c);
+  }
+}
+
+const _String _String::Chop(long from, long to) const {
+  
+  long resulting_length = NormalizeRange(from,to);
+  
+  if (resulting_length > 0L) {
+    _String res((unsigned long)(sLength - resulting_length));
+    if (from > 0L) {
+      memcpy(res.sData, sData, from);
+    }
+    if (to + 1L < sLength) {
+      memcpy(res.sData + from, sData + to + 1L, sLength - to - 1L);
+    }
+    
+    return res;
+  }
+  
+  return *this;
+ 
+}
+
+//Cut string from, to (-1 for any means from beginning/to end)
+const _String _String::Cut(long from, long to) const {
+  return _String (*this, from, to);
+}
+
+//Delete range char operator
+void _String::Delete(long from, long to) {
+  long resulting_length = NormalizeRange(from,to);
+
+  if (resulting_length > 0L) {
+    if (to < sLength - 1UL) {
+      memmove(sData + from, sData + to + 1, sLength - to - 1);
+    }
+    sLength -= resulting_length;
+    sData = MemReallocate(sData, sizeof(char) * (sLength + 1UL));
+    sData[sLength] = 0;
+  }
+}
+
+//Insert a single char operator
+void _String::Insert(char c, long pos) {
+  if (pos < 0L || pos >= sLength) {
+    pos = sLength;
   }
 
-  b = (b & 0xffff) + (b >> 16) * (65536 - MOD_ADLER);
+  sData = MemReallocate(sData, sizeof(char) * (sLength + 2));
 
-  if (b >= MOD_ADLER) {
-    b -= MOD_ADLER;
+  if (pos < sLength) {
+    memmove(sData + pos + 1, sData + pos, sLength - pos);
   }
 
-  return b << 16 | a;
+  sData[pos] = c;
+  sData[++sLength] = 0;
 }
 
 
+/*
+==============================================================
+Case Methods
+==============================================================
+*/
 
-_String _String::Chop(long from, long to) {
-  if (!sLength) {
-    return empty;
+void _String::UpCase(void) {
+  for (unsigned long i = 0UL; i < sLength; i++) {
+    sData[i] = toupper(sData[i]);
   }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return empty;
-  }
-  _String res((unsigned long)(sLength + from - to + 1));
-  if (from) {
-    memcpy(res.sData, sData, from);
-  }
-  if ((to < ((long) sLength) - 1) && (to > from)) {
-    memcpy(res.sData + from, sData + to + 1, sLength - to - 1);
-  }
-  return res;
 }
+
+void _String::LoCase(void) {
+  for (unsigned long i = 0UL; i < sLength; i++) {
+    sData[i] = tolower(sData[i]);
+  }
+}
+
+/*
+==============================================================
+Search and replace
+==============================================================
+*/
+
+
 
 // find first occurence of the string between from and to
 bool _String::ContainsSubstring(_String &s)
@@ -420,44 +465,6 @@ void _String::CopyDynamicString(_String *s, bool flushMe) {
   }
 }
 
-//Cut string from, to (-1 for any means from beginning/to end)
-_String _String::Cut(long from, long to) {
-  if (!sLength) {
-    return empty;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1 || to >= sLength) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return empty;
-  }
-  _String res((unsigned long)(to - from + 1));
-  if (to - from + 1) {
-    memcpy(res.sData, sData + from, to - from + 1);
-  }
-  return res;
-}
-
-//Delete range char operator
-void _String::Delete(long from, long to) {
-  if (from < 0) {
-    from = 0;
-  }
-
-  if (to < 0) {
-    to = sLength - 1;
-  }
-
-  if (to < sLength - 1) {
-    memmove(sData + from, sData + to + 1, sLength - to - 1);
-  }
-  sLength -= to - from + 1;
-  sData = MemReallocate(sData, sizeof(char) * (sLength + 1));
-  sData[sLength] = 0;
-}
 
 void _String::Duplicate(BaseRefConst ref) {
   _String const *s = (_String const*)ref;
@@ -698,17 +705,6 @@ long _String::FindBackwards(_String s, long from, long to)
   return HY_NOT_FOUND;
 }
 
-//Find first occurence of the string
-long _String::FindBinary(char s)
-    // -1, indicates that search term has not been found
-    {
-  for (long i = 0; i < sLength; ++i) {
-    if (sData[i] == s) {
-      return i;
-    }
-  }
-  return HY_NOT_FOUND;
-}
 
 long _String::FindTerminator(long from, _String &terminators) {
   long currentPosition = from, currentCurly = 0, currentSquare = 0,
@@ -758,17 +754,10 @@ long _String::FindTerminator(long from, _String &terminators) {
   return HY_NOT_FOUND;
 }
 
-//s[0]...s[sLength-1] => s[sLength-1]...s[0]
-void _String::Flip(void) {
-  for (unsigned long i = 0; i < sLength / 2; i++) {
-    char c = sData[i];
-    sData[i] = sData[sLength - 1 - i];
-    sData[sLength - 1 - i] = c;
-  }
-}
+
 
 // Return good ole char*
-char *_String::getStr(void) { return sData; }
+char *_String::getStr(void) const { return sData; }
 
 //Element location functions
 const char _String::getChar(long index) const {
@@ -787,21 +776,7 @@ void _String::Initialize(bool) {
   }
 }
 
-//Insert char operator
-void _String::Insert(char c, long pos) {
-  if (pos < 0 || pos >= sLength) {
-    pos = sLength;
-  }
 
-  sData = MemReallocate(sData, sizeof(char) * (sLength + 2));
-
-  if (pos < sLength) {
-    memmove(sData + pos + 1, sData + pos, sLength - pos);
-  }
-  sData[pos] = c;
-  sLength++;
-  sData[sLength] = 0;
-}
 
 long _String::LempelZivProductionHistory(_SimpleList *rec) {
   if (rec) {
@@ -865,7 +840,7 @@ BaseRef _String::makeDynamic(void) const{
 }
 
 //Replace string 1 with string 2, all occurences true/false
-_String _String::Replace(_String s, _String d, bool flag) {
+const _String _String::Replace(const _String& s, const _String& d, bool flag) const {
   if (!sLength) {
     return empty;
   }
@@ -1023,8 +998,8 @@ _List *_String::Tokenize(_String s) {
   return res;
 }
 
-_Parameter _String::toNum(void) {
-  if (sLength == 0) {
+_Parameter _String::toNum(void) const{
+  if (sLength == 0UL) {
     return 0.;
   }
   char *endP;
@@ -1359,23 +1334,6 @@ bool _String::endswith(_String s, bool caseSensitive) {
   return TRUE;
 }
 
-/*
-==============================================================
-Case Methods
-==============================================================
-*/
-
-void _String::UpCase(void) {
-  for (unsigned long i = 0; i < sLength; i++) {
-    sData[i] = toupper(sData[i]);
-  }
-}
-
-void _String::LoCase(void) {
-  for (unsigned long i = 0; i < sLength; i++) {
-    sData[i] = tolower(sData[i]);
-  }
-}
 
 void _String::ProcessParameter(void) {
 #ifndef HY_2014_REWRITE_MASK
@@ -1773,7 +1731,7 @@ Identifier Methods
 ==============================================================
 */
 
-bool _String::IsValidIdentifier(bool strict) {
+bool _String::IsValidIdentifier(bool strict) const {
 #ifndef HY_2014_REWRITE_MASK
   if (sLength == 0) {
     return false;
@@ -1804,7 +1762,7 @@ bool _String::IsValidIdentifier(bool strict) {
   
 }
 
-bool _String::IsValidRefIdentifier(void) {
+bool _String::IsValidRefIdentifier(void) const {
   if (sLength < 2) {
     return false;
   }
@@ -2023,3 +1981,35 @@ unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
 #endif
   return HY_STRING_INVALID_REFERENCE;
 }
+
+// Compute Adler-32 CRC for a string
+// Implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
+long _String::Adler32(void) {
+  unsigned char *data = (unsigned char *)sData;
+
+  unsigned long len = sLength, a = 1, b = 0;
+
+  while (len) {
+    unsigned tlen = len > 5550 ? 5550 : len;
+    len -= tlen;
+    do {
+      a += *data++;
+      b += a;
+    } while (--tlen);
+    a = (a & 0xffff) + (a >> 16) * (65536 - MOD_ADLER);
+    b = (b & 0xffff) + (b >> 16) * (65536 - MOD_ADLER);
+  }
+
+  if (a >= MOD_ADLER) {
+    a -= MOD_ADLER;
+  }
+
+  b = (b & 0xffff) + (b >> 16) * (65536 - MOD_ADLER);
+
+  if (b >= MOD_ADLER) {
+    b -= MOD_ADLER;
+  }
+
+  return b << 16 | a;
+}
+

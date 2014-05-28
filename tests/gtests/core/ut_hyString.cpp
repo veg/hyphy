@@ -94,11 +94,11 @@ namespace {
 
     
   };
-
+  
 }
 
 
-TEST_F (_hyStringTest, StringConstuctorTests) {
+TEST_F (_hyStringTest, StringConstuctorAndConverstionTests) {
   _String blank,
           literal_string ("The quick brown fox jumps over the lazy dog"),
           literal_w_string (L"The quick brown fox jumps over the lazy dog");
@@ -111,13 +111,14 @@ TEST_F (_hyStringTest, StringConstuctorTests) {
   EXPECT_TRUE (literal_string.Equal(test_string)) << "Full stack copy failed";
   delete test_string;
   test_string = new _String (literal_string, 5, 10);
-  EXPECT_STREQ ("uick b", test_string->getStr()) << "Partial stack copy failed";
+  EXPECT_STREQ ("uick b", (const char*)*test_string) << "Partial stack copy (or char*) failed";
   delete test_string;
   test_string = new _String (literal_string, -1, 256);
   EXPECT_TRUE (literal_string.Equal(test_string)) << "Stack copy with ranges implying a full copy failed";
   delete test_string;
   test_string = new _String (blank, 2, 5);
   EXPECT_TRUE (test_string->Length () == 0UL && test_string->getStr() != NULL) << "Stack copy constructor from an empty string must return an empty string regardless of the range";
+  delete test_string;
   
   _String single_char ('W');
   EXPECT_TRUE (single_char.Length () == 1UL && single_char.getChar (0) == 'W') << "Single character constructor failed";
@@ -142,7 +143,7 @@ TEST_F (_hyStringTest, StringConstuctorTests) {
     _Parameter dn = genrand_real2() * pow (10., 200 - genrand_int32() % 400);
     _String double_string (dn);
     snprintf(buffer, 255, PRINTF_FORMAT_STRING, dn);
-    EXPECT_STREQ(buffer, double_string.getStr()) << "Incorrect _String (Parameter) constructor for " << dn;
+    EXPECT_STREQ(buffer, (const char*)double_string) << "Incorrect _String (Parameter) constructor (or char* conversion) for " << dn;
   }
   
   literal_w_string = blank;
@@ -181,4 +182,71 @@ TEST_F (_hyStringTest, StringLogicalOps) {
   
 }
 
+TEST_F (_hyStringTest, StringManipulationOps) {
+  
+  for (long k = 0; k < 1024L; k++) {
+    _String s (_String::Random (genrand_int32() % 32)),
+            f (s);
+    
+    f.Flip();
+    f.Flip();
+    
+    EXPECT_TRUE (s == f) << "s.Flip().Flip() roundtrip failed for '" << s << "'";
+    
+    unsigned long string_length = s.Length();
+    long     breakpoint   = genrand_int32 () % MAX (string_length + 10L, 1L) - 5L;
+                            
+                            
+    _String reassembled = breakpoint >= 0L ? (s.Cut (0, breakpoint) & s.Cut (breakpoint+1, -1L)) :
+                                             s.Cut (0, breakpoint);
+                                             
+    EXPECT_TRUE (s == reassembled) << "Failed string cut test for '" << (const char*) s << "' at " << breakpoint;
+    if (breakpoint >= 0L) {
+      reassembled = s.Chop (breakpoint+1, -1) & s.Chop (0, breakpoint);    
+      EXPECT_TRUE (s == reassembled) << "Failed string chop test for '" << (const char*) s << "' at " << breakpoint 
+            << " had '" << (const char*) reassembled << "'" ;
+      _String p1 (s), p2 (s);
+      p1.Delete (0, breakpoint);
+      p2.Delete (breakpoint+1, -1);
+      EXPECT_TRUE (s == (p2 & p1)) << "Failed to reassemble a string from partial delections for '" << (const char*) s << "' at " << breakpoint << " had '" << (const char*) reassembled << "'" ;
+      
+      reassembled.Insert ('X', breakpoint);
+      breakpoint = MIN (breakpoint, string_length);
+      EXPECT_STREQ ("X", reassembled.Cut (breakpoint, breakpoint).getStr()) << "Insert character failed for '" << (const char*) s << "' at " << breakpoint;
+      
+    }
+    
+  } 
+  
+  EXPECT_EQ (0UL, (empty & empty).Length()) << "empty & empty must be empty";
+  EXPECT_EQ (0UL, empty.Chop (0,0).Length()) << "empty.Cut (anything) must be empty";
+}
+
+TEST_F (_hyStringTest, StringCaseChange) {
+  for (long k = 0; k < 1024L; k++) {
+    _String s (_String::Random (genrand_int32() % 32)),
+            l (s),
+            u (s);
+            
+    l.LoCase();
+    u.UpCase();
+    
+    if (l != u) {
+      u.LoCase();
+      EXPECT_EQ (l, u) << "Case conversion failed";
+    }
+    
+  }
+}
+
+TEST_F (_hyStringTest, StringSearching) {
+
+  _String numbers ("0123456789"), letters ("abcdefghijklmnopqrstuvwxyz");
+
+  for (long k = 0; k < 1024L; k++) {
+    _String s (_String::Random (genrand_int32() % 32));
+    
+    
+  }
+}
 

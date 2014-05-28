@@ -261,7 +261,7 @@ public:
   * \n\n \b Example: \code char * new_str = string.getStr(); \endcode
   * @return Returns a good ole char*
   */
-  char *getStr(void);
+  char *getStr(void) const;
 
   /**
   * Removes part of string that is between the two specified indices
@@ -273,7 +273,7 @@ public:
   * @sa Cut()
   * @sa Trim()
   */
-  _String Chop(long, long);
+  const _String Chop(long, long) const;
 
   /**
   * Cuts part of string that is between the two specified indices
@@ -285,7 +285,7 @@ public:
   * @sa Chop()
   * @sa Trim()
   */
-  _String Cut(long, long);
+  const _String Cut(long, long) const;
 
   /**
   *
@@ -339,7 +339,7 @@ public:
   * @return "AAAZZZCCC"
   */
 
-  _String Replace(_String, _String, bool);
+  const _String Replace(const _String&, const _String&, bool) const;
 
   /**
   * Locate the first non-space character of the string
@@ -415,14 +415,6 @@ public:
   long FindBackwards(_String, long, long);
 
   /**
-  * Binary searches for a char inside of a string
-  * \n\n \b Example: \code _String ("AABBCC").FindBinary('B')\endcode
-  * @param s The char to look for inside of the string
-  * @return The location of the char, -1 if doesn't exist. 3 in the example.
-  */
-  long FindBinary(char);
-
-  /**
   * Compute Adler-32 CRC for a string
   * \n\n \b Example: \code _String result = new _String ("Wikipedia"); \endcode
   * \n Implementation shamelessly lifted from
@@ -444,11 +436,6 @@ public:
 
   void FormatTimeString(long);
 
-  /**
-  * Checks if string is lexicographically equal
-  * @see Equal()
-  */
-  bool operator==(_String);
 
   /**
   * Lexicographic comparison
@@ -512,10 +499,16 @@ public:
   bool operator<=(const _String&) const ;
 
   /**
-  * Checks if string is not lexicographically equal
+  * Checks if strings are not lexicographically equal
   * @see Equal()
   */
   bool operator!=(const _String&) const;
+
+  /**
+  * Checks if string are lexicographically equal
+  * @see Equal()
+  */
+  bool operator==(const _String&) const;
 
   /**
   * Checks to see if string contains substring
@@ -637,14 +630,14 @@ public:
   * @param strict If strict, only alphabetic, no numerals.
   * @sa ConvertToAnIdent();
   */
-  bool IsValidIdentifier(bool = true);
+  bool IsValidIdentifier(bool = true) const;
 
   /**
   * Same as IsValidIdentifier, but must end with a '&'
   * \n\n \bExample: 'hyphy&' is a valid ref identifier
   * @see IsValidIdentifier()
   */
-  bool IsValidRefIdentifier(void);
+  bool IsValidRefIdentifier(void) const;
 
   /**
   * If it is enclosed in quotes, then it is a literal argument
@@ -784,7 +777,7 @@ public:
   * @sa ProcessTreeBranchLength()
   */
 
-  _Parameter toNum(void);
+  _Parameter toNum(void) const;
 
   /**
   * Sets Length
@@ -833,6 +826,9 @@ public:
   // Data Fields
   unsigned long sLength;
   Ptr sData;
+  
+  private:
+    long NormalizeRange (long & from, long & to) const;
 };
 
 // _______________________________________________________________________
