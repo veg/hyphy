@@ -243,7 +243,7 @@ public:
   * @param s The substring to check
   * @return Returns true if string contains substring
   */
-  bool ContainsSubstring(_String &);
+  bool ContainsSubstring(const _String &) const;
 
   /**
   * Converts a good ole char*
@@ -394,7 +394,7 @@ public:
   * @return Returns the index of the first instance of the substr, -1 if not
   * found. 2 in the example
   */
-  long Find(_String s, long from = 0, long to = -1) const;
+  long Find(const _String& s, long from = 0, long to = -1) const;
 
   /**
   *  @see Find()
@@ -406,13 +406,13 @@ public:
   * @see Find()
   */
 
-  long FindAnyCase(_String, long from = 0, long to = -1);
+  long FindAnyCase(const _String&, long from = 0, long to = -1);
 
   /**
   * Backwards Find
   * @see Find()
   */
-  long FindBackwards(_String, long, long);
+  long FindBackwards(const _String&, long from = 0, long to = -1) const;
 
   /**
   * Compute Adler-32 CRC for a string
@@ -566,13 +566,13 @@ public:
   * Converts string to upper case
   * @sa LoCase()
   */
-  void UpCase(void);
+  const _String UpCase(void) const;
 
   /**
   * Converts string to lower case
   * @sa UpCase()
   */
-  void LoCase(void);
+  const _String LoCase(void) const;
 
 
 

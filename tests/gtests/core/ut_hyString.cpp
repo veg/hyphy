@@ -128,6 +128,9 @@ TEST_F (_hyStringTest, StringConstuctorAndConverstionTests) {
   fflush(temp_file);
   test_string = new _String (temp_file);
   EXPECT_TRUE (literal_string.Equal(test_string)) << "String constructor from file did not work correctly";
+  test_string->AddAReference();
+  _String test_copy (test_string);
+  EXPECT_TRUE (test_string->SingleReference()) << "Incorrect reference count handling for CopyDynamicString";
   delete test_string;
   fclose(temp_file);
   
@@ -225,15 +228,12 @@ TEST_F (_hyStringTest, StringManipulationOps) {
 TEST_F (_hyStringTest, StringCaseChange) {
   for (long k = 0; k < 1024L; k++) {
     _String s (_String::Random (genrand_int32() % 32)),
-            l (s),
-            u (s);
+            l (s.LoCase()),
+            u (s.UpCase());
             
-    l.LoCase();
-    u.UpCase();
-    
+     
     if (l != u) {
-      u.LoCase();
-      EXPECT_EQ (l, u) << "Case conversion failed";
+      EXPECT_EQ (l, u.LoCase()) << "Case conversion failed";
     }
     
   }
@@ -241,12 +241,42 @@ TEST_F (_hyStringTest, StringCaseChange) {
 
 TEST_F (_hyStringTest, StringSearching) {
 
-  _String numbers ("0123456789"), letters ("abcdefghijklmnopqrstuvwxyz");
+  _String numbers ("0123456789"), 
+          letters ("abcdefghijklmnopqrstuvwxyz");
+                    
 
   for (long k = 0; k < 1024L; k++) {
-    _String s (_String::Random (genrand_int32() % 32));
-    
-    
+    _String number_string (_String::Random (genrand_int32() % 32, &numbers)),
+            letter_string (_String::Random (genrand_int32() % 32, &letters)),
+            upcase_letter_string (letter_string.UpCase()),
+            combined = letter_string & number_string & upcase_letter_string & number_string;
+            
+            
+    if (number_string.Length () == 0) {
+      EXPECT_EQ (HY_NOT_FOUND, combined.Find (number_string)) << "Finding an empty string must fail";
+    } else {
+      long point1 = letter_string.Length(),
+           point2 = letter_string.Length() * 2 + number_string.Length();
+           
+      EXPECT_EQ (point1, combined.Find (number_string)) << "Find string (whole string) failed";
+      EXPECT_EQ (point2 , combined.Find (number_string, letter_string.Length() + number_string.Length())) << "Find string (partial string) failed";
+      
+      EXPECT_EQ (point2, combined.FindBackwards (number_string)) << "Find string backwards (whole string) failed";
+      EXPECT_EQ (HY_NOT_FOUND, combined.FindBackwards (upcase_letter_string, 0, point1 + number_string.Length() - 1 )) << "Incorrect result for '" << combined << ".FindBackwards('" <<
+                    upcase_letter_string << "')";
+                    
+      EXPECT_EQ (HY_NOT_FOUND, combined.FindBackwards (number_string, combined.Length(), 0)) << "Invalid range returned a valid Find result";
+      
+      
+    }
+    if (letter_string.Length()) {
+        EXPECT_TRUE (combined.ContainsSubstring (upcase_letter_string)) << "Incorrect result for '" << combined << ".ContainsSubstring('" <<
+                    upcase_letter_string << "')";
+         EXPECT_EQ (HY_NOT_FOUND, combined.Find (letter_string, letter_string.Length())) << "Incorrectly found uppercase string";
+         EXPECT_EQ (letter_string.Length() + number_string.Length(), combined.FindAnyCase (letter_string, letter_string.Length())) << "Failed with a case insensitive search for " << letter_string << " in " << combined;
+ 
+    }
+      
   }
 }
 

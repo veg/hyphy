@@ -112,7 +112,7 @@ struct _hyValidIDCharsType {
 
 /*
 ==============================================================
-Constructors
+Constructors/Initializers/Copiers/Destructors
 ==============================================================
 */
 
@@ -238,6 +238,58 @@ _String::~_String(void) {
     free(sData);
   }
 }
+
+void _String::CopyDynamicString(_String *s, bool flushMe) {
+  if (flushMe && sData) {
+    free(sData);
+  }
+  sLength = s->sLength;
+  if (s->SingleReference ()) {
+    sData = s->sData;
+    s->sData = nil;
+    DeleteObject(s);
+  } else {
+    checkPointer(sData = (char *)MemAllocate(sLength + 1UL));
+    if (s->sData) {
+      memcpy(sData, s->sData, sLength + 1);
+    } else {
+      sData[0] = 0;
+    }
+    s->RemoveAReference();
+  }
+}
+
+void _String::Duplicate(BaseRefConst ref) {
+  _String const *s = (_String const*)ref;
+
+  sLength = s->sLength;
+
+  if (s->sData) {
+    sData = (char *)MemAllocate(sLength + 1UL);
+    memcpy(sData, s->sData, sLength + 1UL);
+  } else {
+    sData = nil;
+  }
+
+}
+
+void _String::DuplicateErasing(BaseRef ref) {
+  if (sData) {
+    free(sData);
+  }
+  Duplicate(ref);
+
+}
+
+void _String::Initialize(bool) {
+  BaseObj::Initialize();
+  sLength = 0UL;
+  if (sData) {
+    free(sData);
+    sData = nil;
+  }
+}
+
 
 /*
 ==============================================================
@@ -371,7 +423,7 @@ void _String::Delete(long from, long to) {
   long resulting_length = NormalizeRange(from,to);
 
   if (resulting_length > 0L) {
-    if (to < sLength - 1UL) {
+    if (to < (long)sLength - 1UL) {
       memmove(sData + from, sData + to + 1, sLength - to - 1);
     }
     sLength -= resulting_length;
@@ -403,16 +455,20 @@ Case Methods
 ==============================================================
 */
 
-void _String::UpCase(void) {
+const _String _String::UpCase(void) const {
+  _String res (sLength);
   for (unsigned long i = 0UL; i < sLength; i++) {
-    sData[i] = toupper(sData[i]);
+    res.sData[i] = toupper(sData[i]);
   }
+  return res;
 }
 
-void _String::LoCase(void) {
+const _String _String::LoCase(void) const {
+  _String res (sLength);
   for (unsigned long i = 0UL; i < sLength; i++) {
-    sData[i] = tolower(sData[i]);
+    res.sData[i] = tolower(sData[i]);
   }
+  return res;
 }
 
 /*
@@ -421,94 +477,94 @@ Search and replace
 ==============================================================
 */
 
+long _String::Find(const _String& s, long from, long to) const {
+
+  if (s.sLength) {
+    long span = NormalizeRange(from, to);
+    if (span >= (long) s.sLength) {
+      const unsigned long upper_bound = to - s.sLength + 2L;
+      for (unsigned long i = from; i < upper_bound ; i++) {
+        unsigned long j = 0UL;
+        for (;j < s.sLength; j++) {
+          if (sData[i + j] != s.sData[j]) {
+            break;
+          } 
+        }
+        if (j == s.sLength) {
+          return i;
+        }
+      }
+    }
+  }
+  return HY_NOT_FOUND;
+}
+
+//Find first occurence of the string between from and to
+long _String::FindBackwards(const _String & s, long from, long to) const {
+
+  if (s.sLength) {
+    long span = NormalizeRange(from, to);
+    if (span >= (long) s.sLength) {
+      const long upper_bound = to - s.sLength + 1L;
+      for (long i = upper_bound; i >= from; i--) {
+        unsigned long j = 0UL;
+        for (;j < s.sLength; j++) {
+          if (sData[i + j] != s.sData[j]) {
+            break;
+          } 
+        }
+        if (j == s.sLength) {
+          return i;
+        }
+      }
+    }
+  }
+  return HY_NOT_FOUND;
+}
 
 
 // find first occurence of the string between from and to
-bool _String::ContainsSubstring(_String &s)
-    // -1, indicates that search term has not been found
-    {
-  if (!sLength) {
-    return false;
-  }
-  if (sLength < s.sLength) {
-    return false;
-  }
-  char *sP = sData, *ssP = s.sData;
-  for (long i = 0; i < sLength - s.sLength; i++, sP++) {
-    long j = 0;
-    for (;(sP[j] == ssP[j]) && (j < s.sLength); j++)
-      ;
-    if (j == s.sLength) {
-      return true;
-    }
-  }
-  return false;
+// case insensitive
+long _String::FindAnyCase(const _String& s, long from, long to) {
+    return UpCase().Find (s.UpCase(), from, to);
 }
 
-void _String::CopyDynamicString(_String *s, bool flushMe) {
-  if (flushMe && sData) {
-    free(sData);
-  }
-  sLength = s->sLength;
-  if (s->SingleReference ()) {
-    sData = s->sData;
-    s->sData = nil;
-    DeleteObject(s);
-  } else {
-    checkPointer(sData = (char *)MemAllocate(sLength + 1));
-    if (s->sData) {
-      memcpy(sData, s->sData, sLength + 1);
-    } else {
-      sData[0] = 0;
-    }
-    s->RemoveAReference();
-  }
+// find first occurence of the string between from and to
+bool _String::ContainsSubstring(const _String &s) const {
+  return Find (s) != HY_NOT_FOUND;
 }
 
 
-void _String::Duplicate(BaseRefConst ref) {
-  _String const *s = (_String const*)ref;
-
-  sLength = s->sLength;
-  sData = s->sData;
-
-  if (sData) {
-    checkPointer(sData = (char *)MemAllocate(sLength + 1));
-    memcpy(sData, s->sData, sLength + 1);
-  }
-
-}
-
-void _String::DuplicateErasing(BaseRef ref) {
-  if (sData) {
-    free(sData);
-  }
-  Duplicate(ref);
-
-}
+/*
+==============================================================
+Formatters
+==============================================================
+*/
 
 
-
-
-//Replace string 1 with string 2, all occurences true/false
+// Format second difference as HHH..H:MM:SS 
 void _String::FormatTimeString(long time_diff) {
-  long secs = time_diff, mins = secs / 60, hrs = mins / 60;
 
-  mins = mins % 60;
-  secs = secs % 60;
-  if (hrs < 10) {
+  long secs = time_diff, 
+       mins = secs / 60L, 
+       hrs = mins / 60L;
+
+  mins = mins % 60L;
+  secs = secs % 60L;
+  
+  if (hrs < 10L) {
     (*this) = _String('0') & hrs;
   } else {
     (*this) = _String(hrs);
   }
   (*this) = (*this) & ':';
-  if (mins < 10) {
+  if (mins < 10L) {
     (*this) = (*this) & _String('0') & mins;
   } else {
     (*this) = (*this) & _String(mins);
   }
   (*this) = (*this) & ':';
-  if (secs < 10) {
+  if (secs < 10L) {
     (*this) = (*this) & _String('0') & secs;
   } else {
     (*this) = (*this) & _String(secs);
@@ -542,71 +598,7 @@ long _String::FindEndOfIdent(long start, long end, char wild) {
 
   return i - 1;
 }
-
-// find first occurence of the string between from and to
-long _String::Find(_String s, long from, long to) const
-    // -1, indicates that search term has not been found
-    {
-  if (!sLength) {
-    return HY_NOT_FOUND;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return HY_NOT_FOUND;
-  }
-  if (to - from + 1 < s.sLength) {
-    return HY_NOT_FOUND;
-  }
-  char *sP = sData + from, *ssP = s.sData;
-  for (long i = from; i <= to - s.sLength + 1; i++, sP++) {
-    long j;
-    for (j = 0;(sP[j] == ssP[j]) && (j < s.sLength); j++)
-      ;
-    if (j == s.sLength) {
-      return i;
-    }
-  }
-  return HY_NOT_FOUND;
-}
-
-// find first occurence of the string between from and to
-// case insensitive
-long _String::FindAnyCase(_String s, long from, long to)
-    // -1, indicates that search term has not been found
-    {
-  if (!sLength) {
-    return HY_NOT_FOUND;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return HY_NOT_FOUND;
-  }
-  if (to - from + 1 < s.sLength) {
-    return HY_NOT_FOUND;
-  }
-
-  s.UpCase();
-  char *sP = sData + from, *ssP = s.sData;
-  for (long i = from; i <= to - s.sLength + 1; i++, sP++) {
-    long j;
-    for (j = 0;(toupper(sP[j]) == ssP[j]) && (j < s.sLength); j++)
-      ;
-    if (j == s.sLength) {
-      return i;
-    }
-  }
-  return HY_NOT_FOUND;
-}
+ 
 
 long _String::ExtractEnclosedExpression(long &from, char open, char close,
                                         bool respectQuote, bool respectEscape) {
@@ -674,36 +666,6 @@ long _String::Find(const char s, long from, long to) const {
   return HY_NOT_FOUND;
 }
 
-//Find first occurence of the string between from and to
-long _String::FindBackwards(_String s, long from, long to)
-    // -1, indicates that search term has not been found
-    {
-  if (!sLength) {
-    return HY_NOT_FOUND;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return HY_NOT_FOUND;
-  }
-  if (to - from + 1 < s.sLength) {
-    return HY_NOT_FOUND;
-  }
-  char *sP = sData, *ssP = (s.sData);
-  for (long i = to - s.sLength + 1; i >= (long) from; i--) {
-    long j;
-    for (j = 0;(sP[i + j] == ssP[j]) && (j < s.sLength); j++)
-      ;
-    if (j == s.sLength) {
-      return i;
-    }
-  }
-  return HY_NOT_FOUND;
-}
 
 
 long _String::FindTerminator(long from, _String &terminators) {
@@ -754,7 +716,11 @@ long _String::FindTerminator(long from, _String &terminators) {
   return HY_NOT_FOUND;
 }
 
-
+/*
+==============================================================
+Search and replace
+==============================================================
+*/
 
 // Return good ole char*
 char *_String::getStr(void) const { return sData; }
@@ -767,14 +733,6 @@ const char _String::getChar(long index) const {
   return defaultReturn;
 }
 
-void _String::Initialize(bool) {
-  BaseObj::Initialize();
-  sLength = 0UL;
-  if (sData) {
-    free(sData);
-    sData = nil;
-  }
-}
 
 
 
