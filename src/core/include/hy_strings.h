@@ -169,7 +169,7 @@ public:
   * @sa Duplicate()
   * @sa CopyDynamicString()
   */
-  virtual void DuplicateErasing(BaseRef);
+  virtual void DuplicateErasing(BaseRefConst);
 
   /**
   * Returns the character at a specified index
@@ -209,7 +209,7 @@ public:
   * Element location function
   * @see getChar()
   */
-  char operator()(unsigned long) const;
+  char operator()(long) const;
 
   /**
   * Sets string
@@ -261,7 +261,7 @@ public:
   * \n\n \b Example: \code char * new_str = string.getStr(); \endcode
   * @return Returns a good ole char*
   */
-  char *getStr(void) const;
+  const char *getStr(void) const;
 
   /**
   * Removes part of string that is between the two specified indices
@@ -472,7 +472,7 @@ public:
   * @return true if strings are equal
   * @sa Equal()
   */
-  bool EqualWithWildChar(_String *s, char wildChar = '*');
+  bool EqualWithWildChar(const _String&, const char wildChar = '*') const ;
 
   /**
   * Checks if String is lexicographically greater
@@ -516,14 +516,14 @@ public:
   * @return Returns true if string contains substring. Example returns true
   * @see Find()
   */
-  bool contains(_String);
+  bool contains(const _String&) const;
 
   /**
   * Checks to see if string contains character
   * @return Returns true if string contains character
   * @see contains()
   */
-  bool contains(char);
+  bool contains(char) const;
 
   /**
   * Checks to see if String begins with substring

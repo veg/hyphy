@@ -118,7 +118,11 @@ Constructors/Initializers/Copiers/Destructors
 
 //Does nothing
 _String::_String(void) {
-  sLength = 0;
+  Initialize();
+}
+
+void _String::Initialize (bool) {
+  sLength = 0UL;
   sData = nil;
 }
 
@@ -261,7 +265,6 @@ void _String::CopyDynamicString(_String *s, bool flushMe) {
 
 void _String::Duplicate(BaseRefConst ref) {
   _String const *s = (_String const*)ref;
-
   sLength = s->sLength;
 
   if (s->sData) {
@@ -273,21 +276,12 @@ void _String::Duplicate(BaseRefConst ref) {
 
 }
 
-void _String::DuplicateErasing(BaseRef ref) {
+void _String::DuplicateErasing(BaseRefConst ref) {
   if (sData) {
     free(sData);
   }
   Duplicate(ref);
 
-}
-
-void _String::Initialize(bool) {
-  BaseObj::Initialize();
-  sLength = 0UL;
-  if (sData) {
-    free(sData);
-    sData = nil;
-  }
 }
 
 
@@ -306,11 +300,16 @@ char &_String::operator[](long index) {
 }
 
 //Element location functions
-char _String::operator()(unsigned long index) const {
-  if (index < sLength) {
+char _String::operator()(long index) const {
+  return getChar(index);
+}
+
+  //Element location functions
+const char _String::getChar(long index) const {
+  if (index >= 0L && index < sLength) {
     return sData[index];
   }
-  return 0;
+  return defaultReturn;
 }
 
 // Assignment operator
@@ -349,6 +348,7 @@ const _String _String::operator&(const _String& s)  const {
 //Return good ole char*
 _String::operator const char *(void) const { return sData; }
 
+
 // lexicographic comparisons
 bool _String::operator==(const _String& s) const { return Compare (&s) == 0; }
 bool _String::operator>(const _String & s) const { return Compare (&s) > 0; }
@@ -356,6 +356,80 @@ bool _String::operator<=(const _String & s) const { return Compare (&s) <= 0; }
 bool _String::operator>=(const _String & s) const { return Compare (&s) >= 0; }
 bool _String::operator!=(const _String & s) const { return Compare (&s) != 0; }
 bool _String::operator<(const _String & s) const { return Compare (&s) < 0; }
+
+/*
+ ==============================================================
+ Lexicographic Comparison Methods
+ ==============================================================
+ */
+
+bool _String::contains (const _String& s) const { return Find(s) != -1; }
+bool _String::contains (char c) const    { return Find(c) != HY_NOT_FOUND; }
+
+char _String::Compare(_String const * s) const {
+  unsigned long upTo = MIN (sLength, s->sLength);
+  
+  for (unsigned long i = 0UL; i < upTo; i++) {
+    if (sData[i] < s->sData[i]) {
+      return -1;
+    }
+    if (sData[i] > s->sData[i]) {
+      return 1;
+    }
+  }
+  
+  if (sLength == s->sLength) {
+    return 0;
+  }
+  
+  return sLength < s->sLength ? -1 : 1;
+}
+
+bool _String::Equal(const _String *s) const {
+  return Compare (s) == 0;
+}
+
+bool _String::Equal(const char c) const {
+  return sLength == 1 && sData[0] == c;
+}
+
+
+
+bool _String::EqualWithWildChar(const _String &s, const char wildchar) const {
+  // wildcards only matter in the second string
+  
+  if (s.sLength > 0UL) {
+    unsigned long   match_this_char = 0UL;
+    bool            is_wildcard = s.sData[match_this_char] == wildchar,
+                    scanning_s = is_wildcard;
+    
+    for (unsigned long i = 0UL; i <= sLength && match_this_char <= s.sLength;) {
+      
+        //printf ("%lu/%lu match : %d, scanning : %d\n", i, match_this_char, is_wildcard, scanning_s);
+      
+      if (scanning_s) {
+        scanning_s = s.sData[++match_this_char] == wildchar;
+      } else {
+        if (sData[i] == s.sData[match_this_char]) {
+          i++;
+          is_wildcard =  s.sData[++match_this_char] == wildchar;
+          scanning_s = is_wildcard;
+        } else {
+          if (!is_wildcard) {
+            return false;
+          }
+          scanning_s = false;
+          i++;
+        }
+      }
+    }
+    return match_this_char > s.sLength;
+  } else {
+    return sLength == 0UL;
+  }
+  
+  return false;
+}
 
 
 
@@ -365,6 +439,10 @@ bool _String::operator<(const _String & s) const { return Compare (&s) < 0; }
 Manipulators
 ==============================================================
 */
+
+// a convenicence function not to write (const char*)(*this)[]
+
+const char *_String::getStr(void) const { return sData; }
 
 
 long  _String::NormalizeRange(long & from, long & to) const {
@@ -498,6 +576,26 @@ long _String::Find(const _String& s, long from, long to) const {
   }
   return HY_NOT_FOUND;
 }
+
+  //Find first occurence of the string between from and to
+long _String::Find(const char s, long from, long to) const {
+  if (sLength) {
+    long span = NormalizeRange(from, to);
+    if (span > 0L) {
+      char sentinel = sData[to+1];
+      sData[to+1] = s;
+      long index = from;
+      while (sData[index] != s) {
+        index++;
+      }
+      sData[to+1] = sentinel;
+      return index <= to ? index : HY_NOT_FOUND;
+    }
+  }
+  
+  return HY_NOT_FOUND;
+}
+
 
 //Find first occurence of the string between from and to
 long _String::FindBackwards(const _String & s, long from, long to) const {
@@ -642,29 +740,6 @@ long _String::ExtractEnclosedExpression(long &from, char open, char close,
   return HY_NOT_FOUND;
 }
 
-//Find first occurence of the string between from and to
-long _String::Find(const char s, long from, long to) const {
-  if (!sLength) {
-    return HY_NOT_FOUND;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return HY_NOT_FOUND;
-  }
-  //if (to-from<0) return -1;
-
-  for (long i = from; i <= to; i++)
-    if (sData[i] == s) {
-      return i;
-    }
-
-  return HY_NOT_FOUND;
-}
 
 
 
@@ -716,22 +791,9 @@ long _String::FindTerminator(long from, _String &terminators) {
   return HY_NOT_FOUND;
 }
 
-/*
-==============================================================
-Search and replace
-==============================================================
-*/
 
-// Return good ole char*
-char *_String::getStr(void) const { return sData; }
 
-//Element location functions
-const char _String::getChar(long index) const {
-  if (((unsigned long) index) < sLength) {
-    return sData[index];
-  }
-  return defaultReturn;
-}
+
 
 
 
@@ -1127,106 +1189,6 @@ void _String::Trim(long from, long to, bool softTrim) {
     sData[0] = 0;
   }
 }
-
-/*
-==============================================================
-Lexicographic Comparison Methods
-==============================================================
-*/
-
-bool _String::contains(_String s) { return Find(s) != -1; }
-
-bool _String::contains(char c) { return Find(c) != -1; }
-
-char _String::Compare(_String const * s) const {
-  unsigned long upTo = MIN (sLength, s->sLength);
-
-  for (unsigned long i = 0UL; i < upTo; i++) {
-    if (sData[i] < s->sData[i]) {
-      return -1;
-    }
-    if (sData[i] > s->sData[i]) {
-      return 1;
-    }
-  }
-
-  if (sLength == s->sLength) {
-    return 0;
-  }
-
-  return sLength < s->sLength ? -1 : 1;
-}
-
-bool _String::Equal(const _String *s) const {
-  return Compare (s) == 0;
-}
-
-bool _String::Equal(const char c) const {
-  return sLength == 1 && sData[0] == c;
-}
-
-//S may contain a wild char
-bool _String::EqualWithWildChar(_String *s, char wildchar) {
-  char *sP = sData, *ssP = (s->sData); // optimize
-  // we start comparing the strings until we run into a wildchar.
-  long matchLength, t, q, p, curPos = 0;
-  while (*ssP) {
-    if (*ssP != wildchar) {
-      if (*ssP == *sP) {
-        ssP++;
-        sP++;
-        curPos++;
-        continue;
-      } else {
-        return false;
-      }
-    }
-    // wildchar found
-    // skip the wildchar and scroll the 1st string until match is found
-    matchLength = 0;
-    ssP++;
-    while (*ssP && (*ssP != wildchar)) {
-      ssP++;
-      matchLength++;
-    }
-    if (!matchLength) { // wildchar is the last symbol in expression
-      if (!*ssP) {
-        return true; // expressions matched
-      }
-    } else { // check sP for a possible match
-      t = matchLength - 1;
-      q = matchLength + curPos - 1;
-      ssP--;
-      while (q < sLength) {
-        if (sP[t] == *ssP) {
-          p = 1;
-          while (p < matchLength) {
-            char c = *(ssP - p);
-            if (sP[t - p] != c) {
-              break;
-            }
-            p++;
-          }
-          if (p == matchLength) {
-            sP += t + 1;
-            curPos = q + 1;
-            ssP++;
-            break;
-            //                      ssP++;
-          }
-        }
-        t++;
-        q++;
-      }
-      if (q == sLength) {
-        return false;
-      }
-    }
-  }
-
-  return (*sP == 0);
-}
-
 
 /*
 ==============================================================

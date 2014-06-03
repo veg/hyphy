@@ -97,10 +97,15 @@ namespace {
   
 }
 
+_String numbers ("0123456789"),
+letters ("abcdefghijklmnopqrstuvwxyz");
+
+const char test_case [] = "The quick brown fox jumps over the lazy dog";
+
 
 TEST_F (_hyStringTest, StringConstuctorAndConverstionTests) {
   _String blank,
-          literal_string ("The quick brown fox jumps over the lazy dog"),
+          literal_string (test_case),
           literal_w_string (L"The quick brown fox jumps over the lazy dog");
   
   EXPECT_EQ (0UL, blank.Length ()) << "Default string constructor should make an empty string";
@@ -131,15 +136,19 @@ TEST_F (_hyStringTest, StringConstuctorAndConverstionTests) {
   test_string->AddAReference();
   _String test_copy (test_string);
   EXPECT_TRUE (test_string->SingleReference()) << "Incorrect reference count handling for CopyDynamicString";
+  test_string->DuplicateErasing(&literal_string);
+  EXPECT_TRUE (test_string->Equal(&literal_string)) << "DuplicateErasing did not correctly copy the source string";
   delete test_string;
   fclose(temp_file);
   
   temp_file = NULL;
   test_string = new _String (temp_file);
   EXPECT_TRUE (blank.Equal(test_string)) << "String constructor from NULL file is expected to return an empty string";
+  
   delete test_string;
   
   EXPECT_TRUE (literal_string.Equal (&literal_w_string)) << "Strings constructed from wchar_t* and char* did not match";
+  
   
   char buffer[256];
   for (unsigned long i = 0; i < 50; i++) {
@@ -241,10 +250,6 @@ TEST_F (_hyStringTest, StringCaseChange) {
 
 TEST_F (_hyStringTest, StringSearching) {
 
-  _String numbers ("0123456789"), 
-          letters ("abcdefghijklmnopqrstuvwxyz");
-                    
-
   for (long k = 0; k < 1024L; k++) {
     _String number_string (_String::Random (genrand_int32() % 32, &numbers)),
             letter_string (_String::Random (genrand_int32() % 32, &letters)),
@@ -267,6 +272,15 @@ TEST_F (_hyStringTest, StringSearching) {
                     
       EXPECT_EQ (HY_NOT_FOUND, combined.FindBackwards (number_string, combined.Length(), 0)) << "Invalid range returned a valid Find result";
       
+      EXPECT_EQ (combined.Find (number_string(0)), point1) << "Find (char) failed";
+      EXPECT_EQ (combined.Find ('0'), combined.Find (_String ("0"))) <<
+        "Find 'char' and Find String(char) returned unequal results";
+      
+      EXPECT_EQ (HY_NOT_FOUND, number_string.Find ('a')) << "Found a letter in a numeric string";
+      EXPECT_EQ (combined.contains ('z'), combined.Find ('z') != HY_NOT_FOUND) << "contains (char) did not match Find results";
+      EXPECT_EQ (combined.contains ("X"), combined.Find ("X") != HY_NOT_FOUND) << "contains (_String) did not match Find results";
+      EXPECT_EQ (number_string.Equal('1'), number_string == _String("1")) << "equal (char) did not match '==' results";
+      
       
     }
     if (letter_string.Length()) {
@@ -279,4 +293,24 @@ TEST_F (_hyStringTest, StringSearching) {
       
   }
 }
+
+TEST_F (_hyStringTest, EqualWithWildChar) {
+  _String match_me (test_case),
+          random_string (_String::Random(10L, &numbers));
+  
+  EXPECT_TRUE (match_me.EqualWithWildChar("*qui*ck****dog*", '*'));
+  EXPECT_TRUE  (match_me.EqualWithWildChar(test_case, '*'));
+  EXPECT_TRUE  (match_me.EqualWithWildChar(test_case, 'a'));
+  EXPECT_TRUE  (match_me.EqualWithWildChar("*quick*", '*'));
+  EXPECT_TRUE  (match_me.EqualWithWildChar("*quick*dog", '*'));
+  EXPECT_TRUE  (match_me.EqualWithWildChar("?", '?'));
+  EXPECT_TRUE  (empty.EqualWithWildChar(empty, '?'));
+  EXPECT_FALSE  (match_me.EqualWithWildChar("*quick*ogd", '*'));
+  EXPECT_FALSE  (match_me.EqualWithWildChar("*quick", '*'));
+  EXPECT_FALSE  (match_me.EqualWithWildChar(empty, '?'));
+  EXPECT_FALSE (match_me.EqualWithWildChar(random_string,'*'));
+  
+}
+
+
 
