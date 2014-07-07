@@ -6,7 +6,7 @@ skipCodeSelectionStep 		= 0;
 
 _useGridSearch              = 1;
 
-LoadFunctionLibrary("chooseGeneticCode");
+ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("dSdNTreeTools");
 LoadFunctionLibrary("CF3x4");
@@ -42,7 +42,7 @@ codon3x4					= BuildCodonFrequencies (nucCF);
 
 Model		MGL				= (MGMatrixLocal, codon3x4, 0);
 
-LoadFunctionLibrary("queryTree");
+ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "queryTree.bf");
 
 totalBranchCount			 = BranchCount(givenTree) + TipCount (givenTree);
 bNames						 = BranchName (givenTree, -1);
