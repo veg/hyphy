@@ -548,6 +548,8 @@ treePath = csvFilePath + ".ps";
 
 fprintf (treePath, CLEAR_FILE, psTree);
 
+DeleteObject (stepupLF);
+
 return pValueByBranch;
 
 //------------------------------------------------------------------------------------------------------------------------

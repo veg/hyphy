@@ -15,9 +15,9 @@ lfunction extractBranchLengthsFromTreeAsDict (tree_id) {
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
-lfunction getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
+lfunction getNucRevBranchLengthsAndParameters (dataset_id, tree_id) {
 
-   DataSetFilter nucs = CreateFilter          (^datafilter_id, 1);
+   DataSetFilter nucs = CreateFilter          (^dataset_id, 1);
    HarvestFrequencies   (Freqs, 	nucs, 1,1,1);
 
    global 	AC = 1;
@@ -36,7 +36,7 @@ lfunction getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
    ExecuteCommands           ("Tree 	tree = " + Eval("Format (^tree_id,1,1)"));
    LikelihoodFunction 	LF = (nucs,	tree);
    Optimize                  (res,LF);
-   
+   DeleteObject              (LF);
    
    return {"AC": AC, "AT": AT, "CG": CG, "CT": CT, "GT": GT, "lengths": extractBranchLengthsFromTreeAsDict (&tree)};
 }
