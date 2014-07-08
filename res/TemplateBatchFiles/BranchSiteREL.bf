@@ -217,6 +217,8 @@ for (k = 0; k < totalBranchCount; k+=1) {
     
     
     LikelihoodFunction stepupLF = (dsf, mixtureTree);
+    
+    
     fixGlobalParameters           ("stepupLF");
 
     if (_useGridSearch) {
@@ -297,6 +299,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
         test_IC = getIC (res[1][0], current_parameter_count + 2 + doSynRateVariation, sample_size);
         fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], ", IC = ", test_IC, "\n\t", accepted_rates_count+1, " rate clases\n\t");
         printNodeDesc ("mixtureTree.`local_branch_name`", accepted_rates_count + 1);
+
     }
     
     if (accepted_rates_count > 1) {
@@ -316,9 +319,13 @@ for (k = 0; k < totalBranchCount; k+=1) {
     rate_classes_by_branch [reordered_index] = accepted_rates_count;
 }
 
+//DeleteObject (stepupLF);
 
 Tree mixtureTree = stepupTree;
 ClearConstraints (mixtureTree);
+
+// need this so that DeleteObject does not die later
+LikelihoodFunction stepupLF = (dsf, mixtureTree);
 
 fprintf (stdout, "\n\n[INFERRED MODEL COMPLEXITY]");
 
@@ -548,7 +555,7 @@ treePath = csvFilePath + ".ps";
 
 fprintf (treePath, CLEAR_FILE, psTree);
 
-DeleteObject (stepupLF);
+DeleteObject (stepupLF, three_LF, base_FL);
 
 return pValueByBranch;
 

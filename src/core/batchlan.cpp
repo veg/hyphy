@@ -696,13 +696,12 @@ void KillLFRecord (long lfID, bool completeKill)
                                 otherModels,
                                 wastedModels;
 
-            long                k;
 
 
             myVars  << me->GetIndependentVars();
             myVars  << me->GetDependentVars();
 
-            for (k=0; k<likeFuncList.lLength; k++)
+            for (unsigned long k=0UL; k<likeFuncList.lLength; k++)
                 if (k!=lfID) {
                     if (((_String*)likeFuncNamesList(k))->sLength) {
                         _LikelihoodFunction *lf = (_LikelihoodFunction*)likeFuncList (k);
@@ -718,14 +717,14 @@ void KillLFRecord (long lfID, bool completeKill)
             otherVars.Sort();
             otherModels.Sort();
 
-            for (k=0; k<myVars.lLength; k++)
+            for (unsigned long k=0UL; k<myVars.lLength; k++)
                 if (otherVars.BinaryFind(myVars.lData[k])<0) {
                     wastedVars << myVars.lData[k];
                 }
 
             myVars.Clear();
 
-            for (k=me->GetTheTrees().lLength-1; k>=0; k--) {
+            for (long k=me->GetTheTrees().lLength-1; k>=0; k--) {
                 _TheTree * thisTree = (_TheTree*)LocateVar(me->GetTheTrees().lData[k]);
                 thisTree->CompileListOfModels (myVars);
                 _CalcNode * tNode = thisTree->DepthWiseTraversal (true);
@@ -736,13 +735,17 @@ void KillLFRecord (long lfID, bool completeKill)
                 thisTree->RemoveModel();
             }
 
-            for (k=0; k<myVars.lLength; k++)
+            for (unsigned long k=0UL; k<myVars.lLength; k++)
                 if (otherModels.BinaryFind (myVars.lData[k])<0) {
                     KillModelRecord (myVars.lData[k]);
                 }
 
-            for (k=0; k<wastedVars.lLength; k++) {
-                DeleteVariable (*LocateVar(wastedVars.lData[k])->GetName());
+            for (unsigned long k=0; k<wastedVars.lLength; k++) {
+                //printf ("Deleting %ld (%s)\n", wastedVars.lData[k],  ->GetName()->getStr());
+                _Variable * check_me = LocateVar(wastedVars.lData[k]);
+                if (check_me) {
+                  DeleteVariable (*check_me->GetName());
+                }
             }
 
         }
@@ -4705,8 +4708,8 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
                 objectNameID = _String((_String*)theObject->Compute()->toStr());
                 theObject    = FetchVar (LocateVarByName (objectNameID));
             }
-            if (theObject) {
-                if (theObject->IsCategory()) {
+            if (theObject) { 
+                 if (theObject->IsCategory()) {
                     _CategoryVariable * thisCV = (_CategoryVariable*)theObject;
                     thisCV->Refresh();
 
@@ -4714,7 +4717,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
                              *weights = thisCV->GetWeights(!thisCV->IsUncorrelated());
 
                     f = values->GetHDim()*values->GetVDim();
-                    checkPointer (result = new _Matrix (2,f,false,true));
+                    result = new _Matrix (2,f,false,true);
 
                     for (long k = 0; k<f; k++) {
                         result->theData[k]   = values->theData[k];
@@ -4726,6 +4729,19 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
                         if (theNode->GetModelIndex() != HY_NO_MODEL) {
                             checkPointer(result = new _Matrix);
                             theNode->RecomputeMatrix (0,1,result);
+                        }
+                    } else {
+                        if (theObject->ObjectClass() == TOPOLOGY) {
+ 
+                            _List* map = ((_TreeTopology*)theObject)->MapNodesToModels ();
+                            _AssociativeList* return_this = new _AssociativeList();
+                            
+                            for (unsigned long i = 0; i < map->lLength; i++) {
+                              _List * nodeInfo = (_List*) (*map) (i);
+                              return_this->MStore(*(_String*)(*nodeInfo)(0), *(_String*)(*nodeInfo) (1));
+                            }
+                            result = (_Matrix*) return_this;
+                            DeleteObject (map);
                         }
                     }
 

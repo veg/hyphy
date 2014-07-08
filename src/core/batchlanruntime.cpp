@@ -1100,30 +1100,30 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 } else {
                     _Variable* theVar = FetchVar(LocateVarByName (*currentArgument));
                     if (theVar) {
-                        if (theVar->IsIndependent()) {
-                            result = (_String*)theVar->toStr();
-                        } else {
-                            if (sID == -1)
-                                // list of variables
+                      if (theVar->IsIndependent()) {
+                        result = (_String*)theVar->toStr();
+                      } else {
+                        if (sID == -1)
+                            // list of variables
                             {
-                                _SimpleList vL;
-                                _AVLList    vAVL (&vL);
-                                theVar->ScanForVariables (vAVL, true);
-                                vAVL.ReorderList();
-                                _AssociativeList   * resL = (_AssociativeList *) checkPointer (new _AssociativeList);
-                                _List splitVars;
-                                SplitVariableIDsIntoLocalAndGlobal (vL, splitVars);
-                                InsertVarIDsInList (resL, "Global", *(_SimpleList*)splitVars(0));
-                                InsertVarIDsInList (resL, "Local",   *(_SimpleList*)splitVars(1));
-
-                                theReceptacle->SetValue (resL,false);
-                                return true;
+                          _SimpleList vL;
+                          _AVLList    vAVL (&vL);
+                          theVar->ScanForVariables (vAVL, true);
+                          vAVL.ReorderList();
+                          _AssociativeList   * resL = (_AssociativeList *) checkPointer (new _AssociativeList);
+                          _List splitVars;
+                          SplitVariableIDsIntoLocalAndGlobal (vL, splitVars);
+                          InsertVarIDsInList (resL, "Global", *(_SimpleList*)splitVars(0));
+                          InsertVarIDsInList (resL, "Local",   *(_SimpleList*)splitVars(1));
+                          
+                          theReceptacle->SetValue (resL,false);
+                          return true;
                             }
-
-                            else {  // formula string
-                                result = (_String*)theVar->GetFormulaString ();
-                            }
+                        
+                        else {  // formula string
+                          result = (_String*)theVar->GetFormulaString ();
                         }
+                      }
                     } else {
                         errMsg = _String ("'") & *currentArgument & "' is not an allowed argument type ";
                     }

@@ -294,8 +294,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 
             // also update the fact that this variable is no longer dependent in all declared
             // variable containers which contain references to this variable
-            long i;
-            for (i = 0; i<variablePtrs.lLength; i++) {
+            for (unsigned long i = 0UL; i<variablePtrs.lLength; i++) {
                 if (freeSlots.Find(i)>=0) {
                     continue;
                 }
@@ -308,7 +307,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
                     }
                 }
             }
-            for (i = 0; i<likeFuncList.lLength; i++)
+            for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
                 if (((_String*)likeFuncNamesList(i))->sLength) {
                     ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(theIndex);
                 }
