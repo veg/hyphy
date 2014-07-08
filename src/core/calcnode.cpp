@@ -2299,7 +2299,7 @@ _List*     _TreeTopology::MapNodesToModels (void) {
   _List* map = new _List;
   
   DepthWiseT (true);
-  while (currentNode) {
+  while (!IsCurrentNodeTheRoot()) {
     _List * node_record = new _List;
     _String nodeName;
     GetNodeName(currentNode,nodeName);
