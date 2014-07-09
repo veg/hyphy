@@ -163,6 +163,11 @@ void _StringBuffer::AppendNewInstance(_String *s) {
   DeleteObject(s);
 }
 
+//Append and delete operator
+void _StringBuffer::AppendSubstring(const _String& s, long from, long to) {
+  (*this) << _String (s, from, to);
+}
+
   //Append operator
 void _StringBuffer::EscapeAndAppend(const char c, const _hyStringBufferEscapeMode mode) {
   if (mode == HY_ESCAPE_SQLITE) {

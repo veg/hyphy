@@ -158,6 +158,10 @@ TEST_F (_hyStringTest, StringConstuctorAndConverstionTests) {
     EXPECT_STREQ(buffer, (const char*)double_string) << "Incorrect _String (Parameter) constructor (or char* conversion) for " << dn;
   }
   
+  test_string = (_String*) literal_string.toStr();
+  EXPECT_TRUE (literal_string.Equal (test_string)) << "toStr () did not return the same string back";
+  delete test_string;
+  
   literal_w_string = blank;
   blank = literal_string;
   EXPECT_TRUE (literal_string.Equal (&blank)) << "operator = failed";
@@ -228,7 +232,31 @@ TEST_F (_hyStringTest, StringManipulationOps) {
       
     }
     
+    
+    
   } 
+  
+  _String a_literal = test_case,
+          another_literal;
+  a_literal.Trim (5,2);
+  EXPECT_EQ (empty, a_literal) << "Trim with an invalid range must produce an empty string";
+  a_literal = test_case;
+  a_literal.Trim(2,5);
+  EXPECT_EQ (a_literal, _String (test_case, 2,5)) << "Trim with a valid range failed compared to the substring constructor";
+  a_literal = test_case;
+  a_literal.Trim(0,HY_NOT_FOUND);
+  EXPECT_EQ (a_literal, _String(test_case)) << "Trim which should leave the string intact failed";
+  
+  another_literal = a_literal;
+  a_literal.StripQuotes();
+  EXPECT_EQ (a_literal, another_literal) << "Strip quotes on a string not enclosed in \" marks changed the string";
+  another_literal = _String ('[') & a_literal & ']';
+  another_literal.StripQuotes('[',']');
+  EXPECT_EQ(a_literal, another_literal) << "StripQuotes '[string]' did not return 'string'";
+  
+  another_literal = "aa";
+  another_literal.StripQuotes('a','a');
+  EXPECT_EQ (another_literal, empty) << "StripQuotes on '' did not return an empty string";
   
   EXPECT_EQ (0UL, (empty & empty).Length()) << "empty & empty must be empty";
   EXPECT_EQ (0UL, empty.Chop (0,0).Length()) << "empty.Cut (anything) must be empty";
@@ -262,6 +290,7 @@ TEST_F (_hyStringTest, StringSearching) {
     } else {
       long point1 = letter_string.Length(),
            point2 = letter_string.Length() * 2 + number_string.Length();
+      
            
       EXPECT_EQ (point1, combined.Find (number_string)) << "Find string (whole string) failed";
       EXPECT_EQ (point2 , combined.Find (number_string, letter_string.Length() + number_string.Length())) << "Find string (partial string) failed";
@@ -281,6 +310,15 @@ TEST_F (_hyStringTest, StringSearching) {
       EXPECT_EQ (combined.contains ("X"), combined.Find ("X") != HY_NOT_FOUND) << "contains (_String) did not match Find results";
       EXPECT_EQ (number_string.Equal('1'), number_string == _String("1")) << "equal (char) did not match '==' results";
       
+      if (letter_string.sLength) {
+        EXPECT_TRUE   (combined.startswith(letter_string)) << "AB starts with A failed (match case), A == '" << letter_string << "'";
+        EXPECT_FALSE  (letter_string.startswith(combined)) << "NOT AB startswith A failed";
+        EXPECT_TRUE   (combined.startswith(upcase_letter_string, false)) << "aB startswith A failed (ignore case)";
+        EXPECT_FALSE  (combined.startswith(upcase_letter_string, true)) << "NOT aB startswith A failed (match case)";
+      }
+      EXPECT_TRUE (combined.endswith (number_string)) << "AB endswith B failed (match case)";
+      EXPECT_FALSE(number_string.endswith (combined)) << "NOT B endswith AB failed (match case)" << number_string << "/" << combined;
+      
       
     }
     if (letter_string.Length()) {
@@ -294,6 +332,8 @@ TEST_F (_hyStringTest, StringSearching) {
   }
 }
 
+
+
 TEST_F (_hyStringTest, EqualWithWildChar) {
   _String match_me (test_case),
           random_string (_String::Random(10L, &numbers));
@@ -305,12 +345,50 @@ TEST_F (_hyStringTest, EqualWithWildChar) {
   EXPECT_TRUE  (match_me.EqualWithWildChar("*quick*dog", '*'));
   EXPECT_TRUE  (match_me.EqualWithWildChar("?", '?'));
   EXPECT_TRUE  (empty.EqualWithWildChar(empty, '?'));
-  EXPECT_FALSE  (match_me.EqualWithWildChar("*quick*ogd", '*'));
-  EXPECT_FALSE  (match_me.EqualWithWildChar("*quick", '*'));
-  EXPECT_FALSE  (match_me.EqualWithWildChar(empty, '?'));
+  EXPECT_FALSE (match_me.EqualWithWildChar("*quick*ogd", '*'));
+  EXPECT_FALSE (match_me.EqualWithWildChar("*quick", '*'));
+  EXPECT_TRUE  (match_me.EqualWithWildChar("*quick***", '*'));
+  EXPECT_FALSE (match_me.EqualWithWildChar(empty, '?'));
   EXPECT_FALSE (match_me.EqualWithWildChar(random_string,'*'));
   
 }
 
+TEST_F (_hyStringTest, StringReplace) {
+  _String case1 ("ABABABAB"),
+          case2 ("XXXXXXXXXXY"),
+          r;
+  
+  EXPECT_EQ (empty.Replace ("A","B",false).Length(), 0L) << "Replace called on an empty string must return an empty string";
+  EXPECT_EQ (case1.Replace (empty, "C", true), case1) << "Replace an empty string must do nothing";
+  
+  r = case1.Replace ("B",empty,false);
+  EXPECT_EQ (r, _String("AABABAB")) << "Failed replace the first 'B' with an empty string in '" << case1 << "' / " << r;
+  
+  r = case1.Replace ("B",empty,true);
+  EXPECT_EQ (r, _String("AAAA")) << "Failed replace all 'B' with an empty string in '" << case1 << "' / " << r;
+  
+  r = case1.Replace ("B","CDE",true);
+  EXPECT_EQ (r, _String("ACDEACDEACDEACDE")) << "Failed replace all 'B' with an 'CDE' string in '" << case1 << "' / " << r;
 
+  r = case1.Replace ("AB",empty,true);
+  EXPECT_EQ (r, empty) << "Failed replace all 'AB' with an '' in '" << case1 << "' / " << r;
+
+  r = case1.Replace ("ABA","123",true);
+  EXPECT_EQ (r, _String("123B123B")) << "Failed replace all 'ABA' with '123' in '" << case1 << "' / " << r;
+
+  r = case2.Replace ("XXXXY","Beavis",true);
+  EXPECT_EQ (r, _String("XXXXXXBeavis")) << "Failed replace all 'XXXXY' with 'Beavis' in '" << case2 << "' / " << r;
+
+  r = case2.Replace ("XXXXY","Beavis",false);
+  EXPECT_EQ (r, _String("XXXXXXBeavis")) << "Failed replace the only 'XXXXY' with 'Beavis' in '" << case2 << "' / " << r;
+  
+}
+
+TEST_F (_hyStringTest, StringFormatters) {
+  EXPECT_STREQ(_String::FormatTimeString(0L), "00:00:00");
+  EXPECT_STREQ(_String::FormatTimeString(71L), "00:01:11");
+  EXPECT_STREQ(_String::FormatTimeString(3599L), "00:59:59");
+  EXPECT_STREQ(_String::FormatTimeString(3600L), "01:00:00");
+  EXPECT_STREQ(_String::FormatTimeString(3600L*101L - 1L), "100:59:59");
+}
 

@@ -302,13 +302,12 @@ public:
   * \n\n \b Example: \code _String("AAABBBCCC").Trim(3,5) \endcode
   * @param from The starting index to cut from
   * @param to The ending index to cut from
-  * @param softTrim If set to true, does not reallocate memory
   * @return Transforms string to "BBB"
   * @sa Cut()
   * @sa Chop()
   */
 
-  void Trim(long, long, bool = false);
+  void Trim(long, long);
 
   /**
   * Insert a char at a given position (-1 - append)
@@ -339,7 +338,7 @@ public:
   * @return "AAAZZZCCC"
   */
 
-  const _String Replace(const _String&, const _String&, bool) const;
+  const _String Replace(const _String&, const _String&, bool replace_all) const;
 
   /**
   * Locate the first non-space character of the string
@@ -406,7 +405,7 @@ public:
   * @see Find()
   */
 
-  long FindAnyCase(const _String&, long from = 0, long to = -1);
+  long FindAnyCase(const _String&, long from = 0, long to = -1) const;
 
   /**
   * Backwards Find
@@ -431,10 +430,10 @@ public:
   * _String("").FormatTimeString(time_diff);
   * \endcode
   * @param time_diff Seconds of time
-  * @return Transforms string to "127:32:12" in the example.
+  * @return returns "127:32:12" for the example.
   */
 
-  void FormatTimeString(long);
+  static const _String FormatTimeString(long time_difference);
 
 
   /**
@@ -536,18 +535,8 @@ public:
   * @sa startswith()
   * @sa endswith()
   */
-  bool beginswith(_String, bool = true);
+  bool startswith(const _String& , bool = true) const;
 
-  /**
-  * Checks to see if String starts with substring
-  * \n\n \b Example: \code _String("hyphy").startswith("h")\endcode
-  * @param s Substring
-  * @return true if string starts with substring. Example would return true
-  * @sa contains()
-  * @sa beginswith()
-  * @sa endswith()
-  */
-  bool startswith(_String &);
 
   /**
   * Checks to see if String ends with substring
@@ -560,7 +549,7 @@ public:
   * @sa beginswith()
   * @sa startswith()
   */
-  bool endswith(_String, bool = true);
+  bool endswith(const _String& , bool = true) const;
 
   /**
   * Converts string to upper case
@@ -621,7 +610,7 @@ public:
   * \n\n \b Example: \code _String("\"hyphy\"").StripQuotes("")\endcode
   * @return string with no quotes. "hyphy" in this example.
   */
-  void StripQuotes(void);
+  void StripQuotes(char open_char = '"', char close_char = '"');
 
   /**
   * Checks if String is valid ident
