@@ -4,3 +4,23 @@
 .DS_Store
 src/ocl/opencl_kernels.h
 *.cxx
+
+#Ignore CMake generated files
+**/CMakeCache.txt
+**/CMakeFiles
+**/Makefile
+**/cmake_install.cmake
+**/install_manifest.txt
+**/cmake_uninstall.cmake
+
+#Ignore HYPHY binaries
+HYPHYMP
+HYPHYMPI
+HyPhy.app
+iHyPhyDebug.app
+HYPHYDEBUG
+
+#Ignore HyPhy generated files
+**/*.log*
+**/*.log*
+**/data/*.samples*
