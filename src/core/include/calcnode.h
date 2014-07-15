@@ -389,7 +389,7 @@ public:
     virtual _PMathObj       TipCount                            (void);
     virtual _PMathObj       BranchCount                         (void);
     virtual _PMathObj       AVLRepresentation                   (_PMathObj);
-    virtual unsigned long            ObjectClass                         (void) {
+    virtual unsigned long   ObjectClass                         (void) {
         return TOPOLOGY;
     }
     virtual _AssociativeList*
@@ -411,8 +411,11 @@ public:
     void            StepWiseT                           (bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil);
     void            StepWiseTLevel                      (long&, bool = false);
     void            LeafWiseT                           (bool = false);
+    
+    _List*          MapNodesToModels                    (void);
 
     virtual void            GetNodeName                         (node<long> *, _String&, bool = false);
+    virtual _String*        GetNodeModel                        (node<long> *);
     virtual void            GetBranchLength                     (node<long> *, _String&, bool = false);
     // SLKP 20100901:
     //               added a boolean flag to ask to return branch length expression (if true) (returns "" for topologies)

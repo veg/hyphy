@@ -259,7 +259,7 @@ function partitionENVsequence (seq, nucOrAA) {
 	_currentPartition = 0;
 	
 	while (_currentPartition < _allPartitions && _currentIndex < _mappedLength) {
-	    if (_mappedReference[_currentIndex] >= _upperBound) {
+	    if (_mappedReference[_currentIndex] >= _upperBound && _currentPartition < _allPartitions - 1) {
 	        _currentPartition += 1;
 	        _upperBound          = _HXB_env_upperbound[_currentPartition];
 	    } 
@@ -303,14 +303,15 @@ function selectHXB2ENVsubsequence (seq,theSubset, nucOrAA) {
 		}
 	}
 		
-	if (nucOrAA != 1)
-	{
-		_mappedReference = mapSequenceToHXB2Aux (seq,_HXB2_Env_Sequence_,nucOrAA);
-	}
-	else
-	{
-		_mappedReference = mapSequenceToHXB2Aux (seq,_HXB2_AA_ENV_,nucOrAA);
-	}
+		
+    if (nucOrAA != 1)
+    {
+        _mappedReference = mapSequenceToHXB2Aux (seq,_HXB2_Env_Sequence_,nucOrAA);
+    }
+    else
+    {
+        _mappedReference = mapSequenceToHXB2Aux (seq,_HXB2_AA_ENV_,nucOrAA);
+    }
 	
 	_subset			 = ""; _subset * 256;
 	

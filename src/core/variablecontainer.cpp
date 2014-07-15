@@ -420,6 +420,7 @@ void _VariableContainer::ScanAndAttachVariables (void)
         curVar = FetchVar (f);
 
         if (curVar->theName->startswith(theNameAndADot)) {
+            //printf ("[ScanAndAttachVariables %s]\n", curVar->GetName()->getStr());
             if (!curVar->IsContainer()) {
                 long   vix = variableNames.GetXtra (f);
 

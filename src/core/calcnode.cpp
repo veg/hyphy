@@ -2152,6 +2152,12 @@ void    _TreeTopology::GetNodeName (node<long>* n, _String& r, bool fullName)
 
 //_______________________________________________________________________________________________
 
+_String*    _TreeTopology::GetNodeModel (node<long>* n) {
+  return (_String*)flatCLeaves(n->in_object);
+}
+
+//_______________________________________________________________________________________________
+
 void    _TreeTopology::SetLeafName(long res, _String* newName)
 {
     long count      = 0;
@@ -2287,6 +2293,23 @@ BaseRef     _TheTree::toStr (void)
     return res;
 }
 
+//_______________________________________________________________________________________________
+
+_List*     _TreeTopology::MapNodesToModels (void) {
+  _List* map = new _List;
+  
+  DepthWiseT (true);
+  while (!IsCurrentNodeTheRoot()) {
+    _List * node_record = new _List;
+    _String nodeName;
+    GetNodeName(currentNode,nodeName);
+    (*node_record) && & nodeName;
+    (*node_record) << GetNodeModel(currentNode);
+    map->AppendNewInstance(node_record);
+    DepthWiseT();
+  }
+  return map;
+}
 
 //_______________________________________________________________________________________________
 

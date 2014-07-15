@@ -9661,6 +9661,22 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2, _hy
     case HY_OP_CODE_MCOORD: // MCoord
         return MCoord (p);
         break;
+    case HY_OP_CODE_COLUMNS: {
+        // Columns -- get all unique values (as strings) 
+          _List    unique_values_aux;
+          _AVLList unique_values (&unique_values_aux);
+          
+          for (unsigned long k=0UL; k<avl.dataList->lLength; k++) {
+                BaseRef anItem = ((BaseRef*)avl.dataList->lData)[k];
+                if (anItem) {
+                   unique_values.Insert (avl.GetXtra(k)->toStr(), 0L, true);
+                }
+            }
+          unique_values.ReorderList();
+          return new _Matrix (*(_List*)unique_values.dataList);
+          
+          break;
+        }
     case HY_OP_CODE_ROWS: // Rows - get keys
         if (avl.emptySlots.lLength) {
             _List  dataListCompact;
