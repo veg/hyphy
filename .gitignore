@@ -20,6 +20,10 @@ HyPhy.app
 iHyPhyDebug.app
 HYPHYDEBUG
 
+#Ignore GTEST files
+HYPHYGTEST
+contrib/gtest-1.7.0/libgtest.a
+
 #Ignore HyPhy generated files
 **/*.log*
 **/*.log*
