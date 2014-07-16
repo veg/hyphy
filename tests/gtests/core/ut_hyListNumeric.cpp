@@ -76,6 +76,30 @@ protected:
     
   }
   
+  _hyListNumeric <DATA> make_random_list (const unsigned long size, const unsigned long range, const unsigned long offset = 0UL) {
+    _hyListNumeric <DATA> random_list;
+    for (unsigned long item = 0UL; item < size; item ++) {
+      random_list.append ((DATA) (offset + genrand_int32() % range));
+    }
+    return random_list;
+  }
+  
+  _StringBuffer dump_to_stream_as_longs (const _hyListNumeric<DATA>& data) {
+    _StringBuffer result;
+    char buffer [256];
+    result << '[';
+    for (unsigned long item = 0UL; item < data.countitems(); item++) {
+      if (item) {
+        result << ',';
+      }
+      snprintf(buffer,255,"%lu", (unsigned long)data.AtIndex (item));
+      result << buffer;
+    }
+    result << ']';
+    return result;
+  }
+
+  
 public:
   // Per-test-case set-up.
   // Called before the first test in this test case.
@@ -139,6 +163,8 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
                                single_element_list((TypeParam)5),
                                arithmetic_series_list(10UL, (TypeParam)4UL, (TypeParam)4UL),
                                seq_series_list(10UL, (TypeParam)4UL, (TypeParam)1UL),
+                               seq_series_list2(5UL, (TypeParam)30UL, (TypeParam)2UL),
+                               joined (seq_series_list + seq_series_list2),
                                full_stack_copy(arithmetic_series_list),
                                partial_stack_copy(arithmetic_series_list,2,HY_LIST_INSERT_AT_END);
              
@@ -161,49 +187,54 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
     ASSERT_EQ ( 0, null_list.Sum()) << "Failed summation of an empty list";
 
     // toStr tests
-    _StringBuffer* arithmetic_string = (_StringBuffer*)arithmetic_series_list.toStr();
-    _StringBuffer* single_element_string = (_StringBuffer*)single_element_list.toStr();
-    _StringBuffer* null_string = (_StringBuffer*)null_list.toStr();
-    EXPECT_STREQ("{4,8,12,16,20,24,28,32,36,40}", arithmetic_string->getStr()) << "multiple numeric list to string failed";
-    EXPECT_STREQ("{5}", single_element_string->getStr()) << "single numeric list to string failed";
-    EXPECT_STREQ("{}", null_string->getStr()) << "empty numeric list to string failed";
+    _String arithmetic_string ((_String*)arithmetic_series_list.toStr());
+    _String single_element_string = ((_String*)single_element_list.toStr());
+    _String null_string = ((_String*)null_list.toStr());
+    EXPECT_STREQ("{4,8,12,16,20,24,28,32,36,40}", arithmetic_string.getStr()) << "multiple numeric list to string failed";
+    EXPECT_STREQ("{5}", single_element_string.getStr()) << "single numeric list to string failed";
+    EXPECT_STREQ("{}", null_string.getStr()) << "empty numeric list to string failed";
 
     // list to partition string test
-    //TODO: Fix string doubles and longs to strings
-    _StringBuffer* seq_partition_string = (_StringBuffer*)seq_series_list.ListToPartitionString();
-    _StringBuffer* null_partition_string = (_StringBuffer*)null_list.ListToPartitionString();
-    EXPECT_STREQ("4-13", seq_partition_string->getStr()) << "single numeric list to partition string failed";
-    EXPECT_STREQ("", null_partition_string->getStr()) << "empty numeric list to partition string failed";
+    _String seq_partition_string ((_String*)joined.ListToPartitionString());
+    _String null_partition_string ((_String*)null_list.ListToPartitionString());
+    EXPECT_STREQ("4-13,30,32,34,36,38", seq_partition_string.getStr()) << "single numeric list to partition string failed";
+    EXPECT_STREQ("", null_partition_string.getStr()) << "empty numeric list to partition string failed";
 
-    // counting sort
-    for (int i=0; i <= 12; i++) {
-      if (i % 6 == 1)
-        single_element_list << (TypeParam)2;
-      if (i % 4 == 1) 
-        single_element_list << (TypeParam)3;
-      if (i % 3 == 1)
-        single_element_list << (TypeParam)4;
-      if (i % 2 == 1)
-        single_element_list << (TypeParam)6;
-      single_element_list << (TypeParam)12;
+    for (unsigned long i = 0UL; i < 128UL; i++) {
+      _hyListNumeric<long> index;
+      _hyListNumeric<TypeParam> random = this->make_random_list (genrand_int32() %128, 95,30),
+      psort_counted_list = random.CountingSort(_HY_LIST_NUMERIC_INVALID_VALUE_, (i%2==0) ? &index : NULL);
+      
+      
+      ASSERT_TRUE ( psort_counted_list.IsSorted()) << "Failed Sorted Count List\n In: "
+      << this->dump_to_stream_as_longs (single_element_list).getStr() << "\n Out: "
+      << this->dump_to_stream_as_longs (psort_counted_list).getStr();
+      
+      if (i%2 == 0) { // check the index array
+        for (unsigned long i2 = 0UL; i2 < random.countitems(); i2++) {
+          ASSERT_EQ (random.Element (index.Element(i2)), psort_counted_list.Element (i2)) <<
+          "CountingSort index list failed";
+        }
+      }
+      
+      long offset = (genrand_int32() % 60) - 30;
+      psort_counted_list = random;
+      random.Offset (offset);
+      random.Offset (-offset);
+      ASSERT_EQ (random, psort_counted_list) << "Roundtrip offset failed with " << offset << "In:\n"
+      << this->dump_to_stream_as_longs (psort_counted_list).getStr() << "\n Out: "
+      << this->dump_to_stream_as_longs (random).getStr();
+      
     }
 
-    _hyListNumeric <TypeParam>* psort_counted_list = single_element_list.CountingSort((TypeParam)13);
-    ASSERT_EQ ( 2UL, psort_counted_list->Element(0)) << "Failed Sorted Count List";
-    ASSERT_EQ ( 12UL, psort_counted_list->Element(24)) << "Failed Sorted Count List";
+ 
 
-    // offset test
-    arithmetic_series_list.Offset(24);
-    single_element_list.Offset(24);
-    null_list.Offset(24);
-    ASSERT_EQ ( 36, arithmetic_series_list.Element(2)) << "Failed offset of a list";
-    ASSERT_EQ ( 29, single_element_list.Element(0)) << "Failed offset of a list with a single element";
     ASSERT_EQ ( _HY_LIST_NUMERIC_INVALID_VALUE_, null_list.Element(0)) << "Failed offset of an empty list";
 
 }
 
 REGISTER_TYPED_TEST_CASE_P (_hyListNumericTest, ConstuctorTests, MethodTests);
 
-typedef ::testing::Types<long> _hyListNumericTestTypes;
+typedef ::testing::Types<unsigned char, long, unsigned long> _hyListNumericTestTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyListNumericTest, _hyListNumericTestTypes);
 }
