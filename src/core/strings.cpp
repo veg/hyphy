@@ -56,7 +56,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <time.h>
 
-#define MOD_ADLER 65521
 
 _String compileDate = __DATE__,
         __KERNEL__VERSION__ =
@@ -296,8 +295,14 @@ BaseRef _String::makeDynamic(void) const{
  ==============================================================
 */
 
-//String length
+// String length
 unsigned long _String::Length(void) const { return sLength; }
+
+void _String::setChar(unsigned long index, char c) {
+  if (index < sLength) {
+    sData[index] = c;
+  }
+}
 
 /*
  ==============================================================
@@ -735,6 +740,24 @@ const _String _String::Replace(const _String& s, const _String& d, bool replace_
   return replacementBuffer;
 }
 
+const _List _String::Tokenize(const _String& splitter) const {
+  _List tokenized;
+  
+  long cp = 0L, cpp;
+  
+  while ((cpp = Find(splitter, cp, HY_NOT_FOUND)) != HY_NOT_FOUND) {
+    if (cpp > cp) {
+      tokenized.append (new _String(*this, cp, cpp - 1L));
+    } else {
+      tokenized.append (new _String);
+    }
+    
+    cp = cpp + splitter.sLength;
+  }
+  
+  tokenized.append(new _String(*this, cp, HY_NOT_FOUND));
+  return tokenized;
+}
 
 /*
 ==============================================================
@@ -763,6 +786,64 @@ const _String _String::FormatTimeString(long time_diff){
   
   return time_string;
 }
+
+/*
+ ==============================================================
+ Utility functions with no clear category
+ ==============================================================
+ */
+
+
+const _String _String::Random(const unsigned long length, const _String *alphabet) {
+  _StringBuffer random(length + 1UL);
+  
+  unsigned int alphabet_length = alphabet ? alphabet->sLength : 127;
+  
+  if (length > 0UL && alphabet_length > 0UL) {
+    for (unsigned long c = 0UL; c < length; c++) {
+      unsigned long idx = genrand_int32() % alphabet_length;
+      if (alphabet) {
+        random << alphabet->sData[idx];
+      } else {
+        random << (char)(1UL + idx);
+      }
+    }
+  }
+  
+  return random;
+}
+
+long _String::Adler32(void) const {
+  
+  unsigned long len = sLength,
+                a = 1UL,
+                b = 0UL,
+                i = 0UL;
+  
+  while (len) {
+    unsigned long tlen = len > 5550UL ? 5550UL : len;
+    len -= tlen;
+    do {
+      a += sData[i++];
+      b += a;
+    } while (--tlen);
+    a = (a & 0xffff) + (a >> 16) * (65536UL - HY_STRING_MOD_ADLER);
+    b = (b & 0xffff) + (b >> 16) * (65536UL - HY_STRING_MOD_ADLER);
+  }
+  
+  if (a >= HY_STRING_MOD_ADLER) {
+    a -= HY_STRING_MOD_ADLER;
+  }
+  
+  b = (b & 0xffff) + (b >> 16) * (65536UL - HY_STRING_MOD_ADLER);
+  
+  if (b >= HY_STRING_MOD_ADLER) {
+    b -= HY_STRING_MOD_ADLER;
+  }
+  
+  return b << 16 | a;
+}
+
 
 /*!!!!!!!!!!!!!!!!!!
  
@@ -954,12 +1035,7 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 
 
 
-//Element location functions
-void _String::setChar(long index, char c) {
-  if (((unsigned long) index) < sLength) {
-    sData[index] = c;
-  }
-}
+
 
 _String *_String::Sort(_SimpleList *index) {
   if (index) {
@@ -994,24 +1070,7 @@ _String *_String::Sort(_SimpleList *index) {
 
 
 
-_List *_String::Tokenize(_String s) {
-  _List *res = new _List;
-  if (s.sLength != 0) {
-    long cp = 0, cpp;
-    while ((cpp = Find(s, cp, -1)) != -1) {
-      if (cpp > cp) {
-        res->append(new _String(*this, cp, cpp - 1));
-      } else {
-        res->append (new _String);
-      }
 
-      cp = cpp + s.sLength;
-    }
-
-    res->append(new _String(*this, cp, -1));
-  }
-  return res;
-}
 
 _Parameter _String::toNum(void) const{
   if (sLength == 0UL) {
@@ -1734,22 +1793,7 @@ void _String::RegExpMatchOnce(_String *pattern, _SimpleList &matchedPairs,
   }
 }
 
-_String _String::Random(const unsigned long length, const _String *alphabet) {
-  _StringBuffer random(length + 1);
-  unsigned long alphabet_length = alphabet ? alphabet->sLength : 127;
-  if (length > 0 && alphabet_length > 0) {
-    for (unsigned long c = 0; c < length; c++) {
-      unsigned long idx = genrand_int32() % alphabet_length;
-      if (alphabet) {
-        random << alphabet->sData[idx];
-      } else {
-        random << (char)(1 + idx);
-      }
-    }
-  }
 
-  return random;
-}
 
 unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
                                                      _String *context) {
@@ -1799,34 +1843,4 @@ unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
   return HY_STRING_INVALID_REFERENCE;
 }
 
-// Compute Adler-32 CRC for a string
-// Implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
-long _String::Adler32(void) {
-  unsigned char *data = (unsigned char *)sData;
-
-  unsigned long len = sLength, a = 1UL, b = 0UL;
-
-  while (len) {
-    unsigned tlen = len > 5550 ? 5550 : len;
-    len -= tlen;
-    do {
-      a += *data++;
-      b += a;
-    } while (--tlen);
-    a = (a & 0xffff) + (a >> 16) * (65536 - MOD_ADLER);
-    b = (b & 0xffff) + (b >> 16) * (65536 - MOD_ADLER);
-  }
-
-  if (a >= MOD_ADLER) {
-    a -= MOD_ADLER;
-  }
-
-  b = (b & 0xffff) + (b >> 16) * (65536 - MOD_ADLER);
-
-  if (b >= MOD_ADLER) {
-    b -= MOD_ADLER;
-  }
-
-  return b << 16 | a;
-}
 

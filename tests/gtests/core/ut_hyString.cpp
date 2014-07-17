@@ -47,6 +47,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //Generate necessary includes from the respective implementation file
 #include "hy_strings.h"
 #include "helperfunctions.h"
+#include "hy_list_reference.h"
 
 namespace {
   // The fixture for testing class Foo.
@@ -181,6 +182,16 @@ TEST_F (_hyStringTest, StringAccessorTests) {
   EXPECT_EQ('t', sc.getChar(5)) << "String getChar access (valid range) failed";
   EXPECT_EQ(0, sc.getChar(-1)) << "String getChar access (-1) failed";
   EXPECT_EQ(0, sc.getChar(sc.Length())) << "String getChar access (length + 1) failed";
+  
+    // check setChar
+  
+  s.setChar (0, '!');
+  EXPECT_EQ ('!', s.getChar (0)) << "setChar failed with a valid index";
+  s.setChar (0, 'I');
+  s.setChar (s.Length() + 1, 'X');
+  s.setChar (-1, 'Y');
+  EXPECT_EQ (sc, s) << "setChar with an invalid index range modified the string";
+  
 }
 
 TEST_F (_hyStringTest, StringLogicalOps) {
@@ -391,4 +402,57 @@ TEST_F (_hyStringTest, StringFormatters) {
   EXPECT_STREQ(_String::FormatTimeString(3600L), "01:00:00");
   EXPECT_STREQ(_String::FormatTimeString(3600L*101L - 1L), "100:59:59");
 }
+
+TEST_F (_hyStringTest, Adler32) {
+  const _String referenceString (_String::Random (16L + genrand_int32() % 128L));
+  _String mutableReference (referenceString);
+  
+  long checksum = referenceString.Adler32(),
+       hits     = 0L;
+  
+  for (long loop = 0L; loop < 4096L; loop ++) {
+    long idx = genrand_int32() % referenceString.Length();
+    mutableReference.setChar(idx, referenceString(idx) + 1);
+    if (checksum == mutableReference.Adler32()) {
+      hits ++;
+    }
+    mutableReference.setChar (idx, referenceString(idx));
+  }
+  
+  EXPECT_LE(hits, 2L) << "Too many Adler32 matches for one-character-away strings";
+}
+
+TEST_F (_hyStringTest, Tokenize) {
+  for (long k = 0L; k < 4096L; k++) {
+    
+    _String number_string (_String::Random (genrand_int32() % 32, &numbers)),
+            letter_string (_String::Random (genrand_int32() % 32, &letters)),
+            number_string2 (_String::Random (genrand_int32() % 32, &numbers)),
+            joined = number_string & '|' & letter_string & '|' & number_string2;
+    
+    _List   single_token (number_string.Tokenize ("|"));
+    ASSERT_TRUE (single_token.Length () == 1 && * single_token(0) == number_string) << "A.Tokenize (char not in A) != A";
+
+    _List   multiple_tokens (joined.Tokenize ("|"));
+    
+    ASSERT_EQ (multiple_tokens.Length(), 3UL) << "A|B|C.Tokenize ('|') failed '" <<  joined.getStr() << "'";
+    
+    ASSERT_TRUE (* multiple_tokens(0) == number_string && * multiple_tokens(2) == number_string2
+                 && * multiple_tokens(1) == letter_string) << "Incorrect tokens returned A|B|C.Tokenize ('|') ";
+
+    multiple_tokens = joined.Tokenize (letter_string);
+    
+    if (letter_string.Length()) {
+      ASSERT_EQ (multiple_tokens.Length (), 2UL) << "Expected the ABC.Tokenize (B) to return [A,B] for string'" <<  joined.getStr() << "'";
+       ASSERT_TRUE (* multiple_tokens(0) == (number_string & '|') && * multiple_tokens(1) ==  (_String('|') & number_string2))
+                    << "Incorrect tokens returned by the ABC.Tokenize (B)";
+    } else {
+    
+      ASSERT_TRUE (multiple_tokens.Length () == 1 && * multiple_tokens(0) == joined) << "A.Tokenize (empty) != A";
+    }
+  
+
+  }
+}
+
 

@@ -66,6 +66,9 @@ typedef _hyListReference <_String> _List;
 #define HY_STRING_LOCAL_DEREFERENCE 0x02
 #define HY_STRING_GLOBAL_DEREFERENCE 0x03
 
+#define HY_STRING_MOD_ADLER 65521
+
+
 class _String : public BaseObj {
 
 public:
@@ -181,12 +184,13 @@ public:
 
   /**
   * Sets the character of the string instance at a specified index
+  * Avoids (*string)[5] = 'e', and ignores assignments with invalid indices
   * \n Usage: string->setChar(5, 'e');
   * @param index The int location of the char to be replaced
   * @param c The character to set the location with
   * @return Nothing. Changes string instance
   */
-  void setChar(long, char);
+  void setChar(unsigned long, char);
 
   /**
   * Copies a string dynamically and deletes the original string
@@ -420,7 +424,7 @@ public:
   * http://en.wikipedia.org/wiki/Adler-32
   * @return the Adler32 checksum. 300286872 returns in the Example
   */
-  long Adler32(void);
+  long Adler32(void) const;
 
   /**
   * Turns seconds into a time string in the form "hh:mm:ss"
@@ -570,10 +574,9 @@ public:
   * \n\n \b Example: _String("hyphy, gattaca, protease").Tokenize(",") will
   * create a list {"hyphy","gattaca","protease"}
   * @param s The substring to split the string by
-  * @return A point to a *_List that holds a list of the resultant strings.
-  * Retrieve one by list->lData[i]
+  * @return The list that holds the resultant strings.
   */
-  _List *Tokenize(_String);
+  const _List Tokenize(const _String&) const;
 
   /**
   * TODO: With batchlan
@@ -739,7 +742,7 @@ public:
    * then this will be generated from 1-128 ASCII codes
    * @return the random string
    */
-  static _String Random(const unsigned long len, const _String *alphabet = nil);
+  static const _String Random(const unsigned long len, const _String *alphabet = nil);
 
   /**
   * Computes Lempel-Ziv complexity of the string.

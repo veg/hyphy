@@ -272,6 +272,12 @@ unsigned long _hyList<PAYLOAD>::countitems(void) const
 }
 
 template<typename PAYLOAD>
+unsigned long _hyList<PAYLOAD>::Length(void) const
+{
+  return lLength;
+}
+
+template<typename PAYLOAD>
 unsigned long _hyList<PAYLOAD>::allocated(void) const
 {
   return laLength;
