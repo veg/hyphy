@@ -91,7 +91,9 @@ _StringBuffer::_StringBuffer (const _String& buffer) {
 
 
 //Stack copy contructor
-_StringBuffer::_StringBuffer(const _StringBuffer &s) { Duplicate(& s); }
+_StringBuffer::_StringBuffer(const _StringBuffer &s) {
+  Duplicate(& s);
+}
 
 /*
  ==============================================================
@@ -122,7 +124,9 @@ void _StringBuffer::operator<<(const _String *s) {
 }
 
 // append operator
-void _StringBuffer::operator<<(const _String &s) { (*this) << &s; }
+void _StringBuffer::operator<<(const _String &s) {
+  (*this) << &s;
+}
 
 //Append operator
 void _StringBuffer::operator<<(const char *str) {
@@ -147,14 +151,16 @@ void _StringBuffer::PushChar(const char c){
 }
 
 void _StringBuffer::PushCharBuffer(const char* buffer, const unsigned long buffer_l){
-  unsigned long offset = sLength;
-  sLength += buffer_l;
-  ResizeString ();
-  
-  for (unsigned long k = 0UL; k < buffer_l; k++) {
-    sData[offset + k] = buffer[k];
+  if (buffer_l) {
+      unsigned long offset = sLength;
+      sLength += buffer_l;
+      ResizeString ();
+
+      for (unsigned long k = 0UL; k < buffer_l; k++) {
+        sData[offset + k] = buffer[k];
+      }
+      sData[sLength] = 0;
   }
-  sData[sLength] = 0;
 }
 
 //Append and delete operator
