@@ -74,7 +74,8 @@ _StringBuffer::_StringBuffer (void) : _String () {
   sData[0] = 0;
 }
 
-_StringBuffer::_StringBuffer (const unsigned long character_count) : _String () {
+_StringBuffer::_StringBuffer (const unsigned long character_count)
+                            : _String () {
   AllocateBufferSpace (character_count);
   sData[0] = 0;
 }
@@ -150,16 +151,18 @@ void _StringBuffer::PushChar(const char c){
   sData[sLength] = 0;
 }
 
-void _StringBuffer::PushCharBuffer(const char* buffer, const unsigned long buffer_l){
+void _StringBuffer::PushCharBuffer( const char* buffer,
+                                    const unsigned long
+                                    buffer_l) {
   if (buffer_l) {
-      unsigned long offset = sLength;
-      sLength += buffer_l;
-      ResizeString ();
+    unsigned long offset = sLength;
+    sLength += buffer_l;
+    ResizeString ();
 
-      for (unsigned long k = 0UL; k < buffer_l; k++) {
-        sData[offset + k] = buffer[k];
-      }
-      sData[sLength] = 0;
+    for (unsigned long k = 0UL; k < buffer_l; k++) {
+      sData[offset + k] = buffer[k];
+    }
+    sData[sLength] = 0;
   }
 }
 
@@ -170,7 +173,8 @@ void _StringBuffer::AppendNewInstance(_String *s) {
 }
 
   //Append operator
-void _StringBuffer::EscapeAndAppend(const char c, const _hyStringBufferEscapeMode mode) {
+void _StringBuffer::EscapeAndAppend(const char c,
+                                    const _hyStringBufferEscapeMode mode) {
   if (mode == HY_ESCAPE_SQLITE) {
     PushChar(c);
     switch (c) {
@@ -233,7 +237,7 @@ void _StringBuffer::EscapeAndAppend(const char c, const _hyStringBufferEscapeMod
               PushChar(c);
           }
           return;
-          
+
         }
       }
     }
@@ -260,16 +264,17 @@ void _StringBuffer::EscapeAndAppend(const char c, const _hyStringBufferEscapeMod
   }
 }
 
-  //Append operator
-void _StringBuffer::EscapeAndAppend(const _String &s, const _hyStringBufferEscapeMode mode) {
+//Append operator
+void _StringBuffer::EscapeAndAppend(const _String &s,
+                                    const _hyStringBufferEscapeMode mode) {
   for (unsigned long i = 0UL; i < s.sLength; i++) {
     EscapeAndAppend(s.sData[i], mode);
   }
 }
 
 void _StringBuffer::AppendAnAssignmentToBuffer(_String *id, _String *value,
-                                         bool doFree, bool doQuotes,
-                                         bool doBind) {
+                                               bool doFree, bool doQuotes,
+                                               bool doBind) {
   (*this) << id;
   if (doBind) {
     (*this) << ':';
@@ -289,7 +294,8 @@ void _StringBuffer::AppendAnAssignmentToBuffer(_String *id, _String *value,
 }
 
 
-void _StringBuffer::AppendVariableValueAVL(_String *id, _SimpleList &varNumbers) {
+void _StringBuffer::AppendVariableValueAVL( _String *id,
+                                            _SimpleList &varNumbers) {
 #ifndef HY_2014_REWRITE_MASK
   for (long k = 0; k < varNumbers.lLength; k++) {
     _Variable *tiv = LocateVar(varNumbers.lData[k]);
@@ -311,7 +317,7 @@ void _StringBuffer::AppendVariableValueAVL(_String *id, _SimpleList &varNumbers)
         default:
           AppendNewInstance((_String *)(varValue->toStr()));
           break;
-          
+
       }
       (*this) << ";\n";
     }
