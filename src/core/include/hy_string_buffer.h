@@ -55,11 +55,11 @@ enum _hyStringBufferEscapeMode   {HY_ESCAPE_NORMAL, // used to be 0
 
 
 class _StringBuffer : public _String {
-  
+
 private:
-  
+
   unsigned long saLength;
-  
+
   void AllocateBufferSpace (const unsigned long character_count);
   void ResizeString        (void);
   void PushChar            (const char);
@@ -144,6 +144,17 @@ public:
    */
   virtual void operator<<(const char);
 
+  void sanitizeForSQLAndAppend(const char);
+  void sanitizeForSQLAndAppend(const _String&);
+  void sanitizeForHTMLAndAppend(const char);
+  void sanitizeForHTMLAndAppend(const _String&);
+  void sanitizeAndAppend(const char);
+  void sanitizeAndAppend(const _String&);
+  void sanitizeForPostScriptAndAppend(const char);
+  void sanitizeForPostScriptAndAppend(const _String&);
+  void sanitizeForRegExAndAppend(const char);
+  void sanitizeForRegExAndAppend(const _String&);
+
   /**
   * Escape all characters in a string and append to this string
   * \n\n \b Example: \code _StringBuffer("AB").EscapeAndAppend('<',4); \endcode
@@ -181,10 +192,10 @@ public:
    * @sa AppendNewInstance()
    * @sa AppendVariableValueAVL()
    */
-  
+
   void AppendAnAssignmentToBuffer(_String *, _String *, bool = true,
                                   bool = false, bool = false);
-  
+
   /**
    * SLKP 20090817:
    * A utility function to append a statement of the form
@@ -197,10 +208,10 @@ public:
    * @sa AppendNewInstance()
    * @sa AppendAnAssignmentToBuffer()
    */
-  
+
   void AppendVariableValueAVL(_String *, _SimpleList &);
 
 };
-  
+
 #endif
 

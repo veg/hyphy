@@ -42,21 +42,21 @@ void _StringBuffer::AllocateBufferSpace (const unsigned long character_count) {
   } else {
     checkPointer(sData = (char *)MemAllocate(saLength + 1UL));
   }
-  
+
 }
 
 void _StringBuffer::ResizeString (void) {
   if (saLength < sLength) {
     unsigned long incBy = sLength - saLength;
-    
+
     if (incBy < HY_STRING_BUFFER_ALLOCATION_CHUNK) {
       incBy = HY_STRING_BUFFER_ALLOCATION_CHUNK;
     }
-    
+
     if (incBy < sLength >> 4) {
       incBy = sLength >> 4;
     }
-    
+
     AllocateBufferSpace (saLength + incBy);
   }
 }
@@ -172,7 +172,129 @@ void _StringBuffer::AppendNewInstance(_String *s) {
   DeleteObject(s);
 }
 
-  //Append operator
+//Append operator
+void _StringBuffer::sanitizeForSQLAndAppend(const char c) {
+  PushChar(c);
+  if (c == '\'') {
+    PushChar(c);
+  }
+}
+
+//Append operator
+void _StringBuffer::sanitizeForSQLAndAppend(const _String &s) {
+  for (unsigned long i = 0UL; i < s.sLength; i++) {
+    sanitizeForSQLAndAppend(s.sData[i]);
+  }
+}
+
+
+void _StringBuffer::sanitizeForPostScriptAndAppend(const char c) {
+  switch (c) {
+    case '(':
+    case ')':
+    case '%':
+      PushChar ('\\');
+      PushChar(c);
+  }
+}
+
+//Append operator
+void _StringBuffer::sanitizeForPostScriptAndAppend(const _String &s) {
+  for (unsigned long i = 0UL; i < s.sLength; i++) {
+    sanitizeForPostScriptAndAppend(s.sData[i]);
+  }
+}
+
+void _StringBuffer::sanitizeForHTMLAndAppend(const char c) {
+  switch (c) {
+    case '"':
+      (*this) << "&quot;";
+      break;
+    case '\'':
+      (*this) << "&apos;";
+      break;
+    case '<':
+      (*this) << "&lt;";
+      break;
+    case '>':
+      (*this) << "&gt;";
+      break;
+    case '&':
+      (*this) << "&amp;";
+      break;
+    default:
+      PushChar(c);
+  }
+}
+
+//Append operator
+void _StringBuffer::sanitizeForHTMLAndAppend(const _String &s) {
+  for (unsigned long i = 0UL; i < s.sLength; i++) {
+    sanitizeForHTMLAndAppend(s.sData[i]);
+  }
+}
+
+void _StringBuffer::sanitizeForRegExAndAppend(const char c) {
+  switch (c) {
+    case '[':
+    case '^':
+    case '$':
+    case '.':
+    case '|':
+    case '?':
+    case '*':
+    case '+':
+    case '(':
+    case ')':
+      PushChar('\\');
+      PushChar(c);
+      break;
+    case '\\':
+      (*this) << "\\\\";
+      break;
+    default:
+      PushChar(c);
+  }
+}
+
+//Append operator
+void _StringBuffer::sanitizeForRegExAndAppend(const _String &s) {
+  for (unsigned long i = 0UL; i < s.sLength; i++) {
+    sanitizeForRegExAndAppend(s.sData[i]);
+  }
+}
+
+void _StringBuffer::sanitizeAndAppend(const char c) {
+  switch (c) {
+    case '\n':
+      PushChar('\\');
+      PushChar('n');
+      break;
+    case '\t':
+      PushChar('\\');
+      PushChar('t');
+      break;
+    case '"':
+      PushChar('\\');
+      PushChar('"');
+      break;
+    case '\\':
+      PushChar('\\');
+      PushChar('\\');
+      break;
+    default:
+      PushChar(c);
+  }
+}
+
+//Append operator
+void _StringBuffer::sanitizeAndAppend(const _String &s) {
+  for (unsigned long i = 0UL; i < s.sLength; i++) {
+    sanitizeAndAppend(s.sData[i]);
+  }
+}
+
+//Append operator
 void _StringBuffer::EscapeAndAppend(const char c,
                                     const _hyStringBufferEscapeMode mode) {
   if (mode == HY_ESCAPE_SQLITE) {

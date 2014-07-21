@@ -353,6 +353,95 @@ TEST_F(_StringBufferTest, AppendNewInstanceTest)
 }
 
 /******************************************/
+TEST_F(_StringBufferTest, sanitizeForSQLTest)
+{
+  _StringBuffer test3("AB");
+  const char test_c = '\'';
+  test3.sanitizeForSQLAndAppend(test_c);
+  EXPECT_STREQ("AB''", test3);
+}
+
+/******************************************/
+TEST_F(_StringBufferTest, sanitizeForHTMLTest)
+{
+  _StringBuffer test5("AB");
+  test5.sanitizeForHTMLAndAppend('"');
+  EXPECT_STREQ("AB&quot;", test5);
+  test5.sanitizeForHTMLAndAppend('\'');
+  EXPECT_STREQ("AB&quot;&apos;", test5);
+  test5.sanitizeForHTMLAndAppend('<');
+  EXPECT_STREQ("AB&quot;&apos;&lt;", test5);
+  test5.sanitizeForHTMLAndAppend('>');
+  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;", test5);
+  test5.sanitizeForHTMLAndAppend('&');
+  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;&amp;", test5);
+  test5.sanitizeForHTMLAndAppend('^');
+  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;&amp;^", test5);
+}
+
+/******************************************/
+TEST_F(_StringBufferTest, sanitizeTest)
+{
+  _StringBuffer test("AB");
+  test.sanitizeAndAppend('<');
+  EXPECT_STREQ("AB<", test);
+
+  _StringBuffer test4("AB");
+  test4.sanitizeAndAppend('\n');
+  EXPECT_STREQ("AB\\n", test4);
+  test4.sanitizeAndAppend('\t');
+  EXPECT_STREQ("AB\\n\\t", test4);
+  test4.sanitizeAndAppend("\"");
+  EXPECT_STREQ("AB\\n\\t\\\"", test4);
+  test4.sanitizeAndAppend("\\");
+  EXPECT_STREQ("AB\\n\\t\\\"\\\\", test4);
+  test4.sanitizeAndAppend("!");
+  EXPECT_STREQ("AB\\n\\t\\\"\\\\!", test4);
+}
+
+/******************************************/
+TEST_F(_StringBufferTest, sanitizePSTest)
+{
+  _StringBuffer test2("AB");
+  test2.sanitizeForPostScriptAndAppend('(');
+  EXPECT_STREQ("AB\\(", test2);
+  test2.sanitizeForPostScriptAndAppend(')');
+  EXPECT_STREQ("AB\\(\\)", test2);
+  test2.sanitizeForPostScriptAndAppend('%');
+  EXPECT_STREQ("AB\\(\\)\\%", test2);
+}
+
+/******************************************/
+TEST_F(_StringBufferTest, sanitizeRETest)
+{
+  _StringBuffer test6("AB");
+  test6.sanitizeForRegExAndAppend('[');
+  EXPECT_STREQ("AB\\[", test6);
+  test6.sanitizeForRegExAndAppend('^');
+  EXPECT_STREQ("AB\\[\\^", test6);
+  test6.sanitizeForRegExAndAppend('$');
+  EXPECT_STREQ("AB\\[\\^\\$", test6);
+  test6.sanitizeForRegExAndAppend('.');
+  EXPECT_STREQ("AB\\[\\^\\$\\.", test6);
+  test6.sanitizeForRegExAndAppend('|');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|", test6);
+  test6.sanitizeForRegExAndAppend('?');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?", test6);
+  test6.sanitizeForRegExAndAppend('*');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*", test6);
+  test6.sanitizeForRegExAndAppend('+');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+", test6);
+  test6.sanitizeForRegExAndAppend('(');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(", test6);
+  test6.sanitizeForRegExAndAppend(')');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)", test6);
+  test6.sanitizeForRegExAndAppend('\\');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\", test6);
+  test6.sanitizeForRegExAndAppend('@');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\@", test6);
+}
+
+/******************************************/
 TEST_F(_StringBufferTest, EscapeAndAppendCharTest)
 {
   _StringBuffer test("AB");
