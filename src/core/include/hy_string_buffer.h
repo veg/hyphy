@@ -65,7 +65,8 @@ public:
 
   /**
    * A constructor that creates a string buffer of a given size.
-   * @param character_count The number to convert to string
+   * @param character_count The number of characters worth of space to
+   * allocate
    */
   _StringBuffer(const unsigned long character_count);
 
@@ -76,18 +77,19 @@ public:
 
   /**
   * A constructor that copies from a char string.
-   * @param buffer create
+   * @param buffer Create buffer from provided char array
   */
   _StringBuffer(const char * buffer);
 
   /**
    * A constructor that copies from a standard string.
-   * @param buffer create
+   * @param buffer Create buffer from provided HyPhy _String
    */
   _StringBuffer(const _String& buffer);
 
   /**
    * Initializes _String object to 0 allocated length
+   * @param Allocate memory or not
    */
   virtual void initialize(bool=false);
 
@@ -95,7 +97,7 @@ public:
 
   /**
   * Returns a dynamic copy of the current instance.
-  * \n Usage: stringInstance.makeDynamic();
+  * \n Usage: string_buffer_instance.makeDynamic();
   * @return BaseRef
   */
   virtual BaseRef makeDynamic(void) const;
@@ -109,32 +111,32 @@ public:
 
   /**
   * Append all characters in the argument string to the buffer
-  * @param buffer append characters from here
+  * @param buffer Append characters from standard hyphy _String
   */
   virtual void operator<<(const _String *buffer);
 
   /**
    * Append all characters in the argument string to the buffer
-   * @param buffer append characters from here
+   * @param buffer append characters from standard HyPhy _String
   */
   virtual void operator<<(const _String &);
 
   /**
    * Append a single char to the buffer
-   * @param buffer append characters from here
+   * @param buffer append characters from character
    */
   virtual void operator<<(const char);
 
   /**
    * Append all chars in the string buffer to this string
-   * @param buffer append characters from here
+   * @param buffer append characters from char array
    */
   virtual void operator<<(const char *);
 
   /**
    * Append all characters in the argument string to the buffer
    * delete the buffer object afterwards
-   * @param buffer append characters from here
+   * @param buffer append characters from stanard HyPhy _String
    */
   void appendNewInstance(_String *);
 
@@ -146,7 +148,7 @@ public:
   /**
   * MDS 20140722: Sanitize (escape) all characters in a string and append to
   * this string \n\n \b Example: \code
-  * _StringBuffer("AB").sanitizeForHTMLAndAppend('<',4); \endcode \n Above
+  * _StringBuffer("AB").sanitizeForHTMLAndAppend('<'); \endcode \n Above
   * code will transform string to "AB&lt;"
   * @param c The character to escape and append
   */
@@ -182,11 +184,6 @@ public:
    * id["varname"] = varvalue; for each variable in the SimpleList arguments
    * for String valued variables, their values are properly quoted
    * @param id = value; to the current string assumed to be in the buffer form
-   * @param doFree free the 2nd string argument when done
-   * @param doQuotes put quotes around the value
-   * @param doBind use := instead of =
-   * @sa AppendNewInstance()
-   * @sa appendAnAssignmentToBuffer()
    */
   void appendVariableValueAVL(_String *, _List &);
 
