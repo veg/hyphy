@@ -774,7 +774,9 @@ public:
   /**
   * Sets Length
   */
-  void SetLength(unsigned long nl) { sLength = nl; }
+  void SetLength(unsigned long nl) {
+    s_length = nl;
+  }
 
   /**
   * Starting at index [argument 1],
@@ -816,8 +818,8 @@ public:
   long FindTerminator(long, _String &);
 
   // Data Fields
-  unsigned long sLength;
-  Ptr sData;
+  unsigned long s_length;
+  Ptr s_data;
   
   private:
     long NormalizeRange (long & from, long & to) const;

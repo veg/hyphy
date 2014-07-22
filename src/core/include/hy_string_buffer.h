@@ -49,12 +49,12 @@ class _StringBuffer : public _String {
 
 private:
 
-  unsigned long saLength;
+  unsigned long sa_length;
 
-  void AllocateBufferSpace (const unsigned long character_count);
-  void ResizeString        (void);
-  void PushChar            (const char);
-  void PushCharBuffer      (const char*, const unsigned long);
+  void allocateBufferSpace(const unsigned long character_count);
+  void resizeString(void);
+  void pushChar(const char);
+  void pushCharBuffer(const char*, const unsigned long);
 
 public:
 
@@ -89,7 +89,7 @@ public:
   /**
    * Initializes _String object to 0 allocated length
    */
-  virtual void Initialize(bool=false);
+  virtual void initialize(bool=false);
 
   virtual ~_StringBuffer(void) {};
 
@@ -101,17 +101,17 @@ public:
   virtual BaseRef makeDynamic(void) const;
 
   /**
-  * Duplicates a string
-  * \n Usage: string.Duplicate(&existing_string)
-  * @param ref A pointer to the string to be duplicated
+  * Duplicates a _StringBuffer
+  * \n Usage: string_buffer.duplicate(&existing_string_buffer)
+  * @param ref A pointer to the _StringBuffer to be duplicated
   */
-  virtual void Duplicate(BaseRefConst);
+  virtual void duplicate(BaseRefConst);
 
   /**
   * Append all characters in the argument string to the buffer
   * @param buffer append characters from here
   */
-  virtual void operator<<(const _String * buffer);
+  virtual void operator<<(const _String *buffer);
 
   /**
    * Append all characters in the argument string to the buffer
@@ -136,12 +136,12 @@ public:
    * delete the buffer object afterwards
    * @param buffer append characters from here
    */
-  void AppendNewInstance(_String *);
+  void appendNewInstance(_String *);
 
   /**
    * Append a substring of the source string to this buffer
    */
-  void AppendSubstring(const _String &, long from, long to);
+  void appendSubstring(const _String &, long from, long to);
 
   /**
   * MDS 20140722: Sanitize (escape) all characters in a string and append to
@@ -167,13 +167,13 @@ public:
    * _String("hyphy").AppendAnAssignmentToBuffer("12","12",false,false,false)
    * makes "hyphy12=12"
    * @param id = value; to the current string assumed to be in the buffer form
-   * @param doFree free the 2nd string argument when done
-   * @param doQuotes put quotes around the value
-   * @param doBind use := instead of =
-   * @sa AppendNewInstance()
-   * @sa AppendVariableValueAVL()
+   * @param do_free free the 2nd string argument when done
+   * @param do_quotes put quotes around the value
+   * @param do_bind use := instead of =
+   * @sa appendNewInstance()
+   * @sa appendVariableValueAVL()
    */
-  void AppendAnAssignmentToBuffer(_String *, _String *, bool = true,
+  void appendAnAssignmentToBuffer(_String *, _String *, bool = true,
                                   bool = false, bool = false);
 
   /**
@@ -186,9 +186,9 @@ public:
    * @param doQuotes put quotes around the value
    * @param doBind use := instead of =
    * @sa AppendNewInstance()
-   * @sa AppendAnAssignmentToBuffer()
+   * @sa appendAnAssignmentToBuffer()
    */
-  void AppendVariableValueAVL(_String *, _List &);
+  void appendVariableValueAVL(_String *, _List &);
 
 };
 
