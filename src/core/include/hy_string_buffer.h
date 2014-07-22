@@ -99,8 +99,8 @@ public:
   /**
    * Initializes _String object to 0 allocated length
    */
-  virtual void Initialize(void);
-
+  virtual void Initialize(bool=false);
+  
   virtual ~_StringBuffer(void) {};
 
   /**
@@ -108,7 +108,7 @@ public:
   * \n Usage: stringInstance.makeDynamic();
   * @return BaseRef
   */
-  virtual BaseRef makeDynamic(void);
+  virtual BaseRef makeDynamic(void) const;
 
   /**
   * Duplicates a string
@@ -137,6 +137,11 @@ public:
    * @param buffer append characters from here
    */
   void AppendNewInstance(_String *);
+
+  /**
+   * Append a substring of the source string to this buffer
+   */
+  void AppendSubstring(const _String &, long from, long to);
 
   /**
    * Append a single char to the buffer
