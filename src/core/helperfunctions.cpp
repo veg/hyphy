@@ -609,7 +609,7 @@ double genrand_res53(void) {
 
 void NormalizeCoordinates(long &from, long &to,
                                        const unsigned long refLength) {
-  if (to < 0) {
+  if (to < 0L) {
     to += refLength;
     if (to < 0L) {
       to = 0L;
@@ -617,7 +617,7 @@ void NormalizeCoordinates(long &from, long &to,
   } else {
     to = to < refLength - 1L ? to : refLength - 1L;
   }
-  if (from < 0) {
+  if (from < 0L) {
     from += refLength;
     if (from < 0L) {
       from = 0L;

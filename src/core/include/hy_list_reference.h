@@ -40,19 +40,21 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _HY_LIST_REFERENCE_
 #define _HY_LIST_REFERENCE_
 
-#include "hy_list_orderable.h"
+#include "hy_list.h"
 
 /*
  
- A resizable list which stores PAYLOAD* types
+ A resizable list which stores PAYLOAD* types and tracks
+ references
  
  PAYLOAD objects are assumed to derive from BaseObject and 
- implement the Compare and Equal operations
+ implement the Compare and Equal operations (only if sorting 
+ is needed)
  
  */
 
 template <typename PAYLOAD>
-class _hyListReference : public _hyListOrderable <PAYLOAD*> {
+class _hyListReference : public virtual _hyList <PAYLOAD*> {
 
 public:
 
@@ -64,18 +66,19 @@ public:
 
 
   /**
-   * A _hyListReference constructor for X items
-   * @param items how many items should you allocate
-   */
-  _hyListReference(const unsigned long items);
-
-  /**
    * A _hyListReference constructor from a single item
    * The reference counter for the item will be incremented
    * @param item the element to add to the list
    */
-  _hyListReference(const PAYLOAD&);
+  _hyListReference(PAYLOAD&);
 
+
+  /**
+   * A _hyListReference constructor from a single item
+   * The reference counter for the item will NOT be incremented
+   * @param item the element to add to the list
+   */
+  _hyListReference(PAYLOAD * const);
   
   /**
   * Stack copy contructor
@@ -87,16 +90,14 @@ public:
 
 
   /**
-   * Data constructor list of char* supplied as a variable
-   * ONLY SPECIALIZED FOR PAYLOAD == _String
-   * \n\n \b Example: \code  list = _hyListReference((BaseRef)new _String("one"));
-   * \endcode
-   * @param char* the first string to add to the list
-   * @param const unsigned long the number of additional char* arguments supplied
-   * to the constructor
-   * @param 2-N: char* to be added to the list
+   * Data constructor from a static list of PAYLOAD object pointers
+   * @param const unsigned long the number of PAYLOAD arguments supplied
+   * to the constructor in the second argument
+   * @param const PAYLOAD: the static list of items to pass to the constructor
    */
-  _hyListReference(const char *, const unsigned long, ...);
+  
+  _hyListReference (const unsigned long, PAYLOAD * []);
+
 
   /**
    * Construct a list of substrings from the original string separated by char
@@ -107,7 +108,7 @@ public:
    * @param separator The separator for the string
    */
   
-  _hyListReference(const _String& the_string, const char separator);
+  //_hyListReference(const _String& the_string, const char separator);
 
   virtual ~_hyListReference (void);
   
@@ -168,7 +169,7 @@ public:
    * Only specialized for PAYLOAD == STRING
    * @param buffer make the string from this char *
    */
-  virtual void operator&&(const char*);
+  //virtual void operator&&(const char*);
 
   /**
    * Append all references from the argument to the end of the current list
@@ -189,19 +190,18 @@ public:
    * @param value the value to compare the result to
    * @return true if equal.
    */
-  virtual bool ItemEqualToValue (unsigned long index, const PAYLOAD*& value) const;
+  virtual bool ItemEqualToValue (unsigned long index,  PAYLOAD * const & value) const;
   
-  /**
-   * Compares two elements of the list
-   * @param i The index to compare
-   * @param j The second index to compare
-   * @return -1 if i<j, 0 if i==j, or 1 if i>j
-   */
-   virtual long Compare(const long, const long) const;
-  
-    //   virtual BaseRef makeDynamic(void) const;
+protected:
 
-  
+    /**
+  * Stack copy contructor
+  * @param l List to be copied
+  * @param from Beginning index to copy from
+  * @param to Last index to copy to
+  */
+  void AddReferenceToItems (long = 0, long = HY_LIST_INSERT_AT_END);
+
 };
 
 #include "hy_list_reference.cpp"

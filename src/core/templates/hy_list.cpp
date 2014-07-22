@@ -72,7 +72,7 @@ _hyList<PAYLOAD>::_hyList(const PAYLOAD item) {
 //Stack copy contructor
 template<typename PAYLOAD>
 _hyList<PAYLOAD>::_hyList(const _hyList <PAYLOAD> &l, const long from, const long to) {
-  Initialize ();
+  Initialize (false);
   Clone (&l, from, to);
 }
 
@@ -80,7 +80,8 @@ _hyList<PAYLOAD>::_hyList(const _hyList <PAYLOAD> &l, const long from, const lon
 template<typename PAYLOAD>
 _hyList<PAYLOAD>::_hyList(const unsigned long number, const PAYLOAD items[])
 {
-  Initialize(true);
+  Initialize(false);
+  RequestSpace (number);
   for (unsigned long arg_id = 0UL; arg_id < number; arg_id++) {
     append(items[arg_id]);
   }
@@ -266,6 +267,12 @@ PAYLOAD _hyList<PAYLOAD>::AtIndex(const unsigned long index) const
 
 template<typename PAYLOAD>
 unsigned long _hyList<PAYLOAD>::countitems(void) const
+{
+  return lLength;
+}
+
+template<typename PAYLOAD>
+unsigned long _hyList<PAYLOAD>::Length(void) const
 {
   return lLength;
 }

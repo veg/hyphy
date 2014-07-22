@@ -180,6 +180,7 @@ public:
   */
 
   inline unsigned long countitems (void) const;
+  inline unsigned long Length     (void) const;
 
 
   /**

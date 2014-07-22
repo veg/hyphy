@@ -165,25 +165,25 @@ _hyListNumeric<PAYLOAD>::_hyListNumeric() {
 
   //Data constructor (1 member list)
 template<typename PAYLOAD>
-_hyListNumeric<PAYLOAD>::_hyListNumeric(const PAYLOAD item) : _hyListOrderable<PAYLOAD> (item) {
+_hyListNumeric<PAYLOAD>::_hyListNumeric(const PAYLOAD item) : _hyList<PAYLOAD> (item) {
 }
 
 
   //Stack copy contructor
 template<typename PAYLOAD>
 _hyListNumeric<PAYLOAD>::_hyListNumeric(const _hyListNumeric <PAYLOAD> &l, const long from, const long to)
-{
-  this->Clone(&l, from, to); }
+                        : _hyList <PAYLOAD> (l, from, to) {
+}
 
   // Data constructor from array
 template<typename PAYLOAD>
 _hyListNumeric<PAYLOAD>::_hyListNumeric(const unsigned long number, const PAYLOAD items[]) :
-_hyListOrderable<PAYLOAD> (number, items) {
+_hyList <PAYLOAD> (number, items) {
 }
 
   // Does nothing
 template<typename PAYLOAD>
-_hyListNumeric<PAYLOAD>::_hyListNumeric(const _hyListOrderable<PAYLOAD>& source):_hyListOrderable<PAYLOAD> (source) {
+_hyListNumeric<PAYLOAD>::_hyListNumeric(const _hyListOrderable<PAYLOAD>& source):_hyList <PAYLOAD> (source) {
 }
 
 template<typename PAYLOAD>

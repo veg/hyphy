@@ -61,8 +61,8 @@ void _StringBuffer::ResizeString (void) {
   }
 }
 
-void _StringBuffer::Initialize (void) {
-  _String::Initialize();
+void _StringBuffer::Initialize (bool p) {
+  _String::Initialize(p);
   saLength = 0UL;
 }
 
@@ -107,7 +107,7 @@ void _StringBuffer::Duplicate (BaseRefConst src_obj) {
   saLength = ((_StringBuffer*)src_obj)->saLength;
 }
 
-BaseRef _StringBuffer::makeDynamic (void) {
+BaseRef _StringBuffer::makeDynamic (void) const {
   return new _StringBuffer (*this);
 }
 
@@ -292,6 +292,11 @@ void _StringBuffer::sanitizeAndAppend(const _String &s) {
   for (unsigned long i = 0UL; i < s.sLength; i++) {
     sanitizeAndAppend(s.sData[i]);
   }
+}
+
+//Append and delete operator
+void _StringBuffer::AppendSubstring(const _String& s, long from, long to) {
+  (*this) << _String (s, from, to);
 }
 
 //Append operator
