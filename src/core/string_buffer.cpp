@@ -2,9 +2,19 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2009
+Copyright (C) 1997-now
+Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon              (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Steven Weaver (sweaver@ucsd.edu)
+
+Module Developers:
+	Lance Hepler (nlhepler@gmail.com)
+	Martin Smith (martin.audacis@gmail.com)
+
+Significant contributions from:
+  Spencer V Muse (muse@stat.ncsu.edu)
+  Simon DW Frost (sdf22@cam.ac.uk)
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -27,14 +37,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-
 #include "hy_string_buffer.h"
 #include "helperfunctions.h"
 #include "errorfns.h"
 
 #include <string.h> // for strlen
 
-  // utility functions
+
+/*
+==============================================================
+Utility Functions
+==============================================================
+*/
+
 void _StringBuffer::AllocateBufferSpace (const unsigned long character_count) {
   saLength = character_count;
   if (sData) {
@@ -67,7 +82,11 @@ void _StringBuffer::Initialize (bool p) {
 }
 
 
-  // constructors
+/*
+==============================================================
+Constructors
+==============================================================
+*/
 
 _StringBuffer::_StringBuffer (void) : _String () {
   AllocateBufferSpace (HY_STRING_BUFFER_ALLOCATION_CHUNK);
@@ -90,17 +109,16 @@ _StringBuffer::_StringBuffer (const _String& buffer) {
   (*this) << buffer;
 }
 
-
-//Stack copy contructor
+// Stack copy contructor
 _StringBuffer::_StringBuffer(const _StringBuffer &s) {
   Duplicate(& s);
 }
 
 /*
- ==============================================================
-cloners/copiers
- ==============================================================
- */
+==============================================================
+Cloners and Copiers
+==============================================================
+*/
 
 void _StringBuffer::Duplicate (BaseRefConst src_obj) {
   _String::Duplicate (src_obj);
@@ -118,26 +136,28 @@ Operator Overloads
 */
 
 
+// Append operator
 void _StringBuffer::operator<<(const _String *s) {
   if (s && s->sLength) {
     PushCharBuffer (s->sData, s->sLength);
   }
 }
 
-// append operator
+// Append operator
 void _StringBuffer::operator<<(const _String &s) {
   (*this) << &s;
 }
 
-//Append operator
+// Append operator
 void _StringBuffer::operator<<(const char *str) {
   PushCharBuffer(str, strlen (str));
 }
 
-//Append operator
+// Append operator
 void _StringBuffer::operator<<(const char c) {
   PushChar (c);
 }
+
 /*
 ==============================================================
 Methods
@@ -145,15 +165,14 @@ Methods
 */
 
 void _StringBuffer::PushChar(const char c){
-  sLength ++;
-  ResizeString ();
+  sLength++;
+  ResizeString();
   sData[sLength-1UL] = c;
   sData[sLength] = 0;
 }
 
 void _StringBuffer::PushCharBuffer( const char* buffer,
-                                    const unsigned long
-                                    buffer_l) {
+                                    const unsigned long buffer_l) {
   if (buffer_l) {
     unsigned long offset = sLength;
     sLength += buffer_l;
@@ -166,13 +185,12 @@ void _StringBuffer::PushCharBuffer( const char* buffer,
   }
 }
 
-//Append and delete operator
+// Append and delete
 void _StringBuffer::AppendNewInstance(_String *s) {
   (*this) << s;
   DeleteObject(s);
 }
 
-//Append operator
 void _StringBuffer::sanitizeForSQLAndAppend(const char c) {
   PushChar(c);
   if (c == '\'') {
@@ -180,7 +198,6 @@ void _StringBuffer::sanitizeForSQLAndAppend(const char c) {
   }
 }
 
-//Append operator
 void _StringBuffer::sanitizeForSQLAndAppend(const _String &s) {
   for (unsigned long i = 0UL; i < s.sLength; i++) {
     sanitizeForSQLAndAppend(s.sData[i]);
@@ -204,7 +221,6 @@ void _StringBuffer::sanitizeForPostScriptAndAppend(const char c) {
   }
 }
 
-//Append operator
 void _StringBuffer::sanitizeForPostScriptAndAppend(const _String &s) {
   for (unsigned long i = 0UL; i < s.sLength; i++) {
     sanitizeForPostScriptAndAppend(s.sData[i]);
@@ -233,7 +249,6 @@ void _StringBuffer::sanitizeForHTMLAndAppend(const char c) {
   }
 }
 
-//Append operator
 void _StringBuffer::sanitizeForHTMLAndAppend(const _String &s) {
   for (unsigned long i = 0UL; i < s.sLength; i++) {
     sanitizeForHTMLAndAppend(s.sData[i]);
@@ -263,7 +278,6 @@ void _StringBuffer::sanitizeForRegExAndAppend(const char c) {
   }
 }
 
-//Append operator
 void _StringBuffer::sanitizeForRegExAndAppend(const _String &s) {
   for (unsigned long i = 0UL; i < s.sLength; i++) {
     sanitizeForRegExAndAppend(s.sData[i]);
@@ -293,53 +307,18 @@ void _StringBuffer::sanitizeAndAppend(const char c) {
   }
 }
 
-//Append operator
 void _StringBuffer::sanitizeAndAppend(const _String &s) {
   for (unsigned long i = 0UL; i < s.sLength; i++) {
     sanitizeAndAppend(s.sData[i]);
   }
 }
 
-//Append and delete operator
+// Append and delete
 void _StringBuffer::AppendSubstring(const _String& s, long from, long to) {
   (*this) << _String (s, from, to);
 }
 
-/*
-//Append operator
-void _StringBuffer::EscapeAndAppend(const char c,
-                                    const _hyStringBufferEscapeMode mode) {
-  if (mode == HY_ESCAPE_SQLITE) {
-    this->sanitizeForSQLAndAppend(c);
-    return;
-  } else {
-    if (mode == HY_ESCAPE_POSTSCRIPT) {
-      this->sanitizeForPostScriptAndAppend(c);
-      return;
-    } else {
-      if (mode == HY_ESCAPE_HTML) {
-        this->sanitizeForHTMLAndAppend(c);
-        return;
-      } else {
-        if (mode == HY_ESCAPE_REGEXP) { // regexp
-          this->sanitizeForRegExAndAppend(c);
-          return;
-        }
-      }
-    }
-  }
-  this->sanitizeAndAppend(c);
-}
-
-//Append operator
-void _StringBuffer::EscapeAndAppend(const _String &s,
-                                    const _hyStringBufferEscapeMode mode) {
-  for (unsigned long i = 0UL; i < s.sLength; i++) {
-    EscapeAndAppend(s.sData[i], mode);
-  }
-}
-*/
-
+// Special purpose append
 void _StringBuffer::AppendAnAssignmentToBuffer(_String *id, _String *value,
                                                bool doFree, bool doQuotes,
                                                bool doBind) {
@@ -361,7 +340,7 @@ void _StringBuffer::AppendAnAssignmentToBuffer(_String *id, _String *value,
   }
 }
 
-
+// Special purpose append
 void _StringBuffer::AppendVariableValueAVL( _String *id,
                                             _List &varNumbers) {
 #ifndef HY_2014_REWRITE_MASK

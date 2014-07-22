@@ -45,17 +45,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "hy_strings.h"
 
-/*
-enum _hyStringBufferEscapeMode   {HY_ESCAPE_NORMAL, // used to be 0
-                                  HY_ESCAPE_POSTSCRIPT, // 1
-                                  HY_ESCAPE_SQLITE, // 2
-  HY_ESCAPE_UNUSED, //3
-  HY_ESCAPE_HTML, //4
-  HY_ESCAPE_REGEXP//5
-};
-*/
-
-
 class _StringBuffer : public _String {
 
 private:
@@ -85,7 +74,6 @@ public:
   */
   _StringBuffer(const _StringBuffer &);
 
-
   /**
   * A constructor that copies from a char string.
    * @param buffer create
@@ -102,7 +90,7 @@ public:
    * Initializes _String object to 0 allocated length
    */
   virtual void Initialize(bool=false);
-  
+
   virtual ~_StringBuffer(void) {};
 
   /**
@@ -119,7 +107,6 @@ public:
   */
   virtual void Duplicate(BaseRefConst);
 
-
   /**
   * Append all characters in the argument string to the buffer
   * @param buffer append characters from here
@@ -132,6 +119,17 @@ public:
   */
   virtual void operator<<(const _String &);
 
+  /**
+   * Append a single char to the buffer
+   * @param buffer append characters from here
+   */
+  virtual void operator<<(const char);
+
+  /**
+   * Append all chars in the string buffer to this string
+   * @param buffer append characters from here
+   */
+  virtual void operator<<(const char *);
 
   /**
    * Append all characters in the argument string to the buffer
@@ -146,11 +144,12 @@ public:
   void AppendSubstring(const _String &, long from, long to);
 
   /**
-   * Append a single char to the buffer
-   * @param buffer append characters from here
-   */
-  virtual void operator<<(const char);
-
+  * MDS 20140722: Sanitize (escape) all characters in a string and append to
+  * this string \n\n \b Example: \code
+  * _StringBuffer("AB").sanitizeForHTMLAndAppend('<',4); \endcode \n Above
+  * code will transform string to "AB&lt;"
+  * @param c The character to escape and append
+  */
   void sanitizeForSQLAndAppend(const char);
   void sanitizeForSQLAndAppend(const _String&);
   void sanitizeForHTMLAndAppend(const char);
@@ -161,31 +160,6 @@ public:
   void sanitizeForPostScriptAndAppend(const _String&);
   void sanitizeForRegExAndAppend(const char);
   void sanitizeForRegExAndAppend(const _String&);
-
-  /**
-  * Escape all characters in a string and append to this string
-  * \n\n \b Example: \code _StringBuffer("AB").EscapeAndAppend('<',4); \endcode
-  * \n Above code will transform string to "AB&lt;"
-  * @param c The character to escape and append
-  * @param mode What sort of escaping (see _hyStringBufferEscapeMode)
-  */
-  //virtual void EscapeAndAppend(const char, const _hyStringBufferEscapeMode);
-
-  /**
-  * Escape all characters in a string and append to this string
-  * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
-  * \n Above code will transform string to "AB&lt;"
-  * @param s The string to escape and append
-  * @param mode What sort of escaping
-  * @see EscapeAndAppend(const char, char)
-  */
-  //virtual void EscapeAndAppend(const _String &, const _hyStringBufferEscapeMode = HY_ESCAPE_NORMAL);
-
-  /**
-   * Append all chars in the string buffer to this string
-   * @param buffer append characters from here
-   */
-  virtual void operator<<(const char *);
 
   /**
    * SLKP 20090817: A utility function to append a statement of the form
@@ -199,7 +173,6 @@ public:
    * @sa AppendNewInstance()
    * @sa AppendVariableValueAVL()
    */
-
   void AppendAnAssignmentToBuffer(_String *, _String *, bool = true,
                                   bool = false, bool = false);
 
@@ -215,8 +188,6 @@ public:
    * @sa AppendNewInstance()
    * @sa AppendAnAssignmentToBuffer()
    */
-
-  //void AppendVariableValueAVL(_String *, _SimpleList &);
   void AppendVariableValueAVL(_String *, _List &);
 
 };
