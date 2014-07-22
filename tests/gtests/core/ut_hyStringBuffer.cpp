@@ -43,6 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include "gtest/gtest.h"
 #include "hy_string_buffer.h"
+#include "hy_list.h"
 
 using ::testing::TestWithParam;
 using ::testing::Values;
@@ -573,16 +574,14 @@ TEST_F(_StringBufferTest, AppendAnAssignmentToBufferTest)
 }
 
 /******************************************/
-/*
 TEST_F(_StringBufferTest, AppendVariableValueTest)
 {
   _StringBuffer test;
   _String test_s("hyphy");
-  //_SimpleList test_l;
+  _hyList<_String> test_l;
   //test_l << "one";
   //test.AppendVariableValueAVL(test_s, test_l);
 }
-*/
 
 } // namespace
 

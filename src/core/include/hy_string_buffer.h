@@ -209,7 +209,8 @@ public:
    * @sa AppendAnAssignmentToBuffer()
    */
 
-  void AppendVariableValueAVL(_String *, _SimpleList &);
+  //void AppendVariableValueAVL(_String *, _SimpleList &);
+  void AppendVariableValueAVL(_String *, _List &);
 
 };
 

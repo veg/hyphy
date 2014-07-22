@@ -417,7 +417,7 @@ void _StringBuffer::AppendAnAssignmentToBuffer(_String *id, _String *value,
 
 
 void _StringBuffer::AppendVariableValueAVL( _String *id,
-                                            _SimpleList &varNumbers) {
+                                            _List &varNumbers) {
 #ifndef HY_2014_REWRITE_MASK
   for (long k = 0; k < varNumbers.lLength; k++) {
     _Variable *tiv = LocateVar(varNumbers.lData[k]);
