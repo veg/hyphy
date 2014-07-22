@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include "gtest/gtest.h"
 #include "hy_string_buffer.h"
-#include "hy_list.h"
+#include "hy_list_reference.h"
 
 using ::testing::TestWithParam;
 using ::testing::Values;
@@ -350,7 +350,6 @@ TEST_F(_StringBufferTest, AppendNewInstanceTest)
   _String* test_s = new _String("hyphy");
   test.AppendNewInstance(test_s);
   EXPECT_STREQ("hyphy", test);
-  EXPECT_STREQ("", *test_s);
 }
 
 /******************************************/
@@ -556,31 +555,61 @@ TEST_F(_StringBufferTest, AppendAnAssignmentToBufferTest)
   _String* test2_s = new _String("12");
   test2.AppendAnAssignmentToBuffer(new _String("12"), test2_s, true, false, false);
   EXPECT_STREQ("hyphy12=12;\n", test2);
-  EXPECT_STREQ("", *test2_s);
 
   _StringBuffer test3;
   test3 << "hyphy";
   _String* test3_s = new _String("12");
   test3.AppendAnAssignmentToBuffer(new _String("12"), test3_s, true, true, false);
   EXPECT_STREQ("hyphy12=\"12\";\n", test3);
-  EXPECT_STREQ("", *test3_s);
 
   _StringBuffer test4;
   test4 << "hyphy";
   _String* test4_s = new _String("12");
   test4.AppendAnAssignmentToBuffer(new _String("12"), test4_s, true, true, true);
   EXPECT_STREQ("hyphy12:=\"12\";\n", test4);
-  EXPECT_STREQ("", *test4_s);
 }
 
+TEST_F(_StringBufferTest, AppendSubstringTest)
+{
+  _StringBuffer test(new _String("hyphy"));
+  _StringBuffer test2;
+  test2.AppendSubstring(test, 1, 2);
+  EXPECT_STREQ("yp", test2);
+
+  _StringBuffer test3;
+  test3.AppendSubstring(test, 1, 1);
+  EXPECT_STREQ("y", test3);
+
+  _StringBuffer test4;
+  test4.AppendSubstring(test, 1, 0);
+  EXPECT_STREQ("", test4);
+
+  _StringBuffer test5;
+  test5.AppendSubstring(test, -1, 2);
+  EXPECT_STREQ("hyp", test5);
+
+  _StringBuffer test6;
+  test6.AppendSubstring(test, 1, 12);
+  EXPECT_STREQ("yphy", test6);
+}
+
+
+// I am going to put testing of this method on hold
+// until the HY_2014_REWRITE_MASK issue is resolved.
 /******************************************/
 TEST_F(_StringBufferTest, AppendVariableValueTest)
 {
   _StringBuffer test;
   _String test_s("hyphy");
-  _hyList<_String> test_l;
-  //test_l << "one";
-  //test.AppendVariableValueAVL(test_s, test_l);
+  _List test_l;
+  _String test_i("omega1");
+  _String test_i2("omega2");
+  _String test_i3("omega3");
+  test_l << test_i;
+  test_l << test_i2;
+  test_l << test_i3;
+  test.AppendVariableValueAVL(&test_s, test_l);
+  //EXPECT_STREQ("hyphy[omega1] = omega1", test);
 }
 
 } // namespace

@@ -188,12 +188,18 @@ void _StringBuffer::sanitizeForSQLAndAppend(const _String &s) {
 }
 
 
+// MDS 20140722: modified this quite a bit, previously the switch
+// would fall through to the generic sanitize. Not sure if that was intended.
+// If so, call sanitize and append instead of PushChar as default
 void _StringBuffer::sanitizeForPostScriptAndAppend(const char c) {
   switch (c) {
     case '(':
     case ')':
     case '%':
       PushChar ('\\');
+      PushChar(c);
+      break;
+    default:
       PushChar(c);
   }
 }
@@ -303,24 +309,29 @@ void _StringBuffer::AppendSubstring(const _String& s, long from, long to) {
 void _StringBuffer::EscapeAndAppend(const char c,
                                     const _hyStringBufferEscapeMode mode) {
   if (mode == HY_ESCAPE_SQLITE) {
-    PushChar(c);
-    switch (c) {
-      case '\'':
-        PushChar(c);
-    }
+    this->sanitizeForSQLAndAppend(c);
+    //PushChar(c);
+    //switch (c) {
+      //case '\'':
+        //PushChar(c);
+    //}
     return;
   } else {
     if (mode == HY_ESCAPE_POSTSCRIPT) {
-      switch (c) {
-        case '(':
-        case ')':
-        case '%':
-          PushChar ('\\');
-          PushChar(c);
-          return;
-      }
+      this->sanitizeForPostScriptAndAppend(c);
+      //switch (c) {
+        //case '(':
+        //case ')':
+        //case '%':
+          //PushChar ('\\');
+          //PushChar(c);
+          //return;
+      //}
+      return;
     } else {
       if (mode == HY_ESCAPE_HTML) {
+        this->sanitizeForHTMLAndAppend(c);
+        /*
         switch (c) {
           case '"':
             (*this) << "&quot;";
@@ -340,9 +351,12 @@ void _StringBuffer::EscapeAndAppend(const char c,
           default:
             PushChar(c);
         }
+        */
         return;
       } else {
         if (mode == HY_ESCAPE_REGEXP) { // regexp
+          this->sanitizeForRegExAndAppend(c);
+          /*
           switch (c) {
             case '[':
             case '^':
@@ -363,12 +377,15 @@ void _StringBuffer::EscapeAndAppend(const char c,
             default:
               PushChar(c);
           }
+          */
           return;
 
         }
       }
     }
   }
+  this->sanitizeAndAppend(c);
+  /*
   switch (c) {
     case '\n':
       PushChar('\\');
@@ -389,6 +406,7 @@ void _StringBuffer::EscapeAndAppend(const char c,
     default:
       PushChar(c);
   }
+  */
 }
 
 //Append operator
