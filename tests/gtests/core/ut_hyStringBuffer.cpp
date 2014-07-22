@@ -442,6 +442,7 @@ TEST_F(_StringBufferTest, sanitizeRETest)
 }
 
 /******************************************/
+/*
 TEST_F(_StringBufferTest, EscapeAndAppendCharTest)
 {
   _StringBuffer test("AB");
@@ -513,8 +514,10 @@ TEST_F(_StringBufferTest, EscapeAndAppendCharTest)
   test6.EscapeAndAppend('@',HY_ESCAPE_REGEXP);
   EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\@", test6);
 }
+*/
 
 /******************************************/
+/*
 TEST_F(_StringBufferTest, EscapeAndAppendStringTest)
 {
   _StringBuffer test("AB");
@@ -541,6 +544,7 @@ TEST_F(_StringBufferTest, EscapeAndAppendStringTest)
   test6.EscapeAndAppend(new _String("[]^$.|?*+()\\@!#"),HY_ESCAPE_REGEXP);
   EXPECT_STREQ("AB\\[]\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\@!#", test6);
 }
+*/
 
 /******************************************/
 TEST_F(_StringBufferTest, AppendAnAssignmentToBufferTest)

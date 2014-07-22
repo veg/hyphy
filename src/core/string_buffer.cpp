@@ -305,6 +305,7 @@ void _StringBuffer::AppendSubstring(const _String& s, long from, long to) {
   (*this) << _String (s, from, to);
 }
 
+/*
 //Append operator
 void _StringBuffer::EscapeAndAppend(const char c,
                                     const _hyStringBufferEscapeMode mode) {
@@ -337,6 +338,7 @@ void _StringBuffer::EscapeAndAppend(const _String &s,
     EscapeAndAppend(s.sData[i], mode);
   }
 }
+*/
 
 void _StringBuffer::AppendAnAssignmentToBuffer(_String *id, _String *value,
                                                bool doFree, bool doQuotes,

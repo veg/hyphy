@@ -45,6 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "hy_strings.h"
 
+/*
 enum _hyStringBufferEscapeMode   {HY_ESCAPE_NORMAL, // used to be 0
                                   HY_ESCAPE_POSTSCRIPT, // 1
                                   HY_ESCAPE_SQLITE, // 2
@@ -52,6 +53,7 @@ enum _hyStringBufferEscapeMode   {HY_ESCAPE_NORMAL, // used to be 0
   HY_ESCAPE_HTML, //4
   HY_ESCAPE_REGEXP//5
 };
+*/
 
 
 class _StringBuffer : public _String {
@@ -167,7 +169,7 @@ public:
   * @param c The character to escape and append
   * @param mode What sort of escaping (see _hyStringBufferEscapeMode)
   */
-  virtual void EscapeAndAppend(const char, const _hyStringBufferEscapeMode);
+  //virtual void EscapeAndAppend(const char, const _hyStringBufferEscapeMode);
 
   /**
   * Escape all characters in a string and append to this string
@@ -177,7 +179,7 @@ public:
   * @param mode What sort of escaping
   * @see EscapeAndAppend(const char, char)
   */
-  virtual void EscapeAndAppend(const _String &, const _hyStringBufferEscapeMode = HY_ESCAPE_NORMAL);
+  //virtual void EscapeAndAppend(const _String &, const _hyStringBufferEscapeMode = HY_ESCAPE_NORMAL);
 
   /**
    * Append all chars in the string buffer to this string
