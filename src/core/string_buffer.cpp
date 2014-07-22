@@ -310,103 +310,24 @@ void _StringBuffer::EscapeAndAppend(const char c,
                                     const _hyStringBufferEscapeMode mode) {
   if (mode == HY_ESCAPE_SQLITE) {
     this->sanitizeForSQLAndAppend(c);
-    //PushChar(c);
-    //switch (c) {
-      //case '\'':
-        //PushChar(c);
-    //}
     return;
   } else {
     if (mode == HY_ESCAPE_POSTSCRIPT) {
       this->sanitizeForPostScriptAndAppend(c);
-      //switch (c) {
-        //case '(':
-        //case ')':
-        //case '%':
-          //PushChar ('\\');
-          //PushChar(c);
-          //return;
-      //}
       return;
     } else {
       if (mode == HY_ESCAPE_HTML) {
         this->sanitizeForHTMLAndAppend(c);
-        /*
-        switch (c) {
-          case '"':
-            (*this) << "&quot;";
-            break;
-          case '\'':
-            (*this) << "&apos;";
-            break;
-          case '<':
-            (*this) << "&lt;";
-            break;
-          case '>':
-            (*this) << "&gt;";
-            break;
-          case '&':
-            (*this) << "&amp;";
-            break;
-          default:
-            PushChar(c);
-        }
-        */
         return;
       } else {
         if (mode == HY_ESCAPE_REGEXP) { // regexp
           this->sanitizeForRegExAndAppend(c);
-          /*
-          switch (c) {
-            case '[':
-            case '^':
-            case '$':
-            case '.':
-            case '|':
-            case '?':
-            case '*':
-            case '+':
-            case '(':
-            case ')':
-              PushChar('\\');
-              PushChar(c);
-              break;
-            case '\\':
-              (*this) << "\\\\";
-              break;
-            default:
-              PushChar(c);
-          }
-          */
           return;
-
         }
       }
     }
   }
   this->sanitizeAndAppend(c);
-  /*
-  switch (c) {
-    case '\n':
-      PushChar('\\');
-      PushChar('n');
-      break;
-    case '\t':
-      PushChar('\\');
-      PushChar('t');
-      break;
-    case '"':
-      PushChar('\\');
-      PushChar('"');
-      break;
-    case '\\':
-      PushChar('\\');
-      PushChar('\\');
-      break;
-    default:
-      PushChar(c);
-  }
-  */
 }
 
 //Append operator
