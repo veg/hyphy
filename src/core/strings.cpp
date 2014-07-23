@@ -349,6 +349,14 @@ void _String::operator=(const _String& s) {
   Duplicate(&s);
 }
 
+_Parameter _String::toNum(void) const{
+    if (sLength == 0UL) {
+        return 0.;
+    }
+    char *endP;
+    return strtod(sData, &endP);
+}
+
 
 
 //Append operator
@@ -787,11 +795,13 @@ const _String _String::FormatTimeString(long time_diff){
   return time_string;
 }
 
+
 /*
  ==============================================================
  Utility functions with no clear category
  ==============================================================
  */
+
 
 
 const _String _String::Random(const unsigned long length, const _String *alphabet) {
@@ -844,12 +854,158 @@ long _String::Adler32(void) const {
   return b << 16 | a;
 }
 
+_String const _String::Sort(_SimpleList *index) const {
+    
+    if (index) {
+        index->Clear();
+    }
+    
+    if (sLength > 0UL) {
+        _hyListOrderable<char> sorted;
+        
+        if (index) {
+            for (unsigned long i = 0UL; i < sLength; i++) {
+                sorted << sData[i];
+                (*index) << i;
+            }
+            sorted.Sort (true, index);
+        } else {
+            for (unsigned long i = 0; i < sLength; i++) {
+                sorted << sData[i];
+            }
+            sorted.Sort();
+        }
+        _String result (sLength);
+        
+        for (unsigned long i = 0UL; i < sLength; i++) {
+            result.setChar (i, sorted.AtIndex(i));
+        }
+        
+        return result;
+    }
+    
+    return empty;
+}
+
+/*
+ ==============================================================
+ Identifier Methods
+ ==============================================================
+ */
+
+bool _String::IsValidIdentifier(bool allow_compounds) const {
+    // 201407
+    
+    return sLength > 0UL && _IsValidIdentifierAux (allow_compounds) == Length() - 1UL;
+
+#ifndef HY_2014_REWRITE_MASK
+    // TO DO -- MOVE THIS CHECK ELSEWHERE?
+    return hyReservedWords.Find(this) == HY_NOT_FOUND;
+#endif
+    
+    
+}
+
+long _String::_IsValidIdentifierAux(bool allow_compounds, char wildcard) const {
+    
+    unsigned long current_index = 0UL;
+    
+    bool          first     = true;
+    
+    for (; current_index < sLength; current_index ++) {
+        char current_char = getChar (current_index);
+        if (first) {
+            if ( ! (isalpha (current_char) || current_char == '_')) {
+                break;
+            }
+            first = false;
+        } else {
+            if ( ! (isalnum (current_char) || current_char == '_' || current_char == wildcard)) {
+                if (allow_compounds && current_char == '.') {
+                    first = true;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (current_index) {
+        return current_index - 1UL;
+    }
+    
+    return HY_NOT_FOUND;
+}
+
+const _String _String::ShortenVarID(_String const &containerID) const {
+    if (startswith(containerID)) {
+        unsigned long prefix_length = containerID.Length();
+        
+        if (getChar(prefix_length) == '.' && sLength > prefix_length + 1L) {
+            return Cut(prefix_length + 1L, HY_NOT_FOUND);
+        }
+    }
+    return *this;
+}
+
+
 
 /*!!!!!!!!!!!!!!!!!!
  
  DONE UP TO HERE
  
  !!!!!!!!!!!!!!!!!!!!*/
+
+
+bool _String::IsValidRefIdentifier(void) const {
+    if (sLength < 2) {
+        return false;
+    }
+    if (sData[sLength - 1] == '&') {
+        return Cut(0, sLength - 2).IsValidIdentifier();
+    }
+    return false;
+}
+
+//Convert a string to a valid ident
+void _String::ConvertToAnIdent(bool strict) {
+    _StringBuffer *result = new _StringBuffer((unsigned long) sLength + 1UL);
+    
+    if (sLength) {
+        if (strict) {
+            if (((sData[0] >= 'a') && (sData[0] <= 'z')) ||
+                ((sData[0] >= 'A') && (sData[0] <= 'Z')) || (sData[0] == '_')) {
+                (*result) << sData[0];
+            } else {
+                (*result) << '_';
+            }
+        } else {
+            if (((sData[0] >= 'a') && (sData[0] <= 'z')) ||
+                ((sData[0] >= 'A') && (sData[0] <= 'Z')) || (sData[0] == '_') ||
+                ((sData[0] >= '0') && (sData[0] <= '9'))) {
+                (*result) << sData[0];
+            } else {
+                (*result) << '_';
+            }
+        }
+        
+        long l = 0;
+        for (unsigned long k = 1UL; k < sLength; k++) {
+            unsigned char c = sData[k];
+            if (_hyValidIDChars.valid_chars[c]) {
+                (*result) << c;
+                l++;
+            } else if (result->sData[l] != '_') {
+                (*result) << '_';
+                l++;
+            }
+        }
+    }
+    
+    CopyDynamicString(result, true);
+}
+
+
 
 
 
@@ -1037,48 +1193,8 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 
 
 
-_String *_String::Sort(_SimpleList *index) {
-  if (index) {
-    index->Clear();
-  }
-
-  if (sLength) {
-    _SimpleList charList(sLength);
-    if (index) {
-      for (unsigned long i = 0UL; i < sLength; i++) {
-        charList << sData[i];
-        (*index) << i;
-      }
-      charList.Sort (true, index);
-    } else {
-      for (unsigned long i = 0; i < sLength; i++) {
-        charList << sData[i];
-      }
-
-      charList.Sort();
-    }
-    _String *sorted = new _String(sLength);
-    for (unsigned long i = 0; i < sLength; i++) {
-      sorted->sData[i] = charList.AtIndex(i);
-    }
-
-    return sorted;
-  }
-
-  return new _String;
-}
 
 
-
-
-
-_Parameter _String::toNum(void) const{
-  if (sLength == 0UL) {
-    return 0.;
-  }
-  char *endP;
-  return strtod(sData, &endP);
-}
 
 
 
@@ -1601,110 +1717,6 @@ _String GetTimeStamp(bool doGMT) {
 
 }
 
-/*
-==============================================================
-Identifier Methods
-==============================================================
-*/
-
-bool _String::IsValidIdentifier(bool strict) const {
-#ifndef HY_2014_REWRITE_MASK
-  if (sLength == 0) {
-    return false;
-  }
-
-  if (strict) {
-    if (!(isalpha(sData[0]) || sData[0] == '_')) {
-      return false;
-    }
-  } else if (!(isalnum(sData[0]) || sData[0] == '_')) {
-    return false;
-  }
-
-  for (unsigned long p = 1; p < sLength; p++) {
-    char c = sData[p];
-    if (!(isalnum(c) || c == '_' || (strict && c == '.'))) {
-      return false;
-    }
-  }
-
-  // check to see if it's not a keyword / function name etc
-  
-  return hyReservedWords.Find(this) == HY_NOT_FOUND;
-#else
-  return false;
-#endif
-
-  
-}
-
-bool _String::IsValidRefIdentifier(void) const {
-  if (sLength < 2) {
-    return false;
-  }
-  if (sData[sLength - 1] == '&') {
-    return Cut(0, sLength - 2).IsValidIdentifier();
-  }
-  return false;
-}
-
-//Convert a string to a valid ident
-void _String::ConvertToAnIdent(bool strict) {
-  _StringBuffer *result = new _StringBuffer((unsigned long) sLength + 1UL);
-
-  if (sLength) {
-    if (strict) {
-      if (((sData[0] >= 'a') && (sData[0] <= 'z')) ||
-          ((sData[0] >= 'A') && (sData[0] <= 'Z')) || (sData[0] == '_')) {
-        (*result) << sData[0];
-      } else {
-        (*result) << '_';
-      }
-    } else {
-      if (((sData[0] >= 'a') && (sData[0] <= 'z')) ||
-          ((sData[0] >= 'A') && (sData[0] <= 'Z')) || (sData[0] == '_') ||
-          ((sData[0] >= '0') && (sData[0] <= '9'))) {
-        (*result) << sData[0];
-      } else {
-        (*result) << '_';
-      }
-    }
-
-    long l = 0;
-    for (unsigned long k = 1UL; k < sLength; k++) {
-      unsigned char c = sData[k];
-      if (_hyValidIDChars.valid_chars[c]) {
-        (*result) << c;
-        l++;
-      } else if (result->sData[l] != '_') {
-        (*result) << '_';
-        l++;
-      }
-    }
-  }
-
-  CopyDynamicString(result, true);
-}
-
-_String _String::ShortenVarID(_String &containerID) {
-  long matched = -1,
-       upTo = sLength < containerID.sLength ? sLength : containerID.sLength, k;
-
-  for (k = 0; k < upTo; k++) {
-    if (sData[k] != containerID.sData[k]) {
-      break;
-    } else if (sData[k] == '.') {
-      matched = k;
-    }
-  }
-
-  if ((upTo == containerID.sLength) && (upTo < sLength) && (k == upTo) &&
-      (sData[upTo] == '.')) {
-    matched = upTo;
-  }
-
-  return Cut(matched + 1, -1);
-}
 
 /*
 ==============================================================

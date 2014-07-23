@@ -674,7 +674,7 @@ public:
   * @return _String("house.room")._String("house.") will return "room". However,
   * _String("houseroom") will return "houseroom"
   */
-  _String ShortenVarID(_String &);
+  const _String ShortenVarID(_String const &) const;
 
   /**
   * Examine the string argument contained in this object, decide what it is, and
@@ -729,11 +729,12 @@ public:
   void RegExpMatchOnce(_String *, _SimpleList &, bool, bool);
 
   /**
-  * Lexicographically sorts the string
-  * @param index Needs a list to act as an index
+  * Lexicographically sorts characters string
+  * @param index if supplied, then the the i-th element of the list will store the \n
+  * original index (in the unsorted string) of the i-th character in the sorted string
   * @return sorted string
   */
-  _String *Sort(_SimpleList * = nil);
+  const _String Sort(_SimpleList * = nil) const;
 
   /**
    * Generate a random string on
@@ -821,6 +822,10 @@ public:
   
   private:
     long NormalizeRange (long & from, long & to) const;
+    
+    // returns the length of the prefix of the string which constitutes a valid ID
+    long _IsValidIdentifierAux (bool = true, char = '\0') const;
+
 };
 
 // _______________________________________________________________________

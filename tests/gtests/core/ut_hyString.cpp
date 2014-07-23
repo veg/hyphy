@@ -48,6 +48,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "helperfunctions.h"
 #include "hy_list_reference.h"
+#include "hy_list_numeric.h"
 
 namespace {
   // The fixture for testing class Foo.
@@ -99,7 +100,11 @@ namespace {
 }
 
 _String numbers ("0123456789"),
-letters ("abcdefghijklmnopqrstuvwxyz");
+        letters ("abcdefghijklmnopqrstuvwxyz"),
+        alnum  = numbers & letters & letters.UpCase(),
+        alpha_ = letters & letters.UpCase() & '_',
+        alnum_ = alnum & '_',
+        punctuation ("`!@#$%^&*()+=/,';][\\");
 
 const char test_case [] = "The quick brown fox jumps over the lazy dog";
 
@@ -455,4 +460,74 @@ TEST_F (_hyStringTest, Tokenize) {
   }
 }
 
+TEST_F (_hyStringTest, toNum) {
+    ASSERT_EQ (0.0, empty.toNum()) << "Empty string must convert to 0.";
+    ASSERT_EQ (-1.23e10, _String ("-1.23e+10").toNum()) << " '-1.23e+10' conversion to double failed";
+    ASSERT_EQ (1.e-8, _String ("0.00000001").toNum()) << " '0.0000001' conversion to double failed";
+}
 
+
+TEST_F (_hyStringTest, Sort) {
+    
+    for (unsigned long k = 0UL; k < 1024UL; k++) {
+        
+        _SimpleList index_list;
+        
+        const   _String random_string (_String::Random (genrand_int32() % 384)),
+                sorted (random_string.Sort()),
+                sorted_index (random_string.Sort(&index_list));
+        
+        for (unsigned long i = 0UL; i < random_string.Length(); i++) {
+            if (i) {
+                ASSERT_GE (sorted(i), sorted (i-1UL)) << "Characters are not sorted following the applicaiton of 'Sort' (no index) to '" << sorted.getStr() << "'";
+                ASSERT_GE (sorted_index(i), sorted_index (i-1UL)) << "Characters are not sorted following the applicaiton of 'Sort' (index) to '" << sorted_index.getStr() << "'";
+            }
+            ASSERT_EQ (sorted_index (i), random_string (index_list(i))) << "The character index at " << i << " is incorrect following the applicaiton of 'Sort' (index) to '"  << sorted_index.getStr() << "'";
+        }
+        
+    }
+}
+
+TEST_F (_hyStringTest, Identifiers) {
+    // some standard cases
+    _String id1 ("hyphy3"),
+            id2 ("hyphy3.new"),
+            id3 ("0hyphy"),
+            id4 ("hy-phy"),
+            id5 ("hy_phy"),
+            id6 ("hyphy.test.dots"),
+            id7 ("hyphy.fail..dots");
+    
+    ASSERT_TRUE (id1.IsValidIdentifier()) << id1.getStr() << " declared an invalid identifier";
+    ASSERT_TRUE (id5.IsValidIdentifier()) << id5.getStr() << " declared an invalid identifier";
+    ASSERT_TRUE (id6.IsValidIdentifier()) << id6.getStr() << " declared an invalid identifier";
+
+    ASSERT_FALSE (id3.IsValidIdentifier()) << id3.getStr() << " declared a valid identifier";
+    ASSERT_FALSE (id4.IsValidIdentifier()) << id4.getStr() << " declared a valid identifier";
+    ASSERT_FALSE (id7.IsValidIdentifier()) << id7.getStr() << " declared a valid identifier";
+    ASSERT_FALSE (id2.IsValidIdentifier(false)) << id2.getStr() << " declared a valid identifier (no compounds allowed)";
+    ASSERT_FALSE (empty.IsValidIdentifier()) << "An empty string declared a valid identifier";
+
+    
+    for (unsigned long k = 0UL; k < 1024UL; k++) {
+        const _String randomIdent  = _String::Random (1, &alpha_) & _String::Random (genrand_int32() % 32, &alnum_),
+                      randomIdent2 = _String::Random (1, &alpha_) & _String::Random (genrand_int32() % 32, &alnum_),
+                      randomIdent3 = _String::Random (1, &alpha_) & _String::Random (genrand_int32() % 32, &alnum_),
+                      compound2 = randomIdent & '.' & randomIdent2,
+                      compound3 = randomIdent & '.' & randomIdent2  & '.' & randomIdent3,
+                      partial1 = randomIdent & _String::Random (1 + genrand_int32() % 32, &punctuation),
+                      partial2 = compound3 & _String::Random (1 + genrand_int32() % 32, &punctuation);
+        
+        
+        
+        
+        ASSERT_TRUE (randomIdent.IsValidIdentifier()) << "IsValidIdentifier failed on '" << randomIdent.getStr() << "'";
+        ASSERT_TRUE (compound3.IsValidIdentifier()) << "IsValidIdentifier failed on '" << compound3.getStr() << "'" ;
+        ASSERT_FALSE(compound3.IsValidIdentifier(false)) << "IsValidIdentifier (no compounds) failed on '" << compound3.getStr() << "'";
+        ASSERT_FALSE(partial1.IsValidIdentifier(false)) << "IsValidIdentifier failed on '" << partial1.getStr() << "'";
+        
+        ASSERT_EQ (compound2.ShortenVarID(randomIdent), randomIdent2) << "'A.B'.ShortenVarID ('A') failed on '" << compound2.getStr() << "'";
+        ASSERT_EQ (compound2.ShortenVarID(randomIdent2), compound2) << "'A.B'.ShortenVarID ('B') failed on '" << compound2.getStr() << "'";
+        ASSERT_EQ ((randomIdent&randomIdent2).ShortenVarID(randomIdent), randomIdent&randomIdent2) << "'AB'.ShortenVarID ('A') failed on '" << (randomIdent&randomIdent2).getStr() << "'";
+    }
+}
