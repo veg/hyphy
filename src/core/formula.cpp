@@ -1620,7 +1620,8 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
                     } else {
                         _Parameter  (*theFunc) (_Parameter);
                         theFunc = (_Parameter(*)(_Parameter))thisOp->opCode;
-                        stack[stackTop++].value = (*theFunc)(stack[stackTop].value);
+                        stack[stackTop].value = (*theFunc)(stack[stackTop].value);
+                        stackTop++;
                     }
                 }
             }

@@ -4943,7 +4943,8 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
                         } else {
                             f.ConvertToSimple (vIndex);
                         }
-
+                        
+ 
                         if (conditionalCheck) {
                             conditionalCheck->ConvertToSimple(vIndex);
                         }
@@ -4990,6 +4991,8 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
                                     if (constantValue) {
                                         retMatrix->Store (r,c,constantV);
                                     } else {
+                                        //printf ("Formula eval (stack depth= %d) (%d, %g, %g) %g\n", stackDepth, rid[2], varValues[rid[2]], f.ComputeSimple(stack,varValues));
+
                                         retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
                                     }
                                 }

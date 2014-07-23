@@ -265,6 +265,8 @@ function computeLFOnGrid (lfID, grid, doConditionals) {
             for (_c = 0; _c < _siteCount; _c += 1) {
                 conditionals[_r][_c] = catMat[_c];
             }
+
+                        
         } else {
             conditionals[_r][0] = alpha;
             conditionals[_r][1] = beta;
@@ -274,6 +276,8 @@ function computeLFOnGrid (lfID, grid, doConditionals) {
     }
     ExecuteCommands ("LFCompute(`lfID`,LF_DONE_COMPUTE)");
     
+    
+
 
     if (MPI_NODE_COUNT > 1 && points > MPI_NODE_COUNT) {
          for (node_id = 1; node_id < MPI_NODE_COUNT; node_id += 1) {
@@ -308,15 +312,19 @@ function computeLFOnGrid (lfID, grid, doConditionals) {
         for (_c = 0; _c < _siteCount; _c += 1) {
             this_site  = conditionals[-1][_c];
             best_log_l = Min (this_site*(-1),0);
-            this_site  = (this_site + best_log_l)["Exp(_MATRIX_ELEMENT_VALUE_)"];
+	        this_site  = (this_site + best_log_l)["Exp(_MATRIX_ELEMENT_VALUE_)"];
+
             normalizer = +this_site;
+            
             this_site  = (this_site)*(1/normalizer);
             scaler[_c] = -best_log_l+Log(normalizer);
+            
             for (_r = 0; _r < points; _r += 1) {
                 conditionals[_r][_c] = this_site[_r];
             }
         }
         
+
         result["conditionals"] = conditionals;
         result["scalers"]      = scaler;
     } else {

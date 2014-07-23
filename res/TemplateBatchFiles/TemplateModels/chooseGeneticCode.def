@@ -364,6 +364,8 @@ function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
             currentAA = mapping[codon];
 		}
 	} 
+	
+	
 	translString * 0;
 	
 	return translString;
