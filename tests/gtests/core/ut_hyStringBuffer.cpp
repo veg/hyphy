@@ -44,6 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gtest/gtest.h"
 #include "hy_string_buffer.h"
 #include "hy_list_reference.h"
+#include <string>
 
 using ::testing::TestWithParam;
 using ::testing::Values;
@@ -338,6 +339,14 @@ TEST_F(_StringBufferTest, AppendCharTest)
   const char test_c2 = '\0';
   test2 << test_c2;
   EXPECT_STREQ("", test2);
+
+  _StringBuffer test3;
+  for (int i = 0; i < 1000; i++) {
+    test3 << 'h';
+  }
+  std::string test3_e = std::string(1000, 'h');
+  EXPECT_STREQ(test3_e.data(), test3);
+
 }
 
 /******************************************/
@@ -355,28 +364,38 @@ TEST_F(_StringBufferTest, AppendNewInstanceTest)
 /******************************************/
 TEST_F(_StringBufferTest, sanitizeForSQLTest)
 {
-  _StringBuffer test3("AB");
+  _StringBuffer test("AB");
   const char test_c = '\'';
-  test3.sanitizeForSQLAndAppend(test_c);
-  EXPECT_STREQ("AB''", test3);
+  test.sanitizeForSQLAndAppend(test_c);
+  EXPECT_STREQ("AB''", test);
+  test.sanitizeForSQLAndAppend('h');
+  EXPECT_STREQ("AB''h", test);
+
+  _StringBuffer test2("AB");
+  test2.sanitizeForSQLAndAppend(new _String("hyphy\'"));
+  EXPECT_STREQ("ABhyphy''", test2);
 }
 
 /******************************************/
 TEST_F(_StringBufferTest, sanitizeForHTMLTest)
 {
-  _StringBuffer test5("AB");
-  test5.sanitizeForHTMLAndAppend('"');
-  EXPECT_STREQ("AB&quot;", test5);
-  test5.sanitizeForHTMLAndAppend('\'');
-  EXPECT_STREQ("AB&quot;&apos;", test5);
-  test5.sanitizeForHTMLAndAppend('<');
-  EXPECT_STREQ("AB&quot;&apos;&lt;", test5);
-  test5.sanitizeForHTMLAndAppend('>');
-  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;", test5);
-  test5.sanitizeForHTMLAndAppend('&');
-  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;&amp;", test5);
-  test5.sanitizeForHTMLAndAppend('^');
-  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;&amp;^", test5);
+  _StringBuffer test("AB");
+  test.sanitizeForHTMLAndAppend('"');
+  EXPECT_STREQ("AB&quot;", test);
+  test.sanitizeForHTMLAndAppend('\'');
+  EXPECT_STREQ("AB&quot;&apos;", test);
+  test.sanitizeForHTMLAndAppend('<');
+  EXPECT_STREQ("AB&quot;&apos;&lt;", test);
+  test.sanitizeForHTMLAndAppend('>');
+  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;", test);
+  test.sanitizeForHTMLAndAppend('&');
+  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;&amp;", test);
+  test.sanitizeForHTMLAndAppend('^');
+  EXPECT_STREQ("AB&quot;&apos;&lt;&gt;&amp;^", test);
+
+  _StringBuffer test2("AB");
+  test2.sanitizeForHTMLAndAppend(new _String("hyphy\"\'<>&^hyphy"));
+  EXPECT_STREQ("ABhyphy&quot;&apos;&lt;&gt;&amp;^hyphy", test2);
 }
 
 /******************************************/
@@ -386,59 +405,73 @@ TEST_F(_StringBufferTest, sanitizeTest)
   test.sanitizeAndAppend('<');
   EXPECT_STREQ("AB<", test);
 
-  _StringBuffer test4("AB");
-  test4.sanitizeAndAppend('\n');
-  EXPECT_STREQ("AB\\n", test4);
-  test4.sanitizeAndAppend('\t');
-  EXPECT_STREQ("AB\\n\\t", test4);
-  test4.sanitizeAndAppend("\"");
-  EXPECT_STREQ("AB\\n\\t\\\"", test4);
-  test4.sanitizeAndAppend("\\");
-  EXPECT_STREQ("AB\\n\\t\\\"\\\\", test4);
-  test4.sanitizeAndAppend("!");
-  EXPECT_STREQ("AB\\n\\t\\\"\\\\!", test4);
+  _StringBuffer test2("AB");
+  test2.sanitizeAndAppend('\n');
+  EXPECT_STREQ("AB\\n", test2);
+  test2.sanitizeAndAppend('\t');
+  EXPECT_STREQ("AB\\n\\t", test2);
+  test2.sanitizeAndAppend("\"");
+  EXPECT_STREQ("AB\\n\\t\\\"", test2);
+  test2.sanitizeAndAppend("\\");
+  EXPECT_STREQ("AB\\n\\t\\\"\\\\", test2);
+  test2.sanitizeAndAppend("!");
+  EXPECT_STREQ("AB\\n\\t\\\"\\\\!", test2);
+
+  _StringBuffer test3("AB");
+  test3.sanitizeAndAppend(new _String("hyphy\n\t\"\\!hyphy"));
+  EXPECT_STREQ("ABhyphy\\n\\t\\\"\\\\!hyphy", test3);
 }
 
 /******************************************/
 TEST_F(_StringBufferTest, sanitizePSTest)
 {
+  _StringBuffer test("AB");
+  test.sanitizeForPostScriptAndAppend('(');
+  EXPECT_STREQ("AB\\(", test);
+  test.sanitizeForPostScriptAndAppend(')');
+  EXPECT_STREQ("AB\\(\\)", test);
+  test.sanitizeForPostScriptAndAppend('%');
+  EXPECT_STREQ("AB\\(\\)\\%", test);
+  test.sanitizeForPostScriptAndAppend('@');
+  EXPECT_STREQ("AB\\(\\)\\%@", test);
+
   _StringBuffer test2("AB");
-  test2.sanitizeForPostScriptAndAppend('(');
-  EXPECT_STREQ("AB\\(", test2);
-  test2.sanitizeForPostScriptAndAppend(')');
-  EXPECT_STREQ("AB\\(\\)", test2);
-  test2.sanitizeForPostScriptAndAppend('%');
-  EXPECT_STREQ("AB\\(\\)\\%", test2);
+  test2.sanitizeForPostScriptAndAppend(new _String("hyphy()%@hyphy"));
+  EXPECT_STREQ("ABhyphy\\(\\)\\%@hyphy", test2);
 }
 
 /******************************************/
 TEST_F(_StringBufferTest, sanitizeRETest)
 {
-  _StringBuffer test6("AB");
-  test6.sanitizeForRegExAndAppend('[');
-  EXPECT_STREQ("AB\\[", test6);
-  test6.sanitizeForRegExAndAppend('^');
-  EXPECT_STREQ("AB\\[\\^", test6);
-  test6.sanitizeForRegExAndAppend('$');
-  EXPECT_STREQ("AB\\[\\^\\$", test6);
-  test6.sanitizeForRegExAndAppend('.');
-  EXPECT_STREQ("AB\\[\\^\\$\\.", test6);
-  test6.sanitizeForRegExAndAppend('|');
-  EXPECT_STREQ("AB\\[\\^\\$\\.\\|", test6);
-  test6.sanitizeForRegExAndAppend('?');
-  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?", test6);
-  test6.sanitizeForRegExAndAppend('*');
-  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*", test6);
-  test6.sanitizeForRegExAndAppend('+');
-  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+", test6);
-  test6.sanitizeForRegExAndAppend('(');
-  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(", test6);
-  test6.sanitizeForRegExAndAppend(')');
-  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)", test6);
-  test6.sanitizeForRegExAndAppend('\\');
-  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\", test6);
-  test6.sanitizeForRegExAndAppend('@');
-  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\@", test6);
+  _StringBuffer test("AB");
+  test.sanitizeForRegExAndAppend('[');
+  EXPECT_STREQ("AB\\[", test);
+  test.sanitizeForRegExAndAppend('^');
+  EXPECT_STREQ("AB\\[\\^", test);
+  test.sanitizeForRegExAndAppend('$');
+  EXPECT_STREQ("AB\\[\\^\\$", test);
+  test.sanitizeForRegExAndAppend('.');
+  EXPECT_STREQ("AB\\[\\^\\$\\.", test);
+  test.sanitizeForRegExAndAppend('|');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|", test);
+  test.sanitizeForRegExAndAppend('?');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?", test);
+  test.sanitizeForRegExAndAppend('*');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*", test);
+  test.sanitizeForRegExAndAppend('+');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+", test);
+  test.sanitizeForRegExAndAppend('(');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(", test);
+  test.sanitizeForRegExAndAppend(')');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)", test);
+  test.sanitizeForRegExAndAppend('\\');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\", test);
+  test.sanitizeForRegExAndAppend('@');
+  EXPECT_STREQ("AB\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\@", test);
+
+  _StringBuffer test2("AB");
+  test2.sanitizeForRegExAndAppend(new _String("hyphy[^$.|?*+()\\@hyphy"));
+  EXPECT_STREQ("ABhyphy\\[\\^\\$\\.\\|\\?\\*\\+\\(\\)\\\\@hyphy", test2);
 }
 
 /******************************************/
@@ -490,25 +523,6 @@ TEST_F(_StringBufferTest, AppendSubstringTest)
   _StringBuffer test6;
   test6.appendSubstring(test, 1, 12);
   EXPECT_STREQ("yphy", test6);
-}
-
-
-// I am going to put testing of this method on hold
-// until the HY_2014_REWRITE_MASK issue is resolved.
-/******************************************/
-TEST_F(_StringBufferTest, AppendVariableValueTest)
-{
-  _StringBuffer test;
-  _String test_s("hyphy");
-  _List test_l;
-  _String test_i("omega1");
-  _String test_i2("omega2");
-  _String test_i3("omega3");
-  test_l << test_i;
-  test_l << test_i2;
-  test_l << test_i3;
-  test.appendVariableValueAVL(&test_s, test_l);
-  //EXPECT_STREQ("hyphy[omega1] = omega1", test);
 }
 
 } // namespace

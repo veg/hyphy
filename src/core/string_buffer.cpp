@@ -341,36 +341,4 @@ void _StringBuffer::appendAnAssignmentToBuffer( _String *id,
   }
 }
 
-// Special purpose append
-void _StringBuffer::appendVariableValueAVL( _String *id,
-                                            _List &var_numbers) {
-#ifndef HY_2014_REWRITE_MASK
-  for (long k = 0; k < var_numbers.l_length; k++) {
-    _Variable *tiv = LocateVar(var_numbers.l_data[k]);
-    if (tiv) {
-      (*this) << id;
-      (*this) << "[\"";
-      (*this) << tiv->GetName();
-      (*this) << "\"]=";
-      _PMathObj var_value = tiv->Compute();
-      switch (var_value->ObjectClass()) {
-        case NUMBER:
-          (*this) << _String(var_value->Value());
-          break;
-        case STRING:
-          (*this) << '"';
-          this->EscapeAndAppend(*((_FString *)var_value)->theString);
-          (*this) << '"';
-          break;
-        default:
-          this->appendNewInstance((_String *)(var_value->toStr()));
-          break;
-
-      }
-      (*this) << ";\n";
-    }
-  }
-#endif
-}
-
 
