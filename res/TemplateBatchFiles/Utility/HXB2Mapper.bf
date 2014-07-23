@@ -238,16 +238,20 @@ lfunction		countPNGS		(seq){
 
 /*-------------------------------------------------------------*/
 function partitionENVsequence (seq, nucOrAA) {
+
+
     if (nucOrAA != 1) {
 		_mappedReference = mapSequenceToHXB2Aux (seq,_HXB2_Env_Sequence_,nucOrAA);
+		_binned_regions = _HXB_env_upperbound * 3;
 	}
 	else {
 		_mappedReference = mapSequenceToHXB2Aux (seq,_HXB2_AA_ENV_,nucOrAA);
+		_binned_regions = _HXB_env_upperbound;
 	}
 	
 	_allPartitions       = Columns (_HXB_env_region_name);
 	_currentIndex        = 0;
-	_upperBound          = _HXB_env_upperbound[_currentIndex];
+	_upperBound          = _binned_regions[_currentIndex];
 	_mappedLength        = Rows (_mappedReference);
 	_splitSequence       = {};
 	
@@ -261,7 +265,7 @@ function partitionENVsequence (seq, nucOrAA) {
 	while (_currentPartition < _allPartitions && _currentIndex < _mappedLength) {
 	    if (_mappedReference[_currentIndex] >= _upperBound && _currentPartition < _allPartitions - 1) {
 	        _currentPartition += 1;
-	        _upperBound          = _HXB_env_upperbound[_currentPartition];
+	        _upperBound          = _binned_regions[_currentPartition];
 	    } 
 	    _splitSequence [_HXB_env_region_name[_currentPartition]] * seq[_currentIndex];
 	    _currentIndex += 1;
