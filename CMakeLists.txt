@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 2.8.1)
+cmake_minimum_required(VERSION 3.0.0)
 project(HyPhy)
+cmake_policy(VERSION 3.0.0)
+cmake_policy(SET CMP0026 OLD)
 
 set(CMAKE_CONFIGURATION_TYPES Release)
 
@@ -65,8 +67,6 @@ set(HYPHY_VERSION 2.1)
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
 #-------------------------------------------------------------------------------
-
-
 set(MACOSX_LION false)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
@@ -78,6 +78,15 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
     
 endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+
+set(MACOSX_GT_LION false)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
+        set(MACOSX_GT_LION true)
+    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
+endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+
+
 
 
 #-------------------------------------------------------------------------------
@@ -105,9 +114,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${MACOSX_LION})
 
     if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3 ")
+        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3")
     else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3  ")
+        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3")
     endif(${GCC45})
 
     if(${GCC46})
@@ -260,16 +269,18 @@ install(DIRECTORY res/ DESTINATION lib/hyphy)
 # hyphy library target
 #-------------------------------------------------------------------------------
 add_library(
-    hyphy_mp SHARED
-    EXCLUDE_FROM_ALL
-    ${SRC_COMMON} ${SRC_LINK} ${SRC_PREFS}
+  hyphy_mp SHARED
+  EXCLUDE_FROM_ALL
+  ${SRC_COMMON} ${SRC_LINK} ${SRC_PREFS}
 )
 target_link_libraries(hyphy_mp ${DEFAULT_LIBRARIES})
-install(
-    TARGETS hyphy_mp
-    LIBRARY DESTINATION lib
-    OPTIONAL
-)
+
+#install(
+#  TARGETS hyphy_mp
+#  LIBRARY DESTINATION lib
+#  OPTIONAL
+#)
+
 add_custom_target(LIB DEPENDS hyphy_mp)
 
 set_property(
@@ -286,12 +297,15 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
+
 target_link_libraries(HYPHYMP ${DEFAULT_LIBRARIES})
-install(
-    TARGETS HYPHYMP
-    RUNTIME DESTINATION bin
-    OPTIONAL
-)
+
+#install(
+#    TARGETS HYPHYMP
+#    RUNTIME DESTINATION bin
+#    OPTIONAL
+#)
+
 add_custom_target(MP2 DEPENDS HYPHYMP)
 
 
@@ -307,11 +321,11 @@ if(${OPENCL_FOUND})
     )
     include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl)
     target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
-    install(
-        TARGETS HYPHYOCL
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
+    #install(
+    #    TARGETS HYPHYOCL
+    #    RUNTIME DESTINATION bin
+    #    OPTIONAL
+    #)
     add_custom_target(OCL DEPENDS HYPHYOCL)
     set_property(
         TARGET HYPHYOCL
@@ -340,19 +354,25 @@ endif(${OPENCL_FOUND})
 # hyphy mpi target
 #-------------------------------------------------------------------------------
 find_package(MPI)
+
 if(${MPI_FOUND})
+
     add_executable(
         HYPHYMPI
         EXCLUDE_FROM_ALL
         ${SRC_COMMON} ${SRC_UNIXMAIN}
     )
+
     include_directories(${MPI_INCLUDE_PATH})
+
     target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
-    install(
-        TARGETS HYPHYMPI
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
+
+    #install(
+    #    TARGETS HYPHYMPI
+    #    RUNTIME DESTINATION bin
+    #    OPTIONAL
+    #)
+
     add_custom_target(MPI DEPENDS HYPHYMPI)
 
     # set definitions here 'cause "s_t_p" below doesn't like lists
@@ -387,12 +407,6 @@ set_target_properties(
     COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
     LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
 )
-
-install(
-	TARGETS HYPHYDEBUG
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
 
 
 
@@ -450,11 +464,12 @@ if((${GTK2_FOUND}))
 
 	install(DIRECTORY src/gui/res/GTKResources/ DESTINATION lib/hyphy/GTKResources)
 
-	install(
-        TARGETS HYPHYGTK
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
+	#install(
+  #      TARGETS HYPHYGTK
+  #      RUNTIME DESTINATION bin
+  #      OPTIONAL
+  #  )
+
     set_property(
         TARGET HYPHYGTK
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_GTK__ GDK_PIXBUF_ENABLE_BACKEND __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
@@ -468,82 +483,9 @@ if((${GTK2_FOUND}))
 endif((${GTK2_FOUND}))
 
 #-------------------------------------------------------------------------------
-# hyphy qt target
-#-------------------------------------------------------------------------------
-
-find_package(Qt4 4.7)
-
-if((${QT4_FOUND}))
-
-    file(GLOB QT_HYPHY_SOURCES src/gui/qt/*.cpp src/gui/HYSharedMain.*) 
-    file(GLOB QT_HYPHY_HEADERS src/gui/qt/include/*.h src/gui/include/HYSharedMain.*) 
-    file(GLOB QT_HYPHY_UI src/gui/qt/ui/*ui)
-    set(RES_MACGUI src/gui/mac/HYPHYMP.icns src/gui/mac/HyPhy.rsrc)
-
-    QT4_WRAP_CPP(hyphy_headers_moc ${QT_HYPHY_HEADERS})
-    QT4_WRAP_UI(hyphy_ui_headers ${QT_HYPHY_UI})
-
-    include(${QT_USE_FILE})
-    add_definitions(${QT_DEFINITIONS})
-    add_definitions(-D__HYPHY_64__)
-
-    add_executable(HYPHYQT MACOSX_BUNDLE 
-			  EXCLUDE_FROM_ALL 
-                           ${SRC_CORE}                  
-                           ${SRC_NEW}                  
-                           ${SRC_SQLITE3} 
-                           ${QT_HYPHY_SOURCES}
-                           ${QT_HYPHY_HEADERS} 
-                           ${hyphy_headers_moc} 
-                           ${hyphy_ui_headers} 
-                           ${RES_MACGUI}
-			   
-                           )
-
-    target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARY} ${DEFAULT_LIBRARIES})
-
-    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${QT_QTNETWORK_INCLUDE_DIR} src/gui/qt/include)
-
-    set_property(
-        TARGET HYPHYQT
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYQT__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
-    )
-
-    if(APPLE)
-        set_target_properties(
-            HYPHYQT
-            PROPERTIES
-            OUTPUT_NAME "HyPhyQt"
-            MACOSX_BUNDLE_ICON_FILE "HYPHYMP.icns"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "org.hyphy"
-            MACOSX_BUNDLE_LONG_VERSION_STRING "1.4, Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
-            MACOSX_BUNDLE_BUNDLE_NAME "HyPhyQt"
-            MACOSX_BUNDLE_SHORT_VERSION_STRING "2.10beta"
-            MACOSX_BUNDLE_BUNDLE_VERSION "2.10beta"
-            MACOSX_BUNDLE_COPYRIGHT "Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
-        ) 
-        install(TARGETS HYPHYQT 
-                BUNDLE DESTINATION .
-        )
-
-    else()
-        set_target_properties(
-            HYPHYQT
-            PROPERTIES
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
-        )
-    endif()
-
- 
-endif((${QT4_FOUND}))
-
-
-#-------------------------------------------------------------------------------
 # target-specific and occasionally-shared properties
 #-------------------------------------------------------------------------------
+
 if(UNIX)
     set_property(
         TARGET HYPHYMP hyphy_mp HYPHYGTEST HYPHYDEBUG
@@ -577,7 +519,7 @@ set_target_properties(
 #-------------------------------------------------------------------------------
 # hyphy MacOSX gui target
 #-------------------------------------------------------------------------------
-if(APPLE)
+if(APPLE AND NOT ${MACOSX_GT_LION})
 
     #---------------------------------------------------------------------------
     # MacOSX gui files
@@ -596,7 +538,7 @@ if(APPLE)
     #---------------------------------------------------------------------------
     add_executable(HyPhy
         MACOSX_BUNDLE
-		EXCLUDE_FROM_ALL
+		    EXCLUDE_FROM_ALL
         ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUI}
     )
@@ -693,10 +635,10 @@ if(APPLE)
     set_target_properties(
         HyPhy
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -fast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -fast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
-		XCODE_ATTRIBUTE_ENABLE_OPENMP_SUPPORT YES
-		XCODE_GCC_AUTO_VECTORIZATION YES
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Ofast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Ofast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
+        XCODE_ATTRIBUTE_ENABLE_OPENMP_SUPPORT YES
+        XCODE_GCC_AUTO_VECTORIZATION YES
 	)
     set_target_properties(
         iHyPhyDebug
@@ -761,4 +703,4 @@ if(APPLE)
         PROPERTIES
         OSX_ARCHITECTURES i386
     )
-endif(APPLE)
+endif(APPLE AND NOT ${MACOSX_GT_LION})
