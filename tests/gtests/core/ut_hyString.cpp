@@ -321,7 +321,7 @@ TEST_F (_hyStringTest, StringSearching) {
       EXPECT_EQ (combined.contains ("X"), combined.Find ("X") != HY_NOT_FOUND) << "contains (_String) did not match Find results";
       EXPECT_EQ (number_string.Equal('1'), number_string == _String("1")) << "equal (char) did not match '==' results";
       
-      if (letter_string.sLength) {
+      if (letter_string.s_length) {
         EXPECT_TRUE   (combined.startswith(letter_string)) << "AB starts with A failed (match case), A == '" << letter_string << "'";
         EXPECT_FALSE  (letter_string.startswith(combined)) << "NOT AB startswith A failed";
         EXPECT_TRUE   (combined.startswith(upcase_letter_string, false)) << "aB startswith A failed (ignore case)";
