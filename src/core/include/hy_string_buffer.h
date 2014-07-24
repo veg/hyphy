@@ -177,16 +177,6 @@ public:
    */
   void appendAnAssignmentToBuffer(_String *, _String *, bool = true,
                                   bool = false, bool = false);
-
-  /**
-   * SLKP 20090817:
-   * A utility function to append a statement of the form
-   * id["varname"] = varvalue; for each variable in the SimpleList arguments
-   * for String valued variables, their values are properly quoted
-   * @param id = value; to the current string assumed to be in the buffer form
-   */
-  void appendVariableValueAVL(_String *, _List &);
-
 };
 
 #endif
