@@ -275,11 +275,11 @@ add_library(
 )
 target_link_libraries(hyphy_mp ${DEFAULT_LIBRARIES})
 
-#install(
-#  TARGETS hyphy_mp
-#  LIBRARY DESTINATION lib
-#  OPTIONAL
-#)
+install(
+  TARGETS hyphy_mp
+  LIBRARY DESTINATION lib
+  OPTIONAL
+)
 
 add_custom_target(LIB DEPENDS hyphy_mp)
 
@@ -300,11 +300,11 @@ add_executable(
 
 target_link_libraries(HYPHYMP ${DEFAULT_LIBRARIES})
 
-#install(
-#    TARGETS HYPHYMP
-#    RUNTIME DESTINATION bin
-#    OPTIONAL
-#)
+install(
+    TARGETS HYPHYMP
+    RUNTIME DESTINATION bin
+    OPTIONAL
+)
 
 add_custom_target(MP2 DEPENDS HYPHYMP)
 
@@ -314,18 +314,22 @@ add_custom_target(MP2 DEPENDS HYPHYMP)
 #-------------------------------------------------------------------------------
 find_package(OpenCL)
 if(${OPENCL_FOUND})
+
     add_executable(
         HYPHYOCL
         EXCLUDE_FROM_ALL
         ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl/opencl_kernels.h
     )
+
     include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl)
     target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
-    #install(
-    #    TARGETS HYPHYOCL
-    #    RUNTIME DESTINATION bin
-    #    OPTIONAL
-    #)
+
+    install(
+        TARGETS HYPHYOCL
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
+
     add_custom_target(OCL DEPENDS HYPHYOCL)
     set_property(
         TARGET HYPHYOCL
@@ -367,11 +371,11 @@ if(${MPI_FOUND})
 
     target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
 
-    #install(
-    #    TARGETS HYPHYMPI
-    #    RUNTIME DESTINATION bin
-    #    OPTIONAL
-    #)
+    install(
+        TARGETS HYPHYMPI
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
 
     add_custom_target(MPI DEPENDS HYPHYMPI)
 
@@ -398,6 +402,7 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
+
 target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
@@ -464,11 +469,11 @@ if((${GTK2_FOUND}))
 
 	install(DIRECTORY src/gui/res/GTKResources/ DESTINATION lib/hyphy/GTKResources)
 
-	#install(
-  #      TARGETS HYPHYGTK
-  #      RUNTIME DESTINATION bin
-  #      OPTIONAL
-  #  )
+  install(
+        TARGETS HYPHYGTK
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
 
     set_property(
         TARGET HYPHYGTK
