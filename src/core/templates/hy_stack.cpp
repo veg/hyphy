@@ -39,34 +39,39 @@
 
 
 // Does nothing
-template<typename PAYLOAD>
-_hyStack<PAYLOAD>::_hyStack() {
+template<typename PAYLOAD, typename STACK_CONTAINER>
+_hyStack<PAYLOAD, STACK_CONTAINER>::_hyStack() {
   this->c.Initialize(false);
 }
 
-template<typename PAYLOAD>
-bool _hyStack<PAYLOAD>::push(const PAYLOAD item, bool flag) {
+template<typename PAYLOAD, typename STACK_CONTAINER>
+void _hyStack<PAYLOAD, STACK_CONTAINER>::push(const PAYLOAD item, bool flag) {
  return this->c.append(item);
 }
 
-template<typename PAYLOAD>
-PAYLOAD _hyStack<PAYLOAD>::pop() {
-  return this->c.pop();
+template<typename PAYLOAD, typename STACK_CONTAINER>
+void _hyStack<PAYLOAD, STACK_CONTAINER>::push(PAYLOAD* item, bool flag) {
+ return this->c.AppendNewInstance(item);
 }
 
-template<typename PAYLOAD>
-long _hyStack<PAYLOAD>::stackDepth() {
+template<typename PAYLOAD, typename STACK_CONTAINER>
+PAYLOAD _hyStack<PAYLOAD, STACK_CONTAINER>::pop() {
+  return this->c.Pop();
+}
+
+template<typename PAYLOAD, typename STACK_CONTAINER>
+long _hyStack<PAYLOAD, STACK_CONTAINER>::stackDepth() {
   return this->c.countitems();
 }
 
-template<typename PAYLOAD>
-void _hyStack<PAYLOAD>::reset() {
-  return this->c.DeleteList();
+template<typename PAYLOAD, typename STACK_CONTAINER>
+void _hyStack<PAYLOAD, STACK_CONTAINER>::reset() {
+  return this->c.Clear();
 }
 
 // Does nothing
-template<typename PAYLOAD>
-_hyStack<PAYLOAD>::~_hyStack() {
+template<typename PAYLOAD, typename STACK_CONTAINER>
+_hyStack<PAYLOAD, STACK_CONTAINER>::~_hyStack() {
 }
 
 

@@ -42,11 +42,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "hy_list.h"
 
-template <typename PAYLOAD>
+template <typename PAYLOAD, typename STACK_CONTAINER = _hyList<PAYLOAD> >
 class _hyStack {
 
 private:
-  _hyList <PAYLOAD> c;
+  STACK_CONTAINER c;
 
 public:
   //does nothing
@@ -71,7 +71,9 @@ public:
    * @param clone_from the object to clone from
    * @return None.
    */
-  bool push(PAYLOAD, bool = true);
+  void push(PAYLOAD, bool = true);
+
+  void push(PAYLOAD*, bool = true);
 
   /**
    * Clear the current list and make a copy from the argment

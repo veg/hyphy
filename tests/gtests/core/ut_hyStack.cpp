@@ -45,6 +45,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //Generate necessary includes from the respective implementation file
 #include "hy_stack.h"
+#include "hy_list_reference.h"
+#include "hy_strings.h"
 
 namespace {
 
@@ -96,27 +98,117 @@ public:
   
 };
 
-TYPED_TEST_CASE_P(_hyStackTest);
-
-TYPED_TEST_P (_hyStackTest, ConstuctorTests) {
+typedef ::testing::Types<char, long, double> _hyStackTypes;
+TYPED_TEST_CASE(_hyStackTest, _hyStackTypes);
+TYPED_TEST (_hyStackTest, ConstuctorTests) {
   _hyStack <TypeParam> null_list;
   ASSERT_EQ (0UL, null_list.stackDepth()) << "Non-empty null list";
 }
 
-TYPED_TEST_P (_hyStackTest, MethodTests) {
+TYPED_TEST(_hyStackTest, MethodTests) {
+  _hyStack <TypeParam> multiple_element_stack,
+                       null_stack;
+
+  TypeParam array[4] = {(TypeParam)1L, (TypeParam)4L, (TypeParam)9L, (TypeParam)16L};
+  int array_size = sizeof(array)/sizeof(TypeParam); 
 
   //push
+  for (int i = 0; i < array_size; i++) {
+    multiple_element_stack.push(array[i]);
+  }
+
+  ASSERT_EQ (array_size, multiple_element_stack.stackDepth()) << "All elements weren't pushed to the stack";
 
   //pop
-
-  //stackDepth
+  TypeParam result =  multiple_element_stack.pop();
+  ASSERT_EQ (array[array_size - 1 ], result) << "Incorrect element popped from the stack";
+  ASSERT_EQ (array_size - 1 , multiple_element_stack.stackDepth()) << "Element was not popped off the stack";
 
   //reset
+  multiple_element_stack.reset();
+  ASSERT_EQ (0, multiple_element_stack.stackDepth()) << "Stack should be empty after reset";
+
+  //pop an empty list
+  ASSERT_DEATH(null_stack.pop(), ""); 
 
 }
 
-REGISTER_TYPED_TEST_CASE_P (_hyStackTest, ConstuctorTests);
+// The fixture for testing class Foo.
+template <typename DATA>
+class _hyStackReferenceTest : public ::testing::Test {
 
-typedef ::testing::Types<long> _hyStackTypes;
-INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyStackTest, _hyStackTypes);
+protected:
+
+  _hyStackReferenceTest() {
+    
+  }
+
+  virtual ~_hyStackReferenceTest() {
+    // You can do clean-up work that doesn't throw exceptions here.
+  }
+
+  // If the constructor and destructor are not enough for setting up
+  // and cleaning up each test, you can define the following methods:
+
+  virtual void SetUp() {
+    // Code here will be called immediately after the constructor (right
+    // before each test).
+  }
+
+  virtual void TearDown() {
+    // Code here will be called immediately after each test (right
+    // before the destructor).
+    
+  }
+  
+  
+public:
+  // Per-test-case set-up.
+  // Called before the first test in this test case.
+  // Can be omitted if not needed.
+  static void SetUpTestCase() {
+    //shared_resource_ = new ...;
+  }
+
+  // Per-test-case tear-down.
+  // Called after the last test in this test case.
+  // Can be omitted if not needed.
+  static void TearDownTestCase() {
+    // delete shared_resource_;
+    // shared_resource_ = NULL;
+  }
+
+  
+};
+
+
 }
+
+typedef ::testing::Types<_String> _hyStackReferenceTypes;
+TYPED_TEST_CASE(_hyStackReferenceTest, _hyStackReferenceTypes);
+TYPED_TEST(_hyStackReferenceTest, ReferenceConstructorTests) {
+
+  _hyStack <TypeParam, _hyListReference<TypeParam> > string_stack;
+
+ for (long k = 0; k < 50; k ++) {
+    TypeParam* test_object = new TypeParam (k);
+    string_stack.push(test_object);
+  }
+
+
+  ASSERT_EQ (50, string_stack.stackDepth()) << "All elements weren't pushed to the stack";
+
+  //pop
+  TypeParam result =  string_stack.pop();
+  EXPECT_TRUE(result.Equal(new TypeParam (49L)));
+  ASSERT_EQ (49, string_stack.stackDepth()) << "Incorrect element popped from the stack";
+
+  //reset
+  string_stack.reset();
+  ASSERT_EQ (0, string_stack.stackDepth()) << "Stack should be empty after reset";
+
+  //pop an empty list
+  ASSERT_DEATH(string_stack.pop(), ""); 
+
+}
+
