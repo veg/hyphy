@@ -354,7 +354,11 @@ function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
         
 		if (advance) {
 		    if (copy_codon) {
-                translString * codon;
+		    	if (currentAA == "X") {
+                	translString * "---";
+                } else {
+                	translString * codon;                
+                }
             } else {
                 //fprintf (stdout, "Skipping codon ", codon, "\n");
                 aaPos = aaPos -1;

@@ -349,6 +349,14 @@ protected:
 
      */
 
+    void            RemoveANode                          (_PMathObj);
+    
+    /*
+     
+        Delete a node from the tree by name
+     
+     */
+
 public:
 
     node<long>      *theRoot,

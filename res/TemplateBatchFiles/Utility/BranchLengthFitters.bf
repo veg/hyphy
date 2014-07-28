@@ -1,3 +1,5 @@
+LoadFunctionLibrary ("TreeTools");
+
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
 lfunction extractBranchLengthsFromTreeAsDict (tree_id) {
@@ -20,23 +22,73 @@ lfunction getNucRevBranchLengthsAndParameters (dataset_id, tree_id) {
    DataSetFilter nucs = CreateFilter          (^dataset_id, 1);
    HarvestFrequencies   (Freqs, 	nucs, 1,1,1);
 
-   global 	AC = 1;
-   global 	AT = 1;
-   global 	CG = 1;
-   global 	CT = 1;
-   global 	GT = 1;
+   global 	nAC = 1;
+   global 	nAT = 1;
+   global 	nCG = 1;
+   global 	nCT = 1;
+   global 	nGT = 1;
     
-   revRateMatrix =  {{*,	AC*t,t,	AT*t}
-                      {	AC*t,*,	CG*t,	CT*t}
-                      {t,	CG*t,*,	GT*t}
-                      {	AT*t,	CT*t,	GT*t,*}};
+   revRateMatrix =  {{*,	nAC*t,t,	nAT*t}
+                      {	nAC*t,*,	nCG*t,	nCT*t}
+                      {t,	nCG*t,*,	nGT*t}
+                      {	nAT*t,	nCT*t,	nGT*t,*}};
                     
    Model 	revQ = (revRateMatrix, 	Freqs);
 
    ExecuteCommands           ("Tree 	tree = " + Eval("Format (^tree_id,1,1)"));
    LikelihoodFunction 	LF = (nucs,	tree);
    Optimize                  (res,LF);
+   res = {"AC": nAC, "AT": nAT, "CG": nCG, "CT": nCT, "GT": nGT};
+   res ["lengths"] = extractBranchLengthsFromTreeAsDict (&tree);
    DeleteObject              (LF);
    
-   return {"AC": AC, "AT": AT, "CG": CG, "CT": CT, "GT": GT, "lengths": extractBranchLengthsFromTreeAsDict (&tree)};
+   return res;
 }
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function killZeroBranchesBasedOnNucFit (dataset_id, string) {
+
+   //fprintf (stdout, "CHECK 1\n");
+
+	
+
+   DataSetFilter nucs = CreateFilter          (^dataset_id, 1);
+
+   //fprintf (stdout, "CHECK 2\n");
+
+   HarvestFrequencies   (Freqs, 	nucs, 1,1,1);
+
+   //fprintf (stdout, "CHECK 3\n");
+
+   global 	nAC = 1;
+   global 	nAT = 1;
+   global 	nCG = 1;
+   global 	nCT = 1;
+   global 	nGT = 1;
+    
+   revRateMatrix =  {{*,	nAC*t,t,	nAT*t}
+                      {	nAC*t,*,	nCG*t,	nCT*t}
+                      {t,	nCG*t,*,	nGT*t}
+                      {	nAT*t,	nCT*t,	nGT*t,*}};
+                    
+   Model 	revQ = (revRateMatrix, 	Freqs);
+
+   //fprintf (stdout, "CHECK 4\n");
+
+   ExecuteCommands           ("Tree 	tree = " + string);
+   LikelihoodFunction 	LF = (nucs,	tree);
+   Optimize                  (res,LF);
+   
+   
+   treeAVL = tree ^ 0;
+   
+   res = {"AC": nAC, "AT": nAT, "CG": nCG, "CT": nCT, "GT": nGT};
+   res [ "_collapsed_tree" ]  =  KillInternalZeroBranchLengths (treeAVL);
+   
+   
+   //DeleteObject              (LF);
+   
+   return res;
+}
+

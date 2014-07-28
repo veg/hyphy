@@ -1722,6 +1722,90 @@ node<long>* _TreeTopology::FindNodeByName (_String* match)
 
 //_______________________________________________________________________________________________
 
+void    _TreeTopology::RemoveANode (_PMathObj nodeName) {
+    if (nodeName->ObjectClass () == STRING) {
+        _FString         * removeMe     = (_FString*)nodeName;
+        
+        node<long>* removeThisNode = FindNodeByName (removeMe->theString),
+                  * parentOfRemoved;
+        
+        if (!removeThisNode || ( parentOfRemoved = removeThisNode->get_parent()) == nil) {
+            WarnError ("Node not found in the tree or is the root node call to _TreeTopology::RemoveANode");
+            return;
+        }
+        
+        _SimpleList cleanIndices;
+        
+        while (parentOfRemoved) {
+            cleanIndices << removeThisNode->in_object;
+            parentOfRemoved->detach_child(removeThisNode->get_child_num());
+            
+            _String node_name;
+            GetNodeName (removeThisNode, node_name);
+            //printf ("[RemoveANode %ld %s]\n", removeThisNode->in_object, node_name.getStr());
+            
+            for (int orphans = 1; orphans <= removeThisNode->get_num_nodes(); orphans++) {
+                parentOfRemoved->add_node(*removeThisNode->go_down(orphans));
+            }
+            delete removeThisNode;
+            removeThisNode = parentOfRemoved;
+            parentOfRemoved = parentOfRemoved->get_parent();
+            
+            if (parentOfRemoved == nil && removeThisNode->get_num_nodes() == 1) {
+                removeThisNode = removeThisNode->go_down (1);
+                parentOfRemoved = removeThisNode->get_parent();
+               
+            }
+            
+        }
+        
+        cleanIndices.Sort();
+        flatTree.DeleteList(cleanIndices);
+        flatCLeaves.DeleteList(cleanIndices);
+        
+        
+        
+        cleanIndices << flatTree.lLength + 16L; // this is so that we don't get a index error thrown at GetElement
+        
+        //printf ("%s\n", ((_String*)cleanIndices.toStr())->getStr());
+        
+        _GrowingVector* blengths = ((_GrowingVector*)compExp);
+        long offset = 0L;
+        _SimpleList     oldToNew;
+        
+        for (long k = 0L; k < blengths->used; k++) {
+            if (k == cleanIndices.GetElement(offset)){
+                oldToNew << -1;
+                offset++;
+            } else {
+                blengths->theData[k-offset] = blengths->theData[k];
+                oldToNew << k - offset;
+            }
+        }
+        
+        blengths->used -= offset - 1;
+        DepthWiseT(true);
+        
+        //printf ("%s\n", ((_String*)oldToNew.toStr())->getStr());
+
+        _String       nn;
+        while (currentNode) {
+            //printf ("[%ld->%ld]\n", currentNode->in_object, oldToNew.GetElement(currentNode->in_object));
+            currentNode->in_object = oldToNew.GetElement(currentNode->in_object);
+            DepthWiseT();
+        }
+       
+        
+        
+    } else {
+        WarnError ("An invalid argument (not a string) supplied to _TreeTopology::RemoveANode");
+    }
+
+}
+
+
+//_______________________________________________________________________________________________
+
 void    _TreeTopology::AddANode (_PMathObj newNode)
 {
     if (newNode->ObjectClass () == ASSOCIATIVE_LIST) {
@@ -2680,6 +2764,14 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExe
             return Sum();
         }
         AddANode (p);
+        return new _Constant (0.0);
+        break;
+
+    case HY_OP_CODE_SUB: // +
+        if (!p) {
+            return new _MathObject;
+        }
+        RemoveANode (p);
         return new _Constant (0.0);
         break;
 
