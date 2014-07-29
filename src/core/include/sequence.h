@@ -51,6 +51,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define FULLALPHABET 32
 #define FULLNUCLALPHABET 16
 
+/*
 //_________________________________________________________
 class _CString : public _String // compressible string
                  {
@@ -111,6 +112,7 @@ private:
 
   unsigned char compressionType;
 };
+*/
 
 //_________________________________________________________
 

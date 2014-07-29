@@ -52,161 +52,14 @@ void initFullAlphabet(void) {
 }
 
 //______________________________________________________________________________
-_CString::_CString(void) {
-  allocatedSpace = 0;
-  if (FullAlphabet.sLength == 0) {
-    initFullAlphabet();
+inline unsigned int GetNextCode(_String &s, long &p) {
+  if (s.s_data[p] < 0) {
+    unsigned int val = s.s_data[p++] & 0x7f;
+    val *= 256;
+    val += (unsigned char)(s.s_data[p++]);
+    return val;
   }
-  compressionType = NOCOMPRESSION;
-}
-
-//______________________________________________________________________________
-_CString::_CString(_String &s) : _String(s) {
-  allocatedSpace = 0;
-  if (FullAlphabet.sLength == 0) {
-    initFullAlphabet();
-  }
-  compressionType = NOCOMPRESSION;
-}
-
-//______________________________________________________________________________
-_CString::_CString(char *s) : _String(s) {
-  allocatedSpace = 0;
-  if (FullAlphabet.sLength == 0) {
-    initFullAlphabet();
-  }
-  compressionType = NOCOMPRESSION;
-}
-
-//______________________________________________________________________________
-_CString::_CString(char s) : _String(s) {
-  allocatedSpace = 0;
-  if (FullAlphabet.sLength == 0) {
-    initFullAlphabet();
-  }
-  compressionType = NOCOMPRESSION;
-}
-
-//______________________________________________________________________________
-_CString::_CString(unsigned long sL, bool flag) {
-  if (flag) {
-    sLength = 0;
-    if (sL < storageIncrement) {
-      sL = storageIncrement;
-    }
-    sData = (char *)MemAllocate(sL * sizeof(char));
-    allocatedSpace = sL;
-    if (!sData) {
-      warnError(-108);
-    }
-  } else {
-    allocatedSpace = 0;
-    sLength = sL;
-    sData = (char *)MemAllocate(sL + 1);
-    if (sData) {
-      memset(sData, 0, sL + 1);
-    } else {
-      sLength = 0;
-    }
-  }
-  compressionType = NOCOMPRESSION;
-}
-
-//______________________________________________________________________________
-_CString::~_CString(void) {}
-
-//______________________________________________________________________________
-long _CString::FreeUpMemory(long) {
-  if (!IsCompressed()) {
-    _Parameter comprratio = BestCompress(NUCLEOTIDEALPHABET);
-    if (comprratio == 1) {
-      comprratio = BestCompress(CODONALPHABET);
-    }
-    return sLength * (1 / comprratio - 1);
-  }
-  return 0;
-
-}
-
-//______________________________________________________________________________
-// append operator
-void _CString::Finalize(void) {
-  sData = MemReallocate(sData, sLength + 1);
-
-  if (sData) {
-    sData[sLength] = 0;
-  }
-
-  allocatedSpace = 0;
-}
-
-//______________________________________________________________________________
-// append operator
-void _CString::operator<<(char c) {
-  if (allocatedSpace <= sLength) {
-    unsigned long incBy =
-        ((storageIncrement * 8 > sLength) ? storageIncrement
-                                          : (sLength / 8 + 1));
-
-    allocatedSpace += incBy;
-
-    sData = (char *)MemReallocate((char *)sData, allocatedSpace * sizeof(char));
-
-    if (!sData) {
-      checkPointer(sData);
-    }
-  }
-
-  sData[sLength++] = c;
-}
-
-//______________________________________________________________________________
-// append operator
-void _CString::operator<<(_String *s) {
-  if (s && s->sLength) {
-    if (allocatedSpace < sLength + s->sLength) {
-      unsigned long incBy = sLength + s->sLength - nInstances;
-
-      if (incBy < storageIncrement) {
-        incBy = storageIncrement;
-      }
-
-      if (incBy < sLength / 8) {
-        incBy = sLength / 8;
-      }
-
-      allocatedSpace += incBy;
-
-      sData = (char *)MemReallocate((char *)sData, allocatedSpace * sizeof(char));
-
-      if (!sData) {
-        checkPointer(sData);
-      }
-    }
-
-    memcpy(sData + sLength, s->sData, s->sLength);
-    sLength += s->sLength;
-  }
-}
-
-//______________________________________________________________________________
-BaseRef _CString::makeDynamic(void) {
-  _CString *res = (_CString *)new _CString;
-  checkPointer(res);
-
-  _String::Duplicate(res);
-
-  res->compressionType = compressionType;
-
-  return res;
-
-}
-
-//______________________________________________________________________________
-void _CString::Duplicate(BaseRef res) {
-  _String::Duplicate(res);
-
-  ((_CString *)res)->compressionType = compressionType;
+  return s[p++];
 }
 
 //______________________________________________________________________________
@@ -235,6 +88,167 @@ void WriteBitsToString(_String &s, long &bitAt, char lengthToWrite) {
   bitAt += lengthToWrite;
 }
 
+
+/*
+//______________________________________________________________________________
+_CString::_CString(void) {
+  allocatedSpace = 0;
+  if (FullAlphabet.s_length == 0) {
+    initFullAlphabet();
+  }
+  compressionType = NOCOMPRESSION;
+}
+
+//______________________________________________________________________________
+_CString::_CString(_String &s) : _String(s) {
+  allocatedSpace = 0;
+  if (FullAlphabet.s_length == 0) {
+    initFullAlphabet();
+  }
+  compressionType = NOCOMPRESSION;
+}
+
+//______________________________________________________________________________
+_CString::_CString(char *s) : _String(s) {
+  allocatedSpace = 0;
+  if (FullAlphabet.s_length == 0) {
+    initFullAlphabet();
+  }
+  compressionType = NOCOMPRESSION;
+}
+
+//______________________________________________________________________________
+_CString::_CString(char s) : _String(s) {
+  allocatedSpace = 0;
+  if (FullAlphabet.s_length == 0) {
+    initFullAlphabet();
+  }
+  compressionType = NOCOMPRESSION;
+}
+
+//______________________________________________________________________________
+_CString::_CString(unsigned long sL, bool flag) {
+  if (flag) {
+    s_length = 0;
+    if (sL < storageIncrement) {
+      sL = storageIncrement;
+    }
+    s_data = (char *)MemAllocate(sL * sizeof(char));
+    allocatedSpace = sL;
+    if (!s_data) {
+      warnError(-108);
+    }
+  } else {
+    allocatedSpace = 0;
+    s_length = sL;
+    s_data = (char *)MemAllocate(sL + 1);
+    if (s_data) {
+      memset(s_data, 0, sL + 1);
+    } else {
+      s_length = 0;
+    }
+  }
+  compressionType = NOCOMPRESSION;
+}
+
+//______________________________________________________________________________
+_CString::~_CString(void) {}
+
+//______________________________________________________________________________
+long _CString::FreeUpMemory(long) {
+  if (!IsCompressed()) {
+    _Parameter comprratio = BestCompress(NUCLEOTIDEALPHABET);
+    if (comprratio == 1) {
+      comprratio = BestCompress(CODONALPHABET);
+    }
+    return s_length * (1 / comprratio - 1);
+  }
+  return 0;
+
+}
+
+//______________________________________________________________________________
+// append operator
+void _CString::Finalize(void) {
+  s_data = MemReallocate(s_data, s_length + 1);
+
+  if (s_data) {
+    s_data[s_length] = 0;
+  }
+
+  allocatedSpace = 0;
+}
+
+//______________________________________________________________________________
+// append operator
+void _CString::operator<<(char c) {
+  if (allocatedSpace <= s_length) {
+    unsigned long incBy =
+        ((storageIncrement * 8 > s_length) ? storageIncrement
+                                          : (s_length / 8 + 1));
+
+    allocatedSpace += incBy;
+
+    s_data = (char *)MemReallocate((char *)s_data, allocatedSpace * sizeof(char));
+
+    if (!s_data) {
+      checkPointer(s_data);
+    }
+  }
+
+  s_data[s_length++] = c;
+}
+
+//______________________________________________________________________________
+// append operator
+void _CString::operator<<(_String *s) {
+  if (s && s->s_length) {
+    if (allocatedSpace < s_length + s->s_length) {
+      unsigned long incBy = s_length + s->s_length - nInstances;
+
+      if (incBy < storageIncrement) {
+        incBy = storageIncrement;
+      }
+
+      if (incBy < s_length / 8) {
+        incBy = s_length / 8;
+      }
+
+      allocatedSpace += incBy;
+
+      s_data = (char *)MemReallocate((char *)s_data, allocatedSpace * sizeof(char));
+
+      if (!s_data) {
+        checkPointer(s_data);
+      }
+    }
+
+    memcpy(s_data + s_length, s->s_data, s->s_length);
+    s_length += s->s_length;
+  }
+}
+
+//______________________________________________________________________________
+BaseRef _CString::makeDynamic(void) {
+  _CString *res = (_CString *)new _CString;
+  checkPointer(res);
+
+  _String::Duplicate(res);
+
+  res->compressionType = compressionType;
+
+  return res;
+
+}
+
+//______________________________________________________________________________
+void _CString::Duplicate(BaseRef res) {
+  _String::Duplicate(res);
+
+  ((_CString *)res)->compressionType = compressionType;
+}
+*/
+
 //______________________________________________________________________________
 
 /*
@@ -258,6 +272,7 @@ void    PrintStringBitWise (char* str, long theL)
 }
 */
 
+/*
 //______________________________________________________________________________
 _String *_CString::SelectAlpha(unsigned char alpha) {
   alpha &= 0xf0;
@@ -277,7 +292,7 @@ _Parameter _CString::FrequencyCompress(unsigned char theAlpha, bool doit) {
 
   _String *theAlphabet = SelectAlpha(theAlpha);
 
-  if ((*theAlphabet).sLength > 31) {
+  if ((*theAlphabet).s_length > 31) {
     return 1; // can't do much - the alphabet is too large
   }
 
@@ -292,12 +307,12 @@ _Parameter _CString::FrequencyCompress(unsigned char theAlpha, bool doit) {
        freqs[j] = 0, codeLength[j] = 0, maxOccurences[j] = 0, j++) {
   }
 
-  for (j = 0; j < sLength; j++) {
-    freqs[sData[j]]++;
+  for (j = 0; j < s_length; j++) {
+    freqs[s_data[j]]++;
   }
 
   t = 0;
-  for (j = 0; j < theAlphabet->sLength; j++) {
+  for (j = 0; j < theAlphabet->s_length; j++) {
     freqs[NuclAlphabet[j]] *= -1;
   }
 
@@ -320,10 +335,10 @@ _Parameter _CString::FrequencyCompress(unsigned char theAlpha, bool doit) {
 
   // now build the prefix code for the alphabet
   // fisrt find four most frequently occurring symbols
-  for (j = 0; j < (*theAlphabet).sLength; j++) {
-    for (long k = 0; k < (*theAlphabet).sLength; k++)
+  for (j = 0; j < (*theAlphabet).s_length; j++) {
+    for (long k = 0; k < (*theAlphabet).s_length; k++)
       if (freqs[(*theAlphabet)[j]] >= maxOccurences[k]) {
-        for (long l = (*theAlphabet).sLength - 1; l >= k + 1; l--) {
+        for (long l = (*theAlphabet).s_length - 1; l >= k + 1; l--) {
           maxOccurences[l] = maxOccurences[l - 1];
           locationsOfMaxSymbols[l] = locationsOfMaxSymbols[l - 1];
         }
@@ -335,13 +350,13 @@ _Parameter _CString::FrequencyCompress(unsigned char theAlpha, bool doit) {
 
   // compute efficiency
   //j will store the predicted bit length of the compressed string
-  j = (*theAlphabet).sLength * 5; // translation table size
+  j = (*theAlphabet).s_length * 5; // translation table size
   j = 8 * ((j % 8) ? (j / 8 + 1) : j / 8);
 
   // we are also ready to build the code table
-  for (long k = 0; k < (*theAlphabet).sLength; k++) {
+  for (long k = 0; k < (*theAlphabet).s_length; k++) {
     long l;
-    for (l = 0; l < (*theAlphabet).sLength; l++)
+    for (l = 0; l < (*theAlphabet).s_length; l++)
       if ((*theAlphabet)[k] == locationsOfMaxSymbols[l]) {
         j += (l + 1) * freqs[(*theAlphabet)[k]];
         codeLength[locationsOfMaxSymbols[l]] = l + 1;
@@ -352,7 +367,7 @@ _Parameter _CString::FrequencyCompress(unsigned char theAlpha, bool doit) {
   //  if (j>Length()*8) return 1;
   // no compression could be performed
   if (!doit) {
-    return j / 8.0 / sLength;
+    return j / 8.0 / s_length;
   }
 
   _String result(
@@ -363,7 +378,7 @@ _Parameter _CString::FrequencyCompress(unsigned char theAlpha, bool doit) {
   t = 0;          // current position in the string
 
   //first we must write out the encoding table as 5 bits of length per each
-  for (j = 0; j < (*theAlphabet).sLength; j++, csize += 5, t = csize / 8) {
+  for (j = 0; j < (*theAlphabet).s_length; j++, csize += 5, t = csize / 8) {
     long leftover = 8 - csize % 8;
     if (leftover >= 5) {
       unsigned char value = result[t];
@@ -395,8 +410,8 @@ _Parameter _CString::FrequencyCompress(unsigned char theAlpha, bool doit) {
   t *= 8;
   //t+=8;
 
-  for (j = 0; j < sLength; j++) {
-    WriteBitsToString(result, t, codeLength[(unsigned char) sData[j]]);
+  for (j = 0; j < s_length; j++) {
+    WriteBitsToString(result, t, codeLength[(unsigned char) s_data[j]]);
   }
 
   // pad the rest of the last byte in the string by ones
@@ -409,7 +424,7 @@ _Parameter _CString::FrequencyCompress(unsigned char theAlpha, bool doit) {
 
   // yahoo! we are done - store compression flag and replace the string with
   // compressed string
-  _Parameter factor = result.sLength / (_Parameter) sLength;
+  _Parameter factor = result.s_length / (_Parameter) s_length;
   if (factor < 1) { // compression took place
     DuplicateErasing(&result);
     SetFlag(FREQCOMPRESSION);
@@ -427,7 +442,7 @@ _String *_CString::DecompressFrequency(void) {
   if (!IsFlag(FREQCOMPRESSION)) {
     return nil; // wrong compression type nothing to do
   }
-  unsigned char *codeMaps = new unsigned char[(*theAlphabet).sLength];
+  unsigned char *codeMaps = new unsigned char[(*theAlphabet).s_length];
 
   if (!codeMaps) {
     warnError(-108); // no memory
@@ -439,9 +454,9 @@ _String *_CString::DecompressFrequency(void) {
   i = 0;
   t = 0;
 
-  for (j = 0; j < (*theAlphabet).sLength; j++, i += 5, t = i / 8) {
+  for (j = 0; j < (*theAlphabet).s_length; j++, i += 5, t = i / 8) {
     long leftover = 8 - i % 8;
-    unsigned char value = sData[t];
+    unsigned char value = s_data[t];
     if (leftover >= 5) {
       switch (leftover) {
       case 5:
@@ -458,9 +473,9 @@ _String *_CString::DecompressFrequency(void) {
       }
 
     } else {
-      value = ((unsigned char) sData[t]) % realPowersOf2[leftover] *
+      value = ((unsigned char) s_data[t]) % realPowersOf2[leftover] *
               realPowersOf2[5 - leftover];
-      value += ((unsigned char) sData[t + 1]) / realPowersOf2[3 + leftover];
+      value += ((unsigned char) s_data[t + 1]) / realPowersOf2[3 + leftover];
     }
     codeMaps[value - 1] = j;
   }
@@ -484,7 +499,7 @@ _String *_CString::DecompressFrequency(void) {
     l = j;                   
     while (1) {
       for (i = 8 - l % 8; i > 0; i--) {
-        if (!(sData[t] & realPowersOf2[i - 1])) {
+        if (!(s_data[t] & realPowersOf2[i - 1])) {
           break;
         }
       }
@@ -492,7 +507,7 @@ _String *_CString::DecompressFrequency(void) {
         l += (8 - i) - l % 8;
         break;
       }
-      if (t < sLength - 1) {
+      if (t < s_length - 1) {
         t++;
       } else {
         l = 0;
@@ -506,7 +521,7 @@ _String *_CString::DecompressFrequency(void) {
     l++;
     _String addOn(theAlphabet->getChar(codeMaps[l - j - 1]));
     result << &addOn;
-    if ((t = l / 8) >= sLength) {
+    if ((t = l / 8) >= s_length) {
       break;
     }
     j = l;
@@ -535,29 +550,29 @@ _Parameter _CString::LZWCompress(unsigned char theAlpha) {
 
   for (; k < 256; checkTable[k++] = 0) {
   }
-  for (k = 0; k < theAlphabet->sLength; checkTable[(*theAlphabet)[k++]] = 1) {
+  for (k = 0; k < theAlphabet->s_length; checkTable[(*theAlphabet)[k++]] = 1) {
   }
 
   // init the table
-  for (long j = 0; j < (*theAlphabet).sLength; j++) {
+  for (long j = 0; j < (*theAlphabet).s_length; j++) {
     _String a((*theAlphabet)[j]);
     theCodes.InsertElement((BaseRef) ToLZWCode(j), theTable.BinaryInsert(&a),
                            false, false);
   }
 
-  codeMax = (*theAlphabet).sLength;
+  codeMax = (*theAlphabet).s_length;
 
-  for (long p = 0; p < sLength; p++) {
-    if (!checkTable[sData[p]]) {
+  for (long p = 0; p < s_length; p++) {
+    if (!checkTable[s_data[p]]) {
       // symbol not in alphabet - can't compress
       return 1; 
     }
-    testString = curString & sData[p];
+    testString = curString & s_data[p];
     pos = theTable.BinaryFind(&testString);
     if (pos < 0) {
       pos = theTable.BinaryInsert(&testString);
       theCodes.InsertElement((BaseRef) ToLZWCode(codeMax++), pos, false, false);
-      curString = sData[p];
+      curString = s_data[p];
       long acode = theCodes(pos1);
       pos1 = theTable.BinaryFind(&curString);
       if (acode > 127) {
@@ -586,25 +601,25 @@ _Parameter _CString::LZWCompress(unsigned char theAlpha) {
   output[k] = 0;
 
   // debugging info
-  /*  _String* bs = (_String*)theTable.toStr(), *bss =
-      (_String*)theCodes.toStr();
-      printf ("\nString Table:%s\nCode Table:%s\n",bs->getStr(), bss->getStr());
-      DeleteObject(bs);
-      DeleteObject(bss);
-      for (long j=0;j<k; j++)
-      {
-          unsigned int value = output[j];
-          if (value>127)
-          {
-              value&0x7f;
-              value*=256;
-              value+=output[++j];
-          }
-          printf ("%u,",value);
-      }*/
+//      _String* bs = (_String*)theTable.toStr(), *bss =
+//      (_String*)theCodes.toStr();
+//      printf ("\nString Table:%s\nCode Table:%s\n",bs->getStr(), bss->getStr());
+//      DeleteObject(bs);
+//      DeleteObject(bss);
+//      for (long j=0;j<k; j++)
+//      {
+//          unsigned int value = output[j];
+//          if (value>127)
+//          {
+//              value&0x7f;
+//              value*=256;
+//              value+=output[++j];
+//          }
+//          printf ("%u,",value);
+//      }
   // end debugging
   output.SetLength(k + 1);
-  _Parameter factor = k / _Parameter(sLength);
+  _Parameter factor = k / _Parameter(s_length);
   if (factor < 1) {
     DuplicateErasing(&output);
     SetFlag(LZWCOMPRESSION);
@@ -612,23 +627,15 @@ _Parameter _CString::LZWCompress(unsigned char theAlpha) {
   }
   return factor;
 }
+*/
 
-//______________________________________________________________________________
-inline unsigned int GetNextCode(_String &s, long &p) {
-  if (s.sData[p] < 0) {
-    unsigned int val = s.sData[p++] & 0x7f;
-    val *= 256;
-    val += (unsigned char)(s.sData[p++]);
-    return val;
-  }
-  return s[p++];
-}
 
+/*
 //______________________________________________________________________________
 _String *_CString::DecompressLZW(void) {
   _String *theAlphabet = SelectAlpha(this->compressionType);
 
-  if (!sLength || (!IsFlag(LZWCOMPRESSION))) {
+  if (!s_length || (!IsFlag(LZWCOMPRESSION))) {
     return nil; //nothing to do!
   }
   _List theTable;
@@ -637,7 +644,7 @@ _String *_CString::DecompressLZW(void) {
   long codeMax = 0, oldCode;
 
   // init the table
-  for (long j = 0; j < (*theAlphabet).sLength; j++) {
+  for (long j = 0; j < (*theAlphabet).s_length; j++) {
     _String a((*theAlphabet)[j]);
     theTable &&(&a);
   }
@@ -648,7 +655,7 @@ _String *_CString::DecompressLZW(void) {
   //  output = output&*  (_String*)theTable(oldCode);
   output << (_String *)theTable(oldCode);
 
-  for (; p < sLength - 1;) {
+  for (; p < s_length - 1;) {
     codeMax = GetNextCode(*this, p);
     if (theTable.countitems() - 1 >= codeMax) {
       output << (_String *)theTable(codeMax);
@@ -683,7 +690,7 @@ _Parameter _CString::BestCompress(unsigned char theAlpha, long triggerSize) {
   countCompress++;
   _Parameter freqcomp = FrequencyCompress(theAlpha, false), lzwcomp = 1;
   _CString test(*this);
-  if ((triggerSize >= sLength) || (triggerSize == -1)) {
+  if ((triggerSize >= s_length) || (triggerSize == -1)) {
     lzwcomp = test.LZWCompress(theAlpha);
   }
   if ((freqcomp < 1) || (lzwcomp < 1)) { // stuff to do
@@ -714,3 +721,4 @@ _String *_CString::Decompress(void) {
   }
   return nil;
 }
+*/
