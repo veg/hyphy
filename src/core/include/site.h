@@ -40,51 +40,46 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _GENSITE_
 #define _GENSITE_
 //#pragma once
-#include "sequence.h"
-#include "legacy_parser.h"
-#include "simplelist.h"
-#include "list.h"
-#include "avllist.h"
-#include "avllistx.h"
-#include "avllistxl.h"
+#include "hy_string_buffer.h"
 #include <stdlib.h>
-
-#include "dataset.h"
-#include "translationtable.h"
-
-#define NUCLEOTIDEDATA 0
-#define CODONDATA 1
 
 class _DataSetFilter;
 
-class _Site : public _CString // compressible string
-              {
+class _Site : public _StringBuffer {
 
 public:
-  _Site(void);
   //does nothing
+  _Site(void);
+  // data constructor
   _Site(_String &);
   // data constructor
   _Site(char);
-  // data constructor
+  // reference to another site constructor
   _Site(long);
-  // reference constructor
 
-  virtual ~_Site(void);
   //destructor
+  virtual ~_Site(void);
 
-  void Complete(void); // mark this site as complete and compress it
+  // mark this site as complete
+  void Complete(void);
 
-  virtual BaseRef makeDynamic(void);
-  virtual void Duplicate(BaseRef);
+  //virtual BaseRef makeDynamic(void);
+  void duplicate(BaseRef s) {
+    _StringBuffer::duplicate(s);
+    refNo = -1;
+  }
   virtual void Clear(void);
 
-  void PrepareToUse(void); // decompress the site preparing for intensive use
-  void Archive(void);      // archive the site for later use
+  // XXX maybe remove these
+  //void PrepareToUse(void); // decompress the site preparing for intensive use
+  //void Archive(void);      // archive the site for later use
 
   long GetRefNo(void) { return refNo < 0 ? -refNo - 2 : refNo - 2; }
 
-  bool IsComplete(void) { return refNo < 0; }
+  // Complete and IsComplete are never used, but they don't make sense as
+  // implemented before refactoring, where complete is when refNo is < 0. I
+  // believe this because complete makes refNo positive always.
+  bool IsComplete(void) { return refNo > 0; }
 
   void SetRefNo(long r) { refNo = -r - 2; }
 
@@ -95,6 +90,7 @@ private:
   // has been completed
 };
 
+/*
 extern _TranslationTable defaultTranslationTable;
 
 void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool append = false,
@@ -112,5 +108,6 @@ extern _String dataFileTree, dataFileTreeString, nexusFileTreeMatrix,
     dataFilePartitionMatrix, defaultLargeFileCutoff, nexusBFBody;
 
 extern _DataSet *lastNexusDataMatrix;
+*/
 
 #endif

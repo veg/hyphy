@@ -27,17 +27,21 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "hy_globals.h"
+//#include "hy_globals.h"
+#include <site.h>
 #include "helperfunctions.h"
+#include "errorfns.h"
+//#include "sequence.h"
 
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
+#include "hy_string_buffer.h"
+#include <string.h> // for memcpy
+//#include <ctype.h>
+//#include <stdlib.h>
 
-#include "likefunc.h"
-#include "datasetfilter.h"
-#include "executionlist.h"
-#include "math.h"
+//#include "likefunc.h"
+//#include "datasetfilter.h"
+//#include "executionlist.h"
+//#include "math.h"
 
 #if !defined __UNIX__ || defined __HEADLESS__
 #include "preferences.h"
@@ -54,6 +58,7 @@ _String dataFileTree("IS_TREE_PRESENT_IN_DATA"),
 
 //______________________________________________________________________________
 /* function declarations */
+/*
 void checkTTStatus(FileState *fs);
 void processCommand(_String *s, FileState *fs);
 void FilterRawString(_String &s, FileState *fs, _DataSet &ds);
@@ -64,25 +69,26 @@ bool SkipLine(_String &theLine, FileState *fS);
 void TrimPhylipLine(_String &CurrentLine, _DataSet &ds);
 void ProcessTree(FileState *, FILE *, _String &);
 void ReadNexusFile(FileState &fState, FILE *f, _DataSet &result);
+*/
 
 //______________________________________________________________________________
-_Site::_Site(void) : _CString(16, true) { refNo = -1; }
+_Site::_Site(void) : _StringBuffer(16UL) { refNo = -1; }
 
 //______________________________________________________________________________
-_Site::_Site(_String &s) : _CString(s.sLength, true) {
+_Site::_Site(_String &s) : _StringBuffer(s.s_length) {
   refNo = -1;
   (*this) << &s;
 }
 
 //______________________________________________________________________________
-_Site::_Site(char s) : _CString(16, true) {
+_Site::_Site(char s) : _StringBuffer(16UL) {
   refNo = -1;
   (*this) << s;
 }
 
 //______________________________________________________________________________
 _Site::_Site(long s)
-    //:_CString (1, true)
+    //:_String (1, true)
     {
   SetRefNo(s);
 }
@@ -91,62 +97,78 @@ _Site::_Site(long s)
 _Site::~_Site(void) {}
 
 //______________________________________________________________________________
+// XXX Finalize no longer exists
 void _Site::Complete(void) {
+  /*
   if (refNo == -1) {
     _String::Finalize();
   }
+  */
 
   refNo = refNo < 0 ? -refNo : refNo;
 }
 
+//______________________________________________________________________________
+// It isn't immediately obvious that reseetting the refNo is necessary, but
+// it seems like it would be the expected behaviour
+void _Site::Clear(void) {
+  if (s_data) {
+    free(s_data);
+  }
+  initialize();
+  refNo = -1;
+  /*
+  if (s_data) {
+    free(s_data);
+    s_data = NULL;
+
+    //nInstances = 0;
+  }
+  allocatedSpace = 0;
+  s_length = 0;
+  */
+}
+
+/*
 //______________________________________________________________________________
 BaseRef _Site::makeDynamic(void) {
   _Site *r = new _Site;
   checkPointer(r);
 
   memcpy((char *)r, (char *)this, sizeof(_Site));
-  r->nInstances = 1;
-  nInstances++;
+  r->Initialize();
+  r->AddAReference();
+  //r->nInstances = 1;
+  //nInstances++;
   return r;
 }
 
 //______________________________________________________________________________
 void _Site::Duplicate(BaseRef ref) {
   _Site *s = (_Site *)ref;
-  sLength = s->sLength;
-  if (sData) {
-    free(sData);
+  s_length = s->s_length;
+  if (s_data) {
+    free(s_data);
   }
-  sData = s->sData;
+  s_data = s->s_data;
   allocatedSpace = s->allocatedSpace;
   //nInstances = ref->nInstances;
-  if (sData) {
-    /*long theLength = sLength/storageIncrement;
-    if (!sLength||sLength%storageIncrement) theLength++;
-    theLength*=storageIncrement;
-    checkPointer (sData = (char*)MemAllocate (theLength));
-    memcpy (sData, s->sData, sLength);*/
+  if (s_data) {
+//    long theLength = s_length/storageIncrement;
+//    if (!s_length||s_length%storageIncrement) theLength++;
+//    theLength*=storageIncrement;
+//    checkPointer (s_data = (char*)MemAllocate (theLength));
+//    memcpy (s_data, s->s_data, s_length);
     if (allocatedSpace) {
-      checkPointer(sData = (char *)MemAllocate(allocatedSpace * sizeof(char)));
+      checkPointer(s_data = (char *)MemAllocate(allocatedSpace * sizeof(char)));
     } else {
-      checkPointer(sData = (char *)MemAllocate(sLength * sizeof(char)));
+      checkPointer(s_data = (char *)MemAllocate(s_length * sizeof(char)));
     }
-    memcpy(sData, s->sData, sLength);
+    memcpy(s_data, s->s_data, s_length);
   }
   refNo = -1;
 }
 
-//______________________________________________________________________________
-void _Site::Clear(void) {
-  if (sData) {
-    free(sData);
-    sData = NULL;
-
-    //nInstances = 0;
-  }
-  allocatedSpace = 0;
-  sLength = 0;
-}
 
 //______________________________________________________________________________
 void _Site::PrepareToUse(void) {
@@ -165,7 +187,9 @@ void _Site::Archive(void) {
     BestCompress(NUCLEOTIDEALPHABET);
   }
 }
+*/
 
+/*
 //______________________________________________________________________________
 // reading the data set file in here
 // check whether the translation table needs to be refreshed
@@ -350,8 +374,8 @@ void ProcessTree(FileState *fState, FILE *f, _String &CurrentLine) {
   char c;
   _String treeString((unsigned long) 10, true);
   do {
-    for (i = 0; i < CurrentLine.sLength; i++) {
-      c = CurrentLine.sData[i];
+    for (i = 0; i < CurrentLine.s_length; i++) {
+      c = CurrentLine.s_data[i];
       if (!isspace(c)) {
         treeString << c;
         if (c == ')') {
@@ -365,7 +389,7 @@ void ProcessTree(FileState *fState, FILE *f, _String &CurrentLine) {
       }
     }
     ReadNextLine(f, &CurrentLine, fState, false);
-  } while (j && CurrentLine.sLength);
+  } while (j && CurrentLine.s_length);
 
   if (j) {
     _String errMsg(
@@ -390,7 +414,7 @@ long ProcessLine(_String &s, FileState *fs, _DataSet &ds) {
 
   for (long l = 0; l < sL; l++) {
     // see if it is a legal char
-    char c = toupper(s.sData[l]);
+    char c = toupper(s.s_data[l]);
     if (fs->translationTable->IsCharLegal(c)) { 
       if (fs->curSpecies == 0) {                
         // add new column
@@ -424,19 +448,19 @@ long ProcessLine(_String &s, FileState *fs, _DataSet &ds) {
 
           (*newS) << c;
 
-          /*long rN = ds.dsh->incompletePatterns->Find (newS);
-
-                    if (rN>=0)
-                    {
-                        rN =  ds.dsh->incompletePatterns->GetXtra
-          (rN);
-                        ds.theFrequencies[rN]++;
-                        newS->Clear();
-                        newS->SetRefNo(rN);
-                        ds.theFrequencies << 0;
-                    }
-                    else
-                    {*/
+//          long rN = ds.dsh->incompletePatterns->Find (newS);
+//
+//                    if (rN>=0)
+//                    {
+//                        rN =  ds.dsh->incompletePatterns->GetXtra
+//          (rN);
+//                        ds.theFrequencies[rN]++;
+//                        newS->Clear();
+//                        newS->SetRefNo(rN);
+//                        ds.theFrequencies << 0;
+//                    }
+//                    else
+//                    {
           ds.theFrequencies << 1;
           newS->SetRefNo(-1);
           //}
@@ -529,7 +553,7 @@ void ISelector(FileState &fState, _String &CurrentLine, _DataSet &result) {
 //______________________________________________________________________________
 bool SkipLine(_String &theLine, FileState *fS) {
 
-  if (theLine.sData[0] == '/' && theLine.sData[1] == '/') {
+  if (theLine.s_data[0] == '/' && theLine.s_data[1] == '/') {
     return true;
   }
 
@@ -555,7 +579,7 @@ void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool, bool upCase) {
     lastc = fgetc(fp);
   } else {
     lastc =
-        fs->pInSrc < fs->theSource->sLength ? fs->theSource->sData[fs->pInSrc++]
+        fs->pInSrc < fs->theSource->s_length ? fs->theSource->s_data[fs->pInSrc++]
                                             : 0;
   }
 
@@ -570,7 +594,7 @@ void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool, bool upCase) {
     else
       while (lastc && lastc != 10 && lastc != 13) {
         tempBuffer << lastc;
-        lastc = fs->theSource->sData[fs->pInSrc++];
+        lastc = fs->theSource->s_data[fs->pInSrc++];
       }
   } else {
     if (upCase) {
@@ -578,7 +602,7 @@ void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool, bool upCase) {
     }
 
     while (((fp && (!feof(fp))) ||
-            (fs->theSource && (fs->pInSrc <= fs->theSource->sLength))) &&
+            (fs->theSource && (fs->pInSrc <= fs->theSource->s_length))) &&
            lastc != 10 && lastc != 13) {
 
       if (lastc == '[') {
@@ -606,9 +630,9 @@ void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool, bool upCase) {
         }
       } else {
         if (upCase) {
-          lastc = toupper(fs->theSource->sData[fs->pInSrc++]);
+          lastc = toupper(fs->theSource->s_data[fs->pInSrc++]);
         } else {
-          lastc = fs->theSource->sData[fs->pInSrc++];
+          lastc = fs->theSource->s_data[fs->pInSrc++];
         }
       }
 
@@ -622,8 +646,8 @@ void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool, bool upCase) {
   tempBuffer.Finalize();
 
   if ((fp && feof(fp)) ||
-      (fs->theSource && fs->pInSrc >= fs->theSource->sLength))
-    if (tempBuffer.sLength == 0) {
+      (fs->theSource && fs->pInSrc >= fs->theSource->s_length))
+    if (tempBuffer.s_length == 0) {
       *s = "";
       return;
     }
@@ -631,19 +655,19 @@ void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool, bool upCase) {
   if (s->nInstances > 1) {
     *s = tempBuffer;
   } else {
-    Ptr saveData = s->sData;
-    s->sData = tempBuffer.sData;
-    tempBuffer.sData = saveData;
+    Ptr saveData = s->s_data;
+    s->s_data = tempBuffer.s_data;
+    tempBuffer.s_data = saveData;
 
-    s->sLength = tempBuffer.sLength;
+    s->s_length = tempBuffer.s_length;
   }
 
   if (SkipLine(*s, fs)) {
     ReadNextLine(fp, s, fs, false, upCase);
   }
 
-  if (s->sLength && s->sData[s->sLength - 1] == '\n') {
-    s->Trim(0, s->sLength - 2);
+  if (s->s_length && s->s_data[s->s_length - 1] == '\n') {
+    s->Trim(0, s->s_length - 2);
   }
 }
 
@@ -721,7 +745,7 @@ _DataSet *ReadDataSetFile(FILE *f, char execBF, _String *theS, _String *bfName,
       fileLength = ftell(f);
       rewind(f);
     } else {
-      fileLength = theS->sLength;
+      fileLength = theS->s_length;
     }
 
 #ifdef __HYPHYMPI__
@@ -733,7 +757,7 @@ _DataSet *ReadDataSetFile(FILE *f, char execBF, _String *theS, _String *bfName,
   CurrentLine = empty;
 
   ReadNextLine(f, &CurrentLine, &fState);
-  if (!CurrentLine.sLength) {
+  if (!CurrentLine.s_length) {
     CurrentLine = "Empty File Encountered By ReadDataSet.";
     WarnError(CurrentLine);
     return result;
@@ -744,7 +768,7 @@ _DataSet *ReadDataSetFile(FILE *f, char execBF, _String *theS, _String *bfName,
     } else {
       long i, j, k, filePosition = -1, saveSpecExpected;
       char c;
-      while (CurrentLine.sLength) { // stuff to do
+      while (CurrentLine.s_length) { // stuff to do
                                     // check if the line has a command in it
 #ifdef __HYPHYMPI__
         if (_hy_mpi_node_rank == 0) {
@@ -835,7 +859,7 @@ _DataSet *ReadDataSetFile(FILE *f, char execBF, _String *theS, _String *bfName,
                     (fState.totalSitesRead >= fState.totalSitesExpected)) {
                   // reached the end of the data - see maybe there is a tree
                   ReadNextLine(f, &CurrentLine, &fState);
-                  if (CurrentLine.sLength) {
+                  if (CurrentLine.s_length) {
                     if (CurrentLine.FirstNonSpace() == '(') { 
                       // could be a tree string
                       ProcessTree(&fState, f, CurrentLine);
@@ -890,7 +914,7 @@ _DataSet *ReadDataSetFile(FILE *f, char execBF, _String *theS, _String *bfName,
                   if (fState.totalSpeciesExpected > saveSpecExpected) {
                     // reached the end of the data - see maybe there is a tree
                     ReadNextLine(f, &CurrentLine, &fState);
-                    if (CurrentLine.sLength) {
+                    if (CurrentLine.s_length) {
                       if (CurrentLine.FirstNonSpace() == '(') { 
                         // could be a tree string
                         ProcessTree(&fState, f, CurrentLine);
@@ -910,7 +934,7 @@ _DataSet *ReadDataSetFile(FILE *f, char execBF, _String *theS, _String *bfName,
           // now handle raw data case
           if (fState.fileType == 2) { // raw data
             FilterRawString(CurrentLine, &fState, (*result));
-            if (CurrentLine.sLength) {
+            if (CurrentLine.s_length) {
               break;
             }
             if (ProcessLine(CurrentLine, &fState, (*result))) {
@@ -935,8 +959,8 @@ _DataSet *ReadDataSetFile(FILE *f, char execBF, _String *theS, _String *bfName,
               }
               fState.totalSpeciesExpected++;
               CurrentLine.Trim(CurrentLine.FirstNonSpaceIndex(1, -1, 1), -1);
-              if ((CurrentLine.sData[0] == '#') ||
-                  (CurrentLine.sData[0] == '>')) {
+              if ((CurrentLine.s_data[0] == '#') ||
+                  (CurrentLine.s_data[0] == '>')) {
                 CurrentLine =
                     _String("Species") & _String(fState.totalSpeciesExpected);
               }
@@ -1035,9 +1059,9 @@ _DataSet *ReadDataSetFile(FILE *f, char execBF, _String *theS, _String *bfName,
     }
 
   }
-  if (nexusBFBody.sLength) {
+  if (nexusBFBody.s_length) {
     if (execBF == 1) {
-      lastNexusDataMatrix = result;
+      lastNexus_dataMatrix = result;
 
       long bfl = batchLanguageFunctions.lLength;
 
@@ -1097,7 +1121,7 @@ bool StoreADataSet(_DataSet *ds, _String *setName) {
         existingDS->GetTT() != ds->GetTT();
 
     for (long dfIdx = 0; dfIdx < dataSetFilterNamesList.lLength; dfIdx++)
-      if (((_String *)dataSetFilterNamesList(dfIdx))->sLength) {
+      if (((_String *)dataSetFilterNamesList(dfIdx))->s_length) {
         _DataSetFilter *aDF = _HY2DATASETFILTER (dataSetFilterList(dfIdx));
         if (aDF->GetData() == existingDS) {
           if (isDifferent) {
@@ -1119,3 +1143,4 @@ bool StoreADataSet(_DataSet *ds, _String *setName) {
   CheckReceptacleAndStore(*setName & ".unique_sites", empty, false, new _Constant(ds->NoOfUniqueColumns()), false);
   return true;
 }
+*/
