@@ -56,6 +56,8 @@ class _testPayload {
   
   bool operator == (const _testPayload & o) const { return data == o.data;} 
   
+  operator unsigned long (void) {return data;}
+
   unsigned long data, unused;
 };
 
@@ -86,6 +88,21 @@ protected:
     // before the destructor).
     
   }
+  
+  _StringBuffer dump_to_stream_as_longs (const _hyList <DATA>& data) {
+    _StringBuffer result;
+    char buffer [256];
+    result << '[';
+    for (unsigned long item = 0UL; item < data.countitems(); item++) {
+      if (item) {
+        result << ',';
+      }
+      snprintf(buffer,255,"%lu", (unsigned long)data.AtIndex (item));
+      result << buffer;
+    }
+    result << ']';
+    return result;
+  } 
 
 public:
   // Per-test-case set-up.
@@ -235,20 +252,20 @@ TYPED_TEST_P (_hyListTest, FindAddDelete) {
   EXPECT_EQ (list.countitems()-2, list2.countitems()) << "Popping two elements did not shoren the list by two";
   
   list2.Clear();
-  for (long i = 0L; i < 3*HY_LIST_ALLOCATION_CHUNK; i++) {
+  for (unsigned long i = 0L; i < 3*HY_LIST_ALLOCATION_CHUNK; i++) {
     list2 << (TypeParam) i;
   }
   
   list2.Delete (0, false);
-  for (long i = HY_LIST_ALLOCATION_CHUNK; i < 2*HY_LIST_ALLOCATION_CHUNK; i++) {
+  for (unsigned long i = HY_LIST_ALLOCATION_CHUNK; i < 2*HY_LIST_ALLOCATION_CHUNK; i++) {
     list2.Delete (HY_LIST_ALLOCATION_CHUNK, true);
   }
       
   EXPECT_EQ(2*HY_LIST_ALLOCATION_CHUNK-1, list2.countitems() ) << "List deletetion operation did not return the right length list";
-  for (long i = 0L; i < HY_LIST_ALLOCATION_CHUNK-1; i++) {
+  for (unsigned long i = 0L; i < HY_LIST_ALLOCATION_CHUNK-1; i++) {
     EXPECT_EQ((TypeParam)(i+1), list2.Element (i)) << "List deletion operation failed";
   }
-  for (long i = HY_LIST_ALLOCATION_CHUNK; i < 2*HY_LIST_ALLOCATION_CHUNK-1; i++) {
+  for (unsigned long i = HY_LIST_ALLOCATION_CHUNK; i < 2*HY_LIST_ALLOCATION_CHUNK-1; i++) {
     EXPECT_EQ((TypeParam)(HY_LIST_ALLOCATION_CHUNK+i+1), list2.Element (i)) << "List deletion operation failed";
   }
   
@@ -256,7 +273,7 @@ TYPED_TEST_P (_hyListTest, FindAddDelete) {
   EXPECT_EQ (list2.countitems(), list2.allocated()) << "Trim memory did not correctly trim the allocated buffer";
   
   _hyList <long> indicesToDeleteList;
-  for (long i = 0; i < HY_LIST_ALLOCATION_CHUNK - 1; i+=2) { 
+  for (unsigned long i = 0; i < HY_LIST_ALLOCATION_CHUNK - 1; i+=2) { 
     indicesToDeleteList.append (i);
   }
   indicesToDeleteList << list2.countitems()-1;
@@ -267,7 +284,7 @@ TYPED_TEST_P (_hyListTest, FindAddDelete) {
   list2.DeleteList (&indicesToDeleteList); 
   indicesToDeleteList.Clear();
 
-  for (long i = 0; i < list2.countitems(); i++) {
+  for (unsigned long i = 0; i < list2.countitems(); i++) {
     EXPECT_EQ ((TypeParam)(i < run1 ? 2*(i+1) : 2*HY_LIST_ALLOCATION_CHUNK + (i-run1) + 1) , list2.Element (i)) << "DeleteList did not correctly delete the elements";
     indicesToDeleteList << i;
   }
@@ -282,7 +299,8 @@ TYPED_TEST_P (_hyListTest, FindAddDelete) {
 
 TYPED_TEST_P (_hyListTest, InPlaceOperations) {
   _hyList <TypeParam> list,
-                      list2;
+                      list2,
+                      list3;
                       
   for (long i = 0L; i < 100L; i++) {
     list.append ((TypeParam) i);
@@ -304,11 +322,20 @@ TYPED_TEST_P (_hyListTest, InPlaceOperations) {
   list2 = list;
   list.Displace (10,20,2);
   EXPECT_FALSE (list == list2) << "Displace produced a list equal to the original";
-  list.Displace (12,22,-2);
-  EXPECT_TRUE (list == list2) << "Displace roundtrip failed";
+  list3 = list;
+  list3.Displace (12,22,-2);
+  EXPECT_TRUE (list2 == list3) << "Displace roundtrip failed\n" << this->dump_to_stream_as_longs (list2).getStr() 
+  << "\n" << this->dump_to_stream_as_longs (list).getStr()
+  << "\n" << this->dump_to_stream_as_longs (list3).getStr();
+  list = list3;
   list.Displace (90,95,10);
-  list.Displace (96,HY_LIST_INSERT_AT_END,-6);
-  EXPECT_TRUE (list == list2) << "Displace roundtrip failed when hitting the right edge";
+  list3 = list;
+  list3.Displace (96,HY_LIST_INSERT_AT_END,-6);
+  EXPECT_TRUE (list2 == list3) << "Displace roundtrip failed when hitting the right edge" <<
+  "\n" << this->dump_to_stream_as_longs (list2).getStr() 
+  << "\n" << this->dump_to_stream_as_longs (list).getStr()
+  << "\n" << this->dump_to_stream_as_longs (list3).getStr();
+  list = list3;
   list.Displace (5,10,-20);
   list.Displace (HY_LIST_INSERT_AT_END,5,5);
   EXPECT_TRUE (list == list2) << "Displace roundtrip failed when hitting the left edge";

@@ -54,9 +54,8 @@ _hyListOrderable<PAYLOAD>::_hyListOrderable(const PAYLOAD item) : _hyList<PAYLOA
 
   //Stack copy contructor
 template<typename PAYLOAD>
-_hyListOrderable<PAYLOAD>::_hyListOrderable(const _hyListOrderable <PAYLOAD> &l, const long from, const long to) {
-  this->Initialize ();
-  this->Clone (&l, from, to);
+_hyListOrderable<PAYLOAD>::_hyListOrderable(const _hyListOrderable <PAYLOAD> &l, const long from, const long to) 
+                         : _hyList <PAYLOAD> (l, from, to) {
 }
 
   // Data constructor (variable number of long constants)

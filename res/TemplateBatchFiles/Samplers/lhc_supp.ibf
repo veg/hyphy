@@ -1,0 +1,48 @@
+thisVarValues = {SAMPLE_N,1};
+
+if (SAMPLE_LEFT + SAMPLE_RIGHT)
+{
+	SAMPLE_LEFT  = SAMPLE_N * (SAMPLE_LEFT)/(SAMPLE_LEFT+SAMPLE_RIGHT) $1;
+	SAMPLE_RIGHT = SAMPLE_N - SAMPLE_LEFT;
+
+	if (SAMPLE_LEFT)
+	{
+		if (SAMPLE_LEFT == SAMPLE_N)
+		{
+			SAMPLE_LEFT = SAMPLE_LEFT-1;
+		}
+		
+		weight = 1/SAMPLE_LEFT*(ZCDF (leftSpan/leftSTD)-ZCDF(0));
+		
+		FindRoot(z, ZCDF(x/leftSTD)-0.5-weight,x,0,leftSpan);
+		thisVarValues[SAMPLE_LEFT-1] = z;
+
+		for (ss = SAMPLE_LEFT-2; ss >= 0; ss = ss - 1)
+		{
+			FindRoot(z, ZCDF(x/leftSTD)-ZCDF(thisVarValues[ss+1]/leftSTD)-weight,x,thisVarValues[ss+1],leftSpan);
+			thisVarValues[ss] = z;
+		}
+		for (ss = SAMPLE_LEFT-1; ss >= 0; ss = ss - 1)
+		{
+			thisVarValues[ss] = currentVarValue - thisVarValues[ss];
+		}
+	}	
+	if (SAMPLE_RIGHT)
+	{
+		weight = 1/SAMPLE_RIGHT*(ZCDF (rightSpan/rightSTD)-ZCDF(0));
+		for (ss = SAMPLE_LEFT+1; ss < SAMPLE_N; ss = ss + 1)
+		{
+			FindRoot(z, ZCDF(x/rightSTD)-ZCDF(thisVarValues[ss-1]/rightSTD)-weight,x,thisVarValues[ss-1],rightSpan);
+			thisVarValues[ss] = z;
+		}
+		for (ss = SAMPLE_LEFT+1; ss < SAMPLE_N; ss = ss + 1)
+		{
+			thisVarValues[ss] += currentVarValue;
+		}
+	}	
+}
+else
+{
+	thisVarValues = thisVarValues["currentVarValue"];
+}
+thisVarValues [SAMPLE_LEFT] = currentVarValue;

@@ -180,6 +180,7 @@ public:
   */
 
   inline unsigned long countitems (void) const;
+  inline unsigned long Length     (void) const;
 
 
   /**
@@ -225,7 +226,7 @@ public:
   * @return A long
   */
   
-  virtual PAYLOAD Element(const long);
+  virtual PAYLOAD Element(const long) const;
 
   /**
   * Checks if list is identical to other list
@@ -329,14 +330,14 @@ public:
   * @return Nothing. Acts on the List object it was called from.
   */
   inline void    Swap    (const unsigned long, const unsigned long); //swap two elements
-  virtual BaseRef toStr(void);
+  virtual BaseRef toStr(void) const;
 
   /**
   * Request space for this many elements
   * @param slots The number of elements to allocate the space for
   */
   
-  void    RequestSpace(const unsigned long);
+  void    RequestSpace(const unsigned long, bool = false);
   /**
   * Trim excess memory from the list allocation 
   */

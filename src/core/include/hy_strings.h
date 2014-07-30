@@ -66,6 +66,9 @@ typedef _hyListReference <_String> _List;
 #define HY_STRING_LOCAL_DEREFERENCE 0x02
 #define HY_STRING_GLOBAL_DEREFERENCE 0x03
 
+#define HY_STRING_MOD_ADLER 65521
+
+
 class _String : public BaseObj {
 
 public:
@@ -169,7 +172,7 @@ public:
   * @sa Duplicate()
   * @sa CopyDynamicString()
   */
-  virtual void DuplicateErasing(BaseRef);
+  virtual void DuplicateErasing(BaseRefConst);
 
   /**
   * Returns the character at a specified index
@@ -181,12 +184,13 @@ public:
 
   /**
   * Sets the character of the string instance at a specified index
+  * Avoids (*string)[5] = 'e', and ignores assignments with invalid indices
   * \n Usage: string->setChar(5, 'e');
   * @param index The int location of the char to be replaced
   * @param c The character to set the location with
   * @return Nothing. Changes string instance
   */
-  void setChar(long, char);
+  void setChar(unsigned long, char);
 
   /**
   * Copies a string dynamically and deletes the original string
@@ -209,21 +213,21 @@ public:
   * Element location function
   * @see getChar()
   */
-  char operator()(unsigned long);
+  char operator()(long) const;
 
   /**
   * Sets string
   * \n\n \b Example: \code _String str = _String("hyphy"); \endcode
   * @see Duplicate()
   */
-  void operator=(_String);
+  void operator=(const _String &);
 
   /**
   * Returns the length of the string
   * \n\n \b Example: \code long l = string.Length(); \endcode
   * @return Length of string
   */
-  unsigned long Length(void);
+  unsigned long Length(void) const;
 
   /**
   * Append operator
@@ -232,7 +236,7 @@ public:
   * @return "AB"
   * @sa EscapeAndAppend()
   */
-  _String operator&(_String);
+  const _String operator&(const _String& ) const;
 
 
 
@@ -243,25 +247,25 @@ public:
   * @param s The substring to check
   * @return Returns true if string contains substring
   */
-  bool ContainsSubstring(_String &);
+  bool ContainsSubstring(const _String &) const;
 
   /**
   * Converts a good ole char*
   * \n\n \b Example: \code string.toStr(); \endcode
   */
-  virtual BaseRef toStr(void);
+  virtual BaseRef toStr(void) const;
 
   /**
   * Return good ole char*
   */
-  virtual operator const char *(void);
+  virtual operator const char *(void) const;
 
   /**
   * Returns a good ole char*
   * \n\n \b Example: \code char * new_str = string.getStr(); \endcode
   * @return Returns a good ole char*
   */
-  char *getStr(void);
+  const char *getStr(void) const;
 
   /**
   * Removes part of string that is between the two specified indices
@@ -273,7 +277,7 @@ public:
   * @sa Cut()
   * @sa Trim()
   */
-  _String Chop(long, long);
+  const _String Chop(long, long) const;
 
   /**
   * Cuts part of string that is between the two specified indices
@@ -285,7 +289,7 @@ public:
   * @sa Chop()
   * @sa Trim()
   */
-  _String Cut(long, long);
+  const _String Cut(long, long) const;
 
   /**
   *
@@ -302,13 +306,12 @@ public:
   * \n\n \b Example: \code _String("AAABBBCCC").Trim(3,5) \endcode
   * @param from The starting index to cut from
   * @param to The ending index to cut from
-  * @param softTrim If set to true, does not reallocate memory
   * @return Transforms string to "BBB"
   * @sa Cut()
   * @sa Chop()
   */
 
-  void Trim(long, long, bool = false);
+  void Trim(long, long);
 
   /**
   * Insert a char at a given position (-1 - append)
@@ -339,7 +342,7 @@ public:
   * @return "AAAZZZCCC"
   */
 
-  _String Replace(_String, _String, bool);
+  const _String Replace(const _String&, const _String&, bool replace_all) const;
 
   /**
   * Locate the first non-space character of the string
@@ -394,7 +397,7 @@ public:
   * @return Returns the index of the first instance of the substr, -1 if not
   * found. 2 in the example
   */
-  long Find(_String s, long from = 0, long to = -1) const;
+  long Find(const _String& s, long from = 0, long to = -1) const;
 
   /**
   *  @see Find()
@@ -406,21 +409,13 @@ public:
   * @see Find()
   */
 
-  long FindAnyCase(_String, long from = 0, long to = -1);
+  long FindAnyCase(const _String&, long from = 0, long to = -1) const;
 
   /**
   * Backwards Find
   * @see Find()
   */
-  long FindBackwards(_String, long, long);
-
-  /**
-  * Binary searches for a char inside of a string
-  * \n\n \b Example: \code _String ("AABBCC").FindBinary('B')\endcode
-  * @param s The char to look for inside of the string
-  * @return The location of the char, -1 if doesn't exist. 3 in the example.
-  */
-  long FindBinary(char);
+  long FindBackwards(const _String&, long from = 0, long to = -1) const;
 
   /**
   * Compute Adler-32 CRC for a string
@@ -429,7 +424,7 @@ public:
   * http://en.wikipedia.org/wiki/Adler-32
   * @return the Adler32 checksum. 300286872 returns in the Example
   */
-  long Adler32(void);
+  long Adler32(void) const;
 
   /**
   * Turns seconds into a time string in the form "hh:mm:ss"
@@ -439,16 +434,11 @@ public:
   * _String("").FormatTimeString(time_diff);
   * \endcode
   * @param time_diff Seconds of time
-  * @return Transforms string to "127:32:12" in the example.
+  * @return returns "127:32:12" for the example.
   */
 
-  void FormatTimeString(long);
+  static const _String FormatTimeString(long time_difference);
 
-  /**
-  * Checks if string is lexicographically equal
-  * @see Equal()
-  */
-  bool operator==(_String);
 
   /**
   * Lexicographic comparison
@@ -475,7 +465,7 @@ public:
   * @return 1 if strings are equal, -1 if strings are not
   * @sa Equal()
   */
-  char Compare(_String *);
+  char Compare(_String const *) const;
 
   /**
   * Lexicographic comparison with a wild character
@@ -485,53 +475,43 @@ public:
   * @return true if strings are equal
   * @sa Equal()
   */
-  bool EqualWithWildChar(_String *s, char wildChar = '*');
+  bool EqualWithWildChar(const _String&, const char wildChar = '*') const ;
 
   /**
   * Checks if String is lexicographically greater
   * @see Greater()
   */
-  bool operator>(_String);
+  bool operator>(const _String&) const;
 
   /**
   * Checks if String is lexicographically less
   * @see Less()
   */
-  bool operator<(_String);
-
-  /**
-  * Checks if String is lexicographically greater
-  * \n Lexicographical essentially means alphabetical order in this context.
-  * \n\n \b Example: \code _String ("House").Greater("Household")\endcode
-  * \n @return House > Household would be false. The example returns false.
-  */
-  bool Greater(_String *);
-
-  /**
-  * Checks if String is lexicographically greater
-  * \n Lexicographical essentially means alphabetical order in this context.
-  * \n\n \b Example: \code _String ("House").Lesser("Household")\endcode
-  * \n House < Household would be true. The example would return true.
-  */
-  bool Less(_String *);
-
+  bool operator<(const _String&) const;
+  
   /**
   * Checks if String is lexicographically greater or equal
   * @see Greater()
   */
-  bool operator>=(_String);
+  bool operator>=(const _String&) const;
 
   /**
   * Checks if String is lexicographically less or equal
   * @see Less()
   */
-  bool operator<=(_String);
+  bool operator<=(const _String&) const ;
 
   /**
-  * Checks if string is not lexicographically equal
+  * Checks if strings are not lexicographically equal
   * @see Equal()
   */
-  bool operator!=(_String);
+  bool operator!=(const _String&) const;
+
+  /**
+  * Checks if string are lexicographically equal
+  * @see Equal()
+  */
+  bool operator==(const _String&) const;
 
   /**
   * Checks to see if string contains substring
@@ -539,14 +519,14 @@ public:
   * @return Returns true if string contains substring. Example returns true
   * @see Find()
   */
-  bool contains(_String);
+  bool contains(const _String&) const;
 
   /**
   * Checks to see if string contains character
   * @return Returns true if string contains character
   * @see contains()
   */
-  bool contains(char);
+  bool contains(char) const;
 
   /**
   * Checks to see if String begins with substring
@@ -559,18 +539,8 @@ public:
   * @sa startswith()
   * @sa endswith()
   */
-  bool beginswith(_String, bool = true);
+  bool startswith(const _String& , bool = true) const;
 
-  /**
-  * Checks to see if String starts with substring
-  * \n\n \b Example: \code _String("hyphy").startswith("h")\endcode
-  * @param s Substring
-  * @return true if string starts with substring. Example would return true
-  * @sa contains()
-  * @sa beginswith()
-  * @sa endswith()
-  */
-  bool startswith(_String &);
 
   /**
   * Checks to see if String ends with substring
@@ -583,19 +553,19 @@ public:
   * @sa beginswith()
   * @sa startswith()
   */
-  bool endswith(_String, bool = true);
+  bool endswith(const _String& , bool = true) const;
 
   /**
   * Converts string to upper case
   * @sa LoCase()
   */
-  void UpCase(void);
+  const _String UpCase(void) const;
 
   /**
   * Converts string to lower case
   * @sa UpCase()
   */
-  void LoCase(void);
+  const _String LoCase(void) const;
 
 
 
@@ -604,10 +574,9 @@ public:
   * \n\n \b Example: _String("hyphy, gattaca, protease").Tokenize(",") will
   * create a list {"hyphy","gattaca","protease"}
   * @param s The substring to split the string by
-  * @return A point to a *_List that holds a list of the resultant strings.
-  * Retrieve one by list->lData[i]
+  * @return The list that holds the resultant strings.
   */
-  _List *Tokenize(_String);
+  const _List Tokenize(const _String&) const;
 
   /**
   * TODO: With batchlan
@@ -644,7 +613,7 @@ public:
   * \n\n \b Example: \code _String("\"hyphy\"").StripQuotes("")\endcode
   * @return string with no quotes. "hyphy" in this example.
   */
-  void StripQuotes(void);
+  void StripQuotes(char open_char = '"', char close_char = '"');
 
   /**
   * Checks if String is valid ident
@@ -653,14 +622,14 @@ public:
   * @param strict If strict, only alphabetic, no numerals.
   * @sa ConvertToAnIdent();
   */
-  bool IsValidIdentifier(bool = true);
+  bool IsValidIdentifier(bool = true) const;
 
   /**
   * Same as IsValidIdentifier, but must end with a '&'
   * \n\n \bExample: 'hyphy&' is a valid ref identifier
   * @see IsValidIdentifier()
   */
-  bool IsValidRefIdentifier(void);
+  bool IsValidRefIdentifier(void) const;
 
   /**
   * If it is enclosed in quotes, then it is a literal argument
@@ -773,7 +742,7 @@ public:
    * then this will be generated from 1-128 ASCII codes
    * @return the random string
    */
-  static _String Random(const unsigned long len, const _String *alphabet = nil);
+  static const _String Random(const unsigned long len, const _String *alphabet = nil);
 
   /**
   * Computes Lempel-Ziv complexity of the string.
@@ -800,12 +769,14 @@ public:
   * @sa ProcessTreeBranchLength()
   */
 
-  _Parameter toNum(void);
+  _Parameter toNum(void) const;
 
   /**
   * Sets Length
   */
-  void SetLength(unsigned long nl) { sLength = nl; }
+  void SetLength(unsigned long nl) {
+    s_length = nl;
+  }
 
   /**
   * Starting at index [argument 1],
@@ -847,8 +818,11 @@ public:
   long FindTerminator(long, _String &);
 
   // Data Fields
-  unsigned long sLength;
-  Ptr sData;
+  unsigned long s_length;
+  Ptr s_data;
+  
+  private:
+    long NormalizeRange (long & from, long & to) const;
 };
 
 // _______________________________________________________________________
@@ -870,10 +844,10 @@ void SetStatusLineUser(_String);
 Ptr PrepRegExp(_String *, int &, bool);
 void FlushRegExp(Ptr);
 _String GetRegExpError(int);
-void ReportWarning(_String);
-void FlagError(_String);
+void ReportWarning(const _String&);
+void FlagError(const _String&);
 void WarnErrorWhileParsing(_String, _String &);
-void WarnError(_String);
+void WarnError(const _String&);
 _String GetVersionString(void);
 _String GetTimeStamp(bool = false);
 

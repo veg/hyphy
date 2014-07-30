@@ -100,6 +100,7 @@ _String expectedNumberOfSubs = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
             "LARGE_MATRIX_BRANCH_LENGTH_MODIFIER_DIMENSION",
         largeMatrixBranchLength = "LARGE_MATRIX_BRANCH_LENGTH_MODIFIER",
         newNodeGraftName = "NAME", newNodeGraftWhere = "WHERE",
+        newNodeGraftLength   = "LENGTH", newNodeGraftParentLength = "PARENT_LENGTH",
         newNodeGraftParent = "PARENT", eqWithReroot = "Equal with reroot at ",
         eqWithoutReroot = "Equal without rerooting", iNodePrefix;
 
@@ -2314,61 +2315,77 @@ node<long> *_TreeTopology::FindNodeByName(_String *match) {
 
 }
 
-//______________________________________________________________________________
-void _TreeTopology::AddANode(_PMathObj newNode) {
-  if (newNode->ObjectClass() == ASSOCIATIVE_LIST) {
-    _AssociativeList *newNodeSpec = _HY2ASSOCIATIVE_LIST (newNode);
-    _FString *newName =
-                 (_FString *)newNodeSpec->GetByKey(newNodeGraftName, STRING),
-             *newLocation =
-                 (_FString *)newNodeSpec->GetByKey(newNodeGraftWhere, STRING),
-             *newParent =
-                 (_FString *)newNodeSpec->GetByKey(newNodeGraftParent, STRING);
+//_______________________________________________________________________________________________
 
-    if (!newName) {
-      WarnError(_String("Missing/invalid mandatory argument (\"") &
-                newNodeGraftName & "\") in call to _TreeTopology::AddANode");
-      return;
+void    _TreeTopology::AddANode (_PMathObj newNode)
+{
+    if (newNode->ObjectClass () == ASSOCIATIVE_LIST) {
+        _AssociativeList * newNodeSpec = (_AssociativeList*)newNode;
+        _FString         * newName     = (_FString*)newNodeSpec->GetByKey (newNodeGraftName, STRING),
+                         * newLocation = (_FString*)newNodeSpec->GetByKey (newNodeGraftWhere, STRING),
+                         * newParent   = (_FString*)newNodeSpec->GetByKey (newNodeGraftParent, STRING);
+                         
+        _Constant        * branchLengthSelf = (_Constant*)newNodeSpec->GetByKey (newNodeGraftLength, NUMBER),
+                         * branchLengthParent = (_Constant*)newNodeSpec->GetByKey (newNodeGraftParentLength, NUMBER);
+
+
+        if (!newLocation) {
+            WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftWhere&"\") in call to _TreeTopology::AddANode");
+            return;
+        }
+        
+        
+        if (! (newName || newParent)) {
+            WarnError (_String("At least one of '") & newNodeGraftName&"', '"& newNodeGraftParent &"') must be specified in call to _TreeTopology::AddANode");
+            return;
+        }
+
+        node<long>* graftAt = FindNodeByName (newLocation->theString);
+        if (!graftAt || graftAt->get_parent() == nil) {
+            WarnError ("Attachment node must be an exiting non-root node in call to _TreeTopology::AddANode");
+            return;
+        }
+
+        node<long>* newp = newParent ? (node<long>*) checkPointer(new node<long>) : nil,
+                  * curp = graftAt->get_parent();
+
+        if (newp) {
+          newp->set_parent  (*curp);
+          newp->add_node    (*graftAt);
+          curp->replace_node(graftAt,newp);
+        } 
+
+        if (newName && !newName->IsEmpty()) {
+            node<long>* newt = (node<long>*) checkPointer(new node<long>);
+            if (newp) {
+              newp->add_node(*newt);
+            } else {
+              graftAt->add_node (*newt);
+            }
+            if (branchLengthSelf) {
+              _String bl (branchLengthSelf->Value());
+              FinalizeNode (newt, 0, *newName->theString,   empty, bl);
+            } else {
+              FinalizeNode (newt, 0, *newName->theString,   empty, empty);
+            }
+        }
+
+        if (newp && ! newParent->IsEmpty()) {
+            if (branchLengthParent) {
+              _String bl (branchLengthSelf->Value());
+               FinalizeNode (newp, 0, *newParent->theString, empty, bl);
+            } else {
+              FinalizeNode (newp, 0, *newParent->theString, empty, empty);
+            }
+          
+        }
+
+    } else {
+        WarnError ("An invalid argument (not an associative array) supplied to _TreeTopology::AddANode");
     }
-    if (!newLocation) {
-      WarnError(_String("Missing/invalid mandatory argument (\"") &
-                newNodeGraftWhere & "\") in call to _TreeTopology::AddANode");
-      return;
-    }
-    if (!newParent) {
-      WarnError(_String("Missing/invalid mandatory argument (\"") &
-                newNodeGraftParent & "\") in call to _TreeTopology::AddANode");
-      return;
-    }
-
-    node<long> *graftAt = FindNodeByName(newLocation->theString);
-    if (!graftAt || graftAt->get_parent() == nil) {
-      WarnError("Attachment node must be an exiting non-root node in call to "
-                "_TreeTopology::AddANode");
-      return;
-    }
-
-    node<long> *newp = (node<long> *)checkPointer(new node<long>),
-               *curp = graftAt->get_parent();
-
-    newp->set_parent(*curp);
-    newp->add_node(*graftAt);
-    curp->replace_node(graftAt, newp);
-
-    if (!newName->IsEmpty()) {
-      node<long> *newt = (node<long> *)checkPointer(new node<long>);
-      newp->add_node(*newt);
-      FinalizeNode(newt, 0, *newName->theString, empty, empty);
-    }
-
-    FinalizeNode(newp, 0, *newParent->theString, empty, empty);
-
-  } else {
-    WarnError("An invalid argument (not an associative array) supplied to "
-              "_TreeTopology::AddANode");
-  }
 
 }
+
 
 //______________________________________________________________________________
 void _TreeTopology::DepthWiseT(bool init, _HYTopologyTraversalFunction *handler,

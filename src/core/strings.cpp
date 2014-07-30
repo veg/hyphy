@@ -56,7 +56,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <time.h>
 
-#define MOD_ADLER 65521
 
 _String compileDate = __DATE__,
         __KERNEL__VERSION__ =
@@ -112,66 +111,64 @@ struct _hyValidIDCharsType {
 
 /*
 ==============================================================
-Constructors
+Constructors/Initializers/Copiers/Destructors
 ==============================================================
 */
 
 //Does nothing
 _String::_String(void) {
-  sLength = 0;
-  sData = nil;
+  Initialize();
+}
+
+void _String::Initialize (bool) {
+  s_length = 0UL;
+  s_data = nil;
 }
 
 //Length constructor
 _String::_String(const unsigned long sL) {
 
-    sLength = sL;
-    sData = (char*)checkPointer(MemAllocate(sL + 1UL));
-    memset (sData, 0, sL + 1UL);
+    s_length = sL;
+    s_data = (char*)checkPointer(MemAllocate(sL + 1UL));
+    memset (s_data, 0, sL + 1UL);
 }
 
 //Length constructor
 _String::_String(long sL) {
   char s[32];
   snprintf(s, sizeof(s), "%ld", sL);
-  for (sLength = 0; s[sLength]; sLength++)
+  for (s_length = 0; s[s_length]; s_length++)
     ;
-  checkPointer(sData = (char *)MemAllocate(sLength + 1));
-  memcpy(sData, s, sLength + 1);
+  checkPointer(s_data = (char *)MemAllocate(s_length + 1));
+  memcpy(s_data, s, s_length + 1);
 }
 
 _String::_String(const _String &source, long from, long to) {
-  if (source.sLength) {
-    if (from == -1) {
-      from = 0;
-    }
+  if (source.s_length) {
+    
+    long requested_range = source.NormalizeRange(from, to);
+    
+    if (requested_range > 0L) {
+      s_length = requested_range;
+      s_data = (char *)MemAllocate(s_length + 1UL);
 
-    if (to < 0 || to >= source.sLength) {
-      to = ((long) source.sLength) - 1;
-    }
-
-    if (to >= from) {
-      sLength = to - from + 1;
-      sData = (char *)MemAllocate(sLength + 1);
-      if (!sData) {
-        warnError(-108);
-      }
-
-      if (sLength > 32) {
-        memcpy(sData, source.sData + from, sLength);
+      if (s_length > 32UL) {
+        memcpy(s_data, source.s_data + from, s_length);
       } else
-        for (long k = 0; k < sLength; k++) {
-          sData[k] = source.sData[k + from];
+        for (unsigned long k = 0UL; k < s_length; k++) {
+          s_data[k] = source.s_data[k + from];
         }
 
-      sData[sLength] = 0;
+      s_data[s_length] = 0;
       return;
+      
     }
-  }
+  } 
+    
+  s_length = 0UL;
+  s_data = (char *)MemAllocate(1UL);
+  s_data[0] = 0;
 
-  sLength = 0;
-  sData = (char *)MemAllocate(1);
-  sData[0] = 0;
 }
 
 //Stack copy contructor
@@ -182,73 +179,139 @@ _String::_String(_String *s) { CopyDynamicString(s, false); }
 //Data constructor
 _String::_String(const char *s) {
   // room for the null terminator
-  sLength = strlen(s);
-  checkPointer(sData = (char *)MemAllocate(sLength + 1));
-  memcpy(sData, s, sLength + 1);
+  s_length = strlen(s);
+  s_data = (char *)MemAllocate(s_length + 1UL);
+  memcpy(s_data, s, s_length + 1UL);
 }
 
 
 //Data constructor
 _String::_String(const wchar_t *wc) {
     unsigned long allocated = wcslen (wc);
-    sLength = 0;
-    checkPointer(sData = (char *)MemAllocate(allocated + 1));
+    s_length = 0;
+    checkPointer(s_data = (char *)MemAllocate(allocated + 1));
     for (unsigned long cid = 0; cid < allocated; cid ++) {
         int this_char = wctob (wc[cid]);
         if (this_char != WEOF) {
-            sData[sLength++] = (char) this_char;
+            s_data[s_length++] = (char) this_char;
         }
     }
-    if (sLength != allocated) {
-        sData = (char *)MemReallocate((char *)sData, (sLength+1) * sizeof(char));
+    if (s_length != allocated) {
+        s_data = (char *)MemReallocate((char *)s_data, (s_length+1) * sizeof(char));
     }
-    sData[sLength] = 0;
+    s_data[s_length] = 0;
 }
 
 
 //Data constructor
 _String::_String(const char s) {
-  sLength = 1;
-  checkPointer(sData = (char *)MemAllocate(sLength + 1));
-  sData[0] = s;
-  sData[1] = 0;
+  s_length = 1UL;
+  s_data = (char *)MemAllocate(2UL);
+  s_data[0] = s;
+  s_data[1] = 0;
 }
 
 //Data constructor
 _String::_String(_Parameter val, const char *format) {
   char s_val[128];
-  sLength = snprintf(s_val, 128, format ? format : PRINTF_FORMAT_STRING, val);
-  checkPointer(sData = (char *)MemAllocate(sLength + 1));
-  for (unsigned long k = 0; k <= sLength; k++) {
-    sData[k] = s_val[k];
+  s_length = snprintf(s_val, 128, format ? format : PRINTF_FORMAT_STRING, val);
+  s_data = (char *)MemAllocate(s_length + 1UL);
+  for (unsigned long k = 0; k <= s_length; k++) {
+    s_data[k] = s_val[k];
   }
 }
 
-//Does nothing
+//READ FROM FILE
 _String::_String(FILE *F) {
-  sLength = 0;
-  sData = nil;
+  s_length = 0;
+  s_data = nil;
   if (F) {
     fseek(F, 0, SEEK_END);
-    sLength = (unsigned long) ftell(F);
-    sData = (char *)MemAllocate(sLength + 1);
+    s_length = (unsigned long) ftell(F);
+    s_data = (char *)MemAllocate(s_length + 1);
     rewind(F);
-    fread(sData, 1, sLength, F);
-    sData[sLength] = 0;
+    fread(s_data, 1, s_length, F);
+    s_data[s_length] = 0;
   }
 }
 
 //Destructor
 _String::~_String(void) {
-  if (CanFreeMe()) {
-    if (sData) {
-      free(sData);
-      sData = nil;
-    }
-    sLength = 0;
-  } else {
-    RemoveAReference();
+  if (s_data) {
+    free(s_data);
   }
+}
+
+void _String::CopyDynamicString(_String *s, bool flushMe) {
+  if (flushMe && s_data) {
+    free(s_data);
+  }
+  s_length = s->s_length;
+  if (s->SingleReference ()) {
+    s_data = s->s_data;
+    s->s_data = nil;
+    DeleteObject(s);
+  } else {
+    checkPointer(s_data = (char *)MemAllocate(s_length + 1UL));
+    if (s->s_data) {
+      memcpy(s_data, s->s_data, s_length + 1);
+    } else {
+      s_data[0] = 0;
+    }
+    s->RemoveAReference();
+  }
+}
+
+void _String::Duplicate(BaseRefConst ref) {
+  _String const *s = (_String const*)ref;
+  s_length = s->s_length;
+
+  if (s->s_data) {
+    s_data = (char *)MemAllocate(s_length + 1UL);
+    memcpy(s_data, s->s_data, s_length + 1UL);
+  } else {
+    s_data = nil;
+  }
+
+}
+
+void _String::DuplicateErasing(BaseRefConst ref) {
+  if (s_data) {
+    free(s_data);
+  }
+  Duplicate(ref);
+
+}
+
+//Make dynamic copy
+BaseRef _String::makeDynamic(void) const{
+  return new _String (*this);
+}
+
+
+/*
+ ==============================================================
+ Accessors
+ ==============================================================
+*/
+
+// String length
+unsigned long _String::Length(void) const { return s_length; }
+
+void _String::setChar(unsigned long index, char c) {
+  if (index < s_length) {
+    s_data[index] = c;
+  }
+}
+
+/*
+ ==============================================================
+ Represent as STR
+ ==============================================================
+*/
+
+BaseRef _String::toStr(void) const{
+  return new _String (*this);
 }
 
 /*
@@ -259,355 +322,564 @@ Operator Overloads
 
 // Element location functions
 char &_String::operator[](long index) {
-  if (((unsigned long) index) < sLength) {
-    return sData[index];
+  if (((unsigned long) index) < s_length) {
+    return s_data[index];
   }
   return defaultReturn;
 }
 
 //Element location functions
-char _String::operator()(unsigned long index) {
-  if (index < sLength) {
-    return sData[index];
+char _String::operator()(long index) const {
+  return getChar(index);
+}
+
+  //Element location functions
+const char _String::getChar(long index) const {
+  if (index >= 0L && index < s_length) {
+    return s_data[index];
   }
-  return 0;
+  return defaultReturn;
 }
 
 // Assignment operator
-void _String::operator=(_String s) {
-  if (sData) {
-    free(sData);
+void _String::operator=(const _String& s) {
+  if (s_data) {
+    free(s_data);
   }
   Duplicate(&s);
 }
 
 
-// lexicographic comparison
-bool _String::operator==(_String s) { return Equal(&s); }
 
 //Append operator
-_String _String::operator&(_String s) {
-  if (sLength + s.sLength == 0) {
+const _String _String::operator&(const _String& s)  const {
+  unsigned long combined_length = s_length + s.s_length;
+
+  if (combined_length == 0UL) {
     return empty;
   }
 
-  _String res(sLength + s.sLength);
+  _String res(combined_length);
 
-  if (sLength) {
-    memcpy((res.sData), sData, sLength);
+  if (s_length) {
+    memcpy(res.s_data, s_data, s_length);
   }
 
-  if (s.sLength) {
-    memcpy(res.sData + sLength, s.sData, s.sLength);
+  if (s.s_length) {
+    memcpy(res.s_data + s_length, s.s_data, s.s_length);
   }
 
-  res.sData[res.sLength] = 0;
+  res.s_data[res.s_length] = 0;
   return res;
 }
 
 
 //Return good ole char*
-_String::operator const char *(void) { return sData; }
+_String::operator const char *(void) const { return s_data; }
 
-//Lexicographic comparison
-bool _String::operator>(_String s) { return Greater(&s); }
 
-//Lexicographic comparison
-bool _String::operator<=(_String s) { return !((*this) > s); }
-
-//Lexicographic comparison
-bool _String::operator>=(_String s) { return (((*this) > s) || (*this == s)); }
-
-//Lexicographic comparison
-bool _String::operator!=(_String s) { return !(*this == s); }
-
-//Lexicographic comparison
-bool _String::operator<(_String s) { return Less(&s); }
+// lexicographic comparisons
+bool _String::operator==(const _String& s) const { return Compare (&s) == 0; }
+bool _String::operator>(const _String & s) const { return Compare (&s) > 0; }
+bool _String::operator<=(const _String & s) const { return Compare (&s) <= 0; }
+bool _String::operator>=(const _String & s) const { return Compare (&s) >= 0; }
+bool _String::operator!=(const _String & s) const { return Compare (&s) != 0; }
+bool _String::operator<(const _String & s) const { return Compare (&s) < 0; }
 
 /*
-==============================================================
-Methods
-==============================================================
-*/
+ ==============================================================
+ Lexicographic Comparison Methods
+ ==============================================================
+ */
 
-// Compute Adler-32 CRC for a string
-// Implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
-long _String::Adler32(void) {
-  unsigned char *data = (unsigned char *)sData;
+bool _String::contains (const _String& s) const { return Find(s) != -1; }
+bool _String::contains (char c) const    { return Find(c) != HY_NOT_FOUND; }
 
-  unsigned long len = sLength, a = 1, b = 0;
-
-  while (len) {
-    unsigned tlen = len > 5550 ? 5550 : len;
-    len -= tlen;
-    do {
-      a += *data++;
-      b += a;
-    } while (--tlen);
-    a = (a & 0xffff) + (a >> 16) * (65536 - MOD_ADLER);
-    b = (b & 0xffff) + (b >> 16) * (65536 - MOD_ADLER);
-  }
-
-  if (a >= MOD_ADLER) {
-    a -= MOD_ADLER;
-  }
-
-  b = (b & 0xffff) + (b >> 16) * (65536 - MOD_ADLER);
-
-  if (b >= MOD_ADLER) {
-    b -= MOD_ADLER;
-  }
-
-  return b << 16 | a;
-}
-
-
-
-_String _String::Chop(long from, long to) {
-  if (!sLength) {
-    return empty;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return empty;
-  }
-  _String res((unsigned long)(sLength + from - to + 1));
-  if (from) {
-    memcpy(res.sData, sData, from);
-  }
-  if ((to < ((long) sLength) - 1) && (to > from)) {
-    memcpy(res.sData + from, sData + to + 1, sLength - to - 1);
-  }
-  return res;
-}
-
-// find first occurence of the string between from and to
-bool _String::ContainsSubstring(_String &s)
-    // -1, indicates that search term has not been found
-    {
-  if (!sLength) {
-    return false;
-  }
-  if (sLength < s.sLength) {
-    return false;
-  }
-  char *sP = sData, *ssP = s.sData;
-  for (long i = 0; i < sLength - s.sLength; i++, sP++) {
-    long j = 0;
-    for (;(sP[j] == ssP[j]) && (j < s.sLength); j++)
-      ;
-    if (j == s.sLength) {
-      return true;
+char _String::Compare(_String const * s) const {
+  unsigned long upTo = MIN (s_length, s->s_length);
+  
+  for (unsigned long i = 0UL; i < upTo; i++) {
+    if (s_data[i] < s->s_data[i]) {
+      return -1;
     }
+    if (s_data[i] > s->s_data[i]) {
+      return 1;
+    }
+  }
+  
+  if (s_length == s->s_length) {
+    return 0;
+  }
+  
+  return s_length < s->s_length ? -1 : 1;
+}
+
+bool _String::Equal(const _String *s) const {
+  return Compare (s) == 0;
+}
+
+bool _String::Equal(const char c) const {
+  return s_length == 1 && s_data[0] == c;
+}
+
+
+
+bool _String::EqualWithWildChar(const _String &s, const char wildchar) const {
+  // wildcards only matter in the second string
+  
+  if (s.s_length > 0UL && wildchar != '\0') {
+    unsigned long   match_this_char = 0UL;
+    bool            is_wildcard = s.s_data[match_this_char] == wildchar,
+                    scanning_s = is_wildcard;
+    
+    unsigned long i = 0UL;
+    while (1) {
+      
+      if (scanning_s) { // skip consecutive wildcards in "s"
+        scanning_s = s.s_data[++match_this_char] == wildchar;
+      } else {
+        if (s_data[i] == s.s_data[match_this_char]) {
+              // try character match
+              // note that the terminal '0' characters will always match, so
+              // this is where we terminate
+          i++;
+          match_this_char++;
+          if (i > s_length || match_this_char > s.s_length) {
+            break;
+          }
+          is_wildcard =  s.s_data[match_this_char] == wildchar;
+          scanning_s = is_wildcard;
+        } else { // match wildcard
+          if (!is_wildcard) {
+            return false;
+          }
+          scanning_s = false;
+          i++;
+        }
+      }
+    }
+    
+    return match_this_char > s.s_length;
+  } else {
+    return s_length == 0UL;
+  }
+  
+  return false;
+}
+
+  //Begins with string
+bool _String::startswith(const _String& s, bool caseSensitive) const{
+  return (caseSensitive ? Find (s, 0L, s.s_length - 1L)
+          : FindAnyCase (s, 0L, s.s_length -1L)) == 0L;
+}
+
+bool _String:: endswith(const _String& s, bool caseSensitive) const{
+  if (s_length >= s.s_length) {
+    return (caseSensitive ? Find (s, s_length - s.s_length)
+            : FindAnyCase (s, s_length - s.s_length)) == s_length - s.s_length;
   }
   return false;
 }
 
-void _String::CopyDynamicString(_String *s, bool flushMe) {
-  if (flushMe && sData) {
-    free(sData);
+/*
+==============================================================
+Manipulators
+==============================================================
+*/
+
+// a convenicence function not to write (const char*)(*this)[]
+
+const char *_String::getStr(void) const { return s_data; }
+
+
+long  _String::NormalizeRange(long & from, long & to) const {
+
+  if (s_length == 0UL) {
+    return 0L;
   }
-  sLength = s->sLength;
-  if (s->SingleReference ()) {
-    sData = s->sData;
-    s->sData = nil;
-    DeleteObject(s);
-  } else {
-    checkPointer(sData = (char *)MemAllocate(sLength + 1));
-    if (s->sData) {
-      memcpy(sData, s->sData, sLength + 1);
-    } else {
-      sData[0] = 0;
-    }
-    s->RemoveAReference();
+
+  if (from < 0L) {
+    from = 0L;
+  }
+  
+  if (to < 0L || to >= s_length ) {
+    to = s_length - 1UL;
+  }
+  
+  return to - from + 1L;
+  
+}
+
+//s[0]...s[s_length-1] => s[s_length-1]...s[0]
+void _String::Flip(void) {
+  for (unsigned long i = 0UL; i < (s_length >> 1); i++) {
+    char c;
+    SWAP  (s_data[i], s_data[s_length - 1 - i], c);
   }
 }
 
+const _String _String::Chop(long from, long to) const {
+  
+  long resulting_length = NormalizeRange(from,to);
+  
+  if (resulting_length > 0L) {
+    _String res((unsigned long)(s_length - resulting_length));
+    if (from > 0L) {
+      memcpy(res.s_data, s_data, from);
+    }
+    if (to + 1L < s_length) {
+      memcpy(res.s_data + from, s_data + to + 1L, s_length - to - 1L);
+    }
+    
+    return res;
+  }
+  
+  return *this;
+ 
+}
+
 //Cut string from, to (-1 for any means from beginning/to end)
-_String _String::Cut(long from, long to) {
-  if (!sLength) {
-    return empty;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1 || to >= sLength) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return empty;
-  }
-  _String res((unsigned long)(to - from + 1));
-  if (to - from + 1) {
-    memcpy(res.sData, sData + from, to - from + 1);
-  }
-  return res;
+const _String _String::Cut(long from, long to) const {
+  return _String (*this, from, to);
 }
 
 //Delete range char operator
 void _String::Delete(long from, long to) {
-  if (from < 0) {
-    from = 0;
-  }
+  long resulting_length = NormalizeRange(from,to);
 
-  if (to < 0) {
-    to = sLength - 1;
+  if (resulting_length > 0L) {
+    if (to < (long)s_length - 1UL) {
+      memmove(s_data + from, s_data + to + 1, s_length - to - 1);
+    }
+    s_length -= resulting_length;
+    s_data = MemReallocate(s_data, sizeof(char) * (s_length + 1UL));
+    s_data[s_length] = 0;
   }
-
-  if (to < sLength - 1) {
-    memmove(sData + from, sData + to + 1, sLength - to - 1);
-  }
-  sLength -= to - from + 1;
-  sData = MemReallocate(sData, sizeof(char) * (sLength + 1));
-  sData[sLength] = 0;
 }
 
-void _String::Duplicate(BaseRefConst ref) {
-  _String const *s = (_String const*)ref;
-
-  sLength = s->sLength;
-  sData = s->sData;
-
-  if (sData) {
-    checkPointer(sData = (char *)MemAllocate(sLength + 1));
-    memcpy(sData, s->sData, sLength + 1);
+//Insert a single char operator
+void _String::Insert(char c, long pos) {
+  if (pos < 0L || pos >= s_length) {
+    pos = s_length;
   }
 
-}
+  s_data = MemReallocate(s_data, sizeof(char) * (s_length + 2));
 
-void _String::DuplicateErasing(BaseRef ref) {
-  if (sData) {
-    free(sData);
+  if (pos < s_length) {
+    memmove(s_data + pos + 1, s_data + pos, s_length - pos);
   }
-  Duplicate(ref);
 
+  s_data[pos] = c;
+  s_data[++s_length] = 0;
+}
+
+//Cut string from, to (-1 for any means from beginning/to end)
+void _String::Trim(long from, long to) {
+  
+  long resulting_length = NormalizeRange(from, to);
+  
+  if (resulting_length > 0L) {
+      if (from > 0L) {
+        memmove(s_data, s_data + from, resulting_length);
+      }
+      s_length = resulting_length;
+      s_data = MemReallocate(s_data, resulting_length + 1UL);
+      s_data[resulting_length] = 0;
+  } else {
+      s_length = 0UL;
+      s_data = MemReallocate(s_data, 1UL);
+      s_data[0] = 0;
+  }
 }
 
 
+void _String::StripQuotes(char open_char, char close_char) {
+  if (s_length >= 2UL) {
+    if (getChar(0) == open_char && getChar (s_length - 1UL) == close_char) {
+      Trim (1, s_length - 2UL);
+    }
+  }
+}
+
+/*
+==============================================================
+Case Methods
+==============================================================
+*/
+
+const _String _String::UpCase(void) const {
+  _String res (s_length);
+  for (unsigned long i = 0UL; i < s_length; i++) {
+    res.s_data[i] = toupper(s_data[i]);
+  }
+  return res;
+}
+
+const _String _String::LoCase(void) const {
+  _String res (s_length);
+  for (unsigned long i = 0UL; i < s_length; i++) {
+    res.s_data[i] = tolower(s_data[i]);
+  }
+  return res;
+}
+
+/*
+==============================================================
+Search and replace
+==============================================================
+*/
+
+long _String::Find(const _String& s, long from, long to) const {
+
+  if (s.s_length) {
+    long span = NormalizeRange(from, to);
+    if (span >= (long) s.s_length) {
+      const unsigned long upper_bound = to - s.s_length + 2L;
+      for (unsigned long i = from; i < upper_bound ; i++) {
+        unsigned long j = 0UL;
+        for (;j < s.s_length; j++) {
+          if (s_data[i + j] != s.s_data[j]) {
+            break;
+          } 
+        }
+        if (j == s.s_length) {
+          return i;
+        }
+      }
+    }
+  }
+  return HY_NOT_FOUND;
+}
+
+  //Find first occurence of the string between from and to
+long _String::Find(const char s, long from, long to) const {
+  if (s_length) {
+    long span = NormalizeRange(from, to);
+    if (span > 0L) {
+      char sentinel = s_data[to+1];
+      s_data[to+1] = s;
+      long index = from;
+      while (s_data[index] != s) {
+        index++;
+      }
+      s_data[to+1] = sentinel;
+      return index <= to ? index : HY_NOT_FOUND;
+    }
+  }
+  
+  return HY_NOT_FOUND;
+}
+
+
+//Find first occurence of the string between from and to
+long _String::FindBackwards(const _String & s, long from, long to) const {
+
+  if (s.s_length) {
+    long span = NormalizeRange(from, to);
+    if (span >= (long) s.s_length) {
+      const long upper_bound = to - s.s_length + 1L;
+      for (long i = upper_bound; i >= from; i--) {
+        unsigned long j = 0UL;
+        for (;j < s.s_length; j++) {
+          if (s_data[i + j] != s.s_data[j]) {
+            break;
+          } 
+        }
+        if (j == s.s_length) {
+          return i;
+        }
+      }
+    }
+  }
+  return HY_NOT_FOUND;
+}
+
+
+// find first occurence of the string between from and to
+// case insensitive
+long _String::FindAnyCase(const _String& s, long from, long to) const {
+    return UpCase().Find (s.UpCase(), from, to);
+}
+
+// find first occurence of the string between from and to
+bool _String::ContainsSubstring(const _String &s) const {
+  return Find (s) != HY_NOT_FOUND;
+}
 
 
 //Replace string 1 with string 2, all occurences true/false
-void _String::FormatTimeString(long time_diff) {
-  long secs = time_diff, mins = secs / 60, hrs = mins / 60;
+const _String _String::Replace(const _String& s, const _String& d, bool replace_all) const {
 
-  mins = mins % 60;
-  secs = secs % 60;
-  if (hrs < 10) {
-    (*this) = _String('0') & hrs;
-  } else {
-    (*this) = _String(hrs);
+  if (s_length < s.s_length || s.s_length == 0UL) {
+    return *this;
   }
-  (*this) = (*this) & ':';
-  if (mins < 10) {
-    (*this) = (*this) & _String('0') & mins;
-  } else {
-    (*this) = (*this) & _String(mins);
+
+  _StringBuffer replacementBuffer;
+  unsigned long anchor_index = 0UL;
+  for (; anchor_index <= s_length - s.s_length; anchor_index ++) {
+    unsigned long search_index = 0UL;
+    for (; search_index < s.s_length; search_index++) {
+      if (s_data[anchor_index + search_index] != s.s_data[search_index]) {
+        break;
+      }
+    }
+
+    if (search_index == s.s_length) {
+      replacementBuffer << d;
+      anchor_index += s.s_length - 1UL;
+      if (replace_all == false) {
+        anchor_index ++;
+        break;
+      }
+    } else {
+      replacementBuffer << s_data[anchor_index];
+    }
   }
-  (*this) = (*this) & ':';
-  if (secs < 10) {
-    (*this) = (*this) & _String('0') & secs;
-  } else {
-    (*this) = (*this) & _String(secs);
+  
+  replacementBuffer.appendSubstring(*this, anchor_index, HY_NOT_FOUND);
+  return replacementBuffer;
+}
+
+const _List _String::Tokenize(const _String& splitter) const {
+  _List tokenized;
+  
+  long cp = 0L, cpp;
+  
+  while ((cpp = Find(splitter, cp, HY_NOT_FOUND)) != HY_NOT_FOUND) {
+    if (cpp > cp) {
+      tokenized.append (new _String(*this, cp, cpp - 1L));
+    } else {
+      tokenized.append (new _String);
+    }
+    
+    cp = cpp + splitter.s_length;
   }
+  
+  tokenized.append(new _String(*this, cp, HY_NOT_FOUND));
+  return tokenized;
+}
+
+/*
+==============================================================
+Formatters
+==============================================================
+*/
+
+
+
+// Format second difference as HHH..H:MM:SS 
+const _String _String::FormatTimeString(long time_diff){
+
+  long fields [3] = {time_diff / 3600L, time_diff / 60L % 60L, time_diff % 60L};
+  
+  _StringBuffer time_string;
+  
+  for (unsigned long l = 0; l < 3UL; l++) {
+    if (l) {
+      time_string << ':';
+    }
+    if (fields[l] < 10L) {
+      time_string << '0';
+    }
+    time_string << _String (fields[l]);
+  }
+  
+  return time_string;
+}
+
+/*
+ ==============================================================
+ Utility functions with no clear category
+ ==============================================================
+ */
+
+
+const _String _String::Random(const unsigned long length, const _String *alphabet) {
+  _StringBuffer random(length + 1UL);
+  
+  unsigned int alphabet_length = alphabet ? alphabet->s_length : 127;
+  
+  if (length > 0UL && alphabet_length > 0UL) {
+    for (unsigned long c = 0UL; c < length; c++) {
+      unsigned long idx = genrand_int32() % alphabet_length;
+      if (alphabet) {
+        random << alphabet->s_data[idx];
+      } else {
+        random << (char)(1UL + idx);
+      }
+    }
+  }
+  
+  return random;
+}
+
+long _String::Adler32(void) const {
+  
+  unsigned long len = s_length,
+                a = 1UL,
+                b = 0UL,
+                i = 0UL;
+  
+  while (len) {
+    unsigned long tlen = len > 5550UL ? 5550UL : len;
+    len -= tlen;
+    do {
+      a += s_data[i++];
+      b += a;
+    } while (--tlen);
+    a = (a & 0xffff) + (a >> 16) * (65536UL - HY_STRING_MOD_ADLER);
+    b = (b & 0xffff) + (b >> 16) * (65536UL - HY_STRING_MOD_ADLER);
+  }
+  
+  if (a >= HY_STRING_MOD_ADLER) {
+    a -= HY_STRING_MOD_ADLER;
+  }
+  
+  b = (b & 0xffff) + (b >> 16) * (65536UL - HY_STRING_MOD_ADLER);
+  
+  if (b >= HY_STRING_MOD_ADLER) {
+    b -= HY_STRING_MOD_ADLER;
+  }
+  
+  return b << 16 | a;
 }
 
 
+/*!!!!!!!!!!!!!!!!!!
+ 
+ DONE UP TO HERE
+ 
+ !!!!!!!!!!!!!!!!!!!!*/
+
+
+
 long _String::FindEndOfIdent(long start, long end, char wild) {
-  if (sLength == 0) {
+  if (s_length == 0) {
     return HY_NOT_FOUND;
   }
 
   if (start == -1) {
-    start = ((long) sLength) - 1;
+    start = ((long) s_length) - 1;
   }
   if (end == -1) {
-    end = ((long) sLength) - 1;
+    end = ((long) s_length) - 1;
   }
 
   long i = start;
 
   for (; i <= end; i++)
-    if (!(isalnum(sData[i]) || sData[i] == '.' || sData[i] == wild ||
-          sData[i] == '_')) {
+    if (!(isalnum(s_data[i]) || s_data[i] == '.' || s_data[i] == wild ||
+          s_data[i] == '_')) {
       break;
     }
 
-  if (i > start + 2 && sData[i - 1] == '_' && sData[i - 2] == '_') {
+  if (i > start + 2 && s_data[i - 1] == '_' && s_data[i - 2] == '_') {
     return i - 3;
   }
 
   return i - 1;
 }
-
-// find first occurence of the string between from and to
-long _String::Find(_String s, long from, long to) const
-    // -1, indicates that search term has not been found
-    {
-  if (!sLength) {
-    return HY_NOT_FOUND;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return HY_NOT_FOUND;
-  }
-  if (to - from + 1 < s.sLength) {
-    return HY_NOT_FOUND;
-  }
-  char *sP = sData + from, *ssP = s.sData;
-  for (long i = from; i <= to - s.sLength + 1; i++, sP++) {
-    long j;
-    for (j = 0;(sP[j] == ssP[j]) && (j < s.sLength); j++)
-      ;
-    if (j == s.sLength) {
-      return i;
-    }
-  }
-  return HY_NOT_FOUND;
-}
-
-// find first occurence of the string between from and to
-// case insensitive
-long _String::FindAnyCase(_String s, long from, long to)
-    // -1, indicates that search term has not been found
-    {
-  if (!sLength) {
-    return HY_NOT_FOUND;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return HY_NOT_FOUND;
-  }
-  if (to - from + 1 < s.sLength) {
-    return HY_NOT_FOUND;
-  }
-
-  s.UpCase();
-  char *sP = sData + from, *ssP = s.sData;
-  for (long i = from; i <= to - s.sLength + 1; i++, sP++) {
-    long j;
-    for (j = 0;(toupper(sP[j]) == ssP[j]) && (j < s.sLength); j++)
-      ;
-    if (j == s.sLength) {
-      return i;
-    }
-  }
-  return HY_NOT_FOUND;
-}
+ 
 
 long _String::ExtractEnclosedExpression(long &from, char open, char close,
                                         bool respectQuote, bool respectEscape) {
@@ -615,8 +887,8 @@ long _String::ExtractEnclosedExpression(long &from, char open, char close,
 
   bool isQuote = false, doEscape = false;
 
-  while (currentPosition < sLength) {
-    char thisChar = sData[currentPosition];
+  while (currentPosition < s_length) {
+    char thisChar = s_data[currentPosition];
 
     if (!doEscape) {
       if (thisChar == '"' && respectQuote && !doEscape) {
@@ -651,72 +923,8 @@ long _String::ExtractEnclosedExpression(long &from, char open, char close,
   return HY_NOT_FOUND;
 }
 
-//Find first occurence of the string between from and to
-long _String::Find(const char s, long from, long to) const {
-  if (!sLength) {
-    return HY_NOT_FOUND;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return HY_NOT_FOUND;
-  }
-  //if (to-from<0) return -1;
 
-  for (long i = from; i <= to; i++)
-    if (sData[i] == s) {
-      return i;
-    }
 
-  return HY_NOT_FOUND;
-}
-
-//Find first occurence of the string between from and to
-long _String::FindBackwards(_String s, long from, long to)
-    // -1, indicates that search term has not been found
-    {
-  if (!sLength) {
-    return HY_NOT_FOUND;
-  }
-  if (from == -1) {
-    from = 0;
-  }
-  if (to == -1) {
-    to = ((long) sLength) - 1;
-  }
-  if (to < from) {
-    return HY_NOT_FOUND;
-  }
-  if (to - from + 1 < s.sLength) {
-    return HY_NOT_FOUND;
-  }
-  char *sP = sData, *ssP = (s.sData);
-  for (long i = to - s.sLength + 1; i >= (long) from; i--) {
-    long j;
-    for (j = 0;(sP[i + j] == ssP[j]) && (j < s.sLength); j++)
-      ;
-    if (j == s.sLength) {
-      return i;
-    }
-  }
-  return HY_NOT_FOUND;
-}
-
-//Find first occurence of the string
-long _String::FindBinary(char s)
-    // -1, indicates that search term has not been found
-    {
-  for (long i = 0; i < sLength; ++i) {
-    if (sData[i] == s) {
-      return i;
-    }
-  }
-  return HY_NOT_FOUND;
-}
 
 long _String::FindTerminator(long from, _String &terminators) {
   long currentPosition = from, currentCurly = 0, currentSquare = 0,
@@ -724,8 +932,8 @@ long _String::FindTerminator(long from, _String &terminators) {
 
   bool isQuote = false, doEscape = false;
 
-  while (currentPosition < sLength) {
-    char thisChar = sData[currentPosition];
+  while (currentPosition < s_length) {
+    char thisChar = s_data[currentPosition];
     if (!doEscape) {
       if (thisChar == '"' && !doEscape) {
         isQuote = !isQuote;
@@ -746,8 +954,8 @@ long _String::FindTerminator(long from, _String &terminators) {
             currentParen--;
           } else if (currentParen == 0 && currentSquare == 0 &&
                      currentCurly == 0)
-            for (long s = 0; s < terminators.sLength; s++)
-              if (thisChar == terminators.sData[s]) {
+            for (long s = 0; s < terminators.s_length; s++)
+              if (thisChar == terminators.s_data[s]) {
                 return currentPosition;
               }
         } else {
@@ -766,57 +974,19 @@ long _String::FindTerminator(long from, _String &terminators) {
   return HY_NOT_FOUND;
 }
 
-//s[0]...s[sLength-1] => s[sLength-1]...s[0]
-void _String::Flip(void) {
-  for (unsigned long i = 0; i < sLength / 2; i++) {
-    char c = sData[i];
-    sData[i] = sData[sLength - 1 - i];
-    sData[sLength - 1 - i] = c;
-  }
-}
 
-// Return good ole char*
-char *_String::getStr(void) { return sData; }
 
-//Element location functions
-const char _String::getChar(long index) const {
-  if (((unsigned long) index) < sLength) {
-    return sData[index];
-  }
-  return defaultReturn;
-}
 
-void _String::Initialize(bool) {
-  BaseObj::Initialize();
-  sLength = 0UL;
-  if (sData) {
-    free(sData);
-    sData = nil;
-  }
-}
 
-//Insert char operator
-void _String::Insert(char c, long pos) {
-  if (pos < 0 || pos >= sLength) {
-    pos = sLength;
-  }
 
-  sData = MemReallocate(sData, sizeof(char) * (sLength + 2));
 
-  if (pos < sLength) {
-    memmove(sData + pos + 1, sData + pos, sLength - pos);
-  }
-  sData[pos] = c;
-  sLength++;
-  sData[sLength] = 0;
-}
 
 long _String::LempelZivProductionHistory(_SimpleList *rec) {
   if (rec) {
     rec->Clear();
   }
 
-  if (sLength == 0) {
+  if (s_length == 0) {
     return 0;
   }
 
@@ -826,19 +996,19 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 
   long cp = 1, pH = 1;
 
-  while (cp < sLength) {
+  while (cp < s_length) {
     long maxExtension = 0;
 
     for (long ip = 0; ip < cp; ip++) {
       long sp = ip, mp = cp;
 
-      while ((mp < sLength) && (sData[mp] == sData[sp])) {
+      while ((mp < s_length) && (s_data[mp] == s_data[sp])) {
         mp++;
         sp++;
       }
 
-      if (mp == sLength) {
-        maxExtension = sLength - cp;
+      if (mp == s_length) {
+        maxExtension = s_length - cp;
         break;
       } else {
         if ((mp = mp - cp + 1) > maxExtension) {
@@ -862,142 +1032,34 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
   return pH;
 }
 
-//String length
-unsigned long _String::Length(void) { return sLength; }
 
-//Make dynamic copy
-BaseRef _String::makeDynamic(void) const{
-  _String *r = new _String;
-  r->Duplicate(this);
-  return r;
-}
 
-//Replace string 1 with string 2, all occurences true/false
-_String _String::Replace(_String s, _String d, bool flag) {
-  if (!sLength) {
-    return empty;
-  }
-  if (sLength < s.sLength) {
-    return *this;
-  }
-  if (s.sLength == 0) {
-    return (*this);
-  }
 
-  if (flag) { // replace all
-              // max possible number of replaces
-    unsigned long t = sLength, cp = 0;
 
-    // allocate space for positions of substring s in this
-    long *finds = (long *)MemAllocate(t * sizeof(long)), curSlot = 0;
-
-    // find all substrings s in this
-    finds[0] = Find(s);
-    if (finds[0] != -1) {
-      curSlot++;
-      while ((finds[curSlot] = Find(s, finds[curSlot - 1] + s.sLength, -1)) !=
-             -1) {
-        curSlot++;
-      }
-    }
-
-    // calculate the length of resulting string
-
-    _String Res(sLength - (s.sLength - d.sLength) * curSlot);
-
-    if (!curSlot) { // not found
-      free((char *)finds);
-      return *this;
-    }
-
-    char *rP = (Res.sData), *dsP = (d.sData), *sP = (sData);
-
-    if (finds[0]) {
-      memcpy(rP, sP, finds[0]); //head of the string;
-    }
-    cp += finds[0];
-
-    for (t = 0; t < curSlot - 1; t++) { // do the replacing
-      if (d.sLength) {
-        memcpy(rP + cp, dsP, d.sLength);
-      }
-      cp += d.sLength;
-      if (finds[t + 1] - finds[t] - s.sLength) {
-        memcpy(rP + cp, sP + finds[t] + s.sLength,
-               finds[t + 1] - finds[t] - s.sLength);
-      }
-      cp += finds[t + 1] - finds[t] - s.sLength;
-    }
-    if (d.sLength) {
-      memcpy(rP + cp, dsP, d.sLength);
-    }
-    cp += d.sLength;
-    if (sLength - finds[curSlot - 1] - s.sLength) {
-      memcpy(rP + cp, sP + finds[curSlot - 1] + s.sLength,
-             sLength - finds[curSlot - 1] - s.sLength);
-    }
-    //tail
-    free((char *)finds);
-    return Res;
-  }
-
-  //first occurrence replace
-  long t = Find(s), cp = 0;
-  if (t == -1) {
-    return *this;
-  }
-
-  // substring not found
-  _String Res(sLength - (s.sLength - d.sLength));
-
-  char *rP = Res.sData, *dsP = d.sData, *sP = sData;
-  if (t) {
-    memcpy(rP, sP, t); //head of the string;
-  }
-  cp += t;
-  if (d.sLength) {
-    memcpy(rP + cp, dsP, d.sLength);
-  }
-  cp += d.sLength;
-  if (sLength - t - s.sLength) {
-    memcpy(rP + cp, sP + t + s.sLength, sLength - t - s.sLength);
-  }
-
-  //tail
-  return Res;
-
-}
-
-//Element location functions
-void _String::setChar(long index, char c) {
-  if (((unsigned long) index) < sLength) {
-    sData[index] = c;
-  }
-}
 
 _String *_String::Sort(_SimpleList *index) {
   if (index) {
     index->Clear();
   }
 
-  if (sLength) {
-    _SimpleList charList(sLength);
+  if (s_length) {
+    _SimpleList charList(s_length);
     if (index) {
-      for (unsigned long i = 0UL; i < sLength; i++) {
-        charList << sData[i];
+      for (unsigned long i = 0UL; i < s_length; i++) {
+        charList << s_data[i];
         (*index) << i;
       }
       charList.Sort (true, index);
     } else {
-      for (unsigned long i = 0; i < sLength; i++) {
-        charList << sData[i];
+      for (unsigned long i = 0; i < s_length; i++) {
+        charList << s_data[i];
       }
 
       charList.Sort();
     }
-    _String *sorted = new _String(sLength);
-    for (unsigned long i = 0; i < sLength; i++) {
-      sorted->sData[i] = charList.AtIndex(i);
+    _String *sorted = new _String(s_length);
+    for (unsigned long i = 0; i < s_length; i++) {
+      sorted->s_data[i] = charList.AtIndex(i);
     }
 
     return sorted;
@@ -1006,50 +1068,25 @@ _String *_String::Sort(_SimpleList *index) {
   return new _String;
 }
 
-void _String::StripQuotes(void) {
-  if (sLength && (sData[sLength - 1] == '"') && (sData[0] == '"')) {
-    Trim(1, sLength - 2);
-  }
-}
 
-_List *_String::Tokenize(_String s) {
-  _List *res = new _List;
-  if (s.sLength != 0) {
-    long cp = 0, cpp;
-    while ((cpp = Find(s, cp, -1)) != -1) {
-      if (cpp > cp) {
-        res->append(new _String(*this, cp, cpp - 1));
-      } else {
-        res->append (new _String);
-      }
 
-      cp = cpp + s.sLength;
-    }
 
-    res->append(new _String(*this, cp, -1));
-  }
-  return res;
-}
 
-_Parameter _String::toNum(void) {
-  if (sLength == 0) {
+_Parameter _String::toNum(void) const{
+  if (s_length == 0UL) {
     return 0.;
   }
   char *endP;
-  return strtod(sData, &endP);
+  return strtod(s_data, &endP);
 }
 
-//Return good ole char*
-BaseRef _String::toStr(void) {
-  AddAReference();
-  return this;
-}
+
 
 _Parameter _String::ProcessTreeBranchLength(void) {
   _Parameter res = -1.;
 
-  if (sLength) {
-    if (sData[0] == ':') {
+  if (s_length) {
+    if (s_data[0] == ':') {
       res = Cut(1, -1).toNum();
     } else {
       res = toNum();
@@ -1064,12 +1101,12 @@ _Parameter _String::ProcessTreeBranchLength(void) {
 }
 
 bool _String::IsALiteralArgument(bool stripQuotes) {
-  if (sLength >= 2) {
+  if (s_length >= 2) {
     long from = 0, to = ExtractEnclosedExpression(from, '"', '"', false, true);
 
-    if (from == 0 && to == sLength - 1) {
+    if (from == 0 && to == s_length - 1) {
       if (stripQuotes) {
-        Trim(1, sLength - 2);
+        Trim(1, s_length - 2);
       }
       return true;
     }
@@ -1088,17 +1125,17 @@ Space Methods
 
 //Replace all space runs with a single space
 void _String::CompressSpaces(void) {
-  _StringBuffer temp(sLength + 1);
+  _StringBuffer temp(s_length + 1);
   bool skipping = false;
 
-  for (unsigned long k = 0UL; k < sLength; k++)
-    if (isspace(sData[k])) {
+  for (unsigned long k = 0UL; k < s_length; k++)
+    if (isspace(s_data[k])) {
       if (!skipping) {
         skipping = true;
         temp << ' ';
       }
     } else {
-      temp << sData[k];
+      temp << s_data[k];
       skipping = false;
   }
   *this = temp;
@@ -1107,26 +1144,26 @@ void _String::CompressSpaces(void) {
 //Locate the first non-space charachter of the string
 char _String::FirstNonSpace(long start, long end, char direction) {
   long r = FirstNonSpaceIndex(start, end, direction);
-  return r == -1 ? 0 : sData[r];
+  return r == -1 ? 0 : s_data[r];
 }
 
 //Locate the first non-space charachter of the string
 long _String::FirstNonSpaceIndex(long start, long end, char direction) {
   if (start == -1) {
-    start = ((long) sLength) - 1;
+    start = ((long) s_length) - 1;
   }
   if (end == -1) {
-    end = ((long) sLength) - 1;
+    end = ((long) s_length) - 1;
   }
   if (direction < 0) {
     //long t = start;
     start = end;
     end = start;
   }
-  if (sLength && (start < sLength) && (!isspace(sData[start]))) {
+  if (s_length && (start < s_length) && (!isspace(s_data[start]))) {
     return start; // first char is non-space
   }
-  char *str = sData + start;
+  char *str = s_data + start;
   for (int i = start; i <= end; i += direction, str += direction)
     if (!(((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
       return i;
@@ -1138,20 +1175,20 @@ long _String::FirstNonSpaceIndex(long start, long end, char direction) {
 //Locate the first non-space charachter of the string
 long _String::FirstSpaceIndex(long start, long end, char direction) {
   if (start == -1) {
-    start = ((long) sLength) - 1;
+    start = ((long) s_length) - 1;
   }
   if (end == -1) {
-    end = ((long) sLength) - 1;
+    end = ((long) s_length) - 1;
   }
   if (direction < 0) {
     //long t = start;
     start = end;
     end = start;
   }
-  if (sLength && (isspace(sData[start]))) {
+  if (s_length && (isspace(s_data[start]))) {
     return start; // first char is non-space
   }
-  char *str = sData + start;
+  char *str = s_data + start;
   for (int i = start; i <= end; i += direction, str += direction)
     if ((((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
       return i;
@@ -1162,276 +1199,17 @@ long _String::FirstSpaceIndex(long start, long end, char direction) {
 
 //Remove all spaces
 void _String::KillSpaces(_String &result) {
-  _StringBuffer temp(sLength + 1);
-  for (unsigned long k = 0UL; k < sLength; k++)
-    if (!isspace(sData[k])) {
-      temp << sData[k];
+  _StringBuffer temp(s_length + 1);
+  for (unsigned long k = 0UL; k < s_length; k++)
+    if (!isspace(s_data[k])) {
+      temp << s_data[k];
     }
   result = temp;
 }
 
-//Cut string from, to (-1 for any means from beginning/to end)
-void _String::Trim(long from, long to, bool softTrim) {
-  if (!sLength) {
-    return;
-  }
-  if (from < 0) {
-    from = 0;
-  } else if (from >= sLength) {
-    from = ((long) sLength) - 1;
-  }
-  if (to < 0) {
-    to = ((long) sLength) - 1;
-  } else if (to >= sLength) {
-    to = ((long) sLength) - 1;
-  }
 
-  if (softTrim) {
-    sData += from;
-    sLength = to - from + 1;
-  } else if (to - from + 1 > 0) {
-    if (from) {
-      memmove(sData, sData + from, to - from + 1);
-    }
 
-    sLength = to - from + 1;
-    sData = MemReallocate(sData, to - from + 2);
-    sData[to - from + 1] = 0;
-  } else {
-    sLength = 0;
-    sData = MemReallocate(sData, 1);
-    sData[0] = 0;
-  }
-}
 
-/*
-==============================================================
-Lexicographic Comparison Methods
-==============================================================
-*/
-
-bool _String::contains(_String s) { return Find(s) != -1; }
-
-bool _String::contains(char c) { return Find(c) != -1; }
-
-char _String::Compare(_String *s) {
-  long upTo;
-
-  if (sLength > s->sLength) {
-    upTo = s->sLength;
-  } else {
-    upTo = sLength;
-  }
-
-  for (long i = 0; i < upTo; i++) {
-    int res = (sData[i] - s->sData[i]);
-    if (res < 0) {
-      return HY_NOT_FOUND;
-    } else if (res > 0) {
-      return 1;
-    }
-  }
-
-  if (sLength == s->sLength) {
-    return 0;
-  }
-
-  return 1 - 2 * (sLength < s->sLength);
-}
-
-bool _String::Equal(const _String *s) const {
-  if (sLength != s->sLength) {
-    return false;
-  }
-
-  for (unsigned long i = 0; i < sLength; i++)
-    if (sData[i] != s->sData[i]) {
-      return false;
-    }
-
-  return true;
-}
-
-bool _String::Equal(const char c) const {
-  return sLength == 1 && sData[0] == c;
-}
-
-//S may contain a wild char
-bool _String::EqualWithWildChar(_String *s, char wildchar) {
-  char *sP = sData, *ssP = (s->sData); // optimize
-  // we start comparing the strings until we run into a wildchar.
-  long matchLength, t, q, p, curPos = 0;
-  while (*ssP) {
-    if (*ssP != wildchar) {
-      if (*ssP == *sP) {
-        ssP++;
-        sP++;
-        curPos++;
-        continue;
-      } else {
-        return false;
-      }
-    }
-    // wildchar found
-    // skip the wildchar and scroll the 1st string until match is found
-    matchLength = 0;
-    ssP++;
-    while (*ssP && (*ssP != wildchar)) {
-      ssP++;
-      matchLength++;
-    }
-    if (!matchLength) { // wildchar is the last symbol in expression
-      if (!*ssP) {
-        return true; // expressions matched
-      }
-    } else { // check sP for a possible match
-      t = matchLength - 1;
-      q = matchLength + curPos - 1;
-      ssP--;
-      while (q < sLength) {
-        if (sP[t] == *ssP) {
-          p = 1;
-          while (p < matchLength) {
-            char c = *(ssP - p);
-            if (sP[t - p] != c) {
-              break;
-            }
-            p++;
-          }
-          if (p == matchLength) {
-            sP += t + 1;
-            curPos = q + 1;
-            ssP++;
-            break;
-            //                      ssP++;
-          }
-        }
-        t++;
-        q++;
-      }
-      if (q == sLength) {
-        return false;
-      }
-    }
-  }
-
-  return (*sP == 0);
-}
-
-bool _String::Greater(_String *s) {
-  unsigned long top = ((s->sLength > sLength) ? sLength : s->sLength);
-
-  for (long i = 0; i < top; i++) {
-    int j = sData[i] - s->sData[i];
-    if (j > 0) {
-      return true;
-    }
-    if (j < 0) {
-      return false;
-    }
-  }
-
-  return (sLength > s->sLength);
-}
-
-bool _String::Less(_String *s) {
-  unsigned long top = ((s->sLength > sLength) ? sLength : s->sLength);
-
-  for (long i = 0; i < top; i++) {
-    int j = sData[i] - s->sData[i];
-    if (j > 0) {
-      return false;
-    }
-    if (j < 0) {
-      return true;
-    }
-  }
-
-  return (sLength < s->sLength);
-
-}
-
-/*
-==============================================================
-Begins and Ends With Methods
-==============================================================
-*/
-
-//Begins with string
-bool _String::beginswith(_String s, bool caseSensitive) {
-  if (sLength < s.sLength) {
-    return FALSE;
-  }
-  char *sP = sData, *ssP = (s.sData);
-  if (caseSensitive) {
-    for (long i = 0; i < s.sLength; i++)
-      if (sP[i] != ssP[i]) {
-        return FALSE;
-      }
-  } else
-    for (long i = 0; i < s.sLength; i++)
-      if (toupper(sP[i]) != toupper(ssP[i])) {
-        return FALSE;
-      }
-
-  return TRUE;
-}
-
-//Begins with string
-bool _String::startswith(_String &s) {
-  if (sLength < s.sLength) {
-    return FALSE;
-  }
-
-  char *sP = sData, *ssP = s.sData;
-
-  for (; *ssP; sP++, ssP++)
-    if (*sP != *ssP) {
-      return false;
-    }
-
-  return true;
-}
-
-//Ends with string
-bool _String::endswith(_String s, bool caseSensitive) {
-  if (sLength < s.sLength) {
-    return FALSE;
-  }
-  char *sP = sData + sLength - s.sLength, *ssP = (s.sData),
-       *ssP2 = s.sData + s.sLength;
-
-  if (caseSensitive) {
-    for (; ssP != ssP2; ssP++, sP++)
-      if (*sP - *ssP) {
-        return FALSE;
-      }
-  } else
-    for (; ssP != ssP2; ssP++, sP++)
-      if (toupper(*sP) != toupper(*ssP)) {
-        return FALSE;
-      }
-
-  return TRUE;
-}
-
-/*
-==============================================================
-Case Methods
-==============================================================
-*/
-
-void _String::UpCase(void) {
-  for (unsigned long i = 0; i < sLength; i++) {
-    sData[i] = toupper(sData[i]);
-  }
-}
-
-void _String::LoCase(void) {
-  for (unsigned long i = 0; i < sLength; i++) {
-    sData[i] = tolower(sData[i]);
-  }
-}
 
 void _String::ProcessParameter(void) {
 #ifndef HY_2014_REWRITE_MASK
@@ -1503,7 +1281,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
       StripQuotes();
     }
 
-    if (!sLength) {
+    if (!s_length) {
       return true;
     }
   }
@@ -1532,7 +1310,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
   if (getChar(0) != '/') { // relative path
     if (pathNames.lLength) {
       _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-      long f = lastPath->sLength - 2, k = 0;
+      long f = lastPath->s_length - 2, k = 0;
 
       // check the last stored absolute path and reprocess this relative path
       // into an absolute.
@@ -1562,7 +1340,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
     if (Find('\\') == -1) {
       // check to see if this is a relative path
       *this = Replace("::", ":..\\", true);
-      if ((sData[0] == ':')) {
+      if ((s_data[0] == ':')) {
         Trim(1, -1);
       }
       *this = Replace(':', '\\', true);
@@ -1573,7 +1351,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
 
     if (pathNames.lLength) {
       _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-      long f = lastPath->sLength - 2, k = 0;
+      long f = lastPath->s_length - 2, k = 0;
       // check the last stored absolute path and reprocess this relative path
       // into an absolute.
       while (beginswith("..\\")) {
@@ -1585,7 +1363,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
         k++;
       }
       if (k == 0) {
-        if (lastPath->sData[lastPath->sLength - 1] != '\\') {
+        if (lastPath->s_data[lastPath->s_length - 1] != '\\') {
           *this = *lastPath & '\\' & (*this);
         } else {
           *this = *lastPath & (*this);
@@ -1597,8 +1375,8 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
 
   }
 
-  _String escapedString(sLength, true);
-  for (long stringIndex = 0; stringIndex < sLength; stringIndex++) {
+  _String escapedString(s_length, true);
+  for (long stringIndex = 0; stringIndex < s_length; stringIndex++) {
     char currentChar = getChar(stringIndex);
     //char b[256];
     //snprintf (b, sizeof(b),"%c %d\n", currentChar, currentChar);
@@ -1624,7 +1402,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
 #ifdef __MAC__
   if (!assume_platform_specific && Find('/') != -1) { // UNIX PATH
     bool rootPath = false;
-    if (sData[0] == '/') {
+    if (s_data[0] == '/') {
       rootPath = true;
       *this = volumeName & Cut(1, -1);
     }
@@ -1636,7 +1414,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
     *this = Replace("/", ":", true);
     *this = Replace("..", "", true);
 
-    if (sData[0] != ':' && !rootPath) {
+    if (s_data[0] != ':' && !rootPath) {
       *this = _String(':') & *this;
     }
   } else {
@@ -1652,7 +1430,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
       }
     } else { // MAC PATH
       if (Find(':') != -1) {
-        if (sData[0] != ':') {
+        if (s_data[0] != ':') {
           if (!beginswith(volumeName)) {
             if (pathNames.lLength) {
               _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
@@ -1670,13 +1448,13 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
     }
   }
 
-  if (sData[0] == ':') { // relative path
+  if (s_data[0] == ':') { // relative path
     long f = -1, k = 0;
     if (pathNames.lLength) {
       _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
       // check the last stored absolute path and reprocess this relative path
       // into an absolute.
-      while (sData[k] == ':') {
+      while (s_data[k] == ':') {
         f = lastPath->FindBackwards(':', 0, f) - 1;
         if (f == -1) {
           return;
@@ -1695,12 +1473,12 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
 
 //Compose two UNIX paths (abs+rel)
 _String _String::PathComposition(_String relPath) {
-  if (relPath.sData[0] != '/') { // relative path
+  if (relPath.s_data[0] != '/') { // relative path
     long f = -1, k = 0;
-    f = sLength - 2;
+    f = s_length - 2;
     _String result = *this;
 
-    while (relPath.beginswith("../")) {
+    while (relPath.startswith("../")) {
 
       //Cut Trim relPath
       f = FindBackwards('/', 0, f) - 1;
@@ -1730,17 +1508,17 @@ _String _String::PathSubtraction(_String &p2, char) {
   //if (pStyle == 0)
   //    separator = ':';
   long k;
-  for (k = 0;(k < sLength) && (k < p2.sLength) && (sData[k] == p2.sData[k]);
+  for (k = 0;(k < s_length) && (k < p2.s_length) && (s_data[k] == p2.s_data[k]);
        k++)
     ;
   if (k > 0) {
-    while (sData[k] != separator) {
+    while (s_data[k] != separator) {
       k--;
     }
     if (k > 0) {
       long m = k + 1, levels = 0;
-      for (; m < sLength; m++)
-        if (sData[m] == separator) {
+      for (; m < s_length; m++)
+        if (s_data[m] == separator) {
           levels++;
         }
       if (levels) {
@@ -1829,22 +1607,22 @@ Identifier Methods
 ==============================================================
 */
 
-bool _String::IsValidIdentifier(bool strict) {
+bool _String::IsValidIdentifier(bool strict) const {
 #ifndef HY_2014_REWRITE_MASK
-  if (sLength == 0) {
+  if (s_length == 0) {
     return false;
   }
 
   if (strict) {
-    if (!(isalpha(sData[0]) || sData[0] == '_')) {
+    if (!(isalpha(s_data[0]) || s_data[0] == '_')) {
       return false;
     }
-  } else if (!(isalnum(sData[0]) || sData[0] == '_')) {
+  } else if (!(isalnum(s_data[0]) || s_data[0] == '_')) {
     return false;
   }
 
-  for (unsigned long p = 1; p < sLength; p++) {
-    char c = sData[p];
+  for (unsigned long p = 1; p < s_length; p++) {
+    char c = s_data[p];
     if (!(isalnum(c) || c == '_' || (strict && c == '.'))) {
       return false;
     }
@@ -1860,45 +1638,45 @@ bool _String::IsValidIdentifier(bool strict) {
   
 }
 
-bool _String::IsValidRefIdentifier(void) {
-  if (sLength < 2) {
+bool _String::IsValidRefIdentifier(void) const {
+  if (s_length < 2) {
     return false;
   }
-  if (sData[sLength - 1] == '&') {
-    return Cut(0, sLength - 2).IsValidIdentifier();
+  if (s_data[s_length - 1] == '&') {
+    return Cut(0, s_length - 2).IsValidIdentifier();
   }
   return false;
 }
 
 //Convert a string to a valid ident
 void _String::ConvertToAnIdent(bool strict) {
-  _StringBuffer *result = new _StringBuffer((unsigned long) sLength + 1UL);
+  _StringBuffer *result = new _StringBuffer((unsigned long) s_length + 1UL);
 
-  if (sLength) {
+  if (s_length) {
     if (strict) {
-      if (((sData[0] >= 'a') && (sData[0] <= 'z')) ||
-          ((sData[0] >= 'A') && (sData[0] <= 'Z')) || (sData[0] == '_')) {
-        (*result) << sData[0];
+      if (((s_data[0] >= 'a') && (s_data[0] <= 'z')) ||
+          ((s_data[0] >= 'A') && (s_data[0] <= 'Z')) || (s_data[0] == '_')) {
+        (*result) << s_data[0];
       } else {
         (*result) << '_';
       }
     } else {
-      if (((sData[0] >= 'a') && (sData[0] <= 'z')) ||
-          ((sData[0] >= 'A') && (sData[0] <= 'Z')) || (sData[0] == '_') ||
-          ((sData[0] >= '0') && (sData[0] <= '9'))) {
-        (*result) << sData[0];
+      if (((s_data[0] >= 'a') && (s_data[0] <= 'z')) ||
+          ((s_data[0] >= 'A') && (s_data[0] <= 'Z')) || (s_data[0] == '_') ||
+          ((s_data[0] >= '0') && (s_data[0] <= '9'))) {
+        (*result) << s_data[0];
       } else {
         (*result) << '_';
       }
     }
 
     long l = 0;
-    for (unsigned long k = 1UL; k < sLength; k++) {
-      unsigned char c = sData[k];
+    for (unsigned long k = 1UL; k < s_length; k++) {
+      unsigned char c = s_data[k];
       if (_hyValidIDChars.valid_chars[c]) {
         (*result) << c;
         l++;
-      } else if (result->sData[l] != '_') {
+      } else if (result->s_data[l] != '_') {
         (*result) << '_';
         l++;
       }
@@ -1910,18 +1688,18 @@ void _String::ConvertToAnIdent(bool strict) {
 
 _String _String::ShortenVarID(_String &containerID) {
   long matched = -1,
-       upTo = sLength < containerID.sLength ? sLength : containerID.sLength, k;
+       upTo = s_length < containerID.s_length ? s_length : containerID.s_length, k;
 
   for (k = 0; k < upTo; k++) {
-    if (sData[k] != containerID.sData[k]) {
+    if (s_data[k] != containerID.s_data[k]) {
       break;
-    } else if (sData[k] == '.') {
+    } else if (s_data[k] == '.') {
       matched = k;
     }
   }
 
-  if ((upTo == containerID.sLength) && (upTo < sLength) && (k == upTo) &&
-      (sData[upTo] == '.')) {
+  if ((upTo == containerID.s_length) && (upTo < s_length) && (k == upTo) &&
+      (s_data[upTo] == '.')) {
     matched = upTo;
   }
 
@@ -1950,7 +1728,7 @@ Ptr PrepRegExp(_String *source, int &errCode, bool caseSensitive) {
   regex_t *res = new regex_t;
   checkPointer(res);
 
-  errCode = regcomp(res, source->sData,
+  errCode = regcomp(res, source->s_data,
                     REG_EXTENDED | (caseSensitive ? 0 : REG_ICASE));
 
   if (errCode) {
@@ -1961,11 +1739,11 @@ Ptr PrepRegExp(_String *source, int &errCode, bool caseSensitive) {
 }
 
 void _String::RegExpMatch(Ptr pattern, _SimpleList &matchedPairs) {
-  if (sLength) {
+  if (s_length) {
     regex_t *regEx = (regex_t *)pattern;
 
     regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
-    int errNo = regexec(regEx, sData, regEx->re_nsub + 1, matches, 0);
+    int errNo = regexec(regEx, s_data, regEx->re_nsub + 1, matches, 0);
     if (errNo == 0) {
       for (long k = 0; k <= regEx->re_nsub; k++) {
         matchedPairs << matches[k].rm_so;
@@ -1977,11 +1755,11 @@ void _String::RegExpMatch(Ptr pattern, _SimpleList &matchedPairs) {
 }
 
 void _String::RegExpMatchAll(Ptr pattern, _SimpleList &matchedPairs) {
-  if (sLength) {
+  if (s_length) {
     regex_t *regEx = (regex_t *)pattern;
 
     regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
-    int errNo = regexec(regEx, sData, regEx->re_nsub + 1, matches, 0);
+    int errNo = regexec(regEx, s_data, regEx->re_nsub + 1, matches, 0);
     while (errNo == 0) {
       long offset = matchedPairs.countitems()
                         ? matchedPairs.Element(-1) + 1
@@ -1991,8 +1769,8 @@ void _String::RegExpMatchAll(Ptr pattern, _SimpleList &matchedPairs) {
       matchedPairs << matches[0].rm_eo - 1 + offset;
 
       offset += matches[0].rm_eo;
-      if (offset < sLength) {
-        errNo = regexec(regEx, sData + offset, regEx->re_nsub + 1, matches, 0);
+      if (offset < s_length) {
+        errNo = regexec(regEx, s_data + offset, regEx->re_nsub + 1, matches, 0);
       } else {
         break;
       }
@@ -2003,7 +1781,7 @@ void _String::RegExpMatchAll(Ptr pattern, _SimpleList &matchedPairs) {
 
 void _String::RegExpMatchOnce(_String *pattern, _SimpleList &matchedPairs,
                               bool caseSensitive, bool handleErrors) {
-  if (sLength) {
+  if (s_length) {
     int errNo = 0;
     Ptr regex = PrepRegExp(pattern, errNo, caseSensitive);
     if (regex) {
@@ -2015,28 +1793,13 @@ void _String::RegExpMatchOnce(_String *pattern, _SimpleList &matchedPairs,
   }
 }
 
-_String _String::Random(const unsigned long length, const _String *alphabet) {
-  _StringBuffer random(length + 1);
-  unsigned long alphabet_length = alphabet ? alphabet->sLength : 127;
-  if (length > 0 && alphabet_length > 0) {
-    for (unsigned long c = 0; c < length; c++) {
-      unsigned long idx = genrand_int32() % alphabet_length;
-      if (alphabet) {
-        random << alphabet->sData[idx];
-      } else {
-        random << (char)(1 + idx);
-      }
-    }
-  }
 
-  return random;
-}
 
 unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
                                                      _String *context) {
 #ifndef HY_2014_REWRITE_MASK
   char first_char = getChar(0);
-  bool is_func_ref = getChar(sLength - 1) == '&';
+  bool is_func_ref = getChar(s_length - 1) == '&';
 
   if (first_char == '*' || first_char == '^') {
     if (is_func_ref) {
@@ -2062,7 +1825,7 @@ unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
   }
 
   if (is_func_ref) {
-    referenced_object = Cut(0, sLength - 2);
+    referenced_object = Cut(0, s_length - 2);
     if (referenced_object.IsValidIdentifier()) {
       referenced_object = (context ? (*context & '.' & referenced_object)
                                    : (referenced_object)) & '&';
@@ -2079,3 +1842,5 @@ unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
 #endif
   return HY_STRING_INVALID_REFERENCE;
 }
+
+
