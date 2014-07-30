@@ -48,66 +48,85 @@ class _DataSetFilter;
 class _Site : public _StringBuffer {
 
 public:
-  //does nothing
+
+  /**
+   * A constructor that creates a Site object with no content, placeholder
+   * reference to -1, and is incomplete
+   */
   _Site(void);
-  // data constructor
+
+  /**
+   * A constructor that creates a Site object with given content, placeholder
+   * reference to -1, and is incomplete
+   * @param s The given content of the site
+   */
   _Site(_String &);
-  // data constructor
+
+  /**
+   * A constructor that creates a Site object with given content, placeholder
+   * reference to -1, and is incomplete
+   * @param c The given content of the site
+   */
   _Site(char);
-  // reference to another site constructor
+
+  /**
+   * A constructor that creates a Site object with no content, but a given
+   * reference, and is incomplete
+   * @param r The given reference to another site
+   */
   _Site(long);
 
-  //destructor
+  /**
+   * A destructor. Does nothing.
+   */
   virtual ~_Site(void);
 
-  // mark this site as complete
-  void Complete(void);
+  /**
+   * Mark this site as complete. Uses the sign of ref_no as a switch to do
+   * so.
+   */
+  void complete(void);
 
-  //virtual BaseRef makeDynamic(void);
-  void duplicate(BaseRef s) {
-    _StringBuffer::duplicate(s);
-    refNo = -1;
-  }
-  virtual void Clear(void);
+  /**
+   * Duplicate another Site
+   * @param b The Site to be duplicated. Calls StringBuffer::duplicate, also
+   * copy ref_no
+   */
+  void duplicate(BaseRef);
 
-  // XXX maybe remove these
-  //void PrepareToUse(void); // decompress the site preparing for intensive use
-  //void Archive(void);      // archive the site for later use
+  /**
+   * Replace the StringBuffer of this site and reset the ref_no
+   */
+  virtual void clear(void);
 
-  long GetRefNo(void) { return refNo < 0 ? -refNo - 2 : refNo - 2; }
+  /**
+   * Return the reference held by this site
+   */
+  long getRefNo(void) { return ref_no < 0 ? -ref_no - 2 : ref_no - 2; }
 
   // Complete and IsComplete are never used, but they don't make sense as
-  // implemented before refactoring, where complete is when refNo is < 0. I
-  // believe this because complete makes refNo positive always.
-  bool IsComplete(void) { return refNo > 0; }
+  // implemented before refactoring, where complete is when ref_no is < 0. I
+  // believe this because complete makes ref_no positive always.
+  /**
+   * Return whether or not the site has had its Complete() called
+   */
+  bool isComplete(void) { return ref_no > 0; }
 
-  void SetRefNo(long r) { refNo = -r - 2; }
+  /**
+   * Set the reference held by this site to another site
+   * @param the reference number of another site
+   */
+  void setRefNo(long r) { ref_no = -r - 2; }
 
 private:
 
-  long refNo; // if this site contains a reference to another one
-  // if refNo is negative, then shows whether the definition of this datatype
-  // has been completed
+  /**
+   * if this site contains a reference to another one
+   * if ref_no is negative, then shows whether the definition of this site
+   * has been completed
+   */
+  long ref_no;
+
 };
-
-/*
-extern _TranslationTable defaultTranslationTable;
-
-void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool append = false,
-                  bool upCase = true);
-_DataSet *ReadDataSetFile(FILE *, char = 0, _String * = nil, _String * = nil,
-                          _String * = nil,
-                          _TranslationTable * = &defaultTranslationTable);
-void fillDefaultCharTable(void);
-void printFileResults(_DataSet *);
-void printDSFilter(_DataSetFilter *d);
-
-bool StoreADataSet(_DataSet *, _String *);
-
-extern _String dataFileTree, dataFileTreeString, nexusFileTreeMatrix,
-    dataFilePartitionMatrix, defaultLargeFileCutoff, nexusBFBody;
-
-extern _DataSet *lastNexusDataMatrix;
-*/
 
 #endif
