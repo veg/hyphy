@@ -28,6 +28,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "hy_strings.h"
+#include "hy_globals.h"
+#include "hy_list_numeric.h"
+#include "hy_list_reference.h"
+
+
 
 #ifndef __HYPHYXCODE__
 #include "gnuregex.h"
@@ -36,19 +41,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unistd.h>
 #endif
 
-#ifdef __UNIX__
-#if !defined __MINGW32__
-#include <sys/utsname.h>
-#endif
-#include <unistd.h>
-#endif
 
 #ifdef __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
-
-#include "hy_list_numeric.h"
-#include "hy_list_reference.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -57,25 +53,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <time.h>
 
 
-_String compileDate = __DATE__,
-        __KERNEL__VERSION__ =
-            _String("2.13") & compileDate.Cut(7, 10) &
-            compileDate.Cut(0, 2).Replace("Jan", "01", true)
-                .Replace("Feb", "02", true).Replace("Mar", "03", true)
-                .Replace("Apr", "04", true).Replace("May", "05", true)
-                .Replace("Jun", "06", true).Replace("Jul", "07", true)
-                .Replace("Aug", "08", true).Replace("Sep", "09", true)
-                .Replace("Oct", "10", true).Replace("Nov", "11", true)
-                .Replace("Dec", "12", true) &
-            compileDate.Cut(4, 5).Replace(" ", "0", true) & "beta";
-
-_String empty(""), emptyAssociativeList("{}"),
-    hyphyCiteString(
-        "\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. "
-        "(2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics "
-        "21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy "
-        "user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf "
-        "may be a good starting point.\n");
 
 char defaultReturn = 0;
 unsigned long _String::storageIncrement = 32;
@@ -948,6 +925,44 @@ const _String _String::ShortenVarID(_String const &containerID) const {
     return *this;
 }
 
+/*
+ ==============================================================
+ Space Methods
+ ==============================================================
+ */
+
+//Replace all space runs with a single space
+const _String _String::CompressSpaces(void) const {
+    _StringBuffer temp(sLength + 1UL);
+    bool skipping = false;
+    
+    for (unsigned long k = 0UL; k < sLength; k++) {
+        if (!isspace(sData[k])) {
+            temp << sData[k];
+            skipping = false;
+        } else {
+            if (!skipping) {
+                skipping = true;
+                temp << ' ';
+            }
+        }
+    }
+    return temp;
+}
+
+//Remove all spaces
+const _String _String::KillSpaces(void) const {
+    _StringBuffer temp(sLength + 1UL);
+    for (unsigned long k = 0UL; k < sLength; k++) {
+        if (!isspace(sData[k])) {
+            temp << sData[k];
+        }
+    }
+    return temp;
+}
+
+
+
 
 
 /*!!!!!!!!!!!!!!!!!!
@@ -955,6 +970,69 @@ const _String _String::ShortenVarID(_String const &containerID) const {
  DONE UP TO HERE
  
  !!!!!!!!!!!!!!!!!!!!*/
+
+
+
+
+//Locate the first non-space charachter of the string
+char _String::FirstNonSpace(long start, long end, char direction) {
+    long r = FirstNonSpaceIndex(start, end, direction);
+    return r == -1 ? 0 : sData[r];
+}
+
+//Locate the first non-space charachter of the string
+long _String::FirstNonSpaceIndex(long start, long end, char direction) {
+    if (start == -1) {
+        start = ((long) sLength) - 1;
+    }
+    if (end == -1) {
+        end = ((long) sLength) - 1;
+    }
+    if (direction < 0) {
+        //long t = start;
+        start = end;
+        end = start;
+    }
+    if (sLength && (start < sLength) && (!isspace(sData[start]))) {
+        return start; // first char is non-space
+    }
+    char *str = sData + start;
+    for (int i = start; i <= end; i += direction, str += direction)
+        if (!(((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
+            return i;
+        }
+    
+    return HY_NOT_FOUND;
+}
+
+//Locate the first non-space charachter of the string
+long _String::FirstSpaceIndex(long start, long end, char direction) {
+    if (start == -1) {
+        start = ((long) sLength) - 1;
+    }
+    if (end == -1) {
+        end = ((long) sLength) - 1;
+    }
+    if (direction < 0) {
+        //long t = start;
+        start = end;
+        end = start;
+    }
+    if (sLength && (isspace(sData[start]))) {
+        return start; // first char is non-space
+    }
+    char *str = sData + start;
+    for (int i = start; i <= end; i += direction, str += direction)
+        if ((((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
+            return i;
+        }
+    
+    return HY_NOT_FOUND;
+}
+
+
+
+
 
 
 bool _String::IsValidRefIdentifier(void) const {
@@ -1232,96 +1310,6 @@ bool _String::IsALiteralArgument(bool stripQuotes) {
 
 //TODO: This is a global function.
 bool hyIDValidator(_String *s) { return s->IsValidIdentifier(false); }
-
-/*
-==============================================================
-Space Methods
-==============================================================
-*/
-
-//Replace all space runs with a single space
-void _String::CompressSpaces(void) {
-  _StringBuffer temp(sLength + 1);
-  bool skipping = false;
-
-  for (unsigned long k = 0UL; k < sLength; k++)
-    if (isspace(sData[k])) {
-      if (!skipping) {
-        skipping = true;
-        temp << ' ';
-      }
-    } else {
-      temp << sData[k];
-      skipping = false;
-  }
-  *this = temp;
-}
-
-//Locate the first non-space charachter of the string
-char _String::FirstNonSpace(long start, long end, char direction) {
-  long r = FirstNonSpaceIndex(start, end, direction);
-  return r == -1 ? 0 : sData[r];
-}
-
-//Locate the first non-space charachter of the string
-long _String::FirstNonSpaceIndex(long start, long end, char direction) {
-  if (start == -1) {
-    start = ((long) sLength) - 1;
-  }
-  if (end == -1) {
-    end = ((long) sLength) - 1;
-  }
-  if (direction < 0) {
-    //long t = start;
-    start = end;
-    end = start;
-  }
-  if (sLength && (start < sLength) && (!isspace(sData[start]))) {
-    return start; // first char is non-space
-  }
-  char *str = sData + start;
-  for (int i = start; i <= end; i += direction, str += direction)
-    if (!(((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
-      return i;
-    }
-
-  return HY_NOT_FOUND;
-}
-
-//Locate the first non-space charachter of the string
-long _String::FirstSpaceIndex(long start, long end, char direction) {
-  if (start == -1) {
-    start = ((long) sLength) - 1;
-  }
-  if (end == -1) {
-    end = ((long) sLength) - 1;
-  }
-  if (direction < 0) {
-    //long t = start;
-    start = end;
-    end = start;
-  }
-  if (sLength && (isspace(sData[start]))) {
-    return start; // first char is non-space
-  }
-  char *str = sData + start;
-  for (int i = start; i <= end; i += direction, str += direction)
-    if ((((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
-      return i;
-    }
-
-  return HY_NOT_FOUND;
-}
-
-//Remove all spaces
-void _String::KillSpaces(_String &result) {
-  _StringBuffer temp(sLength + 1);
-  for (unsigned long k = 0UL; k < sLength; k++)
-    if (!isspace(sData[k])) {
-      temp << sData[k];
-    }
-  result = temp;
-}
 
 
 
@@ -1651,71 +1639,6 @@ _String _String::PathSubtraction(_String &p2, char) {
   return empty;
 }
 
-//TODO: These are global methods. Should they even be here?
-char GetPlatformDirectoryChar(void) {
-  char c = '/';
-#ifdef __MAC__
-  c = ':';
-#endif
-#if defined __WINDOZE__ || defined __MINGW32__
-  c = '\\';
-#endif
-
-  return c;
-}
-
-_String GetVersionString(void) {
-  _String theMessage = _String("HYPHY ") & __KERNEL__VERSION__;
-#ifdef __MP__
-  theMessage = theMessage & "(MP)";
-#endif
-#ifdef __HYPHYMPI__
-  theMessage = theMessage & "(MPI)";
-#endif
-  theMessage = theMessage & " for ";
-#ifdef __MAC__
-  theMessage = theMessage & "MacOS";
-#ifdef __HYPHYXCODE__
-  theMessage = theMessage & "(Universal Binary)";
-#else
-#ifdef TARGET_API_MAC_CARBON
-  theMessage = theMessage & "(Carbon)";
-#endif
-#endif
-#endif
-#ifdef __WINDOZE__
-  theMessage = theMessage & "Windows (Win32)";
-#endif
-#ifdef __UNIX__
-#if !defined __HEADLESS_WIN32__ && !defined __MINGW32__
-  struct utsname name;
-  uname(&name);
-  theMessage = theMessage & name.sysname & " on " & name.machine;
-#endif
-#if defined __MINGW32__
-  theMessage = theMessage & "MinGW "; // " & __MINGW32_VERSION;
-#endif
-#endif
-  return theMessage;
-}
-
-_String GetTimeStamp(bool doGMT) {
-  time_t cTime;
-  time(&cTime);
-
-  if (doGMT) {
-    tm *gmt = gmtime(&cTime);
-    return _String((long) 1900 + gmt->tm_year) & '/' &
-           _String(1 + (long) gmt->tm_mon) & '/' &
-           _String((long) gmt->tm_mday) & ' ' & _String((long) gmt->tm_hour) &
-           ':' & _String((long) gmt->tm_min);
-  }
-
-  tm *localTime = localtime(&cTime);
-
-  return asctime(localTime);
-
-}
 
 
 /*

@@ -47,20 +47,19 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-/*
-#include "errorfns.h"
-#include "hy_strings.h"
-#include "site.h"
-#include "batchlan.h"
-#include "category.h"
-#include "likefunc.h"
+#ifdef __UNIX__
+#if !defined __MINGW32__
+#include <sys/utsname.h>
+#endif
+#include <unistd.h>
+#endif
 
-#include <string.h>
-*/
+#include "hy_globals.h"
+
 
 #ifndef HY_2014_REWRITE_MASK
 
-#include "hy_globals.h"
+
 
 //______________________________________________________________________________
 FILE *doFileOpen(const char *fileName, const char *mode, bool warn) {
@@ -625,4 +624,71 @@ void NormalizeCoordinates(long &from, long &to,
   } else {
     from = from < refLength - 1L ? from : refLength - 1L;
   }
+}
+
+
+// get the directory separtor
+
+char GetPlatformDirectoryChar(void) {
+#ifdef __MAC__
+    return ':';
+#endif
+#if defined __WINDOZE__ || defined __MINGW32__
+    return '\\';
+#endif
+    
+    return '/';
+}
+
+const _String GetVersionString(void) {
+    _String theMessage = _String("HYPHY ") & __KERNEL__VERSION__;
+#ifdef __MP__
+    theMessage = theMessage & "(MP)";
+#endif
+#ifdef __HYPHYMPI__
+    theMessage = theMessage & "(MPI)";
+#endif
+    theMessage = theMessage & " for ";
+#ifdef __MAC__
+    theMessage = theMessage & "MacOS";
+#ifdef __HYPHYXCODE__
+    theMessage = theMessage & "(Universal Binary)";
+#else
+#ifdef TARGET_API_MAC_CARBON
+    theMessage = theMessage & "(Carbon)";
+#endif
+#endif
+#endif
+#ifdef __WINDOZE__
+    theMessage = theMessage & "Windows (Win32)";
+#endif
+#ifdef __UNIX__
+#if !defined __HEADLESS_WIN32__ && !defined __MINGW32__
+    struct utsname name;
+    uname(&name);
+    theMessage = theMessage & name.sysname & " on " & name.machine;
+#endif
+#if defined __MINGW32__
+    theMessage = theMessage & "MinGW "; // " & __MINGW32_VERSION;
+#endif
+#endif
+    return theMessage;
+}
+
+const _String GetTimeStamp(bool doGMT) {
+    time_t cTime;
+    time(&cTime);
+    
+    if (doGMT) {
+        tm *gmt = gmtime(&cTime);
+        return _String((long) 1900 + gmt->tm_year) & '/' &
+        _String(1 + (long) gmt->tm_mon) & '/' &
+        _String((long) gmt->tm_mday) & ' ' & _String((long) gmt->tm_hour) &
+        ':' & _String((long) gmt->tm_min);
+    }
+    
+    tm *localTime = localtime(&cTime);
+    
+    return asctime(localTime);
+    
 }

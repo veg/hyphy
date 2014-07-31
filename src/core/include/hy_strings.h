@@ -650,21 +650,19 @@ public:
   /**
   * Removes all spaces in a string
   * \n\n \b Example: \code _String("   h  y p    h  y").KillSpaces \endcode
-  * @param result A reference to the string that will have stripped spaces. The
-  * original string will not be changed.
   * @sa CompressSpaces()
-  * @return The example would return "hyphy"
+  * @return The string without spaces (e.g. "hyphy" in the example)
   */
-  void KillSpaces(_String &);
+   const _String KillSpaces(void) const;
 
   /**
-  * Removes all spaces in a string
+  * Compresses all runs of spaces in a string into a single space
   * \n\n \b Example: \code _String("   h  y p    h  y").CompressSpaces()
   * \endcode
-  * @return Example would transform the string to "h y p h y"
+  * @return "h y p h y"
   * @sa KillSpaces()
   */
-  void CompressSpaces(void);
+  const _String CompressSpaces(void) const;
 
   /**
   * Shorten the var id by removing the matching beginning portion of the passed
@@ -830,11 +828,7 @@ public:
 
 // _______________________________________________________________________
 
-extern _String empty, emptyAssociativeList, hyphyCiteString;
 
-#ifdef __MAC__
-extern _String volumeName;
-#endif
 
 void SetStatusBarValue(long, _Parameter, _Parameter);
 void SetStatusLine(_String);
@@ -851,17 +845,12 @@ void ReportWarning(const _String&);
 void FlagError(const _String&);
 void WarnErrorWhileParsing(_String, _String &);
 void WarnError(const _String&);
-_String GetVersionString(void);
-_String GetTimeStamp(bool = false);
 
 void StringToConsole(_String &, _SimpleList * = nil);
 void BufferToConsole(const char *, _SimpleList * = nil);
 void NLToConsole(void);
 _String *StringFromConsole(bool = true);
 
-char GetPlatformDirectoryChar(void);
-
-extern _String __KERNEL__VERSION__;
 
 #ifdef __UNIX__
 extern bool needExtraNL;

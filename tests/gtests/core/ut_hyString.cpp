@@ -49,6 +49,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "helperfunctions.h"
 #include "hy_list_reference.h"
 #include "hy_list_numeric.h"
+#include "hy_globals.h"
 
 namespace {
   // The fixture for testing class Foo.
