@@ -54,7 +54,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 
-char defaultReturn = 0;
+char _hyStringDefaultReturn = 0;
 unsigned long _String::storageIncrement = 32;
 
 /*extern int _hy_mpi_node_rank;
@@ -302,7 +302,7 @@ char &_String::operator[](long index) {
   if (((unsigned long) index) < sLength) {
     return sData[index];
   }
-  return defaultReturn;
+  return _hyStringDefaultReturn;
 }
 
 //Element location functions
@@ -315,8 +315,9 @@ const char _String::getChar(long index) const {
   if (index >= 0L && index < sLength) {
     return sData[index];
   }
-  return defaultReturn;
+  return _hyStringDefaultReturn;
 }
+
 
 // Assignment operator
 void _String::operator=(const _String& s) {
@@ -963,76 +964,65 @@ const _String _String::KillSpaces(void) const {
 
 
 
+  //Locate the first non-space charachter of the string
+long _String::FirstNonSpaceIndex(long from, long to, unsigned char direction) const {
+  
+  long requested_range = NormalizeRange(from, to);
+  
+  if (requested_range > 0L) {
+    if (direction == HY_STRING_DIRECTION_FORWARD) {
+      for (; from <= to; from++) {
+        if (!isspace(sData[from])) {
+          return from;
+        }
+      }
+    } else {
+      for (; to>=from; to--) {
+        if (!isspace(sData[to])) {
+          return to;
+        }
+      }
+    }
+  }
+  
+  return HY_NOT_FOUND;
+}
 
+
+  //Locate the first non-space charachter of the string
+long _String::FirstSpaceIndex(long from, long to, unsigned char direction) const {
+  long requested_range = NormalizeRange(from, to);
+  
+  if (requested_range > 0L) {
+    if (direction == HY_STRING_DIRECTION_FORWARD) {
+      for (; from <= to; from++) {
+        if (isspace(sData[from])) {
+          return from;
+        }
+      }
+    } else {
+      for (; to>=from; to--) {
+        if (isspace(sData[to])) {
+          return to;
+        }
+      }
+    }
+  }
+  
+  return HY_NOT_FOUND;
+}
+
+  //Locate the first non-space charachter of the string
+char _String::FirstNonSpace(long start, long end, unsigned char direction) const {
+  long r = FirstNonSpaceIndex(start, end, direction);
+  return r == HY_NOT_FOUND ? _hyStringDefaultReturn : sData[r];
+}
 
 /*!!!!!!!!!!!!!!!!!!
  
  DONE UP TO HERE
  
  !!!!!!!!!!!!!!!!!!!!*/
-
-
-
-
-//Locate the first non-space charachter of the string
-char _String::FirstNonSpace(long start, long end, char direction) {
-    long r = FirstNonSpaceIndex(start, end, direction);
-    return r == -1 ? 0 : sData[r];
-}
-
-//Locate the first non-space charachter of the string
-long _String::FirstNonSpaceIndex(long start, long end, char direction) {
-    if (start == -1) {
-        start = ((long) sLength) - 1;
-    }
-    if (end == -1) {
-        end = ((long) sLength) - 1;
-    }
-    if (direction < 0) {
-        //long t = start;
-        start = end;
-        end = start;
-    }
-    if (sLength && (start < sLength) && (!isspace(sData[start]))) {
-        return start; // first char is non-space
-    }
-    char *str = sData + start;
-    for (int i = start; i <= end; i += direction, str += direction)
-        if (!(((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
-            return i;
-        }
-    
-    return HY_NOT_FOUND;
-}
-
-//Locate the first non-space charachter of the string
-long _String::FirstSpaceIndex(long start, long end, char direction) {
-    if (start == -1) {
-        start = ((long) sLength) - 1;
-    }
-    if (end == -1) {
-        end = ((long) sLength) - 1;
-    }
-    if (direction < 0) {
-        //long t = start;
-        start = end;
-        end = start;
-    }
-    if (sLength && (isspace(sData[start]))) {
-        return start; // first char is non-space
-    }
-    char *str = sData + start;
-    for (int i = start; i <= end; i += direction, str += direction)
-        if ((((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
-            return i;
-        }
-    
-    return HY_NOT_FOUND;
-}
-
-
-
-
 
 
 bool _String::IsValidRefIdentifier(void) const {

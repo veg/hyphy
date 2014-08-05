@@ -67,6 +67,9 @@ typedef _hyListReference <_String> _List;
 #define HY_STRING_GLOBAL_DEREFERENCE 0x03
 
 #define HY_STRING_MOD_ADLER 65521
+#define HY_STRING_DIRECTION_FORWARD   0x01
+#define HY_STRING_DIRECTION_BACKWARD  0x02
+
 
 
 class _String : public BaseObj {
@@ -353,7 +356,7 @@ public:
   * @return The char of the first non-space, in the example, 'h'.
   * @see FirstNonSpaceIndex()
   */
-  char FirstNonSpace(long start = 0, long end = -1, char direction = 1);
+  char FirstNonSpace(long start = 0, long end = HY_NOT_FOUND, unsigned char direction = HY_STRING_DIRECTION_FORWARD) const;
 
   /**
   * Locate the first non-space character of the string
@@ -364,7 +367,7 @@ public:
   * @return The index of the first non-space, in the example, 4.
   * @see FirstNonSpaceIndex()
   */
-  long FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1);
+  long FirstNonSpaceIndex(long start = 0, long end = HY_NOT_FOUND, unsigned char direction = HY_STRING_DIRECTION_FORWARD) const;
 
   /**
   * Locate the first space character of the string
@@ -376,7 +379,7 @@ public:
   * @return Returns the index of the first non-space. 1 in the example.
   * @sa FirstSpaceIndex()
   */
-  long FirstSpaceIndex(long start = 0, long end = -1, char direction = 1);
+  long FirstSpaceIndex(long start = 0, long end = HY_NOT_FOUND, unsigned char direction = HY_STRING_DIRECTION_FORWARD) const;
 
   /**
   * Finds end of an ID. An ID is made up of alphanumerics, periods, or '_'
@@ -386,7 +389,7 @@ public:
   * @param wild Wild character to skip as well
   * @return Position after the end of the identifier. 3 in the example
   */
-  long FindEndOfIdent(long start = 0, long end = -1, char wild = '*');
+  long FindEndOfIdent(long start = 0, long end = HY_NOT_FOUND, char wild = '*');
 
   /**
   * Find first occurence of the string between from and to
@@ -397,25 +400,25 @@ public:
   * @return Returns the index of the first instance of the substr, -1 if not
   * found. 2 in the example
   */
-  long Find(const _String& s, long from = 0, long to = -1) const;
+  long Find(const _String& s, long from = 0, long to = HY_NOT_FOUND) const;
 
   /**
   *  @see Find()
   */
-  long Find(const char s, long from = 0, long to = -1) const;
+  long Find(const char s, long from = 0, long to = HY_NOT_FOUND) const;
 
   /**
   * Case insensitive Find
   * @see Find()
   */
 
-  long FindAnyCase(const _String&, long from = 0, long to = -1) const;
+  long FindAnyCase(const _String&, long from = 0, long to = HY_NOT_FOUND) const;
 
   /**
-  * Backwards Find
+  * Find a string
   * @see Find()
   */
-  long FindBackwards(const _String&, long from = 0, long to = -1) const;
+  long FindBackwards(const _String&, long from = 0, long to = HY_NOT_FOUND) const;
 
   /**
   * Compute Adler-32 CRC for a string

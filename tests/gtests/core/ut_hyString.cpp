@@ -105,7 +105,8 @@ _String numbers ("0123456789"),
         alnum  = numbers & letters & letters.UpCase(),
         alpha_ = letters & letters.UpCase() & '_',
         alnum_ = alnum & '_',
-        punctuation ("`!@#$%^&*()+=/,';][\\");
+        punctuation ("`!@#$%^&*()+=/,';][\\"),
+        whitespaces (" \t\n\r\v\f");
 
 const char test_case [] = "The quick brown fox jumps over the lazy dog";
 
@@ -531,4 +532,40 @@ TEST_F (_hyStringTest, Identifiers) {
         ASSERT_EQ (compound2.ShortenVarID(randomIdent2), compound2) << "'A.B'.ShortenVarID ('B') failed on '" << compound2.getStr() << "'";
         ASSERT_EQ ((randomIdent&randomIdent2).ShortenVarID(randomIdent), randomIdent&randomIdent2) << "'AB'.ShortenVarID ('A') failed on '" << (randomIdent&randomIdent2).getStr() << "'";
     }
+}
+
+TEST_F (_hyStringTest, SpaceFunctions) {
+  for (unsigned long k = 0UL; k < 1024UL; k++) {
+    unsigned long segments = 1UL + genrand_int32() % 32;
+    
+    _StringBuffer with_spaces,
+                  single_spaces,
+                  no_spaces;
+    
+    bool last_space = false;
+    for (unsigned long p = 0UL; p < segments; p++) {
+      bool is_space = genrand_real2() > 0.5;
+      _String random_s = _String::Random (1L + genrand_int32() % 5, is_space ? &whitespaces : &alnum_);
+      if (is_space) {
+        with_spaces << random_s;
+        if (!last_space) {
+          single_spaces << ' ';
+        }
+      } else {
+        no_spaces << random_s;
+        single_spaces << random_s;
+        with_spaces << random_s;
+      }
+      last_space = is_space;
+    }
+    
+    ASSERT_EQ (with_spaces.CompressSpaces(),single_spaces) << "Compress spaces failed on '" << with_spaces.getStr() << "' return value '" << with_spaces.CompressSpaces() << "'. Expected '" << single_spaces << "'";
+    ASSERT_EQ (single_spaces.CompressSpaces(),single_spaces) << "Compress (should do nothing) spaces failed on '" << single_spaces.getStr() << '\'';
+    ASSERT_EQ (with_spaces.KillSpaces (),no_spaces) << "Kill spaces failed on '" << with_spaces.getStr() << '\'';
+    ASSERT_EQ (HY_NOT_FOUND, no_spaces.FirstSpaceIndex()) << "Found a space character in a string that should have none";
+    ASSERT_EQ (0, no_spaces.FirstNonSpaceIndex());
+    ASSERT_EQ (no_spaces.Length() - 1UL, no_spaces.FirstNonSpaceIndex(0, HY_NOT_FOUND, HY_STRING_DIRECTION_BACKWARD));
+    
+    
+  }
 }
