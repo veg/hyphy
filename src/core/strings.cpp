@@ -328,11 +328,11 @@ void _String::operator=(const _String& s) {
 }
 
 _Parameter _String::toNum(void) const{
-    if (sLength == 0UL) {
+    if (s_length == 0UL) {
         return 0.;
     }
     char *endP;
-    return strtod(sData, &endP);
+    return strtod(s_data, &endP);
 }
 
 
@@ -838,24 +838,24 @@ _String const _String::Sort(_SimpleList *index) const {
         index->Clear();
     }
     
-    if (sLength > 0UL) {
+    if (s_length > 0UL) {
         _hyListOrderable<char> sorted;
         
         if (index) {
-            for (unsigned long i = 0UL; i < sLength; i++) {
-                sorted << sData[i];
+            for (unsigned long i = 0UL; i < s_length; i++) {
+                sorted << s_data[i];
                 (*index) << i;
             }
             sorted.Sort (true, index);
         } else {
-            for (unsigned long i = 0; i < sLength; i++) {
-                sorted << sData[i];
+            for (unsigned long i = 0; i < s_length; i++) {
+                sorted << s_data[i];
             }
             sorted.Sort();
         }
-        _String result (sLength);
+        _String result (s_length);
         
-        for (unsigned long i = 0UL; i < sLength; i++) {
+        for (unsigned long i = 0UL; i < s_length; i++) {
             result.setChar (i, sorted.AtIndex(i));
         }
         
@@ -868,8 +868,8 @@ _String const _String::Sort(_SimpleList *index) const {
 _Parameter _String::ProcessTreeBranchLength(_Parameter min_value) const {
   _Parameter res = -1.;
   
-  if (sLength) {
-    if (sData[0] == ':') {
+  if (s_length) {
+    if (s_data[0] == ':') {
       res = Cut(1, -1).toNum();
     } else {
       res = toNum();
@@ -890,7 +890,7 @@ _Parameter _String::ProcessTreeBranchLength(_Parameter min_value) const {
 bool _String::IsValidIdentifier(bool allow_compounds) const {
     // 201407
     
-    return sLength > 0UL && _IsValidIdentifierAux (allow_compounds) == Length() - 1UL;
+    return s_length > 0UL && _IsValidIdentifierAux (allow_compounds) == Length() - 1UL;
 
 #ifndef HY_2014_REWRITE_MASK
     // TO DO -- MOVE THIS CHECK ELSEWHERE?
@@ -906,7 +906,7 @@ long _String::_IsValidIdentifierAux(bool allow_compounds, char wildcard) const {
     
     bool          first     = true;
     
-    for (; current_index < sLength; current_index ++) {
+    for (; current_index < s_length; current_index ++) {
         char current_char = getChar (current_index);
         if (first) {
             if ( ! (isalpha (current_char) || current_char == '_')) {
@@ -935,7 +935,7 @@ const _String _String::ShortenVarID(_String const &containerID) const {
     if (startswith(containerID)) {
         unsigned long prefix_length = containerID.Length();
         
-        if (getChar(prefix_length) == '.' && sLength > prefix_length + 1L) {
+        if (getChar(prefix_length) == '.' && s_length > prefix_length + 1L) {
             return Cut(prefix_length + 1L, HY_NOT_FOUND);
         }
     }
@@ -947,15 +947,15 @@ const _String  _String::ConvertToAnIdent(bool strict) const {
   _StringBuffer converted;
   const char default_placeholder = '_';
   
-  if (sLength) {
+  if (s_length) {
     unsigned long index = 0UL;
     if (strict) {
-      converted << (_hyValidIDChars.canBeFirst (sData[0]) ? sData[0] : default_placeholder);
+      converted << (_hyValidIDChars.canBeFirst (s_data[0]) ? s_data[0] : default_placeholder);
       index ++;
     }
-    for (;index < sLength; index++) {
-      if (_hyValidIDChars.isValidChar(sData[index])) {
-        converted << sData[index];
+    for (;index < s_length; index++) {
+      if (_hyValidIDChars.isValidChar(s_data[index])) {
+        converted << s_data[index];
       } else {
         if (index && converted.getChar(converted.Length()-1UL) != default_placeholder)  {
           converted << default_placeholder;
@@ -977,12 +977,12 @@ const _String  _String::ConvertToAnIdent(bool strict) const {
 
 //Replace all space runs with a single space
 const _String _String::CompressSpaces(void) const {
-    _StringBuffer temp(sLength + 1UL);
+    _StringBuffer temp(s_length + 1UL);
     bool skipping = false;
     
-    for (unsigned long k = 0UL; k < sLength; k++) {
-        if (!isspace(sData[k])) {
-            temp << sData[k];
+    for (unsigned long k = 0UL; k < s_length; k++) {
+        if (!isspace(s_data[k])) {
+            temp << s_data[k];
             skipping = false;
         } else {
             if (!skipping) {
@@ -996,10 +996,10 @@ const _String _String::CompressSpaces(void) const {
 
 //Remove all spaces
 const _String _String::KillSpaces(void) const {
-    _StringBuffer temp(sLength + 1UL);
-    for (unsigned long k = 0UL; k < sLength; k++) {
-        if (!isspace(sData[k])) {
-            temp << sData[k];
+    _StringBuffer temp(s_length + 1UL);
+    for (unsigned long k = 0UL; k < s_length; k++) {
+        if (!isspace(s_data[k])) {
+            temp << s_data[k];
         }
     }
     return temp;
@@ -1015,13 +1015,13 @@ long _String::FirstNonSpaceIndex(long from, long to, unsigned char direction) co
   if (requested_range > 0L) {
     if (direction == HY_STRING_DIRECTION_FORWARD) {
       for (; from <= to; from++) {
-        if (!isspace(sData[from])) {
+        if (!isspace(s_data[from])) {
           return from;
         }
       }
     } else {
       for (; to>=from; to--) {
-        if (!isspace(sData[to])) {
+        if (!isspace(s_data[to])) {
           return to;
         }
       }
@@ -1039,13 +1039,13 @@ long _String::FirstSpaceIndex(long from, long to, unsigned char direction) const
   if (requested_range > 0L) {
     if (direction == HY_STRING_DIRECTION_FORWARD) {
       for (; from <= to; from++) {
-        if (isspace(sData[from])) {
+        if (isspace(s_data[from])) {
           return from;
         }
       }
     } else {
       for (; to>=from; to--) {
-        if (isspace(sData[to])) {
+        if (isspace(s_data[to])) {
           return to;
         }
       }
@@ -1058,7 +1058,7 @@ long _String::FirstSpaceIndex(long from, long to, unsigned char direction) const
   //Locate the first non-space charachter of the string
 char _String::FirstNonSpace(long start, long end, unsigned char direction) const {
   long r = FirstNonSpaceIndex(start, end, direction);
-  return r == HY_NOT_FOUND ? _hyStringDefaultReturn : sData[r];
+  return r == HY_NOT_FOUND ? _hyStringDefaultReturn : s_data[r];
 }
 
 
@@ -1096,7 +1096,7 @@ regex_t* PrepRegExp(const _String& source, int &errCode, bool caseSensitive) {
 const _SimpleList _String::RegExpMatch(regex_t const* regEx) const {
   _SimpleList matchedPairs;
   
-  if (sLength) {
+  if (s_length) {
     regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
     int errNo = regexec(regEx, s_data, regEx->re_nsub + 1, matches, 0);
     if (errNo == 0) {
@@ -1114,7 +1114,7 @@ const _SimpleList _String::RegExpMatch(regex_t const* regEx) const {
 const _SimpleList _String::RegExpMatchAll(regex_t const* regEx) const {
   _SimpleList matchedPairs;
   
-  if (sLength) {
+  if (s_length) {
     
     regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
     int errNo = regexec(regEx, s_data, regEx->re_nsub + 1, matches, 0);
@@ -1140,7 +1140,7 @@ const _SimpleList _String::RegExpMatchAll(regex_t const* regEx) const {
 
 const _SimpleList _String::RegExpMatchOnce(const _String & pattern,
                               bool caseSensitive, bool handleErrors) const {
-  if (sLength) {
+  if (s_length) {
     int errNo = 0;
     regex_t* regex = PrepRegExp(pattern, errNo, caseSensitive);
     if (regex) {
@@ -1168,7 +1168,7 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
     rec->Clear();
   }
 
-  if (sLength == 0) {
+  if (s_length == 0) {
     return 0;
   }
 
@@ -1178,19 +1178,19 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 
   long cp = 1, pH = 1;
 
-  while (cp < sLength) {
+  while (cp < s_length) {
     long maxExtension = 0;
 
     for (long ip = 0; ip < cp; ip++) {
       long sp = ip, mp = cp;
 
-      while ((mp < sLength) && (sData[mp] == sData[sp])) {
+      while ((mp < s_length) && (s_data[mp] == s_data[sp])) {
         mp++;
         sp++;
       }
 
-      if (mp == sLength) {
-        maxExtension = sLength - cp;
+      if (mp == s_length) {
+        maxExtension = s_length - cp;
         break;
       } else {
         if ((mp = mp - cp + 1) > maxExtension) {
