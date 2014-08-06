@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _HERROR_
 //#pragma once
 #include "baseobj.h"
+#include "hy_strings.h"
 
 #define _HYNOERROR 1
 
@@ -63,6 +64,8 @@ void flagError(long);
 // reports the text of current error to the user with a built in string
 // writes to stderror
 // terminates execution of current BF
+
+void FlagError (const _String&);
 
 void *checkPointer(void *);
 

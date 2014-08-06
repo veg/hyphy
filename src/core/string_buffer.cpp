@@ -116,8 +116,8 @@ Operator Overloads
 
 
 void _StringBuffer::operator<<(const _String *s) {
-  if (s && s->sLength) {
-    PushCharBuffer (s->sData, s->sLength);
+  if (s && s->Length()) {
+    PushCharBuffer (s->getStr(), s->Length());
   }
 }
 
@@ -261,8 +261,8 @@ void _StringBuffer::EscapeAndAppend(const char c, const _hyStringBufferEscapeMod
 
   //Append operator
 void _StringBuffer::EscapeAndAppend(const _String &s, const _hyStringBufferEscapeMode mode) {
-  for (unsigned long i = 0UL; i < s.sLength; i++) {
-    EscapeAndAppend(s.sData[i], mode);
+  for (unsigned long i = 0UL; i < s.Length(); i++) {
+    EscapeAndAppend(s.getChar(i), mode);
   }
 }
 

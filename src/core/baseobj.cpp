@@ -47,7 +47,7 @@ BaseRef BaseObj::toErrStr(void) const { return toStr(); }
 //______________________________________________________________________________
 void BaseObj::toFileStr(FILE *dest) const {
   _String *s = (_String *)toStr();
-  fwrite(s->sData, 1, s->Length(), dest);
+  fwrite(s->getStr(), 1, s->Length(), dest);
   delete s;
 }
 

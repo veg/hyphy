@@ -692,3 +692,260 @@ const _String GetTimeStamp(bool doGMT) {
     return asctime(localTime);
     
 }
+
+
+  //==============================================================
+  //Filename and Platform Methods
+  //==============================================================
+
+#ifndef HY_2014_REWRITE_MASK
+
+bool ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
+                              bool assume_platform_specific,
+                              _ExecutionList *caller) {
+#ifndef HY_2014_REWRITE_MASK
+  _String errMsg;
+  
+  try {
+    if (Equal(&getFString) || Equal(&tempFString)) { // prompt user for file
+      if (Equal(&tempFString)) {
+#if not defined __MINGW32__ &&not defined __WINDOZE__
+#ifdef __MAC__
+        char tmpFileName[] = "HYPHY-XXXXXX";
+#else
+        char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
+#endif
+        
+        int fileDescriptor = mkstemp(tmpFileName);
+        if (fileDescriptor == -1) {
+          throw("Failed to create a temporary file name");
+        }
+        *this = tmpFileName;
+        CheckReceptacleAndStore(&useLastFString, empty, false,
+                                new _FString(*this, false), false);
+        close(fileDescriptor);
+        return true;
+#else
+        throw(tempFString & " is not implemented for this platform");
+#endif
+      } else {
+        if (!isWrite) {
+          *this = ReturnFileDialogInput();
+        } else {
+          *this = WriteFileDialogInput();
+        }
+      }
+      ProcessFileName(false, false, theP,
+#if defined __MAC__ || defined __WINDOZE__
+                      true
+#else
+                      false
+#endif
+                      ,
+                      caller);
+      
+      CheckReceptacleAndStore(&useLastFString, empty, false,
+                              new _FString(*this, false), false);
+      return true;
+    }
+    
+    if (acceptStringVars) {
+      *this = ProcessLiteralArgument(this, (_VariableContainer *)theP, caller);
+      if (caller && caller->IsErrorState()) {
+        return false;
+      }
+    } else {
+      StripQuotes();
+    }
+    
+    if (!sLength) {
+      return true;
+    }
+  }
+  
+  catch (_String errmsg) {
+    if (caller) {
+      caller->ReportAnExecutionError(errMsg);
+    } else {
+      WarnError(errMsg);
+    }
+    return false;
+  }
+  
+#if (defined __UNIX__ || defined __HYPHY_GTK__) && !defined __MINGW32__
+    //UNIX LINES HERE
+  if (Find('\\') != -1) { // DOS (ASSUME RELATIVE) PATH
+    *this = Replace("\\", "/", true);
+  } else if (Find(':') != -1) { // Mac (Assume Relative) PATH
+    *this = Replace("::", ":../", true);
+    if (getChar(0) == ':') {
+      Trim(1, -1);
+    }
+    *this = Replace(':', '/', true);
+  }
+  
+  if (getChar(0) != '/') { // relative path
+    if (pathNames.lLength) {
+      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
+      long f = lastPath->sLength - 2, k = 0;
+      
+        // check the last stored absolute path and reprocess this relative path
+        // into an absolute.
+      while (beginswith("../")) {
+        if ((f = lastPath->FindBackwards('/', 0, f) - 1) == -1) {
+          return true;
+        }
+        Trim(3, -1);
+        k++;
+      }
+      if (k == 0) {
+        *this = *lastPath & (*this);
+      } else {
+        *this = lastPath->Cut(0, f + 1) & (*this);
+      }
+    }
+  }
+#endif
+  
+#if defined __WINDOZE__ || defined __MINGW32__ // WIN/DOS code
+  if (Find('/') != -1) {                       // UNIX PATH
+    if (getChar(0) == '/') {
+      Trim(1, -1);
+    }
+    *this = Replace("/", "\\", true);
+  } else {
+    if (Find('\\') == -1) {
+        // check to see if this is a relative path
+      *this = Replace("::", ":..\\", true);
+      if ((sData[0] == ':')) {
+        Trim(1, -1);
+      }
+      *this = Replace(':', '\\', true);
+    }
+  }
+  
+  if (Find(':') == -1 && Find("\\\\", 0, 1) == -1) { // relative path
+    
+    if (pathNames.lLength) {
+      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
+      long f = lastPath->sLength - 2, k = 0;
+        // check the last stored absolute path and reprocess this relative path
+        // into an absolute.
+      while (beginswith("..\\")) {
+        f = lastPath->FindBackwards('\\', 0, f) - 1;
+        if (f == -1) {
+          return false;
+        }
+        Trim(3, -1);
+        k++;
+      }
+      if (k == 0) {
+        if (lastPath->sData[lastPath->sLength - 1] != '\\') {
+          *this = *lastPath & '\\' & (*this);
+        } else {
+          *this = *lastPath & (*this);
+        }
+      } else {
+        *this = lastPath->Cut(0, f + 1) & (*this);
+      }
+    }
+    
+  }
+  
+  _String escapedString(sLength, true);
+  for (long stringIndex = 0; stringIndex < sLength; stringIndex++) {
+    char currentChar = getChar(stringIndex);
+      //char b[256];
+      //snprintf (b, sizeof(b),"%c %d\n", currentChar, currentChar);
+      //BufferToConsole (b);
+    switch (currentChar) {
+      case '\t':
+        escapedString << '\\';
+        escapedString << 't';
+        break;
+      case '\n':
+        escapedString << '\\';
+        escapedString << 'n';
+        break;
+      default:
+        escapedString << currentChar;
+    }
+  }
+  escapedString.Finalize();
+  (*this) = escapedString;
+  
+#endif
+  
+#ifdef __MAC__
+  if (!assume_platform_specific && Find('/') != -1) { // UNIX PATH
+    bool rootPath = false;
+    if (sData[0] == '/') {
+      rootPath = true;
+      *this = volumeName & Cut(1, -1);
+    }
+    
+    if (beginswith("..")) {
+      *this = _String('/') & Cut(2, -1);
+    }
+    
+    *this = Replace("/", ":", true);
+    *this = Replace("..", "", true);
+    
+    if (sData[0] != ':' && !rootPath) {
+      *this = _String(':') & *this;
+    }
+  } else {
+    if (!assume_platform_specific &&
+        Find('\\') != -1) { // DOS PATH (ASSUME PARTIAL)
+      if (beginswith("..")) {
+        *this = _String('\\') & Cut(2, -1);
+      }
+      *this = Replace("\\", ":", true);
+      *this = Replace("..", "", true);
+      if (Find(':') != -1) {
+        *this = _String(':') & *this;
+      }
+    } else { // MAC PATH
+      if (Find(':') != -1) {
+        if (sData[0] != ':') {
+          if (!beginswith(volumeName)) {
+            if (pathNames.lLength) {
+              _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
+              if (!beginswith(lastPath->Cut(0, lastPath->Find(':')))) {
+                *this = _String(':') & *this;
+              }
+            } else {
+              *this = _String(':') & *this;
+            }
+          }
+        }
+      } else {
+        *this = _String(':') & *this;
+      }
+    }
+  }
+  
+  if (sData[0] == ':') { // relative path
+    long f = -1, k = 0;
+    if (pathNames.lLength) {
+      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
+        // check the last stored absolute path and reprocess this relative path
+        // into an absolute.
+      while (sData[k] == ':') {
+        f = lastPath->FindBackwards(':', 0, f) - 1;
+        if (f == -1) {
+          return;
+        }
+        k++;
+      }
+      *this = lastPath->Cut(0, f + 1) & Cut(k, -1);
+    } else {
+      *this = empty;
+    }
+  }
+#endif
+#endif
+  return true;
+}
+
+#endif

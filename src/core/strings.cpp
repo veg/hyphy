@@ -31,15 +31,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_globals.h"
 #include "hy_list_numeric.h"
 #include "hy_list_reference.h"
+#include "errorfns.h"
 
 
 
-#ifndef __HYPHYXCODE__
-#include "gnuregex.h"
-#else
-#include "regex.h"
-#include <unistd.h>
-#endif
+
 
 
 #ifdef __HYPHYDMALLOC__
@@ -51,6 +47,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
 
 
 
@@ -62,27 +59,30 @@ long  loopCount      = 3;
 char* addrBreak      = 0x583088;*/
 
 struct _hyValidIDCharsType {
-  bool valid_chars[256];
+  unsigned char valid_chars[256];
+  
+  bool canBeFirst (unsigned char c) {
+    return valid_chars[c] == 2;
+  }
+
+  bool isValidChar (unsigned char c) {
+    return valid_chars[c] > 0;
+  }
+  
   _hyValidIDCharsType(void) {
     for (int c = 0; c < 256; c++) {
-      valid_chars[c] = false;
+      valid_chars[c] = 0;
     }
-    {
-      for (unsigned char c = 'a'; c <= 'z'; c++) {
-        valid_chars[c] = true;
-      }
+    for (unsigned char c = 'a'; c <= 'z'; c++) {
+      valid_chars[c] = 2;
     }
-    {
-      for (unsigned char c = 'A'; c <= 'Z'; c++) {
-        valid_chars[c] = true;
-      }
+    for (unsigned char c = 'A'; c <= 'Z'; c++) {
+      valid_chars[c] = 2;
     }
-    {
-      for (unsigned char c = '0'; c <= '9'; c++) {
-        valid_chars[c] = true;
-      }
+    for (unsigned char c = '0'; c <= '9'; c++) {
+      valid_chars[c] = 1;
     }
-    valid_chars[(unsigned char) '_'] = true;
+    valid_chars[(unsigned char) '_'] = 2;
   }
 } _hyValidIDChars;
 
@@ -865,6 +865,22 @@ _String const _String::Sort(_SimpleList *index) const {
     return empty;
 }
 
+_Parameter _String::ProcessTreeBranchLength(_Parameter min_value) const {
+  _Parameter res = -1.;
+  
+  if (sLength) {
+    if (sData[0] == ':') {
+      res = Cut(1, -1).toNum();
+    } else {
+      res = toNum();
+    }
+    
+    return res < min_value ? min_value : res;
+  }
+  
+  return res;
+}
+
 /*
  ==============================================================
  Identifier Methods
@@ -924,6 +940,33 @@ const _String _String::ShortenVarID(_String const &containerID) const {
         }
     }
     return *this;
+}
+
+  //Convert a string to a valid ident
+const _String  _String::ConvertToAnIdent(bool strict) const {
+  _StringBuffer converted;
+  const char default_placeholder = '_';
+  
+  if (sLength) {
+    unsigned long index = 0UL;
+    if (strict) {
+      converted << (_hyValidIDChars.canBeFirst (sData[0]) ? sData[0] : default_placeholder);
+      index ++;
+    }
+    for (;index < sLength; index++) {
+      if (_hyValidIDChars.isValidChar(sData[index])) {
+        converted << sData[index];
+      } else {
+        if (index && converted.getChar(converted.Length()-1UL) != default_placeholder)  {
+          converted << default_placeholder;
+        }
+      }
+    }
+  } else {
+    converted << default_placeholder;
+  }
+  
+  return converted;
 }
 
 /*
@@ -1018,190 +1061,105 @@ char _String::FirstNonSpace(long start, long end, unsigned char direction) const
   return r == HY_NOT_FOUND ? _hyStringDefaultReturn : sData[r];
 }
 
+
+/*
+ ==============================================================
+ Regular Expression Methods
+ ==============================================================
+ */
+
+const _String GetRegExpError(int error) {
+  char buffer[512];
+  buffer[regerror(error, nil, buffer, 511)] = 0;
+  return _String("Regular Expression error:") & buffer;
+}
+
+void FlushRegExp(regex_t* regExpP) {
+  regfree(regExpP);
+  delete regExpP;
+}
+
+regex_t* PrepRegExp(const _String& source, int &errCode, bool caseSensitive) {
+  regex_t *res = new regex_t;
+  checkPointer(res);
+  
+  errCode = regcomp(res, source.getStr(),
+                    REG_EXTENDED | (caseSensitive ? 0 : REG_ICASE));
+  
+  if (errCode) {
+    FlushRegExp(res);
+    return nil;
+  }
+  return res;
+}
+
+const _SimpleList _String::RegExpMatch(regex_t const* regEx) const {
+  _SimpleList matchedPairs;
+  
+  if (sLength) {
+    regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
+    int errNo = regexec(regEx, sData, regEx->re_nsub + 1, matches, 0);
+    if (errNo == 0) {
+      for (long k = 0L; k <= regEx->re_nsub; k++) {
+        matchedPairs << matches[k].rm_so;
+        matchedPairs << matches[k].rm_eo - 1;
+      }
+    }
+    delete[] matches;
+  }
+  
+  return matchedPairs;
+}
+
+const _SimpleList _String::RegExpMatchAll(regex_t const* regEx) const {
+  _SimpleList matchedPairs;
+  
+  if (sLength) {
+    
+    regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
+    int errNo = regexec(regEx, sData, regEx->re_nsub + 1, matches, 0);
+    while (errNo == 0) {
+      long offset = matchedPairs.countitems()
+      ? matchedPairs.Element(-1) + 1
+      : 0;
+      
+      matchedPairs << matches[0].rm_so + offset;
+      matchedPairs << matches[0].rm_eo - 1 + offset;
+      
+      offset += matches[0].rm_eo;
+      if (offset < sLength) {
+        errNo = regexec(regEx, sData + offset, regEx->re_nsub + 1, matches, 0);
+      } else {
+        break;
+      }
+    }
+    delete[] matches;
+  }
+  return matchedPairs;
+}
+
+const _SimpleList _String::RegExpMatchOnce(const _String & pattern,
+                              bool caseSensitive, bool handleErrors) const {
+  if (sLength) {
+    int errNo = 0;
+    regex_t* regex = PrepRegExp(pattern, errNo, caseSensitive);
+    if (regex) {
+      _SimpleList hits = RegExpMatch(regex);
+      FlushRegExp(regex);
+      return hits;
+    } else if (handleErrors) {
+      warnError(GetRegExpError(errNo));
+    }
+  }
+  return _SimpleList();
+}
+
+
 /*!!!!!!!!!!!!!!!!!!
  
  DONE UP TO HERE
  
  !!!!!!!!!!!!!!!!!!!!*/
-
-
-bool _String::IsValidRefIdentifier(void) const {
-    if (sLength < 2) {
-        return false;
-    }
-    if (sData[sLength - 1] == '&') {
-        return Cut(0, sLength - 2).IsValidIdentifier();
-    }
-    return false;
-}
-
-//Convert a string to a valid ident
-void _String::ConvertToAnIdent(bool strict) {
-    _StringBuffer *result = new _StringBuffer((unsigned long) sLength + 1UL);
-    
-    if (sLength) {
-        if (strict) {
-            if (((sData[0] >= 'a') && (sData[0] <= 'z')) ||
-                ((sData[0] >= 'A') && (sData[0] <= 'Z')) || (sData[0] == '_')) {
-                (*result) << sData[0];
-            } else {
-                (*result) << '_';
-            }
-        } else {
-            if (((sData[0] >= 'a') && (sData[0] <= 'z')) ||
-                ((sData[0] >= 'A') && (sData[0] <= 'Z')) || (sData[0] == '_') ||
-                ((sData[0] >= '0') && (sData[0] <= '9'))) {
-                (*result) << sData[0];
-            } else {
-                (*result) << '_';
-            }
-        }
-        
-        long l = 0;
-        for (unsigned long k = 1UL; k < sLength; k++) {
-            unsigned char c = sData[k];
-            if (_hyValidIDChars.valid_chars[c]) {
-                (*result) << c;
-                l++;
-            } else if (result->sData[l] != '_') {
-                (*result) << '_';
-                l++;
-            }
-        }
-    }
-    
-    CopyDynamicString(result, true);
-}
-
-
-
-
-
-long _String::FindEndOfIdent(long start, long end, char wild) {
-  if (sLength == 0) {
-    return HY_NOT_FOUND;
-  }
-
-  if (start == -1) {
-    start = ((long) sLength) - 1;
-  }
-  if (end == -1) {
-    end = ((long) sLength) - 1;
-  }
-
-  long i = start;
-
-  for (; i <= end; i++)
-    if (!(isalnum(sData[i]) || sData[i] == '.' || sData[i] == wild ||
-          sData[i] == '_')) {
-      break;
-    }
-
-  if (i > start + 2 && sData[i - 1] == '_' && sData[i - 2] == '_') {
-    return i - 3;
-  }
-
-  return i - 1;
-}
- 
-
-long _String::ExtractEnclosedExpression(long &from, char open, char close,
-                                        bool respectQuote, bool respectEscape) {
-  long currentPosition = from, currentLevel = 0;
-
-  bool isQuote = false, doEscape = false;
-
-  while (currentPosition < sLength) {
-    char thisChar = sData[currentPosition];
-
-    if (!doEscape) {
-      if (thisChar == '"' && respectQuote && !doEscape) {
-        isQuote = !isQuote;
-      } else if (thisChar == open && !isQuote) {
-        // handle the case when close and open are the same
-        if (currentLevel == 1 && open == close && from < currentPosition) {
-          return currentPosition;
-        }
-        currentLevel++;
-        if (currentLevel == 1) {
-          from = currentPosition;
-        }
-      } else if (thisChar == close && !isQuote) {
-        currentLevel--;
-        if (currentLevel == 0 && from < currentPosition) {
-          return currentPosition;
-        }
-        if (currentLevel < 0) {
-          return HY_NOT_FOUND;
-        }
-      } else if (thisChar == '\\' && respectEscape && isQuote && !doEscape) {
-        doEscape = true;
-      }
-    } else {
-      doEscape = false;
-    }
-
-    currentPosition++;
-  }
-
-  return HY_NOT_FOUND;
-}
-
-
-
-
-long _String::FindTerminator(long from, _String &terminators) {
-  long currentPosition = from, currentCurly = 0, currentSquare = 0,
-       currentParen = 0;
-
-  bool isQuote = false, doEscape = false;
-
-  while (currentPosition < sLength) {
-    char thisChar = sData[currentPosition];
-    if (!doEscape) {
-      if (thisChar == '"' && !doEscape) {
-        isQuote = !isQuote;
-      } else {
-        if (!isQuote) {
-          if (thisChar == '{') {
-            currentCurly++;
-          } else if (thisChar == '[') {
-            currentSquare++;
-          } else if (thisChar == '(') {
-            currentParen++;
-          }
-          if (currentCurly > 0 && thisChar == '}') {
-            currentCurly--;
-          } else if (currentSquare > 0 && thisChar == ']') {
-            currentSquare--;
-          } else if (currentParen > 0 && thisChar == ')') {
-            currentParen--;
-          } else if (currentParen == 0 && currentSquare == 0 &&
-                     currentCurly == 0)
-            for (long s = 0; s < terminators.sLength; s++)
-              if (thisChar == terminators.sData[s]) {
-                return currentPosition;
-              }
-        } else {
-          if (thisChar == '\\' && isQuote && !doEscape) {
-            doEscape = true;
-          }
-        }
-      }
-    } else {
-      doEscape = false;
-    }
-
-    currentPosition++;
-  }
-
-  return HY_NOT_FOUND;
-}
-
-
-
-
-
 
 
 
@@ -1262,510 +1220,5 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 
 
 
-
-
-
-
-_Parameter _String::ProcessTreeBranchLength(void) {
-  _Parameter res = -1.;
-
-  if (sLength) {
-    if (sData[0] == ':') {
-      res = Cut(1, -1).toNum();
-    } else {
-      res = toNum();
-    }
-
-    if (res < 1e-10) {
-      res = 1e-10;
-    }
-  }
-
-  return res;
-}
-
-bool _String::IsALiteralArgument(bool stripQuotes) {
-  if (sLength >= 2) {
-    long from = 0, to = ExtractEnclosedExpression(from, '"', '"', false, true);
-
-    if (from == 0 && to == sLength - 1) {
-      if (stripQuotes) {
-        Trim(1, sLength - 2);
-      }
-      return true;
-    }
-  }
-  return false;
-}
-
-//TODO: This is a global function.
-bool hyIDValidator(_String *s) { return s->IsValidIdentifier(false); }
-
-
-
-
-
-void _String::ProcessParameter(void) {
-#ifndef HY_2014_REWRITE_MASK
-  if (Equal(&getDString)) {
-    *this = ReturnDialogInput();
-  }
-#endif
-}
-
-//==============================================================
-//Filename and Platform Methods
-//==============================================================
-
-bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
-                              bool assume_platform_specific,
-                              _ExecutionList *caller) {
-#ifndef HY_2014_REWRITE_MASK
-  _String errMsg;
-
-  try {
-    if (Equal(&getFString) || Equal(&tempFString)) { // prompt user for file
-      if (Equal(&tempFString)) {
-#if not defined __MINGW32__ &&not defined __WINDOZE__
-#ifdef __MAC__
-        char tmpFileName[] = "HYPHY-XXXXXX";
-#else
-        char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
-#endif
-
-        int fileDescriptor = mkstemp(tmpFileName);
-        if (fileDescriptor == -1) {
-          throw("Failed to create a temporary file name");
-        }
-        *this = tmpFileName;
-        CheckReceptacleAndStore(&useLastFString, empty, false,
-                                new _FString(*this, false), false);
-        close(fileDescriptor);
-        return true;
-#else
-        throw(tempFString & " is not implemented for this platform");
-#endif
-      } else {
-        if (!isWrite) {
-          *this = ReturnFileDialogInput();
-        } else {
-          *this = WriteFileDialogInput();
-        }
-      }
-      ProcessFileName(false, false, theP,
-#if defined __MAC__ || defined __WINDOZE__
-                      true
-#else
-                      false
-#endif
-                      ,
-                      caller);
-
-      CheckReceptacleAndStore(&useLastFString, empty, false,
-                              new _FString(*this, false), false);
-      return true;
-    }
-
-    if (acceptStringVars) {
-      *this = ProcessLiteralArgument(this, (_VariableContainer *)theP, caller);
-      if (caller && caller->IsErrorState()) {
-        return false;
-      }
-    } else {
-      StripQuotes();
-    }
-
-    if (!sLength) {
-      return true;
-    }
-  }
-
-  catch (_String errmsg) {
-    if (caller) {
-      caller->ReportAnExecutionError(errMsg);
-    } else {
-      WarnError(errMsg);
-    }
-    return false;
-  }
-
-#if (defined __UNIX__ || defined __HYPHY_GTK__) && !defined __MINGW32__
-  //UNIX LINES HERE
-  if (Find('\\') != -1) { // DOS (ASSUME RELATIVE) PATH
-    *this = Replace("\\", "/", true);
-  } else if (Find(':') != -1) { // Mac (Assume Relative) PATH
-    *this = Replace("::", ":../", true);
-    if (getChar(0) == ':') {
-      Trim(1, -1);
-    }
-    *this = Replace(':', '/', true);
-  }
-
-  if (getChar(0) != '/') { // relative path
-    if (pathNames.lLength) {
-      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-      long f = lastPath->sLength - 2, k = 0;
-
-      // check the last stored absolute path and reprocess this relative path
-      // into an absolute.
-      while (beginswith("../")) {
-        if ((f = lastPath->FindBackwards('/', 0, f) - 1) == -1) {
-          return true;
-        }
-        Trim(3, -1);
-        k++;
-      }
-      if (k == 0) {
-        *this = *lastPath & (*this);
-      } else {
-        *this = lastPath->Cut(0, f + 1) & (*this);
-      }
-    }
-  }
-#endif
-
-#if defined __WINDOZE__ || defined __MINGW32__ // WIN/DOS code
-  if (Find('/') != -1) {                       // UNIX PATH
-    if (getChar(0) == '/') {
-      Trim(1, -1);
-    }
-    *this = Replace("/", "\\", true);
-  } else {
-    if (Find('\\') == -1) {
-      // check to see if this is a relative path
-      *this = Replace("::", ":..\\", true);
-      if ((sData[0] == ':')) {
-        Trim(1, -1);
-      }
-      *this = Replace(':', '\\', true);
-    }
-  }
-
-  if (Find(':') == -1 && Find("\\\\", 0, 1) == -1) { // relative path
-
-    if (pathNames.lLength) {
-      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-      long f = lastPath->sLength - 2, k = 0;
-      // check the last stored absolute path and reprocess this relative path
-      // into an absolute.
-      while (beginswith("..\\")) {
-        f = lastPath->FindBackwards('\\', 0, f) - 1;
-        if (f == -1) {
-          return false;
-        }
-        Trim(3, -1);
-        k++;
-      }
-      if (k == 0) {
-        if (lastPath->sData[lastPath->sLength - 1] != '\\') {
-          *this = *lastPath & '\\' & (*this);
-        } else {
-          *this = *lastPath & (*this);
-        }
-      } else {
-        *this = lastPath->Cut(0, f + 1) & (*this);
-      }
-    }
-
-  }
-
-  _String escapedString(sLength, true);
-  for (long stringIndex = 0; stringIndex < sLength; stringIndex++) {
-    char currentChar = getChar(stringIndex);
-    //char b[256];
-    //snprintf (b, sizeof(b),"%c %d\n", currentChar, currentChar);
-    //BufferToConsole (b);
-    switch (currentChar) {
-    case '\t':
-      escapedString << '\\';
-      escapedString << 't';
-      break;
-    case '\n':
-      escapedString << '\\';
-      escapedString << 'n';
-      break;
-    default:
-      escapedString << currentChar;
-    }
-  }
-  escapedString.Finalize();
-  (*this) = escapedString;
-
-#endif
-
-#ifdef __MAC__
-  if (!assume_platform_specific && Find('/') != -1) { // UNIX PATH
-    bool rootPath = false;
-    if (sData[0] == '/') {
-      rootPath = true;
-      *this = volumeName & Cut(1, -1);
-    }
-
-    if (beginswith("..")) {
-      *this = _String('/') & Cut(2, -1);
-    }
-
-    *this = Replace("/", ":", true);
-    *this = Replace("..", "", true);
-
-    if (sData[0] != ':' && !rootPath) {
-      *this = _String(':') & *this;
-    }
-  } else {
-    if (!assume_platform_specific &&
-        Find('\\') != -1) { // DOS PATH (ASSUME PARTIAL)
-      if (beginswith("..")) {
-        *this = _String('\\') & Cut(2, -1);
-      }
-      *this = Replace("\\", ":", true);
-      *this = Replace("..", "", true);
-      if (Find(':') != -1) {
-        *this = _String(':') & *this;
-      }
-    } else { // MAC PATH
-      if (Find(':') != -1) {
-        if (sData[0] != ':') {
-          if (!beginswith(volumeName)) {
-            if (pathNames.lLength) {
-              _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-              if (!beginswith(lastPath->Cut(0, lastPath->Find(':')))) {
-                *this = _String(':') & *this;
-              }
-            } else {
-              *this = _String(':') & *this;
-            }
-          }
-        }
-      } else {
-        *this = _String(':') & *this;
-      }
-    }
-  }
-
-  if (sData[0] == ':') { // relative path
-    long f = -1, k = 0;
-    if (pathNames.lLength) {
-      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-      // check the last stored absolute path and reprocess this relative path
-      // into an absolute.
-      while (sData[k] == ':') {
-        f = lastPath->FindBackwards(':', 0, f) - 1;
-        if (f == -1) {
-          return;
-        }
-        k++;
-      }
-      *this = lastPath->Cut(0, f + 1) & Cut(k, -1);
-    } else {
-      *this = empty;
-    }
-  }
-#endif
-#endif
-  return true;
-}
-
-//Compose two UNIX paths (abs+rel)
-_String _String::PathComposition(_String relPath) {
-  if (relPath.sData[0] != '/') { // relative path
-    long f = -1, k = 0;
-    f = sLength - 2;
-    _String result = *this;
-
-    while (relPath.startswith("../")) {
-
-      //Cut Trim relPath
-      f = FindBackwards('/', 0, f) - 1;
-
-      relPath = relPath.Chop(0, 2);
-      result.Trim(0, f + 1);
-
-      if (f == -1) {
-        return empty;
-      }
-      k++;
-
-    }
-
-    return result & relPath;
-  } else {
-    return relPath;
-  }
-  return empty;
-}
-
-//Mac only so far
-_String _String::PathSubtraction(_String &p2, char) {
-  _String result;
-  char separator = GetPlatformDirectoryChar();
-
-  //if (pStyle == 0)
-  //    separator = ':';
-  long k;
-  for (k = 0;(k < sLength) && (k < p2.sLength) && (sData[k] == p2.sData[k]);
-       k++)
-    ;
-  if (k > 0) {
-    while (sData[k] != separator) {
-      k--;
-    }
-    if (k > 0) {
-      long m = k + 1, levels = 0;
-      for (; m < sLength; m++)
-        if (sData[m] == separator) {
-          levels++;
-        }
-      if (levels) {
-        result = separator;
-        while (levels) {
-          result.Insert(separator, -1);
-          levels--;
-        }
-      }
-      result = result & p2.Cut(k + 1, -1);
-      return result;
-    }
-  }
-  return empty;
-}
-
-
-
-/*
-==============================================================
-Regular Expression Methods
-==============================================================
-*/
-
-_String GetRegExpError(int error) {
-  char buffer[512];
-  buffer[regerror(error, nil, buffer, 511)] = 0;
-  return _String("Regular Expression error:") & buffer;
-}
-
-void FlushRegExp(Ptr regExpP) {
-  regex_t *regEx = (regex_t *)regExpP;
-  regfree(regEx);
-  delete regEx;
-}
-
-Ptr PrepRegExp(_String *source, int &errCode, bool caseSensitive) {
-  regex_t *res = new regex_t;
-  checkPointer(res);
-
-  errCode = regcomp(res, source->sData,
-                    REG_EXTENDED | (caseSensitive ? 0 : REG_ICASE));
-
-  if (errCode) {
-    FlushRegExp((Ptr) res);
-    return nil;
-  }
-  return (Ptr) res;
-}
-
-void _String::RegExpMatch(Ptr pattern, _SimpleList &matchedPairs) {
-  if (sLength) {
-    regex_t *regEx = (regex_t *)pattern;
-
-    regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
-    int errNo = regexec(regEx, sData, regEx->re_nsub + 1, matches, 0);
-    if (errNo == 0) {
-      for (long k = 0; k <= regEx->re_nsub; k++) {
-        matchedPairs << matches[k].rm_so;
-        matchedPairs << matches[k].rm_eo - 1;
-      }
-    }
-    delete[] matches;
-  }
-}
-
-void _String::RegExpMatchAll(Ptr pattern, _SimpleList &matchedPairs) {
-  if (sLength) {
-    regex_t *regEx = (regex_t *)pattern;
-
-    regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
-    int errNo = regexec(regEx, sData, regEx->re_nsub + 1, matches, 0);
-    while (errNo == 0) {
-      long offset = matchedPairs.countitems()
-                        ? matchedPairs.Element(-1) + 1
-                        : 0;
-
-      matchedPairs << matches[0].rm_so + offset;
-      matchedPairs << matches[0].rm_eo - 1 + offset;
-
-      offset += matches[0].rm_eo;
-      if (offset < sLength) {
-        errNo = regexec(regEx, sData + offset, regEx->re_nsub + 1, matches, 0);
-      } else {
-        break;
-      }
-    }
-    delete[] matches;
-  }
-}
-
-void _String::RegExpMatchOnce(_String *pattern, _SimpleList &matchedPairs,
-                              bool caseSensitive, bool handleErrors) {
-  if (sLength) {
-    int errNo = 0;
-    Ptr regex = PrepRegExp(pattern, errNo, caseSensitive);
-    if (regex) {
-      RegExpMatch(regex, matchedPairs);
-      FlushRegExp(regex);
-    } else if (handleErrors) {
-      WarnError(GetRegExpError(errNo));
-    }
-  }
-}
-
-
-
-unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
-                                                     _String *context) {
-#ifndef HY_2014_REWRITE_MASK
-  char first_char = getChar(0);
-  bool is_func_ref = getChar(sLength - 1) == '&';
-
-  if (first_char == '*' || first_char == '^') {
-    if (is_func_ref) {
-      referenced_object = empty;
-      return HY_STRING_INVALID_REFERENCE;
-    }
-    bool is_global_ref = first_char == '^';
-    _String choppedVarID(*this, 1, -1);
-    if (context) {
-      choppedVarID = *context & '.' & choppedVarID;
-    }
-    _FString *dereferenced_value =
-        (_FString *)FetchObjectFromVariableByType(&choppedVarID, STRING);
-    if (dereferenced_value &&
-        dereferenced_value->theString->ProcessVariableReferenceCases(
-            referenced_object) == HY_STRING_DIRECT_REFERENCE) {
-      if (!is_global_ref && context) {
-        referenced_object = *context & '.' & referenced_object;
-      }
-      return is_global_ref ? HY_STRING_GLOBAL_DEREFERENCE
-                           : HY_STRING_LOCAL_DEREFERENCE;
-    }
-  }
-
-  if (is_func_ref) {
-    referenced_object = Cut(0, sLength - 2);
-    if (referenced_object.IsValidIdentifier()) {
-      referenced_object = (context ? (*context & '.' & referenced_object)
-                                   : (referenced_object)) & '&';
-      return HY_STRING_DIRECT_REFERENCE;
-    }
-  } else {
-    if (IsValidIdentifier()) {
-      referenced_object = context ? (*context & '.' & *this) : (*this);
-      return HY_STRING_DIRECT_REFERENCE;
-    }
-  }
-
-  referenced_object = empty;
-#endif
-  return HY_STRING_INVALID_REFERENCE;
-}
 
 
