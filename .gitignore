@@ -1,22 +1,30 @@
 .svn/
 *.tmp
-*.log
 *~
 .DS_Store
 src/ocl/opencl_kernels.h
 *.cxx
-*.cxx_parameters
-contrib/gtest-1.7.0/CMakeCache.txt
-contrib/gtest-1.7.0/*.a
-contrib/gtest-1.7.0/CMakeFiles
-contrib/gtest-1.7.0/Makefile
-contrib/gtest-1.7.0/cmake_install.cmake
-contrib/gtest-1.7.0/install_manifest.txt
-CMakeCache.txt
-CMakeFiles
-Makefile
-cmake_install.cmake
-cmake_uninstall.cmake
-install_manifest.txt
-HYPHY*
-tags
+
+#Ignore CMake generated files
+**/CMakeCache.txt
+**/CMakeFiles
+**/Makefile
+**/cmake_install.cmake
+**/install_manifest.txt
+**/cmake_uninstall.cmake
+
+#Ignore HYPHY binaries
+HYPHYMP
+HYPHYMPI
+HyPhy.app
+iHyPhyDebug.app
+HYPHYDEBUG
+
+#Ignore GTEST files
+HYPHYGTEST
+contrib/gtest-1.7.0/libgtest.a
+
+#Ignore HyPhy generated files
+**/*.log*
+**/*.log*
+**/data/*.samples*

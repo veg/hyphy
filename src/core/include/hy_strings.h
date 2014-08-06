@@ -157,7 +157,7 @@ public:
   virtual BaseRef makeDynamic(void) const;
 
   /**
-  * Initializes _String object to 0 length and 0 sData
+  * Initializes _String object to 0 length and 0 s_data
   */
   virtual void Initialize(bool = false);
 
@@ -299,7 +299,7 @@ public:
   /**
   *
   * In-place flip string
-  * \n s[0]...s[sLength-1] => s[sLength-1]...s[0]
+  * \n s[0]...s[s_length-1] => s[s_length-1]...s[0]
   * \n\n \b Example: \code _String("ABC").Flip() \endcode
   * @return Transforms string to "CBA"
   */
@@ -703,10 +703,13 @@ public:
 
   _Parameter toNum(void) const;
 
+  //TODO: Make these protected
+  unsigned long s_length;
+  char * s_data;
+
+
   // Data Fields
   protected:
-    unsigned long sLength;
-    char * sData;
 
   
   private:
