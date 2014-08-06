@@ -222,7 +222,7 @@ _CalcNode::_CalcNode    (_String name, _String parms, int codeBase, _VariableCon
 
 //_______________________________________________________________________________________________
 _CalcNode::_CalcNode    (_CalcNode* sourceNode, _VariableContainer* theP):_VariableContainer (sourceNode->ContextFreeName(), "", theP) {
-    _String model = sourceNode->GetModelName();
+    _String model = *sourceNode->GetModelName();
     InitializeCN (model, 0, theP);
     if (model.sLength) { // copy model parameter values 
         CopyMatrixParameters(sourceNode, true);
@@ -2238,6 +2238,12 @@ void    _TreeTopology::GetNodeName (node<long>* n, _String& r, bool fullName)
 
 _String*    _TreeTopology::GetNodeModel (node<long>* n) {
   return (_String*)flatCLeaves(n->in_object);
+}
+
+//_______________________________________________________________________________________________
+
+_String*    _TheTree::GetNodeModel (node<long>* n) {
+    return ((_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]))->GetModelName();
 }
 
 //_______________________________________________________________________________________________

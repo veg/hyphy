@@ -4738,7 +4738,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
                             theNode->RecomputeMatrix (0,1,result);
                         }
                     } else {
-                        if (theObject->ObjectClass() == TOPOLOGY) {
+                        if (theObject->ObjectClass() == TOPOLOGY || theObject->ObjectClass() == TREE) {
  
                             _List* map = ((_TreeTopology*)theObject)->MapNodesToModels ();
                             _AssociativeList* return_this = new _AssociativeList();

@@ -579,7 +579,8 @@ public:
     virtual  void           GetBranchValue              (node<long> *, _String&);
     virtual  _String*       GetBranchSpec               (node<long> *);
     virtual  void           GetBranchVarValue           (node<long> *, _String&, long);
-
+    virtual _String*        GetNodeModel                (node<long> *);
+    
     void            InitializeTreeFrequencies   (_Matrix *, bool = false);
 
     _Parameter      ReleafTreeAndCheck          (_DataSetFilter*, long, bool, long categID = -1);

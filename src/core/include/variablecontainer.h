@@ -124,7 +124,7 @@ public:
         return theModel;
     }
     
-    _String     GetModelName                (void);
+    _String*    GetModelName                (void);
     
     long        GetModelDimension           (void);
     /* 20100316 SLKP
