@@ -563,9 +563,11 @@ TEST_F (_hyStringTest, SpaceFunctions) {
     ASSERT_EQ (single_spaces.CompressSpaces(),single_spaces) << "Compress (should do nothing) spaces failed on '" << single_spaces.getStr() << '\'';
     ASSERT_EQ (with_spaces.KillSpaces (),no_spaces) << "Kill spaces failed on '" << with_spaces.getStr() << '\'';
     ASSERT_EQ (HY_NOT_FOUND, no_spaces.FirstSpaceIndex()) << "Found a space character in a string that should have none";
-    ASSERT_EQ (0, no_spaces.FirstNonSpaceIndex());
-    ASSERT_EQ (no_spaces.Length() - 1UL, no_spaces.FirstNonSpaceIndex(0, HY_NOT_FOUND, HY_STRING_DIRECTION_BACKWARD));
-    
-    
+    if (no_spaces.Length()){
+        ASSERT_EQ (0, no_spaces.FirstNonSpaceIndex()) << no_spaces.getStr();
+        ASSERT_EQ (no_spaces.Length() - 1UL, no_spaces.FirstNonSpaceIndex(0, HY_NOT_FOUND, HY_STRING_DIRECTION_BACKWARD));
+    }
+    ASSERT_EQ (single_spaces.Find (' '), with_spaces.FirstSpaceIndex());
+    ASSERT_EQ (single_spaces.Find (' '), with_spaces.FirstSpaceIndex());
   }
 }
