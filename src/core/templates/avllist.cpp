@@ -1,94 +1,120 @@
 /*
 
-HyPhy - Hypothesis Testing Using Phylogenies.
+ HyPhy - Hypothesis Testing Using Phylogenies.
+ 
+ Copyright (C) 1997-now
+ Core Developers:
+ Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Steven Weaver (sweaver@ucsd.edu)
+ Martin Smith (martin.audacis@gmail.com)
+ 
+ Module Developers:
+ Art FY Poon    (apoon@cfenet.ubc.ca)
+ Lance Hepler (nlhepler@gmail.com)
+ 
+ Significant contributions from:
+ Spencer V Muse (muse@stat.ncsu.edu)
+ Simon DW Frost (sdf22@cam.ac.uk)
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Copyright (C) 1997-2009
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon              (apoon@cfenet.ubc.ca)
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-_AVLList    structure inspired by the excellent documentation of
-GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
+    _AVLList    structure inspired by the excellent documentation of
+    GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 
 */
 
-#include "avllist.h"
-#include "hy_strings.h"
-#include "errorfns.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <math.h>
-#include <limits.h>
-#include "legacy_parser.h"
+//*************** CONSTRUCTORS ***************//
 
 
-//______________________________________________________________________________
-// AVL Lists
-//______________________________________________________________________________
-
-_AVLList::_AVLList(_SimpleList *d) {
-  dataList = d;
-  root = -1;
+template <typename KEYTYPE, typename PAYLOAD>
+_AVLList<KEYTYPE,PAYLOAD>::_AVLList(void) {
+    root = HY_AVL_LEAF;
 }
 
-//______________________________________________________________________________
-long _AVLList::Find(BaseRef obj) {
+template <typename KEYTYPE, typename PAYLOAD>
+_AVLList<KEYTYPE,PAYLOAD>::_AVLList(_AVLList<KEYTYPE,PAYLOAD> const & source) {
+    keys.Clone (&source.keys);
+    values.Clone (&source.values);
+    avl_structure.Clone (&source.avl_structure);
+    root = source.root;
+}
 
-  long curNode = root;
 
-  while (curNode >= 0) {
-    long comp = dataList->Compare(obj, curNode);
+//*************** DESTRUCTOR ***************//
 
-    if (comp < 0) {
-      curNode = leftChild.lData[curNode];
-    } else if (comp > 0) {
-      curNode = rightChild.lData[curNode];
-    } else {
-      return curNode;
+template <typename KEYTYPE, typename PAYLOAD>
+_AVLList<KEYTYPE,PAYLOAD>::~_AVLList(void) {
+    
+}
+
+
+//*************** ATTRIBUTE ACCESSORS ***************//
+
+template <typename KEYTYPE, typename PAYLOAD>
+unsigned long _AVLList<KEYTYPE,PAYLOAD>::Length (void) const {
+    return this->avl_structure.Length() - this->empty_slots.Length();
+}
+
+
+//*************** SEARCH FUNCTIONS  ***************//
+
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLList<KEYTYPE,PAYLOAD>::Find (const KEYTYPE key, _SimpleList* history) const{
+    long current_node = this->root;
+    
+    while (current_node != HY_AVL_LEAF) {
+        long comp = this->_CompareIndexToValue (current_node, key);
+        if (comp) {
+            if (history) {
+                history->append(current_node);
+            }
+            current_node = this->_MoveInTree (current_node, comp);
+         } else {
+            return current_node;
+        }
     }
-  }
-
-  return HY_NOT_FOUND;
+    
+    return HY_NOT_FOUND;
 }
 
-//______________________________________________________________________________
-long _AVLList::FindLong(long obj) {
-  long curNode = root;
+//*************** HELPER FUNCTIONS ***************//
 
-  while (curNode >= 0) {
-    long comp = dataList->lData[curNode];
-
-    if (obj < comp) {
-      curNode = leftChild.lData[curNode];
-    } else if (obj > comp) {
-      curNode = rightChild.lData[curNode];
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLList<KEYTYPE,PAYLOAD>::_MoveInTree (long node, long direction) const{
+    if (direction < 0L) {
+        return this->avl_structure(node).left_child;
     } else {
-      return curNode;
+        if (direction > 0L) {
+            return this->avl_structure(node).right_child;
+        }
     }
-  }
-
-  return HY_NOT_FOUND;
+        
+    return node;
 }
+
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLList<KEYTYPE,PAYLOAD>::_CompareIndexToValue (long node, KEYTYPE const & key) const{
+    return this->keys.CompareToValue (node, key);
+}
+/*
+
 
 //______________________________________________________________________________
 char _AVLList::FindBest(BaseRef obj, long &lastNode) {
@@ -465,11 +491,6 @@ long _AVLList::Insert(BaseRef b, long xtra, bool cp, bool clear) {
       da << go_right;
     }
 
-    /*if (da.lLength > 3*log (dataList->lLength+2))
-    {
-        WarnError ("AVLList internal error!");
-        return -1;
-    }*/
 
     // insert new node
 
@@ -575,10 +596,7 @@ long _AVLList::Insert(BaseRef b, long xtra, bool cp, bool clear) {
     return p;
   }
 
-  /*dataList->InsertElement (b,-1,false,false);
-  leftChild  << -1;
-  rightChild << -1;
-  balanceFactor << 0;*/
+
   root = InsertData(b, xtra, cp);
 
   return 0;
@@ -829,4 +847,4 @@ void _AVLList::Delete(BaseRef b, bool delMe) {
   }
   //ConsistencyCheck ();
 
-}
+} */
