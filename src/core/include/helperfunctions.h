@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __HELPERS__
 
 #include "baseobj.h"
+#include "hy_strings.h"
 
 void DeleteObject(BaseRef); // delete a dynamic object
 
@@ -54,12 +55,16 @@ unsigned long bitStringToLong(const long *, const unsigned long);
 void longToBitString(long *, const unsigned long, const unsigned long);
 
 void PurgeAll(bool all = true);
+
 void init_genrand(unsigned long);
 unsigned long genrand_int32(void);
 double genrand_real2(void);
+
 FILE *doFileOpen(const char *, const char *, bool = false);
 // 20110324: SLKP added the bool flag to allow automatic "Can't open file" error
 // reports
+
+
 double TimerDifferenceFunction(bool);
 /**
 * A utility function to ensure that the coordinate range is valid for a list of given length
@@ -69,9 +74,14 @@ double TimerDifferenceFunction(bool);
 * @return Nothing. Acts on the from and to arguments.
 */
 void NormalizeCoordinates(long &, long &, const unsigned long);
-
 void NormalizeCoordinates(long &from, long &to,
                                        const unsigned long refLength);
+
+
+char GetPlatformDirectoryChar(void);
+const _String GetVersionString(void);
+const _String GetTimeStamp(bool = false);
+
                                        
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__ ||      \
     defined __HYPHYQT__

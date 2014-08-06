@@ -40,20 +40,35 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __HY_GLOBALS__
 #define __HY_GLOBALS__
 
-#include "batchlan.h"
-#include "legacy_parser.h"
+#include "defines.h"
+#include "hy_strings.h"
 
-extern bool dropIntoDebugMode, isInFunction, terminateExecution,
-    skipWarningMessages;
+//#include "batchlan.h"
+//#include "legacy_parser.h"
 
-;
+extern bool dropIntoDebugMode,
+            isInFunction,
+            terminateExecution,
+            skipWarningMessages;
+
 
 extern char isDefiningATree;
 
 extern FILE *globalErrorFile, *globalMessageFile;
 
-extern _String blockWiseMatrix, errorFileName, messageFileName, randomSeed,
-    scanfLastFilePath, siteWiseMatrix;
+extern _String  blockWiseMatrix,
+                errorFileName,
+                messageFileName,
+                randomSeed,
+                scanfLastFilePath,
+                siteWiseMatrix,
+                empty,
+                emptyAssociativeList,
+                hyphyCiteString,
+                __KERNEL__VERSION__
+                ;
+
+
 
 extern _SimpleList freeSlots;
 
@@ -61,13 +76,13 @@ extern long globalRandSeed, systemCPUCount;
 
 extern _Parameter dFPrintFormat, dFDefaultWidth;
 
+#ifndef HY_2014_REWRITE_MASK
+
 extern _Variable *_n_, *_x_;
 
 extern _AVLListX openFileHandles, _builtInArgumentCounts;
 
-#ifdef __HYPHYMPI__
-extern int _hy_mpi_node_rank;
-#endif
+
 
 /* operation list */
 
@@ -143,5 +158,18 @@ struct _hy_op_definition {
   {HY_OP_CODE_OR,"||",-1L, (Ptr)OrNumbers},
   {HY_OP_CODE_FSTORE,"FStore",3L, nil}
 };
+
+#endif
+
+// __MAC__ specific globals
+#ifdef __MAC__
+    extern _String volumeName;
+#endif
+
+
+// MPI specific globals
+#ifdef __HYPHYMPI__
+    extern int _hy_mpi_node_rank;
+#endif
 
 #endif

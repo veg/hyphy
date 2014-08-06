@@ -48,6 +48,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "helperfunctions.h"
 #include "hy_list_reference.h"
+#include "hy_list_numeric.h"
+#include "hy_globals.h"
 
 namespace {
   // The fixture for testing class Foo.
@@ -99,7 +101,12 @@ namespace {
 }
 
 _String numbers ("0123456789"),
-letters ("abcdefghijklmnopqrstuvwxyz");
+        letters ("abcdefghijklmnopqrstuvwxyz"),
+        alnum  = numbers & letters & letters.UpCase(),
+        alpha_ = letters & letters.UpCase() & '_',
+        alnum_ = alnum & '_',
+        punctuation ("`!@#$%^&*()+=/,';][\\"),
+        whitespaces (" \t\n\r\v\f");
 
 const char test_case [] = "The quick brown fox jumps over the lazy dog";
 
@@ -321,7 +328,7 @@ TEST_F (_hyStringTest, StringSearching) {
       EXPECT_EQ (combined.contains ("X"), combined.Find ("X") != HY_NOT_FOUND) << "contains (_String) did not match Find results";
       EXPECT_EQ (number_string.Equal('1'), number_string == _String("1")) << "equal (char) did not match '==' results";
       
-      if (letter_string.s_length) {
+      if (letter_string.Length()) {
         EXPECT_TRUE   (combined.startswith(letter_string)) << "AB starts with A failed (match case), A == '" << letter_string << "'";
         EXPECT_FALSE  (letter_string.startswith(combined)) << "NOT AB startswith A failed";
         EXPECT_TRUE   (combined.startswith(upcase_letter_string, false)) << "aB startswith A failed (ignore case)";
@@ -455,4 +462,165 @@ TEST_F (_hyStringTest, Tokenize) {
   }
 }
 
+TEST_F (_hyStringTest, toNum) {
+    ASSERT_EQ (0.0, empty.toNum()) << "Empty string must convert to 0.";
+    ASSERT_EQ (-1.23e10, _String ("-1.23e+10").toNum()) << " '-1.23e+10' conversion to double failed";
+    ASSERT_EQ (1.e-8, _String ("0.00000001").toNum()) << " '0.0000001' conversion to double failed";
+}
+
+TEST_F (_hyStringTest, ProcessTreeBranchLength) {
+  ASSERT_EQ (3.14, _String(":3.14").ProcessTreeBranchLength()) << "Incorrect branch length conversion for 3.14";
+  ASSERT_EQ (2.7182, _String("2.7182").ProcessTreeBranchLength()) << "Incorrect branch length conversion for 2.7182";
+  ASSERT_EQ (0.001, _String (":0.00001").ProcessTreeBranchLength(0.001)) << "Incorrect branch length conversion for 0.00001 with lower bound set at 0.001";
+}
+
+
+
+TEST_F (_hyStringTest, Sort) {
+    
+    for (unsigned long k = 0UL; k < 1024UL; k++) {
+        
+        _SimpleList index_list;
+        
+        const   _String random_string (_String::Random (genrand_int32() % 384)),
+                sorted (random_string.Sort()),
+                sorted_index (random_string.Sort(&index_list));
+        
+        for (unsigned long i = 0UL; i < random_string.Length(); i++) {
+            if (i) {
+                ASSERT_GE (sorted(i), sorted (i-1UL)) << "Characters are not sorted following the applicaiton of 'Sort' (no index) to '" << sorted.getStr() << "'";
+                ASSERT_GE (sorted_index(i), sorted_index (i-1UL)) << "Characters are not sorted following the applicaiton of 'Sort' (index) to '" << sorted_index.getStr() << "'";
+            }
+            ASSERT_EQ (sorted_index (i), random_string (index_list(i))) << "The character index at " << i << " is incorrect following the applicaiton of 'Sort' (index) to '"  << sorted_index.getStr() << "'";
+        }
+        
+    }
+}
+
+TEST_F (_hyStringTest, Identifiers) {
+    // some standard cases
+    _String id1 ("hyphy3"),
+            id2 ("hyphy3.new"),
+            id3 ("0hyphy"),
+            id4 ("hy-phy"),
+            id5 ("hy_phy"),
+            id6 ("hyphy.test.dots"),
+            id7 ("hyphy.fail..dots");
+    
+    ASSERT_TRUE (id1.IsValidIdentifier()) << id1.getStr() << " declared an invalid identifier";
+    ASSERT_TRUE (id5.IsValidIdentifier()) << id5.getStr() << " declared an invalid identifier";
+    ASSERT_TRUE (id6.IsValidIdentifier()) << id6.getStr() << " declared an invalid identifier";
+
+    ASSERT_FALSE (id3.IsValidIdentifier()) << id3.getStr() << " declared a valid identifier";
+    ASSERT_FALSE (id4.IsValidIdentifier()) << id4.getStr() << " declared a valid identifier";
+    ASSERT_FALSE (id7.IsValidIdentifier()) << id7.getStr() << " declared a valid identifier";
+    ASSERT_FALSE (id2.IsValidIdentifier(false)) << id2.getStr() << " declared a valid identifier (no compounds allowed)";
+    ASSERT_FALSE (empty.IsValidIdentifier()) << "An empty string declared a valid identifier";
+    ASSERT_EQ    (id3,id3.ConvertToAnIdent(false)) << id3.getStr() << " should be left untouched as a valud non-strict ident";
+    ASSERT_EQ    (_String ("_hyphy"),id3.ConvertToAnIdent()) << id3.getStr() << " should be modified because it starts with a number";
+    ASSERT_EQ    (_String ("hyphy_fail_dots"),id7.ConvertToAnIdent()) << id7.ConvertToAnIdent().getStr();
+  
+    for (unsigned long k = 0UL; k < 1024UL; k++) {
+        const _String randomIdent  = _String::Random (1, &alpha_) & _String::Random (genrand_int32() % 32, &alnum_),
+                      randomIdent2 = _String::Random (1, &alpha_) & _String::Random (genrand_int32() % 32, &alnum_),
+                      randomIdent3 = _String::Random (1, &alpha_) & _String::Random (genrand_int32() % 32, &alnum_),
+                      compound2 = randomIdent & '.' & randomIdent2,
+                      compound3 = randomIdent & '.' & randomIdent2  & '.' & randomIdent3,
+                      partial1 = randomIdent & _String::Random (1 + genrand_int32() % 32, &punctuation),
+                      partial2 = compound3 & _String::Random (1 + genrand_int32() % 32, &punctuation),
+                      completely_random = _String::Random (genrand_int32() % 32);
+        
+      
+        
+        
+        ASSERT_TRUE (randomIdent.IsValidIdentifier()) << "IsValidIdentifier failed on '" << randomIdent.getStr() << "'";
+        ASSERT_TRUE (compound3.IsValidIdentifier()) << "IsValidIdentifier failed on '" << compound3.getStr() << "'" ;
+        ASSERT_FALSE(compound3.IsValidIdentifier(false)) << "IsValidIdentifier (no compounds) failed on '" << compound3.getStr() << "'";
+        ASSERT_FALSE(partial1.IsValidIdentifier(false)) << "IsValidIdentifier failed on '" << partial1.getStr() << "'";
+        
+        ASSERT_EQ (compound2.ShortenVarID(randomIdent), randomIdent2) << "'A.B'.ShortenVarID ('A') failed on '" << compound2.getStr() << "'";
+        ASSERT_EQ (compound2.ShortenVarID(randomIdent2), compound2) << "'A.B'.ShortenVarID ('B') failed on '" << compound2.getStr() << "'";
+        ASSERT_EQ ((randomIdent&randomIdent2).ShortenVarID(randomIdent), randomIdent&randomIdent2) << "'AB'.ShortenVarID ('A') failed on '" << (randomIdent&randomIdent2).getStr() << "'";
+        ASSERT_TRUE (completely_random.ConvertToAnIdent().IsValidIdentifier()) << "Applying ConvertToAnIdent to '" << completely_random.getStr() << "' failed to produce a valid ident";
+    }
+}
+
+TEST_F (_hyStringTest, SpaceFunctions) {
+  for (unsigned long k = 0UL; k < 1024UL; k++) {
+    unsigned long segments = 1UL + genrand_int32() % 32;
+    
+    _StringBuffer with_spaces,
+                  single_spaces,
+                  no_spaces;
+    
+    bool last_space = false;
+    for (unsigned long p = 0UL; p < segments; p++) {
+      bool is_space = genrand_real2() > 0.5;
+      _String random_s = _String::Random (1L + genrand_int32() % 5, is_space ? &whitespaces : &alnum_);
+      if (is_space) {
+        with_spaces << random_s;
+        if (!last_space) {
+          single_spaces << ' ';
+        }
+      } else {
+        no_spaces << random_s;
+        single_spaces << random_s;
+        with_spaces << random_s;
+      }
+      last_space = is_space;
+    }
+    
+    ASSERT_EQ (with_spaces.CompressSpaces(),single_spaces) << "Compress spaces failed on '" << with_spaces.getStr() << "' return value '" << with_spaces.CompressSpaces() << "'. Expected '" << single_spaces << "'";
+    ASSERT_EQ (single_spaces.CompressSpaces(),single_spaces) << "Compress (should do nothing) spaces failed on '" << single_spaces.getStr() << '\'';
+    ASSERT_EQ (with_spaces.KillSpaces (),no_spaces) << "Kill spaces failed on '" << with_spaces.getStr() << '\'';
+    ASSERT_EQ (HY_NOT_FOUND, no_spaces.FirstSpaceIndex()) << "Found a space character in a string that should have none";
+    if (no_spaces.Length()){
+        ASSERT_EQ (0, no_spaces.FirstNonSpaceIndex()) << no_spaces.getStr();
+        ASSERT_EQ (no_spaces.Length() - 1UL, no_spaces.FirstNonSpaceIndex(0, HY_NOT_FOUND, HY_STRING_DIRECTION_BACKWARD));
+    }
+    ASSERT_EQ (single_spaces.Find (' '), with_spaces.FirstSpaceIndex());
+    ASSERT_EQ (single_spaces.FindBackwards (' '), single_spaces.FirstSpaceIndex(0, HY_NOT_FOUND, HY_STRING_DIRECTION_BACKWARD));
+    
+    ASSERT_EQ ('q', _String(test_case).FirstNonSpace (3,HY_NOT_FOUND));
+    ASSERT_EQ ('e', _String(test_case).FirstNonSpace (0,3,HY_STRING_DIRECTION_BACKWARD));
+    
+  }
+}
+
+
+TEST_F (_hyStringTest, RegExpFunctions) {
+  const _String test (test_case);
+  
+    //The quick brown fox jumps over the lazy dog
+  int error;
+  
+  regex_t* re_case = PrepRegExp("\\ [a-z]+", error, true),
+         * re_nocase = PrepRegExp("^(th)e", error, false),
+         * fail = PrepRegExp( "[", error, true);
+  
+  _SimpleList matches;
+  
+  
+  matches = test.RegExpMatch (re_case);
+  ASSERT_EQ (2, matches.Length ()) << "Failed to match a word";
+  ASSERT_EQ (_String(" quick"),test.Cut (matches(0), matches(1))) << "Matched an incorrect word: '" << test.Cut (matches(0), matches(1)) << "'";
+
+  matches = test.RegExpMatchAll(re_case);
+  ASSERT_EQ (16, matches.Length ()) << "Failed to match all lower-case words";
+
+  matches = test.RegExpMatch(re_nocase);
+  ASSERT_EQ (4, matches.Length ()) << "Failed to match all subexpressions";
+  ASSERT_EQ (_String("Th"),test.Cut (matches(2), matches(3))) << "Matched an incorrect subexpression: '" << test.Cut (matches(0), matches(1)) << "'";
+
+  ASSERT_EQ (NULL, fail) << "Did not flag a broken regexp";
+  ASSERT_LE (0,GetRegExpError(error).Length());
+ 
+  
+  ASSERT_EQ (2, test.RegExpMatchOnce("brown", true, true).Length());
+  ASSERT_EQ (0, test.RegExpMatchOnce("beavis", true, true).Length());
+  ASSERT_EQ (0, test.RegExpMatchOnce("?*", true, false).Length());
+
+  FlushRegExp (re_case);
+  FlushRegExp (re_nocase);
+}
 

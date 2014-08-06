@@ -28,56 +28,30 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "hy_strings.h"
+#include "hy_globals.h"
+#include "hy_list_numeric.h"
+#include "hy_list_reference.h"
+#include "errorfns.h"
 
-#ifndef __HYPHYXCODE__
-#include "gnuregex.h"
-#else
-#include "regex.h"
-#include <unistd.h>
-#endif
 
-#ifdef __UNIX__
-#if !defined __MINGW32__
-#include <sys/utsname.h>
-#endif
-#include <unistd.h>
-#endif
+
+
+
 
 #ifdef __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
-
-#include "hy_list_numeric.h"
-#include "hy_list_reference.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
 
 
-_String compileDate = __DATE__,
-        __KERNEL__VERSION__ =
-            _String("2.13") & compileDate.Cut(7, 10) &
-            compileDate.Cut(0, 2).Replace("Jan", "01", true)
-                .Replace("Feb", "02", true).Replace("Mar", "03", true)
-                .Replace("Apr", "04", true).Replace("May", "05", true)
-                .Replace("Jun", "06", true).Replace("Jul", "07", true)
-                .Replace("Aug", "08", true).Replace("Sep", "09", true)
-                .Replace("Oct", "10", true).Replace("Nov", "11", true)
-                .Replace("Dec", "12", true) &
-            compileDate.Cut(4, 5).Replace(" ", "0", true) & "beta";
 
-_String empty(""), emptyAssociativeList("{}"),
-    hyphyCiteString(
-        "\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. "
-        "(2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics "
-        "21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy "
-        "user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf "
-        "may be a good starting point.\n");
-
-char defaultReturn = 0;
+char _hyStringDefaultReturn = 0;
 unsigned long _String::storageIncrement = 32;
 
 /*extern int _hy_mpi_node_rank;
@@ -85,27 +59,30 @@ long  loopCount      = 3;
 char* addrBreak      = 0x583088;*/
 
 struct _hyValidIDCharsType {
-  bool valid_chars[256];
+  unsigned char valid_chars[256];
+  
+  bool canBeFirst (unsigned char c) {
+    return valid_chars[c] == 2;
+  }
+
+  bool isValidChar (unsigned char c) {
+    return valid_chars[c] > 0;
+  }
+  
   _hyValidIDCharsType(void) {
     for (int c = 0; c < 256; c++) {
-      valid_chars[c] = false;
+      valid_chars[c] = 0;
     }
-    {
-      for (unsigned char c = 'a'; c <= 'z'; c++) {
-        valid_chars[c] = true;
-      }
+    for (unsigned char c = 'a'; c <= 'z'; c++) {
+      valid_chars[c] = 2;
     }
-    {
-      for (unsigned char c = 'A'; c <= 'Z'; c++) {
-        valid_chars[c] = true;
-      }
+    for (unsigned char c = 'A'; c <= 'Z'; c++) {
+      valid_chars[c] = 2;
     }
-    {
-      for (unsigned char c = '0'; c <= '9'; c++) {
-        valid_chars[c] = true;
-      }
+    for (unsigned char c = '0'; c <= '9'; c++) {
+      valid_chars[c] = 1;
     }
-    valid_chars[(unsigned char) '_'] = true;
+    valid_chars[(unsigned char) '_'] = 2;
   }
 } _hyValidIDChars;
 
@@ -325,7 +302,7 @@ char &_String::operator[](long index) {
   if (((unsigned long) index) < s_length) {
     return s_data[index];
   }
-  return defaultReturn;
+  return _hyStringDefaultReturn;
 }
 
 //Element location functions
@@ -338,8 +315,9 @@ const char _String::getChar(long index) const {
   if (index >= 0L && index < s_length) {
     return s_data[index];
   }
-  return defaultReturn;
+  return _hyStringDefaultReturn;
 }
+
 
 // Assignment operator
 void _String::operator=(const _String& s) {
@@ -347,6 +325,14 @@ void _String::operator=(const _String& s) {
     free(s_data);
   }
   Duplicate(&s);
+}
+
+_Parameter _String::toNum(void) const{
+    if (sLength == 0UL) {
+        return 0.;
+    }
+    char *endP;
+    return strtod(sData, &endP);
 }
 
 
@@ -787,11 +773,13 @@ const _String _String::FormatTimeString(long time_diff){
   return time_string;
 }
 
+
 /*
  ==============================================================
  Utility functions with no clear category
  ==============================================================
  */
+
 
 
 const _String _String::Random(const unsigned long length, const _String *alphabet) {
@@ -844,6 +832,328 @@ long _String::Adler32(void) const {
   return b << 16 | a;
 }
 
+_String const _String::Sort(_SimpleList *index) const {
+    
+    if (index) {
+        index->Clear();
+    }
+    
+    if (sLength > 0UL) {
+        _hyListOrderable<char> sorted;
+        
+        if (index) {
+            for (unsigned long i = 0UL; i < sLength; i++) {
+                sorted << sData[i];
+                (*index) << i;
+            }
+            sorted.Sort (true, index);
+        } else {
+            for (unsigned long i = 0; i < sLength; i++) {
+                sorted << sData[i];
+            }
+            sorted.Sort();
+        }
+        _String result (sLength);
+        
+        for (unsigned long i = 0UL; i < sLength; i++) {
+            result.setChar (i, sorted.AtIndex(i));
+        }
+        
+        return result;
+    }
+    
+    return empty;
+}
+
+_Parameter _String::ProcessTreeBranchLength(_Parameter min_value) const {
+  _Parameter res = -1.;
+  
+  if (sLength) {
+    if (sData[0] == ':') {
+      res = Cut(1, -1).toNum();
+    } else {
+      res = toNum();
+    }
+    
+    return res < min_value ? min_value : res;
+  }
+  
+  return res;
+}
+
+/*
+ ==============================================================
+ Identifier Methods
+ ==============================================================
+ */
+
+bool _String::IsValidIdentifier(bool allow_compounds) const {
+    // 201407
+    
+    return sLength > 0UL && _IsValidIdentifierAux (allow_compounds) == Length() - 1UL;
+
+#ifndef HY_2014_REWRITE_MASK
+    // TO DO -- MOVE THIS CHECK ELSEWHERE?
+    return hyReservedWords.Find(this) == HY_NOT_FOUND;
+#endif
+    
+    
+}
+
+long _String::_IsValidIdentifierAux(bool allow_compounds, char wildcard) const {
+    
+    unsigned long current_index = 0UL;
+    
+    bool          first     = true;
+    
+    for (; current_index < sLength; current_index ++) {
+        char current_char = getChar (current_index);
+        if (first) {
+            if ( ! (isalpha (current_char) || current_char == '_')) {
+                break;
+            }
+            first = false;
+        } else {
+            if ( ! (isalnum (current_char) || current_char == '_' || current_char == wildcard)) {
+                if (allow_compounds && current_char == '.') {
+                    first = true;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (current_index) {
+        return current_index - 1UL;
+    }
+    
+    return HY_NOT_FOUND;
+}
+
+const _String _String::ShortenVarID(_String const &containerID) const {
+    if (startswith(containerID)) {
+        unsigned long prefix_length = containerID.Length();
+        
+        if (getChar(prefix_length) == '.' && sLength > prefix_length + 1L) {
+            return Cut(prefix_length + 1L, HY_NOT_FOUND);
+        }
+    }
+    return *this;
+}
+
+  //Convert a string to a valid ident
+const _String  _String::ConvertToAnIdent(bool strict) const {
+  _StringBuffer converted;
+  const char default_placeholder = '_';
+  
+  if (sLength) {
+    unsigned long index = 0UL;
+    if (strict) {
+      converted << (_hyValidIDChars.canBeFirst (sData[0]) ? sData[0] : default_placeholder);
+      index ++;
+    }
+    for (;index < sLength; index++) {
+      if (_hyValidIDChars.isValidChar(sData[index])) {
+        converted << sData[index];
+      } else {
+        if (index && converted.getChar(converted.Length()-1UL) != default_placeholder)  {
+          converted << default_placeholder;
+        }
+      }
+    }
+  } else {
+    converted << default_placeholder;
+  }
+  
+  return converted;
+}
+
+/*
+ ==============================================================
+ Space Methods
+ ==============================================================
+ */
+
+//Replace all space runs with a single space
+const _String _String::CompressSpaces(void) const {
+    _StringBuffer temp(sLength + 1UL);
+    bool skipping = false;
+    
+    for (unsigned long k = 0UL; k < sLength; k++) {
+        if (!isspace(sData[k])) {
+            temp << sData[k];
+            skipping = false;
+        } else {
+            if (!skipping) {
+                skipping = true;
+                temp << ' ';
+            }
+        }
+    }
+    return temp;
+}
+
+//Remove all spaces
+const _String _String::KillSpaces(void) const {
+    _StringBuffer temp(sLength + 1UL);
+    for (unsigned long k = 0UL; k < sLength; k++) {
+        if (!isspace(sData[k])) {
+            temp << sData[k];
+        }
+    }
+    return temp;
+}
+
+
+
+  //Locate the first non-space charachter of the string
+long _String::FirstNonSpaceIndex(long from, long to, unsigned char direction) const {
+  
+  long requested_range = NormalizeRange(from, to);
+  
+  if (requested_range > 0L) {
+    if (direction == HY_STRING_DIRECTION_FORWARD) {
+      for (; from <= to; from++) {
+        if (!isspace(sData[from])) {
+          return from;
+        }
+      }
+    } else {
+      for (; to>=from; to--) {
+        if (!isspace(sData[to])) {
+          return to;
+        }
+      }
+    }
+  }
+  
+  return HY_NOT_FOUND;
+}
+
+
+  //Locate the first non-space charachter of the string
+long _String::FirstSpaceIndex(long from, long to, unsigned char direction) const {
+  long requested_range = NormalizeRange(from, to);
+  
+  if (requested_range > 0L) {
+    if (direction == HY_STRING_DIRECTION_FORWARD) {
+      for (; from <= to; from++) {
+        if (isspace(sData[from])) {
+          return from;
+        }
+      }
+    } else {
+      for (; to>=from; to--) {
+        if (isspace(sData[to])) {
+          return to;
+        }
+      }
+    }
+  }
+  
+  return HY_NOT_FOUND;
+}
+
+  //Locate the first non-space charachter of the string
+char _String::FirstNonSpace(long start, long end, unsigned char direction) const {
+  long r = FirstNonSpaceIndex(start, end, direction);
+  return r == HY_NOT_FOUND ? _hyStringDefaultReturn : sData[r];
+}
+
+
+/*
+ ==============================================================
+ Regular Expression Methods
+ ==============================================================
+ */
+
+const _String GetRegExpError(int error) {
+  char buffer[512];
+  buffer[regerror(error, nil, buffer, 511)] = 0;
+  return _String("Regular Expression error:") & buffer;
+}
+
+void FlushRegExp(regex_t* regExpP) {
+  regfree(regExpP);
+  delete regExpP;
+}
+
+regex_t* PrepRegExp(const _String& source, int &errCode, bool caseSensitive) {
+  regex_t *res = new regex_t;
+  checkPointer(res);
+  
+  errCode = regcomp(res, source.getStr(),
+                    REG_EXTENDED | (caseSensitive ? 0 : REG_ICASE));
+  
+  if (errCode) {
+    FlushRegExp(res);
+    return nil;
+  }
+  return res;
+}
+
+const _SimpleList _String::RegExpMatch(regex_t const* regEx) const {
+  _SimpleList matchedPairs;
+  
+  if (sLength) {
+    regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
+    int errNo = regexec(regEx, s_data, regEx->re_nsub + 1, matches, 0);
+    if (errNo == 0) {
+      for (long k = 0L; k <= regEx->re_nsub; k++) {
+        matchedPairs << matches[k].rm_so;
+        matchedPairs << matches[k].rm_eo - 1;
+      }
+    }
+    delete[] matches;
+  }
+  
+  return matchedPairs;
+}
+
+const _SimpleList _String::RegExpMatchAll(regex_t const* regEx) const {
+  _SimpleList matchedPairs;
+  
+  if (sLength) {
+    
+    regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
+    int errNo = regexec(regEx, s_data, regEx->re_nsub + 1, matches, 0);
+    while (errNo == 0) {
+      long offset = matchedPairs.countitems()
+      ? matchedPairs.Element(-1) + 1
+      : 0;
+      
+      matchedPairs << matches[0].rm_so + offset;
+      matchedPairs << matches[0].rm_eo - 1 + offset;
+      
+      offset += matches[0].rm_eo;
+      if (offset < s_length) {
+        errNo = regexec(regEx, s_data + offset, regEx->re_nsub + 1, matches, 0);
+      } else {
+        break;
+      }
+    }
+    delete[] matches;
+  }
+  return matchedPairs;
+}
+
+const _SimpleList _String::RegExpMatchOnce(const _String & pattern,
+                              bool caseSensitive, bool handleErrors) const {
+  if (sLength) {
+    int errNo = 0;
+    regex_t* regex = PrepRegExp(pattern, errNo, caseSensitive);
+    if (regex) {
+      _SimpleList hits = RegExpMatch(regex);
+      FlushRegExp(regex);
+      return hits;
+    } else if (handleErrors) {
+      warnError(GetRegExpError(errNo));
+    }
+  }
+  return _SimpleList();
+}
+
 
 /*!!!!!!!!!!!!!!!!!!
  
@@ -853,140 +1163,12 @@ long _String::Adler32(void) const {
 
 
 
-long _String::FindEndOfIdent(long start, long end, char wild) {
-  if (s_length == 0) {
-    return HY_NOT_FOUND;
-  }
-
-  if (start == -1) {
-    start = ((long) s_length) - 1;
-  }
-  if (end == -1) {
-    end = ((long) s_length) - 1;
-  }
-
-  long i = start;
-
-  for (; i <= end; i++)
-    if (!(isalnum(s_data[i]) || s_data[i] == '.' || s_data[i] == wild ||
-          s_data[i] == '_')) {
-      break;
-    }
-
-  if (i > start + 2 && s_data[i - 1] == '_' && s_data[i - 2] == '_') {
-    return i - 3;
-  }
-
-  return i - 1;
-}
- 
-
-long _String::ExtractEnclosedExpression(long &from, char open, char close,
-                                        bool respectQuote, bool respectEscape) {
-  long currentPosition = from, currentLevel = 0;
-
-  bool isQuote = false, doEscape = false;
-
-  while (currentPosition < s_length) {
-    char thisChar = s_data[currentPosition];
-
-    if (!doEscape) {
-      if (thisChar == '"' && respectQuote && !doEscape) {
-        isQuote = !isQuote;
-      } else if (thisChar == open && !isQuote) {
-        // handle the case when close and open are the same
-        if (currentLevel == 1 && open == close && from < currentPosition) {
-          return currentPosition;
-        }
-        currentLevel++;
-        if (currentLevel == 1) {
-          from = currentPosition;
-        }
-      } else if (thisChar == close && !isQuote) {
-        currentLevel--;
-        if (currentLevel == 0 && from < currentPosition) {
-          return currentPosition;
-        }
-        if (currentLevel < 0) {
-          return HY_NOT_FOUND;
-        }
-      } else if (thisChar == '\\' && respectEscape && isQuote && !doEscape) {
-        doEscape = true;
-      }
-    } else {
-      doEscape = false;
-    }
-
-    currentPosition++;
-  }
-
-  return HY_NOT_FOUND;
-}
-
-
-
-
-long _String::FindTerminator(long from, _String &terminators) {
-  long currentPosition = from, currentCurly = 0, currentSquare = 0,
-       currentParen = 0;
-
-  bool isQuote = false, doEscape = false;
-
-  while (currentPosition < s_length) {
-    char thisChar = s_data[currentPosition];
-    if (!doEscape) {
-      if (thisChar == '"' && !doEscape) {
-        isQuote = !isQuote;
-      } else {
-        if (!isQuote) {
-          if (thisChar == '{') {
-            currentCurly++;
-          } else if (thisChar == '[') {
-            currentSquare++;
-          } else if (thisChar == '(') {
-            currentParen++;
-          }
-          if (currentCurly > 0 && thisChar == '}') {
-            currentCurly--;
-          } else if (currentSquare > 0 && thisChar == ']') {
-            currentSquare--;
-          } else if (currentParen > 0 && thisChar == ')') {
-            currentParen--;
-          } else if (currentParen == 0 && currentSquare == 0 &&
-                     currentCurly == 0)
-            for (long s = 0; s < terminators.s_length; s++)
-              if (thisChar == terminators.s_data[s]) {
-                return currentPosition;
-              }
-        } else {
-          if (thisChar == '\\' && isQuote && !doEscape) {
-            doEscape = true;
-          }
-        }
-      }
-    } else {
-      doEscape = false;
-    }
-
-    currentPosition++;
-  }
-
-  return HY_NOT_FOUND;
-}
-
-
-
-
-
-
-
-
 long _String::LempelZivProductionHistory(_SimpleList *rec) {
   if (rec) {
     rec->Clear();
   }
 
-  if (s_length == 0) {
+  if (sLength == 0) {
     return 0;
   }
 
@@ -996,19 +1178,19 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 
   long cp = 1, pH = 1;
 
-  while (cp < s_length) {
+  while (cp < sLength) {
     long maxExtension = 0;
 
     for (long ip = 0; ip < cp; ip++) {
       long sp = ip, mp = cp;
 
-      while ((mp < s_length) && (s_data[mp] == s_data[sp])) {
+      while ((mp < sLength) && (sData[mp] == sData[sp])) {
         mp++;
         sp++;
       }
 
-      if (mp == s_length) {
-        maxExtension = s_length - cp;
+      if (mp == sLength) {
+        maxExtension = sLength - cp;
         break;
       } else {
         if ((mp = mp - cp + 1) > maxExtension) {
@@ -1037,810 +1219,6 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 
 
 
-_String *_String::Sort(_SimpleList *index) {
-  if (index) {
-    index->Clear();
-  }
 
-  if (s_length) {
-    _SimpleList charList(s_length);
-    if (index) {
-      for (unsigned long i = 0UL; i < s_length; i++) {
-        charList << s_data[i];
-        (*index) << i;
-      }
-      charList.Sort (true, index);
-    } else {
-      for (unsigned long i = 0; i < s_length; i++) {
-        charList << s_data[i];
-      }
-
-      charList.Sort();
-    }
-    _String *sorted = new _String(s_length);
-    for (unsigned long i = 0; i < s_length; i++) {
-      sorted->s_data[i] = charList.AtIndex(i);
-    }
-
-    return sorted;
-  }
-
-  return new _String;
-}
-
-
-
-
-
-_Parameter _String::toNum(void) const{
-  if (s_length == 0UL) {
-    return 0.;
-  }
-  char *endP;
-  return strtod(s_data, &endP);
-}
-
-
-
-_Parameter _String::ProcessTreeBranchLength(void) {
-  _Parameter res = -1.;
-
-  if (s_length) {
-    if (s_data[0] == ':') {
-      res = Cut(1, -1).toNum();
-    } else {
-      res = toNum();
-    }
-
-    if (res < 1e-10) {
-      res = 1e-10;
-    }
-  }
-
-  return res;
-}
-
-bool _String::IsALiteralArgument(bool stripQuotes) {
-  if (s_length >= 2) {
-    long from = 0, to = ExtractEnclosedExpression(from, '"', '"', false, true);
-
-    if (from == 0 && to == s_length - 1) {
-      if (stripQuotes) {
-        Trim(1, s_length - 2);
-      }
-      return true;
-    }
-  }
-  return false;
-}
-
-//TODO: This is a global function.
-bool hyIDValidator(_String *s) { return s->IsValidIdentifier(false); }
-
-/*
-==============================================================
-Space Methods
-==============================================================
-*/
-
-//Replace all space runs with a single space
-void _String::CompressSpaces(void) {
-  _StringBuffer temp(s_length + 1);
-  bool skipping = false;
-
-  for (unsigned long k = 0UL; k < s_length; k++)
-    if (isspace(s_data[k])) {
-      if (!skipping) {
-        skipping = true;
-        temp << ' ';
-      }
-    } else {
-      temp << s_data[k];
-      skipping = false;
-  }
-  *this = temp;
-}
-
-//Locate the first non-space charachter of the string
-char _String::FirstNonSpace(long start, long end, char direction) {
-  long r = FirstNonSpaceIndex(start, end, direction);
-  return r == -1 ? 0 : s_data[r];
-}
-
-//Locate the first non-space charachter of the string
-long _String::FirstNonSpaceIndex(long start, long end, char direction) {
-  if (start == -1) {
-    start = ((long) s_length) - 1;
-  }
-  if (end == -1) {
-    end = ((long) s_length) - 1;
-  }
-  if (direction < 0) {
-    //long t = start;
-    start = end;
-    end = start;
-  }
-  if (s_length && (start < s_length) && (!isspace(s_data[start]))) {
-    return start; // first char is non-space
-  }
-  char *str = s_data + start;
-  for (int i = start; i <= end; i += direction, str += direction)
-    if (!(((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
-      return i;
-    }
-
-  return HY_NOT_FOUND;
-}
-
-//Locate the first non-space charachter of the string
-long _String::FirstSpaceIndex(long start, long end, char direction) {
-  if (start == -1) {
-    start = ((long) s_length) - 1;
-  }
-  if (end == -1) {
-    end = ((long) s_length) - 1;
-  }
-  if (direction < 0) {
-    //long t = start;
-    start = end;
-    end = start;
-  }
-  if (s_length && (isspace(s_data[start]))) {
-    return start; // first char is non-space
-  }
-  char *str = s_data + start;
-  for (int i = start; i <= end; i += direction, str += direction)
-    if ((((*str >= 9) && (*str <= 13)) || (*str == ' '))) {
-      return i;
-    }
-
-  return HY_NOT_FOUND;
-}
-
-//Remove all spaces
-void _String::KillSpaces(_String &result) {
-  _StringBuffer temp(s_length + 1);
-  for (unsigned long k = 0UL; k < s_length; k++)
-    if (!isspace(s_data[k])) {
-      temp << s_data[k];
-    }
-  result = temp;
-}
-
-
-
-
-
-void _String::ProcessParameter(void) {
-#ifndef HY_2014_REWRITE_MASK
-  if (Equal(&getDString)) {
-    *this = ReturnDialogInput();
-  }
-#endif
-}
-
-//==============================================================
-//Filename and Platform Methods
-//==============================================================
-
-bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
-                              bool assume_platform_specific,
-                              _ExecutionList *caller) {
-#ifndef HY_2014_REWRITE_MASK
-  _String errMsg;
-
-  try {
-    if (Equal(&getFString) || Equal(&tempFString)) { // prompt user for file
-      if (Equal(&tempFString)) {
-#if not defined __MINGW32__ &&not defined __WINDOZE__
-#ifdef __MAC__
-        char tmpFileName[] = "HYPHY-XXXXXX";
-#else
-        char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
-#endif
-
-        int fileDescriptor = mkstemp(tmpFileName);
-        if (fileDescriptor == -1) {
-          throw("Failed to create a temporary file name");
-        }
-        *this = tmpFileName;
-        CheckReceptacleAndStore(&useLastFString, empty, false,
-                                new _FString(*this, false), false);
-        close(fileDescriptor);
-        return true;
-#else
-        throw(tempFString & " is not implemented for this platform");
-#endif
-      } else {
-        if (!isWrite) {
-          *this = ReturnFileDialogInput();
-        } else {
-          *this = WriteFileDialogInput();
-        }
-      }
-      ProcessFileName(false, false, theP,
-#if defined __MAC__ || defined __WINDOZE__
-                      true
-#else
-                      false
-#endif
-                      ,
-                      caller);
-
-      CheckReceptacleAndStore(&useLastFString, empty, false,
-                              new _FString(*this, false), false);
-      return true;
-    }
-
-    if (acceptStringVars) {
-      *this = ProcessLiteralArgument(this, (_VariableContainer *)theP, caller);
-      if (caller && caller->IsErrorState()) {
-        return false;
-      }
-    } else {
-      StripQuotes();
-    }
-
-    if (!s_length) {
-      return true;
-    }
-  }
-
-  catch (_String errmsg) {
-    if (caller) {
-      caller->ReportAnExecutionError(errMsg);
-    } else {
-      WarnError(errMsg);
-    }
-    return false;
-  }
-
-#if (defined __UNIX__ || defined __HYPHY_GTK__) && !defined __MINGW32__
-  //UNIX LINES HERE
-  if (Find('\\') != -1) { // DOS (ASSUME RELATIVE) PATH
-    *this = Replace("\\", "/", true);
-  } else if (Find(':') != -1) { // Mac (Assume Relative) PATH
-    *this = Replace("::", ":../", true);
-    if (getChar(0) == ':') {
-      Trim(1, -1);
-    }
-    *this = Replace(':', '/', true);
-  }
-
-  if (getChar(0) != '/') { // relative path
-    if (pathNames.lLength) {
-      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-      long f = lastPath->s_length - 2, k = 0;
-
-      // check the last stored absolute path and reprocess this relative path
-      // into an absolute.
-      while (beginswith("../")) {
-        if ((f = lastPath->FindBackwards('/', 0, f) - 1) == -1) {
-          return true;
-        }
-        Trim(3, -1);
-        k++;
-      }
-      if (k == 0) {
-        *this = *lastPath & (*this);
-      } else {
-        *this = lastPath->Cut(0, f + 1) & (*this);
-      }
-    }
-  }
-#endif
-
-#if defined __WINDOZE__ || defined __MINGW32__ // WIN/DOS code
-  if (Find('/') != -1) {                       // UNIX PATH
-    if (getChar(0) == '/') {
-      Trim(1, -1);
-    }
-    *this = Replace("/", "\\", true);
-  } else {
-    if (Find('\\') == -1) {
-      // check to see if this is a relative path
-      *this = Replace("::", ":..\\", true);
-      if ((s_data[0] == ':')) {
-        Trim(1, -1);
-      }
-      *this = Replace(':', '\\', true);
-    }
-  }
-
-  if (Find(':') == -1 && Find("\\\\", 0, 1) == -1) { // relative path
-
-    if (pathNames.lLength) {
-      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-      long f = lastPath->s_length - 2, k = 0;
-      // check the last stored absolute path and reprocess this relative path
-      // into an absolute.
-      while (beginswith("..\\")) {
-        f = lastPath->FindBackwards('\\', 0, f) - 1;
-        if (f == -1) {
-          return false;
-        }
-        Trim(3, -1);
-        k++;
-      }
-      if (k == 0) {
-        if (lastPath->s_data[lastPath->s_length - 1] != '\\') {
-          *this = *lastPath & '\\' & (*this);
-        } else {
-          *this = *lastPath & (*this);
-        }
-      } else {
-        *this = lastPath->Cut(0, f + 1) & (*this);
-      }
-    }
-
-  }
-
-  _String escapedString(s_length, true);
-  for (long stringIndex = 0; stringIndex < s_length; stringIndex++) {
-    char currentChar = getChar(stringIndex);
-    //char b[256];
-    //snprintf (b, sizeof(b),"%c %d\n", currentChar, currentChar);
-    //BufferToConsole (b);
-    switch (currentChar) {
-    case '\t':
-      escapedString << '\\';
-      escapedString << 't';
-      break;
-    case '\n':
-      escapedString << '\\';
-      escapedString << 'n';
-      break;
-    default:
-      escapedString << currentChar;
-    }
-  }
-  escapedString.Finalize();
-  (*this) = escapedString;
-
-#endif
-
-#ifdef __MAC__
-  if (!assume_platform_specific && Find('/') != -1) { // UNIX PATH
-    bool rootPath = false;
-    if (s_data[0] == '/') {
-      rootPath = true;
-      *this = volumeName & Cut(1, -1);
-    }
-
-    if (beginswith("..")) {
-      *this = _String('/') & Cut(2, -1);
-    }
-
-    *this = Replace("/", ":", true);
-    *this = Replace("..", "", true);
-
-    if (s_data[0] != ':' && !rootPath) {
-      *this = _String(':') & *this;
-    }
-  } else {
-    if (!assume_platform_specific &&
-        Find('\\') != -1) { // DOS PATH (ASSUME PARTIAL)
-      if (beginswith("..")) {
-        *this = _String('\\') & Cut(2, -1);
-      }
-      *this = Replace("\\", ":", true);
-      *this = Replace("..", "", true);
-      if (Find(':') != -1) {
-        *this = _String(':') & *this;
-      }
-    } else { // MAC PATH
-      if (Find(':') != -1) {
-        if (s_data[0] != ':') {
-          if (!beginswith(volumeName)) {
-            if (pathNames.lLength) {
-              _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-              if (!beginswith(lastPath->Cut(0, lastPath->Find(':')))) {
-                *this = _String(':') & *this;
-              }
-            } else {
-              *this = _String(':') & *this;
-            }
-          }
-        }
-      } else {
-        *this = _String(':') & *this;
-      }
-    }
-  }
-
-  if (s_data[0] == ':') { // relative path
-    long f = -1, k = 0;
-    if (pathNames.lLength) {
-      _String *lastPath = (_String *)pathNames(pathNames.lLength - 1);
-      // check the last stored absolute path and reprocess this relative path
-      // into an absolute.
-      while (s_data[k] == ':') {
-        f = lastPath->FindBackwards(':', 0, f) - 1;
-        if (f == -1) {
-          return;
-        }
-        k++;
-      }
-      *this = lastPath->Cut(0, f + 1) & Cut(k, -1);
-    } else {
-      *this = empty;
-    }
-  }
-#endif
-#endif
-  return true;
-}
-
-//Compose two UNIX paths (abs+rel)
-_String _String::PathComposition(_String relPath) {
-  if (relPath.s_data[0] != '/') { // relative path
-    long f = -1, k = 0;
-    f = s_length - 2;
-    _String result = *this;
-
-    while (relPath.startswith("../")) {
-
-      //Cut Trim relPath
-      f = FindBackwards('/', 0, f) - 1;
-
-      relPath = relPath.Chop(0, 2);
-      result.Trim(0, f + 1);
-
-      if (f == -1) {
-        return empty;
-      }
-      k++;
-
-    }
-
-    return result & relPath;
-  } else {
-    return relPath;
-  }
-  return empty;
-}
-
-//Mac only so far
-_String _String::PathSubtraction(_String &p2, char) {
-  _String result;
-  char separator = GetPlatformDirectoryChar();
-
-  //if (pStyle == 0)
-  //    separator = ':';
-  long k;
-  for (k = 0;(k < s_length) && (k < p2.s_length) && (s_data[k] == p2.s_data[k]);
-       k++)
-    ;
-  if (k > 0) {
-    while (s_data[k] != separator) {
-      k--;
-    }
-    if (k > 0) {
-      long m = k + 1, levels = 0;
-      for (; m < s_length; m++)
-        if (s_data[m] == separator) {
-          levels++;
-        }
-      if (levels) {
-        result = separator;
-        while (levels) {
-          result.Insert(separator, -1);
-          levels--;
-        }
-      }
-      result = result & p2.Cut(k + 1, -1);
-      return result;
-    }
-  }
-  return empty;
-}
-
-//TODO: These are global methods. Should they even be here?
-char GetPlatformDirectoryChar(void) {
-  char c = '/';
-#ifdef __MAC__
-  c = ':';
-#endif
-#if defined __WINDOZE__ || defined __MINGW32__
-  c = '\\';
-#endif
-
-  return c;
-}
-
-_String GetVersionString(void) {
-  _String theMessage = _String("HYPHY ") & __KERNEL__VERSION__;
-#ifdef __MP__
-  theMessage = theMessage & "(MP)";
-#endif
-#ifdef __HYPHYMPI__
-  theMessage = theMessage & "(MPI)";
-#endif
-  theMessage = theMessage & " for ";
-#ifdef __MAC__
-  theMessage = theMessage & "MacOS";
-#ifdef __HYPHYXCODE__
-  theMessage = theMessage & "(Universal Binary)";
-#else
-#ifdef TARGET_API_MAC_CARBON
-  theMessage = theMessage & "(Carbon)";
-#endif
-#endif
-#endif
-#ifdef __WINDOZE__
-  theMessage = theMessage & "Windows (Win32)";
-#endif
-#ifdef __UNIX__
-#if !defined __HEADLESS_WIN32__ && !defined __MINGW32__
-  struct utsname name;
-  uname(&name);
-  theMessage = theMessage & name.sysname & " on " & name.machine;
-#endif
-#if defined __MINGW32__
-  theMessage = theMessage & "MinGW "; // " & __MINGW32_VERSION;
-#endif
-#endif
-  return theMessage;
-}
-
-_String GetTimeStamp(bool doGMT) {
-  time_t cTime;
-  time(&cTime);
-
-  if (doGMT) {
-    tm *gmt = gmtime(&cTime);
-    return _String((long) 1900 + gmt->tm_year) & '/' &
-           _String(1 + (long) gmt->tm_mon) & '/' &
-           _String((long) gmt->tm_mday) & ' ' & _String((long) gmt->tm_hour) &
-           ':' & _String((long) gmt->tm_min);
-  }
-
-  tm *localTime = localtime(&cTime);
-
-  return asctime(localTime);
-
-}
-
-/*
-==============================================================
-Identifier Methods
-==============================================================
-*/
-
-bool _String::IsValidIdentifier(bool strict) const {
-#ifndef HY_2014_REWRITE_MASK
-  if (s_length == 0) {
-    return false;
-  }
-
-  if (strict) {
-    if (!(isalpha(s_data[0]) || s_data[0] == '_')) {
-      return false;
-    }
-  } else if (!(isalnum(s_data[0]) || s_data[0] == '_')) {
-    return false;
-  }
-
-  for (unsigned long p = 1; p < s_length; p++) {
-    char c = s_data[p];
-    if (!(isalnum(c) || c == '_' || (strict && c == '.'))) {
-      return false;
-    }
-  }
-
-  // check to see if it's not a keyword / function name etc
-  
-  return hyReservedWords.Find(this) == HY_NOT_FOUND;
-#else
-  return false;
-#endif
-
-  
-}
-
-bool _String::IsValidRefIdentifier(void) const {
-  if (s_length < 2) {
-    return false;
-  }
-  if (s_data[s_length - 1] == '&') {
-    return Cut(0, s_length - 2).IsValidIdentifier();
-  }
-  return false;
-}
-
-//Convert a string to a valid ident
-void _String::ConvertToAnIdent(bool strict) {
-  _StringBuffer *result = new _StringBuffer((unsigned long) s_length + 1UL);
-
-  if (s_length) {
-    if (strict) {
-      if (((s_data[0] >= 'a') && (s_data[0] <= 'z')) ||
-          ((s_data[0] >= 'A') && (s_data[0] <= 'Z')) || (s_data[0] == '_')) {
-        (*result) << s_data[0];
-      } else {
-        (*result) << '_';
-      }
-    } else {
-      if (((s_data[0] >= 'a') && (s_data[0] <= 'z')) ||
-          ((s_data[0] >= 'A') && (s_data[0] <= 'Z')) || (s_data[0] == '_') ||
-          ((s_data[0] >= '0') && (s_data[0] <= '9'))) {
-        (*result) << s_data[0];
-      } else {
-        (*result) << '_';
-      }
-    }
-
-    long l = 0;
-    for (unsigned long k = 1UL; k < s_length; k++) {
-      unsigned char c = s_data[k];
-      if (_hyValidIDChars.valid_chars[c]) {
-        (*result) << c;
-        l++;
-      } else if (result->s_data[l] != '_') {
-        (*result) << '_';
-        l++;
-      }
-    }
-  }
-
-  CopyDynamicString(result, true);
-}
-
-_String _String::ShortenVarID(_String &containerID) {
-  long matched = -1,
-       upTo = s_length < containerID.s_length ? s_length : containerID.s_length, k;
-
-  for (k = 0; k < upTo; k++) {
-    if (s_data[k] != containerID.s_data[k]) {
-      break;
-    } else if (s_data[k] == '.') {
-      matched = k;
-    }
-  }
-
-  if ((upTo == containerID.s_length) && (upTo < s_length) && (k == upTo) &&
-      (s_data[upTo] == '.')) {
-    matched = upTo;
-  }
-
-  return Cut(matched + 1, -1);
-}
-
-/*
-==============================================================
-Regular Expression Methods
-==============================================================
-*/
-
-_String GetRegExpError(int error) {
-  char buffer[512];
-  buffer[regerror(error, nil, buffer, 511)] = 0;
-  return _String("Regular Expression error:") & buffer;
-}
-
-void FlushRegExp(Ptr regExpP) {
-  regex_t *regEx = (regex_t *)regExpP;
-  regfree(regEx);
-  delete regEx;
-}
-
-Ptr PrepRegExp(_String *source, int &errCode, bool caseSensitive) {
-  regex_t *res = new regex_t;
-  checkPointer(res);
-
-  errCode = regcomp(res, source->s_data,
-                    REG_EXTENDED | (caseSensitive ? 0 : REG_ICASE));
-
-  if (errCode) {
-    FlushRegExp((Ptr) res);
-    return nil;
-  }
-  return (Ptr) res;
-}
-
-void _String::RegExpMatch(Ptr pattern, _SimpleList &matchedPairs) {
-  if (s_length) {
-    regex_t *regEx = (regex_t *)pattern;
-
-    regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
-    int errNo = regexec(regEx, s_data, regEx->re_nsub + 1, matches, 0);
-    if (errNo == 0) {
-      for (long k = 0; k <= regEx->re_nsub; k++) {
-        matchedPairs << matches[k].rm_so;
-        matchedPairs << matches[k].rm_eo - 1;
-      }
-    }
-    delete[] matches;
-  }
-}
-
-void _String::RegExpMatchAll(Ptr pattern, _SimpleList &matchedPairs) {
-  if (s_length) {
-    regex_t *regEx = (regex_t *)pattern;
-
-    regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
-    int errNo = regexec(regEx, s_data, regEx->re_nsub + 1, matches, 0);
-    while (errNo == 0) {
-      long offset = matchedPairs.countitems()
-                        ? matchedPairs.Element(-1) + 1
-                        : 0;
-
-      matchedPairs << matches[0].rm_so + offset;
-      matchedPairs << matches[0].rm_eo - 1 + offset;
-
-      offset += matches[0].rm_eo;
-      if (offset < s_length) {
-        errNo = regexec(regEx, s_data + offset, regEx->re_nsub + 1, matches, 0);
-      } else {
-        break;
-      }
-    }
-    delete[] matches;
-  }
-}
-
-void _String::RegExpMatchOnce(_String *pattern, _SimpleList &matchedPairs,
-                              bool caseSensitive, bool handleErrors) {
-  if (s_length) {
-    int errNo = 0;
-    Ptr regex = PrepRegExp(pattern, errNo, caseSensitive);
-    if (regex) {
-      RegExpMatch(regex, matchedPairs);
-      FlushRegExp(regex);
-    } else if (handleErrors) {
-      WarnError(GetRegExpError(errNo));
-    }
-  }
-}
-
-
-
-unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
-                                                     _String *context) {
-#ifndef HY_2014_REWRITE_MASK
-  char first_char = getChar(0);
-  bool is_func_ref = getChar(s_length - 1) == '&';
-
-  if (first_char == '*' || first_char == '^') {
-    if (is_func_ref) {
-      referenced_object = empty;
-      return HY_STRING_INVALID_REFERENCE;
-    }
-    bool is_global_ref = first_char == '^';
-    _String choppedVarID(*this, 1, -1);
-    if (context) {
-      choppedVarID = *context & '.' & choppedVarID;
-    }
-    _FString *dereferenced_value =
-        (_FString *)FetchObjectFromVariableByType(&choppedVarID, STRING);
-    if (dereferenced_value &&
-        dereferenced_value->theString->ProcessVariableReferenceCases(
-            referenced_object) == HY_STRING_DIRECT_REFERENCE) {
-      if (!is_global_ref && context) {
-        referenced_object = *context & '.' & referenced_object;
-      }
-      return is_global_ref ? HY_STRING_GLOBAL_DEREFERENCE
-                           : HY_STRING_LOCAL_DEREFERENCE;
-    }
-  }
-
-  if (is_func_ref) {
-    referenced_object = Cut(0, s_length - 2);
-    if (referenced_object.IsValidIdentifier()) {
-      referenced_object = (context ? (*context & '.' & referenced_object)
-                                   : (referenced_object)) & '&';
-      return HY_STRING_DIRECT_REFERENCE;
-    }
-  } else {
-    if (IsValidIdentifier()) {
-      referenced_object = context ? (*context & '.' & *this) : (*this);
-      return HY_STRING_DIRECT_REFERENCE;
-    }
-  }
-
-  referenced_object = empty;
-#endif
-  return HY_STRING_INVALID_REFERENCE;
-}
 
 

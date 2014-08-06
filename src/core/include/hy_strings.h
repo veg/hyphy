@@ -46,6 +46,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "baseobj.h"
 #include "wchar.h"
 
+#include "regex.h"
+
 class _ExecutionList;     // forward declaration
 template<typename PAYLOAD>
 class _hyListNumeric; 
@@ -67,6 +69,9 @@ typedef _hyListReference <_String> _List;
 #define HY_STRING_GLOBAL_DEREFERENCE 0x03
 
 #define HY_STRING_MOD_ADLER 65521
+#define HY_STRING_DIRECTION_FORWARD   0x01
+#define HY_STRING_DIRECTION_BACKWARD  0x02
+
 
 
 class _String : public BaseObj {
@@ -353,7 +358,7 @@ public:
   * @return The char of the first non-space, in the example, 'h'.
   * @see FirstNonSpaceIndex()
   */
-  char FirstNonSpace(long start = 0, long end = -1, char direction = 1);
+  char FirstNonSpace(long start = 0, long end = HY_NOT_FOUND, unsigned char direction = HY_STRING_DIRECTION_FORWARD) const;
 
   /**
   * Locate the first non-space character of the string
@@ -364,7 +369,7 @@ public:
   * @return The index of the first non-space, in the example, 4.
   * @see FirstNonSpaceIndex()
   */
-  long FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1);
+  long FirstNonSpaceIndex(long start = 0, long end = HY_NOT_FOUND, unsigned char direction = HY_STRING_DIRECTION_FORWARD) const;
 
   /**
   * Locate the first space character of the string
@@ -376,17 +381,8 @@ public:
   * @return Returns the index of the first non-space. 1 in the example.
   * @sa FirstSpaceIndex()
   */
-  long FirstSpaceIndex(long start = 0, long end = -1, char direction = 1);
+  long FirstSpaceIndex(long start = 0, long end = HY_NOT_FOUND, unsigned char direction = HY_STRING_DIRECTION_FORWARD) const;
 
-  /**
-  * Finds end of an ID. An ID is made up of alphanumerics, periods, or '_'
-  * \n\n \b Example: \code _String ("AA$AAA").FindEndOfIdent()\endcode
-  * @param start Where to start looking
-  * @param end Where to end looking, -1 is the end of the string
-  * @param wild Wild character to skip as well
-  * @return Position after the end of the identifier. 3 in the example
-  */
-  long FindEndOfIdent(long start = 0, long end = -1, char wild = '*');
 
   /**
   * Find first occurence of the string between from and to
@@ -397,25 +393,25 @@ public:
   * @return Returns the index of the first instance of the substr, -1 if not
   * found. 2 in the example
   */
-  long Find(const _String& s, long from = 0, long to = -1) const;
+  long Find(const _String& s, long from = 0, long to = HY_NOT_FOUND) const;
 
   /**
   *  @see Find()
   */
-  long Find(const char s, long from = 0, long to = -1) const;
+  long Find(const char s, long from = 0, long to = HY_NOT_FOUND) const;
 
   /**
   * Case insensitive Find
   * @see Find()
   */
 
-  long FindAnyCase(const _String&, long from = 0, long to = -1) const;
+  long FindAnyCase(const _String&, long from = 0, long to = HY_NOT_FOUND) const;
 
   /**
-  * Backwards Find
+  * Find a string
   * @see Find()
   */
-  long FindBackwards(const _String&, long from = 0, long to = -1) const;
+  long FindBackwards(const _String&, long from = 0, long to = HY_NOT_FOUND) const;
 
   /**
   * Compute Adler-32 CRC for a string
@@ -578,35 +574,6 @@ public:
   */
   const _List Tokenize(const _String&) const;
 
-  /**
-  * TODO: With batchlan
-  */
-  bool ProcessFileName(bool isWrite = false, bool acceptStringVars = false,
-                       Ptr = nil, bool assume_platform_specific = false,
-                       _ExecutionList *caller = nil);
-
-  /**
-  * TODO: With batchlan
-  */
-  void ProcessParameter(void);
-
-  /**
-  * Compose two UNIX paths (abs+rel)
-  * \n\n \b Example: \code
-  * _String("/home/sergei/hyphy").PathComposition("../datamonkey")\endcode
-  * @param relPath The relative path to change to
-  * @return New File Path, Example would return "/home/sergei/datamonkey"
-  */
-  _String PathComposition(_String);
-
-  /**
-  * Subtracts the string from the string passed.
-  * \n\n \b Example: \code
-  * _String("/home/sergei/hyphy").PathSubtraction("/home/sergei/")\endcode
-  * @param s String that will be subtracted
-  * @return Example would return "hyphy"
-  */
-  _String PathSubtraction(_String &, char);
 
   /**
   * Returns a list from a string split by a substr.
@@ -624,47 +591,33 @@ public:
   */
   bool IsValidIdentifier(bool = true) const;
 
-  /**
-  * Same as IsValidIdentifier, but must end with a '&'
-  * \n\n \bExample: 'hyphy&' is a valid ref identifier
-  * @see IsValidIdentifier()
-  */
-  bool IsValidRefIdentifier(void) const;
-
-  /**
-  * If it is enclosed in quotes, then it is a literal argument
-  * \n \n \b Example: "\"hyphy\"" is a literal argument
-  */
-  bool IsALiteralArgument(bool stripQuotes = FALSE);
 
   /**
   * Converts a string to a valid ident
   * \n A valid ident is any alphanumeric or '_'
   * \n\n \b Example: \code _String("$hyphy") \endcode
-  * @param strict If strict, only alphabetic, no numerals.
+  * @param strict If strict, the first character cannot be a number.
   * @sa IsValidIdentifier();
   * @return the example would return "_hyphy"
   */
-  void ConvertToAnIdent(bool = true);
+  const _String ConvertToAnIdent(bool = true) const;
 
   /**
   * Removes all spaces in a string
   * \n\n \b Example: \code _String("   h  y p    h  y").KillSpaces \endcode
-  * @param result A reference to the string that will have stripped spaces. The
-  * original string will not be changed.
   * @sa CompressSpaces()
-  * @return The example would return "hyphy"
+  * @return The string without spaces (e.g. "hyphy" in the example)
   */
-  void KillSpaces(_String &);
+   const _String KillSpaces(void) const;
 
   /**
-  * Removes all spaces in a string
+  * Compresses all runs of spaces in a string into a single space
   * \n\n \b Example: \code _String("   h  y p    h  y").CompressSpaces()
   * \endcode
-  * @return Example would transform the string to "h y p h y"
+  * @return "h y p h y"
   * @sa KillSpaces()
   */
-  void CompressSpaces(void);
+  const _String CompressSpaces(void) const;
 
   /**
   * Shorten the var id by removing the matching beginning portion of the passed
@@ -674,66 +627,45 @@ public:
   * @return _String("house.room")._String("house.") will return "room". However,
   * _String("houseroom") will return "houseroom"
   */
-  _String ShortenVarID(_String &);
+  const _String ShortenVarID(_String const &) const;
 
-  /**
-  * Examine the string argument contained in this object, decide what it is, and
-  * process accordingly
-  * \n\n \bExample: \code 'hyphy'.ProcessVariableReferenceCases (object)
-  * \endcode is a direct reference to object hyphy
-  * \n\n \bExample: \code '\"hy\"+\"phy\"'.ProcessVariableReferenceCases
-  * (object) \endcode is a direct reference to object hyphy
-  * \n\n \bExample: \code '*hyphy'.ProcessVariableReferenceCases (object)
-  * \endcode is a reference to the object whose name is stored in the string
-  * variable hyphy
-  * \n\n \bExample: \code '**hyphy'.ProcessVariableReferenceCases (object)
-  * \endcode is a reference to the object whose name is stored in the string
-  * variable hyphy in the global context
-  * @param referenced_object will store the handled variable ID
-  * @param context is the namespace of the referenced object; could be nil
-  * @return one of HY_STRING_INVALID_REFERENCE    HY_STRING_DIRECT_REFERENCE
-  * HY_STRING_LOCAL_DEREFERENCE    HY_STRING_GLOBAL_DEREFERENCE
-  * @see IsValidIdentifier()
-  */
-
-  unsigned char ProcessVariableReferenceCases(_String &referenced_object,
-                                              _String *context = nil);
 
   static unsigned long storageIncrement;
 
   /**
   * A regular expression match
-  * @param pattern A string(A Ptr is a char*) that holds the regex pattern
-  * @param matchedPairs A list that holds the start and end indexes of matches
+  * @param pattern the compiled regex pattern
+  * @return A list that holds the start and end indexes of matches
   * @sa RegExpMatchAll()
   * @sa RegExpMatchOnce()
   */
-  void RegExpMatch(Ptr, _SimpleList &);
+  const _SimpleList RegExpMatch(regex_t const*) const;
 
   /**
   * A regular expression match
-  * @param pattern A string that holds the regex pattern
-  * @param matchedPairs A list that holds the start and end indexes of matches
+  * @param pattern the compiled regex pattern
+  * @return A list that holds the start and end indexes of matches
   * @sa RegExpMatch()
   * @sa RegExpMatchOnce()
   */
-  void RegExpMatchAll(Ptr, _SimpleList &);
+  const _SimpleList RegExpMatchAll(regex_t const *) const;
 
   /**
   * A regular expression match that only matches once
   * @param pattern A string that holds the regex pattern
-  * @param matchedPairs A list that holds the start and end indexes of matches
+  * @preturn A list that holds the start and end indexes of matches
   * @sa RegExpMatch()
   * @sa RegExpMatchAll()
   */
-  void RegExpMatchOnce(_String *, _SimpleList &, bool, bool);
+  const _SimpleList RegExpMatchOnce(const _String&, bool, bool) const;
 
   /**
-  * Lexicographically sorts the string
-  * @param index Needs a list to act as an index
+  * Lexicographically sorts characters string
+  * @param index if supplied, then the the i-th element of the list will store the \n
+  * original index (in the unsorted string) of the i-th character in the sorted string
   * @return sorted string
   */
-  _String *Sort(_SimpleList * = nil);
+  const _String Sort(_SimpleList * = nil) const;
 
   /**
    * Generate a random string on
@@ -761,7 +693,7 @@ public:
   * \n If it is not of correct form, it will return 1e-10
   * @sa toNum()
   */
-  _Parameter ProcessTreeBranchLength();
+  _Parameter ProcessTreeBranchLength(_Parameter min_value = 1e-10) const;
 
   /**
   * Converts a string of form "[\d\.]\+" into a double
@@ -771,100 +703,28 @@ public:
 
   _Parameter toNum(void) const;
 
-  /**
-  * Sets Length
-  */
-  void SetLength(unsigned long nl) {
-    s_length = nl;
-  }
-
-  /**
-  * Starting at index [argument 1],
-  * find a span that encloses an expression (nested) delimited by char[argument
-  * 2]
-  * and char[argument 3] (e.g. {}, ()) respecting quotes (argument 4), and
-  * allowing
-  * escaped characters (argument 5)
-  * \n SLKP 20090803
-  *
-  * @param &from The starting position of the segment will be stored here
-  * @param open The first character to look for. For example, and open bracket
-  * '[' or open paranthesis '('
-  * @param close The first character to look for. For example, and open bracket
-  * ']' or open paranthesis ')'
-  * @param respectQuote
-  * @param respectEscape
-  *
-  * @return Ending position is returned
-  *-1 is returned if the starting character could not be found or the expression
-  * did not terminate before the end of the string
-  *
-  */
-
-  long ExtractEnclosedExpression(long &, char, char, bool, bool);
-
-  /**
-  * Starting at index [argument 1],
-  * find a span that terminates in one of the characters in [argument 2], while
-  * respecting (), [], {}, "" and escapes
-  * \n SLKP 20090805
-  * @param s The terminator to find
-  * @return HY_NOT_FOUND is returned if the starting character could not be
-  * found or the expression did not terminate before the end of the string
-  * @sa IsALiteralArgument()
-  *
-  */
-
-  long FindTerminator(long, _String &);
-
   // Data Fields
-  unsigned long s_length;
-  Ptr s_data;
+  protected:
+    unsigned long sLength;
+    char * sData;
+
   
   private:
+  
     long NormalizeRange (long & from, long & to) const;
+    
+    // returns the length of the prefix of the string which constitutes a valid ID
+    long _IsValidIdentifierAux (bool = true, char = '\0') const;
+
 };
 
 // _______________________________________________________________________
 
-extern _String empty, emptyAssociativeList, hyphyCiteString;
 
-#ifdef __MAC__
-extern _String volumeName;
-#endif
 
-void SetStatusBarValue(long, _Parameter, _Parameter);
-void SetStatusLine(_String);
-void SetStatusLine(_String, _String, _String, long l);
-void SetStatusLine(_String, _String, _String);
-void SetStatusLine(_String, _String, _String, long, char);
+regex_t* PrepRegExp(const _String& pattern, int & error, bool respect_case);
+void     FlushRegExp(regex_t*);
+const    _String GetRegExpError(int error);
 
-void SetStatusLineUser(_String);
-
-Ptr PrepRegExp(_String *, int &, bool);
-void FlushRegExp(Ptr);
-_String GetRegExpError(int);
-void ReportWarning(const _String&);
-void FlagError(const _String&);
-void WarnErrorWhileParsing(_String, _String &);
-void WarnError(const _String&);
-_String GetVersionString(void);
-_String GetTimeStamp(bool = false);
-
-void StringToConsole(_String &, _SimpleList * = nil);
-void BufferToConsole(const char *, _SimpleList * = nil);
-void NLToConsole(void);
-_String *StringFromConsole(bool = true);
-
-char GetPlatformDirectoryChar(void);
-
-extern _String __KERNEL__VERSION__;
-
-#ifdef __UNIX__
-extern bool needExtraNL;
-#endif
-
-typedef bool (*_hyStringValidatorType)(_String *);
-bool hyIDValidator(_String *);
 
 #endif
