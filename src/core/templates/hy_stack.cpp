@@ -45,13 +45,13 @@ _hyStack<PAYLOAD, STACK_CONTAINER>::_hyStack() {
 }
 
 template<typename PAYLOAD, typename STACK_CONTAINER>
-void _hyStack<PAYLOAD, STACK_CONTAINER>::push(const PAYLOAD item, bool flag) {
+void _hyStack<PAYLOAD, STACK_CONTAINER>::push(const PAYLOAD item) {
  return this->c.append(item);
 }
 
 template<typename PAYLOAD, typename STACK_CONTAINER>
-void _hyStack<PAYLOAD, STACK_CONTAINER>::push(PAYLOAD* item, bool flag) {
- return this->c.AppendNewInstance(item);
+void _hyStack<PAYLOAD, STACK_CONTAINER>::push(PAYLOAD * item) {
+    return this->c.append(item);
 }
 
 template<typename PAYLOAD, typename STACK_CONTAINER>
@@ -60,8 +60,8 @@ PAYLOAD _hyStack<PAYLOAD, STACK_CONTAINER>::pop() {
 }
 
 template<typename PAYLOAD, typename STACK_CONTAINER>
-long _hyStack<PAYLOAD, STACK_CONTAINER>::stackDepth() {
-  return this->c.countitems();
+unsigned long _hyStack<PAYLOAD, STACK_CONTAINER>::Length() const {
+  return this->c.Length();
 }
 
 template<typename PAYLOAD, typename STACK_CONTAINER>

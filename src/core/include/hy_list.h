@@ -156,7 +156,7 @@ public:
   * @param index The index of the elemnt to retrieve
   * @return the value of the element at the specified index.
   */
-  inline PAYLOAD AtIndex(const unsigned long index) const;
+  inline PAYLOAD& AtIndex(const unsigned long index) const;
 
   /**
   * Clear the list (set lLength to 0)

@@ -102,7 +102,7 @@ typedef ::testing::Types<char, long, double> _hyStackTypes;
 TYPED_TEST_CASE(_hyStackTest, _hyStackTypes);
 TYPED_TEST (_hyStackTest, ConstuctorTests) {
   _hyStack <TypeParam> null_list;
-  ASSERT_EQ (0UL, null_list.stackDepth()) << "Non-empty null list";
+  ASSERT_EQ (0UL, null_list.Length()) << "Non-empty null list";
 }
 
 TYPED_TEST(_hyStackTest, MethodTests) {
@@ -117,16 +117,16 @@ TYPED_TEST(_hyStackTest, MethodTests) {
     multiple_element_stack.push(array[i]);
   }
 
-  ASSERT_EQ (array_size, multiple_element_stack.stackDepth()) << "All elements weren't pushed to the stack";
+  ASSERT_EQ (array_size, multiple_element_stack.Length()) << "All elements weren't pushed to the stack";
 
   //pop
   TypeParam result =  multiple_element_stack.pop();
   ASSERT_EQ (array[array_size - 1 ], result) << "Incorrect element popped from the stack";
-  ASSERT_EQ (array_size - 1 , multiple_element_stack.stackDepth()) << "Element was not popped off the stack";
+  ASSERT_EQ (array_size - 1 , multiple_element_stack.Length()) << "Element was not popped off the stack";
 
   //reset
   multiple_element_stack.reset();
-  ASSERT_EQ (0, multiple_element_stack.stackDepth()) << "Stack should be empty after reset";
+  ASSERT_EQ (0, multiple_element_stack.Length()) << "Stack should be empty after reset";
 
   //pop an empty list
   ASSERT_DEATH(null_stack.pop(), ""); 
@@ -191,21 +191,20 @@ TYPED_TEST(_hyStackReferenceTest, ReferenceConstructorTests) {
   _hyStack <TypeParam, _hyListReference<TypeParam> > string_stack;
 
  for (long k = 0; k < 50; k ++) {
-    TypeParam* test_object = new TypeParam (k);
-    string_stack.push(test_object);
+    string_stack.push(new TypeParam (k));
   }
 
 
-  ASSERT_EQ (50, string_stack.stackDepth()) << "All elements weren't pushed to the stack";
+  ASSERT_EQ (50, string_stack.Length()) << "All elements weren't pushed to the stack";
 
   //pop
   TypeParam result =  string_stack.pop();
   EXPECT_TRUE(result.Equal(new TypeParam (49L)));
-  ASSERT_EQ (49, string_stack.stackDepth()) << "Incorrect element popped from the stack";
+  ASSERT_EQ (49, string_stack.Length()) << "Incorrect element popped from the stack";
 
   //reset
   string_stack.reset();
-  ASSERT_EQ (0, string_stack.stackDepth()) << "Stack should be empty after reset";
+  ASSERT_EQ (0, string_stack.Length()) << "Stack should be empty after reset";
 
   //pop an empty list
   ASSERT_DEATH(string_stack.pop(), ""); 

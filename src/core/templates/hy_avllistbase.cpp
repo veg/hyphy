@@ -44,14 +44,14 @@
 
 
 template <typename KEYTYPE, typename PAYLOAD>
-_AVLList<KEYTYPE,PAYLOAD>::_AVLList(void) {
+_AVLListBase<KEYTYPE,PAYLOAD>::_AVLListBase(void) {
     root = HY_AVL_LEAF;
 }
 
 template <typename KEYTYPE, typename PAYLOAD>
-_AVLList<KEYTYPE,PAYLOAD>::_AVLList(_AVLList<KEYTYPE,PAYLOAD> const & source) {
-    keys.Clone (&source.keys);
-    values.Clone (&source.values);
+_AVLListBase<KEYTYPE,PAYLOAD>::_AVLListBase(_AVLListBase<KEYTYPE,PAYLOAD> const & source) {
+    //keys.Clone (&source.keys);
+    //values.Clone (&source.values);
     avl_structure.Clone (&source.avl_structure);
     root = source.root;
 }
@@ -60,7 +60,7 @@ _AVLList<KEYTYPE,PAYLOAD>::_AVLList(_AVLList<KEYTYPE,PAYLOAD> const & source) {
 //*************** DESTRUCTOR ***************//
 
 template <typename KEYTYPE, typename PAYLOAD>
-_AVLList<KEYTYPE,PAYLOAD>::~_AVLList(void) {
+_AVLListBase<KEYTYPE,PAYLOAD>::~_AVLListBase(void) {
     
 }
 
@@ -68,7 +68,7 @@ _AVLList<KEYTYPE,PAYLOAD>::~_AVLList(void) {
 //*************** ATTRIBUTE ACCESSORS ***************//
 
 template <typename KEYTYPE, typename PAYLOAD>
-unsigned long _AVLList<KEYTYPE,PAYLOAD>::Length (void) const {
+unsigned long _AVLListBase<KEYTYPE,PAYLOAD>::Length (void) const {
     return this->avl_structure.Length() - this->empty_slots.Length();
 }
 
@@ -76,14 +76,14 @@ unsigned long _AVLList<KEYTYPE,PAYLOAD>::Length (void) const {
 //*************** SEARCH FUNCTIONS  ***************//
 
 template <typename KEYTYPE,typename PAYLOAD>
-long _AVLList<KEYTYPE,PAYLOAD>::Find (const KEYTYPE key, _SimpleList* history) const{
+long _AVLListBase<KEYTYPE,PAYLOAD>::Find (const KEYTYPE& key, _AVLListTraversalHistory * history) const{
     long current_node = this->root;
     
     while (current_node != HY_AVL_LEAF) {
         long comp = this->_CompareIndexToValue (current_node, key);
         if (comp) {
             if (history) {
-                history->append(current_node);
+                history->push (current_node);
             }
             current_node = this->_MoveInTree (current_node, comp);
          } else {
@@ -94,123 +94,291 @@ long _AVLList<KEYTYPE,PAYLOAD>::Find (const KEYTYPE key, _SimpleList* history) c
     return HY_NOT_FOUND;
 }
 
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::FindBest (const KEYTYPE& key, long &last_index ) const{
+    long current_node = root,
+         comp = HY_AVL_MOVE_RIGHT;
+    
+    while (current_node != HY_AVL_LEAF) {
+        comp = this->_CompareIndexToValue (current_node, key);
+        last_index = current_node;
+        
+        if (comp == 0L) {
+            return 0L;
+        }
+
+        current_node = this->_MoveInTree (current_node, comp);
+
+    }
+    
+    return comp;
+}
+
+
 //*************** HELPER FUNCTIONS ***************//
 
 template <typename KEYTYPE,typename PAYLOAD>
-long _AVLList<KEYTYPE,PAYLOAD>::_MoveInTree (long node, long direction) const{
+long _AVLListBase<KEYTYPE,PAYLOAD>::_MoveInTree (long node, long direction) const{
     if (direction < 0L) {
-        return this->avl_structure(node).left_child;
+        return this->avl_structure.AtIndex(node).left_child;
     } else {
         if (direction > 0L) {
-            return this->avl_structure(node).right_child;
+            return this->avl_structure.AtIndex(node).right_child;
         }
     }
         
     return node;
 }
 
+
+//*************** TREE TRAVERSAL FUNCTIONS ***************//
+
+//______________________________________________________________________________
 template <typename KEYTYPE,typename PAYLOAD>
-long _AVLList<KEYTYPE,PAYLOAD>::_CompareIndexToValue (long node, KEYTYPE const & key) const{
-    return this->keys.CompareToValue (node, key);
+long _AVLListBase<KEYTYPE,PAYLOAD>::_DescendToTerminal(long current_index, long direction, _AVLListTraversalHistory * history) const {
+    
+    long the_index = HY_NOT_FOUND;
+    
+    while (current_index != HY_AVL_LEAF) {
+        if (history) {
+            history->push (current_index);
+        }
+        the_index = current_index;
+        current_index = this->_MoveInTree (current_index, direction);
+    }
+    
+    return the_index;
 }
+
+
+//______________________________________________________________________________
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::First(_AVLListTraversalHistory * history) const {
+    return this->_DescendToTerminal (this->root, HY_AVL_MOVE_LEFT, history);
+}
+
+//______________________________________________________________________________
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::Last(_AVLListTraversalHistory * history) const {
+    return this->_FindExtremeValue (this->root, HY_AVL_MOVE_RIGHT, history);
+}
+
+//______________________________________________________________________________
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::Next(_AVLListTraversalHistory& history) const {
+    
+    if (history.Length()) {
+        long current_node = history.pop(),
+             try_node = this->_MoveInTree (current_node, HY_AVL_MOVE_RIGHT);
+        if (try_node != HY_AVL_LEAF) {
+            return this->_DescentToTerminal (try_node, HY_AVL_MOVE_LEFT, &history);
+        } else {
+             while (history.Length()) {
+                long parent_node = history.pop();
+                try_node = this->_MoveInTree (parent_node, HY_AVL_MOVE_RIGHT);
+                if (try_node == current_node) {
+                    current_node = parent_node;
+                } else {
+                    history.push (try_node);
+                    return try_node;
+                }
+            }
+        }
+    }
+    
+    return HY_NOT_FOUND;
+}
+
+//______________________________________________________________________________
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::Prev(_AVLListTraversalHistory& history) const {
+    
+    if (history.Length()) {
+        long current_node = history.pop(),
+        try_node = this->_MoveInTree (current_node, HY_AVL_MOVE_LEFT);
+        if (try_node != HY_AVL_LEAF) {
+            return this->_DescentToTerminal (try_node, HY_AVL_MOVE_RIGHT, &history);
+        } else {
+            while (history.Length()) {
+                long parent_node = history.pop();
+                try_node = this->_MoveInTree (parent_node, HY_AVL_MOVE_LEFT);
+                if (try_node == current_node) {
+                    current_node = parent_node;
+                } else {
+                    history.push (try_node);
+                    return try_node;
+                }
+            }
+        }
+    }
+    
+    return HY_NOT_FOUND;
+}
+
+//______________________________________________________________________________
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::Traverser(_AVLListTraversalHistory &history) const {
+    if (history.Length()) {
+        return this->Next (&history);
+    } else {
+        return this->First (&history);
+    }
+    return HY_NOT_FOUND;
+}
+
+
+//*************** INSERTION AND DELETION FUNCTIONS ***************//
+
+//______________________________________________________________________________
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::Insert(KEYTYPE const& key, PAYLOAD const& value) {
+    if (this->Length() > 0UL) { // something to do
+        
+        
+        _SimpleList directions;
+        
+        long y = root,
+             z = HY_AVL_LEAF,
+             p,
+             q,
+             n,
+             w;
+        
+        //bool go_right = false;
+        int move_direction = HY_AVL_MOVE_LEFT;
+        
+        for (q = z, p = y; p != HY_AVL_LEAF;
+             q = p, p = this->_MoveInTree (p, move_direction)) {
+            
+            //long comp = dataList->Compare(b, p);
+            long move_direction = this->_CompareIndexToValue (p, key);
+            
+            if (move_direction == 0L) {
+                 return -p - 1L;
+            }
+ 
+            if (this->avl_structure[p].balance_factor != 0L) {
+                z = q;
+                y = p;
+                directions.Clear();
+            }
+            directions.append (move_direction);
+        }
+        
+        
+        // insert new node
+        
+        n = this->_StoreKeyValuePair (key, value);
+        
+        if (move_direction == HY_AVL_MOVE_RIGHT) {
+            this->avl_structure[q].right_child = n;
+        } else {
+            this->avl_structure[q].left_child  = n;
+        }
+        
+        // update balance factors
+        
+        p = y;
+        
+        for (long k = 0L; p != n;
+             p =  this->_MoveInTree (p, directions.AtIndex(k)), k++) {
+            this->avl_structure.AtIndex(k).balance_factor += directions.AtIndex(k) == HY_AVL_MOVE_RIGHT ? 1L : -1L;
+        
+        }
+        
+        if (avl_structure.AtIndex(y).balance_factor  == -2L) {
+            long x = this->avl_structure.AtIndex(y).left_child;
+            if (this->avl_structure.AtIndex(x).balance_factor == -1) {
+                w = x;
+                LEFT_SHIFT (this->avl_structure.AtIndex(y).left_child,this->avl_structure.AtIndex(x).right_child,y);
+                this->avl_structure.AtIndex(x).balance_factor = 0L;
+                this->avl_structure.AtIndex(y).balance_factor = 0L;
+            } else {
+                w = this->avl_structure.AtIndex(x).right_child;
+                LEFT_SHIFT (this->avl_structure.AtIndex(x).right_child,this->avl_structure.AtIndex(w).left_child,x);
+                LEFT_SHIFT (this->avl_structure.AtIndex(y).left_child,this->avl_structure.AtIndex(w).right_child,y);
+                
+                switch (this->avl_structure.AtIndex(w).balance_factor) {
+                    case -1L:
+                        this->avl_structure.AtIndex(x).balance_factor = 0L;
+                        this->avl_structure.AtIndex(y).balance_factor = 1L;
+                        this->avl_structure.AtIndex(w).balance_factor = 0L;
+                        break;
+                    case 0L:
+                        this->avl_structure.AtIndex(x).balance_factor = 0L;
+                        this->avl_structure.AtIndex(y).balance_factor = 0L;
+                        break;
+                    default:
+                        this->avl_structure.AtIndex(x).balance_factor = -1L;
+                        this->avl_structure.AtIndex(y).balance_factor = 0L;
+                        this->avl_structure.AtIndex(w).balance_factor = 0L;
+                        break;
+                }
+                
+            }
+        } else if (avl_structure.AtIndex(y).balance_factor == 2L) {
+            long x = this->avl_structure.AtIndex(y).right_child;
+            if (this->avl_structure.AtIndex(x).balance_factor == 1L) {
+                w = x;
+                LEFT_SHIFT (this->avl_structure.AtIndex(y).right_child, this->avl_structure.AtIndex(x).left_child,y);
+                this->avl_structure.AtIndex(x).balance_factor = 0L;
+                this->avl_structure.AtIndex(y).balance_factor = 0L;
+            } else {
+                w = this->avl_structure.AtIndex(x).left_child;
+                LEFT_SHIFT (this->avl_structure.AtIndex(x).left_child,this->avl_structure.AtIndex(w).right_child,x);
+                LEFT_SHIFT (this->avl_structure.AtIndex(y).right_child,this->avl_structure.AtIndex(w).left_child,y);
+                switch (this->avl_structure.AtIndex(w).balance_factor) {
+                    case 1L:
+                        this->avl_structure.AtIndex(x).balance_factor = 0L;
+                        this->avl_structure.AtIndex(y).balance_factor = -1L;
+                        this->avl_structure.AtIndex(w).balance_factor = 0L;
+                        break;
+                    case 0L:
+                        this->avl_structure.AtIndex(x).balance_factor = 0L;
+                        this->avl_structure.AtIndex(y).balance_factor = 0L;
+                        break;
+                    default:
+                        this->avl_structure.AtIndex(x).balance_factor = 1L;
+                        this->avl_structure.AtIndex(y).balance_factor = 0L;
+                        this->avl_structure.AtIndex(w).balance_factor = 0L;
+                        break;
+                }
+               
+            }
+        } else {
+            return n;
+        }
+        
+        if (z != HY_AVL_LEAF) {
+            if (y == this->avl_structure.AtIndex(z).left_child) {
+                this->avl_structure.AtIndex(z).left_child = w;
+            } else {
+                this->avl_structure.AtIndex(z).right_child = w;
+            }
+        }
+        
+        if (y == this->root) {
+            this->root = w;
+        }        
+        return p;
+    }
+    
+    
+    return (this->root = this->_StoreKeyValuePair (HY_LIST_INSERT_AT_END, key, value));
+    
+}
+
+/*template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::_CompareIndexToValue (long node, KEYTYPE const & key) const{
+    return this->keys.CompareToValue (node, key);
+}*/
+
 /*
 
 
-//______________________________________________________________________________
-char _AVLList::FindBest(BaseRef obj, long &lastNode) {
-  long curNode = root, comp = 1;
 
-  while (curNode >= 0 && comp) {
-    comp = dataList->Compare(obj, curNode);
-    lastNode = curNode;
 
-    if (comp < 0) {
-      curNode = leftChild.lData[curNode];
-    } else if (comp > 0) {
-      curNode = rightChild.lData[curNode];
-    } else {
-      return 0;
-    }
-  }
 
-  return comp;
-}
-
-//______________________________________________________________________________
-long _AVLList::Find(BaseRef obj, _SimpleList &hist) {
-  long curNode = root;
-
-  while (curNode >= 0) {
-    long comp = dataList->Compare(obj, curNode);
-
-    if (comp < 0) {
-      hist << curNode;
-      curNode = leftChild.lData[curNode];
-    } else if (comp > 0) {
-      hist << curNode;
-      curNode = rightChild.lData[curNode];
-    } else {
-      return curNode;
-    }
-  }
-
-  return HY_NOT_FOUND;
-}
-
-//______________________________________________________________________________
-long _AVLList::Next(long d, _SimpleList &hist) {
-  if (d >= 0) {
-    if (rightChild.lData[d] >= 0) {
-      hist << d;
-      d = rightChild.lData[d];
-      while (leftChild.lData[d] >= 0) {
-        hist << d;
-        d = leftChild.lData[d];
-      }
-      return d;
-    } else {
-      while (hist.countitems()) {
-        long x = hist.lData[hist.lLength - 1];
-
-        hist.Delete(hist.lLength - 1);
-
-        if (rightChild.lData[x] != d) {
-          return x;
-        }
-        d = x;
-      }
-
-      return HY_NOT_FOUND;
-    }
-  }
-
-  d = root;
-  while (d >= 0 && leftChild.lData[d] >= 0) {
-    d = leftChild.lData[d];
-  }
-
-  return d;
-}
-
-//______________________________________________________________________________
-long _AVLList::First(void) {
-  long d = root;
-  while (d >= 0 && leftChild.lData[d] >= 0) {
-    d = leftChild.lData[d];
-  }
-
-  return d;
-}
-
-//______________________________________________________________________________
-long _AVLList::Last(void) {
-  long d = root;
-  while (d >= 0 && rightChild.lData[d] >= 0) {
-    d = rightChild.lData[d];
-  }
-
-  return d;
-}
 
 //______________________________________________________________________________
 long _AVLList::GetByIndex(const long theIndex) {
@@ -240,41 +408,6 @@ long _AVLList::GetByIndex(const long theIndex) {
   return HY_NOT_FOUND;
 }
 
-//______________________________________________________________________________
-long _AVLList::Prev(long d, _SimpleList &hist) {
-  if (d >= 0) {
-    if (leftChild.lData[d] >= 0) {
-      hist << d;
-      d = leftChild.lData[d];
-      while (rightChild.lData[d] >= 0) {
-        hist << d;
-        d = rightChild.lData[d];
-      }
-      return d;
-    } else {
-      while (hist.countitems()) {
-        long x = hist.lData[hist.lLength - 1];
-
-        hist.Delete(hist.lLength - 1);
-
-        if (leftChild.lData[x] != d) {
-          return x;
-        }
-        d = x;
-      }
-
-      return HY_NOT_FOUND;
-    }
-  }
-
-  d = root;
-  while (d >= 0 && rightChild.lData[d] >= 0) {
-    d = rightChild.lData[d];
-  }
-
-  return d;
-
-}
 
 //______________________________________________________________________________
 void _AVLList::ReorderList(_SimpleList *s) {
@@ -370,28 +503,6 @@ void _AVLList::ConsistencyCheck(void) {
 
 }
 
-//______________________________________________________________________________
-long _AVLList::Traverser(_SimpleList &nodeStack, long &t, long r) {
-  if (r >= 0) {
-    t = r;
-    nodeStack.Clear();
-  }
-
-  while (t >= 0) {
-    nodeStack << t;
-    t = leftChild.lData[t];
-  }
-
-  if (long h = nodeStack.lLength) {
-    h--;
-    t = nodeStack.lData[h];
-    r = t;
-    t = rightChild.lData[t];
-    nodeStack.Delete(h, false);
-    return r;
-  }
-  return HY_NOT_FOUND;
-}
 
 //______________________________________________________________________________
 BaseRef _AVLList::toStr(void) {
@@ -459,10 +570,6 @@ long _AVLList::InsertData(BaseRef b, long, bool) {
   return n;
 }
 
-//______________________________________________________________________________
-unsigned long _AVLList::countitems(void) {
-  return dataList->lLength - emptySlots.lLength;
-}
 
 //______________________________________________________________________________
 long _AVLList::Insert(BaseRef b, long xtra, bool cp, bool clear) {

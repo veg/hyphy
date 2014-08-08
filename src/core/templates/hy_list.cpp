@@ -260,7 +260,7 @@ void _hyList<PAYLOAD>::RequestSpace(const unsigned long slots, bool set_length)
 }
 
 template<typename PAYLOAD>
-PAYLOAD _hyList<PAYLOAD>::AtIndex(const unsigned long index) const
+PAYLOAD& _hyList<PAYLOAD>::AtIndex(const unsigned long index) const
 {
   return lData[index];
 }

@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 
 //Generate necessary includes from the respective implementation file
-#include "avllist.h"
+#include "hy_avllistbase.h"
 
 namespace {
 

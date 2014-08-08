@@ -44,8 +44,12 @@
 #include "hy_list_orderable.h"
 #include "hy_list_numeric.h"
 #include "helperfunctions.h"
+#include "hy_stack.h"
+#include "defines.h"
 
 #define HY_AVL_LEAF (-1L)
+#define HY_AVL_MOVE_LEFT (-1L)
+#define HY_AVL_MOVE_RIGHT (1L)
 
 /**
  * A helper data object representing a tree node;
@@ -65,6 +69,8 @@
      }
 };
 
+typedef _hyStack <long> _AVLListTraversalHistory;
+
 
 /**
  * This object implements a key:value dictionary functionality using 
@@ -76,7 +82,7 @@
 
 //_____________________________________________________________________________
 template <typename KEYTYPE, typename PAYLOAD>
-class _AVLList : public virtual BaseObj{
+class _AVLListBase : public virtual BaseObj{
     
 protected:
     
@@ -93,7 +99,7 @@ protected:
      * they are tied to tre tree nodes by index, i.e. the key stored in the i-th index
      */
     
-    _hyListOrderable    <KEYTYPE>        keys;
+   // _hyListOrderable    <KEYTYPE>        keys;
     
     /**
      * This list stores the payloads associated with each key
@@ -101,7 +107,7 @@ protected:
      * of avl_structure is bound to the i-th value in this list
      */
 
-    _hyList             <PAYLOAD>        values;
+    //_hyList             <PAYLOAD>        values;
     
     
     /**
@@ -130,16 +136,48 @@ protected:
      */
 
     inline long _MoveInTree (long node, long direction) const ;
+    
+    /**
+     * Find the index of the smallest/largest key in the subtree rooted at node
+     * @param node start traversal here (if HY_AVL_LEAF, the return value is HY_NOT_FOUND)
+     * @param direction go left (small values) or right (large values)
+     * @param history if not null, store the path leading to the extereme element here
+     * @sa First
+     * @sa Last
+     * @return the >=0 index of smallest/largest key in this tree or HY_NOT_FOUND if not found
+     */
+
+    long   _DescendToTerminal (long node, long direction, _AVLListTraversalHistory * history = NULL) const;
    
     /**
      * Compares the key at a given index to a fixed value
+     * Must be implemented by a derived class
      * @param node The index of the item to compare
      * @param key The value to compare the index to
      * @return -1 if keys[node] < key , 0 if keys[node] == key, or 1 if keys[node] > key
      */
     
-    virtual long _CompareIndexToValue (long node, KEYTYPE const & key) const ;
-   
+    virtual long _CompareIndexToValue (long node, KEYTYPE const & key) const = 0;
+
+    
+    /**
+     * Stores a key, value pair in the list at a given index
+     * Must be implemented by a derived class
+     * @param index The index to store at (pass HY_LIST_INSERT_AT_END to find an unused index to store)
+     * @param key The key to store (assumed to NOT already be in the tree, otherwise things will break)
+     * @param value The value to associate with the key
+     * @return -1 if keys[node] < key , 0 if keys[node] == key, or 1 if keys[node] > key
+     */
+
+    virtual long _StoreKeyValuePair   (long index, const KEYTYPE& key, const PAYLOAD& value) = 0;
+
+    /**
+     * Remove a kay/value pair from 'index' (note that the tree structure is handled by the ::Delete function)
+     * Must be implemented by a derived class
+     * @param index The index to delete from at
+     */
+    virtual void _RemoveKeyValuePair   (long index) = 0;
+
     
 public:
 
@@ -148,19 +186,25 @@ public:
      * Construct an empty AVLList
      */
     
-  _AVLList     (void);
+   _AVLListBase     (void);
 
     /**
      * Stack copy constructor
      */
     
-  _AVLList     (_AVLList <KEYTYPE, PAYLOAD> const & );
+   _AVLListBase     (_AVLListBase <KEYTYPE, PAYLOAD> const & );
 
     /**
      * Object destuctor
      */
     
-  virtual ~_AVLList(void);
+   virtual ~_AVLListBase(void);
+
+    /**
+     * Length of the list
+     * @return The number of elements in the list
+     */
+   unsigned long Length (void) const;
 
     /**
      * The basic search function
@@ -169,22 +213,82 @@ public:
      * @return the >=0 index of the key in this list or HY_NOT_FOUND if not found
      */
   
-  long   Find(const KEYTYPE key, _SimpleList* history = NULL) const;
-
+ 
+    virtual long   Find(const KEYTYPE& key, _AVLListTraversalHistory * history = NULL) const;
+    
+    
     /**
-     * Length of the list
-     * @return The number of elements in the list
+     * Find the key in the tree; if not found, store the last key traversed
+     * @param key The value to find
+     * @param last_index store the index of the last traversed key here
+     * @return the result of comparing the search key with the key stored at last_index
      */
     
-  unsigned long Length (void) const;
     
-  /*virtual void Clear(bool = false);
+    virtual long   FindBest (const KEYTYPE& key, long& last_index) const;
+
+    // tree traversal functions
+    // 20140808: SLKP TODO Move to an iterator class
+
+    /**
+     * Find the index of the smallest key in the tree
+     * @param history if not null, store the path leading to the first element here
+     * @return the >=0 index of smallest key in this tree or HY_NOT_FOUND if not found
+     */
+
+    long First(_AVLListTraversalHistory * history = NULL) const;
+
+    /**
+     * Find the index of the largest key in the tree
+     * @param history if not null, store the path leading to the last element here
+     * @return the >=0 index of largest key in this tree or HY_NOT_FOUND if not found
+     */
+    
+    long Last(_AVLListTraversalHistory * history = NULL) const;
+    
+    /**
+     * Find the index of the next largest key in the tree given traversal history
+     * @param history The traversal history up to now (empty
+     * @return the >=0 index of the next key in this tree or HY_NOT_FOUND if not found
+     */
+    
+    long Next (_AVLListTraversalHistory& history) const;
+    
+    /**
+     * Find the index of the next smallest key in the tree given traversal history
+     * @param history The traversal history up to now (empty history returns HY_NOT_FOUND)
+     * @return the >=0 index of the previous key in this tree or HY_NOT_FOUND if not found
+     */
+    
+    long Prev (_AVLListTraversalHistory& history) const;
+   
+    /**
+     * Traverse the tree and return key indices in sequences
+     * @param history The traversal history up to now (empty history returns initializes the traversal)
+     * @return the >=0 index of the next key in sequence this tree or HY_NOT_FOUND if not found
+     */
+
+    virtual long Traverser(_AVLListTraversalHistory &) const;
+   
+    // insertion and deletion functions
+    
+    
+    /**
+     * Traverse the tree and insert the key-value pair (if not found); update and rebalance the tree
+     * @param key The key to insert
+     * @param value The value to associate with the key
+     * @return the index>=0 if the key/value was inserted at position index, returns -index-1 if the key
+     * found in position index
+     */
+    
+    virtual long Insert  (KEYTYPE const& key, PAYLOAD const& value);
+
+    /*virtual void Clear(bool = false);
   virtual bool HasData(long);
 
   virtual void ReorderList(_SimpleList * = nil);
   virtual long InsertData(BaseRef, long, bool);
   virtual BaseRef toStr(void);
-  virtual long Traverser(_SimpleList &, long &, long = -1);
   virtual long GetRoot(void) { return root; }
   virtual void DeleteXtra(long); // {}
 
@@ -198,12 +302,6 @@ public:
   // 20100623: a shortcut function to look for integers only
   // avoids calling ::Compare
 
-  char FindBest(BaseRef, long &);
-
-  long Next(long, _SimpleList &);
-  long Prev(long, _SimpleList &);
-  long First(void);
-  long Last(void);
 
   long GetByIndex(const long);
 
@@ -219,7 +317,7 @@ public:
 
 };
 
-#include "avllist.cpp"
+#include "hy_avllistbase.cpp"
 
 
 #endif

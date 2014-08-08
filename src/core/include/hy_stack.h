@@ -66,14 +66,12 @@ public:
   */
 
   /**
-   * Clear the current list and make a copy from the argment
+   * Push a value on the stack
    * Argument is a pointer to make it possible to overload Clone
-   * @param clone_from the object to clone from
    * @return None.
    */
-  void push(PAYLOAD, bool = true);
-
-  void push(PAYLOAD*, bool = true);
+  void push(const PAYLOAD);
+  void push(PAYLOAD *);
 
   /**
    * Clear the current list and make a copy from the argment
@@ -84,7 +82,7 @@ public:
   PAYLOAD pop();    
 
   // returns the depth of the stack
-  long stackDepth();             
+  unsigned long Length () const;
 
   // clear the stack
   void reset();                  
