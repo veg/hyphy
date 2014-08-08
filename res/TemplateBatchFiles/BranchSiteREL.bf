@@ -20,6 +20,9 @@ if (doSynRateVariation < 0) {
     return 1;
 }   
 
+_BSREL_timers = {4,1};
+
+
 doSynRateVariation = 1-doSynRateVariation;
 
 DataSet 			ds 				= ReadDataFile(PROMPT_FOR_FILE);
@@ -51,7 +54,7 @@ bNames						 = BranchName (givenTree, -1);
 
 selectedBranches = {};
 
-//LF_SMOOTHING_SCALER    = 0.01;
+LF_SMOOTHING_SCALER    = 0.01;
 
 if (doSynRateVariation == 0) {
     selectTheseForTesting = {totalBranchCount + 2, 2};
@@ -116,7 +119,7 @@ fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site varia
 
 lfOut	= csvFilePath + ".mglocal.fit";
 
-
+taskTimerStart (0);
 if (_reload_local_fit) {
     ExecuteAFile (lfOut);
     LFCompute (base_LF,LF_START_COMPUTE);
@@ -137,6 +140,8 @@ if (_reload_local_fit) {
     localLL						 = res_base[1][0];
     localParams					 = res_base[1][1] + 9;
 }
+taskTimerStop (0);
+
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
@@ -183,6 +188,7 @@ OPTIMIZATION_METHOD           = 0;
 Tree stepupTree               = givenTree;
 
 
+taskTimerStart (1);
 
 fprintf 					  (stdout, "[PHASE 1] Fitting Branch Site REL models to one branch at a time\n");
 
@@ -339,6 +345,9 @@ for (k = 0; k < totalBranchCount; k+=1) {
 }
 fprintf (stdout, "\n");
 
+taskTimerStop (1);
+
+
 OPTIMIZATION_TIME_HARD_LIMIT = 1e26;
 
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
@@ -349,11 +358,15 @@ USE_LAST_RESULTS    = 1;
 OPTIMIZATION_METHOD = 0;
 
 
+taskTimerStart (2);
 
 fprintf 					  (stdout, "\n\n[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
 VERBOSITY_LEVEL = 0;
 Optimize					  (res_three_LF,three_LF);
 fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom, IC = ", getIC (res_three_LF[1][0], res_three_LF[1][1], sample_size), "\n");
+
+taskTimerStop (2);
+
 
 lfOut	= csvFilePath + ".fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
@@ -373,6 +386,8 @@ fprintf (stdout, renderString, "\n");
 
 UseModel (USE_NO_MODEL);
 Tree T = renderString;
+
+taskTimerStart (3);
 
 for	(k = 0; k < totalBranchCount; k += 1) {
     pValueByBranch[k][branch_length_column] = bsrel_bls[bNames[k]];
@@ -460,6 +475,9 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         pValueByBranch[k][p_uncorrected_column] = 1.0;
     }
 }
+
+taskTimerStop (3);
+
 
 OPTIMIZATION_METHOD = 4;
 
@@ -557,6 +575,11 @@ fprintf (treePath, CLEAR_FILE, psTree);
 
 DeleteObject (stepupLF, three_LF, base_FL);
 
+printTimers (_BSREL_timers, {"0" : "MG94 model fit",
+                             "1" : "Rate class complexity analysis",
+                             "2" : "aBSREL model fit",
+                             "3" : "Individual branch selection testing"});
+
 return pValueByBranch;
 
 //------------------------------------------------------------------------------------------------------------------------
@@ -591,7 +614,15 @@ function restoreLF (key, value) {
 	return 0;
 }
 
+//------------------------------------------------------------------------------------------------------------------------
 
+lfunction printTimers (timers, titles) {
+    fprintf (stdout, "\n\n === CPU TIME REPORT === \n");
+    for (k = 0; k < Rows (timers); k+=1) {
+        fprintf (stdout, "\t", titles[k], " : ", _formatTimeString (timers[k]), "\n");
+    }
+
+}
 //------------------------------------------------------------------------------------------------------------------------
 
 lfunction printNodeDesc (ref, rate_classes) {
@@ -830,6 +861,17 @@ lfunction copyParametersToArray (parameters) {
         array[k] = ^(parameters[k]);
     }
     return array;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+function taskTimerStart (index) {
+    _BSREL_timers[index] = Time(1);
+}
+
+function taskTimerStop (index) {
+    _BSREL_timers[index] = Time(1) - _BSREL_timers[index];
+
 }
 
 //------------------------------------------------------------------------------------------------------------------------
