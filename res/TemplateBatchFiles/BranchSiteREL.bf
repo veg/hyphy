@@ -39,6 +39,14 @@ _BSREL_json    = {"fits" : {},
                   "rate distributions" : {},
                   "test results" : {}
                   };
+                  
+if (oldBSREL) {
+    _BSREL_json["version"] = "3-rate BS-REL";
+    _BSREL_json["PMID"] = "XXX";
+} else {
+    _BSREL_json["version"] = "Adaptive BS-REL";
+    _BSREL_json["PMID"] = "YYY";
+}
 
 doSynRateVariation = 1-doSynRateVariation;
 
@@ -280,10 +288,10 @@ for (k = 0; k < totalBranchCount; k+=1) {
     fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", Format(res[1][0],8,3), ", IC = ", Format (test_IC,8,3), "\n\t2 rate clases\n\t");
     printNodeDesc ("mixtureTree.`local_branch_name`", 2);
     
-    while (test_IC < current_IC || (oldBSREL && accepted_rates_count < 3)) {
+    while (test_IC < current_IC && (!oldBSREL || accepted_rates_count < 2) ||  || (oldBSREL && accepted_rates_count < 2)) {
         accepted_rates_count += 1;
         current_parameter_count += 2 + doSynRateVariation;
-        current_IC = test_IC;
+        current_IC = Min (test_IC,current_IC);
         saved_MLEs = saveNodeMLES (branch_name_to_test, accepted_rates_count);
         //fprintf (stdout, saved_MLEs, "\n");
         ExecuteCommands ("SetParameter (`branch_name_to_test_base`, MODEL, MG" + (accepted_rates_count+1) +");");
