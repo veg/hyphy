@@ -1,10 +1,14 @@
 RequireVersion ("2.1320130313");
 
+_BSREL_timers  = {5,1};
+taskTimerStart (4);
+
 VERBOSITY_LEVEL				= 0;
 maximum_number_of_omegas   = 10;
 skipCodeSelectionStep 		= 0;
-
 _useGridSearch              = 1;
+LF_SMOOTHING_SCALER         = 0.01;
+
 
 ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
 LoadFunctionLibrary("GrabBag");
@@ -14,14 +18,27 @@ LoadFunctionLibrary("BranchSiteTemplate");
 LoadFunctionLibrary("TreeTools");
 
 
-ChoiceList  (doSynRateVariation,"Allow branch-site variation in synonymous rates?",1,NO_SKIP,"Yes","Both alpha and beta vary along branch-site combinations","No", "Alpha varies from branch to branch, while omega varies among branch-site combinations");
+ChoiceList  (oldBSREL,"Run the adaptive version of BS-REL?", 1,NO_SKIP,
+        "Yes","[Strongly recommended] Automatically decide on appropriate model complexity among branches",
+        "No", "[Compatibility only] Sets the number of rate classes on each branch to 3 (as done with the 2011 version of BS-REL)");
+
+if (oldBSREL < 0) {
+    return 1;
+}   
+
+
+ChoiceList  (doSynRateVariation,"Allow branch-site variation in synonymous rates?", 1,NO_SKIP,
+        "Yes","Both alpha and beta vary along branch-site combinations",
+        "No", "[Default] Alpha varies from branch to branch, while omega varies among branch-site combinations");
 
 if (doSynRateVariation < 0) {
     return 1;
 }   
 
-_BSREL_timers = {4,1};
-
+_BSREL_json    = {"fits" : {},
+                  "rate distributions" : {},
+                  "test results" : {}
+                  };
 
 doSynRateVariation = 1-doSynRateVariation;
 
@@ -53,8 +70,6 @@ bNames						 = BranchName (givenTree, -1);
 //******* SELECT WHICH BRANCHES TO TEST ********//
 
 selectedBranches = {};
-
-LF_SMOOTHING_SCALER    = 0.01;
 
 if (doSynRateVariation == 0) {
     selectTheseForTesting = {totalBranchCount + 2, 2};
@@ -127,11 +142,12 @@ if (_reload_local_fit) {
     LFCompute (base_LF,LF_DONE_COMPUTE);
     GetString (_lfInfo, base_LF, -1);
     localParams = Columns (_lfInfo["Local Independent"]) + Columns (_lfInfo["Global Independent"]) + 9;
-
+    
 } else {
     LikelihoodFunction	base_LF	 = (dsf, givenTree);
     T0 = Time(1);
     Optimize					  (res_base,base_LF);
+    
     OPTIMIZATION_TIME_HARD_LIMIT = (Time(1)-T0)*4;
     LIKELIHOOD_FUNCTION_OUTPUT = 7;
     fprintf (lfOut, CLEAR_FILE, base_LF);
@@ -169,7 +185,7 @@ current_IC             = getIC (current_log_L, current_parameter_count, sample_s
 
 
 fprintf						 (stdout, "\nLog L = ", localLL, " with ", localParams, " degrees of freedom. IC = ", current_IC, "\n");
-
+json_store_lf                (_BSREL_json, "MG94", localLL, localParams,current_IC, _BSREL_timers[0]); 
 PrintDescriptiveStats		 ("Branch omega values", omegaStats);
 
 
@@ -264,7 +280,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
     fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", Format(res[1][0],8,3), ", IC = ", Format (test_IC,8,3), "\n\t2 rate clases\n\t");
     printNodeDesc ("mixtureTree.`local_branch_name`", 2);
     
-    while (test_IC < current_IC) {
+    while (test_IC < current_IC || (oldBSREL && accepted_rates_count < 3)) {
         accepted_rates_count += 1;
         current_parameter_count += 2 + doSynRateVariation;
         current_IC = test_IC;
@@ -344,7 +360,6 @@ for (k = 0; k < totalBranchCount; k+=1) {
     fprintf (stdout, "\n\t", branch_name_to_test, " has ", rate_classes_by_branch [k], " site rate classes");
 }
 fprintf (stdout, "\n");
-
 taskTimerStop (1);
 
 
@@ -358,15 +373,13 @@ USE_LAST_RESULTS    = 1;
 OPTIMIZATION_METHOD = 0;
 
 
-taskTimerStart (2);
-
 fprintf 					  (stdout, "\n\n[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
 VERBOSITY_LEVEL = 0;
+taskTimerStart (2);
 Optimize					  (res_three_LF,three_LF);
-fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom, IC = ", getIC (res_three_LF[1][0], res_three_LF[1][1], sample_size), "\n");
-
 taskTimerStop (2);
-
+fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom, IC = ", getIC (res_three_LF[1][0], res_three_LF[1][1] + 9, sample_size), "\n");
+json_store_lf                 (_BSREL_json, "Full model", res_three_LF[1][0], res_three_LF[1][1] + 9, getIC (res_three_LF[1][0], res_three_LF[1][1] + 9, sample_size), _BSREL_timers[2]); 
 
 lfOut	= csvFilePath + ".fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
@@ -381,12 +394,11 @@ if (doSynRateVariation) {
 
 tavl         = mixtureTree ^ 0;
 renderString = PostOrderAVL2StringDistances (tavl, bsrel_bls);
-
 fprintf (stdout, renderString, "\n");
 
 UseModel (USE_NO_MODEL);
 Tree T = renderString;
-
+_BSREL_json ["tree"] = Format (T,1,1);
 taskTimerStart (3);
 
 for	(k = 0; k < totalBranchCount; k += 1) {
@@ -398,14 +410,16 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     rate_classes = rate_classes_by_branch[k];
     node_omegas = getNodeOmegaDistribution (ref, rate_classes);
     
+    (_BSREL_json ["rate distributions"])[bNames[k]] = matrix2json(node_omegas);
+    
     fprintf (stdout, "\n");
     printNodeDesc (ref, rate_classes_by_branch[k]);
+    
     if (node_omegas[rate_classes-1][0] > 1) {
         pValueByBranch[k][2] = node_omegas[rate_classes-1][0];
         pValueByBranch[k][3] = node_omegas[rate_classes-1][1];
     }
     
-        
     if (node_omegas[rate_classes-1][0] > 1 && node_omegas[rate_classes-1][1] > 1e-6 && selectedBranches[k])
     {
         fprintf (stdout, "...Testing for selection at this branch\n");
@@ -446,6 +460,9 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         }
         fprintf (stdout, "p-value = ", pValueByBranch[k][p_uncorrected_column], "\n");
         
+        (_BSREL_json["test results"])[bNames[k]] = {"LRT": pValueByBranch[k][lrt_column],
+                                                    "uncorrected p": pValueByBranch[k][p_uncorrected_column]};
+        
         if (rate_classes > 1) {
             if (doSynRateVariation == 0) {
                 *testing_parameter :< 10000;
@@ -460,6 +477,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
             fprintf 					  (stdout, "[PHASE 2/REPEAT] Detected a convergence problem; refitting the LOCAL alternative model with new starting values\n");
             lfOut	= csvFilePath + ".fit";
             Optimize					  (res_three_LF,three_LF);
+            json_store_lf                 (_BSREL_json, "BS-REL", res_three_LF[1][0], res_three_LF[1][1] + 9, getIC (res_three_LF[1][0], res_three_LF[1][1], sample_size), _BSREL_timers[2]); 
             LIKELIHOOD_FUNCTION_OUTPUT = 7;
             fprintf (lfOut, CLEAR_FILE, three_LF);
             LIKELIHOOD_FUNCTION_OUTPUT = 2;
@@ -473,6 +491,8 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     else
     {
         pValueByBranch[k][p_uncorrected_column] = 1.0;
+        (_BSREL_json["test results"])[bNames[k]] = {"LRT": "test not run",
+                                                    "uncorrected p": 1.0};
     }
 }
 
@@ -495,11 +515,12 @@ pthreshold = 0.05;
 for		(k = 0; k < totalBranchCount; k = k+1)
 {
     pValueByBranch[pValueSorter[k][0]][p_corrected_column] = Min (1,pValueSorter[k][1]);
-    if (pValueSorter[k][1] <= pthreshold)
-    {
+    if (pValueSorter[k][1] <= pthreshold) {
         fprintf (stdout, "\t", bNames[pValueSorter[k][0]], " p = ", pValueByBranch[pValueSorter[k][0]][p_corrected_column], "\n");
         hasBranchesUnderSelection += 1;
     }
+    ((_BSREL_json["test results"])[bNames[pValueSorter[k][0]]])["p"] = pValueByBranch[pValueSorter[k][0]][p_corrected_column] ;
+
 }
 
 
@@ -514,71 +535,19 @@ for		(k = 0; k < totalBranchCount; k = k+1) {
 
 
 fprintf (csvFilePath, CLOSE_FILE);
+jsonFilePath = csvFilePath + ".json";
+taskTimerStop (4);
+_BSREL_json ["time"] = _BSREL_timers[4];
+fprintf        (jsonFilePath, CLEAR_FILE, _BSREL_json);
 
-//---- TREE RENDERING -----
-
-LoadFunctionLibrary ("ReadDelimitedFiles");
-treeString = Format (givenTree, 1,1);
-resultTable=ReadCSVTable (csvFilePath, 2);
-
-rows	= Rows (resultTable[2]);
-columns = Columns(resultTable[1]);
-
-
-TREE_OUTPUT_OPTIONS = {"__FONT_SIZE__":14};
-
-tavl = T^0;
-for (k = 1; k < Abs (tavl)-1; k+=1) {
-	TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]] = {};
-}
-
-for (k = 1; k < Abs (tavl)-1; k+=1) {
-	thisP = (resultTable[1])[k-1][p_corrected_column];
-	
-    ref = "mixtureTree."+bNames[k-1];
-    rate_classes = rate_classes_by_branch[k-1];
-    myRateDistro = getNodeOmegaDistribution (ref, rate_classes);
-    
-    parentName = (tavl[((tavl[k])["Parent"])])["Name"];
-		
-	myRateDistro = myRateDistro % 0;
-		
-	colors = {rate_classes,4};
-	for (cc = 0; cc < rate_classes; cc += 1) {
-	    color1 = makeDNDSColor (myRateDistro[cc][0]);
-	    colors [cc][0] = color1[0];
-	    colors [cc][1] = color1[1];
-	    colors [cc][2] = color1[2];
-	    colors [cc][3] = myRateDistro[cc][1];
-	}
-	
-	(TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]])["TREE_OUTPUT_BRANCH_COLOR"] 		= colors;
-	(TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]])["TREE_OUTPUT_BRANCH_LINECAP"]  = 	thisP > 0.05;
-	
-	if (thisP <= 0.05)
-	{
-		(TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]])["TREE_OUTPUT_BRANCH_THICKNESS"] = 	14;
-
-	}
-	if (Abs((tavl[k])["Children"]) > 0)
-	{
-		(TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]])["TREE_OUTPUT_BRANCH_TLABEL"] = (tavl[k])["Name"]; 
-	}
-}
-
-height = TipCount (T) * 36;
-psTree = PSTreeString (T,"STRING_SUPPLIED_LENGTHS",{{400,height}});
-
-treePath = csvFilePath + ".ps";
-
-fprintf (treePath, CLEAR_FILE, psTree);
 
 DeleteObject (stepupLF, three_LF, base_FL);
 
 printTimers (_BSREL_timers, {"0" : "MG94 model fit",
                              "1" : "Rate class complexity analysis",
                              "2" : "aBSREL model fit",
-                             "3" : "Individual branch selection testing"});
+                             "3" : "Individual branch selection testing",
+                             "4" : "Total time"});
 
 return pValueByBranch;
 
@@ -924,4 +893,29 @@ lfunction computeOnAGrid (grid_points, parameters, lfname) {
     LFCompute(^lfname,LF_DONE_COMPUTE);
     return best_state;
             
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction matrix2json (mx) {
+    result_str = ""; result_str * 128;
+    result_str * "[";
+    for (r = 0; r < Rows (mx); r+=1) {
+        if (r) {
+            result_str * ",";
+        }
+        result_str * ("[" + Join(",",mx[r][-1]) + "]");
+    }
+    result_str * "]";
+    result_str * 0;
+    return result_str;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction json_store_lf (json, name, ll, df, aicc, time) {
+    (json["fits"])[name] = {"log-likelihood": ll,
+                            "parameters": df,
+                            "AIC-c" : aicc,
+                            "runtime" : time};
 }

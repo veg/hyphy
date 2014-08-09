@@ -1,4 +1,4 @@
-# Install script for directory: /Volumes/home-raid/hyphy2.2/contrib/gtest-1.7.0
+# Install script for directory: /Users/sergei/hyphy2.2/contrib/gtest-1.7.0
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
