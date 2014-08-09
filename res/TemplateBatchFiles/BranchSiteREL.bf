@@ -715,7 +715,17 @@ lfunction getNodeOmegaDistribution (ref, rate_classes) {
         }
         
     } else {
-        values [0][0] =   ^("`ref`.nonsyn")/^("`ref`.syn");
+        ns = ^("`ref`.nonsyn");
+        syn = ^("`ref`.syn");
+        if (syn == 0) {
+            if (ns > 0) {
+                values[0][0] = 1e26;
+            } else {
+                values[0][0] = 1;
+            }
+        } else {
+            values [0][0] =   ns/syn;
+        }
         values [0][1] =   1;        
     }
     return values;
