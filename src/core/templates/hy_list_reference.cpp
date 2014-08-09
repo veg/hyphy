@@ -159,7 +159,7 @@ _hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator&(const PAYLO
 template<typename PAYLOAD>
 void _hyListReference<PAYLOAD>::operator<<(PAYLOAD* item)
 {
-  this->append (item);
+  this->append(item);
   item->AddAReference();
 }
 
@@ -167,7 +167,7 @@ void _hyListReference<PAYLOAD>::operator<<(PAYLOAD* item)
 template<typename PAYLOAD>
 void _hyListReference<PAYLOAD>::operator&&(const PAYLOAD* item)
 {
-   this->append ((PAYLOAD*) item->makeDynamic());
+   this->append(new PAYLOAD(*item));
 }
 
 

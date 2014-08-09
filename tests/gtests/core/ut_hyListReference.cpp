@@ -153,7 +153,7 @@ TYPED_TEST_P (_hyListReferenceTest, ConstuctorTests) {
     EXPECT_LT (0UL, partial_stack_copy.allocated());
     partial_stack_copy.Clear (true);
     EXPECT_EQ (0UL, partial_stack_copy.allocated());
-    EXPECT_EQ (dynamic_object, dynamic_list->Element (0));
+    EXPECT_EQ (dynamic_object, dynamic_list->Element(0));
     EXPECT_TRUE (dynamic_object->SingleReference()) << "Incorrect reference count following list operations";
     
     EXPECT_TRUE (another_dynamic_list->SingleReference()) << "Incorrect reference count following list operations";
