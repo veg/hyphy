@@ -288,7 +288,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
     fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", Format(res[1][0],8,3), ", IC = ", Format (test_IC,8,3), "\n\t2 rate clases\n\t");
     printNodeDesc ("mixtureTree.`local_branch_name`", 2);
     
-    while (test_IC < current_IC && (!oldBSREL || accepted_rates_count < 2) ||  || (oldBSREL && accepted_rates_count < 2)) {
+    while (test_IC < current_IC && (!oldBSREL || accepted_rates_count < 2) || (oldBSREL && accepted_rates_count < 2)) {
         accepted_rates_count += 1;
         current_parameter_count += 2 + doSynRateVariation;
         current_IC = Min (test_IC,current_IC);
