@@ -406,7 +406,7 @@ fprintf (stdout, renderString, "\n");
 
 UseModel (USE_NO_MODEL);
 Tree T = renderString;
-_BSREL_json ["tree"] = Format (T,1,1);
+_BSREL_json ["tree"] = renderString;
 taskTimerStart (3);
 
 for	(k = 0; k < totalBranchCount; k += 1) {

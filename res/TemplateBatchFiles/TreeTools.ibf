@@ -134,10 +134,7 @@ function PostOrderAVL2StringDistances (theAVL, distAVL)
 					_ost * ",";
 				}
 			}
-			if (Abs(nodeInfo["Children"])==0)
-			{
-				_ost * myName;
-			}
+			_ost * myName;
 			if (nodeIndex < treeSize - 1)
 			{
 				_ost * ":";
