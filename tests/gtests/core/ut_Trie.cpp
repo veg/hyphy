@@ -86,6 +86,11 @@ TEST_F(_TrieTest, ConstructorsTest)
   EXPECT_EQ ('p', the_test.alphabet()[1]) << "Should be y";
   EXPECT_EQ ('y', the_test.alphabet()[3]) << "Should be p";
 
+  //Insert an item that has an invalid character
+  long response = the_test.Insert("@handle#rocks", 1L);
+  EXPECT_EQ(HY_TRIE_INVALID_LETTER, response);
+
+
 }
 
 TEST_F(_TrieTest, MethodTests)
@@ -114,16 +119,21 @@ TEST_F(_TrieTest, MethodTests)
   the_trie.clear();
   the_trie.Insert("apple", 1L);
   the_trie.Insert("apropos", 2L);
-  the_trie.Insert("banana", 2L);
-  the_trie.Insert("orange", 3L);
+  the_trie.Insert("banana", 3L);
+  the_trie.Insert("orange", 4L);
+  EXPECT_STREQ("banana", the_trie.RetrieveKeyByPayload(3L));
+  EXPECT_EQ(3L, the_trie.GetValueFromString("banana"));
 
   EXPECT_EQ(26, the_trie.countitems());
 
-  //bool deleted = the_trie.Delete("banana");
-  the_trie.DumpRaw();
+  bool deleted = the_trie.Delete("banana");
+  EXPECT_EQ(true, deleted);
+  EXPECT_GT(0, the_trie.Find("banana"));
+  EXPECT_STREQ("0", the_trie.RetrieveKeyByPayload(3L));
 
 
-  // Create a random strings and ensure the count is correct
+
+  // Dreate a random strings and ensure the count is correct
   the_trie.clear();
 
   long random_list_length = 16L + genrand_int32() % 128L;
@@ -133,13 +143,11 @@ TEST_F(_TrieTest, MethodTests)
   _String* alph = new _String("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 
   for (long i = 0; i <= random_list_length; i++) {
-
     long random_length = 16L + genrand_int32() % 128L;
     _String* random_string = new _String(_String::Random (random_length, alph));
     random_str_list.AppendNewInstance(random_string);
     random_long_list.append(random_length);
     the_trie.Insert(*random_string, random_length);
-
   }
 
   long random_index = genrand_int32() % random_long_list.Length();
@@ -147,8 +155,17 @@ TEST_F(_TrieTest, MethodTests)
   _String str(*random_str_list.Element(random_index));
   EXPECT_LT(0, the_trie.Find(str));
   EXPECT_GT(random_long_list.Sum(), the_trie.Find(str));
-  EXPECT_LT(0, the_trie.Find(str[genrand_int32() % str.Length()]));
-  EXPECT_GT(random_long_list.Sum(), the_trie.Find(genrand_int32() % str.Length()));
+  char to_find = str[genrand_int32() % str.Length()];
+  EXPECT_LT(0, the_trie.Find(to_find)) << "The character " << to_find << " was not found despite " << str << " being inserted";
+  EXPECT_GT(random_long_list.Sum(), the_trie.Find(to_find));
+
+
+
+  // Delete every item from a list
+  deleted = the_trie.Delete(random_str_list);
+  EXPECT_EQ(true, deleted);
+
+   
 
   //Insert the entire list at once
   the_trie.clear();
@@ -159,9 +176,9 @@ TEST_F(_TrieTest, MethodTests)
   EXPECT_LT(random_long_list.Sum(), second_trie.countitems() - 1);
   EXPECT_LT(0, second_trie.Find(str));
   EXPECT_GT(random_long_list.Sum(), second_trie.Find(str));
-  EXPECT_LT(0, second_trie.Find(str[genrand_int32() % str.Length()]));
+  to_find = str[genrand_int32() % str.Length()];
+  EXPECT_LT(0, second_trie.Find(to_find)) << "The character " << to_find << " was not found despite " << str << " being inserted";
   EXPECT_GT(random_long_list.Sum(), second_trie.Find(genrand_int32() % str.Length()));
-
 
 
 }

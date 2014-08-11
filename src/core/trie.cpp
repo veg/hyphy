@@ -43,11 +43,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "iostream"
 
 //______________________________________________________________________________
-_Trie::_Trie(_StringBuffer* alphabet) {
+_Trie::_Trie(_String* alph) {
 
   this->linear_list.Initialize();
 
-  this->setAlphabet(alphabet, false);
+  this->setAlphabet(alph, true);
   this->linear_list.AppendNewInstance(new _hyListNumeric<long>);
   this->payload.append(0L);
   this->parents.append(-1L);
@@ -85,26 +85,26 @@ _hyList<char> _Trie::alphabet(void) const {
 }
 
 //______________________________________________________________________________
-void _Trie::setAlphabet(const _StringBuffer *alphabet, bool do_clear) {
+void _Trie::setAlphabet(const _String* alph, bool do_clear) {
 
   if (do_clear) {
     clear(true);
     char_map.Clear();
   }
 
-  if (alphabet) {
+  if (alph) {
     this->char_map.Populate(257, -1, 0);
     unsigned long char_counter = 0;
 
     // always allow the '\0' character
     //this->char_map[0] = 1; 
 
-    for (unsigned long charIndex = 0; charIndex < alphabet->Length();
+    for (unsigned long charIndex = 0; charIndex < alph->Length();
          charIndex++) {
-      this->char_map[(unsigned char) alphabet->getChar(charIndex)] = 1;
+      this->char_map[(unsigned char) alph->getChar(charIndex)] = 1;
     }
 
-    // now sort alphabetically
+    // now sort alphically
     for (unsigned long charIndex = 0; charIndex < 256; charIndex++) {
       if (this->char_map[charIndex] == 2)
         this->char_map[charIndex] = char_counter++;
@@ -215,16 +215,16 @@ long _Trie::Find(const char key, bool prefixOK) const {
   return current_index;
 }
 
-////______________________________________________________________________________
-//long _Trie::GetValueFromString(const _String &key) {
-//  long keyIndex = Find(key);
-//  if (keyIndex != HY_TRIE_NOTFOUND) {
-//    return GetValue(keyIndex);
-//  }
-//  return HY_TRIE_NOTFOUND;
-//}
+//______________________________________________________________________________
+long _Trie::GetValueFromString(const _String &key) {
+  long keyIndex = Find(key);
+  if (keyIndex != HY_TRIE_NOTFOUND) {
+    return GetValue(keyIndex);
+  }
+  return HY_TRIE_NOTFOUND;
+}
 
-////______________________________________________________________________________
+//______________________________________________________________________________
 void _Trie::UpdateValue(const long key, const long value) {
   if (key >= 0 && key < this->payload.Length())
     this->payload.SetItem(key, value);
@@ -331,11 +331,10 @@ bool _Trie::Delete(_String key) {
       _hyListNumeric<long> *current_list = this->linear_list.Element(history[k]);
 
       if (current_list == nil || current_list->Length() <= 1L) {
-        std::cout << "CURNELT LIST HAS LENGTH: " << current_list->Length() << std::endl;
         this->payload[history[k]] = 0L;
         this->parents[history[k]] = -1L;
 
-        _hyListNumeric<long> *parentList = this->linear_list.Element(history[k]);
+        _hyListNumeric<long> *parentList = this->linear_list.Element(history[k - 1]);
 
         unsigned long parentNode =
             parentList->FindStepping(history[k], 2, 1) - 1;
@@ -343,12 +342,15 @@ bool _Trie::Delete(_String key) {
         parentList->Delete(parentNode);
         parentList->Delete(parentNode);
 
-        DeleteObject(current_list);
-        this->linear_list.SetItem(history[k], nil);
-
       }
 
     }
+
+    // SW 20140811: Breaks deconstructor
+    //for (long k = history.Length() - 1; k >= 0; k--) {
+    //  std::cout << "Setting null " << k << std::endl;
+    //  this->linear_list.SetItem(history[k], NULL);
+    //}
 
     return true;
 
@@ -505,6 +507,7 @@ _StringBuffer _Trie::toStr() {
 //______________________________________________________________________________
 
 _String _Trie::RetrieveKeyByPayload(const long key) {
+
   long key_index = payload.Find(key);
   if (key_index >= 0) {
 

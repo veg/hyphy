@@ -94,7 +94,7 @@ public:
    * default (or if an empty string is passed), all ASCII characters are allowed
    * @return Nothing.
    */
-   _Trie(_StringBuffer* alphabet = nil);
+   _Trie(_String* alphabet = nil);
    _Trie(_Trie&);
 
   /**
@@ -258,7 +258,7 @@ public:
 
 private:
 
-  void setAlphabet(const _StringBuffer *, bool);
+  void setAlphabet(const _String*, bool);
 
   /**
    * Given a current position in the trie (current_index), try to walk down the
