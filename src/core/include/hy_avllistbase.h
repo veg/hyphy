@@ -177,6 +177,18 @@ protected:
      * @param index The index to delete from at
      */
     virtual void _RemoveKeyValuePair   (long index) = 0;
+    
+    /**
+     * Remove a kay/value pair from 'index' (note that the tree structure is handled by the ::Delete function)
+     * Must be implemented by a derived class
+     * @param index The index to delete from at
+     */
+    
+    inline long& RightChild (const long index) const;
+    inline long& LeftChild (const long index) const ;
+    inline long& BalanceFactor (const long index) const;
+    
+    void   _DeleteHelper (const long index, const long new_node, _SimpleList const &directions, _SimpleList const &nodes, bool update_root = true);
 
     
 public:
@@ -204,7 +216,7 @@ public:
      * Length of the list
      * @return The number of elements in the list
      */
-   unsigned long Length (void) const;
+   inline unsigned long Length (void) const;
 
     /**
      * The basic search function
@@ -282,6 +294,20 @@ public:
      */
     
     virtual long Insert  (KEYTYPE const& key, PAYLOAD const& value);
+
+    /**
+     * Traverse the tree and delete the key (if found); update and rebalance the tree
+     * @param key The key to insert
+     * @return the index of the key deleted (>=0) of HY_NOT_FOUND the key was not in the DB
+     */
+    
+    virtual long Delete  (KEYTYPE const& key);
+
+    
+    virtual PAYLOAD* operator [] (const KEYTYPE& key) = 0;
+    virtual PAYLOAD* operator () (long index) = 0;
+    
+    
 
     /*virtual void Clear(bool = false);
   virtual bool HasData(long);

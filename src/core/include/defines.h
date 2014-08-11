@@ -350,6 +350,6 @@
 #endif
 
 #define SWAP(a, b, c) ((c) = (a), (a) = (b), (b) = (c))
-#define LEFT_SHIFT(a, b, c) ((a) = (b), (b) = (c))
+#define LEFT_SHIFT(a, b, c) ((a) = (b),(b) = (c))
 
 #endif

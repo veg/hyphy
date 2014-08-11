@@ -68,10 +68,24 @@ _AVLListBase<KEYTYPE,PAYLOAD>::~_AVLListBase(void) {
 //*************** ATTRIBUTE ACCESSORS ***************//
 
 template <typename KEYTYPE, typename PAYLOAD>
-unsigned long _AVLListBase<KEYTYPE,PAYLOAD>::Length (void) const {
+inline unsigned long _AVLListBase<KEYTYPE,PAYLOAD>::Length (void) const {
     return this->avl_structure.Length() - this->empty_slots.Length();
 }
 
+template <typename KEYTYPE, typename PAYLOAD>
+inline long& _AVLListBase<KEYTYPE,PAYLOAD>::LeftChild(const long index) const {
+    return this->avl_structure.AtIndex (index).left_child;
+}
+
+template <typename KEYTYPE, typename PAYLOAD>
+inline long& _AVLListBase<KEYTYPE,PAYLOAD>::RightChild(const long index) const {
+    return this->avl_structure.AtIndex (index).right_child;
+}
+
+template <typename KEYTYPE, typename PAYLOAD>
+inline long& _AVLListBase<KEYTYPE,PAYLOAD>::BalanceFactor(const long index) const {
+    return this->avl_structure.AtIndex (index).balance_factor;
+}
 
 //*************** SEARCH FUNCTIONS  ***************//
 
@@ -232,152 +246,344 @@ long _AVLListBase<KEYTYPE,PAYLOAD>::Traverser(_AVLListTraversalHistory &history)
 //______________________________________________________________________________
 template <typename KEYTYPE,typename PAYLOAD>
 long _AVLListBase<KEYTYPE,PAYLOAD>::Insert(KEYTYPE const& key, PAYLOAD const& value) {
-    if (this->Length() > 0UL) { // something to do
-        
-        
-        _SimpleList directions;
-        
-        long y = root,
-             z = HY_AVL_LEAF,
-             p,
-             q,
-             n,
-             w;
-        
-        //bool go_right = false;
-        int move_direction = HY_AVL_MOVE_LEFT;
-        
-        for (q = z, p = y; p != HY_AVL_LEAF;
-             q = p, p = this->_MoveInTree (p, move_direction)) {
-            
-            //long comp = dataList->Compare(b, p);
-            long move_direction = this->_CompareIndexToValue (p, key);
-            
-            if (move_direction == 0L) {
-                 return -p - 1L;
-            }
- 
-            if (this->avl_structure[p].balance_factor != 0L) {
-                z = q;
-                y = p;
-                directions.Clear();
-            }
-            directions.append (move_direction);
-        }
-        
-        
-        // insert new node
-        
-        n = this->_StoreKeyValuePair (key, value);
-        
-        if (move_direction == HY_AVL_MOVE_RIGHT) {
-            this->avl_structure[q].right_child = n;
-        } else {
-            this->avl_structure[q].left_child  = n;
-        }
-        
-        // update balance factors
-        
-        p = y;
-        
-        for (long k = 0L; p != n;
-             p =  this->_MoveInTree (p, directions.AtIndex(k)), k++) {
-            this->avl_structure.AtIndex(k).balance_factor += directions.AtIndex(k) == HY_AVL_MOVE_RIGHT ? 1L : -1L;
-        
-        }
-        
-        if (avl_structure.AtIndex(y).balance_factor  == -2L) {
-            long x = this->avl_structure.AtIndex(y).left_child;
-            if (this->avl_structure.AtIndex(x).balance_factor == -1) {
-                w = x;
-                LEFT_SHIFT (this->avl_structure.AtIndex(y).left_child,this->avl_structure.AtIndex(x).right_child,y);
-                this->avl_structure.AtIndex(x).balance_factor = 0L;
-                this->avl_structure.AtIndex(y).balance_factor = 0L;
-            } else {
-                w = this->avl_structure.AtIndex(x).right_child;
-                LEFT_SHIFT (this->avl_structure.AtIndex(x).right_child,this->avl_structure.AtIndex(w).left_child,x);
-                LEFT_SHIFT (this->avl_structure.AtIndex(y).left_child,this->avl_structure.AtIndex(w).right_child,y);
-                
-                switch (this->avl_structure.AtIndex(w).balance_factor) {
-                    case -1L:
-                        this->avl_structure.AtIndex(x).balance_factor = 0L;
-                        this->avl_structure.AtIndex(y).balance_factor = 1L;
-                        this->avl_structure.AtIndex(w).balance_factor = 0L;
-                        break;
-                    case 0L:
-                        this->avl_structure.AtIndex(x).balance_factor = 0L;
-                        this->avl_structure.AtIndex(y).balance_factor = 0L;
-                        break;
-                    default:
-                        this->avl_structure.AtIndex(x).balance_factor = -1L;
-                        this->avl_structure.AtIndex(y).balance_factor = 0L;
-                        this->avl_structure.AtIndex(w).balance_factor = 0L;
-                        break;
-                }
-                
-            }
-        } else if (avl_structure.AtIndex(y).balance_factor == 2L) {
-            long x = this->avl_structure.AtIndex(y).right_child;
-            if (this->avl_structure.AtIndex(x).balance_factor == 1L) {
-                w = x;
-                LEFT_SHIFT (this->avl_structure.AtIndex(y).right_child, this->avl_structure.AtIndex(x).left_child,y);
-                this->avl_structure.AtIndex(x).balance_factor = 0L;
-                this->avl_structure.AtIndex(y).balance_factor = 0L;
-            } else {
-                w = this->avl_structure.AtIndex(x).left_child;
-                LEFT_SHIFT (this->avl_structure.AtIndex(x).left_child,this->avl_structure.AtIndex(w).right_child,x);
-                LEFT_SHIFT (this->avl_structure.AtIndex(y).right_child,this->avl_structure.AtIndex(w).left_child,y);
-                switch (this->avl_structure.AtIndex(w).balance_factor) {
-                    case 1L:
-                        this->avl_structure.AtIndex(x).balance_factor = 0L;
-                        this->avl_structure.AtIndex(y).balance_factor = -1L;
-                        this->avl_structure.AtIndex(w).balance_factor = 0L;
-                        break;
-                    case 0L:
-                        this->avl_structure.AtIndex(x).balance_factor = 0L;
-                        this->avl_structure.AtIndex(y).balance_factor = 0L;
-                        break;
-                    default:
-                        this->avl_structure.AtIndex(x).balance_factor = 1L;
-                        this->avl_structure.AtIndex(y).balance_factor = 0L;
-                        this->avl_structure.AtIndex(w).balance_factor = 0L;
-                        break;
-                }
-               
-            }
-        } else {
-            return n;
-        }
-        
-        if (z != HY_AVL_LEAF) {
-            if (y == this->avl_structure.AtIndex(z).left_child) {
-                this->avl_structure.AtIndex(z).left_child = w;
-            } else {
-                this->avl_structure.AtIndex(z).right_child = w;
-            }
-        }
-        
-        if (y == this->root) {
-            this->root = w;
-        }        
-        return p;
+  if (this->Length() > 0UL) { // something to do
+    
+    
+    _SimpleList directions;
+    
+    long y = root,
+    z = HY_AVL_LEAF,
+    p,
+    q,
+    n,
+    w;
+    
+    //bool go_right = false;
+    int move_direction = HY_AVL_MOVE_LEFT;
+    
+    for (q = z, p = y; p != HY_AVL_LEAF;
+         q = p, p = this->_MoveInTree (p, move_direction)) {
+      
+      //long comp = dataList->Compare(b, p);
+      long move_direction = this->_CompareIndexToValue (p, key);
+      
+      if (move_direction == 0L) {
+        return -p - 1L;
+      }
+      
+      if (this->avl_structure[p].balance_factor != 0L) {
+        z = q;
+        y = p;
+        directions.Clear();
+      }
+      directions.append (move_direction);
     }
     
     
-    return (this->root = this->_StoreKeyValuePair (HY_LIST_INSERT_AT_END, key, value));
+    // insert new node
     
+    n = this->_StoreKeyValuePair (key, value);
+    
+    if (move_direction == HY_AVL_MOVE_RIGHT) {
+      this->RightChild (q) = n;
+    } else {
+      this->LeftChild (q)  = n;
+    }
+    
+    // update balance factors
+    
+    p = y;
+    
+    for (long k = 0L; p != n;
+         p =  this->_MoveInTree (p, directions.AtIndex(k)), k++) {
+      this->BalanceFactor (k) += directions.AtIndex(k) == HY_AVL_MOVE_RIGHT ? 1L : -1L;
+    }
+    
+    if ( this->BalanceFactor (y)  == -2L) {
+      long x = this->LeftChild (y);
+      if (this-BalanceFactor(x) == -1) {
+        w = x;
+        LEFT_SHIFT (this->LeftChold (y),this->RightChild (x),y);
+        this-BalanceFactor(x) = 0L;
+        this-BalanceFactor(y) = 0L;
+      } else {
+        w = this->RightChild (x);
+        LEFT_SHIFT (this->RightChild(x),this->LeftChild (w),x);
+        LEFT_SHIFT (this->LeftChild(y),this->RightChild(w),y);
+        
+        switch (this-BalanceFactor(w)) {
+          case -1L:
+            this-BalanceFactor(x) = 0L;
+            this-BalanceFactor(y) = 1L;
+            this-BalanceFactor(w) = 0L;
+            break;
+          case 0L:
+            this-BalanceFactor(x) = 0L;
+            this-BalanceFactor(y) = 0L;
+            break;
+          default:
+            this-BalanceFactor(x) = -1L;
+            this-BalanceFactor(y) = 0L;
+            this-BalanceFactor(w) = 0L;
+            break;
+        }
+        
+      }
+    } else if (this->BalanceFactor (y) == 2L) {
+      long x = this->RightChild (y);
+      if (this-BalanceFactor(x) == 1L) {
+        w = x;
+        LEFT_SHIFT (this-RightChild (y), this->LeftChild(x),y);
+        this-BalanceFactor(x) = 0L;
+        this-BalanceFactor(y) = 0L;
+      } else {
+        w = this->LeftChild (x);
+        LEFT_SHIFT (this->LeftChild(x),this->RightChild (w),x);
+        LEFT_SHIFT (this->RightChild(y),this->LeftChild (w),y);
+        switch (this-BalanceFactor(w)) {
+          case 1L:
+            this-BalanceFactor(x) = 0L;
+            this-BalanceFactor(y) = -1L;
+            this-BalanceFactor(w) = 0L;
+            break;
+          case 0L:
+            this-BalanceFactor(x) = 0L;
+            this->avl_structure.AtIndex(y).balance_factor = 0L;
+            break;
+          default:
+            this-BalanceFactor(x) = 1L;
+            this-BalanceFactor(y) = 0L;
+            this-BalanceFactor(w) = 0L;
+            break;
+        }
+        
+      }
+    } else {
+      return n;
+    }
+    
+    if (z != HY_AVL_LEAF) {
+      if (y == this->LeftChild (z)) {
+        this->LeftChild (z) = w;
+      } else {
+        this->RightChild (z) = w;
+      }
+    }
+    
+    if (y == this->root) {
+      this->root = w;
+    }
+    return n;
+    // WAS return p;
+  }
+  
+  
+  return (this->root = this->_StoreKeyValuePair (HY_LIST_INSERT_AT_END, key, value));
+  
 }
 
-/*template <typename KEYTYPE,typename PAYLOAD>
-long _AVLListBase<KEYTYPE,PAYLOAD>::_CompareIndexToValue (long node, KEYTYPE const & key) const{
-    return this->keys.CompareToValue (node, key);
-}*/
+
+
+//______________________________________________________________________________
+template <typename KEYTYPE,typename PAYLOAD>
+void _AVLListBase<KEYTYPE,PAYLOAD>::_DeleteHelper (const long index, const long new_node, _SimpleList const &directions, _SimpleList const& nodes, bool update_root) {
+    if (index > 1L) {
+        directions.AtIndex(index-1L) > 0L ?
+            this->RightChild (nodes.AtIndex (index-1L)):
+            this->LeftChild (nodes.AtIndex (index-1L)) = new_node;
+    } else {
+      if (update_root) {
+        this->root = new_node;
+      }
+    }
+}
+
+
+
+//______________________________________________________________________________
+
+template <typename KEYTYPE,typename PAYLOAD>
+long _AVLListBase<KEYTYPE,PAYLOAD>::Delete(const KEYTYPE  &key) {
+  
+  if (this->Length() > 0UL) { // something to do
+    
+    _SimpleList directions,
+    nodes;
+    
+    long p = this->root,
+    cmp = this->_CompareIndexToValue(p, key),
+    k = 0L;
+    
+    nodes.append (HY_AVL_LEAF);
+    directions.append (HY_AVL_MOVE_RIGHT);
+    
+    for (k=1L; cmp != 0L; cmp = _CompareIndexToValue (p, key), k++) {
+      
+      nodes.append (p);
+      directions.append (cmp);
+      p = this->_MoveInTree (p, cmp);
+      
+      if (p == HY_AVL_LEAF) {
+        return HY_NOT_FOUND;
+      }
+    }
+    
+    if (k == 1L) {
+      nodes.append (HY_AVL_LEAF);
+    }
+    
+    _RemoveKeyValuePair (p);
+    
+    long r = this->RightChild (p); //rightChild.lData[p];
+    
+    if (r == HY_AVL_LEAF) {
+      this->_DeleteHelper (k, this->LeftChild(p), directions, nodes, false);
+      if (p == this->root) {
+        this->root = this->LeftChild (root); //leftChild.lData[root];
+      }
+    } else {
+      if (this->LeftChild (r)  == HY_AVL_LEAF) {
+        this->LeftChild (r)     = this->LeftChild (p);      // leftChild.lData[r] = leftChild.lData[p];
+        this->BalanceFactor (r) = this->BalanceFactor (p);   // balanceFactor.lData[r] = balanceFactor.lData[p];
+        this->_DeleteHelper (k, r, directions, nodes);
+        
+        directions.append (HY_AVL_MOVE_RIGHT);
+        nodes.append (r);
+        k++;
+      } else {
+        long s;
+        int j = k++;
+        nodes.append (0L);
+        directions.append (0L);
+        
+        
+        for (;;) {
+          directions.append (0L);
+          nodes.append (r);
+          k++;
+          s = this->LeftChild (r); //this->avl_structure.AtIndex(r).left_child;
+          if (this->LeftChild (s) == HY_AVL_LEAF) {
+            break;
+          }
+          r = s;
+        }
+        this->LeftChild (s) = this->LeftChild (p);
+        LEFT_SHIFT (this->LeftChild (r), this->RughtChild (s), this->RightChild (p));
+        this->BalanceFactor (s) = this->BalanceFactor (p);
+        this->_DeleteHelper (j, s, directions, nodes, false);
+        
+        nodes.SetItem(j,s);
+        directions.SetItem(j, HY_AVL_MOVE_RIGHT);
+        if (p == this->root) {
+          this->root = s;
+        }
+      }
+    }
+    
+    while (--k > 0L) {
+      long y = nodes.AtIndex(k);
+      if (directions.AtIndex(k) == 0L) {
+        switch ( ++ this->BalanceFactor (y) ) {
+          case 1L: {
+            k = 0L; // break out of the main loop
+            break;
+          }
+          case 2L: {
+            long x = this->RightChild (y);
+            if (this->BalanceFactor (x) == -1L) {
+              long w = this->LeftChild (x);
+              LEFT_SHIFT (this->LeftChild (x), this->RightChild (w), x);
+              LEFT_SHIFT (this->RightChild (y), this->LeftChild (w), y);
+              switch (this->BalanceFactor (w)) {
+                case 1L:
+                  this->BalanceFactor (x) = 0L;
+                  this->BalanceFactor (y) = -1L;
+                  this->BalanceFactor (w) = 0L;
+                  break;
+                case 0L:
+                  this->BalanceFactor (x) = 0L;
+                  this->BalanceFactor (y) = -1L;
+                  break;
+                default:
+                  this->BalanceFactor (x) = 1L;
+                  this->BalanceFactor (y) = 0L;
+                  this->BalanceFactor (w) = 0L;
+              }
+              this->_DeleteHelper (k, w, directions, nodes);
+            } else {
+              LEFT_SHIFT (this->RightChild (y),this->LeftChild (x),y);
+              this->_DeleteHelper (k, x, directions, nodes);
+              
+              if ( this->BalanceFactor(x) == 0L) {
+                this->BalanceFactor(x) = -1L;
+                this->BalanceFactor(y) = 1L;
+                k = 0L; // break out of the main loop
+                break;
+              } else {
+                this->BalanceFactor(x) = 0L;
+                this->BalanceFactor(y) = 0L;
+              }
+            }
+            break; // switch
+          }
+        } // end switch
+      } else {
+        switch ( -- this->BalanceFactor (y) ) {
+          case -1L : {
+            k = 0L;
+            break;
+          }
+          case -2L : {
+            long x = this->LeftChild (y);
+            if (this->BalanceFactor (x) == 1L) {
+              long w = this->RightChild (x);
+              LEFT_SHIFT (this->RightChild (x), this->LeftChild (w), x);
+              LEFT_SHIFT (this->LeftChild (y), this->RightChild (w), y);
+              switch (this->BalanceFactor (w)) {
+                case -1L:
+                  this->BalanceFactor (x) = 0L;
+                  this->BalanceFactor (y) = 1L;
+                  this->BalanceFactor (w) = 0L;
+                  break;
+                case 0L:
+                  this->BalanceFactor (x) = 0L;
+                  this->BalanceFactor (y) = 0L;
+                  break;
+                default:
+                  this->BalanceFactor (x) = -1L;
+                  this->BalanceFactor (y) = 0L;
+                  this->BalanceFactor (w) = 0L;
+              }
+              this->_DeleteHelper (k, w, directions, nodes);
+            } else {
+              LEFT_SHIFT (this->LeftChild (y), this->RightChild (x), y);
+              this->_DeleteHelper (k, x, directions);
+              
+              if ( this->BalanceFactor(x) == 0L) {
+                this->BalanceFactor(x) = 1L;
+                this->BalanceFactor(y) = -1L;
+                k = 0L; // break out of the main loop
+                break;
+              } else {
+                this->BalanceFactor(x) = 0L;
+                this->BalanceFactor(y) = 0L;
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+    
+    return p;
+  }
+  return HY_NOT_FOUND;
+  
+}
+
+
 
 /*
-
-
-
-
 
 
 //______________________________________________________________________________
