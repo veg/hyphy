@@ -123,6 +123,10 @@ public:
   
   // append an instance to this
   
+  virtual void append_or_insert    (const PAYLOAD, unsigned long index);
+
+  // append an instance to this
+  
   virtual void append_multiple    (const PAYLOAD, const unsigned long copies);
 
   virtual void operator<<(const PAYLOAD);

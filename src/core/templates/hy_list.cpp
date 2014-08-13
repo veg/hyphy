@@ -228,16 +228,23 @@ void _hyList<PAYLOAD>::Clone(const _hyList<PAYLOAD>* clone_from, const long from
 }
 
 template<typename PAYLOAD>
-void _hyList<PAYLOAD>::append(const PAYLOAD item)
-{
+void _hyList<PAYLOAD>::append(const PAYLOAD item) {
   InsertElement(item, HY_LIST_INSERT_AT_END);
 }
 
 template<typename PAYLOAD>
-void _hyList<PAYLOAD>::append_multiple(const PAYLOAD item, const unsigned long copies)
-{
+void _hyList<PAYLOAD>::append_multiple(const PAYLOAD item, const unsigned long copies) {
   RequestSpace (laLength + copies);
   for (unsigned long i = 0UL; i < copies; i++) {
+    append (item);
+  }
+}
+
+template<typename PAYLOAD>
+void _hyList<PAYLOAD>::append_or_insert(const PAYLOAD item, const unsigned long index) {
+  if (index < lLength) {
+    SetItem(index, item);
+  } else {
     append (item);
   }
 }
@@ -303,8 +310,21 @@ void _hyList<PAYLOAD>::Clear(bool completeClear)
 template<typename PAYLOAD>
 void _hyList<PAYLOAD>::CompactList(void)
 {
-  if (laLength - lLength > HY_LIST_ALLOCATION_CHUNK) {
-    laLength -= ((laLength - lLength) / HY_LIST_ALLOCATION_CHUNK) * HY_LIST_ALLOCATION_CHUNK;
+  bool do_resize = false;
+  
+  if (laLength > HY_LIST_ALLOCATION_CHUNK * 5UL) {
+    if (laLength - lLength > laLength / 5UL) {
+      laLength = (laLength * 4UL)/5UL;
+      do_resize = true;
+    }
+  } else {
+    if (laLength - lLength > HY_LIST_ALLOCATION_CHUNK) {
+      laLength -= ((laLength - lLength) / HY_LIST_ALLOCATION_CHUNK) * HY_LIST_ALLOCATION_CHUNK;
+      do_resize = true;
+    }
+  }
+  
+  if (do_resize) {
     if (laLength) {
       lData = (PAYLOAD *)MemReallocate((Ptr)lData, laLength * sizeof(PAYLOAD));
     } else {

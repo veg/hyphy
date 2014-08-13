@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 
 //Generate necessary includes from the respective implementation file
-#include "hy_avllistbase.h"
+#include "hy_avllist.h"
 
 namespace {
 
@@ -127,19 +127,38 @@ TYPED_TEST_CASE_P(_hyAVLListTest);
 
 
 TYPED_TEST_P (_hyAVLListTest, ConstuctorTests) {
-  /*
-   _hyList <TypeParam> null_list,
-          single_element_list ((TypeParam)16),
-          multiple_element_list (5,array),
-          full_stack_copy (multiple_element_list),
-          partial_stack_copy (multiple_element_list,2,HY_LIST_INSERT_AT_END);
-   */
+  TypeParam array [5] = {(TypeParam)1, (TypeParam)4, (TypeParam)9, (TypeParam)16, (TypeParam)25};
+  
+  _hyList <TypeParam> multiple_element_defs (5,array);
+  
+  
+  _AVLList <TypeParam> test_list,
+                       single_item_list ((TypeParam)42),
+                       multiple_elements_list (multiple_element_defs),
+                       stack_copy (multiple_elements_list);
+  
+  ASSERT_EQ (0UL, test_list.Length()) << "Default constructor must create an empty _AVLList";
+  ASSERT_EQ (1UL, single_item_list.Length()) << "Default single item constructor must create a single item _AVLList";
+  ASSERT_EQ (multiple_element_defs.Length(), multiple_elements_list.Length()) << "Default list of items constructor must create an _AVLList of the same length as the argument list";
+  
+  ASSERT_EQ (multiple_elements_list,stack_copy) << " Failed _AVLList A(B) => A==B";
+}
+  
+TYPED_TEST_P (_hyAVLListTest, OperationTests) {
+  _AVLList <TypeParam> test_list;
+  
+  for (long replicates = 0L; replicates < 128L; replicates++) {
+    long up_to = genrand_int32() % 65536;
+    for (long item = 0; item < up_to; item ++) {
+      test_list.Insert ((TypeParam) genrand_int32());
+    }
+  }
+
 }
 
-
-REGISTER_TYPED_TEST_CASE_P (_hyAVLListTest, ConstuctorTests);
+REGISTER_TYPED_TEST_CASE_P (_hyAVLListTest, ConstuctorTests, OperationTests);
 
 }
 
-typedef ::testing::Types<char, long, double, _testPayload> _hyAVLListTestTypes;
+typedef ::testing::Types<long> _hyAVLListTestTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyAVLListTest, _hyAVLListTestTypes);

@@ -202,7 +202,7 @@ TYPED_TEST_P (_hyListTest, AccessAndManipulationTests) {
   sequence >> sequence (0);
   EXPECT_EQ (20UL, sequence.countitems()) << ">> added an already existing element";
   
-  sequence >> (TypeParam)42;
+  sequence >> (TypeParam)42L;
   EXPECT_EQ (21UL, sequence.countitems()) << ">> failed to add a new element";
   
   sequence << sequence2;
@@ -218,11 +218,19 @@ TYPED_TEST_P (_hyListTest, AccessAndManipulationTests) {
   
   EXPECT_TRUE (sequence3 == sequence4) << "Failed test (C = A & B) == (C = A) << B";
   
-  sequence4.SetItem (3, (TypeParam)123);
-  sequence3.SetItem (8, (TypeParam)123);
+  sequence4.SetItem (3, (TypeParam)123L);
+  sequence3.SetItem (8, (TypeParam)123L);
   
   EXPECT_EQ (sequence4.AtIndex (3), sequence3.AtIndex (8)) << "SetItem failed to assign equal values to list items";
   
+  sequence4.append_or_insert ((TypeParam)1025L,1);
+  sequence3.append_or_insert ((TypeParam)1025L,4);
+  
+  EXPECT_EQ (sequence4.AtIndex (1), sequence3.AtIndex (4)) << "append_or_insert failed to assign equal values to list items";
+ 
+  sequence4.append ((TypeParam)2049);
+  sequence3.append_or_insert ((TypeParam)2049, sequence4.Length());
+  EXPECT_EQ (sequence4.Element (-1L), sequence3.Element (-1L)) << "append_or_insert did not handle the set vs insert case correctly";
   
 }
   
