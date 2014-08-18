@@ -72,21 +72,31 @@ Model		MGL				= (MGMatrixLocal, codon3x4, 0);
 
 ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "queryTree.bf");
 
+
 totalBranchCount			 = BranchCount(givenTree) + TipCount (givenTree);
 bNames						 = BranchName (givenTree, -1);
+tavl                         = givenTree ^ 0;
+
+is_internal = {};
+for (k = 1; k < Abs (tavl); k+=1) {
+    is_internal[(tavl[k])["Name"]] = Abs ((tavl[k])["Children"]) > 0;
+}
+
 
 //******* SELECT WHICH BRANCHES TO TEST ********//
 
 selectedBranches = {};
 
 if (doSynRateVariation == 0) {
-    selectTheseForTesting = {totalBranchCount + 2, 2};
+    selectTheseForTesting = {totalBranchCount + 4, 2};
     selectTheseForTesting [0][0] = "None"; selectTheseForTesting [0][1] = "Just fit the branch-site REL model";
     selectTheseForTesting [1][0] = "All";  selectTheseForTesting [1][1] = "Test all branches";
+    selectTheseForTesting [2][0] = "Internal";  selectTheseForTesting [2][1] = "Test all internal branches";
+    selectTheseForTesting [3][0] = "Leaves";  selectTheseForTesting [3][1] = "Test all terminal branches";
 
-    for (k = 0; k < totalBranchCount; k = k+1) {
-        selectTheseForTesting [k+2][0] = bNames[k];
-        selectTheseForTesting [k+2][1] = "Test branch '" + bNames[k] + "'";
+    for (k = 0; k < totalBranchCount; k += 1) {
+        selectTheseForTesting [k+4][0] = bNames[k];
+        selectTheseForTesting [k+4][1] = "Test branch '" + bNames[k] + "'";
     
     }
 
@@ -99,15 +109,18 @@ if (doSynRateVariation == 0) {
 
     for (k = 0; k < Columns (whichBranchesToTest); k += 1) {
         if (whichBranchesToTest [k] == 0) {
-            selectedBranches = {}; break;
+            selectedBranches = {}; 
+            break;
         }
-        if (whichBranchesToTest [k] == 1) {
-            for (k = 0; k <  totalBranchCount; k += 1) {
-                selectedBranches[k] = 1;
+        if (whichBranchesToTest [k] >= 1 && whichBranchesToTest [k] <= 3) {
+            for (k2 = 0; k2 <  totalBranchCount; k2 += 1) {
+                 if (is_internal [bNames[k2]] && whichBranchesToTest [k] == 2 || is_internal [bNames[k2]] == 0 && whichBranchesToTest [k] == 3 || whichBranchesToTest [k] == 1) {
+                     selectedBranches[k2] = 1;
+                 }
             }
             break;
         }
-        selectedBranches [whichBranchesToTest [k] - 2] = 1;
+        selectedBranches [whichBranchesToTest [k] - 4] = 1;
     }
 }
 
@@ -430,6 +443,8 @@ json_store_lf                 (_BSREL_json, "Full model", res_three_LF[1][0], re
 
 taskTimerStart (3);
 
+totalTestedBranches = 1;
+
 for	(k = 0; k < totalBranchCount; k += 1) {
     pValueByBranch[k][branch_length_column] = bsrel_bls[bNames[k]];
     
@@ -451,6 +466,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     
     if (node_omegas[rate_classes-1][0] > 1 && node_omegas[rate_classes-1][1] > 1e-6 && selectedBranches[k])
     {
+        totalTestedBranches += 1;
         fprintf (stdout, "...Testing for selection at this branch\n");
         _stashLF = saveLF ("three_LF");
         
@@ -552,7 +568,7 @@ OPTIMIZATION_METHOD = 4;
 pValueSorter = {totalBranchCount,2};
 pValueSorter = pValueSorter["_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==0)+pValueByBranch[_MATRIX_ELEMENT_ROW_][p_uncorrected_column]*(_MATRIX_ELEMENT_COLUMN_==1)"];
 pValueSorter = pValueSorter % 1;
-pValueSorter = pValueSorter["_MATRIX_ELEMENT_VALUE_*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_VALUE_*(totalBranchCount-_MATRIX_ELEMENT_ROW_)*(_MATRIX_ELEMENT_COLUMN_==1)"];
+pValueSorter = pValueSorter["_MATRIX_ELEMENT_VALUE_*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_VALUE_*(Max(1,totalTestedBranches-_MATRIX_ELEMENT_ROW_))*(_MATRIX_ELEMENT_COLUMN_==1)"];
 
 fprintf (stdout,"\n\nSummary of branches under episodic selection (", Abs(selectedBranches)," were tested) :\n");
 hasBranchesUnderSelection = 0;
