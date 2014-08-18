@@ -486,6 +486,22 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         }
         
         if (pValueByBranch[k][lrt_column] < (-0.5)) {
+            
+            
+            if (rate_classes > 1) {
+                if (doSynRateVariation) {
+                    for (rc = 1; rc <= rate_classes; rc += 1) {
+                        ratio = "_mg94omega" + rc;
+                        nonsynvar = ref + ".nonsyn" + rc;
+                        synvar    = ref + ".syn" + rc;
+                        Eval ("`nonsynvar` = " + "`synvar` * `ratio`");                    
+                    }
+                } 
+            } else {
+                *(ref + ".nonsyn") = *(ref + ".syn") * _mg94omega;
+            }
+            
+        
             fprintf 					  (stdout, "[PHASE 2/REPEAT] Detected a convergence problem; refitting the LOCAL alternative model with new starting values\n");
             lfOut	= csvFilePath + ".fit";
             Optimize					  (res_three_LF,three_LF);
