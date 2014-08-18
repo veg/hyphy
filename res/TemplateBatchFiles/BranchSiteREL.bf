@@ -36,13 +36,13 @@ if (doSynRateVariation < 0) {
 }   
 
 _BSREL_json    = {"fits" : {},
-                  "rate distributions" : {},
-                  "test results" : {}
+                  "test results" : {},
+                  "timers" : {}
                   };
                   
 if (oldBSREL) {
     _BSREL_json["version"] = "3-rate BS-REL";
-    _BSREL_json["PMID"] = "XXX";
+    _BSREL_json["PMID"] = "21670087";
 } else {
     _BSREL_json["version"] = "Adaptive BS-REL";
     _BSREL_json["PMID"] = "YYY";
@@ -166,6 +166,7 @@ if (_reload_local_fit) {
 }
 taskTimerStop (0);
 
+json_store_lf                (_BSREL_json, "MG94", localLL, localParams,current_IC, _BSREL_timers[0], +BranchLength (givenTree,-1), Format (givenTree, 1,1)); 
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
@@ -183,6 +184,15 @@ for (k = 0; k < totalBranchCount; k = k+1) {
 	else {
 		pValueByBranch [k][0] = 10;
 	}	
+	
+	node_omegas = {1,2};
+	node_omegas[0] = pValueByBranch [k][0];
+	node_omegas[1] = 1;
+	
+	
+    (((_BSREL_json["fits"])["MG94"]) ["rate distributions"])[bNames[k]] = matrix2json(node_omegas);
+	
+	
 }
 
 omegaStats					 = GatherDescriptiveStats (pValueByBranch[-1][0]);
@@ -193,7 +203,6 @@ current_IC             = getIC (current_log_L, current_parameter_count, sample_s
 
 
 fprintf						 (stdout, "\nLog L = ", localLL, " with ", localParams, " degrees of freedom. IC = ", current_IC, "\n");
-json_store_lf                (_BSREL_json, "MG94", localLL, localParams,current_IC, _BSREL_timers[0]); 
 PrintDescriptiveStats		 ("Branch omega values", omegaStats);
 
 
@@ -372,7 +381,9 @@ for (k = 0; k < totalBranchCount; k+=1) {
     fprintf (stdout, "\n\t", branch_name_to_test, " has ", rate_classes_by_branch [k], " site rate classes");
 }
 fprintf (stdout, "\n");
+
 taskTimerStop (1);
+(_BSREL_json ["timers"])["Complexity analysis"] = _BSREL_timers[1];
 
 
 OPTIMIZATION_TIME_HARD_LIMIT = 1e26;
@@ -391,7 +402,6 @@ taskTimerStart (2);
 Optimize					  (res_three_LF,three_LF);
 taskTimerStop (2);
 fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom, IC = ", getIC (res_three_LF[1][0], res_three_LF[1][1] + 9, sample_size), "\n");
-json_store_lf                 (_BSREL_json, "Full model", res_three_LF[1][0], res_three_LF[1][1] + 9, getIC (res_three_LF[1][0], res_three_LF[1][1] + 9, sample_size), _BSREL_timers[2]); 
 
 lfOut	= csvFilePath + ".fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
@@ -410,7 +420,13 @@ fprintf (stdout, renderString, "\n");
 
 UseModel (USE_NO_MODEL);
 Tree T = renderString;
-_BSREL_json ["tree"] = renderString;
+//_BSREL_json ["tree"] = renderString;
+
+json_store_lf                 (_BSREL_json, "Full model", res_three_LF[1][0], res_three_LF[1][1] + 9, getIC (res_three_LF[1][0], res_three_LF[1][1] + 9, sample_size), _BSREL_timers[2],
+                                            +BranchLength (T, -1),
+                                            renderString); 
+
+
 taskTimerStart (3);
 
 for	(k = 0; k < totalBranchCount; k += 1) {
@@ -422,7 +438,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     rate_classes = rate_classes_by_branch[k];
     node_omegas = getNodeOmegaDistribution (ref, rate_classes);
     
-    (_BSREL_json ["rate distributions"])[bNames[k]] = matrix2json(node_omegas);
+    (((_BSREL_json["fits"])["Full model"]) ["rate distributions"])[bNames[k]] = matrix2json(node_omegas);
     
     fprintf (stdout, "\n");
     printNodeDesc (ref, rate_classes_by_branch[k]);
@@ -522,9 +538,11 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         (_BSREL_json["test results"])[bNames[k]] = {"LRT": "test not run",
                                                     "uncorrected p": 1.0};
     }
+    ((_BSREL_json["test results"])[bNames[k]])["tested"] = selectedBranches[k];
 }
 
 taskTimerStop (3);
+(_BSREL_json ["timers"])["Testing"] = _BSREL_timers[3];
 
 
 OPTIMIZATION_METHOD = 4;
@@ -565,7 +583,7 @@ for		(k = 0; k < totalBranchCount; k = k+1) {
 fprintf (csvFilePath, CLOSE_FILE);
 jsonFilePath = csvFilePath + ".json";
 taskTimerStop (4);
-_BSREL_json ["time"] = _BSREL_timers[4];
+(_BSREL_json ["timers"])["overall"] = _BSREL_timers[4];
 fprintf        (jsonFilePath, CLEAR_FILE, _BSREL_json);
 
 
@@ -951,9 +969,12 @@ lfunction matrix2json (mx) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-lfunction json_store_lf (json, name, ll, df, aicc, time) {
+lfunction json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_string) {
     (json["fits"])[name] = {"log-likelihood": ll,
                             "parameters": df,
                             "AIC-c" : aicc,
-                            "runtime" : time};
+                            "runtime" : time,
+                            "tree length" : tree_length,
+                            "tree string" : tree_string,
+                            "rate distributions" : {}};
 }
