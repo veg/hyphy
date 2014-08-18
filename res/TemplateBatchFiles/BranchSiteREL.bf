@@ -166,6 +166,11 @@ if (_reload_local_fit) {
 }
 taskTimerStop (0);
 
+current_parameter_count = localParams;
+current_log_L           = localLL;
+sample_size             = dsf.sites * dsf.species;
+current_IC             = getIC (current_log_L, current_parameter_count, sample_size);
+
 json_store_lf                (_BSREL_json, "MG94", localLL, localParams,current_IC, _BSREL_timers[0], +BranchLength (givenTree,-1), Format (givenTree, 1,1)); 
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
@@ -196,10 +201,6 @@ for (k = 0; k < totalBranchCount; k = k+1) {
 }
 
 omegaStats					 = GatherDescriptiveStats (pValueByBranch[-1][0]);
-current_parameter_count = localParams;
-current_log_L           = localLL;
-sample_size             = dsf.sites * dsf.species;
-current_IC             = getIC (current_log_L, current_parameter_count, sample_size);
 
 
 fprintf						 (stdout, "\nLog L = ", localLL, " with ", localParams, " degrees of freedom. IC = ", current_IC, "\n");
