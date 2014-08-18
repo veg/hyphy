@@ -464,9 +464,10 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         pValueByBranch[k][3] = node_omegas[rate_classes-1][1];
     }
     
+    totalTestedBranches += selectedBranches[k] > 0;
+
     if (node_omegas[rate_classes-1][0] > 1 && node_omegas[rate_classes-1][1] > 1e-6 && selectedBranches[k])
     {
-        totalTestedBranches += 1;
         fprintf (stdout, "...Testing for selection at this branch\n");
         _stashLF = saveLF ("three_LF");
         
