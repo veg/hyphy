@@ -466,8 +466,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     
     totalTestedBranches += selectedBranches[k] > 0;
 
-    if (node_omegas[rate_classes-1][0] > 1 && node_omegas[rate_classes-1][1] > 1e-6 && selectedBranches[k])
-    {
+    if (node_omegas[rate_classes-1][0] > 1 && node_omegas[rate_classes-1][1] > 1e-6 && selectedBranches[k] && bsrel_bls[bNames[k]] > 1e-8) {
         fprintf (stdout, "...Testing for selection at this branch\n");
         _stashLF = saveLF ("three_LF");
         
@@ -944,9 +943,12 @@ lfunction computeOnAGrid (grid_points, parameters, lfname) {
         total_grid_points = total_grid_points * grid_dimensions[k];
     }
     
+    best_val :> -1e100;
     best_val = -1e100;
     
     current_state = copyParametersToArray (parameters);
+
+
     LFCompute (^lfname,LF_START_COMPUTE);
     for (grid_point = 0; grid_point < total_grid_points; grid_point += 1) {
         index = grid_point;
@@ -956,8 +958,8 @@ lfunction computeOnAGrid (grid_points, parameters, lfname) {
         }
         copyArrayToParameters (current_state, parameters);
         LFCompute (^lfname, try_value);
+        
         if (try_value > best_val) {
-            //fprintf (stdout, try_value, "\n");
             best_state  = current_state;
             best_val = try_value;
         }
