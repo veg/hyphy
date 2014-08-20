@@ -69,7 +69,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class _Trie {
 
 private:
-  _hyListReference< _hyListNumeric<long> > linear_list;
 
 protected:
 
@@ -87,6 +86,7 @@ protected:
 
 
 public:
+  _hyListReference< _hyListNumeric<long> > linear_list;
 
   /**
    * Construct an empty trie over a given alphabet

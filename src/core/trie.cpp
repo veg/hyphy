@@ -40,18 +40,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "trie.h"
 #include "hy_string_buffer.h"
 #include "helperfunctions.h"
-#include "iostream"
 
 //______________________________________________________________________________
 _Trie::_Trie(_String* alph) {
-
   this->linear_list.Initialize();
-
   this->setAlphabet(alph, true);
   this->linear_list.AppendNewInstance(new _hyListNumeric<long>);
   this->payload.append(0L);
   this->parents.append(-1L);
-
 }
 
 //______________________________________________________________________________

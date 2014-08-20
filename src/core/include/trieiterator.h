@@ -43,8 +43,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "trie.h"
 
 /*_____________________________________________________________________________
-    This is a simple class for representing prefix tries with integer values
-    attached to each string key.
+  This is a simple class for representing prefix tries with integer values
+  attached to each string key.
 */
 
 //_____________________________________________________________________________
@@ -53,41 +53,41 @@ class _TrieIterator {
 public:
   _TrieIterator (const _Trie&);
   ~_TrieIterator (void) {}
+
+  _String* First(void);
+  _String* Last(void);
+  _String* Next(void);
+  _String* Previous(void);
   
-  _String* First (void);
-  _String* Last  (void);
-  _String* Next  (void);
-  _String* Previous  (void);
-  
-  long     CurrentIndex (void) const { return last_retrieved_index; }
+  //long CurrentIndex(void) const { return last_retrieved_index; }
   
 private:
   
-  void    Init     (bool = false);
-  long    MoveDown (bool move_left = true);
-  /**
+  void Init(bool = false);
+  long MoveDown(bool move_left = true);
+
+  /*
    * Starting at a current (incomplete) traversal position, move down to the nearest tip,
    * taking either left-most or right-most branches every time
    * @param move_left -- take left-most (false) or right-most (true) branches
    * @return the index of the terminal leaf found or HY_NOT_FOUND if already at a tip,
    or if the initial traversal position is invalid
   */
-  long    RollUp   (bool move_left = false);
-  /**
+  long RollUp(bool move_left = false);
+
+   /*
    * Starting at a current traversal position (tip), move up until there is,
    * taking either left-most or right-most branches every time
    * @param move_left -- move left whenever possible, otherwise more right
    * @return the index of the parent where the move was made,
    or HY_NOT_FOUND if the move could not be made
    */
-
-  _String *BuildPath     (void);
+  _StringBuffer* BuildPath(void);
   
-  long    last_retrieved_index;
-  _SimpleList traversal_history;
-  _String alphabet;
-  
-  const _Trie * data_source;
+  long last_retrieved_index;
+  _hyListNumeric<long> traversal_history;
+  _hyList<char> alphabet;
+  const _Trie* data_source;
 
 };
 
