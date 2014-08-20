@@ -219,8 +219,7 @@ function busted.checkForPS (model_parameters) {
 
 //------------------------------------------------------------------------------ 
 function busted.constrainTheModel (model_parameters) {
-  ExecuteCommands (((model_parameters["FG"])["omegas"])[2] + "=1");           
-  ExecuteCommands (((model_parameters["FG"])["omegas"])[2] + ":<1");           
+  ExecuteCommands (((model_parameters["FG"])["omegas"])[2] + ":=1");           
 }
 
 //------------------------------------------------------------------------------ 
@@ -333,6 +332,7 @@ function busted.io.define_bsrel_models (foreground_id, background_id, frequencie
     ((model_parameters["BG"])["omegas"])["busted._aux.define_parameter"][""];
     
     Eval (((model_parameters["FG"])["omegas"])[2] + ":<1e26");
+    Eval (((model_parameters["FG"])["omegas"])[2] + ":>1");
     Eval (((model_parameters["BG"])["omegas"])[2] + ":<1e26");
 
     busted.init_values = {"0" : 0.8, "1" : 0.75};
