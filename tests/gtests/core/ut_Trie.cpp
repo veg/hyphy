@@ -90,6 +90,7 @@ TEST_F(_TrieTest, ConstructorsTest)
   long response = the_test.Insert("@handle#rocks", 1L);
   EXPECT_EQ(HY_TRIE_INVALID_LETTER, response);
 
+  delete test_s;
 
 }
 
@@ -155,9 +156,6 @@ TEST_F(_TrieTest, MethodTests)
   _String str(*random_str_list.Element(random_index));
   EXPECT_LT(0, the_trie.Find(str));
   EXPECT_GT(random_long_list.Sum(), the_trie.Find(str));
-  char to_find = str[genrand_int32() % str.Length()];
-  EXPECT_LT(0, the_trie.Find(to_find)) << "The character " << to_find << " was not found despite " << str << " being inserted";
-  EXPECT_GT(random_long_list.Sum(), the_trie.Find(to_find));
 
 
 
@@ -176,10 +174,9 @@ TEST_F(_TrieTest, MethodTests)
   EXPECT_LT(random_long_list.Sum(), second_trie.countitems() - 1);
   EXPECT_LT(0, second_trie.Find(str));
   EXPECT_GT(random_long_list.Sum(), second_trie.Find(str));
-  to_find = str[genrand_int32() % str.Length()];
-  EXPECT_LT(0, second_trie.Find(to_find)) << "The character " << to_find << " was not found despite " << str << " being inserted";
-  EXPECT_GT(random_long_list.Sum(), second_trie.Find(genrand_int32() % str.Length()));
 
+  delete alph;
+  random_str_list.Clear();
 
 }
 
