@@ -51,7 +51,8 @@ LoadFunctionLibrary("BranchSiteTemplate");
 
 _BUSTED_json    = {"fits" : {},
                   "timers" : {},
-                  "profiles" : {}
+                  "profiles" : {},
+                  "evidence ratios": {}
                   };
                   
 
@@ -123,8 +124,7 @@ busted.json_store_lf                (_BUSTED_json, "Unconstrained model",
 
 
 busted.profiles = {};
-busted.profiles ["HA"] = busted.computeSiteLikelihoods ("busted.LF");
-(_BUSTED_json ["profiles"])["unconstrained"] = busted.matrix2json (busted.profiles ["HA"]);
+(_BUSTED_json ["profiles"])["unconstrained"] = busted.computeSiteLikelihoods ("busted.LF");
 
 
 if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8) {
@@ -135,16 +135,16 @@ if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8
 
     io.reportProgressMessage ("BUSTED", "Fitting the branch-site model that disallows omega > 1 among foreground branches");
     busted.constrainTheModel (busted.model_definitions);
+    (_BUSTED_json ["profiles"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
     Optimize (busted.MLE_H0, busted.LF);
+    (_BUSTED_json ["profiles"])["optimized null"] = busted.computeSiteLikelihoods ("busted.LF");;
     io.reportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_H0[1][0]);
     busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);
     
     _BUSTED_json ["test results"] = busted.LRT;
     
     io.reportProgressMessage ("BUSTED", "Likelihood ratio test for episodic positive selection, p = " + busted.LRT["p"]);
-    busted.profiles ["H0"] = busted.computeSiteLikelihoods ("busted.LF");
-    (_BUSTED_json ["profiles"])["constrained"] = busted.matrix2json (busted.profiles ["H0"]);
-    busted.taskTimerStop (1);
+     busted.taskTimerStop (1);
     
     busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
     busted.tavl         = busted.tree ^ 0;
@@ -163,7 +163,8 @@ if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8
                                         _BUSTED_json["background"]
                                        );
                                        
-    (_BUSTED_json ["profiles"])["evidence ratios"] = busted.evidenceRatios ( busted.profiles ["HA"],  busted.profiles ["H0"]);
+    (_BUSTED_json ["evidence ratios"])["constrained"] = busted.evidenceRatios ( (_BUSTED_json ["profiles"])["unconstrained"],  (_BUSTED_json ["profiles"])["constrained"]);
+    (_BUSTED_json ["evidence ratios"])["optimized null"] = busted.evidenceRatios ( (_BUSTED_json ["profiles"])["unconstrained"],  (_BUSTED_json ["profiles"])["optimized null"]);
 }
 
 busted.taskTimerStop (2);
@@ -172,8 +173,9 @@ busted.taskTimerStop (2);
 (_BUSTED_json ["timers"])["unconstrained"] = _BUSTED_timers[0];
 (_BUSTED_json ["timers"])["constrained"] = _BUSTED_timers[1];
 
+USE_JSON_FOR_MATRIX = 1;
 fprintf (codon_data_info["json"], CLEAR_FILE, _BUSTED_json);
-
+USE_JSON_FOR_MATRIX = 0;
 
 //------------------------------------------------------------------------------ 
 // HELPER FUNCTIONS FROM HTHIS POINT ON
@@ -451,21 +453,7 @@ function busted.getIC (logl,params,samples) {
     return -2*logl + 2*samples/(samples-params-1)*params;
 }
 
-//------------------------------------------------------------------------------------------------------------------------
 
-lfunction busted.matrix2json (mx) {
-    result_str = ""; result_str * 128;
-    result_str * "[";
-    for (r = 0; r < Rows (mx); r+=1) {
-        if (r) {
-            result_str * ",";
-        }
-        result_str * ("[" + Join(",",mx[r][-1]) + "]");
-    }
-    result_str * "]";
-    result_str * 0;
-    return result_str;
-}
 
 //------------------------------------------------------------------------------------------------------------------------
 
