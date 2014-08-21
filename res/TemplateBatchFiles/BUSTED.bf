@@ -423,7 +423,7 @@ lfunction busted.io.selectBranchesToTest (tree_definition) {
             }       
             return selectedBranches;     
         }
-        selectedBranches [whichBranchesToTest [k] - 3 - Abs (extra_models)] = 1;
+        selectedBranches [(tAVL[whichBranchesToTest [k] - 3 - Abs (extra_models)])["Name"]] = 1;
     }
     
     return selectedBranches;
