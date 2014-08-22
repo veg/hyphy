@@ -51,7 +51,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */ 
 
-#define HY_LIST_ALLOCATION_CHUNK 8UL
+#define HY_LIST_ALLOCATION_CHUNK 16UL
 #define HY_LIST_INSERT_AT_END    (-1L)
 
 
@@ -320,9 +320,10 @@ public:
   /**
   * Retrive the last value and shorten the list by 1
   * Example: _hyList(1,3,5,7).Pop() = 7
+  * @param compact_list if TRUE, then clean up unused memory
   * @return Return last value from the list
   */
-  virtual PAYLOAD Pop();
+  virtual PAYLOAD Pop(bool compact_list = false);
 
   void Subtract(_hyList <PAYLOAD> &, _hyList <PAYLOAD> &);
 

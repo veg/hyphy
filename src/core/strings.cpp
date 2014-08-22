@@ -400,8 +400,8 @@ char _String::Compare(_String const * s) const {
   return s_length < s->s_length ? -1 : 1;
 }
 
-bool _String::Equal(const _String *s) const {
-  return Compare (s) == 0;
+bool _String::Equal(const _String& s) const {
+  return Compare (&s) == 0;
 }
 
 bool _String::Equal(const char c) const {

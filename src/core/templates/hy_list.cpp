@@ -312,16 +312,11 @@ void _hyList<PAYLOAD>::CompactList(void)
 {
   bool do_resize = false;
   
-  if (laLength > HY_LIST_ALLOCATION_CHUNK * 5UL) {
-    if (laLength - lLength > laLength / 5UL) {
-      laLength = (laLength * 4UL)/5UL;
+  long buffer_size = (laLength > (HY_LIST_ALLOCATION_CHUNK << 3)) ? laLength >> 3 : HY_LIST_ALLOCATION_CHUNK;
+  
+  if (laLength - lLength > buffer_size) {
+      laLength -= ((laLength - lLength) / buffer_size) * buffer_size;
       do_resize = true;
-    }
-  } else {
-    if (laLength - lLength > HY_LIST_ALLOCATION_CHUNK) {
-      laLength -= ((laLength - lLength) / HY_LIST_ALLOCATION_CHUNK) * HY_LIST_ALLOCATION_CHUNK;
-      do_resize = true;
-    }
   }
   
   if (do_resize) {
@@ -384,7 +379,7 @@ template<typename PAYLOAD>
 void _hyList<PAYLOAD>::ResizeList(void)
 {
   if (lLength > laLength) {
-    unsigned long incBy = (HY_LIST_ALLOCATION_CHUNK * 5UL > lLength) ? HY_LIST_ALLOCATION_CHUNK : lLength / 5UL;
+    unsigned long incBy = ((HY_LIST_ALLOCATION_CHUNK << 3L) > lLength) ? HY_LIST_ALLOCATION_CHUNK : (laLength >> 3L);
 
     laLength += incBy;
 
@@ -708,11 +703,14 @@ void _hyList<PAYLOAD>::PermuteWithReplacement(const unsigned long blockLength)
 }
 
 template<typename PAYLOAD>
-PAYLOAD _hyList<PAYLOAD>::Pop(void)
+PAYLOAD _hyList<PAYLOAD>::Pop(bool compact)
 {
   if (lLength > 0UL) {
-    lLength--;
-    return lData[lLength];
+    if (compact) {
+      PAYLOAD ret_value = lData[--lLength];
+      CompactList();
+    }
+    return lData[--lLength];
   }
 
   warnError ("_hyList::Pop called on an empty list");

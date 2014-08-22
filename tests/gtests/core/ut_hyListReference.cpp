@@ -57,7 +57,7 @@ class _testPayload: public BaseObj {
   _testPayload (const _testPayload& o) { data = o.data; }
   virtual BaseObj *makeDynamic(void) const { return new _testPayload (*this); }
   virtual void Duplicate(BaseObj const * ref) { data = ((_testPayload*)ref)->data; }
-  virtual bool Equal (const _testPayload * o) {return data == o->data;}
+  virtual bool Equal (_testPayload const& o) {return data == o.data;}
 
   long data;
 };
@@ -137,7 +137,7 @@ TYPED_TEST_P (_hyListReferenceTest, ConstuctorTests) {
     ASSERT_EQ (5UL, full_stack_copy.countitems()) << "Stack copy list has wrong length";
     ASSERT_EQ (3UL, partial_stack_copy.countitems()) << "Partial stack copy list has wrong length";
     
-    EXPECT_TRUE (single_element_list (0)->Equal (full_stack_copy(3)));   
+    EXPECT_TRUE (single_element_list (0)->Equal (*full_stack_copy(3)));
     for (unsigned long i = 0UL; i < multiple_element_list.countitems(); i++) {
       EXPECT_EQ (full_stack_copy (i), full_stack_copy[i]);
     }

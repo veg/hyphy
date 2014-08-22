@@ -143,7 +143,87 @@ public:
   
 };
 
-#include "hy_avllist.cpp"
+//#include "hy_avllist.cpp"
 
+//*************** CONSTRUCTORS ***************//
+
+
+template <typename KEYTYPE>
+_AVLList<KEYTYPE>::_AVLList(void):_AVLListBase<KEYTYPE> () {
+  this->Initialize();
+}
+
+template <typename KEYTYPE>
+_AVLList<KEYTYPE>::_AVLList(_AVLList<KEYTYPE> const & source):_AVLListBase<KEYTYPE> (source) {
+  this->Clone (source);
+}
+
+template <typename KEYTYPE>
+_AVLList<KEYTYPE>::_AVLList(KEYTYPE const & item) {
+  this->Initialize();
+  this->Insert (item);
+}
+
+template <typename KEYTYPE>
+_AVLList<KEYTYPE>::_AVLList(_hyList<KEYTYPE> const & items) {
+  this->Initialize();
+  for (unsigned long k = 0UL; k < items.Length(); k+=1) {
+    this->Insert (items.AtIndex (k));
+  }
+}
+
+
+//*************** INITIALIZER and CLONER ***************//
+template <typename KEYTYPE>
+void _AVLList<KEYTYPE>::Clone(_AVLList<KEYTYPE> const & source) {
+  this->_AVLListBase<KEYTYPE>::Clone (source);
+  this->keys.Clone (&source.keys);
+}
+
+template <typename KEYTYPE>
+void _AVLList<KEYTYPE>::Initialize(bool) {
+}
+
+
+//*************** DESTRUCTOR ***************//
+
+template <typename KEYTYPE>
+_AVLList<KEYTYPE>::~_AVLList(void) {
+}
+
+//*************** REQUIRED FUNCTION DEFINITIONS ***************//
+
+template <typename KEYTYPE>
+long _AVLList<KEYTYPE>::_CompareIndexToValue(long node, KEYTYPE const &key ) const {
+  return -this->keys.CompareToValue (node, key);
+}
+
+template <typename KEYTYPE>
+long _AVLList<KEYTYPE>::_StoreKey(KEYTYPE const &key, long index) {
+  index = this->_AVLListBase <KEYTYPE>::_StoreKey (key, index);
+  this->keys.append_or_insert (key, index);
+  return index;
+}
+
+template <typename KEYTYPE>
+void _AVLList<KEYTYPE>::_RemoveKey(long index) {
+  this->_AVLListBase <KEYTYPE>::_RemoveKey (index);
+  //this->keys.Delete (index);
+}
+
+template <typename KEYTYPE>
+KEYTYPE const * _AVLList<KEYTYPE>::_AtIndex(unsigned long index) const {
+  return &this->keys.AtIndex (index);
+}
+
+template <typename KEYTYPE>
+BaseObj* _AVLList<KEYTYPE>::makeDynamic(void) const {
+  return new _AVLList <KEYTYPE> (*this);
+}
+
+template <typename KEYTYPE>
+void _AVLList<KEYTYPE>::Duplicate (BaseObj const * ref) {
+  this->Clone (*dynamic_cast<_AVLList<KEYTYPE> const *> (ref));
+}
 
 #endif

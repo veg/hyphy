@@ -58,7 +58,7 @@ class _testPayload: public BaseObj {
   virtual BaseObj *makeDynamic(void) const { return new _testPayload (*this); }
   virtual void Duplicate(BaseObj const * ref) { data = ((_testPayload*)ref)->data; }
   virtual long Compare (const _testPayload * o) {return data > o->data ? 1 : (data < o->data ? -1 : 0);}
-  virtual bool Equal (const _testPayload * o) {return data == o->data;}
+  virtual bool Equal (_testPayload const & o) {return data == o.data;}
 
   long data;
 };
@@ -138,7 +138,7 @@ TYPED_TEST_P (_hyListReferenceOrderableTest, ConstructorTests) {
     ASSERT_EQ (5UL, full_stack_copy.countitems()) << "Stack copy list has wrong length";
     ASSERT_EQ (3UL, partial_stack_copy.countitems()) << "Partial stack copy list has wrong length";
     
-    EXPECT_TRUE (single_element_list (0)->Equal (full_stack_copy(3)));   
+    EXPECT_TRUE (single_element_list (0)->Equal (*full_stack_copy(3)));
     for (unsigned long i = 0UL; i < multiple_element_list.countitems(); i++) {
       EXPECT_EQ (full_stack_copy (i), full_stack_copy[i]);
     }
@@ -206,14 +206,14 @@ TYPED_TEST_P (_hyListReferenceOrderableTest, SortingTests) {
     
     sort_me.BubbleSort (&bubble_sort_indexer);
     for (unsigned long i = 0UL; i < sort_me.countitems(); i++) {
-      EXPECT_TRUE (sorted (i) -> Equal (sort_me[i])) << "Bubble sort failed at element " << (i+1);
-      EXPECT_TRUE (unsorted (bubble_sort_indexer.AtIndex(i)) ->Equal (sort_me.AtIndex (i))) << "Sorted indices for bubble sort are incorrect at position " << i << " mapping to index " << bubble_sort_indexer.AtIndex(i);
+      EXPECT_TRUE (sorted (i) -> Equal (*sort_me[i])) << "Bubble sort failed at element " << (i+1);
+      EXPECT_TRUE (unsorted (bubble_sort_indexer.AtIndex(i)) ->Equal (*sort_me.AtIndex (i))) << "Sorted indices for bubble sort are incorrect at position " << i << " mapping to index " << bubble_sort_indexer.AtIndex(i);
     }
     sort_me.Clone (&unsorted);
     sort_me.QuickSort (0, sort_me.countitems(), &quick_sort_indexer);
     for (unsigned long i = 0UL; i < sort_me.countitems(); i++) {
-      EXPECT_TRUE (sorted (i) ->Equal (sort_me[i])) << "Quick sort failed at element " << (i+1);
-      EXPECT_TRUE (unsorted (quick_sort_indexer.AtIndex(i)) -> Equal (sort_me.AtIndex (i))) << "Sorted indices for quick sort are incorrect at position " << i << " mapping to index " << quick_sort_indexer.AtIndex(i);
+      EXPECT_TRUE (sorted (i) ->Equal (*sort_me[i])) << "Quick sort failed at element " << (i+1);
+      EXPECT_TRUE (unsorted (quick_sort_indexer.AtIndex(i)) -> Equal (*sort_me.AtIndex (i))) << "Sorted indices for quick sort are incorrect at position " << i << " mapping to index " << quick_sort_indexer.AtIndex(i);
     }
     
     _hyListOrderable <long> index_list;
@@ -231,7 +231,7 @@ TYPED_TEST_P (_hyListReferenceOrderableTest, SortingTests) {
     ASSERT_EQ(copy_direct, direct_large) << "Sorting an already sorted list failed";
     reverse_large.QuickSort(0, reverse_large.countitems()-1, &index_list);
     for (unsigned long i = 0UL; i < copy_reverse.countitems(); i++) {
-      EXPECT_TRUE (direct_large.AtIndex(i)->Equal (reverse_large.AtIndex(i))) << "Sort reverse list in ascending order at element " << (i+1);
+      EXPECT_TRUE (direct_large.AtIndex(i)->Equal (*reverse_large.AtIndex(i))) << "Sort reverse list in ascending order at element " << (i+1);
     }
     reverse_large.Sort(false, &index_list);
     ASSERT_EQ (reverse_large, copy_reverse) << "Sort reverse list in descending order failed";

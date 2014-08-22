@@ -155,7 +155,7 @@ protected:
    * Must be implemented by a derived class
    * @param node The index of the item to compare
    * @param key The value to compare the index to
-   * @return -1 if keys[node] < key , 0 if keys[node] == key, or 1 if keys[node] > key
+   * @return -1 if keys[node] > key , 0 if keys[node] == key, or 1 if keys[node] < key
    */
   
   virtual long _CompareIndexToValue (long node, KEYTYPE const & key) const = 0;
@@ -290,10 +290,11 @@ public:
   /**
    * Traverse the tree and return key indices in sequences
    * @param history The traversal history up to now (empty history returns initializes the traversal)
+   * @param reverse go in reverse (largest to smallest)
    * @return the >=0 index of the next key in sequence this tree or HY_NOT_FOUND if not found
    */
   
-  virtual long Traverser(_AVLListTraversalHistory &) const;
+  virtual long Traverser(_AVLListTraversalHistory &, bool reverse = false) const;
   
   // insertion and deletion functions
   
@@ -331,8 +332,13 @@ public:
    * @return are the lists equal
    */
   virtual bool operator == (_AVLListBase <KEYTYPE> const & rhs) const;
-  // virtual PAYLOAD* operator () (long index) = 0;
 
+  /**
+   * Compare two lists for inequality (i.e. do they represent the same set of keys)
+   * @param rhs The _AVLList to compare this one to
+   * @return are the lists UNequal
+   */
+  virtual bool operator != (_AVLListBase <KEYTYPE> const & rhs) const;
   
   /**
    * Return the key at a given index
@@ -370,8 +376,11 @@ public:
    
    BaseRef Retrieve(long);
    
-   void Delete(BaseRef, bool = false);
-   void ConsistencyCheck(void);*/
+   void Delete(BaseRef, bool = false); */
+  
+   const char* ConsistencyCheck(void) const;
+   void EchoList        (void) const;
+   void _EchoListHelper  (long, long) const;
   
 };
 
@@ -501,7 +510,7 @@ long _AVLListBase<KEYTYPE>::_MoveInTree (long node, long direction) const{
 
 template <typename KEYTYPE>
 KEYTYPE const* _AVLListBase<KEYTYPE>::AtIndex (unsigned long index) const{
-  if (index < this->Length()) {
+  if (index < this->avl_structure.Length()) {
     if (empty_slots.Length()) {
       if (empty_slots.Find (index) != HY_NOT_FOUND) {
         return NULL;
@@ -542,7 +551,7 @@ long _AVLListBase<KEYTYPE>::First(_AVLListTraversalHistory * history) const {
 //______________________________________________________________________________
 template <typename KEYTYPE>
 long _AVLListBase<KEYTYPE>::Last(_AVLListTraversalHistory * history) const {
-  return this->_FindExtremeValue (this->root, HY_AVL_MOVE_RIGHT, history);
+  return this->_DescendToTerminal (this->root, HY_AVL_MOVE_RIGHT, history);
 }
 
 //______________________________________________________________________________
@@ -561,8 +570,8 @@ long _AVLListBase<KEYTYPE>::Next(_AVLListTraversalHistory& history) const {
         if (try_node == current_node) {
           current_node = parent_node;
         } else {
-          history.push (try_node);
-          return try_node;
+          history.push (parent_node);
+          return parent_node;
         }
       }
     }
@@ -579,7 +588,7 @@ long _AVLListBase<KEYTYPE>::Prev(_AVLListTraversalHistory& history) const {
     long current_node = history.pop(),
     try_node = this->_MoveInTree (current_node, HY_AVL_MOVE_LEFT);
     if (try_node != HY_AVL_LEAF) {
-      return this->_DescentToTerminal (try_node, HY_AVL_MOVE_RIGHT, &history);
+      return this->_DescendToTerminal (try_node, HY_AVL_MOVE_RIGHT, &history);
     } else {
       while (history.Length()) {
         long parent_node = history.pop();
@@ -587,8 +596,8 @@ long _AVLListBase<KEYTYPE>::Prev(_AVLListTraversalHistory& history) const {
         if (try_node == current_node) {
           current_node = parent_node;
         } else {
-          history.push (try_node);
-          return try_node;
+          history.push (parent_node);
+          return parent_node;
         }
       }
     }
@@ -599,7 +608,16 @@ long _AVLListBase<KEYTYPE>::Prev(_AVLListTraversalHistory& history) const {
 
 //______________________________________________________________________________
 template <typename KEYTYPE>
-long _AVLListBase<KEYTYPE>::Traverser(_AVLListTraversalHistory &history) const {
+long _AVLListBase<KEYTYPE>::Traverser(_AVLListTraversalHistory &history, bool reverse) const {
+  if (reverse) {
+    if (history.Length()) {
+      return this->Prev (history);
+    } else {
+      return this->Last (&history);
+    }
+    return HY_NOT_FOUND;
+    
+  }
   if (history.Length()) {
     return this->Next (history);
   } else {
@@ -618,20 +636,27 @@ bool _AVLListBase<KEYTYPE>::operator == (_AVLListBase <KEYTYPE> const& rhs) cons
     _AVLListTraversalHistory historyLHS,
                              historyRHS;
     
-    long indexLHS = Next (historyLHS),
-         indexRHS = rhs.Next (historyRHS);
+    long indexLHS = Traverser (historyLHS),
+         indexRHS = rhs.Traverser (historyRHS);
     
     while (indexLHS != HY_NOT_FOUND && indexRHS != HY_NOT_FOUND) {
-      if (this->_CompareIndexToValue (indexLHS, *rhs.AtIndex (indexRHS))) {
+      
+      if (this->_CompareIndexToValue (indexLHS, *rhs.AtIndex (indexRHS)) != 0L) {
         return false;
       }
       indexLHS = Next (historyLHS);
-      indexRHS = Next (historyRHS);
+      indexRHS = rhs.Next (historyRHS);
     }
     
     return (indexLHS == HY_NOT_FOUND && indexRHS == HY_NOT_FOUND);
   }
   return false;
+}
+
+//______________________________________________________________________________
+template <typename KEYTYPE>
+bool _AVLListBase<KEYTYPE>::operator != (_AVLListBase <KEYTYPE> const& rhs) const {
+  return ! (*this == rhs);
 }
 
 //*************** INSERTION AND DELETION FUNCTIONS ***************//
@@ -641,7 +666,7 @@ template <typename KEYTYPE>
 long _AVLListBase<KEYTYPE>::_StoreKey   (const KEYTYPE&, long index) {
   if (index == HY_LIST_INSERT_AT_END) {
     if (empty_slots.Length()) {
-      index = empty_slots.Pop();
+      index = empty_slots.Pop(true);
     } else {
       index = avl_structure.Length();
       avl_structure.append (_AVLListHelper ());
@@ -660,6 +685,7 @@ void _AVLListBase<KEYTYPE>::_RemoveKey   (long index) {
   empty_slots.append (index);
 }
 
+
 //______________________________________________________________________________
 template <typename KEYTYPE>
 long _AVLListBase<KEYTYPE>::Insert(KEYTYPE const& key) {
@@ -676,19 +702,19 @@ long _AVLListBase<KEYTYPE>::Insert(KEYTYPE const& key) {
     w;
     
     //bool go_right = false;
-    int move_direction = HY_AVL_MOVE_LEFT;
+    long move_direction = HY_AVL_MOVE_LEFT;
     
     for (q = z, p = y; p != HY_AVL_LEAF;
          q = p, p = this->_MoveInTree (p, move_direction)) {
       
       //long comp = dataList->Compare(b, p);
-      long move_direction = this->_CompareIndexToValue (p, key);
+      move_direction = this->_CompareIndexToValue (p, key);
       
       if (move_direction == 0L) {
         return -p - 1L;
       }
       
-      if (this->avl_structure[p].balance_factor != 0L) {
+      if (this->BalanceFactor (p) != 0L) {
         z = q;
         y = p;
         directions.Clear();
@@ -713,7 +739,7 @@ long _AVLListBase<KEYTYPE>::Insert(KEYTYPE const& key) {
     
     for (long k = 0L; p != n;
          p =  this->_MoveInTree (p, directions.AtIndex(k)), k++) {
-      this->BalanceFactor (k) += directions.AtIndex(k) == HY_AVL_MOVE_RIGHT ? 1L : -1L;
+      this->BalanceFactor (p) += (directions.AtIndex(k) == HY_AVL_MOVE_RIGHT ? 1L : -1L);
     }
     
     if ( this->BalanceFactor (y)  == -2L) {
@@ -765,7 +791,7 @@ long _AVLListBase<KEYTYPE>::Insert(KEYTYPE const& key) {
             break;
           case 0L:
             this->BalanceFactor(x) = 0L;
-            this->avl_structure.AtIndex(y).balance_factor = 0L;
+            this->BalanceFactor(y) = 0L;
             break;
           default:
             this->BalanceFactor(x) = 1L;
@@ -800,23 +826,19 @@ long _AVLListBase<KEYTYPE>::Insert(KEYTYPE const& key) {
 }
 
 
-
 //______________________________________________________________________________
 template <typename KEYTYPE>
 void _AVLListBase<KEYTYPE>::_DeleteHelper (const long index, const long new_node, _SimpleList const &directions, _SimpleList const& nodes, bool update_root) {
   if (index > 1L) {
-    directions.AtIndex(index-1L) > 0L ?
-    this->RightChild (nodes.AtIndex (index-1L)):
-    this->LeftChild (nodes.AtIndex (index-1L)) = new_node;
+    (directions.AtIndex(index-1L) > 0L ?
+      this->RightChild (nodes.AtIndex (index-1L)):
+      this->LeftChild (nodes.AtIndex (index-1L))) = new_node;
   } else {
     if (update_root) {
       this->root = new_node;
     }
   }
 }
-
-
-
 //______________________________________________________________________________
 
 template <typename KEYTYPE>
@@ -825,16 +847,16 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
   if (this->Length() > 0UL) { // something to do
     
     _SimpleList directions,
-    nodes;
+                nodes;
     
     long p = this->root,
-    cmp = this->_CompareIndexToValue(p, key),
-    k = 0L;
+         cmp = this->_CompareIndexToValue(p, key),
+         k = 1L;
     
     nodes.append (HY_AVL_LEAF);
     directions.append (HY_AVL_MOVE_RIGHT);
     
-    for (k=1L; cmp != 0L; cmp = this->_CompareIndexToValue (p, key), k++) {
+    for (; cmp != 0L; cmp = this->_CompareIndexToValue (p, key), k++) {
       
       nodes.append (p);
       directions.append (cmp);
@@ -845,10 +867,6 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
       }
     }
     
-    if (k == 1L) {
-      nodes.append (HY_AVL_LEAF);
-    }
-    
     _RemoveKey(p);
     
     long r = this->RightChild (p); //rightChild.lData[p];
@@ -856,7 +874,7 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
     if (r == HY_AVL_LEAF) {
       this->_DeleteHelper (k, this->LeftChild(p), directions, nodes, false);
       if (p == this->root) {
-        this->root = this->LeftChild (root); //leftChild.lData[root];
+        this->root = this->LeftChild (this->root); //leftChild.lData[root];
       }
     } else {
       if (this->LeftChild (r)  == HY_AVL_LEAF) {
@@ -868,14 +886,16 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
         nodes.append (r);
         k++;
       } else {
+        
         long s;
         int j = k++;
+        
         nodes.append (0L);
-        directions.append (0L);
+        directions.append (HY_AVL_MOVE_RIGHT);
         
         
         for (;;) {
-          directions.append (0L);
+          directions.append (HY_AVL_MOVE_LEFT);
           nodes.append (r);
           k++;
           s = this->LeftChild (r); //this->avl_structure.AtIndex(r).left_child;
@@ -884,13 +904,14 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
           }
           r = s;
         }
+ 
         this->LeftChild (s) = this->LeftChild (p);
         LEFT_SHIFT (this->LeftChild (r), this->RightChild (s), this->RightChild (p));
         this->BalanceFactor (s) = this->BalanceFactor (p);
         this->_DeleteHelper (j, s, directions, nodes, false);
         
         nodes.SetItem(j,s);
-        directions.SetItem(j, HY_AVL_MOVE_RIGHT);
+        
         if (p == this->root) {
           this->root = s;
         }
@@ -899,8 +920,8 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
     
     while (--k > 0L) {
       long y = nodes.AtIndex(k);
-      if (directions.AtIndex(k) == 0L) {
-        switch ( ++ this->BalanceFactor (y) ) {
+      if (directions.AtIndex(k) == HY_AVL_MOVE_LEFT) {
+        switch ( (++ this->BalanceFactor (y)) ) {
           case 1L: {
             k = 0L; // break out of the main loop
             break;
@@ -919,7 +940,7 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
                   break;
                 case 0L:
                   this->BalanceFactor (x) = 0L;
-                  this->BalanceFactor (y) = -1L;
+                  this->BalanceFactor (y) = 0L;
                   break;
                 default:
                   this->BalanceFactor (x) = 1L;
@@ -945,7 +966,7 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
           }
         } // end switch
       } else {
-        switch ( -- this->BalanceFactor (y) ) {
+        switch ( (-- this->BalanceFactor (y)) ) {
           case -1L : {
             k = 0L;
             break;
@@ -996,6 +1017,94 @@ long _AVLListBase<KEYTYPE>::Delete(const KEYTYPE  &key) {
   }
   return HY_NOT_FOUND;
   
+}
+
+
+// DEBUG FUNCTIONS
+
+//______________________________________________________________
+
+template <typename KEYTYPE>
+void _AVLListBase<KEYTYPE>::EchoList(void) const {
+  if (root == HY_AVL_LEAF) {
+    printf ("Empty list\n");
+  } else {
+    _EchoListHelper (root, 0);
+  }
+}
+
+
+template <typename KEYTYPE>
+void _AVLListBase<KEYTYPE>::_EchoListHelper(long node, long offset) const {
+  if (node != HY_AVL_LEAF) {
+    for (long i = 0; i < offset; i++) {
+      printf ("-");
+    }
+    printf ("[%ld]=>%ld (balance = %ld)\n", node, (long)*AtIndex (node), BalanceFactor (node));
+    _EchoListHelper (LeftChild(node), offset+1);
+    _EchoListHelper (RightChild(node), offset+1);
+  }
+}
+  
+  
+
+#include <math.h>
+
+//______________________________________________________________
+
+template <typename KEYTYPE>
+const char* _AVLListBase<KEYTYPE>::ConsistencyCheck(void) const {
+  _SimpleList nodeStack ;
+  
+  long        curNode  = this->root,
+  lastNode = HY_AVL_LEAF;
+  
+  while (1) {
+    
+    while (curNode != HY_AVL_LEAF) {
+      
+      nodeStack << curNode;
+      
+      curNode = this->_MoveInTree (curNode, HY_AVL_MOVE_LEFT);
+      if (curNode >= (long)this->avl_structure.Length()) {
+        return "Index out of bounds";
+      }
+      
+    }
+    
+    if (long h = nodeStack.Length()) {
+      if (h>3*log (1.+this->Length())) {
+        return "Unbalanced tree";
+      }
+      
+      h--;
+      
+      curNode = nodeStack.AtIndex (h);
+      
+      if (lastNode != HY_AVL_LEAF && curNode != HY_AVL_LEAF) {
+        
+        if (_CompareIndexToValue (lastNode, *this->AtIndex(curNode)) <= 0) {
+          return "Key comparisons contradtict tree structure";
+        }
+      }
+      if (this->BalanceFactor (curNode) < -1 || this->BalanceFactor (curNode) > 1) {
+        return "Balance factor is out of bounds";
+      }
+      
+      lastNode = curNode;
+      
+      curNode = this->_MoveInTree (curNode, HY_AVL_MOVE_RIGHT);
+      if (curNode >= (long)this->avl_structure.Length()) {
+        return "Index out of bounds";
+      }
+      
+      nodeStack.Pop();
+    } else {
+      break;
+    }
+  }
+  
+  return NULL;
 }
 
 

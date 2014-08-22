@@ -121,13 +121,13 @@ TEST_F (_hyStringTest, StringConstuctorAndConverstionTests) {
   
   _String * test_string = new _String (literal_string);
   
-  EXPECT_TRUE (literal_string.Equal(test_string)) << "Full stack copy failed";
+  EXPECT_TRUE (literal_string.Equal(*test_string)) << "Full stack copy failed";
   delete test_string;
   test_string = new _String (literal_string, 5, 10);
   EXPECT_STREQ ("uick b", (const char*)*test_string) << "Partial stack copy (or char*) failed";
   delete test_string;
   test_string = new _String (literal_string, -1, 256);
-  EXPECT_TRUE (literal_string.Equal(test_string)) << "Stack copy with ranges implying a full copy failed";
+  EXPECT_TRUE (literal_string.Equal(*test_string)) << "Stack copy with ranges implying a full copy failed";
   delete test_string;
   test_string = new _String (blank, 2, 5);
   EXPECT_TRUE (test_string->Length () == 0UL && test_string->getStr() != NULL) << "Stack copy constructor from an empty string must return an empty string regardless of the range";
@@ -140,22 +140,22 @@ TEST_F (_hyStringTest, StringConstuctorAndConverstionTests) {
   fprintf (temp_file, "%s", literal_string.getStr());
   fflush(temp_file);
   test_string = new _String (temp_file);
-  EXPECT_TRUE (literal_string.Equal(test_string)) << "String constructor from file did not work correctly";
+  EXPECT_TRUE (literal_string.Equal(*test_string)) << "String constructor from file did not work correctly";
   test_string->AddAReference();
   _String test_copy (test_string);
   EXPECT_TRUE (test_string->SingleReference()) << "Incorrect reference count handling for CopyDynamicString";
   test_string->DuplicateErasing(&literal_string);
-  EXPECT_TRUE (test_string->Equal(&literal_string)) << "DuplicateErasing did not correctly copy the source string";
+  EXPECT_TRUE (test_string->Equal(literal_string)) << "DuplicateErasing did not correctly copy the source string";
   delete test_string;
   fclose(temp_file);
   
   temp_file = NULL;
   test_string = new _String (temp_file);
-  EXPECT_TRUE (blank.Equal(test_string)) << "String constructor from NULL file is expected to return an empty string";
+  EXPECT_TRUE (blank.Equal(*test_string)) << "String constructor from NULL file is expected to return an empty string";
   
   delete test_string;
   
-  EXPECT_TRUE (literal_string.Equal (&literal_w_string)) << "Strings constructed from wchar_t* and char* did not match";
+  EXPECT_TRUE (literal_string.Equal (literal_w_string)) << "Strings constructed from wchar_t* and char* did not match";
   
   
   char buffer[256];
@@ -167,12 +167,12 @@ TEST_F (_hyStringTest, StringConstuctorAndConverstionTests) {
   }
   
   test_string = (_String*) literal_string.toStr();
-  EXPECT_TRUE (literal_string.Equal (test_string)) << "toStr () did not return the same string back";
+  EXPECT_TRUE (literal_string.Equal (*test_string)) << "toStr () did not return the same string back";
   delete test_string;
   
   literal_w_string = blank;
   blank = literal_string;
-  EXPECT_TRUE (literal_string.Equal (&blank)) << "operator = failed";
+  EXPECT_TRUE (literal_string.Equal (blank)) << "operator = failed";
   
 }
 

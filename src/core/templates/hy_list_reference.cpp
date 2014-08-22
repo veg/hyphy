@@ -167,7 +167,7 @@ void _hyListReference<PAYLOAD>::operator<<(PAYLOAD* item)
 template<typename PAYLOAD>
 void _hyListReference<PAYLOAD>::operator&&(const PAYLOAD* item)
 {
-   this->append ((PAYLOAD*) item->makeDynamic());
+   this->append (new PAYLOAD (*item));
 }
 
 
@@ -186,9 +186,8 @@ void _hyListReference<PAYLOAD>::operator<<(const _hyListReference<PAYLOAD>& l)
 */
 
 template<typename PAYLOAD>
-bool _hyListReference<PAYLOAD>::ItemEqualToValue(unsigned long index, PAYLOAD * const & value) const
-{
-  return this->lData[index]->Equal (value);
+bool _hyListReference<PAYLOAD>::ItemEqualToValue(unsigned long index, PAYLOAD * const & value) const {
+  return this->lData[index]->Equal (*value);
 }
 
 

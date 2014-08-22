@@ -443,7 +443,7 @@ public:
   * @return true if strings are equal
   * @sa Compare()
   */
-  bool Equal(const _String *) const;
+  bool Equal(_String const&) const;
 
   /**
   * Lexicographic comparison

@@ -87,7 +87,7 @@ _AVLList<KEYTYPE>::~_AVLList(void) {
 
 template <typename KEYTYPE>
 long _AVLList<KEYTYPE>::_CompareIndexToValue(long node, KEYTYPE const &key ) const {
-  return this->keys.CompareToValue (node, key);
+  return -this->keys.CompareToValue (node, key);
 }
 
 template <typename KEYTYPE>
