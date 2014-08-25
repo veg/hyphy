@@ -167,7 +167,7 @@ public:
   * @param compact Free allocated memory if true
   */
 
-  virtual void          Clear(bool = true);
+  virtual void Clear(bool = true);
   
   /**
    * Element storage functions - assuming the space is already allocated
@@ -238,6 +238,13 @@ public:
   * @return true if equal.
   */
   bool Equal(const _hyList <PAYLOAD>&) const;
+
+  /**
+  * Checks if list is identical to other list
+  * Example: _hyList([4, 1, 2]).Equal(_hyList([4, 1, 2]) = true
+  * @return true if equal.
+  */
+  bool Equal(const _hyList <PAYLOAD>*) const;
 
 
   /**

@@ -218,8 +218,7 @@ set(SRC_MACMAIN src/mains/mac.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_GRAMMAR})
-
-set (SRC_WORKING src/core/baseobj.cpp src/core/site.cpp src/core/strings.cpp src/core/error.cpp src/core/string_buffer.cpp src/core/helperfunctions.cpp src/core/regex.cpp src/core/globals.cpp)
+set (SRC_WORKING src/core/baseobj.cpp src/core/site.cpp src/core/strings.cpp src/core/error.cpp src/core/string_buffer.cpp src/core/helperfunctions.cpp src/core/regex.cpp src/core/globals.cpp src/core/trie.cpp src/core/trieiterator.cpp)
 
 #-------------------------------------------------------------------------------
 # setup some source properties so that we don't spam stdout

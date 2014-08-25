@@ -128,9 +128,6 @@ TYPED_TEST(_hyStackTest, MethodTests) {
   multiple_element_stack.reset();
   ASSERT_EQ (0, multiple_element_stack.Length()) << "Stack should be empty after reset";
 
-  //pop an empty list
-  ASSERT_DEATH(null_stack.pop(), ""); 
-
 }
 
 // The fixture for testing class Foo.
@@ -199,15 +196,12 @@ TYPED_TEST(_hyStackReferenceTest, ReferenceConstructorTests) {
 
   //pop
   TypeParam result =  string_stack.pop();
-  EXPECT_TRUE(result.Equal(new TypeParam (49L)));
+  EXPECT_TRUE(result.Equal(TypeParam (49L)));
   ASSERT_EQ (49, string_stack.Length()) << "Incorrect element popped from the stack";
 
   //reset
   string_stack.reset();
   ASSERT_EQ (0, string_stack.Length()) << "Stack should be empty after reset";
-
-  //pop an empty list
-  ASSERT_DEATH(string_stack.pop(), ""); 
 
 }
 

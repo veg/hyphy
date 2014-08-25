@@ -45,7 +45,6 @@
 #include "hy_string_buffer.h"
 
 
-
 /*
 ==============================================================
 Constructors
@@ -197,7 +196,7 @@ void _hyList<PAYLOAD>::operator<<(const _hyList<PAYLOAD> &source)
 template<typename PAYLOAD>
 bool _hyList<PAYLOAD>::operator == (const _hyList<PAYLOAD> &source) const
 {
-  return this->Equal (source);
+  return this->Equal(source);
 }
 
 /*
@@ -556,6 +555,12 @@ bool _hyList<PAYLOAD>::Equal(const _hyList<PAYLOAD> &l2) const
 }
 
 template<typename PAYLOAD>
+bool _hyList<PAYLOAD>::Equal(const _hyList<PAYLOAD>* l2) const
+{
+  return this->Equal(*l2);
+}
+
+template<typename PAYLOAD>
 bool _hyList<PAYLOAD>::ItemEqualToValue(unsigned long index, const PAYLOAD& value) const
 {
   return lData[index] == value;
@@ -620,6 +625,7 @@ void _hyList<PAYLOAD>::InsertElement(const PAYLOAD item, const long insert_at)
     }
     lData[insert_here] = item;
   }
+
 }
 
 
@@ -788,4 +794,3 @@ bool _hyList<PAYLOAD>::NChooseK(_hyList <long> *state, _hyList <PAYLOAD>& store)
   
   return state->AtIndex (3) < lLength - state->AtIndex (0);
 }
-

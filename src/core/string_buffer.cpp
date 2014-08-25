@@ -40,7 +40,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_string_buffer.h"
 #include "helperfunctions.h"
 #include "errorfns.h"
-
 #include <string.h> // for strlen
 
 
