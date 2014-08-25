@@ -709,6 +709,7 @@ PAYLOAD _hyList<PAYLOAD>::Pop(bool compact)
     if (compact) {
       PAYLOAD ret_value = lData[--lLength];
       CompactList();
+      return ret_value;
     }
     return lData[--lLength];
   }

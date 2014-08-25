@@ -279,7 +279,6 @@ namespace {
     
     _AVLList <TypeParam> sequence;
     for (long replicates = 0L; replicates < 128L; replicates++) {
-      printf ("%ld\n", replicates);
       _AVLList <TypeParam> small_values,
                            large_values,
                            all_values;
@@ -313,7 +312,11 @@ namespace {
         //all_values.Insert (*small_values.AtIndex (k));
         k = small_values.Traverser (hist);
      }
-      ASSERT_EQ (all_values, all_copy) << "AB, delete A, add A, != AB";
+     
+      //all_values.EchoList();
+      //all_copy.EchoList();
+      
+     ASSERT_EQ (all_values, all_copy) << "AB, delete A, add A, != AB";
 
       
       
