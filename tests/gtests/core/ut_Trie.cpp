@@ -79,18 +79,17 @@ class _TrieTest : public ::testing::Test {
 TEST_F(_TrieTest, ConstructorsTest)
 {
   // Normal
-  _StringBuffer* test_s = new _StringBuffer("hyphy");
+  _StringBuffer test_s ("hyphy");
 
-  _Trie the_test(test_s);
-  EXPECT_EQ ('h', the_test.alphabet()[0]) << "Should be h";
-  EXPECT_EQ ('p', the_test.alphabet()[1]) << "Should be y";
-  EXPECT_EQ ('y', the_test.alphabet()[3]) << "Should be p";
+  _Trie the_test(&test_s);
+  EXPECT_EQ ('\0', the_test.alphabet()[0]) << "Should be \\0";
+  EXPECT_EQ ('h', the_test.alphabet()[1]) << "Should be h";
+  EXPECT_EQ ('p', the_test.alphabet()[2]) << "Should be p";
+  EXPECT_EQ ('y', the_test.alphabet()[3]) << "Should be y";
 
   //Insert an item that has an invalid character
-  long response = the_test.Insert("@handle#rocks", 1L);
-  EXPECT_EQ(HY_TRIE_INVALID_LETTER, response);
-
-  delete test_s;
+  EXPECT_EQ(HY_TRIE_INVALID_LETTER, the_test.Insert("@handle#rocks", 1L)) << "Insertion of a string with invalid characters was allowed to proceed";
+  EXPECT_NE(HY_TRIE_INVALID_LETTER, the_test.Insert ("hppy", 0L)) << "Insertion of a string with all valid characters failed";
 
 }
 
@@ -179,6 +178,20 @@ TEST_F(_TrieTest, MethodTests)
   random_str_list.Clear();
 
 }
+  
+  TEST_F(_TrieTest, LargeTrieTest) {
+    _String alph ("ACGT");
+    _Trie nucleotide_trie (&alph);
+    long i = 0L;
+    
+    for (; i <= (1<<20L); i++) {
+      nucleotide_trie.Insert(_String::Random (20, &alph), i);
+    }
+    
+    //ASSERT_EQ (i, nucleotide_trie.Length());
+    
+  }
+
 
 
 }

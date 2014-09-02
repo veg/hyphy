@@ -93,7 +93,7 @@ void _Trie::setAlphabet(const _String* alph, bool do_clear) {
     unsigned long char_counter = 0;
 
     // always allow the '\0' character
-    //this->char_map[0] = 1; 
+    this->char_map[0] = 1; 
 
     for (unsigned long charIndex = 0; charIndex < alph->Length();
          charIndex++) {
@@ -118,8 +118,13 @@ void _Trie::setAlphabet(const _String* alph, bool do_clear) {
 //}
 
 //______________________________________________________________________________
-long _Trie::countitems(void) const {
-  return payload.countitems() - 1;
+unsigned long _Trie::countitems(void) const {
+  return this->Length();
+}
+
+//______________________________________________________________________________
+unsigned long _Trie::Length(void) const {
+  return payload.countitems() - 1L;
 }
 
 //______________________________________________________________________________

@@ -123,7 +123,13 @@ public:
    * Counts the number of strings in this Trie
    * @return the number of strings.
    */
-  virtual long countitems (void) const;
+  virtual unsigned long countitems (void) const;
+
+  /**
+   * Counts the number of strings in this Trie
+   * @return the number of strings.
+   */
+  virtual unsigned long Length     (void) const;
   
   
 
