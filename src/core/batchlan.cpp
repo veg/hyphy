@@ -3060,6 +3060,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 
                     // printf ("%s\n", tryPath.sData);
 
+                    tryPath.ProcessFileName (false, false, (Ptr)chain.nameSpacePrefix);
+                  
                     if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
                         ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
                         return;
@@ -3075,9 +3077,12 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
             }
 
         }
+      
 
         if (commandSource == nil) {
             filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
+            StringToConsole (filePath);
+
             if (code == 66 && loadedLibraryPaths.Find(&filePath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
                 ReportWarning (_String("Already loaded '") & originalPath & "' from " & filePath);
                 return;
