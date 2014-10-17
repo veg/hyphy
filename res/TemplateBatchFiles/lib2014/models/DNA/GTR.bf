@@ -14,7 +14,6 @@ function models.DNA.GTR.modelDescription () {
     				"global" : {}, 
     				"local" : {}
     			},
-			"frequency_estimator" : "", 
     		"get_branch_length" : "",
     		"set_branch_length" : "models.generic.set_branch_length",
     		"constrain_branch_length" : "models.generic.constrain_branch_length",
@@ -38,10 +37,10 @@ function models.DNA.GTR.defineQ (option, namespace) {
 	gtr ["type"] = option;
 	models.DNA.generic.defineQMatrix (gtr, namespace);
 	if (option == terms.global) {
-		parameters.fixValue (((gtr["parameters"])[terms.global])[terms.nucleotideRate ("A","G")], "1");
+		parameters.setConstraint (((gtr["parameters"])[terms.global])[terms.nucleotideRate ("A","G")], "1", "");
 	}
 	if (option == terms.local) {
-		parameters.fixValue (((gtr["parameters"])[terms.local])[terms.nucleotideRate ("A","G")], "1");
+		parameters.setConstraint (((gtr["parameters"])[terms.local])[terms.nucleotideRate ("A","G")], "1", "");
 	}
 	return gtr;
 }

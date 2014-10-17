@@ -2,6 +2,7 @@ LoadFunctionLibrary ("DNA.bf");
 LoadFunctionLibrary ("parameters.bf");
 LoadFunctionLibrary ("frequencies.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
+//------------------------------------------------------------------------------ 
 
 
 function model.applyModelToTree (id, tree, model_list, rules) {
@@ -37,10 +38,12 @@ function model.applyModelToTree (id, tree, model_list, rules) {
 						  ");
 	}
 }
+//------------------------------------------------------------------------------ 
 
 function model.define_model (model_spec, id, type, data_filter, estimator_type) {
 	
 	model.define_model.model = utility.callFunction (model_spec, None);
+	models.generic.attachFilter (model.define_model.model, data_filter);
 	
 	model.define_model.model = utility.callFunction(model.define_model.model ["defineQ"], {"0" :   parameters.quote (type),
 																						   "1" :    parameters.quote (id)});
@@ -62,5 +65,36 @@ function model.define_model (model_spec, id, type, data_filter, estimator_type) 
 	ExecuteCommands (model.define_model.model ["efv id"]   + " = " + model.define_model.model[terms.efv_estimate]);
 		
 	ExecuteCommands ("Model `id` = (" + model.define_model.model ["matrix id"] + "," + model.define_model.model ["efv id"] + "," + model.define_model.model ["canonical"] + ")");
+	
+	
 	return model.define_model.model;
+}
+
+//------------------------------------------------------------------------------ 
+
+function models.generic.attachFilter (model, filter) {
+	GetDataInfo (_givenAlphabet, *filter, "CHARACTERS");
+	__alphabet = model ["alphabet"];
+	assert (Columns (__alphabet) == Columns (_givenAlphabet) && model.matchAlphabets (_givenAlphabet, __alphabet), "The declared model alphabet '" + __alphabet + "' does not match the `filter` filter: '" + _givenAlphabet + "'");
+	
+	model ["alphabet"] = _givenAlphabet;
+	model ["data"] = filter;
+	return model;
+}
+
+
+//------------------------------------------------------------------------------ 
+
+lfunction model.matchAlphabets (a1, a2) {
+	_validStates = {};
+	for (_k = 0; _k < Columns (a1); _k += 1) {
+		_validStates [a1[_k]] = _k;
+	}
+	for (_k = 0; _k < Columns (a2); _k += 1) {
+		if (_validStates [a2[_k]] != _k) {
+			return 0;
+		}
+	}
+	return 1;
+
 }

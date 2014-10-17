@@ -1,13 +1,12 @@
 LoadFunctionLibrary ("terms.bf");
 LoadFunctionLibrary ("frequencies.bf");
 
-models.DNA.alphabet = "ACGT";
-
+models.DNA.alphabet = {{"A","C","G","T"}};
 
 function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 	
 	__alphabet = modelSpec ["alphabet"];
-	assert (Type (__alphabet) == "String" && Abs (__alphabet) == 4, "Unsupported or missing alphabet '" + __alphabet + "'");
+	assert (Type (__alphabet) == "Matrix" && Columns (__alphabet) == 4, "Unsupported or missing alphabet '" + __alphabet + "'");
 	
 	__modelType = modelSpec["type"];
 	if (Type (__modelType) == "None" || Type (__modelType) == "Number") {
@@ -59,26 +58,5 @@ function models.DNA.generic.time (option) {
 	return terms.default_time;
 }
 
-function models.matchAlphabets (a1, a2) {
-	_validStates = {};
-	for (_k = 0; _k < Abs (a1); _k += 1) {
-		_validStates [a1[_k]] = 1;
-	}
-	for (_k = 0; _k < Abs (a2); _k += 1) {
-		if (_validStates [a2[_k]] == 0) {
-			return 0;
-		}
-	}
-	return 1;
 
-}
 
-function models.DNA.generic.attachFilter (model, filter) {
-	GetDataInfo (_givenAlphabet, *filter, "CHARACTERS");
-	__alphabet = model ["alphabet"];
-	assert (Abs (__alphabet) == Abs (_givenAlphabet) && matchAlphabets (_givenAlphabet, __alphabet), "The declared model alphabet '" + __alphabet + "' does not match the `filter` filter: '" + _givenAlphabet + "'");
-	
-	model ["alphabet"] = _givenAlphabet;
-	model ["data"] = filter;
-	return model;
-}
