@@ -446,6 +446,20 @@ function defineCodonToAA ()
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+function defineCodonToAAGivenCode (code)
+{	
+	codonToAAMap = {};
+	nucChars = "ACGT";
+	
+	for (p1=0; p1<64; p1+=1) {
+		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[code[p1]];
+	}
+	
+	return codonToAAMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 function findAllCodonsForAA (aa)
 {	
 	codonsForAA = {};

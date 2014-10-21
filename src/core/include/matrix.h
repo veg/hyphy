@@ -48,6 +48,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define     _POLYNOMIAL_TYPE 0
 #define     _NUMERICAL_TYPE  1
 #define     _FORMULA_TYPE 2
+#define     _SIMPLE_FORMULA_TYPE 3
 
 #define     HY_MATRIX_COLUMN_VECTOR     1
 #define     HY_MATRIX_ROW_VECTOR        2
@@ -184,7 +185,7 @@ public:
     // and stores them in the list passed as the parameter
 
     virtual bool        IsIndependent (void)   {
-        return storageType!=2;
+        return storageType!=_FORMULA_TYPE;
     }
     // used to determine whether the matrix contains references
     // to other unknowns
@@ -325,14 +326,14 @@ public:
     _Parameter  ExpNumberOfSubs         (_Matrix*,bool);
 
     virtual     bool        IsVariable  (void) {
-        return storageType != 1;
+        return storageType != _NUMERICAL_TYPE;
     }
     // is this matrix a constant or a variable quantity?
 
     virtual     bool        IsConstant  (void);
 
     virtual     bool        IsPrintable (void) {
-        return storageType != 2;
+        return storageType != _FORMULA_TYPE;
     }
     
     virtual     bool        Equal       (_PMathObj);
@@ -356,7 +357,7 @@ public:
         return lDim;
     }
     long        GetMySize                   (void) {
-        return sizeof(_Matrix)+lDim*(storageType==1?sizeof(_Parameter):sizeof(Ptr));
+        return sizeof(_Matrix)+lDim*(storageType==_NUMERICAL_TYPE?sizeof(_Parameter):sizeof(Ptr));
     }
 
     void        PopulateConstantMatrix      (const _Parameter);
@@ -417,7 +418,7 @@ public:
     // indicates the first available slot
 
     _Parameter*       fastIndex(void)   {
-        return (!theIndex)&&(storageType==1)?(_Parameter*)theData:nil;
+        return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(_Parameter*)theData:nil;
     }
     inline            _Parameter&         directIndex(long k)   {
         return theData[k];

@@ -99,6 +99,7 @@ gtr_lengths ["busted._aux.free_lengths"][""];
 
 OPTIMIZATION_PRECISION = 0.001;
 Optimize (busted.MLE_HA, busted.LF);
+io.spoolLF ("busted.LF", codon_data_info["file"], None);
 busted_positive_class = busted.checkForPS (busted.model_definitions);
 io.reportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_HA[1][0] + ". Unrestricted class omega = " + busted_positive_class["omega"] + " (weight = " + busted_positive_class["weight"] + ")");
 
@@ -137,6 +138,7 @@ if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8
     busted.constrainTheModel (busted.model_definitions);
     (_BUSTED_json ["profiles"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
     Optimize (busted.MLE_H0, busted.LF);
+    io.spoolLF ("busted.LF", codon_data_info["file"], "null");
     (_BUSTED_json ["profiles"])["optimized null"] = busted.computeSiteLikelihoods ("busted.LF");;
     io.reportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_H0[1][0]);
     busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);

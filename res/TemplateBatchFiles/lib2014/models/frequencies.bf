@@ -18,17 +18,35 @@ function frequencies.empirical.nucleotide (model, namespace, datafilter) {
 
 function frequencies.empirical.corrected.CF3x4 (model, namespace, datafilter) {
 
+    __dimension = model.dimension (model); 
+    __alphabet = model ["alphabet"];
+    
+    assert ( Type (model[terms.rate_matrix]) == "Matrix" && Rows (model[terms.rate_matrix]) == __dimension && Columns (model[terms.rate_matrix]) == __dimension,
+            "`terms.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4");
+
+
     GetDataInfo (_givenAlphabet, *datafilter, "CHARACTERS");
     
  	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", 0);
 	HarvestFrequencies (__f, *datafilter, 3,1,1);
 	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
     
-    frequencies._aux.CF3x4 (__f, model["bases"], model["stop"]);
+    __estimates = frequencies._aux.CF3x4 (__f, model["bases"], __alphabet, model["stop"]);
+ 	model[terms.efv_estimate]      = __estimates ["codons"];
+    __estimates = __estimates["bases"];
+    
+     for (_rowChar = 0; _rowChar < __dimension; _rowChar +=1 ){
+		for (_colChar = _rowChar + 1; _colChar < __dimension; _colChar += 1) {
+			
+			__diff = models.codon.diff (__alphabet[_rowChar], __alphabet[_colChar]);
+            if (None != __diff) {
+                (model[terms.rate_matrix])[_rowChar][_colChar] += "*" + (__estimates[__diff["to"]])[__diff["position"]];
+                (model[terms.rate_matrix])[_colChar][_rowChar] += "*" + (__estimates[__diff["from"]])[__diff["position"]];
+            }
+		}	
+	}
 	
-	model[terms.efv_estimate] = __f;
-	model[terms.efv_estimate_name] = terms.freqs.CF3x4;
-	
+	model[terms.efv_estimate_name] = terms.freqs.CF3x4;	
 	return model;
 }
 
@@ -47,14 +65,20 @@ function frequencies._aux.empirical.singlechar (model, namespace, datafilter) {
 }
 
 
-function frequencies._aux.CF3x4 (observed_3x4,base_alphabet,stop_codons) {
+function frequencies._aux.CF3x4 (observed_3x4,base_alphabet,sense_codons, stop_codons) {
 
    frequencies._aux.CF3x4.p = {};
+   
+   frequencies._aux.CF3x4.args = {};
+   
    for (frequencies._aux.CF3x4.k = 0; frequencies._aux.CF3x4.k < 3; frequencies._aux.CF3x4.k += 1) {
         frequencies._aux.CF3x4.p [frequencies._aux.CF3x4.k] = parameters.generate_sequential_names ("frequencies._aux.CF3x4.p" + frequencies._aux.CF3x4.k,3,None);    
         parameters.declareGlobal (frequencies._aux.CF3x4.p [frequencies._aux.CF3x4.k], None);
         parameters.setRange (frequencies._aux.CF3x4.p [frequencies._aux.CF3x4.k], terms.range01);
+        frequencies._aux.CF3x4.args + (Join (",",frequencies._aux.CF3x4.p [frequencies._aux.CF3x4.k]));
    }   
+    
+    frequencies._aux.CF3x4.args = Join (",", frequencies._aux.CF3x4.args);
     
     frequencies._aux.CF3x4.n = {}; 
     
@@ -67,84 +91,83 @@ function frequencies._aux.CF3x4 (observed_3x4,base_alphabet,stop_codons) {
 
    
 	frequencies._aux.stop_count = Columns (stop_codons);
-    fprintf (stdout, frequencies._aux.stop_count, "\n");
+    
+    frequencies._aux.CF3x4.stop_correction = {};
+    
+    
+
+    
+    for (frequencies._aux.CF3x4.i = 0; frequencies._aux.CF3x4.i < Columns (base_alphabet); frequencies._aux.CF3x4.i += 1) {
+        frequencies._aux.CF3x4.stop_correction [base_alphabet[frequencies._aux.CF3x4.i]] = {{"","",""}};
+    }
+    
+    frequencies._aux.CF3x4.denominator = "1";
+    
+    for (frequencies._aux.CF3x4.i = 0; frequencies._aux.CF3x4.i < frequencies._aux.stop_count; frequencies._aux.CF3x4.i += 1) {
+        frequencies._aux.CF3x4.sc = stop_codons[frequencies._aux.CF3x4.i];
+        
+        (frequencies._aux.CF3x4.stop_correction[frequencies._aux.CF3x4.sc[0]])[0] += 
+                "-frequencies._aux.CF3x4.n1_" +  frequencies._aux.CF3x4.sc[1] +
+                "*frequencies._aux.CF3x4.n2_" +  frequencies._aux.CF3x4.sc[2];
+
+        (frequencies._aux.CF3x4.stop_correction[frequencies._aux.CF3x4.sc[1]])[1] += 
+                "-frequencies._aux.CF3x4.n0_" +  frequencies._aux.CF3x4.sc[0] +
+                "*frequencies._aux.CF3x4.n2_" +  frequencies._aux.CF3x4.sc[2];
+
+        (frequencies._aux.CF3x4.stop_correction[frequencies._aux.CF3x4.sc[2]])[2] += 
+                "-frequencies._aux.CF3x4.n0_" +  frequencies._aux.CF3x4.sc[0] +
+                "*frequencies._aux.CF3x4.n1_" +  frequencies._aux.CF3x4.sc[1];
+                
+        frequencies._aux.CF3x4.denominator += "-frequencies._aux.CF3x4.n0_" + frequencies._aux.CF3x4.sc[0] +    
+                                              "*frequencies._aux.CF3x4.n1_" + frequencies._aux.CF3x4.sc[1] +
+                                              "*frequencies._aux.CF3x4.n2_" + frequencies._aux.CF3x4.sc[2];
+    }
 	
-	return 0;
 	
-	charMap   		= {"A":0,"C":1,"G":2, "T": 3};
-	revMap			= {{"A","C","G","T"}};
-	stopComposition = {stopCount,3};
+	parameters.setConstraint ("frequencies._aux.CF3x4.denominator", frequencies._aux.CF3x4.denominator, 1);
+		    
+	frequencies._aux.N = {Columns (base_alphabet),3};
+	frequencies._aux.res = {};
+	frequencies._aux.codons = {Columns (sense_codons), 1};
 	
-	SDef =""; SDef * 128; SDef * "1";
+	for (frequencies._aux.CF3x4.i = 0; frequencies._aux.CF3x4.i < Columns (sense_codons); frequencies._aux.CF3x4.i += 1) {
+	    frequencies._aux.CF3x4.sc = {3,1};
+		for (frequencies._aux.CF3x4.pos = 0; frequencies._aux.CF3x4.pos < 3; frequencies._aux.CF3x4.pos += 1) {
+		    frequencies._aux.CF3x4.sc [frequencies._aux.CF3x4.pos] = "frequencies._aux.CF3x4.n"
+                             +frequencies._aux.CF3x4.pos+"_"+(sense_codons[frequencies._aux.CF3x4.i])[frequencies._aux.CF3x4.pos];
+        }	    
+        ExecuteCommands ("frequencies._aux.codons[frequencies._aux.CF3x4.i] := " + Join ("*", frequencies._aux.CF3x4.sc) + "/frequencies._aux.CF3x4.denominator");
+	}
 	
-	for (i = 0; i < stopCount; i = i+1)
-	{
-		SDef * "-";
-		for (j = 0; j < 3; j = j+1)
-		{
-			stopComposition[i][j] = charMap[stopCodons[4*i+j]];
-			if (j)
-			{
-				SDef * "*";
-			}
-			SDef * ("n"+(j+1)+stopCodons[4*i+j]);
+	for (frequencies._aux.CF3x4.i = 0; frequencies._aux.CF3x4.i < Columns (base_alphabet); frequencies._aux.CF3x4.i += 1) {
+	    frequencies._aux.CF3x4.n = base_alphabet[frequencies._aux.CF3x4.i];
+	    frequencies._aux.res [frequencies._aux.CF3x4.n] = {3,1};
+		for (frequencies._aux.CF3x4.pos = 0; frequencies._aux.CF3x4.pos < 3; frequencies._aux.CF3x4.pos += 1) {
+		    
+		    frequencies._aux.CF3x4.sc = (frequencies._aux.CF3x4.stop_correction[frequencies._aux.CF3x4.n])[frequencies._aux.CF3x4.pos];
+		    
+			if (Abs (frequencies._aux.CF3x4.sc)) {
+                frequencies._aux.CF3x4.sc = "*(1" + frequencies._aux.CF3x4.sc + ")";		
+            }
+            
+            ExecuteCommands( "frequencies._aux.N[" + frequencies._aux.CF3x4.i + "][" + frequencies._aux.CF3x4.pos + "] := frequencies._aux.CF3x4.n"
+                             +frequencies._aux.CF3x4.pos+"_"+frequencies._aux.CF3x4.n
+                             +frequencies._aux.CF3x4.sc+"/frequencies._aux.CF3x4.denominator");
+                             
+            ExecuteCommands ("(frequencies._aux.res[frequencies._aux.CF3x4.n])[frequencies._aux.CF3x4.pos] := frequencies._aux.CF3x4.n"
+                             +frequencies._aux.CF3x4.pos+"_"+frequencies._aux.CF3x4.n);
 		}
 	}
 	
-	SDef * 0;
 	
-	ExecuteCommands ("global S:=`SDef`");
 	
-	SDef = {4,3};
-	for (i = 0; i<4; i=i+1)
-	{
-		for (j = 0; j<3; j=j+1)
-		{
-			SDef[i][j] = "";
-		}
-	}
-	
-	for (k = 0; k < stopCount; k = k+1)
-	{
-		SDef[stopComposition[k][0]][0] = SDef[stopComposition[k][0]][0] + 
-										 "-" +
-										 "n2" + revMap[stopComposition[k][1]] +
-										 "*n3" + revMap[stopComposition[k][2]];
-		SDef[stopComposition[k][1]][1] = SDef[stopComposition[k][1]][1] + 
-										 "-" +
-										 "n1" + revMap[stopComposition[k][0]] +
-										 "*n3" + revMap[stopComposition[k][2]];
-		SDef[stopComposition[k][2]][2] = SDef[stopComposition[k][2]][2] + 
-										 "-" +
-										 "n1" + revMap[stopComposition[k][0]] +
-										 "*n2" + revMap[stopComposition[k][1]];
-	}
+    ExecuteCommands ("Optimize (frequencies._aux.CF3x4.p, frequencies._aux._CF3x4_minimizer( "  +
+                     frequencies._aux.CF3x4.args + "))");
 
-	frequencies._aux.N = {4,3};
-	
-	for (i = 0; i<4; i=i+1) {
-		for (j = 0; j<3; j=j+1)
-		{
-			if (Abs (SDef[i][j]))
-			{
-				ExecuteCommands ("N[i][j] := n"+(j+1)+revMap[i] + "*(1" + SDef[i][j] + ")/S;");
-			}
-			else
-			{
-				ExecuteCommands ("N[i][j] := n"+(j+1)+revMap[i] + "/S;");			
-			}
-		}
-	}
-	
-
-	Optimize (res, frequencies._aux._CF3x4_minimizer(p11,p12,p13,p21,p22,p23,p31,p32,p33));
-		
-	return {{n1A__,n2A__,n3A__}{n1C__,n2C__,n3C__}{n1G__,n2G__,n3G__}{n1T__,n2T__,n3T__}};
-
-	return None;
+	return {"codons" : Eval("frequencies._aux.codons"), "bases" : frequencies._aux.res};
 }
 
 function frequencies._aux._CF3x4_minimizer (p11,p12,p13,p21,p22,p23,p31,p32,p33) {
-	error = N-observed_3x4;
-	return  - (+ error$error);
+	frequencies._aux._CF3x4_minimizer.error = frequencies._aux.N-observed_3x4;
+	return  - (+ frequencies._aux._CF3x4_minimizer.error$frequencies._aux._CF3x4_minimizer.error);
 }

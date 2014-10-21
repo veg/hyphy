@@ -40,12 +40,12 @@ function model.applyModelToTree (id, tree, model_list, rules) {
 }
 //------------------------------------------------------------------------------ 
 
-function model.define_model (model_spec, id, type, data_filter, estimator_type) {
+function model.define_model (model_spec, id, arguments, data_filter, estimator_type) {
 	
-	model.define_model.model = utility.callFunction (model_spec, None);
+	model.define_model.model = utility.callFunction (model_spec, arguments);
 	models.generic.attachFilter (model.define_model.model, data_filter);
 	
-	model.define_model.model = utility.callFunction(model.define_model.model ["defineQ"], {"0" :   parameters.quote (type),
+	model.define_model.model = utility.callFunction(model.define_model.model ["defineQ"], {"0" :   "model.define_model.model",
 																						   "1" :    parameters.quote (id)});
 	model.define_model.model ["matrix id"] = "`id`_" + terms.rate_matrix;
 	model.define_model.model ["efv id"] = "`id`_" + terms.efv_matrix;
@@ -75,6 +75,8 @@ function model.define_model (model_spec, id, type, data_filter, estimator_type) 
 function models.generic.attachFilter (model, filter) {
 	GetDataInfo (_givenAlphabet, *filter, "CHARACTERS");
 	__alphabet = model ["alphabet"];
+
+
 	assert (Columns (__alphabet) == Columns (_givenAlphabet) && model.matchAlphabets (_givenAlphabet, __alphabet), "The declared model alphabet '" + __alphabet + "' does not match the `filter` filter: '" + _givenAlphabet + "'");
 	
 	model ["alphabet"] = _givenAlphabet;
@@ -82,10 +84,20 @@ function models.generic.attachFilter (model, filter) {
 	return model;
 }
 
+//------------------------------------------------------------------------------ 
+
+function model.dimension (model) {
+    if (Type (model["alphabet"]) == "Matrix") {
+        return Columns (model["alphabet"]);
+    }
+    return None;
+}
 
 //------------------------------------------------------------------------------ 
 
 lfunction model.matchAlphabets (a1, a2) {
+
+
 	_validStates = {};
 	for (_k = 0; _k < Columns (a1); _k += 1) {
 		_validStates [a1[_k]] = _k;

@@ -3,7 +3,7 @@ LoadFunctionLibrary ("../parameters.bf");
 LoadFunctionLibrary ("../frequencies.bf");
 LoadFunctionLibrary ("../../UtilityFunctions.bf");
 
-function models.DNA.GTR.modelDescription () {
+function models.DNA.GTR.modelDescription (type) {
 
     return {"alphabet" : models.DNA.alphabet,
     		"description" : "The general time reversible (GTR) model of nucleotide substitution",
@@ -14,6 +14,7 @@ function models.DNA.GTR.modelDescription () {
     				"global" : {}, 
     				"local" : {}
     			},
+    		"type" : type,
     		"get_branch_length" : "",
     		"set_branch_length" : "models.generic.set_branch_length",
     		"constrain_branch_length" : "models.generic.constrain_branch_length",
@@ -25,21 +26,33 @@ function models.DNA.GTR.modelDescription () {
 }
 
 
-function models.DNA.GTR.generateRate (fromChar, toChar) {
-	if (fromChar < toChar) {
-		return "theta_" + fromChar + toChar;
+function models.DNA.GTR.generateRate (fromChar, toChar, namespace, model_type) {
+    models.DNA.GTR.generateRate.p = {};
+    models.DNA.GTR.generateRate.p [model_type] = {};
+    
+	if (fromChar > toChar) {
+		 models.DNA.GTR.parameter_name = "theta_" + toChar + fromChar;
+	} else {
+	    models.DNA.GTR.parameter_name = "theta_" + fromChar + toChar;
 	}
-	return "theta_" + toChar + fromChar;
+	
+	if (model_type == terms.global) {
+	    models.DNA.GTR.parameter_name = parameters.applyNameSpace (models.DNA.GTR.parameter_name, namespace); 
+	}
+	
+	(models.DNA.GTR.generateRate.p [model_type])[terms.nucleotideRate (fromChar, toChar)] = models.DNA.GTR.parameter_name;
+	 models.DNA.GTR.generateRate.p [terms.rate_entry] = models.DNA.GTR.parameter_name;
+	
+	return models.DNA.GTR.generateRate.p;
 }
 
-function models.DNA.GTR.defineQ (option, namespace) {
-	gtr = models.DNA.GTR.modelDescription ();
-	gtr ["type"] = option;
+function models.DNA.GTR.defineQ (gtr, namespace) {
+
 	models.DNA.generic.defineQMatrix (gtr, namespace);
-	if (option == terms.global) {
+	if (gtr ["type"] == terms.global) {
 		parameters.setConstraint (((gtr["parameters"])[terms.global])[terms.nucleotideRate ("A","G")], "1", "");
-	}
-	if (option == terms.local) {
+	} 
+	if (gtr ["type"] == terms.local) {
 		parameters.setConstraint (((gtr["parameters"])[terms.local])[terms.nucleotideRate ("A","G")], "1", "");
 	}
 	return gtr;

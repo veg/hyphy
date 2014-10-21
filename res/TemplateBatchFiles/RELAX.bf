@@ -29,7 +29,7 @@ io.displayAnalysisBanner ({"info" : "RELAX (a random effects test of selection r
                             by the relaxation parameter (K).",
                            "version" : "1.00",
                            "reference" : "In revision, preprint at xxx",
-                           "authors" : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and the UCSD VEG group",
+                           "authors" : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and the UCSD viral evolution group",
                            "contact" : "spond@ucsd.edu",
                            "requirements" : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"         
                           } );
@@ -56,20 +56,15 @@ _RELAX_json    = {"fits" : {},
                   };
                   
 
-codon_data_info = utility.promptForGeneticCodeAndAlignment ("codon_data", "codon_filter");
+codon_data_info = utility.promptForGeneticCodeAndAlignment ("RELAX.codon_data", "RELAX.codon_filter");
 
 LoadFunctionLibrary ("lib2014/models/codon/MG_REV.bf");
-mg = models.codon.MG_REV.modelDescription (codon_data_info["code"]);
-
-frequencies.empirical.corrected.CF3x4 (mg, "", "codon_filter");
-
-return 0;
 
 
-codon_data_info["json"] = codon_data_info["file"] + ".BUSTED.json";
+codon_data_info["json"] = codon_data_info["file"] + ".RELAX.json";
 io.reportProgressMessage ("RELAX", "Loaded an MSA with " + codon_data_info["sequences"] + " sequences and " + codon_data_info["sites"] + " codons from '" + codon_data_info["file"] + "'");
 
-codon_frequencies     = utility.defineFrequencies ("codon_filter");
+codon_frequencies     = utility.defineFrequencies ("RELAX.codon_filter");
 tree_definition 	  = utility.loadAnnotatedTopology ();
 
 relax.selected_branches = relax.io.defineBranchSets (tree_definition);
@@ -78,10 +73,11 @@ _RELAX_json ["partition"] = relax.selected_branches;
 io.reportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches["Test"]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches["Test"])));
 
 io.reportProgressMessage ("RELAX", "Obtaining branch lengths under the GTR model");
-relax.gtr_results = estimators.fitGTR     ("codon_filter", tree_definition, None);
+relax.gtr_results = estimators.fitGTR     ("RELAX.codon_filter", tree_definition, None);
 io.reportProgressMessage ("RELAX", "Log(L) = " + relax.gtr_results["LogL"]);
 
 io.reportProgressMessage ("RELAX", "Obtaining omega and branch length estimates under the MG94xGTR model using GTR as the starting point");
+relax.mg_results  = estimators.fitMGREV     (codon_data_info, tree_definition, terms.local, relax.gtr_results);
 
 return 0;
 

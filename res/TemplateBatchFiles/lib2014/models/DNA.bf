@@ -28,20 +28,21 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 	
 	
 	for (_rowChar = 0; _rowChar < 4; _rowChar +=1 ){
-		for (_colChar = 0; _colChar < 4; _colChar += 1) {
-			if (_colChar != _rowChar) {
-				__rp = utility.callFunction (__rate_function, {"0": parameters.quote(__alphabet[_rowChar]), 
-															   "1": parameters.quote(__alphabet[_colChar])});
-				if (__modelType == terms.global) {
-					__rp = parameters.applyNameSpace (__rp, namespace);
-					parameters.declareGlobal (__rp, __global_cache);
-					((modelSpec["parameters"])[terms.global]) [terms.nucleotideRate (__alphabet[_rowChar], __alphabet[_colChar])] = __rp;
-				} else {
-					((modelSpec["parameters"])[terms.local]) [terms.nucleotideRate (__alphabet[_rowChar], __alphabet[_colChar])] = __rp;				
-				}
-				
-				__rate_matrix [_rowChar][_colChar] = __rp;
-			}
+		for (_colChar = _rowChar + 1; _colChar < 4; _colChar += 1) {
+			__rp = utility.callFunction (__rate_function, {"0": parameters.quote(__alphabet[_rowChar]), 
+															   "1": parameters.quote(__alphabet[_colChar]),
+															   "2": "namespace",
+															   "3": "__modelType"});
+															   
+            if (Abs (__rp[terms.rate_entry])) {			
+                parameters.declareGlobal (__rp[terms.global], __global_cache);
+                parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+                            
+                __rate_matrix [_rowChar][_colChar] = __rp[terms.rate_entry];
+                __rate_matrix [_colChar][_rowChar] = __rp[terms.rate_entry];
+                continue;
+            } 
+			__rate_matrix [_rowChar][_colChar] = "";
 		}	
 	}
 	
@@ -49,9 +50,11 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 	
 	if (Abs (__rp)) {
 		((modelSpec["parameters"])[terms.local])[terms.timeParameter ()] = __rp; 
+	    modelSpec [terms.rate_matrix] = parameters.addMultiplicativeTerm (__rate_matrix, __rp, 0);
+	} else {
+	    modelSpec [terms.rate_matrix] = __rate_matrix;
 	}
 	
-	modelSpec [terms.rate_matrix] = parameters.addMultiplicativeTerm (__rate_matrix, __rp);
 }
 
 function models.DNA.generic.time (option) {

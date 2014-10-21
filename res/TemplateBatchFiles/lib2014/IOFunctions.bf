@@ -73,6 +73,14 @@ function io.hasStringKey (key, dict) {
     return Type (dict[key]) == "String";
 }
 
+function io.spoolLF (lf_id, trunk_path, tag) {
+    ExecuteCommands ("Export (__lf_spool, `lf_id`);");
+    if (tag == None) {
+        tag = lf_id;
+    }
+    fprintf (trunk_path + "." + tag + ".bf", CLEAR_FILE, __lf_spool);
+}
+
 function io.printAndUnderline (string, char) {
     fprintf (stdout, "\n", string, "\n");
     for (k = 0; k < Abs (string); k+=1) {

@@ -92,7 +92,7 @@ function estimators.fitGTR  (data_filter, tree, initial_values) {
 	// create a nucleotide filter first
 	
 	DataSetFilter estimators.fitGTR.nuc_data = CreateFilter (^data_filter, 1);
-	estimators.fitGTR.model =  model.define_model ("models.DNA.GTR.modelDescription", "estimators.fitGTR.gtr", terms.global, "estimators.fitGTR.nuc_data", None); 
+	estimators.fitGTR.model =  model.define_model ("models.DNA.GTR.modelDescription", "estimators.fitGTR.gtr", {"0" : "terms.global"}, "estimators.fitGTR.nuc_data", None); 
 
     model.applyModelToTree ("estimators.fitGTR.tree", tree, {"default" : estimators.fitGTR.model} , None);
     
@@ -113,7 +113,48 @@ function estimators.fitGTR  (data_filter, tree, initial_values) {
     estimators.fitGTR.results["LogL"]            = estimators.fitGTR.mles[1][0];
     estimators.fitGTR.results["parameters"] = estimators.fitGTR.mles[1][1] + 3;
     
+    //io.spoolLF ("estimators.fitGTR.likelihoodFunction", "/Volumes/home-raid/Desktop/test", None);
+    
     DeleteObject (estimators.fitGTR.likelihoodFunction);
     
     return estimators.fitGTR.results;
+}
+
+function estimators.fitMGREV  (codon_data, tree, option, initial_values) {
+	// create a nucleotide filter first
+		
+    estimators.fitMGREV.filter = codon_data["dataset"];
+		
+	DataSetFilter estimators.fitMGREV.codon_data = CreateFilter (^estimators.fitMGREV.filter, 3, "", "", codon_data["stop"]);
+	estimators.fitMGREV.model =  model.define_model ("models.codon.MG_REV.modelDescription", "estimators.fitMGREV.mg", {"0" : "terms.global", "1" : codon_data["code"]}, "estimators.fitMGREV.codon_data", None); 
+
+    fprintf (stdout, estimators.fitMGREV.model, "\n");
+
+    return None;
+
+    model.applyModelToTree ("estimators.fitGTR.tree", tree, {"default" : estimators.fitGTR.model} , None);
+    
+    LikelihoodFunction estimators.fitGTR.likelihoodFunction = (estimators.fitGTR.nuc_data, estimators.fitGTR.tree);
+    
+    if (Type (initial_values) == "AssociativeList") {
+        utility.toggleEnvVariable ("USE_LAST_RESULTS", 1);
+        estimators.applyExistingEstimates ("estimators.fitGTR.likelihoodFunction", {"estimators.fitGTR.gtr" : estimators.fitGTR.model}, initial_values)
+    }
+    
+    Optimize (estimators.fitGTR.mles, estimators.fitGTR.likelihoodFunction);
+    
+    if (Type (initial_values) == "AssociativeList") {
+        utility.toggleEnvVariable ("USE_LAST_RESULTS", None);
+    }
+        
+    estimators.fitGTR.results = estimators.extractMLEs ("estimators.fitGTR.likelihoodFunction", {"estimators.fitGTR.gtr" : estimators.fitGTR.model});
+    
+    estimators.fitGTR.results["LogL"]            = estimators.fitGTR.mles[1][0];
+    estimators.fitGTR.results["parameters"] = estimators.fitGTR.mles[1][1] + 3;
+    
+    //io.spoolLF ("estimators.fitGTR.likelihoodFunction", "/Volumes/home-raid/Desktop/test", None);
+    
+    DeleteObject (estimators.fitGTR.likelihoodFunction);*/
+    
+    return estimators.fitMGREV.results;
 }

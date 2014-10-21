@@ -23,8 +23,9 @@ function parameters.declareGlobal (id, cache) {
     } else {
         if (Type (id) == "AssociativeList") {
             parameters.declareGlobal.var_count = Abs (id);
+            parameters.declareGlobal.names = Columns (id);
             for (parameters.declareGlobal.k = 0; parameters.declareGlobal.k <  parameters.declareGlobal.var_count; parameters.declareGlobal.k += 1) {
-                parameters.declareGlobal (id[parameters.declareGlobal.k], cache);
+                parameters.declareGlobal (parameters.declareGlobal.names[parameters.declareGlobal.k], cache);
             }            
         }
     }
@@ -35,7 +36,7 @@ function parameters.quote (arg) {
 	return "\"" + arg + "\"";
 }
 
-function parameters.addMultiplicativeTerm (matrix, term) {
+lfunction parameters.addMultiplicativeTerm (matrix, term, do_empties) {
 	
 	if (Abs (term) > 0) {
 		__N = Rows (matrix);
@@ -44,9 +45,11 @@ function parameters.addMultiplicativeTerm (matrix, term) {
 			for (__c = 0; __c < __N; __c+=1) {
 				if (__r != __c) {
 					if (Abs (matrix[__r][__c])) {
-						matrix[__r][__c] += "*" + term;
+						matrix[__r][__c] = "(" + matrix[__r][__c] + ")*(" + term + ")";
 					} else {
-						matrix[__r][__c] =  term;
+					    if (do_empties) {
+						    matrix[__r][__c] =  term;
+						}
 					}
 				}
 			}
@@ -134,6 +137,18 @@ function parameters.setConstraint (id, value, global_tag) {
     }
 }
 
+function parameters.helper.copy_definitions (target, source) {
+    parameters.helper.copy_definitions.key_iterator = {{terms.local, terms.global}};
+    
+    for (parameters.helper.copy_definitions.i = 0; 
+         parameters.helper.copy_definitions.i < Columns (parameters.helper.copy_definitions.key_iterator);
+         parameters.helper.copy_definitions.i += 1) {
+         parameters.helper.copy_definitions.key = parameters.helper.copy_definitions.key_iterator[parameters.helper.copy_definitions.i];
+         if (Type (source[parameters.helper.copy_definitions.key]) == "AssociativeList") {
+            target [parameters.helper.copy_definitions.key] * source [parameters.helper.copy_definitions.key];
+         }   
+    }
+}
 
 lfunction parameters.helper.stick_breaking (parameters, initial_values) {
     left_over   = ""; 
@@ -153,4 +168,14 @@ lfunction parameters.helper.stick_breaking (parameters, initial_values) {
     
     weights[k] = left_over[0][Abs (left_over)-2];
     return weights;
+}
+
+lfunction parameters.helper.dump_matrix (matrix) {
+    for (i = 0; i < Rows (^matrix); i+=1) {
+        for (j = 0; j < Columns (^matrix); j+=1) {
+            ExecuteCommands ("GetString (cell, `matrix`, i, j)");
+            fprintf (stdout, "`matrix`[", i, "][", j, "] := ", cell, "\n");    
+        }
+    }
+    return None;
 }

@@ -5,6 +5,8 @@ function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name
     ExecuteCommands ("DataSetFilter `datafilter_name` = CreateFilter (`dataset_name`, 3, , , data_info[\"stop\"])");
     io.checkAssertion ("`datafilter_name`.sites*3==`dataset_name`.sites","The input alignment must not contain stop codons");
     data_info ["sites"] = Eval ("`datafilter_name`.sites");
+    data_info ["dataset"] = dataset_name;
+    data_info ["datafilter"] = datafilter_name;
     
     return data_info;
 }
@@ -32,6 +34,7 @@ function utility.loadAnnotatedTopology () {
 }
 
 function utility.callFunction (id, arguments) {
+
 	if (Type (arguments) == "AssociativeList") {
 		return Eval ("`id` (" + Join (",", arguments) + ")");	
 	}

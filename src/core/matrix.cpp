@@ -1291,8 +1291,8 @@ _PMathObj   _Matrix::MultByFreqs (long freqID)
 _PMathObj   _Matrix::Compute (void)
 {
     //if ((storageType != 1)&&(storageType != 2))
-    if (storageType != 1) {
-        if (storageType == 0) {
+    if (storageType != _NUMERICAL_TYPE) {
+      if (storageType == _POLYNOMIAL_TYPE) {
             if (ANALYTIC_COMPUTATION_FLAG) {
                 return this;
             }
@@ -1304,7 +1304,7 @@ _PMathObj   _Matrix::Compute (void)
         if (theValue) {
             DeleteObject (theValue);
         }
-        if (storageType != 3) {
+        if (storageType != _SIMPLE_FORMULA_TYPE) {
             theValue = Evaluate(false);
         } else {
             theValue  = EvaluateSimple ();
@@ -1317,7 +1317,7 @@ _PMathObj   _Matrix::Compute (void)
 //__________________________________________________________________________________
 _PMathObj   _Matrix::ComputeNumeric (bool copy)
 {
-    if (storageType != 1) {
+    if (storageType != _NUMERICAL_TYPE) {
         if (storageType == 0 && ANALYTIC_COMPUTATION_FLAG) {
             return this;
         }
@@ -1326,7 +1326,7 @@ _PMathObj   _Matrix::ComputeNumeric (bool copy)
             DeleteObject (theValue);
         }
 
-        if (storageType != 3) {
+        if (storageType != _SIMPLE_FORMULA_TYPE) {
             theValue  = Evaluate(false);
         } else {
             theValue  = EvaluateSimple ();
@@ -1347,7 +1347,7 @@ _PMathObj   _Matrix::ComputeNumeric (bool copy)
 //__________________________________________________________________________________
 _PMathObj   _Matrix::RetrieveNumeric (void)
 {
-    if (storageType != 1) {
+    if (storageType != _NUMERICAL_TYPE) {
         if (theValue) {
             return theValue;
         }
@@ -2911,7 +2911,7 @@ void        _Matrix::ConvertToSimpleList (_SimpleList & sl)
 bool        _Matrix::IsAStringMatrix (void)
 // check if a formula matrix contains strings
 {
-    if (storageType == 2) {
+    if (storageType == _FORMULA_TYPE) {
         _PMathObj   formValue = nil;
         _Formula ** theFormulas = (_Formula**)theData;
         if (theIndex)
@@ -9587,21 +9587,24 @@ void        _AssociativeList::Merge (_PMathObj p)
 
     if (p && p->ObjectClass() == ASSOCIATIVE_LIST) {
 
-       _AssociativeList *rhs = (_AssociativeList*) p;
+        _AssociativeList *rhs = (_AssociativeList*) p;
+      
+      if (rhs->avl.countitems()) {
        
-        _SimpleList  hist;
-        long         ls,
-                     cn = rhs->avl.Traverser (hist,ls,rhs->avl.GetRoot());
+          _SimpleList  hist;
+          long         ls,
+                       cn = rhs->avl.Traverser (hist,ls,rhs->avl.GetRoot());
 
 
-  
-       /*   SLKP20120111: we need to skip over "blanks" (e.g. resulting from previous delete operations)
-            here; using the traversal of the second list is the easiest way to go. */
-        
-        while (cn >= 0) {
-            MStore(*(_String*)(*(_List*)rhs->avl.dataList)(cn),(_PMathObj)rhs->avl.GetXtra (cn),true);
-            cn = rhs->avl.Traverser (hist,ls);
-        }
+    
+         /*   SLKP20120111: we need to skip over "blanks" (e.g. resulting from previous delete operations)
+              here; using the traversal of the second list is the easiest way to go. */
+          
+          while (cn >= 0) {
+              MStore(*(_String*)(*(_List*)rhs->avl.dataList)(cn),(_PMathObj)rhs->avl.GetXtra (cn),true);
+              cn = rhs->avl.Traverser (hist,ls);
+          }
+      }
     }
     else {
         WarnError ("Associative list merge operation requires an associative list argument.");
