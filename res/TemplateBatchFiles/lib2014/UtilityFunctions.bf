@@ -34,11 +34,13 @@ function utility.loadAnnotatedTopology () {
 }
 
 function utility.callFunction (id, arguments) {
-
-	if (Type (arguments) == "AssociativeList") {
-		return Eval ("`id` (" + Join (",", arguments) + ")");	
-	}
-	return Eval ("`id`()");
+    if (Type (id) == "String") {
+        if (Type (arguments) == "AssociativeList") {
+            return Eval ("`id` (" + Join (",", arguments) + ")");	
+        }
+        return Eval ("`id`()");
+    } 
+    return None;
 }
 
 function utility.isFunction (id) {

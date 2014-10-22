@@ -38,36 +38,79 @@ function model.applyModelToTree (id, tree, model_list, rules) {
 						  ");
 	}
 }
+
+
+function model.define.from.components (id,q,efv,canonical) {
+	ExecuteCommands ("Model `id` = (" + q + "," + efv + "," + canonical + ")");
+
+}
+
 //------------------------------------------------------------------------------ 
 
-function model.define_model (model_spec, id, arguments, data_filter, estimator_type) {
+function model.generic.define_model (model_spec, id, arguments, data_filter, estimator_type) {
 	
-	model.define_model.model = utility.callFunction (model_spec, arguments);
-	models.generic.attachFilter (model.define_model.model, data_filter);
+	model.generic.define_model.model = utility.callFunction (model_spec, arguments);
+	models.generic.attachFilter (model.generic.define_model.model, data_filter);
 	
-	model.define_model.model = utility.callFunction(model.define_model.model ["defineQ"], {"0" :   "model.define_model.model",
+	model.generic.define_model.model = utility.callFunction(model.generic.define_model.model ["defineQ"], {"0" :   "model.generic.define_model.model",
 																						   "1" :    parameters.quote (id)});
-	model.define_model.model ["matrix id"] = "`id`_" + terms.rate_matrix;
-	model.define_model.model ["efv id"] = "`id`_" + terms.efv_matrix;
-	model.define_model.model ["id"] = id;
+	model.generic.define_model.model ["matrix-id"] = "`id`_" + terms.rate_matrix;
+	model.generic.define_model.model ["efv-id"] = "`id`_" + terms.efv_matrix;
+	model.generic.define_model.model ["id"] = id;
 	
 	
 	if (estimator_type != None) {
-		model.define_model.model ["frequency_estimator"] = estimator_type;
+		model.generic.define_model.model ["frequency-estimator"] = estimator_type;
 	} 
 		
-	utility.callFunction (model.define_model.model ["frequency_estimator"], {"0": "model.define_model.model", 
+	utility.callFunction (model.generic.define_model.model ["frequency-estimator"], {"0": "model.generic.define_model.model", 
 													    "1":  parameters.quote(id),
 													    "2":   parameters.quote(data_filter)}); // this sets the EFV field
+													    
 													  
 													  
-	parameters.stringMatrixToFormulas (model.define_model.model ["matrix id"],model.define_model.model[terms.rate_matrix]);
-	ExecuteCommands (model.define_model.model ["efv id"]   + " = " + model.define_model.model[terms.efv_estimate]);
-		
-	ExecuteCommands ("Model `id` = (" + model.define_model.model ["matrix id"] + "," + model.define_model.model ["efv id"] + "," + model.define_model.model ["canonical"] + ")");
+	parameters.stringMatrixToFormulas (model.generic.define_model.model ["matrix-id"],model.generic.define_model.model[terms.rate_matrix]);
+	ExecuteCommands (model.generic.define_model.model ["efv-id"]   + " = " + model.generic.define_model.model[terms.efv_estimate]);
+		    
+	model.define.from.components (id, 	model.generic.define_model.model ["matrix-id"], model.generic.define_model.model ["efv-id"], model.generic.define_model.model ["canonical"]);
+    
+    if (Type (model.generic.define_model.model["post-definition"]) == "String") {
+        utility.callFunction (model.generic.define_model.model["post-definition"], {"0" : "model.generic.define_model.model"});
+    }
 	
-	
-	return model.define_model.model;
+	return model.generic.define_model.model;
+}
+
+//------------------------------------------------------------------------------ 
+
+function models.generic.post.definition  (model) {
+    if (Type (model ["id"]) == "String") {
+        ExecuteCommands ("GetString (models.generic.post.definition.bl,"+model ["id"]+",-1)");
+        model ["branch-length-string"] = models.generic.post.definition.bl; 
+    }
+     return model;
+}
+
+//------------------------------------------------------------------------------ 
+
+function models.generic.set_branch_length (model, value, parameter) {
+    if (Abs((model["parameters"])["local"]) == 1) {
+        if (Type (model ["branch-length-string"]) == "String") {
+            models.generic.set_branch_length.bl = (Columns ((model["parameters"])["local"]))[0];
+            ExecuteCommands ("FindRoot (models.generic.set_branch_length.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.set_branch_length.bl + ",0,10000)");
+            Eval (parameter + "." + models.generic.set_branch_length.bl + "=" + models.generic.set_branch_length.t);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------ 
+
+function models.generic.post.definition  (model) {
+    if (Type (model ["id"]) == "String") {
+        ExecuteCommands ("GetString (models.generic.post.definition.bl,"+model ["id"]+",-1)");
+        model ["branch-length-string"] = models.generic.post.definition.bl; 
+    }
+     return model;
 }
 
 //------------------------------------------------------------------------------ 
@@ -91,6 +134,19 @@ function model.dimension (model) {
         return Columns (model["alphabet"]);
     }
     return None;
+}
+
+//------------------------------------------------------------------------------ 
+
+function model.parameters.local (model) {
+    return (model["parameters"])["local"];
+}
+
+
+//------------------------------------------------------------------------------ 
+
+function model.parameters.global (model) {
+    return (model["parameters"])["global"];
 }
 
 //------------------------------------------------------------------------------ 

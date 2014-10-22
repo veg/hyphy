@@ -25,7 +25,7 @@ function  terms.nucleotideRate (fromC, toC) {
 }
 
 function  terms.aminoacidRate (fromA, toA) {
-	return "Substitution rate from amino-acid " + fromA + " to amino-acid " + toA;
+	return "Substitution rate from aminoacid " + fromA + " to aminoacid " + toA;
 }
 
 function  terms.timeParameter () {

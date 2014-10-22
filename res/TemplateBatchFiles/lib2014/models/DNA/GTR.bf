@@ -15,13 +15,14 @@ function models.DNA.GTR.modelDescription (type) {
     				"local" : {}
     			},
     		"type" : type,
-    		"get_branch_length" : "",
-    		"set_branch_length" : "models.generic.set_branch_length",
-    		"constrain_branch_length" : "models.generic.constrain_branch_length",
-    		"frequency_estimator" : "frequencies.empirical.nucleotide",
+     		"get-branch-length" : "",
+    		"set-branch-length" : "models.generic.set_branch_length",
+    		"constrain-branch-length" : "models.generic.constrain_branch_length",
+       		"frequency-estimator" : "frequencies.empirical.nucleotide",
     		"q_ij" : "models.DNA.GTR.generateRate",
     		"time" : "models.DNA.generic.time",
-    		"defineQ" : "models.DNA.GTR.defineQ"
+    		"defineQ" : "models.DNA.GTR.defineQ",
+    		"post-definition" : "models.generic.post.definition"
     		};
 }
 

@@ -1,10 +1,14 @@
 RequireVersion ("2.1320140810");
 
-_RELAX_timers  = {5,1};
-busted.taskTimerStart (4);
+RELAX.timers  = {5,1};
+relax.taskTimerStart (4);
 
 VERBOSITY_LEVEL				= 0;
 LF_SMOOTHING_SCALER         = 0.01;
+
+RELAX.test      = "RELAX.test";
+RELAX.reference = "RELAX.reference";
+RELAX.ignore    = "RELAX.ignore";
 
 
 LoadFunctionLibrary("GrabBag");
@@ -22,13 +26,16 @@ LoadFunctionLibrary("lib2014/IOFunctions.bf");
 LoadFunctionLibrary("lib2014/tasks/estimators.bf");
 
 
+_RELAX_settings = {"GTR" : 1, 
+                   "LocalMG" : 1};
+
 io.displayAnalysisBanner ({"info" : "RELAX (a random effects test of selection relaxation)
                             uses a random effects branch-site model framework 
                             to test whether a set of test branches (T) evolves under relaxed 
                             selection relative to a set of reference branches (R), as measured
                             by the relaxation parameter (K).",
                            "version" : "1.00",
-                           "reference" : "In revision, preprint at xxx",
+                           RELAX.reference : "In revision, preprint at xxx",
                            "authors" : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and the UCSD viral evolution group",
                            "contact" : "spond@ucsd.edu",
                            "requirements" : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"         
@@ -60,7 +67,6 @@ codon_data_info = utility.promptForGeneticCodeAndAlignment ("RELAX.codon_data", 
 
 LoadFunctionLibrary ("lib2014/models/codon/MG_REV.bf");
 
-
 codon_data_info["json"] = codon_data_info["file"] + ".RELAX.json";
 io.reportProgressMessage ("RELAX", "Loaded an MSA with " + codon_data_info["sequences"] + " sequences and " + codon_data_info["sites"] + " codons from '" + codon_data_info["file"] + "'");
 
@@ -70,16 +76,49 @@ tree_definition 	  = utility.loadAnnotatedTopology ();
 relax.selected_branches = relax.io.defineBranchSets (tree_definition);
 _RELAX_json ["partition"] = relax.selected_branches;
 
-io.reportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches["Test"]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches["Test"])));
+io.reportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches[RELAX.test]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches[RELAX.test])));
 
-io.reportProgressMessage ("RELAX", "Obtaining branch lengths under the GTR model");
-relax.gtr_results = estimators.fitGTR     ("RELAX.codon_filter", tree_definition, None);
-io.reportProgressMessage ("RELAX", "Log(L) = " + relax.gtr_results["LogL"]);
 
-io.reportProgressMessage ("RELAX", "Obtaining omega and branch length estimates under the MG94xGTR model using GTR as the starting point");
-relax.mg_results  = estimators.fitMGREV     (codon_data_info, tree_definition, terms.local, relax.gtr_results);
+if (_RELAX_settings["GTR"]) {
+    io.reportProgressMessage ("RELAX", "Obtaining branch lengths under the GTR model");
+    relax.gtr_results = estimators.fitGTR     ("RELAX.codon_filter", tree_definition, None);
+    io.reportProgressMessage ("RELAX", "Log(L) = " + relax.gtr_results["LogL"]);
+    estimators.fixSubsetOfEstimates (relax.gtr_results, relax.gtr_results["global"]);
+} else {
+    relax.gtr_results = None;
+}
+
+if (_RELAX_settings["LocalMG"]) {
+  io.reportProgressMessage ("RELAX", "Obtaining  omega and branch length estimates under the local MG94xGTR model");
+  relax.local_mg_results  = estimators.fitMGREV     (codon_data_info, tree_definition, {"model-type" : terms.local}, relax.gtr_results);
+  io.reportProgressMessage ("RELAX", "Log(L) = " + relax.local_mg_results["LogL"]);
+  estimators.fixSubsetOfEstimates (relax.local_mg_results, relax.local_mg_results["global"]);
+} else {
+    relax.local_mg_results = relax.gtr_results;
+}
+
+io.reportProgressMessage ("RELAX", "Obtaining omega and branch length estimates under the partitioned MG94xGTR");
+
+tr = Time (1);
+
+relax.mg_results  = estimators.fitMGREV     (codon_data_info, tree_definition, {"model-type" : terms.local, "partitioned-omega" : 1, "fixed-branch-proportions": 1}, relax.local_mg_results);
+
+fprintf (stdout, relax.mg_results, "\n", Time (1) - tr, "\n");
 
 return 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 busted.model_definitions = busted.io.define_bsrel_models  ("FG","BG","Unclassified",codon_frequencies);
 
@@ -370,6 +409,7 @@ function relax._aux.io.countBranchSets (key, value) {
 }
 
 function relax._aux.io.mapBranchSets (key, value) {
+    (tree_definition ["model_map"])[key] = branch_set[value];
     (return_set[branch_set[value]])[key] = 1;
     return None;
 }
@@ -392,7 +432,6 @@ function relax.io.defineBranchSets (tree_definition) {
     
     option_count = Columns (list_models);
         
-        
     selectTheseForTesting = {option_count,2};
     for (k = 0; k < Columns (list_models); k+=1) {
         if (list_models[k] != "") {
@@ -410,8 +449,8 @@ function relax.io.defineBranchSets (tree_definition) {
     return_set = {};
     
     if (fgSet > 0) {
-        branch_set [selectTheseForTesting[fgSet][0]] = "Test";
-        return_set ["Test"] = {};
+        branch_set [selectTheseForTesting[fgSet][0]] = RELAX.test;
+        return_set [RELAX.test] = {};
         if (option_count > 2) {
             ChoiceList  (bgSet,"Choose the set of reference branches (R set)",1,fgSet,selectTheseForTesting);    
             if (bgSet < 0) {
@@ -419,8 +458,8 @@ function relax.io.defineBranchSets (tree_definition) {
             }    
             for (k = 0; k < option_count; k+=1) {
                 if (k != bgSet && k != fgSet) {
-                    branch_set [""] = "Ignore";
-                    return_set ["Ignore"] = {};
+                    branch_set [""] = RELAX.ignore;
+                    return_set [RELAX.ignore] = {};
                     break;
                 }
             }
@@ -428,11 +467,12 @@ function relax.io.defineBranchSets (tree_definition) {
         else {
             bgSet = 1-fgSet;
         }
-        branch_set [selectTheseForTesting[bgSet][0]] = "Reference";
-        return_set ["Reference"] = {};
+        branch_set [selectTheseForTesting[bgSet][0]] = RELAX.reference;
+        return_set [RELAX.reference] = {};
     }
     
     (tree_definition["model_map"])["relax._aux.io.mapBranchSets"][""];
+    tree_definition["model_list"] = Columns (tree_definition["model_map"]);
     
     return return_set;
     
@@ -448,17 +488,17 @@ function busted.evidenceRatios (ha, h0) {
 //------------------------------------------------------------------------------------------------------------------------
 
 function relax.taskTimerStart (index) {
-    _RELAX_timers[index] = Time(1);
+    RELAX.timers[index] = Time(1);
 }
 
 function relax.taskTimerStop (index) {
-    _RELAX_timers[index] = Time(1) - _RELAX_timers[index];
+    RELAX.timers[index] = Time(1) - RELAX.timers[index];
 
 }
 
 //------------------------------------------------------------------------------------------------------------------------
 
-function busted.getIC (logl,params,samples) {
+function relax.getIC (logl,params,samples) {
     return -2*logl + 2*samples/(samples-params-1)*params;
 }
 
@@ -466,7 +506,8 @@ function busted.getIC (logl,params,samples) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-lfunction busted.json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_string, defs, has_bg) {
+lfunction relax.json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_string, defs, has_bg) {
+
     (json["fits"])[name] = {"log-likelihood": ll,
                             "parameters": df,
                             "AIC-c" : aicc,
@@ -474,9 +515,11 @@ lfunction busted.json_store_lf (json, name, ll, df, aicc, time, tree_length, tre
                             "tree length" : tree_length,
                             "tree string" : tree_string,
                             "rate distributions" : {}};
-                            
-    (((json["fits"])[name])["rate distributions"])["FG"] = busted.getRateDistribution (defs, "FG");
-    if (has_bg) {
-        (((json["fits"])[name])["rate distributions"])["BG"] = busted.getRateDistribution (defs, "BG");
+                
+    if (fits) {                        
+        (((json["fits"])[name])["rate distributions"])["FG"] = busted.getRateDistribution (defs, "FG");
+        if (has_bg) {
+            (((json["fits"])[name])["rate distributions"])["BG"] = busted.getRateDistribution (defs, "BG");
+        }
     }
 }

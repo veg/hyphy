@@ -1,6 +1,8 @@
 LoadFunctionLibrary ("GrabBag");
 LoadFunctionLibrary ("terms.bf");
 
+parameters.infinity = 1e10;
+
 function parameters.applyNameSpace (id, namespace) {
 	if (Type (namespace) == "String") {
 		if (Abs (namespace) > 0) {
@@ -27,10 +29,28 @@ function parameters.declareGlobal (id, cache) {
             for (parameters.declareGlobal.k = 0; parameters.declareGlobal.k <  parameters.declareGlobal.var_count; parameters.declareGlobal.k += 1) {
                 parameters.declareGlobal (parameters.declareGlobal.names[parameters.declareGlobal.k], cache);
             }            
+        } else {
+            if (Type (id) == "Matrix") {
+                 parameters.declareGlobal.var_count = Columns (id) * Rows (id);
+                 for (parameters.declareGlobal.k = 0; parameters.declareGlobal.k <  parameters.declareGlobal.var_count; parameters.declareGlobal.k += 1) {
+                    parameters.declareGlobal (parameters.declareGlobal.names[parameters.declareGlobal.k], cache);
+                 }                       
+            }
         }
     }
 }
 
+
+function parameters.normalize_ratio (n, d) {
+    if (d == 0) {
+        if (n == 0) {
+            return 1;
+        } else {
+            return parameters.infinity;
+        }
+    } 
+    return n/d;
+}
 
 function parameters.quote (arg) {
 	return "\"" + arg + "\"";
@@ -119,6 +139,11 @@ function parameters.setRange (id, ranges) {
     }
 }
 
+function parameters.isIndependent (id) {
+    ExecuteCommands ("GetString (parameters.isIndependent.t, `id`, -1);");
+    return Type (parameters.isIndependent.t) != "AssociativeList";
+}
+
 function parameters.setConstraint (id, value, global_tag) {
     if (Type (id) == "String") {
         if (Abs (id)) {
@@ -136,6 +161,23 @@ function parameters.setConstraint (id, value, global_tag) {
         }
     }
 }
+
+function parameters.removeConstraint (id) {
+    if (Type (id) == "String") {
+        if (Abs (id)) {
+            Eval ("`id` = " + Eval(id));
+        }
+    } else {
+        if (Type (id) == "AssociativeList" && Type (value) == "AssociativeList") {                
+
+            parameters.removeConstraint.var_count = Abs (id);
+            for (parameters.removeConstraint.k = 0; parameters.removeConstraint.k <  parameters.removeConstraint.var_count; parameters.removeConstraint.k += 1) {
+                parameters.removeConstraint (id[parameters.removeConstraint.k]);
+            }            
+        }
+    }
+}
+
 
 function parameters.helper.copy_definitions (target, source) {
     parameters.helper.copy_definitions.key_iterator = {{terms.local, terms.global}};
