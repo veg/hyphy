@@ -74,7 +74,7 @@ _String   compileDate = __DATE__,
                                                                                                   Replace("Dec", "12", true)
                                                                                                   & compileDate.Cut (4,5).Replace (" ", "0", true) & "beta";
 
-
+ 
 _String     empty(""),
             emptyAssociativeList ("{}"),
             hyphyCiteString ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n");
