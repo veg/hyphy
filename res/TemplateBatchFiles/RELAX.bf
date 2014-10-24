@@ -256,7 +256,7 @@ relax.taskTimerStop  (0);
 (RELAX.json ["timers"])["preliminaries"]         = RELAX.timers[1];
 (RELAX.json ["timers"])["general descriptive"]   = RELAX.timers[2];
 (RELAX.json ["timers"])["Null"]                  = RELAX.timers[3];
-(RELAX.json ["timers"])["Alternative"]             = RELAX.timers[4];
+(RELAX.json ["timers"])["Alternative"]           = RELAX.timers[4];
 
 
 USE_JSON_FOR_MATRIX = 1;
@@ -412,9 +412,7 @@ function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
     
     if (do_local) {
         parameters.setConstraint ((model_parameters["omegas"])[2], " 1/" + ((model_parameters["omegas"])[0]) + "/" + ((model_parameters["omegas"])[1]) , "");
-        
-        relax.io.define_a_bsrel_model_r = {"LB" : 1e-4, "UB" : 1};
-        
+        relax.io.define_a_bsrel_model_r = {"LB" : 1e-4, "UB" : 1};        
         parameters.setRange ((model_parameters["omegas"])[1], relax.io.define_a_bsrel_model_r);
     }
     
@@ -458,7 +456,6 @@ function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
 //------------------------------------------------------------------------------ 
 
 
-
 function relax.aux.retrieve_branch_length (model, tree, node) {
     relax.aux.retrieve_branch_length.locals = Columns ((model_parameters["parameters"])[terms.local]);
     for (relax.aux.retrieve_branch_length.i = 0; relax.aux.retrieve_branch_length.i < Columns (relax.aux.retrieve_branch_length.locals); relax.aux.retrieve_branch_length.i += 1) {
@@ -491,6 +488,9 @@ function relax._aux.io.countBranchSets (key, value) {
 }
 
 function relax._aux.io.mapBranchSets (key, value) {
+    if (Abs (value) == 0) {
+        value = "Unlabeled branches";
+    }
     (relax.tree ["model_map"])[key] = branch_set[value];
     (return_set[branch_set[value]])[key] = 1;
     return None;
@@ -530,7 +530,7 @@ function relax.io.defineBranchSets (relax.tree) {
     
     return_set = {};
     
-    if (fgSet > 0) {
+    if (fgSet >= 0) {
         branch_set [selectTheseForTesting[fgSet][0]] = RELAX.test;
         return_set [RELAX.test] = {};
         if (option_count > 2) {
