@@ -63,6 +63,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
             ANAL_COMP_FLAG              = "ANALYTIC_COMPUTATIONS",
             ANAL_MATRIX_TOLERANCE      = "ANAL_MATRIX_TOLERANCE",
+            USE_JSON_FOR_MATRIX      = "USE_JSON_FOR_MATRIX",
             PROFILE_MEAN_VAR_MULT      = "PROFILE_MEAN_VAR_MULT",
             CACHE_FORMULA_DEPENDANCY  = "CACHE_FORMULA_DEPENDANCY",
             BRANCH_LENGTH_STENCIL      = "BRANCH_LENGTH_STENCIL",
@@ -1290,8 +1291,8 @@ _PMathObj   _Matrix::MultByFreqs (long freqID)
 _PMathObj   _Matrix::Compute (void)
 {
     //if ((storageType != 1)&&(storageType != 2))
-    if (storageType != 1) {
-        if (storageType == 0) {
+    if (storageType != _NUMERICAL_TYPE) {
+      if (storageType == _POLYNOMIAL_TYPE) {
             if (ANALYTIC_COMPUTATION_FLAG) {
                 return this;
             }
@@ -1303,7 +1304,7 @@ _PMathObj   _Matrix::Compute (void)
         if (theValue) {
             DeleteObject (theValue);
         }
-        if (storageType != 3) {
+        if (storageType != _SIMPLE_FORMULA_TYPE) {
             theValue = Evaluate(false);
         } else {
             theValue  = EvaluateSimple ();
@@ -1316,7 +1317,7 @@ _PMathObj   _Matrix::Compute (void)
 //__________________________________________________________________________________
 _PMathObj   _Matrix::ComputeNumeric (bool copy)
 {
-    if (storageType != 1) {
+    if (storageType != _NUMERICAL_TYPE) {
         if (storageType == 0 && ANALYTIC_COMPUTATION_FLAG) {
             return this;
         }
@@ -1325,7 +1326,7 @@ _PMathObj   _Matrix::ComputeNumeric (bool copy)
             DeleteObject (theValue);
         }
 
-        if (storageType != 3) {
+        if (storageType != _SIMPLE_FORMULA_TYPE) {
             theValue  = Evaluate(false);
         } else {
             theValue  = EvaluateSimple ();
@@ -1346,7 +1347,7 @@ _PMathObj   _Matrix::ComputeNumeric (bool copy)
 //__________________________________________________________________________________
 _PMathObj   _Matrix::RetrieveNumeric (void)
 {
-    if (storageType != 1) {
+    if (storageType != _NUMERICAL_TYPE) {
         if (theValue) {
             return theValue;
         }
@@ -2910,7 +2911,7 @@ void        _Matrix::ConvertToSimpleList (_SimpleList & sl)
 bool        _Matrix::IsAStringMatrix (void)
 // check if a formula matrix contains strings
 {
-    if (storageType == 2) {
+    if (storageType == _FORMULA_TYPE) {
         _PMathObj   formValue = nil;
         _Formula ** theFormulas = (_Formula**)theData;
         if (theIndex)
@@ -7359,100 +7360,110 @@ _Matrix     _Matrix::operator - (_Matrix& m)
 
 BaseRef _Matrix::toStr(void)
 {
-    _String result(2048L,true);
-    checkParameter (printDigitsSpec,printDigits,0);
-    long digs = printDigits;
-
-    //if (vDim<500)
-    {
-        if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
-            bool printStrings = storageType != 1;
-
-            result << '{';
-            result << '\n';
-            for (long i = 0; i<hDim; i++) {
-                result<<'{';
-                char str[100];
-                for (long j = 0; j<vDim; j++) {
-                    if (printStrings) {
-                        result << '"';
-                        _Formula * f = GetFormula (i,j);
-                        _PMathObj fv;
-                        if (f && (fv=f->Compute())) {
-                            if (fv->ObjectClass() == STRING) {
-                                result << ((_FString*)fv)->theString;
-                            } else {
-                                result << (_String*)fv->toStr();
-                            }
-                        }
-                        result << '"';
-                    } else {
-                        if (digs >= 0)
-#ifdef __USE_LONG_DOUBLE__
-                            snprintf (str, sizeof(str), "%18.12Lg", (*this)(i,j));
-#else
-                            snprintf (str, sizeof(str), PRINTF_FORMAT_STRING, (*this)(i,j));
-#endif
-                        else
-#ifdef __USE_LONG_DOUBLE__
-                            snprintf (str, sizeof(str), "%Lg", (*this)(i,j));
-#else
-                            snprintf (str, sizeof(str), PRINTF_FORMAT_STRING, (*this)(i,j));
-#endif
-                        _String cell (str);
-                        result<<&cell;
-
-                    }
-                    if (j<vDim-1) {
-                        result<<',';
-                    }
-                }
-                result<<'}';
-                result<<'\n';
-            }
-            result<<'}';
-            result<<'\n';
-            result.Finalize();
-        } else if (storageType == 0) {
-            checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
-            if (!ANALYTIC_COMPUTATION_FLAG) {
-                return Compute()->toStr();
-            }
-            for (long i = 0; i<hDim; i++) {
-                result<<'\n';
-                result<<'[';
-                for (long j = 0; j<vDim; j++) {
-                    long p = Hash (i,j);
-                    if (GetMatrixObject(p)) {
-                        if (p>=0) {
-                            _String *sp = (_String*) GetMatrixObject (p)->toStr();
-                            result<<sp;
-                            if (j<vDim-1) {
-                                result<<',';
-                            }
-                            result<<' ';
-                            DeleteObject (sp);
-                            continue;
-                        }
-                    }
-                    result<<'0';
-                }
-                result<<']';
-            }
-            result<<'\n';
-            result<<'\n';
-            result.Finalize();
-        } else {
-            _Matrix* eval = (_Matrix*)ComputeNumeric();
-            result.Finalize();
-            _String* ss = (_String*)eval->toStr();
-            return ss;
+  _String result(2048L,true);
+  checkParameter (printDigitsSpec,printDigits,0);
+  long digs = printDigits;
+  
+  //if (vDim<500)
+  {
+    if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
+      bool printStrings = storageType != 1;
+ 
+      _Parameter useJSON = 0.0;
+       checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
+      bool doJSON = !CheckEqual(useJSON, 0.0);
+      
+      char openBracket  = doJSON ? '[' : '{',
+      closeBracket = doJSON ? ']' : '}';
+      
+      result << openBracket;
+      result << '\n';
+      for (long i = 0; i<hDim; i++) {
+        if (i && doJSON) {
+          result << ',';
         }
-
-
+        result<<openBracket;
+        char str[100];
+        for (long j = 0; j<vDim; j++) {
+          if (printStrings) {
+            result << '"';
+            _Formula * f = GetFormula (i,j);
+            _PMathObj fv;
+            if (f && (fv=f->Compute())) {
+              if (fv->ObjectClass() == STRING) {
+                result << ((_FString*)fv)->theString;
+              } else {
+                result << (_String*)fv->toStr();
+              }
+            }
+            result << '"';
+          } else {
+            if (digs >= 0)
+#ifdef __USE_LONG_DOUBLE__
+              snprintf (str, sizeof(str), "%18.12Lg", (*this)(i,j));
+#else
+            snprintf (str, sizeof(str), PRINTF_FORMAT_STRING, (*this)(i,j));
+#endif
+            else
+#ifdef __USE_LONG_DOUBLE__
+              snprintf (str, sizeof(str), "%Lg", (*this)(i,j));
+#else
+            snprintf (str, sizeof(str), PRINTF_FORMAT_STRING, (*this)(i,j));
+#endif
+            _String cell (str);
+            result<<&cell;
+            
+          }
+          if (j<vDim-1) {
+            result<<',';
+          }
+        }
+        result<<closeBracket;
+        result<<'\n';
+      }
+      result<<closeBracket;
+      result<<'\n';
+      result.Finalize();
+    } else if (storageType == 0) {
+      checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
+      if (!ANALYTIC_COMPUTATION_FLAG) {
+        return Compute()->toStr();
+      }
+      for (long i = 0; i<hDim; i++) {
+        result<<'\n';
+        result<<'[';
+        for (long j = 0; j<vDim; j++) {
+          long p = Hash (i,j);
+          if (GetMatrixObject(p)) {
+            if (p>=0) {
+              _String *sp = (_String*) GetMatrixObject (p)->toStr();
+              result<<sp;
+              if (j<vDim-1) {
+                result<<',';
+              }
+              result<<' ';
+              DeleteObject (sp);
+              continue;
+            }
+          }
+          result<<'0';
+        }
+        result<<']';
+      }
+      result<<'\n';
+      result<<'\n';
+      result.Finalize();
+    } else {
+      _Matrix* eval = (_Matrix*)ComputeNumeric();
+      result.Finalize();
+      _String* ss = (_String*)eval->toStr();
+      return ss;
     }
-
-    return result.makeDynamic();
+    
+    
+  }
+  
+  return result.makeDynamic();
 }
 
 //_____________________________________________________________________________________________
@@ -7492,91 +7503,97 @@ void     _Matrix::Serialize (_String& res, _String& myID)
 }
 
 //_________________________________________________________
-void    _Matrix::toFileStr (FILE*dest)
-{
-    if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
-        bool printStrings = storageType != 1;
-        long digs         = -1;
-
-        if (!printStrings) {
-            checkParameter (printDigitsSpec,printDigits,0);
-            digs =  printDigits;
-        }
-
-        if (!printStrings && digs != -1) {
-            _String formatStr;
-            if (digs<=0 || digs>15) {
-                digs = 8;
-            }
-            formatStr = "%";
-            formatStr = formatStr&_String(digs+6)&'.'&_String(digs)&'g';
-            char *fs = formatStr.getStr();
-            fprintf (dest, "\n{");
-            for (long i = 0; i<hDim; i++) {
-                fprintf (dest, "{");
-                for (long j = 0; j<vDim; j++) {
-                    fprintf(dest, fs, (*this)(i,j));
-                    if (j<vDim-1) {
-                        fprintf (dest, ",");
-                    }
-                    if (j%100==0) {
-                        fflush(dest);
-                    }
-                }
-                fprintf (dest, "}\n");
-            }
-            fprintf (dest, "}\n");
-        } else {
-            fprintf (dest, "\n{");
-            for (long i = 0; i<hDim; i++) {
-                fprintf (dest, "{");
-                for (long j = 0; j<vDim; j++) {
-                    if (j) {
-                        fprintf (dest,",");
-                    }
-
-                    if (printStrings) {
-                        fprintf (dest,"\"");;
-                        _Formula * f = GetFormula (i,j);
-                        _PMathObj fv;
-                        if (f && (fv=f->Compute())) {
-                            fprintf (dest,"%s",((_FString*)fv)->theString->sData);
-                        }
-                        fprintf (dest,"\"");
-                    } else {
-                        fprintf(dest, "%g", (*this)(i,j));
-                    }
-                }
-                fprintf (dest, "}\n");
-            }
-            fprintf (dest, "}\n");
-        }
-    } else if (storageType==0) {
-        checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
-        if (!ANALYTIC_COMPUTATION_FLAG) {
-            Compute()->toFileStr(dest);
-            return;
-        }
-        for (long i = 0; i<hDim; i++) {
-            fprintf (dest, "\n[");
-            for (long j = 0; j<vDim; j++) {
-                long p = Hash (i,j);
-                if (p>=0) {
-                    _String *sp = (_String*) GetMatrixObject (p)->toStr();
-                    fprintf(dest, "%s", sp->sData);
-                    fprintf (dest, ",");
-                    DeleteObject (sp);
-                } else {
-                    fprintf(dest, "%g", 0.0);
-                }
-            }
-            fprintf (dest, "]");
-        }
-    } else {
-        _Matrix* eval = (_Matrix*)(storageType==3?EvaluateSimple():Evaluate(false));
-        eval->toFileStr(dest);
-        DeleteObject (eval);
+void    _Matrix::toFileStr (FILE*dest){
+  if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
+    bool printStrings = storageType != 1;
+    long digs         = -1;
+    
+    _Parameter useJSON = 0.0;
+    checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
+    bool doJSON = !CheckEqual(useJSON, 0.0);
+    
+    char openBracket  = doJSON ? '[' : '{',
+         closeBracket = doJSON ? ']' : '}';
+    
+    if (!printStrings) {
+      checkParameter (printDigitsSpec,printDigits,0);
+      digs =  printDigits;
     }
+    
+    if (!printStrings && digs != -1) {
+      _String formatStr;
+      if (digs<=0 || digs>15) {
+        digs = 8;
+      }
+      formatStr = "%";
+      formatStr = formatStr&_String(digs+6)&'.'&_String(digs)&'g';
+      char *fs = formatStr.getStr();
+      fprintf (dest, "\n%c", openBracket);
+      for (long i = 0; i<hDim; i++) {
+        fprintf (dest, "%c", openBracket);
+        for (long j = 0; j<vDim; j++) {
+          fprintf(dest, fs, (*this)(i,j));
+          if (j<vDim-1) {
+            fprintf (dest, ",");
+          }
+          if (j%100==0) {
+            fflush(dest);
+          }
+        }
+        fprintf (dest, "}\n");
+      }
+      fprintf (dest, "}\n");
+    } else {
+      fprintf (dest, "\n{");
+      for (long i = 0; i<hDim; i++) {
+        fprintf (dest, "{");
+        for (long j = 0; j<vDim; j++) {
+          if (j) {
+            fprintf (dest,",");
+          }
+          
+          if (printStrings) {
+            fprintf (dest,"\"");;
+            _Formula * f = GetFormula (i,j);
+            _PMathObj fv;
+            if (f && (fv=f->Compute())) {
+              fprintf (dest,"%s",((_FString*)fv)->theString->sData);
+            }
+            fprintf (dest,"\"");
+          } else {
+            fprintf(dest, "%g", (*this)(i,j));
+          }
+        }
+        fprintf (dest, "%c%c\n", closeBracket, doJSON ? ',' : ' ');
+      }
+      fprintf (dest, "%c\n", closeBracket);
+    }
+  } else if (storageType==0) {
+    checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
+    if (!ANALYTIC_COMPUTATION_FLAG) {
+      Compute()->toFileStr(dest);
+      return;
+    }
+    for (long i = 0; i<hDim; i++) {
+      fprintf (dest, "\n[");
+      for (long j = 0; j<vDim; j++) {
+        long p = Hash (i,j);
+        if (p>=0) {
+          _String *sp = (_String*) GetMatrixObject (p)->toStr();
+          fprintf(dest, "%s", sp->sData);
+          fprintf (dest, ",");
+          DeleteObject (sp);
+        } else {
+          fprintf(dest, "%g", 0.0);
+        }
+      }
+      fprintf (dest, "]");
+    }
+  } else {
+    _Matrix* eval = (_Matrix*)(storageType==3?EvaluateSimple():Evaluate(false));
+    eval->toFileStr(dest);
+    DeleteObject (eval);
+  }
 }
 
 //_____________________________________________________________________________________________
@@ -9570,21 +9587,24 @@ void        _AssociativeList::Merge (_PMathObj p)
 
     if (p && p->ObjectClass() == ASSOCIATIVE_LIST) {
 
-       _AssociativeList *rhs = (_AssociativeList*) p;
+        _AssociativeList *rhs = (_AssociativeList*) p;
+      
+      if (rhs->avl.countitems()) {
        
-        _SimpleList  hist;
-        long         ls,
-                     cn = rhs->avl.Traverser (hist,ls,rhs->avl.GetRoot());
+          _SimpleList  hist;
+          long         ls,
+                       cn = rhs->avl.Traverser (hist,ls,rhs->avl.GetRoot());
 
 
-  
-       /*   SLKP20120111: we need to skip over "blanks" (e.g. resulting from previous delete operations)
-            here; using the traversal of the second list is the easiest way to go. */
-        
-        while (cn >= 0) {
-            MStore(*(_String*)(*(_List*)rhs->avl.dataList)(cn),(_PMathObj)rhs->avl.GetXtra (cn),true);
-            cn = rhs->avl.Traverser (hist,ls);
-        }
+    
+         /*   SLKP20120111: we need to skip over "blanks" (e.g. resulting from previous delete operations)
+              here; using the traversal of the second list is the easiest way to go. */
+          
+          while (cn >= 0) {
+              MStore(*(_String*)(*(_List*)rhs->avl.dataList)(cn),(_PMathObj)rhs->avl.GetXtra (cn),true);
+              cn = rhs->avl.Traverser (hist,ls);
+          }
+      }
     }
     else {
         WarnError ("Associative list merge operation requires an associative list argument.");

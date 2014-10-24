@@ -354,7 +354,11 @@ function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
         
 		if (advance) {
 		    if (copy_codon) {
-                translString * codon;
+		    	if (currentAA == "X") {
+                	translString * "---";
+                } else {
+                	translString * codon;                
+                }
             } else {
                 //fprintf (stdout, "Skipping codon ", codon, "\n");
                 aaPos = aaPos -1;
@@ -435,6 +439,20 @@ function defineCodonToAA ()
 	for (p1=0; p1<64; p1=p1+1)
 	{
 		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[_Genetic_Code[p1]];
+	}
+	
+	return codonToAAMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function defineCodonToAAGivenCode (code)
+{	
+	codonToAAMap = {};
+	nucChars = "ACGT";
+	
+	for (p1=0; p1<64; p1+=1) {
+		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[code[p1]];
 	}
 	
 	return codonToAAMap;
@@ -560,20 +578,27 @@ function translateCodonToAA (codonSeq,mapping,offset)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function ComputeCodonCodeToStringMap (genCode)
+lfunction ComputeCodonCodeToStringMap (genCode)
 {
 	_codonMap = {};
-	_shift	  = 0;
 	_nucLetters = "ACGT";
-	for (_idx = 0; _idx < Columns(genCode); _idx = _idx+1)
-	{
-		if (genCode[_idx] == 10)
-		{
-			_shift = _shift + 1;
+	for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
+		if (genCode[_idx] != 10) {
+		    _codonMap + (_nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4]);
 		}
-		else
-		{
-			_codonMap [_idx-_shift] = _nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4];
+	}
+	return _codonMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction ComputeCodonCodeToStringMapStop (genCode)
+{
+	_codonMap = {};
+	_nucLetters = "ACGT";
+	for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
+		if (genCode[_idx] == 10) {
+			_codonMap + (_nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4]);
 		}
 	}
 	return _codonMap;

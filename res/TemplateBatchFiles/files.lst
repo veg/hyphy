@@ -71,6 +71,7 @@
 "BSREL","Use the random effects branch-site model (2010) to find lineages subject to episodic selection.","BranchSiteREL.bf";
 "BST","Use the improved branch-site REL method of Yang and Nielsen (2005) to look for episodic selection in sequences.","YangNielsenBranchSite2005.bf";
 "BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf";
+"BUSTED","Run the Branch-site Unrestricted Statistical Test for Episodic Diversification to test for evidence of episodic alignment-wide selective pressure","BUSTED.bf";
 "PSD","Test whether sites in two populations are evolving under different selective pressures.","CompareSelectivePressure.bf";
 "PSDI","Test whether sites in two populations are evolving under different selective pressures along internal tree branches.","CompareSelectivePressureIVL.bf";
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";

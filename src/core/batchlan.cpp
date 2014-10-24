@@ -3047,6 +3047,10 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 
 
         FILE * commandSource = nil;
+        
+        _Parameter reload = 0.;
+        checkParameter(alwaysReloadLibraries, reload, 0.);
+
         if (code == 66) {
             bool hasExtension    = filePath.FindBackwards (".",0,-1) > 0;
 
@@ -3055,9 +3059,9 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
                     _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 
                     // printf ("%s\n", tryPath.sData);
-                    _Parameter reload = 0.;
-                    checkParameter(alwaysReloadLibraries, reload, 0.);
 
+                    tryPath.ProcessFileName (false, false, (Ptr)chain.nameSpacePrefix);
+                  
                     if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
                         ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
                         return;
@@ -3073,9 +3077,16 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
             }
 
         }
+      
 
         if (commandSource == nil) {
             filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
+ 
+            if (code == 66 && loadedLibraryPaths.Find(&filePath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
+                ReportWarning (_String("Already loaded '") & originalPath & "' from " & filePath);
+                return;
+            }
+            
             if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil) {
                 WarnError (_String("Could not read command file in ExecuteAFile.\nOriginal path: '") &
                                     originalPath & "'.\nExpanded path: '" & filePath & "'");
@@ -4731,7 +4742,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
                             theNode->RecomputeMatrix (0,1,result);
                         }
                     } else {
-                        if (theObject->ObjectClass() == TOPOLOGY) {
+                        if (theObject->ObjectClass() == TOPOLOGY || theObject->ObjectClass() == TREE) {
  
                             _List* map = ((_TreeTopology*)theObject)->MapNodesToModels ();
                             _AssociativeList* return_this = new _AssociativeList();

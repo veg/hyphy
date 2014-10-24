@@ -76,6 +76,8 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecu
         return new _Constant (0.0);
     case HY_OP_CODE_ERF: // Erf
         return Erf();
+    case HY_OP_CODE_EVAL:
+        return (_PMathObj)Compute()->makeDynamic();
     case HY_OP_CODE_EXP: // Exp
         return Exp();
     case HY_OP_CODE_FORMAT: // Format

@@ -22,60 +22,57 @@ function PostOrderAVL2StringAnnotateAux (theAVL, doLengths, label, chars)
 	lastLevel = 0;
 	treeSize  = Abs(theAVL);
 	treeInfo  = theAVL[0];
-	rootIndex = theAVL["Root"];
+	rootIndex = treeInfo["Root"];
 	
 	for (nodeIndex = 1; nodeIndex < treeSize; nodeIndex = nodeIndex + 1)
 	{
-		if (nodeIndex != rootIndex)
-		{
-			nodeInfo = theAVL[nodeIndex];
-			myDepth = nodeInfo["Depth"];
-			if (lastDepth < myDepth)
-			{
-				if (lastDepth)
-				{
-					_ost * ",";
-				}
-				for (pidx = lastDepth; pidx < myDepth; pidx = pidx + 1)
-				{
-					_ost * "(";
-				}
-			}
-			else
-			{
-				if (lastDepth > myDepth)
-				{
-					for (pidx = myDepth; pidx < lastDepth; pidx = pidx + 1)
-					{
-						_ost * ")";
-					}				
-				}
-				else
-				{
-					_ost * ",";
-				}
-			}
-			
-			_ost * nodeInfo["Name"];
-			
-			if (Abs (label))
-			{
-				if (Abs(nodeInfo[label]))
-				{
-					_ost * (chars[0] + nodeInfo[label] + chars[1]);
-				}
-			}
+        nodeInfo = theAVL[nodeIndex];
+        myDepth = nodeInfo["Depth"];
+        if (lastDepth < myDepth)
+        {
+            if (lastDepth)
+            {
+                _ost * ",";
+            }
+            for (pidx = lastDepth; pidx < myDepth; pidx = pidx + 1)
+            {
+                _ost * "(";
+            }
+        }
+        else
+        {
+            if (lastDepth > myDepth)
+            {
+                for (pidx = myDepth; pidx < lastDepth; pidx = pidx + 1)
+                {
+                    _ost * ")";
+                }				
+            }
+            else
+            {
+                _ost * ",";
+            }
+        }
+        
+        _ost * nodeInfo["Name"];
+        
+        if (Abs (label))
+        {
+            if (Abs(nodeInfo[label]))
+            {
+                _ost * (chars[0] + nodeInfo[label] + chars[1]);
+            }
+        }
 
-			if (doLengths)
-			{
-				if (nodeIndex < treeSize - 1)
-				{
-					_ost * ":";
-					_ost * (""+nodeInfo ["Length"]); 
-				}
-			}
-			lastDepth = myDepth;
-		}
+        if (doLengths)
+        {
+            if (nodeIndex < treeSize - 1)
+            {
+                _ost * ":";
+                _ost * (""+nodeInfo ["Length"]); 
+            }
+        }
+        lastDepth = myDepth;
 	}
 	
 	_ost * 0;
@@ -100,51 +97,48 @@ function PostOrderAVL2StringDistances (theAVL, distAVL)
 	lastLevel = 0;
 	treeSize  = Abs(theAVL);
 	treeInfo  = theAVL[0];
+	rootIndex = treeInfo["Root"];
 	
-	for (nodeIndex = 1; nodeIndex < treeSize; nodeIndex = nodeIndex + 1)
+	for (nodeIndex = 1; nodeIndex < treeSize; nodeIndex+=1)
 	{
-		if (nodeIndex != rootIndex && (theAVL[nodeIndex])["Parent"] >= 0)
-		{
-			nodeInfo = theAVL[nodeIndex];
-			myDepth = nodeInfo["Depth"];
-			myName 	= nodeInfo["Name"];
-			
-			if (lastDepth < myDepth)
-			{
-				if (lastDepth)
-				{
-					_ost * ",";
-				}
-				for (pidx = lastDepth; pidx < myDepth; pidx = pidx + 1)
-				{
-					_ost * "(";
-				}
-			}
-			else
-			{
-				if (lastDepth > myDepth)
-				{
-					for (pidx = myDepth; pidx < lastDepth; pidx = pidx + 1)
-					{
-						_ost * ")";
-					}				
-				}
-				else
-				{
-					_ost * ",";
-				}
-			}
-			if (Abs(nodeInfo["Children"])==0)
-			{
-				_ost * myName;
-			}
-			if (nodeIndex < treeSize - 1)
-			{
-				_ost * ":";
-				_ost * (""+distAVL [myName]); 
-			}
-			lastDepth = myDepth;
-		}
+        nodeInfo = theAVL[nodeIndex];
+        myDepth = nodeInfo["Depth"];
+        myName 	= nodeInfo["Name"];
+        
+        if (lastDepth < myDepth)
+        {
+            if (lastDepth)
+            {
+                _ost * ",";
+            }
+            for (pidx = lastDepth; pidx < myDepth; pidx = pidx + 1)
+            {
+                _ost * "(";
+            }
+        }
+        else
+        {
+            if (lastDepth > myDepth)
+            {
+                for (pidx = myDepth; pidx < lastDepth; pidx = pidx + 1)
+                {
+                    _ost * ")";
+                }				
+            }
+            else
+            {
+                _ost * ",";
+            }
+        }
+        if (nodeIndex != rootIndex) {
+            _ost * myName;
+        }
+        if (nodeIndex < treeSize - 1)
+        {
+            _ost * ":";
+            _ost * (""+distAVL [myName]); 
+        }
+        lastDepth = myDepth;
 	}
 	
 	_ost * 0;

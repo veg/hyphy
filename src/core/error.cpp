@@ -382,12 +382,13 @@ void WarnError (_String st)
 #ifdef _HY_ABORT_ON_ERROR
     abort ();
 #else
-    PurgeAll(true);
     #if defined __MAC__ or defined __WINDOZE__ or defined __HYPHY_GTK__
+      terminateExecution = true;
       ProblemReport (errMsg);
+    #else
+      exit(1);
     #endif
-    exit(1);
-    
+  
 #endif
 
 #endif

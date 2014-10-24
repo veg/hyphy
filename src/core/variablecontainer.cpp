@@ -214,12 +214,12 @@ _Formula* _VariableContainer::GetExplicitFormModel (void)
 
 //__________________________________________________________________________________
 
-_String _VariableContainer::GetModelName (void) {
+_String* _VariableContainer::GetModelName (void) {
     _String * res = _HBLObjectNameByType (HY_BL_MODEL, theModel, false);
     if (res) {
-        return *res;
+        return res;
     }
-    return empty;
+    return &empty;
 }
 
 //__________________________________________________________________________________

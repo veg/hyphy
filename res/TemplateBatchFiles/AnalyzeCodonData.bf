@@ -5,6 +5,8 @@ NICETY_LEVEL = 3;
 
 SetDialogPrompt ("Please specify a codon data file:");
 
+COUNT_GAPS_IN_FREQUENCIES = 0;
+VERBOSITY_LEVEL = 1;
 
 DataSet 	  ds 		   = ReadDataFile (PROMPT_FOR_FILE);
 DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);

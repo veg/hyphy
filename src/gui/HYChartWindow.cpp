@@ -3585,7 +3585,7 @@ void    _HYChartWindow::SetLabels       (_String xx, _String yy, _String zz, lon
         long varRef = 0;
         _String errMsg;
       _FormulaParsingContext fpc (&errMsg);
-        if (Parse (&overlayPlot, fla,fpc)!= HY_FORMULA_EXPRESSION) {
+        if (Parse (&overlayPlot, fla,fpc, nil)!= HY_FORMULA_EXPRESSION) {
             overlayPlot.Clear();
         }
     }
