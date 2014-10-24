@@ -1,0 +1,12 @@
+{
+  "name": "hyphy",
+  "version": "2.2.1",
+  "author": "Steven Weaver",
+  "repository": {
+  "type": "git",
+  "url": "https://github.com/veg/hyphy.git"
+  },
+    "scripts": {
+    "install": "cmake .;make HYPHYMP"
+  }
+}
