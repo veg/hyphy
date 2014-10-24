@@ -1,15 +1,8 @@
-RequireVersion ("2.1320140810");
+RequireVersion ("2.220141023");
 
-RELAX.timers  = {5,1};
-relax.taskTimerStart (4);
 
 VERBOSITY_LEVEL				= 0;
-LF_SMOOTHING_SCALER         = 0.01;
-
-RELAX.test      = "RELAX.test";
-RELAX.reference = "RELAX.reference";
-RELAX.ignore    = "RELAX.ignore";
-
+LF_SMOOTHING_SCALER         = 0.1;
 
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("CF3x4");
@@ -22,17 +15,49 @@ LoadFunctionLibrary("lib2014/UtilityFunctions.bf");
 // namespace 'io' for interactive/datamonkey i/o functions
 LoadFunctionLibrary("lib2014/IOFunctions.bf");
 
-// namespace 'models.DNA.GTR' for the nucleotide GTR model
+LoadFunctionLibrary ("lib2014/models/codon/MG_REV.bf");
+
+// namespace 'estimators' for various estimator related functions
 LoadFunctionLibrary("lib2014/tasks/estimators.bf");
 
 
-_RELAX_settings = {"GTR" : 1, 
+LoadFunctionLibrary("BranchSiteTemplate");
+/*------------------------------------------------------------------------------ 
+    BranchSiteTemplate Defines
+
+    BuildCodonFrequencies (obsF);
+    PopulateModelMatrix (ModelMatrixName&, EFV, synrateP, globalP, nonsynRateP);
+
+------------------------------------------------------------------------------*/
+
+RELAX.settings = {"GTR" : 1, 
                    "LocalMG" : 1};
+
+RELAX.timers  = {5,1};
+
+
+relax.taskTimerStart (0);
+
+RELAX.json    = {"fits" : {},
+                  "timers" : {},
+                  "relaxation-test" : None
+                  };
+
+RELAX.test            = "RELAX.test";
+RELAX.reference       = "RELAX.reference";
+RELAX.unclassified    = "RELAX.unclassified";
+RELAX.general_descriptive         = "RELAX.general_descriptive";
+RELAX.relaxation_parameter        = "RELAX.K";
+
+term.RELAX.k          = "relaxation coefficient";
+
+/*------------------------------------------------------------------------------*/
+
 
 io.displayAnalysisBanner ({"info" : "RELAX (a random effects test of selection relaxation)
                             uses a random effects branch-site model framework 
-                            to test whether a set of test branches (T) evolves under relaxed 
-                            selection relative to a set of reference branches (R), as measured
+                            to test whether a set of 'Test' branches evolves under relaxed 
+                            selection relative to a set of 'Reference' branches (R), as measured
                             by the relaxation parameter (K).",
                            "version" : "1.00",
                            RELAX.reference : "In revision, preprint at xxx",
@@ -43,251 +68,293 @@ io.displayAnalysisBanner ({"info" : "RELAX (a random effects test of selection r
 
 
 
-/*------------------------------------------------------------------------------ 
-    BranchSiteTemplate Defines
 
-    BuildCodonFrequencies (obsF);
-    PopulateModelMatrix (ModelMatrixName&, EFV, synrateP, globalP, nonsynRateP);
-
-------------------------------------------------------------------------------*/
-
-
-
-LoadFunctionLibrary("BranchSiteTemplate");
-
-
-
-_RELAX_json    = {"fits" : {},
-                  "timers" : {},
-                  "tests" : {}
-                  };
                   
 
-codon_data_info = utility.promptForGeneticCodeAndAlignment ("RELAX.codon_data", "RELAX.codon_filter");
+relax.codon_data_info     = utility.promptForGeneticCodeAndAlignment ("RELAX.codon_data", "RELAX.codon_filter");
+relax.sample_size         = relax.codon_data_info["sites"] * relax.codon_data_info["sequences"];
 
-LoadFunctionLibrary ("lib2014/models/codon/MG_REV.bf");
 
-codon_data_info["json"] = codon_data_info["file"] + ".RELAX.json";
-io.reportProgressMessage ("RELAX", "Loaded an MSA with " + codon_data_info["sequences"] + " sequences and " + codon_data_info["sites"] + " codons from '" + codon_data_info["file"] + "'");
+relax.codon_data_info["json"] = relax.codon_data_info["file"] + ".RELAX.json";
+io.reportProgressMessage ("RELAX", "Loaded an MSA with " + relax.codon_data_info["sequences"] + " sequences and " + relax.codon_data_info["sites"] + " codons from '" + relax.codon_data_info["file"] + "'");
 
-codon_frequencies     = utility.defineFrequencies ("RELAX.codon_filter");
-tree_definition 	  = utility.loadAnnotatedTopology ();
+relax.codon_frequencies     = utility.defineFrequencies ("RELAX.codon_filter");
+relax.tree 	  = utility.loadAnnotatedTopology ();
 
-relax.selected_branches = relax.io.defineBranchSets (tree_definition);
-_RELAX_json ["partition"] = relax.selected_branches;
+relax.selected_branches = relax.io.defineBranchSets (relax.tree);
+RELAX.has_unclassified = utility.array.find (Rows (relax.selected_branches), RELAX.unclassified) >= 0;
+
+RELAX.json ["partition"] = relax.selected_branches;
+RELAX.json ["tree"] = relax.tree ["string"];
 
 io.reportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches[RELAX.test]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches[RELAX.test])));
 
+relax.taskTimerStart (1);
 
-if (_RELAX_settings["GTR"]) {
+if (RELAX.settings["GTR"]) {
     io.reportProgressMessage ("RELAX", "Obtaining branch lengths under the GTR model");
-    relax.gtr_results = estimators.fitGTR     ("RELAX.codon_filter", tree_definition, None);
+    relax.gtr_results = estimators.fitGTR     ("RELAX.codon_filter", relax.tree, None);
     io.reportProgressMessage ("RELAX", "Log(L) = " + relax.gtr_results["LogL"]);
     estimators.fixSubsetOfEstimates (relax.gtr_results, relax.gtr_results["global"]);
 } else {
     relax.gtr_results = None;
 }
 
-if (_RELAX_settings["LocalMG"]) {
+if (RELAX.settings["LocalMG"]) {
   io.reportProgressMessage ("RELAX", "Obtaining  omega and branch length estimates under the local MG94xGTR model");
-  relax.local_mg_results  = estimators.fitMGREV     (codon_data_info, tree_definition, {"model-type" : terms.local}, relax.gtr_results);
+  relax.local_mg_results  = estimators.fitMGREV     (relax.codon_data_info, relax.tree, {"model-type" : terms.local}, relax.gtr_results);
   io.reportProgressMessage ("RELAX", "Log(L) = " + relax.local_mg_results["LogL"]);
   estimators.fixSubsetOfEstimates (relax.local_mg_results, relax.local_mg_results["global"]);
 } else {
     relax.local_mg_results = relax.gtr_results;
 }
 
-io.reportProgressMessage ("RELAX", "Obtaining omega and branch length estimates under the partitioned MG94xGTR");
+io.reportProgressMessage ("RELAX", "Obtaining omega and branch length estimates under the partitioned MG94xGTR model");
+relax.mg_results  = estimators.fitMGREV     (relax.codon_data_info, relax.tree, {"model-type" : terms.local, "partitioned-omega" : 1, "fixed-branch-proportions": 1}, relax.local_mg_results);
+relax.taskTimerStop (1);
 
-tr = Time (1);
-
-relax.mg_results  = estimators.fitMGREV     (codon_data_info, tree_definition, {"model-type" : terms.local, "partitioned-omega" : 1, "fixed-branch-proportions": 1}, relax.local_mg_results);
-
-fprintf (stdout, relax.mg_results, "\n", Time (1) - tr, "\n");
-
-return 0;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-busted.model_definitions = busted.io.define_bsrel_models  ("FG","BG","Unclassified",codon_frequencies);
-
-model.applyModelToTree ("busted.tree", tree_definition, "", {"DEFAULT" : (busted.model_definitions["BG"])["model"], 
-                                                             (busted.model_definitions["FG"])["model"] : Rows (busted.selected_branches)});
-                                                             
-                                                             
-                                                             
-busted.taskTimerStart (0);
-LikelihoodFunction busted.LF = (codon_filter, busted.tree);
-
-_BUSTED_json["background"] =  busted.hasBackground  ("busted.tree");
-
-estimators.applyExistingEstimates ("busted.LF", {"0":busted.model_definitions}, busted.gtr_results);
-global busted.T_scaler = 1;
-gtr_lengths = (busted.gtr_results["branch lengths"])[0];
-gtr_lengths ["busted._aux.copy_lengths"][""];
-
-io.reportProgressMessage ("BUSTED", "Fitting the unconstrained branch-site model");
-
-USE_LAST_RESULTS = 1;
-OPTIMIZATION_PRECISION = 0.1;
-
-busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
-Optimize (busted.MLE_HA, busted.LF);
-gtr_lengths ["busted._aux.free_lengths"][""];
-
-OPTIMIZATION_PRECISION = 0.001;
-Optimize (busted.MLE_HA, busted.LF);
-busted_positive_class = busted.checkForPS (busted.model_definitions);
-io.reportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_HA[1][0] + ". Unrestricted class omega = " + busted_positive_class["omega"] + " (weight = " + busted_positive_class["weight"] + ")");
-
-
-busted.sample_size             =codon_data_info["sites"] * codon_data_info["sequences"];
-busted.taskTimerStop (0);
-
-busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
-busted.tavl         = busted.tree ^ 0;
-busted.renderString = PostOrderAVL2StringDistances (busted.tavl, busted.bls);
-UseModel (USE_NO_MODEL);
-Tree busted.T = busted.renderString;
-
-busted.json_store_lf                (_BUSTED_json, "Unconstrained model", 
-        busted.MLE_HA[1][0], busted.MLE_HA[1][1]+9, 
-        busted.getIC (busted.MLE_HA[1][0], busted.MLE_HA[1][1]+9, busted.sample_size) , 
-        _BUSTED_timers[0], 
-        +BranchLength (busted.T,-1), 
-        Format (busted.T, 1,1),
-        busted.model_definitions,
-        _BUSTED_json["background"]
-        );
-
-
-busted.profiles = {};
-(_BUSTED_json ["profiles"])["unconstrained"] = busted.computeSiteLikelihoods ("busted.LF");
-
-
-if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8) {
-    io.reportProgressMessage ("BUSTED", "No evidence for positive selection under the unconstrained model, skipping constrained model fitting");
-    _BUSTED_json ["test results"] = busted.runLRT (0, 0);
-} else {
-    busted.taskTimerStart (1);
-
-    io.reportProgressMessage ("BUSTED", "Fitting the branch-site model that disallows omega > 1 among foreground branches");
-    busted.constrainTheModel (busted.model_definitions);
-    (_BUSTED_json ["profiles"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
-    Optimize (busted.MLE_H0, busted.LF);
-    (_BUSTED_json ["profiles"])["optimized null"] = busted.computeSiteLikelihoods ("busted.LF");;
-    io.reportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_H0[1][0]);
-    busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);
-    
-    _BUSTED_json ["test results"] = busted.LRT;
-    
-    io.reportProgressMessage ("BUSTED", "Likelihood ratio test for episodic positive selection, p = " + busted.LRT["p"]);
-     busted.taskTimerStop (1);
-    
-    busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
-    busted.tavl         = busted.tree ^ 0;
-    busted.renderString = PostOrderAVL2StringDistances (busted.tavl, busted.bls);
-    UseModel (USE_NO_MODEL);
-    Tree busted.T = busted.renderString;
-
-    busted.json_store_lf                (_BUSTED_json, 
-                                        "Constrained model", busted.MLE_H0[1][0], 
-                                        busted.MLE_H0[1][1]+9, 
-                                        busted.getIC (busted.MLE_H0[1][0], busted.MLE_H0[1][1]+9, busted.sample_size) , 
-                                        _BUSTED_timers[1],
-                                         +BranchLength (busted.T,-1), 
-                                        Format (busted.T, 1,1),
-                                        busted.model_definitions,
-                                        _BUSTED_json["background"]
-                                       );
-                                       
-    (_BUSTED_json ["evidence ratios"])["constrained"] = busted.evidenceRatios ( (_BUSTED_json ["profiles"])["unconstrained"],  (_BUSTED_json ["profiles"])["constrained"]);
-    (_BUSTED_json ["evidence ratios"])["optimized null"] = busted.evidenceRatios ( (_BUSTED_json ["profiles"])["unconstrained"],  (_BUSTED_json ["profiles"])["optimized null"]);
+relax.mg_results_rate =                      
+                     {"Reference"   : {{relax.extract_global_MLE (relax.mg_results, RELAX.reference),1}},
+                      "Test"        : {{relax.extract_global_MLE (relax.mg_results, RELAX.test),1}}};
+                      
+if (RELAX.has_unclassified) {
+   relax.mg_results_rate ["Unclassified"] =  {{relax.extract_global_MLE (relax.mg_results, RELAX.unclassified),1}};
 }
 
-busted.taskTimerStop (2);
+io.reportProgressMessage ("RELAX", "Log(L) = " + relax.mg_results["LogL"]);
 
-(_BUSTED_json ["timers"])["overall"] = _BUSTED_timers[2];
-(_BUSTED_json ["timers"])["unconstrained"] = _BUSTED_timers[0];
-(_BUSTED_json ["timers"])["constrained"] = _BUSTED_timers[1];
+
+relax.json_store_lf (RELAX.json, "Partitioned MG94xREV", 
+                     relax.mg_results["LogL"], relax.mg_results["parameters"] + 5,
+                     RELAX.timers[1],
+                     relax._aux.extract_branch_info ((relax.mg_results["branch lengths"])[0], "relax.branch.length"),
+                     relax._aux.extract_branch_info ((relax.mg_results["branch lengths"])[0], "relax.branch.omega"),
+                     relax.mg_results_rate,
+                     None,
+                     "&omega;"
+                    );
+
+
+
+relax.taskTimerStart (2);
+
+RELAX.general.descriptive.model      = relax.io.define_a_bsrel_model (RELAX.general_descriptive, relax.codon_frequencies, relax.extract_global_MLE (relax.mg_results, RELAX.test) ,1);
+model.applyModelToTree          ("RELAX.tree", relax.tree, {"DEFAULT" : RELAX.general.descriptive.model}, None);
+
+ASSUME_REVERSIBLE_MODELS = 1;
+LikelihoodFunction relax.LF = (RELAX.codon_filter, RELAX.tree);
+
+RELAX.general.descriptive.model_spec                = {};
+RELAX.general.descriptive.model_spec[RELAX.general.descriptive.model["id"]] = RELAX.general.descriptive.model;
+
+global RELAX.branch_scaler = 1;
+RELAX.proportional_constraint = "RELAX.branch_scaler";
+
+estimators.fixSubsetOfEstimates   (relax.mg_results, relax.mg_results["global"]);
+estimators.applyExistingEstimates ("relax.LF", RELAX.general.descriptive.model_spec, relax.mg_results);
+
+io.reportProgressMessage ("RELAX", "Two-stage fit of the general descriptive model (separate relaxation parameter for each branch)");
+
+// VERBOSITY_LEVEL       = 10;
+USE_LAST_RESULTS       = 1;
+OPTIMIZATION_PRECISION = 0.1;
+
+Optimize (relax.MLE.general_descriptive, relax.LF);
+
+OPTIMIZATION_PRECISION = 0.001;
+parameters.unconstrain_parameter_set ("relax.LF", {{terms.lf.local.constrained}});
+
+Optimize (relax.MLE.general_descriptive, relax.LF);
+io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.general_descriptive[1][0]);
+        //io.spoolLF ("relax.LF", "/Volumes/home-raid/Desktop/test", None);
+
+
+        // ExecuteAFile ("/Volumes/home-raid/Desktop/test.relax.LF.bf");
+
+relax.general_descriptive = estimators.extractMLEs ("relax.LF", RELAX.general.descriptive.model_spec);   
+relax.add_scores (relax.general_descriptive, relax.MLE.general_descriptive);
+
+relax.taskTimerStop (2);
+
+relax.json_store_lf (RELAX.json, "General Descriptive", 
+                     relax.general_descriptive["LogL"], relax.general_descriptive["parameters"],
+                     RELAX.timers[2],
+                     relax._aux.extract_branch_info ((relax.general_descriptive["branch lengths"])[0], "relax.branch.length"),
+                     relax._aux.extract_branch_info ((relax.general_descriptive["branch lengths"])[0], "relax.branch.local_k"),
+                     {"Overall" : relax.getRateDistribution (RELAX.general.descriptive.model, 1)},
+                     None,
+                     "k"
+                    );
+
+
+relax.taskTimerStart (3);
+io.reportProgressMessage ("RELAX", "Fitting the RELAX null model");
+RELAX.null = relax.define.null ("RELAX.tree", RELAX.general.descriptive.model, relax.selected_branches);
+
+
+Optimize (relax.MLE.null, relax.LF);
+    //io.spoolLF ("relax.LF", "/Volumes/home-raid/Desktop/relax.null", None);
+io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.null[1][0]);
+    
+    //ExecuteAFile ("/Volumes/home-raid/Desktop/relax.null.relax.LF.bf");
+
+RELAX.null.model_spec                = {};
+RELAX.null.model_spec[RELAX.null["id"]] = RELAX.null;
+relax.null = estimators.extractMLEs ("relax.LF", RELAX.null.model_spec);   
+relax.add_scores (relax.null, relax.MLE.null);
+
+relax.taskTimerStop (3);
+
+relax.json_store_lf (RELAX.json, "RELAX Null", 
+                     relax.null["LogL"], relax.null["parameters"],
+                     RELAX.timers[3],
+                     relax._aux.extract_branch_info ((relax.null["branch lengths"])[0], "relax.branch.length"),
+                     relax._aux.extract_branch_info ((relax.null["branch lengths"])[0], "relax.branch.local_k"),
+                     {"Test" : relax.getRateDistribution (RELAX.null, 1), 
+                      "Reference" : relax.getRateDistribution (RELAX.null, 1)},
+                     1,
+                     "k"
+                    );
+
+io.reportProgressMessage ("RELAX", "Fitting the RELAX alternative model");
+
+relax.taskTimerStart (4);
+parameters.removeConstraint (RELAX.relaxation_parameter);
+Optimize (relax.MLE.alt, relax.LF);
+io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.alt[1][0] + ". Relaxation parameter K = " + Eval (RELAX.relaxation_parameter));
+
+    //io.spoolLF ("relax.LF", "/Volumes/home-raid/Desktop/alt", None);
+    //ExecuteAFile ("/Volumes/home-raid/Desktop/alt.relax.LF.bf");
+
+
+
+relax.alt = estimators.extractMLEs ("relax.LF", RELAX.null.model_spec);   
+relax.add_scores (relax.alt, relax.MLE.alt);
+
+RELAX.json ["relaxation-test"] = relax.runLRT (relax.alt["LogL"], relax.null["LogL"]);
+
+io.reportProgressMessage ("RELAX", "Likelihood ratio test for relaxation on Test branches, p = " + (RELAX.json ["relaxation-test"])["p"]);
+ 
+
+relax.taskTimerStop  (4);
+
+relax.json_store_lf (RELAX.json, "RELAX Alternative", 
+                     relax.alt["LogL"], relax.alt["parameters"],
+                     RELAX.timers[4],
+                     relax._aux.extract_branch_info ((relax.alt["branch lengths"])[0], "relax.branch.length"),
+                     relax._aux.extract_branch_info ((relax.alt["branch lengths"])[0], "relax.branch.local_k"),
+                     {"Test" : relax.getRateDistribution (RELAX.null, Eval (RELAX.relaxation_parameter)), 
+                      "Reference" : relax.getRateDistribution (RELAX.null,1)},
+                     Eval (RELAX.relaxation_parameter),
+                     "k"
+                    );
+
+relax.taskTimerStop  (0);
+
+
+(RELAX.json ["timers"])["overall"]               = RELAX.timers[0];
+(RELAX.json ["timers"])["preliminaries"]         = RELAX.timers[1];
+(RELAX.json ["timers"])["general descriptive"]   = RELAX.timers[2];
+(RELAX.json ["timers"])["Null"]                  = RELAX.timers[3];
+(RELAX.json ["timers"])["Alternative"]             = RELAX.timers[4];
+
 
 USE_JSON_FOR_MATRIX = 1;
-fprintf (codon_data_info["json"], CLEAR_FILE, _BUSTED_json);
+fprintf (relax.codon_data_info["json"], CLEAR_FILE, RELAX.json);
 USE_JSON_FOR_MATRIX = 0;
 
 //------------------------------------------------------------------------------ 
 // HELPER FUNCTIONS FROM THIS POINT ON
 //------------------------------------------------------------------------------ 
-function busted._aux.copy_lengths (key, value) {
-    ExecuteCommands ("busted.tree." + key + ".t := busted.T_scaler * " + value["MLE"]);
+
+function relax.extract_global_MLE (fit, id) {
+    return ((fit["global"])[id])["MLE"];
 }
 
-//------------------------------------------------------------------------------ 
-function busted.hasBackground (id) {
-   ExecuteCommands ("GetInformation (busted.nodeMap, `id`)");
-   busted.nodeMap = Columns(busted.nodeMap);
-   return Rows (busted.nodeMap) * Columns (busted.nodeMap) > 1; 
+function relax.branch.length (branch_info) {
+    return branch_info["MLE"];
 }
 
+function relax.branch.omega  (branch_info) {
+    return parameters.normalize_ratio ((branch_info[terms.nonsynonymous_rate])["MLE"], (branch_info[terms.synonymous_rate])["MLE"]);
+}
+
+function relax.branch.local_k  (branch_info) {
+    return (branch_info[term.RELAX.k])["MLE"];
+}
+
+function relax._aux.extract_branch_info.callback (key, value) {
+    relax._aux.extract_branch_info_result [key] = utility.callFunction (callback, {"0" : "value"});
+}
+
+function relax._aux.extract_branch_info (branch_spec, callback) {
+    relax._aux.extract_branch_info_result = {};
+    branch_spec ["relax._aux.extract_branch_info.callback"][""];
+    return relax._aux.extract_branch_info_result;
+}
+
+
 //------------------------------------------------------------------------------ 
-function busted.getRateDistribution (model_description, key) {
-  busted.getRateInformation.rate_classes = Abs ((model_description[key])["omegas"]);
-  busted.getRateInformation.omega_info = {busted.getRateInformation.rate_classes,2};
+function relax.getRateDistribution (model_description, K) {
+  relax.getRateInformation.rate_classes = Abs (model_description["omegas"]);
+  relax.getRateInformation.omega_info = {relax.getRateInformation.rate_classes,2};
   
-  for (busted.getRateInformation.k = 0; busted.getRateInformation.k < busted.getRateInformation.rate_classes; busted.getRateInformation.k += 1) {
-    busted.getRateInformation.omega_info[busted.getRateInformation.k][0] = Eval (((model_description[key])["omegas"])[busted.getRateInformation.k]);
-    busted.getRateInformation.omega_info[busted.getRateInformation.k][1] = Eval (((model_description[key])["weights"])[busted.getRateInformation.k]);
+  for (relax.getRateInformation.k = 0; relax.getRateInformation.k < relax.getRateInformation.rate_classes; relax.getRateInformation.k += 1) {
+    relax.getRateInformation.omega_info[relax.getRateInformation.k][0] = Eval ((model_description["omegas"])[relax.getRateInformation.k])^K;
+    relax.getRateInformation.omega_info[relax.getRateInformation.k][1] = Eval ((model_description["weights"])[relax.getRateInformation.k]);
   }
-  return busted.getRateInformation.omega_info;
-}
-
-
-//------------------------------------------------------------------------------ 
-function busted._aux.free_lengths (key, value) {
-    ExecuteCommands ("busted.tree." + key + ".t = busted.tree." + key + ".t");
-}
-
-
-//------------------------------------------------------------------------------ 
-function busted.checkForPS (model_parameters) {
-   return {"omega" :Eval (((model_parameters["FG"])["omegas"])[2]),
-           "weight" : Eval (((model_parameters["FG"])["weights"])[2])};
-           
-}
-
-//------------------------------------------------------------------------------ 
-function busted.constrainTheModel (model_parameters) {
-  ExecuteCommands (((model_parameters["FG"])["omegas"])[2] + ":=1");           
-}
-
-//------------------------------------------------------------------------------ 
-function busted.computeSiteLikelihoods (id) {
-   ConstructCategoryMatrix (_siteLike, *id, SITE_LOG_LIKELIHOODS);
-   return _siteLike;         
+  return relax.getRateInformation.omega_info % 0;
 }
 
 
 
 //------------------------------------------------------------------------------ 
-function busted.runLRT (ha, h0) {
+function relax.define.null._aux (key, value) {
+    //fprintf (stdout, "`tree_id`.`key`.`relax.define.null.local` := `relax.define.null.global`\n");
+    ExecuteCommands ("`tree_id`.`key`.`relax.define.null.local` := `relax.define.null.global`");  
+}
+
+//------------------------------------------------------------------------------ 
+function relax.define.null (tree_id, general_model, partition) {
+    RELAX.null = general_model;
+    parameters.removeConstraint ((general_model["omegas"])[2]);
+    
+    
+    relax.define.null.local = ((general_model["parameters"])["local"])[term.RELAX.k];
+
+    //fprintf (stdout, "\n**", relax.define.null.par , "\n");
+    relax.define.null.global = "1";
+    (partition[RELAX.reference])["relax.define.null._aux"][""];
+    
+    parameters.setConstraint (RELAX.relaxation_parameter, 1, terms.global);
+    relax.define.null.global = RELAX.relaxation_parameter;
+
+    (partition[RELAX.test])["relax.define.null._aux"][""];
+    
+    ((general_model["parameters"])["global"])[RELAX.relaxation_parameter] = RELAX.relaxation_parameter;
+    
+    return RELAX.null;
+}
+
+
+
+//------------------------------------------------------------------------------ 
+function relax.add_scores (desc, mles) {
+    if (Type (mles) == "Matrix") {
+        desc ["LogL"] = mles[1][0];
+        desc ["parameters"] = mles[1][1] + 14; /* 9 for frequencies; 5 for GTR nuc biases */
+    }
+}
+
+//------------------------------------------------------------------------------ 
+function relax.runLRT (ha, h0) {
     return {"LR" : 2*(ha-h0),
-            "p" : 1-CChi2 (2*(ha-h0),2)};
+            "p" : 1-CChi2 (2*(ha-h0),1)};
 }
 
 
 //------------------------------------------------------------------------------ 
-function busted._aux.define_bsrel_model (id,Q,weights,freqs) {
+function relax._aux.define_bsrel_model (id,Q,weights,freqs) {
     rate_count = Abs (Q);
     components = {};
     length = "";
@@ -307,101 +374,116 @@ function busted._aux.define_bsrel_model (id,Q,weights,freqs) {
     return length;
 }
 
+
+
 //------------------------------------------------------------------------------ 
-function busted._aux.define_parameter (key, value) {
-   ExecuteCommands ("global `value` :< 1;");
-   ExecuteCommands ("`value` :> 0;");
-   ExecuteCommands ("`value` = " + busted.init_values[key]);
+
+function relax.io.evaluator (key, value) {
+    fprintf (stdout, key, "->", Eval (value), "\n");
 }
 
 //------------------------------------------------------------------------------ 
-function busted.io.evaluate_branch_lengths (model_parameters, tree_id, fg_set) {
-    busted.io.evaluate_branch_lengths.res    = {};
-    busted.io.evaluate_branch_lengths.bnames = BranchName (*tree_id, -1);
-    for (busted.io.evaluate_branch_lengths.k = 0; 
-         busted.io.evaluate_branch_lengths.k < Columns (busted.io.evaluate_branch_lengths.bnames)-1;
-         busted.io.evaluate_branch_lengths.k += 1) {
-         
-         busted.io.evaluate_branch_lengths.lexpr = "";
-         
-         busted.io.evaluate_branch_lengths.b_name = busted.io.evaluate_branch_lengths.bnames[busted.io.evaluate_branch_lengths.k];
-         if (fg_set [busted.io.evaluate_branch_lengths.b_name]) {
-            //fprintf (stdout, busted.io.evaluate_branch_lengths.b_name, "=>FG\n");
-            busted.io.evaluate_branch_lengths.lexpr = (model_parameters["FG"])["length"];
-         } else {
-            //fprintf (stdout, busted.io.evaluate_branch_lengths.b_name, "=>BG\n");
-            busted.io.evaluate_branch_lengths.lexpr = (model_parameters["BG"])["length"];
-         }
-         Eval (model_parameters["length parameter"] + " = `tree_id`.`busted.io.evaluate_branch_lengths.b_name`." + model_parameters["length parameter"]);
-         busted.io.evaluate_branch_lengths.res [ busted.io.evaluate_branch_lengths.b_name ] =
-            Eval (busted.io.evaluate_branch_lengths.lexpr);
-    }
-    return busted.io.evaluate_branch_lengths.res;
-}
+function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
 
-//------------------------------------------------------------------------------ 
-function busted.io.define_bsrel_models (foreground_id, background_id, frequencies) {
-
-    model_parameters = 
-        {"FG": {"omegas" : {}, "weights" : {}, "f" : {}, "Q" : {}, "length" : ""},
-         "BG": {"omegas" : {}, "weights" : {}, "f" : {}, "Q" : {}, "length" : ""},
-         "parameters" : {"global" : {}}
-          };
+    model_parameters = {"parameters" : {"global" : {}, "local" : {}}, "omegas" : {}, "weights" : {}, "f" : {}, "Q" : {}, "length" : ""};
     
+    model_parameters["omegas"] = parameters.generate_sequential_names ("`id`.omega",    3, "_");
+    model_parameters["f"]      = parameters.generate_sequential_names ("`id`.aux_freq", 2, "_");
+    
+    parameters.declareGlobal    (model_parameters["f"], None);
+    parameters.setRange         (model_parameters["f"], terms.range01);
+
+    parameters.declareGlobal    (model_parameters["omegas"], None);
+    
+    
+    model_parameters["weights"] = parameters.helper.stick_breaking (model_parameters["f"], {{0.7,0.25,0.05}});
+    
+    relax.init_omegas = {{0.05,0.25,4}};
+    relax.init_omegas = relax.init_omegas * (1/ parameters.mean (relax.init_omegas, model_parameters["weights"], Abs (model_parameters["omegas"])));
+
+    parameters.setRange ((model_parameters["omegas"])[0], terms.range01);
+    parameters.set_value ((model_parameters["omegas"])[0], relax.init_omegas[0]);
+    
+    parameters.setRange ((model_parameters["omegas"])[1], terms.range01);
+    parameters.set_value ((model_parameters["omegas"])[1], relax.init_omegas[1]);
+    
+    parameters.setRange ((model_parameters["omegas"])[2], terms.range_gte1);
+    parameters.set_value ((model_parameters["omegas"])[2], relax.init_omegas[2]);
+    
+    if (do_local) {
+        parameters.setConstraint ((model_parameters["omegas"])[2], " 1/" + ((model_parameters["omegas"])[0]) + "/" + ((model_parameters["omegas"])[1]) , "");
+        
+        relax.io.define_a_bsrel_model_r = {"LB" : 1e-4, "UB" : 1};
+        
+        parameters.setRange ((model_parameters["omegas"])[1], relax.io.define_a_bsrel_model_r);
+    }
+    
+
+   local_k :< 50;
+      
     for (k = 1; k <= 3; k +=1) {
-        tag = "" + k;
-        ((model_parameters["FG"])["omegas"]) + "`foreground_id`_omega_`tag`";
-        ((model_parameters["BG"])["omegas"]) + "`background_id`_omega_`tag`";
+        ((model_parameters["parameters"])["global"])[relax.define_omega_term (k)] = (model_parameters["omegas"])[k-1];
         if (k < 3) {
-            ((model_parameters["FG"])["f"]) + "`foreground_id`_f_`tag`";
-            ((model_parameters["BG"])["f"]) + "`background_id`_f_`tag`";
+            ((model_parameters["parameters"])["global"])[relax.define_weight_term (k)] = (model_parameters["f"])[k-1];
         }
-        
+    
+        model_parameters["Q"] + ("Q_`id`_" + k);
+        if (do_local) {
+            PopulateModelMatrix			  ((model_parameters["Q"])[k-1],  frequencies["nucleotide"], "t", "Min (1000," + (model_parameters["omegas"])[k-1] +"^local_k)", "");        
+        } else {
+            PopulateModelMatrix			  ((model_parameters["Q"])[k-1],  frequencies["nucleotide"], "t", (model_parameters["omegas"])[k-1], "");
+        }
     }
     
-    ((model_parameters["FG"])["weights"])  = parameters.helper.stick_breaking (((model_parameters["FG"])["f"]), None);
-    ((model_parameters["BG"])["weights"])  = parameters.helper.stick_breaking (((model_parameters["BG"])["f"]), None);
-     
-    busted.init_values = {"0" : 0.1, "1" : 0.5, "2" : 1};
-
-    ((model_parameters["FG"])["omegas"])["busted._aux.define_parameter"][""];
-    ((model_parameters["BG"])["omegas"])["busted._aux.define_parameter"][""];
+    model_parameters["id"] = "`id`_model";
+    model_parameters["length-expression"] = relax._aux.define_bsrel_model ("`id`_model", model_parameters["Q"], model_parameters["weights"], frequencies["codon"]);
     
-    Eval (((model_parameters["FG"])["omegas"])[2] + ":<1e26");
-    Eval (((model_parameters["FG"])["omegas"])[2] + ":>1");
-    Eval (((model_parameters["BG"])["omegas"])[2] + ":<1e26");
-
-    busted.init_values = {"0" : 0.8, "1" : 0.75};
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","C")] = "AC";
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","T")] = "AT";
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","G")] = "CG";
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","T")] = "CT";
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("G","T")] = "GT";
     
-    ((model_parameters["FG"])["f"])["busted._aux.define_parameter"][""];
-    ((model_parameters["BG"])["f"])["busted._aux.define_parameter"][""];
-    
-
-    for (k = 1; k <= 3; k +=1) {
-        
-        ((model_parameters["FG"])["Q"]) + ("Q_`foreground_id`_" + k);
-        PopulateModelMatrix			  (((model_parameters["FG"])["Q"])[k-1],  frequencies["nucleotide"], "t",((model_parameters["FG"])["omegas"])[k-1], "");
-        ((model_parameters["BG"])["Q"]) + ("Q_`background_id`_" + k);
-        PopulateModelMatrix			  (((model_parameters["BG"])["Q"])[k-1],  frequencies["nucleotide"], "t",((model_parameters["BG"])["omegas"])[k-1], "");
-    }
-    
-    (model_parameters["BG"])["model"] = "`background_id`_model";
-    (model_parameters["BG"])["length"] = busted._aux.define_bsrel_model ("`background_id`_model", (model_parameters["BG"])["Q"], (model_parameters["BG"])["weights"], frequencies["codon"]);
-    (model_parameters["FG"])["model"] = "`foreground_id`_model";
-    (model_parameters["FG"])["length"] = busted._aux.define_bsrel_model ("`foreground_id`_model", (model_parameters["FG"])["Q"], (model_parameters["FG"])["weights"], frequencies["codon"]);
-    
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","C")] = {"ID" : "AC"};
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","T")] = {"ID" : "AT"};
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","G")] = {"ID" : "CG"};
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","T")] = {"ID" : "CT"};
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("G","T")] = {"ID" : "GT"};
+    model_parameters["set-branch-length"] = "relax.aux.copy_branch_length";
     
     model_parameters["length parameter"] = "t";
-    
+    ((model_parameters["parameters"])[terms.local])[terms.timeParameter ()] = "t";
+    if (do_local) {
+        ((model_parameters["parameters"])[terms.local])[term.RELAX.k] = "local_k";
+    }   
+    model_parameters["get-branch-length"] = "relax.aux.retrieve_branch_length";
     return model_parameters;
 }
 
 //------------------------------------------------------------------------------ 
+
+
+
+function relax.aux.retrieve_branch_length (model, tree, node) {
+    relax.aux.retrieve_branch_length.locals = Columns ((model_parameters["parameters"])[terms.local]);
+    for (relax.aux.retrieve_branch_length.i = 0; relax.aux.retrieve_branch_length.i < Columns (relax.aux.retrieve_branch_length.locals); relax.aux.retrieve_branch_length.i += 1) {
+        Eval (relax.aux.retrieve_branch_length.locals[relax.aux.retrieve_branch_length.i] + " = `tree`.`node`." + relax.aux.retrieve_branch_length.locals[relax.aux.retrieve_branch_length.i]);
+    }
+    return Eval (model["length-expression"]);
+}
+
+//------------------------------------------------------------------------------ 
+
+function relax.aux.copy_branch_length (model, value, parameter) {
+
+    relax.aux.copy_branch_length.t = ((model["parameters"])["local"])[terms.timeParameter ()];
+    relax.aux.copy_branch_length.k = ((model["parameters"])["local"])[term.RELAX.k];
+    
+    if (Abs (RELAX.proportional_constraint)) {
+        Eval ("`parameter`.`relax.aux.copy_branch_length.t` := `RELAX.proportional_constraint` * " + value);        
+    } else {
+        Eval ("`parameter`.`relax.aux.copy_branch_length.t` = " + value);
+    }
+    
+    if (Type (relax.aux.copy_branch_length.k) == "String") {
+        Eval ("`parameter`.`relax.aux.copy_branch_length.k` = 1");
+    }
+}
 
 function relax._aux.io.countBranchSets (key, value) {
     available_models[value] += 1;
@@ -409,23 +491,23 @@ function relax._aux.io.countBranchSets (key, value) {
 }
 
 function relax._aux.io.mapBranchSets (key, value) {
-    (tree_definition ["model_map"])[key] = branch_set[value];
+    (relax.tree ["model_map"])[key] = branch_set[value];
     (return_set[branch_set[value]])[key] = 1;
     return None;
 }
 
 //------------------------------------------------------------------------------ 
-function relax.io.defineBranchSets (tree_definition) {
+function relax.io.defineBranchSets (relax.tree) {
     
     available_models        = {};
     branch_set              = {};
     
     
-    for (k = 0; k < Columns (tree_definition["model_list"]); k += 1) {
-        available_models  [(tree_definition["model_list"])[k]] = 0;
+    for (k = 0; k < Columns (relax.tree["model_list"]); k += 1) {
+        available_models  [(relax.tree["model_list"])[k]] = 0;
     }
     
-    (tree_definition["model_map"])["relax._aux.io.countBranchSets"][""];
+    (relax.tree["model_map"])["relax._aux.io.countBranchSets"][""];
     
     list_models = Rows (available_models); // get keys    
     io.checkAssertion ("Columns (list_models) > 1", "The tree string must include at least one two sets of branches, at least one of which is annotated using {}");
@@ -458,8 +540,8 @@ function relax.io.defineBranchSets (tree_definition) {
             }    
             for (k = 0; k < option_count; k+=1) {
                 if (k != bgSet && k != fgSet) {
-                    branch_set [""] = RELAX.ignore;
-                    return_set [RELAX.ignore] = {};
+                    branch_set [""] = RELAX.unclassified;
+                    return_set [RELAX.unclassified] = {};
                     break;
                 }
             }
@@ -471,19 +553,13 @@ function relax.io.defineBranchSets (tree_definition) {
         return_set [RELAX.reference] = {};
     }
     
-    (tree_definition["model_map"])["relax._aux.io.mapBranchSets"][""];
-    tree_definition["model_list"] = Columns (tree_definition["model_map"]);
+    (relax.tree["model_map"])["relax._aux.io.mapBranchSets"][""];
+    relax.tree["model_list"] = Columns (relax.tree["model_map"]);
     
     return return_set;
     
 }
 
-//------------------------------------------------------------------------------------------------------------------------
-
-function busted.evidenceRatios (ha, h0) {
-    sites = Rows (ha) * Columns (ha);
-    return ha["Exp(_MATRIX_ELEMENT_VALUE_-h0[_MATRIX_ELEMENT_COLUMN_])"];
-}
 
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -493,7 +569,6 @@ function relax.taskTimerStart (index) {
 
 function relax.taskTimerStop (index) {
     RELAX.timers[index] = Time(1) - RELAX.timers[index];
-
 }
 
 //------------------------------------------------------------------------------------------------------------------------
@@ -502,24 +577,31 @@ function relax.getIC (logl,params,samples) {
     return -2*logl + 2*samples/(samples-params-1)*params;
 }
 
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction relax.define_omega_term (cat) {
+    return "Omega for category " + cat;
+}
+
+lfunction relax.define_weight_term (cat) {
+    return "Omega frequency parameter " + cat;
+}
+
 
 
 //------------------------------------------------------------------------------------------------------------------------
 
-lfunction relax.json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_string, defs, has_bg) {
+lfunction relax.json_store_lf (json, name, ll, df, time, branch_length, branch_annotation, omega_distribution, K, annotation_tag) {
 
-    (json["fits"])[name] = {"log-likelihood": ll,
-                            "parameters": df,
-                            "AIC-c" : aicc,
-                            "runtime" : time,
-                            "tree length" : tree_length,
-                            "tree string" : tree_string,
-                            "rate distributions" : {}};
-                
-    if (fits) {                        
-        (((json["fits"])[name])["rate distributions"])["FG"] = busted.getRateDistribution (defs, "FG");
-        if (has_bg) {
-            (((json["fits"])[name])["rate distributions"])["BG"] = busted.getRateDistribution (defs, "BG");
-        }
-    }
-}
+    (json["fits"])[name] = {"log-likelihood"     : ll,
+                            "parameters"         : df,
+                            "AIC-c"              : relax.getIC (ll, df, relax.sample_size),
+                            "runtime"            : time,
+                            "branch-lengths"     : branch_length,
+                            "branch-annotations" : branch_annotation,
+                            "rate-distributions" : omega_distribution, 
+                            "K" : K, 
+                            "annotation-tag" : annotation_tag, 
+                            "display-order" : Abs (json["fits"])};
+                            
+ }

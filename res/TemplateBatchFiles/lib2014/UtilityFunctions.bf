@@ -73,3 +73,13 @@ lfunction utility.checkCacheFile (data_info) {
     }
     return cache_info;
 }   
+
+lfunction utility.array.find (array, value) {
+    d = Rows (array) * Columns (array);
+    for (i = 0; i < d; i+=1) {
+        if (array [i] == value) {
+            return i;
+        }
+    }
+    return -1;
+}

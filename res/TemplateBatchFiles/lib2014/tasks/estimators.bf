@@ -7,7 +7,7 @@ function estimators.copyGlobals2 (key, value) {
 }
 
 function estimators.copyGlobals (key, value) {
-    ((value["parameters"])["global"])["estimators.copyGlobals2"][""];
+     ((value["parameters"])["global"])["estimators.copyGlobals2"][""];
 }
 
 function estimators.setGlobals2 (key, value) {
@@ -32,8 +32,8 @@ function estimators.extractBranchInformation.copy_local (key, value) {
 function estimators.extractBranchInformation (tree, node, model) {
     estimators.extractBranchLength.result = {}; 
     
-    if (Abs(model["get_branch_length"])) {
-        // this is where we handle non-standard cases
+    if (Abs(model["get-branch-length"])) {
+        estimators.extractBranchLength.result ["MLE"] = utility.callFunction (model["get-branch-length"], {"0" : "model", "1" : "tree",  "2": "node"});
     } else {
         estimators.extractBranchLength.result ["MLE"] = Eval ("BranchLength (`tree`, \"`node`\")");
     }
@@ -204,7 +204,7 @@ function estimators.fitMGREV  (codon_data, tree, option, initial_values) {
         estimators.applyExistingEstimates ("estimators.fitMGREV.likelihoodFunction", {"estimators.fitMGREV.mg" : estimators.fitMGREV.model}, initial_values);
     }
     
-    io.spoolLF ("estimators.fitMGREV.likelihoodFunction", "/Volumes/home-raid/Desktop/test", None);
+    // io.spoolLF ("estimators.fitMGREV.likelihoodFunction", "/Volumes/home-raid/Desktop/test", None);
     Optimize (estimators.fitMGREV.mles, estimators.fitMGREV.likelihoodFunction);
     
     if (Type (initial_values) == "AssociativeList") {

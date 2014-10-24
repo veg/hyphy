@@ -12,12 +12,27 @@ function parameters.applyNameSpace (id, namespace) {
 	return id;
 }
 
+function parameters.unconstrain_parameter_set (lf, set) {
+    ExecuteCommands ("GetString(parameters.unconstrain_parameter_set.info, `lf`, -1)");
+    if (None == set) {
+        set = {{terms.lf.global.constrained,terms.lf.local.constrained}};
+    } 
+    for (parameters.unconstrain_parameter_set.s = 0; parameters.unconstrain_parameter_set.s < Columns (set); parameters.unconstrain_parameter_set.s += 1) {
+        parameters.unconstrain_parameter_set.m = parameters.unconstrain_parameter_set.info [set [parameters.unconstrain_parameter_set.s]];
+        for (parameters.unconstrain_parameter_set.i = 0; parameters.unconstrain_parameter_set.i < Columns (parameters.unconstrain_parameter_set.m); parameters.unconstrain_parameter_set.i += 1) {
+            Eval (parameters.unconstrain_parameter_set.m[parameters.unconstrain_parameter_set.i] + "=" + Eval (parameters.unconstrain_parameter_set.m[parameters.unconstrain_parameter_set.i]));
+        }   
+    }
+}
+
 function parameters.declareGlobal (id, cache) {
     if (Type (id) == "String") {
         if (Abs (id)) {
             if (Type (cache) == "AssociativeList") {
                 if (Abs (cache[id]) == 0) {
                     return;
+                } else {
+                    cache[id] = 1;
                 }
             }
             ExecuteCommands ("global `id` = 1;");
@@ -40,7 +55,6 @@ function parameters.declareGlobal (id, cache) {
     }
 }
 
-
 function parameters.normalize_ratio (n, d) {
     if (d == 0) {
         if (n == 0) {
@@ -50,6 +64,18 @@ function parameters.normalize_ratio (n, d) {
         }
     } 
     return n/d;
+}
+
+function parameters.set_value (id, value) {
+    Eval ("`id` = " + value);
+}
+
+lfunction parameters.mean (values, weights, d) {
+    m = 0;
+    for (i = 0; i < 3; i+=1) {
+        m += Eval (values[i]) * Eval(weights[i]);
+    }
+    return m;
 }
 
 function parameters.quote (arg) {
@@ -161,6 +187,7 @@ function parameters.setConstraint (id, value, global_tag) {
         }
     }
 }
+
 
 function parameters.removeConstraint (id) {
     if (Type (id) == "String") {
