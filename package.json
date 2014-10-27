@@ -7,6 +7,6 @@
   "url": "https://github.com/veg/hyphy.git"
   },
     "scripts": {
-    "install": "cmake .;make HYPHYMP"
+    "install": "/usr/local/bin/cmake .;make HYPHYMP"
   }
 }
