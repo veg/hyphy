@@ -566,6 +566,14 @@ function relax._aux.io.mapBranchSets (key, value) {
     return None;
 }
 
+function relax.handle.unlabeled (label) {
+    if (label == "Unlabeled branches") {
+        return "";
+    } else {
+        return label;
+    }
+}
+
 //------------------------------------------------------------------------------ 
 function relax.io.defineBranchSets (relax.tree) {
     
@@ -602,7 +610,7 @@ function relax.io.defineBranchSets (relax.tree) {
     return_set = {};
     
     if (fgSet >= 0) {
-        branch_set [selectTheseForTesting[fgSet][0]] = RELAX.test;
+        branch_set [relax.handle.unlabeled(selectTheseForTesting[fgSet][0])] = RELAX.test;
         return_set [RELAX.test] = {};
         if (option_count > 2) {
             ChoiceList  (bgSet,"Choose the set of reference branches (R set)",1,fgSet,selectTheseForTesting);    
@@ -611,19 +619,20 @@ function relax.io.defineBranchSets (relax.tree) {
             }    
             for (k = 0; k < option_count; k+=1) {
                 if (k != bgSet && k != fgSet) {
-                    branch_set [""] = RELAX.unclassified;
+                    branch_set [relax.handle.unlabeled(selectTheseForTesting[k][0])] = RELAX.unclassified;
                     return_set [RELAX.unclassified] = {};
                     break;
                 }
             }
         }
         else {
+            
             bgSet = 1-fgSet;
         }
-        branch_set [selectTheseForTesting[bgSet][0]] = RELAX.reference;
+        branch_set [relax.handle.unlabeled(selectTheseForTesting[bgSet][0])] = RELAX.reference;
         return_set [RELAX.reference] = {};
      }
-    
+         
     (relax.tree["model_map"])["relax._aux.io.mapBranchSets"][""];
     relax.tree["model_list"] = Columns (relax.tree["model_map"]);
     //fprintf (stdout, "\n", relax.tree, "\n", return_set, "\n");
