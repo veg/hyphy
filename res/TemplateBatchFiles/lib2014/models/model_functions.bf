@@ -18,6 +18,11 @@ function model.applyModelToTree (id, tree, model_list, rules) {
             ExecuteCommands ("UseModel (" + rules["DEFAULT"] + ");
                               Tree `id` = " + tree["string"] + ";
                               ");	    
+	    } else {
+            ExecuteCommands ("UseModel (USE_NO_MODEL);
+                              Tree `id` = " + tree["string"] + ";
+                              ");	    
+	    
 	    }
 	    
 	    model.applyModelToTree.ids = Rows (rules);
@@ -25,8 +30,18 @@ function model.applyModelToTree (id, tree, model_list, rules) {
 	        model.applyModelToTree.name = model.applyModelToTree.ids[model.applyModelToTree.k];
 	        if ( model.applyModelToTree.name != "DEFAULT") {
                 model.applyModelToTree.list = rules[model.applyModelToTree.name];
+                if (Type (model.applyModelToTree.list) == "AssociativeList") {
+                    model.applyModelToTree.list = Rows (model.applyModelToTree.list);
+                }
+                
+                if (Type (model_list) == "AssociativeList") {
+                    model.applyModelToTree.apply_model = model_list[model.applyModelToTree.name];
+                } else {
+                    model.applyModelToTree.apply_model = model.applyModelToTree.name;
+                }
+                
                 for (model.applyModelToTree.b = 0; model.applyModelToTree.b < Columns (model.applyModelToTree.list); model.applyModelToTree.b += 1) {
-                    ExecuteCommands ("SetParameter (`id`." + model.applyModelToTree.list[model.applyModelToTree.b] + ",MODEL," + model.applyModelToTree.name + ")");
+                    ExecuteCommands ("SetParameter (`id`." + model.applyModelToTree.list[model.applyModelToTree.b] + ",MODEL," + model.applyModelToTree.apply_model + ")");
                 }
             }
 	    }

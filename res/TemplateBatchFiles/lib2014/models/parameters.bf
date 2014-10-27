@@ -188,6 +188,17 @@ function parameters.setConstraint (id, value, global_tag) {
     }
 }
 
+function parameters.constrainSets (set1, set2) {
+    parameters.constrainSets.tags = Rows (set1);
+    for (parameters.constrainSets.k = 0; parameters.constrainSets.k < Abs (set1); parameters.constrainSets.k += 1) {
+        
+        if (Type (set2[parameters.constrainSets.tags [parameters.constrainSets.k]]) == "String") {
+            ExecuteCommands (set2[parameters.constrainSets.tags [parameters.constrainSets.k]] + ":=" +
+                             set1[parameters.constrainSets.tags [parameters.constrainSets.k]]);
+        }
+    }
+}
+
 
 function parameters.removeConstraint (id) {
     if (Type (id) == "String") {
@@ -195,9 +206,11 @@ function parameters.removeConstraint (id) {
             Eval ("`id` = " + Eval(id));
         }
     } else {
-        if (Type (id) == "AssociativeList" && Type (value) == "AssociativeList") {                
-
-            parameters.removeConstraint.var_count = Abs (id);
+        if (Type (id) == "AssociativeList") {                
+            return parameters.removeConstraint (Columns (id));
+        }
+        if (Type (id) == "Matrix") {                
+            parameters.removeConstraint.var_count = Columns (id) * Rows (id);
             for (parameters.removeConstraint.k = 0; parameters.removeConstraint.k <  parameters.removeConstraint.var_count; parameters.removeConstraint.k += 1) {
                 parameters.removeConstraint (id[parameters.removeConstraint.k]);
             }            
