@@ -292,7 +292,7 @@ relax.taskTimerStart  (5);
 
 parameters.removeConstraint (RELAX.test.model ["omegas"]);
 parameters.removeConstraint (RELAX.test.model ["f"]);
-parameters.setConstraint (RELAX.relaxation_parameter, Eval (RELAX.relaxation_parameter), "");
+parameters.setConstraint    (RELAX.relaxation_parameter, Eval (RELAX.relaxation_parameter), "");
 
 
 io.reportProgressMessage ("RELAX", "Fitting the RELAX partitioned exploratory model");
@@ -301,7 +301,7 @@ io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.part.expl [1][0]);
 
 relax.part.expl = estimators.extractMLEs ("relax.LF", RELAX.model_specification);   
 
-relax.omega_distributions["Test"] = relax.getRateDistribution (RELAX.test.model,1);
+relax.omega_distributions["Test"]       = relax.getRateDistribution (RELAX.test.model,Eval (RELAX.relaxation_parameter));
 relax.omega_distributions["Reference"] =  relax.getRateDistribution (RELAX.reference.model, 1);
 
 if (RELAX.has_unclassified) {
