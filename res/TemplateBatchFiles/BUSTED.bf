@@ -1,10 +1,10 @@
-RequireVersion ("2.1320140810");
+RequireVersion ("2.1320141020");
 
 _BUSTED_timers  = {3,1};
 busted.taskTimerStart (2);
 
 VERBOSITY_LEVEL				= 0;
-LF_SMOOTHING_SCALER         = 0.01;
+LF_SMOOTHING_SCALER         = 0.1;
 
 
 LoadFunctionLibrary("GrabBag");
@@ -83,19 +83,25 @@ LikelihoodFunction busted.LF = (codon_filter, busted.tree);
 
 _BUSTED_json["background"] =  busted.hasBackground  ("busted.tree");
 
-estimators.applyExistingEstimates ("busted.LF", {"0":busted.model_definitions}, busted.gtr_results);
-global busted.T_scaler = 1;
-gtr_lengths = (busted.gtr_results["branch lengths"])[0];
-gtr_lengths ["busted._aux.copy_lengths"][""];
+global busted.T_scaler = 4;
+BUSTED.proportional_constraint = "busted.T_scaler";
+
+BUSTED.model_specification = {};
+BUSTED.model_specification[(busted.model_definitions["FG"])["model"]] = busted.model_definitions;
+BUSTED.model_specification[(busted.model_definitions["BG"])["model"]] = busted.model_definitions;
+
+estimators.applyExistingEstimates ("busted.LF", BUSTED.model_specification, busted.gtr_results);
 
 io.reportProgressMessage ("BUSTED", "Fitting the unconstrained branch-site model");
 
 USE_LAST_RESULTS = 1;
 OPTIMIZATION_PRECISION = 0.1;
+ASSUME_REVERSIBLE_MODELS = 1;
 
 busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
 Optimize (busted.MLE_HA, busted.LF);
-gtr_lengths ["busted._aux.free_lengths"][""];
+
+parameters.unconstrain_parameter_set ("busted.LF", {{terms.lf.local.constrained}});
 
 OPTIMIZATION_PRECISION = 0.001;
 Optimize (busted.MLE_HA, busted.LF);
@@ -182,9 +188,7 @@ USE_JSON_FOR_MATRIX = 0;
 //------------------------------------------------------------------------------ 
 // HELPER FUNCTIONS FROM HTHIS POINT ON
 //------------------------------------------------------------------------------ 
-function busted._aux.copy_lengths (key, value) {
-    ExecuteCommands ("busted.tree." + key + ".t := busted.T_scaler * " + value["MLE"]);
-}
+
 
 //------------------------------------------------------------------------------ 
 function busted.hasBackground (id) {
@@ -309,7 +313,7 @@ function busted.io.define_bsrel_models (foreground_id, background_id, frequencie
     model_parameters = 
         {"FG": {"omegas" : {}, "weights" : {}, "f" : {}, "Q" : {}, "length" : ""},
          "BG": {"omegas" : {}, "weights" : {}, "f" : {}, "Q" : {}, "length" : ""},
-         "parameters" : {"global" : {}}
+         "parameters" : {"global" : {}, "local" : {}}
           };
     
     for (k = 1; k <= 3; k +=1) {
@@ -356,17 +360,36 @@ function busted.io.define_bsrel_models (foreground_id, background_id, frequencie
     (model_parameters["FG"])["model"] = "`foreground_id`_model";
     (model_parameters["FG"])["length"] = busted._aux.define_bsrel_model ("`foreground_id`_model", (model_parameters["FG"])["Q"], (model_parameters["FG"])["weights"], frequencies["codon"]);
     
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","C")] = {"ID" : "AC"};
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","T")] = {"ID" : "AT"};
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","G")] = {"ID" : "CG"};
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","T")] = {"ID" : "CT"};
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("G","T")] = {"ID" : "GT"};
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","C")] = "AC";
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","T")] = "AT";
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","G")] = "CG";
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","T")] = "CT";
+    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("G","T")] = "GT";
+     model_parameters["set-branch-length"] = "busted.aux.copy_branch_length";
+
+    ((model_parameters["parameters"])[terms.local])[terms.timeParameter ()] = "t";
     
-    model_parameters["length parameter"] = "t";
+     model_parameters["length parameter"] = "t";
     
     return model_parameters;
 }
 
+function busted.aux.copy_branch_length (model, value, parameter) {
+
+    busted.aux.copy_branch_length.t = ((model["parameters"])["local"])[terms.timeParameter ()];
+    
+    if (Abs (BUSTED.proportional_constraint)) {
+        Eval ("`parameter`.`busted.aux.copy_branch_length.t` := `BUSTED.proportional_constraint` * " + value);        
+    } else {
+        Eval ("`parameter`.`busted.aux.copy_branch_length.t` = " + value);
+    }
+    
+    
+    
+    if (Type (relax.aux.copy_branch_length.k) == "String") {
+        Eval ("`parameter`.`relax.aux.copy_branch_length.k` = 1");
+    }
+}
 
 //------------------------------------------------------------------------------ 
 lfunction busted.io.selectBranchesToTest (tree_definition) {
