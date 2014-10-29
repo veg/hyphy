@@ -89,6 +89,16 @@ RELAX.json ["tree"] = relax.tree ["string"];
 
 io.reportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches[RELAX.test]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches[RELAX.test])));
 
+
+ChoiceList  (RELAX.runModel,"Analysis type",1,NO_SKIP,
+            "All", "[Default] Fit descriptive models AND run the relax test (4 models)",
+            "Minimal", "Run only the RELAX test (2 models)"
+            );
+
+if (RELAX.runModel < 0) {
+    return;
+}
+
 relax.taskTimerStart (1);
 
 if (RELAX.settings["GTR"]) {
@@ -100,7 +110,7 @@ if (RELAX.settings["GTR"]) {
     relax.gtr_results = None;
 }
 
-if (RELAX.settings["LocalMG"]) {
+if (RELAX.settings["LocalMG"] && RELAX.runModel == 0) {
   io.reportProgressMessage ("RELAX", "Obtaining  omega and branch length estimates under the local MG94xGTR model");
   relax.local_mg_results  = estimators.fitMGREV     (relax.codon_data_info, relax.tree, {"model-type" : terms.local}, relax.gtr_results);
   io.reportProgressMessage ("RELAX", "Log(L) = " + relax.local_mg_results["LogL"]);
@@ -117,7 +127,6 @@ relax.mg_results_rate =
                      {"Reference"   : {{relax.extract_global_MLE (relax.mg_results, RELAX.reference),1}},
                       "Test"        : {{relax.extract_global_MLE (relax.mg_results, RELAX.test),1}}};
                       
-
 
 
 
@@ -175,43 +184,52 @@ if (RELAX.settings["Estimate GTR"] != 1) {
 
 estimators.applyExistingEstimates ("relax.LF",  RELAX.model_specification, relax.mg_results);
 
-io.reportProgressMessage ("RELAX", "Two-stage fit of the general descriptive model (separate relaxation parameter for each branch)");
-
 USE_LAST_RESULTS       = 1;
-OPTIMIZATION_PRECISION = 0.1;
 
-Optimize (relax.MLE.general_descriptive, relax.LF);
+if (RELAX.runModel == 0) {
 
-OPTIMIZATION_PRECISION = 0.001;
-parameters.unconstrain_parameter_set ("relax.LF", {{terms.lf.local.constrained}});
+    io.reportProgressMessage ("RELAX", "Two-stage fit of the general descriptive model (separate relaxation parameter for each branch)");
 
-Optimize (relax.MLE.general_descriptive, relax.LF);
-io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.general_descriptive[1][0]);
+    OPTIMIZATION_PRECISION = 0.1;
 
-if (RELAX.has_unclassified) {
-    parameters.removeConstraint (RELAX.unclassified.model ["omegas"]);
-    parameters.removeConstraint (RELAX.unclassified.model ["f"]);
+    Optimize (relax.MLE.general_descriptive, relax.LF);
+
+    OPTIMIZATION_PRECISION = 0.001;
+    parameters.unconstrain_parameter_set ("relax.LF", {{terms.lf.local.constrained}});
+
+    Optimize (relax.MLE.general_descriptive, relax.LF);
+    io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.general_descriptive[1][0]);
+    
+    relax.general_descriptive = estimators.extractMLEs ("relax.LF", RELAX.model_specification);   
+    relax.add_scores (relax.general_descriptive, relax.MLE.general_descriptive);
+
+    relax.taskTimerStop (2);
+
+    relax.json_store_lf (RELAX.json, "General Descriptive", 
+                         relax.general_descriptive["LogL"], relax.general_descriptive["parameters"],
+                         RELAX.timers[2],
+                         relax._aux.extract_branch_info ((relax.general_descriptive["branch lengths"])[0], "relax.branch.length"),
+                         relax._aux.extract_branch_info ((relax.general_descriptive["branch lengths"])[0], "relax.branch.local_k"),
+                         {"All" : relax.getRateDistribution (RELAX.reference.model, 1)},
+                         None,
+                         "k"
+                        );
+    relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
+    
+} else {
+    parameters.unconstrain_parameter_set ("relax.LF", {{terms.lf.local.constrained}});
 }
+
+
 
    
 //io.spoolLF ("relax.LF", "/Volumes/home-raid/Desktop/explore", None);
 
 
-relax.general_descriptive = estimators.extractMLEs ("relax.LF", RELAX.model_specification);   
-relax.add_scores (relax.general_descriptive, relax.MLE.general_descriptive);
-
-relax.taskTimerStop (2);
-
-relax.json_store_lf (RELAX.json, "General Descriptive", 
-                     relax.general_descriptive["LogL"], relax.general_descriptive["parameters"],
-                     RELAX.timers[2],
-                     relax._aux.extract_branch_info ((relax.general_descriptive["branch lengths"])[0], "relax.branch.length"),
-                     relax._aux.extract_branch_info ((relax.general_descriptive["branch lengths"])[0], "relax.branch.local_k"),
-                     {"All" : relax.getRateDistribution (RELAX.reference.model, 1)},
-                     None,
-                     "k"
-                    );
-relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
+if (RELAX.has_unclassified) {
+    parameters.removeConstraint (RELAX.unclassified.model ["omegas"]);
+    parameters.removeConstraint (RELAX.unclassified.model ["f"]);
+}
 
 relax.taskTimerStart (3);
 io.reportProgressMessage ("RELAX", "Fitting the RELAX null model");
@@ -288,38 +306,42 @@ relax.json_store_lf (RELAX.json, "Alternative",
                      "k"
                     );
 
-relax.taskTimerStart  (5);
 
-parameters.removeConstraint (RELAX.test.model ["omegas"]);
-parameters.removeConstraint (RELAX.test.model ["f"]);
-parameters.setConstraint    (RELAX.relaxation_parameter, Eval (RELAX.relaxation_parameter), "");
+if (RELAX.runModel == 0) {
+
+    relax.taskTimerStart  (5);
+
+    parameters.removeConstraint (RELAX.test.model ["omegas"]);
+    parameters.removeConstraint (RELAX.test.model ["f"]);
+    parameters.setConstraint    (RELAX.relaxation_parameter, Eval (RELAX.relaxation_parameter), "");
 
 
-io.reportProgressMessage ("RELAX", "Fitting the RELAX partitioned exploratory model");
-Optimize (relax.MLE.part.expl, relax.LF);
-io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.part.expl [1][0]);
+    io.reportProgressMessage ("RELAX", "Fitting the RELAX partitioned exploratory model");
+    Optimize (relax.MLE.part.expl, relax.LF);
+    io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.part.expl [1][0]);
 
-relax.part.expl = estimators.extractMLEs ("relax.LF", RELAX.model_specification);   
+    relax.part.expl = estimators.extractMLEs ("relax.LF", RELAX.model_specification);   
 
-relax.omega_distributions["Test"]       = relax.getRateDistribution (RELAX.test.model,Eval (RELAX.relaxation_parameter));
-relax.omega_distributions["Reference"] =  relax.getRateDistribution (RELAX.reference.model, 1);
+    relax.omega_distributions["Test"]       = relax.getRateDistribution (RELAX.test.model,Eval (RELAX.relaxation_parameter));
+    relax.omega_distributions["Reference"] =  relax.getRateDistribution (RELAX.reference.model, 1);
 
-if (RELAX.has_unclassified) {
-    relax.omega_distributions ["Unclassified"] = relax.getRateDistribution (RELAX.unclassified.model, 1);
+    if (RELAX.has_unclassified) {
+        relax.omega_distributions ["Unclassified"] = relax.getRateDistribution (RELAX.unclassified.model, 1);
+    }
+
+    relax.add_scores (relax.part.expl, relax.MLE.part.expl);
+
+    relax.taskTimerStop  (5);
+    relax.json_store_lf (RELAX.json, "Partitioned Exploratory", 
+                         relax.part.expl["LogL"], relax.part.expl["parameters"],
+                         RELAX.timers[5],
+                         relax._aux.extract_branch_info ((relax.part.expl["branch lengths"])[0], "relax.branch.length"),
+                         None,
+                         relax.omega_distributions,
+                         None,
+                         ""
+                        );
 }
-
-relax.add_scores (relax.part.expl, relax.MLE.part.expl);
-
-relax.taskTimerStop  (5);
-relax.json_store_lf (RELAX.json, "Partitioned Exploratory", 
-                     relax.part.expl["LogL"], relax.part.expl["parameters"],
-                     RELAX.timers[5],
-                     relax._aux.extract_branch_info ((relax.part.expl["branch lengths"])[0], "relax.branch.length"),
-                     None,
-                     relax.omega_distributions,
-                     None,
-                     ""
-                    );
 
 
 relax.taskTimerStop  (0);
