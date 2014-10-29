@@ -1,0 +1,12 @@
+{
+  "name": "hyphy",
+  "version": "2.2.1",
+  "author": "Sergei L Kosakovsky Pond",
+  "repository": {
+  "type": "git",
+  "url": "https://github.com/veg/hyphy.git"
+  },
+    "scripts": {
+    "install": "/usr/local/bin/cmake .;make HYPHYMP"
+  }
+}
