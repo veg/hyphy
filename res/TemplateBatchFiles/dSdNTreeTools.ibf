@@ -1,9 +1,8 @@
-function  ComputeScalingStencils (dummy)
+function  ComputeScalingStencils (unused)
 {
 	scalingStencils = {};
 	
-	if (Columns(_Genetic_Code) != 64)
-	{
+	if (Columns(_Genetic_Code) != 64) {
 		fprintf (stdout, "\nError: _Genetic_Code is not properly defined\n");
 	}
 	else

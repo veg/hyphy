@@ -255,6 +255,15 @@ function partitionENVsequence (seq, nucOrAA) {
 	_mappedLength        = Rows (_mappedReference);
 	_splitSequence       = {};
 	
+    for (_currentIndex = 0; _currentIndex < _mappedLength; _currentIndex+=1) {
+        if (_mappedReference[_currentIndex] > 0) {
+           if (_currentIndex > 0) {
+                _currentIndex += (-1);
+           }
+           break;
+        }
+    }
+	
 	for (_currentPartition    = 0; _currentPartition < _allPartitions; _currentPartition += 1) {
 	    _segmentName = _HXB_env_region_name[_currentPartition];
 	    _splitSequence [_segmentName] = "";
@@ -273,7 +282,9 @@ function partitionENVsequence (seq, nucOrAA) {
 
 	for (_currentPartition    = 0; _currentPartition < _allPartitions; _currentPartition += 1) {
         _splitSequence [_HXB_env_region_name[_currentPartition]] * 0;
-	}
+	}	
+		
+		
 		
 	return _splitSequence;
 }
