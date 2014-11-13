@@ -48,6 +48,8 @@ if (oldBSREL) {
     _BSREL_json["PMID"] = "YYY";
 }
 
+_BSREL_json["convergence failures"] = 0;
+
 doSynRateVariation = 1-doSynRateVariation;
 
 DataSet 			ds 				= ReadDataFile(PROMPT_FOR_FILE);
@@ -537,8 +539,18 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         
             fprintf 					  (stdout, "[PHASE 2/REPEAT] Detected a convergence problem; refitting the LOCAL alternative model with new starting values\n");
             lfOut	= csvFilePath + ".fit";
+            _BSREL_json["convergence failures"] += 1;
             Optimize					  (res_three_LF,three_LF);
-            json_store_lf                 (_BSREL_json, "BS-REL", res_three_LF[1][0], res_three_LF[1][1] + 9, getIC (res_three_LF[1][0], res_three_LF[1][1], sample_size), _BSREL_timers[2]); 
+            json_store_lf                 ( _BSREL_json,
+                                            "BS-REL",
+                                            res_three_LF[1][0],
+                                            res_three_LF[1][1] + 9,
+                                            getIC(  res_three_LF[1][0],
+                                                    res_three_LF[1][1],
+                                                    sample_size),
+                                            _BSREL_timers[2],
+                                            +BranchLength (T, -1),
+                                            renderString);
             LIKELIHOOD_FUNCTION_OUTPUT = 7;
             fprintf (lfOut, CLEAR_FILE, three_LF);
             LIKELIHOOD_FUNCTION_OUTPUT = 2;
