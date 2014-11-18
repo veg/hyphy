@@ -1177,8 +1177,12 @@ void _LikelihoodFunction::SetupParameterMapping (void)
     parameterTransformationFunction.Clear();
     parameterValuesAndRanges = new _Matrix (indexInd.lLength, 4, false, true);
     checkParameter(addLFSmoothing, smoothingTerm, 0.0);
+    checkParameter(reduceLFSmoothing, smoothingReduction, 0.8);
     if (smoothingPenalty < 0.0) {
       smoothingPenalty = 0.0;
+    }
+    if (smoothingReduction <= 0.0 || smoothingReduction >= 1.0) {
+      smoothingReduction = 0.8;
     }
     
 

@@ -212,7 +212,8 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 optimizationHardLimit           ("OPTIMIZATION_TIME_HARD_LIMIT"),
                                 minimumSitesForAutoParallelize  ("MINIMUM_SITES_FOR_AUTO_PARALLELIZE"),
                                 userSuppliedVariableGrouping    ("PARAMETER_GROUPING"),
-                                addLFSmoothing                  ("LF_SMOOTHING_SCALER");
+                                addLFSmoothing                  ("LF_SMOOTHING_SCALER"),
+                                reduceLFSmoothing               ("LF_SMOOTHING_REDUCTION");
 
     
 extern _String useNexusFileData,
@@ -4312,7 +4313,7 @@ DecideOnDivideBy (this);
             }
 #endif
             if (smoothingTerm > 0.) {
-              smoothingTerm *= 0.8;
+              smoothingTerm *= smoothingReduction;
             }
             
             _SimpleList nc2;

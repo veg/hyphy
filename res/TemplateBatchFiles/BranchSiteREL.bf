@@ -7,7 +7,8 @@ VERBOSITY_LEVEL				= 0;
 maximum_number_of_omegas   = 10;
 skipCodeSelectionStep 		= 0;
 _useGridSearch              = 1;
-LF_SMOOTHING_SCALER         = 0.01;
+LF_SMOOTHING_SCALER         = 1/16;
+LF_SMOOTHING_REDUCTION      = 1/8;
 
 
 ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");

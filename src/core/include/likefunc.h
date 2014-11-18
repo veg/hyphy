@@ -602,6 +602,7 @@ private:
     MSTCache*       mstCache;
     
     _Parameter      smoothingTerm,
+                    smoothingReduction,
                     smoothingPenalty;
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
@@ -747,7 +748,8 @@ storeRootSupportFlag           ,
 supportMatrixVariable          ,
 optimizationStatusFile         ,
 autoParalellizeLF              ,
-addLFSmoothing                 ;
+addLFSmoothing                 ,
+reduceLFSmoothing              ;
 
 
 
