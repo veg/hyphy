@@ -277,6 +277,9 @@ parameters.removeConstraint (RELAX.relaxation_parameter);
 Optimize (relax.MLE.alt, relax.LF);
 io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.alt[1][0] + ". Relaxation parameter K = " + Eval (RELAX.relaxation_parameter));
 
+LIKELIHOOD_FUNCTION_OUTPUT = 7;
+fprintf (relax.codon_data_info["file"] + ".alternative.fit", CLEAR_FILE, relax.LF);
+LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 
 relax.alt = estimators.extractMLEs ("relax.LF", RELAX.model_specification);   
@@ -319,6 +322,10 @@ if (RELAX.runModel == 0) {
     io.reportProgressMessage ("RELAX", "Fitting the RELAX partitioned exploratory model");
     Optimize (relax.MLE.part.expl, relax.LF);
     io.reportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.part.expl [1][0]);
+
+    LIKELIHOOD_FUNCTION_OUTPUT = 7;
+    fprintf (relax.codon_data_info["file"] + ".partitioned_descriptive.fit", CLEAR_FILE, relax.LF);
+    LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
     relax.part.expl = estimators.extractMLEs ("relax.LF", RELAX.model_specification);   
 

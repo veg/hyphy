@@ -2488,7 +2488,12 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
     }
     else {
         if (IsValidIdentifier()) {
-            referenced_object = context? (*context & '.' & *this): (*this);
+          if (context) {
+            _String cdot = *context & '.';
+            referenced_object = startswith(cdot) ? * this : (cdot & *this);
+          } else {
+            referenced_object = *this;
+          }
             return HY_STRING_DIRECT_REFERENCE;
         }
     }
