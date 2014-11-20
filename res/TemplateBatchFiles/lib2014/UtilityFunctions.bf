@@ -12,7 +12,6 @@ function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name
     return data_info;
 }
 
-
 function utility.defineFrequencies (datafilter_name) {
     HarvestFrequencies	          (nuc3, *datafilter_name, 3, 1, 1);
     nucCF						= CF3x4	(nuc3, GeneticCodeExclusions);
@@ -22,12 +21,10 @@ function utility.defineFrequencies (datafilter_name) {
             "codon": codon3x4};
 }
 
-function utility.loadAnnotatedTopology () {
-
-    tree_string = io.getTreeString();
+function utility.loadAnnotatedTopology (look_for_newick_tree) {
+    tree_string = io.getTreeString(look_for_newick_tree);
     Topology     T = tree_string;
     GetInformation (modelMap, T);
-        
     
     return {"string"     : Format (T,1,0),
             "annotated_string" : "" + T,

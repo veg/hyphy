@@ -1,0 +1,845 @@
+USE_MPI_CACHING = 1;
+PRINT_DIGITS = -1;
+
+
+function add_discrete_node (node_id, max_parents, sample_size, nlevels)
+{
+	node = {};
+	node["NodeID"] = node_id;
+    node["NodeType"] = 0;
+    node["MaxParents"] = max_parents;
+	node["PriorSize"] = sample_size;
+	node["NumLevels"] = nlevels;
+	return node;
+}
+
+function add_gaussian_node (node_id, max_parents, sample_size, mean, precision, scale)
+{
+	node = {};
+	node["NodeID"] = node_id;
+    node["NodeType"] = 1;
+	node["MaxParents"] = max_parents;
+	node["PriorSize"] = sample_size;
+	node["PriorMean"]	= mean;
+	node["PriorPrecision"]	= precision;
+	node["PriorScale"] = scale;
+	return node;
+}
+
+
+
+/* utility functions from ReadDelimitedFiles.bf */
+function ReadCSVTable (fileName, haveHeader)
+{
+	if (Abs(fileName) == 0)
+	{
+		fscanf (PROMPT_FOR_FILE, "Lines", inData);
+	}
+	else
+	{
+		fscanf (fileName, "Lines", inData);		
+	}
+	if (haveHeader)
+	{
+		output = {};
+		output[0] = splitOnRegExp (inData[0],"\\,");
+	}
+	felMXString = "";
+	felMXString * 256;
+	felMXString * "_tempMatrix={";
+	for (lineID = haveHeader; lineID < Columns(inData); lineID = lineID + 1)
+	{
+		felMXString * ("{" + inData[lineID] + "}\n");
+	}
+	felMXString * "}";
+	felMXString * 0;
+	ExecuteCommands (felMXString);
+	felMXString = 0;
+	inData = 0;
+	if (haveHeader)
+	{
+		output[1] = _tempMatrix;
+		_tempMatrix = 0;
+		return output;
+	}
+	return _tempMatrix;
+}
+
+
+function splitOnRegExp (string, splitter)
+{
+	matched = string || splitter;
+	splitBits = {};
+	if (matched [0] < 0)
+	{
+		splitBits[0] = string;
+	}
+	else
+	{
+		mc = 0;
+		if (matched[0] == 0)
+		{
+			fromPos = matched[1]+1;
+			mc = 2;
+		}
+		else
+		{
+			fromPos = 0;
+			toPos	= 0;
+		}
+		for (; mc < Rows (matched); mc = mc+2)
+		{
+			toPos = matched[mc]-1;
+			splitBits [Abs(splitBits)] = string[fromPos][toPos];
+			fromPos    = matched[mc+1]+1;
+		}
+		splitBits [Abs(splitBits)] = string[fromPos][Abs(string)-1];
+	}
+	return splitBits;
+}
+
+
+/* a wrapper around ReadCSVTable */
+function import_data (inData, hasHeader)
+{
+	timer0 = Time(0);
+	file_input = ReadCSVTable (inData, hasHeader);
+	
+	bgm_data_matrix = {{}};
+	names = {{}};
+	num_nodes = 0;
+	
+	if (hasHeader)
+	{
+		names = file_input["0"];
+		bgm_data_matrix = file_input["1"];
+		
+		fprintf (stdout, "Read ", Rows(bgm_data_matrix), " cases from file.\n");
+		
+		num_nodes = Columns(bgm_data_matrix);
+		
+		if (Abs(file_input["0"]) != num_nodes)
+		{
+			fprintf (stdout, "ERROR! Number of items in header does not match the number of items in the data matrix.");
+			return 0;
+		}
+		
+		fprintf (stdout, "Detected ", num_nodes, " variables.\n");
+	}
+	else
+	{
+		bgm_data_matrix = file_input;
+		
+		fprintf (stdout, "Read ", Rows(bgm_data_matrix), " cases from file.\n");
+		
+		num_nodes = Columns(bgm_data_matrix);
+		names = {num_nodes, 1};
+		
+		for (i = 0; i < num_nodes; i = i+1)
+		{
+			names[i] = i;
+		}
+		
+		fprintf (stdout, "Detected ", num_nodes, " variables.\n");
+	}
+	
+	return bgm_data_matrix;
+}
+
+
+
+function import_cache (filename, cache_name)
+{
+	fscanf (filename, "Raw", cacheStr);
+	ExecuteCommands(cache_name+" = "+cacheStr+";");
+	return 0;
+}
+
+
+
+function attach_cache (_bgm, cache)
+{
+	ExecuteCommands ("SetParameter("+_bgm+", BGM_SCORE_CACHE, cache);");
+	return 0;
+}
+
+
+
+
+/* ____________________________________________________________ */
+/*  accessor functions											*/
+function setStructure (_bgm, graph_matrix)
+{
+	ExecuteCommands("SetParameter ("+_bgm+", BGM_GRAPH_MATRIX, graph_matrix);");
+}
+
+function setOrder (_bgm, order_matrix)
+{
+	if (Rows(order_matrix) > 1)
+	{
+		if (Columns(order_matrix) == 1)
+		{
+			t_order_matrix = Transpose(order_matrix);
+			ExecuteCommands("SetParameter ("+_bgm+", BGM_NODE_ORDER, t_order_matrix);");
+		}
+		else
+		{
+			fprintf (stdout, "Warning: expecting row vector matrix, received non-vector matrix");
+			fprintf (stdout, "         with dimensions ", Rows(order_matrix), " x ", Columns(order_matrix), "\n");
+			fprintf (stdout, "Node order not set!\n");
+		}
+	}
+	else
+	{
+		ExecuteCommands ("SetParameter ("+_bgm+", BGM_NODE_ORDER, order_matrix);");
+	}
+}
+
+
+function setConstraints (_bgm, constraint_matrix)
+{
+	ExecuteCommands("SetParameter ("+_bgm+", BGM_CONSTRAINT_MATRIX, constraint_matrix);");
+	return 0;
+}
+
+
+/* ____________________________________________________________ */
+/*	Assign data matrix to _BayesianGraphicalModel object 		*/
+function attach_data (_bgm, data, impute_max, impute_burn, impute_samp)
+{
+	BGM_IMPUTE_MAXSTEPS = impute_max$1;
+	BGM_IMPUTE_BURNIN = impute_burn$1;
+	BGM_IMPUTE_SAMPLES = impute_samp$1;
+
+	ExecuteCommands("SetParameter ("+_bgm+", BGM_DATA_MATRIX, data);");
+	return 0;
+}
+
+
+
+/*  
+	Structural (graph) MCMC by Metropolis-Hastings				
+ 		Returns matrix object containing chain trace, edge			
+	marginal posterior probabilities, and best graph as 		
+	adjacency matrix.
+	
+	rand_tolerance = maximum number of failed steps in graph randomization
+					to tolerate
+	
+	prob_swap = probability of reversing an edge, instead of adding or deleting an edge
+	
+	with_order = a vector containing node ordering to constrain graph MCMC
+					set to 0 to have unconstrained chain sample
+*/
+
+BGM_MCMC_MAXFAILS = 100;
+BGM_MCMC_PROBSWAP = 0.1;
+
+function graph_MCMC (_bgm, duration, burnin, num_samples, with_order=0)
+{
+	if (Rows(with_order) * Columns(with_order) > 0)
+	{
+		/* fixed node order */
+		ExecuteCommands("setOrder ("+_bgm+", with_order);");
+		BGM_OPTIMIZATION_METHOD = 2;
+	}
+	else
+	{
+		/* shuffle node order */
+		BGM_OPTIMIZATION_METHOD = 3;
+	}
+	
+	BGM_MCMC_MAXSTEPS 	= duration;
+	BGM_MCMC_BURNIN		= burnin;
+	BGM_MCMC_SAMPLES 	= num_samples;
+	
+	ExecuteCommands("Optimize(res, "+_bgm+");");
+	
+	return res;
+}
+
+
+/*
+	Order (node precedence permutation) MCMC by Metropolis-Hastings
+*/
+function order_MCMC (_bgm, duration, burnin, num_samples)
+{
+	BGM_OPTIMIZATION_METHOD = 4;
+	
+	BGM_MCMC_MAXSTEPS 	= duration;
+	BGM_MCMC_BURNIN		= burnin;
+	BGM_MCMC_SAMPLES 	= num_samples;
+	
+	ExecuteCommands("Optimize(res, "+_bgm+");");
+	
+	return res;
+}
+
+
+
+
+
+function display_MCMC_chain (res)
+{
+	if (Rows(res)*Columns(res) == 0)
+	{
+		fprintf (stdout, "ERROR: Cannot display MCMC chain for empty matrix\n");
+		return 1;
+	}
+	
+	pp_trace = res[-1][0];
+	min_trace = pp_trace[0];
+	max_trace = pp_trace[0];
+	
+	/* locate min/max and end of trace */
+	for (k = 0; k < Rows(pp_trace); k = k+1)
+	{
+		if (pp_trace[k] == 0)
+		{
+			break;
+		}
+		if (pp_trace[k] < min_trace)
+		{
+			min_trace = pp_trace[k];
+		}
+		if (pp_trace[k] > max_trace)
+		{
+			max_trace = pp_trace[k];
+		}
+	}
+	k = k-1;
+	pp_trace = pp_trace[{{0,0}}][{{k-1,0}}];
+	
+	
+	columnHeaders = {{"MCMC chain","sample;1;2;3;4;5;6;7;8;9"}};
+	
+	OpenWindow (CHARTWINDOW,{{"Posterior probability"}
+			{"columnHeaders"}
+			{"pp_trace"}
+			{"Step Plot"}
+			{"Index"}
+			{"MCMC chain"}
+			{"chain sample step"}
+			{"posterior prob."}
+			{""}
+			{"0"}
+			{""}
+			{"0;0"}
+			{"10;1.309;0.785398"}
+			{"Times:12:0;Times:10:0;Times:12:2"}
+			{"0;0;13816530;16777215;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
+			{"16,"+min_trace+","+max_trace}
+			},
+			"405;462;105;100");
+	
+	return 0;
+}
+
+
+function get_MCMC_graph (res, num_nodes, mode)
+{
+	/* mode = -1 		: best_graph
+	   mode = 0 		: last_graph
+	   0 < mode <= 1 	: marginal posterior graph with threshold = mode (e.g. 0.9)
+	   */
+	graph = {num_nodes, num_nodes};
+	
+	if (mode > 0)
+	{
+		for (row = 0; row < num_nodes * num_nodes; row = row+1)
+		{
+			if (res[row][1] >= mode)
+			{
+				graph[row $ num_nodes][row % num_nodes] = 1;
+			}
+		}
+	}
+	else
+	{
+		for (row = 0; row < num_nodes; row = row+1)
+		{
+			for (col = 0; col < num_nodes; col = col+1)
+			{
+				graph[row][col] = res[row*num_nodes+col][mode+3];
+			}
+		}
+	}
+	
+	return graph;
+}
+
+
+function write_edgelist (filename,res,num_nodes,directed)
+{
+	fprintf (filename, CLEAR_FILE, KEEP_OPEN);
+	if (directed)	
+	{
+		for (row = 0; row < num_nodes; row = row+1)
+		{
+			for (col = 0; col < num_nodes; col = col+1)
+			{
+				fprintf (filename, names[row], ",", names[col], ",", res[row*num_nodes+col][1], "\n");
+			}
+		}
+	}
+	else
+	{
+		for (row = 0; row < num_nodes-1; row = row+1)
+		{
+			for (col = row+1; col < num_nodes; col = col+1)
+			{
+				fprintf (filename, names[row], ",", names[col], ",", res[row*num_nodes+col][1] + res[col*num_nodes+row][1], "\n");
+			}
+		}
+	}
+	fprintf (filename, CLOSE_FILE);
+	return 0;
+}
+
+
+function mcmc_graph_to_dotfile (filename, threshold, res, nodes)
+{	
+	fprintf (filename, CLEAR_FILE);
+	fprintf (filename, "digraph foo\n{\n");
+	fprintf (filename, "\tnode [fontname=\"Helvetica\" style=\"filled\" fillcolor=\"white\"];\n");
+	fprintf (filename, "\tedge [labelfontname=\"Helvetica\" labelangle=30 labeldistance=2];\n");
+	
+	for (_n = 0; _n < Abs(nodes); _n+=1) {
+		fprintf (filename, "\t", (nodes[_n])["NodeID"]);
+		if ((nodes[_n])["NodeType"]==0) {
+			fprintf (filename, " [shape=\"Msquare\"];\n");
+		} else {
+			fprintf (filename, " [shape=\"circle\"];\n");
+		}
+	}
+	
+	
+	// sum edge posteriors in both directions between nodes X and Y, 
+	// and assign direction to the greater value
+	for (row = 0; row < num_nodes-1; row = row+1) {
+		for (col = row+1; col < num_nodes; col = col+1) {
+			xy = res[row*num_nodes+col][1];
+			yx = res[col*num_nodes+row][1];
+			if (xy+yx > threshold) {
+				/*
+					This is really annoying - order MCMC reports edge marginal matrix with rows = child
+					whereas graph MCMC reports rows = parent
+				*/
+				if ( xy > yx ) {
+					fprintf (filename, "\t", (nodes[row])["NodeID"], "->", (nodes[col])["NodeID"], ";\n");
+				} else {
+					fprintf (filename, "\t", (nodes[col])["NodeID"], "->", (nodes[row])["NodeID"], ";\n");
+				}
+			}			
+		}
+	}
+	
+	fprintf (filename, "}\n");
+	return 0;
+}
+
+
+/* argument must be string identifier of BGM object */
+function get_network_parameters (_bgm)
+{
+	ExecuteCommands("GetString (res, "+_bgm+", 1);");
+	ExecuteCommands(res);
+	/* returns string identifier to associative array */
+	ExecuteCommands("params="+_bgm+"_export;");
+	return params;
+}
+
+
+function get_node_score_cache (_bgm)
+{
+	ExecuteCommands("GetString (res, "+_bgm+", 0);");
+	return res;
+}
+
+
+/*
+function getStructure (_bgm)
+{
+	ExecuteCommands("GetInformation (s, "+_bgm+", 0);");
+	return s;
+}
+
+function getNodeOrder (_bgm)
+{
+	ExecuteCommands("GetInformation (s, "+_bgm+", 1);");
+	return s;
+}
+
+*/
+
+
+
+
+/*  
+	Simulation of data based on the inferred network
+		structure and parameters.
+	mode = 0 (local) : for each case, instantiate parameters de novo.
+						Better for assessing uncertainty.
+	mode = 1 (global) : instantiate all parameters once.
+						Assuming known network.
+*/
+function instantiate_CPDFs (params)
+{
+	node_names = Rows(params);
+	
+	/* instantiate network parameters from conditional posterior distribution functions */
+	for (i = 0; i < Abs(params); i = i + 1) {
+		/* stores instantiations */
+		ExecuteCommands("(params[\""+node_names[i]+"\"])[\"Parameters\"] = {};");	
+		
+		/* number of parent combinations */
+		//ExecuteCommands("npac = Columns((params[\""+node_names[i]+"\"])[\"CPDFs\"]);");
+		ExecuteCommands("npac = (params[\""+node_names[i]+"\"])[\"NParentCombs\"];"); // safe version
+		
+		for (pa = 0; pa < npac; pa = pa+1) {
+			ExecuteCommands("_p = " + ((params[node_names[i]])["CPDFs"])[pa] + ";");
+			ExecuteCommands("((params[\""+node_names[i]+"\"])[\"Parameters\"])[\""+pa+"\"] = "+_p+";");
+		}
+		
+		//ExecuteCommands("((params[\""+node_names[i]+"\"])[\"Levels\"] = Columns( ((params[\""+node_names[i]+"\"])[\"Parameters\"])[0] ));");
+	}
+	return 0;
+}
+
+
+/*
+	Return a parameter vector for conditional Gaussian (CG) node given 
+	hyperparameters passed as arguments.
+*/
+function cg_params (mean_vec, rho, phi, tau) {
+	ExecuteCommands("sigma = Random({{"+phi+"}}, {\"PDF\":\"InverseWishart\", \"ARG0\":{{"+rho+"}} });");
+	ExecuteCommands("em = Random("+mean_vec+", {\"PDF\":\"Gaussian\", \"ARG0\":(Inverse("+tau+") * "+sigma[0]+") } );");
+	return ({"EM":em, "SIGMA":sigma});
+}
+
+
+
+function simulate_data (params, num_cases)
+{
+	// prepare matrix to store simulated data
+	result = {num_cases, Abs(params)};
+	
+	node_names = Rows(params);
+	if ( Columns(Rows((params[node_names[0]])["Parameters"])) == 0 )
+	{
+		/* parameters have not been instantiated yet */
+		instantiate_CPDFs(params);
+	}
+	
+	
+	// initialize State variables and generate root states
+	for (case = 0; case < num_cases; case = case+1) {	
+		
+		for (i = 0; i < Abs(params); i = i + 1) {
+			// set to String as a placeholder
+			(params[node_names[i]])["State"] = "";
+			
+			if ( Type((params[node_names[i]])["Parents"]) == "AssociativeList" ) {
+				// if condition is true then this is a root node (no parents) 
+				if ( (params[node_names[i]])["NodeType"] == 0 ) {
+					// discrete node, parameters define conditional probability table
+					urn = Random(0,1);
+					cpt = ((params[node_names[i]])["Parameters"])[0];
+					r_i = Columns(cpt);
+					for (k = 0; k < r_i; k = k+1)
+					{
+						if ( urn <= cpt[k] )
+						{
+							(params[node_names[i]])["State"] = k;
+							break;
+						}
+						urn = urn - cpt[k];
+					}
+				} else {
+					// conditional Gaussian node, parameter defines intercept
+					em = (((params[node_names[i]])["Parameters"])[0])["EM"];
+					sigma = (((params[node_names[i]])["Parameters"])[0])["SIGMA"];
+					(params[node_names[i]])["State"] = (Random(em, {"PDF":"Gaussian", "ARG0":sigma}))[0];
+				}
+			}
+		}
+		
+		while (1)
+		{
+			all_done = 1;
+			
+			/* loop until parameters are instantiated for all nodes */
+			for (i = 0; i < Abs(params); i = i+1)
+			{
+				if (Type(params[node_names[i]])["State"] == "String")
+				{
+					// Type String indicates no value - replace placeholder with NoneType when it becomes available
+					
+					all_done = 0;
+					ok_to_go = 1;
+					
+					parents = (params[node_names[i]])["Parents"];
+					num_parent_combos = 1;
+					pa_index = 0;
+					
+					for (p = 0; p < Abs(Rows(parents)); p = p+1)
+					{
+						pid = parents[p];
+						if ( Type(params[pid])["State"] == "String" )
+						{
+							// parents not resolved, skipping
+							ok_to_go = 0;
+							break;
+						}
+						
+						// compute parental index for discrete parents
+						if ( (params[pid])["NodeType"] == 0 ) {
+							pa_index = pa_index + (params[pid])["State"] * num_parent_combos;						
+							num_parent_combos = num_parent_combos * (params[pid])["Levels"];
+						}					
+					}
+					
+					
+					if (ok_to_go)
+					{
+						// instantiate this node's parameters
+						if ( (params[node_names[i]])["NodeType"] == 0 ) {
+							urn = Random(0,1);
+							cpt = ((params[node_names[i]])["Parameters"])[pa_index];
+							r_i = Columns(cpt);
+							for (k = 0; k < r_i; k = k+1) {
+								if ( urn <= cpt[k] ) {
+									(params[node_names[i]])["State"] = k;
+									break;
+								}
+								urn = urn - cpt[k];
+							}
+						} else {
+							em = ( ((params[node_names[i]])["Parameters"])[pa_index] )["EM"];
+							sigma = ( ((params[node_names[i]])["Parameters"])[pa_index] )["SIGMA"];
+							zvec = {Columns(em), 1};
+							zvec[0] = 1;
+							
+							// get states of continuous parents
+							cpar = 0;
+							for (p = 0; p < Abs(Rows(parents)); p += 1) {
+								pid = parents[p];
+								if ( (params[pid])["NodeType"] == 1 ) {
+									zvec[cpar+1] = (params[pid])["State"];
+									cpar += 1;
+								}
+							}
+							
+							// conditional mean 
+							cond_mean = em * zvec;
+							(params[node_names[i]])["State"] = (Random(cond_mean, {"PDF":"Gaussian", "ARG0":sigma}))[0];
+						}
+					}
+				}
+			}
+			/* end for loop */
+			
+			if (all_done) break;
+		}
+		/* end while */
+		
+		/* add case to result */
+		for (i = 0; i < Abs(params); i = i+1) {
+			result[case][i] = (params[node_names[i]])["State"];
+		}
+	}
+	
+	return result;
+}
+
+
+/* 
+	Example:
+		import_xmlbif("/Users/apoon/svn/hyphy/HBL/art/BGM/alarm/alarm.xml", "Alarm"); 
+*/
+function import_xmlbif (filename, newname)
+{
+	ExecuteCommands(newname+"={};");
+	
+	fscanf (filename, "Raw", input);
+	
+	var_tags = input||"<VARIABLE";
+	if (var_tags[0] < 0)
+	{
+		fprintf (stdout, "ERROR: <VARIABLE> tag absent from XML, exiting..");
+		return 1;
+	}
+	
+	ntags = Rows(var_tags)$2;
+	
+	
+	for (tag = 0; tag < ntags; tag = tag+1)
+	{
+		/*
+			search for <NAME> tag - note that we use an arbitrary character limit (1000)
+			for the last entry because if we use the rest of the XML file, it causes the
+			regular expression search to fail! - afyp, October 26, 2011
+		*/
+		start_char = var_tags[tag*2+1];
+		if (tag == ntags-1) { end_char = start_char+1000; }
+		else { end_char = var_tags[(tag+1)*2]; }
+		substr = input[start_char][end_char];
+		
+		/* create node */
+		name_tag = substr||"<NAME>.+</NAME>";
+		node_name = substr[name_tag[0]+6][name_tag[1]-7];
+		
+		
+		ExecuteCommands(newname+"[\""+node_name+"\"]= {};");
+		
+		outcome_tags = substr||"<OUTCOME>";
+		ExecuteCommands("("+newname+"[\""+node_name+"\"])[\"Levels\"]= "+Rows(outcome_tags)$2+";");
+	}
+	
+	
+	def_tags = input||"<DEFINITION>";
+	if (def_tags[0] < 0)
+	{
+		fprintf (stdout, "ERROR: <DEFINITION> tag absent from XML, exiting..");
+		return 1;
+	}
+	
+	ntags = Rows(def_tags)$2;
+	for (tag = 0; tag < ntags; tag = tag+1)
+	{
+		/* parse definition tags */
+		start_char = def_tags[tag*2+1];
+		if (tag == ntags-1) { end_char = Abs(input); }
+		else { end_char = def_tags[(tag+1)*2]; }
+		substr = input[start_char][end_char];
+		
+		/* start a new node */
+		for_tag = substr||"<FOR>.+</FOR>";
+		node_name = substr[for_tag[0]+5][for_tag[1]-6];
+		
+		/* assign parents */
+		exec_str = "";
+		exec_str * 256;
+		exec_str * "(";
+		exec_str * newname;
+		exec_str * "[\"";
+		exec_str * node_name;
+		exec_str * "\"])[\"Parents\"]={";
+		given_tags = substr||"<?GIVEN>";
+		if (given_tags[0] >= 0)
+		{
+			for (gt = 1; gt < Rows(given_tags); gt = gt+4)
+			{
+				exec_str * "{\"";
+				exec_str * substr[given_tags[gt]+1][given_tags[gt+1]-3];
+				exec_str * "\"}";
+				if (gt < Rows(given_tags)-4) { exec_str * ","; }
+			}
+		}
+		exec_str * "};";
+		exec_str * 0;
+		ExecuteCommands(exec_str);
+		
+		
+		/* assign conditional probability table - child state cycles fastest, then parents */
+		table_tag = substr||"<TABLE>.+</TABLE>";
+		table_str = substr[table_tag[0]+7][table_tag[1]-8];
+		prob_tags = table_str||"[01]\.[0-9]+";
+		
+		n_parent_combos = 1;
+		ExecuteCommands("parents = ("+newname+"[\""+node_name+"\"])[\"Parents\"];");
+		for (par = 0; par < Abs(Rows(parents)); par=par+1)
+		{
+			ExecuteCommands("n_parent_combos = n_parent_combos * ("+newname+"[\""+parents[par]+"\"])[\"Levels\"];");
+		}
+		ExecuteCommands("n_levels = ("+newname+"[node_name])[\"Levels\"];");
+		
+		ExecuteCommands("("+newname+"[\""+node_name+"\"])[\"Parameters\"]= {};");
+		
+		for (pa = 0; pa < n_parent_combos; pa = pa+1)
+		{
+			ExecuteCommands("(("+newname+"[\""+node_name+"\"])[\"Parameters\"])[\""+pa+"\"]={1,n_levels};");
+			for (lev = 0; lev < n_levels; lev=lev+1)
+			{
+				foo = lev * n_parent_combos + pa;
+				/* fprintf (stdout, lev, ",", pa, ",", table_str[prob_tags[foo*2]][prob_tags[foo*2+1]], "\n"); */
+				ExecuteCommands("((("+newname+"[\""+node_name+"\"])[\"Parameters\"])[\""+pa+"\"])["+lev+"]="+table_str[prob_tags[foo*2]][prob_tags[foo*2+1]]+";");
+			}
+		}
+		
+		
+	}
+	
+	return 0;
+}
+
+
+
+function list2adjmat (alist) {
+/*
+	convert associative list returned by import_xmlbif into an adjacency matrix
+*/
+	num_nodes = Abs(alist);
+	res = {num_nodes, num_nodes};
+	node_names = Rows(alist);
+	name2index = {};
+	
+	// for indexing into adjacency matrix
+	for (node = 0; node < num_nodes; node += 1) {
+		name2index[node_names[node]] = node;
+	}
+	
+	for (child = 0; child < num_nodes; child += 1) {
+		parents = (alist[node_names[child]])["Parents"];
+		if (Type(parents) == "Matrix") {
+			for (par = 0; par < Rows(parents); par += 1) {
+				parent = name2index[parents[par]];
+				res[parent][child] = 1;
+			}
+		}
+	}
+	
+	return res;
+}
+
+
+function check_edgelist (results, adjmat, cutoff) {
+	// extract edge marginal posteriors vector from results matrix (in column 1)
+	edgep = results[-1][1];
+	num_nodes = Rows(adjmat);
+	true_pos = 0;
+	false_pos = 0;
+	true_neg = 0;
+	false_neg = 0;
+	
+	for (parent = 0; parent < (num_nodes-1); parent += 1) {
+		for (child = (parent+1); child < num_nodes; child += 1) {
+			x = edgep[parent * num_nodes + child] + edgep[child * num_nodes + parent];
+			
+			if (adjmat[parent][child] > 0 || adjmat[child][parent] > 0) {
+				if ( x > cutoff ) {
+					true_pos += 1;
+				} else { 
+					false_neg += 1;
+				}
+			} else {
+				if ( x > cutoff ) {
+					false_pos += 1;
+				} else { 
+					true_neg += 1;
+				}
+			}
+		}
+	}
+	
+	result = {4,1}; /* TP, FN, FP, TN */
+	result[0] = true_pos;
+	result[1] = false_neg;
+	result[2] = false_pos;
+	result[3] = true_neg;
+	
+	return (result);
+}
+
+
+
