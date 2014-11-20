@@ -7,8 +7,8 @@ VERBOSITY_LEVEL				= 0;
 maximum_number_of_omegas   = 10;
 skipCodeSelectionStep 		= 0;
 _useGridSearch              = 1;
-LF_SMOOTHING_SCALER         = 1/16;
-LF_SMOOTHING_REDUCTION      = 1/8;
+//LF_SMOOTHING_SCALER         = 10;
+LF_SMOOTHING_REDUCTION      = 0.1;
 
 
 ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
@@ -17,6 +17,7 @@ LoadFunctionLibrary("dSdNTreeTools");
 LoadFunctionLibrary("CF3x4");
 LoadFunctionLibrary("BranchSiteTemplate");
 LoadFunctionLibrary("TreeTools");
+LoadFunctionLibrary("lib2014/UtilityFunctions.bf");
 
 
 ChoiceList  (oldBSREL,"Run the adaptive version of BS-REL?", 1,NO_SKIP,
@@ -71,10 +72,15 @@ for (matrix_id = 1; matrix_id <= maximum_number_of_omegas; matrix_id += 1) {
 PopulateModelMatrix			  ("MGMatrixLocal",  nucCF, "syn", "", "nonsyn");
 codon3x4					= BuildCodonFrequencies (nucCF);
 
-Model		MGL				= (MGMatrixLocal, codon3x4, 0);
+tree_info = utility.loadAnnotatedTopology (1);
 
-ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "queryTree.bf");
+fprintf (stdout, tree_info);
 
+Model	  MGL				= (MGMatrixLocal, codon3x4, 0);
+
+//ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "queryTree.bf");
+
+ExecuteCommands ("Tree givenTree = " + tree_info["string"]);
 
 totalBranchCount			 = BranchCount(givenTree) + TipCount (givenTree);
 bNames						 = BranchName (givenTree, -1);
@@ -235,6 +241,9 @@ for (matrix_id = 2; matrix_id <= maximum_number_of_omegas; matrix_id += 1) {
 ASSUME_REVERSIBLE_MODELS	  = 1;
 USE_LAST_RESULTS              = 1;
 OPTIMIZATION_METHOD           = 0;
+//LF_SMOOTHING_SCALER           = 1;
+LF_SMOOTHING_REDUCTION        = 1/16;
+
 Tree stepupTree               = givenTree;
 
 
@@ -384,6 +393,11 @@ for (k = 0; k < totalBranchCount; k+=1) {
 Tree mixtureTree = stepupTree;
 ClearConstraints (mixtureTree);
 
+INCLUDE_MODEL_SPECS = 1;
+save_tree_string_to	= csvFilePath + ".annotated.nwk";
+fprintf (save_tree_string_to, CLEAR_FILE, stepupTree);
+INCLUDE_MODEL_SPECS = 0;
+
 // need this so that DeleteObject does not die later
 LikelihoodFunction stepupLF = (dsf, mixtureTree);
 
@@ -405,6 +419,10 @@ taskTimerStop (1);
 
 OPTIMIZATION_TIME_HARD_LIMIT = 1e26;
 
+//LF_SMOOTHING_SCALER           = 1/8;
+LF_SMOOTHING_REDUCTION        = 1/2;
+
+
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 unconstrainGlobalParameters ("three_LF");
 
@@ -419,6 +437,11 @@ taskTimerStart (2);
 Optimize					  (res_three_LF,three_LF);
 taskTimerStop (2);
 fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom, IC = ", getIC (res_three_LF[1][0], res_three_LF[1][1] + 9, sample_size), "\n");
+
+
+//LF_SMOOTHING_SCALER           = 10;
+LF_SMOOTHING_REDUCTION        = 0.1;
+
 
 lfOut	= csvFilePath + ".fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;

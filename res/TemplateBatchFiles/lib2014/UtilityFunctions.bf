@@ -1,4 +1,5 @@
 LoadFunctionLibrary ("GrabBag");
+LoadFunctionLibrary ("IOFunctions.bf");
 
 function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name) {
     data_info = io.readCodonDataSet (dataset_name);
@@ -29,6 +30,7 @@ function utility.loadAnnotatedTopology () {
         
     
     return {"string"     : Format (T,1,0),
+            "annotated_string" : "" + T,
             "model_map"  : modelMap,
             "model_list" :  Columns (modelMap)};
 }
