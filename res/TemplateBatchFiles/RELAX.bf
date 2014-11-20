@@ -79,7 +79,7 @@ relax.codon_data_info["json"] = relax.codon_data_info["file"] + ".RELAX.json";
 io.reportProgressMessage ("RELAX", "Loaded an MSA with " + relax.codon_data_info["sequences"] + " sequences and " + relax.codon_data_info["sites"] + " codons from '" + relax.codon_data_info["file"] + "'");
 
 relax.codon_frequencies     = utility.defineFrequencies ("RELAX.codon_filter");
-relax.tree 	  = utility.loadAnnotatedTopology ();
+relax.tree 	  = utility.loadAnnotatedTopology (1);
 
 relax.selected_branches = relax.io.defineBranchSets (relax.tree);
 RELAX.has_unclassified = utility.array.find (Rows (relax.selected_branches), RELAX.unclassified) >= 0;
