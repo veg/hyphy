@@ -1,4 +1,4 @@
-RequireVersion ("2.1320130313");
+RequireVersion ("2.1320141101");
 
 _BSREL_timers  = {5,1};
 taskTimerStart (4);
@@ -9,6 +9,8 @@ skipCodeSelectionStep 		= 0;
 _useGridSearch              = 1;
 //LF_SMOOTHING_SCALER         = 10;
 LF_SMOOTHING_REDUCTION      = 0.1;
+
+_BSREL.valid_models = {"MGL" : 1};
 
 
 ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
@@ -67,6 +69,11 @@ for (matrix_id = 1; matrix_id <= maximum_number_of_omegas; matrix_id += 1) {
     } else {
        PopulateModelMatrix			  ("MGMatrix" + matrix_id,  nucCF, "t", "omega" + matrix_id, "");
     }
+    
+    if (matrix_id > 1) {
+        _BSREL.valid_models ["MG" + matrix_id] = matrix_id;
+    }
+    
 }
 
 PopulateModelMatrix			  ("MGMatrixLocal",  nucCF, "syn", "", "nonsyn");
@@ -76,11 +83,35 @@ tree_info = utility.loadAnnotatedTopology (1);
 
 Model	  MGL				= (MGMatrixLocal, codon3x4, 0);
 
-ExecuteCommands ("Tree givenTree = " + tree_info["string"]);
+tree_info_models = tree_info["model_map"];
 
-totalBranchCount			 = BranchCount(givenTree) + TipCount (givenTree);
-bNames						 = BranchName (givenTree, -1);
-tavl                         = givenTree ^ 0;
+ExecuteCommands ("Tree baselineTree = " + tree_info["string"]);
+
+totalBranchCount			 = BranchCount(baselineTree) + TipCount (baselineTree);
+bNames						 = BranchName (baselineTree, -1);
+tavl                         = baselineTree ^ 0;
+
+tree_info_map = {};
+for (k = 0; k < totalBranchCount; k+=1) {
+    model_id = _BSREL.valid_models[tree_info_models[bNames[k]]];
+    if (model_id == 0) {
+        tree_info_map = {};
+        break;
+    }
+    tree_info_map[bNames[k]] = model_id;
+}
+
+useExistingModelSpec = 0;
+
+if (oldBSREL == 0 && Abs (tree_info_map)) {
+    ChoiceList  (useExistingModelSpec,"Use the model specified in the tree string?", 1,NO_SKIP,
+        "No", "[Default] Infer the model complexity automatically",
+        "Yes","Use the number of branch-level rate classes as specified in the tree string");
+        
+    if (useExistingModelSpec < 0) {
+        return 1;
+    }
+}
 
 is_internal = {};
 for (k = 1; k < Abs (tavl); k+=1) {
@@ -170,7 +201,7 @@ if (_reload_local_fit) {
     localParams = Columns (_lfInfo["Local Independent"]) + Columns (_lfInfo["Global Independent"]) + 9;
     
 } else {
-    LikelihoodFunction	base_LF	 = (dsf, givenTree);
+    LikelihoodFunction	base_LF	 = (dsf, baselineTree);
     T0 = Time(1);
     Optimize					  (res_base,base_LF);
     
@@ -189,18 +220,18 @@ current_log_L           = localLL;
 sample_size             = dsf.sites * dsf.species;
 current_IC             = getIC (current_log_L, current_parameter_count, sample_size);
 
-json_store_lf                (_BSREL_json, "MG94", localLL, localParams,current_IC, _BSREL_timers[0], +BranchLength (givenTree,-1), Format (givenTree, 1,1)); 
+json_store_lf                (_BSREL_json, "MG94", localLL, localParams,current_IC, _BSREL_timers[0], +BranchLength (baselineTree,-1), Format (baselineTree, 1,1)); 
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
-//GetInformation	   		   (varNames, "givenTree\\..*\\.omega1");
+//GetInformation	   		   (varNames, "baselineTree\\..*\\.omega1");
 //localOmegaValues			 = {totalBranchCount,1}["Eval(varNames[_MATRIX_ELEMENT_ROW_])"];
 
 pValueByBranch				  = {totalBranchCount,8};
 
 for (k = 0; k < totalBranchCount; k = k+1) {
-	srate  = Eval ("givenTree." + bNames[k] + ".syn");
-	nsrate = Eval ("givenTree." + bNames[k] + ".nonsyn");
+	srate  = Eval ("baselineTree." + bNames[k] + ".syn");
+	nsrate = Eval ("baselineTree." + bNames[k] + ".nonsyn");
 	if (srate > 0) {
 		pValueByBranch [k][0] = Min (10, nsrate/srate);
 	}
@@ -240,14 +271,14 @@ OPTIMIZATION_METHOD           = 0;
 //LF_SMOOTHING_SCALER           = 1;
 LF_SMOOTHING_REDUCTION        = 1/16;
 
-Tree stepupTree               = givenTree;
+Tree stepupTree               = baselineTree;
 
 
 taskTimerStart (1);
 
 fprintf 					  (stdout, "[PHASE 1] Fitting Branch Site REL models to one branch at a time\n");
 
-mg94bls   = BranchLength (givenTree,-1);
+mg94bls   = BranchLength (baselineTree,-1);
 sortedBLs = {totalBranchCount, 2}["mg94bls[_MATRIX_ELEMENT_ROW_]*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==1)"];
 sortedBLs = sortedBLs%0;
 
@@ -260,6 +291,13 @@ for (k = 0; k < totalBranchCount; k+=1) {
     //reordered_index = sortedBLs[k][1];
     local_branch_name = bNames[reordered_index];
     accepted_rates_count = 1;
+    
+    //fprintf (stdout, local_branch_name, ":", useExistingModelSpec, ":", tree_info_map[local_branch_name], ":", accepted_rates_count, "\n");
+    
+    if (useExistingModelSpec && tree_info_map[local_branch_name] == accepted_rates_count) {
+        rate_classes_by_branch [reordered_index] = accepted_rates_count;
+        continue;
+    }
     
     branch_name_to_test_base = "stepupTree.`local_branch_name`";
     ExecuteCommands ("SetParameter (`branch_name_to_test_base`, MODEL, MG2);");
@@ -274,7 +312,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
     
     branch_name_to_test = "mixtureTree." + bNames[reordered_index];
     setBSRELBounds (branch_name_to_test, 2);
-    copyomegas (branch_name_to_test, Eval ("givenTree.`local_branch_name`.syn"), Eval ("givenTree.`local_branch_name`.nonsyn"));
+    copyomegas (branch_name_to_test, Eval ("baselineTree.`local_branch_name`.syn"), Eval ("baselineTree.`local_branch_name`.nonsyn"));
     
     
     LikelihoodFunction stepupLF = (dsf, mixtureTree);
@@ -284,7 +322,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
 
     if (_useGridSearch) {
         if (!doSynRateVariation) {
-            _baseT = Eval ("givenTree.`local_branch_name`.syn");
+            _baseT = Eval ("baselineTree.`local_branch_name`.syn");
             
             computeOnAGrid ({"0": {5,1}["_MATRIX_ELEMENT_ROW_ * 0.2"],
                  "1": {7,1}["(1+(_MATRIX_ELEMENT_ROW_-3)^3)*(_MATRIX_ELEMENT_ROW_>=3)+(_MATRIX_ELEMENT_ROW_*0.25+0.25)*(_MATRIX_ELEMENT_ROW_<3)"],
@@ -296,8 +334,8 @@ for (k = 0; k < totalBranchCount; k+=1) {
                  "3": "`branch_name_to_test`.t"},
                  "stepupLF");
         } else {
-             _baseS = Eval ("givenTree.`local_branch_name`.syn");
-             _baseN = Eval ("givenTree.`local_branch_name`.nonsyn");
+             _baseS = Eval ("baselineTree.`local_branch_name`.syn");
+             _baseN = Eval ("baselineTree.`local_branch_name`.nonsyn");
                 computeOnAGrid ({"0": {{_baseS}{_0.5*_baseS + (_baseS==0)*0.05}{_2*_baseS + (_baseS==0)*0.1}{_5*_baseS + (_baseS==0)*0.5}},
                                  "1": {{_baseN}{_0.5*_baseN + (_baseN==0)*0.05}{_2*_baseN + (_baseN==0)*0.1}{_5*_baseN + (_baseN==0)*0.5}},
                                  "2": {{0}{0.25}{1.0}{5.0}},
@@ -319,12 +357,12 @@ for (k = 0; k < totalBranchCount; k+=1) {
     fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", Format(res[1][0],8,3), ", IC = ", Format (test_IC,8,3), "\n\t2 rate clases\n\t");
     printNodeDesc ("mixtureTree.`local_branch_name`", 2);
     
-    while (test_IC < current_IC || oldBSREL && accepted_rates_count < 3) {
+    while (test_IC < current_IC || oldBSREL && accepted_rates_count < 3 || useExistingModelSpec && tree_info_map[local_branch_name] > accepted_rates_count) {
         accepted_rates_count += 1;
         current_parameter_count += 2 + doSynRateVariation;
         current_IC = Min (test_IC,current_IC);
         saved_MLEs = saveNodeMLES (branch_name_to_test, accepted_rates_count);
-        if (oldBSREL && accepted_rates_count == 3) {
+        if (oldBSREL && accepted_rates_count == 3 || useExistingModelSpec && tree_info_map[local_branch_name] == accepted_rates_count) {
             break;
         }
         ExecuteCommands ("SetParameter (`branch_name_to_test_base`, MODEL, MG" + (accepted_rates_count+1) +");");
@@ -377,8 +415,8 @@ for (k = 0; k < totalBranchCount; k+=1) {
     
     if (accepted_rates_count == 1) {
         ExecuteCommands ("SetParameter (`branch_name_to_test_base`, MODEL, MGL);");
-        ExecuteCommands ("`branch_name_to_test_base`.syn = givenTree.`local_branch_name`.syn");
-        ExecuteCommands ("`branch_name_to_test_base`.nonsyn = givenTree.`local_branch_name`.nonsyn");
+        ExecuteCommands ("`branch_name_to_test_base`.syn = baselineTree.`local_branch_name`.syn");
+        ExecuteCommands ("`branch_name_to_test_base`.nonsyn = baselineTree.`local_branch_name`.nonsyn");
     }
 
     rate_classes_by_branch [reordered_index] = accepted_rates_count;
