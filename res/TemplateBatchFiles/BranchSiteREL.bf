@@ -74,11 +74,7 @@ codon3x4					= BuildCodonFrequencies (nucCF);
 
 tree_info = utility.loadAnnotatedTopology (1);
 
-fprintf (stdout, tree_info);
-
 Model	  MGL				= (MGMatrixLocal, codon3x4, 0);
-
-//ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "queryTree.bf");
 
 ExecuteCommands ("Tree givenTree = " + tree_info["string"]);
 
@@ -470,6 +466,7 @@ json_store_lf                 (_BSREL_json, "Full model", res_three_LF[1][0], re
 taskTimerStart (3);
 
 totalTestedBranches = 1;
+secondaryOptimizations = 0;
 
 for	(k = 0; k < totalBranchCount; k += 1) {
     pValueByBranch[k][branch_length_column] = bsrel_bls[bNames[k]];
@@ -514,11 +511,13 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         } else {
             global _mg94omega = 1;
             _mg94omega :< 1;
+            *(ref + ".syn") = (*(ref + ".nonsyn") + *(ref + ".syn")) / 2;
             *(ref + ".nonsyn") := *(ref + ".syn") * _mg94omega;
         }
         
         //VERBOSITY_LEVEL = 10;
         
+        secondaryOptimizations += 1;
         Optimize					  (res_three_current,three_LF);
         
         fprintf (stdout, "\n");
@@ -580,6 +579,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
             LIKELIHOOD_FUNCTION_OUTPUT = 2;
             _stashLF = saveLF ("three_LF");
             k = 0;
+            secondaryOptimizations = 0;
         }
         else {
             _stashLF ["restoreLF"][""];
@@ -606,7 +606,7 @@ pValueSorter = pValueSorter["_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==0)+p
 pValueSorter = pValueSorter % 1;
 pValueSorter = pValueSorter["_MATRIX_ELEMENT_VALUE_*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_VALUE_*(Max(1,totalTestedBranches-_MATRIX_ELEMENT_ROW_))*(_MATRIX_ELEMENT_COLUMN_==1)"];
 
-fprintf (stdout,"\n\nSummary of branches under episodic selection (", Abs(selectedBranches)," were tested) :\n");
+fprintf (stdout,"\n\nSummary of branches under episodic selection (", Abs(selectedBranches)," were tested, of which ", secondaryOptimizations, " required optimizations) :\n");
 hasBranchesUnderSelection = 0;
 
 pthreshold = 0.05;
