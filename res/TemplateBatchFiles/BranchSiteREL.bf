@@ -564,8 +564,9 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         if (doSynRateVariation && rate_classes) {
             pValueByBranch[k][p_uncorrected_column]			  = (1-CChi2 (pValueByBranch[k][lrt_column],rate_classes));       
         } else {	 
-            pValueByBranch[k][p_uncorrected_column]			  = (1-CChi2 (pValueByBranch[k][lrt_column],1))*.5;
+            pValueByBranch[k][p_uncorrected_column]			  = (1-0.4*CChi2 (pValueByBranch[k][lrt_column],1)-0.6* CChi2 (pValueByBranch[k][lrt_column],2))*.5;            
         }
+        
         fprintf (stdout, "p-value = ", pValueByBranch[k][p_uncorrected_column], "\n");
         
         (_BSREL_json["test results"])[bNames[k]] = {"LRT": pValueByBranch[k][lrt_column],
