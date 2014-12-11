@@ -564,7 +564,12 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         if (doSynRateVariation && rate_classes) {
             pValueByBranch[k][p_uncorrected_column]			  = (1-CChi2 (pValueByBranch[k][lrt_column],rate_classes));       
         } else {	 
-            pValueByBranch[k][p_uncorrected_column]			  = (1-0.4*CChi2 (pValueByBranch[k][lrt_column],1)-0.6* CChi2 (pValueByBranch[k][lrt_column],2))*.5;            
+            if (oldBSREL) {
+                pValueByBranch[k][p_uncorrected_column]			  = (1-0.1*CChi2 (pValueByBranch[k][lrt_column],1)-0.9* CChi2 (pValueByBranch[k][lrt_column],2))*.5;
+            
+            } else {
+                pValueByBranch[k][p_uncorrected_column]			  = (1-0.4*CChi2 (pValueByBranch[k][lrt_column],1)-0.6* CChi2 (pValueByBranch[k][lrt_column],2))*.5;
+            }            
         }
         
         fprintf (stdout, "p-value = ", pValueByBranch[k][p_uncorrected_column], "\n");
