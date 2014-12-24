@@ -60,8 +60,8 @@ codon_data_info = utility.promptForGeneticCodeAndAlignment ("codon_data", "codon
 codon_data_info["json"] = codon_data_info["file"] + ".BUSTED.json";
 io.reportProgressMessage ("BUSTED", "Loaded an MSA with " + codon_data_info["sequences"] + " sequences and " + codon_data_info["sites"] + " codons from '" + codon_data_info["file"] + "'");
 
-codon_frequencies     = utility.defineFrequencies ("codon_filter");
-tree_definition 	  = utility.loadAnnotatedTopology ();
+codon_frequencies = utility.defineFrequencies ("codon_filter");
+tree_definition   = utility.loadAnnotatedTopology(1);
 
 busted.selected_branches = busted.io.selectBranchesToTest (tree_definition);
 _BUSTED_json ["test set"] = Join (",",Rows(busted.selected_branches));

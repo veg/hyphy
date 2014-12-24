@@ -28,9 +28,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "batchlan.h"
 #include "calcnode.h"
 #include <unistd.h>
+
 #if !defined __MINGW32__
 
     #include <termios.h>
@@ -84,6 +86,7 @@ long    DisplayListOfChoices        (void);
 void    ProcessConfigStr            (_String&);
 void    ReadInPostFiles             (void);
 long    DisplayListOfPostChoices    (void);
+_String getLibraryPath              (void);
 
 
 extern  long
@@ -136,6 +139,47 @@ void            mpiOptimizerLoop (int, int);
 #endif  
 
 //bool  terminateExecution = false;
+
+//____________________________________________________________________________________
+
+_String getLibraryPath() {
+
+    char    curWd[4096],
+            dirSlash = GetPlatformDirectoryChar();
+    getcwd (curWd,4096);
+
+    _String baseDir (curWd);
+
+    if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
+        baseDir=baseDir & dirSlash;
+    }
+
+#if defined _HYPHY_LIBDIRECTORY_
+    _String libDir (_HYPHY_LIBDIRECTORY_);
+
+    if (libDir.getChar (libDir.sLength-1) != dirSlash) {
+        libDir=libDir & dirSlash;
+    }
+
+#else
+     pathNames&& &baseDir;
+    _String libDir = baseDir;
+#endif
+
+    // SW20141119: Check environment libpath and override default path if it exists
+    // TODO: Move string to globals in v3
+    // TODO: Move function to helpers location in v3
+    char* hyphyEnv = getenv("HYPHY_PATH");
+    if(hyphyEnv) {
+      _String hyphyPath(hyphyEnv);
+      if(hyphyPath.sLength != 0) {
+        libDir = hyphyPath;
+      }
+    }
+
+    return libDir;
+
+}
 
 //__________________________________________________________________________________
 void    ReadInTemplateFiles(void)
@@ -535,7 +579,7 @@ int main (int argc, char* argv[])
          
 #endif
     char    curWd[4096],
-            dirSlash = GetPlatformDirectoryChar ();
+            dirSlash = GetPlatformDirectoryChar();
     getcwd (curWd,4096);
 
     _String baseDir (curWd);
@@ -543,21 +587,9 @@ int main (int argc, char* argv[])
     if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
     }
-
-
-#if defined _HYPHY_LIBDIRECTORY_
-    _String libDir (_HYPHY_LIBDIRECTORY_);
-
-    if (libDir.getChar (libDir.sLength-1) != dirSlash) {
-        libDir=libDir & dirSlash;
-    }
-
+    
+    _String libDir = getLibraryPath();
     pathNames&& &libDir;
-#else
-     pathNames&& &baseDir;
-    _String libDir = baseDir;
-#endif
-
     _String argFile;
 
     libDirectory  = libDir;

@@ -11,8 +11,14 @@ function io.readCodonDataSet (dataset_name) {
     return {"code": _Genetic_Code, "stop" : GeneticCodeExclusions, "file" : LAST_FILE_PATH, "sequences" : Eval ("`dataset_name`.species")};
 }
 
-function io.getTreeString () {
+function io.getTreeString (look_for_newick_tree) {
+
     UseModel (USE_NO_MODEL);
+
+    if(look_for_newick_tree == 0) {
+      IS_TREE_PRESENT_IN_DATA = 0;
+    }
+
     ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" 
                                       + DIRECTORY_SEPARATOR 
                                       + "queryTree.bf");
@@ -23,7 +29,6 @@ function io.checkAssertion (statement, error_msg) {
     ExecuteCommands ("assert (`statement`, error_msg)");
     return None;
 }
-
 
 function io.reportProgressMessage (analysis, text) {
     if (Abs (analysis)) {
@@ -88,8 +93,6 @@ function io.printAndUnderline (string, char) {
     }
     fprintf (stdout, "\n");
 }
-
-
 
 function io.formatLongStringToWidth (string, width) {
     words = splitOnRegExp (string, "[\\ \n]+");
