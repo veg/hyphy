@@ -41,13 +41,13 @@
 	<key>CFBundleIdentifier</key>
 	<string>org.hyphy</string>
 	<key>CFBundleLongVersionString</key>
-	<string>1.4, Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse</string>
+	<string>1.4, Copyright 1997-2014 by Sergei L Kosakovsky Pond, Art FY Poon, N. Lance Hepler, Steven Weaver, Martin Smith, and Spencer V Muse</string>
 	<key>CFBundleShortVersionString</key>
 	<string>2.10beta</string>
 	<key>CFBundleURLTypes</key>
 	<array/>
 	<key>CFBundleVersion</key>
-	<string>2.10beta</string>
+	<string>2.2.3</string>
 	<key>NSServices</key>
 	<array/>
 	<key>UTExportedTypeDeclarations</key>
