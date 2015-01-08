@@ -320,8 +320,7 @@ function ApplyGeneticCodeTable (myModelType)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
-{
+function mapCodonsToAAGivenMappingAux (codonSeq,aaSequence, mapping, this_many_mm) {
     seqLen  = Abs (aaSequence);
 	translString = "";
 	translString * (seqLen);
@@ -331,6 +330,7 @@ function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
 	seqPos    = 0;
 	codon     = codonSeq[seqPos][seqPos+2];
 	currentAA = mapping[codon];
+	mismatch_count = 0;
 	
 	for (aaPos = 0; aaPos < seqLen && seqPos < seqLenN; aaPos += 1)
 	{
@@ -345,8 +345,16 @@ function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
                 }
             }
             else {
-                assert (aaSequence[aaPos] == currentAA, "Incompatible codon and protein strings at position " + aaPos 
-                        + " : codon '" + codonSeq[seqPos][seqPos+2] + "'(" + aaSequence[aaPos] + ") a.a. '`currentAA`'");
+                mismatch_count += (aaSequence[aaPos] != currentAA);
+                if (this_many_mm == 1) {
+                    assert (mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos 
+                            + " : codon '" + codonSeq[seqPos][seqPos+2] + "'(" + aaSequence[aaPos] + ") a.a. '`currentAA`'");
+                } else {
+                    if (mismatch_count >= this_many_mm) {
+                        translString * 0;
+                        return None;
+                    }
+                }
             }
         } else {
             copy_codon = 0;
@@ -375,12 +383,23 @@ function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
 	return translString;
 }
 
+/*----------------------------------------------------------------------------------------------------------*/
+
+function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping) {
+    return mapCodonsToAAGivenMappingAux (codonSeq,aaSequence, mapping, 1);
+}
+
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function mapCodonsToAA (codonSeq,aaSequence)
-{
+function mapCodonsToAA (codonSeq,aaSequence) {
 	return mapCodonsToAAGivenMapping (codonSeq,aaSequence,defineCodonToAA ());
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function mapCodonsToAAFuzzy (codonSeq,aaSequence, mismatches) {
+	return mapCodonsToAAGivenMappingAux (codonSeq,aaSequence,defineCodonToAA (),mismatches);
 }
 
 
