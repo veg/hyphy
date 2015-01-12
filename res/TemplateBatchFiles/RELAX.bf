@@ -2,7 +2,7 @@ RequireVersion ("2.220141023");
 
 
 VERBOSITY_LEVEL				= 0;
-LF_SMOOTHING_SCALER         = 0.1;
+//LF_SMOOTHING_SCALER         = 0.1;
 
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("CF3x4");

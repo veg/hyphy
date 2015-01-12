@@ -1,4 +1,5 @@
 LoadFunctionLibrary ("GrabBag");
+LoadFunctionLibrary ("IOFunctions.bf");
 
 function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name) {
     data_info = io.readCodonDataSet (dataset_name);
@@ -24,8 +25,12 @@ function utility.loadAnnotatedTopology (look_for_newick_tree) {
     tree_string = io.getTreeString(look_for_newick_tree);
     Topology     T = tree_string;
     GetInformation (modelMap, T);
+    utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", 1);
+    T.str = "" + T;
+    utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", None);
     
     return {"string"     : Format (T,1,0),
+            "annotated_string" : T.str ,
             "model_map"  : modelMap,
             "model_list" :  Columns (modelMap)};
 }

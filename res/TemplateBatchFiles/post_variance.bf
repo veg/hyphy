@@ -1,12 +1,10 @@
 likelihoodFnChoice = 0;
 
-if (Rows("LikelihoodFunction")>1)
-{
+if (Rows("LikelihoodFunction")>1) {
 	ChoiceList  (likelihoodFnChoice,"Choose a Likelihood Function",1,NO_SKIP,LikelihoodFunction);
 }		
 
-if (likelihoodFnChoice<0)
-{
+if (likelihoodFnChoice<0) {
 	return;
 } 
 			 
@@ -16,41 +14,34 @@ ChoiceList  (response,"Covariance Matrix",1,NO_SKIP,
 			 "Likelihood Profile","95% CI based on the quadratic approximation to the likelihood surface. Should be faster than full covariance matrices for large numbers of parameters and may be more robust to statistical errors.");
 
 			 
-if (response<0)
-{
-	return;
+if (response<0) {
+	return 1;
 }
 
-if (response == 2)
-{
+if (response == 2) {
 	COVARIANCE_PRECISION = 0.95;
-}
-else
-{	
+} else {	
 	COVARIANCE_PRECISION = response+1;
 }
 
 GetString (likelihoodFunctionName,LikelihoodFunction,likelihoodFnChoice);
 
-if (RESTORE_GLOBALS)
-{
-	dumb = RestoreGlobalValues (likelihoodFnChoice);
+if (RESTORE_GLOBALS) {
+	RestoreGlobalValues (likelihoodFnChoice);
 }
 
-CovarianceMatrix (covMatrix, likelihoodFunctionName__);
+CovarianceMatrix (covMatrix, *likelihoodFunctionName);
 
 fprintf   (stdout, "\n\n\t\tVARIANCE ESTIMATES\n\n");
 
 nameWidth = 10;
-for (covCounter = 0; covCounter<Rows(covMatrix); covCounter=covCounter+1)
-{
-	GetString (argName,likelihoodFunctionName__,covCounter);
-	argLength = Abs (argName);
-	if (argLength>nameWidth)
-	{
-		nameWidth = argLength;
-	}
+
+for (covCounter = 0; covCounter<Rows(covMatrix); covCounter += 1) {
+	GetString (argName,*likelihoodFunctionName,covCounter);
+	nameWidth = Max (nameWidth, Abs (argName));
 }
+
+
 
 fprintf (stdout,"+");
 for (counter = 0; counter<nameWidth+1; counter=counter+1)
@@ -105,7 +96,7 @@ for (covCounter = 0; covCounter<Rows(covMatrix); covCounter=covCounter+1)
 		fprintf (stdout,"-");
 	}
 	fprintf (stdout,"+\n| ");
-	GetString (argName,likelihoodFunctionName__,covCounter);
+	GetString (argName,*likelihoodFunctionName,covCounter);
 	fprintf (stdout, argName);
 	argLength = Abs(argName);
 	for (counter = 0; counter<nameWidth-argLength; counter=counter+1)

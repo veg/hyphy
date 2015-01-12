@@ -34,10 +34,10 @@ GetString (likelihoodFunctionName,LikelihoodFunction,likelihoodFnChoice);
 
 if (RESTORE_GLOBALS)
 {
-	dumb = RestoreGlobalValues (likelihoodFnChoice);
+	RestoreGlobalValues (likelihoodFnChoice);
 }
 
-CovarianceMatrix (covMatrix, likelihoodFunctionName__);
+CovarianceMatrix (covMatrix, *likelihoodFunctionName);
 
 SetDialogPrompt ("Save Covariance Matrix to:");
 
@@ -47,7 +47,7 @@ covDim = Rows(covMatrix);
 
 for (covCounter = 0; covCounter<covDim; covCounter=covCounter+1)
 {
-	GetString (argName,likelihoodFunctionName__,covCounter);
+	GetString (argName,*likelihoodFunctionName,covCounter);
 	fprintf (LAST_FILE_PATH,"\t",argName);
 }
 
