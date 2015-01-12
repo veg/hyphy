@@ -32,6 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "batchlan.h"
 #include "calcnode.h"
 #include <unistd.h>
+#include "polynoml.h"
 
 #if !defined __MINGW32__
 
@@ -597,8 +598,7 @@ int main (int argc, char* argv[])
     baseDirectory = baseDir;
     baseArgDir    = baseDirectory;
 
-    _ExecutionList ex;
-
+  
 #ifdef _OPENMP
     systemCPUCount = omp_get_max_threads();
 #endif
@@ -671,8 +671,22 @@ int main (int argc, char* argv[])
     }
 
     GlobalStartup();
+  
+  /*_String exp2 ("1+x*t+y*t"),
+          exp1 ("y*t");
+  
+  _Formula f1 (exp1),
+           f2 (exp2);
+  
+  _MathObject *pl = ((_Polynomial*)f1.ConstructPolynomial ())->Add (f2.ConstructPolynomial());
+  
+  fprintf (stdout, "%s\n", _String ((_String*)pl->toStr()).getStr());*/
+           
 
-    if (calculatorMode) {
+    _ExecutionList ex;
+  
+  
+  if (calculatorMode) {
         printf ("\nHYPHY is running in calculator mode. Type 'exit' when you are finished.\n");
         while (ExpressionCalculator()) ;
         return 0;

@@ -812,317 +812,232 @@ long _SimpleList::Min(void)
 }
 
 //Merge 2 lists (sorted)
-void _SimpleList::Merge(_SimpleList& l1, _SimpleList& l2, _SimpleList* mergeResults1, _SimpleList* mergeResults2)
-{
-    Clear();
-    if (mergeResults1) {
-        mergeResults1->Clear();
-    }
-    if (mergeResults2) {
-        mergeResults2->Clear();
-    }
-    char    advancing = -1;
-    long    * list1 = l1.quickArrayAccess(),
-              * list2 = l2.quickArrayAccess(),
-                pos1=0,
-                pos2 =0,
-                nt1 = l1.lLength,
-                nt2 = l2.lLength,
-                c,
-                i;
 
-    if (mergeResults1 && mergeResults2) {
-        bool   doMerge1 = false,
-               doMerge2 = false;
-        while (1) { // stuff left to do
-            if (advancing == 0) { // advancing in the 1st list
-                pos1++;
-                if (pos1==nt1) {
-                    advancing = 2;
-                    continue;
-                }
-                list1++;
-                c = *list1-*list2;
-                if (c<=0) {
-                    if (doMerge1) {
-                        (*mergeResults1)<<lLength;
-                    }
+void _SimpleList::Merge(_SimpleList& l1, _SimpleList& l2, _SimpleList* mergeResults1, _SimpleList* mergeResults2) {
+  
+  this->Clear();
+  if (mergeResults1) {
+    mergeResults1->Clear();
+  }
+  if (mergeResults2) {
+    mergeResults2->Clear();
+  }
 
-                    (*this)<<*list1;
-                    if (c<0) {
-                        if (!doMerge2) {
-                            if (pos1>=pos2) {
-                                doMerge2 = true;
-                                for (i=0; i<pos2; i++) {
-                                    (*mergeResults2)<<i;
-                                }
-                            }
-                        }
-                        continue;
-                    }
-                }
-                if (c>0) {
-                    advancing = 1;
-                    if (!doMerge1) {
-                        for (i=0; i<pos1; i++) {
-                            (*mergeResults1)<<i;
-                        }
-                        doMerge1 = true;
-                    }
-                    if (doMerge2) {
-                        (*mergeResults2)<<lLength;
-                    }
-                    (*this)<<*list2;
-                    continue;
-                }
+  enum    machine_states {INIT, ADVANCE1, ADVANCE2, FLUSH1, FLUSH2} advancing = INIT;
 
-            } else if (advancing == 1) { // advancing in the 2nd list
-                pos2++;
-                if (pos2==nt2) {
-                    advancing = 3;
-                    continue;
-                }
-                list2++;
-                c = *list2-*list1;
-                if (c<=0) {
-                    if (doMerge2) {
-                        (*mergeResults2)<<lLength;
-                    }
-                    (*this)<<*list2;
-                    if (c<0) {
-                        if (!doMerge1) {
-                            if (pos2>=pos1) {
-                                doMerge1 = true;
-                                for (i=0; i<pos1; i++) {
-                                    (*mergeResults1)<<i;
-                                }
-                            }
-                        }
-                        continue;
-                    }
-                }
-                if (c>0) {
-                    advancing = 0;
-                    if (!doMerge2) {
-                        for (i=0; i<pos2; i++) {
-                            (*mergeResults2)<<i;
-                        }
-                        doMerge2 = true;
-                    }
-                    if (doMerge1) {
-                        (*mergeResults1)<<lLength;
-                    }
-                    (*this)<<*list1;
-                    continue;
-                }
-            } else if (advancing == 2) { // flush out the 2nd list
-                if (!doMerge1&&(pos2<nt2)) {
-                    for (i=0; i<nt1; i++) {
-                        (*mergeResults1)<<i;
-                    }
-                }
-                if (doMerge2)
-                    while (pos2<nt2) {
-                        (*mergeResults2)<<lLength;
-                        (*this)<<*list2;
-                        list2++;
-                        pos2++;
-                    }
-                else
-                    while (pos2<nt2) {
-                        (*this)<<*list2;
-                        list2++;
-                        pos2++;
-                    }
-                break;
-            } else if (advancing == 3) { // flush out the 1st list
-                if (!doMerge2&&(pos1<nt1)) {
-                    for (i=0; i<nt2; i++) {
-                        (*mergeResults2)<<i;
-                    }
-                }
-                if (doMerge1)
-                    while (pos1<nt1) {
-                        (*mergeResults1)<<lLength;
-                        (*this)<<*list1;
-                        list1++;
-                        pos1++;
-                    }
-                else
-                    while (pos1<nt1) {
-                        (*this)<<*list1;
-                        list1++;
-                        pos1++;
-                    }
-                break;
-            } else if (advancing == -1) { // just starting
-                if (!nt1) { // first list is empty!
-                    advancing = 2;
-                    continue;
-                }
-                if (!nt2) { // second list is empty!
-                    advancing = 3;
-                    continue;
-                }
-                c = *list1-*list2;
-                if (c<=0) { // begin with the first list
-                    (*this)<<*list1;
-                    advancing = 0;
-                    if (c) {
-                        doMerge2 = true;
-                        continue;
-                    }
-                } else {
-                    (*this)<<*list2;
-                    advancing = 1;
-                    doMerge1 = true;
-                    continue;
-                }
+  unsigned long   pos1 = 0,
+                  pos2 = 0,
+                  nt1 = l1.countitems(),
+                  nt2 = l2.countitems();
 
-            }
 
-            if (advancing == 0) { // moving up in the second term
-                pos1++;
-                if (pos1==nt1) {
-                    list2++;
-                    pos2++;
-                    if (doMerge2) {
-                        (*mergeResults2)<<lLength-1;
-                    }
-                    advancing = 2;
-                    continue;
-                } else {
-                    advancing = 1;
-                    if (doMerge2) {
-                        (*mergeResults2)<<lLength-1;
-                    }
-                    list1++;
-                }
-            } else {
-                pos2++;
-                if (pos2==nt2) {
-                    list1++;
-                    pos1++;
-                    if (doMerge1) {
-                        (*mergeResults1)<<lLength-1;
-                    }
-                    advancing = 3;
-                    continue;
-                } else {
-                    list2++;
-                    if (doMerge1) {
-                        (*mergeResults1)<<lLength-1;
-                    }
-                    advancing = 0;
-                }
-            }
+  bool  keep_going = true;
+
+  while (keep_going) {
+    switch (advancing) {
+        
+      case ADVANCE1: { // advancing in the 1st list
+        pos1++;
+        if (pos1==nt1) {
+          advancing = FLUSH2;
+          continue;
         }
-    } else {
-        while (1) { // stuff left to do
-            if (advancing == 0) { // advancing in the 1st list
-                pos1++;
-                if (pos1==nt1) {
-                    advancing = 2;
-                    continue;
-                }
-                list1++;
-                c = *list1-*list2;
-                if (c<=0) {
-                    (*this)<<*list1;
-                    if (c<0) {
-                        continue;
-                    }
-                }
-                if (c>0) {
-                    advancing = 1;
-                    (*this)<<*list2;
-                    continue;
-                }
-
-            } else if (advancing == 1) { // advancing in the 2nd list
-                pos2++;
-                if (pos2==nt2) {
-                    advancing = 3;
-                    continue;
-                }
-                list2++;
-                c = *list2-*list1;
-                if (c<=0) {
-                    (*this)<<*list2;
-                    if (c<0) {
-                        continue;
-                    }
-                }
-                if (c>0) {
-                    advancing = 0;
-                    (*this)<<*list1;
-                    continue;
-                }
-            } else if (advancing == 2) { // flush out the 2nd list
-                while (pos2<nt2) {
-                    (*this)<<*list2;
-                    list2++;
-                    pos2++;
-                }
-                break;
-            } else if (advancing == 3) { // flush out the 2nd list
-                while (pos1<nt1) {
-                    (*this)<<*list1;
-                    list1++;
-                    pos1++;
-                }
-                break;
-            } else if (advancing == -1) { // just starting
-                if (!nt1) { // first list is empty!
-                    advancing = 2;
-                    continue;
-                }
-                if (!nt2) { // second list is empty!
-                    advancing = 3;
-                    continue;
-                }
-                c = *list1-*list2;
-                if (c<=0) { // begin with the first list
-                    (*this)<<*list1;
-                    advancing = 0;
-                    if (c) {
-                        continue;
-                    }
-                } else {
-                    (*this)<<*list2;
-                    advancing = 1;
-                    continue;
-                }
-
+        
+        long cmp = l1.lData[pos1] - l2.lData [pos2];
+        //if (l1lData[pos1] <= l2->lData[pos2]) {
+        if ( cmp <= 0L) {
+          if (mergeResults1) {
+            //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
+            (*mergeResults1)<<this->lLength;
+          }
+          
+          (*this) << (l1.lData[pos1]);
+          
+          //        if (mergeResults2 && l1->lData[pos1] < l2->lData[pos2]) {
+          if (cmp < 0L) {
+            if (mergeResults2 && mergeResults2->countitems () == 0UL && pos1 >= pos2) {
+              for (unsigned long i=0UL; i<pos2; i++) {
+                (*mergeResults2) << i;
+              }
             }
-
-            if (advancing == 0) { // moving up in the second term
-                pos1++;
-                if (pos1==nt1) {
-                    list2++;
-                    pos2++;
-                    advancing = 2;
-                    continue;
-                } else {
-                    advancing = 1;
-                    list1++;
-                }
-            } else {
-                pos2++;
-                if (pos2==nt2) {
-                    list1++;
-                    pos1++;
-                    advancing = 3;
-                    continue;
-                } else {
-                    list2++;
-                    advancing = 0;
-                }
-            }
-
-
+            continue;
+          }
         }
+        
+        if (cmp > 0L) {
+          //if (l1->lData[pos1] > l2->lData[pos2]) {
+          advancing = ADVANCE2;
+          if (mergeResults1 && mergeResults1->countitems () == 0UL ) {
+            for (unsigned long i=0UL; i<pos1; i++) {
+              //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
+              (*mergeResults1) << i;
+            }
+          }
+          
+          if (mergeResults2) {
+            (*mergeResults2)<<this->lLength;
+          }
+          
+          //printf ("this->append (l2->AtIndex(pos2))\n");
+          (*this)  << l2.lData[pos2];
+          continue;
+        }
+        break;
+      }
+        
+      case ADVANCE2: { // advancing in the 2nd list
+        pos2++;
+        if (pos2==nt2) {
+          advancing = FLUSH1;
+          continue;
+        }
+        
+        long cmp = l2.lData[pos2] - l1.lData[pos1];
+        
+        //if (l2->lData[pos2] <= l1->lData[pos1]) {
+        if (cmp <= 0L) {
+          if (mergeResults2) {
+            (*mergeResults2)<<this->lLength;
+          }
+          
+          (*this) << l2.lData[pos2];
+          
+          //if (l2->lData[pos2] < l1->lData[pos1] && mergeResults1 && !doMerge1 && pos2>=pos1) {
+          if (cmp < 0L ) {
+            if(mergeResults1 && mergeResults1->countitems() == 0 && pos2>=pos1) {
+              for (unsigned long i=0UL; i<pos1; i++) {
+                //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
+                (*mergeResults1)<<i;
+              }
+            }
+            continue;
+          }
+        }
+        
+        //if (l2->lData[pos2] > l1->lData[pos1]) {
+        if (cmp > 0L) {
+          advancing = ADVANCE1;
+          if (mergeResults2 && mergeResults2->countitems() == 0) {
+            for (unsigned long i=0UL; i<pos2; i++) {
+              (*mergeResults2)<<i;
+            }
+          }
+          if (mergeResults1) {
+            //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
+            (*mergeResults1)<<this->lLength;
+          }
+          (*this) << l1.lData[pos1];
+          continue;
+        }
+        break;
+      }
+      case FLUSH2: { // flush out the 2nd list
+        if (mergeResults1 && pos2<nt2 ) {
+          for (unsigned long i=pos1; i<nt1; i++) {
+            //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
+            (*mergeResults1)<<i;
+          }
+        }
+        if (mergeResults2)
+          while (pos2<nt2) {
+            (*mergeResults2)<<this->lLength;
+            (*this) << (l2.lData[pos2++]);
+          }
+        else
+          while (pos2<nt2) {
+            (*this) << (l2.lData[pos2++]);
+          }
+        keep_going = false;
+        break;
+      }
+      case FLUSH1: { // flush out the 1st list
+        if (mergeResults2 && pos1<nt1) {
+          for (unsigned long i=pos2; i<nt2; i++) {
+            (*mergeResults2)<<i;
+          }
+        }
+        if (mergeResults1)
+          while (pos1<nt1) {
+            //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
+            (*mergeResults1)<<this->lLength;
+            (*this) << (l1.lData[pos1++]);
+          }
+        else
+          while (pos1<nt1) {
+            (*this) << (l1.lData[pos1++]);
+          }
+        keep_going = false;
+        break;
+      }
+      case INIT: { // just starting
+        if (!nt1) { // first list is empty!
+          advancing = FLUSH2;
+          continue;
+        }
+        if (!nt2) { // second list is empty!
+          advancing = FLUSH1;
+          continue;
+        }
+        
+        //if (l1->lData[pos1] <= l2->lData[pos2]) { // begin with the first list
+        
+        long cmp = l1.lData[pos1] - l2.lData[pos2];
+        
+        if (cmp <= 0L) { // begin with the first list
+          if (mergeResults1) {
+            (*mergeResults1)<<this->lLength;
+          }
+          (*this) << (l1.lData[0]);
+          advancing = ADVANCE1;
+          if (cmp != 0L) {
+            continue;
+          }
+        } else {
+          if (mergeResults2) {
+            (*mergeResults2)<<this->lLength;
+          }
+          (*this) << (l2.lData[0]);
+          advancing = ADVANCE2;
+          continue;
+        }
+        break;
+      }
+    } // end SWITCH
+    
+    if (keep_going) {
+      if (advancing == ADVANCE1) { // moving up in the second term
+        pos1++;
+        if (pos1==nt1) {
+          pos2++;
+          if (mergeResults2) {
+            (*mergeResults2)<<this->lLength-1UL;
+          }
+          advancing = FLUSH2;
+          continue;
+        } else {
+          advancing = ADVANCE2;
+          if (mergeResults2) {
+            (*mergeResults2)<<this->lLength-1UL;
+          }
+        }
+      } else {
+        pos2++;
+        if (pos2==nt2) {
+          pos1++;
+          if (mergeResults1) {
+            (*mergeResults1)<<this->lLength-1UL;
+          }
+          advancing = FLUSH1;
+          continue;
+        } else {
+          advancing = ADVANCE1;
+          if (mergeResults1) {
+            (*mergeResults1)<<this->lLength-1UL;
+          }
+        }
+      }
     }
+  }
 }
 
 // Together with the next function

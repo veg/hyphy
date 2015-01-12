@@ -250,15 +250,15 @@ void    _PolynomialData::AddTerm (long * theTerm, _Parameter theC, long* reindex
     }
     theCoeff[actTerms] = theC;
     if (numberVars>2) {
-        long *newTerm = thePowers+actTerms*numberVars, i;
-        for (i=0; i<numberVars; i++,newTerm++) {
-            *newTerm = 0;
+        long *newTerm = thePowers+actTerms*numberVars;
+        for (long i=0; i<numberVars; i++) {
+            newTerm[i] = 0L;
         }
-        newTerm-=numberVars;
-//!     memset (newTerm, 0, numberVars*sizeof(long));
-        for (i=0; i<actLength; i++, reindexer++, theTerm++) {
-            newTerm[*reindexer] = *theTerm;
+ 
+        for (long i=0; i<actLength; i++) {
+            newTerm[reindexer[i]] = theTerm[i];
         }
+
     } else {
         *(thePowers+actTerms*numberVars) = 0;
         *(thePowers+actTerms*numberVars+1) = 0;
@@ -540,10 +540,10 @@ char    _PolynomialData::CompareTerms (long* s1, long* s2)
 {
     for (long i=0; i<numberVars; i++) {
         long comp = s1[i]-s2[i];
-        if (comp>0) {
+        if (comp>0L) {
             return 1;
         }
-        if (comp<0) {
+        if (comp<0L) {
             return -1;
         }
     }
@@ -553,7 +553,24 @@ char    _PolynomialData::CompareTerms (long* s1, long* s2)
 //__________________________________________________________________________________
 char    _PolynomialData::CompareTerms (long* s1, long* s2, long* secondReindex, long actLength)
 {
-    long comp,i;
+    long second_index = 0;
+    for (long k = 0L; k < numberVars; k++) {
+      long v1 = s1[k],
+            v2 = 0;
+      if (second_index < actLength && k == secondReindex[second_index]) {
+        v2 = s2[second_index];
+        second_index++;
+      }
+      
+      if (v1 != v2) {
+        return v1 > v2 ? 1 : -1;
+      }
+    }
+  
+    return 0;
+  
+    /*long comp,i;
+  
     for (i=0; i<actLength; i++,s1++,s2++,secondReindex++) {
         comp = *secondReindex-i;
         if (comp>0) {
@@ -579,13 +596,44 @@ char    _PolynomialData::CompareTerms (long* s1, long* s2, long* secondReindex, 
             return 1;
         }
     }
-    return 0;
+    return 0;*/
 }
 
 //__________________________________________________________________________________
 char    _PolynomialData::CompareTerms (long* s1, long* s2, long* firstReindex, long* secondReindex,long actLength1,  long actLength2)
 {
-    bool secondLonger = actLength1<actLength2,
+    long first_index = 0L,
+         second_index = 0L,
+         k;
+  
+    for (k = 0; k < numberVars; k ++) {
+      
+      long v1 = 0,
+           v2 = 0;
+      
+      if (first_index < actLength1) {
+        if (k == firstReindex[first_index]) {
+          v1 = s1 [first_index];
+          first_index ++;
+        }
+      }
+
+      if (second_index < actLength2) {
+        if (k == secondReindex[second_index]) {
+          v2 = s2 [second_index];
+          second_index ++;
+        }
+      }
+      
+      if (v1 != v2) {
+        return v1 < v2 ? -1 : 1;
+      }
+      
+    }
+      
+    return 0;
+  
+    /*bool secondLonger = actLength1<actLength2,
          firstLonger  = actLength1>actLength2;
 
     long minLength = actLength1<actLength2?actLength1:actLength2,
@@ -639,7 +687,7 @@ char    _PolynomialData::CompareTerms (long* s1, long* s2, long* firstReindex, l
                 return -1;
             }
         }
-    return 0;
+    return 0;*/
 }
 
 //__________________________________________________________________________________
@@ -949,7 +997,10 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
     if (objectT == POLYNOMIAL) { // another polynomial
         Convert2OperationForm();
         _Polynomial* p2 = (_Polynomial*)m;
-
+      
+      
+      
+      
         if (variableIndex.lLength == 0) {
             if (theTerms->NumberOfTerms()) {
                 _Constant coef1 (theTerms->GetCoeff(0));
@@ -1166,14 +1217,15 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
         } else {
             _SimpleList mergedVariables, merge1, merge2;
             mergedVariables.Merge(variableIndex, p2->variableIndex, &merge1, &merge2);
-            if ((merge1.countitems()==0)||(merge2.countitems()==0))
-                // one of the poly's variables are a superset for the other - treat accordingly
-            {
-                bool  firstBigger = merge1.countitems()==0; // is the first poly bigger than the second
+            if ( merge1.countitems()==mergedVariables.countitems() || merge2.countitems()==mergedVariables.countitems()) {
+                bool  firstBigger = merge1.countitems()==mergedVariables.countitems(); // is the first poly bigger than the second
+              
                 long  *reindexList = firstBigger?merge2.quickArrayAccess():merge1.quickArrayAccess(),
                        reindexLength = firstBigger?merge2.countitems():merge1.countitems();
+              
+              
                 res = new _Polynomial (mergedVariables); // create a blank new result holder
-                checkPointer(res);
+
                 ResetPolynomialCheck(res);
                 while (1) { // stuff left to do
                     if (advancing == 0) { // advancing in the 1st polynomial
@@ -1511,15 +1563,23 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
             }
         }
 
-        if (!res->theTerms->checkMe()) {
-            //BufferToConsole (_String((_String*)toStr()));
-            //NLToConsole();
-            //BufferToConsole (_String((_String*)m->toStr()));
-            //NLToConsole();
-            //BufferToConsole (_String((_String*)res->toStr()));
-            //NLToConsole();
+ 
+      
+      /*
+      NLToConsole();
+      NLToConsole();
+      BufferToConsole (_String((_String*)this->toStr()).getStr());
+      BufferToConsole("\n+\n");
+      BufferToConsole (_String((_String*)p2->toStr()).getStr());
+      BufferToConsole("\n=\n");
+      BufferToConsole (_String((_String*)res->toStr()).getStr());
+      NLToConsole();
+       */
+      
+
+      if (!res->theTerms->checkMe()) {
             return nil;
-        }
+      }
 //      res->theTerms->ChopTerms();
         if (res->theTerms->GetNoTerms()==0) {
             DeleteObject (res);
@@ -2618,59 +2678,72 @@ void    _Polynomial::RankTerms(_SimpleList* receptacle)
 
 //__________________________________________________________________________________
 
-BaseObj* _Polynomial::toStr (void)
-{
-    _String result (10, true);
-    if (theTerms->NumberOfTerms()) {
-        long i;
-        _List _varNames;
-        for (i=0; i<variableIndex.countitems(); i++) {
-            _varNames<<LocateVar(variableIndex(i))->GetName();
-        }
-
-        for (i=0; i<theTerms->NumberOfTerms(); i++) {
-            char        number [100];
-            snprintf (number, sizeof(number),PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
-            if (i>0 && number[0]!='-') {
-                result<<'+';
-            }
-
-            result<<number;
-            bool       firstN = theTerms->IsFirstANumber();
-            if (i>0 || !firstN) {
-                result<<'*';
-                long *cT = theTerms->GetTerm(i);
-                bool      printedFirst = false;
-                for (long k=0; k<variableIndex.countitems(); k++,cT++) {
-                    if (*cT>0) {
-                        if (printedFirst) {
-                            result<<'*';
-                        } else {
-                            printedFirst = true;
-                        }
-
-                        result<<(_String*)_varNames(k);
-                        if (*cT>1) {
-                            result<<'^';
-                            _String st (*cT);
-                            result<< *cT;
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        _String*s = (_String*)compList1.toStr();
-        result<<s;
-        result<<'\n';
-        DeleteObject(s);
-        s = (_String*)compList2.toStr();
-        result<<s;
-        result<<'\n';
-        DeleteObject(s);
+BaseObj* _Polynomial::toStr (void) {
+  _String result (10, true);
+  if (theTerms->NumberOfTerms()) {
+    long i;
+    _List _varNames;
+    for (i=0; i<variableIndex.countitems(); i++) {
+      _varNames<<LocateVar(variableIndex(i))->GetName();
     }
-    result.Finalize();
-    return result.makeDynamic();
+    
+    bool       firstN = theTerms->IsFirstANumber();
+    for (i=0; i<theTerms->NumberOfTerms(); i++) {
+      char        number [100];
+      
+      _Parameter  coeff = theTerms->GetCoeff(i);
+      
+      bool print_coeff = false;
+      
+      if ((i == 0 && firstN) || !CheckEqual(coeff, 1)) {
+        print_coeff = true;
+      }
+      
+      snprintf (number, sizeof(number),PRINTF_FORMAT_STRING,coeff);
+      if (i>0 && coeff >= 0.) {
+        result<<'+';
+      }
+      
+      if (print_coeff) {
+        result<<number;
+      }
+      
+      if (i>0 || !firstN) {
+        if (print_coeff) {
+          result<<'*';
+        }
+        long *cT = theTerms->GetTerm(i);
+        bool      printedFirst = false;
+        for (long k=0; k<variableIndex.countitems(); k++,cT++) {
+          if (*cT>0) {
+            if (printedFirst) {
+              result<<'*';
+            } else {
+              printedFirst = true;
+            }
+            
+            result<<(_String*)_varNames(k);
+            if (*cT>1) {
+              result<<'^';
+              _String st (*cT);
+              result<< *cT;
+            }
+          }
+        }
+      }
+    }
+  } else {
+    _String*s = (_String*)compList1.toStr();
+    result<<s;
+    result<<'\n';
+    DeleteObject(s);
+    s = (_String*)compList2.toStr();
+    result<<s;
+    result<<'\n';
+    DeleteObject(s);
+  }
+  result.Finalize();
+  return result.makeDynamic();
 }
 
 //__________________________________________________________________________________

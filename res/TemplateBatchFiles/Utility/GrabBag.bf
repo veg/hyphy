@@ -863,31 +863,26 @@ function remapSequenceCoordinatesToReference (ref,seq)
 {
 	_seqLen	  = Abs(seq);
 	_coordMap = {_seqLen,1}["-1"];
-	
-		
+			
 	_k				= (ref$"^\\-+");
 	_referenceSpan	= _k[1]+1;
 	
-	for (_k = 0; _k < _referenceSpan; _k = _k+1)
-	{
+	for (_k = 0; _k < _referenceSpan; _k += 1) {
 		_coordMap[_k] = 0;
 	}
 	
 	_qryCoord = _k;
 	_refCoord = 0;
 
-	while (_k < Abs(seq))
-	{
-		if (seq[_k] != "-")
-		{
+	while (_k < Abs(seq)) {
+		if (seq[_k] != "-") {
 			_coordMap[_qryCoord] = _refCoord;
-			_qryCoord = _qryCoord + 1;
+			_qryCoord += 1;
 		}
-		if (ref[_k] != "-")
-		{
-			_refCoord = _refCoord + 1;
+		if (ref[_k] != "-") {
+			_refCoord += 1;
 		}
-		_k = _k+1;
+		_k += 1;
 	}
 	return _coordMap;
 }
