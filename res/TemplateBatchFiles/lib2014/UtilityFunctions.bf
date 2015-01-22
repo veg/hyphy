@@ -12,6 +12,44 @@ function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name
     return data_info;
 }
 
+function utility.replace(search, replace, string) {
+    string_search = "*" + search + "*";
+
+    while (string/string_search) {
+      inf_instances = string$search;
+      new_string = "";
+
+      for(x = 0; x < inf_instances[0]; x=x+1) {
+        new_string = new_string + string[x];  
+      } 
+
+      new_string = new_string + replace;
+
+      for(x = inf_instances[1] + 1; x < Abs(string); x=x+1) {
+        new_string = new_string + string[x];  
+      } 
+
+      string = new_string;
+
+    }
+
+    return string;
+}
+
+
+function utility.associativeListToJSON(associative_list) {
+
+    // Convert associative list to string
+    string =  " " + associative_list + " ";
+    string = utility.replace("inf,", "1e9999,", string);
+    string = utility.replace("-nan,", "null,", string);
+    string = utility.replace("inf]", "1e9999]", string);
+    string = utility.replace("-nan]", "null]", string);
+
+    // Replace inf and nan with 1+e9999 and null, respectively
+    return Eval(string);
+}
+
 function utility.defineFrequencies (datafilter_name) {
     HarvestFrequencies	          (nuc3, *datafilter_name, 3, 1, 1);
     nucCF						= CF3x4	(nuc3, GeneticCodeExclusions);
@@ -85,3 +123,5 @@ lfunction utility.array.find (array, value) {
     }
     return -1;
 }
+
+
