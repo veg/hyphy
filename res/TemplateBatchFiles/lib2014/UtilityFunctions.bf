@@ -12,6 +12,25 @@ function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name
     return data_info;
 }
 
+
+function utility.associativeListToJSON(associative_list) {
+
+    // Replace inf and nan with 1+e9999 and null, respectively
+
+    // SW20150122 TODO: Add recursion
+    keys = Rows(associative_list);
+    for (_k = 0; _k < Columns(keys); _k = _k+1) {
+      current_val = associative_list[keys[_k]];
+      if(Type(current_val) == "String") {
+			  current_val = current_val^{{"inf"}{"1e999"}}; /* search and replace */
+			  current_val = current_val^{{"-nan"}{"null"}}; /* search and replace */
+        associative_list[keys[_k]] = current_val;
+      }
+    }
+
+    return associative_list;
+}
+
 function utility.defineFrequencies (datafilter_name) {
     HarvestFrequencies	          (nuc3, *datafilter_name, 3, 1, 1);
     nucCF						= CF3x4	(nuc3, GeneticCodeExclusions);
@@ -85,3 +104,5 @@ lfunction utility.array.find (array, value) {
     }
     return -1;
 }
+
+
