@@ -2075,9 +2075,9 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
             catCount        = categoryVariables.lLength-1,
             entriesPerCat   = 2+catCount;
 
-    //for (long k = 0; k<containerVariables.lLength;k++)
-    //  printf ("%d %s\n", k, ((_Variable*)containerVariables(k))->GetName()->sData);
-
+    //for (long k = 0; k<categoryVariables.lLength;k++)
+    //    printf ("%ld\n", categoryVariables(k));//, ((_Variable*)categoryVariables(k))->GetName()->sData);
+  
     if (catCount<0) {
         remapMyCategories.Clear();
     } else {
@@ -2094,7 +2094,6 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
                 WarnError ("Internal error in SetupCategoryMap. Please report to spond@ucsd.edu");
             }
             localCategories *= classCounter.lData[coordinate];
-            //printf ("%d %s\n", myCatID, LocateVar(categoryVariables.lData[myCatID])->GetName()->sData);
             remappedIDs << coordinate;
         }
 
@@ -2118,6 +2117,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
 
             long offset = currentRateCombo * entriesPerCat;
             remapMyCategories.lData[offset] = localCatID;
+           //printf ("[%ld] = %ld (%ld)\n", offset, localCatID, );
 
             offset++;
             for  (long localVariableID = 0; localVariableID<=catCount; localVariableID++) {
@@ -2127,7 +2127,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
         }
     }
 
-    //printf ("Node remap at %s yielded %s\n", GetName()->sData, _String((_String*)remapMyCategories.toStr()).sData);
+  //printf ("Node remap at %s yielded %s\n", GetName()->sData, _String((_String*)remapMyCategories.toStr()).sData);
 
 }
 

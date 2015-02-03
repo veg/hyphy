@@ -891,7 +891,7 @@ bool      _VariableContainer::SetMDependance (_SimpleList& mDep)
 //__________________________________________________________________________________
 void      _VariableContainer::Clear(void)
 {
-    theModel = -1;
+    theModel = HY_NO_MODEL;
     if (iVariables) {
         delete iVariables;
         iVariables = nil;

@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#define     ALMOST_ZERO  1e-305
 
 //#define _UBER_VERBOSE_MX_UPDATE_DUMP
-#define _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL 28
+#define _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL 1
 
 
 #define     ANCESTRAL_SCALING_MAX 16
@@ -441,11 +441,22 @@ long    _CalcNode::FreeUpMemory (long)
 
 void _CalcNode::RemoveModel (void)
 {
-    Clear();
+  
     if (compExp && referenceNode < 0) {
         DeleteObject (compExp);
         compExp = nil;
     }
+  
+    if (matrixCache) {
+      
+    }
+
+    categoryVariables.Clear();
+    categoryIndexVars.Clear();
+    remapMyCategories.Clear();
+
+    Clear();
+
 }
 
 //__________________________________________________________________________________
@@ -763,7 +774,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     locVar = LocateVar (iVariables->lData[i]);
                     curVar->SetValue(locVar->Compute());
                     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-                      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                      if (1 || likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
                         fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
                       }
                     #endif
@@ -778,7 +789,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     locVar = LocateVar (dVariables->lData[i]);
                     curVar->SetValue(locVar->Compute());
                     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-                      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                      if (1 || likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
                         fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
                       }
                     #endif
@@ -786,7 +797,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             }
     
     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
+      if (1|| likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
         for (unsigned long i=0; i<gVariables->lLength; i++) {
           _Variable* curVar = LocateVar(gVariables->GetElement(i));
           fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
@@ -806,7 +817,11 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
     if (!storeRateMatrix)
         if (totalCategs>1) {
-            DeleteObject(GetCompExp(categID));
+          #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+            fprintf (stderr, "[_CalcNode::RecomputeMatrix] Deleting category %ld for node %s at %p\n", categID, GetName()->sData, GetCompExp(categID));
+          #endif
+          DeleteObject(GetCompExp(categID, true));
+          
         } else if (compExp) {
             DeleteObject (compExp);
             compExp = nil;
@@ -816,6 +831,9 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     
     if (isExplicitForm && bufferedOps) {
         _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel()->Compute (0,nil, bufferedOps);
+        #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+            fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting (buffered) category %ld/%ld for node %s\n", categID, totalCategs, GetName()->sData);
+         #endif
         SetCompExp ((_Matrix*)bufferedExp->makeDynamic(), totalCategs>1?categID:-1);
         return false;
     }
@@ -866,6 +884,9 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                 return isExplicitForm;
             }
 
+            #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+                fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting category %ld/%ld for node %s\n", categID, totalCategs, GetName()->sData);
+            #endif
             SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate()), totalCategs>1?categID:-1);
 
         } else {
@@ -923,7 +944,7 @@ _Matrix*        _CalcNode::ComputeModelMatrix  (bool)
 
 //_______________________________________________________________________________________________
 
-_Matrix*    _CalcNode::GetCompExp       (long catID)
+_Matrix*    _CalcNode::GetCompExp       (long catID, bool doClear)
 {
     if (catID==-1) {
         return compExp;
@@ -931,8 +952,13 @@ _Matrix*    _CalcNode::GetCompExp       (long catID)
         if (remapMyCategories.lLength) {
             catID = remapMyCategories.lData[catID * (categoryVariables.lLength+1)];
         }
-
-        return matrixCache?matrixCache[catID]:compExp;
+      //if (matrixCache)
+      //    printf ("%d %d %d\n", remapMyCategories[0*catID * (categoryVariables.lLength+1)], remapMyCategories[catID * (categoryVariables.lLength+1)], remapMyCategories[2*catID * (categoryVariables.lLength+1)]);
+        _Matrix* ret = matrixCache?matrixCache[catID]:compExp;
+      if (doClear && matrixCache) {
+        matrixCache[catID] = nil;
+      }
+      return ret;
     }
 }
 
@@ -6370,19 +6396,23 @@ _PMathObj _TheTree::TEXTreeString (_PMathObj p)
 
 void _TheTree::SetUpMatrices (long categCount)
 {
+  //fprintf (stderr, "[_TheTree::SetUpMatrices] %ld\n", categCount);
     _CalcNode* travNode;
     categoryCount = categCount>=1?categCount:1;
+
+ 
     travNode = DepthWiseTraversal (TRUE);
     while   (travNode) {
         if (travNode->IsConstant()) {
             travNode->varFlags |= HY_VC_NO_CHECK;
         }
         travNode->ConvertToSimpleMatrix();
+      
         if (categoryCount==1) {
             travNode->matrixCache = nil;
         } else {
-            checkPointer(travNode->matrixCache = (_Matrix**)MemAllocate (categoryCount*sizeof(_Matrix*)));
-            for (long i=0; i<categoryCount; i++) {
+            travNode->matrixCache = (_Matrix**)MemAllocate (categoryCount*sizeof(_Matrix*));
+            for (unsigned long i=0; i<categoryCount; i++) {             
                 travNode->matrixCache[i] = nil;
             }
         }

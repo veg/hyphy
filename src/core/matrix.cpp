@@ -2009,7 +2009,6 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix* sourceMatrix)
 BaseRef _Matrix::makeDynamic (void)
 {
     _Matrix * result = new _Matrix;
-    checkPointer    (result);
     DuplicateMatrix (result, this);
 
     return result;

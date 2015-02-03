@@ -157,7 +157,7 @@ public:
     // return TRUE if the matrix is an explicit exponential form
 
     virtual bool        HasChanged       (void);
-    virtual bool        NeedToExponentiate(long = -1);
+    virtual bool        NeedToExponentiate(long = -1L);
     virtual void        SetModel         (long, _AVLListXL*);
 
     bool                IsFlagged        (void) {
@@ -190,7 +190,7 @@ public:
 
     void                SetCompExp      (_Matrix*, long = -1);
     void                SetCompMatrix   (long);
-    _Matrix*            GetCompExp      (long catID = -1);
+    _Matrix*            GetCompExp      (long catID = -1, bool = false);
 
     _Formula*           RecurseMC       (long , node<long>* , bool first = false, char rooted = UNROOTED);
 
