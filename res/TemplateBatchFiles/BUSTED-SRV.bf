@@ -393,7 +393,7 @@ function busted.io.define_bsrel_models (foreground_id, background_id, frequencie
     
     ((model_parameters["FG"])["f"])["busted._aux.define_parameter"][""];
     ((model_parameters["BG"])["f"])["busted._aux.define_parameter"][""];
-    ((model_parameters["SRV"])["f"])["busted._aux.define_srv_rate"][""];
+    ((model_parameters["SRV"])["f"])["busted._aux.define_parameter"][""];
     
     busted._srv_cat_name = "busted.srv.cat";
     busted._aux.define_srv_category (((model_parameters["SRV"])["omegas"]), ((model_parameters["SRV"])["weights"]), busted._srv_cat_name);
