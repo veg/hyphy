@@ -60,7 +60,7 @@ _BUSTED_json    = {"fits" : {},
                   
 
 codon_data_info = utility.promptForGeneticCodeAndAlignment ("codon_data", "codon_filter");
-codon_data_info["json"] = codon_data_info["file"] + ".BUSTED.json";
+codon_data_info["json"] = codon_data_info["file"] + ".BUSTED-SRV.json";
 io.reportProgressMessage ("BUSTED", "Loaded an MSA with " + codon_data_info["sequences"] + " sequences and " + codon_data_info["sites"] + " codons from '" + codon_data_info["file"] + "'");
 
 codon_frequencies = utility.defineFrequencies ("codon_filter");
