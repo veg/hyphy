@@ -409,8 +409,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
 )
 
 
