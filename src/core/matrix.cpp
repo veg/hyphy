@@ -7363,6 +7363,8 @@ BaseRef _Matrix::toStr(void)
   checkParameter (printDigitsSpec,printDigits,0);
   long digs = printDigits;
   
+  char number_buffer [256];
+  
   //if (vDim<500)
   {
     if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
@@ -7397,20 +7399,8 @@ BaseRef _Matrix::toStr(void)
             }
             result << '"';
           } else {
-            if (digs >= 0)
-#ifdef __USE_LONG_DOUBLE__
-              snprintf (str, sizeof(str), "%18.12Lg", (*this)(i,j));
-#else
-            snprintf (str, sizeof(str), PRINTF_FORMAT_STRING, (*this)(i,j));
-#endif
-            else
-#ifdef __USE_LONG_DOUBLE__
-              snprintf (str, sizeof(str), "%Lg", (*this)(i,j));
-#else
-            snprintf (str, sizeof(str), PRINTF_FORMAT_STRING, (*this)(i,j));
-#endif
-            _String cell (str);
-            result<<&cell;
+            parameterToCharBuffer ((*this)(i,j), number_buffer, 255, doJSON);
+            result<<number_buffer;
             
           }
           if (j<vDim-1) {
@@ -7507,6 +7497,7 @@ void    _Matrix::toFileStr (FILE*dest){
     bool printStrings = storageType != 1;
     long digs         = -1;
     
+    char number_buffer [256];
     _Parameter useJSON = 0.0;
     checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
     bool doJSON = !CheckEqual(useJSON, 0.0);
@@ -7560,7 +7551,8 @@ void    _Matrix::toFileStr (FILE*dest){
             }
             fprintf (dest,"\"");
           } else {
-            fprintf(dest, "%g", (*this)(i,j));
+            parameterToCharBuffer ((*this)(i,j), number_buffer, 255, doJSON);
+            fprintf(dest, "%s", number_buffer);
           }
         }
         fprintf (dest, "%c%c\n", closeBracket, doJSON ? ',' : ' ');

@@ -132,8 +132,19 @@ _Variable * LocateVar (long index)
 }
 
 //__________________________________________________________________________________
-void     parameterToCharBuffer (_Parameter value, char* dump, long length)
+void     parameterToCharBuffer (_Parameter value, char* dump, long length, bool json)
 {
+    if (json) {
+      if (isnan (value)) {
+        snprintf (dump, length, "null");
+        return;
+      }
+      if (isinf(value)) {
+        snprintf (dump, length, value < 0 ? "-1e9999" : "1e9999");
+        return;
+      }
+    }
+  
     long digs = printDigits;
     if (digs<=0 || digs>15) {
         if (round(value) == value && fabs (value) < long_max) {
