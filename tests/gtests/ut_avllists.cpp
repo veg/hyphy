@@ -439,23 +439,23 @@ TEST_F(AVLListTest,countitemsTest){
 }
 
 
-TEST_F(AVLListXTest,toStrTest){
+//TEST_F(AVLListXTest,toStrTest){
 
-    long info; 
-    _SimpleList sl; 
+//    long info; 
+//    _SimpleList sl; 
 
-    _AVLListX alx(&sl);
-    _String test_string = _String("house,condo,hyphy");
-    _String* sub_string = new _String(",");
+//    _AVLListX alx(&sl);
+//    _String test_string = _String("house,condo,hyphy");
+//    _String* sub_string = new _String(",");
 
-    _List* result_list = test_string.Tokenize(sub_string);
-    _List rl = *result_list;
-    alx.PopulateFromList(rl);
+//    _List* result_list = test_string.Tokenize(sub_string);
+//    _List rl = *result_list;
+//    alx.PopulateFromList(rl);
 
-    _String* rs = (_String*)alx.toStr();
-    _String expected("house : 0\ncondo : 1\nhyphy : 2\n"); 
-    EXPECT_STREQ(expected.getStr(),rs->getStr());
-}
+//    _String* rs = (_String*)alx.toStr();
+//    _String expected("house : 0\ncondo : 1\nhyphy : 2\n"); 
+//    EXPECT_STREQ(expected.getStr(),rs->getStr());
+//}
 
 
 //TEST_F(AVLListXLTest,toStrTest){

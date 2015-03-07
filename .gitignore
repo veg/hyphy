@@ -1,4 +1,4 @@
-#Standard ignores
+# Standard
 .svn/
 *.tmp
 *~
@@ -7,26 +7,29 @@ src/ocl/opencl_kernels.h
 *.cxx
 tags
 
-#Ignore CMake generated files
-**/CMakeCache.txt
-**/CMakeFiles
-**/Makefile
-**/cmake_install.cmake
-**/install_manifest.txt
-**/cmake_uninstall.cmake
+# CMake generated files
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+cmake_uninstall.cmake
 
-#Ignore HYPHY binaries
+# HYPHY binaries
 HYPHYMP
 HYPHYMPI
 HyPhy.app
 iHyPhyDebug.app
 HYPHYDEBUG
 
-#Ignore GTEST files
+# GTEST 
 HYPHYGTEST
 contrib/gtest-1.7.0/libgtest.a
+gmon.out
 
-#Ignore HyPhy generated files
+#HyPhy generated files
 **/*.log*
 **/*.log*
 **/data/*.samples*
+messages.log
+errors.log
