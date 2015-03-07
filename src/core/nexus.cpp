@@ -281,7 +281,7 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
                 NexusParseEqualStatement (blank);
                 speciesExpected = blank.toNum();
             }
-        } else if (CurrentLine.beginswith (key3)) {
+        } else if (CurrentLine.beginswith (key3, false)) {
             if (speciesExpected == -1) {
                 key1 = "TAXLABELS must be preceded by a valid NTAX statement. Skipping the entire TAXA block.";
                 ReportWarning (key1);
