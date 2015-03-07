@@ -1665,6 +1665,21 @@ bool _String::Equal (_String* s)
     return true;
 }
 
+bool _String::iEqual(_String* s)
+{
+    if  (sLength!=s->sLength) {
+        return false;
+    }
+
+    for (long i=0; i<sLength; i++)
+        if (tolower(sData[i])!=tolower(s->sData[i])) {
+            return false;
+        }
+
+    return true;
+}
+
+
 bool _String::Equal (const char c)
 {
     return sLength == 1 &&  sData[0] == c;

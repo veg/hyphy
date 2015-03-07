@@ -126,7 +126,7 @@ void    NexusParseEqualStatement (_String& source)
 }
 //_________________________________________________________
 
-bool    ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _String& blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes)
+bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _String& blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes)
 {
     bool done          = false,
          insideLiteral = false,
@@ -262,12 +262,12 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
         }
         // now that we've got stuff to work with see what it is
 
-        if (CurrentLine.beginswith (keyEnd)) {
+        if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
         }
 
-        if (CurrentLine.startswith (key1)) {
+        if (CurrentLine.beginswith (key1, false)) {
             if (result.GetNames().lLength) { // check the number of dimensions
                 // some data already present
                 key1 = "Only one taxa definition per NEXUS file is recognized, the others will be ignored.";
@@ -281,7 +281,7 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
                 NexusParseEqualStatement (blank);
                 speciesExpected = blank.toNum();
             }
-        } else if (CurrentLine.startswith (key3)) {
+        } else if (CurrentLine.beginswith (key3)) {
             if (speciesExpected == -1) {
                 key1 = "TAXLABELS must be preceded by a valid NTAX statement. Skipping the entire TAXA block.";
                 ReportWarning (key1);
@@ -355,12 +355,12 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
         }
         // now that we've got stuff to work with see what it is
 
-        if (CurrentLine.beginswith (keyEnd)) {
+        if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
         }
 
-        if (CurrentLine.beginswith (key1)) { // actual tree strings & idents
+        if (CurrentLine.beginswith (key1, false)) { // actual tree strings & idents
             _String blank ((unsigned long)10, true);
             if (!ReadNextNexusStatement (fState, f, CurrentLine, key1.sLength, blank, false, false, false,false,true)) {
                 errMsg = _String("CHARSET construct not followed by ';'.");
@@ -601,12 +601,12 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
         }
         // now that we've got stuff to work with see what it is
 
-        if (CurrentLine.beginswith (keyEnd)) {
+        if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
         }
 
-        if (CurrentLine.beginswith (key1)) {
+        if (CurrentLine.beginswith (key1, false)) {
             // set up translations between nodes and data labels
             long offset = key1.sLength;
             do {
@@ -639,7 +639,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                 offset = 0;
 
             } while (1);
-        } else if (CurrentLine.beginswith (key2)) { // actual tree strings & idents
+        } else if (CurrentLine.beginswith (key2, false)) { // actual tree strings & idents
             _String blank ((unsigned long)10, true);
             if (!ReadNextNexusStatement (fState, f, CurrentLine, key2.sLength, blank, false, false, false,false,false, true)) {
                 errMsg = _String("TREE construct not followed by ';'.");
@@ -699,6 +699,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
 
             }
         } else {
+
             long offSet = 0;
 
             _String errMsg = CurrentLine.Cut (0,CurrentLine.FirstSpaceIndex(1,-1)) & " is not used by HYPHY in TREES block";
@@ -910,18 +911,18 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
             break;
         }
 
-        if (CurrentLine.beginswith (keyEnd)) {
+        if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
         }
 
-        if (CurrentLine.beginswith (key1)) {
+        if (CurrentLine.beginswith (key1, false)) {
             offSet = key1.sLength;
             while (!done) {
                 _String blank ((unsigned long)10, true);
                 done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, blank, true, true,true,false,false);
 
-                if (blank.beginswith(key11)) {
+                if (blank.beginswith(key11, false)) {
                     if (result.GetNames().lLength) {
                         errMsg = "NTAX will override the definition of taxa names from the TAXA block";
                         ReportWarning (errMsg);
@@ -940,7 +941,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                             spExp = result.GetNames().lLength?result.GetNames().lLength:1;
                         }
                     }
-                } else if (blank.beginswith(key12)) {
+                } else if (blank.beginswith(key12, false)) {
                     if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,blank))) {
                         errMsg = "NCHAR is not followed by '= number-of-charaters'";
                         ReportWarning (errMsg);
@@ -953,7 +954,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                 offSet = 0;
             }
             done = false;
-        } else if (CurrentLine.beginswith (key2)) { // format instruction
+        } else if (CurrentLine.beginswith (key2, false)) { // format instruction
             offSet = key2.sLength;
             while (!done) {
                 charSwitcher = 0;
@@ -997,17 +998,17 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                             done = false;
                         }
                     }
-                } else if (blank.beginswith(key22)) { // MISSING
+                } else if (blank.beginswith(key22, false)) { // MISSING
                     charSwitcher = 1;
-                } else if (blank.beginswith(key23)) { // GAP
+                } else if (blank.beginswith(key23, false)) { // GAP
                     charSwitcher = 2;
-                } else if (blank.beginswith(key26)) { // MATCHCHAR
+                } else if (blank.beginswith(key26, false)) { // MATCHCHAR
                     charSwitcher = 3;
-                } else if (blank.beginswith(key27)) { // NOLABELS
+                } else if (blank.beginswith(key27, false)) { // NOLABELS
                     labels = false;
-                } else if (blank.beginswith(key28)) { // INTERLEAVE
+                } else if (blank.beginswith(key28, false)) { // INTERLEAVE
                     fState.interleaved = true;
-                } else if (blank.beginswith(key24)) { // SYMBOLS
+                } else if (blank.beginswith(key24, false)) { // SYMBOLS
                     count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,blank, true,false);
                     if (blank.sLength == 0) {
                         errMsg = blank& _String("is not of the form SYMBOLS = \"sym1 sym2 ...\". The entire block is ignored.");
@@ -1045,7 +1046,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                     newAlph = tempNewAlpha;
                     charSwitcher = 0;
                     done = done||(count>1);
-                } else if (blank.beginswith(key25)) { // EQUATE
+                } else if (blank.beginswith(key25, false)) { // EQUATE
                     blank.Trim(key25.sLength,-1);
                     if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0,blank,true,false))) {
                         errMsg = errMsg&" is not followed by '=char'";
@@ -1161,7 +1162,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                 }
                 done = false;
             }
-        } else if (CurrentLine.beginswith (key3)) { // matrix instruction
+        } else if (CurrentLine.beginswith (key3, false)) { // matrix instruction
             // if needed, set up a new symbol set
             offSet = key3.sLength;
             if (newAlph.sLength>1) { // a valid new alphabet set
@@ -1342,14 +1343,14 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
     ReadNextLine(file,&CurrentLine,&fState,false);
     while (CurrentLine.sLength) {
         f = 0;
-        while ((f = CurrentLine.Find (beginMark,f,-1 ))>=0) {
+        while ((f = CurrentLine.FindAnyCase(beginMark,f,-1 ))>=0) {
             f = CurrentLine.FirstNonSpaceIndex (f+beginMark.sLength,-1,1);
             if (f!=-1) { // process
                 g = CurrentLine.Find (';', f, -1);
                 if (g!=-1) {
                     blockName = CurrentLine.Cut (f,g-1);
                     // dispatch to block readers
-                    if (blockName.Equal(&data)) {
+                    if (blockName.iEqual(&data)) {
                         blockName = blockName &" block is now deprecated in NEXUS and should not be used.";
                         ReportWarning (blockName);
 
@@ -1362,25 +1363,25 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
                             blockName = "Only one data set per NEXUS file is read by ReadDataSet - the 1st valid one.";
                             ReportWarning (blockName);
                         }
-                    } else if (blockName.Equal(&taxa)) {
+                    } else if (blockName.iEqual(&taxa)) {
                         if (!dataRead) {
                             ProcessNexusTaxa (fState, g+1, file, CurrentLine, result);
                         } else {
                             blockName = "The TAXA block was encountered after CHARACTER had been read and will be ignored.";
                             ReportWarning (blockName);
                         }
-                    } else if (blockName.Equal(&trees)) {
+                    } else if (blockName.iEqual(&trees)) {
                         ProcessNexusTrees (fState, g+1, file, CurrentLine, result);
-                    } else if (blockName.Equal(&chars)) {
+                    } else if (blockName.iEqual(&chars)) {
                         if (!dataRead) {
                             dataRead = ProcessNexusData (fState, g+1, file, CurrentLine, result);
                         } else {
                             blockName = "Only one data set per NEXUS file is read by ReadDataSet - the 1st valid one.";
                             ReportWarning (blockName);
                         }
-                    } else if (blockName.Equal(&assumptions)||blockName.Equal(&sets)) {
+                    } else if (blockName.iEqual(&assumptions)||blockName.iEqual(&sets)) {
                         ProcessNexusAssumptions (fState, g+1, file, CurrentLine, result);
-                    } else if (blockName.Equal(&hyphy)) {
+                    } else if (blockName.iEqual(&hyphy)) {
                         ProcessNexusHYPHY (fState, g+1, file, CurrentLine, result);
                     } else {
                         blockName = _String("NEXUS blocks ")&blockName&(" are not used by HYPHY.");

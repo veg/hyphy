@@ -520,6 +520,15 @@ public:
     bool Equal   (_String*);
 
     /**
+    * Case Insensitive Lexicographic comparison
+    * \n Checks if Strings are equal lexicographic
+    * @param s Second string to compare
+    * @return true if strings are equal
+    * @sa Compare()
+    */
+    bool iEqual   (_String*);
+
+    /**
     * Lexicographic comparison
     * \n Checks if a string is equal to one character 
     * @param c the character to compare to 
