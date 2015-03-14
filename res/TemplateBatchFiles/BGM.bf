@@ -1,38 +1,4 @@
-RequireVersion  ("0.9920060815");
-
-/* ________________________________________________________________	*/
-
-function make_discrete_node (node_id, sample_size, max_parents)
-{
-	dnode = {};
-	dnode["NodeID"] = node_id;
-	dnode["PriorSize"] = sample_size;
-	dnode["MaxParents"] = max_parents;
-	return dnode;
-}
-
-/* ________________________________________________________________	*/
-
-function make_continuous_node (node_id, sample_size, mean, precision)
-{
-	cnode = {};
-	cnode["NodeID"] 	= node_id;
-	cnode["PriorSize"] 	= sample_size;
-	cnode["MaxParents"] = max_parents;
-	cnode["PriorMean"]	= mean;
-	cnode["PriorVar"]	= precision;
-	return cnode;
-}
-
-/* ________________________________________________________________	*/
-
-function make_banned_edge (parent, child)
-{
-	a_rule = {};
-	a_rule["BanParent"] = parent;
-	a_rule["BanChild"] = child;
-	return a_rule;
-}
+ExecuteAFile("bayesgraph.ibf");
 
 /* ________________________________________________________________	*/
 
@@ -189,23 +155,6 @@ function handleMPIBGM (_bgm_data, jobID)
 		if (jobID >= 0)
 		{				
 			_sample_results [jobID] = runBGM(_bgm_data);
-		}
-	}
-	else
-	{
-		
-	}
-}
-
-/* ________________________________________________________________	*/
-
-function handleMPIBGM (_bgm_data, jobID)
-{
-	if (MPI_NODE_COUNT <= 1)
-	{
-		if (jobID >= 0)
-		{				
-			_sample_results [jobID] = runBGM(_bgm_data);
 			fprintf (stdout, "Ancestral sample ", jobID + 1, "\n");
 		}
 	}
@@ -228,7 +177,6 @@ function handleMPIBGM (_bgm_data, jobID)
 					break;
 				}
 			}
-			
 		}
 		doReceive = (jobID < 0) || (mpiNode == MPI_NODE_COUNT-1);
 		if (doReceive)
@@ -250,19 +198,20 @@ function handleMPIBGM (_bgm_data, jobID)
 	return 0;
 }
 
-/* ________________________________________________________________	*/
 
-function runBGM (_bgm_data)
+function runBGM (_bgm_data) 
 {
-	
-	num_nodes			=	Abs (_bgm_data["MAP"]);
+    num_nodes			=	Abs (_bgm_data["MAP"]);
 	num_parents			=	_bgm_data["PARENTS"];
+	num_parents = num_parents$1;
+	
 	branches			=	Rows(_bgm_data["MATRIX"]);
 	
 	BGM_MCMC_DURATION   = _bgm_data ["BGM_MCMC_DURATION"];				 		 
 	BGM_MCMC_BURNIN     = _bgm_data ["BGM_MCMC_BURNIN"];	
 	BGM_MCMC_SAMPLES	= _bgm_data ["BGM_MCMC_SAMPLES"];
 	
+	/* convert data to matrix form */
 	bgm_data_matrix = {branches,num_nodes};
 	
 	for (k = 0; k < num_nodes; k=k+1)
@@ -273,21 +222,27 @@ function runBGM (_bgm_data)
 			bgm_data_matrix[j][k] = (_bgm_data["MATRIX"])[j][i];
 		}
 	}
-
-	discreteNodes   = {};
-	continuousNodes = {};
-
-	/* BGM_NTHREADS = 2; */
-	num_parents = num_parents$1;
-
+	
+    nodes = {};
 	for (k = 0; k < num_nodes; k = k+1)
 	{
-		discreteNodes[Abs(discreteNodes)] = make_discrete_node (k, 0, num_parents);
+	    /* Arguments:
+	        1. node name, must be a string
+	        2. maximum number of parents
+	        3. prior sample size - always uninformative (count split evenly across levels)
+	            - if we were truly Bayesian, we would let the user set informative priors..
+	        4. number of levels - always binary in this case (substitution mapped to branch)
+	    */
+	    node_name = ""+k;
+	    nodes[Abs(nodes)] = add_discrete_node (node_name, num_parents, 0, 2);
 	}
-
-	BGM gen_bgm = 		(discreteNodes, continuousNodes);
-	SetParameter 		(gen_bgm, BGM_DATA_MATRIX, 	 bgm_data_matrix);
-	SetParameter 		(gen_bgm, BGM_WEIGHT_MATRIX, num_nodes);
-	CovarianceMatrix 	(postp, gen_bgm);
-	return				 postp;
+	
+    BayesianGraphicalModel gen_bgm = (nodes);
+    
+    // no imputation of missing data (setting args to 0)
+    attach_data("gen_bgm", bgm_data_matrix, 0, 0, 0);
+    
+    bgm_result = order_MCMC("gen_bgm", BGM_MCMC_DURATION, BGM_MCMC_BURNIN, BGM_MCMC_SAMPLES);
+    
+	return bgm_result;
 }
