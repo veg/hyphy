@@ -7805,6 +7805,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
 
             _Parameter sum  = 0.;
+          
             if (doCachedComp >= 3) {
 #ifdef _UBER_VERBOSE_LF_DEBUG
                 fprintf (stderr, "CACHE compute branch %d\n",doCachedComp-3);
@@ -7825,12 +7826,51 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 #ifdef _OPENMP
             np           = MIN(GetThreadCount(),omp_get_max_threads());
 #endif
-            long sitesPerP    = df->NumberDistinctSites() / np + 1;
+            long sitesPerP    = df->NumberDistinctSites() / np + 1L;
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
                 fprintf (stderr, "NORMAL compute lf \n");
 #endif
-
+          
+            _Parameter* thread_results = new _Parameter[np];
+            #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
+              for (blockID = 0; blockID < np; blockID ++) {
+                thread_results[blockID] = t->ComputeTreeBlockByBranch (*sl,
+                                                    *branches,
+                                                    tcc,
+                                                    df,
+                                                    inc,
+                                                    conditionalTerminalNodeStateFlag[index],
+                                                    ssf,
+                                                    (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                                    overallScalingFactors.lData[index],
+                                                    blockID * sitesPerP,
+                                                    (1+blockID) * sitesPerP,
+                                                    catID,
+                                                    siteRes,
+                                                    scc,
+                                                    branchIndex,
+                                                    branchIndex >= 0 ? branchValues->lData: nil);
+              }
+         
+          
+            if (np > 1) {
+              _Parameter correction = 0.;
+              for (blockID = 0; blockID < np; blockID ++)  {
+                thread_results[blockID] -= correction;
+                _Parameter temp_sum = sum +  thread_results[blockID];
+                correction = (temp_sum - sum) - thread_results[blockID];
+                sum = temp_sum;
+              }
+              
+              
+            } else {
+              sum = thread_results[0];
+              
+            }
+          
+            delete [] thread_results;
+            /*
             #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum) if (np>1)
             for (blockID = 0; blockID < np; blockID ++) {
                 sum += t->ComputeTreeBlockByBranch (*sl,
@@ -7849,7 +7889,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                     scc,
                                                     branchIndex,
                                                     branchIndex >= 0 ? branchValues->lData: nil);
-            }
+            }*/
 
             sum -= _logLFScaler * overallScalingFactors.lData[index];
 

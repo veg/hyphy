@@ -994,18 +994,20 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
     // assemble the entire likelihood
 
     _Parameter _hprestrict_ * rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount);
-    _Parameter                result = 0.0;
+    _Parameter                result = 0.0,
+                              correction = 0.0;
 
 
-    for (long siteID = siteFrom; siteID < siteTo; siteID++) {
+    for (long siteID = siteFrom, rootIndex = 0L; siteID < siteTo; siteID++) {
         _Parameter accumulator = 0.;
+      
         if (setBranch == flatTree.lLength-1) {
             long                rootState = setBranchTo[siteOrdering.lData[siteID]];
-            accumulator      += rootConditionals[rootState] * theProbs[rootState];
-            rootConditionals += alphabetDimension;
+            accumulator         = rootConditionals[rootIndex + rootState] * theProbs[rootState];
+            rootIndex           += alphabetDimension;
         } else
-            for (long p = 0; p < alphabetDimension; p++,rootConditionals++) {
-                accumulator += *rootConditionals * theProbs[p];
+            for (long p = 0; p < alphabetDimension; p++,rootIndex++) {
+                accumulator += rootConditionals[rootIndex] * theProbs[p];
             }
 
         /*#pragma omp critical
@@ -1031,11 +1033,21 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                 }
                 break;
             }
+          
+            _Parameter term,
+                       temp_sum;
+          
             if (theFilter->theFrequencies [siteOrdering.lData[siteID]] > 1) {
-                result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                term = log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
             } else {
-                result += log(accumulator);
+                term = log(accumulator);
             }
+          // Kahan sum
+            term     -= correction;
+            temp_sum = result + term;
+            correction = (temp_sum - result) - term;
+            result = temp_sum;
+          
         }
     }
 
@@ -1481,7 +1493,8 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
 
     _Parameter _hprestrict_ *branchConditionals = cache              + siteFrom * alphabetDimension;
     _Parameter _hprestrict_ *rootConditionals   = branchConditionals + siteCount * alphabetDimension;
-    _Parameter  result = 0.0;
+    _Parameter  result = 0.0,
+                correction = 0.0;
 
 
     //printf ("ComputeLLWithBranchCache @ %d catID = %d branchID = %d\n", likeFuncEvalCallCount, catID, brID);
@@ -1531,11 +1544,16 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
                 }
                 break;
             }
+            _Parameter term;
             if (theFilter->theFrequencies [siteOrdering.lData[siteID]] > 1) {
-                result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                term = log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]] - correction;
             } else {
-                result += log(accumulator);
+                term = log(accumulator) - correction;
             }
+            _Parameter temp_sum = result + term;
+            correction = (temp_sum - result) - term;
+            result = temp_sum;
+          
             //result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
         }
     }
