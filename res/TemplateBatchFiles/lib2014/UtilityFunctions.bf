@@ -12,6 +12,16 @@ function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name
     return data_info;
 }
 
+function utility.readNucleotideAlignment (file_name, dataset_name, datafilter_name) {
+    data_info = io.readNucleotideDataSet (dataset_name, file_name);
+    ExecuteCommands ("DataSetFilter `datafilter_name` = CreateFilter (`dataset_name`,1)");
+    data_info ["sites"] = Eval ("`datafilter_name`.sites");
+    data_info ["dataset"] = dataset_name;
+    data_info ["datafilter"] = datafilter_name;
+    
+    return data_info;
+}
+
 
 function utility.associativeListToJSON(associative_list) {
 
@@ -62,6 +72,10 @@ function utility.callFunction (id, arguments) {
         return Eval ("`id`()");
     } 
     return None;
+}
+
+function utility.array1D (m) {
+    return Rows (m) * Columns (m);
 }
 
 function utility.isFunction (id) {

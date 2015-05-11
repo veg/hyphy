@@ -28,7 +28,7 @@ function frequencies.empirical.corrected.CF3x4 (model, namespace, datafilter) {
     GetDataInfo (_givenAlphabet, *datafilter, "CHARACTERS");
     
  	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", 0);
-	HarvestFrequencies (__f, *datafilter, 3,1,1);
+ 	__f = frequencies._aux.empirical.collect_data (datafilter, 3,1,1);
 	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
     
     __estimates = frequencies._aux.CF3x4 (__f, model["bases"], __alphabet, model["stop"]);
@@ -56,9 +56,45 @@ function frequencies.mle (model, namespace, datafilter) {
 
 //--- AUX FUNCTIONS FROM THIS POINT ON ---//
 
+function frequencies._aux.empirical.character_count (datafilter) {
+    return Eval ("`datafilter`.sites * `datafilter`.species");
+}
+
+function frequencies._aux.empirical.collect_data (datafilter, unit, stride, position_specific) {
+    assert (Type (datafilter) == "Matrix" || Type (datafilter) == "String", 
+        "`datafilter` must be a matrix of a string in call to frequencies._aux.empirical.collect_data"
+    );
+    if (Type (datafilter) == "String") {
+        HarvestFrequencies (__f, *datafilter, unit,stride,position_specific);
+    } else {
+        frequencies._aux.empirical.collect_data.site_count = 0;
+    
+        for (frequencies._aux.empirical.collect_data.i = 0; 
+             frequencies._aux.empirical.collect_data.i < Rows (datafilter) * Columns (datafilter); 
+             frequencies._aux.empirical.collect_data.i += 1) {
+            
+            
+             ExecuteCommands ("HarvestFrequencies (__f, " + datafilter[frequencies._aux.empirical.collect_data.i] + ",unit,stride,position_specific_)");
+             frequencies._aux.empirical.collect_data.local_sites = frequencies._aux.empirical.character_count (datafilter[frequencies._aux.empirical.collect_data.i]);
+             
+             if (frequencies._aux.empirical.collect_data.i) {
+                __f_composite = __f *  frequencies._aux.empirical.collect_data.local_sites;
+             } else {
+                __f_composite += __f *  frequencies._aux.empirical.collect_data.local_sites;
+            
+             }
+             frequencies._aux.empirical.collect_data.site_count += frequencies._aux.empirical.collect_data.local_sites;
+        }            
+        return __f_composite * (1/frequencies._aux.empirical.collect_data.site_count);
+    }
+    
+    return __f;
+}
+
+
 function frequencies._aux.empirical.singlechar (model, namespace, datafilter) {
 	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", 0);
-	HarvestFrequencies (__f, *datafilter, 1,1,1);
+	__f = frequencies._aux.empirical.collect_data (datafilter, 1,1,1);
 	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
 	model[terms.efv_estimate] = __f;
 	return model;

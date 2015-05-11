@@ -80,7 +80,7 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 		
 	utility.callFunction (model.generic.define_model.model ["frequency-estimator"], {"0": "model.generic.define_model.model", 
 													    "1":  parameters.quote(id),
-													    "2":   parameters.quote(data_filter)}); // this sets the EFV field
+													    "2":  parameters.quote(data_filter)}); // this sets the EFV field
 													    
 													  
 													  
@@ -131,9 +131,17 @@ function models.generic.post.definition  (model) {
 //------------------------------------------------------------------------------ 
 
 function models.generic.attachFilter (model, filter) {
+
+    if (Type (filter) == "Matrix") {
+        for (models.generic.attachFilter.i = utility.array1D (filter) - 1; models.generic.attachFilter.i >= 0; models.generic.attachFilter.i = models.generic.attachFilter.i - 1) {
+            models.generic.attachFilter (model, filter[models.generic.attachFilter.i]);
+        }
+        model["data"] = filter;
+        return model;
+    }
+
 	GetDataInfo (_givenAlphabet, *filter, "CHARACTERS");
 	__alphabet = model ["alphabet"];
-
 
 	assert (Columns (__alphabet) == Columns (_givenAlphabet) && model.matchAlphabets (_givenAlphabet, __alphabet), "The declared model alphabet '" + __alphabet + "' does not match the `filter` filter: '" + _givenAlphabet + "'");
 	

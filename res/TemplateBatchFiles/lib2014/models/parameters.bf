@@ -79,7 +79,10 @@ lfunction parameters.mean (values, weights, d) {
 }
 
 function parameters.quote (arg) {
-	return "\"" + arg + "\"";
+    if (Type (arg) == "String") {
+	    return "\"" + arg + "\"";
+    } 
+    return arg;
 }
 
 lfunction parameters.addMultiplicativeTerm (matrix, term, do_empties) {

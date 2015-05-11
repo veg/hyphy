@@ -11,6 +11,17 @@ function io.readCodonDataSet (dataset_name) {
     return {"code": _Genetic_Code, "stop" : GeneticCodeExclusions, "file" : LAST_FILE_PATH, "sequences" : Eval ("`dataset_name`.species")};
 }
 
+function io.readNucleotideDataSet (dataset_name, file_name) {
+    
+    if (Type (file_name) == "String") {
+        ExecuteCommands ("DataSet `dataset_name` = ReadDataFile (`file_name`);");
+    } else {
+        ExecuteCommands ("DataSet `dataset_name` = ReadDataFile (PROMPT_FOR_FILE);");    
+    }
+    
+    return {"sequences" : Eval ("`dataset_name`.species")};
+}
+
 function io.getTreeString (look_for_newick_tree) {
 
     UseModel (USE_NO_MODEL);
@@ -42,6 +53,42 @@ function io.reportProgressMessage (analysis, text) {
 function io.reportProgressMessage (analysis, text) {
     fprintf (stdout, "[`analysis`] `text` \n");
     return None;
+}
+
+function io.validate_a_list_of_files (list) {
+    io.validate_a_list_of_files.result = {};
+    for (io.validate_a_list_of_files.i = 0; io.validate_a_list_of_files.i < Rows(list) * Columns (list); io.validate_a_list_of_files.i += 1) {
+        if (Abs (list[io.validate_a_list_of_files.i])) {
+            io.validate_a_list_of_files.fn = list[io.validate_a_list_of_files.i];
+            io.checkAssertion ("!io.validate_a_list_of_files.fn", "HyPhy cannot open '" + io.validate_a_list_of_files.fn + "' for reading");
+            io.validate_a_list_of_files.result + io.validate_a_list_of_files.fn;
+        }
+    }
+    return io.validate_a_list_of_files.result;
+}
+
+
+function io.get_a_list_of_files (filename) {
+    if (Type (filename) == "String") {
+        if (!filename) { // filename exists
+            fscanf (filename, REWIND, "Lines", io.get_a_list_of_files.list);
+            return io.validate_a_list_of_files (io.get_a_list_of_files.list);
+        }
+    }
+    
+    io.get_a_list_of_files.result = {};
+    io.printAndUnderline ("Enter paths to files (blank line to end entry)", "-");
+    while (1) {
+        fprintf (stdout, "File ", Abs (io.get_a_list_of_files.result) + 1, " [relative path `PATH_TO_CURRENT_BF`]:");
+        io.get_a_list_of_files.current_path = "";
+        fscanf  (stdin,  "String", io.get_a_list_of_files.current_path);
+        if (Abs (io.get_a_list_of_files.current_path)) {
+            io.checkAssertion ("! io.get_a_list_of_files.current_path", "HyPhy cannot open '" + io.get_a_list_of_files.current_path + "' for reading");
+        } else {
+            break;
+        }
+        io.get_a_list_of_files.result + io.get_a_list_of_files.current_path;
+    } 
 }
 
 function io.displayAnalysisBanner (analysis_info) {
