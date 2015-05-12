@@ -487,13 +487,26 @@ _Parameter  _CalcNode::BranchLength (void)
     if (theModel < 0) {
         return Value();
     }
+  
+    {
+      _FString   *stencil = (_FString*)FetchObjectFromVariableByType (&BRANCH_LENGTH_STENCIL,STRING);
 
-    _FString   *stencil = (_FString*)FetchObjectFromVariableByType (&BRANCH_LENGTH_STENCIL,STRING);
-
-    if (stencil && stencil->theString->Equal (&stringSuppliedLengths)) {
-        return Value();
+      if (stencil && stencil->theString->Equal (&stringSuppliedLengths)) {
+          return Value();
+      }
+    }
+    {
+      _AssociativeList *lookup = (_AssociativeList*)FetchObjectFromVariableByType (&BRANCH_LENGTH_STENCIL,ASSOCIATIVE_LIST);
+      if (lookup) {
+        _String lookup_name = ContextFreeName();
+        _Constant * value = (_Constant*)lookup->GetByKey (lookup_name, NUMBER);
+        if (value) {
+          return value->Value();
+        }
+      }
     }
 
+  
 
     _Matrix     *freqMx,
                 *theMx;

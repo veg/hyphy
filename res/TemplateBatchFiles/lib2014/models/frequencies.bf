@@ -7,12 +7,14 @@ function frequencies.equal (model, namespace, datafilter) {
 	__N = Abs (model["alphabet"]);
 	model[terms.efv_estimate]      = {__N,1}["1/__N"];
 	model[terms.efv_estimate_name] = terms.freqs.equal;
+	(model["parameters"])["empirical"] = 0;
 	return model;
 }
 
 function frequencies.empirical.nucleotide (model, namespace, datafilter) {
 	model = frequencies._aux.empirical.singlechar (model, namespace, datafilter);
 	model[terms.efv_estimate_name] = terms.freqs.4x1;
+	(model["parameters"])["empirical"] = 3;
 	return model;
 }
 
@@ -47,6 +49,7 @@ function frequencies.empirical.corrected.CF3x4 (model, namespace, datafilter) {
 	}
 	
 	model[terms.efv_estimate_name] = terms.freqs.CF3x4;	
+	(model["parameters"])["empirical"] = 9;
 	return model;
 }
 
@@ -62,7 +65,7 @@ function frequencies._aux.empirical.character_count (datafilter) {
 
 function frequencies._aux.empirical.collect_data (datafilter, unit, stride, position_specific) {
     assert (Type (datafilter) == "Matrix" || Type (datafilter) == "String", 
-        "`datafilter` must be a matrix of a string in call to frequencies._aux.empirical.collect_data"
+        "`datafilter` must be a matrix or a string in call to frequencies._aux.empirical.collect_data"
     );
     if (Type (datafilter) == "String") {
         HarvestFrequencies (__f, *datafilter, unit,stride,position_specific);
@@ -78,9 +81,9 @@ function frequencies._aux.empirical.collect_data (datafilter, unit, stride, posi
              frequencies._aux.empirical.collect_data.local_sites = frequencies._aux.empirical.character_count (datafilter[frequencies._aux.empirical.collect_data.i]);
              
              if (frequencies._aux.empirical.collect_data.i) {
-                __f_composite = __f *  frequencies._aux.empirical.collect_data.local_sites;
-             } else {
                 __f_composite += __f *  frequencies._aux.empirical.collect_data.local_sites;
+             } else {
+                __f_composite = __f *  frequencies._aux.empirical.collect_data.local_sites;
             
              }
              frequencies._aux.empirical.collect_data.site_count += frequencies._aux.empirical.collect_data.local_sites;

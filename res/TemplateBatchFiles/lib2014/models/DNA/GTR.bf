@@ -12,7 +12,8 @@ function models.DNA.GTR.modelDescription (type) {
     		terms.efv_estimate_name: terms.freqs.4x1,
     		"parameters" : 	{
     				"global" : {}, 
-    				"local" : {}
+    				"local"  : {},
+    				"empirical" : 3
     			},
     		"type" : type,
      		"get-branch-length" : "",

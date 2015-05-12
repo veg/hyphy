@@ -2,6 +2,7 @@ LoadFunctionLibrary ("../models/model_functions.bf");
 LoadFunctionLibrary ("../models/terms.bf");
 LoadFunctionLibrary ("../models/DNA/GTR.bf");
 
+
 function estimators.copyGlobals2 (key, value) {
     (estimators.extractMLEs.results ["global"])[key] = {"ID" : value, "MLE" : Eval (value)};
 }
@@ -60,16 +61,31 @@ function estimators.fixSubsetOfEstimates (estimates, variables) {
     (estimates["global"])["estimators.fixSubsetOfEstimates.helper"]["estimators.fixSubsetOfEstimates.helper_condition"];
 }
 
+function estimators.branch_lengths_in_string.map (id, value) {
+    estimators.branch_lengths_in_string.lookup [id] = value["MLE"];
+}
+
+function estimators.branch_lengths_in_string (tree_id, lookup) {
+    estimators.branch_lengths_in_string.lookup = {};
+    lookup["estimators.branch_lengths_in_string.map"][""];
+    utility.toggleEnvVariable ("BRANCH_LENGTH_STENCIL", estimators.branch_lengths_in_string.lookup);
+    estimators.branch_lengths_in_string.string = Eval ("Format (`tree_id`,1,1)");
+    utility.toggleEnvVariable ("BRANCH_LENGTH_STENCIL", None);
+    return estimators.branch_lengths_in_string.string;
+}
+
+
 function estimators.extractMLEs (likelihood_function_id, model_descriptions) {
     ExecuteCommands ("GetString (estimators.extractMLEs.lfInfo, `likelihood_function_id`,-1)");  
     estimators.extractMLEs.results = {};
-    estimators.extractMLEs.partitions = Rows (estimators.extractMLEs.lfInfo["Trees"]);
+    estimators.extractMLEs.partitions = utility.array1D (estimators.extractMLEs.lfInfo["Trees"]);
    
     // copy global variables first 
     
     estimators.extractMLEs.results ["global"] = {};
     model_descriptions ["estimators.copyGlobals"][""];
     estimators.extractMLEs.results ["branch lengths"] = {};
+    estimators.extractMLEs.results ["Trees"] = estimators.extractMLEs.lfInfo["Trees"];
     
     for (estimators.extractMLEs.i = 0; estimators.extractMLEs.i < estimators.extractMLEs.partitions; estimators.extractMLEs.i  += 1) {
         _tree_name = (estimators.extractMLEs.lfInfo["Trees"])[estimators.extractMLEs.i];
@@ -83,6 +99,10 @@ function estimators.extractMLEs (likelihood_function_id, model_descriptions) {
             ((estimators.extractMLEs.results ["branch lengths"])[estimators.extractMLEs.i])[_branch_name] = 
                 estimators.extractBranchInformation (_tree_name, _branch_name, model_descriptions[estimators.extractMLEs.map[_branch_name]]);
         }   
+        
+        (estimators.extractMLEs.results ["Trees"])[estimators.extractMLEs.i] = 
+            estimators.branch_lengths_in_string ( (estimators.extractMLEs.results ["Trees"])[estimators.extractMLEs.i], 
+                                                (estimators.extractMLEs.results ["branch lengths"])[estimators.extractMLEs.i]);
     }   
     
     return estimators.extractMLEs.results;
@@ -120,6 +140,62 @@ function estimators.applyExistingEstimates (likelihood_function_id, model_descri
     }   
 }
 
+function estimators._aux.countEmpiricalParameters (id, model) {
+    estimators._aux.parameter_counter += (model["parameters"])["empirical"];
+} 
+
+function estimators.fitLF (data_filters_list, tree_list, model_map, initial_values) {
+    estimators.fitLF.component_count = utility.array1D (data_filters_list);
+    
+    assert (estimators.fitLF.component_count == utility.array1D (tree_list), 
+                "Data filters and tree lists must have the same dimensions in call to estimators.fitLF");
+                
+    
+    estimators.fitLF.components = {estimators.fitLF.component_count,2};
+    
+    for (estimators.fitLF.i = 0; estimators.fitLF.i < estimators.fitLF.component_count; estimators.fitLF.i += 1) {
+        estimators.fitLF.components [estimators.fitLF.i][0] = data_filters_list[estimators.fitLF.i];
+        estimators.fitLF.components [estimators.fitLF.i][1] = tree_list[estimators.fitLF.i];
+    }
+    
+    LikelihoodFunction estimators.fitLF.likelihoodFunction = (estimators.fitLF.components);
+
+    if (Type (initial_values) == "AssociativeList") {
+        utility.toggleEnvVariable ("USE_LAST_RESULTS", 1);
+        estimators.applyExistingEstimates ("estimators.fitLF.likelihoodFunction", model_map, initial_values);
+    }
+    
+    /*Export (boom, estimators.fitLF.likelihoodFunction);
+    fprintf (stdout, boom, "\n");
+    assert (0);*/
+    Optimize (estimators.fitLF.mles, estimators.fitLF.likelihoodFunction);
+    if (Type (initial_values) == "AssociativeList") {
+        utility.toggleEnvVariable ("USE_LAST_RESULTS", None);
+    }
+    
+
+
+    estimators.fitLF.results = estimators.extractMLEs ("estimators.fitLF.likelihoodFunction", model_map);
+    
+    estimators._aux.parameter_counter = 0;
+    model_map ["estimators._aux.countEmpiricalParameters"][""];
+    
+    estimators.fitLF.results["LogL"]         = estimators.fitLF.mles[1][0];
+    estimators.fitLF.results["parameters"]   = estimators.fitLF.mles[1][1] + estimators._aux.parameter_counter;
+    estimators.fitLF.results["Filters"]      = {1,estimators.fitLF.component_count};
+    
+    for (estimators.fitLF.i = 0; estimators.fitLF.i < estimators.fitLF.component_count; estimators.fitLF.i += 1) {
+       (estimators.fitLF.results["Filters"])[estimators.fitLF.i] = data_filters_list[estimators.fitLF.i];
+       //(estimators.fitLF.results["Trees"])[estimators.fitLF.i]   = Eval ("Format("+tree_list[estimators.fitLF.i]+",1,1)");
+    }
+
+
+    DeleteObject (estimators.fitLF.likelihoodFunction);
+    
+    return estimators.fitLF.results;
+
+    return ;
+}
 
 function estimators.fitGTR  (data_filter, tree, initial_values) {
 	// create a nucleotide filter first

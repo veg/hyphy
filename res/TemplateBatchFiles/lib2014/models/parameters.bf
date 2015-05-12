@@ -72,7 +72,8 @@ function parameters.set_value (id, value) {
 
 lfunction parameters.mean (values, weights, d) {
     m = 0;
-    for (i = 0; i < 3; i+=1) {
+    d = Rows  (values)*Columns (values);
+    for (i = 0; i < d; i+=1) {
         m += Eval (values[i]) * Eval(weights[i]);
     }
     return m;
@@ -107,6 +108,7 @@ lfunction parameters.addMultiplicativeTerm (matrix, term, do_empties) {
 	
 	return matrix;
 }
+
 
 function parameters.stringMatrixToFormulas (id, matrix) {
 	__N = Rows (matrix);

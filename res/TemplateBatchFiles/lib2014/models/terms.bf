@@ -27,6 +27,11 @@ terms.lf.global.constrained = "Global Constrained";
 terms.synonymous_rate    = "synonymous rate";
 terms.nonsynonymous_rate = "non-synonymous rate";
 terms.omega_ratio        = "non-synonymous/synonymous rate ratio";
+
+terms.rate_variation.bins = "Rate variation bins";
+terms.rate_variation.gamma_alpha = "Shape parameter for the gamma distribution (alpha)";
+terms.rate_variation.gamma_beta  = "Shape parameter for the gamma distribution (beta)";
+terms.rate_variation.gamma_p_inv  = "Estimated proportion of invariant sites";
  
 function  terms.nucleotideRate (fromC, toC) {
 	return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;

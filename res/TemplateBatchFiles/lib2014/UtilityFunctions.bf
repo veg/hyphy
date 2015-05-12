@@ -78,6 +78,18 @@ function utility.array1D (m) {
     return Rows (m) * Columns (m);
 }
 
+
+function utility.json_spool (json, file) {
+    USE_JSON_FOR_MATRIX = 1;
+    if (Type (file) == "String") {
+        fprintf (file, CLEAR_FILE, json);
+    } else {
+        fprintf (stdout, "\n", json, "\n");
+    }
+    USE_JSON_FOR_MATRIX = 0;
+}
+
+
 function utility.isFunction (id) {
 	if (Type (id) == "String" && Abs (id) > 0) {
 		ExecuteCommands ("GetString (__funcInfo, `id`, -1)");
@@ -89,7 +101,7 @@ function utility.isFunction (id) {
 }
 
 function utility.toggleEnvVariable (var, value) {
-	if (value != None) {
+	if (None != value) {
 		utilityFunction.toggleEnvVariable.__stash = Eval (var);
 		*var = value;
 	} else {
