@@ -1,10 +1,11 @@
+LoadFunctionLibrary ("lib2014/IOFunctions.bf");
 VERBOSITY_LEVEL = -1;
 
 SetDialogPrompt ("Please load a nucleotide data file:");
 DataSet 	ds = ReadDataFile (PROMPT_FOR_FILE);
 baselineDSPath = LAST_FILE_PATH;
 
-SetDialogPrompt ("Please load a GA partition analysis result file:");
+SetDialogPrompt ("Please load a GA partition analysis result file (.gard_splits extension):");
 fscanf  (PROMPT_FOR_FILE,REWIND,"Lines",partLines);
 
 readPCount = Columns (partLines)/2-1;
@@ -75,6 +76,8 @@ for (h=0; h<filteredData.sites; h=h+1)
 	}
 }
 
+io.printAndUnderline ("Data summary", "-");
+
 fprintf (stdout, "\nSequences :", filteredData.species,
 				 "\nSites     :", filteredData.sites,
 				 "\nVariable  :", Abs(bppMap), "\n"); 
@@ -119,7 +122,8 @@ m1 = computeMeanDivergence ("givenTree");
 
 fprintf  (stdout, "\nMean divergence : ", m1*100, "%\n");
 
-fprintf  (stdout, "\n\nFitting a single-tree, multiple partition model\n");
+
+io.printAndUnderline ("Fitting a single-tree, multiple partition model", "-");
 
 USE_DISTANCES = 0;
 
@@ -152,7 +156,7 @@ lfDef = "";
 lfDef * 128;
 lfDef  * "LikelihoodFunction multiPart  = (";
 
-fprintf  (stdout, "\n\nFitting a mutilple tree, multiple partition model\n");
+io.printAndUnderline ("Fitting a mutilple tree, multiple partition model", "-");
 
 for (pccounter = 0; pccounter < readPCount; pccounter = pccounter + 1)
 {
@@ -180,8 +184,18 @@ myDF = baseParams + res[1][1];
 
 fullCAIC = -2(res[1][0]-myDF*filteredData.sites/(filteredData.sites-myDF-1));
 
-fprintf  (stdout, "\n\nVersus the single partition model: c-AIC = ", fullCAIC, "\nDelta AIC = ", nullCAIC-fullCAIC,"\n\n");
-fprintf  (stdout, "\n\nVersus the single tree/multiple partition model: Delta AIC = ", intCAIC-fullCAIC,"\n\n");
+
+io.printAndUnderline ("Topological Incongruence Summary", "-");
+
+fprintf  (stdout, "\nGARD vs the single partition model: c-AIC = ", fullCAIC, 
+                    "\nDelta AIC = ", nullCAIC-fullCAIC,
+                    "\nEvidence ratio in favor of the GARD model = ", Exp ((nullCAIC-fullCAIC)*0.5),
+                    "\n");
+                    
+fprintf  (stdout, "\nGARD vs the single tree/multiple partition model",
+                  "\nDelta AIC = ", intCAIC-fullCAIC,
+                  "\nEvidence ratio in favor of the GARD model = ", Exp ((intCAIC-fullCAIC)*0.5),                  
+                  "\n\n");
 
 bpLocations = {readPCount, 1}; 
 for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)
@@ -222,6 +236,8 @@ else
 {
 	cutThreshold		= 2 * OPTIMIZATION_PRECISION;
 }
+
+io.printAndUnderline ("KH Testing", "-");
 
 
 for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)
