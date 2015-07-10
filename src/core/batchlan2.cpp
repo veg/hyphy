@@ -2079,40 +2079,6 @@ bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target
 }
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructNN (_String&source, _ExecutionList&target)
-// syntax: NeuralNet ident = (InMatrix,OutMatrix,HiddenNodes)
-{
-
-    long    mark1 = source.FirstSpaceIndex(0,-1,1),
-            mark2 = source.Find ('=', mark1, -1);
-
-    _String nnID (source, mark1+1,mark2-1);
-
-    if (mark1==-1 || mark2==-1 || mark1+1>mark2-1 || !nnID.IsValidIdentifier(true)) {
-        WarnError ("NeutalNet declaration missing a valid identifier");
-        return false;
-    }
-
-
-    _List pieces;
-
-    mark1 = source.Find ('(',mark2,-1);
-    if (mark1 >= 0) {
-        ExtractConditions (source,mark1+1,pieces,',');
-    }
-
-    if (pieces.lLength != 3) {
-        WarnError ("NeuralNet ident = (InMatrix,OutMatrix,HiddenNodes)");
-        return false;
-    }
-
-    _ElementaryCommand * nn = new _ElementaryCommand (63);
-    nn->parameters  && (&nnID);
-    nn->addAndClean(target,&pieces,0);
-    return true;
-}
-
-//____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 // syntax: BGM ident = (<nodes>)
 {

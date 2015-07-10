@@ -542,7 +542,6 @@ function hbl_functions()
 //MolecularClock
 //MPIReceive
 //MPISend
-//NeuralNet
 //OpenDataPanel
 //OpenWindow
 //Optimize
