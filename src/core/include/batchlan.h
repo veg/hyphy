@@ -365,8 +365,6 @@ public:
 
     static  bool      ConstructSCFG         (_String&, _ExecutionList&);
 
-    static  bool      ConstructNN           (_String&, _ExecutionList&);
-
     static  bool      ConstructBGM          (_String&, _ExecutionList&);
 
     static  bool      ConstructAssert       (_String&, _ExecutionList&);

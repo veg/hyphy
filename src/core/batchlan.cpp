@@ -44,8 +44,6 @@
 #include "polynoml.h"
 #include "time.h"
 #include "scfg.h"
-#include "HYNetInterface.h"
-
 #include "bayesgraph.h"
 
 
@@ -1499,7 +1497,6 @@ _String  blFor                  ("for("),               // moved
          blDeleteObject         ("DeleteObject("),
          blRequireVersion           ("RequireVersion("),
          blSCFG                     ("SCFG "),
-         blNN                       ("NeuralNet "),
          blBGM                      ("BayesianGraphicalModel "),
          blSimulateDataSet          ("SimulateDataSet"),
          blAssert                   ("assert(");
@@ -1728,8 +1725,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
             } else if (currentLine.startswith (blSCFG)) { // SCFG definition
                 _ElementaryCommand::ConstructSCFG (currentLine, *this);
-            } else if (currentLine.startswith (blNN)) { // Neural Net definition
-                _ElementaryCommand::ConstructNN (currentLine, *this);
             } else if (currentLine.startswith (blBGM)) {    // Bayesian Graphical Model definition
                 _ElementaryCommand::ConstructBGM (currentLine, *this);
             } 
@@ -2447,10 +2442,9 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = blRequireVersion & '(' & *converted & ')';
         break;
     }
-    case 61:
-    case 63: {
+    case 61: {
         converted = (_String*)parameters(0)->toStr();
-        result = (code==61?blSCFG:blNN) & *converted & "=(";
+        result = blSCFG & *converted & "=(";
         for (long i=1; i<parameters.lLength; i++) {
             DeleteObject(converted);
             converted = (_String*)parameters(i)->toStr();
@@ -3995,18 +3989,12 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 
     if (parameters.lLength>3) {
         parameterName = (_String*)parameters.lData[3];
-        if (parameterName->Equal(&ModelTrainNNFlag)) {
-            _String arg1 = chain.AddNameSpaceToID(*(_String*)parameters(1));
-            TrainModelNN (&arg0,&arg1);
-            return;
-        } else
-
-            if (parameterName->Equal(&explicitFormMExp)) {
-                doExpressionBased = true;
-                multFreqs         = 0;
-            } else {
-                multFreqs = ProcessNumericArgument (parameterName,chain.nameSpacePrefix);
-            }
+        if (parameterName->Equal(&explicitFormMExp)) {
+            doExpressionBased = true;
+            multFreqs         = 0;
+        } else {
+            multFreqs = ProcessNumericArgument (parameterName,chain.nameSpacePrefix);
+        }
     }
 
     _Matrix*  checkMatrix = nil;
