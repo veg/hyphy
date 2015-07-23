@@ -28,6 +28,7 @@ coreSrcPath = path.join(srcPath, 'core')
 newSrcPath = path.join(srcPath, 'new')
 guiSrcPath = path.join(srcPath, 'gui')
 prefFile = [path.join(guiSrcPath, 'preferences.cpp')]
+
 if sys.version_info >= (3,0,0):
     swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_py3.cpp')]
 else:
@@ -48,11 +49,12 @@ includePaths += [linkPath, contribPath, sqlitePath]
 define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
 
 # openmp on Mac OS X Lion is broken
-openmp = ['-fopenmp'] if mac_ver()[0] < '10.7.0' else []
+major, minor, patch = mac_ver()[0].split('.')
+openmp = ['-fopenmp'] if int(major) < 10 or (int(major) == 10 and int(minor) < 7) else []
 
 setup(
     name = 'HyPhy',
-    version = '0.1',
+    version = '0.1.1',
     description = 'HyPhy package interface library',
     author = 'Sergei L Kosakovsky Pond',
     author_email = 'spond@ucsd.edu',
