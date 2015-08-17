@@ -11420,7 +11420,7 @@ _String _TreeTopology::MatchTreePattern (_TreeTopology* compareTo)
 
                         if (sacLamb->parent->get_num_nodes()==1) {
                             DeleteObject((BaseRef)sacLamb->parent->in_object);
-                            sacLamb->parent->in_object = nil;
+                            sacLamb->parent->in_object = 0L;
                         }
 
                         sacLamb->parent->detach_child (sacLamb->get_child_num());

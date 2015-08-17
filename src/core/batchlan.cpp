@@ -750,7 +750,7 @@ void KillLFRecord (long lfID, bool completeKill)
 
         if (lfID<likeFuncList.lLength-1) {
             DeleteObject(likeFuncList(lfID));
-            likeFuncList.lData[lfID] = nil;
+            likeFuncList.lData[lfID] = 0L;
             likeFuncNamesList.Replace(lfID,&empty,true);
         } else {
             likeFuncList.Delete(lfID);
