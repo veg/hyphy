@@ -354,7 +354,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
     Optimize                      (res, stepupLF);
     
     test_IC = getIC (res[1][0], current_parameter_count + 2 + doSynRateVariation, sample_size);
-    fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", Format(res[1][0],8,3), ", IC = ", Format (test_IC,8,3), "\n\t2 rate clases\n\t");
+    fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", Format(res[1][0],8,3), ", IC = ", Format (test_IC,8,3), "\n\t2 rate classes\n\t");
     printNodeDesc ("mixtureTree.`local_branch_name`", 2);
     
     while (test_IC < current_IC || oldBSREL && accepted_rates_count < 3 || useExistingModelSpec && tree_info_map[local_branch_name] > accepted_rates_count) {
@@ -400,7 +400,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
         
         Optimize                      (res, stepupLF);
         test_IC = getIC (res[1][0], current_parameter_count + 2 + doSynRateVariation, sample_size);
-        fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], ", IC = ", test_IC, "\n\t", accepted_rates_count+1, " rate clases\n\t");
+        fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], ", IC = ", test_IC, "\n\t", accepted_rates_count+1, " rate classes\n\t");
         printNodeDesc ("mixtureTree.`local_branch_name`", accepted_rates_count + 1);
 
     }
