@@ -39,6 +39,7 @@
 
 
 #include "bayesgraph.h"
+#include "function_templates.h"
 
 #ifdef __HYPHYQT__
     #include "hyphymain.h"

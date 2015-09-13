@@ -40,6 +40,7 @@
 #include      "likefunc.h"
 #include      "scfg.h"
 #include      <ctype.h>
+#include      "function_templates.h"
 
 #include      "bayesgraph.h"
 
@@ -812,6 +813,7 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
             }
             ob = lf->ConstructCategoryMatrix(partsToDo,runMode,true, &resultID);
         }
+        DeleteObject (partitionList);
     } else {
         _TheTree * testTree = (_TheTree*) FetchObjectFromVariableByType (&objectName, TREE);
         if (testTree) {

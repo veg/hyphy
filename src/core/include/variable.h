@@ -132,7 +132,7 @@ public:
     _String     ContextFreeName                 (void);
     _String     ParentObjectName                 (void);
  
-    _String*    GetName                         (void) {
+    _String*    GetName                         (void) const{
         return theName;
     }
     _String*    GetFormulaString        (void) {

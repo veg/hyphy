@@ -156,14 +156,15 @@ long    _CString::FreeUpMemory(long)
 // append operator
 void _CString::Finalize (void)
 {
+  
     sData = MemReallocate (sData,sLength+1);
 
     if (!sData) {
         warnError(-108);
+    } else {
+      sData[sLength]=0;
+      allocatedSpace = 0;
     }
-
-    sData[sLength]=0;
-    allocatedSpace = 0;
 }
 
 //_______________________________________________________________________
@@ -174,11 +175,11 @@ void _CString::operator << (char c)
         unsigned long incBy = ((storageIncrement*8 > sLength)? storageIncrement: (sLength/8+1));
 
         allocatedSpace+=incBy;
-
         sData = (char*)MemReallocate((char*)sData, allocatedSpace*sizeof(char));
 
         if (!sData) {
             checkPointer (sData);
+            return;
         }
     }
 
@@ -564,7 +565,7 @@ _String*    _CString::DecompressFrequency(void)
 }
 
 //_________________________________________________________
-inline unsigned int     ToLZWCode (long l)
+inline unsigned long     ToLZWCode (long l)
 {
     return (l>127)?l|0x8000:l;
 }
@@ -574,7 +575,7 @@ inline unsigned int     ToLZWCode (long l)
 
 _Parameter      _CString::LZWCompress (unsigned char theAlpha)
 {
-    _List theTable;
+    _List       theTable;
     _SimpleList theCodes;
 
     _String* theAlphabet = SelectAlpha (theAlpha);

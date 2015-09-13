@@ -53,6 +53,8 @@
 #include "avllistx.h"
 #include "avllistxl.h"
 
+#include "function_templates.h"
+
 #ifdef    __HYPHYDMALLOC__
     #include "dmalloc.h"
 #endif
@@ -2955,13 +2957,14 @@ void        _Matrix::FillInList (_List& fillMe, bool doNumeric)
                 _Formula * entryFla = GetFormula(r,c);
                 if (entryFla) {
                     _PMathObj computedValue = entryFla->Compute();
-                    if (computedValue)
-                        if (computedValue->ObjectClass() == STRING) {
-                            fillMe && ((_FString*)computedValue)->theString;
-                        } else {
-                            fillMe.Clear();
-                            return;
-                        }
+                    if (computedValue) {
+                          if (computedValue->ObjectClass() == STRING) {
+                              fillMe && ((_FString*)computedValue)->theString;
+                          } else {
+                              fillMe.Clear();
+                              return;
+                          }
+                    }
                 }
             }
     else {

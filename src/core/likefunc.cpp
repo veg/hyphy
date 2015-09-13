@@ -50,6 +50,7 @@
 #include "site.h"
 #include "batchlan.h"
 #include "category.h"
+#include "function_templates.h"
 
 
 #ifdef __WINDOZE__
@@ -4663,7 +4664,7 @@ DecideOnDivideBy (this);
             if (verbosityLevel>5) {
                 snprintf (buffer, sizeof(buffer),"\nAverage Variable Change: %g %g %g %g %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
                 BufferToConsole (buffer);
-                snprintf (buffer, sizeof(buffer),"\nDiff: %g, Precision: %16.12g, termFactor: %d", maxSoFar-lastMaxValue, precision, termFactor);
+                snprintf (buffer, sizeof(buffer),"\nDiff: %g, Precision: %16.12g, termFactor: %ld", maxSoFar-lastMaxValue, precision, termFactor);
                 BufferToConsole (buffer);
                 snprintf (buffer, sizeof(buffer),"\nSmoothing term: %g", smoothingTerm);
                 BufferToConsole (buffer);
@@ -5761,18 +5762,20 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  
                            lb            = currentValue-GetIthIndependentBound(index,true),
                            testStep    = MAX(currentValue * gradientStep,gradientStep);
 
-                if (testStep >= ub)
-                    if (testStep < lb) {
-                        testStep = -testStep;
-                    } else if (ub > lb) {
-                        testStep = ub;
-                    } else if (lb >= ub)
-                        if (lb == 0.) {
-                            testStep = 0.;
-                        } else {
-                            testStep = -lb;
-                        }
+                if (testStep >= ub) {
+                  if (testStep < lb) {
+                    testStep = -testStep;
+                  } else {
+                    if (ub > lb) {
+                      testStep = ub;
+                    } else {
+                      if (lb >= ub)
+                        testStep = lb == 0. ? 0. : -lb;
+                    }
+                  }
+                }
 
+              
                 if (testStep) {
                     SetIthIndependent(index,currentValue+testStep);
                     gradient[index]=(Compute()-funcValue)/testStep;

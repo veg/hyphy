@@ -43,6 +43,7 @@
 #include "calcnode.h"
 #include "scfg.h"
 #include "parser.h"
+#include "function_templates.h"
 
 #include "category.h"
 #include "batchlan.h"
@@ -865,7 +866,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     _Matrix * myModelMatrix = GetModelMatrix(queue,tags); 
     
     if (isExplicitForm && !myModelMatrix) { // matrix exponentiations got cached
-        if (queue->lLength > previous_length) {
+        if (queue && queue->lLength > previous_length) {
             return true;
         } else {
             WarnError ("Internal error");
@@ -10554,23 +10555,19 @@ long    _TheTree::ComputeReleafingCost (_DataSetFilter* dsf, long firstIndex, lo
 
 //_______________________________________________________________________________________________
 
-void    _TheTree::MarkMatches (_DataSetFilter* dsf, long firstIndex, long secondIndex)
-{
-
-    long n = 0,f;
-
+void    _TheTree::MarkMatches (_DataSetFilter* dsf, long firstIndex, long secondIndex) {
+ 
     _CalcNode* travNode ;
 
-    for (n = 0; n<flatLeaves.lLength; n++) {
-        travNode = (_CalcNode*)(((BaseRef*)flatCLeaves.lData)[n]);
+    for (unsigned long n = 0; n<flatLeaves.lLength; n++) {
         if (!dsf->CompareTwoSites(firstIndex,secondIndex,n)) {
             node <long>* theTreeNode = ((node <long>*)(flatLeaves.lData[n]))->parent;
             _CalcNode* cN = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theTreeNode->in_object]);
             cN->cBase = -1;
         }
     }
-    n = 0;
-    for (f=0; f<flatTree.lLength; f++) {
+  
+    for (unsigned long f=0; f<flatTree.lLength; f++) {
         travNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[f]);
         if (travNode->cBase == -1) {
             node <long>* theTreeNode = ((node <long>*)(flatNodes.lData[f]))->parent;
@@ -10580,7 +10577,7 @@ void    _TheTree::MarkMatches (_DataSetFilter* dsf, long firstIndex, long second
             }
         }
     }
-    for (f=0; f<flatTree.lLength; f++) {
+    for (unsigned long f=0; f<flatTree.lLength; f++) {
         travNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[f]);
         if (travNode->cBase != -1) {
             travNode->lastState = -2;
@@ -10691,8 +10688,6 @@ void    _TheTree::DumpingOrder (_DataSetFilter* dsf, _SimpleList& receptacle)
         }
 
         // now compute the cost
-
-        theCost = 0;
 
         for (long i=0; i<flatTree.lLength; i++) {
             travNode = (_CalcNode*)flatTree (i);

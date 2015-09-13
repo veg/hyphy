@@ -38,6 +38,8 @@
  */
 
 #include    "scfg.h"
+#include "function_templates.h"
+
 
 #ifdef      _USE_HYPHY_HOOKS_
 

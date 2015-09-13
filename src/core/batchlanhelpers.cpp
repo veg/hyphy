@@ -213,9 +213,11 @@ bool    ExpressionCalculator (void)
 
 bool    PushFilePath (_String& pName, bool trim)
 {
-    char c = GetPlatformDirectoryChar();
-
-    long    f = pName.FindBackwards(_String(c),0,-1);
+    _String dir_sep (GetPlatformDirectoryChar());
+  
+    pName.ProcessFileName();
+  
+    long    f = pName.FindBackwards(dir_sep,0,-1);
     if (f>=0) {
         _String newP = pName.Cut(0,f);
         pathNames && & newP;

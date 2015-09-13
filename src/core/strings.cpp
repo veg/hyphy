@@ -69,7 +69,7 @@
 #define MOD_ADLER 65521
 
 _String   compileDate = __DATE__,
-          __KERNEL__VERSION__ = _String ("2.2") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+          __HYPHY__VERSION__ = _String ("2.26") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
                                                                                                   Replace("Mar", "03", true).
                                                                                                   Replace("Apr", "04", true).
@@ -1997,7 +1997,8 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
     }
 #endif
 
-#if defined __WINDOZE__ || defined __MINGW32__ // WIN/DOS code
+#if defined __WINDOZE__ || defined __MINGW32__ // WIN/DOS code'
+  
     if (Find('/')!=-1) { // UNIX PATH
         if (getChar(0)=='/') {
             Trim(1,-1);
@@ -2014,7 +2015,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
         }
     }
 
-    if (Find(':')==-1 && Find("\\\\",0,1)==-1) { // relative path
+  if (Find(':') < 0 && Find("\\\\",0,1)==-1) { // relative path
 
         if (pathNames.lLength) {
             _String* lastPath = (_String*)pathNames(pathNames.lLength-1);
@@ -2041,7 +2042,9 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
 
     }
 
-    _String escapedString (sLength, true);
+
+
+   _String escapedString (sLength, true);
     for (long stringIndex = 0; stringIndex < sLength; stringIndex ++) {
         char currentChar = getChar (stringIndex);
         //char b[256];
@@ -2206,8 +2209,7 @@ char GetPlatformDirectoryChar (void)
     char c = '/';
 #ifdef __MAC__
     c = ':';
-#endif
-#if defined __WINDOZE__ || defined __MINGW32__
+#elif defined __WINDOZE__ || defined __MINGW32__
     c = '\\';
 #endif
 
@@ -2216,7 +2218,7 @@ char GetPlatformDirectoryChar (void)
 
 _String GetVersionString (void)
 {
-    _String theMessage = _String("HYPHY ")&__KERNEL__VERSION__;
+    _String theMessage = _String("HYPHY ")&__HYPHY__VERSION__;
 #ifdef __MP__
     theMessage = theMessage & "(MP)";
 #endif

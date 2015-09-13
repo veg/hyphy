@@ -481,7 +481,7 @@ _PMathObj _FString::RerootTree (void)
     }
 
     _CalcNode   *iterator = rTree.DepthWiseTraversal (true),
-                 *rerootAt;
+                *rerootAt = nil;
 
     node<long>  *cNode;
 
@@ -533,7 +533,7 @@ _PMathObj _FString::RerootTree (void)
             nodeMin = 1;
         }
 
-        if ((nodeMin>maxMin)||((nodeMin==maxMin)&&(thisRatio>bRatio))) {
+        if (nodeMin>maxMin || (nodeMin==maxMin && thisRatio>bRatio)) {
             bRatio = thisRatio;
             maxMin = nodeMin;
             rerootAt = iterator;

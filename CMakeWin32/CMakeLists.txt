@@ -113,6 +113,13 @@ if (${HAZ_NSIS} MATCHES ".+makensis$")
 		POST_BUILD
 		COMMAND makensis ${CMAKE_CURRENT_SOURCE_DIR}/../installers/Win/hyphy.nsi
 		)
+
+	add_custom_command(
+		TARGET HYPHY-CLI.EXE
+		POST_BUILD
+		COMMAND makensis ${CMAKE_CURRENT_SOURCE_DIR}/../installers/Win/hyphy-cli.nsi
+		)
+
 endif (${HAZ_NSIS} MATCHES ".+makensis$")
 
 
@@ -133,9 +140,9 @@ set_target_properties(
 set_target_properties(
 	HYPHY-CLI.EXE
 	PROPERTIES
-	COMPILE_DEFINITIONS "__UNIX__;__HYPHY_NO_CURL__;"
+	COMPILE_DEFINITIONS "__UNIX__;__HYPHY_NO_CURL__;__MINGW32__;"
 	COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} "
-	LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} "
+	LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}"
 	LINKER_LANGUAGE CXX
 	# WIN32_EXECUTABLE TRUE
 )

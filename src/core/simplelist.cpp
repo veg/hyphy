@@ -717,6 +717,7 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
 
         if (!lData) {
             checkPointer (lData);
+            return;
         }
     }
     if (insertAt==-1) {

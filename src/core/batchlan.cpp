@@ -45,6 +45,7 @@
 #include "time.h"
 #include "scfg.h"
 #include "bayesgraph.h"
+#include "function_templates.h"
 
 
 //#include "profiler.h"
@@ -474,13 +475,14 @@ _PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* th
 
     _Formula  expressionProcessor (*expression, theP, currentProgram?&errMsg:nil);
     
-    if (errMsg.sLength) {
+    if (errMsg.sLength && currentProgram) {
         currentProgram->ReportAnExecutionError (errMsg);
     }
     else {
         _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
         if (expressionResult && expressionResult->ObjectClass()==objectType) {
-            return (_PMathObj)expressionResult->makeDynamic();
+          expressionResult->AddAReference();
+          return expressionResult;
         }
     }
     
@@ -492,18 +494,12 @@ _PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* th
 
 _String ProcessLiteralArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram)
 {
-    _String   errMsg;
-    
-    _Formula  expressionProcessor (*data, theP, currentProgram?&errMsg:nil);
-    
-    if (errMsg.sLength) {
-        currentProgram->ReportAnExecutionError (errMsg);
-    }
-    else {
-        _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
-        if (expressionResult && expressionResult->ObjectClass()==STRING) {
-            return *((_FString*)expressionResult)->theString;
-        }
+    _PMathObj getString = ProcessAnArgumentByType (data, theP, STRING, currentProgram);
+  
+    if (getString) {
+      _String result (*((_FString*)getString)->theString);
+      DeleteObject(getString);
+      return result;
     }
     
     return empty;
@@ -511,20 +507,8 @@ _String ProcessLiteralArgument (_String* data, _VariableContainer* theP, _Execut
 
 //____________________________________________________________________________________
 
-_AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram)
-{
-    _String   errMsg;
-    _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
-    if (errMsg.sLength && currentProgram) {
-        currentProgram->ReportAnExecutionError (errMsg);
-    } else {
-        _PMathObj formRes = nameForm.Compute();
-        if (formRes && formRes->ObjectClass()==ASSOCIATIVE_LIST) {
-            formRes->AddAReference();
-            return (_AssociativeList*)formRes;
-        }
-    }
-    return nil;
+_AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram) {
+  return (_AssociativeList* )ProcessAnArgumentByType (data, theP, ASSOCIATIVE_LIST, currentProgram);
 }
 
 
@@ -1570,11 +1554,11 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                
         switch (prefixTreeCode) {
             case HY_HBL_COMMAND_FOR:
-                _ElementaryCommand::BuildFor (currentLine, *this, *pieces);
+                _ElementaryCommand::BuildFor (currentLine, *this, pieces);
                 handled = true;
                 break;
             case HY_HBL_COMMAND_WHILE:
-                _ElementaryCommand::BuildWhile (currentLine, *this, *pieces);
+                _ElementaryCommand::BuildWhile (currentLine, *this, pieces);
                 handled = true;
                 break;
             case HY_HBL_COMMAND_BREAK:
@@ -2039,7 +2023,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
     case 16: // data set merger
         converted = (_String*)parameters(0)->toStr();
         result = _String("Build dataset")&(*converted)&_String(" by ");
-        if (abs(simpleParameters(0)==1)) {
+        if (labs(simpleParameters(0))==1) {
             result = result & _String (" concatenating ");
         } else {
             result = result & _String (" combining ");
@@ -2722,6 +2706,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                 DeleteObject (likelihoodFunctionSpec);
                 likelihoodFunctionSpec = nil;
             }
+            DeleteObject (matrixOfStrings);
         }
         if (likelihoodFunctionSpec == nil) {
             WarnError (_String("Not a valid string matrix object passed to a _LikelihoodFunction constructor: ") & *(_String*)parameters(1));
@@ -3008,6 +2993,7 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
         }
         StoreADataSet  (ds, dsName);
         DeleteObject   (dsName);
+        DeleteObject   (partitionList);
     } else {
         objectID    =   FindSCFGName       (name2lookup);
         if (objectID>=0)
@@ -3038,7 +3024,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
     } else {
         _String filePath = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix),
                 originalPath = filePath;
-
+      
+      
 
         FILE * commandSource = nil;
         
@@ -6246,7 +6233,7 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
 //____________________________________________________________________________________
 
 
-bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target,  _List & pieces)
+bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target,  _List * pieces)
 
 // the for loop becomes this:
 // initialize
@@ -6257,14 +6244,20 @@ bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target, 
 // goto if(condition)
 
 {
-    return MakeGeneralizedLoop ((_String*)pieces(0),(_String*)pieces(1),(_String*)pieces(2),true,source,target);
+  if (pieces)
+    return MakeGeneralizedLoop ((_String*)pieces->GetItem(0),(_String*)pieces->GetItem(1),(_String*)pieces->GetItem(2),true,source,target);
+  else
+    return MakeGeneralizedLoop (nil,nil,nil,true,source,target);
 }
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::BuildWhile          (_String&source, _ExecutionList&target,  _List &pieces)
+bool    _ElementaryCommand::BuildWhile          (_String&source, _ExecutionList&target,  _List * pieces)
 {
-    return MakeGeneralizedLoop (nil,(_String*)pieces(0),nil,true,source,target);
+    if (pieces)
+      return MakeGeneralizedLoop (nil,(_String*)pieces->GetItem(0),nil,true,source,target);
+    else
+      return MakeGeneralizedLoop (nil,nil,nil,true,source,target);
 }
 
 //____________________________________________________________________________________

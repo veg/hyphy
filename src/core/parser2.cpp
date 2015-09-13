@@ -51,6 +51,8 @@
 #include "float.h"
 #include "batchlan.h"
 #include "category.h"
+#include "function_templates.h"
+
 
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
@@ -1574,22 +1576,6 @@ long     VerbosityLevel (void)
     return verbosityLevel;
 }
 
-//__________________________________________________________________________________
-void  checkParameter (_String& name, _Parameter& dest, _Parameter def, _VariableContainer* theP)
-{
-    long f;
-    if (theP) {
-        _String ppn = *theP->GetName() & '.' & name;
-        f = LocateVarByName(ppn);
-    } else {
-        f = LocateVarByName (name);
-    }
-    if (f<0) {
-        dest = def;
-    } else {
-        dest = FetchVar(f)->Value();
-    }
-}
 
 //__________________________________________________________________________________
 void  stashParameter (_String& name, _Parameter v, bool set)

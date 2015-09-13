@@ -43,6 +43,7 @@
 #include "formula.h"
 
 #include "parser.h"
+#include "function_templates.h"
 
 //Constants
 extern _Parameter twoOverSqrtPi;
@@ -69,8 +70,8 @@ extern _Parameter tolerance;
 extern _String intPrecFact;
 extern _String intMaxIter;
 
-_Parameter      maxRombergSteps = 8.,
-                integrationPrecisionFactor = 1.e-5;
+#define         maxRombergSteps  8
+#define         integrationPrecisionFactor  1.e-5
 
 _Formula::_Formula (void)
 {
@@ -607,88 +608,91 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramet
 // find a root of the formulaic expression, using Newton's method, given the derivative and a bracketed root.
 // will alternate between bisections and Newton iterations based on what is fatser
 {
-    // check that there is indeed a sign change on the interval
-    _Constant   dummy;
-    _Parameter  t1,t2,t3,t4,t5,lastCorrection = 100., newCorrection;
-    _String     msg;
-    long        iterCount = 0;
-    dummy.SetValue (left);
-    unknown->SetValue(&dummy);
-    t1 = Compute()->Value()-targetValue;
-    if (t1==0.0) {
-        return left;
-    }
-    dummy.SetValue (right);
-    unknown->SetValue(&dummy);
-    t2 = Compute()->Value()-targetValue;
-    if (t2==0) {
-        return right;
-    }
-    if (t1*t2>0.0) {
-        subNumericValues = 2;
-        _String *s = (_String*)toStr();
-        subNumericValues = 0;
-        _String msg = *s&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)";
-        ReportWarning (msg);
-        DeleteObject (s);
-        return    left;
-    }
-    // else all is good we can start the machine
-    bool useNewton = false;
-    while ((fabs((right-left)/MAX(left,right))>machineEps*10.)&&(iterCount<200)) { // stuff to do
-        iterCount ++;
-        if (!useNewton) {
-            t3 = (right+left)/2;
+  // check that there is indeed a sign change on the interval
+  _Parameter    func_left, func_right, // keeps track of function values in the current interval, [left,right]
+  root_guess, func_root_guess,
+  lastCorrection = 100.,
+  newCorrection;
+  
+  
+  unknown->SetNumericValue(left);
+  func_left = Compute()->Value()-targetValue;
+  if (func_left==0.0) {
+    return left;
+  }
+  unknown->SetNumericValue(right);
+  func_right = Compute()->Value()-targetValue;
+  if (func_right==0.0) {
+    return right;
+  }
+  
+  if (func_left*func_right>0.0) { // bracket fail
+    subNumericValues = 2;
+    _String *s = (_String*)toStr();
+    subNumericValues = 0;
+    ReportWarning (*s&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
+    DeleteObject (s);
+    return    left;
+  }
+  // else all is good we can start the machine
+  bool useNewton = false;
+  
+  root_guess = (right+left) * .5;
+  
+  for (unsigned long iterCount  = 0L; iterCount < 200UL; iterCount++) {
+    if ( fabs(right-left)/MAX(left,right) > machineEps*10. ) { // stuff to do
+      
+      unknown->SetNumericValue(root_guess);
+      func_root_guess = Compute()->Value()-targetValue;
+      if (func_root_guess == 0.) {
+        return root_guess;
+      }
+      // get the correction term from the derivative
+      _Parameter df_dx = derivative.Compute()->Value(),
+      adjusted_root_guess;
+      
+      useNewton = true;
+      if (df_dx==0.0) {
+        useNewton = false;
+      } else {
+        newCorrection = -func_root_guess/df_dx;
+        
+        if (fabs(newCorrection/func_root_guess)<machineEps*2. || fabs(newCorrection)<machineEps*2.) { // correction too small - the root has been found
+            return root_guess;
         }
-        dummy.SetValue(t3);
-        unknown->SetValue(&dummy);
-        t4 = Compute()->Value()-targetValue;
-        // get the correction term from the derivative
-        dummy.SetValue(t3);
-        unknown->SetValue(&dummy);
-        t5 = derivative.Compute()->Value();
-        useNewton = true;
-        if (t5==0.0) {
-            useNewton = false;
+        
+        if (fabs(newCorrection/lastCorrection)>4.) { // Newton correction too large - revert to bisection
+          useNewton = false;
+        }
+        
+        adjusted_root_guess = root_guess +newCorrection;
+        if (adjusted_root_guess<=left || adjusted_root_guess >=right) {
+          useNewton = false;
         } else {
-            newCorrection = -t4/t5;
-            if (t3) {
-                if (fabs(newCorrection/t3)<machineEps*2.) { // correction too small - the root has been found
-                    return t3;
-                }
-            } else if (fabs(newCorrection)<machineEps*2.) { // correction too small - the root has been found
-                return t3;
-            }
-            if (fabs(newCorrection/lastCorrection)>4) { // Newton correction too large - revert to bisection
-                useNewton = false;
-            }
-            t5 = t3+newCorrection;
-            if ((t5<=left)||(t5>=right)) {
-                useNewton = false;
-            } else {
-                lastCorrection = newCorrection;
-            }
+          lastCorrection = newCorrection;
         }
-        if (useNewton) {
-            t3 = t5;
+      }
+      
+      if (useNewton) {
+        root_guess = adjusted_root_guess;
+      } else {
+        if (func_root_guess==0.0) {
+          return root_guess;
+        }
+        if (func_root_guess*func_left > 0.0) { // move to the right half
+          func_left   = func_root_guess;
+          left  = root_guess;
         } else {
-            dummy.SetValue(t3);
-            unknown->SetValue(&dummy);
-            t4 = Compute()->Value()-targetValue;
-            if (t4==0.0) {
-                return t3;
-            }
-            if (t4*t1 >0) {
-                t1 = t4;
-                left = t3;
-            } else {
-                t2 = t4;
-                right = t3;
-            }
+          right = root_guess;
         }
-
+        root_guess = (right+left) * .5;
+      }
+      
+    } else {
+      break;
     }
-    return t3;
+  }
+  return root_guess;
 }
 
 
@@ -1115,9 +1119,12 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
             return Integral(dx,left,right1,false);
         }
     }
-
-    checkParameter(intPrecFact,integrationPrecisionFactor,1e-4);
-    checkParameter(intMaxIter,maxRombergSteps,8);
+  
+    _Parameter       localPrecisionFactor;
+    long             localIntegrationLoops;
+  
+    checkParameter (intPrecFact,localPrecisionFactor,integrationPrecisionFactor);
+    checkParameter (intMaxIter, localIntegrationLoops,maxRombergSteps);
 
     _Parameter ss,
                dss,
@@ -1126,8 +1133,6 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
 
     s = new _Parameter [(long)maxRombergSteps];
     h = new _Parameter [(long)(maxRombergSteps+1)];
-    checkPointer(s);
-    checkPointer(h);
 
     h[0]=1.0;
 
@@ -1150,9 +1155,7 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
 
     if (AmISimple (stackDepth,fvidx)) {
         stack = new _SimpleFormulaDatum [stackDepth];
-        checkPointer (stack);
         vvals = new _SimpleFormulaDatum [fvidx.lLength];
-        checkPointer (vvals);
         ConvertToSimple (fvidx);
         stackDepth = dx->GetAVariable();
         for (long vi = 0; vi < fvidx.lLength; vi++) {
@@ -1195,8 +1198,8 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
 
     if (stackDepth>=0) {
         ConvertFromSimple(fvidx);
-        delete (stack);
-        delete (vvals);
+        delete [] stack;
+        delete [] vvals;
     }
     _String *str = (_String*)toStr(),
              msg = _String("Integral of ")&*str & " over ["&_String(left)&","&_String(right)&"] converges slowly, loss of precision may occur. Change either INTEGRATION_PRECISION_FACTOR or INTEGRATION_MAX_ITERATES";
@@ -1204,10 +1207,10 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
     DeleteObject (str);
     ReportWarning (msg);
 
-    delete s;
-    delete h;
-    delete ic;
-    delete id;
+    delete [] s;
+    delete [] h;
+    delete [] ic;
+    delete [] id;
     return ss;
 }
 

@@ -37,12 +37,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "likefunc.h"
-#include <math.h>
-
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
+
+#include "likefunc.h"
+#include "function_templates.h"
+
+#include <math.h>
+
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
 

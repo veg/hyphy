@@ -328,9 +328,8 @@ _PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
     }
 
 #endif
-    a1 = snprintf    (buffer,256, format,Value());
-    _String    t (buffer);
-    return     new _FString (t);
+    snprintf    (buffer,256, format,Value());
+    return     new _FString (new _String (buffer));
 }
 //__________________________________________________________________________________
 _PMathObj _Constant::Log (void)

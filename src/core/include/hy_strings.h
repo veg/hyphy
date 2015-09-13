@@ -964,7 +964,7 @@ _String*StringFromConsole           (bool=true);
 char    GetPlatformDirectoryChar    (void);
 
 
-extern  _String                     __KERNEL__VERSION__;
+extern  _String                     __HYPHY__VERSION__;
 
 #ifdef __UNIX__
 	extern bool	needExtraNL;

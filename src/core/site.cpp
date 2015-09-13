@@ -37,15 +37,17 @@
  
  */
 
+#define  HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
+#define   DATA_SET_SWITCH_THRESHOLD     100000
+
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 
-#define  HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
 
 #include "likefunc.h"
+#include "function_templates.h"
 
-#define   DATA_SET_SWITCH_THRESHOLD     100000
 
 #include "math.h"
 
