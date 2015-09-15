@@ -296,7 +296,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
         currentTreeNode = isLeaf? (((_CalcNode**) flatCLeaves.lData)[nodeID]):
                           (((_CalcNode**) flatTree.lData)  [nodeID - flatLeaves.lLength]);
 
-        if (currentTreeNode->NeedToExponentiate (catID)) {
+        if (currentTreeNode->NeedNewCategoryExponential (catID)) {
             if (expNodes) {
                 (*expNodes) << currentTreeNode;
                 //printf ("EXP>%s\n", currentTreeNode->GetName()->sData);

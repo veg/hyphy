@@ -253,7 +253,7 @@ void    WriteBitsToString (_String&s, long& bitAt, char lengthToWrite)
 {
     long leftOver = 8-bitAt%8, curPos = bitAt/8;
     if (leftOver >= lengthToWrite) { // will fit in current byte
-        unsigned char value = (unsigned char)s[curPos];
+        unsigned char value = s.getUChar(curPos);
         value += powersOf2[leftOver-1]-powersOf2[leftOver-lengthToWrite];
         s[curPos]=value;
     } else {
@@ -317,8 +317,9 @@ _Parameter      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
 {
 
     _String* theAlphabet = SelectAlpha (theAlpha);
-    if ((*theAlphabet).sLength>31) {
-        return 1;    // can't do much - the alphabet is too large
+  
+    if (theAlphabet->sLength>31) {
+        return 1.;    // can't do much - the alphabet is too large
     }
     char codeLength[256];
     long freqs [256],j,t;
@@ -332,12 +333,12 @@ _Parameter      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
 
 
     for (j=0; j<sLength; j++) {
-        freqs[sData[j]]++;
+        freqs[getUChar(j)]++;
     }
 
     t = 0;
     for (j=0; j<theAlphabet->sLength; j++) {
-        freqs[NuclAlphabet[j]]*=-1;
+        freqs[NuclAlphabet.getUChar(j)]*=-1;
     }
 
     //make sure that the alphabet is "large" enough for the nucleotide case
@@ -364,12 +365,12 @@ _Parameter      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
 
     for (j=0; j<(*theAlphabet).sLength; j++) {
         for (long k = 0; k<(*theAlphabet).sLength; k++)
-            if (freqs[(*theAlphabet)[j]]>=maxOccurences[k]) {
+            if (freqs[theAlphabet->getUChar(j)]>=maxOccurences[k]) {
                 for (long l=(*theAlphabet).sLength-1; l>=k+1; l--) {
                     maxOccurences[l]=maxOccurences[l-1];
                     locationsOfMaxSymbols[l]=locationsOfMaxSymbols[l-1];
                 }
-                maxOccurences[k]=freqs[(*theAlphabet)[j]];
+                maxOccurences[k]=freqs[theAlphabet->getUChar(j)];
                 locationsOfMaxSymbols[k]=(*theAlphabet)[j];
                 break;
             }
@@ -388,7 +389,7 @@ _Parameter      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
         long l;
         for (l=0; l<(*theAlphabet).sLength; l++)
             if ((*theAlphabet)[k]==locationsOfMaxSymbols[l]) {
-                j+=(l+1)*freqs[(*theAlphabet)[k]];
+                j+=(l+1)*freqs[theAlphabet->getUChar(k)];
                 codeLength [locationsOfMaxSymbols[l]] = l+1;
                 break;
             }
@@ -414,21 +415,21 @@ _Parameter      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
             unsigned char value = result[t];
             switch (leftover) {
             case 5:
-                value+=codeLength[(*theAlphabet)[j]];
+                value+=codeLength[theAlphabet->getUChar(j)];
                 break;
             case 6:
-                value+=codeLength[(*theAlphabet)[j]]*2;
+                value+=codeLength[theAlphabet->getUChar(j)]*2;
                 break;
             case 7:
-                value+=codeLength[(*theAlphabet)[j]]*4;
+                value+=codeLength[theAlphabet->getUChar(j)]*4;
                 break;
             default:
-                value+=codeLength[(*theAlphabet)[j]]*8;
+                value+=codeLength[theAlphabet->getUChar(j)]*8;
             }
             result[t]=value;
         } else {
-            result[t]+=codeLength[(*theAlphabet)[j]]/realPowersOf2[5-leftover];
-            result[++t]=(codeLength[(*theAlphabet)[j]]%realPowersOf2[5-leftover])*realPowersOf2[3+leftover];
+            result[t]+=codeLength[theAlphabet->getUChar(j)]/realPowersOf2[5-leftover];
+            result[++t]=(codeLength[theAlphabet->getUChar(j)]%realPowersOf2[5-leftover])*realPowersOf2[3+leftover];
         }
     }
 
@@ -582,10 +583,10 @@ _Parameter      _CString::LZWCompress (unsigned char theAlpha)
 
     _String output (*this), curString(""), testString;
     long k = 0, pos, codeMax = 0, pos1;
-    char checkTable [256];
+    unsigned char checkTable [256];
 
     for (; k<256; checkTable[k++]=0) {}
-    for (k=0; k<theAlphabet->sLength; checkTable[(*theAlphabet)[k++]]=1) {}
+    for (k=0; k<theAlphabet->sLength; checkTable[(unsigned char)(*theAlphabet)[k++]]=1) {}
 
     // init the table
 
@@ -597,17 +598,17 @@ _Parameter      _CString::LZWCompress (unsigned char theAlpha)
     codeMax = (*theAlphabet).sLength;
 
     for (long p=0; p<sLength; p++) {
-        if (!checkTable[sData[p]]) {
+        if (!checkTable[(unsigned char)sData[p]]) {
             return 1;    // symbol not in alphabet - can't compress
         }
         testString = curString&sData[p];
-        pos = theTable.BinaryFind(&testString);
+        pos = theTable.BinaryFindObject (&testString);
         if (pos<0) {
             pos=theTable.BinaryInsert(&testString);
             theCodes.InsertElement ((BaseRef)ToLZWCode(codeMax++),pos,false,false);
             curString = sData[p];
             long acode = theCodes(pos1);
-            pos1 = theTable.BinaryFind(&curString);
+            pos1 = theTable.BinaryFindObject (&curString);
             if (acode>127) {
                 output[k+1]=acode%256;
                 output[k]=acode/256;

@@ -99,18 +99,18 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     )
 
     set(GCC45 false)
-    set(GCC46 false)
+    set(GCC50 false)
 
     if(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
         set(GCC45 true)
     endif(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
 
-    if(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
-        set(GCC46 true)
-    endif(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
+    if(${GCC_VERSION} VERSION_GREATER 5.0 OR ${GCC_VERSION} VERSION_EQUAL 5.0)
+        set(GCC50 true)
+    endif(${GCC_VERSION} VERSION_GREATER 5.0 OR ${GCC_VERSION} VERSION_EQUAL 5.0)
 
     if(${MACOSX_LION})
-        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null -Wno-dangling-else -Wno-logical-op-parentheses")
+        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null -Wno-dangling-else -Wno-logical-op-parentheses ")
     endif(${MACOSX_LION})
 
     if(${GCC45})
@@ -119,9 +119,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3")
     endif(${GCC45})
 
-    if(${GCC46})
-        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
-    endif(${GCC46})
+    if(${GCC50})
+        set(DEFAULT_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
+    endif(${GCC50})
     
     PCL_CHECK_FOR_AVX()
     if(${HAVE_AVX_EXTENSIONS})
@@ -524,7 +524,7 @@ set_target_properties(
 #-------------------------------------------------------------------------------
 # hyphy MacOSX gui target
 #-------------------------------------------------------------------------------
-if(APPLE AND NOT ${MACOSX_GT_LION})
+if(APPLE)
 
     #---------------------------------------------------------------------------
     # MacOSX gui files
@@ -708,4 +708,4 @@ if(APPLE AND NOT ${MACOSX_GT_LION})
         PROPERTIES
         OSX_ARCHITECTURES i386
     )
-endif(APPLE AND NOT ${MACOSX_GT_LION})
+endif(APPLE)

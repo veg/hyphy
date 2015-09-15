@@ -89,7 +89,7 @@ _Constant::_Constant (_Parameter value)
 }
 //__________________________________________________________________________________
 
-void _Constant::Initialize (void)
+void _Constant::Initialize (bool)
 {
     BaseObj::Initialize();
     theValue = 0;
@@ -205,31 +205,31 @@ _PMathObj _Constant::longDiv (_PMathObj theObj) // div
     }
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Raise (_PMathObj theObj)
-{
-    if (!theObj) {
-        return nil;
+_PMathObj _Constant::Raise (_PMathObj theObj) {
+  if (!theObj) {
+    return nil;
+  }
+  
+  _Parameter    base  = Value(),
+  expon = theObj->Value();
+  
+  if (base>0.0) {
+    return    new  _Constant (exp (log(base)*(expon)));;
+  } else {
+    if (base<0.0) {
+      if (CheckEqual (expon, (long)expon)) {
+        return new _Constant (((((long)expon)%2)?-1:1)*exp (log(-base)*(expon)));
+      } else {
+        _String errMsg ("An invalid base/exponent pair passed to ^");
+        WarnError (errMsg.sData);
+      }
     }
-
-    _Parameter    base  = Value(),
-                  expon = theObj->Value();
-
-    if (base>0.0) {
-        return    new  _Constant (exp (log(base)*(expon)));;
-    } else {
-        if (base<0.0)
-            if (CheckEqual (expon, (long)expon)) {
-                return new _Constant (((((long)expon)%2)?-1:1)*exp (log(-base)*(expon)));
-            } else {
-                _String errMsg ("An invalid base/exponent pair passed to ^");
-                WarnError (errMsg.sData);
-            }
-
-        if (expon != 0.0)
-          return     new _Constant (0.0);
-        else
-          return     new _Constant (1.0);
-    }
+    
+    if (expon != 0.0)
+      return     new _Constant (0.0);
+    else
+      return     new _Constant (1.0);
+  }
 }
 
 //__________________________________________________________________________________

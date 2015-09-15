@@ -1160,12 +1160,12 @@ void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bo
     long    k = 1;
 
     if (sorted)
-        while (names.BinaryFind(&tryName)>=0) {
+        while (names.BinaryFindObject (&tryName)>=0) {
             k++;
             tryName = partName&k;
         }
     else
-        while (names.Find(&tryName)>=0) {
+        while (names.FindObject(&tryName)>=0) {
             k++;
             tryName = partName&k;
         }

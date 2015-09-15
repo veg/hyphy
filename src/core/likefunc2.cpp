@@ -121,42 +121,43 @@ void            _LikelihoodFunction::PartitionCatVars     (_SimpleList& storage,
 //_______________________________________________________________________________________
 long            _LikelihoodFunction::TotalRateClassesForAPartition    (long partIndex, char mode)
 {
-    if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength) {
-        _List* myList = (_List*)categoryTraversalTemplate(partIndex);
-        if (myList->lLength)
-            if (mode == 0) {
-                return ((_SimpleList*)((*myList)(1)))->Element(-1);
-            } else {
-                long hmmCats = 1;
-                _SimpleList * catVars = (_SimpleList*)(*myList)(0);
-                for (long id = 0; id < catVars->lLength; id++)
-                    if (mode == 1) {
-                        if (((_CategoryVariable*)catVars->lData[id])->IsHiddenMarkov()) {
-                            hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
-                        }
-                    } else if (mode == 2) {
-                        if (((_CategoryVariable*)catVars->lData[id])->IsConstantOnPartition()) {
-                            hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
-                        }
-                    }
-                return hmmCats;
-
+  if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength) {
+    _List* myList = (_List*)categoryTraversalTemplate(partIndex);
+    if (myList->lLength) {
+      if (mode == 0) {
+        return ((_SimpleList*)((*myList)(1)))->Element(-1);
+      } else {
+        long hmmCats = 1;
+        _SimpleList * catVars = (_SimpleList*)(*myList)(0);
+        for (long id = 0; id < catVars->lLength; id++)
+          if (mode == 1) {
+            if (((_CategoryVariable*)catVars->lData[id])->IsHiddenMarkov()) {
+              hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
             }
-    } else if (partIndex < 0) {
-        long catCount = 1;
-        if (mode == 0)
-            for (long k = 0; k < indexCat.lLength; k++) {
-                catCount *= ((_CategoryVariable*)LocateVar (indexCat.lData[k]))->GetNumberOfIntervals();
+          } else if (mode == 2) {
+            if (((_CategoryVariable*)catVars->lData[id])->IsConstantOnPartition()) {
+              hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
             }
-        else if (mode == 1) {
-            for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
-                long partHMMCount = TotalRateClassesForAPartition(k,1);
-                catCount = MAX(partHMMCount,catCount);
-            }
-        }
-        return catCount;
+          }
+        return hmmCats;
+        
+      }
     }
-    return 1;
+  } else if (partIndex < 0) {
+    long catCount = 1;
+    if (mode == 0)
+      for (long k = 0; k < indexCat.lLength; k++) {
+        catCount *= ((_CategoryVariable*)LocateVar (indexCat.lData[k]))->GetNumberOfIntervals();
+      }
+    else if (mode == 1) {
+      for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
+        long partHMMCount = TotalRateClassesForAPartition(k,1);
+        catCount = MAX(partHMMCount,catCount);
+      }
+    }
+    return catCount;
+  }
+  return 1;
 }
 
 //_______________________________________________________________________________________
@@ -492,8 +493,8 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                         currentHMMCat         = 1,
                         arrayDim              ;
 
-    bool                isTrivial               = variables->lLength == 0,
-                        switchingHMM         = false;
+    bool                isTrivial               = variables->lLength == 0;
+  //switchingHMM         = false;
 
     _CategoryVariable   *catVariable;
 
@@ -554,7 +555,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                     if (hmmCatCount) {
                         currentHMMCat = currentRateCombo / hmmCatCount;
-                        switchingHMM = (currentRateCombo % hmmCatCount) == 0;
+                      //switchingHMM = (currentRateCombo % hmmCatCount) == 0;
                     }
 
                     if (currentRateCombo && remainder  == 0) {

@@ -163,19 +163,17 @@ long    _TranslationTable::TokenCode (char token)
 {
     // standard translations
     long * receptacle       = new long[baseLength];
-    if (!receptacle) {
-        checkPointer    (receptacle);
-    }
+  
     TokenCode               (token,receptacle);
 
     long                    theCode         = 0,
                             shifter       = 1;
 
-    for (int i = 0; i<baseLength; i++, shifter <<= 1) {
+    for (unsigned long i = 0; i<baseLength; i++, shifter <<= 1) {
         theCode +=  shifter*receptacle[i];
     }
 
-    delete receptacle;
+    delete [] receptacle;
     return theCode;
 }
 
@@ -238,18 +236,16 @@ char    _TranslationTable::CodeToLetter (long* split)
 }
 
 //_________________________________________________________
-void    _TranslationTable::SplitTokenCode (long code, long* receptacle)
-{
-    long shifter = 1;
-    for (int i=0; i<baseLength; i++) {
-        receptacle[i] = ((code&shifter)!=0);
-        shifter*=2;
+void    _TranslationTable::SplitTokenCode (long code, long* receptacle) const {
+    unsigned long shifter = 1L;
+    for (unsigned int i=0; i<baseLength; i++) {
+        receptacle[i] = ((code&shifter)!=0) ? 1L : 0L;
+        shifter >>= 1;
     }
 }
 
 //_________________________________________________________
-long    _TranslationTable::LengthOfAlphabet (void)
-{
+long    _TranslationTable::LengthOfAlphabet (void) const {
     return baseSet.sLength?baseSet.sLength:baseLength;
 }
 
@@ -559,7 +555,7 @@ void    _TranslationTable::PrepareForChecks (void)
     }
 
     for (long i=0; i<checkSymbols.sLength; i++) {
-        checkTable[checkSymbols(i)] = 1;
+        checkTable[(unsigned char)checkSymbols(i)] = 1;
     }
 }
 
@@ -569,7 +565,7 @@ bool    _TranslationTable::IsCharLegal (char c)
     if (!checkTable) {
         PrepareForChecks();
     }
-    return checkTable[c];
+    return checkTable[(unsigned char)c];
 }
 //___________________________________________
 
@@ -948,7 +944,7 @@ _DataSet::~_DataSet (void)
 
 //_______________________________________________________________________
 
-void _DataSet::Clear (void)
+void _DataSet::Clear (bool )
 {
     _List::Clear();
     theMap.Clear();
@@ -1489,7 +1485,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
     }
 
     for (charsIn=0; charsIn<baseSymbols.sLength; charsIn++) {
-        checks[baseSymbols.sData[charsIn]] = 1;
+        checks[(unsigned char)baseSymbols.sData[charsIn]] = 1;
     }
 
     charsIn = 0;
@@ -1498,7 +1494,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
         _String* thisColumn = (_String*)lData[i];
         long     w = theFrequencies.lData[i];
         for (long j = 0; j<thisColumn->sLength; j++)
-            if (checks[thisColumn->sData[j]]) {
+            if (checks[(unsigned char)thisColumn->sData[j]]) {
                 charsIn+=w;
             } else if (gapChar == thisColumn->sData[j]) {
                 gaps += w;
@@ -2970,7 +2966,6 @@ void    _DataSetFilter::FindAllSitesLikeThisOne (long index, _SimpleList& recept
     if (theData->NoOfSpecies()==theNodeMap.lLength) {
         long *matchMap = new long[unitLength];
 
-        checkPointer (matchMap);
         for (m=0; m<unitLength; m++)
             //matchMap[m] = theData->theMap.lData[theOriginalOrder.lData[oindex+1]];
         {
@@ -2990,7 +2985,7 @@ void    _DataSetFilter::FindAllSitesLikeThisOne (long index, _SimpleList& recept
                 }
         }
 
-        delete matchMap;
+        delete [] matchMap;
     } else {
         char ** matchMap = (char**)MemAllocate (sizeof (char*) * unitLength);
         checkPointer (matchMap);
@@ -3294,8 +3289,8 @@ _Matrix* _DataSetFilter::PairwiseCompare (_SimpleList* s1, _SimpleList *s2, _Lis
             res->theData[c1*c+c2] += 1.;
         }
 
-        delete sort1;
-        delete sort2;
+        delete [] sort1;
+        delete [] sort2;
     } else {
         checkPointer (nil);
     }
@@ -3407,10 +3402,6 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
     long        loopDim  = GetDimension();
     _Parameter* store    = new _Parameter [loopDim];
 
-    if (!store) {
-        warnError( -108);
-    }
-
     long j,
          upTo = theNodeMap.lLength?theNodeMap.lLength:theData->NoOfSpecies();
 
@@ -3434,13 +3425,13 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
                 outcome = true;
                 storage->Insert ((BaseRef)theNodeMap.lData[k]);
             } else {
-                delete store;
+                delete [] store;
                 return true;
             }
         }
     }
 
-    delete store;
+    delete [] store;
     return outcome;
 }
 
@@ -3448,52 +3439,48 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
 //_______________________________________________________________________
 bool    _DataSetFilter::IsConstant (unsigned long site,bool relaxedDeletions)
 {
-    _Parameter* store = nil, *store2 = nil;
+    _Parameter *store = new _Parameter [GetDimension()],
+               *store2 = new _Parameter [GetDimension()];
 
-    store = new _Parameter [GetDimension()];
-    store2 = new _Parameter [GetDimension()];
-
-    if (!(store&&store2)) {
-        warnError(-108);
-    }
-    long j,
+    unsigned long j,
          upTo = theNodeMap.lLength?theNodeMap.lLength:theData->NoOfSpecies(),
          loopDim = GetDimension();
 
     Translate2Frequencies ((*this)(site,0), store, false);
 
     if (relaxedDeletions) {
-        for (unsigned int k = 1; k<upTo; k++) {
+        for (unsigned long k = 1UL; k<upTo; k++) {
             Translate2Frequencies ((*this)(site,k), store2, false);
-            for (j=0; j<loopDim; j++) {
+            for (j=0UL; j<loopDim; j++) {
                 if (store2[j]==0.0) {
                     store[j]=0.0;
                 }
             }
         }
-        for (j=0; j<loopDim; j++)
+        for (j=0UL; j<loopDim; j++)
             if (store[j]!=0.0) {
-                delete store;
-                delete store2;
-                return true;
+              break;
             }
-        if (j==loopDim) {
-            delete store;
-            delete store2;
-            return false;
-        }
+      
+        delete [] store;
+        delete [] store2;
+        return j!=loopDim;
+      
     } else {
-        for (unsigned int k = 1; k<upTo; k++) {
+        for (unsigned long k = 1; k<upTo; k++) {
             Translate2Frequencies ((*this)(site,k), store2, false);
-            for (j=0; j<loopDim; j++)
+            for (j=0UL; j<loopDim; j++)
+              
                 if (store[j]!=store2[j]) {
-                    delete store;
-                    delete store2;
+                    delete [] store;
+                    delete [] store2;
                     return false;
                 }
         }
     }
-
+  
+    delete [] store;
+    delete [] store2;
     return true;
 }
 
@@ -4451,7 +4438,6 @@ long    _DataSetFilter::MapStringToCharIndex (_String& str)
         }
 
         if (count==1) {
-            m = 0;
             if (theExclusions.lLength) {
                 for (long exc = 0; exc < theExclusions.lLength; exc++)
                     if (index == theExclusions.lData[exc]) {
@@ -5261,7 +5247,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             ReadNexusFile (fState,f,(*result));
             doAlphaConsistencyCheck = false;
         } else {
-            long i,j,k, filePosition = -1, saveSpecExpected;
+            long i,j,k, filePosition = -1, saveSpecExpected = 0x7FFFFFFF;
             char c;
             while (CurrentLine.sLength) { // stuff to do
                 // check if the line has a command in it
@@ -5343,8 +5329,8 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                                 if (fState.totalSpeciesRead<fState.totalSpeciesExpected) {
                                     TrimPhylipLine (CurrentLine, (*result));
                                 }
-                                if ((fState.curSite)&&(fState.curSpecies >= saveSpecExpected)&&
-                                        (fState.totalSitesRead >= fState.totalSitesExpected)) {
+                                if (fState.curSite && fState.curSpecies >= saveSpecExpected &&
+                                        fState.totalSitesRead >= fState.totalSitesExpected) {
                                     // reached the end of the data - see maybe there is a tree
                                     ReadNextLine (f,&CurrentLine,&fState);
                                     if (CurrentLine.sLength) {

@@ -58,8 +58,8 @@ _String    _HYGenerateANameSpace () {
             capLetters ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
     do {
         nmsp = _String::Random (8, &capLetters);
-        
-    } while (_HY_HBL_Namespaces.Find (nmsp) != HY_TRIE_NOTFOUND);
+      
+    } while (_HY_HBL_Namespaces.FindKey (nmsp) != HY_TRIE_NOTFOUND);
     
     _HY_HBL_Namespaces.Insert (nmsp, 0);
     return nmsp;

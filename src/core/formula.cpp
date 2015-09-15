@@ -473,7 +473,7 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
                     _List * p1 = (_List*)(*matchNames)(0),
                             * p2 = (_List*)(*matchNames)(1);
 
-                    long  f = p1->Find (vName);
+                    long  f = p1->FindObject (vName);
 
                     if (f<0) {
                         result<<vName;
@@ -615,23 +615,19 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramet
   newCorrection;
   
   
-  unknown->SetNumericValue(left);
+  unknown->SetValue(left);
   func_left = Compute()->Value()-targetValue;
   if (func_left==0.0) {
     return left;
   }
-  unknown->SetNumericValue(right);
+  unknown->SetValue(right);
   func_right = Compute()->Value()-targetValue;
   if (func_right==0.0) {
     return right;
   }
   
   if (func_left*func_right>0.0) { // bracket fail
-    subNumericValues = 2;
-    _String *s = (_String*)toStr();
-    subNumericValues = 0;
-    ReportWarning (*s&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
-    DeleteObject (s);
+    ReportWarning (_String((_String*)toStr())&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
     return    left;
   }
   // else all is good we can start the machine
@@ -642,7 +638,7 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramet
   for (unsigned long iterCount  = 0L; iterCount < 200UL; iterCount++) {
     if ( fabs(right-left)/MAX(left,right) > machineEps*10. ) { // stuff to do
       
-      unknown->SetNumericValue(root_guess);
+      unknown->SetValue(root_guess);
       func_root_guess = Compute()->Value()-targetValue;
       if (func_root_guess == 0.) {
         return root_guess;
@@ -703,7 +699,7 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     // check that there is indeed a sign change on the interval
     _Constant   dummy;
 
-    _Parameter  fa = 0.0,fb = 0.0,fc,d,e,min1,min2,xm,p,q,r,s,tol1,
+    _Parameter  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
                 c = b;
 
     min1 = unknown->GetLowerBound();
@@ -1017,9 +1013,12 @@ _Parameter   _Formula::Newton(_Variable* unknown, _Parameter targetValue, _Param
     }
     // else all is good we can start the machine
     bool useNewton = false;
+  
+    t3 = (right + left) * 0.5;
+  
     while (right-left>1e-6) { // stuff to do
         if (!useNewton) {
-            t3 = (right+left)/2;
+            t3 = (right+left) * 0.5;
         }
         dummy.SetValue(t3);
         unknown->SetValue(&dummy);
@@ -1057,7 +1056,6 @@ _Parameter   _Formula::Newton(_Variable* unknown, _Parameter targetValue, _Param
                 t1 = t4;
                 left = t3;
             } else {
-                t2 = t4;
                 right = t3;
             }
         }
@@ -1462,49 +1460,50 @@ _Formula& _Formula::PatchFormulasTogether (_Formula& target, const _Formula& ope
 //__________________________________________________________________________________
 void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
 {
-    if (makeComplex) {
-        if (resultCache) {
-            DeleteObject (resultCache);
-            resultCache = nil;
-        }
-    } else {
-        if (!resultCache) {
-            resultCache = new _List();
-            for (int i=1; i<theFormula.lLength; i++) {
-                _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-                if (thisOp->CanResultsBeCached(((_Operation*)(((BaseRef**)theFormula.lData)[i-1])))) {
-                    resultCache->AppendNewInstance(new _MathObject());
-                    resultCache->AppendNewInstance(new _MathObject());
-                }
-            }
-        }
+  if (makeComplex) {
+    if (resultCache) {
+      DeleteObject (resultCache);
+      resultCache = nil;
     }
-
-    for (int i=0; i<theFormula.lLength; i++) {
+  } else {
+    if (!resultCache) {
+      resultCache = new _List();
+      for (int i=1; i<theFormula.lLength; i++) {
         _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-
-        _Matrix   * thisMatrix = nil;
-
-        if (thisOp->theNumber) {
-            if (thisOp->theNumber->ObjectClass() == MATRIX) {
-                thisMatrix = (_Matrix*)thisOp->theNumber;
-            }
-        } else {
-            if (thisOp->theData>-1) {
-                _Variable* thisVar = LocateVar (thisOp->theData);
-                if (thisVar->ObjectClass() == MATRIX) {
-                    thisMatrix = (_Matrix*)thisVar->GetValue();
-                }
-            }
+        if (thisOp->CanResultsBeCached(((_Operation*)(((BaseRef**)theFormula.lData)[i-1])))) {
+          resultCache->AppendNewInstance(new _MathObject());
+          resultCache->AppendNewInstance(new _MathObject());
         }
-
-        if (thisMatrix)
-            if (makeComplex) {
-                thisMatrix->MakeMeGeneral();
-            } else {
-                thisMatrix->MakeMeSimple();
-            }
+      }
     }
+  }
+  
+  for (int i=0; i<theFormula.lLength; i++) {
+    _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
+    
+    _Matrix   * thisMatrix = nil;
+    
+    if (thisOp->theNumber) {
+      if (thisOp->theNumber->ObjectClass() == MATRIX) {
+        thisMatrix = (_Matrix*)thisOp->theNumber;
+      }
+    } else {
+      if (thisOp->theData>-1) {
+        _Variable* thisVar = LocateVar (thisOp->theData);
+        if (thisVar->ObjectClass() == MATRIX) {
+          thisMatrix = (_Matrix*)thisVar->GetValue();
+        }
+      }
+    }
+    
+    if (thisMatrix) {
+      if (makeComplex) {
+        thisMatrix->MakeMeGeneral();
+      } else {
+        thisMatrix->MakeMeSimple();
+      }
+    }
+  }
 }
 
 //__________________________________________________________________________________

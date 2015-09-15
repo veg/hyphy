@@ -219,8 +219,8 @@ void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* conte
 
 
 //__________________________________________________________________________________
-_Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Parameter *c , _Parameter *d, _Parameter x, _Parameter& err)
-{
+_Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Parameter *c , _Parameter *d, _Parameter x, _Parameter& err) {
+  // Neville's algoruthm for polynomial interpolation (Numerical Recipes' rawinterp)
     _Parameter y,
                den,
                dif = 1e10,
@@ -229,9 +229,9 @@ _Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Param
                hp,
                w;
 
-    long   ns;
+    long   ns = 0L;
 
-    for (long i=0; i<n; i++) {
+    for (unsigned long i=0; i<n; i++) {
         dift = fabs(x-theX[i]);
         if (dift<dif) {
             ns = i;
@@ -240,10 +240,9 @@ _Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Param
         c[i] = d[i] = theY[i];
     }
 
-    y = theY[ns];
-    ns --;
+    y = theY[ns--];
 
-    for (long m=1; m<n; m++) {
+    for (unsigned long m=1; m<n; m++) {
         for (long i=0; i<=n-m-1; i++) {
             ho = theX[i]-x;
             hp = theX[i+m]-x;
@@ -508,14 +507,18 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         } else {
             _Variable* mmo = LocateVar(((_Operation*)f->theFormula(0))->GetAVariable());
 
-            if (mmo)
-                if (mmo->ObjectClass () == MATRIX) {
-                    mmx = (_Matrix*)(mmo->GetValue());
-                    ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
-                } else if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
-                    mma = (_AssociativeList*)(mmo->GetValue());
-                    ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+            if (mmo) {
+              if (mmo->ObjectClass () == MATRIX) {
+                mmx = (_Matrix*)(mmo->GetValue());
+                ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+              } else {
+                
+                if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
+                  mma = (_AssociativeList*)(mmo->GetValue());
+                  ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
                 }
+              }
+            }
         }
 
         _PMathObj coordMx = nil;
@@ -569,11 +572,11 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
 
 struct      characterChecker {
     characterChecker (_String s) {
-        for (long r = 0; r<256; r++) {
+        for (long r = 0L; r<256L; r++) {
             isAllowed [r] = false;
         }
         for (long r2 = 0; r2<s.sLength; r2++) {
-            isAllowed [(unsigned char)s.sData[r2]] = true;
+            isAllowed [s.getUChar (r2)] = true;
         }
     }
     bool     isAllowed [256];
@@ -819,12 +822,15 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             /* 04252006 if (s.getChar(i)==']' && s.getChar(i+1)!='[')
                 mlevel = -1; */
 
-            if (lookAtMe != ',')
-                if (i != s.sLength) {
-                    level--;
-                } else if (level) {
-                    level = -1;
+            if (lookAtMe != ',') {
+              if (i != s.sLength) {
+                level--;
+              } else {
+                if (level) {
+                  level = -1;
                 }
+              }
+            }
 
             /* 04252206 if (i!=s.sLength && lookAtMe != ',')
                 level --;
@@ -973,8 +979,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     }
                     f->Duplicate((BaseRef)&newF);
                 }
-                twoToken     = false;
-
+              
                 parsingContext.assignmentRefID()   = lhs_variable->GetAVariable();
                 parsingContext.assignmentRefType() = deref;
 
@@ -1023,14 +1028,18 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         } else {
                             _Variable* mmo = ((_Operation*)f->theFormula(0))->IsAVariable()?LocateVar(((_Operation*)f->theFormula(0))->GetAVariable()):nil;
 
-                            if (mmo)
-                                if (mmo->ObjectClass () == MATRIX) {
-                                    mmx = (_Matrix*)(mmo->GetValue());
-                                    ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
-                                } else if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
-                                    mma = (_AssociativeList*)(mmo->GetValue());
-                                    ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                            if (mmo) {
+                              if (mmo->ObjectClass () == MATRIX) {
+                                mmx = (_Matrix*)(mmo->GetValue());
+                                ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                              } else {
+                                
+                                if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
+                                  mma = (_AssociativeList*)(mmo->GetValue());
+                                  ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
                                 }
+                              }
+                            }
                         }
 
                         if (mmx) {
@@ -1118,7 +1127,6 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
 
             inAssignment = false;
-            twoToken     = false;
 
 
     
@@ -1343,7 +1351,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 globalKey  = true;
             }
                 
-            if (UnOps.Find(curOp)>=0) { // a standard function
+            if (UnOps.FindKey(curOp)>=0) { // a standard function
                 if (takeVarReference) {
                     return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
                 }
@@ -1352,7 +1360,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 continue;
             } else { // a variable
                 // check if this is a function defined  in the list of "standard functions"
-                long bLang = noneObject?-1:FunctionNameList.BinaryFind(&curOp);
+                long bLang = noneObject?-1:FunctionNameList.BinaryFindObject (&curOp);
                 if (bLang>=0) {
                     if (takeVarReference) {
                         return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
@@ -1464,7 +1472,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
             if (levelData->countitems()==0) {
                 if (s[i-curOp.sLength]!=')' && storage!=')' && s[i-curOp.sLength] !=']') {
-                    if (!twoToken && UnOps.Find (s.getChar(i)) >= 0) {
+                    if (!twoToken && UnOps.FindKey (s.getChar(i)) >= 0) {
                         twoOrOne = 1;
                     } else {
                         return HandleFormulaParsingError ("Bad binary operator placement ", parsingContext.errMsg(), s, i);
@@ -1545,7 +1553,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 return HY_FORMULA_FAILED;
             }
             continue;
-        } else if (UnOps.Find(s.getChar(i)) >= 0) {
+        } else if (UnOps.FindKey (s.getChar(i)) >= 0) {
             if ((s.getChar(i)=='-' || s.getChar(i)=='+') && (!i|| s.getChar(i-1)=='(')) { // unary minus?
                 curOp   = s.getChar(i);
                 levelOps->AppendNewInstance (new _Operation (curOp,1));

@@ -517,20 +517,20 @@ _AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer
 //____________________________________________________________________________________
 long    FindDataSetName (_String&s)
 {
-    return dataSetNamesList.Find (&s);
+    return dataSetNamesList.FindObject (&s);
 }
 //____________________________________________________________________________________
 long    FindDataSetFilterName (_String&s)
 {
-    return dataSetFilterNamesList.Find (&s);
+    return dataSetFilterNamesList.FindObject (&s);
 }
 //____________________________________________________________________________________
 long    FindLikeFuncName (_String&s, bool tryAsAString)
 {
-    long try1 = likeFuncNamesList.Find (&s);
+    long try1 = likeFuncNamesList.FindObject (&s);
     if (try1 < 0 && tryAsAString) {
         _String s2 (ProcessLiteralArgument(&s, nil));
-        try1 = likeFuncNamesList.Find(&s2);
+        try1 = likeFuncNamesList.FindObject(&s2);
     }
     return try1;
 }
@@ -542,7 +542,7 @@ long    FindModelName (_String&s)
         return lastMatrixDeclared;
     }
 
-    return modelNames.Find (&s);
+    return modelNames.FindObject (&s);
 }
 
 //____________________________________________________________________________________
@@ -558,7 +558,7 @@ _LikelihoodFunction*    FindLikeFuncByName (_String&s)
 //____________________________________________________________________________________
 long    FindSCFGName (_String&s)
 {
-    return scfgNamesList.Find (&s);
+    return scfgNamesList.FindObject (&s);
 }
 
 //____________________________________________________________________________________
@@ -569,7 +569,7 @@ long    FindBFFunctionName (_String&s, _VariableContainer* theP)
 
         long cutAt = testName.sLength - s.sLength - 2;
         do {
-            long idx = batchLanguageFunctionNames.Find (&testName);
+            long idx = batchLanguageFunctionNames.FindObject (&testName);
             if (idx >= 0) {
                 s = testName;
                 return idx;
@@ -579,14 +579,14 @@ long    FindBFFunctionName (_String&s, _VariableContainer* theP)
         } while (cutAt >= 0);
     }
 
-    return batchLanguageFunctionNames.Find (&s);
+    return batchLanguageFunctionNames.FindObject (&s);
 }
 
 
 //____________________________________________________________________________________
 long    FindBgmName (_String&s)
 {
-    return bgmNamesList.Find (&s);
+    return bgmNamesList.FindObject (&s);
 }
 
 
@@ -623,7 +623,7 @@ long  AddFilterToList (_String& partName,_DataSetFilter* theFilter, bool addP)
 long  AddDataSetToList (_String& theName,_DataSet* theDS)
 {
     FindUnusedObjectName (prefixDS,theName,dataSetNamesList);
-    long k = dataSetNamesList.Find (&empty);
+    long k = dataSetNamesList.FindObject (&empty);
     if (k==-1) {
         dataSetList.AppendNewInstance (theDS);
         dataSetNamesList&& & theName;
@@ -711,7 +711,7 @@ void KillLFRecord (long lfID, bool completeKill)
                 thisTree->CompileListOfModels (myVars);
                 _CalcNode * tNode = thisTree->DepthWiseTraversal (true);
                 while (tNode) {
-                    tNode->SetValue (new _Constant (tNode->BranchLength()),false);
+                    tNode->SetValue (new _Constant (tNode->ComputeBranchLength()),false);
                     tNode = thisTree->DepthWiseTraversal();
                 }
                 thisTree->RemoveModel();
@@ -1153,7 +1153,7 @@ long        _ExecutionList::ExecuteAndClean     (long g, _String* fName)        
     Execute ();
 
     if (fName && !terminateExecution) {
-        f = batchLanguageFunctionNames.Find (fName);
+        f = batchLanguageFunctionNames.FindObject (fName);
     }
 
     terminateExecution      = false;
@@ -1509,7 +1509,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         }
         
         triePath.Clear(false);
-        long prefixTreeCode = _HY_ValidHBLExpressions.Find (currentLine, &triePath, true);
+        long prefixTreeCode = _HY_ValidHBLExpressions.FindKey (currentLine, &triePath, true);
         
         _List *pieces = nil;
         _HBLCommandExtras *commandExtraInfo = nil;
@@ -2818,7 +2818,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
         {
             DeleteObject (lkf);
         } else {
-            likeFuncObjectID = likeFuncNamesList.Find(&empty);
+            likeFuncObjectID = likeFuncNamesList.FindObject(&empty);
             // see if there are any vacated spots in the list
 
             if (likeFuncObjectID < 0) {
@@ -3779,7 +3779,6 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
         p = 0;    // will be used to keep track of the position in the string
     }
 
-    q = 0;
     r = shifter;
 
     while (r<simpleParameters.lLength && p<data->sLength) {
@@ -3967,7 +3966,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
              arg0 = chain.AddNameSpaceToID(*(_String*)parameters(0));
 
     long     f,
-             f2=-1,
+             f2=-1L,
              matrixDim,
              f3,
              multFreqs = 1;
@@ -3997,53 +3996,54 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
         f3 = lastMatrixDeclared;
         f  = modelMatrixIndices[f3];
         usingLastDefMatrix = true;
-    } else {
-        if (doExpressionBased) {
-            _String matrixExpression (ProcessLiteralArgument((_String*)parameters.lData[1],chain.nameSpacePrefix)),
-                    defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment.") & ':' & matrixExpression;
-            // try to parse the expression, confirm that it is a square  matrix,
-            // and that it is a valid transition matrix
-            isExpressionBased = (_Formula*)checkPointer(new _Formula);
-            _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
-            long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
-            if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
-                WarnError (defErrMsg );
-                return;
-            }
-            
-            //for (unsigned long k = 0; k < isExpressionBased
-            
-            checkMatrix = (_Matrix*)isExpressionBased->Compute();
-
-
-        } else {
-            parameterName = (_String*)parameters.lData[1];
-
-            _String augName (chain.AddNameSpaceToID(*parameterName));
-            f = LocateVarByName (augName);
-
-            if (f<0) {
-                WarnError (*parameterName & " has not been defined prior to the call to Model = ...");
-                return;
-            }
-
-            _Variable* checkVar = usingLastDefMatrix?LocateVar(f):FetchVar (f);
-            if (checkVar->ObjectClass()!=MATRIX) {
-                WarnError (*parameterName & " must refer to a matrix in the call to Model = ...");
-                return;
-            }
-            checkMatrix = (_Matrix*)checkVar->GetValue();
-        }
     }
+  
+  
+    if (doExpressionBased) {
+        _String matrixExpression (ProcessLiteralArgument((_String*)parameters.lData[1],chain.nameSpacePrefix)),
+                defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment.") & ':' & matrixExpression;
+        // try to parse the expression, confirm that it is a square  matrix,
+        // and that it is a valid transition matrix
+        isExpressionBased = (_Formula*)checkPointer(new _Formula);
+        _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+        long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
+        if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
+            WarnError (defErrMsg );
+            return;
+        }
+        
+        //for (unsigned long k = 0; k < isExpressionBased
+        
+        checkMatrix = (_Matrix*)isExpressionBased->Compute();
 
 
+    } else {
+        parameterName = (_String*)parameters.lData[1];
+
+        _String augName (chain.AddNameSpaceToID(*parameterName));
+        f = LocateVarByName (augName);
+
+        if (f<0) {
+            WarnError (*parameterName & " has not been defined prior to the call to Model = ...");
+            return;
+        }
+
+        _Variable* checkVar = usingLastDefMatrix?LocateVar(f):FetchVar (f);
+        if (checkVar->ObjectClass()!=MATRIX) {
+            WarnError (*parameterName & " must refer to a matrix in the call to Model = ...");
+            return;
+        }
+        checkMatrix = (_Matrix*)checkVar->GetValue();
+    }
+  
+
+  
+    // so far so good
     matrixDim = checkMatrix->GetHDim();
     if ( matrixDim!=checkMatrix->GetVDim() || matrixDim<2 ) {
-        WarnError (*parameterName & " must be a square matrix of dimension>=2 in the call to Model = ...");
-        return;
+      WarnError (*parameterName & " must be a square matrix of dimension>=2 in the call to Model = ...");
+      return;
     }
-
-    // so far so good
 
     parameterName = (_String*)parameters.lData[2]; // this is the frequency matrix (if there is one!)
     _String         freqNameTag (chain.AddNameSpaceToID(*parameterName));
@@ -4058,13 +4058,15 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
         WarnError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
         return;
     }
+  
     checkMatrix = (_Matrix*)checkVar->GetValue();
-    if (checkMatrix->GetVDim()==1) {
+  
+   if (checkMatrix->GetVDim()==1UL) {
         if (checkMatrix->GetHDim()!=matrixDim) {
             WarnError (*parameterName & " must be a column vector of the same dimension as the model matrix in the call to Model = ...");
             return;
         }
-    } else if (checkMatrix->GetHDim()==1) {
+    } else if (checkMatrix->GetHDim()==1UL) {
         if (checkMatrix->GetVDim()!=matrixDim) {
             WarnError ( *parameterName & " must be a row vector of the same dimension as the model matrix in the call to Model = ...");
             return;
@@ -4085,10 +4087,10 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
         f2 = -f2-1;
     }
 
-    long existingIndex = modelNames.Find(&arg0);
+    long existingIndex = modelNames.FindObject(&arg0);
 
     if (existingIndex == -1) { // name not found
-        lastMatrixDeclared = modelNames.Find (&empty);
+        lastMatrixDeclared = modelNames.FindObject (&empty);
 
         if (lastMatrixDeclared>=0) {
             modelNames.Replace (lastMatrixDeclared,&arg0,true);
@@ -4255,7 +4257,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                     if (saveTheArg==lastModelParameterList) {
                         f = lastMatrixDeclared;
                     } else {
-                        f = modelNames.Find(&nmspName);
+                        f = modelNames.FindObject(&nmspName);
                     }
 
                     if (f>=0) {
@@ -4337,7 +4339,6 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                             break;
                         }
                     if (choice == theChoices->lLength) {
-                        choice = -1;
                         WarnError (_String("Not a valid option: '") & buffer & "' passed to Choice List '" & ((_String*)parameters(1))->sData & "' using redirected stdin input");
                         return;
                     }
@@ -4572,7 +4573,7 @@ void      _ElementaryCommand::ExecuteCase36 (_ExecutionList& chain)
              errMsg,
              result;
 
-    long    f = dataSetNamesList.Find(&AppendContainerName(*currentArgument,chain.nameSpacePrefix)),
+    long    f = dataSetNamesList.FindObject(&AppendContainerName(*currentArgument,chain.nameSpacePrefix)),
             s,
             k,
             m;
@@ -4643,12 +4644,6 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 
     _String matrixName = chain.AddNameSpaceToID(*(_String*)parameters(0)),
             *objectName = (_String*)parameters(1);
-
-
-    long    sID;
-    if (parameters.lLength > 2) {
-        sID = ProcessNumericArgument ((_String*)parameters(2), chain.nameSpacePrefix);
-    }
 
 
     _Matrix *result = nil;
@@ -4740,7 +4735,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
                 }
             }
         } else {
-            f = likeFuncNamesList.Find (&objectNameID);
+            f = likeFuncNamesList.FindObject (&objectNameID);
             if (f>=0) {     // it's a likelihood function
                 _LikelihoodFunction * lf = (_LikelihoodFunction*)likeFuncList (f);
                 f = lf->GetCategoryVars().lLength;
@@ -4757,7 +4752,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 
                 result = (_Matrix*) checkPointer(new _Matrix (catVars));
             } else {
-				if ((f = dataSetFilterNamesList.Find (&objectNameID))>=0)
+				if ((f = dataSetFilterNamesList.FindObject (&objectNameID))>=0)
 					// return a vector of strings - each with actual characters of the corresponding sequence
 				{
 					_DataSetFilter* daFilter = (_DataSetFilter*)dataSetFilterList (f);
@@ -4965,7 +4960,7 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain)
              *arg2 = (_String*)parameters(0),
               errMsg;
 
-    long    k = dataSetFilterNamesList.Find (&AppendContainerName(*arg1,chain.nameSpacePrefix));
+    long    k = dataSetFilterNamesList.FindObject (&AppendContainerName(*arg1,chain.nameSpacePrefix));
 
     if (k<0) {
         errMsg = *arg1 & " is not a defined data set filter ID ";
@@ -5099,7 +5094,7 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
         _LikelihoodFunction * lf   = (_LikelihoodFunction *) likeFuncList (k);
         _String         callBack   = ProcessLiteralArgument (arg2,chain.nameSpacePrefix);
 
-        k = batchLanguageFunctionNames.Find (&callBack);
+        k = batchLanguageFunctionNames.FindObject (&callBack);
 
         if (k<0) {
             errMsg = *arg2 & " is not a defined user batch language function ";
@@ -6423,8 +6418,8 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
 
     if (oper ==  _String("ReadDataFile") || oper == _String ("ReadFromString")) { // a switch statement if more than 1
         _List pieces;
-        mark2 = ExtractConditions (source,mark1+1,pieces,',');
-        if (pieces.lLength!=1) {
+        ExtractConditions (source,mark1+1,pieces,',');
+        if (pieces.lLength!=1UL) {
             WarnErrorWhileParsing ("DataSet declaration missing a valid filename", source);
             return false;
         }
@@ -6442,8 +6437,8 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
         return true;
     } else if (oper.Equal(&blSimulateDataSet)) {
         _List pieces;
-        mark2 = ExtractConditions (source,mark1+1,pieces,',');
-        if ( pieces.lLength>4 || pieces.lLength==0 ) {
+        ExtractConditions (source,mark1+1,pieces,',');
+        if ( pieces.lLength>4UL || pieces.lLength==0UL ) {
             WarnErrorWhileParsing (blSimulateDataSet & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).",
                                    source);
             return false;
@@ -6460,8 +6455,8 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
         return true;
     } else if ( oper ==  _String("Concatenate") || oper ==  _String("Combine")) {
         _List pieces;
-        mark2 = ExtractConditions (source,mark1+1,pieces,',');
-        if (pieces.lLength==0) {
+        ExtractConditions (source,mark1+1,pieces,',');
+        if (pieces.lLength==0UL) {
             WarnErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
             return false;
         }
@@ -6495,8 +6490,8 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
     } else {
         if (oper ==  _String("ReconstructAncestors") || oper ==  _String("SampleAncestors")) {
             _List pieces;
-            mark2 = ExtractConditions (source,mark1+1,pieces,',');
-            if (pieces.lLength>3 || pieces.lLength==0) {
+            ExtractConditions (source,mark1+1,pieces,',');
+            if (pieces.lLength>3UL || pieces.lLength==0UL) {
                 WarnErrorWhileParsing("ReconstructAncestors and SampleAncestors expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.",
                                       source);
                 return false;
@@ -6518,8 +6513,8 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
             return true;
         } else if (oper ==  _String("Simulate")) {
             _List pieces;
-            mark2 = ExtractConditions (source,mark1+1,pieces,',');
-            if ((pieces.lLength>7)||(pieces.lLength<4)) {
+            ExtractConditions (source,mark1+1,pieces,',');
+            if ((pieces.lLength>7)||(pieces.lLength<4UL)) {
                 WarnErrorWhileParsing ("Simulate expects 4-6 parameters: tree with attached models, equilibrium frequencies, character map, number of sites|root sequence, <save internal node sequences>, <file name for direct storage>",
                                        source);
                 return false;
@@ -6568,8 +6563,8 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
         if (mark2!=-1) {
             source = source.Cut (mark1+1,mark2-1);
             _List args;
-            mark2 = ExtractConditions (source,0,args,',');
-            if (args.lLength>=7) {
+            ExtractConditions (source,0,args,',');
+            if (args.lLength>=7UL) {
                 _ElementaryCommand * cv = new _ElementaryCommand (20);
                 checkPointer (cv);
                 cv->parameters&&(&catID);
@@ -6760,8 +6755,8 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionLi
     }
 
 
-    mark2 = ExtractConditions (source,mark1+1,pieces,',');
-    if (!(pieces.lLength>=2 || (pieces.lLength == 1 && dsf->code == 6))) {
+    ExtractConditions (source,mark1+1,pieces,',');
+    if (!(pieces.lLength>=2UL || (pieces.lLength == 1UL && dsf->code == 6))) {
         _String errMsg ("Parameter(s) missing in DataSetFilter definition.");
         acknError (errMsg);
         return false;
@@ -6797,7 +6792,7 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
     // now look for the opening paren
     mark1 = source.Find ('(',mark2,-1);
     _List pieces;
-    mark2 = ExtractConditions (source,mark1+1,pieces,',');
+    ExtractConditions (source,mark1+1,pieces,',');
 
     if (pieces.lLength<2) {
         _String errMsg ("Parameter(s) missing in Model definition. Must have a matrix and a compatible eqiulibrium frequencies vector.");
@@ -6899,7 +6894,7 @@ bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&targ
     ExtractConditions   (*((_String*)arguments(1+shifter)),0,argDesc,',');
 
     for (f = 0; f<argDesc.lLength; f++) {
-        p = allowedFormats.Find(argDesc(f));
+        p = allowedFormats.FindObject(argDesc(f));
         if (p==-1) {
             WarnError ( *((_String*)argDesc(f))&" is not a valid type descriptor for fscanf. Allowed ones are:"& _String((_String*)allowedFormats.toStr()));
             DeleteObject (fscan);
@@ -7262,7 +7257,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
     // now look for the opening paren
 
-    if ((mark1=batchLanguageFunctionNames.Find(funcID))!=-1) {
+    if ((mark1=batchLanguageFunctionNames.FindObject(funcID))!=-1) {
         ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
     }
 

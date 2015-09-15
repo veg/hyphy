@@ -328,7 +328,7 @@ inline  bool    _Matrix::IsNonEmpty  (long logicalIndex)
 
 //__________________________________________________________________________________
 
-bool        _Matrix::HasChanged(void)
+bool        _Matrix::HasChanged(bool)
 {
     if (storageType == 2) {
         _Formula* theF, **theFormulae = (_Formula**)theData;
@@ -1511,7 +1511,7 @@ _Matrix::_Matrix ()                             // default constructor, doesn't 
 }
 //_____________________________________________________________________________________________
 
-void _Matrix::Initialize ()                             // default constructor, doesn't do much
+void _Matrix::Initialize (bool)                             // default constructor, doesn't do much
 {
     theData         = nil;
     theIndex        = nil;
@@ -1649,7 +1649,7 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo)
         return true;    // duh!
     }
 
-    long k = 0,
+    long k = 0L,
          i,
          threshold = lDim*_Matrix::switchThreshold/100;
     
@@ -1662,8 +1662,8 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo)
     if (k < threshold) {
         // we indeed are sparse enough
         
-        if (k == 0) {
-            k = 1;
+        if (k == 0L) {
+            k = 1L;
         }
 
        _Parameter *          newData  = (_Parameter*)MatrixMemAllocate (k*sizeof(_Parameter));
@@ -1674,16 +1674,17 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo)
 
         if (!(newData&&whereTo.theIndex)) {
             warnError (-108);
+            return false;
         }
 
         long p = 0;
 
         whereTo.theIndex[0] = -1;
 
-        for (i=0; i<lDim; i++)
+        for (unsigned long i=0; i < lDim; i++)
             if (theData[i]!=ZEROOBJECT) {
                 whereTo.theIndex[p] = i;
-                newData[p++]=theData[i];
+                newData[p++] = theData[i];
             }
 
         whereTo.lDim     = k;
@@ -2173,12 +2174,14 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 
                             _Formula*  theTerm = (_Formula*)checkPointer(new _Formula (lterm, theP));
 
-                            if (isAConstant) // there is hope that this matrix is of numbers
-                                if (theTerm->ObjectClass() == NUMBER) {
-                                    isAConstant = theTerm->IsAConstant();
-                                } else {
-                                    isAConstant = false;
-                                }
+                            if (isAConstant) {
+                              // there is hope that this matrix is of numbers
+                              if (theTerm->ObjectClass() == NUMBER) {
+                                isAConstant = theTerm->IsAConstant();
+                              } else {
+                                isAConstant = false;
+                              }
+                            }
 
                             ((_Formula**)theData)[vDim*hPos+vPos] = theTerm;
                         }
@@ -3245,7 +3248,7 @@ _PMathObj _Matrix::Abs (void)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
+void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 // addition operation on matrices
 // internal function
 
@@ -3517,7 +3520,7 @@ void    _Matrix::Subtract  (_Matrix& storage, _Matrix& secondArg)
 // internal function
 
 {
-    Add (storage,secondArg,true);
+    AddMatrix (storage,secondArg,true);
 }
 
 //_____________________________________________________________________________________________
@@ -4028,6 +4031,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 
         if (!(indexTable&&indexTable2&&indexVector)) {
             warnError (-108);
+            return;
         }
 
         memset (indexTable,0,indexTableDim*sizeof(long));
@@ -4783,362 +4787,361 @@ _Matrix*        _Matrix::ExtractElementsByEnumeration (_SimpleList*h, _SimpleLis
 
 
 //_____________________________________________________________________________________________
-_PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
-{
-    if (!p) {
-        warnError(-106);
-        return new _Constant (0.0);
-    }
-
-    if (hDim <= 0 || vDim <= 0) {
-        return new _Constant (0.0);
-    }
-
-    if (p->ObjectClass() == MATRIX) {
-        if (p2 == nil) {
-            _Matrix * nn = (_Matrix*)p;
-            if (nn->storageType == 1)
-                if (nn->hDim == hDim && nn->vDim == vDim) {
-                    _SimpleList hL,
-                                vL;
-
-                    for (long r=0; r<hDim; r++)
-                        for (long c=0; c<vDim; c++)
-                            if ((*nn)(r,c) > 0.0) {
-                                hL << r;
-                                vL << c;
-                            }
-
-                    return ExtractElementsByEnumeration (&hL,&vL);
-                } else {
-                    if (nn->hDim > 0 && nn->vDim == 1) { // extract by row
-                        _SimpleList hL;
-
-                        for (long r=0; r<nn->hDim; r++) {
-                            long v = (*nn)(r,0);
-                            if (v>=0 && v<hDim) {
-                                hL<<v;
-                            }
-                        }
-
-                        if (hL.lLength) {
-                            _Matrix * result = new _Matrix (hL.lLength,vDim,false,true);
-                            checkPointer (result);
-                            long k = 0;
-                            for (long r=0; r<hL.lLength; r++) {
-                                long ri = hL.lData[r];
-                                for (long c=0; c<vDim; c++,k++) {
-                                    result->theData[k] = (*this)(ri,c);
-                                }
-                            }
-                            return result;
-                        }
-
-                        return new _Matrix;
-                    } else if (nn->vDim > 0 && nn->hDim == 1) { // extract by column
-                        _SimpleList hL;
-
-                        for (long r=0; r<nn->vDim; r++) {
-                            long v = (*nn)(0,r);
-                            if (v>=0 && v<vDim) {
-                                hL<<v;
-                            }
-                        }
-
-                        if (hL.lLength) {
-                            _Matrix * result = new _Matrix (hDim,hL.lLength,false,true);
-                            checkPointer (result);
-                            long k = 0;
-                            for (long c=0; c<hDim; c++)
-                                for (long r=0; r<hL.lLength; r++,k++) {
-                                    result->theData[k] = (*this)(c,hL.lData[r]);
-                                }
-                            return result;
-                        }
-
-                        return new _Matrix;
-                    }
-                }
-
-            ReportWarning ("Incorrect dimensions or matrix type (must be numeric) for an indexing matrix in call to []");
-        } else {
-            if (p2->ObjectClass() == MATRIX) {
-                _Matrix * nn =  (_Matrix*)((_Matrix*)p)->ComputeNumeric();
-                _Matrix * nn2 = (_Matrix*)((_Matrix*)p2)->ComputeNumeric();
-
-                if (nn->hDim == 1 && nn->vDim == 2 && nn->storageType == 1 && nn2->hDim == 1 && nn2->vDim == 2 && nn2->storageType == 1) {
-                    long left   = (*nn)(0,0),
-                         top    = (*nn)(0,1),
-                         bottom = (*nn2)(0,1),
-                         right  = (*nn2)(0,0);
-
-                    if (left >= 0 && left < hDim && right >= 0 && right < hDim && left <=right &&
-                            top >= 0 && top < vDim && bottom >=0 && bottom < vDim && top <= bottom) {
-                        _SimpleList hL,
-                                    vL;
-
-                        for (long r=left; r<=right; r++)
-                            for (long c=top; c<=bottom; c++) {
-                                hL << r;
-                                vL << c;
-                            }
-
-                        _Matrix * subM = ExtractElementsByEnumeration (&hL,&vL);
-                        subM->hDim = right-left+1;
-                        subM->vDim = bottom-top+1;
-
-                        return subM;
-                    }
-                }
-                ReportWarning ("Incorrect dimensions or matrix type (must be numeric 2x1 matrices) for an rectangular extract in call to []");
-            }
-
-        }
-        return new _Constant (0.0);
-    } else {
-        if (p->ObjectClass() == STRING) {
-
-
-            _String aFormulaString = *((_FString*)p)->theString;
-            _Formula f (aFormulaString);
-
-            if (!f.IsEmpty()) {
-                /* check formula validity */
-
-                _String cell_value ("_MATRIX_ELEMENT_VALUE_"),
-                        cell_row   ("_MATRIX_ELEMENT_ROW_"),
-                        cell_column("_MATRIX_ELEMENT_COLUMN_");
-
-                _Variable * cv = CheckReceptacle(&cell_value, empty, false),
-                            * cr = CheckReceptacle(&cell_row, empty, false),
-                              * cc = CheckReceptacle(&cell_column, empty, false);
-
-                cv->CheckAndSet (0.0);
-                cr->CheckAndSet (0.0);
-                cc->CheckAndSet (0.0);
-
-                f.Compute();
-                if (terminateExecution) {
-                    return new _Matrix ();
-                } else {
-
-                    _Formula * conditionalCheck = nil;
-
-                    if (p2 && p2->ObjectClass() == STRING) {
-                        conditionalCheck = new _Formula (*((_FString*)p2)->theString);
-                        if (conditionalCheck->IsEmpty()) {
-                            delete conditionalCheck;
-                            conditionalCheck = nil;
-                        }
-
-                        conditionalCheck->Compute();
-                        if (terminateExecution) {
-                            delete conditionalCheck;
-                            return new _Matrix ();
-                        }
-                    }
-
-                    _Matrix   * retMatrix = new _Matrix (hDim,vDim,false,true);
-
-                    long          stackDepth = 0;
-                    _SimpleList   vIndex;
-
-                    if (f.AmISimple (stackDepth,vIndex) && (!conditionalCheck || conditionalCheck->AmISimple(stackDepth,vIndex))) {
-                        _SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
-                        * varValues = new _SimpleFormulaDatum [vIndex.lLength];
-
-                        bool                constantValue = false;
-                        _Parameter          constantV     = f.Compute()->Value();
-
-                        if (f.IsConstant()) {
-                            constantValue = true;
-                            constantV     = f.Compute()->Value();
-                        } else {
-                            f.ConvertToSimple (vIndex);
-                        }
-                        
- 
-                        if (conditionalCheck) {
-                            conditionalCheck->ConvertToSimple(vIndex);
-                        }
-
-                        if (constantValue && !conditionalCheck) {
-                            for (long r=0; r<hDim; r++)
-                                for (long c=0; c<vDim; c++) {
-                                    retMatrix->Store (r,c,constantV);
-                                }
-                        } else {
-
-                            long rid []= {cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
-
-                            for (long k=0; k<3; k++) {
-                                rid[k] = vIndex.Find(rid[k]);
-                            }
-
-                            PopulateArraysForASimpleFormula(vIndex, varValues);
-
-                            for (long r=0; r<hDim; r++) {
-
-                                if (rid[0]>=0) {
-                                    varValues[rid[0]].value = r;
-                                }
-
-                                for (long c=0; c<vDim; c++) {
-                                    if (rid[1]>=0) {
-                                        varValues[rid[1]].value = c;
-                                    }
-
-                                    if (rid[2]>=0) {
-                                        varValues[rid[2]].value = (*this)(r,c);
-                                    }
-
-                                    if (conditionalCheck && CheckEqual(conditionalCheck->ComputeSimple(stack,varValues),0.0)) {
-                                        if (rid[2]>=0) {
-                                            retMatrix->Store (r,c,varValues[rid[2]].value);
-                                        } else {
-                                            retMatrix->Store (r,c, (*this)(r,c));
-                                        }
-                                        continue;
-                                    }
-
-                                    if (constantValue) {
-                                        retMatrix->Store (r,c,constantV);
-                                    } else {
-                                        //printf ("Formula eval (stack depth= %d) (%d, %g, %g) %g\n", stackDepth, rid[2], varValues[rid[2]], f.ComputeSimple(stack,varValues));
-
-                                        retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
-                                    }
-                                }
-                            }
-
-                            f.ConvertFromSimple (vIndex);
-                        }
-                        if (conditionalCheck) {
-                            conditionalCheck->ConvertFromSimple(vIndex);
-                        }
-
-                        delete  [] stack;
-                        delete  [] varValues;
-                    } else {
-                        for (long r=0; r<hDim; r++) {
-                            cr->CheckAndSet (r);
-                            for (long c=0; c<vDim; c++) {
-                                cc->CheckAndSet (c);
-                                cv->CheckAndSet ((*this)(r,c));
-                                _PMathObj fv;
-
-                                if (conditionalCheck) {
-                                    fv = conditionalCheck->Compute();
-                                    if (fv->ObjectClass() == NUMBER)
-                                        if (CheckEqual (fv->Value(), 0.0)) {
-                                            retMatrix->Store (r,c,cv->Value());
-                                            continue;
-                                        }
-                                }
-
-                                fv = f.Compute();
-                                if (fv->ObjectClass()==NUMBER) {
-                                    retMatrix->Store (r,c,fv->Value());
-                                }
-                            }
-                        }
-                    }
-                    retMatrix->AmISparse();
-                    if (conditionalCheck) {
-                        delete conditionalCheck;
-                    }
-                    return retMatrix;
-                }
-            }
-            ReportWarning (_String("Invalid formula expression for element-wise matrix operations: ") & *((_FString*)p)->theString);
-            return new _Matrix;
-        }
-    }
-
-    long    ind1 = p->Value(),
-            ind2 = -1;
-
-    if (p2) {
-        ind2 = p2->Value();
-        // handle the row/column access operations here i.e. [R][-1] or [-1][R]
-
-        if (ind1 == -1 && ind2 >=0 && ind2 <vDim) { // valid column access
-            _SimpleList hL (hDim,0,1),
-                        vL (hDim,ind2,0);
-            return ExtractElementsByEnumeration (&hL,&vL,true);
-        }
-
-        if (ind2 == -1 && ind1 >=0 && ind1 <hDim) { // valid row access
-            _SimpleList hL (vDim,ind1,0),
-                        vL (vDim,0,1);
-            return ExtractElementsByEnumeration (&hL,&vL);
-        }
-    }
-
-    if (hDim == 1) {
-        if (ind2<0) {
-            ind2 = ind1;
-        }
-        ind1=0;
-    }
-
-    if (vDim == 1) {
-        ind2 = 0;
-    }
-
-    if (ind2<0) { // allow direct vectorlike indexing, i.e m[21] = m[3][3] (if the dim is *x6)
-        ind2  = ind1%vDim;
-        ind1 /=vDim;
-    }
-
-    if (ind1<0 || ind1>=hDim || ind2>=vDim) {
-        MatrixIndexError     (ind1,ind2,hDim,vDim);
-        return new _Constant (0.0);
-    }
-
-    if (ind2>=0) { // element access
-        if (storageType == 2) { // formulas
-            if (!theIndex) {
-                _Formula * entryFla = (((_Formula**)theData)[ind1*vDim+ind2]);
-                if (entryFla) {
-                    return (_PMathObj)entryFla->Compute()->makeDynamic();
-                } else {
-                    return new _Constant (0.0);
-                }
-            } else {
-                long p = Hash (ind1, ind2);
-                if (p<0) {
-                    return new _Constant (0.0);
-                } else {
-                    return (_PMathObj)(((_Formula**)theData)[p])->Compute()->makeDynamic();
-                }
-            }
-        } else {
-            if (storageType == 1) {
-                if (theIndex) {
-                    return new _Constant ((*this)(ind1,ind2));
-                } else {
-                    return new _Constant (theData[ind1*vDim+ind2]);
-                }
-
-            } else {
-                _MathObject* cell;
-                if (!theIndex) {
-                    cell = (_MathObject*)GetMatrixObject (ind1*vDim+ind2)->makeDynamic();
-                } else {
-                    long p = Hash (ind1, ind2);
-                    if (p<0) {
-                        cell = new _Constant (0.0);
-                    } else {
-                        cell = (_MathObject*)GetMatrixObject (p)->makeDynamic();
-                    }
-                }
-                return cell;
-            }
-        }
-    }
-
+_PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
+  if (!p) {
+    warnError(-106);
     return new _Constant (0.0);
+  }
+  
+  if (hDim <= 0 || vDim <= 0) {
+    return new _Constant (0.0);
+  }
+  
+  if (p->ObjectClass() == MATRIX) {
+    if (p2 == nil) {
+      _Matrix * nn = (_Matrix*)p;
+      if (nn->storageType == 1) {
+        if (nn->hDim == hDim && nn->vDim == vDim) {
+          _SimpleList hL,
+          vL;
+          
+          for (long r=0; r<hDim; r++)
+            for (long c=0; c<vDim; c++)
+              if ((*nn)(r,c) > 0.0) {
+                hL << r;
+                vL << c;
+              }
+          
+          return ExtractElementsByEnumeration (&hL,&vL);
+        } else {
+          if (nn->hDim > 0 && nn->vDim == 1) { // extract by row
+            _SimpleList hL;
+            
+            for (long r=0; r<nn->hDim; r++) {
+              long v = (*nn)(r,0);
+              if (v>=0 && v<hDim) {
+                hL<<v;
+              }
+            }
+            
+            if (hL.lLength) {
+              _Matrix * result = new _Matrix (hL.lLength,vDim,false,true);
+              checkPointer (result);
+              long k = 0;
+              for (long r=0; r<hL.lLength; r++) {
+                long ri = hL.lData[r];
+                for (long c=0; c<vDim; c++,k++) {
+                  result->theData[k] = (*this)(ri,c);
+                }
+              }
+              return result;
+            }
+            
+            return new _Matrix;
+          } else if (nn->vDim > 0 && nn->hDim == 1) { // extract by column
+            _SimpleList hL;
+            
+            for (long r=0; r<nn->vDim; r++) {
+              long v = (*nn)(0,r);
+              if (v>=0 && v<vDim) {
+                hL<<v;
+              }
+            }
+            
+            if (hL.lLength) {
+              _Matrix * result = new _Matrix (hDim,hL.lLength,false,true);
+              checkPointer (result);
+              long k = 0;
+              for (long c=0; c<hDim; c++)
+                for (long r=0; r<hL.lLength; r++,k++) {
+                  result->theData[k] = (*this)(c,hL.lData[r]);
+                }
+              return result;
+            }
+            
+            return new _Matrix;
+          }
+        }
+      }
+      ReportWarning ("Incorrect dimensions or matrix type (must be numeric) for an indexing matrix in call to []");
+    } else {
+      if (p2->ObjectClass() == MATRIX) {
+        _Matrix * nn =  (_Matrix*)((_Matrix*)p)->ComputeNumeric();
+        _Matrix * nn2 = (_Matrix*)((_Matrix*)p2)->ComputeNumeric();
+        
+        if (nn->hDim == 1 && nn->vDim == 2 && nn->storageType == 1 && nn2->hDim == 1 && nn2->vDim == 2 && nn2->storageType == 1) {
+          long left   = (*nn)(0,0),
+          top    = (*nn)(0,1),
+          bottom = (*nn2)(0,1),
+          right  = (*nn2)(0,0);
+          
+          if (left >= 0 && left < hDim && right >= 0 && right < hDim && left <=right &&
+              top >= 0 && top < vDim && bottom >=0 && bottom < vDim && top <= bottom) {
+            _SimpleList hL,
+            vL;
+            
+            for (long r=left; r<=right; r++)
+              for (long c=top; c<=bottom; c++) {
+                hL << r;
+                vL << c;
+              }
+            
+            _Matrix * subM = ExtractElementsByEnumeration (&hL,&vL);
+            subM->hDim = right-left+1;
+            subM->vDim = bottom-top+1;
+            
+            return subM;
+          }
+        }
+        ReportWarning ("Incorrect dimensions or matrix type (must be numeric 2x1 matrices) for an rectangular extract in call to []");
+      }
+      
+    }
+    return new _Constant (0.0);
+  } else {
+    if (p->ObjectClass() == STRING) {
+      
+      
+      _String aFormulaString = *((_FString*)p)->theString;
+      _Formula f (aFormulaString);
+      
+      if (!f.IsEmpty()) {
+        /* check formula validity */
+        
+        _String cell_value ("_MATRIX_ELEMENT_VALUE_"),
+        cell_row   ("_MATRIX_ELEMENT_ROW_"),
+        cell_column("_MATRIX_ELEMENT_COLUMN_");
+        
+        _Variable * cv = CheckReceptacle(&cell_value, empty, false),
+        * cr = CheckReceptacle(&cell_row, empty, false),
+        * cc = CheckReceptacle(&cell_column, empty, false);
+        
+        cv->CheckAndSet (0.0);
+        cr->CheckAndSet (0.0);
+        cc->CheckAndSet (0.0);
+        
+        f.Compute();
+        if (terminateExecution) {
+          return new _Matrix ();
+        } else {
+          
+          _Formula * conditionalCheck = nil;
+          
+          if (p2 && p2->ObjectClass() == STRING) {
+            conditionalCheck = new _Formula (*((_FString*)p2)->theString);
+            if (conditionalCheck->IsEmpty()) {
+              delete conditionalCheck;
+              conditionalCheck = nil;
+            }
+            
+            conditionalCheck->Compute();
+            if (terminateExecution) {
+              delete conditionalCheck;
+              return new _Matrix ();
+            }
+          }
+          
+          _Matrix   * retMatrix = new _Matrix (hDim,vDim,false,true);
+          
+          long          stackDepth = 0;
+          _SimpleList   vIndex;
+          
+          if (f.AmISimple (stackDepth,vIndex) && (!conditionalCheck || conditionalCheck->AmISimple(stackDepth,vIndex))) {
+            _SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
+            * varValues = new _SimpleFormulaDatum [vIndex.lLength];
+            
+            bool                constantValue = false;
+            _Parameter          constantV     = f.Compute()->Value();
+            
+            if (f.IsConstant()) {
+              constantValue = true;
+              constantV     = f.Compute()->Value();
+            } else {
+              f.ConvertToSimple (vIndex);
+            }
+            
+            
+            if (conditionalCheck) {
+              conditionalCheck->ConvertToSimple(vIndex);
+            }
+            
+            if (constantValue && !conditionalCheck) {
+              for (long r=0; r<hDim; r++)
+                for (long c=0; c<vDim; c++) {
+                  retMatrix->Store (r,c,constantV);
+                }
+            } else {
+              
+              long rid []= {cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
+              
+              for (long k=0; k<3; k++) {
+                rid[k] = vIndex.Find(rid[k]);
+              }
+              
+              PopulateArraysForASimpleFormula(vIndex, varValues);
+              
+              for (long r=0; r<hDim; r++) {
+                
+                if (rid[0]>=0) {
+                  varValues[rid[0]].value = r;
+                }
+                
+                for (long c=0; c<vDim; c++) {
+                  if (rid[1]>=0) {
+                    varValues[rid[1]].value = c;
+                  }
+                  
+                  if (rid[2]>=0) {
+                    varValues[rid[2]].value = (*this)(r,c);
+                  }
+                  
+                  if (conditionalCheck && CheckEqual(conditionalCheck->ComputeSimple(stack,varValues),0.0)) {
+                    if (rid[2]>=0) {
+                      retMatrix->Store (r,c,varValues[rid[2]].value);
+                    } else {
+                      retMatrix->Store (r,c, (*this)(r,c));
+                    }
+                    continue;
+                  }
+                  
+                  if (constantValue) {
+                    retMatrix->Store (r,c,constantV);
+                  } else {
+                    //printf ("Formula eval (stack depth= %d) (%d, %g, %g) %g\n", stackDepth, rid[2], varValues[rid[2]], f.ComputeSimple(stack,varValues));
+                    
+                    retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
+                  }
+                }
+              }
+              
+              f.ConvertFromSimple (vIndex);
+            }
+            if (conditionalCheck) {
+              conditionalCheck->ConvertFromSimple(vIndex);
+            }
+            
+            delete  [] stack;
+            delete  [] varValues;
+          } else {
+            for (long r=0; r<hDim; r++) {
+              cr->CheckAndSet (r);
+              for (long c=0; c<vDim; c++) {
+                cc->CheckAndSet (c);
+                cv->CheckAndSet ((*this)(r,c));
+                _PMathObj fv;
+                
+                if (conditionalCheck) {
+                  fv = conditionalCheck->Compute();
+                  if (fv->ObjectClass() == NUMBER)
+                    if (CheckEqual (fv->Value(), 0.0)) {
+                      retMatrix->Store (r,c,cv->Value());
+                      continue;
+                    }
+                }
+                
+                fv = f.Compute();
+                if (fv->ObjectClass()==NUMBER) {
+                  retMatrix->Store (r,c,fv->Value());
+                }
+              }
+            }
+          }
+          retMatrix->AmISparse();
+          if (conditionalCheck) {
+            delete conditionalCheck;
+          }
+          return retMatrix;
+        }
+      }
+      ReportWarning (_String("Invalid formula expression for element-wise matrix operations: ") & *((_FString*)p)->theString);
+      return new _Matrix;
+    }
+  }
+  
+  long    ind1 = p->Value(),
+  ind2 = -1;
+  
+  if (p2) {
+    ind2 = p2->Value();
+    // handle the row/column access operations here i.e. [R][-1] or [-1][R]
+    
+    if (ind1 == -1 && ind2 >=0 && ind2 <vDim) { // valid column access
+      _SimpleList hL (hDim,0,1),
+      vL (hDim,ind2,0);
+      return ExtractElementsByEnumeration (&hL,&vL,true);
+    }
+    
+    if (ind2 == -1 && ind1 >=0 && ind1 <hDim) { // valid row access
+      _SimpleList hL (vDim,ind1,0),
+      vL (vDim,0,1);
+      return ExtractElementsByEnumeration (&hL,&vL);
+    }
+  }
+  
+  if (hDim == 1) {
+    if (ind2<0) {
+      ind2 = ind1;
+    }
+    ind1=0;
+  }
+  
+  if (vDim == 1) {
+    ind2 = 0;
+  }
+  
+  if (ind2<0) { // allow direct vectorlike indexing, i.e m[21] = m[3][3] (if the dim is *x6)
+    ind2  = ind1%vDim;
+    ind1 /=vDim;
+  }
+  
+  if (ind1<0 || ind1>=hDim || ind2>=vDim) {
+    MatrixIndexError     (ind1,ind2,hDim,vDim);
+    return new _Constant (0.0);
+  }
+  
+  if (ind2>=0) { // element access
+    if (storageType == 2) { // formulas
+      if (!theIndex) {
+        _Formula * entryFla = (((_Formula**)theData)[ind1*vDim+ind2]);
+        if (entryFla) {
+          return (_PMathObj)entryFla->Compute()->makeDynamic();
+        } else {
+          return new _Constant (0.0);
+        }
+      } else {
+        long p = Hash (ind1, ind2);
+        if (p<0) {
+          return new _Constant (0.0);
+        } else {
+          return (_PMathObj)(((_Formula**)theData)[p])->Compute()->makeDynamic();
+        }
+      }
+    } else {
+      if (storageType == 1) {
+        if (theIndex) {
+          return new _Constant ((*this)(ind1,ind2));
+        } else {
+          return new _Constant (theData[ind1*vDim+ind2]);
+        }
+        
+      } else {
+        _MathObject* cell;
+        if (!theIndex) {
+          cell = (_MathObject*)GetMatrixObject (ind1*vDim+ind2)->makeDynamic();
+        } else {
+          long p = Hash (ind1, ind2);
+          if (p<0) {
+            cell = new _Constant (0.0);
+          } else {
+            cell = (_MathObject*)GetMatrixObject (p)->makeDynamic();
+          }
+        }
+        return cell;
+      }
+    }
+  }
+  
+  return new _Constant (0.0);
 }
 
 //_____________________________________________________________________________________________
@@ -5193,6 +5196,7 @@ _PMathObj _Matrix::MCoord (_PMathObj p, _PMathObj p2)
 
     if (!p) {
         warnError( -106);
+        return new _MathObject;
     }
 
     ind1 = p->Value();
@@ -5866,35 +5870,37 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
 //_____________________________________________________________________________________________
 void        _Matrix::AgreeObjects (_Matrix& m)
 {
-    if (storageType==2)
-        if (toPolyOrNot!=0.0) {
-            ConvertFormulas2Poly ();
-        } else {
-            Evaluate(true);
-        }
-
-    if (m.storageType==2)
-        if (toPolyOrNot!=0.0) {
-            m.ConvertFormulas2Poly ();
-        } else {
-            m.Evaluate(true);
-        }
-
-    if (storageType!=m.storageType) {
-        if (toPolyOrNot) {
-            if (storageType == 1) {
-                ConvertNumbers2Poly ();
-            } else {
-                m.ConvertNumbers2Poly ();
-            }
-        } else {
-            if (storageType == 1) {
-                m.Evaluate (true);
-            } else {
-                Evaluate ();
-            }
-        }
+  if (storageType==2) {
+    if (toPolyOrNot!=0.0) {
+      ConvertFormulas2Poly ();
+    } else {
+      Evaluate(true);
     }
+  }
+  
+  if (m.storageType==2) {
+    if (toPolyOrNot!=0.0) {
+      m.ConvertFormulas2Poly ();
+    } else {
+      m.Evaluate(true);
+    }
+  }
+  
+  if (storageType!=m.storageType) {
+    if (toPolyOrNot) {
+      if (storageType == 1) {
+        ConvertNumbers2Poly ();
+      } else {
+        m.ConvertNumbers2Poly ();
+      }
+    } else {
+      if (storageType == 1) {
+        m.Evaluate (true);
+      } else {
+        Evaluate ();
+      }
+    }
+  }
 }
 //_____________________________________________________________________________________________
 void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
@@ -6035,7 +6041,7 @@ void        _Matrix::operator += (_Matrix& m)
     if ((!m.theIndex) && theIndex) {
         CheckIfSparseEnough(true);
     }
-    Add (*this,m);
+    AddMatrix (*this,m);
 }
 
 //______________________________________________________________
@@ -6330,9 +6336,9 @@ _PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp)
     _String                 errMsg;
 
     if (storageType!=1 || hDim != 3) {
-        errMsg = ("First argument in call to < (PathLogLikelihood) must be a numeric 3xN matrix");
+        errMsg = "First argument in call to < (PathLogLikelihood) must be a numeric 3xN matrix";
     } else {
-        errMsg = ("Second argument in call to < (PathLogLikelihood) must be a square matrix");
+        errMsg = "Second argument in call to < (PathLogLikelihood) must be a square matrix";
         if (mp->ObjectClass () == MATRIX) {
             m = (_Matrix*)mp->Compute();
             if (m->GetHDim() == m->GetVDim()) {
@@ -6343,7 +6349,7 @@ _PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp)
 
     if (errMsg.sLength) {
         WarnError  (errMsg);
-        return new _Constant (0.);
+        return new _MathObject;
     }
 
     CheckIfSparseEnough     (true);
@@ -6941,7 +6947,6 @@ _PMathObj       _Matrix::ProfileMeanFit (_PMathObj classes)
     res->theData[2*weightClasses+currentSlider] = valueSum/currentSpan;
     //splitRuns.lData[currentSlider] = currentSpan;
 
-    currentIndex    = 0;
     currentSlider   = 0;
     runningOffset   = 0;
 
@@ -7047,7 +7052,7 @@ _PMathObj       _Matrix::AddObj (_PMathObj mp)
     if (!result) {
         checkPointer (result);
     }
-    Add (*result,*m);
+    AddMatrix (*result,*m);
     return result;
 }
 
@@ -7199,26 +7204,27 @@ void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalSt
 //_____________________________________________________________________________________________
 _PMathObj       _Matrix::MultObj (_PMathObj mp)
 {
-
-    if (mp->ObjectClass()!=ObjectClass())
-        if (mp->ObjectClass()!=NUMBER) {
-            warnError(-101);
-            return new _Matrix (1,1);
-        } else {
-            _Parameter theV = mp->Value();
-            return (_PMathObj)((*this)*theV).makeDynamic();
-        }
-
-    _Matrix*        m = (_Matrix*)mp;
-    if (!CheckDimensions (*m)) return new _MathObject;
-    AgreeObjects    (*m);
-
-    _Matrix*      result = new _Matrix (hDim, m->vDim, false, storageType);
-    checkPointer  (result);
-    
-    Multiply      (*result,*m);
-    return        result;
-
+  
+  if (mp->ObjectClass()!=ObjectClass()) {
+    if (mp->ObjectClass()!=NUMBER) {
+      warnError(-101);
+      return new _Matrix (1,1);
+    } else {
+      _Parameter theV = mp->Value();
+      return (_PMathObj)((*this)*theV).makeDynamic();
+    }
+  }
+  
+  _Matrix*        m = (_Matrix*)mp;
+  if (!CheckDimensions (*m)) return new _MathObject;
+  AgreeObjects    (*m);
+  
+  _Matrix*      result = new _Matrix (hDim, m->vDim, false, storageType);
+  checkPointer  (result);
+  
+  Multiply      (*result,*m);
+  return        result;
+  
 }
 
 //_____________________________________________________________________________________________
@@ -7354,7 +7360,7 @@ _Matrix     _Matrix::operator + (_Matrix& m)
 {
     AgreeObjects (m);
     _Matrix result (hDim, vDim, bool((theIndex!=nil)&&(m.theIndex!=nil)), storageType);
-    Add (result,m);
+    AddMatrix (result,m);
     return result;
 
 }
@@ -7374,7 +7380,6 @@ BaseRef _Matrix::toStr(void)
 {
   _String result(2048L,true);
   checkParameter (printDigitsSpec,printDigits,0);
-  long digs = printDigits;
   
   char number_buffer [256];
   
@@ -7397,7 +7402,7 @@ BaseRef _Matrix::toStr(void)
           result << ',';
         }
         result<<openBracket;
-        char str[100];
+        
         for (long j = 0; j<vDim; j++) {
           if (printStrings) {
             result << '"';
@@ -9735,7 +9740,7 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2, _hy
 
 _GrowingVector::_GrowingVector (bool iscol) : _Matrix (64,1,false,true)
 {
-    used = 0;
+    used = 0UL;
     isColumn = iscol;
 }
 
@@ -9746,7 +9751,7 @@ BaseRef     _GrowingVector::makeDynamic (void)
     _GrowingVector * result = (_GrowingVector*)checkPointer(new _GrowingVector);
     result->_Matrix::Duplicate (this);
     result->used = used;
-    result->vDim = 1;
+    result->vDim = 1UL;
     result->isColumn = isColumn;
     return result;
 }
@@ -9757,7 +9762,7 @@ long        _GrowingVector::Store (_Parameter toStore)
 {
     if (used < hDim) {
         theData[used++] = toStore;  // increment AFTER argument is sent to function
-        return used-1;
+        return used-1UL;
     } else {
         Resize (used + MAX (used/8,64));    // allocate another block of 64
         return Store (toStore);
@@ -9768,7 +9773,7 @@ long        _GrowingVector::Store (_Parameter toStore)
 
 void        _GrowingVector::operator << (const _SimpleList& theSource)
 {
-    for (long k = 0; k < theSource.lLength; k++) {
+    for (unsigned long k = 0; k < theSource.lLength; k++) {
         Store (theSource.lData[k]);
     }
 }
@@ -9779,7 +9784,7 @@ void        _GrowingVector::Clear (void)
 {
     _Matrix::Clear();
     ZeroUsed();
-    vDim = 1;
+    vDim = 1UL;
 }
 
 //_____________________________________________________________________________________________

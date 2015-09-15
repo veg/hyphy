@@ -123,7 +123,7 @@ class _List:public _SimpleList
         /**
         * Element location functions - read only
         */
-        virtual _List operator = (_List&);
+        virtual const _List operator = (_List&);
 
 
         /**
@@ -131,7 +131,7 @@ class _List:public _SimpleList
         * \n\n \b Example: \code _List result_list = list & append_list; \endcode 
         * @return New concatenated list
         */
-        _List operator & (_List&);
+        const _List operator & (_List const&) const;
 
         /**
         * Append operator
@@ -165,12 +165,12 @@ class _List:public _SimpleList
         /**
         * Append operator
         */
-        _List operator & (BaseRef);
+        const _List operator & (BaseRef) const;
 
         /**
         * @sa Equal()
         */
-        bool operator == (_List&);
+        bool operator == (_List const&) const;
 
         /**
         * Append reference to *this
@@ -193,7 +193,7 @@ class _List:public _SimpleList
         * @sa Find()
         * @sa BinaryFind()
         */
-        virtual long BinaryFind(BaseRef);
+        virtual long BinaryFindObject (BaseRef, long startAt = 0) const;
 
         /**
         * Insert an element into the sorted list preserving the sortedness
@@ -242,7 +242,7 @@ class _List:public _SimpleList
         * @return bool, true if identical.
         * @sa AppendNewInstance()
         */
-        bool Equal(_List&);
+        bool Equal(_List const&) const;
 
         /**
         * Find the position of a search string in the list of strings (ONLY)
@@ -253,7 +253,7 @@ class _List:public _SimpleList
         * @param s The integer to find
         * @return -1 if not found, index if found
         */
-        virtual long Find(BaseRef, long startat = 0);
+        virtual long FindObject (BaseRefCosnt, long startat = 0) const;
 
         /**
         */
@@ -290,7 +290,7 @@ class _List:public _SimpleList
         * @param increment by Pass true for a case sensitive search 
         * @return Nothing. Acts on the List object it was called from. 
         */
-        virtual void InsertElement(BaseRef br,long insertAt=-1, bool store=true);
+        virtual void InsertElement(BaseRef br,long insertAt=-1, bool store=true, bool pointer=true);
 
         /**
         */

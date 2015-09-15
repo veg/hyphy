@@ -1424,8 +1424,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
 
             if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false)) {
                 bool    remaining, family_is_discrete;
-                long    res;
-
+ 
                 do {
                     remaining = all_but_one.NChooseK (aux_list, nk_tuple);
 
@@ -1460,7 +1459,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
                         score = ComputeContinuousScore (node_id, parents);
                     }
 
-                    res = family_scores.Store (score, nk_tuple);
+                    family_scores.Store (score, nk_tuple);
                 } while (remaining);
             } else {
                 _String oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
@@ -1734,8 +1733,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
         K2Search (optMethod, num_restarts, num_randomize, output_matrix);
     } else {
         _String         oops;
-        _Parameter      mcmc_steps, mcmc_burnin, mcmc_samples,
-                        mcmc_nchains, mcmc_dtemp;
+        _Parameter      mcmc_steps, mcmc_burnin, mcmc_samples;
 
 
         // acquisition of HBL arguments with a few sanity checks
@@ -2229,6 +2227,10 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
     //  Modify a graph by adding, removing, or reversing an edge, so long as that modification
     //  complies with the constraint matrix and (when fixed_order=TRUE) node order.
 
+    if (num_nodes <= 1) { // nothing to do
+      return;
+    }
+  
     long    step = 0, fail = 0;
 
 
