@@ -11,6 +11,7 @@
 #include "HYPlatformGraphicPane.h"
 #include "parser.h"
 #include <Timer.h>
+#include "function_templates.h"
 
 extern   PixPatHandle   whiteFill,
          blueFill,

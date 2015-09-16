@@ -169,7 +169,7 @@ bool        _HYDataPanel::_ProcessMenuSelection (long msel)
             case 2:
                 newDisplay = HY_SEQUENCE_PANE_NAMES_SHORT;
                 break;
-            case 3:
+            default:
                 newDisplay = HY_SEQUENCE_PANE_NAMES_ALL;
 
             }
@@ -378,7 +378,7 @@ void        _HYDataPanel::_PrintData(void)
     }
 
     if (theStatus == noErr) {
-        theStatus = PMSessionPrintDialog(hyPC,gPrintSettings, gPageFormat, &isAccepted);
+        PMSessionPrintDialog(hyPC,gPrintSettings, gPageFormat, &isAccepted);
 
         if (isAccepted) {
             theStatus = PMGetAdjustedPageRect(gPageFormat, &prRect);
@@ -563,20 +563,20 @@ void        _HYDataPanel::_PrintData(void)
                     gFlattenedSettings = NULL;
                 }
 
-                theStatus = PMFlattenPrintSettings(gPrintSettings, &gFlattenedSettings);
+                PMFlattenPrintSettings(gPrintSettings, &gFlattenedSettings);
             }
 
             if (gPageFormat != kPMNoPageFormat) {
-                theStatus = PMRelease(gPageFormat);
+                PMRelease(gPageFormat);
                 gPageFormat = kPMNoPageFormat;
             }
 
             if (gPrintSettings != kPMNoPrintSettings) {
-                theStatus = PMRelease(gPrintSettings);
+                PMRelease(gPrintSettings);
                 gPrintSettings = kPMNoPrintSettings;
             }
 
-            theStatus = PMRelease(hyPC);
+            PMRelease(hyPC);
 
 #else
             PrCloseDoc(printPort);
@@ -587,7 +587,7 @@ void        _HYDataPanel::_PrintData(void)
         }
 #ifdef TARGET_API_MAC_CARBON
         else {
-            theStatus = PMRelease(hyPC);
+            PMRelease(hyPC);
         }
 #endif
 

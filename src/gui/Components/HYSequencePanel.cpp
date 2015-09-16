@@ -784,12 +784,13 @@ void    _HYSequencePane::HScrollPane (long dx)
         } else {
             loopStart = (startColumn-dx)%blockWidth;
 
-            if (loopStart)
-                if (loopStart>=visWidth) {
-                    h -= (loopStart-blockWidth)*charWidth;
-                } else {
-                    h = 0;
-                }
+            if (loopStart) {
+                  if (loopStart>=visWidth) {
+                      h -= (loopStart-blockWidth)*charWidth;
+                  } else {
+                      h = 0;
+                  }
+            }
 
         }
 
@@ -1128,7 +1129,7 @@ void        _HYSequencePane::AddColumnToSelection (long c)
 //__________________________________________________________________
 void        _HYSequencePane::AddSpeciesToSelection (long c)
 {
-    if (c>0 && c<speciesIndex.lLength)
+  if (c>0 && c<speciesIndex.lLength) {
         if (vselection.lLength) {
             long f = vselection.BinaryFind (c);
             if (f<0) {
@@ -1137,6 +1138,7 @@ void        _HYSequencePane::AddSpeciesToSelection (long c)
         } else {
             vselection<<c;
         }
+  }
 }
 
 
@@ -1148,7 +1150,7 @@ void        _HYSequencePane::SelectSequenceNames (_List& list, bool send)
 
     for (long k=0; k<rowHeaders.lLength; k++) {
         _String * aSeq = (_String*)rowHeaders(speciesIndex.lData[k]);
-        if (list.BinaryFind (aSeq) >= 0) {
+        if (list.BinaryFindObject (aSeq) >= 0) {
             vselection << k;
         }
     }
@@ -1552,8 +1554,8 @@ void        _HYSequencePane::BatchRenameSequences (_List& oldNames,_List& newNam
 {
     bool touched = false;
     for (long k=0; k<oldNames.lLength; k++) {
-        long nID = rowHeaders.Find (oldNames(k));
-        if (nID >= 0 && rowHeaders.Find (newNames(k)) < 0) {
+        long nID = rowHeaders.FindString (oldNames(k));
+        if (nID >= 0 && rowHeaders.FindString (newNames(k)) < 0) {
             rowHeaders (nID)->Duplicate (newNames(k));
             touched = true;
         }
@@ -1574,7 +1576,7 @@ void        _HYSequencePane::EditSequenceName (long k)
 
     if (EnterStringDialog ( edited, prompt,(Ptr)messageRecipient)) {
         if (!edited.Equal (present)) {
-            if (rowHeaders.Find (&edited)>=0) {
+            if (rowHeaders.FindString (&edited)>=0) {
                 prompt = _String("Another sequence is already named ") & edited & ". Please choose another name.";
                 ProblemReport (prompt, (Ptr)messageRecipient);
                 return;

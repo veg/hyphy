@@ -195,6 +195,16 @@ _String getLibraryPath() {
 }
 
 //__________________________________________________________________________________
+
+void   _helper_clear_screen (void) {
+  #ifdef __MINGW32__
+  //system("cls");
+  #else
+    printf ("\033[2J\033[H");
+  #endif
+}
+
+//__________________________________________________________________________________
 void    ReadInTemplateFiles(void)
 {
     _String dir_sep (GetPlatformDirectoryChar()),
@@ -368,8 +378,8 @@ long    DisplayListOfChoices (void)
                     padder.Finalize();
                     verString = padder & '/' & verString & "\\" & padder;
                 }
-
-                printf ("\n\033[2J\033[H%s\n%s\n\n",verString.getStr(), header.getStr());
+                _helper_clear_screen ();
+                printf ("%s\n%s\n\n",verString.getStr(), header.getStr());
                 for (choice = 0; choice<categoryHeadings.lLength; choice++) {
                     printf ("\n\t(%ld) %s",choice+1,((_String*)categoryHeadings(choice))->getStr());
                 }
@@ -394,7 +404,8 @@ long    DisplayListOfChoices (void)
                     categNumber = choice-1;
                 }
             } else {
-                printf ("\n\033[2J\033[H ***************** FILES IN '%s' ***************** \n\n",((_String*)categoryHeadings(categNumber))->getStr());
+                _helper_clear_screen ();
+                printf ("***************** FILES IN '%s' ***************** \n\n",((_String*)categoryHeadings(categNumber))->getStr());
                 long start = categoryDelimiters.lData[categNumber]+1,
                      end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.lData[categNumber+1];
 
@@ -432,7 +443,8 @@ long    DisplayListOfPostChoices (void)
     long choice = -1;
     if (availablePostProcessors.lLength) {
         _String fileAbbr;
-        printf ("\033[2J\033[H\n\t Available Result Processing Tools\n\t ---------------------------------\n\n");
+        _helper_clear_screen ();
+        printf ("\n\t Available Result Processing Tools\n\t ---------------------------------\n\n");
         while (choice == -1) {
             for (choice = 0; choice<availablePostProcessors.lLength; choice++) {
                 printf ("\n\t(%ld):%s",choice+1,
@@ -567,22 +579,6 @@ int main (int argc, char* argv[])
 
     if (rank == 0) {
         mpiNodesThatCantSwitch.Populate (size,1,0);
-        /* {
-              char hostname[256];
-              gethostname(hostname, sizeof(hostname));
-              printf("PID %d on %s ready for attach\n", getpid(), hostname);
-              fflush(stdout);
-              //getchar ();
-          } */
-#endif
-
-
-        //for (long k=0; k<NSIG; k++)
-        //{
-        //  signal(k, &hyphyBreak);
-        //}
-
-#ifdef  __HYPHYMPI__
     }
 #endif
 
@@ -591,19 +587,25 @@ int main (int argc, char* argv[])
          signal (SIGTERM, SIG_IGN);
      if (signal (SIGINT, hyphy_sigterm_handler) == SIG_IGN)
          signal (SIGINT, SIG_IGN);
-         
 #endif
+  
     char    curWd[4096],
             dirSlash = GetPlatformDirectoryChar();
     getcwd (curWd,4096);
   
     _String baseDir (curWd);
+  
 
     if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
     }
-    
+  
     _String libDir = getLibraryPath();
+
+
+#ifdef __MINGW32__
+     baseDir = libDir;
+#endif
   
     pathNames&& &libDir;
     _String argFile;

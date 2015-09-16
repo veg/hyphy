@@ -221,7 +221,7 @@ bool    GlobalStartup (void)
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
 #ifndef __HYPHYMPI__
     _String fileName(errorFileName);
-#if defined __HYPHYXCODE__ || defined __WINDOZE__
+#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
     fileName = baseDirectory & fileName;
 #endif
 #else
@@ -231,7 +231,7 @@ bool    GlobalStartup (void)
     globalErrorFile = doFileOpen (fileName.sData,"w+");
     while (globalErrorFile == nil && p<10) {
         fileName = errorFileName&'.'&_String(p);
-#if defined __HYPHYXCODE__ || defined __WINDOZE__
+#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
         fileName = baseDirectory & fileName;
 #endif
         globalErrorFile = doFileOpen (fileName.sData,"w+");
@@ -242,7 +242,7 @@ bool    GlobalStartup (void)
     p=1;
 #ifndef __HYPHYMPI__
     fileName = messageFileName;
-#if defined __HYPHYXCODE__ || defined __WINDOZE__
+#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
     fileName = baseDirectory & fileName;
 #endif
 #else
@@ -253,7 +253,7 @@ bool    GlobalStartup (void)
 
     while (globalMessageFile == nil && p<10) {
         fileName = messageFileName&'.'&_String(p);
-#if defined __HYPHYXCODE__ || defined __WINDOZE__
+#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
         fileName = baseDirectory & fileName;
 #endif
         globalMessageFile = doFileOpen (fileName.sData,"w+");

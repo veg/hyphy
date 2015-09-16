@@ -526,7 +526,7 @@ void    _HYObjectInspector::BuildListOfObjects (long index)
                 } else {
                     oList->SetCellData (thisDS,rowCount,0,HY_TABLE_STATIC_TEXT|HY_TABLE_ITALIC,true);
                 }
-                _DataSet*  theDS = (_DataSet*)dataSetList(dataSetNamesList.Find(thisDS));
+                _DataSet*  theDS = (_DataSet*)dataSetList(dataSetNamesList.FindObject(thisDS));
                 if (theDS->GetTT()->IsStandardNucleotide()) {
                     newStat = "Nucleotide data";
                 } else if (theDS->GetTT()->IsStandardAA()) {
@@ -770,7 +770,7 @@ void    _HYObjectInspector::OpenObjectWindow (void)
                 windowTitle = _String ("Likelihood Function ")&windowTitle;
                 f = FindWindowByName (windowTitle);
                 if (f<0) {
-                    f = likeFuncNamesList.Find(&winTitle);
+                    f = likeFuncNamesList.FindObject(&winTitle);
                     if (f>=0) {
                         _HYParameterTable* newParameterTable = new _HYParameterTable (windowTitle,f);
                         newParameterTable->_Zoom(true);
@@ -823,7 +823,7 @@ void    _HYObjectInspector::KillObject (void)
         }
         case 1: {
             for (f = 0; f<sel.lLength; f+=2) {
-                long dsID = dataSetNamesList.Find ((_String*)dl->GetCellData (0,sel.lData[f]/2));
+                long dsID = dataSetNamesList.FindObject ((_String*)dl->GetCellData (0,sel.lData[f]/2));
                 if (dsID>=0) {
                     if (dl->cellTypes.lData[sel.lData[f]] & HY_TABLE_BOLD) {
                         _String prompt ("Dataset ");

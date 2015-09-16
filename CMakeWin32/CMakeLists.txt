@@ -33,7 +33,7 @@ ENABLE_LANGUAGE(C)
 SET(CMAKE_CXX_COMPILER ${CMAKE_FIND_ROOT_PATH}/bin/i586-mingw32-g++)
 ENABLE_LANGUAGE(CXX)
 
-set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 ")
+set(DEFAULT_COMPILE_FLAGS "-fsigned-char -Os -ffunction-sections -fdata-sections  ")
 add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
 
 
@@ -144,6 +144,5 @@ set_target_properties(
 	COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} "
 	LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}"
 	LINKER_LANGUAGE CXX
-	# WIN32_EXECUTABLE TRUE
 )
 

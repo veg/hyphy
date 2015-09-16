@@ -526,7 +526,7 @@ _Parameter  _CalcNode::ComputeBranchLength (void)
 
     RetrieveModelComponents (theModel, theMx, freqMx, mbf);
 
-    if (!freqMx || !theModel) {
+    if (!freqMx || !theMx) {
         return Value();
     }
 

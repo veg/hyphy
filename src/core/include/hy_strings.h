@@ -315,7 +315,7 @@ public:
     * \n\n \b Example: \code char * new_str = string.getStr(); \endcode
     * @return Returns a good ole char*
     */
-    char*    getStr(void);
+    const char*    getStr(void) const;
 
     /**
     * Removes part of string that is between the two specified indices
@@ -637,7 +637,7 @@ public:
     * @sa startswith()
     * @sa endswith()
     */
-    bool beginswith (_String, bool = true);
+    bool beginswith (_String const, bool = true) const;
 
     /**
     * Checks to see if String starts with substring
@@ -648,7 +648,7 @@ public:
     * @sa beginswith()
     * @sa endswith()
     */
-    bool startswith (_String&);
+    bool startswith (_String const&) const;
 
     /**
     * Checks to see if String ends with substring

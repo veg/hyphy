@@ -413,7 +413,6 @@ private:
     void            ComputeGradient             (_Matrix&, _Matrix&,  _Parameter&, _Matrix&, _SimpleList&,
             long, bool normalize = true);
     bool            SniffAround                 (_Matrix& , _Parameter& , _Parameter&);
-    long            HasPrecisionBeenAchieved    (_Parameter funcValue = 2.*A_LARGE_NUMBER, bool = false);
     void            RecurseCategory             (long,long,long,long,_Parameter
 #ifdef _SLKP_LFENGINE_REWRITE_
             ,_SimpleList* = nil, char = 0, _Parameter* = nil,

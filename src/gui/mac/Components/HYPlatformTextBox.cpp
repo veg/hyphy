@@ -860,7 +860,7 @@ void _HYPlatformTextBox::_HandleContextMenu (Point& where)
 
     bool      sendMessage = true;
 
-    long      f = menuOptions.Find (&command);
+    long      f = menuOptions.FindObject (&command);
 
     if (f>=0) {
         switch (f) {

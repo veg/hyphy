@@ -4625,7 +4625,6 @@ void      _ElementaryCommand::ExecuteCase36 (_ExecutionList& chain)
     newDP->RestorePartInfo(currentArgument);
     currentArgument = (_String*)parameters(2);
     newDP->RestorePanelSettings(currentArgument);
-    currentArgument = (_String*)parameters(1);
     newDP->SetSavePath (chain.sourceFile);
     newDP->BringToFront();
     if (parameters.lLength>4) {

@@ -16,11 +16,11 @@ function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult  	   = 0;
 
-    GetURL (url_data, "http://www.hyphy.org");
-    assert (Abs(url_data) > 0, "Expected to retrieve non-empty data from http://www.hyphy.org");
+    GetURL (url_data, "http://www.google.com");
+    assert (Abs(url_data) > 0, "Expected to retrieve non-empty data from http://www.google.com");
     
     GetURL (PATH_TO_CURRENT_BF + "tmp" + DIRECTORY_SEPARATOR + "GetURL.txt", "http://www.google.com", SAVE_TO_FILE);
-    assert (Abs(url_data) > 0, "Expected to retrieve non-empty data from http://www.hyphy.org");
+    assert (Abs(url_data) > 0, "Expected to retrieve non-empty data from http://www.google.org");
     
     assert (runCommandWithSoftErrors ("GetURL (url_data/j, \"http://www.google.com\")", " is not a valid variable identifier"), "Failed error checking for an invalid receptacle");
     assert (runCommandWithSoftErrors ("GetURL (url_data, \"http://www.thereisnowaythisurlexists.org\")", "Could not fetch "), "Failed error checking for a URL fetch error");

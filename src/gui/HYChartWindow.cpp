@@ -64,6 +64,7 @@
 #include "batchlan.h"
 #include "math.h"
 #include "HYButton.h"
+#include "function_templates.h"
 
 #include "HYDataPanel.h"
 
@@ -3525,7 +3526,6 @@ void    _HYChartWindow::HandleChartOptions      (void)
 
 
             if (overlayString->sLength) {
-                long varRef = 0;
                 _String errMsg;
               _FormulaParsingContext fpc(&errMsg, nil);
 		if (Parse (&overlayPlot, *(_String*)args(3),fpc,nil)!= HY_FORMULA_EXPRESSION) {
@@ -3582,9 +3582,8 @@ void    _HYChartWindow::SetLabels       (_String xx, _String yy, _String zz, lon
     overlayPlot.Clear();
 
     if (fla.sLength) {
-        long varRef = 0;
         _String errMsg;
-      _FormulaParsingContext fpc (&errMsg);
+        _FormulaParsingContext fpc (&errMsg);
         if (Parse (&overlayPlot, fla,fpc, nil)!= HY_FORMULA_EXPRESSION) {
             overlayPlot.Clear();
         }
@@ -4550,7 +4549,7 @@ void    _HYDistributionChartWindow::AddVariable (_String * expr)
 
         for (; k < scanVariables.countitems(); k++) {
             _Variable* thisV = LocateVar (scanVariables.lData[k]);
-            long f = atomNames.Find (thisV->GetName());
+            long f = atomNames.FindObject (thisV->GetName());
             if (f == -1) {
                 if (!thisV->IsCategory()) {
                     scanVariables.Delete (k);

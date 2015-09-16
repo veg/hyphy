@@ -876,12 +876,13 @@ bool _HYPlatformWindow::_ProcessOSEvent (Ptr vEvent)
                         long    cv = GetControl32BitValue(whichC),cv2;
                         TrackControl (whichC,localClick,nil);
                         cv2 = GetControl32BitValue(whichC);
-                        if (cv!=cv2)
-                            if (whichC==hScroll) {
-                                scrollingWindow->ProcessEvent (generateScrollEvent (cv2-cv,0));
-                            } else {
-                                scrollingWindow->ProcessEvent (generateScrollEvent (0,cv2-cv));
-                            }
+                        if (cv!=cv2) {
+                              if (whichC==hScroll) {
+                                  scrollingWindow->ProcessEvent (generateScrollEvent (cv2-cv,0));
+                              } else {
+                                  scrollingWindow->ProcessEvent (generateScrollEvent (0,cv2-cv));
+                              }
+                        }
 
                         break;
                     }

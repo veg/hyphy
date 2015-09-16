@@ -2384,127 +2384,6 @@ void        _LikelihoodFunction::CheckFibonacci (_Parameter shrinkFactor)
     }
 }
 //_______________________________________________________________________________________
-long     _LikelihoodFunction::HasPrecisionBeenAchieved (_Parameter funcVal, bool cleanup)
-{
-    static _Parameter lastValue = -A_LARGE_NUMBER, callcount = likeFuncEvalCallCount;
-    static _Parameter* oldVarValues = nil;
-
-    if (cleanup) {
-        lastValue = 0;
-        callcount = likeFuncEvalCallCount;
-        if (oldVarValues) {
-            delete [] oldVarValues;
-        }
-        oldVarValues = nil;
-        return 0;
-    }
-    if (funcVal >= A_LARGE_NUMBER) { // reset
-        lastValue = 0;
-        callcount = likeFuncEvalCallCount;
-        if (oldVarValues) {
-            delete oldVarValues;
-        }
-        oldVarValues = new _Parameter[indexInd.lLength];
-        checkPointer(oldVarValues);
-        for (long i=indexInd.lLength-1; i>=0; i--) {
-            oldVarValues[i]=0.0;
-        }
-        return 0;
-    }
-    if (likeFuncEvalCallCount-callcount>maxItersPerVar)
-        // too many computations - return "precision has been reached and spit a warning
-    {
-        _String warningMsg ("Optimization routines returning before requested precision goal met. The maximum iteration number specified by MAXIMUM_ITERATIONS_PER_VARIABLE has been reached");
-        ReportWarning (warningMsg);
-        // return precision reached
-        warningMsg = _String("Last absolute error in ln-lik function was:")&_String ((_Parameter)fabs(funcVal-lastValue));
-        ReportWarning (warningMsg);
-        if (optimizationPrecMethod>0.5) { // return precision in parameters
-            long maxIndex;
-            _Parameter average = 0.0, max = 0.0, vVal;
-            for (long i=0; i<=indexInd.lLength-1; i--) {
-                vVal = fabs(GetIthIndependent(i)-oldVarValues[i]);
-                if (vVal>max) {
-                    max = vVal;
-                    maxIndex = i;
-                }
-                average+=vVal;
-            }
-            warningMsg = _String("Average last step = ")&_String(average/indexInd.lLength)&
-                         ", with maximum occurring at "&(*LocateVar(indexInd(maxIndex))->GetName())&_String(" =")&_String (max);
-            ReportWarning (warningMsg);
-        }
-        return 1;
-    } else { // check whether the precision has been reached
-        bool done = false;
-        if (optimizationPrecMethod<0.5) {
-            if (relPrec>0.5) {
-                if (fabs((funcVal-lastValue)/funcVal)<precision) {
-                    done = true;
-                } else {
-                    lastValue = funcVal;
-                }
-            } else {
-                if (fabs(funcVal-lastValue)<precision) {
-                    done = true;
-                } else {
-                    lastValue = funcVal;
-                }
-            }
-            if (done) {
-                long maxIndex = 0;
-                _Parameter average = 0.0, max = 0.0, vVal;
-                for (long i=0; i<=indexInd.lLength-1; i--) {
-                    vVal = fabs(GetIthIndependent(i)-oldVarValues[i]);
-                    if (vVal>max) {
-                        max = vVal;
-                        maxIndex = i;
-                    }
-                    average+=vVal;
-                }
-                _String warningMsg = _String("Average last step = ")&_String((_Parameter)(average/indexInd.lLength))
-                                     &", with maximum occurring at "&(*LocateVar(indexInd(maxIndex))->GetName())&_String("=")&_String (max);
-                ReportWarning (warningMsg);
-                return 1;
-            }
-
-            for (long i=0; i<=indexInd.lLength-1; i++) {
-                _Variable* currentVar = LocateVar(indexInd[i]);
-                oldVarValues[i]=currentVar->Value();
-            }
-
-            return 0;
-        } else {
-            done = true;
-            if (relPrec>0.5) {
-                for (long i=0; i<=indexInd.lLength-1; i++) {
-                    _Variable* currentVar = LocateVar(indexInd[i]);
-                    if (done) {
-                        done = fabs ((currentVar->Value()-oldVarValues[i])/currentVar->Value())<precision;
-                    }
-                    oldVarValues[i]=currentVar->Value();
-                }
-            } else {
-                for (long i=0; i<=indexInd.lLength-1; i++) {
-                    _Variable* currentVar = LocateVar(indexInd[i]);
-                    if (done) {
-                        done = fabs (currentVar->Value()-oldVarValues[i])<precision;
-                    }
-                    oldVarValues[i]=currentVar->Value();
-                }
-            }
-            if (done) {
-                _String warningMsg = _String("Last absolute error in ln-lik was:")&_String ((_Parameter)fabs(lastValue-funcVal));
-                ReportWarning(warningMsg);
-                return 1;
-            }
-            lastValue = funcVal;
-            return 0;
-        }
-    }
-    return 0;
-}
-//_______________________________________________________________________________________
 
 void    _LikelihoodFunction::CheckDependentBounds (void)
 // this function makes sure that a constrained optimization starts within the domain
@@ -3856,101 +3735,8 @@ DecideOnDivideBy (this);
     }*/
 
     if (optMethod == 3) { // Powell's Method
-        _Matrix         bestSoFar (indexInd.lLength,1,false,true),
-                        savedStartingPoint(indexInd.lLength,1,false,true),
-                        extrapolatePoint(indexInd.lLength,1,false,true),
-                        temp(indexInd.lLength,1,false,true);
-        _List           startingDirections;
-
-        _Parameter      saveItMax;
-
-        //long    indOfMaxIncrease;
-        currentPrecision = 0.01;
-        for (i=0; i<indexInd.lLength; i++) {
-            _Matrix *ithDir = new _Matrix (indexInd.lLength,1,false,true);
-            ithDir->theData[i]=1.0;
-            startingDirections<<ithDir;
-            DeleteObject(ithDir);
-            bestSoFar.theData[i]=GetIthIndependent(i);
-        }
-      //indOfMaxIncrease = 1;
-
-        HasPrecisionBeenAchieved(2.*A_LARGE_NUMBER);
-
-
-        maxSoFar = Compute();
-
-        while (!HasPrecisionBeenAchieved (maxSoFar)) {
-            bP = 0;
-            saveItMax = maxSoFar;
-            savedStartingPoint.Duplicate(&bestSoFar);
-            keepStartingPoint = Compute();
-            for (i=0; i<indexInd.lLength; i++) {
-                lastMax = maxSoFar;
-                GradientLocateTheBump (currentPrecision, maxSoFar, bestSoFar, *((_Matrix*)startingDirections(i)));
-                //((_Matrix*)startingDirections(i))->Duplicate(&bestSoFar);
-                //*((_Matrix*)startingDirections(i))-=temp;
-#if !defined __UNIX__ || defined __HEADLESS__
-#ifdef __HYPHYMPI__
-                if (_hy_mpi_node_rank == 0)
-#endif
-                    if (terminateExecution) {
-                        CleanUpOptimize();
-                        return new _Matrix (1,1,false,true);
-                    }
-#endif
-                if (fabs(lastMax-maxSoFar)>bP) {
-                  //indOfMaxIncrease = i;
-                    bP = fabs(lastMax-maxSoFar);
-                }
-                if (verbosityLevel>=5) {
-                    snprintf (buffer, sizeof(buffer),"\nPowell's direction %ld current Max = %g\n", i, maxSoFar);
-                    BufferToConsole (buffer);
-                }
-
-            }
-
-            /*_Constant * normConst;
-            extrapolatePoint.Duplicate(&bestSoFar);
-            extrapolatePoint*=2.0;
-            extrapolatePoint-=savedStartingPoint;
-            normConst = (_Constant*)extrapolatePoint.Abs();
-            extrapolatePoint*=1./normConst->Value();
-            DeleteObject (normConst);
-
-            for (i=0; i<indexInd.lLength; i++)
-                SetIthIndependent (i,extrapolatePoint(0,i));
-
-            wobble = Compute();
-
-            for (i=0; i<indexInd.lLength; i++)
-                SetIthIndependent (i,bestSoFar(0,i));
-
-            if (wobble > saveItMax)
-            {
-                //if (2.*(saveItMax-2.* maxSoFar+wobble) * SQR (
-                temp = bestSoFar;
-                temp -= savedStartingPoint;
-                normConst = (_Constant*)temp.Abs();
-                temp*=1./normConst->Value();
-                DeleteObject (normConst);
-                GradientLocateTheBump (currentPrecision, maxSoFar, bestSoFar, temp);
-
-                if (indOfMaxIncrease != indexInd.lLength-1)
-                    ((_Matrix*)startingDirections(indOfMaxIncrease))->Duplicate(startingDirections(indexInd.lLength-1));
-
-                ((_Matrix*)startingDirections(indOfMaxIncrease))->Duplicate(&temp);
-            }*/
-
-            if (verbosityLevel>=5) {
-                snprintf (buffer, sizeof(buffer),"\nAt Powell's Precision %g  current Max = %g", currentPrecision, maxSoFar);
-                BufferToConsole (buffer);
-            }
-
-            if (currentPrecision>1e-8) {
-                currentPrecision/=10;
-            }
-        }
+      FlagError ("This optimization method is no longer supported");
+      return new _Matrix;
     }
 
     if ((optMethod == 4)&&(indexInd.lLength == 1)) {
@@ -4016,7 +3802,6 @@ DecideOnDivideBy (this);
         }
         currentPrecision = optMethod==7?sqrt(precision):intermediateP;
         percentDone = 10.0;
-        HasPrecisionBeenAchieved(2.*A_LARGE_NUMBER);
     }
 
     if (optMethod==5) { // randomized bracketing method
@@ -4304,7 +4089,6 @@ DecideOnDivideBy (this);
             oldAverage = averageChange;
 
             averageChange  = 1e-25;
-            averageChange2 = 1e-25;
 
             bigLastMax = maxSoFar;
 
@@ -4832,7 +4616,6 @@ void _LikelihoodFunction::CleanUpOptimize (void)
      }*/
 
     setParameter (likeFuncCountVar,likeFuncEvalCallCount);
-    HasPrecisionBeenAchieved (0,true);
     isInOptimize = false;
     //DoneComputing();
     hasBeenOptimized = true;
@@ -6051,7 +5834,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
             break;
         }
         bool done = false;
-        bestTry = tryStep = currentPrecision;
+        tryStep = currentPrecision;
         while(!done) {
             CheckStep (tryStep,gradient, &bestVal);
             if (tryStep == 0.0) {
@@ -6073,8 +5856,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
                     }
                 }
 
-                tryStep = currentPrecision;
-                if (freeze.lLength==wereFrozen) {
+                 if (freeze.lLength==wereFrozen) {
                     return;
                 }
                 break;
@@ -6093,7 +5875,6 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
                 delta = gradient;
                 delta*=tryStep;
                 if ((temp-maxSoFar)/fabs(maxSoFar)<gPrecision) {
-                    maxSoFar = temp;
                     bestVal += delta;
                     return;
                 }
@@ -10006,11 +9787,7 @@ _AssociativeList*   _LikelihoodFunction::SimulateCodonNeutral (_Matrix* synCost,
 
 
                 doneCount++;
-#if !defined __UNIX__ || defined __HEADLESS__
-                if (doneCount%totalSimCount==0) {
-                    SetStatusBarValue (doneCount/totalSimCount,1.0, 0.0);
-                }
-#endif
+
 
                 CodonNeutralSimulate    (tree->GetRoot(), k, true, synCost, nsCost, s, ns);
 

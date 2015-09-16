@@ -1780,7 +1780,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                                 continue;
                             }
 
-                            char *  thisString = ((_String**)corpusInt.lData)[stringID]->getStr();
+                            const char *  thisString = ((_String**)corpusInt.lData)[stringID]->getStr();
 
                             for (long from = 0; from < stringL; from++) {
                                 long    thisSymbol = thisString[from];

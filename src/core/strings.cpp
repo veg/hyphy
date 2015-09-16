@@ -1157,7 +1157,7 @@ void _String::Flip(void)
 }
 
 // Return good ole char*
-char * _String::getStr (void)
+const char * _String::getStr (void) const
 {
     return sData;
 }
@@ -1284,10 +1284,12 @@ const _String _String::Replace(const _String s, const _String d, bool flag) cons
 
     if (flag) { // replace all
         // max possible number of replaces
-        unsigned long t = sLength, cp=0;
+        unsigned long t = sLength, cp=0UL;
 
         // allocate space for positions of substring s in this
-        long *finds = (long *)MemAllocate(t*sizeof(long)), curSlot = 0;
+      
+        long *finds = new long [t],
+              curSlot = 0L;
 
 
         // find all substrings s in this
@@ -1301,10 +1303,10 @@ const _String _String::Replace(const _String s, const _String d, bool flag) cons
 
         // calculate the length of resulting string
 
-        _String Res(sLength-(s.sLength-d.sLength)*curSlot);
+        _String Res(sLength-(s.sLength-d.sLength)*curSlot, false);
 
         if (!curSlot) { // not found
-            free ((char*)finds);
+            delete [] finds;
             return *this;
         }
 
@@ -1333,7 +1335,7 @@ const _String _String::Replace(const _String s, const _String d, bool flag) cons
             memcpy(rP+cp,sP+finds[curSlot-1]+s.sLength,sLength-finds[curSlot-1]-s.sLength);
         }
         //tail
-        free((char*)finds);
+        delete [] finds;
         return Res;
     }
 
@@ -1803,20 +1805,19 @@ Begins and Ends With Methods
 */
 
 //Begins with string
-bool _String::beginswith (_String s, bool caseSensitive)
+bool _String::beginswith (_String const s, bool caseSensitive) const
 {
     if (sLength<s.sLength) {
         return FALSE;
     }
-    char *sP = sData, *ssP = (s.sData);
     if (caseSensitive) {
-        for (long i=0; i<s.sLength; i++)
-            if (sP[i]!=ssP[i]) {
+        for (unsigned long i=0UL; i<s.sLength; i++)
+            if (s.sData[i]!=sData[i]) {
                 return FALSE;
             }
     } else
         for (long i=0; i<s.sLength; i++)
-            if (toupper(sP[i])!=toupper(ssP[i])) {
+            if (toupper(s.sData[i])!=toupper(sData[i])) {
                 return FALSE;
             }
 
@@ -1825,7 +1826,7 @@ bool _String::beginswith (_String s, bool caseSensitive)
 }
 
 //Begins with string
-bool _String::startswith (_String& s)
+bool _String::startswith (_String const& s) const
 {
     if (sLength<s.sLength) {
         return FALSE;

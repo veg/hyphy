@@ -7535,7 +7535,7 @@ void    _Matrix::toFileStr (FILE*dest){
       }
       formatStr = "%";
       formatStr = formatStr&_String(digs+6)&'.'&_String(digs)&'g';
-      char *fs = formatStr.getStr();
+      const char *fs = formatStr.getStr();
       fprintf (dest, "\n%c", openBracket);
       for (long i = 0; i<hDim; i++) {
         fprintf (dest, "%c", openBracket);
