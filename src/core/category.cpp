@@ -39,6 +39,7 @@
 
 #include  "category.h"
 #include  "math.h"
+#include  "function_templates.h"
 
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
@@ -276,7 +277,6 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                 if (scannedVarsList.lLength) {
                     if(scannedVarsList.lLength==1) {
                         if (scannedVarsList[0]==_n_->GetAVariable()) {
-                            check = true;
                               for (unsigned long i=0; i<intervals; i++) {
                                 _n_->SetValue(new _Constant ((_Parameter)i), false);
                                 (*weights)[i]= probabilities.Compute()->Value();
@@ -423,7 +423,6 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             param               = (_String*)parameters(3);
             _String             splitterName (AppendContainerName(*param,theP));
             f = LocateVarByName (splitterName);
-            check = true;
             if (f>=0) {
                 _Variable * cbase = FetchVar (f);
                 if (cbase->IsCategory()) {
@@ -465,7 +464,6 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             _Matrix* catMatrix = (_Matrix*)tryMatrix;
             if (!( ((catMatrix->GetHDim()==1)&&(catMatrix->GetVDim()==intervals))||
                     ((catMatrix->GetHDim()==intervals)&&(catMatrix->GetVDim()==1)))) {
-                check = false;
                 errorMsg = errorMsg & ("Dimension of category representatives matrix is not the same as the number of categories");
                 WarnError (errorMsg );
                 return;

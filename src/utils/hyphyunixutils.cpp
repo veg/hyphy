@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include "likefunc.h"
+#include "function_templates.h"
 
 
 

@@ -103,7 +103,7 @@ public:
         return this;
     };
 
-    virtual   void    Initialize            (void);
+    virtual   void    Initialize            (bool = false);
     virtual   void    Duplicate             (BaseRef);
     virtual   BaseRef makeDynamic           (void);
     virtual   BaseRef toStr                 (void);

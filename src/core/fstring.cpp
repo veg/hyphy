@@ -458,7 +458,7 @@ BaseRef  _FString::toStr()
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::RerootTree (void)
+_PMathObj _FString::RerootTree (_PMathObj where)
 {
     long     stashedModelID = lastMatrixDeclared,
              totalNodeCount = 0;
@@ -481,7 +481,7 @@ _PMathObj _FString::RerootTree (void)
     }
 
     _CalcNode   *iterator = rTree.DepthWiseTraversal (true),
-                 *rerootAt;
+                *rerootAt = nil;
 
     node<long>  *cNode;
 
@@ -533,7 +533,7 @@ _PMathObj _FString::RerootTree (void)
             nodeMin = 1;
         }
 
-        if ((nodeMin>maxMin)||((nodeMin==maxMin)&&(thisRatio>bRatio))) {
+        if (nodeMin>maxMin || (nodeMin==maxMin && thisRatio>bRatio)) {
             bRatio = thisRatio;
             maxMin = nodeMin;
             rerootAt = iterator;
@@ -740,7 +740,7 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutio
         return CharAccess(p,p2);
         break;
     case HY_OP_CODE_REROOTTREE: // RerootTree
-        return RerootTree ();
+        return RerootTree (nil);
         break;
     case HY_OP_CODE_ROWS: // Count Objects of given type
         return CountGlobalObjects();
@@ -790,7 +790,7 @@ _PMathObj   _FString::MapStringToVector (_PMathObj p)
 
             _SimpleList mapped;
             for (long s = 0; s < theString->sLength; s++) {
-                mapped << mapper[(unsigned char)theString->sData[s]];
+                mapped << mapper[theString->getUChar(s)];
             }
 
             return new _Matrix (mapped);

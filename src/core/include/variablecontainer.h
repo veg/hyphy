@@ -78,12 +78,12 @@ public:
         return true;
     }
 
-    virtual     bool        HasChanged                  (void);
-    virtual     bool        NeedToExponentiate          (bool = false);
+    virtual     bool        HasChanged                  (bool = false);
+    virtual     bool        NeedToExponentiate          (bool = false) const;
 
     void        ScanAndAttachVariables      (void);
 
-    virtual     void        ScanForVariables            (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
+    void        ScanForVariables                        (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
     virtual     void        ScanForDVariables           (_AVLList&,_AVLList&);
     virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
 

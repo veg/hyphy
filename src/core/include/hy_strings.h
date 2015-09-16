@@ -136,7 +136,7 @@ public:
     /**
     * Initializes _String object to 0 length and 0 sData
     */
-    virtual     void    Initialize (void);
+    virtual     void    Initialize (bool = false);
 
     /**
     * Duplicates a string
@@ -162,7 +162,17 @@ public:
     * @param index The int location of the char in the string
     * @return char located at specified location
     */
-    const       char    getChar          (long);
+    const       char    getChar          (long) const;
+
+    /**
+     * Returns the character at a specified index as unsigned (suiable for indexing)
+     * \n Usage: unsigned char c = string.getUChar(5);
+     * @param index The int location of the char in the string
+     * @return char located at specified location case to (unsigned char)
+     */
+    inline const       unsigned char    getUChar          (long i) const {
+      return (unsigned char)sData[i];
+    }
 
     /**
     * Sets the character of the string instance at a specified index
@@ -215,7 +225,7 @@ public:
     * @return "AB"
     * @sa EscapeAndAppend()
     */
-    _String operator & (_String);
+    const _String operator & (const _String) const;
 
     /**
     * Append operator
@@ -298,7 +308,7 @@ public:
     /**
     * Return good ole char*
     */
-    virtual     operator const char* (void);
+    virtual     operator const char* (void) const;
 
     /**
     * Returns a good ole char*
@@ -316,7 +326,7 @@ public:
     * @sa Cut()
     * @sa Trim()
     */
-    _String Chop(long, long);
+    const _String Chop(long, long) const;
 
     /**
     * Cuts part of string that is between the two specified indices
@@ -327,7 +337,7 @@ public:
     * @sa Chop()
     * @sa Trim()
     */
-    _String Cut (long, long);
+    const _String Cut (long, long) const;
 
     /**
     *
@@ -382,7 +392,7 @@ public:
     * @return "AAAZZZCCC"
     */
 
-    _String Replace(_String, _String, bool);
+    const _String Replace(const _String, const _String, bool) const;
 
 
     /**
@@ -439,12 +449,12 @@ public:
     * @return Returns the index of the first instance of the substr, -1 if not found. 2 in the example
     * @sa FindKMP()
     */
-    long    Find(_String s, long from = 0, long to = -1);
+    long    Find(const _String s, long from = 0, long to = -1) const;
 
     /**
     *  @see Find()
     */
-    long    Find(char s, long from = 0, long to = -1);
+    long    Find(char s, long from = 0, long to = -1) const ;
 
     /**
     * Find first occurence of the string between from and to
@@ -517,7 +527,7 @@ public:
     * @return true if strings are equal
     * @sa Compare()
     */
-    bool Equal   (_String*);
+    bool Equal   (_String const*) const;
 
     /**
     * Case Insensitive Lexicographic comparison
@@ -740,14 +750,14 @@ public:
     * @param strict If strict, only alphabetic, no numerals.
     * @sa ConvertToAnIdent();
     */
-    bool    IsValidIdentifier(bool = true);
+    bool    IsValidIdentifier(bool = true) const;
 
     /**
     * Same as IsValidIdentifier, but must end with a '&'
     * \n\n \bExample: 'hyphy&' is a valid ref identifier
     * @see IsValidIdentifier()
     */
-    bool    IsValidRefIdentifier(void);
+    bool    IsValidRefIdentifier(void) const;
 
     /**
     * If it is enclosed in quotes, then it is a literal argument
@@ -876,7 +886,7 @@ public:
     * @sa ProcessTreeBranchLength()
     */
 
-    _Parameter      toNum (void);
+    _Parameter      toNum (void) const;
 
     /**
     * Sets Length
@@ -964,7 +974,7 @@ _String*StringFromConsole           (bool=true);
 char    GetPlatformDirectoryChar    (void);
 
 
-extern  _String                     __KERNEL__VERSION__;
+extern  _String                     __HYPHY__VERSION__;
 
 #ifdef __UNIX__
 	extern bool	needExtraNL;

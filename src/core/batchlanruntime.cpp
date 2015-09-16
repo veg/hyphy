@@ -43,6 +43,7 @@
 #include      "likefunc.h"
 #include      "bayesgraph.h"
 #include      "scfg.h"
+#include      "function_templates.h"
 
 #if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
     #include "HYConsoleWindow.h"
@@ -294,12 +295,14 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                 dataType = "aminoacid";
             }
         } else {
-            if (thisTT->IsStandardNucleotide())
+          if (thisTT->IsStandardNucleotide()) {
                 if (unitLength==3) {
                     dataType = "codon";
-                } else if (unitLength==2) {
-                    dataType = "dinucleotide";
+                } else {
+                    if (unitLength==2)
+                      dataType = "dinucleotide";
                 }
+          }
         }
 
         if (!dataType.sLength) {
@@ -743,7 +746,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgra
     currentProgram.currentCommand++;
     _String theVersion = ProcessLiteralArgument ((_String*)parameters (0),currentProgram.nameSpacePrefix);
 
-    if (__KERNEL__VERSION__.toNum() < theVersion.toNum()) {
+    if (__HYPHY__VERSION__.toNum() < theVersion.toNum()) {
         currentProgram.ReportAnExecutionError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
         return false;
     }
@@ -1078,22 +1081,22 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
             if (currentArgument->Equal(&versionString)) {
                 if (sID > 1.5)
 #ifdef __HEADLESS__
-                    result = new _String(_String ("Library version ") & __KERNEL__VERSION__);
+                    result = new _String(_String ("Library version ") & __HYPHY__VERSION__);
 #else
 #ifdef __MAC__
-                    result = new _String(_String("Macintosh ") & __KERNEL__VERSION__);
+                    result = new _String(_String("Macintosh ") & __HYPHY__VERSION__);
 #else
 #ifdef __WINDOZE__
-                    result = new _String(_String("Windows ") & __KERNEL__VERSION__);
+                    result = new _String(_String("Windows ") & __HYPHY__VERSION__);
 #else
-                    result = new _String(_String("Source ") & __KERNEL__VERSION__);
+                    result = new _String(_String("Source ") & __HYPHY__VERSION__);
 #endif
 #endif
 #endif
                     else if (sID > 0.5) {
                         result = new _String(GetVersionString());
                     } else {
-                        result = new _String(__KERNEL__VERSION__);
+                        result = new _String(__HYPHY__VERSION__);
                     }
                 } else if (currentArgument->Equal(&timeStamp)) {
                     result = new _String(GetTimeStamp(sID < 0.5));

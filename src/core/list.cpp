@@ -178,7 +178,7 @@ BaseRef _List::GetItem (const unsigned long i)
 }
 
 // Assignment operator
-_List _List::operator = (_List& l)
+const _List _List::operator = (_List& l)
 {
     this->~_List();
     lLength = l.lLength;
@@ -186,59 +186,68 @@ _List _List::operator = (_List& l)
     lData = l.lData;
     l.nInstances++;
     for (unsigned long i = 0; i<lLength; i++) {
-        ((BaseRef*)(lData))[i]->nInstances++;
+        ((BaseRef*)(lData))[i] -> AddAReference();
     }
     return *this;
 }
 
 // Assignment compare 
-bool _List::operator == (_List& l2)
+bool _List::operator == (_List const& l2) const
 {
     return this->Equal(l2);
 }
 
 // Append operator
-_List _List::operator & (_List& l)
+const _List _List::operator & (_List const & l) const
 {
     _List res (l.lLength + lLength);
+  
     if (!res.laLength) {
         return res;
     }
 
-    if (lData&&lLength) {
-        memcpy(res.lData,lData,lLength*sizeof(void*));
+    BaseRef * res_data = (BaseRef*) res.lData;
+  
+    if (lData) {
+      BaseRef * base_data = (BaseRef*) lData;
+      
+      for (res.lLength = 0UL; res.lLength < lLength; res.lLength++) {
+        res_data [res.lLength] = base_data[res.lLength];
+        res_data [res.lLength] -> AddAReference();
+      }
     }
-    if (l.lData&&l.lLength) {
-        memcpy((char*)res.lData+lLength*sizeof(void*),l.lData, l.lLength*sizeof(void*));
+  
+    if (l.lData) {
+      BaseRef * l_data = (BaseRef*) l.lData;
+      for (unsigned long li = 0UL; li < l.lLength; li++, res.lLength++) {
+        res_data [res.lLength] = l_data [li];
+        l_data [li] -> AddAReference();
+      }
     }
-    res.lLength = l.lLength + lLength;
-    unsigned long i;
-    for (i = 0; (i<lLength); i++) {
-        ((BaseRef*)lData)[i]->nInstances++;
 
-    }
-    for (i=0; i<l.lLength; i++) {
-        ((BaseRef*)l.lData)[i]->nInstances++;
-    }
     return res;
 }
 
 // Append operator
-_List _List::operator & (BaseRef br)
+const _List _List::operator & (BaseRef br) const
 {
-    _List res (lLength+1);
-    if (!res.laLength) {
+    _List res (lLength+1UL);
+    if (res.laLength == 0UL) {
         return res;
     }
-
+  
+    BaseRef * res_data = (BaseRef*) res.lData;
     if (lData) {
-        memcpy(res.lData,lData,lLength*sizeof(void*));
+      BaseRef * base_data = (BaseRef*) lData;
+      
+      for (res.lLength = 0UL; res.lLength < lLength; res.lLength++) {
+        res_data [res.lLength] = base_data[res.lLength];
+        res_data [res.lLength] -> AddAReference();
+      }
+      
     }
-    for (unsigned long i = 0; (i<lLength); i++) {
-        ((BaseRef*)lData)[i]->nInstances++;
-    }
-    res.lLength=lLength+1;
-    ((BaseRef*)res.lData)[lLength]=br->makeDynamic();
+  
+    res_data [res.lLength++]=br->makeDynamic();
     return res;
 }
 
@@ -299,14 +308,17 @@ void _List::AppendNewInstance (BaseRef br)
     }
 }
 
-long  _List::BinaryFind (BaseRef s)
+long  _List::BinaryFindObject (BaseRef s, long startAt) const
 {
     _String * st = (_String*)s;
-    long top=lLength-1, bottom=0, middle;
+    long top    = lLength-1,
+         bottom = startAt,
+         middle;
 
-    if (top==-1) {
+    if (top < 0L) {
         return -1;
     }
+  
     while (top>bottom) {
         middle = (top+bottom)/2;
         _String* stp = (_String*)(((BaseRef*)lData)[middle]->toStr());
@@ -341,7 +353,7 @@ long  _List::BinaryInsert (BaseRef s)
         return 0;
     }
 
-    long pos = -BinaryFind (s)-2;
+    long pos = -BinaryFindObject (s)-2;
     if (pos<0) {
         return -pos+2;
     }
@@ -451,7 +463,7 @@ void    _List::Duplicate (const BaseRef theRef)
         }
 }
 
-bool _List::Equal(_List& l2)
+bool _List::Equal(_List const & l2) const
 {
     if (lLength!=l2.lLength) {
         return false;
@@ -465,9 +477,9 @@ bool _List::Equal(_List& l2)
     return true;
 }
 
-long  _List::Find (BaseRef s, long startat)
+long  _List::FindObject (BaseRefCosnt s, long startat) const
 {
-    _String * st = (_String*)s;
+    _String const * st = (_String const*)s;
     for (unsigned long i = startat; i<lLength; i++) {
         _String * sp = (_String*)(((BaseRef*)lData)[i]->toStr());
 
@@ -521,8 +533,7 @@ long  _List::FreeUpMemory (long requestedBytes)
 }
 
 // Append & store operator
-void _List::InsertElement (BaseRef br, long insertAt, bool store)
-{
+void _List::InsertElement (BaseRef br, long insertAt, bool store, bool ) {
     _SimpleList::InsertElement (br, insertAt, store);
 }
 

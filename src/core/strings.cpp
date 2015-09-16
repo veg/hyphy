@@ -69,7 +69,7 @@
 #define MOD_ADLER 65521
 
 _String   compileDate = __DATE__,
-          __KERNEL__VERSION__ = _String ("2.2") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+          __HYPHY__VERSION__ = _String ("2.26") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
                                                                                                   Replace("Mar", "03", true).
                                                                                                   Replace("Apr", "04", true).
@@ -195,12 +195,13 @@ _String::_String (const _String& source, long from, long to)
             sData = (char*)MemAllocate (sLength+1);
             if (!sData) {
                 warnError( -108);
+                return;
             }
 
             if (sLength > 32) {
                 memcpy (sData,source.sData+from ,sLength);
             } else
-                for (long k=0; k<sLength; k++) {
+                for (unsigned long k=0UL; k<sLength; k++) {
                     sData[k] = source.sData[k+from];
                 }
 
@@ -326,57 +327,56 @@ bool _String::operator == (_String s)
 }
 
 //Append operator
-_String _String::operator & (_String s)
+const _String _String::operator & (const _String s) const
 {
-    if (sLength+s.sLength == 0) {
+    if (sLength+s.sLength == 0UL) {
         return empty;
     }
 
     _String res (sLength+s.sLength,false);
-
-    if (sLength) {
-        memcpy((res.sData),sData,sLength);
+  
+    for (res.sLength = 0UL; res.sLength < sLength; res.sLength ++) {
+      res.sData [res.sLength] = sData[res.sLength];
     }
 
-    if (s.sLength) {
-        memcpy(res.sData+sLength,s.sData,s.sLength);
+    for (unsigned long i = 0L; i < s.sLength; i++) {
+      res.sData[res.sLength++] = s.sData[i];
     }
-
-    res.sData[res.sLength]=0;
+    
+    res.sData[res.sLength]='\0';
     return res;
 }
 
 // append operator
 void _String::operator << (const _String* s)
 {
-    if ( s && s->sLength) {
-        if (nInstances < sLength + s->sLength) {
-            unsigned long incBy = sLength + s->sLength - nInstances;
-
-            if (incBy < storageIncrement) {
-                incBy = storageIncrement;
-            }
-
-            if (incBy < sLength/8) {
-                incBy = sLength/8;
-            }
-
-            nInstances+=incBy;
-
-            sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char));
-
-            if (!sData) {
-                checkPointer (sData);
-            }
-        }
-
-        for (long k = 0; k < s->sLength; k++) {
-            sData[sLength+k] = s->sData[k];
-        }
-
-        //memcpy(sData+sLength,s->sData,s->sLength);
-        sLength+=s->sLength;
+  if ( s && s->sLength) {
+    if (nInstances < sLength + s->sLength) {
+      unsigned long incBy = sLength + s->sLength - nInstances;
+      
+      if (incBy < storageIncrement) {
+        incBy = storageIncrement;
+      }
+      
+      if (incBy < sLength >> 3) {
+        incBy = sLength >> 3;
+      }
+      
+      nInstances+=incBy;
+      
+      if (! (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)))) {
+        return;
+      }
+      
     }
+    
+    for (unsigned long k = 0UL; k < s->sLength; k++) {
+      sData[sLength+k] = s->sData[k];
+    }
+    
+    //memcpy(sData+sLength,s->sData,s->sLength);
+    sLength+=s->sLength;
+  }
 }
 
 // append operator
@@ -404,8 +404,7 @@ void _String::operator << (const char c)
 }
 
 //Return good ole char*
-_String::operator const char* (void)
-{
+_String::operator const char* (void) const {
     return sData;
 }
 
@@ -536,27 +535,31 @@ void _String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
     }
 }
 
-_String _String::Chop(long from, long to)
+const _String _String::Chop(long from, long to) const
 {
-    if (!sLength) {
+    if (sLength == 0UL) {
         return empty;
     }
     if (from == -1) {
-        from = 0;
+        from = 0L;
     }
     if (to == -1) {
-        to = ((long)sLength)-1;
+        to = sLength-1UL;
     }
     if (to<from) {
         return empty;
     }
-    _String res ((unsigned long)(sLength+from-to+1));
-    if (from) {
-        memcpy (res.sData,sData, from);
+  
+    _String res (sLength+from-to+1, false);
+  
+    for (res.sLength = 0; res.sLength < from; res.sLength++) {
+      res.sData [res.sLength] = sData[res.sLength];
     }
-    if ((to<((long)sLength)-1)&&(to>from)) {
-        memcpy (res.sData+from,sData+to+1, sLength-to-1);
+  
+    for (unsigned long i = to + 1UL; i < sLength; i++) {
+      res.sData [res.sLength++] = sData[i];
     }
+  
     return res;
 }
 
@@ -603,25 +606,27 @@ void _String::CopyDynamicString (_String *s, bool flushMe)
 }
 
 //Cut string from, to (-1 for any means from beginning/to end)
-_String _String::Cut(long from, long to)
+const _String _String::Cut(long from, long to) const
 {
-    if (!sLength) {
-        return empty;
+    if (sLength) {
+      if (from == -1) {
+          from = 0;
+      }
+      if (to == -1 || to >= sLength) {
+          to = sLength-1UL;
+      }
+    
+      if (to>=from) {
+        _String res (to-from+1UL, false);
+      
+        for (unsigned long index = from; index <= to; index++) {
+          res.sData[index-from] = sData[index];
+        }
+      
+        return res;
+      }
     }
-    if (from == -1) {
-        from = 0;
-    }
-    if (to == -1 || to >= sLength) {
-        to = ((long)sLength)-1;
-    }
-    if (to<from) {
-        return empty;
-    }
-    _String res ((unsigned long)(to-from+1));
-    if (to-from+1) {
-        memcpy (res.sData,sData+from,  to-from+1);
-    }
-    return res;
+    return empty;
 }
 
 //Delete range char operator
@@ -798,13 +803,12 @@ void _String::FormatTimeString(long time_diff)
 //Finalize buffer string
 void _String::Finalize (void)
 {
-
     if (!(sData = MemReallocate (sData, sLength+1))) {
-        warnError (-108);
+      return;
     }
 
     sData[sLength]  = 0;
-    nInstances      = 1;
+    nInstances      = 1L;
 
 }
 
@@ -836,7 +840,7 @@ long _String::FindEndOfIdent(long start, long end, char wild)
 }
 
 // find first occurence of the string between from and to
-long _String::Find(_String s, long from, long to)
+long _String::Find(const _String s, long from, long to) const
 // -1, indicates that search term has not been found
 {
     if (!sLength) {
@@ -1025,7 +1029,7 @@ long _String::ExtractEnclosedExpression (long& from, char open, char close, bool
 
 
 //Find first occurence of the string between from and to
-long _String::Find(char s, long from, long to)
+long _String::Find(char s, long from, long to) const
 {
     if (!sLength) {
         return -1;
@@ -1159,7 +1163,7 @@ char * _String::getStr (void)
 }
 
 //Element location functions
-const char _String::getChar (long index)
+const char _String::getChar (long index) const
 {
     if (((unsigned long)index)<sLength) {
         return sData[index];
@@ -1167,7 +1171,8 @@ const char _String::getChar (long index)
     return defaultReturn;
 }
 
-void    _String::Initialize (void)
+
+void    _String::Initialize (bool)
 {
     BaseObj::Initialize();
     sLength = 0;
@@ -1265,7 +1270,7 @@ BaseRef _String::makeDynamic (void)
 }
 
 //Replace string 1 with string 2, all occurences true/false
-_String _String::Replace(_String s, _String d, bool flag)
+const _String _String::Replace(const _String s, const _String d, bool flag) const
 {
     if (!sLength) {
         return empty;
@@ -1427,8 +1432,7 @@ _List* _String::Tokenize (_String s)
     return res;
 }
 
-_Parameter _String::toNum (void)
-{
+_Parameter _String::toNum (void) const {
     if (sLength == 0) {
         return 0.;
     }
@@ -1437,8 +1441,7 @@ _Parameter _String::toNum (void)
 }
 
 //Return good ole char*
-BaseRef _String::toStr (void)
-{
+BaseRef _String::toStr (void) {
     nInstances++;
     return this;
 }
@@ -1660,7 +1663,7 @@ char    _String::Compare (_String* s)
     return 1-2*(sLength<s->sLength);
 }
 
-bool _String::Equal (_String* s)
+bool _String::Equal (_String const* s) const
 {
     if  (sLength!=s->sLength) {
         return false;
@@ -1997,7 +2000,8 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
     }
 #endif
 
-#if defined __WINDOZE__ || defined __MINGW32__ // WIN/DOS code
+#if defined __WINDOZE__ || defined __MINGW32__ // WIN/DOS code'
+  
     if (Find('/')!=-1) { // UNIX PATH
         if (getChar(0)=='/') {
             Trim(1,-1);
@@ -2014,7 +2018,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
         }
     }
 
-    if (Find(':')==-1 && Find("\\\\",0,1)==-1) { // relative path
+  if (Find(':') < 0 && Find("\\\\",0,1)==-1) { // relative path
 
         if (pathNames.lLength) {
             _String* lastPath = (_String*)pathNames(pathNames.lLength-1);
@@ -2041,7 +2045,9 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
 
     }
 
-    _String escapedString (sLength, true);
+
+
+   _String escapedString (sLength, true);
     for (long stringIndex = 0; stringIndex < sLength; stringIndex ++) {
         char currentChar = getChar (stringIndex);
         //char b[256];
@@ -2206,8 +2212,7 @@ char GetPlatformDirectoryChar (void)
     char c = '/';
 #ifdef __MAC__
     c = ':';
-#endif
-#if defined __WINDOZE__ || defined __MINGW32__
+#elif defined __WINDOZE__ || defined __MINGW32__
     c = '\\';
 #endif
 
@@ -2216,7 +2221,7 @@ char GetPlatformDirectoryChar (void)
 
 _String GetVersionString (void)
 {
-    _String theMessage = _String("HYPHY ")&__KERNEL__VERSION__;
+    _String theMessage = _String("HYPHY ")&__HYPHY__VERSION__;
 #ifdef __MP__
     theMessage = theMessage & "(MP)";
 #endif
@@ -2273,7 +2278,7 @@ Identifier Methods
 ==============================================================
 */
 
-bool    _String::IsValidIdentifier (bool strict)
+bool    _String::IsValidIdentifier (bool strict) const
 {
     if (sLength == 0) { 
         return false;
@@ -2297,10 +2302,10 @@ bool    _String::IsValidIdentifier (bool strict)
 
     // check to see if it's not a keyword / function name etc
 
-    return hyReservedWords.Find (this) == -1;
+    return hyReservedWords.FindObject (this) == -1;
 }
 
-bool    _String::IsValidRefIdentifier (void)
+bool    _String::IsValidRefIdentifier (void) const
 {
     if (sLength<2) {
         return false;

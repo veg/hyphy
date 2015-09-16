@@ -1,6 +1,6 @@
 ; Based on the example from http://www.seas.gwu.edu/~drum/java/lectures/appendix/installer/install.html
 
-!define VERSION "2.2.4"
+!define VERSION "2.2.6"
 !define PACKAGE_NAME "HyPhy"
 
 Icon "../../src/gui/res/Windows/desk.ico"
@@ -64,7 +64,7 @@ Section "Install HyPhy" ; A "useful" name is not needed as we are not installing
 
 SetOutPath $INSTDIR\
 
-File ../../HYPHY.EXE
+File ../../CMakeWin32/HYPHY.EXE
 File /r ../../help/*.pdf
 File /r ../../res/*.*
 

@@ -62,7 +62,7 @@ _Variable::_Variable (void)
 }
 
 //__________________________________________________________________________________
-void _Variable::Initialize (void)
+void _Variable::Initialize (bool)
 {
     //_Formula::Initialize();
     _Constant::Initialize();
@@ -281,6 +281,12 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
 }
 
 //__________________________________________________________________________________
+void  _Variable::SetValue (_Parameter new_value) {
+// set the value of the var
+  this->SetValue (new _Constant (new_value), false);
+}
+
+//__________________________________________________________________________________
 void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 {
     //hasBeenChanged = true;
@@ -313,7 +319,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
                 }
 
             //_Formula::Clear();
-            delete (varFormula);
+            delete varFormula;
             varFormula = nil;
         }
         if (varValue) {
@@ -532,34 +538,35 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
 
     // also update the fact that this variable is no longer independent in all declared
     // variable containers which contain references to this variable
-    if (changeMe)
-        if (deferSetFormula) {
-            *deferSetFormula << theIndex;
-            deferIsConstant  << isAConstant;
-        } else {
-            long i;
-            _SimpleList tcache;
-            long        iv;
+    if (changeMe) {
+          if (deferSetFormula) {
+              *deferSetFormula << theIndex;
+              deferIsConstant  << isAConstant;
+          } else {
+              long i;
+              _SimpleList tcache;
+              long        iv;
 
-            i = variableNames.Traverser (tcache,iv,variableNames.GetRoot());
+              i = variableNames.Traverser (tcache,iv,variableNames.GetRoot());
 
-            for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
-                _Variable* theV = FetchVar(i);
-                if (theV->IsContainer()) {
-                    _VariableContainer* theVC = (_VariableContainer*)theV;
-                    if (theVC->SetDependance(theIndex) == -2) {
-                        ReportWarning ((_String("Can't make variable ")&*GetName()&" dependent in the context of "&*theVC->GetName()&" because its template variable is bound by another relation in the global context."));
-                        continue;
-                    }
-                }
-            }
-            {
-                for (long i = 0; i<likeFuncList.lLength; i++)
-                    if (((_String*)likeFuncNamesList(i))->sLength) {
-                        ((_LikelihoodFunction*)likeFuncList(i))->UpdateIndependent(theIndex,isAConstant);
-                    }
-            }
-        }
+              for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
+                  _Variable* theV = FetchVar(i);
+                  if (theV->IsContainer()) {
+                      _VariableContainer* theVC = (_VariableContainer*)theV;
+                      if (theVC->SetDependance(theIndex) == -2) {
+                          ReportWarning ((_String("Can't make variable ")&*GetName()&" dependent in the context of "&*theVC->GetName()&" because its template variable is bound by another relation in the global context."));
+                          continue;
+                      }
+                  }
+              }
+              {
+                  for (long i = 0; i<likeFuncList.lLength; i++)
+                      if (((_String*)likeFuncNamesList(i))->sLength) {
+                          ((_LikelihoodFunction*)likeFuncList(i))->UpdateIndependent(theIndex,isAConstant);
+                      }
+              }
+          }
+    }
 
     if (&theF!=myF) {
         delete myF;
