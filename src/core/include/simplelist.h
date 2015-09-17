@@ -142,7 +142,7 @@ class _SimpleList:public BaseObj
         * @param startAt Index to start at 
         * @return -1 if not found, index if found
         */
-        virtual long BinaryFind(long, long startAt=0);
+        virtual long BinaryFind(long, long startAt=0) const;
 
         // insert an element into the sorted list preserving the sortedness
         long BinaryInsert(long);
@@ -217,7 +217,7 @@ class _SimpleList:public BaseObj
         * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4 
         * @return true if equal. 
         */
-        bool Equal(_SimpleList&);
+        bool Equal(_SimpleList const&) const;
 
         /**
         * Retain all those elements that are between (strictly) the 1st and the 2nd argument

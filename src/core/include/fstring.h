@@ -68,7 +68,7 @@ public:
     virtual _PMathObj Greater           (_PMathObj);
     virtual _PMathObj GreaterEq         (_PMathObj);
     virtual _PMathObj NotEqual          (_PMathObj);
-    virtual _PMathObj RerootTree        (void);
+    virtual _PMathObj RerootTree        (_PMathObj);
     virtual _PMathObj EqualAmb          (_PMathObj);
     virtual _PMathObj EqualRegExp       (_PMathObj,bool = false);
     virtual _PMathObj ReplaceReqExp     (_PMathObj);
@@ -94,7 +94,7 @@ public:
         return true;
     }
 
-    virtual bool      HasChanged        (void) {
+    virtual bool      HasChanged        (bool = false) {
         return true;
     }
 

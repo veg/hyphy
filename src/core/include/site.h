@@ -85,7 +85,7 @@ public:
 
     void    AddBaseSet                      (_String&);
     bool    TokenCode                       (char, long*, bool = true);
-    void    SplitTokenCode                  (long, long*);
+    void    SplitTokenCode                  (long, long*) const;
 
     void    AddTokenCode                    (char, _String&);
     void    PrepareForChecks                (void);
@@ -93,14 +93,14 @@ public:
     char    GetSkipChar                     (void);
     char    GetGapChar                      (void);
     _String ConvertCodeToLetters            (long, char);
-    long    LengthOfAlphabet                (void);
-    bool    IsStandardBinary                (void) {
+    long    LengthOfAlphabet                (void) const;
+    bool    IsStandardBinary                (void) const {
         return baseLength==2 && baseSet.sLength==0;
     }
-    bool    IsStandardNucleotide            (void) {
+    bool    IsStandardNucleotide            (void) const {
         return baseLength==4 && baseSet.sLength==0;
     }
-    bool    IsStandardAA                    (void) {
+    bool    IsStandardAA                    (void) const {
         return baseLength==20&& baseSet.sLength==0;
     }
     _TranslationTable*
@@ -256,7 +256,7 @@ public:
     long        ComputeSize             (void);
     // compute the size of this object in memory
 
-    void        Clear                   (void);
+    void        Clear                   (bool = true);
 
     virtual  char       operator ()             (unsigned long, unsigned long, unsigned int);
     // retrieve element pos of site-th site

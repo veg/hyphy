@@ -215,7 +215,7 @@ _SimpleList _SimpleList::operator & (_SimpleList l)
 
 void _SimpleList::operator << (long br)
 {
-    InsertElement ((BaseRef)br, -1, false, false);
+  _SimpleList::InsertElement ((BaseRef)br, -1, false, false);
 }
 
 bool _SimpleList::operator >> (long br)
@@ -259,7 +259,7 @@ long _SimpleList::GetElement (const long index)
 }
 
 
-long  _SimpleList::BinaryFind (long s, long startAt)
+long  _SimpleList::BinaryFind (long s, long startAt) const
 {
     long top    =   lLength-1,
          bottom  =   startAt,
@@ -420,7 +420,7 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
     }
 
     if (lLength) {
-        if (upperBound < 0) {
+        if (upperBound <= 0) {
             upperBound = Max()+1;
         }
 
@@ -628,18 +628,19 @@ long _SimpleList::Element(long index)
     return 0;
 }
 
-bool _SimpleList::Equal(_SimpleList& l2)
+bool _SimpleList::Equal(_SimpleList const& l2) const
 {
-    if (lLength!=l2.lLength) {
+    if (lLength == l2.lLength) {
         return false;
+      
+      for (unsigned long i=0UL; i<lLength; i++)
+          if (lData[i] != l2.lData[i]) {
+              return false;
+          }
+      
+      return true;
     }
-
-    for (long i=0; i<lLength; i++)
-        if (lData[i] != l2.lData[i]) {
-            return false;
-        }
-
-    return true;
+    return false;
 }
 
 long  _SimpleList::Find (long s, long startAt)
@@ -688,7 +689,7 @@ void _SimpleList::Flip ()
 void _SimpleList::Initialize(bool doMemAlloc)
 {
     BaseObj::Initialize();
-    lLength = 0;
+    lLength = 0UL;
     if (doMemAlloc) {
         laLength = MEMORYSTEP;
         lData = (long*)MemAllocate (laLength * sizeof(Ptr));
@@ -716,9 +717,10 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
         }
 
         if (!lData) {
-            checkPointer (lData);
+            return;
         }
     }
+  
     if (insertAt==-1) {
         if (store) {
             ((BaseRef*)lData)[lLength-1]=br->makeDynamic();
@@ -1721,7 +1723,7 @@ void    _SimpleList::XOR (_SimpleList& l1, _SimpleList& l2)
     long  c1 = 0,
           c2 = 0;
 
-    while ((c1<l1.lLength)&&(c2<l2.lLength)) {
+    while (c1<l1.lLength && c2<l2.lLength) {
         while (c1<l1.lLength && l1.lData[c1]<l2.lData[c2]) {
             (*this) << l1.lData[c1++];
         }

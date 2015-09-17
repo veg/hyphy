@@ -270,17 +270,19 @@ _PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long obje
 _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg)
 {
     _Variable * v = FetchVar (idx);
-    if (v && (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass)) {
-        return v->GetValue();
-    }
-    if (command_id >= 0 || errMsg) {
-        if (command_id >= 0) {
-            WarnError (_String ("'") & *v->GetName() & ("' must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to " 
-                                     &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
-        } else {
-            WarnError (errMsg->Replace ("_VAR_NAME_ID_", *v->GetName(), true));
+    if (v) {
+        if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
+            return v->GetValue();
         }
-    }    
+        if (command_id >= 0 || errMsg) {
+            if (command_id >= 0) {
+                WarnError (_String ("'") & *v->GetName() & ("' must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to " 
+                                         &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
+            } else {
+                WarnError (errMsg->Replace ("_VAR_NAME_ID_", *v->GetName(), true));
+            }
+        }
+    }
     return nil;
 }
 
@@ -1158,12 +1160,12 @@ void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bo
     long    k = 1;
 
     if (sorted)
-        while (names.BinaryFind(&tryName)>=0) {
+        while (names.BinaryFindObject (&tryName)>=0) {
             k++;
             tryName = partName&k;
         }
     else
-        while (names.Find(&tryName)>=0) {
+        while (names.FindObject(&tryName)>=0) {
             k++;
             tryName = partName&k;
         }

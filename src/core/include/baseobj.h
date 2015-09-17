@@ -92,15 +92,15 @@ public:
         return 0;
     }
 
-    virtual void     Initialize (void) {
-        nInstances=1;
+    virtual void     Initialize (bool = false) {
+        nInstances=1L;
     }
 
     virtual void     Duplicate (BaseObj* ref) {
         nInstances=++ref->nInstances;
     }
 
-    virtual void     AddAReference (void)     {
+    inline virtual void     AddAReference (void)     {
         nInstances ++;
     }
 
@@ -114,6 +114,7 @@ public:
 };
 
 typedef BaseObj*  BaseRef;
+typedef BaseObj const * BaseRefCosnt;
 
 extern  void      DeleteObject (BaseRef); // delete a dynamic object
 

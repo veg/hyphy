@@ -34,8 +34,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unistd.h>
 #include "polynoml.h"
 
-#if !defined __MINGW32__
-
+#if defined __MINGW32__
+    #include <shlwapi.h>
+#else
     #include <termios.h>
     #include <signal.h>
     #define __HYPHY_HANDLE_TERM_SIGNAL__
@@ -44,9 +45,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #ifdef _MINGW32_MEGA_
-#include <Windows.h>
-HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
+  #include <Windows.h>
+  HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 #endif
+
 
 #ifdef  __UNITTEST__
 #include "gtest/gtest.h"
@@ -143,13 +145,23 @@ void            mpiOptimizerLoop (int, int);
 
 //____________________________________________________________________________________
 
-_String getLibraryPath() {
 
-    char    curWd[4096],
-            dirSlash = GetPlatformDirectoryChar();
-    getcwd (curWd,4096);
+#define _HYPHY_MAX_PATH_LENGTH 8192L
+
+_String getLibraryPath() {
+  char    dirSlash = GetPlatformDirectoryChar();
+
+#ifdef __MINGW32__
+  TCHAR buffer[_HYPHY_MAX_PATH_LENGTH];
+  GetModuleFileName(NULL, buffer, _HYPHY_MAX_PATH_LENGTH);
+  _String baseDir (buffer);
+  baseDir.Trim (0, baseDir.FindBackwards (dirSlash, 0, -1) - 1L);
+#else
+    char    curWd[_HYPHY_MAX_PATH_LENGTH];
+    getcwd (curWd,_HYPHY_MAX_PATH_LENGTH);
 
     _String baseDir (curWd);
+#endif
 
     if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
@@ -185,11 +197,12 @@ _String getLibraryPath() {
 //__________________________________________________________________________________
 void    ReadInTemplateFiles(void)
 {
-    _String fileIndex;
-    fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/files.lst";
+    _String dir_sep (GetPlatformDirectoryChar()),
+            fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles" & dir_sep & "files.lst";
+  
     FILE* modelList = fopen (fileIndex.getStr(),"r");
     if (!modelList) {
-        fileIndex = baseArgDir&"TemplateBatchFiles/files.lst";
+        fileIndex = baseArgDir&"TemplateBatchFiles" & dir_sep & "files.lst";
         modelList = fopen (fileIndex.getStr(),"r");
         if (!modelList) {
             return;
@@ -226,13 +239,13 @@ void    ReadInPostFiles(void)
 {
     //if (!likeFuncList.lLength)
     //  return;
-
-    _String fileIndex;
-    FILE* modelList = fopen (fileIndex.getStr(),"r");
-    fileIndex = libArgDir &"TemplateBatchFiles/postprocessors.lst";
-    modelList = fopen (fileIndex.getStr(),"r");
+ 
+    _String dir_sep (GetPlatformDirectoryChar());
+  
+    _String fileIndex = libArgDir & "TemplateBatchFiles" & dir_sep & "postprocessors.lst";
+    FILE*  modelList = fopen (fileIndex.getStr(),"r");
     
-    if (modelList == NULL) {
+    if (!modelList) {
         return;
     }
 
@@ -241,7 +254,8 @@ void    ReadInPostFiles(void)
     
     if (theData.sLength) {
         _ElementaryCommand::ExtractConditions(theData,0,availablePostProcessors);
-        for (long i = 0; i<availablePostProcessors.countitems(); i++) {
+      
+        for (unsigned long i = 0; i<availablePostProcessors.countitems(); i++) {
             _String* thisString = (_String*)availablePostProcessors(i);
             _List   thisFile;
             _ElementaryCommand::ExtractConditions(*thisString,thisString->FirstNonSpaceIndex(),thisFile,',');
@@ -254,11 +268,11 @@ void    ReadInPostFiles(void)
                 ((_String*)thisFile(j))->StripQuotes();
             }
             if (*(_String*)thisFile(0)!=_String("SEPARATOR")) {
-                fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/" & *(_String*)thisFile(1);
+                fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles" & dir_sep & *(_String*)thisFile(1);
                 //printf ("%s\n", fileIndex.sData);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
-                    fileIndex =libArgDir&"TemplateBatchFiles/"& *(_String*)thisFile(1);
+                    fileIndex =libArgDir&"TemplateBatchFiles"& dir_sep & *(_String*)thisFile(1);
                     dummyFile = fopen (fileIndex,"r");
                 }
                 if (dummyFile) {
@@ -582,7 +596,7 @@ int main (int argc, char* argv[])
     char    curWd[4096],
             dirSlash = GetPlatformDirectoryChar();
     getcwd (curWd,4096);
-
+  
     _String baseDir (curWd);
 
     if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
@@ -590,8 +604,10 @@ int main (int argc, char* argv[])
     }
     
     _String libDir = getLibraryPath();
+  
     pathNames&& &libDir;
     _String argFile;
+  
 
     libDirectory  = libDir;
     libArgDir     = libDirectory;
@@ -818,10 +834,16 @@ int main (int argc, char* argv[])
         CloseHandle (_HY_MEGA_Pipe);
     }
 #endif
+  
 
     PurgeAll                    (true);
     GlobalShutdown              ();
 
+#ifdef __MINGW32__
+  fflush (stdout);
+  system("PAUSE");
+#endif
+  
 #ifdef __HYPHYMPI__
     if (rank == 0) {
         printf ("\n\n");

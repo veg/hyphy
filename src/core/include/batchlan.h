@@ -251,7 +251,7 @@ public:
      */
    
 
-    static  bool      BuildFor              (_String&, _ExecutionList&, _List&);
+    static  bool      BuildFor              (_String&, _ExecutionList&, _List*);
     // builds the for loop starting from
     // the beginning of input
     // this will process the loop header
@@ -263,7 +263,7 @@ public:
     // this will process the loop header
     // and the entire scope afterwards
 
-    static  bool      BuildWhile            (_String&, _ExecutionList&, _List&);
+    static  bool      BuildWhile            (_String&, _ExecutionList&, _List*);
     // builds the while(..) construct starting from
     // the beginning of input
     // this will process the loop header

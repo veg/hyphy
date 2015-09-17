@@ -24,20 +24,20 @@ SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 
-# where is the target environment 
-SET(CMAKE_FIND_ROOT_PATH  /usr/local/i386-mingw32-4.3.0/)
+# where is the target environment
+SET(CMAKE_FIND_ROOT_PATH  /usr/local/gcc-4.8.0-qt-4.8.4-for-mingw32/win32-gcc)
 
 # specify the cross compiler
-SET(CMAKE_C_COMPILER   ${CMAKE_FIND_ROOT_PATH}/bin/i386-mingw32-gcc)
+SET(CMAKE_C_COMPILER   ${CMAKE_FIND_ROOT_PATH}/bin/i586-mingw32-gcc)
 ENABLE_LANGUAGE(C)
-SET(CMAKE_CXX_COMPILER ${CMAKE_FIND_ROOT_PATH}/bin/i386-mingw32-g++)
+SET(CMAKE_CXX_COMPILER ${CMAKE_FIND_ROOT_PATH}/bin/i586-mingw32-g++)
 ENABLE_LANGUAGE(CXX)
 
 set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 ")
 add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
 
 
-set(CMAKE_RC_COMPILER_INIT ${CMAKE_FIND_ROOT_PATH}/bin/i386-mingw32-windres)
+set(CMAKE_RC_COMPILER_INIT ${CMAKE_FIND_ROOT_PATH}/bin/i586-mingw32-windres)
 ENABLE_LANGUAGE(RC)
 SET(CMAKE_RC_COMPILE_OBJECT
 "<CMAKE_RC_COMPILER> <FLAGS> <DEFINES> -O coff -o <OBJECT> -i <SOURCE> ")
@@ -53,13 +53,15 @@ file(GLOB SRC_WIN32_GUI ../src/gui/win/*.cpp ../src/gui/win/Components/*.cpp ../
 
 set(SRC_SQLITE3 ../contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_WINMAIN ../src/mains/win.cpp)
+set(SRC_CLIMAIN ../src/mains/unix.cpp)
 set(SRC_WINRES  ../src/gui/res/Windows/Win.rc)
+set(SRC_UNIXUTIL ../src/utils/hyphyunixutils.cpp)
 
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3})
 
 include_directories(
 	../src/core/include
-	../src/lib/Link 
+	../src/lib/Link
 	../src/new/include
 	../contrib/SQLite-3.8.2
 	../src/gui/include
@@ -78,18 +80,30 @@ add_executable(
 	${SRC_WINRES}
 	${SRC_WINMAIN}
 	${SRC_WIN32_GUI}
-	${SRC_COMMON} 
+	${SRC_COMMON}
 	${SRC_GUI}
 )
-	
+
+add_executable(
+	HYPHY-CLI.EXE
+	${SRC_COMMON}
+	${SRC_CLIMAIN}
+	${SRC_UNIXUTIL}
+)
+
 target_link_libraries(HYPHY.EXE comctl32 winspool wininet msimg32)
+#target_link_libraries(HYPHY-CLI.EXE comctl32 winspool wininet msimg32)
 
 
 add_custom_target(WIN32 DEPENDS HYPHY.EXE
-				  COMMENT "Win32 GUI HyPhy"	
+				  COMMENT "Win32 GUI HyPhy"
 )
 
-find_program (HAZ_NSIS "makensis" 
+add_custom_target(WIN32_CLI DEPENDS HYPHY-CLI.EXE
+				  COMMENT "Win32 CLI HyPhy"
+)
+
+find_program (HAZ_NSIS "makensis"
 			HINTS /usr/bin/ /usr/local/bin ENV PATH)
 
 
@@ -98,9 +112,16 @@ if (${HAZ_NSIS} MATCHES ".+makensis$")
 		TARGET HYPHY.EXE
 		POST_BUILD
 		COMMAND makensis ${CMAKE_CURRENT_SOURCE_DIR}/../installers/Win/hyphy.nsi
-		)	
+		)
+
+	add_custom_command(
+		TARGET HYPHY-CLI.EXE
+		POST_BUILD
+		COMMAND makensis ${CMAKE_CURRENT_SOURCE_DIR}/../installers/Win/hyphy-cli.nsi
+		)
+
 endif (${HAZ_NSIS} MATCHES ".+makensis$")
- 
+
 
 if (${CMAKE_SYSTEM} MATCHES "^Darwin.*")
 	set (CMAKE_CXX_LINK_FLAGS "")
@@ -114,5 +135,15 @@ set_target_properties(
 	LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -mwindows -v -static "
 	LINKER_LANGUAGE CXX
 	WIN32_EXECUTABLE TRUE
+)
+
+set_target_properties(
+	HYPHY-CLI.EXE
+	PROPERTIES
+	COMPILE_DEFINITIONS "__UNIX__;__HYPHY_NO_CURL__;__MINGW32__;"
+	COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} "
+	LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}"
+	LINKER_LANGUAGE CXX
+	# WIN32_EXECUTABLE TRUE
 )
 

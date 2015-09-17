@@ -39,6 +39,7 @@
 
 
 #include "bayesgraph.h"
+#include "function_templates.h"
 
 extern _String      _HYBgm_IMPUTE_MAXSTEPS,
        _HYBgm_IMPUTE_BURNIN,
@@ -900,10 +901,10 @@ _Parameter _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _Simp
 	
 	
     // initialize missing entries to random assignments based on observed cases or prior info
-    for (long fnode, row, col, missing_idx = 0; missing_idx < is_missing.lLength; missing_idx++) {
+    for (long row, col, missing_idx = 0; missing_idx < is_missing.lLength; missing_idx++) {
         row     = is_missing.lData[missing_idx] / family_size;
         col     = is_missing.lData[missing_idx] % family_size;
-        fnode   = (col == 0) ? node_id : parents.lData[col-1];
+      //fnode   = (col == 0) ? node_id : parents.lData[col-1];
 		
 		urn = genrand_real2 ();
 		
@@ -941,7 +942,6 @@ _Parameter _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _Simp
 			row         = is_missing.lData[missing_idx] / family_size;
 			col         = is_missing.lData[missing_idx] % family_size;
 			pa_index    = 0;
-			denom       = 0.;
 			
 			
 			// determine parent combination for this row -- use [pa_indices] object instead?  AFYP
@@ -1116,8 +1116,8 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 
                     impute_maxsteps, impute_burnin, impute_samples, // HBL settings
 
-                    parent_state, child_state,
-                    denom,
+                    parent_state, child_state = 0.0,
+
                     // prior hyperparameters for CG nodes
                     rho = prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0,
                     phi = prior_scale (node_id, 0);
@@ -1430,7 +1430,6 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 			// indices into data_deep_copy for this missing value
 			row         = is_missing.lData[missing_idx] / family_size;
 			col         = is_missing.lData[missing_idx] % family_size;
-			denom       = 0.;
 			pa_index    = pa_indices.lData[row];
 
 
@@ -1589,7 +1588,7 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 
 						n_ij.Store (pa_index, 0, n_ij(pa_index,0) - 1);
 						n_ij.Store (pa_indices.lData[row], 0, n_ij(pa_indices.lData[row],0) + 1);
-						pa_index = pa_indices.lData[row];
+            // pa_index = pa_indices.lData[row];
 					}
 				}
 

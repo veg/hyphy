@@ -156,8 +156,8 @@ public:
     // store it in compExp.
     // return TRUE if the matrix is an explicit exponential form
 
-    virtual bool        HasChanged       (void);
-    virtual bool        NeedToExponentiate(long = -1L);
+    virtual bool        HasChanged       (bool = false);
+    virtual bool        NeedNewCategoryExponential (long = -1L) const;
     virtual void        SetModel         (long, _AVLListXL*);
 
     bool                IsFlagged        (void) {
@@ -190,7 +190,7 @@ public:
 
     void                SetCompExp      (_Matrix*, long = -1);
     void                SetCompMatrix   (long);
-    _Matrix*            GetCompExp      (long catID = -1, bool = false);
+    _Matrix*            GetCompExp      (long catID = -1, bool = false) const;
 
     _Formula*           RecurseMC       (long , node<long>* , bool first = false, char rooted = UNROOTED);
 
@@ -198,7 +198,7 @@ public:
         return cBase;
     }
 
-    _Parameter          BranchLength    (void);
+    _Parameter          ComputeBranchLength    (void);
     virtual long        SetDependance   (long);
 
     node<long>*         LocateMeInTree  (void);
@@ -449,7 +449,7 @@ public:
     _String         CompareTrees                        (_TreeTopology*);
     _String         MatchTreePattern                    (_TreeTopology*);
     virtual _PMathObj       TipName                             (_PMathObj);
-    virtual _PMathObj       BranchName                          (_PMathObj, bool = false, _PMathObj = nil);
+    _PMathObj       TreeBranchName                          (_PMathObj, bool = false, _PMathObj = nil);
     virtual _PMathObj       BranchLength                        (_PMathObj);
     virtual _PMathObj       RerootTree                          (_PMathObj);
     _List*          SplitTreeIntoClusters               (unsigned long, unsigned long);
@@ -539,7 +539,7 @@ public:
 
 
     virtual                 ~_TheTree                   (void);
-    virtual bool            HasChanged                  (void);
+    virtual bool            HasChanged                  (bool = false);
     virtual void            MarkDone                    (void);
     bool            HasChanged2                 (void);
 
@@ -583,41 +583,12 @@ public:
     
     void            InitializeTreeFrequencies   (_Matrix *, bool = false);
 
-    _Parameter      ReleafTreeAndCheck          (_DataSetFilter*, long, bool, long categID = -1);
-    _Parameter      ReleafTreeAndCheckChar4     (_DataSetFilter*, long, bool, long categID = -1);
-
-    _Parameter      ReleafTree                  (_DataSetFilter*,long,long,long,long);
-    _Parameter      ReleafTreeDegenerate        (_DataSetFilter*,long);
-
-    _Parameter      ReleafTreeCache             (_DataSetFilter*,long,long,long,long,long);
-#if USE_SCALING_TO_FIX_UNDERFLOW
-    _Parameter      ThreadReleafTreeCache       (_DataSetFilter*,long,long,long,long,long,long offset = 0,long fixAttempt = 0, _Parameter = 690.);
-    _Parameter      doScaling                   (_DataSetFilter*,long,long,long,long,_Parameter, bool, bool);
-#else
-    _Parameter      ThreadReleafTreeCache       (_DataSetFilter*,long,long,long,long,long,long offset = 0);
-#endif
 
     _Parameter      Process3TaxonNumericFilter  (_DataSetFilterNumeric*, long = 0);
 
 
-    void            ThreadMatrixUpdate          (long, bool);
-    void            SerialMatrixUpdate          (long, bool);
-    void            MatrixCacheUpdate           (void);
-
-    _Parameter      ThreadReleafTreeCharCache   (_DataSetFilter*,long,long,long,long,long,long offset = 0);
-    _Parameter      ReleafTreeCharDegenerate    (_DataSetFilter*,long);
-    _Parameter      ReleafTreeChar4             (_DataSetFilter*,long,long,long,long,long);
-    _Parameter      ReleafTreeChar4Degenerate   (_DataSetFilter*,long);
-
-    _Parameter      ThreadReleafTreeChar4       (_DataSetFilter*,long,long,long,long,long,long offset = 0);
-    _Parameter      ReleafTreeChar4             (_DataSetFilter*,long,long,long,long);
 
     _Parameter  Probij                          (long, long, _CalcNode*);
-    _Parameter  PruneTree                       (long categID = -1);
-    _Parameter  PruneTreeChar                   (long categID = -1);
-    _Parameter  PruneTreeCharCache              (long categID = -1);
-    _Parameter  PruneTreeChar4                  (long categID = -1);
-    _Parameter  PruneTreeChar4Cache             (long categID = -1);
 
     _List*      RecoverAncestralSequences       (_DataSetFilter*, _SimpleList&, _List&, _Parameter*, _Parameter*, long, long*, _GrowingVector*, bool = false);
     void        RecoverNodeSupportStates        (_DataSetFilter*, long, long, _Matrix&);

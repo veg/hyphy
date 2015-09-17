@@ -202,7 +202,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
     #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
-        if (isExplicitForm.lData[matrixID] == 0) { // normal matrix to exponentiate
+        if (isExplicitForm.lData[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);
         } else {
              (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate();
@@ -296,7 +296,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
         currentTreeNode = isLeaf? (((_CalcNode**) flatCLeaves.lData)[nodeID]):
                           (((_CalcNode**) flatTree.lData)  [nodeID - flatLeaves.lLength]);
 
-        if (currentTreeNode->NeedToExponentiate (catID)) {
+        if (currentTreeNode->NeedNewCategoryExponential (catID)) {
             if (expNodes) {
                 (*expNodes) << currentTreeNode;
                 //printf ("EXP>%s\n", currentTreeNode->GetName()->sData);
@@ -2215,14 +2215,15 @@ _Parameter   _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, l
 
 void        _TreeTopology::ComputeClusterTable (_SimpleList& result, _SimpleList& pswRepresentation)
 {
-    long            leafCount = pswRepresentation.Element(-2),
-                    leafCode  = 0,
-                    L,R;
+    long            leafCount = pswRepresentation.Element(-2L),
+                    leafCode  = 0L,
+                    L = 0L,
+                    R = 0L;
 
     result.Clear    ();
     result.Populate (3*leafCount,-1,0);
 
-    for (long k = 0; k < pswRepresentation.lLength-2; k+=2) {
+    for (long k = 0; k < pswRepresentation.lLength-2L; k+=2) {
         if (pswRepresentation.lData[k] < leafCount) { // is a leaf
             R = leafCode++;
         } else {
@@ -2426,7 +2427,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p)
             long matchCount = 0,
                  iNodeCount = 0;
 
-            long L, R;
+            long L, R = -1L;
 
             _SimpleList leafSpans (leafCount,0,0),
                         iNodesTouched;

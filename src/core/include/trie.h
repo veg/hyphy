@@ -126,7 +126,7 @@ class _Trie: public _List
          * @return Nothing. 
          */
         
-        long     Find (const _String& key, _SimpleList* path = nil, bool prefixOK = false);
+        long     FindKey (const _String& key, _SimpleList* path = nil, bool prefixOK = false) const;
         /**
          * Determine if 'key' is in the trie
          * @param  key      -- the string to search for
@@ -135,7 +135,7 @@ class _Trie: public _List
          * @return the index of the key in 'nodes' if found, HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise  
          */
 
-        long     Find (const char key, bool prefixOK = false);
+        long     FindKey (const char key, bool prefixOK = false) const;
         /**
          * Determine if 'key' is in the trie
          * @param  key      -- the character to search for
@@ -235,7 +235,7 @@ class _Trie: public _List
  private:
         
         void SetAlphabet        (const _String*, bool);
-        long FindNextLetter     (const char letter, const unsigned long currentIndex);
+        long FindNextLetter     (const char letter, const unsigned long currentIndex) const;
         /**
          * Given a current position in the trie (current_index), try to walk down the next character
          * @param  letter -- the next letter

@@ -62,7 +62,7 @@ _Operation::_Operation  (void)
 }
 
 //__________________________________________________________________________________
-void    _Operation::Initialize(void)
+void    _Operation::Initialize(bool)
 {
     numberOfTerms = 0;
     theData = -1;
@@ -130,7 +130,7 @@ _Operation::_Operation  (_String& opc, const long opNo = 2)
 // number of operands
 {
     if(opNo>=0) {
-        opCode = BuiltInFunctions.BinaryFind(&opc);
+        opCode = BuiltInFunctions.BinaryFindObject (&opc);
     } else {
         opCode = -opNo-1;
     }

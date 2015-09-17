@@ -40,6 +40,7 @@
 #include      "likefunc.h"
 #include      "scfg.h"
 #include      <ctype.h>
+#include      "function_templates.h"
 
 #include      "bayesgraph.h"
 
@@ -812,6 +813,7 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
             }
             ob = lf->ConstructCategoryMatrix(partsToDo,runMode,true, &resultID);
         }
+        DeleteObject (partitionList);
     } else {
         _TheTree * testTree = (_TheTree*) FetchObjectFromVariableByType (&objectName, TREE);
         if (testTree) {
@@ -1053,12 +1055,12 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 
                 if (charVector) {
                     for (long cc = 0; cc < charVector->theString->sLength; cc++)
-                        if (ccount.lData[(unsigned char)charVector->theString->sData[cc]]>=0) {
+                        if (ccount.lData[charVector->theString->getUChar(cc)]>=0) {
                             charCount = 0; // this is an error condition for
                             // duplicate characters in the string
                             break;
                         } else {
-                            ccount.lData[(unsigned char)charVector->theString->sData[cc]] = cc;
+                            ccount.lData[charVector->theString->getUChar(cc)] = cc;
                             charCount ++;
                         }
                 }

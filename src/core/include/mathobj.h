@@ -257,7 +257,7 @@ public:
         return this;
     }
     virtual _MathObject* Type                          (void);
-    virtual _MathObject* PlainTreeString(_MathObject*) {
+    virtual _MathObject* PlainTreeString(_MathObject*,_MathObject*) {
         warnError (-666);
         return this;
     }
@@ -300,7 +300,7 @@ public:
     virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     // execute this operation with the list of Args
 
-    virtual bool         HasChanged (void) {
+    virtual bool         HasChanged (bool = false) {
         return false;
     }
 

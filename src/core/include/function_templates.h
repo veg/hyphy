@@ -1,18 +1,20 @@
+/*
+
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-
+Copyright (C) 1997-now
 Core Developers:
-Sergei L Kosakovsky Pond (spond@temple.edu)
-Art FY Poon    (apoon@cfenet.ubc.ca)
-Steven Weaver (sweaver@ucsd.edu)
-
+  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Steven Weaver (sweaver@ucsd.edu)
+  
 Module Developers:
-Lance Hepler (nlhepler@gmail.com)
-Martin Smith (martin.audacis@gmail.com)
+	Lance Hepler (nlhepler@gmail.com)
+	Martin Smith (martin.audacis@gmail.com)
 
 Significant contributions from:
-Spencer V Muse (muse@stat.ncsu.edu)
-Simon DW Frost (sdf22@cam.ac.uk)
+  Spencer V Muse (muse@stat.ncsu.edu)
+  Simon DW Frost (sdf22@cam.ac.uk)
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -32,3 +34,19 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
+
+
+template <typename ARG_TYPE>
+void        checkParameter  (_String& name, ARG_TYPE& dest, const _Parameter def, const _VariableContainer* theP = nil) {
+  long f;
+  if (theP) {
+    _String ppn = *theP->GetName() & '.' & name;
+    f = LocateVarByName(ppn);
+  } else {
+    f = LocateVarByName (name);
+  }
+  dest = f < 0 ? def :FetchVar(f)->Value();
+}
+

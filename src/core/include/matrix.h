@@ -136,7 +136,7 @@ public:
 
     virtual void    Clear (void);               //deletes all the entries w/o destroying the matrix
 
-    void    Initialize (void);                  // zeros all matrix structures
+    void    Initialize (bool = false);                  // zeros all matrix structures
 
     virtual void        Serialize (_String&,_String&);
     // write the matrix definition in HBL
@@ -343,17 +343,17 @@ public:
 
     _Parameter  FisherExact             (_Parameter, _Parameter, _Parameter);
 
-    virtual     bool        HasChanged  (void);
+    virtual     bool        HasChanged  (bool = false);
     // have any variables which are referenced by the elements changed?
 
-    virtual     long
-    GetHDim                     (void) {
+    virtual     unsigned long
+    GetHDim                     (void) const{
         return hDim;
     }
-    long        GetVDim                     (void) {
+    unsigned long        GetVDim                     (void) const {
         return vDim;
     }
-    long        GetSize                     (void) {
+    unsigned long        GetSize                     (void) const {
         return lDim;
     }
     long        GetMySize                   (void) {
@@ -494,7 +494,7 @@ private:
     _Matrix*    branchLengthStencil (void);
 
     //bool      IsAStringMatrix     (void);
-    void        Add                 (_Matrix&, _Matrix&, bool sub = false);
+    void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
     // aux arithmetic rountines
     bool        AddWithThreshold    (_Matrix&, _Parameter);
     void        RowAndColumnMax     (_Parameter&, _Parameter&, _Parameter* = nil);
@@ -595,29 +595,29 @@ public:
 
     virtual     void        Clear (void);
 
-    virtual     long        GetHDim                     (void) {
+    virtual     unsigned long        GetHDim                     (void) const {
         if (isColumn) {
             return GetUsed();
         }
-        return 1;
+        return 1UL;
     }
-    virtual     long        GetVDim                     (void) {
+    virtual     long        GetVDim                     (void) const {
         if (!isColumn) {
             return GetUsed();
         }
-        return 1;
+        return 1UL;
     }
     long   Store            (_Parameter);
-    long   GetUsed          (void) {
+    long   GetUsed          (void) const {
         return used;
     }
     void     ZeroUsed       (void) {
-        used = 0;
+        used = 0UL;
     }
 
     void    operator <<     (const _SimpleList&);
 
-    long   used;
+    unsigned long   used;
     bool   isColumn;
 };
 

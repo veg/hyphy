@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include "errorfns.h"
 #include "hy_strings.h"
+#include "batchlan.h"
+#include "function_templates.h"
 
 
 
@@ -78,7 +80,7 @@ extern  bool dropIntoDebugMode;
 void    SaveConsole (void);
 #endif
 
-#include "batchlan.h"
+
 
 //_____________________________________________________________
 
@@ -388,6 +390,7 @@ void WarnError (_String st)
     }
 #endif
     //GlobalShutdown();
+
 
 #ifdef _HY_ABORT_ON_ERROR
     abort ();
