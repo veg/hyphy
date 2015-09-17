@@ -43,7 +43,6 @@ install:
   - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
   - $HOME/cmake-3.3.2-Linux-x86_64/bin/cmake . 
   - make HYPHYMP
-  - make HYPHYMPI
   - make HYPHYGTEST
 
 script: 
