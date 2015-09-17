@@ -58,7 +58,8 @@ if (cOptions == 0) {
 	ExecuteAFile("SGEmulator_MF.bf");
 }
 else { // FEL 
-    pValue = prompt_for_a_value ("Significance level for Likelihood Ratio Tests",0.1,0,1,0)
+
+  pValue = prompt_for_a_value ("Significance level for Likelihood Ratio Tests",0.1,0,1,0);
 					
 	SHORT_MPI_RETURN = 1;
 	FEL_RUN_TIMER    = Time(1);
