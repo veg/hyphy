@@ -5500,7 +5500,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
                 _AVLList    indepA (&indep),
                             depA   (&dep);
 
-                tr->ScanForVariables (indepA,depA);
+                tr->ScanContainerForVariables (indepA,depA);
                 //tr.ScanForVariables (indepA,depA);
                 indepA.ReorderList();
                 depA.ReorderList();

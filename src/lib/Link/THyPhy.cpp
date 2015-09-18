@@ -70,7 +70,7 @@ _THyPhy * globalInterfaceInstance = nil;
 
 //_________________________________________________________
 // default callback hanlder
-bool _tHyPhyDefaultHandler (char*,int,double)
+bool _tHyPhyDefaultHandler (const char*,int,double)
 {
     return true;
 }
@@ -293,7 +293,9 @@ _THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge)
 
     _ExecutionList      compiledCode  (commandString);
 
-    ApplyPreferences    ();
+    if (doPurge) {
+      ApplyPreferences    ();
+    }
 
     DeleteObject        ((_String*)errors);
     DeleteObject        ((_String*)warnings);
@@ -512,7 +514,7 @@ double  _THyPhyGetDoubleStatus      (void)
 
 //_________________________________________________________________________
 
-char*   _THyPhyGetStringStatus      (void)
+const char*   _THyPhyGetStringStatus      (void)
 {
     return _tHYPHYCurrentStatus.getStr();
 }

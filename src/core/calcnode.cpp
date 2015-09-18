@@ -6603,12 +6603,12 @@ bool _TheTree::HaveStringBranchLengths (void)
 
 //__________________________________________________________________________________
 
-void _TheTree::ScanForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight)
+void _TheTree::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight)
 {
     unsigned long traversal_order = 0;
     _CalcNode* curNode = DepthWiseTraversal (true);
     while (curNode) {
-        curNode->ScanForVariables(l,l2, tagger, weight +  flatNodes.lLength + flatLeaves.lLength - traversal_order);
+        curNode->ScanContainerForVariables(l,l2, tagger, weight +  flatNodes.lLength + flatLeaves.lLength - traversal_order);
         curNode = DepthWiseTraversal();
         traversal_order += 1;
     }
@@ -7724,7 +7724,7 @@ void        _TheTree::ScanSubtreeVars  (_List& rec, char flags, _CalcNode* start
     {
         _AVLList scanVarsA (&scanVars);
         if (flags&0x01) {
-            thisV->ScanForVariables (scanVarsA,scanVarsA);
+            thisV->ScanContainerForVariables (scanVarsA,scanVarsA);
         }
         if (flags&0x02) {
             thisV->ScanForDVariables(scanVarsA,scanVarsA);

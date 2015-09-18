@@ -1109,7 +1109,7 @@ void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAl
         _AVLList sA (&startVars);
         if (doAll) {
 
-            firstVar->ScanForVariables (sA,sA);
+            firstVar->ScanContainerForVariables (sA,sA);
             firstVar->ScanForGVariables (sA,sA);
         }
 

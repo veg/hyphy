@@ -198,7 +198,7 @@ _String getLibraryPath() {
 
 void   _helper_clear_screen (void) {
   #ifdef __MINGW32__
-  //system("cls");
+    system("cls");
   #else
     printf ("\033[2J\033[H");
   #endif

@@ -1080,7 +1080,7 @@ bool _VariableContainer::IsConstant (void)
 
 //__________________________________________________________________________________
 
-void _VariableContainer::ScanForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight)
+void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight)
 {
     if (iVariables)
         for (unsigned long i = 0; i<iVariables->lLength; i+=2) {

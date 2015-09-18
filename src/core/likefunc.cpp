@@ -2647,7 +2647,7 @@ void        _LikelihoodFunction::GetInitialValues (void)
                 history.Clear();
                 {
                     _AVLList hA (&history);
-                    dumpkopf->ScanForVariables(hA,hA);
+                    dumpkopf->ScanContainerForVariables(hA,hA);
                     hA.ReorderList ();
                 }
                 if (history.lLength>=2) {
@@ -2817,7 +2817,7 @@ void        _LikelihoodFunction::GetInitialValues (void)
                     _AVLList h1 (&history),
                              h2 (&history2);
 
-                    dumpkopf->ScanForVariables(h1,h2);
+                    dumpkopf->ScanContainerForVariables(h1,h2);
 
                     h1.ReorderList();
                     h2.ReorderList();
@@ -2876,7 +2876,7 @@ void        _LikelihoodFunction::GetInitialValues (void)
             _SimpleList     indeps;
             _AVLList        iavl (&indeps);
 
-            t->ScanForVariables (iavl, iavl);
+            t->ScanContainerForVariables (iavl, iavl);
 
             for (long vc = 0; vc < indeps.lLength; vc++) {
                 //char buf[512];
@@ -6834,7 +6834,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
         
         for (unsigned long i=0; i<theTrees.lLength; i++) {
             _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-            cT->ScanForVariables  (iia, iid, &rankVariables, 1 + treeSizes.GetElement (i));
+            cT->ScanContainerForVariables  (iia, iid, &rankVariables, 1 + treeSizes.GetElement (i));
             cT->ScanForDVariables (iid, iia);
             cT->SetUp();
         }
@@ -7046,7 +7046,7 @@ void    _LikelihoodFunction::ScanAllVariablesOnPartition (_SimpleList& pidx, _Si
 
         for (long i=0; i<pidx.lLength; i++) {
             _TheTree * cT = (_TheTree*)(LocateVar(theTrees.lData[pidx.lData[i]]));
-            cT->ScanForVariables (iia,iid);
+            cT->ScanContainerForVariables (iia,iid);
             cT->ScanForDVariables (iid, iia);
         }
 
@@ -9030,7 +9030,7 @@ BaseRef _LikelihoodFunction::toStr (void)
                         _AVLList    iVA (&iV),
                                     dVA (&dV2);
 
-                        currentNode->ScanForVariables(iVA,dVA);
+                        currentNode->ScanContainerForVariables(iVA,dVA);
                         currentNode->ScanForDVariables(dVA,iVA);
 
                         iVA.ReorderList ();

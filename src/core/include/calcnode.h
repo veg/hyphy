@@ -356,6 +356,7 @@ protected:
         Delete a node from the tree by name
      
      */
+  
 
 public:
 
@@ -436,7 +437,7 @@ public:
     virtual void            PasteBranchLength                   (node<long> *, _String&, long, _Parameter factor = 1.);
 
     node<long>&     GetRoot                             (void) {
-        return *theRoot;
+      return  *theRoot;
     }
     void            SetRoot                             (node<long>* r) {
         theRoot = r;
@@ -615,7 +616,7 @@ public:
     }
 
     void        ScanAndAttachVariables          (void);
-    void        ScanForVariables                (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0);
+    void        ScanContainerForVariables       (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0);
     void        ScanForDVariables               (_AVLList& l, _AVLList& l2);
     void        ScanForGVariables               (_AVLList&, _AVLList&, _AVLListX* tagger = nil, long weight = 0);
     void        ScanForCVariables               (_AVLList&);

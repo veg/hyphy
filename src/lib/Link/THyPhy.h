@@ -56,7 +56,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // the progress update/cancel handling function prototype
 
-typedef  bool _ProgressCancelHandler (char*,int,double);
+typedef  bool _ProgressCancelHandler (const char*,int,double);
 /* if  the function returns false, then HyPhy will attempt to terminate the task and return
      HyPhy will also populate three agruments
   -- char * : pointer to an (internally handled by HyPhy) string
@@ -269,7 +269,7 @@ private:
 //_________________________________________________________
 
 long    _THyPhyGetLongStatus        (void);
-char*   _THyPhyGetStringStatus      (void);
+const char*   _THyPhyGetStringStatus      (void);
 double  _THyPhyGetDoubleStatus      (void);
 
 //void  SetGlobalInterfaceInstance  (const _THyPhy*);

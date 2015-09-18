@@ -103,9 +103,13 @@ public:
     node            (void) {
         parent = NULL;
     }
+    node            (node_data const & d) {
+      parent = NULL;
+      this->init (d);
+    }
     ~node()
     {}
-    void                init            (node_data value) {
+    void                init            (const node_data & value) {
         in_object = value;
     }
     node_data       get_data        (void) {
