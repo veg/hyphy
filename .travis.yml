@@ -6,6 +6,7 @@ notifications:
     email:
         recipients:
             - sweaver@ucsd.edu
+            - spond@ucsd.edu
         on_success: change
         on_failure: always
 
