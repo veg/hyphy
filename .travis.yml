@@ -1,0 +1,50 @@
+# OpenMP projects should set the environment variable OMP_NUM_THREADS to a reasonably small value (say, 4). 
+
+sudo : false
+
+notifications:
+    email:
+        recipients:
+            - sweaver@ucsd.edu
+        on_success: change
+        on_failure: always
+
+branches:
+  only:
+    - master
+
+cache:
+  directories:
+      - $HOME/cmake-3.3.2-Linux-x86_64/ 
+
+env:
+  - MPI=openmpi
+
+language: c++
+compiler: 
+  - gcc
+
+addons:
+  apt:
+    sources:
+        - llvm-toolchain-precise
+        - ubuntu-toolchain-r-test
+        - george-edison55-precise-backports
+    packages:
+        - g++-5
+        - gcc-5
+
+before_install:
+  - wget http://www.cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz 
+  - tar xvzf cmake-3.3.2-Linux-x86_64.tar.gz -C $HOME
+
+install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
+  - $HOME/cmake-3.3.2-Linux-x86_64/bin/cmake . 
+  - make HYPHYMP
+  - make HYPHYGTEST
+
+script: 
+  - ./HYPHYGTEST
+
