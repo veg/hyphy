@@ -51,6 +51,8 @@
 _Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
 
+extern  _List batchLanguageFunctionNames;
+
 //____________________________________________________________________________________
 
 _String    _HYGenerateANameSpace () {
@@ -394,7 +396,7 @@ _String WriteFileDialogInput(void) {
 
 _String* _HBLObjectNameByType (const long type, const long index, bool correct_for_empties) {
 
-    if (index < 0) {
+    if (index < 0L) {
         return nil;
     }
     _List * theList = nil;

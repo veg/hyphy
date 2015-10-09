@@ -46,6 +46,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "trie.h"
 #include <stdio.h>
 
+
 #define  HY_BL_ERROR_HANDLING_DEFAULT 0
 #define  HY_BL_ERROR_HANDLING_SOFT    1
 
@@ -372,6 +373,8 @@ public:
     static  bool      SelectTemplateModel   (_String&, _ExecutionList&);
 
     static  bool      MakeGeneralizedLoop   (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
+  
+    bool              DecompileFormulae     (void);
 
 protected:
 
@@ -382,7 +385,8 @@ protected:
     // with two branches
     // and a condition
 
-    void       addAndClean          (_ExecutionList&, _List* = nil, long = 0);
+    void       addAndClean            (_ExecutionList&, _List* = nil, long = 0);
+    void       appendCompiledFormulae (_Formula *, _Formula* = nil);
 
 
     friend  class     _ExecutionList;
@@ -428,9 +432,6 @@ _String* MPIRecvString          (long,long&);
 
 extern  _List
 
-batchLanguageFunctions,
-batchLanguageFunctionNames,
-batchLanguageFunctionParameterLists,
 dataSetList,
 dataSetNamesList,
 likeFuncList,
@@ -452,9 +453,6 @@ standardLibraryExtensions;
 
 
 extern  _SimpleList
-
-batchLanguageFunctionParameters,
-batchLanguageFunctionClassification,
 modelMatrixIndices,
 modelTypeList,
 // SLKP: 20100313 this list stores 0 for  normal (rate-matrix based models),
@@ -578,10 +576,26 @@ extern  long                        globalRandSeed,
                                     matrixExpCount;
  
 
-long    FindDataSetName              (_String&);
-long    FindDataSetFilterName        (_String&);
-long    FindSCFGName                 (_String&);
-long    FindBFFunctionName           (_String&, _VariableContainer* = nil);
+long      FindDataSetName                 (_String&);
+long      FindDataSetFilterName           (_String&);
+long      FindSCFGName                    (_String&);
+long      FindBFFunctionName              (_String&, _VariableContainer* = nil);
+
+
+_String&  GetBFFunctionNameByIndex        (long);
+long      GetBFFunctionArgumentCount  (long);
+_List&    GetBFFunctionArgumentList   (long);
+_SimpleList&    GetBFFunctionArgumentTypes   (long);
+_HY_BL_FUNCTION_TYPE
+         GetBFFunctionType            (long);
+_ExecutionList&
+          GetBFFunctionBody           (long);
+
+
+void      ClearBFFunctionLists        (long = -1L);
+bool      IsBFFunctionIndexValid      (long);
+long      GetBFFunctionCount          (void);
+
 
 long    FindBgmName                  (_String &);
 // added by afyp, March 18, 2007

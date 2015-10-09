@@ -406,11 +406,6 @@ long    _SimpleList::CountCommonElements (_SimpleList& l1, bool yesNo)
     return res;
 }
 
-//List length
-unsigned long _SimpleList::countitems(void)
-{
-    return lLength;
-}
 
 
 _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
@@ -615,7 +610,7 @@ void _SimpleList::Duplicate(BaseRef theRef)
 
 //Element location functions (0,llength - 1)
 //Negative indices return offsets from the end of the list
-long _SimpleList::Element(long index)
+long _SimpleList::Element(long index) const
 {
     if (index >= 0 && index < lLength) {
         return lData[index];
@@ -625,7 +620,7 @@ long _SimpleList::Element(long index)
         return lData[(long)lLength+index];
     }
 
-    return 0;
+    return 0L;
 }
 
 bool _SimpleList::Equal(_SimpleList const& l2) const
@@ -722,14 +717,7 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
     }
   
     if (insertAt==-1) {
-        if (store) {
-            ((BaseRef*)lData)[lLength-1]=br->makeDynamic();
-        } else {
-            ((BaseRef*)lData)[lLength-1]=br;
-            if (pointer) {
-                br->nInstances++;
-            }
-        }
+        insertAt = lLength-1;
     } else {
         //insertAt = insertAt>=lLength?lLength:insertAt;
         insertAt = insertAt>=lLength?lLength-1:insertAt;
@@ -742,14 +730,15 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
             memmove (((char**)lData)+(insertAt+1), ((char**)lData)+insertAt, moveThisMany*sizeof(void*));
         }
 
-        if (store) {
-            ((BaseRef*)lData)[insertAt]=br->makeDynamic();
-        } else {
-            ((BaseRef*)lData)[insertAt]=br;
-            if (pointer) {
-                br->nInstances++;
-            }
-        }
+      
+    }
+    if (store) {
+      ((BaseRef*)lData)[insertAt]=br->makeDynamic();
+    } else {
+      ((BaseRef*)lData)[insertAt]=br;
+      if (pointer) {
+        br->nInstances++;
+      }
     }
 
 

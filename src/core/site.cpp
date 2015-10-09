@@ -5539,7 +5539,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
         if (execBF == 1) {
             lastNexusDataMatrix = result;
 
-            long            bfl = batchLanguageFunctions.lLength;
+            long            bfl = GetBFFunctionCount ();
 
             _ExecutionList nexusBF (nexusBFBody,namespaceID);
             if (bfName) {

@@ -135,6 +135,8 @@ public:
 
 
     virtual bool            EqualOp             (_Operation*);
+  
+    static  long            BinOpCode           (_String const &, long = -1);
 
 protected:
 

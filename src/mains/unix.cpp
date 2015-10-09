@@ -398,7 +398,7 @@ long    DisplayListOfChoices (void)
                     return -1;
                 }
 
-                choice = fileAbbr.toNum();
+                choice = fileAbbr.toLong();
 
                 if ( choice>0 && choice<=categoryHeadings.lLength) {
                     categNumber = choice-1;
@@ -424,7 +424,7 @@ long    DisplayListOfChoices (void)
                 if (fileAbbr.FirstNonSpaceIndex()<0) {
                     categNumber = -1;
                 } else {
-                    choice = fileAbbr.toNum();
+                    choice = fileAbbr.toLong();
                     if ((choice>0 && choice<=end-start)) {
                         return start+choice-1;
                     }
@@ -459,7 +459,7 @@ long    DisplayListOfPostChoices (void)
             if (!fileAbbr.sLength||((fileAbbr.sLength==1)&&(fileAbbr.sData[0]=='Q'))) {
                 return -1;
             }
-            choice = fileAbbr.toNum();
+            choice = fileAbbr.toLong();
 
             if (choice<=0 || choice>availablePostProcessors.lLength) {
                 choice = -1;
@@ -678,11 +678,11 @@ int main (int argc, char* argv[])
 #ifdef __MP__
             if (thisArg.beginswith ("CPU=")) {
                 _String cpus = thisArg.Cut(4,-1);
-                systemCPUCount = cpus.toNum();
+                systemCPUCount = cpus.toLong();
                 if (systemCPUCount<1) {
                     systemCPUCount = 1;
                 }
-                pthread_setconcurrency (systemCPUCount+1);
+                pthread_setconcurrency ((int)systemCPUCount+1);
             } else
 #endif
                 argFile = thisArg;

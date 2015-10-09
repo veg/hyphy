@@ -111,7 +111,8 @@ _List::_List (BaseRef br)
     lLength = 1;
     laLength = MEMORYSTEP;
     lData = (long*)MemAllocate (laLength * sizeof(Ptr));
-    ((BaseRef*)lData)[0]= br->makeDynamic();
+    BaseRef   object_copy = br->makeDynamic();
+    ((BaseRef*)lData)[0]= object_copy;
 }
 
 // Data constructor (variable number of string constants)
@@ -184,8 +185,8 @@ const _List _List::operator = (_List& l)
     lLength = l.lLength;
     laLength = l.laLength;
     lData = l.lData;
-    l.nInstances++;
-    for (unsigned long i = 0; i<lLength; i++) {
+    l.AddAReference();
+    for (unsigned long i = 0UL; i<lLength; i++) {
         ((BaseRef*)(lData))[i] -> AddAReference();
     }
     return *this;
@@ -425,7 +426,11 @@ void  _List::Delete (long index, bool delete_object)
     }
     if (laLength-lLength>MEMORYSTEP) {
         laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
-        lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+        if (laLength > 0)
+          lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+        else {
+          free (lData); lData = nil;
+        }
     }
 
 }
@@ -447,8 +452,12 @@ void  _List::DeleteList (const _SimpleList& toDelete)
         lLength -= toDelete.lLength;
         if (laLength-lLength>MEMORYSTEP) {
             laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
-            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
-        }
+            if (laLength > 0)
+              lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+            else {
+              free (lData); lData = nil;
+            }
+          }
     }
 }
 

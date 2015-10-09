@@ -135,6 +135,8 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecu
         return LnGamma();
     case HY_OP_CODE_LOG: // Log
         return Log();
+    case HY_OP_CODE_MACCESS:
+        return new _MathObject; // indexing None returns None
     case HY_OP_CODE_MAX: // Max
         return Max(p);
     case HY_OP_CODE_MIN: // Min

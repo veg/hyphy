@@ -19,7 +19,7 @@ LoadFunctionLibrary("dSdNTreeTools");
 LoadFunctionLibrary("CF3x4");
 LoadFunctionLibrary("BranchSiteTemplate");
 LoadFunctionLibrary("TreeTools");
-LoadFunctionLibrary("lib2014/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
 
 ChoiceList  (oldBSREL,"Run the adaptive version of BS-REL?", 1,NO_SKIP,

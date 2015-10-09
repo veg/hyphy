@@ -467,8 +467,11 @@ bool _Variable::IsConstant (void)
         return varFormula->IsConstant();
     }
 
-    if (varValue && varValue->ObjectClass () != NUMBER) {
-        return varValue->IsConstant();
+    if (varValue) {
+        long varType = varValue->ObjectClass ();
+        if (!(varType & HY_MUTABLE_OBJECT)) {
+            return varValue->IsConstant();
+        }
     }
 
     return false;

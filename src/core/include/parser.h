@@ -78,7 +78,13 @@ extern      _List           variablePtrs,
             hyReservedWords;
 
 extern      _SimpleList     BuiltInFunctionParameterCount,
-            *deferSetFormula;
+            *deferSetFormula,
+            opPrecedence,
+            BinOps,
+            associativeOps,
+            simpleOperationCodes,
+            simpleOperationFunctions;
+
 
 extern      _AVLListX       variableNames;
 
@@ -130,7 +136,7 @@ bool        ExpressionCalculator(void);
 bool        ExpressionCalculator(_String data);
 
 _Variable*  CheckReceptacle
-(_String*,_String, bool = true, bool = false);
+(_String*, _String const & , bool = true, bool = false);
 
 bool        CheckReceptacleAndStore
 (_String*,_String, bool, _PMathObj, bool = true);

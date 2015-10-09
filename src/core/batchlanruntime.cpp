@@ -905,9 +905,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
         case HY_BL_HBL_FUNCTION: // UserFunction
             result = (_String*)_HBLObjectNameByType(HY_BL_HBL_FUNCTION,sID);
             if (result) {
-                _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
+                _AssociativeList * resAVL = new _AssociativeList;
                 resAVL->MStore ("ID", new _FString (*result), false);
-                resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(sID)), false);
+                resAVL->MStore ("Arguments", new _Matrix(GetBFFunctionArgumentList(sID)), false);
                 theReceptacle->SetValue (resAVL,false);
                 return true;
             } 
@@ -925,7 +925,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
 
         default: { // everything else...
             // decide what kind of object current argument represents
-            
+          
+          
+          
             _String *currentArgument = (_String*)parameters(1),
                     nmspaced       = AppendContainerName(*currentArgument,currentProgram.nameSpacePrefix);
             long    typeFlag       = HY_BL_ANY,
@@ -1070,8 +1072,8 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 case HY_BL_HBL_FUNCTION: {
                     _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
                     resAVL->MStore ("ID", new _FString (*_HBLObjectNameByType (HY_BL_HBL_FUNCTION, index, false)), false);
-                    resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(index)), false);
-                    resAVL->MStore("Body", new _FString (((_ExecutionList*)batchLanguageFunctions(index))->sourceText,false),false);
+                    resAVL->MStore ("Arguments", new _Matrix(GetBFFunctionArgumentList(index)), false);
+                    resAVL->MStore ("Body", new _FString (GetBFFunctionBody(index).sourceText,false),false);
                     theReceptacle->SetValue (resAVL,false);
                     return true;
                 }

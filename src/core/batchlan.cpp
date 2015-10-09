@@ -125,6 +125,7 @@ allowedFormats,
 batchLanguageFunctions,
 batchLanguageFunctionNames,
 batchLanguageFunctionParameterLists,
+batchLanguageFunctionParameterTypes,
 compiledFormulaeParameters,
 modelNames,
 executionStack,
@@ -142,7 +143,6 @@ _String volumeName;
 
 _SimpleList
 returnlist,
-batchLanguageFunctionParameters,
 batchLanguageFunctionClassification,
 modelMatrixIndices,
 modelTypeList,
@@ -559,6 +559,69 @@ _LikelihoodFunction*    FindLikeFuncByName (_String&s)
 long    FindSCFGName (_String&s)
 {
     return scfgNamesList.FindObject (&s);
+}
+
+//____________________________________________________________________________________
+_String&    GetBFFunctionNameByIndex  (long idx) {
+  return *_HBLObjectNameByType (HY_BL_HBL_FUNCTION, idx, false);
+}
+
+//____________________________________________________________________________________
+long   GetBFFunctionArgumentCount  (long idx) {
+  return ((_List*)batchLanguageFunctionParameterLists.Element (idx))->countitems();
+}
+
+//____________________________________________________________________________________
+_List&   GetBFFunctionArgumentList  (long idx) {
+  return *(_List*)batchLanguageFunctionParameterLists.Element (idx);
+}
+
+//____________________________________________________________________________________
+_SimpleList&   GetBFFunctionArgumentTypes  (long idx) {
+  return *(_SimpleList*)batchLanguageFunctionParameterTypes.Element (idx);
+}
+
+//____________________________________________________________________________________
+_ExecutionList&   GetBFFunctionBody  (long idx) {
+  return *(_ExecutionList*)batchLanguageFunctions.Element (idx);
+}
+
+//____________________________________________________________________________________
+_HY_BL_FUNCTION_TYPE   GetBFFunctionType  (long idx) {
+  return (_HY_BL_FUNCTION_TYPE) batchLanguageFunctionClassification.Element (idx);
+}
+
+//____________________________________________________________________________________
+void ClearBFFunctionLists (long start_here) {
+  if (start_here > 0L && start_here < batchLanguageFunctionNames.countitems()) {
+    
+    _SimpleList delete_me (batchLanguageFunctionNames.countitems()-start_here, start_here, 1L);
+    
+    batchLanguageFunctionNames.DeleteList           (delete_me);
+    batchLanguageFunctions.DeleteList               (delete_me);
+    batchLanguageFunctionClassification.DeleteList  (delete_me);
+    batchLanguageFunctionParameterLists.DeleteList  (delete_me);
+    batchLanguageFunctionParameterTypes.DeleteList  (delete_me);
+  } else {
+    batchLanguageFunctionNames.Clear();
+    batchLanguageFunctions.Clear();
+    batchLanguageFunctionClassification.Clear();
+    batchLanguageFunctionParameterLists.Clear();
+    batchLanguageFunctionParameterTypes.Clear();
+  }
+}
+
+//____________________________________________________________________________________
+bool IsBFFunctionIndexValid (long index) {
+  if (index >= 0L && index < batchLanguageFunctionNames.countitems()) {
+    return batchLanguageFunctions.Element(index) != nil;
+  }
+  return false;
+}
+
+//____________________________________________________________________________________
+long GetBFFunctionCount (void) {
+  return batchLanguageFunctions.countitems();
 }
 
 //____________________________________________________________________________________
@@ -1083,17 +1146,9 @@ _PMathObj       _ExecutionList::Execute     (void)      // run this execution li
     callPoints << currentCommand;
     executionStack       << this;
 
-    _String             dd (GetPlatformDirectoryChar());
-
-    _FString            bp  (baseDirectory, false),
-                        lp  (libDirectory, false),
-                        ds  (dd),
-                        cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):empty),
+ 
+    _FString            cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):empty),
                         * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
-
-    setParameter        (platformDirectorySeparator, &ds);
-    setParameter        (hyphyBaseDirectory, &bp);
-    setParameter        (hyphyLibDirectory, &lp);
 
     if (stashed) {
         stashed = (_FString*)stashed->makeDynamic();
@@ -1116,11 +1171,13 @@ _PMathObj       _ExecutionList::Execute     (void)      // run this execution li
             TimerDifferenceFunction (false);
             (((_ElementaryCommand**)lData)[currentCommand])->Execute(*this);
             timeDiff   = TimerDifferenceFunction(true);
+          
 
-            if (profileCounter) {
-                profileCounter->theData[instCounter*2]   += timeDiff;
-                profileCounter->theData[instCounter*2+1] += 1.0;
-            }
+          if (profileCounter) {
+            // a call to _hyphy_profile_dump can set this to NULL
+            profileCounter->theData[instCounter*2]   += timeDiff;
+            profileCounter->theData[instCounter*2+1] += 1.0;
+          }
         } else {
             (((_ElementaryCommand**)lData)[currentCommand])->Execute(*this);
         }
@@ -1159,14 +1216,9 @@ long        _ExecutionList::ExecuteAndClean     (long g, _String* fName)        
     terminateExecution      = false;
     skipWarningMessages     = false;
 
-    while (g<batchLanguageFunctionNames.lLength) {
-        batchLanguageFunctionNames.Delete           (g);
-        batchLanguageFunctionParameters.Delete      (g);
-        batchLanguageFunctions.Delete               (g);
-        batchLanguageFunctionClassification.Delete  (g);
-        batchLanguageFunctionParameterLists.Delete  (g);
-    }
-    return f;
+    ClearBFFunctionLists    (g);
+  
+  return f;
 }
 
 //____________________________________________________________________________________
@@ -1303,43 +1355,26 @@ void        _ExecutionList::ExecuteSimple       (void)
 
 void        _ExecutionList::ResetFormulae       (void)      // run this execution list
 {
-    currentCommand = 0;
+    currentCommand = 0L;
+    _SimpleList to_delete_aux;
+    _AVLList to_delete (&to_delete_aux);
     while (currentCommand<lLength) {
         _ElementaryCommand* thisCommand = ((_ElementaryCommand**)lData)[currentCommand];
-        if (thisCommand->code==0) {
-            if (thisCommand->simpleParameters.lLength) {
-                //printf ("[ResetFormulae] %s\n", thisCommand->sData);
-                _Formula* f = (_Formula*)
-                              thisCommand->simpleParameters.lData[1],
-                              *f2 = (_Formula*)
-                                    thisCommand->simpleParameters.lData[2] ;
-                if (f) {
-                    delete f;
-                }
-                if (f2) {
-                    delete f2;
-                }
-                thisCommand->simpleParameters.Clear();
-                long k = listOfCompiledFormulae.Find((long)thisCommand);
-                if (k >= 0) {
-                    listOfCompiledFormulae.Delete(k);
-                    //printf ("[ResetFormulae:listOfCompiledFormulae %d]\n",k);
-                    compiledFormulaeParameters.Delete(k);
-                    //printf ("[ResetFormulae:compiledFormulaeParameters %d]\n",k);
-                }
-            }
-        } else {
-            if (thisCommand->code==4) {
-                if (thisCommand->parameters.lLength && thisCommand->simpleParameters.lLength == 3) {
-                    _Formula* f = (_Formula*)thisCommand->simpleParameters.lData[2];
-                    if (f) {
-                        delete f;
-                    }
-                    thisCommand->simpleParameters.Delete (2);
-                }
-            }
+        if (thisCommand->DecompileFormulae()) {
+          to_delete.Insert(thisCommand);
         }
         currentCommand++;
+    }
+  
+    if (to_delete.countitems()) {
+      _SimpleList batch_delete;
+      for (unsigned long i = 0; i < listOfCompiledFormulae.lLength; i++) {
+        if (to_delete.Find ((BaseRef)listOfCompiledFormulae.Element(i)) >= 0) {
+          batch_delete << i;
+        }
+      }
+      listOfCompiledFormulae.DeleteList(batch_delete);
+      compiledFormulaeParameters.DeleteList(batch_delete);
     }
 }
 //____________________________________________________________________________________
@@ -2471,56 +2506,65 @@ BaseRef   _ElementaryCommand::toStr      (void)
 void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 {
     chain.currentCommand++;
+  
+    _String * errMsg = nil;
+  
+    try {
 
-    if (chain.cli) {
-        _Parameter result = ((_Formula*)simpleParameters.lData[1])->ComputeSimple (chain.cli->stack, chain.cli->values);
-        long sti = chain.cli->storeResults.lData[chain.currentCommand-1];
-        if (sti>=0) {
-            chain.cli->values[sti].value = result;
-        }
-        return;
-    }
+      if (chain.cli) {
+          _Parameter result = ((_Formula*)simpleParameters.lData[1])->ComputeSimple (chain.cli->stack, chain.cli->values);
+          long sti = chain.cli->storeResults.lData[chain.currentCommand-1];
+          if (sti>=0) {
+              chain.cli->values[sti].value = result;
+          }
+          return;
+      }
 
-    if (!simpleParameters.lLength) { // not compiled yet
-        _Formula f,
-                 f2;
+      if (!simpleParameters.lLength) { // not compiled yet
+          _Formula f,
+                   f2;
 
-        _String* theFla     = (_String*)parameters(0),
-                 errMsg;
+          _String* theFla     = (_String*)parameters(0),
+                   errMsg;
 
-        _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+          _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
 
-        long     parseCode = Parse(&f,(*theFla),fpc,&f2);
+          long     parseCode = Parse(&f,(*theFla),fpc,&f2);
 
-        if (parseCode != HY_FORMULA_FAILED ) {
-            if (fpc.isVolatile() == false) { // not a matrix constant
-                simpleParameters    <<parseCode;
-                simpleParameters    <<long (f.makeDynamic());
-                simpleParameters    <<long (f2.makeDynamic());
-                simpleParameters    <<fpc.assignmentRefID   ();
-                simpleParameters    <<fpc.assignmentRefType ();
+          if (parseCode != HY_FORMULA_FAILED ) {
+              if (fpc.isVolatile() == false) { // not a matrix constant
+                  simpleParameters    <<parseCode;
+                  simpleParameters    <<long (f.makeDynamic());
+                  simpleParameters    <<long (f2.makeDynamic());
+                  simpleParameters    <<fpc.assignmentRefID   ();
+                  simpleParameters    <<fpc.assignmentRefType ();
+                  appendCompiledFormulae (&f, &f2);
+                
+              } else {
+                  ExecuteFormula(&f,&f2,parseCode,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
+                  if (terminateExecution) {
+                    errMsg = new _String ("Error computing the compiled statement: ");
+                    throw 0;
+                  }
+                  return;
+              }
+          } else {
+            errMsg = new _String ("Error compiling the statement: ");
+            throw 0;
+          }
+      }
 
-                _SimpleList*        varList = new _SimpleList;
-                _AVLList            varListA (varList);
-                f.ScanFForVariables (varListA, true, true, true, true);
-                f2.ScanFForVariables(varListA, true, true);
-                varListA.ReorderList();
-                listOfCompiledFormulae<<(long)this;
-                compiledFormulaeParameters.AppendNewInstance(varList);
-            } else {
-                ExecuteFormula(&f,&f2,parseCode,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
-                return;
-            }
-        } else {
-            return;
-        }
-    }
-
-    ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix, simpleParameters.lData[4]);
-
-    if (terminateExecution) {
-        WarnError (_String("Problem occurred in line: ")&*this);
-        return;
+      ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix, simpleParameters.lData[4]);
+      
+      if (terminateExecution) {
+        errMsg = new _String ("Error computing the interpreted statement: ");
+        throw 0;
+      }
+      
+    } catch (int e) {
+      if (errMsg) {
+        WarnError (_String(errMsg) & *this);
+      }
     }
 }
 
@@ -2530,75 +2574,106 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 {
     chain.currentCommand++;
-    if (simpleParameters.lLength==2) {
+    /*if (simpleParameters.lLength==2) {
 
+    }*/
+  
+    _Formula * expression = nil;
+    _String  * errMsg = nil;
+
+    try {
+      if (simpleParameters.lLength==3 || parameters.lLength) {
+        
+        
+          if ( parameters.lLength && simpleParameters.lLength < 3) {
+              expression = new _Formula;
+              //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
+
+              _FormulaParsingContext fpc (nil,  chain.nameSpacePrefix);
+              long status = Parse (expression, *(_String*)parameters(0), fpc, nil);
+
+              //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
+
+              if (status== HY_FORMULA_EXPRESSION) {
+                if (fpc.isVolatile() == false) {
+                    simpleParameters << (long)expression;
+                    appendCompiledFormulae (expression);
+                    expression = nil;
+                }
+              } else {
+                  errMsg = new _String (" is not a valid conditional expression");
+                  throw (0);
+              }
+          }
+
+          if (chain.cli) {
+              if ( ((_Formula*)simpleParameters(2))->ComputeSimple(chain.cli->stack, chain.cli->values)==0.0) {
+                  chain.currentCommand = simpleParameters.lData[1];
+                  return;
+              }
+          } else {
+              _PMathObj result;
+              if (expression) {
+                //printf ("\n*** Interpreted condition\n");
+                result = expression->Compute();
+              } else {
+                //printf ("\n*** Compiled condition\n");
+                result = ((_Formula*)simpleParameters(2))->Compute();
+              }
+               if (terminateExecution && !result) {
+                  subNumericValues = 2;
+                  _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr();
+                  subNumericValues = 0;
+                  errMsg  = new _String(_String("Failed while evaluating: ") & _String((_String*)((_Formula*)simpleParameters(2))->toStr()) & " which expanded to  " & s);
+                  throw (1);
+               }
+
+              bool conditionFalse = false;
+
+              switch (result->ObjectClass()) {
+                case NUMBER:
+                    conditionFalse = result->Value()==0.0;
+                    break;
+                case STRING:
+                    conditionFalse = ((_FString*)result)->IsEmpty();
+                    break;
+                case HY_UNDEFINED:
+                    conditionFalse = true;
+                    break;
+                default:
+                    errMsg = new _String(_String(" did not evaluate to a number, a string, or a null (") &  (_String*)result->toStr() & ")");
+                    throw (0);
+              }
+            
+              if (expression) {
+                delete expression;
+              }
+
+              if (conditionFalse) {
+                  chain.currentCommand = simpleParameters.lData[1];
+                  return;
+              }
+          }
+      }
+      chain.currentCommand = simpleParameters.lData[0];
+
+      if (chain.currentCommand == -1) {
+          terminateExecution   = true;
+          chain.currentCommand = chain.lLength;
+      }
     }
-
-    if (simpleParameters.lLength==3 || parameters.lLength) {
-        if ( parameters.lLength && simpleParameters.lLength < 3) {
-            _Formula f;
-            //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
-
-            _FormulaParsingContext fpc (nil,  chain.nameSpacePrefix);
-            long status = Parse (&f, *(_String*)parameters(0), fpc, nil);
-
-            //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
-
-            if (status== HY_FORMULA_EXPRESSION) {
-                simpleParameters<<long(f.makeDynamic());
-            } else {
-                return;
-            }
-        }
-
-        if (chain.cli) {
-            if ( ((_Formula*)simpleParameters(2))->ComputeSimple(chain.cli->stack, chain.cli->values)==0.0) {
-                chain.currentCommand = simpleParameters.lData[1];
-                return;
-            }
+    catch (int e) {
+      if (expression) {
+        delete expression;
+      }
+      if (errMsg) {
+        if (e == 0) {
+          WarnError (_String ("'") & *(_String*)parameters(0) & "'" & errMsg);
         } else {
-            _PMathObj result = ((_Formula*)simpleParameters(2))->Compute();
-            if (!result) {
-                WarnError ("Condition Evaluation Failed");
-                return ;
-            }
-
-            if (terminateExecution) {
-                subNumericValues = 2;
-                _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr();
-                subNumericValues = 0;
-                _String     err  = _String("Failed while evaluating: ") & _String((_String*)((_Formula*)simpleParameters(2))->toStr()) & " - " & *s;
-                DeleteObject (s);
-                WarnError    (err);
-                return;
-            }
-
-            bool conditionFalse = false;
-
-            switch (result->ObjectClass()) {
-            case NUMBER:
-                conditionFalse = result->Value()==0.0;
-                break;
-            case STRING:
-                conditionFalse = ((_FString*)result)->IsEmpty();
-                break;
-            default:
-                WarnError ("Condition evaluation result be be a number or a string");
-                return;
-
-            }
-
-            if (conditionFalse) {
-                chain.currentCommand = simpleParameters.lData[1];
-                return;
-            }
+          WarnError    (errMsg);
         }
-    }
-    chain.currentCommand = simpleParameters.lData[0];
-
-    if (chain.currentCommand == -1) {
-        terminateExecution   = true;
-        chain.currentCommand = chain.lLength;
+        // note that errMsg will be deleted by _String (*_String) constructors
+      }
     }
 }
 
@@ -5092,13 +5167,12 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
     if (errMsg.sLength == 0) {
         _LikelihoodFunction * lf   = (_LikelihoodFunction *) likeFuncList (k);
         _String         callBack   = ProcessLiteralArgument (arg2,chain.nameSpacePrefix);
-
-        k = batchLanguageFunctionNames.FindObject (&callBack);
+        k = FindBFFunctionName (callBack);
 
         if (k<0) {
-            errMsg = *arg2 & " is not a defined user batch language function ";
+            errMsg = _String ("'") & *arg2 & "' is not a defined user batch language function ";
         } else {
-            if (batchLanguageFunctionParameters.lData[k]!=2) {
+            if (GetBFFunctionArgumentCount(k)!=2L) {
                 errMsg = *arg2 & " callback function must depend on 2 parameters ";
             } else {
                 lf->StateCounter (k);
@@ -5402,11 +5476,9 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
 
 //____________________________________________________________________________________
 
-bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this command in a given list
-{
-    _String errMsg;
-
-    switch (code) {
+bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
+  
+  switch (code) {
 
     case 0: // formula reparser
         ExecuteCase0 (chain);
@@ -5557,24 +5629,69 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase12 (chain);
         break;
 
-    case 14:
-
-    {
-        if (parameters.lLength) {
-            DeleteObject (chain.result);
-            _Formula returnValue (*(_String*)parameters(0),chain.nameSpacePrefix);
-            chain.result = returnValue.Compute();
-            if (chain.result) {
-                chain.result = (_PMathObj) chain.result->makeDynamic();
+    case 14: {
+      // a return statement
+    
+      if (parameters.lLength) {
+        
+        _Formula * expression = nil;
+        _String  * errMsg     = nil;
+        try {
+          
+          
+          if (simpleParameters.lLength < 2) {
+            expression = new _Formula;
+            //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
+            
+            _FormulaParsingContext fpc (nil,  chain.nameSpacePrefix);
+            long status = Parse (expression, *(_String*)parameters(0), fpc, nil);
+            
+            if (status== HY_FORMULA_EXPRESSION) {
+              if (fpc.isVolatile() == false) {
+                simpleParameters<<(long)expression;
+                appendCompiledFormulae (expression);
+                expression = nil;
+              }
+            } else {
+                errMsg = new _String ("Invalid return statement");
+                throw 0;
             }
+          }
+            
+            
+          DeleteObject (chain.result);
+          if (expression) {
+            //printf ("Return interpreted\n");
+            chain.result = expression->Compute();
+          }
+          else{
+            //printf ("Return compiled\n");
+            chain.result = ((_Formula*)simpleParameters(1))->Compute();
+          }
+          if (chain.result) {
+            chain.result->AddAReference();
+          }
+          
+          if (expression) {
+            delete (expression);
+          }
         }
-        chain.currentCommand = simpleParameters(0);
-        if (chain.currentCommand<0) {
-            chain.currentCommand = 0x7fffffff;
+        catch (int e) {
+          if (expression)
+            delete expression;
+          if (errMsg)
+            WarnError (errMsg);
+          return false;
         }
-    }
-
-    break;
+      }
+      
+      chain.currentCommand = simpleParameters(0);
+      if (chain.currentCommand<0) {
+        chain.currentCommand = 0x7fffffff;
+      }
+      break;
+   }
+      
 
     case 16: { // data set merger operation
         chain.currentCommand++;
@@ -7256,13 +7373,14 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
     // now look for the opening paren
 
-    if ((mark1=batchLanguageFunctionNames.FindObject(funcID))!=-1) {
+    if ((mark1=FindBFFunctionName(*funcID)) >= 0L) {
         ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
     }
 
-    _List pieces;
+    _List       arguments;
+    _SimpleList argument_types;
 
-    long upto = ExtractConditions (source,mark2+1,pieces,',',false);
+    long upto = ExtractConditions (source,mark2+1,arguments,',',false);
 
 
     if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}') {
@@ -7275,8 +7393,16 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     if (isLFunction)
         extraNamespace = _HYGenerateANameSpace();
     
-    for (long k = 0; k < pieces.lLength; k++) {
-        pieces.Replace (k,new _String(chain.AddNameSpaceToID (*(_String*)pieces(k), & extraNamespace)),false);
+    for (long k = 0; k < arguments.lLength; k++) {
+      
+        _String*   namespaced = new _String(chain.AddNameSpaceToID (*(_String*)arguments(k), & extraNamespace));
+        if (namespaced->getChar(namespaced->sLength - 1L) == '&') {
+          namespaced->Trim(0,namespaced->sLength-2);
+          argument_types << BL_FUNCTION_ARGUMENT_REFERENCE;
+        } else {
+          argument_types << BL_FUNCTION_ARGUMENT_NORMAL;
+        }
+        arguments.Replace (k,namespaced,false);
     }
 
     _String          sfunctionBody (source, upto+1,source.Length()-2);
@@ -7303,14 +7429,14 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     if (mark1>=0) {
         batchLanguageFunctions.Replace (mark1, functionBody, false);
         batchLanguageFunctionNames.Replace (mark1, funcID, false);
-        batchLanguageFunctionParameterLists.Replace (mark1, &pieces, true);
-        batchLanguageFunctionParameters.lData[mark1] = pieces.lLength;
+        batchLanguageFunctionParameterLists.Replace (mark1, &arguments, true);
+        batchLanguageFunctionParameterTypes.Replace (mark1, &argument_types, true);
         batchLanguageFunctionClassification.lData[mark1] = isFFunction? BL_FUNCTION_NORMAL_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE;
     } else {
         batchLanguageFunctions.AppendNewInstance(functionBody);
         batchLanguageFunctionNames.AppendNewInstance(funcID);
-        batchLanguageFunctionParameterLists &&(&pieces);
-        batchLanguageFunctionParameters     <<pieces.lLength;
+        batchLanguageFunctionParameterLists &&(&arguments);
+        batchLanguageFunctionParameterTypes &&(&argument_types);
         batchLanguageFunctionClassification <<(isFFunction? BL_FUNCTION_NORMAL_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE);
     }
 

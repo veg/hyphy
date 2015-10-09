@@ -42,25 +42,13 @@
 #include "defines.h"
 #include "formula.h"
 
+
 #include "parser.h"
+#include "batchlan.h"
 #include "function_templates.h"
 
 //Constants
 extern _Parameter twoOverSqrtPi;
-
-extern _List batchLanguageFunctionNames,
-             batchLanguageFunctionParameterLists;
-
-extern _SimpleList BinOps,
-       opPrecedence,
-       FunctionArgumentCount,
-       batchLanguageFunctionParameters,
-       batchLanguageFunctionClassification,
-       associativeOps;
-
-extern
-_SimpleList     simpleOperationCodes,
-                simpleOperationFunctions;
 
 extern  _Variable*  _x_, *_n_;
 
@@ -566,11 +554,13 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
     if (nOps<0)
         // a user-defined function
     {
-        result<<((_String*)batchLanguageFunctionNames(-nOps-1));
+        long func_id = -nOps - 1L;
+        result<< & GetBFFunctionNameByIndex(func_id);
         if (currentNode) {
             result<<'(';
-            for (long k=1; k<=batchLanguageFunctionParameters(-nOps-1); k++) {
-                if(k>1) {
+            long argument_count = GetBFFunctionArgumentCount(func_id);
+            for (long k=1L; k<=argument_count; k++) {
+                if(k>1L) {
                     result<<',';
                 }
                 internalToStr (result, currentNode->go_down(k),-1,matchNames);
@@ -1302,7 +1292,7 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
 
 
 //__________________________________________________________________________________
-_PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg) 
+_PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
 // compute the value of the formula
 {
     if (theFormula.lLength == 0) {
@@ -1384,6 +1374,15 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
         }
         if (theStack.theStack.lLength != 1 || !wellDone) {
             _String errorText = _String((_String*)toStr()) & _String(" contains errors.");
+          
+            if (theStack.theStack.lLength > 1 && wellDone) {
+                errorText = errorText & " Unconsumed values on the stack";
+                for (long stack_id = theStack.theStack.lLength-1; stack_id >= 0; stack_id --) {
+                  errorText = errorText & "\n------------------\n" & (_String*) theStack.Pop()->toStr();
+                }
+                errorText & "\n------------------\n";
+            }
+          
             if (errMsg) {
                 *errMsg = *errMsg & errorText;
             }
@@ -1395,7 +1394,8 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
          }
     }
 
-    return theStack.Pop(false);
+    _PMathObj return_value = theStack.Pop(false);
+    return valid_type == HY_ANY_OBJECT ? return_value : ((return_value->ObjectClass() & valid_type) ? return_value : nil);
 }
 
 //__________________________________________________________________________________
@@ -1726,8 +1726,8 @@ bool _Formula::HasChanged (bool ingoreCats)
             return true;
         } else if (thisOp->numberOfTerms<0) {
             dataID = -thisOp->numberOfTerms-2;
-            if (dataID<batchLanguageFunctionClassification.lLength) {
-                if (batchLanguageFunctionClassification.lData[dataID] == BL_FUNCTION_NORMAL_UPDATE) {
+            if (IsBFFunctionIndexValid (dataID)) {
+                if (GetBFFunctionType (dataID) == BL_FUNCTION_NORMAL_UPDATE) {
                     continue;
                 }
             }
@@ -1932,6 +1932,16 @@ bool _Formula::IsConstant (void)
 }
 
 //__________________________________________________________________________________
+void _Formula::PushTerm (BaseRef object) {
+  _List * test_list;
+  if ((test_list = dynamic_cast<_List*>(object))) {
+    theFormula << *test_list;
+  } else {
+    theFormula << object;
+  }
+}
+
+//__________________________________________________________________________________
 void _Formula::SimplifyConstants (void)
 {
     theStack.theStack.Clear();
@@ -1941,7 +1951,7 @@ void _Formula::SimplifyConstants (void)
         if ((thisOp->theData==-1)&&(thisOp->opCode>=0)&&(thisOp->numberOfTerms)) {
             long nt = thisOp->numberOfTerms;
             if (nt<0) {
-                nt = batchLanguageFunctionParameters.lData[-nt-1];
+                nt = GetBFFunctionArgumentCount (-nt-1);
             }
 
             for (j = 1; j<=nt; j++) {
@@ -2051,8 +2061,8 @@ void    _Formula::ConvertToTree (bool err_msg)
                 nodeStack<<(long)leafNode;
             } else { // an operation
                 long nTerms = currentOp->GetNoTerms();
-                if (nTerms<0) {
-                    nTerms = batchLanguageFunctionParameters(-nTerms-1);
+                if (nTerms<0L) {
+                    nTerms = GetBFFunctionArgumentCount(-nTerms-1L);
                 }
 
                 if (nTerms>nodeStack.lLength) {

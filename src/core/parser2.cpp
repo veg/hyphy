@@ -653,8 +653,8 @@ bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char &
         }
     }
     if (check && levelData->lLength == 1) {
-        _Operation * theOp = (_Operation*)(*levelData)(0);
-        if (!theOp->IsAVariable(false)) {
+        _Operation * theOp = dynamic_cast<_Operation*>(levelData->GetItem(0));
+        if (!(theOp && theOp->IsAVariable(false))) {
             errMsg = "The left-hand side of an assignment must be a variable (not a constant)";
             return false;
         }        
@@ -852,10 +852,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 }
 
                 for (int i = 0; i<levelData->countitems(); i++) {
-                    f->theFormula << (*levelData)(i);    // mod 07072006 to not duplicate
+                  //f->theFormula << (*levelData)(i);    // mod 07072006 to not duplicate
+                  f->PushTerm (levelData->GetItem (i));
                 }
 
-                levelData->Clear();
 
                 for (int k = levelOps->countitems()-1; k>=0; k--) {
                     f->theFormula << (*levelOps)(k);    // mod 07072006 to not duplicate
@@ -866,11 +866,13 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (levelData->lLength>1) {
                     return HandleFormulaParsingError ("Syntax error ", parsingContext.errMsg(), s, i);
                 } else if (levelData->lLength) {
-                    f->theFormula << (*levelData)(0);    // mod 07072006 to not duplicate
+                  //f->theFormula << (*levelData)(0);    // mod 07072006 to not duplicate
+                  f->PushTerm (levelData->GetItem(0));
                 }
 
-                levelData->Clear();
             }
+
+            levelData->Clear();
 
             if (i<s.sLength && lookAtMe !=',' ) {
                 operations.Delete(level+1);
@@ -1218,8 +1220,9 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 }
 
                 if (levelData->lLength) {
-                    f->theFormula.AppendNewInstance((*levelData)[levelData->lLength-1]);
-                    levelData->Delete(levelData->lLength-1,false);
+                    //f->theFormula.AppendNewInstance((*levelData)[levelData->lLength-1]);
+                    f->PushTerm(levelData->GetItem(levelData->lLength-1));
+                    levelData->Delete(levelData->lLength-1);
                 }
             }
 
@@ -1249,7 +1252,8 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             long j             = 1,
                  inPlaceID     = -1;
 
-            _String * literal = (_String*)checkPointer(new _String (16,true));
+            _String * literal = new _String (16,true);
+            _List * formula_list = nil;
 
             while (i+j<s.sLength) {
                 char aChar = s.sData[i+j];
@@ -1269,27 +1273,58 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (aChar =='"' && inPlaceID < 0) {
                     break;
                 }
-
+              
+ 
                 if (aChar == '`') {
                     if (inPlaceID < 0) {
                         inPlaceID = ++j;
                     } else if (j == inPlaceID) {
-                        return HandleFormulaParsingError ("Attempted to string substitute an empty quotation ", parsingContext.errMsg(), s, i);
+                      //return HandleFormulaParsingError ("Attempted to string substitute an empty quotation ", parsingContext.errMsg(), s, i);
+                      (*literal) << '`';
+                      inPlaceID = -1L;
+                      j++;
+      
                     } else {
-                        _String     inPlaceVID (s,i+inPlaceID,i+j-1),
-                                    inPlaceValue = ProcessLiteralArgument(&inPlaceVID, parsingContext.formulaScope());
-
-                        /*if (!inPlaceValue) {
-                            inPlaceValue = (_FString*)ProcessLiteralArgument(&inPlaceVID, theParent);
-                            if (!inPlaceValue) {
-                                return HandleFormulaParsingError ("Attempted to string substitute something other that a string variable/expression ", saveError, s, i);
-                            }
-                        }*/
-
-                        (*literal) << inPlaceValue;
-                        inPlaceID = -1;
-                        parsingContext.isVolatile() = true;
+                        _String     inPlaceVID (s,i+inPlaceID,i+j-1);
+                        _Formula    expressionProcessor;
+                      
+                        long parse_result = Parse(&expressionProcessor, inPlaceVID, parsingContext, nil);
+                      
+                        if (parse_result != HY_FORMULA_EXPRESSION) {
+                          return HandleFormulaParsingError ("Not a valid/simple expression inside `` ", parsingContext.errMsg(), s, i);
+                        }
+                      
+                        if (expressionProcessor.IsConstant()) {
+                          _PMathObj constant_literal = expressionProcessor.Compute (0, nil, nil, nil, STRING);
+                          if (constant_literal) {
+                            (*literal) << *((_FString*)constant_literal)->theString;
+                          }
+                          else {
+                            return HandleFormulaParsingError ("Constant expression inside `` did not evaluate to a string ", parsingContext.errMsg(), s, i);
+                          }
+                        } else {
+                          // push this expression down
+                          if (!formula_list) {
+                            formula_list = new _List;
+                          }
+                          
+                          literal->Finalize();
+                          if (literal->sLength) {
+                            formula_list->AppendNewInstance(new _Operation (new _FString(literal)));
+                          } else {
+                            DeleteObject (literal);
+                          }
+                          literal = new _String (16,true);
+                          (*formula_list) << expressionProcessor.theFormula;
+                          if (formula_list->lLength > expressionProcessor.theFormula.lLength) {
+                            formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
+                          }
+                        }
+                        inPlaceID = -1L;
+                        //parsingContext.isVolatile() = true;
                         j++;
+                      
+                      
                     }
 
                 } else {
@@ -1299,12 +1334,30 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     j++;
                 }
             }
+          
+          
             literal->Finalize();
-            if (inPlaceID >= 0) {
-                return HandleFormulaParsingError ("Unterminated string substitution inside a literal ", parsingContext.errMsg(), s, i);
+          
+            if (formula_list) {
+              if (literal->sLength) {
+                formula_list->AppendNewInstance(new _Operation (new _FString(literal)));
+                formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
+                levelData->AppendNewInstance(new _List(*formula_list));
+              } else {
+                DeleteObject (literal);
+                levelData->AppendNewInstance(new _List(*formula_list));
+              }
+              DeleteObject (formula_list);
+              
+            } else {
+              levelData->AppendNewInstance (new _Operation (new _FString(*literal)));
+              DeleteObject(literal);
             }
-            levelData->AppendNewInstance (new _Operation (new _FString(*literal)));
-            DeleteObject(literal);
+          
+          
+            if (inPlaceID >= 0) {
+              return HandleFormulaParsingError ("Unterminated string substitution (``) inside a literal ", parsingContext.errMsg(), s, i);
+            }
 
             i += j;
             continue;
@@ -1448,18 +1501,20 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 continue;
             }
         }
-        
-        if ( BinOps.Find (s.getChar(i))!=-1 || (twoToken&& (BinOps.Find(s.getChar(i-1)*(long)256+s.getChar(i))!=-1)) ) {
-            if (!twoToken && BinOps.Find(s.getChar(i)*(long)256+s.getChar(i+1)) != -1) {
+      
+        long is_2t_bin_ops = -1L;
+      
+        if ( BinOps.Find (s.getChar(i))!=-1 || (twoToken&& (is_2t_bin_ops = _Operation::BinOpCode (s, i)) !=-1)) {
+            if (!twoToken && is_2t_bin_ops != -1) {
                 twoToken = true;
                 continue;
             }
 
-            if (twoToken||(BinOps.Find(s.getChar(i)*256+s.getChar(i+1))!=-1)) {
+            if (twoToken|| is_2t_bin_ops !=-1) {
                 if (!twoToken) {
                     i++;
                 }
-                curOp = _String(s.getChar(i-1))&(_String)(s.getChar(i));
+                curOp = _String(s.getChar(i-1)) & s.getChar(i);
             } else {
                 curOp = s.getChar(i);
             }
@@ -1486,14 +1541,16 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (storage) {
                     BaseRef newS = (*levelData)(levelData->countitems()-1)->makeDynamic();
                     for (unsigned long k = 0; k<levelData->countitems()-1; k++) {
-                        f->theFormula&&((*levelData)(k));
+                        f->PushTerm (levelData->GetItem (k));
+                        //f->theFormula << ((*levelData)(k));
                     }
 
                     levelData->Clear();
                     levelData->AppendNewInstance (newS);
                 } else {
                     for (unsigned long k = 0; k<levelData->countitems(); k++) {
-                        f->theFormula << ((*levelData)(k));
+                        f->PushTerm (levelData->GetItem (k));
+                        //f->theFormula << ((*levelData)(k));
                     }
                     levelData->Clear();
                 }
@@ -1512,18 +1569,16 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             long h,g;
             _String prevOp = *((((_Operation*)((*levelOps)(levelOps->countitems()-1)))->GetCode()));
 
-            h = BinOps.Find(prevOp.sLength==2?prevOp.getChar(0)*256+prevOp.getChar(1):prevOp.getChar(0));
-            g = BinOps.Find(curOp.sLength==2?curOp.getChar(0)*256+curOp.getChar(1):curOp.getChar(0));
+            h = _Operation::BinOpCode (prevOp);
+            g = _Operation::BinOpCode (curOp);
 
-            if (h!=-1) {
+            if (h >= 0L) {
                 h = opPrecedence (h);
             }
-
             g = opPrecedence (g);
 
 
-
-            if (g>h && h!=-1) { // store the op, don't do it yet!
+           if (g>h && h!=-1) { // store the op, don't do it yet!
                 levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
                 if (terminateExecution) {
                     return HY_FORMULA_FAILED;
@@ -1535,9 +1590,9 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
             for (int j = levelOps->countitems()-1; j>=0; j--) {
                 _String  sss = (((_Operation*)((*levelOps)(levelOps->countitems()-1)))->GetCode());
-                h = BinOps.Find(sss.sLength==2?sss.getChar(0)*256+sss.getChar(1):sss.getChar(0));
-                if (h==-1) {
-                    h=100;
+                h = _Operation::BinOpCode (sss);
+                if (h < 0L) {
+                    h = 0xFFFF;
                 } else {
                     h = opPrecedence (h);
                 }
@@ -1545,8 +1600,8 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (h<g) {
                     break;
                 }
-                f->theFormula&&((*levelOps)(j));
-                levelOps->Delete((*levelOps).lLength-1);
+                f->theFormula << levelOps->GetItem(j);
+                levelOps->Delete(levelOps->lLength-1);
             }
             levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
             if (terminateExecution) {

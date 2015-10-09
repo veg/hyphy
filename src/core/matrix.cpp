@@ -1168,8 +1168,7 @@ _PMathObj   _Matrix::Log (void)
         }
         return res;
     }
-    _String errorMsg ("Can't apply logs to non-numeric matrices.");
-    WarnError (errorMsg);
+    WarnError ("Can't apply logs to non-numeric matrices.");
     return new _Matrix(1,1,false,true);
 }
 
@@ -1443,6 +1442,9 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecution
         break;
     case HY_OP_CODE_EIGENSYSTEM: //Eigensystem
         return Eigensystem();
+        break;
+    case HY_OP_CODE_EVAL: //Eigensystem
+        return (_PMathObj)ComputeNumeric()->makeDynamic();
         break;
     case HY_OP_CODE_EXP: //Exp
         return Exponentiate();
@@ -9338,10 +9340,10 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
             long    fID  = FindBFFunctionName (*s),
                     fID2 = FindBFFunctionName (*s2);
 
-            if (fID < 0 || batchLanguageFunctionParameters.lData[fID] != 2) {
+            if (fID < 0 || GetBFFunctionArgumentCount(fID) != 2L) {
                 WarnError ("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)");
             } else {
-                if (fID2 >= 0 && batchLanguageFunctionParameters.lData[fID2] != 1) {
+                if (fID2 >= 0 && GetBFFunctionArgumentCount (fID2) != 1L) {
                     WarnError ("The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument");
                 }
 

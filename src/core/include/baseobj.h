@@ -66,7 +66,9 @@ typedef char* Ptr;
 #define _hprestrict_
 #endif
 
-#include "stdio.h"
+#include "hy_types.h"
+
+#include <stdio.h>
 
 class BaseObj
 {

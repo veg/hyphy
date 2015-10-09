@@ -1442,6 +1442,14 @@ _Parameter _String::toNum (void) const {
     return strtod(sData,&endP);
 }
 
+long _String::toLong (void) const {
+  if (sLength == 0) {
+    return 0;
+  }
+  char * endP;
+  return strtol(sData,&endP,10);
+}
+
 //Return good ole char*
 BaseRef _String::toStr (void) {
     nInstances++;
@@ -2497,15 +2505,27 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
         }
         bool is_global_ref = first_char == '^';
         _String   choppedVarID (*this, 1, -1);
-        if (context) {
-            choppedVarID = *context & '.' & choppedVarID;
-        }
-        _FString * dereferenced_value = (_FString*)FetchObjectFromVariableByType(&choppedVarID, STRING);
-        if (dereferenced_value && dereferenced_value->theString->ProcessVariableReferenceCases (referenced_object) == HY_STRING_DIRECT_REFERENCE) {
+      
+        if (choppedVarID.IsValidIdentifier()) {
+          if (context) {
+              choppedVarID = *context & '.' & choppedVarID;
+          }
+          _FString * dereferenced_value = (_FString*)FetchObjectFromVariableByType(&choppedVarID, STRING);
+          if (dereferenced_value && dereferenced_value->theString->ProcessVariableReferenceCases (referenced_object) == HY_STRING_DIRECT_REFERENCE) {
+              if (!is_global_ref && context) {
+                  referenced_object = *context & '.' & referenced_object;
+              }
+              return is_global_ref?HY_STRING_GLOBAL_DEREFERENCE:HY_STRING_LOCAL_DEREFERENCE;
+          }
+        } else {
+          _String try_as_expression = ProcessLiteralArgument (&choppedVarID, nil);
+           if (try_as_expression.ProcessVariableReferenceCases (referenced_object) == HY_STRING_DIRECT_REFERENCE) {
             if (!is_global_ref && context) {
-                referenced_object = *context & '.' & referenced_object;
+              referenced_object = *context & '.' & try_as_expression;
             }
+             //StringToConsole(referenced_object); NLToConsole();
             return is_global_ref?HY_STRING_GLOBAL_DEREFERENCE:HY_STRING_LOCAL_DEREFERENCE;
+          }
         }
     }
     
@@ -2524,7 +2544,7 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
           } else {
             referenced_object = *this;
           }
-            return HY_STRING_DIRECT_REFERENCE;
+          return HY_STRING_DIRECT_REFERENCE;
         }
     }
     

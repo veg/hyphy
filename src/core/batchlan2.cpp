@@ -1855,7 +1855,7 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
         if (chain.profileCounter) {
             DeleteObject (chain.profileCounter);
         }
-        checkPointer(chain.profileCounter = new _Matrix (chain.lLength, 2, false, true));
+        chain.profileCounter = new _Matrix (chain.lLength, 2, false, true);
         chain.doProfile = 1;
     } else if (*profileCode == _String ("PAUSE")) {
         chain.doProfile = 2;
@@ -1866,17 +1866,14 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
         if (outVar) {
             if (chain.profileCounter) {
                 _AssociativeList * profileDump = new _AssociativeList;
-                checkPointer     (profileDump);
 
                 _SimpleList      instructions;
                 _List            descriptions;
 
-                for (long k=1; k<2*chain.lLength; k+=2) {
+                for (unsigned long k=1UL; k<2*chain.lLength; k+=2UL) {
                     if (chain.profileCounter->theData[k] > 0.0) {
                         instructions << k/2;
-                        _String * desc = (_String*)((_ElementaryCommand*)chain(k/2))->toStr();
-                        descriptions << desc;
-                        DeleteObject (desc);
+                        descriptions.AppendNewInstance((_String*)((_ElementaryCommand*)chain(k/2))->toStr());
                     }
                 }
 
@@ -1884,25 +1881,17 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
                 * instCounter = new _Matrix (instructions),
                 * descList    = new _Matrix (descriptions);
 
-                checkPointer    (execProfile);
-                checkPointer    (instCounter);
-                checkPointer    (descList);
-
-                long k2 = 0;
-                for (long m=1; m<2*chain.lLength; m+=2) {
+                unsigned long k2 = 0UL;
+                for (unsigned long m=1UL; m<2*chain.lLength; m+=2UL) {
                     if (chain.profileCounter->theData[m] > 0.0) {
                         execProfile->theData[k2++] = chain.profileCounter->theData[m];
                         execProfile->theData[k2++] = chain.profileCounter->theData[m-1];
                     }
                 }
 
-                _FString  aKey;
-                *aKey.theString = "INSTRUCTION INDEX";
-                profileDump->MStore (&aKey, instCounter, false);
-                *aKey.theString = "INSTRUCTION";
-                profileDump->MStore (&aKey, descList, false);
-                *aKey.theString = "STATS";
-                profileDump->MStore (&aKey, execProfile, false);
+                profileDump->MStore ("INSTRUCTION INDEX", instCounter, false);
+                profileDump->MStore ("INSTRUCTION", descList, false);
+                profileDump->MStore ("STATS", execProfile, false);
                 outVar->SetValue (profileDump,false);
                 chain.doProfile = 0;
                 DeleteObject (chain.profileCounter);
@@ -2045,6 +2034,69 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
     }
 }
 
+//____________________________________________________________________________________
+
+
+void   _ElementaryCommand::appendCompiledFormulae(_Formula* f, _Formula *f2) {
+  if (f || f2) {
+    _SimpleList*        varList = new _SimpleList;
+    _AVLList            varListA (varList);
+    if (f)
+      f->ScanFForVariables (varListA, true, true, true, true);
+    if (f2)
+      f2->ScanFForVariables(varListA, true, true);
+    varListA.ReorderList();
+    listOfCompiledFormulae<<(long)this;
+    compiledFormulaeParameters.AppendNewInstance(varList);
+  }
+}
+
+//____________________________________________________________________________________
+bool    _ElementaryCommand::DecompileFormulae (void) {
+  switch (code) {
+    case 0:
+      if (simpleParameters.lLength) {
+        //printf ("[ResetFormulae] %s\n", thisCommand->sData);
+        _Formula* f = (_Formula*)simpleParameters.lData[1],
+                *f2 = (_Formula*)simpleParameters.lData[2] ;
+        if (f) {
+          delete f;
+        }
+        if (f2) {
+          delete f2;
+        }
+        simpleParameters.Clear();
+        
+        return true;
+      }
+      break;
+    case 4: {
+      if (parameters.lLength && simpleParameters.lLength == 3) {
+        _Formula* f = (_Formula*)simpleParameters.lData[2];
+        if (f) {
+          delete f;
+        }
+        simpleParameters.Delete (2);
+        return true;
+      }
+      break;
+    }
+    case 14: {
+      if (parameters.lLength && simpleParameters.lLength == 2) {
+        _Formula* f = (_Formula*)simpleParameters.lData[1];
+        if (f) {
+          delete f;
+        }
+        simpleParameters.Delete (1);
+        return true;
+      }
+      break;
+    }
+      
+
+  }
+  return false;
+}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target)
@@ -2315,7 +2367,7 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
             if (index) {
                 *index = loc;
             }
-            return batchLanguageFunctions (loc);
+            return &GetBFFunctionBody (loc);
         }
     }
     

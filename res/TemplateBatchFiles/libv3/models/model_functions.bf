@@ -64,7 +64,7 @@ function model.define.from.components (id,q,efv,canonical) {
 
 function model.generic.define_model (model_spec, id, arguments, data_filter, estimator_type) {
 	
-	model.generic.define_model.model = utility.callFunction (model_spec, arguments);
+	model.generic.define_model.model = utility.callFunction (model_spec, arguments);	
 	models.generic.attachFilter (model.generic.define_model.model, data_filter);
 	
 	model.generic.define_model.model = utility.callFunction(model.generic.define_model.model ["defineQ"], {"0" :   "model.generic.define_model.model",
@@ -112,10 +112,18 @@ function models.generic.set_branch_length (model, value, parameter) {
     if (Abs((model["parameters"])["local"]) == 1) {
         if (Type (model ["branch-length-string"]) == "String") {
             models.generic.set_branch_length.bl = (Columns ((model["parameters"])["local"]))[0];
-            ExecuteCommands ("FindRoot (models.generic.set_branch_length.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.set_branch_length.bl + ",0,10000)");
-            Eval (parameter + "." + models.generic.set_branch_length.bl + "=" + models.generic.set_branch_length.t);
+            if (Type (value) == "AssociativeList") {
+                ExecuteCommands ("FindRoot (models.generic.set_branch_length.t,(" + model ["branch-length-string"] + ")-" + value[terms.branch_length] + "," + models.generic.set_branch_length.bl + ",0,10000)");
+                Eval (parameter + "." + models.generic.set_branch_length.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.set_branch_length.t);
+                return 1;
+           
+            } else {
+                ExecuteCommands ("FindRoot (models.generic.set_branch_length.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.set_branch_length.bl + ",0,10000)");
+                Eval (parameter + "." + models.generic.set_branch_length.bl + "=" + models.generic.set_branch_length.t);
+            }
         }
     }
+    return 0;
 }
 
 //------------------------------------------------------------------------------ 

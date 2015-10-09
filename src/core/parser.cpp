@@ -308,30 +308,16 @@ void       UpdateChangingFlas (long vN)
 
     _SimpleList * toDelete = nil;
 
-    for (long k = 0; k<topLimit; k++) {
+    for (long k = 0L; k<topLimit; k++) {
         long g = ((_SimpleList*)compiledFormulaeParameters.lData[k])->BinaryFind (vN,0);
 
         if (g>=0) {
-            _ElementaryCommand* thisCommand = (_ElementaryCommand*)listOfCompiledFormulae.lData[k];
-            _Formula  *f  = (_Formula*)(thisCommand->simpleParameters.lData[1]),
-                       *f2 = (_Formula*)(thisCommand->simpleParameters.lData[2]);
-
-            delete f;
-            delete f2;
-
-            thisCommand->simpleParameters.Clear();
-
-            // MOD 10/21/2005
+            ((_ElementaryCommand*)listOfCompiledFormulae.lData[k])->DecompileFormulae();
+          
 
             if (!toDelete) {
                 checkPointer(toDelete = new _SimpleList);
             }
-
-            //listOfCompiledFormulae.    Delete(k);
-            //compiledFormulaeParameters.Delete(k);
-
-            //k--;
-            //topLimit--;
 
             *toDelete << k;
         }
@@ -355,15 +341,7 @@ void       UpdateChangingFlas (_SimpleList & involvedVariables)
         long g = ((_SimpleList*)compiledFormulaeParameters.lData[k])->CountCommonElements (involvedVariables,true);
 
         if (g>0) {
-            _ElementaryCommand* thisCommand = (_ElementaryCommand*)listOfCompiledFormulae.lData[k];
-
-            _Formula  *f  = (_Formula*)(thisCommand->simpleParameters.lData[1]),
-                       *f2 = (_Formula*)(thisCommand->simpleParameters.lData[2]);
-
-            delete f;
-            delete f2;
-
-            thisCommand->simpleParameters.Clear();
+            ((_ElementaryCommand*)listOfCompiledFormulae.lData[k])->DecompileFormulae();
 
             if (!toDelete) {
                 checkPointer(toDelete = new _SimpleList);
@@ -539,7 +517,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 }
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool isGlobal)
+_Variable* CheckReceptacle (_String* name, _String const & fID, bool checkValid, bool isGlobal)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
         _String errMsg = *name & " is not a valid variable identifier in call to " & fID;
@@ -548,13 +526,15 @@ _Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool is
     }
 
     long    f = LocateVarByName (*name);
-    if (f<0) {
+    if ( f<0L ) {
         _Variable dummy (*name, isGlobal);
         f = LocateVarByName (*name);
     }
 
     return FetchVar(f);
 }
+
+
 //__________________________________________________________________________________
 _Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
 {

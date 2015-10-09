@@ -44,12 +44,11 @@
 #include "parser.h"
 #include "polynoml.h"
 #include "batchlan.h"
+#include "parser.h"
 
 extern _SimpleList BinOps,
        opPrecedence,
        FunctionArgumentCount,
-       batchLanguageFunctionParameters,
-       batchLanguageFunctionClassification,
        associativeOps;
 
 //__________________________________________________________________________________
@@ -293,6 +292,18 @@ bool        _Operation::EqualOp (_Operation* otherOp)
 
     return false;
 }
+
+//__________________________________________________________________________________
+
+
+long     _Operation::BinOpCode           (_String const & op_token, long index) {
+  if (index >= 0)
+    return BinOps.Find (op_token.getChar(index-1L) * 256L + op_token.getChar (index));
+  
+  return BinOps.Find (op_token.sLength == 2 ? op_token.getChar(0) * 256L + op_token.getChar (1) : op_token.getChar (0));
+}
+
+
 //__________________________________________________________________________________
 
 bool        _Operation::ReportOperationExecutionError(_String text, _String * errMsg) {
@@ -308,235 +319,209 @@ bool        _Operation::ReportOperationExecutionError(_String text, _String * er
 }
 
 //__________________________________________________________________________________
-bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg)
-{
-    if (theNumber) {
-        theScrap.Push(theNumber);
-        return true;
+bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg) {
+  if (theNumber) { // push value
+    theScrap.Push(theNumber);
+    return true;
+  }
+  
+  if (theData >= 0L) { // variable reference
+    if (numberOfTerms <= 0L) { // compute and push value
+      theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->Compute());
+    } else { // compute reference and push value
+      theScrap.Push (((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->ComputeReference(nameSpace),false);
     }
-    if (theData >= 0) { // variable reference
-        if (numberOfTerms <= 0) { // compute and push value
-            theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->Compute());
-        } else {
-            theScrap.Push (((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->ComputeReference(nameSpace),false);
-        }
-        return true;
-    }
-    if (theData < -2) {
-        theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[-theData-3])->GetValue());
-        return true;
-    }
-    if (numberOfTerms<0) { // execute a user-defined function
-        {
-            long functionID = -numberOfTerms-1;
-            if (functionID >= batchLanguageFunctionParameters.lLength) {   
-                return ReportOperationExecutionError ("Attempted to call an undefined user function ", errMsg);
-            }
-            
-            long numb = batchLanguageFunctionParameters(functionID);
-            if (theScrap.StackDepth()<numb) {
-                return ReportOperationExecutionError (_String("User-defined function:") & 
-                            &*(_String*)batchLanguageFunctionNames(functionID)
-                            &" needs "&_String(numb)& " parameters: "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
-            }
-
-            _List       displacedVars,
-                        *funcVarList = (_List*)batchLanguageFunctionParameterLists(functionID),
-                         displacedValues,
-                         referenceArgs;
-
-            _SimpleList existingIVars,
-                        existingDVars,
-                        displacedReferences;
-
-            _String     *argNameString;
-            long        i;
-            bool        purgeFlas = false;
-
-            for (long k=numb-1; k>=0; k--) {
-                bool            isRefVar = false;
-                argNameString = (_String*)(*funcVarList)(k);
-
-                if (argNameString->sData[argNameString->sLength-1]=='&') {
-                    argNameString->Trim(0,argNameString->sLength-2);
-                    isRefVar  = true;
-                    purgeFlas = true;
-                }
-
-                long      f = LocateVarByName (*argNameString);
-
-                _PMathObj nthterm = theScrap.Pop();
-
-                if (isRefVar && nthterm->ObjectClass()!=STRING) {
-                    _FString * type = (_FString*)nthterm->Type();
-                    _String errText = _String ("User-defined function '")
-                                     &*(_String*)batchLanguageFunctionNames(-numberOfTerms-1)
-                                     &"' expected a string for the reference variable '"
-                                     & *argNameString
-                                     &"' but was passed a " & *type->theString
-                                     & " with the value of " & _String((_String*)nthterm->toStr());
-
-                    DeleteObject (type);
-                    return ReportOperationExecutionError (errText, errMsg);
-                }
-
-                if (f<0) { // not an existing var
-                    _Variable newV (*argNameString);
-                    f =  LocateVarByName (*argNameString);
-                }
-                _Variable* theV = FetchVar (f);
-
-                if (!isRefVar) {
-                    if (theV->IsIndependent())
-                        // if the variable exists and is independent then
-                        // simply swap the value of the var, otherwise
-                        // duplicate the entire variable
-                    {
-                        theV->varFlags &= HY_VARIABLE_SET;
-                        if (!theV->varValue) {
-                            theV->Compute();
-                        }
-                        displacedValues<<theV->varValue;
-                        theV->varFlags |= HY_VARIABLE_CHANGED;
-                        /*if (*theV->GetName() == _String("gbdd1"))
-                        {
-                             printf ("Setting argument value of %s to %s\n",
-                             theV->GetName()->sData,
-                             _String((_String*)nthterm->toStr()).sData
-                         );
-                        }*/
-
-                        theV->varValue = nthterm;
-                        existingIVars<<theV->GetAVariable();
-                    } else {
-                        _Variable newV (*argNameString);
-                        newV.SetValue(nthterm);
-                        existingDVars<<theV->GetAVariable();
-                        displacedVars<<theV;
-                        variablePtrs.Replace (theV->GetAVariable(),(_PMathObj)newV.makeDynamic());
-                        DeleteObject (nthterm);
-                    }
-                } else {
-                    referenceArgs<< variableNames.Retrieve(f);
-                    displacedReferences<<theV->GetAVariable();
-
-                    _String * refArgName = ((_FString*)nthterm)->theString;
-
-                    if (nameSpace) {
-                        *refArgName = AppendContainerName (*refArgName, nameSpace);
-                    }
-
-                    i = LocateVarByName (*refArgName);
-
-                    if (i<0) {
-                        _Variable newAV (*refArgName);
-                        i =  LocateVarByName (*refArgName);
-                    }
-                    variableNames.SetXtra (f, variableNames.GetXtra (i));
-                    *argNameString = *argNameString&'&';
-                    DeleteObject (nthterm);
-                }
-            }
-
-            if (purgeFlas) {
-                ((_ExecutionList*)batchLanguageFunctions(opCode))->ResetFormulae();
-            }
-
-            _ExecutionList * functionBody = ((_ExecutionList*)batchLanguageFunctions(opCode));
-            if (currentExecutionList && currentExecutionList->stdinRedirect) {
-                functionBody -> stdinRedirect    = currentExecutionList->stdinRedirect;
-                functionBody -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
-            }
-            _PMathObj ret = functionBody->Execute();
-
-            functionBody -> stdinRedirect    = nil;
-            functionBody -> stdinRedirectAux = nil;
-
-            if (terminateExecution) {
-                theScrap.Push (new _Constant (0.0));
-                return true;
-            }
-
-            if (ret) {
-                theScrap.Push (ret);
-            }
-
-            for (unsigned long di = 0; di < referenceArgs.lLength; di++) {
-                variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(di)),displacedReferences.lData[di]);
-            }
-
-            //for (i= referenceArgs.lLength-1; i>=0; i--)
-            //  variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(i)),displacedReferences.lData[i]);
-
-            for (unsigned long dv = 0; dv < displacedVars.lLength; dv++) {
-                variablePtrs.Replace (existingDVars.lData[dv],(_PMathObj)displacedVars(dv));
-            }
-
-            //for (i= displacedVars.lLength-1; i>=0; i--)
-            //  variablePtrs.Replace (existingDVars(i),(_PMathObj)displacedVars(i));
-
-            for (unsigned long dv2 = 0; dv2 < displacedValues.lLength; dv2++) {
-                _Variable* theV = LocateVar (existingIVars.lData[dv2]);
-                DeleteObject(theV->varValue);
-                theV->varValue = ((_PMathObj)displacedValues(dv2));
-            }
-
-            //for (i= displacedValues.lLength-1; i>=0; i--)
-            //{
-            //  _Variable* theV = LocateVar (existingIVars(i));
-            //  DeleteObject(theV->varValue);
-            //  theV->varValue = ((_PMathObj)displacedValues(i));
-            //}
-
-
-        }
-        return true;
-
-    }
-
-    if (theScrap.theStack.lLength<numberOfTerms) {
-        return ReportOperationExecutionError (_String((_String*)toStr())&
-                         " needs "&_String(numberOfTerms)& " arguments; "&_String(theScrap.StackDepth())&" were supplied", errMsg);
-
-    }
-
-    _PMathObj term1, term2 = nil, term3 = nil, temp;
+    return true;
+  }
+  if (theData < -2L) { // WTF is is this?
+    theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[-theData-3])->GetValue());
+    return true;
+  }
+  if (numberOfTerms<0) { // execute a user-defined function
+      
+      if (!IsBFFunctionIndexValid(opCode)) {
+        return ReportOperationExecutionError ("Attempted to call an undefined/deleted user function ", errMsg);
+      }
+      
+      long arguments = GetBFFunctionArgumentCount (opCode);
+      
+      if (theScrap.StackDepth()<arguments) {
+        return ReportOperationExecutionError (_String("User-defined function:") &
+                                              & GetBFFunctionNameByIndex (opCode)
+                                              &" needs "&_String(long(arguments))& " parameters: "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
+      }
+      
+      _List       displacedVars,
+      *funcVarList = &GetBFFunctionArgumentList(opCode),
+      displacedValues,
+      referenceArgs;
+      
+      _SimpleList existingIVars,
+      existingDVars,
+      displacedReferences,
+      *funcVarTypes = &GetBFFunctionArgumentTypes (opCode);
+      
+      bool        need_to_purge = false;
     
-    _hyExecutionContext localContext (nameSpace, errMsg);
+    // printf ("***** Calling %s\n", GetBFFunctionNameByIndex (opCode).sData);
+    
+      for (long k = arguments-1L; k >= 0; k--) {
+        bool            isRefVar = (funcVarTypes->Element (k) == BL_FUNCTION_ARGUMENT_REFERENCE);
+        
+        _String         *argument_k = (_String*)funcVarList->Element(k);
+        _PMathObj       nthterm = theScrap.Pop();
+        
+        //printf ("\tArgument %d : %s (%s)\n", k, argument_k->sData, _String((_String*)nthterm->toStr()).sData);
 
-
-    if (numberOfTerms >= 3) {
-        long sL = theScrap.theStack.lLength-1;
-        term3 = (_PMathObj)theScrap.theStack.lData[sL--];
-        term2 = (_PMathObj)theScrap.theStack.lData[sL--];
-        term1 = (_PMathObj)theScrap.theStack.lData[sL];
-        theScrap.theStack.lLength = sL;
-        temp = term1->Execute (opCode, term2, term3, &localContext);
-        DeleteObject (term1);
-        DeleteObject (term2);
-        DeleteObject (term3);
-    } else if (numberOfTerms == 2) {
-        long sL = theScrap.theStack.lLength-1;
-        term2 = (_PMathObj)theScrap.theStack.lData[sL--];
-        term1 = (_PMathObj)theScrap.theStack.lData[sL];
-        theScrap.theStack.lLength = sL;
-        temp = term1->Execute (opCode, term2, nil, &localContext);
-        DeleteObject (term1);
-        DeleteObject (term2);
-    } else {
-        term1 = (_PMathObj)theScrap.theStack.lData[--theScrap.theStack.lLength];
-        temp = term1->Execute (opCode, nil, nil, &localContext);
-        DeleteObject (term1);
-    }
-
-
-    if (temp) {
-        theScrap.theStack.Place(temp);
+        if (isRefVar) {
+          need_to_purge = true;
+          if (nthterm->ObjectClass()!=STRING) {
+            _FString * type = (_FString*)nthterm->Type();
+            _String errText = _String ("User-defined function '")
+            & GetBFFunctionNameByIndex(opCode)
+            &"' expected a string for the reference variable '"
+            & *argument_k
+            &"' but was passed a " & *type->theString
+            & " with the value of " & _String((_String*)nthterm->toStr());
+            
+            DeleteObject (type);
+            return ReportOperationExecutionError (errText, errMsg);
+          }
+        }
+        
+        _Variable* argument_var = CheckReceptacle (argument_k, empty, false, false);
+        
+        if (!isRefVar) {
+          if (argument_var->IsIndependent()) {
+            // if the variable exists and is independent then
+            // simply swap the value of the var, otherwise
+            // duplicate the entire variable
+            argument_var->varFlags &= HY_VARIABLE_SET;
+            if (!argument_var->varValue) {
+              argument_var->Compute();
+            }
+            displacedValues<<argument_var->varValue;
+            argument_var->varFlags |= HY_VARIABLE_CHANGED;
+            argument_var->varValue = nthterm;
+            existingIVars<<argument_var->GetAVariable();
+          } else {
+            _Variable *newV = new _Variable (*argument_k);
+            newV->SetValue(nthterm,false);
+            nthterm->AddAReference();
+            existingDVars<<argument_var->GetAVariable();
+            displacedVars<<argument_k;
+            variablePtrs.Replace (argument_var->GetAVariable(),newV,false);
+          }
+        } else {
+          
+          long new_index = argument_var->GetAVariable();
+          
+          referenceArgs << argument_var->GetName();
+          displacedReferences<<new_index;
+          
+          _String * refArgName = ((_FString*)nthterm)->theString;
+          
+          if (nameSpace) {
+            *refArgName = AppendContainerName (*refArgName, nameSpace);
+          }
+          
+          _Variable* reference_var = CheckReceptacle (refArgName, empty, false, false);
+          
+          variableNames.SetXtra (new_index, reference_var->GetAVariable());
+          
+          DeleteObject (nthterm);
+        }
+      }
+      
+      _ExecutionList * function_body = &GetBFFunctionBody(opCode);
+      
+      if (need_to_purge) {
+        function_body->ResetFormulae();
+      }
+      
+      if (currentExecutionList && currentExecutionList->stdinRedirect) {
+        function_body -> stdinRedirect    = currentExecutionList->stdinRedirect;
+        function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
+      }
+      
+      _PMathObj ret = function_body->Execute();
+      
+      function_body -> stdinRedirect    = nil;
+      function_body -> stdinRedirectAux = nil;
+      
+      if (terminateExecution) {
+        theScrap.Push (new _Constant (0.0));
         return true;
-    } else {
-        return false;
-    }
-
+      }
+      
+      if (ret) {
+        theScrap.Push (ret);
+      }
+    
+    //printf ("\nFunction result = %s\n", _String ((_String*)theScrap.Pop (false)->toStr()).getStr());
+    
+      for (unsigned long di = 0UL; di < referenceArgs.lLength; di++) {
+        variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(di)),displacedReferences.lData[di]);
+      }
+      
+      for (unsigned long dv = 0UL; dv < displacedVars.lLength; dv++) {
+        variablePtrs.Replace (existingDVars.lData[dv],(_PMathObj)displacedVars(dv));
+      }
+      
+      
+      for (unsigned long dv2 = 0; dv2 < displacedValues.lLength; dv2++) {
+        _Variable* theV = LocateVar (existingIVars.lData[dv2]);
+        DeleteObject(theV->varValue);
+        theV->varValue = ((_PMathObj)displacedValues(dv2));
+      }
+    
+      return true;
+    
+  }
+  
+  if (theScrap.theStack.lLength<numberOfTerms) {
+    return ReportOperationExecutionError (_String((_String*)toStr())&
+                                          " needs "&_String(numberOfTerms)& " arguments; "&_String(theScrap.StackDepth())&" were supplied", errMsg);
+    
+  }
+  
+  _PMathObj term1, term2 = nil, term3 = nil, temp;
+  
+  _hyExecutionContext localContext (nameSpace, errMsg);
+  
+  
+  if (numberOfTerms >= 3) {
+    long sL = theScrap.theStack.lLength-1;
+    term3 = (_PMathObj)theScrap.theStack.lData[sL--];
+    term2 = (_PMathObj)theScrap.theStack.lData[sL--];
+    term1 = (_PMathObj)theScrap.theStack.lData[sL];
+    theScrap.theStack.lLength = sL;
+    temp = term1->Execute (opCode, term2, term3, &localContext);
+    DeleteObject (term1);
+    DeleteObject (term2);
+    DeleteObject (term3);
+  } else if (numberOfTerms == 2) {
+    long sL = theScrap.theStack.lLength-1;
+    term2 = (_PMathObj)theScrap.theStack.lData[sL--];
+    term1 = (_PMathObj)theScrap.theStack.lData[sL];
+    theScrap.theStack.lLength = sL;
+    temp = term1->Execute (opCode, term2, nil, &localContext);
+    DeleteObject (term1);
+    DeleteObject (term2);
+  } else {
+    term1 = (_PMathObj)theScrap.theStack.lData[--theScrap.theStack.lLength];
+    temp = term1->Execute (opCode, nil, nil, &localContext);
+    DeleteObject (term1);
+  }
+  
+  
+  if (temp) {
+    theScrap.theStack.Place(temp);
+    return true;
+  } else {
+    return false;
+  }
+  
 }
 
 //__________________________________________________________________________________
@@ -548,7 +533,7 @@ void        _Operation::StackDepth (long& depth)
     }
 
     if (numberOfTerms<0) { // execute a user-defined function
-        depth -= batchLanguageFunctionParameters(-numberOfTerms-1) - 1;
+        depth -= GetBFFunctionArgumentCount(opCode) - 1L;
         return;
     }
     depth -= numberOfTerms - 1;

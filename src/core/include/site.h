@@ -325,7 +325,7 @@ public:
     _Parameter   CheckAlphabetConsistency
     (void);
 
-    void         SetNoSpecies           (long n) {
+    void         SetNoSpecies           (unsigned long n) {
         noOfSpecies = n;
     }
     void         ResetIHelper           (void);
@@ -336,7 +336,7 @@ private:
     _SimpleList theMap,
                 theFrequencies;         // remapping vector, and the counter of frequencies
 
-    unsigned int
+    unsigned long
     noOfSpecies;
 
     _TranslationTable*

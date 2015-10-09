@@ -171,7 +171,7 @@ class _SimpleList:public BaseObj
         * Example: SimpleList SimpleList([4, 1, 2]).countitems() = 4 
         * @return Unsigned long of item length    
         */
-        unsigned long countitems(void);
+        inline unsigned long countitems(void) const {return lLength;}
 
         /**
         * SLKP: 20090611    
@@ -210,7 +210,7 @@ class _SimpleList:public BaseObj
         * @param index Which item you want.
         * @return A long    
         */
-        long Element(long);
+        long Element(long) const;
 
         /**
         * Checks if list is identical to other list 

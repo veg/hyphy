@@ -87,7 +87,7 @@ public:
     _Formula (_String&,_VariableContainer* theParent=nil,_String* errorString = nil);
     _Formula (_PMathObj, bool isAVar = false);
     virtual ~_Formula (void);
-    _PMathObj   Compute             (long = 0, _VariableContainer* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil);
+    _PMathObj   Compute             (long = 0, _VariableContainer* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
     // compute the value of the formula
     // 1st argument : execute from this instruction onwards
     // see the commend for ExecuteFormula for the second argument
@@ -116,7 +116,6 @@ public:
                     varID may need to be prefixed by a namespace ID.
      */
 
-    bool        CheckFormula        (void); // check to see if this formula is valid and compute the obj class
 
     _MathObject*ConstructPolynomial (void);
 
@@ -160,7 +159,15 @@ public:
     */
     void        Clear               (void);
     _PMathObj   GetTheMatrix        (void);
-
+  
+    void        PushTerm            (BaseRef);
+  
+    /* 20151008: if the argument is a _List, then treat as a list of _Operations and push them onto this formula (increment reference counters as well)
+                 otherwise assume it's a MathObject and push it to this forumla (+1 reference counter)
+                 dynamic_cast is used to determine what type of object this is
+     
+    */
+  
     bool        AmISimple           (long& stackDepth, _SimpleList& variableIndex);
     bool        ConvertToSimple     (_SimpleList& variableIndex);
     void        ConvertFromSimple   (_SimpleList& variableIndex);

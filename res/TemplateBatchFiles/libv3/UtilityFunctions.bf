@@ -50,10 +50,27 @@ function utility.defineFrequencies (datafilter_name) {
             "codon": codon3x4};
 }
 
+lfunction utility.partition_tree (avl, l) {
+    for (k = 0; k < Abs (avl); k+=1) {
+        if ((avl[k])["Parent"]) {
+            if (Abs ((avl[k])["Children"])) {
+                l [(avl[k])["Name"]] = "internal";
+            } else {
+                l [(avl[k])["Name"]] = "leaf";
+            }
+        }
+    }
+}
+
 function utility.loadAnnotatedTopology (look_for_newick_tree) {
     tree_string = io.getTreeString(look_for_newick_tree);
     Topology     T = tree_string;
     GetInformation (modelMap, T);
+    
+    leaves_internals    = {};
+    
+    utility.partition_tree (T^0, leaves_internals);
+    
     utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", 1);
     T.str = "" + T;
     utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", None);
@@ -61,10 +78,12 @@ function utility.loadAnnotatedTopology (look_for_newick_tree) {
     return {"string"     : Format (T,1,0),
             "annotated_string" : T.str ,
             "model_map"  : modelMap,
+            "partitioned" : leaves_internals,
             "model_list" :  Columns (modelMap)};
 }
 
 function utility.callFunction (id, arguments) {
+
     if (Type (id) == "String") {
         if (Type (arguments) == "AssociativeList") {
             return Eval ("`id` (" + Join (",", arguments) + ")");	

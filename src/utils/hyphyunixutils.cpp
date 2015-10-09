@@ -170,7 +170,7 @@ _String*    StringFromConsole   (bool)
             CheckReceptacleAndStore (&hasEndBeenReached,empty,false,new _Constant (1.), false);
             break;
         }
-        *returnme << readAChar;
+        *returnme << (char)readAChar;
     }
 #else
     WarnError ("Unhandled standard input interaction in StringFromConsole for headless HyPhy");

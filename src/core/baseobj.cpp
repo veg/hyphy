@@ -71,6 +71,12 @@ extern int _hy_mpi_node_rank;
     #include <Windows.h>
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__)
+  #include <mach/mach.h>
+  #include <mach/mach_time.h>
+  mach_timebase_info_data_t    sTimebaseInfo;
+#endif
+
 
 
 bool        terminateExecution  = false;
@@ -96,7 +102,9 @@ long            globalRandSeed;
 //____________________________________________________________________________________
 
 _String         errorFileName   ("errors.log"),
-                messageFileName ("messages.log");
+                messageFileName ("messages.log"),
+                _hy_TRUE ("TRUE"),
+                _hy_FALSE ("FALSE");
 
 
 //____________________________________________________________________________________
@@ -194,6 +202,8 @@ bool    GlobalStartup (void)
     _hyApplicationGlobals.Insert(new _String (hyphyLibDirectory));
     _hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
     _hyApplicationGlobals.Insert(new _String (pathToCurrentBF));
+    _hyApplicationGlobals.Insert(new _String (_hy_TRUE));
+    _hyApplicationGlobals.Insert(new _String (_hy_FALSE));
 
     _String             dd (GetPlatformDirectoryChar());
 
@@ -210,6 +220,9 @@ bool    GlobalStartup (void)
     standardLibraryExtensions.AppendNewInstance (new _String (".mdl"));
 
     _HBL_Init_Const_Arrays  ();
+  
+    CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.));
+    CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.));
 
 
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
@@ -264,8 +277,13 @@ bool    GlobalStartup (void)
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
     }
 #endif
+  
+  setParameter        (platformDirectorySeparator, new _FString (dd, false), false); // these should be set globally?
+  setParameter        (hyphyBaseDirectory, new _FString (baseDirectory, false), false);
+  setParameter        (hyphyLibDirectory, new _FString (libDirectory, false), false);
 
-    return globalErrorFile && globalMessageFile;
+
+  return globalErrorFile && globalMessageFile;
 }
 
 
@@ -288,11 +306,15 @@ bool    GlobalShutdown (void)
     // force manual clear to help debuggin 'exit' crashes
     ReportWarning ("PurgeAll was successful");
     if (_hy_mpi_node_rank == 0) {
+        fflush (stdout);
+
         for (long count = 1; count < size; count++) {
             ReportWarning (_String ("Sending shutdown command to node ") & count & '.');
             MPISendString(empty,count);
         }
     }
+#else
+  fflush (stdout);  
 #endif
 
 #ifdef  __HYPHYMPI__
@@ -308,6 +330,7 @@ bool    GlobalShutdown (void)
     ReportWarning ("Returned from MPI_Finalize");
 #endif
 
+  
 
     if (globalErrorFile) {
         fflush (globalErrorFile);
@@ -358,6 +381,7 @@ bool    GlobalShutdown (void)
     }
     _HY_HBLCommandHelper.Clear();
     _HY_ValidHBLExpressions.Clear();
+  
 
     return res;
 }
@@ -366,11 +390,7 @@ bool    GlobalShutdown (void)
 
 void    PurgeAll (bool all)
 {
-    batchLanguageFunctions.Clear();
-    batchLanguageFunctionNames.Clear();
-    batchLanguageFunctionParameterLists.Clear();
-    batchLanguageFunctionParameters.Clear();
-    batchLanguageFunctionClassification.Clear();
+    ClearBFFunctionLists();
     executionStack.Clear();
     loadedLibraryPaths.Clear(true);
     _HY_HBL_Namespaces.Clear();
@@ -474,6 +494,8 @@ void        yieldCPUTime(void)
 double      TimerDifferenceFunction (bool doRetrieve)
 {
     double timeDiff = 0.0;
+  
+  
 #ifdef __MAC__
     static UnsignedWide microsecsIn;
     UnsignedWide microsecsOut;
@@ -509,7 +531,7 @@ double      TimerDifferenceFunction (bool doRetrieve)
         if (doRetrieve) {
             QueryPerformanceCounter (&tOut);
             timeDiff   = (tOut.QuadPart-tIn.QuadPart) * winTimerScaler;
-
+          
         } else {
             QueryPerformanceCounter (&tIn);
         }
@@ -526,13 +548,32 @@ double      TimerDifferenceFunction (bool doRetrieve)
     }
     else
         clockIn  = clock();*/
+  
+#if defined(__APPLE__) && defined(__MACH__)
+  static uint64_t        clockIn, clockOut;
+  
+  if (doRetrieve) {
+    clockOut = mach_absolute_time();
+    uint64_t diff = clockOut - clockIn;
+    if ( sTimebaseInfo.denom == 0 ) {
+      (void) mach_timebase_info(&sTimebaseInfo);
+    }
+    
+    return diff * 1e-9 * sTimebaseInfo.numer / sTimebaseInfo.denom;
+  
+  } else {
+    clockIn = mach_absolute_time();
+  }
+#else
     static timeval clockIn, clockOut;
     if (doRetrieve) {
         gettimeofday (&clockOut,nil);
         timeDiff = (clockOut.tv_sec-clockIn.tv_sec) + (clockOut.tv_usec-clockIn.tv_usec)*0.000001;
+      
     } else {
         gettimeofday (&clockIn,nil);
     }
+#endif
 
 #endif
 

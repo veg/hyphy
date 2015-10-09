@@ -889,6 +889,13 @@ public:
     _Parameter      toNum (void) const;
 
     /**
+     * Converts a into a long
+     * \n\n \b Example: "3.14" becomes 3
+     */
+    
+    long      toLong (void) const;
+
+  /**
     * Sets Length
     */
     void    SetLength (unsigned long nl) {
