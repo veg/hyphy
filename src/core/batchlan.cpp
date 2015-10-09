@@ -5640,6 +5640,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
           
           
           if (simpleParameters.lLength < 2) {
+            
             expression = new _Formula;
             //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
             
@@ -5657,15 +5658,14 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
                 throw 0;
             }
           }
-            
-            
+          
           DeleteObject (chain.result);
           if (expression) {
             //printf ("Return interpreted\n");
             chain.result = expression->Compute();
           }
           else{
-            //printf ("Return compiled\n");
+            //printf ("Return compiled %d\n", ((_Formula*)simpleParameters(1))->GetList().lLength);
             chain.result = ((_Formula*)simpleParameters(1))->Compute();
           }
           if (chain.result) {

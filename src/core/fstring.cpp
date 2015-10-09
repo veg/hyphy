@@ -584,7 +584,7 @@ _PMathObj _FString::Evaluate (_hyExecutionContext* context)
             return evalTo;
         }
     }
-    return new _Constant (.0);
+    return new _MathObject;
 }
 
 //__________________________________________________________________________________

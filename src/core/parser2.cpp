@@ -1314,6 +1314,9 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                           } else {
                             DeleteObject (literal);
                           }
+                          if (formula_list->lLength > 1L) {
+                            formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
+                          }
                           literal = new _String (16,true);
                           (*formula_list) << expressionProcessor.theFormula;
                           if (formula_list->lLength > expressionProcessor.theFormula.lLength) {
@@ -1501,16 +1504,17 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 continue;
             }
         }
-      
-        long is_2t_bin_ops = -1L;
-      
-        if ( BinOps.Find (s.getChar(i))!=-1 || (twoToken&& (is_2t_bin_ops = _Operation::BinOpCode (s, i)) !=-1)) {
-            if (!twoToken && is_2t_bin_ops != -1) {
+   
+        if ( BinOps.Find (s.getChar(i)) != -1L || (twoToken&&  _Operation::BinOpCode (s, i) != -1L)) {
+          
+            bool look_ahead = _Operation::BinOpCode (s, i+1) != -1L;
+          
+            if (!twoToken && look_ahead) {
                 twoToken = true;
                 continue;
             }
 
-            if (twoToken|| is_2t_bin_ops !=-1) {
+            if (twoToken|| look_ahead) {
                 if (!twoToken) {
                     i++;
                 }

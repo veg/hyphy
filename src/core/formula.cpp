@@ -163,7 +163,7 @@ BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
             (*result) << "RPN:";
             internalToStr (*result,nil,0,nil,(_Operation*)(theFormula(0)));
             for (unsigned long k=1; k<theFormula.lLength; k++) {
-                (*result)<<',';
+                (*result)<<'|';
                 internalToStr (*result,nil,0,nil,(_Operation*)(theFormula(k)));
             }
         }
@@ -1366,11 +1366,14 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                 }
             }
         } else {
-            for (unsigned long i=startAt; i<theFormula.lLength; i++)
-                if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack, nameSpace, errMsg)) {
-                    wellDone = false;
-                    break;
-                }
+            for (unsigned long i=startAt; i<theFormula.lLength; i++) {
+                  _Operation * this_step =((_Operation*)(((BaseRef**)theFormula.lData)[i]));
+                  printf ("Step %ld, Stack %ld, Op %s\n", i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData);
+                  if (! this_step->Execute(theStack, nameSpace, errMsg)) {
+                      wellDone = false;
+                      break;
+                  }
+            }
         }
         if (theStack.theStack.lLength != 1 || !wellDone) {
             _String errorText = _String((_String*)toStr()) & _String(" contains errors.");
@@ -1378,7 +1381,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
             if (theStack.theStack.lLength > 1 && wellDone) {
                 errorText = errorText & " Unconsumed values on the stack";
                 for (long stack_id = theStack.theStack.lLength-1; stack_id >= 0; stack_id --) {
-                  errorText = errorText & "\n------------------\n" & (_String*) theStack.Pop()->toStr();
+                  errorText = errorText & "\n[" & (stack_id+1) & "]------------------\n" & (_String*) theStack.Pop()->toStr();
                 }
                 errorText & "\n------------------\n";
             }

@@ -95,21 +95,21 @@ void    _Operation::Duplicate(BaseRef r)
 //__________________________________________________________________________________
 BaseRef _Operation::toStr(void)
 {
-    _String res, *dump = nil;
-    if (theData!=-1) {
-        dump = (_String*)((_Variable*)LocateVar(theData))->toStr();
-        res = _String("Variable ")& *dump;
+    _String * res = new _String;
+  
+    if (IsAVariable()) {
+        *res = _String("Variable ")& *LocateVar(GetAVariable())->GetName();
     } else if (theNumber) {
-        dump = (_String*)theNumber->toStr();
-        res = _String("Constant ")& *dump;
+       *res = _String("Constant ")& _String((_String*)theNumber->toStr());
     } else {
-        res = _String("Operation ")&*(_String*)BuiltInFunctions(opCode);
+        if (IsAFunctionCall())
+          *res = GetBFFunctionNameByIndex(UserFunctionID());
+        else
+          *res = _String("Operation ")&*(_String*)BuiltInFunctions(opCode);
     }
 
-    if(dump) {
-        DeleteObject (dump);
-    }
-    return res.makeDynamic();
+  
+    return res;
 
 }
 
@@ -363,7 +363,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
       
       bool        need_to_purge = false;
     
-    // printf ("***** Calling %s\n", GetBFFunctionNameByIndex (opCode).sData);
+      //printf ("***** Calling %s\n", GetBFFunctionNameByIndex (opCode).sData);
     
       for (long k = arguments-1L; k >= 0; k--) {
         bool            isRefVar = (funcVarTypes->Element (k) == BL_FUNCTION_ARGUMENT_REFERENCE);
