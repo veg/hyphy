@@ -156,7 +156,7 @@ void _Variable::toFileStr(FILE* f)
 
 _Variable::_Variable (_String&s, bool isG)
 {
-    theName         = (_String*)checkPointer(new _String(s));
+    theName         = new _String(s);
     varFlags        = HY_VARIABLE_NOTSET|(isG?HY_VARIABLE_GLOBAL:0);
     varValue        = nil;
     varFormula      = nil;
@@ -194,7 +194,7 @@ _Variable::_Variable (_String&s, _String&f, bool isG)//:  _Formula (f)
 
 _Variable::~_Variable (void)
 {
-    nInstances++;
+  //nInstances++;
     if (varValue) {
         DeleteObject (varValue);
     }

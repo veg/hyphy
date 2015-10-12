@@ -542,8 +542,8 @@ long  _List::FreeUpMemory (long requestedBytes)
 }
 
 // Append & store operator
-void _List::InsertElement (BaseRef br, long insertAt, bool store, bool ) {
-    _SimpleList::InsertElement (br, insertAt, store);
+void _List::InsertElement (BaseRef br, long insertAt, bool store, bool pointer) {
+    _SimpleList::InsertElement (br, insertAt, store, pointer);
 }
 
 void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* idx2)

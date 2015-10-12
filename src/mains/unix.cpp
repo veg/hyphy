@@ -837,6 +837,7 @@ int main (int argc, char* argv[])
     }
 #endif
   
+    DeleteObject (new _String ("AAA"));
 
     PurgeAll                    (true);
     GlobalShutdown              ();

@@ -411,9 +411,9 @@ void    PurgeAll (bool all)
         variablePtrs.Clear();
         freeSlots.Clear();
         lastMatrixDeclared = -1;
-        {
-            variableNames.Clear(true);
-        }
+        variableNames.Clear(true);
+        _hyApplicationGlobals.Clear(true);
+      
         _x_ = nil;
         _n_ = nil;
         pathNames.Clear();
