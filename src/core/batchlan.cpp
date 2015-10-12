@@ -5668,8 +5668,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             //printf ("Return compiled %d\n", ((_Formula*)simpleParameters(1))->GetList().lLength);
             chain.result = ((_Formula*)simpleParameters(1))->Compute();
           }
+          
           if (chain.result) {
-            chain.result->AddAReference();
+            chain.result = (_PMathObj)chain.result->makeDynamic();
           }
           
           if (expression) {
