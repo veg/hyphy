@@ -457,7 +457,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
       }
       
       if (ret) {
-        theScrap.Push (ret);
+        theScrap.Push (ret, false);
       }
     
     //printf ("\nFunction result = %s\n", _String ((_String*)theScrap.Pop (false)->toStr()).getStr());
