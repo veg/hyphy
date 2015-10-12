@@ -5659,18 +5659,22 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             }
           }
           
-          DeleteObject (chain.result);
+          _PMathObj ret_val = nil;
+         
           if (expression) {
             //printf ("Return interpreted\n");
-            chain.result = expression->Compute();
+            ret_val = expression->Compute();
           }
           else{
             //printf ("Return compiled %d\n", ((_Formula*)simpleParameters(1))->GetList().lLength);
-            chain.result = ((_Formula*)simpleParameters(1))->Compute();
+            ret_val = ((_Formula*)simpleParameters(1))->Compute();
           }
           
-          if (chain.result) {
-            chain.result = (_PMathObj)chain.result->makeDynamic();
+          DeleteObject (chain.result);
+          
+          chain.result = ret_val;
+          if (ret_val) {
+            chain.result->AddAReference();
           }
           
           if (expression) {
