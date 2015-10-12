@@ -107,7 +107,7 @@ BaseRef _Operation::toStr(void)
         if (IsAFunctionCall())
           *res = GetBFFunctionNameByIndex(UserFunctionID());
         else
-          *res = _String("Operation ")&*(_String*)BuiltInFunctions(opCode);
+          *res = _String("Operation ") & *(_String*)BuiltInFunctions(opCode) & " with " & _String((long)numberOfTerms) & " arguments";
     }
 
   

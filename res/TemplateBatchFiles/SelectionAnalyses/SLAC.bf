@@ -10,6 +10,7 @@ LoadFunctionLibrary("TreeTools");
 
 
 // namespace 'utility' for convenience functions 
+
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
 // namespace 'io' for interactive/datamonkey i/o functions
@@ -92,6 +93,7 @@ slac.json["tree"] = slac.tree["string"];
 io.reportProgressMessage("SLAC", "Selected " + Abs(slac.selected_branches) + " branches to test for selection " + Join(",", Rows(slac.selected_branches)));
 
 selection.io.startTimer(slac.timers, 1);
+
 
 io.reportProgressMessage("SLAC", "Obtaining branch lengths under the nucleotide GTR model");
 slac.gtr_results = estimators.fitGTR("slac.codon_filter", slac.tree, None);

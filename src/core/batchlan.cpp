@@ -7361,8 +7361,8 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
             mark2 = source.Find ('(', mark1, -1);
 
 
-    if ( mark1==-1 || mark2==-1 || mark1+1>mark2-1) {
-        WarnError      ("Function declaration missing a valid function identifier or parameter list.");
+    if ( mark1==-1 || mark2==-1 || mark1>mark2-1) {
+        WarnError      (_String("Function declaration missing a valid function identifier or parameter list.\n-----------\n") & source & "\n-----------\n");
         isInFunction = false;
         return false;
     }

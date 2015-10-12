@@ -88,8 +88,6 @@ function selection.io.defineBranchSets(tree_for_analysis) {
 //------------------------------------------------------------------------------ 
 
 function selection.io.startTimer(timers, index) {
-
-    fprintf (stdout, startTimer, "\n");
     timers[index] = Time(1);
 
 }

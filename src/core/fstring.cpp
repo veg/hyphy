@@ -731,6 +731,11 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutio
         return res;
     }
     break;
+        
+    case HY_OP_CODE_MCOORD: // MCoord
+      return new _FString (*theString, true);
+      break;
+
     case HY_OP_CODE_JOIN: // Inverse
         return Join (p);
 

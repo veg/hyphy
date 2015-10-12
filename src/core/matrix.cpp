@@ -1443,7 +1443,7 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecution
     case HY_OP_CODE_EIGENSYSTEM: //Eigensystem
         return Eigensystem();
         break;
-    case HY_OP_CODE_EVAL: //Eigensystem
+    case HY_OP_CODE_EVAL: //Eval
         return (_PMathObj)ComputeNumeric()->makeDynamic();
         break;
     case HY_OP_CODE_EXP: //Exp

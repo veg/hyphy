@@ -50,11 +50,6 @@ function io.reportProgressMessage (analysis, text) {
     return None;
 }
 
-function io.reportProgressMessage (analysis, text) {
-    fprintf (stdout, "[`analysis`] `text` \n");
-    return None;
-}
-
 function io.validate_a_list_of_files (list) {
     io.validate_a_list_of_files.result = {};
     for (io.validate_a_list_of_files.i = 0; io.validate_a_list_of_files.i < Rows(list) * Columns (list); io.validate_a_list_of_files.i += 1) {

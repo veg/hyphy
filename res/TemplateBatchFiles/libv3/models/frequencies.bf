@@ -163,7 +163,7 @@ function frequencies._aux.CF3x4 (observed_3x4,base_alphabet,sense_codons, stop_c
     }
 	
 	
-	parameters.setConstraint ("frequencies._aux.CF3x4.denominator", frequencies._aux.CF3x4.denominator, 1);
+	parameters.setConstraint ("frequencies._aux.CF3x4.denominator", frequencies._aux.CF3x4.denominator, "global");
 		    
 	frequencies._aux.N = {Columns (base_alphabet),3};
 	frequencies._aux.res = {};

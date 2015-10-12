@@ -1345,11 +1345,12 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
               if (literal->sLength) {
                 formula_list->AppendNewInstance(new _Operation (new _FString(literal)));
                 formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
-                levelData->AppendNewInstance(new _List(*formula_list));
               } else {
                 DeleteObject (literal);
-                levelData->AppendNewInstance(new _List(*formula_list));
               }
+              formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_MCOORD),1));
+             
+              levelData->AppendNewInstance(new _List(*formula_list));
               DeleteObject (formula_list);
               
             } else {

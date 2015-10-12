@@ -317,6 +317,7 @@ void    WarnErrorWhileParsing (_String st, _String& context)
     WarnError (_String ("While parsing:\n") & context & "\n" & st);
 }
 
+extern _List batchLanguageFunctions;
 
 //_______________________________________________________________________
 void WarnError (_String st)
@@ -389,8 +390,10 @@ void WarnError (_String st)
         MPI_Abort (MPI_COMM_WORLD,1);
     }
 #endif
-    //GlobalShutdown();
-
+    GlobalShutdown();
+  
+  //batchLanguageFunctions.Clear(true);
+  
 
 #ifdef _HY_ABORT_ON_ERROR
     abort ();

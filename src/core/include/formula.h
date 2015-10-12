@@ -215,6 +215,10 @@ protected:
                 *resultCache;
 
     _Stack      theStack;
+    _PMathObj   recursion_calls;
+  
+    unsigned    long call_count;
+  
     node<long>* theTree; // this formula converted to a tree for operation purposes
     // such as simplification, differentiation and printing.
     // trees store numbers referencing operations inside

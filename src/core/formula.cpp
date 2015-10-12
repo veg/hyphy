@@ -65,6 +65,8 @@ _Formula::_Formula (void)
 {
     theTree     = nil;
     resultCache = nil;
+    call_count = 0UL;
+    recursion_calls = nil;
 }
 //__________________________________________________________________________________
 
@@ -72,6 +74,9 @@ _Formula::_Formula (_PMathObj p, bool isAVar)
 {
     theTree     = nil;
     resultCache = nil;
+    recursion_calls = nil;
+    call_count = 0UL;
+  
     if (!isAVar) {
         theFormula.AppendNewInstance (new _Operation (p));
     } else {
@@ -89,7 +94,12 @@ void _Formula::Duplicate  (BaseRef f)
 
     theFormula.Duplicate       (& f_cast->theFormula);
     theStack.theStack.Duplicate(& f_cast->theStack.theStack);
-
+    call_count = f_cast->call_count;
+    if (f_cast->recursion_calls) {
+      recursion_calls = (_PMathObj)f_cast->recursion_calls->makeDynamic();
+    } else {
+      recursion_calls = nil;
+    }
     if (f_cast->theTree) {
         theTree = f_cast->theTree->duplicate_tree();
     } else {
@@ -119,7 +129,7 @@ void _Formula::DuplicateReference  (const _Formula* f)
 //__________________________________________________________________________________
 BaseRef _Formula::makeDynamic (void)
 {
-    _Formula * res = (_Formula*) checkPointer (new _Formula);
+    _Formula * res = new _Formula;
     res->Duplicate((BaseRef)this);
     return (BaseRef)res;
 }
@@ -127,6 +137,7 @@ BaseRef _Formula::makeDynamic (void)
 
 _Formula::~_Formula (void)
 {
+  
     Clear();
 }
 
@@ -143,6 +154,10 @@ void    _Formula::Clear (void)
     }
 
     theFormula.Clear();
+    if (recursion_calls) {
+      delete (recursion_calls);
+    }
+  
 //  theStack.Clear();
 }
 
@@ -1290,25 +1305,37 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
     return result;
 }
 
-unsigned long ticker = 0UL;
+//unsigned long ticker = 0UL;
 
 //__________________________________________________________________________________
 _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
 // compute the value of the formula
 {
+    _Stack * scrap_here;
     if (theFormula.lLength == 0) {
         theStack.theStack.Clear();
         theStack.Push (new _MathObject, false);
+        scrap_here = &theStack;
     } else {
         bool wellDone = true;
-
-        if (startAt == 0) {
-            theStack.theStack.Clear();
+      
+      
+        if (call_count++) {
+          scrap_here = new _Stack;
+        } else {
+          scrap_here = &theStack;
+          if (startAt == 0) {
+              theStack.Reset();
+          }
         }
-
-      if (ticker++ > 942271) {
-        printf ("_Formula::Compute (%u)  %ld items, Stack %ld\n", theFormula.lLength, theStack.theStack.lLength);
-      }
+      
+      
+      
+        //ticker++;
+        /*if (ticker++ > 942250) {
+          printf ("_Formula::Compute (%x, %d)  %ld items, Stack %ld\n", this, ticker, theFormula.lLength, theStack.theStack.lLength);
+        }*/
+      
         if (startAt == 0 && resultCache && resultCache->lLength) {
             long cacheID     = 0;     
                 // where in the cache are we currently looking
@@ -1321,12 +1348,12 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                     _Operation* nextOp  ((_Operation*)(((BaseRef**)theFormula.lData)[i+1]));
 
                     if (! cacheUpdated && nextOp->CanResultsBeCached(thisOp)) {
-                        if (!thisOp->Execute(theStack,nameSpace, errMsg)) {
+                        if (!thisOp->Execute(*scrap_here,nameSpace, errMsg)) {
                             wellDone = false;
                             break;
                         }
 
-                        _Matrix *currentArg  = (_Matrix*)theStack.Pop(false),
+                        _Matrix *currentArg  = (_Matrix*)scrap_here->Pop(false),
                                 *cachedArg   = (_Matrix*)((_PMathObj)(*resultCache)(cacheID)),
                                 *diff        = nil;
 
@@ -1337,13 +1364,13 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                         bool    no_difference = diff && diff->MaxElement() <= 1e-12;
 
                         if (no_difference || (additionalCacheArguments && additionalCacheArguments->lLength && nextOp->CanResultsBeCached(thisOp,true))) {
-                            DeleteObject  (theStack.Pop  ());
+                            DeleteObject  (scrap_here->Pop  ());
                             if (no_difference) {
-                                theStack.Push ((_PMathObj)(*resultCache)(cacheID+1));
+                                scrap_here->Push ((_PMathObj)(*resultCache)(cacheID+1));
                             } else {
  
-                                theStack.Push ((_PMathObj)(*additionalCacheArguments)(0)); 
-                                resultCache->Replace(cacheID,theStack.Pop(false),true);
+                                scrap_here->Push ((_PMathObj)(*additionalCacheArguments)(0));
+                                resultCache->Replace(cacheID,scrap_here->Pop(false),true);
                                 resultCache->Replace(cacheID+1,(*additionalCacheArguments)(0),false);
                                 additionalCacheArguments->Delete (0, false);                              
                                 //printf ("_Formula::Compute additional arguments %ld\n", additionalCacheArguments->lLength);
@@ -1353,41 +1380,47 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                             //printf ("Used formula cache %s\n", _String((_String*)nextOp->toStr()).sData);
                         } else {
                             cacheUpdated = true;
-                            resultCache->Replace(cacheID++,theStack.Pop(false),true);
+                            resultCache->Replace(cacheID++,scrap_here->Pop(false),true);
                             //printf ("Updated formula cache %s\n", _String((_String*)nextOp->toStr()).sData);
                        }
                        DeleteObject (diff);
                        continue;
                     }
                 }
-                if (!thisOp->Execute(theStack,nameSpace, errMsg)) { // does this always get executed?
+                if (!thisOp->Execute(*scrap_here,nameSpace, errMsg)) { // does this always get executed?
                     wellDone = false;
                     break;
                 }
                 if (cacheUpdated) {
-                    resultCache->Replace(cacheID++,theStack.Pop(false),true);
+                    resultCache->Replace(cacheID++,scrap_here->Pop(false),true);
                     cacheUpdated = false;
                 }
             }
         } else {
             for (unsigned long i=startAt; i<theFormula.lLength; i++) {
                   _Operation * this_step =((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-                  if (ticker > 942271) {
-                      printf ("Step %ld, Stack %ld, Op %s\n", i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData);
-                  }
-                  if (! this_step->Execute(theStack, nameSpace, errMsg)) {
+              
+                  /*if (ticker > 942050 & theFormula.lLength == 10 && i == 9) {
+                    printf ("Step %ld, Stack %ld, Op %s (top stack %s)\n", i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
+                  }*/
+              
+                  if (! this_step->Execute(*scrap_here, nameSpace, errMsg)) {
                       wellDone = false;
                       break;
                   }
+              
+                  /*if (ticker > 942050 & theFormula.lLength == 10 && i == 9) {
+                    printf ("Step %ld, Stack %ld, Op %s (top stack %s)\n", i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
+                  }*/
             }
         }
-        if (theStack.theStack.lLength != 1 || !wellDone) {
-            _String errorText = _String((_String*)toStr()) & _String(" contains errors.");
+        if (scrap_here->StackDepth() != 1L || !wellDone) {
+            _String errorText = _String ("'") & _String((_String*)toStr()) & _String("' evaluated with errors.");
           
-            if (theStack.theStack.lLength > 1 && wellDone) {
+            if (scrap_here->StackDepth() > 1 && wellDone) {
                 errorText = errorText & " Unconsumed values on the stack";
-                for (long stack_id = theStack.theStack.lLength-1; stack_id >= 0; stack_id --) {
-                  errorText = errorText & "\n[" & (stack_id+1) & "]------------------\n" & (_String*) theStack.Pop()->toStr();
+                for (long stack_id = scrap_here->StackDepth()-1; stack_id >= 0; stack_id --) {
+                  errorText = errorText & "\n[" & (stack_id+1) & "]------------------\n" & (_String*) scrap_here->Pop(false)->toStr();
                 }
                 errorText & "\n------------------\n";
             }
@@ -1398,12 +1431,25 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
             else {
                 WarnError (errorText);
             }
-            theStack.theStack.Clear();
-            theStack.Push (new _Constant (0.0), false);
+            scrap_here->Reset();
+            scrap_here->Push (new _Constant (0.0), false);
          }
     }
 
-    _PMathObj return_value = theStack.Pop(false);
+  
+    _PMathObj return_value = scrap_here->Pop(false);
+  
+    if (theFormula.lLength) {
+         DeleteObject (recursion_calls);
+         if (--call_count) {
+          recursion_calls = return_value;
+          return_value->AddAReference();
+          delete scrap_here;
+          
+        } else {
+          recursion_calls = nil;
+        }
+    }
     return valid_type == HY_ANY_OBJECT ? return_value : ((return_value->ObjectClass() & valid_type) ? return_value : nil);
 }
 
@@ -2047,6 +2093,8 @@ _Formula::_Formula (_String&s, _VariableContainer* theParent, _String* reportErr
 {
     theTree     = nil;
     resultCache = nil;
+    recursion_calls = nil;
+    call_count = 0UL;
 
     _FormulaParsingContext fpc (reportErrors, theParent);
     
