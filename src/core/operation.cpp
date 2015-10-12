@@ -97,10 +97,12 @@ BaseRef _Operation::toStr(void)
 {
     _String * res = new _String;
   
-    if (IsAVariable()) {
+    if (theData != -1) {
         *res = _String("Variable ")& *LocateVar(GetAVariable())->GetName();
     } else if (theNumber) {
-       *res = _String("Constant ")& _String((_String*)theNumber->toStr());
+        _FString * type = (_FString*)theNumber->Type();
+       *res = _String("Constant (")& *type->theString & ")" & _String((_String*)theNumber->toStr());
+        DeleteObject(type);
     } else {
         if (IsAFunctionCall())
           *res = GetBFFunctionNameByIndex(UserFunctionID());

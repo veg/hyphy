@@ -1290,6 +1290,7 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
     return result;
 }
 
+unsigned long ticker = 0UL;
 
 //__________________________________________________________________________________
 _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
@@ -1305,6 +1306,9 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
             theStack.theStack.Clear();
         }
 
+      if (ticker++ > 942271) {
+        printf ("_Formula::Compute (%u)  %ld items, Stack %ld\n", theFormula.lLength, theStack.theStack.lLength);
+      }
         if (startAt == 0 && resultCache && resultCache->lLength) {
             long cacheID     = 0;     
                 // where in the cache are we currently looking
@@ -1368,7 +1372,9 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
         } else {
             for (unsigned long i=startAt; i<theFormula.lLength; i++) {
                   _Operation * this_step =((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-                  printf ("Step %ld, Stack %ld, Op %s\n", i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData);
+                  if (ticker > 942271) {
+                      printf ("Step %ld, Stack %ld, Op %s\n", i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData);
+                  }
                   if (! this_step->Execute(theStack, nameSpace, errMsg)) {
                       wellDone = false;
                       break;

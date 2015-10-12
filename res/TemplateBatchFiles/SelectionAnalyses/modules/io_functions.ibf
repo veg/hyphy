@@ -1,0 +1,167 @@
+RequireVersion("2.25");
+
+//------------------------------------------------------------------------------ 
+
+function selection._aux.io.countBranchSets(key, value) {
+    available_models[value] += 1;
+    return None;
+}
+
+function selection._aux.io.mapBranchSets(key, value) {
+    (tree_for_analysis["model_map"])[key] = branch_set[value];
+    (return_set[branch_set[value]])[key] = 1;
+    return None;
+}
+
+function selection._aux.io.fillInDefaultSelection(key, value) {
+    if (tag == value || tag == None) {
+        return_set[key] = 1;
+    }
+    return None;
+}
+
+//------------------------------------------------------------------------------ 
+function selection.io.defineBranchSets(tree_for_analysis) {
+
+    available_models = {};
+    branch_set = {};
+
+    for (k = 0; k < Columns(tree_for_analysis["model_list"]); k += 1) {
+        available_models[(tree_for_analysis["model_list"])[k]] = 0;
+    }
+
+    (tree_for_analysis["model_map"])["selection._aux.io.countBranchSets"][""];
+
+    list_models = Rows(available_models); // get keys    
+    option_count = Columns(list_models);
+
+    selectTheseForTesting = {
+        option_count + 3, 2
+    };
+
+    selectTheseForTesting[0][0] = "All";
+    selectTheseForTesting[0][1] = "Include all branches in the analysis";
+    selectTheseForTesting[1][0] = "Internal";
+    selectTheseForTesting[1][1] = "Include all internal branches in the analysis";
+    selectTheseForTesting[2][0] = "Leaves";
+    selectTheseForTesting[2][1] = "Include all leaf branches in the analysis";
+
+    for (k = 0; k < Columns(list_models); k += 1) {
+        if (list_models[k] != "") {
+            selectTheseForTesting[3 + k][0] = list_models[k];
+            selectTheseForTesting[3 + k][1] = "Set " + list_models[k] + " with " + available_models[list_models[k]] + " branches";
+        } else {
+            selectTheseForTesting[3 + k][0] = "Unlabeled branches";
+            selectTheseForTesting[3 + k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
+        }
+    }
+
+    ChoiceList(testSet, "Choose the set of branches to test for selection", 1, NO_SKIP, selectTheseForTesting);
+
+    assert(testSet >= 0, "User cancelled branch selection; analysis terminating");
+
+    return_set = {};
+
+    if (testSet < 3) {
+        if (testSet == 0) {
+            tag = None;
+        } else {
+            if (testSet == 1) {
+                tag = "internal";
+            } else {
+                tag = "leaf";
+            }
+        }
+        (tree_for_analysis["partitioned"])["selection._aux.io.fillInDefaultSelection"][""];
+    } else {
+        tag = SELECTION_STRINGS;
+        if (tag == "Unlabeled branches") {
+            tag = "";
+        }
+        (tree_for_analysis["model_map"])["selection._aux.io.fillInDefaultSelection"][""];
+    }
+
+    return return_set;
+
+}
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.startTimer(timers, index) {
+
+    fprintf (stdout, startTimer, "\n");
+    timers[index] = Time(1);
+
+}
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.stopTimer(timers, index) {
+    timers[index] = Time(1) - timers[index];
+}
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.extract_global_MLE(fit, id) {
+    return ((fit["global"])[id])["MLE"];
+}
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.branch.length(branch_info) {
+    return branch_info["MLE"];
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+function selection.io.getIC (logl,params,samples) {
+    return -2*logl + 2*samples/(samples-params-1)*params;
+}
+
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.json_store_lf (json, name, ll, df, ss, time, branch_length, branch_annotation, omega_distribution, annotation_tag) {
+
+    if (Abs (json["fits"]) == 0) {
+        json["fits"] = {};
+    }
+
+
+    (json["fits"])[name] = {
+        "log-likelihood": ll,
+        "parameters": df,
+        "AIC-c": selection.io.getIC(ll, df, ss),
+        "runtime": time,
+        "branch-lengths": branch_length,
+        "branch-annotations": branch_annotation,
+        "rate-distributions": omega_distribution,
+        "annotation-tag": annotation_tag,
+        "display-order": Abs(json["fits"])
+    };
+
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+function selection.json_spool(json, file) {
+    utility.toggleEnvVariable("USE_JSON_FOR_MATRIX", 1);
+    fprintf(file, CLEAR_FILE, json);
+    utility.toggleEnvVariable("USE_JSON_FOR_MATRIX", None);
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+function selection.io._aux.extract_branch_info.callback (key, value) {
+    selection.io.extract_branch_info_result [key] = utility.callFunction (callback, {"0" : "value"});
+}
+
+function selection.io.extract_branch_info (branch_spec, callback) {
+    selection.io.extract_branch_info_result = {};
+    branch_spec ["selection.io._aux.extract_branch_info.callback"][""];
+    return selection.io.extract_branch_info_result;
+}
+
+function selection.io.branch.length (branch_info) {
+    return branch_info["MLE"];
+}
