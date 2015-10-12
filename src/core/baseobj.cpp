@@ -221,8 +221,8 @@ bool    GlobalStartup (void)
 
     _HBL_Init_Const_Arrays  ();
   
-    CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.));
-    CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.));
+    CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.), false);
+    CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.), false);
 
 
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
