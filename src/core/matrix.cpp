@@ -9511,8 +9511,8 @@ void _AssociativeList::MStore (_String obj, _PMathObj inObject, bool repl)
 //_____________________________________________________________________________________________
 void _AssociativeList::MStore (_String obj, _String info)
 {
-    _FString inf (info);
-    MStore (obj, &inf, true);
+    _FString *  inf = new _FString (info);
+    MStore (obj, inf, false);
 }
 
 

@@ -2444,9 +2444,9 @@ _List*     _TreeTopology::MapNodesToModels (void) {
   DepthWiseT (true);
   while (!IsCurrentNodeTheRoot()) {
     _List * node_record = new _List;
-    _String nodeName;
-    GetNodeName(currentNode,nodeName);
-    (*node_record) && & nodeName;
+    _String * nodeName = new _String;;
+    GetNodeName(currentNode,*nodeName);
+    node_record->AppendNewInstance(nodeName);
     (*node_record) << GetNodeModel(currentNode);
     map->AppendNewInstance(node_record);
     DepthWiseT();

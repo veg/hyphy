@@ -4792,8 +4792,8 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
                             _AssociativeList* return_this = new _AssociativeList();
                             
                             for (unsigned long i = 0; i < map->lLength; i++) {
-                              _List * nodeInfo = (_List*) (*map) (i);
-                              return_this->MStore(*(_String*)(*nodeInfo)(0), *(_String*)(*nodeInfo) (1));
+                              _List * nodeInfo = (_List*) map->GetItem(i);
+                              return_this->MStore(*(_String*)nodeInfo->GetItem(0), *(_String*)nodeInfo->GetItem (1));
                             }
                             result = (_Matrix*) return_this;
                             DeleteObject (map);
@@ -4858,8 +4858,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
         result = new _Matrix (0,0,false,false);
     }
 
-    CheckReceptacleAndStore (&matrixName, empty, true, result, true);
-    DeleteObject (result);
+    CheckReceptacleAndStore (&matrixName, empty, true, result, false);
 
 }
 
@@ -5660,6 +5659,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
           }
           
           _PMathObj ret_val = nil;
+          // important to store the return value in a local variable
+          // because chain.result may be overwritten by recursive calls to
+          // this function
          
           if (expression) {
             //printf ("Return interpreted\n");

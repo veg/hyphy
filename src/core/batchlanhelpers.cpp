@@ -427,11 +427,11 @@ _String* _HBLObjectNameByType (const long type, const long index, bool correct_f
     if (theList) {
         // account for deleted objects
         if (!correct_for_empties) 
-            return (_String*)(*theList)(index);
+            return (_String*)theList->GetItem (index);
             
         long counter = 0;
         for (unsigned long name_index = 0; name_index < theList->lLength; name_index++) {
-            _String *thisName = (_String*)(*theList)(name_index);
+            _String *thisName = (_String*)theList->GetItem(name_index);
             if (thisName && thisName->sLength) {
                 if (name_index - counter == index) {
                     return thisName;
