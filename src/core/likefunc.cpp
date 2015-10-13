@@ -513,6 +513,7 @@ void _LikelihoodFunction::Init (void)
     parameterValuesAndRanges                = nil;
     
 #ifdef  _OPENMP
+    lfThreadCount       = 1L;
     SetThreadCount      (systemCPUCount);
 #endif
 

@@ -9398,17 +9398,21 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
         }
     } else if (p->ObjectClass () == STRING && p2->ObjectClass () == NUMBER) {
         _String * s  = (_String*)p->toStr();
+        _PMathObj result = nil;
 
         if (s->Equal (&AVL_ITERATOR_ORDER) || s->Equal (&AVL_ITERATOR_ORDER_VALUE)) {
             long index = avl.GetByIndex(p2->Compute()->Value());
+          
             if (index >= 0) {
-                return s->Equal (&AVL_ITERATOR_ORDER)? (new _FString(*((_String**)avl.dataList->lData)[index],false)): ((_PMathObj)avl.GetXtra (index)->makeDynamic());
+              result = s->Equal (&AVL_ITERATOR_ORDER)? (new _FString(*((_String**)avl.dataList->lData)[index],false)): ((_PMathObj)avl.GetXtra (index)->makeDynamic());
             } else {
                 WarnError ("Index out of bounds in call to AVL iterator (by index)");
             }
         }
-
+      
         DeleteObject (s);
+        if (result)
+          return result;
     } else {
         WarnError ("Both arguments must be Strings (or a String Literal and a number) in an iterator call for Associative Arrays");
     }
@@ -9703,7 +9707,7 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2, _hy
           for (unsigned long k=0UL; k<avl.dataList->lLength; k++) {
                 BaseRef anItem = ((BaseRef*)avl.dataList->lData)[k];
                 if (anItem) {
-                   unique_values.Insert (avl.GetXtra(k)->toStr(), 0L, true);
+                   unique_values.Insert (avl.GetXtra(k)->toStr(), 0L, false);
                 }
             }
           unique_values.ReorderList();
