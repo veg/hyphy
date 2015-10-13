@@ -9707,7 +9707,10 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2, _hy
           for (unsigned long k=0UL; k<avl.dataList->lLength; k++) {
                 BaseRef anItem = ((BaseRef*)avl.dataList->lData)[k];
                 if (anItem) {
-                   unique_values.Insert (avl.GetXtra(k)->toStr(), 0L, false);
+                   _String* string_value = (_String*) avl.GetXtra(k)->toStr();
+                    if (unique_values.Insert (string_value, 0L, false) < 0) {
+                      DeleteObject(string_value);
+                    }
                 }
             }
           unique_values.ReorderList();
