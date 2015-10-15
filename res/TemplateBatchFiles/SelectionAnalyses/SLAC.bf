@@ -147,6 +147,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
     selected_branches_parents    = {selected_branches_count,1};
     selected_branch_total_length = 0;
     k = 0;
+    tip_count = 0;
     
     for (i = 1; i < Abs (tree); i+=1) {
         if (selected_branches [(tree[i])["Name"]&&1]) {
@@ -155,6 +156,9 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
             selected_branches_parents[k] = (tree[i])["Parent"] - 1;
             
             k+=1;
+        }
+        if (Abs ((tree[i])["Children"]) == 0) {
+            tip_count += 1;        
         }
     }
     
@@ -169,45 +173,135 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
            3 Observed non-synonymous subs
            4 Expected ratio
            5 Observed ratio 
-           6 p-value
+           6 dS
+           7 dN
+           8 dN-dS 
+           9 dN-dS (scaled)
+           10 P {S <= observed} // posititve sel
+           11 P {S >= observed} // negative sel 
+           12 effective branch length
+           
     */
     
-    column_count    = 7;
+    column_count    = 13;
     report_resolved = {site_count, column_count};
     report_averaged = {site_count, column_count};
     pairwise_eps = counts ["EPS"];
     state_count  = Rows (pairwise_eps);
     pairwise_epn = counts ["EPN"];
+    pairwise_ops = counts ["OPS"];
+    pairwise_opn = counts ["OPN"];
+    by_site_scaler = {site_count, 1} ["" + selected_branch_total_length];
+    column_vector = {state_count,1};
     
+    sites_with_ambigs = {};
+    
+    averaged = {4,1}; // this hack enables deferred execution
+    averaged [0] := (+pairwise_eps[-1][parent_state]$resolution)/resolution_count;
+    averaged [1] := (+pairwise_epn[-1][parent_state]$resolution)/resolution_count;
+    averaged [2] := (+pairwise_ops[-1][parent_state]$resolution)/resolution_count;
+    averaged [3] := (+pairwise_opn[-1][parent_state]$resolution)/resolution_count;
+    
+    fully_resolved = {4,1}; // this hack enables deferred execution
+    fully_resolved [0] := pairwise_eps[psi] * relative_branch_length;
+    fully_resolved [1] := pairwise_epn[psi] * relative_branch_length;
+    fully_resolved [2] := pairwise_ops[psi];
+    fully_resolved [3] := pairwise_opn[psi];
+
+      
     for (i = 0; i < selected_branches_count; i+=1) {
         this_branch            = selected_branches_in_avl[i];
         if (selected_branches_lengths[i]) {
             relative_branch_length = selected_branches_lengths[i] / selected_branch_total_length;
-            
             parent_branch          = selected_branches_parents[i];
             
-            fprintf (stdout, this_branch, ":", parent_branch, "\n");
-            
-            for (s = 0; s < site_count; s += 1) {
+             for (s = 0; s < site_count; s += 1) {
                 this_state      = matrix[this_branch][s];
                 parent_state    = matrix[parent_branch][s];
                 
                 // parent state can only be resolved or --- (-1)
                 
-                fprintf (stdout, s, "\n");
-                
-                if (this_state >= 0) { // tip fully resolved
-                    if (parent_state >= 0) { // parent fully resolved 
-                        report_resolved[s*column_count + 0] += pairwise_eps[this_state][parent_state] * relative_branch_length;
-                        report_averaged[s*column_count + 0] = report_resolved[s*column_count + 0];
-                        report_resolved[s*column_count + 1] += pairwise_epn[this_state][parent_state] * relative_branch_length;
-                        report_averaged[s*column_count + 1] = report_resolved[s*column_count + 1];
+                if (this_state >= 0) { // child fully resolved (this means that the parent is fully resolved as well
+                    psi = this_state*state_count+parent_state;
+                    
+                    for (k = 0; k < 4; k += 1) {
+                        report_averaged[s*column_count + k] += fully_resolved[k];
+                        report_resolved[s*column_count + k] += fully_resolved[k];
                     }
-                } 
+                     
+                } else {
+                    if (this_state == -1) { // the child is fully missing; no counts here
+                        if (parent_state != -1) { // but the parent IS resolved
+                            by_site_scaler [s] += (-selected_branches_lengths[i]);
+                            psi = parent_state*state_count+parent_state;
+                            for (k = 0; k < 2; k += 1) {
+                                report_averaged[s*column_count + k] += fully_resolved[k];
+                                report_resolved[s*column_count + k] += fully_resolved[k];
+                            }
+                           
+                       }
+                    } else { // the tip is an ambiguous, but partially resolved character
+                             // this implies that the ancestor is fully resolved
+                        resolution = lookup [-this_state-2]; // column vector with 1's for possible resolutions
+                        resolution_count = + resolution;
+                        
+                        for (k = 0; k < 4; k += 1) {
+                            report_averaged[s*column_count + k] = averaged[k];
+                        }
+                        
+                        extract_site_info = sites_with_ambigs[s];
+                        if (Type (extract_site_info) != "Matrix") {
+                            extract_site_info    = matrix[{{0,s}}][{{tip_count-1,s}}];
+                            extract_site_info    = extract_site_info[extract_site_info["_MATRIX_ELEMENT_VALUE_>=0"]];
+                            if (Columns (extract_site_info) > 0) {
+                               site_info = column_vector;
+                               for (k = 0; k <  Columns (extract_site_info); k+=1) {
+                                    site_info[extract_site_info[k]] += 1;
+                               }
+                               extract_site_info = site_info;
+                            } 
+                            sites_with_ambigs[s] = extract_site_info;
+                            
+                        }
+                        
+                        if (Columns (extract_site_info) > 0) {
+
+                            fprintf (stdout, averaged, "\n", resolution, "\n");
+                            resolution_filtered = extract_site_info $ resolution;
+                            most_frequent_char = Max (extract_site_info $ resolution,1)[0];
+                            if (most_frequent_char) {
+                                resolution = resolution_filtered["_MATRIX_ELEMENT_VALUE_==most_frequent_char"];
+                                resolution_count = + resolution;
+                                //fprintf (stdout, averaged, "\n", resolution, "\nDONE\n");
+                            }
+                            
+                        }
+                        for (k = 0; k < 4; k += 1) {
+                            report_resolved[s*column_count + k] += averaged[k];
+                        }
+                    }
+                }
             }
         }
-        
     }
+    
+    //fprintf (stdout, sites_with_ambigs, "\n", by_site_scaler, "\n");
+    
+    
+    for (s = 0; s < site_count; s+=1) {
+        k = by_site_scaler[s];
+        report_resolved[s*column_count + 12] = k;
+        report_averaged[s*column_count + 12] = k;
+        
+        if (k > 0) {
+            k = selected_branch_total_length/k;
+            report_resolved[s*column_count + 0] = report_resolved[s*column_count + 0] * k;
+            report_resolved[s*column_count + 1] = report_resolved[s*column_count + 1] * k;
+            report_averaged[s*column_count + 0] = report_averaged[s*column_count + 0] * k;
+            report_averaged[s*column_count + 1] = report_averaged[s*column_count + 1] * k;
+        }
+    }
+    
     #profile _hyphy_profile_dump;
 
     
@@ -229,7 +323,7 @@ for (k=0; k<Columns(_instructions); k=k+1)
                                                    "\n\tTime (seconds): ", stats[k2][1], "\n");
 }
 */
-    return report_resolved;
+    return report_averaged;
 
 }
 

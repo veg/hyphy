@@ -204,6 +204,9 @@ bool    GlobalStartup (void)
     _hyApplicationGlobals.Insert(new _String (pathToCurrentBF));
     _hyApplicationGlobals.Insert(new _String (_hy_TRUE));
     _hyApplicationGlobals.Insert(new _String (_hy_FALSE));
+    _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_VALUE_"));
+    _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_ROW_"));
+    _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_COLUMN_"));
 
     _String             dd (GetPlatformDirectoryChar());
 

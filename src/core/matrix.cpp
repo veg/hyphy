@@ -4905,7 +4905,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
       
       
       _String aFormulaString = *((_FString*)p)->theString;
-      _Formula f (aFormulaString);
+      _Formula f (aFormulaString, currentExecutionList ? currentExecutionList->nameSpacePrefix : nil);
       
       if (!f.IsEmpty()) {
         /* check formula validity */
@@ -4930,7 +4930,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
           _Formula * conditionalCheck = nil;
           
           if (p2 && p2->ObjectClass() == STRING) {
-            conditionalCheck = new _Formula (*((_FString*)p2)->theString);
+            conditionalCheck = new _Formula (*((_FString*)p2)->theString, currentExecutionList ? currentExecutionList->nameSpacePrefix : nil);
             if (conditionalCheck->IsEmpty()) {
               delete conditionalCheck;
               conditionalCheck = nil;
