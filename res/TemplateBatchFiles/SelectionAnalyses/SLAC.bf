@@ -137,19 +137,30 @@ io.spoolLF (slac.global_mg_results["LF"], slac.codon_data_info["file"], None);
 /*------------------------------------------------------------------------------------*/
 
 lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, counts) {
-    site_count = Rows (matrix);
-    selected_branches_count  = Abs (selected_branches);
-    selected_branches_in_avl = {selected_branches_count,1};
+#profile START;
+
+    site_count = Columns (matrix);
+    
+    selected_branches_count      = Abs (selected_branches);
+    selected_branches_in_avl     = {selected_branches_count,1};
+    selected_branches_lengths    = {selected_branches_count,1};
+    selected_branches_parents    = {selected_branches_count,1};
     selected_branch_total_length = 0;
     k = 0;
     
     for (i = 1; i < Abs (tree); i+=1) {
         if (selected_branches [(tree[i])["Name"]&&1]) {
             selected_branches_in_avl[k]   = i-1;
-            selected_branch_total_length += (tree[i])["Length"];
+            selected_branches_lengths[k] = (tree[i])["Length"];
+            selected_branches_parents[k] = (tree[i])["Parent"] - 1;
+            
             k+=1;
         }
     }
+    
+    
+    selected_branch_total_length  = +selected_branches_lengths;
+    io.checkAssertion ("`&selected_branch_total_length`>0", "SLAC cannot be applied to a branch selection with total zero branch length (i.e. no variation)");
     
     /*  columns 
            0 Expected synonymous     sites 
@@ -161,27 +172,65 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
            6 p-value
     */
     
-    report_resolved = {site_count, 7};
-    report_averaged = {site_count, 7};
+    column_count    = 7;
+    report_resolved = {site_count, column_count};
+    report_averaged = {site_count, column_count};
+    pairwise_eps = counts ["EPS"];
+    state_count  = Rows (pairwise_eps);
+    pairwise_epn = counts ["EPN"];
     
     for (i = 0; i < selected_branches_count; i+=1) {
         this_branch            = selected_branches_in_avl[i];
-        if ((tree[this_branch])["Length"]) {
-            relative_branch_length = (tree[this_branch])["Length"] / selected_branch_total_length;
-            parent_branch          = (tree[this_branch])["Parent"] - 1;
-            for (s = 0; s < sites; s += 1) {
+        if (selected_branches_lengths[i]) {
+            relative_branch_length = selected_branches_lengths[i] / selected_branch_total_length;
+            
+            parent_branch          = selected_branches_parents[i];
+            
+            fprintf (stdout, this_branch, ":", parent_branch, "\n");
+            
+            for (s = 0; s < site_count; s += 1) {
                 this_state      = matrix[this_branch][s];
                 parent_state    = matrix[parent_branch][s];
                 
                 // parent state can only be resolved or --- (-1)
                 
+                fprintf (stdout, s, "\n");
+                
                 if (this_state >= 0) { // tip fully resolved
                     if (parent_state >= 0) { // parent fully resolved 
+                        report_resolved[s*column_count + 0] += pairwise_eps[this_state][parent_state] * relative_branch_length;
+                        report_averaged[s*column_count + 0] = report_resolved[s*column_count + 0];
+                        report_resolved[s*column_count + 1] += pairwise_epn[this_state][parent_state] * relative_branch_length;
+                        report_averaged[s*column_count + 1] = report_resolved[s*column_count + 1];
+                    }
                 } 
             }
         }
         
     }
+    #profile _hyphy_profile_dump;
+
+    
+/*
+stats  			= _hyphy_profile_dump["STATS"];
+_profile_summer = ({1,Rows(stats)}["1"]) * stats;
+_instructions   = _hyphy_profile_dump["INSTRUCTION"];
+_indices	    = _hyphy_profile_dump["INSTRUCTION INDEX"];
+
+fprintf (stdout, "\nTotal run time (seconds)      : ", Format(_profile_summer[1],15,6),
+                 "\nTotal number of steps         : ", Format(_profile_summer[0],15,0), "\n\n");
+             
+to_sort        =  stats["-_MATRIX_ELEMENT_VALUE_*_MATRIX_ELEMENT_COLUMN_+(_MATRIX_ELEMENT_COLUMN_==0)*_MATRIX_ELEMENT_ROW_"] % 1;  
+             
+for (k=0; k<Columns(_instructions); k=k+1)
+{
+    k2 = to_sort[k][0];
+    fprintf (stdout, Format (_indices[k2],6,0), " : ", _instructions[k2], "\n\tCall count: ", stats[k2][0], 
+                                                   "\n\tTime (seconds): ", stats[k2][1], "\n");
+}
+*/
+    return report_resolved;
+
 }
 
 /*------------------------------------------------------------------------------------*/

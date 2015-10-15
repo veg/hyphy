@@ -5193,8 +5193,8 @@ _Formula* _Matrix::GetFormula (long ind1, long ind2)
 //_____________________________________________________________________________________________
 _PMathObj _Matrix::MCoord (_PMathObj p, _PMathObj p2)
 {
-    long ind1 = -1,
-         ind2 = -1;
+    long ind1 = -1L,
+         ind2 = -1L;
 
     if (!p) {
         warnError( -106);
@@ -5207,27 +5207,26 @@ _PMathObj _Matrix::MCoord (_PMathObj p, _PMathObj p2)
     }
 
 
-    if (hDim == 1) {
-        if (ind2<0) {
+    if (hDim == 1L) {
+        if (ind2<0L) {
             ind2 = ind1;
         }
-        ind1=0;
+        ind1=0L;
     }
 
-    if (vDim == 1) {
-        ind2 = 0;
+    if (vDim == 1L) {
+        ind2 = 0L;
     }
 
-    if (ind2<0) { // allow direct vectorlike indexing, i.e m[21] = m[3][3] (if the dim is *x6)
+    if (ind2<0L) { // allow direct vectorlike indexing, i.e m[21] = m[3][3] (if the dim is *x6)
         ind2 = ind1%vDim;
+        ind1 = ind1/vDim;
     }
 
-    _Matrix * res = new _Matrix (1,2,false,true);
+    _Matrix * res = new _Matrix (1L,2L,false,true);
     if (res) {
         res->theData[0]=ind1;
         res->theData[1]=ind2;
-    } else {
-        checkPointer (res);
     }
     return res;
 
