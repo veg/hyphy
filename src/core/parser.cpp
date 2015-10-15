@@ -976,6 +976,8 @@ void    SetupOperationLists (void)
 
         //HY_OP_CODE_MCOORD
         BuiltInFunctions.AppendNewInstance (new _String ("MCoord"));
+        simpleOperationCodes<<HY_OP_CODE_MCOORD;
+        simpleOperationFunctions<<(long)FastMxWrite;
 
         //HY_OP_CODE_MAX
         BuiltInFunctions.AppendNewInstance (new _String ("Max"));

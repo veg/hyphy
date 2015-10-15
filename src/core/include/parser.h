@@ -195,6 +195,7 @@ _Parameter  MinusNumber (_Parameter);
 _Parameter  MaxNumbers  (_Parameter, _Parameter);
 _Parameter  MinNumbers  (_Parameter, _Parameter);
 _Parameter  FastMxAccess(Ptr, _Parameter);
+void        FastMxWrite (Ptr, _Parameter, _Parameter);
 
 BaseRef parameterToString       (_Parameter);
 void    parameterToCharBuffer   (_Parameter, char*, long, bool json = false);

@@ -41,11 +41,6 @@ slac.json = {
 
 slac.scaler = "SLAC.scaler";
 
-
-//GetString (dd, selection.io.json_store_lf, -1);
-//fprintf (stdout, dd);
-//return 0;
-
 /*------------------------------------------------------------------------------*/
 
 
@@ -78,7 +73,6 @@ slac.codon_data_info = utility.promptForGeneticCodeAndAlignment("slac.codon_data
 slac.sample_size = slac.codon_data_info["sites"] * slac.codon_data_info["sequences"];
 slac.codon_data_info["json"] = slac.codon_data_info["file"] + ".slac.json";
 
-slac.counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE});
 
 io.reportProgressMessage("SLAC", "Loaded an MSA with " + slac.codon_data_info["sequences"] + " sequences and " + slac.codon_data_info["sites"] + " codons from '" + slac.codon_data_info["file"] + "'");
 
@@ -86,6 +80,7 @@ slac.codon_frequencies = utility.defineFrequencies("slac.codon_filter");
 slac.tree = utility.loadAnnotatedTopology(1);
 
 slac.selected_branches = selection.io.defineBranchSets(slac.tree);
+/* dict ["selected branch (original case)"] == TRUE */ 
 
 slac.json["tested"] = slac.selected_branches;
 slac.json["tree"] = slac.tree["string"];
@@ -139,6 +134,63 @@ selection.io.json_store_lf(
 
 io.spoolLF (slac.global_mg_results["LF"], slac.codon_data_info["file"], None);
 
+/*------------------------------------------------------------------------------------*/
 
-// _buildAncestralCacheInternal (
+lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, counts) {
+    site_count = Rows (matrix);
+    selected_branches_count  = Abs (selected_branches);
+    selected_branches_in_avl = {selected_branches_count,1};
+    selected_branch_total_length = 0;
+    k = 0;
+    
+    for (i = 1; i < Abs (tree); i+=1) {
+        if (selected_branches [(tree[i])["Name"]&&1]) {
+            selected_branches_in_avl[k]   = i-1;
+            selected_branch_total_length += (tree[i])["Length"];
+            k+=1;
+        }
+    }
+    
+    /*  columns 
+           0 Expected synonymous     sites 
+           1 Expected non-synonymous sites 
+           2 Observed synonymous subs
+           3 Observed non-synonymous subs
+           4 Expected ratio
+           5 Observed ratio 
+           6 p-value
+    */
+    
+    report_resolved = {site_count, 7};
+    report_averaged = {site_count, 7};
+    
+    for (i = 0; i < selected_branches_count; i+=1) {
+        this_branch            = selected_branches_in_avl[i];
+        if ((tree[this_branch])["Length"]) {
+            relative_branch_length = (tree[this_branch])["Length"] / selected_branch_total_length;
+            parent_branch          = (tree[this_branch])["Parent"] - 1;
+            for (s = 0; s < sites; s += 1) {
+                this_state      = matrix[this_branch][s];
+                parent_state    = matrix[parent_branch][s];
+                
+                // parent state can only be resolved or --- (-1)
+                
+                if (this_state >= 0) { // tip fully resolved
+                    if (parent_state >= 0) { // parent fully resolved 
+                } 
+            }
+        }
+        
+    }
+}
+
+/*------------------------------------------------------------------------------------*/
+
+
+io.reportProgressMessage("SLAC", "Performing joint maximum likelihood ancestral state reconstruction");
+
+slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE});
+slac.ancestors = ancestral.build (slac.global_mg_results["LF"], 0, None);
+
+fprintf (stdout, slac.compute_the_counts (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.selected_branches, slac.counts), "\n");
 

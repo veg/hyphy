@@ -151,3 +151,18 @@ lfunction utility.array.find (array, value) {
 }
 
 
+
+lfunction utility.dict.swap_keys_and_values (dict) {
+    swapped_dict = {};
+    keys         = Rows (dict);
+    items        = Abs (dict);
+    
+    for (i = 0; i < items; i+=1) {
+        key = keys[i];
+        swapped_dict [dict[key]] = key;
+    }
+    
+    return swapped_dict;
+}
+
+

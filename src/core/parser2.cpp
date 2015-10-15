@@ -158,8 +158,13 @@ _Parameter  LogNumbers  (_Parameter x)
 }
 _Parameter  FastMxAccess(Ptr m, _Parameter index)
 {
-    return ((_Parameter*)m)[(long)index];
+    return ((_Parameter*)m)[(unsigned long)index];
 }
+
+void  FastMxWrite(Ptr m, _Parameter index, _Parameter value) {
+  ((_Parameter*)m)[(unsigned long)index] = value;
+}
+
 _Parameter  AndNumbers  (_Parameter x, _Parameter y)
 {
     return x != 0.0 && y != 0.0;
@@ -202,7 +207,11 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
         if (varValue->ObjectClass() == NUMBER) {
             values[k2].value = varValue->Value();
         } else {
-            values[k2].reference = (Ptr)((_Matrix*)varValue)->theData;
+            if (varValue->ObjectClass() == MATRIX) {
+              values[k2].reference = (Ptr)((_Matrix*)varValue)->theData;
+            } else {
+              WarnError ("Internal error in PopulateArraysForASimpleFormula");
+            }
         }
     }
 }
@@ -1614,7 +1623,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
             continue;
         } else if (UnOps.FindKey (s.getChar(i)) >= 0) {
-            if ((s.getChar(i)=='-' || s.getChar(i)=='+') && (!i|| s.getChar(i-1)=='(')) { // unary minus?
+            if ((s.getChar(i)=='-' || s.getChar(i)=='+') && (!i|| s.getChar(i-1)=='(')) { // unary minus or plus
                 curOp   = s.getChar(i);
                 levelOps->AppendNewInstance (new _Operation (curOp,1));
                 continue;

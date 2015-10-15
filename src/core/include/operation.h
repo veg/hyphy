@@ -50,7 +50,11 @@ extern  _List BuiltInFunctions;
 
 class _Stack;
 class _VariableContainer;
+class _Variable;
 class _Formula;
+
+_Variable * FetchVar (long);
+
 //__________________________________________________________________________________
 class   _Operation : public BaseObj
 {
@@ -82,7 +86,7 @@ public:
     bool            ExecutePolynomial   (_Stack&,_VariableContainer* nameSpace = nil, _String* errMsg = nil);
     virtual   BaseObj*      toStr               (void);    //convert the op to string
 
-  virtual   void          Initialize          (bool = false);
+    virtual   void          Initialize          (bool = false);
     virtual   void          Duplicate           (BaseRef);
     _String&    GetCode             (void) {
         return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):empty;
@@ -106,6 +110,13 @@ public:
 
     virtual  void           SetAVariable        (long d) {  // return the index of the variable
         theData=d;
+    }
+  
+    _Variable *             RetrieveVar         (void) {
+      if (theData != -1) {
+        return FetchVar(GetAVariable());
+      }
+      return nil;
     }
 
     virtual  bool           AssignmentVariable  (void) {

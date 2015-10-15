@@ -15,7 +15,7 @@ function selection._aux.io.mapBranchSets(key, value) {
 
 function selection._aux.io.fillInDefaultSelection(key, value) {
     if (tag == value || tag == None) {
-        return_set[key] = 1;
+        return_set[key&&1] = TRUE;
     }
     return None;
 }

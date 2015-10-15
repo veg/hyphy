@@ -1249,21 +1249,55 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
                 long          parseCode = Parse(f,*formulaString,fpc,f2);
 
-                if (parseCode == HY_FORMULA_EXPRESSION || parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
+                if (parseCode == HY_FORMULA_EXPRESSION || parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT || parseCode == HY_FORMULA_FORMULA_VALUE_ASSIGNMENT) {
+                  
                     if (f->AmISimple(stackDepth,varList)) {
+                        try {
+                          if (parseCode == HY_FORMULA_FORMULA_VALUE_ASSIGNMENT) {
+                            if (!f2->AmISimple(stackDepth, varList)) throw 0;
+                            long assignment_length = f->NumberOperations();
+                            if (assignment_length < 3) throw 0;
+                            _Variable * mx = f->GetIthTerm(0)->RetrieveVar();
+                            if (! mx) throw 0;
+                            f->GetIthTerm (0)->SetAVariable(mx->GetAVariable());
+                            _Operation * last = f->GetIthTerm(assignment_length-1);
+                            if (! (last->TheCode() == HY_OP_CODE_MCOORD && last->GetNoTerms() == 2)) throw 0;
+                            
+                            
+                            f2->GetList() << f->GetList();
+                            f->Clear();
+                            
+                            _Formula *t = f2;
+                            f2 = f;
+                            f  = t;
+          
+                          }
+                          
+                        } catch (int e) {
+                          status = false;
+                          break;
+                        }
                         aStatement->simpleParameters<<parseCode;
                         aStatement->simpleParameters<<(long)f;
                         aStatement->simpleParameters<<(long)f2;
+                      
+                      
                         aStatement->simpleParameters<<fpc.assignmentRefID();
+                      
 
                         formulaeToConvert << (long)f;
+                      
 
-                        if (HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
+                        if (parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
+                            if (varList.Find (fpc.assignmentRefID()) < 0) {
+                              varList << fpc.assignmentRefID();
+                            }
                             parseCodes        << fpc.assignmentRefID();
                         } else {
                             parseCodes        << -1;
                         }
                         break;
+                        
                     }
                 }
 
@@ -1329,6 +1363,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
             } else {
                 cli->storeResults << avlList.GetXtra (avlList.Find ((BaseRef) parseCodes.lData[ri]));
             }
+            //printf ("\n%ld\n",  cli->storeResults.lData[ri]);
         }
         cli->varList.Duplicate(&varList);
     }
@@ -1382,17 +1417,22 @@ void        _ExecutionList::ResetFormulae       (void)      // run this executio
 BaseRef  _ExecutionList::toStr (void)
 {
     _String *result = new _String (1,true),
-    step ("\n\nStep"),
+    step ("\n\nStep "),
     dot (".");
+  
+    _ExecutionList* stash = currentExecutionList;
+  
+    currentExecutionList = this;
 
-    for (unsigned long i=0; i<countitems(); i++) {
+    for (unsigned long i=0UL; i<countitems(); i++) {
         (*result) << &step;
-        _String lineNumber (i);
-        (*result)<< &lineNumber;
+        (*result)<< _String((long)i);
         (*result)<< '.';
-        result->AppendNewInstance ((_String*)(*this)(i)->toStr());
+        result->AppendNewInstance ((_String*)GetItem(i)->toStr());
     }
     result->Finalize();
+  
+    currentExecutionList = stash;
     return result;
 }
 
@@ -1871,14 +1911,14 @@ void      _ElementaryCommand::Duplicate (BaseRef source)
 
 //____________________________________________________________________________________
 
-_String _hblCommandAccessor (_ExecutionList* theList, long index) {
+const _String _hblCommandAccessor (_ExecutionList* theList, long index) {
     if (theList) {
         if (index >= 0) {
             if (index < theList->lLength) {
                 _ElementaryCommand * aCommand = (_ElementaryCommand*)theList->GetItem (index);
                 return _String ((_String*)aCommand->toStr());
             } else {
-                return "<END EXECUTION>";
+              return _String("<END EXECUTION>");
             }
         }
     }
@@ -1901,14 +1941,14 @@ BaseRef   _ElementaryCommand::toStr      (void)
     case 4:
 
         result = "Branch ";
-        if (simpleParameters.countitems()==3) {
-            converted = (_String*)((_Formula*)simpleParameters(2))->toStr();
+        if (simpleParameters.countitems()==3 || parameters.countitems() == 1) {
+            converted = (_String*)parameters.GetItem(0)->toStr();
             result = result& "under condition '"& *converted&"'\n\tto\n\t\t"&
                         _hblCommandAccessor (currentExecutionList,simpleParameters(0))&
                         "\n\telse\n\t\t"&
                         _hblCommandAccessor (currentExecutionList,simpleParameters(1));
         } else {
-            result = result&"to "& _hblCommandAccessor (currentExecutionList,simpleParameters(0));
+            result = result&"to Step "& simpleParameters(0);
         }
 
         break;
@@ -2515,6 +2555,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
           _Parameter result = ((_Formula*)simpleParameters.lData[1])->ComputeSimple (chain.cli->stack, chain.cli->values);
           long sti = chain.cli->storeResults.lData[chain.currentCommand-1];
           if (sti>=0) {
+            //printf ("%ld, %g\n", sti, result);
               chain.cli->values[sti].value = result;
           }
           return;
@@ -3247,7 +3288,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
             exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
 
             if (simpleParameters.lLength && exc.TryToMakeSimple()) {
-                ReportWarning ("Successfully compiled an execution list.");
+                ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)exc.toStr()) );
                 exc.ExecuteSimple ();
             } else {
                 exc.Execute();

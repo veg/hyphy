@@ -1574,6 +1574,12 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
         _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
         locDepth++;
         if ( thisOp->theData<-2 || thisOp->numberOfTerms<0) {
+            if (thisOp->theData < -2 && i == 0) {
+              if (variableIndex.Find (thisOp->GetAVariable())==-1) {
+                variableIndex<<thisOp->GetAVariable();
+              }
+              continue;
+            }
             return false;
         }
 
@@ -1596,7 +1602,7 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
             } else {
                 if (simpleOperationCodes.Find(thisOp->opCode)==-1) {
                     return false;
-                } else if ((thisOp->opCode == HY_OP_CODE_MACCESS || thisOp->opCode == HY_OP_CODE_MUL) && thisOp->numberOfTerms != 2) {
+                } else if ((thisOp->opCode == HY_OP_CODE_MACCESS || thisOp->opCode == HY_OP_CODE_MCOORD || thisOp->opCode == HY_OP_CODE_MUL) && thisOp->numberOfTerms != 2) {
                     return false;
                 }
 
@@ -1638,6 +1644,10 @@ bool _Formula::ConvertToSimple (_SimpleList& variableIndex)
             } else {
                 if (thisOp->opCode == HY_OP_CODE_MACCESS) {
                     thisOp->numberOfTerms = -2;
+                } else {
+                  if (thisOp->opCode == HY_OP_CODE_MCOORD) {
+                    thisOp->numberOfTerms = -3;
+                  }
                 }
                 if (thisOp->opCode == HY_OP_CODE_RANDOM || thisOp->opCode == HY_OP_CODE_TIME)
                     has_volatiles = true;
@@ -1667,6 +1677,10 @@ void _Formula::ConvertFromSimple (_SimpleList& variableIndex)
             } else {
                 if (thisOp->opCode == (long)FastMxAccess) {
                     thisOp->numberOfTerms = 2;
+                } else {
+                  if (thisOp->opCode == (long)FastMxWrite) {
+                    thisOp->numberOfTerms = 2;
+                  }
                 }
                 thisOp->opCode = simpleOperationCodes(simpleOperationFunctions.Find(thisOp->opCode));
             }
@@ -1684,7 +1698,7 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
     long stackTop = 0;
 
     for (int i=0; i<theFormula.lLength; i++) {
-        _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
+        _Operation* thisOp = ((_Operation*)(((BaseRef*)theFormula.lData)[i]));
         if (thisOp->theNumber) {
             stack[stackTop++].value = thisOp->theNumber->Value();
             continue;
@@ -1696,34 +1710,50 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
                 if (thisOp->numberOfTerms==2) {
                     _Parameter  (*theFunc) (_Parameter, _Parameter);
                     theFunc = (_Parameter(*)(_Parameter,_Parameter))thisOp->opCode;
-                    if (stackTop<1) {
-                        _String errMsg = "Internal error in _Formula::ComputeSimple - stack underflow.)";
-                        WarnError (errMsg);
+                    if (stackTop<1L) {
+                        WarnError ("Internal error in _Formula::ComputeSimple - stack underflow.)");
                         return 0.0;
                     }
                     stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].value,stack[stackTop].value);
                 } else {
-                    if (thisOp->numberOfTerms==-2) {
+                  switch (thisOp->numberOfTerms) {
+                    case -2 : {
                         _Parameter  (*theFunc) (Ptr,_Parameter);
                         theFunc = (_Parameter(*)(Ptr,_Parameter))thisOp->opCode;
-                        if (stackTop<1) {
-                            _String errMsg = "Internal error in _Formula::ComputeSimple - stack underflow.)";
-                            WarnError (errMsg);
+                        if (stackTop<1L) {
+                            WarnError ("Internal error in _Formula::ComputeSimple - stack underflow.)");
                             return 0.0;
                         }
                         stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].reference,stack[stackTop].value);
-                    } else {
+                        break;
+                      }
+                    case -3 : {
+                      void  (*theFunc) (Ptr,_Parameter,_Parameter);
+                      theFunc = (void(*)(Ptr,_Parameter,_Parameter))thisOp->opCode;
+                      if (stackTop != 2 || i != theFormula.lLength - 1) {
+                        WarnError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)");
+                        
+                        return 0.0;
+                      }
+                      //stackTop = 0;
+                      // value, reference, index
+                      (*theFunc)(stack[1].reference,stack[2].value, stack[0].value);
+                      break;
+                    }
+                    default: {
                         _Parameter  (*theFunc) (_Parameter);
                         theFunc = (_Parameter(*)(_Parameter))thisOp->opCode;
                         stack[stackTop].value = (*theFunc)(stack[stackTop].value);
                         ++stackTop;
                     }
+                  }
+                
                 }
             }
         }
     }
 
-    return stack->value;
+    return stack[0].value;
 }
 
 //__________________________________________________________________________________
