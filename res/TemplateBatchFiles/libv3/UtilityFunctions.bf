@@ -98,15 +98,7 @@ function utility.array1D (m) {
 }
 
 
-function utility.json_spool (json, file) {
-    USE_JSON_FOR_MATRIX = 1;
-    if (Type (file) == "String") {
-        fprintf (file, CLEAR_FILE, json);
-    } else {
-        fprintf (stdout, "\n", json, "\n");
-    }
-    USE_JSON_FOR_MATRIX = 0;
-}
+
 
 
 function utility.isFunction (id) {

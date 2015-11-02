@@ -142,14 +142,6 @@ function selection.io.json_store_lf (json, name, ll, df, ss, time, branch_length
 
 //------------------------------------------------------------------------------------------------------------------------
 
-function selection.json_spool(json, file) {
-    utility.toggleEnvVariable("USE_JSON_FOR_MATRIX", 1);
-    fprintf(file, CLEAR_FILE, json);
-    utility.toggleEnvVariable("USE_JSON_FOR_MATRIX", None);
-}
-
-//------------------------------------------------------------------------------------------------------------------------
-
 function selection.io._aux.extract_branch_info.callback (key, value) {
     selection.io.extract_branch_info_result [key] = utility.callFunction (callback, {"0" : "value"});
 }

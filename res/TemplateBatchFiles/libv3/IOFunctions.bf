@@ -41,13 +41,31 @@ function io.checkAssertion (statement, error_msg) {
     return None;
 }
 
-function io.reportProgressMessage (analysis, text) {
+lfunction io._reportMessageHelper (analysis, text) {
     if (Abs (analysis)) {
-        fprintf (stdout, "[`analysis`] `text` \n");
+        return "[`analysis`] `text`";
     } else {
-        fprintf (stdout, text, "\n");
+        return text;
     }
-    return None;
+}
+
+lfunction io.spool_json (json, file) {
+    utility.toggleEnvVariable ("USE_JSON_FOR_MATRIX", 1);
+    if (Type (file) == "String") {
+        fprintf (file, CLEAR_FILE, json);
+    } else {
+        fprintf (stdout, "\n", json, "\n");
+    }
+    utility.toggleEnvVariable ("USE_JSON_FOR_MATRIX", None);
+}
+
+
+lfunction io.reportProgressMessage (analysis, text) {
+    fprintf (stdout, io._reportMessageHelper (analysis, text), "\n");
+}
+
+function io.reportProgressBar (analysis, text) {
+    SetParameter (STATUS_BAR_STATUS_STRING, io._reportMessageHelper (analysis, text),0);
 }
 
 function io.validate_a_list_of_files (list) {
