@@ -64,6 +64,28 @@ lfunction io.reportProgressMessage (analysis, text) {
     fprintf (stdout, io._reportMessageHelper (analysis, text), "\n");
 }
 
+lfunction io.reportProgressMessageMD (analysis, stage, text) {
+    if (Abs (cache) == 0) {
+        cache = {};
+    }
+    advance = TRUE;
+    if (Abs (cache[analysis])) {
+        if ((cache[analysis])[stage]) {
+            advance = FALSE;
+        }
+        (cache[analysis])[stage] += 1;
+    } else {
+        cache[analysis] = {};
+        (cache[analysis])[stage] = 1;
+    }
+    
+    if (advance) {
+        fprintf (stdout, Abs (cache[analysis]), ". ", text, "\n");
+    } else {
+        fprintf (stdout, "    ", text, "\n");
+    }
+}
+
 function io.reportProgressBar (analysis, text) {
     SetParameter (STATUS_BAR_STATUS_STRING, io._reportMessageHelper (analysis, text),0);
 }
@@ -106,27 +128,27 @@ function io.get_a_list_of_files (filename) {
 
 function io.displayAnalysisBanner (analysis_info) {
     if (io.hasStringKey ("info", analysis_info)) {
-        io.printAndUnderline ("Analysis Description", "=");
+        io.printAndUnderline ("Analysis Description", "-");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["info"], 72), "\n");
     }
     if (io.hasStringKey ("requirements", analysis_info)) {
-        io.printAndUnderline ("Requirements", "=");
+        fprintf (stdout, "\n- __Requirements__: ");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["requirements"], 72), "\n");
     }
     if (io.hasStringKey ("reference", analysis_info)) {
-        io.printAndUnderline ("Citation", "=");
+        fprintf (stdout, "\n- __Citation__: ");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["reference"], 72), "\n");
     }
     if (io.hasStringKey ("authors", analysis_info)) {
-        io.printAndUnderline ("Written by", "=");
+        fprintf (stdout, "\n- __Written by__: ");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["authors"], 72), "\n");
     }   
     if (io.hasStringKey ("contact", analysis_info)) {
-        io.printAndUnderline ("Contact Information", "=");
+        fprintf (stdout, "\n- __Contact Information__: ");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["contact"], 72), "\n");
     }   
     if (io.hasStringKey ("version", analysis_info)) {
-        io.printAndUnderline ("Analysis Version", "=");
+        fprintf (stdout, "\n- __Analysis Version__: ");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["version"], 72), "\n");
     }   
     fprintf (stdout, "\n");

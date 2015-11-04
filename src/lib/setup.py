@@ -57,7 +57,7 @@ setup(
     version = '0.1.1',
     description = 'HyPhy package interface library',
     author = 'Sergei L Kosakovsky Pond',
-    author_email = 'spond@ucsd.edu',
+    author_email = 'spond@temple.edu',
     url = 'http://www.hyphy.org/',
     packages = ['HyPhy'],
     package_dir = {'HyPhy': 'LibraryModules/Python/HyPhy'},

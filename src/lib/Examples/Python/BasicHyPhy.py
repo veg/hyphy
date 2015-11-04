@@ -91,6 +91,7 @@ def retrieveValueByKey (key, returnType,hyphyInstance):
 
 hyphyResult = hyphyInstance.ExecuteBF ("ExecuteAFile(\"../HBL/HKY85.bf\")");
 
+
 print ("Log-L = ", retrieveValueByKey ("LogL", HyPhy.THYPHY_TYPE_NUMBER, hyphyInstance).nValue)
 print ("kappa = ", retrieveValueByKey ("kappa", HyPhy.THYPHY_TYPE_NUMBER, hyphyInstance).nValue)
 print ("tree string = ", retrieveValueByKey ("Tree", HyPhy.THYPHY_TYPE_STRING, hyphyInstance).sData)

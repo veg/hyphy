@@ -602,19 +602,19 @@ void ClearBFFunctionLists (long start_here) {
     batchLanguageFunctionClassification.DeleteList  (delete_me);
     batchLanguageFunctionParameterLists.DeleteList  (delete_me);
     batchLanguageFunctionParameterTypes.DeleteList  (delete_me);
-  } else {
+  } /*else {
     batchLanguageFunctionNames.Clear();
     batchLanguageFunctions.Clear();
     batchLanguageFunctionClassification.Clear();
     batchLanguageFunctionParameterLists.Clear();
     batchLanguageFunctionParameterTypes.Clear();
-  }
+  }*/
 }
 
 //____________________________________________________________________________________
 bool IsBFFunctionIndexValid (long index) {
   if (index >= 0L && index < batchLanguageFunctionNames.countitems()) {
-    return batchLanguageFunctions.Element(index) != nil;
+    return batchLanguageFunctions.GetItem(index) != nil;
   }
   return false;
 }

@@ -63,7 +63,7 @@ io.displayAnalysisBanner({
     for recombination - aware analysis.
     ",
     "version": "2.00",
-    "reference": "Not So Different After All: A Comparison of Methods for Detecting Amino Acid Sites Under Selection (2005). Mol Biol Evol 22 (5): 1208-1222",
+    "reference": "Not So Different After All: A Comparison of Methods for Detecting Amino Acid Sites Under Selection (2005). _Mol Biol Evol_ 22 (5): 1208-1222",
     "authors": "Sergei L Kosakovsky Pond and Simon DW Frost",
     "contact": "spond@temple.edu",
     "requirements": "in-frame codon alignment and a phylogenetic tree"
@@ -78,7 +78,7 @@ slac.sample_size = slac.codon_data_info["sites"] * slac.codon_data_info["sequenc
 slac.codon_data_info["json"] = slac.codon_data_info["file"] + ".slac.json";
 
 
-io.reportProgressMessage("SLAC", "Loaded an MSA with " + slac.codon_data_info["sequences"] + " sequences and " + slac.codon_data_info["sites"] + " codons from '" + slac.codon_data_info["file"] + "'");
+io.reportProgressMessage ("", ">Loaded an MSA with **" + slac.codon_data_info["sequences"] + "** sequences and **" + slac.codon_data_info["sites"] + "** codons from \`" + slac.codon_data_info["file"] + "\`");
 
 slac.codon_frequencies = utility.defineFrequencies("slac.codon_filter");
 slac.tree = utility.loadAnnotatedTopology(1);
@@ -89,16 +89,16 @@ slac.selected_branches = selection.io.defineBranchSets(slac.tree);
 slac.json["tested"] = slac.selected_branches;
 slac.json["tree"] = slac.tree["string"];
 
-io.reportProgressMessage("SLAC", "Selected " + Abs(slac.selected_branches) + " branches to include in SLAC calculations " + Join(",", Rows(slac.selected_branches)));
+io.reportProgressMessageMD("SLAC",  "selector", "Selected " + Abs(slac.selected_branches) + " branches to include in SLAC calculations " + Join(", ", Rows(slac.selected_branches)));
 
 selection.io.startTimer(slac.timers, 1);
 
-io.reportProgressMessage("SLAC", "Obtaining branch lengths under the nucleotide GTR model");
+io.reportProgressMessageMD ("SLAC", "nuc-fit", "Obtaining branch lengths under the nucleotide GTR model");
 slac.gtr_results = estimators.fitGTR("slac.codon_filter", slac.tree, None);
-io.reportProgressMessage("SLAC", "Log(L) = " + slac.gtr_results["LogL"]);
+io.reportProgressMessageMD ("SLAC", "nuc-fit", "Log(L) = " + slac.gtr_results["LogL"]);
 estimators.fixSubsetOfEstimates(slac.gtr_results, slac.gtr_results["global"]);
 
-io.reportProgressMessage("SLAC", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
+io.reportProgressMessageMD("SLAC", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
 
 parameters.declareGlobal(slac.scaler, None);
 parameters.set_value(slac.scaler, 3);
@@ -110,10 +110,10 @@ slac.global_mg_results = estimators.fitMGREV(slac.codon_data_info, slac.tree, {
     },
     "retain-lf-object": TRUE
 }, slac.gtr_results);
-io.reportProgressMessage("SLAC", "Log(L) = " + slac.global_mg_results["LogL"]);
+io.reportProgressMessageMD("SLAC", "codon-fit", "Log(L) = " + Format(slac.global_mg_results["LogL"],8,2));
 
 slac.global_dnds = selection.io.extract_global_MLE(slac.global_mg_results, terms.omega_ratio);
-io.reportProgressMessage("SLAC", "Global dN/dS = " + slac.global_dnds);
+io.reportProgressMessageMD ("SLAC", "codon-fit", "Global dN/dS = " + Format (slac.global_dnds,8,2));
 
 selection.io.stopTimer(slac.timers, 1);
 
@@ -136,7 +136,7 @@ selection.io.json_store_lf(
 );
 
 io.spoolLF (slac.global_mg_results["LF"], slac.codon_data_info["file"], None);
-io.reportProgressMessage("SLAC", "Performing joint maximum likelihood ancestral state reconstruction");
+io.reportProgressMessageMD("SLAC", "anc", "Performing joint maximum likelihood ancestral state reconstruction");
 
 slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE});
 slac.ancestors = ancestral.build (slac.global_mg_results["LF"], 0, None);
@@ -158,7 +158,7 @@ slac.json ["MLE"] = {"headers" : {{"ES", "Expected synonymous sites"}
 
 io.spool_json (slac.json, slac.codon_data_info["json"]);
 
-io.reportProgressMessage("SLAC", "Generating `slac.samples` ancestral sequence samples to obtain confidence intervals");
+io.reportProgressMessageMD ("SLAC", "anc", "Generating `slac.samples` ancestral sequence samples to obtain confidence intervals");
 
 slac.sample.results = {};
 
