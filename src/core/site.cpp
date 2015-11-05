@@ -2391,24 +2391,24 @@ long    _DataSetFilter::FindSpeciesName (_List& s, _SimpleList& r)
     _List           newNames;
     _AVLListX       matched (&newNames);
 
-    for (long k=0; k<theNodeMap.lLength; k++) {
+    for (unsigned long k=0UL; k<theNodeMap.lLength; k++) {
         long i = theNodeMap.lData[k];
         _String * uC = new _String (*(_String*)theData->theNames (i));
         uC->UpCase();
         matched.Insert (uC,i);
     }
 
-    for (long m = 0; m < s.lLength; m++) {
-        _String ts (*((_String*)s(m)));
+    for (unsigned long m = 0UL; m < s.lLength; m++) {
+        _String ts (*(_String*)s.GetItem (m));
         ts.UpCase();
         long f = matched.Find (&ts);
-        if (f>=0) {
+        if (f>=0L) {
             r << matched.GetXtra (f);
         } else {
             break;
         }
     }
-
+    
     return r.lLength;
 }
 

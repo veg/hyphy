@@ -446,14 +446,15 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
 
 void  _SimpleList::Clear (bool completeClear)
 {
-    if (nInstances<=1) {
-        lLength = 0;
+    if (nInstances<=1L) {
+        lLength = 0UL;
         if (completeClear) {
-            laLength = 0;
+            laLength = 0UL;
             if (lData) {
                 free (lData);
+                lData = nil;
             }
-            lData = nil;
+            
         }
     } else {
         nInstances--;
@@ -1397,15 +1398,13 @@ BaseRef _SimpleList::toStr(void)
 
         _String * s = new _String (10L, true);
 
-        checkPointer (s);
-
         (*s) << "{";
 
-        for (unsigned long i = 0; i<lLength; i++) {
-            char c[32];
-            snprintf (c, sizeof(c),"%ld",((long*)lData)[i]),
-                    (*s) << c;
-            if (i<lLength-1) {
+        char c[32];
+        for (unsigned long i = 0UL; i<lLength; i++) {
+            snprintf (c, sizeof(c),"%ld",lData[i]);
+            (*s) << c;
+            if (i<lLength-1L) {
                 (*s) << ',';
             }
         }

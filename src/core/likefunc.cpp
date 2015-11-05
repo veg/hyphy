@@ -548,16 +548,15 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
 
     while (travNode) {
         if (t->IsCurrentNodeATip()) {
-            _String tipName (travNode->GetName()->Cut(travNode->GetName()->FindBackwards('.',0,-1)+1,-1));
-            tips&& &tipName;
+            tips.AppendNewInstance (new _String (travNode->ContextFreeName ()));
         }
         if (!t->IsCurrentNodeTheRoot()) {
             if (travNode->GetModelIndex () == HY_NO_MODEL) {
-                WarnError (_String ("Model is not associated with the node:") & *travNode->GetName());
+                WarnError (_String ("Model is not associated with the node:") & travNode->ContextFreeName());
                 return false;
             } else if (travNode->GetModelDimension() != dfDim) {
                 _String warnMsg ("The dimension of the transition matrix at node ");
-                warnMsg = warnMsg&travNode->GetName()->Cut(travNode->GetName()->FindBackwards('.',0,-1)+1,-1)
+                warnMsg = warnMsg & travNode->ContextFreeName ()
                           &" is not equal to the state count in the data filter associated with the tree.";
                 WarnError (warnMsg);
                 return false;
@@ -583,36 +582,39 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
 
         j = df->FindSpeciesName (tips, tipMatches);
 
-        if (j!=tips.lLength) { // try numeric match
+        if (j != tips.lLength) { // try numeric match
             _Parameter      doNum = 0.0;
             checkParameter (tryNumericSequenceMatch, doNum, 0.0);
             if (doNum>0.5) {
-                long sj = j;
+            
+                try {
+                    tipMatches.Clear();
                 
-                for (j=0; j<tips.lLength; j++) {
-                    _String *thisName = (_String*)tips(j);
-                    k = atoi (thisName->sData);
-                    _String tryAgain (k);
-                    if (tryAgain.Equal(thisName) && k<=tips.lLength) {
-                        tipMatches<<k;
-                    } else {
-                        break;
-                    }
-                }
-                
-                if (j==tips.lLength) {
-                    if (tipMatches.Find(0)==-1) // map to indexing from 0
-                        tipMatches.Offset (-1);
-
-                    _SimpleList *dfMap = (_SimpleList*)df->GetMap();
                     
-                    if (dfMap) {
-                        for (sj = 0; sj < tips.lLength; sj++) {
-                            tipMatches.lData[sj] = dfMap->lData[tipMatches.lData[sj]];
+                    for (j=0L; j<tips.lLength; j++) {
+                        _String *thisName = (_String*)tips(j);
+                        long numeric_value = atol (thisName->sData);
+                        if (numeric_value<=tips.lLength && numeric_value >= 0L && _String(numeric_value).Equal(thisName)) {
+                            tipMatches<<numeric_value;
+                        } else {
+                            throw (j);
                         }
                     }
-                } else {
-                    j=sj;
+                
+                    if (j==tips.lLength) {
+                        if (tipMatches.Find(0L) < 0) // map to indexing from 0
+                            tipMatches.Offset (-1L);
+
+                        _SimpleList *dfMap = (_SimpleList*)df->GetMap();
+                    
+                        if (dfMap) {
+                            for (unsigned long k = 0UL; k < tips.lLength; k++) {
+                                tipMatches.lData[k] = dfMap->lData[tipMatches.lData[k]];
+                            }
+                        }
+                    } 
+                } catch (unsigned long i) {
+                    j = -1L;
                 }
             }
         }
@@ -624,7 +626,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
 
             _SimpleList * currentMap = (_SimpleList *)df->GetMap();
             if (! currentMap || ! currentMap->Equal (tipMatches)) {
-                for (long lfID = 0; lfID < likeFuncList.lLength; lfID++) {
+                for (unsigned long lfID = 0UL; lfID < likeFuncList.lLength; lfID++) {
                     _LikelihoodFunction* lfp = (_LikelihoodFunction*)likeFuncList(lfID);
                     if (lfp && lfp != this && lfp->DependOnDF (theDataFilters.lData[f])) {
                         WarnError (_String ("Cannot reuse the filter '") & _HBLObjectNameByType (HY_BL_DATASET_FILTER, theDataFilters.lData[f], false) &
@@ -637,7 +639,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
                 }
                 df->SetMap(tipMatches);
             }
-            ReportWarning (_String ("The tips of the tree:") & *t->GetName() &" were matched with the species names from the data as follows "& _String ((_String*)tipMatches.toStr()));
+            ReportWarning (_String ("The tips of the tree:") & *t->GetName() &" were matched with the species names from the data in the following numeric order (0-based) "& _String ((_String*)tipMatches.toStr()));
         } else {
             _String warnMsg = _String ("The leaf of the tree:") & *t->GetName() &" labeled " &*(_String*)tips(j)
                               &" had no match in the data. Please make sure that all leaf names correspond to a sequence name in the data file.";
