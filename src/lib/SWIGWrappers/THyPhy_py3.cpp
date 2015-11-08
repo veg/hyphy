@@ -5632,6 +5632,13 @@ static PyHeapTypeObject SwigPyBuiltin___THyPhyReturnObject_type = {
     (int) 0,                                  /* tp_version_tag */
 #endif
   },
+#if PY_VERSION_HEX >= 0x03050000
+  {
+    (unaryfunc) 0,                            /* am_await */
+    (unaryfunc) 0,                            /* am_aiter */
+    (unaryfunc) 0,                            /* am_anext */
+  },
+#endif
   {
     (binaryfunc) 0,                           /* nb_add */
     (binaryfunc) 0,                           /* nb_subtract */
@@ -5830,6 +5837,13 @@ static PyHeapTypeObject SwigPyBuiltin___THyPhyString_type = {
     (int) 0,                                  /* tp_version_tag */
 #endif
   },
+#if PY_VERSION_HEX >= 0x03050000
+  {
+    (unaryfunc) 0,                            /* am_await */
+    (unaryfunc) 0,                            /* am_aiter */
+    (unaryfunc) 0,                            /* am_anext */
+  },
+#endif
   {
     (binaryfunc) 0,                           /* nb_add */
     (binaryfunc) 0,                           /* nb_subtract */
@@ -6025,6 +6039,13 @@ static PyHeapTypeObject SwigPyBuiltin___THyPhyNumber_type = {
     (int) 0,                                  /* tp_version_tag */
 #endif
   },
+#if PY_VERSION_HEX >= 0x03050000
+  {
+    (unaryfunc) 0,                            /* am_await */
+    (unaryfunc) 0,                            /* am_aiter */
+    (unaryfunc) 0,                            /* am_anext */
+  },
+#endif
   {
     (binaryfunc) 0,                           /* nb_add */
     (binaryfunc) 0,                           /* nb_subtract */
@@ -6227,6 +6248,13 @@ static PyHeapTypeObject SwigPyBuiltin___THyPhyMatrix_type = {
     (int) 0,                                  /* tp_version_tag */
 #endif
   },
+#if PY_VERSION_HEX >= 0x03050000
+  {
+    (unaryfunc) 0,                            /* am_await */
+    (unaryfunc) 0,                            /* am_aiter */
+    (unaryfunc) 0,                            /* am_anext */
+  },
+#endif
   {
     (binaryfunc) 0,                           /* nb_add */
     (binaryfunc) 0,                           /* nb_subtract */
@@ -6433,6 +6461,13 @@ static PyHeapTypeObject SwigPyBuiltin___THyPhy_type = {
     (int) 0,                                  /* tp_version_tag */
 #endif
   },
+#if PY_VERSION_HEX >= 0x03050000
+  {
+    (unaryfunc) 0,                            /* am_await */
+    (unaryfunc) 0,                            /* am_aiter */
+    (unaryfunc) 0,                            /* am_anext */
+  },
+#endif
   {
     (binaryfunc) 0,                           /* nb_add */
     (binaryfunc) 0,                           /* nb_subtract */
