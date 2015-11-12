@@ -162,6 +162,49 @@ FILE *      doFileOpen (const char * fileName, const char * mode, bool warn)
     return daFile;
 }
 
+void    InitializeGlobals (void) {
+  _hyApplicationGlobals.Insert(new _String (dataFileTree));
+  _hyApplicationGlobals.Insert(new _String (dataFileTreeString));
+  _hyApplicationGlobals.Insert(new _String (siteWiseMatrix));
+  _hyApplicationGlobals.Insert(new _String (blockWiseMatrix));
+  _hyApplicationGlobals.Insert(new _String (selectionStrings));
+  _hyApplicationGlobals.Insert(new _String (randomSeed));
+  _hyApplicationGlobals.Insert(new _String (statusBarUpdateString));
+  _hyApplicationGlobals.Insert(new _String (statusBarProgressValue));
+  _hyApplicationGlobals.Insert(new _String (hyphyBaseDirectory));
+  _hyApplicationGlobals.Insert(new _String (hyphyLibDirectory));
+  _hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
+  _hyApplicationGlobals.Insert(new _String (pathToCurrentBF));
+  _hyApplicationGlobals.Insert(new _String (_hy_TRUE));
+  _hyApplicationGlobals.Insert(new _String (_hy_FALSE));
+  _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_VALUE_"));
+  _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_ROW_"));
+  _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_COLUMN_"));
+  
+  _String             dd (GetPlatformDirectoryChar());
+  
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd));
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "UserAddIns" & dd));
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
+  
+  standardLibraryExtensions.AppendNewInstance (new _String (""));
+  standardLibraryExtensions.AppendNewInstance (new _String (".bf"));
+  standardLibraryExtensions.AppendNewInstance (new _String (".ibf"));
+  standardLibraryExtensions.AppendNewInstance (new _String (".def"));
+  standardLibraryExtensions.AppendNewInstance (new _String (".mdl"));
+  
+  _HBL_Init_Const_Arrays  ();
+  
+  CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.), false);
+  CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.), false);
+  setParameter        (platformDirectorySeparator, new _FString (dd, false), false); // these should be set globally?
+  setParameter        (hyphyBaseDirectory, new _FString (baseDirectory, false), false);
+  setParameter        (hyphyLibDirectory, new _FString (libDirectory, false), false);
+  
+
+}
 
 //____________________________________________________________________________________
 bool    GlobalStartup (void)
@@ -188,49 +231,13 @@ bool    GlobalStartup (void)
     init_genrand            (seed_init);
     globalRandSeed          = seed_init;
     setParameter            (randomSeed,globalRandSeed);
-    long                    p   = 1;
 
-    _hyApplicationGlobals.Insert(new _String (dataFileTree));
-    _hyApplicationGlobals.Insert(new _String (dataFileTreeString));
-    _hyApplicationGlobals.Insert(new _String (siteWiseMatrix));
-    _hyApplicationGlobals.Insert(new _String (blockWiseMatrix));
-    _hyApplicationGlobals.Insert(new _String (selectionStrings));
-    _hyApplicationGlobals.Insert(new _String (randomSeed));
-    _hyApplicationGlobals.Insert(new _String (statusBarUpdateString));
-    _hyApplicationGlobals.Insert(new _String (statusBarProgressValue));
-    _hyApplicationGlobals.Insert(new _String (hyphyBaseDirectory));
-    _hyApplicationGlobals.Insert(new _String (hyphyLibDirectory));
-    _hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
-    _hyApplicationGlobals.Insert(new _String (pathToCurrentBF));
-    _hyApplicationGlobals.Insert(new _String (_hy_TRUE));
-    _hyApplicationGlobals.Insert(new _String (_hy_FALSE));
-    _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_VALUE_"));
-    _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_ROW_"));
-    _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_COLUMN_"));
-
-    _String             dd (GetPlatformDirectoryChar());
-
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "UserAddIns" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
-
-    standardLibraryExtensions.AppendNewInstance (new _String (""));
-    standardLibraryExtensions.AppendNewInstance (new _String (".bf"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".ibf"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".def"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".mdl"));
-
-    _HBL_Init_Const_Arrays  ();
-  
-    CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.), false);
-    CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.), false);
-
+    InitializeGlobals();
 
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
     if (_hy_mpi_node_rank == 0) {
 #endif
+      long                    p   = 1;
 
 
 
@@ -281,10 +288,6 @@ bool    GlobalStartup (void)
     }
 #endif
   
-  setParameter        (platformDirectorySeparator, new _FString (dd, false), false); // these should be set globally?
-  setParameter        (hyphyBaseDirectory, new _FString (baseDirectory, false), false);
-  setParameter        (hyphyLibDirectory, new _FString (libDirectory, false), false);
-
 
   return globalErrorFile && globalMessageFile;
 }

@@ -293,6 +293,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
             if (keepState < 0.5) {
                 PurgeAll (true);
+                InitializeGlobals ();
                 pathNames && & baseDir;
             }
         }

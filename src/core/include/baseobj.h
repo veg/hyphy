@@ -130,6 +130,7 @@ char*   MemReallocate (Ptr, long);
 #endif
 
 bool    GlobalStartup();
+void    InitializeGlobals ();
 bool    GlobalShutdown();
 
 
