@@ -626,9 +626,7 @@ long _SimpleList::Element(long index) const
 
 bool _SimpleList::Equal(_SimpleList const& l2) const
 {
-    if (lLength == l2.lLength) {
-        return false;
-      
+    if (lLength == l2.lLength) {      
       for (unsigned long i=0UL; i<lLength; i++)
           if (lData[i] != l2.lData[i]) {
               return false;
