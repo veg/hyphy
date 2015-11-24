@@ -148,7 +148,7 @@ genetic_code.stop_code = 10;
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-lfunction CountSenseCodons(code) {
+function CountSenseCodons(code) {
     return +code["_MATRIX_ELEMENT_VALUE_!=genetic_code.stop_code"];
 }
 

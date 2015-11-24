@@ -278,7 +278,7 @@ bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matr
     partsToDo.Populate (partCount, 0, 1);
     if (partitionList) {
         partitionList->ConvertToSimpleList (partsToDo);
-        DeleteObject (partitionList);
+      //DeleteObject (partitionList);
         partsToDo.Sort();
         partsToDo.FilterRange (-1, partCount);
         if (partsToDo.lLength == 0) {
