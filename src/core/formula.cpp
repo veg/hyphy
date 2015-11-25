@@ -2029,10 +2029,11 @@ void _Formula::PushTerm (BaseRef object) {
 //__________________________________________________________________________________
 void _Formula::SimplifyConstants (void)
 {
+    bool did_something = false;
     theStack.theStack.Clear();
     for (unsigned long i = 0; i<theFormula.countitems(); i++) {
         long j;
-        _Operation* thisOp = ((_Operation*)((BaseRef**)theFormula.lData)[i]);
+        _Operation* thisOp = (_Operation*)theFormula.GetItem(i);
         if ((thisOp->theData==-1)&&(thisOp->opCode>=0)&&(thisOp->numberOfTerms)) {
             long nt = thisOp->numberOfTerms;
             if (nt<0) {
@@ -2040,7 +2041,7 @@ void _Formula::SimplifyConstants (void)
             }
 
             for (j = 1; j<=nt; j++) {
-                _Operation*  aTerm = ((_Operation*)((BaseRef**)theFormula.lData)[i-j]);
+                _Operation*  aTerm = (_Operation*)theFormula.GetItem(i-j);
                 if ((aTerm->IsAVariable())||(aTerm->opCode>=0)) {
                     break;
                 }
@@ -2061,23 +2062,27 @@ void _Formula::SimplifyConstants (void)
                 i = n+1;
                 theStack.theStack.Clear();
                 thisOp->nInstances--;
+                did_something = true;
             } else {
                 if (thisOp->numberOfTerms == 2 &&
                         (thisOp->opCode==HY_OP_CODE_MUL||thisOp->opCode==HY_OP_CODE_DIV||thisOp->opCode==HY_OP_CODE_POWER))
                     // *,/,^ 1 can be removed
                 {
-                    _Operation*  aTerm = ((_Operation*)((BaseRef**)theFormula.lData)[i-1]);
+                    _Operation*  aTerm = (_Operation*)theFormula.GetItem(i-1);
                     if (!((aTerm->IsAVariable())||(aTerm->opCode>=0))) {
                         if (aTerm->theNumber->ObjectClass()==NUMBER && aTerm->theNumber->Value() == 1.) {
                             theFormula.Delete (i);
                             theFormula.Delete (i-1);
                             i--;
+                            did_something = true;
                         }
                     }
                 }
             }
         }
     }
+    if (did_something)
+      SimplifyConstants();
 }
 
 //__________________________________________________________________________________

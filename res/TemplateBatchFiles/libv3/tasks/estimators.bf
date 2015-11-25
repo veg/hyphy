@@ -136,6 +136,8 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
     estimators.applyExistingEstimates.df_correction = 0;
 
     for (estimators.applyExistingEstimates.i = 0; estimators.applyExistingEstimates.i < estimators.applyExistingEstimates.partitions; estimators.applyExistingEstimates.i += 1) {
+        
+        
         if (Type((initial_values["branch lengths"])[estimators.applyExistingEstimates.i]) == "AssociativeList") {
 
             _tree_name = (estimators.applyExistingEstimates.lfInfo["Trees"])[estimators.applyExistingEstimates.i];
@@ -275,6 +277,7 @@ function estimators.fitMGREV.set_partition_omega(key, value) {
 
 function estimators.fitMGREV(codon_data, tree, option, initial_values) {
 
+
     estimators.fitMGREV.filter = codon_data["dataset"];
     estimators.fitMGREV.partitioned_omega = 0;
 
@@ -298,7 +301,7 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
             estimators.fitMGREV.partitioned_omega = 1;
         }
     }
-
+    
     LikelihoodFunction estimators.fitMGREV.likelihoodFunction = (estimators.fitMGREV.codon_data, estimators.fitMGREV.tree);
 
     if (estimators.fitMGREV.partitioned_omega) {
@@ -330,6 +333,8 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
     }
 
     // io.spoolLF ("estimators.fitMGREV.likelihoodFunction", "/Volumes/home-raid/Desktop/test", None);
+    
+    
     Optimize(estimators.fitMGREV.mles, estimators.fitMGREV.likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
@@ -348,11 +353,6 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
     } else {
         DeleteObject(estimators.fitMGREV.likelihoodFunction);
     }
-    
-    
-
-    //io.spoolLF ("estimators.fitMGREV.likelihoodFunction", "/Volumes/sergei-raid/Desktop/test", None);
-
 
     return estimators.fitMGREV.results;
 }

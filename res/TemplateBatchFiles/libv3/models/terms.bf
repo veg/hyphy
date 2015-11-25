@@ -38,6 +38,7 @@ terms.rate_variation.gamma_p_inv = "Estimated proportion of invariant sites";
 
 terms.branch_length = "branch length";
 terms.branch_length_scaler = "branch length scaler";
+terms.branch_length_constrain = "branch length constrain";
 
 function terms.nucleotideRate(fromC, toC) {
     return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;

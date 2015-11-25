@@ -65,6 +65,19 @@ lfunction utility.partition_tree (avl, l) {
 function utility.loadAnnotatedTopology (look_for_newick_tree) {
     tree_string = io.getTreeString(look_for_newick_tree);
     Topology     T = tree_string;
+    
+    utility.loadAnnotatedTopology.branch_lengths = BranchLength (T, -1);
+    utility.loadAnnotatedTopology.branch_names    = BranchName (T, -1);
+    
+    utility.loadAnnotatedTopology.bls            = {};
+    
+    for (utility.loadAnnotatedTopology.k = 0; utility.loadAnnotatedTopology.k < Columns (utility.loadAnnotatedTopology.branch_names) - 1; utility.loadAnnotatedTopology.k += 1) {
+        if (utility.loadAnnotatedTopology.branch_lengths[utility.loadAnnotatedTopology.k] >= 0.) {
+            utility.loadAnnotatedTopology.bls [utility.loadAnnotatedTopology.branch_names[utility.loadAnnotatedTopology.k]] = 
+               utility.loadAnnotatedTopology.branch_lengths[utility.loadAnnotatedTopology.k]; 
+        }
+    }
+    
     GetInformation (modelMap, T);
     
     leaves_internals    = {};
@@ -76,6 +89,7 @@ function utility.loadAnnotatedTopology (look_for_newick_tree) {
     utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", None);
     
     return {"string"     : Format (T,1,0),
+            "branch_lengths" :  utility.loadAnnotatedTopology.bls,
             "annotated_string" : T.str ,
             "model_map"  : modelMap,
             "partitioned" : leaves_internals,

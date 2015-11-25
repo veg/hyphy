@@ -103,7 +103,7 @@ function models.generic.post.definition  (model) {
         ExecuteCommands ("GetString (models.generic.post.definition.bl,"+model ["id"]+",-1)");
         model ["branch-length-string"] = models.generic.post.definition.bl; 
     }
-     return model;
+    return model;
 }
 
 //------------------------------------------------------------------------------ 
@@ -126,15 +126,7 @@ function models.generic.set_branch_length (model, value, parameter) {
     return 0;
 }
 
-//------------------------------------------------------------------------------ 
 
-function models.generic.post.definition  (model) {
-    if (Type (model ["id"]) == "String") {
-        ExecuteCommands ("GetString (models.generic.post.definition.bl,"+model ["id"]+",-1)");
-        model ["branch-length-string"] = models.generic.post.definition.bl; 
-    }
-     return model;
-}
 
 //------------------------------------------------------------------------------ 
 
