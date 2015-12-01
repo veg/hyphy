@@ -86,28 +86,29 @@ node<node_data>* StepWiseTraverser (node<node_data>* root)
 //-------------------------------------------------------------
 
 template <class node_data>
-node<node_data>* DepthWiseStepTraverser  (node<node_data>* root)
+node<node_data>* DepthWiseStepTraverser  (node<node_data>* root,
+                                          node<node_data>** state)
 {
 	static node<node_data>* laststep;
-	node<node_data>* curstep, *crashdummy;
+	node<node_data>* curstep,
+      * crashdummy,
+      * state_holder = state ? *state : laststep;
 		
-	if (root)
-	{
-		laststep = root;
-		while ((crashdummy = laststep->go_down(1))) laststep = crashdummy;
-		return laststep;
+	if (root) {
+		state_holder = root;
+		while ((crashdummy = state_holder->go_down(1))) state_holder = crashdummy;
+		return state_holder;
 	}
 	
-	curstep = laststep;
+	curstep = state_holder;
 	crashdummy = curstep->go_next();
-	if (crashdummy)
-	{
+	if (crashdummy) {
 		curstep=crashdummy;
 		while ((crashdummy = curstep->go_down(1))) curstep = crashdummy;
-		return laststep = curstep;
+		return state_holder = curstep;
 	}
 	curstep=curstep->go_up();
-	laststep = curstep;
+	state_holder = curstep;
 	return curstep;
 }
 

@@ -223,9 +223,8 @@ _Formula* _Formula::Differentiate (_String varName, bool bail)
     varID = variableNames.GetXtra (varID);
 
     _Formula*     res = new _Formula ();
-    checkPointer  (res);
-
-    ConvertToTree    ();
+ 
+     ConvertToTree    ();
 
     _SimpleList  varRefs,
                  dydx;
@@ -303,7 +302,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 
     _PMathObj   newVal      = nil;
 
-    _Operation* op = (_Operation*)theFormula (startNode->get_data());
+    _Operation* op = GetIthTerm(startNode->get_data());
 
     if  (numChildren == 0) {
         return !op->IsAVariable();
@@ -2027,62 +2026,10 @@ void _Formula::PushTerm (BaseRef object) {
 }
 
 //__________________________________________________________________________________
-void _Formula::SimplifyConstants (void)
-{
-    bool did_something = false;
-    theStack.theStack.Clear();
-    for (unsigned long i = 0; i<theFormula.countitems(); i++) {
-        long j;
-        _Operation* thisOp = (_Operation*)theFormula.GetItem(i);
-        if ((thisOp->theData==-1)&&(thisOp->opCode>=0)&&(thisOp->numberOfTerms)) {
-            long nt = thisOp->numberOfTerms;
-            if (nt<0) {
-                nt = GetBFFunctionArgumentCount (-nt-1);
-            }
-
-            for (j = 1; j<=nt; j++) {
-                _Operation*  aTerm = (_Operation*)theFormula.GetItem(i-j);
-                if ((aTerm->IsAVariable())||(aTerm->opCode>=0)) {
-                    break;
-                }
-            }
-
-            if (j>nt)
-                // all terms are constant -> Evaluate
-            {
-                for (j=i-thisOp->numberOfTerms; j<=i; j++) {
-                    ((_Operation*)((BaseRef**)theFormula.lData)[j])->Execute(theStack);
-                }
-                long n = i-thisOp->numberOfTerms;
-                thisOp = new _Operation (theStack.Pop());
-                for (j=n; j<=i; j++) {
-                    theFormula.Delete (n);
-                }
-                theFormula.InsertElement (thisOp,n,false);
-                i = n+1;
-                theStack.theStack.Clear();
-                thisOp->nInstances--;
-                did_something = true;
-            } else {
-                if (thisOp->numberOfTerms == 2 &&
-                        (thisOp->opCode==HY_OP_CODE_MUL||thisOp->opCode==HY_OP_CODE_DIV||thisOp->opCode==HY_OP_CODE_POWER))
-                    // *,/,^ 1 can be removed
-                {
-                    _Operation*  aTerm = (_Operation*)theFormula.GetItem(i-1);
-                    if (!((aTerm->IsAVariable())||(aTerm->opCode>=0))) {
-                        if (aTerm->theNumber->ObjectClass()==NUMBER && aTerm->theNumber->Value() == 1.) {
-                            theFormula.Delete (i);
-                            theFormula.Delete (i-1);
-                            i--;
-                            did_something = true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if (did_something)
-      SimplifyConstants();
+void _Formula::SimplifyConstants (void){
+  ConvertToTree    ();
+  //InternalSimplify (theTree);
+  ConvertFromTree ();
 }
 
 //__________________________________________________________________________________
@@ -2140,21 +2087,22 @@ _Formula::_Formula (_String&s, _VariableContainer* theParent, _String* reportErr
 //__________________________________________________________________________________
 void    _Formula::ConvertToTree (bool err_msg)
 {
-    if (!theTree&&theFormula.lLength) { // work to do
+    if (!theTree && theFormula.lLength) { // work to do
         _SimpleList nodeStack;
-        
         _Operation* currentOp;
-        for (unsigned long i=0; i<theFormula.lLength; i++) {
-            currentOp = (_Operation*)theFormula(i);
-            if (currentOp->TheCode()<0) { // a data bit
+      
+        for (unsigned long i=0UL; i<theFormula.lLength; i++) {
+          
+            currentOp = GetIthTerm(i);
+          
+            if (currentOp->theNumber || currentOp->theData >= 0L || currentOp->theData < -2L) { // a data bit
                 node<long>* leafNode = new node<long>;
-                checkPointer(leafNode);
                 leafNode->init(i);
                 nodeStack<<(long)leafNode;
             } else { // an operation
                 long nTerms = currentOp->GetNoTerms();
                 if (nTerms<0L) {
-                    nTerms = GetBFFunctionArgumentCount(-nTerms-1L);
+                    nTerms = GetBFFunctionArgumentCount(currentOp->opCode);
                 }
 
                 if (nTerms>nodeStack.lLength) {
@@ -2166,11 +2114,9 @@ void    _Formula::ConvertToTree (bool err_msg)
                 }
 
                 node<long>* operationNode = new node<long>;
-                checkPointer(operationNode);
                 operationNode->init(i);
                 for (long j=0; j<nTerms; j++) {
-                    operationNode->prepend_node(*((node<long>*)nodeStack(nodeStack.lLength-1)));
-                    nodeStack.Delete(nodeStack.lLength-1);
+                    operationNode->prepend_node(*((node<long>*)nodeStack.Pop()));
                 }
                 nodeStack<<(long)operationNode;
             }
@@ -2180,7 +2126,6 @@ void    _Formula::ConvertToTree (bool err_msg)
                 WarnError ((_String)"The expression '" & _String ((_String*)toStr()) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
             }
             theTree = nil;
-            return;
         } else {
             theTree = (node<long>*)nodeStack(0);
         }
@@ -2191,10 +2136,10 @@ void    _Formula::ConvertFromTree (void)
 {
     if (theTree) { // work to do
         _SimpleList termOrder;
-        node<long>* currentNode = DepthWiseStepTraverser (theTree);
+        node<long>* state, * currentNode = DepthWiseStepTraverser (theTree, &state);
         while (currentNode) {
             termOrder<<currentNode->get_data();
-            currentNode = DepthWiseStepTraverser ((node<long>*)nil);
+            currentNode = DepthWiseStepTraverser ((node<long>*)nil, &state);
         }
         if (termOrder.lLength!=theFormula.lLength) { // something has changed
             _List newFormula;
@@ -2203,11 +2148,11 @@ void    _Formula::ConvertFromTree (void)
             }
             theFormula.Clear();
             theFormula.Duplicate(&newFormula);
-            theTree->delete_tree();
-            delete (theTree);
-            theTree = nil;
-            ConvertToTree();
+            //ConvertToTree();
         }
+        theTree->delete_tree();
+        delete (theTree);
+        theTree = nil;
     }
 }
 

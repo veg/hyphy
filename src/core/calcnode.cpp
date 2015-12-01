@@ -4367,7 +4367,6 @@ _PMathObj _TreeTopology::TreeBranchName (_PMathObj p, bool subtree, _PMathObj p2
                     _String       bs;   //(travNode->GetName()->Cut(cutAt,-1));
                     GetNodeName  (currentNode, bs);
                     _FString*     bName = new _FString (bs);
-                    checkPointer (bName);
                     _Formula      bNamef (bName,false);
 
                     branchLengths->StoreFormula (0,count++,bNamef);

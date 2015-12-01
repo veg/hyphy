@@ -169,7 +169,7 @@ public:
 template <class node_data>  node<node_data>* StepWiseTraverser              (node<node_data>* root);
 template <class node_data>  node<node_data>* StepWiseTraverserLevel         (node_data& level, node<node_data>* root);
 //template <class array_data> node<node_data>* DepthWiseTraverserLevel      (node_data& level, node<node_data>* root);
-template <class node_data> node<node_data>* DepthWiseStepTraverser      (node<node_data>* root);
+template <class node_data> node<node_data>* DepthWiseStepTraverser      (node<node_data>* root, node<node_data>** state = nil);
 template <class node_data> node<node_data>* DepthWiseStepTraverserRight     (node<node_data>* root);
 template <class node_data> long             NodePathTraverser               (_SimpleList& history, node<node_data>* root);
 template <class node_data> node<node_data>* DepthWiseStepTraverserWCount    (long& costCount, node<node_data>* root);
