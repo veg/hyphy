@@ -162,7 +162,7 @@ class _SimpleList:public BaseObj
         * @return -1 if i<j, 0 if i==j, or 1 if i>j 
         */
         virtual long Compare(long,long);
-        virtual long Compare(BaseRef,long);
+        virtual long Compare(BaseObj const*,long);
 
         long CountCommonElements(_SimpleList&, bool=false);
 

@@ -86,8 +86,7 @@ _FString::_FString (long inData)
 }
 
 //__________________________________________________________________________________
-_FString::_FString (_String& data, bool meta)
-{
+_FString::_FString (_String const& data, bool meta) {
     if (meta) {
         unsigned long ssi = _String::storageIncrement;
 
@@ -458,11 +457,9 @@ BaseRef  _FString::toStr()
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::RerootTree (_PMathObj where)
-{
-    long     stashedModelID = lastMatrixDeclared,
-             totalNodeCount = 0;
-
+_PMathObj _FString::RerootTree (_PMathObj) {
+  
+    long     stashedModelID = lastMatrixDeclared;
     lastMatrixDeclared      = HY_NO_MODEL;
     /* unset current model; do not want the internal tree to have an attached model */
 
@@ -479,86 +476,55 @@ _PMathObj _FString::RerootTree (_PMathObj where)
         DeleteVariable  (internalRerootTreeID);
         return new _FString;
     }
+  
 
-    _CalcNode   *iterator = rTree.DepthWiseTraversal (true),
-                *rerootAt = nil;
+    _CalcNode   *rerootAt = nil;
+  
+    node<long>* counted_descendants = rTree.theRoot->duplicate_tree(node_count_descendants);
 
-    node<long>  *cNode;
-
-    _GrowingVector  valueCache;
-
-    while       (iterator)
-        // count the number of descendants of a given node, store as numeric value of the CalcNode
-    {
-        cNode    = &rTree.GetCurrentNode();
-        valueCache.Store(iterator->Value());
-        if (long myNodeCount = cNode->get_num_nodes()) {
-            _Parameter tNodeCount = 0.0;
-
-            for (long k = 1; k <= myNodeCount; k++) {
-                tNodeCount += ((_CalcNode*)LocateVar(cNode->go_down(k)->in_object))->Value();
-            }
-
-            iterator->SetNumericValue(tNodeCount+1.0);
-        } else {
-            iterator->SetNumericValue(1.0);
-        }
-
-        iterator = rTree.DepthWiseTraversal (false);
-        totalNodeCount ++;
-    }
-
-    iterator = rTree.DepthWiseTraversal (true);
-
-    long        maxMin = 0;
+    long        maxMin         = 0L,
+                totalNodeCount = counted_descendants->in_object + 1L;
+  
     _Parameter  bRatio  = 0.0;
+  
+    node_iterator<long> ni (counted_descendants, _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (&rTree, _HY_TREE_TRAVERSAL_POSTORDER);
 
-    while       (iterator) {
-        _Parameter      nodeMin   = totalNodeCount-iterator->Value(),
-                        thisRatio = nodeMin/(_Parameter)iterator->Value();
+    while       (_CalcNode * iterator = ti.Next()) {
+        node<long>* counter_tree = ni.Next();
+        long      nodeMin    = totalNodeCount-counter_tree->in_object-1L;
+        _Parameter thisRatio = nodeMin/(1L+counter_tree->in_object);
 
         if (thisRatio>1.0) {
-            thisRatio = 1./thisRatio;
+            thisRatio = 1.0/thisRatio;
         }
 
-        cNode    = &rTree.GetCurrentNode();
-        if (cNode->get_num_nodes()) {
-            for (long k = cNode->get_num_nodes(); k; k--) {
-                long tt = ((_CalcNode*)LocateVar(cNode->go_down(k)->in_object))->Value();
-                if (tt<nodeMin) {
-                    nodeMin = tt;
-                }
-            }
+        if (counter_tree->is_leaf()) {
+          nodeMin = 1L;
         } else {
-            nodeMin = 1;
+            for (int k = counter_tree->get_num_nodes(); k; k--) {
+              long tt = counter_tree->go_down(k)->in_object;
+              if (tt<nodeMin) {
+                nodeMin = tt;
+              }
+            }
         }
 
         if (nodeMin>maxMin || (nodeMin==maxMin && thisRatio>bRatio)) {
             bRatio = thisRatio;
             maxMin = nodeMin;
             rerootAt = iterator;
-            if (!cNode->get_parent()) {
+            if (counter_tree->is_root()) {
                 rerootAt = nil;
             }
         }
-        iterator = rTree.DepthWiseTraversal (false);
     }
-
-    iterator        = rTree.DepthWiseTraversal (true);
-    totalNodeCount  = 0;
-    while       (iterator)
-        // restore branch lengths
-    {
-        iterator->SetNumericValue(valueCache.theData[totalNodeCount]);
-        iterator = rTree.DepthWiseTraversal (false);
-        totalNodeCount ++;
-    }
+  
+    counted_descendants->delete_tree(true);
 
     _FString* res;
     if (rerootAt) {
-        _String stringCopy = *rerootAt->GetName();
-        stringCopy.Trim (stringCopy.FindBackwards ('.',0,-1)+1,-1);
-        _FString    rAt  (stringCopy);
+        _FString    rAt  (rerootAt->ContextFreeName());
         res = (_FString*)rTree.RerootTree (&rAt);
     } else {
         res = new _FString (*theString, false);

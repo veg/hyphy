@@ -6118,10 +6118,8 @@ void    _HYTreePanel::HandleTreeSave (long c, _String filePath)
                             fprintf (theFile,",");
                         }
                         _String * rmp = new _String (nodeCounter++),
-                        *nname = new _String;
-                        checkPointer (nname);
-                        checkPointer (rmp);
-                        me->GetNodeName (&me->GetCurrentNode(),*nname,false);
+                        *nname = new _String (me->GetCurrentNode());
+  
                         nodeRemap.Insert (nname,(long)rmp);
                         fprintf (theFile,"\n\t\t%s %s",rmp->sData,nname->sData);
                         DeleteObject (rmp);

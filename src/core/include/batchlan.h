@@ -601,7 +601,7 @@ long    FindBgmName                  (_String &);
 // added by afyp, March 18, 2007
 
 long    FindLikeFuncName             (_String&, bool = false);
-long    FindModelName                (_String&);
+long    FindModelName                (_String const&);
 void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, bool inclG, long modelID2, bool inclCat);
 /* 20100316 SLKP:
     factored out a function call to scan a particular model

@@ -144,6 +144,7 @@ inline void _handle4x4_pruning_case (double* childVector, double* tMatrix, doubl
 
 }
 
+
 /*----------------------------------------------------------------------------------------------------------*/
 
 _Parameter  acquireScalerMultiplier (long s)
@@ -2076,10 +2077,9 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 
 void     _TheTree::SetupCategoryMapsForNodes (_List& containerVariables, _SimpleList& classCounter, _SimpleList& multipliers)
 {
-    _CalcNode* iterator = DepthWiseTraversal (true);
-    while (iterator) {
+    _TreeIterator ti (this, _HY_TREE_TRAVERSAL_POSTORDER);
+    while (_CalcNode* iterator = ti.Next()) {
         iterator->SetupCategoryMap (containerVariables,classCounter,multipliers);
-        iterator = DepthWiseTraversal(false);
     }
 }
 //_______________________________________________________________________________________________
@@ -2286,24 +2286,20 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
     pswRepresentation.Clear();
 
     long    leafIndex  = 0,
-            iNodeCount = -1,
-            level      = 0;
+            iNodeCount = -1;
 
-    _String nodeName;
-
-    DepthWiseTLevel (level,&GetRoot());
     _SimpleList levelBuffer;
+  
+    node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+  
+    while (node<long> * currentNode = ni.Next (&levelBuffer)) {
+        _String nodeName = GetNodeName (currentNode);
 
-    while (currentNode) {
-        GetNodeName (currentNode,nodeName,false);
-
-
-        while (levelBuffer.countitems() <= level) {
+        while (levelBuffer.countitems() <= ni.Level()) {
             levelBuffer << 0;
         }
 
-        if (IsCurrentNodeATip()) {
-
+        if (currentNode->is_leaf()) {
             pswRepresentation << leafIndex;
             pswRepresentation << 0;
             if (reference) {
@@ -2325,7 +2321,7 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
             }
         } else {
             pswRepresentation << iNodeCount;
-            pswRepresentation << levelBuffer.lData[level];
+            pswRepresentation << levelBuffer.lData[ni.Level()];
             if (reference) {
                 pswRepresentation << 0;
             } else {
@@ -2334,11 +2330,10 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
 
             iNodeCount--;
         }
-        if (level) {
-            levelBuffer.lData[level-1] += levelBuffer.lData[level]+1;
+        if (ni.Level()) {
+            levelBuffer.lData[ni.Level()-1] += levelBuffer.lData[ni.Level()]+1;
         }
-        levelBuffer.lData[level]   = 0;
-        DepthWiseTLevel  (level,nil);
+        levelBuffer.lData[ni.Level()]   = 0;
     }
 
     for (long k = 0; k < pswRepresentation.lLength; k+=(reference?3:2))
@@ -2499,6 +2494,76 @@ _VariableContainer*     _CalcNode::ParentTree(void) {
     }
     return nil;
 }
+
+  //_______________________________________________________________________________________________
+
+/*
+class _TreeIterator {
+private:
+  
+  node_iterator<long> iterator;
+  int           traverser;
+  _SimpleList   history;
+  
+public:*/
+
+_TreeIterator::_TreeIterator (_TheTree const* source, int traversal_type): iterator(source->theRoot, traversal_type & _HY_TREE_TRAVERSAL_MASK) {
+  source_tree = source;
+  flags  = traversal_type;
+}
+
+_TreeIterator::~_TreeIterator (void) {};
+
+void     _TreeIterator:: Reset (void) {
+  iterator.Reset (source_tree->theRoot);
+}
+
+
+_CalcNode *     _TreeIterator:: Next (void) {
+  
+  node<long> * nn = iterator.Next(&history);
+  
+  if (nn) {
+    if (nn->is_root() && (flags & _HY_TREE_TRAVERSAL_SKIP_ROOT)) {
+      return Next();
+    }
+    if (!nn->is_leaf() && (flags & _HY_TREE_TRAVERSAL_LEAVES)) {
+      return Next();
+    }
+  
+    return _mapNodeToCalcNode(nn);
+  }
+  return nil;
+}
+
+_CalcNode *     _TreeIterator::Current (void) const {
+  return _mapNodeToCalcNode(iterator.Current());
+}
+
+long     _TreeIterator::Depth (void) const {
+  return iterator.Level();
+}
+
+const _SimpleList&  _TreeIterator::History (void) const {
+  return history;
+}
+
+bool  _TreeIterator::IsAtLeaf          (void) const {
+  node <long>* current = iterator.Current();
+  if (current) {
+    return current->get_num_nodes() == 0L;
+  }
+  return false;
+}
+
+bool  _TreeIterator::IsAtRoot          (void) const {
+  node <long>* current = iterator.Current();
+  if (current) {
+    return current->get_parent() == nil;
+  }
+  return false;
+}
+
 
 
 #endif

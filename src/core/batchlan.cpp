@@ -536,7 +536,7 @@ long    FindLikeFuncName (_String&s, bool tryAsAString)
 }
 
 //____________________________________________________________________________________
-long    FindModelName (_String&s)
+long    FindModelName (_String const &s)
 {
     if (s.Equal (&useLastModel)) {
         return lastMatrixDeclared;
@@ -772,10 +772,9 @@ void KillLFRecord (long lfID, bool completeKill)
             for (long k=me->GetTheTrees().lLength-1; k>=0; k--) {
                 _TheTree * thisTree = (_TheTree*)LocateVar(me->GetTheTrees().lData[k]);
                 thisTree->CompileListOfModels (myVars);
-                _CalcNode * tNode = thisTree->DepthWiseTraversal (true);
-                while (tNode) {
+                _TreeIterator ti (thisTree, _HY_TREE_TRAVERSAL_POSTORDER);
+                while (_CalcNode* tNode = ti.Next()) {
                     tNode->SetValue (new _Constant (tNode->ComputeBranchLength()),false);
-                    tNode = thisTree->DepthWiseTraversal();
                 }
                 thisTree->RemoveModel();
             }
@@ -2841,7 +2840,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
         if(FindDataSetFilterName(AppendContainerName(*dataset,chain.nameSpacePrefix))!=-1) {
             _TheTree*   thisTree = (_TheTree*)FetchObjectFromVariableByType(&AppendContainerName(*tree,chain.nameSpacePrefix),TREE);
             if (thisTree) {
-                _CalcNode*  thisNode = thisTree->DepthWiseTraversal(true);
+                _TreeIterator ti (thisTree, _HY_TREE_TRAVERSAL_POSTORDER);
                 if (!freq) { // no explicit frequency parameter; grab one from the tree
                     long        theFreqID       = -1,
                                 theModelID     = -1,
@@ -2849,13 +2848,15 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                     bool        done = false;
 
                     while (1) {
+                        _CalcNode *thisNode = ti.Next();
+                      
                         if ((theModelID     = thisNode->GetModelIndex()) == HY_NO_MODEL) { // this node has no model
                             done = false;
                             break;
                         }
                         theFreqID   = modelFrequenciesIndices.lData[theModelID];
-                        thisNode    = thisTree->DepthWiseTraversal();
-                        while(thisNode) {
+                      
+                        while((thisNode = ti.Next()) && !ti.IsAtRoot()) {
                             theModelID      = thisNode->GetModelIndex();
                             if (theModelID == HY_NO_MODEL) { // no model
                                 done = false;
@@ -2865,10 +2866,6 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                                 done = true;
                                 break;
                             }
-                            if (thisTree->IsCurrentNodeTheRoot()) {
-                                break;
-                            }
-                            thisNode = thisTree->DepthWiseTraversal();
                         }
                         if (theFreqID<0) {
                             finalFreqID = -theFreqID-1;

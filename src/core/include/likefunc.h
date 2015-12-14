@@ -214,7 +214,7 @@ public:
     virtual     void        RescanAllVariables      (void);
 
     long        DependOnTree            (_String&);
-    long        DependOnModel           (_String&);
+    long        DependOnModel           (_String const&) const;
     long        DependOnDS              (long);
     bool        DependOnDF              (long ID) {
         return theDataFilters.Find(ID)>=0;
@@ -231,6 +231,11 @@ public:
     _SimpleList&GetTheTrees             (void) {
         return theTrees;
     }
+  
+    _TheTree*         GetIthTree            (long) const;
+    _DataSetFilter *  GetIthFilter          (long) const;
+    _Matrix*          GetIthFrequencies     (long) const;
+  
     _SimpleList&GetTheFilters           (void) {
         return theDataFilters;
     }
@@ -311,7 +316,7 @@ protected:
     void            AllocateSiteResults     (void);
     void            ZeroSiteResults         (void);
     // 20090211: A utility function to reset site results.
-    void            GetInitialValues        (void);
+    void            GetInitialValues        (void) const;
     bool            checkPermissibility     (_Matrix&m, long row);
     _Parameter      computeAtAPoint         (_Matrix&m, long row = 0);
     _Parameter      replaceAPoint           (_Matrix&m, long row, _Matrix&p, _Parameter& nV, _Matrix& fv);

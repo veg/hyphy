@@ -252,9 +252,9 @@ public:
         warnError (-666);
         return this;
     }
-    virtual _MathObject* TEXTreeString(_MathObject*) {
+    virtual _MathObject* TEXTreeString(_MathObject*) const {
         warnError (-666);
-        return this;
+        return new _MathObject;
     }
     virtual _MathObject* Type                          (void);
     virtual _MathObject* PlainTreeString(_MathObject*,_MathObject*) {

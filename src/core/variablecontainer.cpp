@@ -191,8 +191,7 @@ _VariableContainer::_VariableContainer (_String theName, _String theTmplt, _Vari
 
 //__________________________________________________________________________________
 
-bool _VariableContainer::HasExplicitFormModel (void)
-{
+bool _VariableContainer::HasExplicitFormModel (void) const {
     if (theModel == -1) {
         return false;
     }
@@ -201,9 +200,8 @@ bool _VariableContainer::HasExplicitFormModel (void)
 
 //__________________________________________________________________________________
 
-_Formula* _VariableContainer::GetExplicitFormModel (void)
-{
-    if (theModel == -1) {
+_Formula* _VariableContainer::GetExplicitFormModel (void) const {
+    if (theModel < 0L) {
         return nil;
     }
     if (modelTypeList.lData[theModel]) { // an explicit formula based matrix
@@ -224,9 +222,8 @@ _String* _VariableContainer::GetModelName (void) {
 
 //__________________________________________________________________________________
 
-_Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags)
-{
-    if (theModel == -1) {
+_Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) const {
+    if (theModel < 0L) {
         return nil;
     }
 
@@ -234,7 +231,8 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags)
         if (queue && tags) {
             long currentQueueLength = ((_Formula*)modelMatrixIndices.lData[theModel])->ExtractMatrixExpArguments (queue);
             if (currentQueueLength) {
-                for (long k = 0; k < currentQueueLength; k++) 
+                tags->Populate (currentQueueLength, 0, 1);
+                for (long k = 0; k < currentQueueLength; k++)
                     (*tags) << currentQueueLength;
                 return nil;
             }
@@ -263,8 +261,7 @@ long _VariableContainer::GetModelDimension (void)
 
 //__________________________________________________________________________________
 
-_Matrix* _VariableContainer::GetFreqMatrix (void)
-{
+_Matrix* _VariableContainer::GetFreqMatrix (void) const  {
     if (theModel>=0) {
         long freqID = modelFrequenciesIndices.lData[theModel];
         if (freqID>=0) {
@@ -990,8 +987,7 @@ void  _VariableContainer::CompileListOfDependents (_SimpleList& rec)
 
 //__________________________________________________________________________________
 
-void _VariableContainer::MarkDone (void)
-{
+void _VariableContainer::MarkDone (void) {
     if (iVariables)
         for (unsigned long i = 0; i<iVariables->lLength && iVariables->lData[i+1] >= 0; i+=2) {
             LocateVar (iVariables->lData[i])->MarkDone();
@@ -1114,8 +1110,7 @@ void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _A
 
 //__________________________________________________________________________________
 
-void _VariableContainer::ScanForDVariables (_AVLList& l,_AVLList&)
-{
+void _VariableContainer::ScanForDVariables (_AVLList& l,_AVLList&) const {
     if (dVariables)
         for (unsigned long i = 0; i<dVariables->lLength; i+=2) {
             l.Insert ((BaseRef)dVariables->lData[i]);
@@ -1137,8 +1132,7 @@ void _VariableContainer::GetListOfModelParameters (_List& rec)
 
 //__________________________________________________________________________________
 
-void _VariableContainer::ScanForGVariables (_AVLList& l,_AVLList& l2, _AVLListX* tagger, long weight)
-{
+void _VariableContainer::ScanForGVariables (_AVLList& l,_AVLList& l2, _AVLListX* tagger, long weight) const {
     if (gVariables)
         for (unsigned long i = 0; i<gVariables->lLength; i++) {
             long p = gVariables->lData[i];

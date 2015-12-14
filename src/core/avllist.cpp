@@ -481,8 +481,7 @@ long  _AVLList::InsertData (BaseRef b, long, bool)
 
 //______________________________________________________________
 
-unsigned long _AVLList::countitems (void)
-{
+unsigned long _AVLList::countitems (void) const {
     return dataList->lLength - emptySlots.lLength;
 }
 

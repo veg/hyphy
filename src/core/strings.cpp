@@ -321,8 +321,7 @@ void _String::operator = (_String s)
 }
 
 // lexicographic comparison
-bool _String::operator == (_String s)
-{
+bool _String::operator == (_String const& s) const {
     return Equal(&s);
 }
 
@@ -486,22 +485,23 @@ void _String::AppendNewInstance (_String* s)
     DeleteObject (s);
 }
 
-void _String::AppendAnAssignmentToBuffer(_String* id, _String *value, bool doFree, bool doQuotes, bool doBind)
+void _String::AppendAnAssignmentToBuffer(_String* id, _String *value, unsigned long flags)
 {
     (*this) << id;
-    if (doBind) {
+  
+    if (flags & kAppendAnAssignmentToBufferAssignment) {
         (*this) << ':';
     }
     (*this) << '=';
-    if (doQuotes) {
+    if (flags & kAppendAnAssignmentToBufferQuote) {
         (*this) << '"';
     }
     (*this) << value;
-    if (doQuotes) {
+    if (flags & kAppendAnAssignmentToBufferQuote) {
         (*this) << '"';
     }
     (*this) << ";\n";
-    if (doFree) {
+    if (flags & kAppendAnAssignmentToBufferFree) {
         DeleteObject (value);
     }
 }
@@ -1054,9 +1054,8 @@ long _String::Find(char s, long from, long to) const
 }
 
 //Find first occurence of the string between from and to
-long _String::FindBackwards(_String s, long from, long to)
+long _String::FindBackwards(_String const & s, long from, long to) const {
 // -1, indicates that search term has not been found
-{
     if (!sLength) {
         return -1;
     }
@@ -1414,24 +1413,25 @@ void    _String::StripQuotes (void)
 }
 
 
-_List* _String::Tokenize (_String s)
-{
-    _List *res = new _List;
-    if (s.sLength!=0) {
+const _List& _String::Tokenize (_String const& s) const {
+    _List pieces;
+  
+     if (s.sLength > 0L) {
         long cp=0,cpp;
         while ((cpp = Find(s,cp,-1))!=-1) {
             if (cpp>cp) {
-                res->AppendNewInstance (new _String (*this,cp,cpp-1));
+                pieces.AppendNewInstance (new _String (*this,cp,cpp-1));
             } else {
-                (*res) && (&empty);
+                pieces.AppendNewInstance(new _String());
             }
 
             cp=cpp+s.sLength;
         }
 
-        res->AppendNewInstance (new _String (*this,cp,-1));
+        pieces.AppendNewInstance (new _String (*this,cp,-1));
     }
-    return res;
+  
+    return pieces;
 }
 
 _Parameter _String::toNum (void) const {
@@ -1647,8 +1647,7 @@ bool _String::contains (char c)
     return Find(c)!=-1;
 }
 
-char    _String::Compare (_String* s)
-{
+char    _String::Compare (_String const* s) const {
     long upTo;
 
     if  (sLength>s->sLength) {
@@ -2493,6 +2492,13 @@ _String _String::Random(const unsigned long length, const _String * alphabet)
     random.Finalize();
     return random;
 }
+
+void    _String::AppendNCopies   (_String const& value, unsigned long copies) {
+  for (unsigned long i = 0UL; i < copies; i++) {
+    (*this) << value;
+  }
+}
+
 
 unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object, _String * context) {
     char first_char    = getChar(0);

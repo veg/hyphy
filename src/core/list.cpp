@@ -173,8 +173,7 @@ BaseRef _List::operator () (const unsigned long i)
 }
 
 // Element location functions (0,llength - 1)
-BaseRef _List::GetItem (const unsigned long i)
-{
+BaseRef _List::GetItem (const unsigned long i) const {
     return ((BaseRef*)lData)[i];
 }
 
@@ -285,9 +284,8 @@ void _List::operator << (BaseRef br)
     br->nInstances++;
 }
 
-void _List::operator << (_List& source)
-{
-    for (long k=0; k<source.lLength; k++) {
+void _List::operator << (_List const& source) {
+    for (unsigned long k=0UL; k<source.lLength; k++) {
         (*this) << ((BaseRef*)source.lData)[k];
     }
 }
@@ -309,9 +307,8 @@ void _List::AppendNewInstance (BaseRef br)
     }
 }
 
-long  _List::BinaryFindObject (BaseRef s, long startAt) const
-{
-    _String * st = (_String*)s;
+long  _List::BinaryFindObject (BaseObj const * s, long startAt) const {
+    _String const * st = (_String const*)s;
     long top    = lLength-1,
          bottom = startAt,
          middle;
@@ -389,18 +386,16 @@ void  _List::Clear (bool completeClear)
     }
 }
 
-long  _List::Compare (long i, long j)
-{
+long  _List::Compare (long i, long j) {
     _String             *si = (_String*)lData[i],
                          *sj = (_String*)lData[j];
 
     return  si->Compare(sj);
 }
 
-long  _List::Compare (BaseRef i, long j)
-{
-    _String             *sj = (_String*)lData[j],
-                         *si = (_String*)i;
+long  _List::Compare (BaseObj const * i, long j) {
+    _String const       *sj = (_String const*)lData[j],
+                        *si = (_String const*)i;
 
     return  si->Compare(sj);
 }

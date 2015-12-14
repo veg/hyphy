@@ -77,7 +77,7 @@ class _AVLList: public BaseObj
             DeleteObject(dataList);
         }
 
-        unsigned long countitems(void);
+        unsigned long countitems(void) const;
 
         // 20100623: a shortcut function to look for integers only
         // avoids calling ::Compare

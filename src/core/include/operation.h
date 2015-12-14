@@ -65,7 +65,7 @@ class   _Operation : public BaseObj
 
 public:
     _Operation  (void);
-    _Operation  (_String&, const long);
+    _Operation  (_String const&, const long);
     // construct the operation by its symbol and, if relevant -
     // number of operands
     _Operation  (const long,const long);

@@ -120,7 +120,7 @@ public:
     // to make a matrix with C elements per row
     // if <= 0 - a row matrix is returned
 
-    _Matrix ( _List &);                         //make string matrix from a list
+    _Matrix ( _List const &);                         //make string matrix from a list
 
     _Matrix (_Parameter *, unsigned long, unsigned long);
     /*
@@ -739,8 +739,8 @@ public:
     void                MStore          (_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
     // SLKP 20100811: see the comment for _Matrix::MStore
 
-    void                MStore          (_String  , _PMathObj, bool = true);
-    void                MStore          (_String  , _String);
+    void                MStore          (const _String&  , _PMathObj, bool = true);
+    void                MStore          (const _String&  , const _String&);
     virtual unsigned long        ObjectClass     (void)      {
         return ASSOCIATIVE_LIST;
     }

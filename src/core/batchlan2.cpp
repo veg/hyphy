@@ -830,28 +830,26 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
                         + testTree->GetINodeCount()) * testTree->categoryCount,
                         testTree->GetCodeBase(),
                         false, true);
+              
                 _List               leafNames,
                                     inodeNames;
-
-                testTree->DepthWiseT(true);
-
-                while (testTree->currentNode) {
-                    _String       * bs = new _String;
-                    testTree->GetNodeName  (testTree->currentNode, *bs);
-                    if (testTree->IsCurrentNodeATip()) {
-                        leafNames << bs;
+              
+              
+                _TreeIterator ti (testTree, _HY_TREE_TRAVERSAL_POSTORDER);
+              
+                while (_CalcNode * iterator = ti.Next()) {
+                    if (ti.IsAtLeaf()) {
+                        leafNames && iterator->GetName();
                     } else {
-                        inodeNames << bs;
+                        inodeNames && iterator->GetName();
                     }
-                    DeleteObject (bs);
-                    testTree->DepthWiseT(false);
                 }
 
                 leafNames << inodeNames;
 
                 _Matrix  *nodeNames = new _Matrix (leafNames);
 
-                for (long siteC = 0; siteC < objectID; siteC ++) {
+                for (long siteC = 0L; siteC < objectID; siteC ++) {
                     testTree->RecoverNodeSupportStates (dsf,siteC,siteC-1,*condMx);
                 }
 

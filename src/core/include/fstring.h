@@ -50,7 +50,7 @@ class _FString : public _MathObject   // strings encountered in formulas
 
 public:
 
-    _FString (_String&, bool = true);
+    _FString (_String const&, bool = true);
     _FString (long);
     _FString (_String*);
     _FString (void);

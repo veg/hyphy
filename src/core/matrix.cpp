@@ -2366,20 +2366,14 @@ _Matrix::_Matrix (_Parameter* inList, unsigned long rows, unsigned long columns)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_List& sl)
+_Matrix::_Matrix (_List const& sl)
 // list of strings
 {
     if (sl.lLength) {
         CreateMatrix     (this, 1, sl.lLength,  false, true, false);
-        _Constant        hi (0.),
-                         vi;
-
-        for (unsigned long k=0; k<sl.lLength; k++) {
-            _FString  *choiceString = new _FString (*(_String*) sl(k));
-            _Formula  sf (choiceString);
-            vi.SetValue (k);
-            MStore(&hi,&vi,sf);
-            //DeleteObject (choiceString);
+ 
+        for (unsigned long k=0UL; k<sl.lLength; k++) {
+             StoreFormula (0L,k,*new _Formula (new _FString (*(_String*) sl.GetItem(k))), false, false);
         }
     } else {
         Initialize();
@@ -9505,15 +9499,13 @@ void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long 
 }
 
 //_____________________________________________________________________________________________
-void _AssociativeList::MStore (_String obj, _PMathObj inObject, bool repl)
-{
+void _AssociativeList::MStore (const _String& obj, _PMathObj inObject, bool repl) {
     _FString f (obj);
     MStore (&f,inObject, repl);
 }
 
 //_____________________________________________________________________________________________
-void _AssociativeList::MStore (_String obj, _String info)
-{
+void _AssociativeList::MStore (const _String& obj, const _String& info) {
     _FString *  inf = new _FString (info);
     MStore (obj, inf, false);
 }

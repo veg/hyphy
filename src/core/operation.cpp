@@ -126,10 +126,9 @@ _Operation::_Operation  (const long theCode, const long opNo = 2)
 }
 
 //__________________________________________________________________________________
-_Operation::_Operation  (_String& opc, const long opNo = 2)
+_Operation::_Operation  (_String const& opc, const long opNo = 2) {
 // construct the operation by its symbol and, if relevant -
 // number of operands
-{
     if(opNo>=0) {
         opCode = BuiltInFunctions.BinaryFindObject (&opc);
     } else {

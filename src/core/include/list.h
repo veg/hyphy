@@ -118,7 +118,7 @@ class _List:public _SimpleList
         * Element location functions - read only
         * used to avoid (*list)(3) which are hard to read
         */
-        virtual BaseRef GetItem     (const unsigned long);
+        virtual BaseRef GetItem     (const unsigned long) const;
 
         /**
         * Element location functions - read only
@@ -160,7 +160,7 @@ class _List:public _SimpleList
         * @return Nothing. Operates on the _List.
         * @sa AppendNewInstance()
         */
-        void operator << (_List&);
+        void operator << (_List const&);
 
         /**
         * Append operator
@@ -193,7 +193,7 @@ class _List:public _SimpleList
         * @sa Find()
         * @sa BinaryFind()
         */
-        virtual long BinaryFindObject (BaseRef, long startAt = 0) const;
+        virtual long BinaryFindObject (BaseObj const *, long startAt = 0) const;
 
         /**
         * Insert an element into the sorted list preserving the sortedness
@@ -210,7 +210,7 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual long Compare(BaseRef,long);
+        virtual long Compare(BaseObj const *,long);
 
         /**
         * Return number of elements 

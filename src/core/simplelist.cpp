@@ -93,7 +93,7 @@ _SimpleList::_SimpleList (unsigned long l)
 }
 
 //Stack copy contructor
-_SimpleList::_SimpleList (_SimpleList& l, long from, long to)
+_SimpleList::_SimpleList (_SimpleList & l, long from, long to)
 {
     if (from == 0 && to == -1) { // copy the whole thing
         Duplicate (&l);
@@ -105,11 +105,6 @@ _SimpleList::_SimpleList (_SimpleList& l, long from, long to)
         for (long k = 0; k < upto; k++) {
             lData[k] = l.lData[from+k];
         }
-        /*
-        for (long i = from; i < to; i++) {
-            (*this) << l.lData[i];
-        }
-        */
     }
 }
 
@@ -345,7 +340,7 @@ long  _SimpleList::Compare (long i, long j)
     //return ((long*)lData)[i]-((long*)lData)[j];
 }
 
-long  _SimpleList::Compare (BaseRef i, long j)
+long  _SimpleList::Compare (BaseObj const *i, long j)
 {
     long    v1 = (long)i,
             v2 = ((long*)lData)[j];
@@ -617,7 +612,7 @@ long _SimpleList::Element(long index) const
         return lData[index];
     }
 
-    else if(-index <= lLength) {
+    else if(index < 0L && -index <= lLength) {
         return lData[(long)lLength+index];
     }
 
@@ -1092,10 +1087,9 @@ void _SimpleList::NormalizeCoordinates (long& from, long& to, const unsigned lon
     }
 }
 
-void _SimpleList::Offset (long shift)
-{
+void _SimpleList::Offset (long shift) {
     if (lData) {
-        for (long k=0; k<lLength; k++) {
+        for (unsigned long k=0UL; k<lLength; k++) {
             lData[k] += shift;
         }
     }
@@ -1216,13 +1210,11 @@ long _SimpleList::Pop (void)
 }
 
 //Length constructor and populator
-void _SimpleList::Populate (long l, long start, long step)
-{
+void _SimpleList::Populate (long l, long start, long step) {
     RequestSpace (l);
-    for (long k = 0; k < l; k++, start+=step) {
+    for (long k = 0L; k < l; k++, start+=step) {
         lData[k] = start;
     }
-
     lLength = l;
 }
 

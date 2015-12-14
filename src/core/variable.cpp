@@ -645,7 +645,7 @@ _PMathObj    _Variable::ComputeReference (_PMathObj context)
 }
 
 //__________________________________________________________________________________
-_String    _Variable::ContextFreeName(void) {
+_String const&    _Variable::ContextFreeName(void) const {
     long location = theName->FindBackwards (".", 0, -1);
     if (location > 0) {
        return theName->Cut (location+1,-1); 
@@ -654,7 +654,7 @@ _String    _Variable::ContextFreeName(void) {
 }
 
 //__________________________________________________________________________________
-_String    _Variable::ParentObjectName(void) {
+_String const&   _Variable::ParentObjectName(void) const {
     long location = theName->FindBackwards (".", 0, -1);
     if (location > 0) {
        return theName->Cut (0,location-1); 

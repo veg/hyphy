@@ -2136,11 +2136,12 @@ void    _Formula::ConvertFromTree (void)
 {
     if (theTree) { // work to do
         _SimpleList termOrder;
-        node<long>* state, * currentNode = DepthWiseStepTraverser (theTree, &state);
-        while (currentNode) {
-            termOrder<<currentNode->get_data();
-            currentNode = DepthWiseStepTraverser ((node<long>*)nil, &state);
+        node_iterator<long> ni (theTree, _HY_TREE_TRAVERSAL_POSTORDER);
+      
+      while (node<long>* iterator = ni.Next()) {
+            termOrder<<iterator->get_data();
         }
+      
         if (termOrder.lLength!=theFormula.lLength) { // something has changed
             _List newFormula;
             for (long i=0; i<termOrder.lLength; i++) {

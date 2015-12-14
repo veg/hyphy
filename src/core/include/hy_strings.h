@@ -52,6 +52,11 @@ class _ExecutionList; // forward declaration
 #define HY_STRING_GLOBAL_DEREFERENCE    0x03
 
 
+#define kAppendAnAssignmentToBufferFree       0b0001
+#define kAppendAnAssignmentToBufferQuote      0b0010
+#define kAppendAnAssignmentToBufferAssignment 0b0100
+
+
 class _String:public BaseObj
 {
 
@@ -247,6 +252,13 @@ public:
     * @sa EscapteAndAppend()
     */
     void    AppendNewInstance (_String*);
+
+    /**
+     * Append multiple copies of the same string to the buffer
+     * @param value the string to copy
+     * @param copies how many copies to make
+     */
+    void    AppendNCopies   (_String const& value, unsigned long copies);
 
     /**
     * Append operator
@@ -483,7 +495,7 @@ public:
     * Backwards Find
     * @see Find()
     */
-    long    FindBackwards(_String, long, long);
+    long    FindBackwards(_String const&, long, long) const;
 
     /**
     * Binary searches for a char inside of a string
@@ -518,7 +530,7 @@ public:
     * Checks if string is lexicographically equal
     * @see Equal()
     */
-    bool    operator == (_String);
+    bool    operator == (_String const&) const;
 
     /**
     * Lexicographic comparison
@@ -554,7 +566,7 @@ public:
     * @return 1 if strings are equal, -1 if strings are not
     * @sa Equal()
     */
-    char Compare (_String*);
+    char Compare (_String const*) const;
 
     /**
     * Lexicographic comparison with a wild character
@@ -678,14 +690,15 @@ public:
     * SLKP 20090817: A utility function to append a statement of the form
     * \n\n \b Example: _String("hyphy").AppendAnAssignmentToBuffer("12","12",false,false,false) makes "hyphy12=12"
     * @param id = value; to the current string assumed to be in the buffer form
-    * @param doFree free the 2nd string argument when done
-    * @param doQuotes put quotes around the value
-    * @param doBind use := instead of =
+    * @param flags: a bitwise combination of flags; set kAppendAnAssignmentToBufferFree to free 'value'; \\
+      set kAppendAnAssignmentToBufferQuote to put quotes around the value \\
+      set kAppendAnAssignmentToBufferAssignment to use ':=' instead of '=' \\
+      default is to use kAppendAnAssignmentToBufferFree
     * @sa AppendNewInstance()
     * @sa AppendVariableValueAVL()
     */
 
-    void    AppendAnAssignmentToBuffer (_String*, _String*, bool = true, bool = false, bool = false);
+    void    AppendAnAssignmentToBuffer (_String*, _String*, unsigned long = kAppendAnAssignmentToBufferFree);
 
     /**
     * SLKP 20090817:
@@ -708,7 +721,7 @@ public:
     * @param s The substring to split the string by
     * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
     */
-    _List*  Tokenize (_String);
+    const _List&  Tokenize (_String const&) const;
 
     /**
     * TODO: With batchlan
