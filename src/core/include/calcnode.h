@@ -323,8 +323,8 @@ typedef bool _HYTopologyTraversalFunction (node<long>*, Ptr);
 class _TheTree; // forward declaration for xlc
 
 
-#define kGetNodeStringForTreeName   0b0001
-#define kGetNodeStringForTreeModel  0b0010
+#define kGetNodeStringForTreeName   0x01
+#define kGetNodeStringForTreeModel  0x02
 
 //_______________________________________________________________________________________________
 
@@ -824,9 +824,9 @@ protected:
 
 };
 
-#define       _HY_TREE_TRAVERSAL_MASK      0b00000111
-#define       _HY_TREE_TRAVERSAL_SKIP_ROOT 0b00001000
-#define       _HY_TREE_TRAVERSAL_LEAVES    0b00010000
+#define       _HY_TREE_TRAVERSAL_MASK      0x07 // 111 binary
+#define       _HY_TREE_TRAVERSAL_SKIP_ROOT 0x10 //
+#define       _HY_TREE_TRAVERSAL_LEAVES    0x20
 
 class _TreeIterator {
 private:

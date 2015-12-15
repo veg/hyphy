@@ -178,14 +178,13 @@ BaseRef _List::GetItem (const unsigned long i) const {
 }
 
 // Assignment operator
-const _List _List::operator = (_List& l)
-{
-    this->~_List();
+const _List _List::operator = (const _List& l) {
+    Clear(true);
+  
     lLength = l.lLength;
-    laLength = l.laLength;
-    lData = l.lData;
-    l.AddAReference();
+    RequestSpace(laLength);
     for (unsigned long i = 0UL; i<lLength; i++) {
+        ((BaseRef*)(lData))[i] = l.GetItem (i);
         ((BaseRef*)(lData))[i] -> AddAReference();
     }
     return *this;

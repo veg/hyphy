@@ -107,7 +107,7 @@ template <class node_data> node<node_data>* node_iterator<node_data>::Next(_Simp
           }
           return this->iterator_state;
         }
-        this->iterator_state=test_node->go_up();
+        this->iterator_state=this->iterator_state->go_up();
         this->pop_history_item (history);
         if (this->traversal_level == 0L) {
           // need this if traversal is initiated at an interior node which is not root
@@ -122,30 +122,40 @@ template <class node_data> node<node_data>* node_iterator<node_data>::Next(_Simp
         
         if (this->traversal_level < 0L) {
           this->traversal_level = 0L;
-          this->push_history_item (history);
-          return  this->iterator_state; // already root
-        }
-        
-        this->pop_history_item (history);
-
-        test_node = this->iterator_state->go_down (1);
-          // iterator_state has already been visited;
-          // try to descend down the tree first
-          // failing that, move to the sibling
-          // failing that, move up the tree
-        
-        if (test_node) {
-          this->iterator_state = test_node;
-          this->traversal_level  ++;
-          
         } else {
-          test_node = this->iterator_state->go_next();
+          
+          test_node = this->iterator_state->go_down (1);
+            // iterator_state has already been visited;
+            // try to descend down the tree first
+            // failing that, move to the sibling
+            // failing that, move up the tree
+          
           if (test_node) {
             this->iterator_state = test_node;
+            this->traversal_level  ++;
+            
           } else {
-            this->iterator_state->go_up();
-            this->traversal_level --;
-            return this->Next (history);
+            test_node = this->iterator_state->go_next();
+            if (test_node) {
+              this->pop_history_item (history);
+              this->iterator_state = test_node;
+            } else {
+              test_node = this->iterator_state->go_up();
+              this->traversal_level --;
+              this->pop_history_item (history);
+              while (test_node && test_node->go_down (test_node->get_num_nodes()) == this->iterator_state) {
+                this->iterator_state = test_node;
+                this->pop_history_item (history);
+                this->traversal_level --;             
+                test_node = this->iterator_state->go_up();
+              }
+              if (test_node) {
+                this->iterator_state = this->iterator_state->go_next();
+              } else {
+                this->iterator_state = nil;
+                break;
+              }
+            }
           }
         }
         this->push_history_item (history);
@@ -188,7 +198,7 @@ template <class node_data> node<node_data>* node<node_data>::duplicate_tree(void
 
   //-------------------------------------------------------------
 
-void node_count_descendants (node<long>* n) {
+template <class node_data> void node_count_descendants (node<node_data>* n) {
     n->in_object = 0L;
     for (int i=1; i<=n->get_num_nodes(); i++) {
       n->in_object += n->go_down(i)->in_object;

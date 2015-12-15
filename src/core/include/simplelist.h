@@ -106,7 +106,7 @@ class _SimpleList:public BaseObj
         long operator () (const unsigned long);
 
         // assignment operator
-        virtual _SimpleList operator = (_SimpleList);
+        virtual _SimpleList const & operator = (_SimpleList const&);
 
         // append operator
         virtual _SimpleList operator & (_SimpleList);

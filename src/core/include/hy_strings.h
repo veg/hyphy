@@ -52,9 +52,10 @@ class _ExecutionList; // forward declaration
 #define HY_STRING_GLOBAL_DEREFERENCE    0x03
 
 
-#define kAppendAnAssignmentToBufferFree       0b0001
-#define kAppendAnAssignmentToBufferQuote      0b0010
-#define kAppendAnAssignmentToBufferAssignment 0b0100
+#define kAppendAnAssignmentToBufferFree       0x01
+#define kAppendAnAssignmentToBufferQuote      0x02
+#define kAppendAnAssignmentToBufferAssignment 0x04
+#define kAppendAnAssignmentToBufferGlobal     0x08
 
 
 class _String:public BaseObj
@@ -721,7 +722,7 @@ public:
     * @param s The substring to split the string by
     * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
     */
-    const _List&  Tokenize (_String const&) const;
+    const _List  Tokenize (_String const&) const;
 
     /**
     * TODO: With batchlan

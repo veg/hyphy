@@ -2620,23 +2620,25 @@ void    _DataSetFilter::SetExclusions (_String* theList, bool filter)
         return;
     }
 
-    _List        *tokens = theList->Tokenize(',');
+    _List        tokens (theList->Tokenize(','));
     _SimpleList  holder;
     _AVLList     exclusions (&holder);
 
-    for (long k = 0; k < tokens->lLength; k++) {
-        long posMarker = MapStringToCharIndex(*(_String*)((*tokens)(k)));
+    for (long k = 0; k < tokens.lLength; k++) {
+      
+        _String* kth_token = (_String*)tokens.GetItem(k);
+      
+        long posMarker = MapStringToCharIndex(*kth_token);
 
         if (posMarker < 0) {
-            ReportWarning (_String("Exclusion request for '") & *(_String*)((*tokens)(k)) &"' does not represent a unique state and will therefore be ignored.");
+            ReportWarning (_String("Exclusion request for '") & *kth_token &"' does not represent a unique state and will therefore be ignored.");
         } else {
             if (exclusions.Insert((BaseRef)posMarker) < 0) {
-                ReportWarning (_String("Exclusion symbol for '") & *(_String*)((*tokens)(k)) &"' is included more than once.");
+                ReportWarning (_String("Exclusion symbol for '") & *kth_token &"' is included more than once.");
             }
         }
     }
 
-    DeleteObject (tokens);
     exclusions.ReorderList();
 
     if (filter) {

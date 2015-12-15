@@ -247,8 +247,8 @@ _String::_String (const char s)
 //Data constructor
 _String::_String (_Parameter val, const char * format)
 {
-    char s_val[128];
-    sLength = snprintf (s_val,128, format?format:PRINTF_FORMAT_STRING,val);
+    char s_val[256];
+    sLength = snprintf (s_val,256, format?format:PRINTF_FORMAT_STRING,val);
     checkPointer (sData = (char*)MemAllocate (sLength+1));
     for (unsigned long k=0; k<=sLength; k++) {
         sData[k] = s_val[k];
@@ -487,6 +487,11 @@ void _String::AppendNewInstance (_String* s)
 
 void _String::AppendAnAssignmentToBuffer(_String* id, _String *value, unsigned long flags)
 {
+
+    if (flags & kAppendAnAssignmentToBufferGlobal) {
+      (*this) << "global ";
+    }
+
     (*this) << id;
   
     if (flags & kAppendAnAssignmentToBufferAssignment) {
@@ -505,6 +510,7 @@ void _String::AppendAnAssignmentToBuffer(_String* id, _String *value, unsigned l
         DeleteObject (value);
     }
 }
+
 
 void _String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
 {
@@ -1413,7 +1419,7 @@ void    _String::StripQuotes (void)
 }
 
 
-const _List& _String::Tokenize (_String const& s) const {
+const _List _String::Tokenize (_String const& s) const {
     _List pieces;
   
      if (s.sLength > 0L) {

@@ -169,9 +169,9 @@ public:
 
 };
 
-#define _HY_TREE_TRAVERSAL_POSTORDER              0x000000000b
-#define _HY_TREE_TRAVERSAL_POSTORDER_RIGHT_FIRST  0x000000001b
-#define _HY_TREE_TRAVERSAL_PREORDER               0x000000010b
+#define _HY_TREE_TRAVERSAL_POSTORDER              0x00
+#define _HY_TREE_TRAVERSAL_POSTORDER_RIGHT_FIRST  0x01
+#define _HY_TREE_TRAVERSAL_PREORDER               0x02
 
 template <class node_data> class node_iterator {
   private:

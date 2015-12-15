@@ -123,7 +123,7 @@ class _List:public _SimpleList
         /**
         * Element location functions - read only
         */
-        virtual const _List operator = (_List&);
+        virtual const _List operator = (const _List&);
 
 
         /**

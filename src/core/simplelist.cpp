@@ -172,7 +172,7 @@ long _SimpleList::operator () (const unsigned long i)
 }
 
 //Assignment operator
-_SimpleList _SimpleList::operator = (_SimpleList l)
+const _SimpleList& _SimpleList::operator = (_SimpleList const &l)
 {
     Clear();
     lLength  = l.lLength;
@@ -1201,12 +1201,11 @@ void  _SimpleList::PermuteWithReplacement (long blockLength)
 
 long _SimpleList::Pop (void)
 {
-    if (lLength > 0) {
-        lLength --;
-        return lData[lLength];
+    if (lLength > 0L) {
+        return lData[--lLength];
     }
 
-    return 0;
+    return 0L;
 }
 
 //Length constructor and populator

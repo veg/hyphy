@@ -130,8 +130,8 @@ public:
     virtual     void        ClearConstraints    (void);
     virtual     bool        CheckFForDependence (long, bool = false);
 
-    _String const&     ContextFreeName                 (void) const;
-    _String const&    ParentObjectName                 (void) const;
+    _String const     ContextFreeName                 (void) const;
+    _String const    ParentObjectName                 (void) const;
  
     _String*    GetName                         (void) const{
         return theName;

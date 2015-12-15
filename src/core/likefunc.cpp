@@ -2648,7 +2648,7 @@ inline _Parameter sqr (_Parameter x)
         
         unsigned  long  inode_count = 0UL;
         
-        _TreeIterator ti (tree, _HY_TREE_TRAVERSAL_PREORDER);
+        _TreeIterator ti (tree, _HY_TREE_TRAVERSAL_PREORDER | _HY_TREE_TRAVERSAL_SKIP_ROOT);
         
         _SimpleList node_to_index_support ;
         _AVLListX node_to_index (&node_to_index_support);
@@ -2657,28 +2657,29 @@ inline _Parameter sqr (_Parameter x)
         bool two = false;
         
         while (_CalcNode* iterator = ti.Next()) {
-          if (!ti.IsAtRoot()) {
-            if (ti.IsAtLeaf()) {
-              _SimpleList * indexed_path = new _SimpleList;
-              for (long node_index = ti.History().countitems() - 2; node_index >= 0; node_index--) {
-                long lookup_index = node_to_index.Find ((BaseRef)ti.History().Element(node_index));
-                if (lookup_index >= 0) {
-                  (*indexed_path) << node_to_index.GetXtra(lookup_index);
-                }
+           if (ti.IsAtLeaf()) {
+            _SimpleList * indexed_path = new _SimpleList;
+            for (long node_index = ti.History().countitems() - 2; node_index >= 0; node_index--) {
+              long lookup_index = node_to_index.Find ((BaseRef)ti.History().Element(node_index));
+              if (lookup_index >= 0) {
+                (*indexed_path) << node_to_index.GetXtra(lookup_index);
               }
-              indexed_path->Sort();
-              root_paths.AppendNewInstance(indexed_path);
-            } else {
-              node_to_index.Insert ((BaseRef)ti.GetNode(), inode_count++);
             }
-            
-            _SimpleList avl_storage;
-            _AVLList node_variables (&avl_storage);
-            iterator->ScanContainerForVariables(node_variables,node_variables);
-            
-            if (node_variables.countitems()>=2) {
-              two = true;
-            }
+            indexed_path->Sort();
+            _SimpleList nc;
+            nc = ti.History();
+            printf ("%s: %s (%s)\n", iterator->ContextFreeName().getStr(), ((_String*)indexed_path->toStr())->getStr(), ((_String*)nc.toStr())->getStr());
+            root_paths.AppendNewInstance(indexed_path);
+          } else {
+            node_to_index.Insert ((BaseRef)ti.GetNode(), inode_count++);
+          }
+          
+          _SimpleList avl_storage;
+          _AVLList node_variables (&avl_storage);
+          iterator->ScanContainerForVariables(node_variables,node_variables);
+          
+          if (node_variables.countitems()>=2) {
+            two = true;
           }
         }
         
@@ -8089,18 +8090,17 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
 
             long        level,
                         nc          =   0;
+          
 
-            
-            node<long>* curNode= DepthWiseStepTraverser(spanningTreeRoot);
-
-            while (curNode!=spanningTreeRoot) {
-                long maxLevel2 = 0;
-                totalLength = 0;
-                countingTraverseArbRoot (curNode, nil, totalLength, 1, maxLevel2);
-                if (maxLevel2<maxLevel) {
-                    maxLevel = maxLevel2;
-                }
-                curNode= DepthWiseStepTraverser((node <long>*) nil);
+            node_iterator<long> ni (spanningTreeRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+   
+            while (node<long>* iterator = ni.Next()) {
+              if (iterator != spanningTreeRoot) {
+                long maxLevel2 = 0L;
+                     totalLength = 0L;
+                countingTraverseArbRoot (spanningTreeRoot, nil, totalLength, 1, maxLevel2);
+                maxLevel = MIN (maxLevel, maxLevel2);
+              }
             }
 
             _SimpleList   computingOrder,
@@ -8853,8 +8853,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
 
 //_______________________________________________________________________________________
 
-BaseRef _LikelihoodFunction::toStr (void)
-{
+BaseRef _LikelihoodFunction::toStr (void) {
     _Parameter longOrShort,
                value = 0.0;
 
@@ -8868,8 +8867,6 @@ BaseRef _LikelihoodFunction::toStr (void)
 
     if (longOrShort>5.5) { // serialized self-contained LF
         _String   *sLF = new _String (8192L, true);
-        checkPointer    (sLF);
-        //_SimpleList   dummySL (8,0,1);
         SerializeLF     (*sLF);
         sLF->Finalize   ();
         return          sLF;
@@ -8881,14 +8878,14 @@ BaseRef _LikelihoodFunction::toStr (void)
     if (longOrShort>=4.0) { // just spool out the names of parameters
         _Variable * thisVar;
 
-        for (long i=0; i<indexInd.lLength; i++) {
+        for (unsigned long i=0UL; i<indexInd.lLength; i++) {
             thisVar = LocateVar(indexInd.lData[i]);
             if (thisVar->IsGlobal()) {
                 snprintf (str, sizeof(str), "\nglobal %s=%.16g;", thisVar->GetName()->getStr(),(double)GetIthIndependent(i));
             } else {
                 snprintf (str, sizeof(str), "\n%s=%.16g;", thisVar->GetName()->getStr(),(double)GetIthIndependent(i));
             }
-
+          
             res<<str;
 
             if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
@@ -8903,17 +8900,9 @@ BaseRef _LikelihoodFunction::toStr (void)
         if (indexDep.lLength>0) {
             for (long i=0; i<indexDep.lLength; i++) {
                 thisVar = LocateVar(indexDep.lData[i]);
-                if (thisVar->IsGlobal()) {
-                    snprintf (str, sizeof(str), "\nglobal %s",thisVar->GetName()->getStr());
-                } else {
-                    snprintf (str, sizeof(str), "\n%s",thisVar->GetName()->getStr());
-                }
-                res<<str;
-                res<<":=";
-                _String* s = thisVar->GetFormulaString();
-                res<<s;
-                DeleteObject(s);
-                res<<';';
+              
+                res.AppendAnAssignmentToBuffer(thisVar->GetName(), thisVar->GetFormulaString(), kAppendAnAssignmentToBufferFree | (thisVar->IsGlobal() ? kAppendAnAssignmentToBufferGlobal : 0));
+              
                 if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
                     snprintf (str, sizeof(str), "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
                     res<<str;
@@ -8970,29 +8959,30 @@ BaseRef _LikelihoodFunction::toStr (void)
                     res<<v->GetName();
                     res<<'=';
                     if (doDep) {
-                        _String* fs = v->GetFormulaString();
-                        res<<fs;
+                        res.AppendNewInstance(v->GetFormulaString());
                         res<<'=';
-                        DeleteObject(fs);
-                    }
-                    _String* s = (_String*)v->toStr();
-                    res<<s;
-                    res<<'\n';
-                    DeleteObject(s);
+                     }
+                  res.AppendNewInstance ((_String*)v->toStr());
                 }
             }
         }
         // traverse the trees now
         for (long treeCounter = 0; treeCounter<theTrees.lLength; treeCounter++) {
-            _TheTree* currentTree = (_TheTree*)LocateVar(theTrees(treeCounter));
-            long level = 0,myLevel=0,lastLevel = 0,l1,l2,j;
+            _TheTree* currentTree = GetIthTree (treeCounter);
+            long level = 0, lastLevel = 0,l1,l2,j;
             res<<"\nTree ";
             res<<currentTree->GetName();
             l1 = currentTree->GetName()->Length();
             res<<'=';
-            _CalcNode* currentNode=currentTree->DepthWiseTraversalLevel(myLevel,true),*nextNode;
-            level = myLevel;
-            nextNode=currentTree->DepthWiseTraversalLevel(myLevel) ;
+          
+            _TreeIterator ti (currentTree, _HY_TREE_TRAVERSAL_POSTORDER);
+          
+            _CalcNode* currentNode=ti.Next(),
+                     * nextNode;
+          
+            level = ti.Depth();
+            nextNode=ti.Next();
+          
             _SimpleList iV, dV2;
             // decide if we can use expected substituion measure
             bool    useExpectedSubstitutions = longOrShort<3;
@@ -9006,13 +8996,10 @@ BaseRef _LikelihoodFunction::toStr (void)
                     if (lastLevel) {
                         res<<',';
                     }
-                    for (j=0; j<level-lastLevel; j++) {
-                        res<<'(';
-                    }
+                    res.AppendNCopies('(', level-lastLevel);
+                  
                 } else if (level<lastLevel) {
-                    for (j=0; j<lastLevel-level; j++) {
-                        res<<')';
-                    }
+                    res.AppendNCopies(')', lastLevel-level);
                 } else {
                     res<<',';
                 }
@@ -9039,12 +9026,10 @@ BaseRef _LikelihoodFunction::toStr (void)
                         num = currentVar->GetName()->Cut(l2+2,-1);
                         res<<&num;
                         res<<'=';
-                        s = (_String*)currentVar->toStr();
-                        res<<s;
+                        res.AppendNewInstance((_String*)currentVar->toStr());
                         if (j<iV.lLength-1) {
                             res<<',';
                         }
-                        DeleteObject(s);
                     }
 
                     for (j=0; j<dV2.lLength; j++) {
@@ -9055,13 +9040,9 @@ BaseRef _LikelihoodFunction::toStr (void)
                         num = currentVar->GetName()->Cut(l2+2,-1);
                         res<<&num;
                         res<<'=';
-                        s = currentVar->GetFormulaString();
-                        res<<s;
+                        res.AppendNewInstance(currentVar->GetFormulaString());
                         res<<'=';
-                        DeleteObject(s);
-                        s = (_String*)currentVar->toStr();
-                        res<<s;
-                        DeleteObject(s);
+                        res.AppendNewInstance((_String*)currentVar->toStr());
                     }
                     res<<'}';
                 } else {
@@ -9079,14 +9060,13 @@ BaseRef _LikelihoodFunction::toStr (void)
 
                 }
                 lastLevel = level;
-                level = myLevel;
+                level = ti.Depth();
                 currentNode = nextNode;
-                nextNode=currentTree->DepthWiseTraversalLevel(myLevel) ;
+                nextNode=ti.Next() ;
 
             }
-            for (j=0; j<lastLevel-level; j++) {
-                res<<')';
-            }
+            res.AppendNCopies(')', lastLevel - level);
+          
             res<<';';
         }
         res << '\n';
@@ -9100,21 +9080,16 @@ BaseRef _LikelihoodFunction::toStr (void)
             _Variable* v = LocateVar (doDep?indexDep(i-indexInd.lLength):indexInd(i));
             res<<v->GetName();
             if (doDep) {
-                _String* fs = v->GetFormulaString();
-                res<<fs;
+                res.AppendNewInstance(v->GetFormulaString());
                 res<<'=';
-                DeleteObject (fs);
             }
             res<<'=';
-            _String* s = (_String*)v->toStr();
-            res<<s;
+            res.AppendNewInstance((_String*)v->toStr());
             res<<'\n';
-            DeleteObject(s);
         }
     } else {
         snprintf (str, sizeof(str), "%15.15g",(double)value);
-        _String num (str);
-        res<<&num;
+        res<<str;
     }
 
     if (longOrShort < 4.0) {
