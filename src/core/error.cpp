@@ -402,6 +402,7 @@ void WarnError (_String st)
       terminateExecution = true;
       ProblemReport (errMsg);
     #else
+  
       exit(1);
     #endif
   

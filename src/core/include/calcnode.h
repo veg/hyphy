@@ -431,7 +431,7 @@ public:
     
     _List*          MapNodesToModels                    (void);
 
-    virtual _String const&  GetNodeName                         (node<long> *, bool = false) const;
+    virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
     virtual _String*        GetNodeModel                        (node<long> *) const;
     virtual void            GetBranchLength                     (node<long> *, _String&, bool = false) const;
     // SLKP 20100901:
@@ -442,7 +442,7 @@ public:
     virtual _Parameter      GetBranchLength                     (node<long> *) const;
     virtual void            GetBranchValue                      (node<long> *, _String&) const;
     virtual void            GetBranchVarValue                   (node<long> *, _String&, long) const;
-    virtual _String const&  GetNodeStringForTree                (node<long> *, int flags) const;
+    virtual _String const  GetNodeStringForTree                (node<long> *, int flags) const;
     virtual void            PasteBranchLength                   (node<long> *, _String&, long, _Parameter factor = 1.) const;
 
     node<long>&     GetRoot                             (void) const {
@@ -456,11 +456,11 @@ public:
         return *currentNode;
     }*/
   
-    const _List&    RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
+    const _List    RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
     void            SubTreeString                       (node<long>* root, _String&, bool = false, long = -1, _AVLListXL* = nil) const;
 
     _String         CompareTrees                        (_TreeTopology*) const;
-    const _String&         MatchTreePattern                    (_TreeTopology const*) const;
+    const _String         MatchTreePattern                    (_TreeTopology const*) const;
     virtual _PMathObj       TipName                             (_PMathObj);
     _PMathObj       TreeBranchName                          (_PMathObj, bool = false, _PMathObj = nil);
     virtual _PMathObj       BranchLength                        (_PMathObj);
@@ -589,7 +589,7 @@ public:
     virtual  _PMathObj      TEXTreeString               (_PMathObj) const;
     virtual  _PMathObj      PlainTreeString             (_PMathObj,_PMathObj);
 
-    virtual _String const&  GetNodeName                         (node<long> *, bool = false) const;
+    virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
     virtual  void           GetBranchLength             (node<long> *, _String&, bool = false) const;
     virtual  _Parameter     GetBranchLength             (node<long> *) const ;
     virtual  void           GetBranchValue              (node<long> *, _String&) const ;

@@ -2076,7 +2076,7 @@ node<long>*  _TreeTopology::CopyTreeStructure (node <long>* theNode,  bool)
 
 //_______________________________________________________________________________________________
 
-const _String&    _TreeTopology::GetNodeName (node<long>* n, bool fullName) const {
+const _String    _TreeTopology::GetNodeName (node<long>* n, bool fullName) const {
     if (fullName) {
         return *GetName()&'.'&*(_String*)(flatTree.GetItem(n->in_object));
     }
@@ -2114,12 +2114,12 @@ void    _TreeTopology::SetLeafName(long res, _String* newName)
 }
 //_______________________________________________________________________________________________
 
-const _String&    _TheTree::GetNodeName      (node<long>* n, bool fullName) const
+const _String    _TheTree::GetNodeName      (node<long>* n, bool fullName) const
 {
     if (fullName) {
         return *_mapNodeToCalcNode(n)->GetName();
     }
-    return *_mapNodeToCalcNode(n)->GetName()->Cut (GetName()->sLength+1,-1);
+    return _mapNodeToCalcNode(n)->GetName()->Cut (GetName()->sLength+1,-1);
 }
 
 
@@ -2149,7 +2149,7 @@ _List*     _TreeTopology::MapNodesToModels (void) {
 
   //_______________________________________________________________________________________________
 
-_String const&  _TreeTopology::GetNodeStringForTree                (node<long> * n , int flags) const {
+_String const  _TreeTopology::GetNodeStringForTree                (node<long> * n , int flags) const {
 
   _String node_desc;
   
@@ -2560,7 +2560,7 @@ _PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutio
 
   //_______________________________________________________________________________________________
 
-const _List&     _TreeTopology::RetrieveNodeNames (bool doTips, bool doInternals, int traversalType) const {
+const _List     _TreeTopology::RetrieveNodeNames (bool doTips, bool doInternals, int traversalType) const {
   _List result;
   
   
@@ -3815,7 +3815,7 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p) {
           while (node<long>* iterator = ni.Next()) {
             _String nn = GetNodeName(iterator);
             for (long i = 0L; i < 2; i++) {
-              if (nodes[i] && nn == nodes[i]) {
+              if (nodes[i] && nn.Equal(nodes[i])) {
                 node_objects[i] = iterator;
                 levels[i] = ni.Level();
                 if (node_objects[1-i]) {
@@ -4038,7 +4038,7 @@ void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,
       }
       res.AppendNCopies('(', ni.Level()-last_level);
     } else if (ni.Level() < last_level) {
-      res.AppendNCopies('(', last_level-ni.Level());
+      res.AppendNCopies(')', last_level-ni.Level());
     } else if (last_level) {
       res<<',';
     }
@@ -6564,8 +6564,6 @@ void _CalcNode::ConvertToSimpleMatrix (void) const {
             mm->MakeMeSimple();
         }
     }
-
-    return 0;
 }
 
 //_______________________________________________________________________________________________
@@ -7084,7 +7082,7 @@ _List*  _TreeTopology::SplitTreeIntoClusters (unsigned long size, unsigned long 
 
   //_______________________________________________________________________________________________
 
-const _String& _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) const {
+const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) const {
     // the pattern is this
     // compare to is the potential match
   _List           myLeaves,

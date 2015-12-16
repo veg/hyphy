@@ -141,7 +141,6 @@ template <class node_data> node<node_data>* node_iterator<node_data>::Next(_Simp
               this->iterator_state = test_node;
             } else {
               test_node = this->iterator_state->go_up();
-              this->traversal_level --;
               this->pop_history_item (history);
               while (test_node && test_node->go_down (test_node->get_num_nodes()) == this->iterator_state) {
                 this->iterator_state = test_node;

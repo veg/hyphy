@@ -2371,6 +2371,7 @@ _Matrix::_Matrix (_List const& sl)
 {
     if (sl.lLength) {
         CreateMatrix     (this, 1, sl.lLength,  false, true, false);
+        Convert2Formulas();
  
         for (unsigned long k=0UL; k<sl.lLength; k++) {
              StoreFormula (0L,k,*new _Formula (new _FString (*(_String*) sl.GetItem(k))), false, false);

@@ -387,6 +387,7 @@ bool    GlobalShutdown (void)
     }
     _HY_HBLCommandHelper.Clear();
     _HY_ValidHBLExpressions.Clear();
+    listOfCompiledFormulae.Clear();
   
 
     return res;

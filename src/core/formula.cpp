@@ -213,8 +213,7 @@ node<long>* _Formula::DuplicateFormula (node<long>* src, _Formula& tgt)
 //__________________________________________________________________________________
 _Formula* _Formula::Differentiate (_String varName, bool bail)
 {
-    long          varID = LocateVarByName (varName),
-                  k;
+    long          varID = LocateVarByName (varName);
 
     if (varID<0) {
         return new _Formula (new _Constant (0.0));
@@ -230,19 +229,19 @@ _Formula* _Formula::Differentiate (_String varName, bool bail)
                  dydx;
 
 
-    {
-        _AVLList al (&varRefs);
-        ScanFForVariables (al, true, true, true);
-        al.ReorderList ();
-    }
-
-    for (k=0; k < varRefs.lLength; k++) {
+    _AVLList al (&varRefs);
+    ScanFForVariables (al, true, true, true);
+    al.ReorderList ();
+  
+    for (unsigned long k=0UL; k < varRefs.lLength; k++) {
         _Variable* thisVar = LocateVar (varRefs.lData[k]);
         _Formula * dYdX;
         if (thisVar->IsIndependent()) {
             dYdX = new _Formula ((thisVar->GetName()->Equal (&varName))?new _Constant (1.0):new _Constant (0.0));
-            checkPointer (dYdX);
             dYdX->ConvertToTree();
+            if (dYdX->theTree == nil) {
+              printf ("FUBAR!!!\n");
+            }
             dydx << (long)dYdX;
         } else {
             dYdX = thisVar->varFormula->Differentiate (varName);
@@ -258,7 +257,7 @@ _Formula* _Formula::Differentiate (_String varName, bool bail)
     node<long>*           dTree = nil;
 
     if (!(dTree = InternalDifferentiate (theTree, varID, varRefs, dydx, *res))) {
-        for (k=0; k<dydx.lLength; k++) {
+        for (unsigned long k=0UL; k<dydx.lLength; k++) {
             delete ((_Formula*)dydx.lData[k]);
         }
 
@@ -272,7 +271,7 @@ _Formula* _Formula::Differentiate (_String varName, bool bail)
         }
     }
 
-    for (k=0; k<dydx.lLength; k++) {
+    for (unsigned long k=0UL; k<dydx.lLength; k++) {
         delete ((_Formula*)dydx.lData[k]);
     }
 
@@ -2085,8 +2084,7 @@ _Formula::_Formula (_String&s, _VariableContainer* theParent, _String* reportErr
     }
 }
 //__________________________________________________________________________________
-void    _Formula::ConvertToTree (bool err_msg)
-{
+void    _Formula::ConvertToTree (bool err_msg) {
     if (!theTree && theFormula.lLength) { // work to do
         _SimpleList nodeStack;
         _Operation* currentOp;

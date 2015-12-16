@@ -2668,7 +2668,6 @@ inline _Parameter sqr (_Parameter x)
             indexed_path->Sort();
             _SimpleList nc;
             nc = ti.History();
-            printf ("%s: %s (%s)\n", iterator->ContextFreeName().getStr(), ((_String*)indexed_path->toStr())->getStr(), ((_String*)nc.toStr())->getStr());
             root_paths.AppendNewInstance(indexed_path);
           } else {
             node_to_index.Insert ((BaseRef)ti.GetNode(), inode_count++);
