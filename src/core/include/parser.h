@@ -118,7 +118,7 @@ void        DeleteTreeVariable
 
 void        stashParameter  (_String& name, _Parameter  newVal, bool);
 void        setParameter    (_String& name, _Parameter def, _String* = nil);
-void        setParameter    (_String& name, _PMathObj  def, bool = true, _String* = nil);
+void        setParameter    (_String& name, _PMathObj  def, _String* = nil, bool = true);
 
 long        VerbosityLevel (void);
 void        ReplaceVar      (_Variable*);

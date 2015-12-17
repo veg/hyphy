@@ -1696,16 +1696,16 @@ void  setParameter (_String& name, _Parameter def, _String* namespc)
 
 //__________________________________________________________________________________
 
-void  setParameter (_String& name, _PMathObj def, bool dup, _String* namespc)
+void  setParameter (_String& name, _PMathObj def, _String* namespc, bool dup)
 {
     if (namespc) {
         _String namespcd = AppendContainerName(name,namespc);
-        setParameter (namespcd,def,dup);
+        setParameter (namespcd,def,nil, dup);
     } else {
         long f = LocateVarByName (name);
         if (f<0) {
             _Variable cornholio(name);
-            setParameter (name,def,dup);
+            setParameter (name,def,nil, dup);
         } else {
             FetchVar(f)->SetValue(def,dup);
         }
