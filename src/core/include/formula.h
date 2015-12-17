@@ -185,7 +185,7 @@ public:
 
     _Parameter  Integral            (_Variable*,_Parameter, _Parameter, bool inifinite = false);
     _Parameter  MeanIntegral        (_Variable*,_Parameter, _Parameter, bool inifinite = false);
-    _Formula*   Differentiate       (_String, bool = true);
+    _Formula*   Differentiate       (_String, bool = true, bool convert_from_tree = true);
     node<long>* InternalDifferentiate
     (node<long>*, long,_SimpleList&, _SimpleList&, _Formula&);
 

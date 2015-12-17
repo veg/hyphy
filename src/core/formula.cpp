@@ -211,7 +211,7 @@ node<long>* _Formula::DuplicateFormula (node<long>* src, _Formula& tgt)
 }
 
 //__________________________________________________________________________________
-_Formula* _Formula::Differentiate (_String varName, bool bail)
+_Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from_tree)
 {
     long          varID = LocateVarByName (varName);
 
@@ -239,19 +239,17 @@ _Formula* _Formula::Differentiate (_String varName, bool bail)
         if (thisVar->IsIndependent()) {
             dYdX = new _Formula ((thisVar->GetName()->Equal (&varName))?new _Constant (1.0):new _Constant (0.0));
             dYdX->ConvertToTree();
-            if (dYdX->theTree == nil) {
-              printf ("FUBAR!!!\n");
-            }
             dydx << (long)dYdX;
         } else {
-            dYdX = thisVar->varFormula->Differentiate (varName);
+            dYdX = thisVar->varFormula->Differentiate (varName, bail, false);
+          
             if (dYdX->theFormula.lLength == 0) {
                 delete (dYdX);
                 return res;
             }
             dydx << (long)dYdX;
         }
-    }
+      }
 
     SortLists             (&varRefs, &dydx);
     node<long>*           dTree = nil;
@@ -278,7 +276,8 @@ _Formula* _Formula::Differentiate (_String varName, bool bail)
     res->theFormula.AppendNewInstance (new _Operation(new _Constant (0.0))) ;
     res->theTree         = dTree;
     res->InternalSimplify (dTree);
-    res->ConvertFromTree  ();
+    if (convert_from_tree)
+      res->ConvertFromTree  ();
     return res;
 
 }
