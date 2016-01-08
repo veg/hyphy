@@ -248,7 +248,7 @@ _String::_String (const char s)
 _String::_String (_Parameter val, const char * format)
 {
     char s_val[256];
-    sLength = snprintf (s_val,256, format?format:PRINTF_FORMAT_STRING,val);
+    sLength = snprintf (s_val,256, format?format:"%g",val);
     checkPointer (sData = (char*)MemAllocate (sLength+1));
     for (unsigned long k=0; k<=sLength; k++) {
         sData[k] = s_val[k];

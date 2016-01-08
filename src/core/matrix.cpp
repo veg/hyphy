@@ -9747,12 +9747,17 @@ _GrowingVector::_GrowingVector (bool iscol) : _Matrix (64,1,false,true)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
+void _GrowingVector::Trim (void) {
+  Resize (used);
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------------*/
+
 BaseRef     _GrowingVector::makeDynamic (void)
 {
     _GrowingVector * result = (_GrowingVector*)checkPointer(new _GrowingVector);
     result->_Matrix::Duplicate (this);
     result->used = used;
-    result->vDim = 1UL;
     result->isColumn = isColumn;
     return result;
 }

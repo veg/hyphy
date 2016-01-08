@@ -2026,7 +2026,7 @@ void _Formula::PushTerm (BaseRef object) {
 //__________________________________________________________________________________
 void _Formula::SimplifyConstants (void){
   ConvertToTree    ();
-  //InternalSimplify (theTree);
+  InternalSimplify (theTree);
   ConvertFromTree ();
 }
 

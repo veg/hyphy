@@ -1016,6 +1016,11 @@ void    SetupOperationLists (void)
         //HY_OP_CODE_SIMPLEX
         BuiltInFunctions.AppendNewInstance (new _String ("Simplex"));
 
+        //HY_OP_CODE_EXPRESSION
+        BuiltInFunctions.AppendNewInstance (new _String ("Simplify"));
+        FunctionNameList << BuiltInFunctions (HY_OP_CODE_SIMPLIFY);
+        FunctionArgumentCount << 2;
+
         //HY_OP_CODE_SIN
         BuiltInFunctions.AppendNewInstance (new _String ("Sin"));
 

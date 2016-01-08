@@ -607,6 +607,9 @@ public:
         }
         return 1UL;
     }
+  
+    void   Trim             (void);
+  
     long   Store            (_Parameter);
     long   GetUsed          (void) const {
         return used;

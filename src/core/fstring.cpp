@@ -553,6 +553,44 @@ _PMathObj _FString::Evaluate (_hyExecutionContext* context)
     return new _MathObject;
 }
 
+  //__________________________________________________________________________________
+
+_PMathObj _FString::SubstituteAndSimplify(_PMathObj arguments) {
+  /**
+   "arguments" is expected to be a dictionary of with key : value pairs like
+    "x" : 3, 
+    "y" : {{1,2}}
+   
+    etc
+   */
+  if (theString && theString->sLength) {
+    _String     s (*theString);
+    _Formula    evaluator (s);
+    
+    
+    if (!terminateExecution) {
+      _AssociativeList* argument_substitution_map = (_AssociativeList*) (arguments->ObjectClass() == ASSOCIATIVE_LIST ? arguments : nil);
+      if (argument_substitution_map) { // do direct argument substitution
+        for (unsigned long expression_term = 0UL; expression_term < evaluator.Length(); expression_term++) {
+          _Operation* current_term       = evaluator.GetIthTerm(expression_term);
+          _Variable * variable_reference = current_term->RetrieveVar();
+          if (variable_reference) {
+            _PMathObj replacement = argument_substitution_map->GetByKey (*variable_reference->GetName());
+            if (replacement) {
+              current_term->SetAVariable(-1);
+              current_term->SetNumber ((_PMathObj)replacement->makeDynamic());
+            }
+          }
+        }
+      }
+      
+      evaluator.SimplifyConstants();
+      return new _FString ((_String*)evaluator.toStr());
+    }
+  }
+  return new _MathObject;
+}
+
 //__________________________________________________________________________________
 
 _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* context, bool return_variable_ref) {
@@ -715,6 +753,9 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutio
         break;
     case HY_OP_CODE_ROWS: // Count Objects of given type
         return CountGlobalObjects();
+        break;
+    case HY_OP_CODE_SIMPLIFY: // Simplify an expression
+        return SubstituteAndSimplify (p);
         break;
     case HY_OP_CODE_TYPE: // Type
         return Type();

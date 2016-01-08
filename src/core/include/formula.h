@@ -157,6 +157,9 @@ public:
         given an index (i) as the argument, the function retrieves
         the i-th term of the formula
     */
+  
+    unsigned long Length            (void) const {return theFormula.lLength;}
+  
     void        Clear               (void);
     _PMathObj   GetTheMatrix        (void);
   

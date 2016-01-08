@@ -91,10 +91,12 @@ function estimators.branch_lengths_in_string(tree_id, lookup) {
 
 function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
     ExecuteCommands("GetString (estimators.extractMLEs.lfInfo, `likelihood_function_id`,-1)");
+
+
     estimators.extractMLEs.results = {};
     estimators.extractMLEs.partitions = utility.array1D(estimators.extractMLEs.lfInfo["Trees"]);
 
-    // copy global variables first 
+    // copy global variables first
 
     estimators.extractMLEs.results["global"] = {};
     model_descriptions["estimators.copyGlobals"][""];
@@ -127,7 +129,7 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
     estimators.applyExistingEstimates.results = {};
     estimators.applyExistingEstimates.partitions = Rows(estimators.applyExistingEstimates.lfInfo["Trees"]);
 
-    // copy global variables first 
+    // copy global variables first
 
     estimators.applyExistingEstimates.results["global"] = {};
 
@@ -136,8 +138,9 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
     estimators.applyExistingEstimates.df_correction = 0;
 
     for (estimators.applyExistingEstimates.i = 0; estimators.applyExistingEstimates.i < estimators.applyExistingEstimates.partitions; estimators.applyExistingEstimates.i += 1) {
-        
-        
+
+        // fprintf (stdout, initial_values, "\n");
+
         if (Type((initial_values["branch lengths"])[estimators.applyExistingEstimates.i]) == "AssociativeList") {
 
             _tree_name = (estimators.applyExistingEstimates.lfInfo["Trees"])[estimators.applyExistingEstimates.i];
@@ -148,6 +151,7 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
             for (estimators.applyExistingEstimates.b = 0; estimators.applyExistingEstimates.b < Abs(estimators.applyExistingEstimates.map); estimators.applyExistingEstimates.b += 1) {
                 _branch_name = estimators.applyExistingEstimates.branch_names[estimators.applyExistingEstimates.b];
                 _existing_estimate = ((initial_values["branch lengths"])[estimators.applyExistingEstimates.i])[_branch_name];
+
                 if (Type(_existing_estimate) == "AssociativeList") {
                     _set_branch_length_to = _existing_estimate["MLE"];
 
@@ -167,7 +171,7 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
 
         }
     }
-    
+
     return estimators.applyExistingEstimates.df_correction;
 }
 
@@ -266,7 +270,7 @@ function estimators.fitGTR(data_filter, tree, initial_values) {
     estimators.fitGTR.results["parameters"] = estimators.fitGTR.mles[1][1] + 3 + estimators.fitGTR.df;
 
     DeleteObject(estimators.fitGTR.likelihoodFunction);
-    
+
     return estimators.fitGTR.results;
 }
 
@@ -295,13 +299,15 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
         "default": estimators.fitMGREV.model
     }, None);
 
+    //fprintf (stdout, "\n\n", Format (estimators.fitMGREV.tree, 1,1), "\n\n");
+
     if (option["model-type"] == terms.local && option["partitioned-omega"]) {
         estimators.fitMGREV.model_list = tree["model_list"];
         if (Columns(estimators.fitMGREV.model_list) > 1) {
             estimators.fitMGREV.partitioned_omega = 1;
         }
     }
-    
+
     LikelihoodFunction estimators.fitMGREV.likelihoodFunction = (estimators.fitMGREV.codon_data, estimators.fitMGREV.tree);
 
     if (estimators.fitMGREV.partitioned_omega) {
@@ -332,9 +338,7 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
         }, initial_values, option["proportional-branch-length-scaler"]);
     }
 
-    // io.spoolLF ("estimators.fitMGREV.likelihoodFunction", "/Volumes/home-raid/Desktop/test", None);
-    
-    
+
     Optimize(estimators.fitMGREV.mles, estimators.fitMGREV.likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
@@ -344,10 +348,10 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
     estimators.fitMGREV.results = estimators.extractMLEs("estimators.fitMGREV.likelihoodFunction", {
         "estimators.fitMGREV.mg": estimators.fitMGREV.model
     });
-    
+
     estimators.fitMGREV.results["LogL"] = estimators.fitMGREV.mles[1][0];
     estimators.fitMGREV.results["parameters"] = estimators.fitMGREV.mles[1][1] + 9 + estimators.fitMGREV.df;
-    
+
     if (option ["retain-lf-object"]) {
         estimators.fitMGREV.results["LF"] = "estimators.fitMGREV.likelihoodFunction";
     } else {

@@ -1,24 +1,32 @@
 LoadFunctionLibrary ("ReadDelimitedFiles");
 
 function io.readCodonDataSet (dataset_name) {
-    ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" 
-                                      + DIRECTORY_SEPARATOR 
-                                      + "TemplateModels" 
-                                      + DIRECTORY_SEPARATOR 
+    return io.readCodonDataSetFromPath (dataset_name, None);
+}
+
+function io.readCodonDataSetFromPath (dataset_name, path) {
+    ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles"
+                                      + DIRECTORY_SEPARATOR
+                                      + "TemplateModels"
+                                      + DIRECTORY_SEPARATOR
                                       + "chooseGeneticCode.def");
-    
-    ExecuteCommands ("DataSet `dataset_name` = ReadDataFile (PROMPT_FOR_FILE);");
-    return {"code": _Genetic_Code, "stop" : GeneticCodeExclusions, "file" : LAST_FILE_PATH, "sequences" : Eval ("`dataset_name`.species")};
+
+    if (Type (path) == "String") {
+        ExecuteCommands ("DataSet `dataset_name` = ReadDataFile (`path`);");
+    } else {
+        ExecuteCommands ("DataSet `dataset_name` = ReadDataFile (PROMPT_FOR_FILE);");
+        path = LAST_FILE_PATH;
+    }
+    return {"code": _Genetic_Code, "stop" : GeneticCodeExclusions, "file" : path, "sequences" : Eval ("`dataset_name`.species")};
 }
 
 function io.readNucleotideDataSet (dataset_name, file_name) {
-    
     if (Type (file_name) == "String") {
         ExecuteCommands ("DataSet `dataset_name` = ReadDataFile (`file_name`);");
     } else {
-        ExecuteCommands ("DataSet `dataset_name` = ReadDataFile (PROMPT_FOR_FILE);");    
+        ExecuteCommands ("DataSet `dataset_name` = ReadDataFile (PROMPT_FOR_FILE);");
     }
-    
+
     return {"sequences" : Eval ("`dataset_name`.species")};
 }
 
@@ -30,8 +38,8 @@ function io.getTreeString (look_for_newick_tree) {
       IS_TREE_PRESENT_IN_DATA = 0;
     }
 
-    ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" 
-                                      + DIRECTORY_SEPARATOR 
+    ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles"
+                                      + DIRECTORY_SEPARATOR
                                       + "queryTree.bf");
     return treeString;
 }
@@ -78,7 +86,7 @@ lfunction io.reportProgressMessageMD (analysis, stage, text) {
         cache[analysis] = {};
         (cache[analysis])[stage] = 1;
     }
-    
+
     if (advance) {
         fprintf (stdout, Abs (cache[analysis]), ". ", text, "\n");
     } else {
@@ -110,7 +118,7 @@ function io.get_a_list_of_files (filename) {
             return io.validate_a_list_of_files (io.get_a_list_of_files.list);
         }
     }
-    
+
     io.get_a_list_of_files.result = {};
     io.printAndUnderline ("Enter paths to files (blank line to end entry)", "-");
     while (1) {
@@ -123,7 +131,7 @@ function io.get_a_list_of_files (filename) {
             break;
         }
         io.get_a_list_of_files.result + io.get_a_list_of_files.current_path;
-    } 
+    }
 }
 
 function io.displayAnalysisBanner (analysis_info) {
@@ -142,17 +150,17 @@ function io.displayAnalysisBanner (analysis_info) {
     if (io.hasStringKey ("authors", analysis_info)) {
         fprintf (stdout, "\n- __Written by__: ");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["authors"], 72), "\n");
-    }   
+    }
     if (io.hasStringKey ("contact", analysis_info)) {
         fprintf (stdout, "\n- __Contact Information__: ");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["contact"], 72), "\n");
-    }   
+    }
     if (io.hasStringKey ("version", analysis_info)) {
         fprintf (stdout, "\n- __Analysis Version__: ");
         fprintf (stdout, io.formatLongStringToWidth (analysis_info["version"], 72), "\n");
-    }   
+    }
     fprintf (stdout, "\n");
-   
+
     return None;
 }
 
@@ -179,7 +187,7 @@ function io.printAndUnderline (string, char) {
 function io.formatLongStringToWidth (string, width) {
     words = splitOnRegExp (string, "[\\ \n]+");
     lines = {};
-    
+
     current_line = "";
     words_in_current_line = 0;
     for (i = 0; i < Abs (words); i+=1 ) {
@@ -196,12 +204,12 @@ function io.formatLongStringToWidth (string, width) {
                 current_line = "";
                 i = i - 1;
             }
-        } 
+        }
     }
-    
+
     if (words_in_current_line) {
         lines + current_line;
     }
-    
+
     return Join ("\n", lines);
 }

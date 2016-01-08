@@ -156,7 +156,13 @@ public:
         warnError (-666);
         return this;
     }
-    virtual _MathObject* Min        (_MathObject*)     {
+
+    virtual _MathObject* Simplify    (void)             {
+      warnError (-666);
+      return this;
+    }
+
+   virtual _MathObject* Min        (_MathObject*)     {
         warnError (-666);
         return this;
     }

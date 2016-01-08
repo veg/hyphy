@@ -1433,7 +1433,6 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                 nodeStack<<(long)currentNode;
                 nodeNumbers<<nodeCount;
                 newNode = new node<long>;
-                checkPointer(newNode);
                 currentNode->add_node (*newNode);
                 nodeCount++;
             }
@@ -1452,6 +1451,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             }
             parentNode = (node<long>*)nodeStack(lastNode);
             FinalizeNode (parentNode, nodeNumbers(lastNode), nodeName, nodeParameters, nodeValue, &nodeComment);
+            nodeName = empty;
             nodeStack.Delete(lastNode, false);
             nodeNumbers.Delete(lastNode, false);
 
@@ -3785,6 +3785,9 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p) {
             branch_lengths->Store(GetBranchLength (iterator));
           }
         }
+        branch_lengths->Store (0.0); // backward compatibility with storing 0 at the root
+        branch_lengths->Trim();
+        branch_lengths->Transpose();
         return branch_lengths;
       } else {
           // get a specific branch length
@@ -4142,7 +4145,7 @@ void            _TreeTopology::PasteBranchLength (node<long>* iterator, _String&
 
         if (t.sLength) {
             res<<':';
-            res<< (t.toNum()*factor);
+            res<< _String (t.toNum()*factor);
         }
     }
 

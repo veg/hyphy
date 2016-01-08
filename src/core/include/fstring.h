@@ -75,6 +75,8 @@ public:
     virtual _PMathObj CountGlobalObjects(void);
     virtual _PMathObj FileExists        (void);
     virtual _PMathObj Evaluate          (_hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual _PMathObj SubstituteAndSimplify
+                                        (_PMathObj arguments);
     virtual _PMathObj Join              (_PMathObj);
     virtual _PMathObj Differentiate     (_PMathObj);
     virtual unsigned long      ObjectClass       (void) {

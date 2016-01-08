@@ -2,13 +2,20 @@ LoadFunctionLibrary ("GrabBag");
 LoadFunctionLibrary ("IOFunctions.bf");
 
 function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name) {
-    data_info = io.readCodonDataSet (dataset_name);
+    return utility.loadCodonDataFile (dataset_name, io.readCodonDataSet (dataset_name));
+}
+
+function utility.loadGeneticCodeAndAlignment (dataset_name, datafilter_name, path) {
+    return utility.loadCodonDataFile (dataset_name, io.readCodonDataSetFromPath (dataset_name, path));
+}
+
+function utility.loadCodonDataFile (dataset_name, data_info) {
     ExecuteCommands ("DataSetFilter `datafilter_name` = CreateFilter (`dataset_name`, 3, , , data_info[\"stop\"])");
     io.checkAssertion ("`datafilter_name`.sites*3==`dataset_name`.sites","The input alignment must not contain stop codons");
     data_info ["sites"] = Eval ("`datafilter_name`.sites");
     data_info ["dataset"] = dataset_name;
     data_info ["datafilter"] = datafilter_name;
-    
+
     return data_info;
 }
 
@@ -18,10 +25,9 @@ function utility.readNucleotideAlignment (file_name, dataset_name, datafilter_na
     data_info ["sites"] = Eval ("`datafilter_name`.sites");
     data_info ["dataset"] = dataset_name;
     data_info ["datafilter"] = datafilter_name;
-    
+
     return data_info;
 }
-
 
 function utility.associativeListToJSON(associative_list) {
 
@@ -65,29 +71,29 @@ lfunction utility.partition_tree (avl, l) {
 function utility.loadAnnotatedTopology (look_for_newick_tree) {
     tree_string = io.getTreeString(look_for_newick_tree);
     Topology     T = tree_string;
-    
-    utility.loadAnnotatedTopology.branch_lengths = BranchLength (T, -1);
+
+    utility.loadAnnotatedTopology.branch_lengths  = BranchLength (T, -1);
     utility.loadAnnotatedTopology.branch_names    = BranchName (T, -1);
-    
+
     utility.loadAnnotatedTopology.bls            = {};
-    
+
     for (utility.loadAnnotatedTopology.k = 0; utility.loadAnnotatedTopology.k < Columns (utility.loadAnnotatedTopology.branch_names) - 1; utility.loadAnnotatedTopology.k += 1) {
         if (utility.loadAnnotatedTopology.branch_lengths[utility.loadAnnotatedTopology.k] >= 0.) {
-            utility.loadAnnotatedTopology.bls [utility.loadAnnotatedTopology.branch_names[utility.loadAnnotatedTopology.k]] = 
-               utility.loadAnnotatedTopology.branch_lengths[utility.loadAnnotatedTopology.k]; 
+            utility.loadAnnotatedTopology.bls [utility.loadAnnotatedTopology.branch_names[utility.loadAnnotatedTopology.k]] =
+               utility.loadAnnotatedTopology.branch_lengths[utility.loadAnnotatedTopology.k];
         }
     }
-    
+
     GetInformation (modelMap, T);
-    
+
     leaves_internals    = {};
-    
+
     utility.partition_tree (T^0, leaves_internals);
-    
+
     utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", 1);
     T.str = "" + T;
     utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", None);
-    
+
     return {"string"     : Format (T,1,0),
             "branch_lengths" :  utility.loadAnnotatedTopology.bls,
             "annotated_string" : T.str ,
@@ -100,10 +106,10 @@ function utility.callFunction (id, arguments) {
 
     if (Type (id) == "String") {
         if (Type (arguments) == "AssociativeList") {
-            return Eval ("`id` (" + Join (",", arguments) + ")");	
+            return Eval ("`id` (" + Join (",", arguments) + ")");
         }
         return Eval ("`id`()");
-    } 
+    }
     return None;
 }
 
@@ -144,7 +150,7 @@ lfunction utility.checkCacheFile (data_info) {
          cache_info["cache"] = {};
     }
     return cache_info;
-}   
+}
 
 lfunction utility.array.find (array, value) {
     d = Rows (array) * Columns (array);
@@ -162,12 +168,12 @@ lfunction utility.dict.swap_keys_and_values (dict) {
     swapped_dict = {};
     keys         = Rows (dict);
     items        = Abs (dict);
-    
+
     for (i = 0; i < items; i+=1) {
         key = keys[i];
         swapped_dict [dict[key]] = key;
     }
-    
+
     return swapped_dict;
 }
 

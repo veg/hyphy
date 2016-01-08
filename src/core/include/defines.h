@@ -140,7 +140,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_OP_CODE_REROOTTREE      (1+HY_OP_CODE_RANDOM) // RerootTree
 #define  HY_OP_CODE_ROWS            (1+HY_OP_CODE_REROOTTREE) // Rows
 #define  HY_OP_CODE_SIMPLEX         (1+HY_OP_CODE_ROWS) // Simplex
-#define  HY_OP_CODE_SIN             (1+HY_OP_CODE_SIMPLEX) // Sin
+#define  HY_OP_CODE_SIMPLIFY        (1+HY_OP_CODE_SIMPLEX) // Simplify
+#define  HY_OP_CODE_SIN             (1+HY_OP_CODE_SIMPLIFY) // Sin
 #define  HY_OP_CODE_SQRT            (1+HY_OP_CODE_SIN) // Sqrt
 #define  HY_OP_CODE_TEXTREESTRING   (1+HY_OP_CODE_SQRT) // TEXTreeString
 
