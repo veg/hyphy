@@ -112,7 +112,7 @@ function models.codon.MG_REV.set_branch_length (model, value, parameter) {
 
                   //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
 
-                  parameters.setConstraint (models.codon.MG_REV.set_branch_length.beta.p, "(" + value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" +  model [terms.synonymous_rate] + "))/(" +  model [terms.nonsynonymous_rate] + ")", "");
+                  parameters.setConstraint (models.codon.MG_REV.set_branch_length.beta.p, "(" + 3*value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" +  model [terms.synonymous_rate] + "))/(" +  model [terms.nonsynonymous_rate] + ")", "");
 
                 } else {
                     assert (0, "TBA in models.codon.MG_REV.set_branch_length");

@@ -1,5 +1,5 @@
 lfunction matrix.symmetrize (mx) {
-    /** upper sub-diagonal gets copied to upper subdiagonal
+    /** upper triangle gets copied to lower triangle
         for non-square matrices, the largest square minor is symmetrized        
     */
     

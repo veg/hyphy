@@ -630,6 +630,55 @@ lfunction genetic_code.assemble_codon(positions) {
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
+ /* 
+            given a genetic code (`genCode`), computes a matrix of N x N entries (N = sense codons)
+            where a value of 1 in cell (i,j) means that i <-> j is a substitution of a specific type
+            (e.g. synonymous or non-synonymous), and a value of 0 is assigned to all other cells. 
+            
+            returns a dictionary with 'synonymous' and 'non-synonymous' keys
+            
+            Also see inline comments
+            
+        */   
+        
+    sense_codons = CountSenseCodons (genCode);
+    SS = {sense_codons, sense_codons};
+    NS = {sense_codons, sense_codons};
+    
+    stop_code = ^ "genetic_code.stop_code";
+    codon_offset = 0;
+    
+    
+    for (codon = 0; codon < 64; codon += 1) {
+        if (genCode[codon] == stop_code) {
+            codon_offset += 1;
+        } else {
+            aa1 = genCode [codon];
+            codon_offset2 = codon_offset;
+            for (codon2 = codon + 1; codon2 < 64; codon2 += 1) {
+                if (genCode [codon2] == stop_code) {
+                    codon_offset2 += 1;
+                } else {
+                    if (aa1 == genCode [codon2]) {
+                        SS [codon-codon_offset][codon2-codon_offset2] = 1;
+                    } else {
+                        NS [codon-codon_offset][codon2-codon_offset2] = 1;
+                    }
+                }
+            }   
+        }
+    }
+
+    matrix.symmetrize(SS);
+    matrix.symmetrize(NS);
+
+    return {"synonymous" : SS, "non-synonymous" : NS};
+    
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, options) {
         /* 
             given a genetic code (`genCode`), computes a number of per-codon (or per pair of codons) 

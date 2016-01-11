@@ -2179,7 +2179,7 @@ BaseRef     _TreeTopology::toStr (void) {
   checkParameter (includeModelSpecs, includeMSP , 0.0);
   
   int            leaf_flag      = kGetNodeStringForTreeName,
-                 inode_flag     = skipILabels > 0.1 ? kGetNodeStringForTreeName : 0;
+                 inode_flag     = skipILabels < 0.1 ? kGetNodeStringForTreeName : 0;
   
   if (includeMSP > 0.5) {
     leaf_flag   = leaf_flag | kGetNodeStringForTreeModel;
@@ -2226,8 +2226,8 @@ BaseRef     _TreeTopology::toStr (void) {
       
       lastLevel = level;
       curNode   = nextNode;
-      nextNode  = ni.Next();
       level     = ni.Level();
+      nextNode  = ni.Next();
     }
     
     res->AppendNCopies(')', lastLevel-level);

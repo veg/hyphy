@@ -272,7 +272,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values (dict, type) {
     result = {"branch lengths" : { "0" : {} } };
 
     if (type == "codon") {
-        factor = 3;
+        factor = 1;
     } else {
         factor = 1;
     }

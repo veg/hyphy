@@ -69,7 +69,10 @@ lfunction utility.partition_tree (avl, l) {
 }
 
 function utility.loadAnnotatedTopology (look_for_newick_tree) {
-    tree_string = io.getTreeString(look_for_newick_tree);
+    return utility.extractTreeInfo (io.getTreeString(look_for_newick_tree));
+ }
+
+function utility.extractTreeInfo (tree_string) {
     Topology     T = tree_string;
 
     utility.loadAnnotatedTopology.branch_lengths  = BranchLength (T, -1);
@@ -116,9 +119,6 @@ function utility.callFunction (id, arguments) {
 function utility.array1D (m) {
     return Rows (m) * Columns (m);
 }
-
-
-
 
 
 function utility.isFunction (id) {

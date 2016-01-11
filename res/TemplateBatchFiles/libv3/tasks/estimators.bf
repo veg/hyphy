@@ -279,6 +279,26 @@ function estimators.fitMGREV.set_partition_omega(key, value) {
     ExecuteCommands("estimators.fitMGREV.tree.`key`.`estimators.fitMGREV.beta`:=estimators.fitMGREV.tree.`key`.`estimators.fitMGREV.alpha`*" + estimators.fitMGREV.partitioned_omega.parameters[value]);
 }
 
+function estimators.fitMGREVExtractComponentBranchLengths (codon_data, fit_results) {
+    /**
+        extract fitted trees with branch lengths scaled on synonymous and non-synonymous
+        substitutions per site
+    */
+    
+    estimators.fitMGREVExtractComponentBranchLengths.stencils = genetic_code.ComputeBranchLengthStencils (codon_data["code"]);
+    
+    
+    BRANCH_LENGTH_STENCIL = estimators.fitMGREVExtractComponentBranchLengths.stencils["synonymous"];    
+    fit_results ["synonymous-trees"] = (estimators.extractMLEs(fit_results["LF"], fit_results["model"]))["Trees"];
+    
+    BRANCH_LENGTH_STENCIL = estimators.fitMGREVExtractComponentBranchLengths.stencils["non-synonymous"];
+    fit_results ["non-synonymous-trees"] = (estimators.extractMLEs(fit_results["LF"], fit_results["model"]))["Trees"];
+
+    BRANCH_LENGTH_STENCIL = None;
+    
+    return fit_results;
+}
+
 function estimators.fitMGREV(codon_data, tree, option, initial_values) {
 
 
@@ -338,7 +358,6 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
         }, initial_values, option["proportional-branch-length-scaler"]);
     }
 
-
     Optimize(estimators.fitMGREV.mles, estimators.fitMGREV.likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
@@ -357,6 +376,10 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
     } else {
         DeleteObject(estimators.fitMGREV.likelihoodFunction);
     }
-
+ 
+    if (option ["retain-model-object"]) {
+        estimators.fitMGREV.results["model"] = {"estimators.fitMGREV.mg": estimators.fitMGREV.model};
+    } 
+   
     return estimators.fitMGREV.results;
 }
