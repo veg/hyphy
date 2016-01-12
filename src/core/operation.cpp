@@ -410,8 +410,9 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
             newV->SetValue(nthterm,false);
             nthterm->AddAReference();
             existingDVars<<argument_var->GetAVariable();
-            displacedVars<<argument_k;
-            variablePtrs.Replace (argument_var->GetAVariable(),newV,false);
+            displacedVars<<argument_var; // 2 references
+            argument_var->AddAReference(); // 3 references
+            variablePtrs.Replace (argument_var->GetAVariable(),newV,false); // 2 references
           }
         } else {
           
@@ -466,7 +467,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
       }
       
       for (unsigned long dv = 0UL; dv < displacedVars.lLength; dv++) {
-        variablePtrs.Replace (existingDVars.lData[dv],(_PMathObj)displacedVars(dv));
+        variablePtrs.Replace (existingDVars.lData[dv],(_PMathObj)displacedVars(dv), false);
       }
       
       

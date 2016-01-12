@@ -179,10 +179,10 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         if (thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm)) {
              hasExpForm = true;
         }
-        #ifdef _UBER_VERBOSE_DUMP
-          if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP)
-            printf ("NodeID %d (%s). Old length %ld, new length %ld\n", nodeID, thisNode->GetName()->sData, didIncrease,matrixQueue.lLength); 
-        #endif
+      #ifdef _UBER_VERBOSE_DUMP
+      if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP)
+            printf ("NodeID %ld (%s). Old length %ld, new length %ld (%ld)\n", nodeID, thisNode->GetName()->sData, didIncrease,matrixQueue.lLength, isExplicitForm.lLength);
+      #endif
         if ((didIncrease = (matrixQueue.lLength - didIncrease))) {
             for (long copies = 0; copies < didIncrease; copies++) {
                 nodesToDo << thisNode;

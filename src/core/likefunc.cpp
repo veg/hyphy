@@ -8962,6 +8962,7 @@ BaseRef _LikelihoodFunction::toStr (void) {
                         res<<'=';
                      }
                   res.AppendNewInstance ((_String*)v->toStr());
+                  res << "\n";
                 }
             }
         }

@@ -82,6 +82,7 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 													    "1":  parameters.quote(id),
 													    "2":  parameters.quote(data_filter)}); // this sets the EFV field
 													    
+					
 													  
 													  
 	parameters.stringMatrixToFormulas (model.generic.define_model.model ["matrix-id"],model.generic.define_model.model[terms.rate_matrix]);
@@ -146,6 +147,7 @@ function models.generic.attachFilter (model, filter) {
 	assert (Columns (__alphabet) == Columns (_givenAlphabet) && model.matchAlphabets (_givenAlphabet, __alphabet), "The declared model alphabet '" + __alphabet + "' does not match the `filter` filter: '" + _givenAlphabet + "'");
 	
 	model ["alphabet"] = _givenAlphabet;
+	
 	model ["data"] = filter;
 	return model;
 }

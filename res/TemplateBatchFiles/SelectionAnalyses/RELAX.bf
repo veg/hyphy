@@ -59,12 +59,13 @@ io.displayAnalysisBanner ({"info" : "RELAX (a random effects test of selection r
                             to test whether a set of 'Test' branches evolves under relaxed 
                             selection relative to a set of 'Reference' branches (R), as measured
                             by the relaxation parameter (K).",
-                           "version" : "1.00",
+                           "version" : "1.0",
                            "reference" : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
-                           "authors" : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and the UCSD viral evolution group",
+                           "authors" : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                            "contact" : "spond@temple.edu",
                            "requirements" : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"         
                           } );
+
 
 
 

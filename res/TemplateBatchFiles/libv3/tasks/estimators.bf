@@ -238,16 +238,38 @@ function estimators.fitLF(data_filters_list, tree_list, model_map, initial_value
 function estimators.fitGTR(data_filter, tree, initial_values) {
     // create a nucleotide filter first
 
-    DataSetFilter estimators.fitGTR.nuc_data = CreateFilter( ^ data_filter, 1);
-    estimators.fitGTR.model = model.generic.define_model("models.DNA.GTR.modelDescription", "estimators.fitGTR.gtr", {
+    if (Type (data_filter) == "String") {
+        return estimators.fitGTR({{data_filter__}}, {"0" : tree}, initial_values)
+    }
+    
+    estimators.fitGTR.components    = utility.array1D (data_filter);
+    estimators.fitGTR.filters       = {estimators.fitGTR.components,1};
+    estimators.fitGTR.lf_components = {2*estimators.fitGTR.components,1};
+
+    for (estimators.fitGTR.i = 0; estimators.fitGTR.i < estimators.fitGTR.components; estimators.fitGTR.i += 1) {
+        
+        estimators.fitGTR.filters [estimators.fitGTR.i] = "estimators.fitGTR.nuc_data_" + estimators.fitGTR.i;
+        estimators.fitGTR.lf_components [2*estimators.fitGTR.i] = estimators.fitGTR.filters [estimators.fitGTR.i];
+        ExecuteCommands ("DataSetFilter `(estimators.fitGTR.filters [estimators.fitGTR.i])` = CreateFilter( `data_filter[estimators.fitGTR.i]`, 1)");
+
+    
+    } 
+
+     estimators.fitGTR.model = model.generic.define_model("models.DNA.GTR.modelDescription", "estimators.fitGTR.gtr", {
         "0": "terms.global"
-    }, "estimators.fitGTR.nuc_data", None);
+     }, estimators.fitGTR.filters, None);
+     
+ 
+    for (estimators.fitGTR.i = 0; estimators.fitGTR.i < estimators.fitGTR.components; estimators.fitGTR.i += 1) {
+        
+        estimators.fitGTR.lf_components [2*estimators.fitGTR.i + 1] = "estimators.fitGTR.tree_" + estimators.fitGTR.i;
+        model.applyModelToTree(estimators.fitGTR.lf_components[2*estimators.fitGTR.i + 1], tree[estimators.fitGTR.i], {
+            "default": estimators.fitGTR.model
+        }, None);
+    
+    } 
 
-    model.applyModelToTree("estimators.fitGTR.tree", tree, {
-        "default": estimators.fitGTR.model
-    }, None);
-
-    LikelihoodFunction estimators.fitGTR.likelihoodFunction = (estimators.fitGTR.nuc_data, estimators.fitGTR.tree);
+    LikelihoodFunction estimators.fitGTR.likelihoodFunction = (estimators.fitGTR.lf_components);
 
     estimators.fitGTR.df = 0;
     if (Type(initial_values) == "AssociativeList") {
@@ -261,6 +283,7 @@ function estimators.fitGTR(data_filter, tree, initial_values) {
     if (Type(initial_values) == "AssociativeList") {
         utility.toggleEnvVariable("USE_LAST_RESULTS", None);
     }
+    
 
     estimators.fitGTR.results = estimators.extractMLEs("estimators.fitGTR.likelihoodFunction", {
         "estimators.fitGTR.gtr": estimators.fitGTR.model
@@ -269,6 +292,7 @@ function estimators.fitGTR(data_filter, tree, initial_values) {
     estimators.fitGTR.results["LogL"] = estimators.fitGTR.mles[1][0];
     estimators.fitGTR.results["parameters"] = estimators.fitGTR.mles[1][1] + 3 + estimators.fitGTR.df;
 
+    fprintf (stdout, estimators.fitGTR.results, "\n");
     DeleteObject(estimators.fitGTR.likelihoodFunction);
 
     return estimators.fitGTR.results;
@@ -300,7 +324,6 @@ function estimators.fitMGREVExtractComponentBranchLengths (codon_data, fit_resul
 }
 
 function estimators.fitMGREV(codon_data, tree, option, initial_values) {
-
 
     estimators.fitMGREV.filter = codon_data["dataset"];
     estimators.fitMGREV.partitioned_omega = 0;

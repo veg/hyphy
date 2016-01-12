@@ -231,9 +231,8 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) co
         if (queue && tags) {
             long currentQueueLength = ((_Formula*)modelMatrixIndices.lData[theModel])->ExtractMatrixExpArguments (queue);
             if (currentQueueLength) {
-                tags->Populate (currentQueueLength, 0, 1);
-                for (long k = 0; k < currentQueueLength; k++)
-                    (*tags) << currentQueueLength;
+                for (unsigned long k = 0; k < currentQueueLength; k++)
+                  (*tags) << currentQueueLength;
                 return nil;
             }
         }
