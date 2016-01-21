@@ -3,10 +3,15 @@ LoadFunctionLibrary("../models/terms.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
 
 
-function estimators.copyGlobals2(key, value) {
-    (estimators.extractMLEs.results["global"])[key] = {
-        "ID": value,
-        "MLE": Eval(value)
+function estimators.copyGlobals2(key2, value2) {
+    
+    if (Type ((estimators.extractMLEs.results["global"])[key2]) == "AssociativeList") {
+        key2 = "[`key`] `key2`";
+    }
+
+    (estimators.extractMLEs.results["global"])[key2] = {
+        "ID": value2,
+        "MLE": Eval(value2)
     };
 }
 
@@ -238,36 +243,44 @@ function estimators.fitLF(data_filters_list, tree_list, model_map, initial_value
 function estimators.fitGTR(data_filter, tree, initial_values) {
     // create a nucleotide filter first
 
-    if (Type (data_filter) == "String") {
-        return estimators.fitGTR({{data_filter__}}, {"0" : tree}, initial_values)
+    if (Type(data_filter) == "String") {
+        return estimators.fitGTR({
+            {
+                data_filter__
+            }
+        }, {
+            "0": tree
+        }, initial_values)
     }
-    
-    estimators.fitGTR.components    = utility.array1D (data_filter);
-    estimators.fitGTR.filters       = {estimators.fitGTR.components,1};
-    estimators.fitGTR.lf_components = {2*estimators.fitGTR.components,1};
+
+    estimators.fitGTR.components = utility.array1D(data_filter);
+    estimators.fitGTR.filters = {
+        estimators.fitGTR.components, 1
+    };
+    estimators.fitGTR.lf_components = {
+        2 * estimators.fitGTR.components, 1
+    };
 
     for (estimators.fitGTR.i = 0; estimators.fitGTR.i < estimators.fitGTR.components; estimators.fitGTR.i += 1) {
-        
-        estimators.fitGTR.filters [estimators.fitGTR.i] = "estimators.fitGTR.nuc_data_" + estimators.fitGTR.i;
-        estimators.fitGTR.lf_components [2*estimators.fitGTR.i] = estimators.fitGTR.filters [estimators.fitGTR.i];
-        ExecuteCommands ("DataSetFilter `(estimators.fitGTR.filters [estimators.fitGTR.i])` = CreateFilter( `data_filter[estimators.fitGTR.i]`, 1)");
 
-    
-    } 
+        estimators.fitGTR.filters[estimators.fitGTR.i] = "estimators.fitGTR.nuc_data_" + estimators.fitGTR.i;
+        estimators.fitGTR.lf_components[2 * estimators.fitGTR.i] = estimators.fitGTR.filters[estimators.fitGTR.i];
+        ExecuteCommands("DataSetFilter `(estimators.fitGTR.filters [estimators.fitGTR.i])` = CreateFilter( `data_filter[estimators.fitGTR.i]`, 1)");
 
-     estimators.fitGTR.model = model.generic.define_model("models.DNA.GTR.modelDescription", "estimators.fitGTR.gtr", {
+
+    }
+
+    estimators.fitGTR.model = model.generic.define_model("models.DNA.GTR.modelDescription", "estimators.fitGTR.gtr", {
         "0": "terms.global"
-     }, estimators.fitGTR.filters, None);
-     
- 
+    }, estimators.fitGTR.filters, None);
+
     for (estimators.fitGTR.i = 0; estimators.fitGTR.i < estimators.fitGTR.components; estimators.fitGTR.i += 1) {
-        
-        estimators.fitGTR.lf_components [2*estimators.fitGTR.i + 1] = "estimators.fitGTR.tree_" + estimators.fitGTR.i;
-        model.applyModelToTree(estimators.fitGTR.lf_components[2*estimators.fitGTR.i + 1], tree[estimators.fitGTR.i], {
+
+        estimators.fitGTR.lf_components[2 * estimators.fitGTR.i + 1] = "estimators.fitGTR.tree_" + estimators.fitGTR.i;
+        model.applyModelToTree(estimators.fitGTR.lf_components[2 * estimators.fitGTR.i + 1], tree[estimators.fitGTR.i], {
             "default": estimators.fitGTR.model
         }, None);
-    
-    } 
+    }
 
     LikelihoodFunction estimators.fitGTR.likelihoodFunction = (estimators.fitGTR.lf_components);
 
@@ -283,7 +296,7 @@ function estimators.fitGTR(data_filter, tree, initial_values) {
     if (Type(initial_values) == "AssociativeList") {
         utility.toggleEnvVariable("USE_LAST_RESULTS", None);
     }
-    
+
 
     estimators.fitGTR.results = estimators.extractMLEs("estimators.fitGTR.likelihoodFunction", {
         "estimators.fitGTR.gtr": estimators.fitGTR.model
@@ -292,7 +305,6 @@ function estimators.fitGTR(data_filter, tree, initial_values) {
     estimators.fitGTR.results["LogL"] = estimators.fitGTR.mles[1][0];
     estimators.fitGTR.results["parameters"] = estimators.fitGTR.mles[1][1] + 3 + estimators.fitGTR.df;
 
-    fprintf (stdout, estimators.fitGTR.results, "\n");
     DeleteObject(estimators.fitGTR.likelihoodFunction);
 
     return estimators.fitGTR.results;
@@ -303,23 +315,23 @@ function estimators.fitMGREV.set_partition_omega(key, value) {
     ExecuteCommands("estimators.fitMGREV.tree.`key`.`estimators.fitMGREV.beta`:=estimators.fitMGREV.tree.`key`.`estimators.fitMGREV.alpha`*" + estimators.fitMGREV.partitioned_omega.parameters[value]);
 }
 
-function estimators.fitMGREVExtractComponentBranchLengths (codon_data, fit_results) {
+function estimators.fitMGREVExtractComponentBranchLengths(codon_data, fit_results) {
     /**
         extract fitted trees with branch lengths scaled on synonymous and non-synonymous
         substitutions per site
     */
-    
-    estimators.fitMGREVExtractComponentBranchLengths.stencils = genetic_code.ComputeBranchLengthStencils (codon_data["code"]);
-    
-    
-    BRANCH_LENGTH_STENCIL = estimators.fitMGREVExtractComponentBranchLengths.stencils["synonymous"];    
-    fit_results ["synonymous-trees"] = (estimators.extractMLEs(fit_results["LF"], fit_results["model"]))["Trees"];
-    
+
+    estimators.fitMGREVExtractComponentBranchLengths.stencils = genetic_code.ComputeBranchLengthStencils(codon_data["code"]);
+
+
+    BRANCH_LENGTH_STENCIL = estimators.fitMGREVExtractComponentBranchLengths.stencils["synonymous"];
+    fit_results["synonymous-trees"] = (estimators.extractMLEs(fit_results["LF"], fit_results["model"]))["Trees"];
+
     BRANCH_LENGTH_STENCIL = estimators.fitMGREVExtractComponentBranchLengths.stencils["non-synonymous"];
-    fit_results ["non-synonymous-trees"] = (estimators.extractMLEs(fit_results["LF"], fit_results["model"]))["Trees"];
+    fit_results["non-synonymous-trees"] = (estimators.extractMLEs(fit_results["LF"], fit_results["model"]))["Trees"];
 
     BRANCH_LENGTH_STENCIL = None;
-    
+
     return fit_results;
 }
 
@@ -369,9 +381,7 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
         (tree["model_map"])["estimators.fitMGREV.set_partition_omega"][""];
 
         (estimators.fitMGREV.model["parameters"])["global"] = estimators.fitMGREV.partitioned_omega.parameters;
-
     }
-
 
     estimators.fitMGREV.df = 0;
     if (Type(initial_values) == "AssociativeList") {
@@ -394,15 +404,17 @@ function estimators.fitMGREV(codon_data, tree, option, initial_values) {
     estimators.fitMGREV.results["LogL"] = estimators.fitMGREV.mles[1][0];
     estimators.fitMGREV.results["parameters"] = estimators.fitMGREV.mles[1][1] + 9 + estimators.fitMGREV.df;
 
-    if (option ["retain-lf-object"]) {
+    if (option["retain-lf-object"]) {
         estimators.fitMGREV.results["LF"] = "estimators.fitMGREV.likelihoodFunction";
     } else {
         DeleteObject(estimators.fitMGREV.likelihoodFunction);
     }
- 
-    if (option ["retain-model-object"]) {
-        estimators.fitMGREV.results["model"] = {"estimators.fitMGREV.mg": estimators.fitMGREV.model};
-    } 
-   
+
+    if (option["retain-model-object"]) {
+        estimators.fitMGREV.results["model"] = {
+            "estimators.fitMGREV.mg": estimators.fitMGREV.model
+        };
+    }
+
     return estimators.fitMGREV.results;
 }

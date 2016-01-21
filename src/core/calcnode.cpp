@@ -1272,8 +1272,8 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
                          nodeName       (*(_String*)top->flatTree(topTraverser->in_object)),
                          nodeParams     (*(_String*)top->flatCLeaves(topTraverser->in_object));
 
-            if (!nodeName.IsValidIdentifier(true)) {
-                nodeName.ConvertToAnIdent (true);
+            if (!nodeName.IsValidIdentifier(false)) {
+                nodeName.ConvertToAnIdent (false);
             }
 
             if (nodeVal != 0.0) {
@@ -1344,11 +1344,11 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty) 
 }
 
 //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology    (_String name, _String& parms, bool dupMe):_CalcNode (name,empty)
+_TreeTopology::_TreeTopology    (_String name, _String& parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,empty)
 // builds a tree from a string
 {
     PreTreeConstructor   (dupMe);
-    if (MainTreeConstructor  (parms, false)) {
+    if (MainTreeConstructor  (parms, false, mapping)) {
         PostTreeConstructor  (dupMe);
     } else {
         DeleteObject     (compExp);
@@ -1375,8 +1375,7 @@ bool _MainTreeConstructor_error (const _String& error, const _String& tree_strin
 }
 
 //_______________________________________________________________________________________________
-bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
-{
+bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames, _AssociativeList* mapping) {
     long i,
          nodeCount=0,
          lastNode;
@@ -1450,6 +1449,12 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                 return _MainTreeConstructor_error (_String ("Unexpected '") & parms[i] & "'", parms, i);
             }
             parentNode = (node<long>*)nodeStack(lastNode);
+            if (mapping) {
+              _FString * mapped_name = (_FString*)mapping->GetByKey (nodeName, STRING);
+              if (mapped_name) {
+                nodeName = *mapped_name->theString;
+              }
+            }
             FinalizeNode (parentNode, nodeNumbers(lastNode), nodeName, nodeParameters, nodeValue, &nodeComment);
             nodeName = empty;
             nodeStack.Delete(lastNode, false);
@@ -1591,6 +1596,12 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
 
     while (lastNode>=0) {
         parentNode = (node<long>*)nodeStack(lastNode);
+        if (mapping) {
+          _FString * mapped_name = (_FString*)mapping->GetByKey (nodeName, STRING);
+          if (mapped_name) {
+            nodeName = *mapped_name->theString;
+          }
+        }
         FinalizeNode (parentNode, nodeNumbers(lastNode), nodeName, nodeParameters, nodeValue, &nodeComment);
         lastNode--;
     }

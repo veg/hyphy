@@ -90,7 +90,6 @@ RELAX.json ["tree"] = relax.tree ["string"];
 
 io.reportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches[RELAX.test]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches[RELAX.test])));
 
-
 ChoiceList  (RELAX.runModel,"Analysis type",1,NO_SKIP,
             "All", "[Default] Fit descriptive models AND run the relax test (4 models)",
             "Minimal", "Run only the RELAX test (2 models)"

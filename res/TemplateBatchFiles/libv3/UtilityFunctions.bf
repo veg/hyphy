@@ -70,7 +70,23 @@ lfunction utility.partition_tree (avl, l) {
 
 function utility.loadAnnotatedTopology (look_for_newick_tree) {
     return utility.extractTreeInfo (io.getTreeString(look_for_newick_tree));
- }
+}
+
+function utility.loadAnnotatedTopologyAndMap._aux (key, value) {
+    utility.loadAnnotatedTopologyAndMap.reverse[value] = key;
+}
+
+function utility.loadAnnotatedTopologyAndMap (look_for_newick_tree, mapping) {
+    utility.loadAnnotatedTopologyAndMap.reverse = {};
+    mapping ["utility.loadAnnotatedTopologyAndMap._aux"][""];
+    
+    io.checkAssertion ("Abs (mapping) == Abs (utility.loadAnnotatedTopologyAndMap.reverse)", "The mapping between original and normalized tree sequence names must be one to one");
+    utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", utility.loadAnnotatedTopologyAndMap.reverse);
+    utility.loadAnnotatedTopologyAndMap.result = utility.extractTreeInfo (io.getTreeString(look_for_newick_tree));
+    utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", None);
+    return utility.loadAnnotatedTopologyAndMap.result;
+}
+
 
 function utility.extractTreeInfo (tree_string) {
     Topology     T = tree_string;
@@ -98,6 +114,7 @@ function utility.extractTreeInfo (tree_string) {
     utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", None);
 
     return {"string"     : Format (T,1,0),
+            "string_with_lengths": Format (T,1,1),
             "branch_lengths" :  utility.loadAnnotatedTopology.bls,
             "annotated_string" : T.str ,
             "model_map"  : modelMap,
@@ -163,7 +180,6 @@ lfunction utility.array.find (array, value) {
 }
 
 
-
 lfunction utility.dict.swap_keys_and_values (dict) {
     swapped_dict = {};
     keys         = Rows (dict);
@@ -176,5 +192,6 @@ lfunction utility.dict.swap_keys_and_values (dict) {
 
     return swapped_dict;
 }
+
 
 

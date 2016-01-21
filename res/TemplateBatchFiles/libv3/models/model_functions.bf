@@ -7,7 +7,6 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
 
 function model.applyModelToTree (id, tree, model_list, rules) {
 
-
 	if (Type (rules) == "AssociativeList") {
 	    // this has the form 
 	    // model id : list of branches to apply the model (as a string matrix)
@@ -41,6 +40,7 @@ function model.applyModelToTree (id, tree, model_list, rules) {
                 }
                 
                 for (model.applyModelToTree.b = 0; model.applyModelToTree.b < Columns (model.applyModelToTree.list); model.applyModelToTree.b += 1) {
+                    //fprintf (stdout, "SetParameter (`id`." + model.applyModelToTree.list[model.applyModelToTree.b] + ",MODEL," + model.applyModelToTree.apply_model + ")", "\n");
                     ExecuteCommands ("SetParameter (`id`." + model.applyModelToTree.list[model.applyModelToTree.b] + ",MODEL," + model.applyModelToTree.apply_model + ")");
                 }
             }
@@ -116,6 +116,7 @@ function models.generic.set_branch_length (model, value, parameter) {
             if (Type (value) == "AssociativeList") {
                 ExecuteCommands ("FindRoot (models.generic.set_branch_length.t,(" + model ["branch-length-string"] + ")-" + value[terms.branch_length] + "," + models.generic.set_branch_length.bl + ",0,10000)");
                 Eval (parameter + "." + models.generic.set_branch_length.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.set_branch_length.t);
+                //fprintf (stdout, parameter + "." + models.generic.set_branch_length.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.set_branch_length.t, "\n");
                 return 1;
            
             } else {

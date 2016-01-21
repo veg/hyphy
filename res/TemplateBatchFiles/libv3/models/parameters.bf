@@ -283,3 +283,15 @@ lfunction parameters.helper.tree_lengths_to_initial_values (dict, type) {
 
     return result;
 }
+
+function parameters.getProfileCI (id, lf, level) {
+    utility.toggleEnvVariable ("COVARIANCE_PRECISION", level);
+    utility.toggleEnvVariable ("COVARIANCE_PARAMETER", id);
+    ExecuteCommands ("CovarianceMatrix (parameters.getProfileCI.mx, `lf`)");
+    utility.toggleEnvVariable ("COVARIANCE_PRECISION", None);
+    utility.toggleEnvVariable ("COVARIANCE_PARAMETER", None);
+    
+    return {"`terms.lower_bound`" : parameters.getProfileCI.mx[0], "`terms.MLE`" : parameters.getProfileCI.mx[1],"`terms.upper_bound`" : parameters.getProfileCI.mx[2]};
+}
+
+

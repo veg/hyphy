@@ -295,6 +295,10 @@ public:
         return lLength;
     }
     void        AddName                 (_String&);
+  
+    _String*   GetSequenceName      (unsigned long i) const {
+      return (_String*)theNames.GetItem (i) ;
+    }
     _List&     GetNames             (void) {
         return theNames;
     }

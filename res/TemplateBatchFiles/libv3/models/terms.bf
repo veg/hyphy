@@ -5,6 +5,7 @@ terms.default_time = "t";
 
 terms.lower_bound = "LB";
 terms.upper_bound = "UB";
+terms.MLE   = "MLE";
 
 terms.range01 = {
     "LB": "0",
@@ -39,6 +40,10 @@ terms.rate_variation.gamma_p_inv = "Estimated proportion of invariant sites";
 terms.branch_length = "branch length";
 terms.branch_length_scaler = "branch length scaler";
 terms.branch_length_constrain = "branch length constrain";
+
+terms.transition_transversion_ratio = "Transitition/transversion ratio";
+terms.transition = "transision rate";
+terms.transversion = "transversion rate";
 
 function terms.nucleotideRate(fromC, toC) {
     return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;

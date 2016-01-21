@@ -93,7 +93,8 @@ _String     sqlOpen                 ("SQL_OPEN"),
             _hyStatusConditionProbsMatrix
             ("Constructing Conditional Probabilities Matrix"),
 
-            isDynamicGraph          ("BGM_DYNAMIC");
+            isDynamicGraph          ("BGM_DYNAMIC"),
+            treeNodeNameMapping     ("TREE_NODE_NAME_MAPPING");
 
 
 extern      _String                 blDoSQL,
@@ -968,6 +969,8 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain)
     _String  *treeSpec = ((_String*)parameters(1));
     treeSpec->ProcessParameter();
     _TreeTopology * tr = nil;
+  
+    _AssociativeList* mapping = (_AssociativeList*)FetchObjectFromVariableByType(&treeNodeNameMapping, ASSOCIATIVE_LIST);
 
     if (treeSpec->sLength) {
         if (treeSpec->sData[0]!='(') {
@@ -981,7 +984,7 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain)
                 if (formRes&&formRes->ObjectClass () == STRING)
                     tr = new _TreeTopology (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix),
                                             *((_FString*)formRes)->theString,
-                                            false);
+                                            false, mapping);
             }
         } else
             tr = new _TreeTopology (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix),

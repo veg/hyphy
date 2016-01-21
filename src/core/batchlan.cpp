@@ -5590,19 +5590,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             WarnError ("Illegal right hand side in call to Tree id = ...; it must be a string, a Newick tree spec or a topology");
             return false;
         }
-        //_TheTree tr (*(_String*)parameters(0),treeStr);
-
-
-        /*for (varID = 0; varID < leftOverVars.lLength; varID++)
-        {
-            _Variable* theVar = LocateVar (leftOverVars.lData[varID]);
-            if (theVar)
-                printf ("%d = %s\n", leftOverVars.lData[varID], theVar->GetName()->getStr());
-            else
-                printf ("%d Deleted!!!\n", leftOverVars.lData[varID], theVar->GetName()->getStr());
-
-        }*/
-
+      
         if (leftOverVars.lLength) { // mod 02/03/2003 - the entire "if" block
             _SimpleList indep, dep, holder;
             {

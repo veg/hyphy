@@ -333,7 +333,7 @@ class _TreeTopology: public _CalcNode {
 protected:
 
     virtual void            PreTreeConstructor                  (bool);
-    virtual bool            MainTreeConstructor                 (_String&,bool = true);
+    virtual bool            MainTreeConstructor                 (_String&,bool = true, _AssociativeList* mapping = nil);
     virtual void            PostTreeConstructor                 (bool);
     node<long>*     prepTree4Comparison                 (_List&, _SimpleList&, node<long>* = nil) const;
     void            destroyCompTree                     (node<long>*) const;
@@ -380,7 +380,7 @@ public:
     void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_String&, long  = -1, bool = false) const;
 
     _TreeTopology                       (void);
-    _TreeTopology                       (_String, _String&, bool = true);
+    _TreeTopology                       (_String, _String&, bool = true, _AssociativeList* mapping = nil);
     _TreeTopology                       (_String*);
     _TreeTopology                       (_TheTree*);
 
