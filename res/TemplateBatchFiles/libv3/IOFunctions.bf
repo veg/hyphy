@@ -34,9 +34,12 @@ function io.readNucleotideDataSet(dataset_name, file_name) {
         ExecuteCommands("DataSet `dataset_name` = ReadDataFile (`file_name`);");
     } else {
         ExecuteCommands("DataSet `dataset_name` = ReadDataFile (PROMPT_FOR_FILE);");
+        file_name = LAST_FILE_PATH;
     }
 
-    return io.readNucleotideDataSet_aux (dataset_name);
+    io.readNucleotideDataSet.result =  io.readNucleotideDataSet_aux (dataset_name);
+    io.readNucleotideDataSet.result["file"] = file_name;
+    return io.readNucleotideDataSet.result;
 }
 
 function io.readNucleotideDataSetString(dataset_name, data) {
@@ -73,7 +76,7 @@ function io.getTreeString(look_for_newick_tree) {
     }
 
     if (IS_TREE_PRESENT_IN_DATA) {
-        fprintf(stdout, "\n\nA tree was found in the data file:\n", DATAFILE_TREE, "\n\nWould you like to use it:(Y/N)?");
+        fprintf(stdout, "\n> A tree was found in the data file: ``", DATAFILE_TREE, "``\n>Would you like to use it? ");
         fscanf(stdin, "String", io.getTreeString.response);
         if (io.getTreeString.response == "n" || io.getTreeString.response == "N") {
             IS_TREE_PRESENT_IN_DATA = 0;
@@ -87,11 +90,12 @@ function io.getTreeString(look_for_newick_tree) {
     if (!IS_TREE_PRESENT_IN_DATA) {
         SetDialogPrompt("Please select a tree file for the data:");
         fscanf(PROMPT_FOR_FILE, REWIND, "Raw", io.getTreeString.treeString);
+        fprintf(stdout, "\n");
             
         if (regexp.find(io.getTreeString.treeString, "^#NEXUS")) {
             ExecuteCommands(io.getTreeString.treeString);
             if (IS_TREE_PRESENT_IN_DATA == 0) {
-                fprintf(stdout, "\nThis NEXUS file doesn't contain a valid tree block");
+                fprintf(stdout, "\n> **This NEXUS file doesn't contain a valid tree block**");
                 return 1;
             }
             if (Rows(NEXUS_FILE_TREE_MATRIX) > 1) {
@@ -106,7 +110,7 @@ function io.getTreeString(look_for_newick_tree) {
         } else {
             io.getTreeString.start = (io.getTreeString.treeString $ "\\(")[0];
             if (io.getTreeString.start < 0) {
-                fprintf(stdout, "\nThis doesn't seem to be a valid Newick string file. Can't find the opening parenthesis.\nHad:", io.getTreeString);
+                fprintf(stdout, "\n> **This doesn't seem to be a valid Newick string file**. Can't find the opening parenthesis. ``", io.getTreeString, "``\n");
                 return 1;
             } else {
                 io.getTreeString.parenCounter = 1;
@@ -124,7 +128,7 @@ function io.getTreeString(look_for_newick_tree) {
                 }
 
                 if (io.getTreeString.parenCounter) {
-                    fprintf(stdout, "\nThis doesn't seem to be a valid Newick string file. Can't match the parentheses.\nHad:", io.getTreeString.treeString).
+                    fprintf(stdout, "\n> ** This doesn't seem to be a valid Newick string file**. Can't match the parentheses. \n``", io.getTreeString.treeString, "``\n");
                     return 1;
                 }
 
@@ -183,6 +187,9 @@ lfunction io.reportProgressMessageMD(analysis, stage, text) {
     }
 
     if (advance) {
+        if (Abs (cache[analysis]) == 1) {
+            fprintf (stdout, "\n");
+        }
         fprintf(stdout, Abs(cache[analysis]), ". ", text, "\n");
     } else {
         fprintf(stdout, "    ", text, "\n");
@@ -217,7 +224,7 @@ function io.get_a_list_of_files(filename) {
     io.get_a_list_of_files.result = {};
     io.printAndUnderline("Enter paths to files (blank line to end entry)", "-");
     while (1) {
-        fprintf(stdout, "File ", Abs(io.get_a_list_of_files.result) + 1, " [relative path `PATH_TO_CURRENT_BF`]:");
+        fprintf(stdout, "* File ", Abs(io.get_a_list_of_files.result) + 1, " [relative path `PATH_TO_CURRENT_BF`]:");
         io.get_a_list_of_files.current_path = "";
         fscanf(stdin, "String", io.get_a_list_of_files.current_path);
         if (Abs(io.get_a_list_of_files.current_path)) {

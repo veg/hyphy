@@ -4793,7 +4793,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
             WarnError (GetRegExpError (errNo));
         }
     } else {    // object is not a string, is some kind of variable
-        _String objectNameID = chain.AddNameSpaceToID(*objectName);
+        _String objectNameID = AppendContainerName(*objectName,chain.nameSpacePrefix);
         long    f = LocateVarByName (objectNameID);
         if      (f>=0) {    // it's a numeric variable
             _Variable* theObject = FetchVar(f);
@@ -7321,7 +7321,7 @@ bool    _ElementaryCommand::ConstructGetInformation (_String&source, _ExecutionL
         return false;
     }
 
-    else {
+    /*else {
         _String *s0 = (_String*)pieces(0),
                  *s1 = (_String*)pieces(1);
 
@@ -7329,7 +7329,7 @@ bool    _ElementaryCommand::ConstructGetInformation (_String&source, _ExecutionL
             WarnError (_String ("Both ") & *s0 & " and " & *s1 & " must be valid identifiers in call to GetInformation.");
             return     false;
         }
-    }
+    }*/
 
     _ElementaryCommand * sp = makeNewCommand(37);
     sp->addAndClean (target, &pieces, 0);

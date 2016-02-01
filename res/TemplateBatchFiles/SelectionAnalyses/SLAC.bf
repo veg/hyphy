@@ -320,7 +320,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
  
     for (i = 0; i < selected_branches_count; i+=1) {
         this_branch            = selected_branches_in_avl[i];
-        report_branch_names [i] = (tree[this_branch])["Name"];
+        report_branch_names [i] = (tree[this_branch+1])["Name"];
         if (selected_branches_lengths[i]) {
             
             relative_branch_length = selected_branches_lengths[i] / selected_branch_total_length;

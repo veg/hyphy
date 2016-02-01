@@ -262,21 +262,19 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
 
 _String ReturnDialogInput(bool dispPath)
 {
-    if (!dispPath) {
-        NLToConsole ();
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
-    } else {
-        NLToConsole ();
-        if (pathNames.lLength) {
+    NLToConsole ();
+    StringToConsole (dialogPrompt);
+  
+    if (dispPath) {
+      BufferToConsole (" (`");
+      if (pathNames.lLength) {
             StringToConsole(*(_String*)pathNames(pathNames.lLength-1));
         } else {
             StringToConsole (baseDirectory);
         }
-        
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
+      BufferToConsole ("`)");
     }
+    BufferToConsole (" ");
     return StringFromConsole();
 }
 
