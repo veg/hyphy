@@ -1187,11 +1187,8 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
             _String matrixDef   (s,i,j);
 
-            if (matrixDef.sLength == 2 || matrixDef.sData[1] == '"') {
+            if (matrixDef.sLength == 2 || matrixDef.FindTerminator(1, ":") >= 0L) {
                 _AssociativeList *theList = new _AssociativeList ();
-                if (!theList) {
-                    checkPointer (theList);
-                }
                 if (matrixDef.sLength > 2) {
                     matrixDef.Trim (1,matrixDef.sLength-2);
                     if (!theList->ParseStringRepresentation (matrixDef,parsingContext.errMsg() == nil, parsingContext.formulaScope())) {
@@ -1202,9 +1199,6 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 levelData->AppendNewInstance (new _Operation (theList));
             } else {
                 _Matrix *theMatrix = new _Matrix (matrixDef,false,parsingContext.formulaScope());
-                if (!theMatrix) {
-                    checkPointer (theMatrix);
-                }
                 levelData->AppendNewInstance (new _Operation (theMatrix));
             }
 

@@ -1100,12 +1100,11 @@ long _String::FindBinary(char s)
     return -1;
 }
 
-long _String::FindTerminator (long from, _String& terminators)
-{
+long _String::FindTerminator (long from, _String const& terminators) const {
     long   currentPosition  = from,
-           currentCurly     = 0,
-           currentSquare    = 0,
-           currentParen = 0;
+           currentCurly     = 0L,
+           currentSquare    = 0L,
+           currentParen     = 0L;
 
     bool   isQuote = false,
            doEscape = false;

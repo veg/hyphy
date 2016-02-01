@@ -947,7 +947,7 @@ public:
     *
     */
 
-    long    FindTerminator          (long, _String&);
+    long    FindTerminator          (long, _String const&) const;
 
 
     // Data Fields
