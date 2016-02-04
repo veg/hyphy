@@ -1,4 +1,4 @@
-LoadFunctionLibrary("ReadDelimitedFiles");
+LoadFunctionLibrary("convenience/regexp.bf");
 
 function io.readCodonDataSet(dataset_name) {
     return io.readCodonDataSetFromPath(dataset_name, None);
@@ -21,11 +21,21 @@ function io.readCodonDataSetFromPath(dataset_name, path) {
     };
 }
 
-function io.readNucleotideDataSet_aux (dataset_name) {
+lfunction io.readNucleotideDataSet_aux (dataset_name) {
+
+    partitions = None;
+    
+    if (Type (^"DATA_FILE_PARTITION_MATRIX") == "Matrix") {
+        partitions = {};
+        for (k = 0; k < Columns (^"DATA_FILE_PARTITION_MATRIX"); k += 1) {
+            partitions [(^"DATA_FILE_PARTITION_MATRIX")[0][k]] = (^"DATA_FILE_PARTITION_MATRIX")[1][k];
+        }
+    }
     return {
-        "sequences": Eval("`dataset_name`.species"),
-        "sites": Eval("`dataset_name`.sites"),
-        "name-mapping": Eval("`dataset_name`.mapping")
+        "sequences": Eval(^"`dataset_name`.species"),
+        "sites": Eval(^"`dataset_name`.sites"),
+        "name-mapping": Eval(^"`dataset_name`.mapping"), 
+        "partitions" : partitions
     };
 }
 
@@ -287,7 +297,7 @@ function io.printAndUnderline(string, char) {
 }
 
 function io.formatLongStringToWidth(string, width) {
-    words = splitOnRegExp(string, "[\\ \n]+");
+    words = regexp.split (string, "[\\ \n]+");
     lines = {};
 
     current_line = "";
