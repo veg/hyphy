@@ -679,6 +679,41 @@ lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+lfunction genetic_code.DefineCodonToAAMapping (code) {
+    codonToAAMap = {};
+    nucChars = "ACGT";
+
+    for (p = 0; p < 64; p += 1) {
+        codonToAAMap[nucChars[p$16] + nucChars[p % 16 $4] + nucChars[p % 4]] = (^"_hyphyAAOrdering")[code[p]];
+    }
+
+    return codonToAAMap;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction genetic_code.DefineIntegerToAAMapping (code, only_sense) {
+    codon_code_map = {};
+    
+    shift = 0;
+    
+    for (p = 0; p < 64; p += 1) {
+        if (IsStop (p, code)) {
+            if (only_sense) {
+               shift += 1;
+               continue;
+            }
+        }
+        
+        codon_code_map[p-shift] = (^"_hyphyAAOrdering")[code[p]];
+    }
+    
+    return codon_code_map;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, options) {
         /* 
             given a genetic code (`genCode`), computes a number of per-codon (or per pair of codons) 
