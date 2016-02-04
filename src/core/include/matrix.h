@@ -749,7 +749,7 @@ public:
     }
     _List*              GetKeys         (void);
     void                FillInList      (_List&);
-    _String*            Serialize       (_String&);
+    _String*            Serialize       () ;
     
     /**
      * Traverse the dictionary, cast each value into a float and return their sum.

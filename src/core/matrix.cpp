@@ -119,6 +119,8 @@ extern      _String         printDigitsSpec;
 
 _Trie        _HY_MatrixRandomValidPDFs;
 
+
+
 //__________________________________________________________________________________
 
 int         fexact_                 (long , long , double *, double , double , double , double *, double *);
@@ -9269,10 +9271,8 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool 
 
 //_____________________________________________________________________________________________
 
-BaseRef _AssociativeList::toStr (void)
-{
-    _String defName   ("_hyphyAssociativeArray");
-    return Serialize  (defName);
+BaseRef _AssociativeList::toStr (void) {
+    return Serialize  ();
 }
 
 //_____________________________________________________________________________________________
@@ -9513,10 +9513,8 @@ void _AssociativeList::MStore (const _String& obj, const _String& info) {
 
 
 //_____________________________________________________________________________________________
-_String* _AssociativeList::Serialize (_String& avlName)
-{
+_String* _AssociativeList::Serialize ()  {
     _String * outString = new _String (1024L,true);
-    checkPointer (outString);
 
     (*outString) << "{";
     bool        doComma = false;
@@ -9559,8 +9557,7 @@ _PMathObj _AssociativeList::Compute (void)
 }
 
 //__________________________________________________________________________________
-_List* _AssociativeList::GetKeys (void)
-{
+_List* _AssociativeList::GetKeys (void)  {
     return (_List*)avl.dataList;
 }
 
