@@ -92,6 +92,7 @@ lfunction ancestral._buildAncestralCacheInternal (_lfID, _lfComponentID, doSampl
 	 _bacHandledResolutions  	  = {};
 	 _bacHandledResolutionsChars  = {};
 	 _bacHandledResolutionsAmbig  = {};
+	 _bacHandledResolutionsCodons = {};
 	 
  /* map where sequences are in the filter vs where they are in the 
 	tree structure */
@@ -179,6 +180,17 @@ lfunction ancestral._buildAncestralCacheInternal (_lfID, _lfComponentID, doSampl
 		}
 	 }
 	 
+	 reverse_mapping = {};
+	 all_chars = Rows (_bacHandledResolutions);
+	 for (_bacCounter = 0; _bacCounter < Abs (_bacHandledResolutions); _bacCounter+=1) {
+	    value = _bacHandledResolutions [all_chars[_bacCounter]];
+	    if (value > 0) {
+	        value += -1;
+	    } 
+	    reverse_mapping [value] = all_chars[_bacCounter];
+	    
+	 }
+	 
 
 	 return {"DIMENSIONS" : {
 	                "SITES" : _bacAF.sites,
@@ -189,7 +201,8 @@ lfunction ancestral._buildAncestralCacheInternal (_lfID, _lfComponentID, doSampl
 	         "CHARS" : _bacCharHandles,
              "MATRIX": _bacMatrixOfResolutions,
              "TREE_AVL" : _bac_tree_avl,
-             "AMBIGS" : _bacHandledResolutionsAmbig
+             "AMBIGS" : _bacHandledResolutionsAmbig,
+             "MAPPING": reverse_mapping
              //"AMBIGS_REV": utility.dict.swap_keys_and_values (_bacHandledResolutionsAmbig)
              };
 }
