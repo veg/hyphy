@@ -193,5 +193,73 @@ lfunction utility.dict.swap_keys_and_values (dict) {
     return swapped_dict;
 }
 
+function utility.map (object, lambda_name, transform) {
 
+    Eval ("`lambda_name` = None");
 
+    if (Type (object) == "AssociativeList") {
+        utility.map.return_object = {};
+        utility.map.keys = Rows (object);
+        for (utility.map.k = 0; utility.map.k < Abs (object); utility.map.k += 1) {
+            ^(lambda_name) = object [utility.map.keys[utility.map.k]];
+            utility.map.return_object [utility.map.keys[utility.map.k]] = Eval (transform);
+        }
+        return utility.map.return_object;
+    }
+    
+    if (Type (object) == "Matrix") {
+        utility.map.rows = Rows (object);
+        utility.map.columns = Columns (object);
+        utility.map.return_object = {utility.map.rows,  utility.map.columns};
+        for (utility.map.r = 0; utility.map.r < utility.map.rows; utility.map.r += 1) {
+            for (utility.map.c = 0; utility.map.c < utility.map.columns; utility.map.c += 1) {
+                 ^(lambda_name) = object [utility.map.r][utility.map.c];
+                utility.map.return_object [utility.map.r][utility.map.c] = Eval (transform);
+               
+            }
+        }
+        return utility.map.return_object;
+    }
+
+    return None;
+}
+
+function utility.forEach (object, lambda_name, transform) {
+
+    Eval ("`lambda_name` = None");
+
+    if (Type (object) == "AssociativeList") {
+        utility.map.keys = Rows (object);
+        for (utility.map.k = 0; utility.map.k < Abs (object); utility.map.k += 1) {
+            ^(lambda_name) = object [utility.map.keys[utility.map.k]];
+            Eval (transform);
+        }
+    }
+    
+    if (Type (object) == "Matrix") {
+        utility.map.rows = Rows (object);
+        utility.map.columns = Columns (object);
+        utility.map.return_object = {utility.map.rows,  utility.map.columns};
+        for (utility.map.r = 0; utility.map.r < utility.map.rows; utility.map.r += 1) {
+            for (utility.map.c = 0; utility.map.c < utility.map.columns; utility.map.c += 1) {
+                 ^(lambda_name) = object [utility.map.r][utility.map.c];
+                Eval (transform);
+               
+            }
+        }
+    }
+
+}
+
+lfunction utility.keys (object) {
+    if (Type (object) == "AssociativeList") {
+        return Rows (object);
+    }
+    return None;
+}
+
+lfunction utility.dict.ensure_key (dict, key) {
+    if (Type (dict[key]) != "AssociativeList") {
+        dict[key] = {};
+    }
+}
