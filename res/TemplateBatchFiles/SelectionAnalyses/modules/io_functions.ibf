@@ -15,7 +15,7 @@ function selection._aux.io.mapBranchSets(key, value) {
 
 function selection._aux.io.fillInDefaultSelection(key, value) {
     if (tag == value || tag == None) {
-        return_set[key&&1] = TRUE;
+        return_set[key && 1] = TRUE;
     }
     return None;
 }
@@ -87,15 +87,18 @@ function selection.io.defineBranchSets(tree_for_analysis) {
 
 //------------------------------------------------------------------------------ 
 
-function selection.io.startTimer(timers, index) {
-    timers[index] = Time(1);
+function selection.io.startTimer(timers, key, sort_index) {
+    timers[key] = {
+        "timer": Time(1),
+        "order": sort_index
+    };
 
 }
 
 //------------------------------------------------------------------------------ 
 
-function selection.io.stopTimer(timers, index) {
-    timers[index] = Time(1) - timers[index];
+function selection.io.stopTimer(timers, key) {
+    (timers[key])["timer"] = Time(1) - (timers[key])["timer"];
 }
 
 //------------------------------------------------------------------------------ 
@@ -112,46 +115,74 @@ function selection.io.branch.length(branch_info) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-function selection.io.getIC (logl,params,samples) {
-    return -2*logl + 2*samples/(samples-params-1)*params;
+function selection.io.getIC(logl, params, samples) {
+    return -2 * logl + 2 * samples / (samples - params - 1) * params;
 }
 
 
 //------------------------------------------------------------------------------ 
 
-function selection.io.json_store_lf (json, name, ll, df, ss, time, branch_length, branch_annotation, omega_distribution, annotation_tag) {
+function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
 
-    if (Abs (json["fits"]) == 0) {
-        json["fits"] = {};
+    utility.dict.ensure_key(json, dict_key);
+    if (Abs(json[terms.json.fits]) == 0) {
+        json[terms.json.fits] = {};
     }
 
-
-    (json["fits"])[name] = {
-        "log-likelihood": ll,
-        "parameters": df,
-        "AIC-c": selection.io.getIC(ll, df, ss),
-        "runtime": time,
-        "branch-lengths": branch_length,
-        "branch-annotations": branch_annotation,
-        "rate-distributions": omega_distribution,
-        "annotation-tag": annotation_tag,
-        "display-order": Abs(json["fits"])
-    };
+    selection.io.json_store_key_value_pair(json, terms.json.fits, name, {
+        terms.json.log_likelinhood: ll,
+            terms.json.parameters: df,
+            terms.json.AICc: selection.io.getIC(ll, df, ss),
+            terms.json.rate_distributions: rate_distribution,
+            terms.json.display_order: Abs(json[terms.json.fits])
+    });
 
 }
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
+
+    if (None == dict_key) {
+        json[key] = value;
+    } else {
+        utility.dict.ensure_key(json, dict_key);
+        (json[dict_key])[key] = value;
+    }
+}
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.json_store_branch_attribute(json, attribute_name, attribute_type, display_order, partition, values) {
+    utility.dict.ensure_key(json, terms.json.branch_attributes); 
+    utility.dict.ensure_key(json[terms.json.branch_attributes], partition); 
+    utility.dict.ensure_key(json[terms.json.branch_attributes], terms.json.attribute.meta);
+    utility.dict.ensure_key((json[terms.json.branch_attributes])[terms.json.attribute.meta], attribute_name);
+    ((json[terms.json.branch_attributes])[terms.json.attribute.meta])[attribute_name] = {terms.json.attribute.meta.type : attribute_type,
+                                                                                            terms.json.attribute.meta.order: display_order}; 
+    
+    utility.forEach (utility.keys (values), "selection.io.json_store_branch_attribute.branch_name",
+                             "utility.dict.ensure_key ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
+                             
+    utility.forEach (utility.keys (values), "selection.io.json_store_branch_attribute.branch_name",
+                             "(((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name]");
+ }
+
 
 //------------------------------------------------------------------------------------------------------------------------
 
-function selection.io._aux.extract_branch_info.callback (key, value) {
-    selection.io.extract_branch_info_result [key] = utility.callFunction (callback, {"0" : "value"});
+function selection.io._aux.extract_branch_info.callback(key, value) {
+    selection.io.extract_branch_info_result[key] = utility.callFunction(callback, {
+        "0": "value"
+    });
 }
 
-function selection.io.extract_branch_info (branch_spec, callback) {
+function selection.io.extract_branch_info(branch_spec, callback) {
     selection.io.extract_branch_info_result = {};
-    branch_spec ["selection.io._aux.extract_branch_info.callback"][""];
+    branch_spec["selection.io._aux.extract_branch_info.callback"][""];
     return selection.io.extract_branch_info_result;
 }
 
-function selection.io.branch.length (branch_info) {
+function selection.io.branch.length(branch_info) {
     return branch_info["MLE"];
 }
