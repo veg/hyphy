@@ -122,6 +122,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     if(${GCC46})
         set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
     endif(${GCC46})
+
+    if(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
+        set(DEFAULT_COMPILE_FLAGS "-fno-strict-aliasing -fpermissive")
+    endif(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
+
     
     PCL_CHECK_FOR_AVX()
     if(${HAVE_AVX_EXTENSIONS})
