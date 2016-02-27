@@ -25,7 +25,7 @@ Change your directory to the newly cloned directory
 
 `cd hyphy`
 
-Configure the project from the source directory usin cmake.
+Configure the project from the source directory using CMake.
 
 `cmake .`
 
@@ -46,9 +46,10 @@ by providing an installation prefix
 For example, this configuration will install hyphy at /opt/hyphy
 
 `mkdir -p /opt/hyphy`
+
 `cmake -DINSTALL_PREFIX=/opt/hyphy .`
 
-If on OS X you can specify which OS X SDK to use with
+If you are on an OS X platform, you can specify which OS X SDK to use
 
 `cmake -DCMAKE_OSX_SYSROOT=/Developer/SDKs/MacOSX10.9.sdk/ .`
 
@@ -61,11 +62,11 @@ then run `make` with one of the following build targets:
 +   SP - build a HyPhy executable (HYPHYSP) without multiprocessing
 +   MP2 - build a HyPhy executable (HYPHYMP) using pthreads to do multiprocessing
 +   MPI - build a HyPhy executable (HYPHYMPI) using MPI to do multiprocessing
-+   HYPHYMPI - build a HyPhy executable using openMPI 
++   HYPHYMPI - build a HyPhy executable (HYPHYMPI) using openMPI 
 +   LIB - build a HyPhy library (libhyphy_mp) using pthreads to do multiprocessing
 -   GTEST - build HyPhy's gtest testing executable (HYPHYGTEST)
 
-for example to create a MPI build of HYPHY using openMPI ensure that you 
+For example to create a MPI build of HYPHY using openMPI ensure that you 
 have openmpi installed and available on your  path. You can check if this
 is the case after running 
 `cmake .` you should see something similar to this in your output
