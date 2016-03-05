@@ -143,7 +143,7 @@ public:
         Cleanup();   // destructor
     }
 
-    virtual BaseRef     toStr (void);
+    virtual BaseRef     toStr (unsigned long = 0UL);
 
     virtual BaseRef     makeDynamic (void);      // dynamic copy of this object
 

@@ -1,50 +1,71 @@
 RequireVersion("2.3");
 
-
-VERBOSITY_LEVEL = 0;
-
-
-LoadFunctionLibrary("GrabBag");
-LoadFunctionLibrary("CF3x4");
-LoadFunctionLibrary("TreeTools");
-
-
-// namespace 'utility' for convenience functions 
+/*------------------------------------------------------------------------------
+    Load library files
+*/
 
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
-
-// namespace 'io' for interactive/datamonkey i/o functions
 LoadFunctionLibrary("libv3/IOFunctions.bf");
+LoadFunctionLibrary("libv3/stats.bf");
+LoadFunctionLibrary("libv3/terms-json.bf");
+
+LoadFunctionLibrary("libv3/tasks/ancestral.bf");
+LoadFunctionLibrary("libv3/tasks/alignments.bf");
+LoadFunctionLibrary("libv3/tasks/estimators.bf");
+LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 
-// namespace 'estimators' for various estimator related functions
-LoadFunctionLibrary("libv3/tasks/estimators.bf");
-
-// namespace 'selection.io' for convenience functions 
 LoadFunctionLibrary("modules/io_functions.ibf");
 
-// namespace 'ancestral' for ancestral reconstruction functions 
-LoadFunctionLibrary("libv3/tasks/ancestral.bf");
+/*------------------------------------------------------------------------------
+    Environment setup
+*/
 
-// namespace 'stats' for various descriptive stats functions 
-LoadFunctionLibrary("libv3/stats.bf");
+utility.setEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
-// namespace 'terms.json' for various "standard" fields in JSON outputs
-LoadFunctionLibrary("libv3/terms-json.bf");
+/*------------------------------------------------------------------------------
+    Globals 
+*/
 
-
-
-slac.samples = 0;
+slac.samples = 0; 
+    /**
+         how many ancestral reconstruction replicates to run ;
+         set to 0 to skip resampling (which is time consuming)
+    */
+    
+slac.pvalue = 0.1;
+    /** 
+        default cutoff for printing to screen 
+    */
 
 slac.json = {
     terms.json.fits: {},
     terms.json.timers: {},
 };
+    /** 
+        The dictionary of results to be written to JSON at the end of the run
+    */
 
 selection.io.startTimer (slac.json [terms.json.timers], "Total time", 0); 
 
-slac.scaler = "SLAC.scaler";
+slac.scaler_prefix = "SLAC.scaler";
+
+slac.table_headers = {{"ES", "Expected synonymous sites"}
+                      {"EN", "Expected non-synonymous sites"}
+                      {"S", "Inferred synonymous substitutions"}
+                      {"N", "Inferred non-synonymous substitutions"}
+                      {"P[S]", "Expected proportion of synonymous sites"}
+                      {"dS", "Inferred synonymous susbsitution rate"}
+                      {"dN", "Inferred non-synonymous susbsitution rate"}
+                      {"dN-dS", "Scaled by the length of the tested branches"}
+                      {"P [dN/dS > 1]", "Binomial probability that S is no greater than the observed value, with P<sub>s</sub> probability of success"}
+                      {"P [dN/dS < 1]", "Binomial probability that S is no less than the observed value, with P<sub>s</sub> probability of success"}
+                      {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
+                      
+slac.table_screen_output = {{"Codon", "Partition", "S", "N", "dS", "dN", "Selection?"}};
+slac.table_output_options =  {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
+
 
 /*------------------------------------------------------------------------------*/
 
@@ -60,7 +81,7 @@ io.displayAnalysisBanner({
     so the signal is derived from
     pervasive diversification or conservation.A subset of branches can be selected
     for testing as well.
-    Multiple partitions within a NEXUS file or multiple files are also supported
+    Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
     "version": "2.00",
@@ -73,169 +94,348 @@ io.displayAnalysisBanner({
 
 
 
-slac.codon_data_info = utility.promptForGeneticCodeAndAlignment("slac.codon_data", "slac.codon_filter");
+slac.codon_data_info = alignments.promptForGeneticCodeAndAlignment("slac.codon_data", "slac.codon_filter");
+
+    /** example output
+    {
+        "sequences": 13,
+        "sites": 897,
+        "name-mapping": {
+            "AF082576": "AF082576",
+...
+            "AF234767": "AF234767",
+            "AF_231119": "AF-231119"
+        },
+        "partitions": {
+            {
+                "SPAN_1", "0-587"
+            } 
+            ...
+            {
+                "SPAN_5", "1693-2690"
+            }
+        },
+        "code": {
+            {
+                14, 13, 14, 13, 7, 7, 7, 7, 19, 5, 19, 5, 2, 2, 3, 2, 12, 11, 12, 11, 6, 6, 6, 6, 19, 19, 19, 19, 1, 1, 1, 1, 16, 15, 16, 15, 8, 8, 8, 8, 20, 20, 20, 20, 4, 4, 4, 4, 10, 9, 10, 9, 5, 5, 5, 5, 10, 17, 18, 17, 1, 0, 1, 0
+            }
+        },
+        "file": "/Volumes/sergei-raid/hyphy2.2/tests/hbltests/libv3/data/partitioned.nex",
+        "stop": "TAA,TAG,TGA",
+        "dataset": "slac.codon_data",
+        "datafilter": "slac.codon_filter"
+    }
+
+    */
+
 slac.sample_size = slac.codon_data_info["sites"] * slac.codon_data_info["sequences"];
 slac.codon_data_info["json"] = slac.codon_data_info["file"] + ".slac.json";
+slac.name_mapping = slac.codon_data_info[terms.json.name_mapping];
+    /** 
+        will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
+    */
+    
+if (None == slac.name_mapping) { /** create a 1-1 mapping if nothing was done */ 
+    slac.name_mapping = {};
+    utility.forEach (alignments.getSequenceNames ("slac.codon_data"), "_value_", "slac.name_mapping[_value_] = _value_");
+}
+
+slac.partitions_and_trees = trees.loadAnnotatedTreeTopology.match_partitions (slac.codon_data_info[terms.json.partitions], slac.name_mapping);
+
+    /**  this will return a dictionary of partition strings and trees; one set per partition, as in
+    {
+        "0": {
+            "name:" ... ,
+            "filter-string": "0-587",
+            "tree": {
+                "string": ...
+                "string_with_lengths": ...
+                "branch_lengths": {
+                    "AF_231119": 0.00519475,
+                    ...
+                },
+                "annotated_string": ... ,
+                "model_map": {
+                    "AF_231119": "",
+                    ...
+                },
+                "partitioned": {
+                    "AF_231119": "leaf",
+                 },
+                "model_list": {
+                    {
+                }
+            }
+        },
+        ...
+    */
+    
+    
+    
+slac.partition_count = Abs (slac.partitions_and_trees);
+    
+utility.forEachPair (slac.partitions_and_trees, "_key_", "_value_", ' (slac.partitions_and_trees[_key_])["filter-string"] = selection.io.adjust_partition_string (_value_["filter-string"], 3*slac.codon_data_info["sites"])');
+    /**     
+        ensure that all partitions fall on codon boundaries if they are contiguous    
+    */
 
 
-io.reportProgressMessage ("", ">Loaded an MSA with **" + slac.codon_data_info["sequences"] + "** sequences and **" + slac.codon_data_info["sites"] + "** codons from \`" + slac.codon_data_info["file"] + "\`");
+io.reportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + slac.codon_data_info["sequences"] + "** sequences, **" + slac.codon_data_info["sites"] + "** codons, and **" + Abs (slac.partitions_and_trees) + "** partitions from \`" + slac.codon_data_info["file"] + "\`");
 
-slac.codon_frequencies = utility.defineFrequencies("slac.codon_filter");
-slac.tree = utility.loadAnnotatedTopology(1);
+slac.selected_branches = selection.io.defineBranchSets(slac.partitions_and_trees); 
+    /**  this will return a dictionary of selected branches; one set per partition, like in
+    {
+        "0": {
+            "NODE3": "test",
+            "NODE6": "background",
+    ...
+            "NODE15": "test"
+        },
+        
+        ...
+        "4": {
+            "NODE4": "test",
+     ...
+             "NODE2": "background"
+        }
+    } 
+    */
 
-slac.selected_branches = selection.io.defineBranchSets(slac.tree);
-/* dict ["selected branch (original case)"] == TRUE */ 
 
-slac.json.tree = {};
 
-selection.io.json_store_key_value_pair (slac.json, terms.json.trees, terms.json.tree.newick, slac.tree["string"]); 
+selection.io.json_store_key_value_pair (slac.json, terms.json.trees, terms.json.tree.newick, utility.map (slac.partitions_and_trees, "_pt_", '(_pt_["tree"])["string"]&&1')); 
 selection.io.json_store_key_value_pair (slac.json, terms.json.trees, "tested", slac.selected_branches); 
 
-slac.json["tested"] = slac.selected_branches;
-slac.json[terms.json.trees] = slac.tree["string"];
 
-io.reportProgressMessageMD("SLAC",  "selector", "Selected " + Abs(slac.selected_branches) + " branches to include in SLAC calculations " + Join(", ", Rows(slac.selected_branches)));
+utility.forEachPair (slac.selected_branches, "_partition_", "_selection_", 
+    "_selection_ = utility.filter (_selection_, '_value_', '_value_ == terms.json.attribute.test'); io.reportProgressMessageMD('SLAC',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in SLAC calculations: \\\`' + Join (', ',utility.keys(_selection_)) + '\\\`')");
+
 
 selection.io.startTimer (slac.json [terms.json.timers], "Model fitting", 1);
 
+slac.filter_specification = alignments.defineFiltersForPartitions (slac.partitions_and_trees, "slac.codon_data" , "slac.filter.", slac.codon_data_info);
+/** defines codon filters for each partition, and returns the (codon) sites mapped to each filter
+{
+    {
+        "0": {
+            "name": "slac.filter.SPAN_1",
+            "coverage": {
+                {
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, ...
+                }
+            }
+        },
+        "1": {
+            "name": "...",
+            "coverage": "..."
+        },
+        ...
+    }
+}
+*/
+
+selection.io.json_store_key_value_pair (slac.json, None, terms.json.partitions, slac.filter_specification);
+
 io.reportProgressMessageMD ("SLAC", "nuc-fit", "Obtaining branch lengths under the nucleotide GTR model");
-slac.gtr_results = estimators.fitGTR("slac.codon_filter", slac.tree, None);
-io.reportProgressMessageMD ("SLAC", "nuc-fit", "Log(L) = " + slac.gtr_results["LogL"]);
+slac.trees = utility.map (slac.partitions_and_trees, "_partition_", '_partition_["tree"]');
+slac.filter_names = utility.map (slac.filter_specification, "_partition_", '_partition_["name"]');
+
+slac.gtr_results = estimators.fitGTR(slac.filter_names, 
+                                     slac.trees, 
+                                     parameters.helper.tree_lengths_to_initial_values (slac.trees, None));
+
+
+io.reportProgressMessageMD ("SLAC", "nuc-fit", "Log(L) = " + Format (slac.gtr_results["LogL"], 8, 2));
 estimators.fixSubsetOfEstimates(slac.gtr_results, slac.gtr_results["global"]);
 
-io.reportProgressMessageMD("SLAC", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
+io.reportProgressMessageMD ("SLAC", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
 
-parameters.declareGlobal(slac.scaler, None);
-parameters.set_value(slac.scaler, 3);
 
-slac.global_mg_results = estimators.fitMGREV(slac.codon_data_info, slac.tree, {
-    "model-type": terms.global,
-    "proportional-branch-length-scaler": {
-        "0": slac.scaler
-    },
+slac.scaler_variables = utility.populateDict (0, slac.partition_count, "slac.scaler_prefix + '_' + _k_", "_k_");
+utility.forEach (slac.scaler_variables, "_value_", "parameters.declareGlobal(_value_, None);parameters.set_value(_value_, 3);");
+/** the previous two lines declare per-partition branch length scalers 
+    slac.scaler_prefix_0
+    slac.scaler_prefix_1 
+    etc
+*/
+
+
+slac.partitioned_mg_results = estimators.fitMGREV(slac.filter_names, slac.trees, slac.codon_data_info ["code"], {
+    "model-type": terms.local,
+    "proportional-branch-length-scaler": slac.scaler_variables,
+    "partitioned-omega": slac.selected_branches,
     "retain-lf-object": TRUE
 }, slac.gtr_results);
-io.reportProgressMessageMD("SLAC", "codon-fit", "Log(L) = " + Format(slac.global_mg_results["LogL"],8,2));
 
-slac.global_dnds = selection.io.extract_global_MLE(slac.global_mg_results, terms.omega_ratio);
-io.reportProgressMessageMD ("SLAC", "codon-fit", "Global dN/dS = " + Format (slac.global_dnds,8,2));
+io.reportProgressMessageMD("SLAC", "codon-fit", "Log(L) = " + Format(slac.partitioned_mg_results["LogL"],8,2));
+slac.global_dnds = selection.io.extract_global_MLE_re (slac.partitioned_mg_results, "^" + terms.omega_ratio);
+utility.forEach (slac.global_dnds, "_value_", 'io.reportProgressMessageMD ("SLAC", "codon-fit", _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+
+/** extract and report dN/dS estimates */
 
 selection.io.stopTimer (slac.json [terms.json.timers], "Model fitting");
+
 
 selection.io.json_store_lf(
     slac.json,
     "Global MG94xREV",
-    slac.global_mg_results["LogL"],
-    slac.global_mg_results["parameters"] - 1,
+    slac.partitioned_mg_results["LogL"],
+    slac.partitioned_mg_results["parameters"],
     slac.sample_size,
-    {
-        "All": {
-            {
-                slac.global_dnds, 1
-            }
-        }
-    }
+    utility.array_to_dict (utility.map (slac.global_dnds, "_value_", "{'key': _value_['description'], 'value' : Eval({{_value_ ['MLE'],1}})}"))
 );
 
 
-selection.io.json_store_branch_attribute(slac.json, "Global MG94xREV model", terms.json.attribute.branch_length, 0, 
-                                         partition, 
-                                         selection.io.extract_branch_info((slac.global_mg_results["branch lengths"])[0], "selection.io.branch.length"));
 
-    
+utility.forEachPair (slac.filter_specification, "_key_", "_value_",
+    'selection.io.json_store_branch_attribute(slac.json, "Global MG94xREV model", terms.json.attribute.branch_length, 0, 
+                                             _key_, 
+                                             selection.io.extract_branch_info((slac.partitioned_mg_results[terms.json.attribute.branch_length])[_key_], "selection.io.branch.length"));');
+
+ 
 selection.io.startTimer (slac.json [terms.json.timers], "Primary SLAC analysis", 2);
 
-io.spoolLF (slac.global_mg_results["LF"], slac.codon_data_info["file"], None);
+
+io.spoolLF (slac.partitioned_mg_results["LF"], slac.codon_data_info["file"], "SLAC");
 io.reportProgressMessageMD("SLAC", "anc", "Performing joint maximum likelihood ancestral state reconstruction");
-
 slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE});
-slac.ancestors = ancestral.build (slac.global_mg_results["LF"], 0, None);
-
-slac.results   = slac.compute_the_counts (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.selected_branches, slac.counts);
+slac.results   = {};
 
 
-slac.branch_attributes = slac.substituton_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
 
-selection.io.json_store_branch_attribute(slac.json, "codon", terms.json.attribute.node_label, 0, 
-                                         partition, 
-                                         slac.branch_attributes["codon"]);
+slac.report_to_screen = {}; 
+/** 
+    store pairs of {partition, site, positive selection (if false => negative selection)} to print to screen (after sampling done if necessary) 
+*/
 
-selection.io.json_store_branch_attribute(slac.json, "amino-acid", terms.json.attribute.node_label, 1, 
-                                         partition, 
-                                         slac.branch_attributes["amino-acid"]);
+slac.printed_header = FALSE;
 
-selection.io.json_store_branch_attribute(slac.json, "synonymous substitution count", terms.json.attribute.branch_label, 0, 
-                                         partition, 
-                                         slac.branch_attributes["synonymous substitution count"]);
+for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
+    io.reportProgressMessageMD("SLAC", "anc", "Working on parition #" + (1+slac.i));
+    
+    slac.ancestors         = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, None);
+    slac.results           [slac.i] = slac.compute_the_counts (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
+    
+    slac.partition_sites   = utility.array1D ((slac.filter_specification[slac.i])["coverage"]);
+ 
+    slac.positive_p := Min ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][8], (((slac.results[slac.i]) ["by-site"])["AVERAGED"])[slac.site][8]);
+    slac.negative_p := Min ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][9], (((slac.results[slac.i]) ["by-site"])["AVERAGED"])[slac.site][9]);
+    
+    slac.report_positive_site = {{"" + ((slac.filter_specification[slac.i])["coverage"])[slac.site], slac.i + 1, (((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][2], (((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][3],
+                                  (((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][5], (((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][6], "Pos. p = " + Format((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][8],0,3)}};
+    slac.report_negative_site = {{"" +((slac.filter_specification[slac.i])["coverage"])[slac.site], slac.i + 1, (((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][2], (((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][3],
+                                  (((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][5], (((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][6], "Neg. p = " + Format((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][9],0,3)}};
+                                  
+    
+    slac.site_reporter = {{slac.i, slac.site, slac.positive_p <= slac.pvalue}};
+    
+    for (slac.site = 0; slac.site < slac.partition_sites; slac.site += 1) {
+        slac.print_row = None;
+        if (slac.negative_p <= slac.pvalue) {
+            slac.report_to_screen + Eval ( slac.site_reporter);
+            slac.print_row = slac.report_negative_site;
+        } 
+        
+        
+        if (None != slac.print_row) {
+            if (!slac.printed_header) {
+                fprintf (stdout, 
+                    io.format_table_row (slac.table_screen_output,slac.table_output_options));
+                slac.printed_header = TRUE;
+                slac.table_output_options["header"] = FALSE;
+            }
+            
+            fprintf (stdout, 
+                io.format_table_row (slac.print_row,slac.table_output_options));
+        }
+    }
+    
+    slac.branch_attributes = slac.substituton_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
 
-selection.io.json_store_branch_attribute(slac.json, "non-synonymous substitution count", terms.json.attribute.branch_label, 1, 
-                                         partition, 
-                                         slac.branch_attributes["non-synonymous substitution count"]);
+    selection.io.json_store_branch_attribute(slac.json, "original name", terms.json.attribute.node_label, 0, 
+                                             slac.i, 
+                                             slac.name_mapping);
 
-slac.table_headers = {{"ES", "Expected synonymous sites"}
-                                  {"EN", "Expected non-synonymous sites"}
-                                  {"S", "Inferred synonymous substitutions"}
-                                  {"N", "Inferred non-synonymous substitutions"}
-                                  {"P<sub>S</sub>", "Expected proportion of synonymous sites"}
-                                  {"dS", "Inferred synonymous susbsitution rate"}
-                                  {"dN", "Inferred non-synonymous susbsitution rate"}
-                                  {"dN-dS", "Scaled by the length of the tested branches"}
-                                  {"Positive selection", "Binomial probability that S is no greater than the observed value, with P<sub>s</sub> probability of success"}
-                                  {"Negative selection", "Binomial probability that S is no less than the observed value, with P<sub>s</sub> probability of success"}
-                                  {"Effective branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
+    selection.io.json_store_branch_attribute(slac.json, "codon", terms.json.attribute.node_label, 0, 
+                                             slac.i, 
+                                             slac.branch_attributes["codon"]);
+
+    selection.io.json_store_branch_attribute(slac.json, "amino-acid", terms.json.attribute.node_label, 1, 
+                                             slac.i, 
+                                             slac.branch_attributes["amino-acid"]);
+
+    selection.io.json_store_branch_attribute(slac.json, "synonymous substitution count", terms.json.attribute.branch_label, 0, 
+                                             slac.i, 
+                                             slac.branch_attributes["synonymous substitution count"]);
+
+    selection.io.json_store_branch_attribute(slac.json, "non-synonymous substitution count", terms.json.attribute.branch_label, 1, 
+                                             slac.i, 
+                                             slac.branch_attributes["non-synonymous substitution count"]);
+                                             
+        
+}
+
 
 slac.json [terms.json.MLE ] = {terms.json.headers   : slac.table_headers,
                                terms.json.content : slac.results };
-
+        
 
 io.spool_json (slac.json, slac.codon_data_info["json"]);
 selection.io.stopTimer (slac.json [terms.json.timers], "Primary SLAC analysis");
 
 if (slac.samples > 0) {
-    selection.io.startTimer (slac.json [terms.json.timers], "Ancestor sampling analysis", 2);
+    selection.io.startTimer (slac.json [terms.json.timers], "Ancestor sampling analysis", 3);
     
     io.reportProgressMessageMD ("SLAC", "anc", "Generating `slac.samples` ancestral sequence samples to obtain confidence intervals");
 
-    slac.sample.results = {};
+    utility.dict.ensure_key (slac.json, "sample-median");
+    utility.dict.ensure_key (slac.json, "sample-2.5");
+    utility.dict.ensure_key (slac.json, "sample-97.5");
+    
+    for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
+    
+        slac.sample.results = {};
+         
+        for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
+            slac.sampled   = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, {"sample": TRUE});
+            slac.sample.results + slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
+            io.reportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
+        }
 
-    for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
-        slac.sampled   = ancestral.build (slac.global_mg_results["LF"], 0, {"sample": TRUE});
-        slac.sample.results + slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], slac.selected_branches, slac.counts);
-        io.reportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples);
-    }
-
-    slac.extractor = {slac.samples, 1};
-
-    slac.sites = slac.codon_data_info["sites"];
-    slac.columns = Rows (slac.table_headers);
-
-
-
-    slac.json ["sample-median"] = {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
-    slac.json ["sample-2.5"]    = {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
-    slac.json ["sample-97.5"]   = {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
-    slac.keys = {{"RESOLVED", "AVERAGED"}};
+        slac.extractor = {slac.samples, 1};
+        slac.sites   = utility.array1D ((slac.filter_specification[slac.i])["coverage"]);
+        slac.columns = Rows (slac.table_headers);
 
 
-    for (slac.s = 0; slac.s < slac.sites; slac.s += 1) {
-        for (slac.c = 0; slac.c <slac.columns; slac.c+=1) {
-            for (slac.key = 0; slac.key < Columns(slac.keys); slac.key += 1) {
-                slac.key_value = slac.keys[slac.key];
-                slac.col = slac._extract_vector (slac.extractor, slac.sample.results, slac.key_value, slac.s,slac.c);
+        slac.json ["sample-median"] + {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
+        slac.json ["sample-2.5"]    + {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
+        slac.json ["sample-97.5"]   + {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
+        slac.keys = {{"RESOLVED", "AVERAGED"}};
+
+
+        for (slac.s = 0; slac.s < slac.sites; slac.s += 1) {
+            for (slac.c = 0; slac.c <slac.columns; slac.c+=1) {
+                for (slac.key = 0; slac.key < Columns(slac.keys); slac.key += 1) {
+                    slac.key_value = slac.keys[slac.key];
+                    slac.col = slac._extract_vector (slac.extractor, slac.sample.results, slac.key_value, slac.s,slac.c);
             
-                ((slac.json["sample-median"])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.5);
-                ((slac.json["sample-2.5"])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.025);
-                ((slac.json["sample-97.5"])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.975);
+                    (((slac.json["sample-median"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.5);
+                    (((slac.json["sample-2.5"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.025);
+                    (((slac.json["sample-97.5"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.975);
+                }
             }
         }
     }
+
     selection.io.stopTimer (slac.json [terms.json.timers], "Ancestor sampling analysis");
 }
 
 selection.io.stopTimer (slac.json [terms.json.timers], "Total time"); 
 io.spool_json (slac.json, slac.codon_data_info["json"]);
 
-
+if (!slac.printed_header) {
+    io.reportProgressMessage ("SLAC", "results", "** No sites found to be under positive or negative selection at p <= " + slac.pvalue + "**");
+}
 
 /*___________________________________________________________________________________________________________*/
 // HELPER FUNCTIONS
@@ -382,6 +582,9 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
 //#profile START;
 
     site_count = Columns (matrix);
+    selected_branches = utility.filter (selected_branches, "_value_", "_value_ == 'test'");
+    
+    
     
     selected_branches_count      = Abs (selected_branches);
     selected_branches_in_avl     = {selected_branches_count,1};
@@ -584,6 +787,10 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
                 
                 (*mx) [s*column_count + 8] = slac.extendedBinTail(total_subs,(*mx) [s*column_count + 4],(*mx)[s*column_count + 2]);
                 (*mx) [s*column_count + 9] = 1-slac.extendedBinTail(total_subs,(*mx) [s*column_count + 4],Max (0, (*mx)[s*column_count + 2]-1));
+            } else {
+                (*mx) [s*column_count + 8] = 1;
+                (*mx) [s*column_count + 9] = 1;
+            
             }
             
         }
@@ -614,7 +821,8 @@ for (k=0; k<Columns(_instructions); k=k+1)
 
     return {"by-site" :{"AVERAGED" : report_averaged,
                         "RESOLVED" : report_resolved},
-                        "by-branch" :{"NAMES": report_branch_names, "AVERAGED" : report_averaged_by_branch,
+          "by-branch" :{"NAMES": report_branch_names, 
+                        "AVERAGED" : report_averaged_by_branch,
                         "RESOLVED" : report_resolved_by_branch}
                         };
 

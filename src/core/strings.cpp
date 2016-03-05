@@ -245,6 +245,19 @@ _String::_String (const char s)
 }
 
 //Data constructor
+_String::_String (const _String& s, unsigned long copies) {
+  sLength = copies * s.sLength;
+  checkPointer (sData = (char*)MemAllocate (sLength+1));
+  unsigned long index = 0UL;
+  for (unsigned long i = 0UL; i < copies; i++) {
+    for (unsigned long j = 0UL; j < s.sLength; j++, index++) {
+      sData[index]=s.sData[j];
+    }
+  }
+  sData[sLength]=0;
+}
+
+//Data constructor
 _String::_String (_Parameter val, const char * format)
 {
     char s_val[256];
@@ -479,8 +492,7 @@ long _String::Adler32(void)
 }
 
 //Append and delete operator
-void _String::AppendNewInstance (_String* s)
-{
+void _String::AppendNewInstance (_String* s) {
     (*this) << s;
     DeleteObject (s);
 }
@@ -992,8 +1004,8 @@ long _String::ExtractEnclosedExpression (long& from, char open, char close, bool
     long   currentPosition = from,
            currentLevel    = 0;
 
-    bool   isQuote = false,
-           doEscape = false;
+    char       isQuote = 0;
+    bool       doEscape = false;
 
     while (currentPosition < sLength) {
         char thisChar = sData[currentPosition];
@@ -1150,14 +1162,28 @@ long _String::FindTerminator (long from, _String const& terminators) const {
     return -1;
 }
 
+
+
 //s[0]...s[sLength-1] => s[sLength-1]...s[0]
-void _String::Flip(void)
-{
-    for (unsigned long i = 0; i < sLength/2; i++) {
-        char c = sData[i];
-        sData[i] = sData[sLength-1-i];
-        sData[sLength-1-i] = c;
-    }
+const _String _String::Flip(void) {
+  
+  for (long s = 0L, e = (long)sLength-1L;  s < e; s++, e--) {
+    char c = sData[s];
+    sData[s] = sData[e];
+    sData[e] = c;
+  }
+  return *this;
+}
+
+const _String _String::Reverse(void) const {
+  
+  _String result (*this);
+  
+  for (long s = 0L, e = (long)sLength-1L;  s < sLength; s++, e--) {
+    result[s] = sData[e];
+  }
+  
+  return result;
 }
 
 // Return good ole char*
@@ -1255,8 +1281,7 @@ long _String::LempelZivProductionHistory (_SimpleList* rec)
 }
 
 //String length
-unsigned long _String::Length(void)
-{
+unsigned long _String::Length(void) const {
     return sLength;
 }
 
@@ -1440,7 +1465,7 @@ const _List _String::Tokenize (_String const& s) const {
 }
 
 _Parameter _String::toNum (void) const {
-    if (sLength == 0) {
+    if (sLength == 0UL) {
         return 0.;
     }
     char * endP;
@@ -1456,7 +1481,7 @@ long _String::toLong (void) const {
 }
 
 //Return good ole char*
-BaseRef _String::toStr (void) {
+BaseRef _String::toStr (unsigned long) {
     nInstances++;
     return this;
 }
@@ -1482,8 +1507,7 @@ _Parameter  _String::ProcessTreeBranchLength (void)
 }
 
 
-bool    _String::IsALiteralArgument (bool stripQuotes)
-{
+bool    _String::IsALiteralArgument (bool stripQuotes) {
     if (sLength >= 2) { 
         long from = 0, 
              to = ExtractEnclosedExpression (from,'"','"',false,true);
@@ -1538,8 +1562,7 @@ char _String::FirstNonSpace(long start, long end, char direction)
 }
 
 //Locate the first non-space charachter of the string
-long _String::FirstNonSpaceIndex(long start, long end, char direction)
-{
+long _String::FirstNonSpaceIndex(long start, long end, char direction) const {
     if (start == -1) {
         start = ((long)sLength)-1;
     }
@@ -1554,18 +1577,18 @@ long _String::FirstNonSpaceIndex(long start, long end, char direction)
     if (sLength&&(start<sLength)&&(!isspace (sData[start]))) {
         return start;    // first char is non-space
     }
-    char* str = sData+start;
-    for (int i = start; i<=end; i+=direction, str+=direction)
-        if (!(((*str>=9)&&(*str<=13))||(*str==' '))) {
-            return i;
-        }
+ 
+    for (int i = start; i<=end; i+=direction) {
+      if (!isspace (sData[i])) {
+        return i;
+      }
+    }
 
     return -1;
 }
 
 //Locate the first non-space charachter of the string
-long _String::FirstSpaceIndex(long start, long end, char direction)
-{
+long _String::FirstSpaceIndex(long start, long end, char direction) const {
     if (start == -1) {
         start = ((long)sLength)-1;
     }
@@ -1580,14 +1603,25 @@ long _String::FirstSpaceIndex(long start, long end, char direction)
     if (sLength&&(isspace (sData[start]))) {
         return start;    // first char is non-space
     }
-    char* str = sData+start;
-    for (int i = start; i<=end; i+=direction, str+=direction)
-        if ((((*str>=9)&&(*str<=13))||(*str==' '))) {
-            return i;
+  
+    for (int i = start; i<=end; i+=direction) {
+        if (isspace (sData[i])) {
+          return i;
         }
-
+    }
     return -1;
 }
+
+
+long _String::FirstNonSpaceFollowingSpace(long start, long end, char direction) const {
+  long first_space = FirstSpaceIndex (start, end, direction);
+  if (first_space >= 0) {
+    first_space = FirstNonSpaceIndex(first_space, end, direction);
+  }
+  return first_space;
+}
+
+
 
 //Remove all spaces
 void _String::KillSpaces (_String& result)
@@ -1854,6 +1888,24 @@ bool _String::startswith (_String const& s) const
 
     return true;
 }
+
+//Begins with string
+bool _String::startswith_noident (_String const& s) const
+{
+  
+  if (startswith (s)) {
+    if (sLength > s.sLength) {
+      char next_char = getChar (s.sLength);
+      //printf ("Next char %c (%d)\n", next_char, next_char);
+      if (isalnum(next_char) || next_char == '.' || next_char == '_' || next_char == '&') {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 
 //Ends with string
 bool _String::endswith (_String s, bool caseSensitive)
@@ -2529,12 +2581,19 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
               return is_global_ref?HY_STRING_GLOBAL_DEREFERENCE:HY_STRING_LOCAL_DEREFERENCE;
           }
         } else {
-          _String try_as_expression = ProcessLiteralArgument (&choppedVarID, nil);
+          
+          _String try_as_expression;
+          if (context) {
+            _VariableContainer ctxt (*context);
+            try_as_expression = ProcessLiteralArgument (&choppedVarID, &ctxt);
+          } else {
+            try_as_expression = ProcessLiteralArgument (&choppedVarID, nil);
+          }
            if (try_as_expression.ProcessVariableReferenceCases (referenced_object) == HY_STRING_DIRECT_REFERENCE) {
-            if (!is_global_ref && context) {
+             if (!is_global_ref && context) {
               referenced_object = *context & '.' & try_as_expression;
             }
-             //StringToConsole(referenced_object); NLToConsole();
+             
             return is_global_ref?HY_STRING_GLOBAL_DEREFERENCE:HY_STRING_LOCAL_DEREFERENCE;
           }
         }
@@ -2551,7 +2610,7 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
         if (IsValidIdentifier()) {
           if (context) {
             _String cdot = *context & '.';
-            referenced_object = startswith(cdot) ? * this : (cdot & *this);
+            referenced_object = startswith(cdot) ? *this : (cdot & *this);
           } else {
             referenced_object = *this;
           }

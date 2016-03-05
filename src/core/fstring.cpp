@@ -165,6 +165,12 @@ _PMathObj _FString::Add (_PMathObj p)
 }
 
 //__________________________________________________________________________________
+
+_PMathObj _FString::Sum (void) {
+  return new _Constant (theString->toNum());
+}
+
+//__________________________________________________________________________________
 long _FString::AddOn (_PMathObj p)
 {
     if (p->ObjectClass()==STRING) {
@@ -450,9 +456,9 @@ _PMathObj _FString::Greater (_PMathObj p)
 }
 
 //__________________________________________________________________________________
-BaseRef  _FString::toStr()
+BaseRef  _FString::toStr(unsigned long)
 {
-    theString->nInstances++;
+    theString->AddAReference();
     return theString;
 }
 
@@ -620,8 +626,7 @@ _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* contex
 //__________________________________________________________________________________
 
 
-_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
-{
+_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   {
     switch (opCode) {
     case HY_OP_CODE_NOT: // !
         return FileExists();

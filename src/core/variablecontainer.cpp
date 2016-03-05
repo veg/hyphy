@@ -136,11 +136,9 @@ BaseRef _VariableContainer::makeDynamic (void)
 
 //__________________________________________________________________________________
 
-BaseRef _VariableContainer::toStr (void)
+BaseRef _VariableContainer::toStr (unsigned long)
 {
     _String * res = new _String (128L,true);
-
-    checkPointer (res);
 
     (*res) << "Container Class:";
     (*res) << theName;

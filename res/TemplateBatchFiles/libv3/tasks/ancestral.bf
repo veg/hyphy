@@ -47,13 +47,11 @@ lfunction ancestral._buildAncestralCacheInternal (_lfID, _lfComponentID, doSampl
 /* 2; construct a temporary likelihood function with 
    the tree and the filter; and an AVL representation of the tree */
    
-	
-	
     if (doSample) {
-		DataSet _bac_ancDS = SampleAncestors (^_lfID, _lfComponentID);
+		DataSet _bac_ancDS = SampleAncestors (^_lfID, {{_lfComponentID}});
     }  
 	else {
-		DataSet _bac_ancDS = ReconstructAncestors (^_lfID, _lfComponentID);
+		DataSet _bac_ancDS = ReconstructAncestors (^_lfID, {{_lfComponentID}});
 	}
 	   
 	_bac_tree_avl = (^_bac_treeID)^0;

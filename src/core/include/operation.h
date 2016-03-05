@@ -84,7 +84,7 @@ public:
     virtual   void          StackDepth          (long&);
 
     bool            ExecutePolynomial   (_Stack&,_VariableContainer* nameSpace = nil, _String* errMsg = nil);
-    virtual   BaseObj*      toStr               (void);    //convert the op to string
+    virtual   BaseObj*      toStr               (unsigned long = 0UL);    //convert the op to string
 
     virtual   void          Initialize          (bool = false);
     virtual   void          Duplicate           (BaseRef);

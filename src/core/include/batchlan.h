@@ -88,7 +88,7 @@ public:
     BaseRef     makeDynamic (void);
 
     virtual
-    BaseRef     toStr (void);
+    BaseRef     toStr (unsigned long = 0UL);
 
     virtual
     void        Duplicate                   (BaseRef);
@@ -179,7 +179,7 @@ public:
 
     virtual   BaseRef        makeDynamic (void);
     virtual   void           Duplicate (BaseRef);
-    virtual   BaseRef        toStr (void);
+    virtual   BaseRef        toStr (unsigned long = 0UL);
 
     bool      Execute        (_ExecutionList&); // perform this command in a given list
     void      ExecuteCase0   (_ExecutionList&);
@@ -233,7 +233,7 @@ public:
     bool      HandleDifferentiate                   (_ExecutionList&);
     long      GetCode                               (void) { return code; };
     
-    static  _String   FindNextCommand       (_String&, bool = false);
+    static  const _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
     // chops the input to remove the newly found line
 
@@ -460,6 +460,8 @@ modelTypeList,
 modelFrequenciesIndices,
 listOfCompiledFormulae;
 
+
+
 extern  _String
 
 getDString,
@@ -556,6 +558,14 @@ assertionBehavior               ,
 dialogPrompt                    ,
 _hyLastExecutionError           ,
 _hyExecutionErrorMode           ,
+blReturn                        ,
+blDataSet                       ,
+blDataSetFilter                 ,
+blLF                            ,
+blLF3                           ,
+blTree                          ,
+blTopology                      ,
+blSCFG                          ,
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
 mpiNodeCount                    ,
@@ -570,7 +580,8 @@ extern  _AVLListX                   _HY_HBLCommandHelper,
                                     _HY_GetStringGlobalTypes;
                                     
 extern  _Trie                       _HY_ValidHBLExpressions,
-                                    _HY_HBL_Namespaces;
+                                    _HY_HBL_Namespaces,
+                                    _HY_HBL_KeywordsPreserveSpaces;
 
 extern  long                        globalRandSeed,
                                     matrixExpCount;

@@ -317,9 +317,9 @@ public:
 
     virtual     void        Duplicate   (BaseRef obj); // duplicate this object into a dynamic copy
 
-    virtual     BaseRef     toStr       (void);       // convert this matrix to a string
+    virtual     BaseRef     toStr       (unsigned long = 0UL);       // convert this matrix to a string
 
-    virtual     void        toFileStr   (FILE*dest);
+    virtual     void        toFileStr   (FILE*dest, unsigned long = 0UL);
 
     bool        AmISparse               (void);
 
@@ -709,7 +709,7 @@ public:
 
      */
 
-    virtual BaseRef     toStr           (void);
+    virtual BaseRef     toStr           (unsigned long = 0UL);
     virtual _PMathObj   Execute         (long opCode, _PMathObj = nil, _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual BaseRef     makeDynamic     (void);
     virtual _PMathObj   Compute         (void);
@@ -749,7 +749,7 @@ public:
     }
     _List*              GetKeys         (void);
     void                FillInList      (_List&);
-    _String*            Serialize       () ;
+    _String*            Serialize       (unsigned long) ;
     
     /**
      * Traverse the dictionary, cast each value into a float and return their sum.

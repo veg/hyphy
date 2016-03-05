@@ -2744,20 +2744,32 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
     return nil;
 }
 
+
+
 //__________________________________________________________________________________
 _FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer* scope) {
     assignment_ref_id   = -1;
     assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
     is_volatile = false;
+    in_assignment = false;
     err_msg = err;
     formula_scope = scope;
 }
 
 //__________________________________________________________________________________
-_String _FormulaParsingContext::contextualizeRef (_String& ref) {
+_String const _FormulaParsingContext::contextualizeRef (_String& ref) {
     if (formula_scope) {
         return *formula_scope->GetName () & '.' & ref;
     }
     return ref;
 }
 
+//__________________________________________________________________________________
+void _FormulaParsingContext::setScope(const _String *scope) {
+  if (scope && scope->sLength) {
+    _VariableContainer vc (*scope);
+    formula_scope = (_VariableContainer*)FetchVar(vc.GetAVariable());
+  } else {
+    formula_scope = nil;
+  }
+}

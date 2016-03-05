@@ -141,7 +141,7 @@ public:
     virtual BaseRef     makeDynamic     (void);
     // creates a dynamic copy of this object
 
-    virtual BaseRef     toStr           (void);
+    virtual BaseRef     toStr           (unsigned long = 0UL);
     // converts this object to string
 
     _Parameter&         operator[]      (unsigned long);
@@ -375,8 +375,8 @@ public:
 
     char            rooted;
 
-    virtual void            toFileStr                           (FILE*);
-    virtual BaseRef         toStr                               (void);
+    virtual void            toFileStr                           (FILE*, unsigned long);
+    virtual BaseRef         toStr                               (unsigned long = 0UL);
     void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_String&, long  = -1, bool = false) const;
 
     _TreeTopology                       (void);
@@ -580,7 +580,7 @@ public:
 
     virtual  BaseRef        makeDynamicCopy             (_String*);
     node<long>* DuplicateTreeStructure      (node<long>*, _String*, bool);
-    virtual  BaseRef        toStr                       (void);
+    virtual  BaseRef        toStr                       (unsigned long = 0UL);
     virtual unsigned long           ObjectClass                 (void) {
         return TREE;
     }

@@ -616,6 +616,19 @@ lfunction ComputeCodonCodeToStringMap(genCode) {
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+lfunction ComputeCodonCodeToStringMapStop (genCode) {
+	_codonMap = {};
+	_nucLetters = "ACGT";
+	for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
+		if (genCode[_idx] == ^ "genetic_code.stop_code") {
+			_codonMap + (_nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4]);
+		}
+	}
+	return _codonMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 lfunction genetic_code.partition_codon(codon) {
     return Eval({
         {

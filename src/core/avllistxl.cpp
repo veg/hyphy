@@ -86,7 +86,7 @@ void    _AVLListXL::SetXtra (long i, BaseRef d, bool dup)
 
 //______________________________________________________________
 
-BaseRef _AVLListXL::toStr (void)
+BaseRef _AVLListXL::toStr (unsigned long)
 {
     _String * str = new _String (128L, true);
     checkPointer (str);

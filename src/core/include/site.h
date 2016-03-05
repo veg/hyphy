@@ -261,10 +261,10 @@ public:
     virtual  char       operator ()             (unsigned long, unsigned long, unsigned int);
     // retrieve element pos of site-th site
 
-    virtual  BaseRef    toStr                   (void);
+    virtual  BaseRef    toStr                   (unsigned long = 0UL);
     // convert to string
 
-    virtual  void       toFileStr               (FILE*dest);
+    virtual  void       toFileStr               (FILE*dest, unsigned long = 0UL);
 
     void        Compact                 (long);
     // release string overhead
@@ -278,7 +278,7 @@ public:
     // segmentation - partition of the underlying DataSet to look at
     // null for segmentation assumes the entire dataset
 
-    void        MatchIndices            (_Formula&, _SimpleList& , bool , long );
+    void        MatchIndices            (_Formula&, _SimpleList& , bool , long, _String* = nil);
     friend   void       printFileResults        (_DataSet* );
     char        InternalStorageMode     (void) {
         return useHorizontalRep;
@@ -319,7 +319,7 @@ public:
     CheckCompatibility(_SimpleList& ref, char concatOrCombine);
 
 
-    void         ProcessPartition       (_String&, _SimpleList&,  bool, _SimpleList* = nil, _SimpleList* = nil);
+    void         ProcessPartition       (_String&, _SimpleList&,  bool, _SimpleList* = nil, _SimpleList* = nil, _String* scope = nil);
     void         SetTranslationTable    (_DataSet *  newTT );
     void         SetTranslationTable    (_TranslationTable *  newTT );
     _TranslationTable*
@@ -366,8 +366,8 @@ public:
 
     virtual                     ~_DataSetFilter (void);
 
-    virtual  BaseRef            toStr           (void);  // convert to string
-    virtual  void               toFileStr       (FILE*); // convert to string
+    virtual  BaseRef            toStr           (unsigned long = 0UL);  // convert to string
+    virtual  void               toFileStr       (FILE*, unsigned long = 0UL); // convert to string
 
     virtual  BaseRef            makeDynamic     (void);
     virtual  long               FreeUpMemory    (long);

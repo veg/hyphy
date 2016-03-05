@@ -134,7 +134,7 @@ _Parameter    _Constant::Value (void)
     return theValue;
 }
 //__________________________________________________________________________________
-BaseRef _Constant::toStr(void)
+BaseRef _Constant::toStr(unsigned long)
 {
     return parameterToString(Value());
 }

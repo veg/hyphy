@@ -733,33 +733,24 @@ void    _CategoryVariable::Clear (void)
 }
 
 //___________________________________________________________________________________________
-BaseRef _CategoryVariable::toStr (void)
+BaseRef _CategoryVariable::toStr (unsigned long)
 {
     UpdateIntervalsAndValues(true);
-    _String result (10,true), *s, st;
+    _String result (32UL,true);
     if (weights) {
-        st = "\nClass weights are:";
-        result<<&st;
+        result<< "\nClass weights are:";
         _Matrix* cw =(_Matrix*)weights->ComputeNumeric();
         checkWeightMatrix(*cw);
-        s = (_String*)cw->toStr();
-        result<<s;
+        result.AppendNewInstance((_String*)cw->toStr());
         result<<'\n';
-        DeleteObject(s);
     }
     if (values) {
-        st = "Classes represented by:";
-        result<<&st;
-        s = (_String*)values->toStr();
-        result<<s;
-        DeleteObject(s);
+        result<<"Classes represented by:";
+        result.AppendNewInstance((_String*)values->toStr());
     }
     if (intervalEnds) {
-        st = "Interval ends:";
-        result<<&st;
-        s = (_String*)intervalEnds->toStr();
-        result<<s;
-        DeleteObject(s);
+        result<< "Interval ends:";
+        result.AppendNewInstance((_String*)intervalEnds->toStr());
     }
     if (!density.IsEmpty()) {
         result << "\nSupported on [";

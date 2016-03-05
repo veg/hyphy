@@ -116,28 +116,24 @@ BaseObj::BaseObj()
 
 
 //____________________________________________________________________________________
-BaseRef   BaseObj::toStr (void)
-{
-    return new _String ("null");
+BaseRef   BaseObj::toStr (unsigned long padding) {
+  return new _String ("null");
 }
 
 //____________________________________________________________________________________
-BaseRef   BaseObj::toErrStr (void)
-{
-    return toStr();
+BaseRef   BaseObj::toErrStr (unsigned long padding) {
+    return toStr(padding);
 }
 
 //____________________________________________________________________________________
-void     BaseObj::toFileStr (FILE* dest)
-{
-    _String* s = (_String*)toStr();
+void     BaseObj::toFileStr (FILE* dest, unsigned long padding) {
+    _String* s = (_String*)toStr(padding);
     fwrite(s->sData,1,s->Length(),dest);
     DeleteObject (s);
 }
 
 //____________________________________________________________________________________
-BaseObj*  BaseObj::makeDynamic(void)
-{
+BaseObj*  BaseObj::makeDynamic(void) {
     warnError(-112);
     return nil;
 }
@@ -180,6 +176,10 @@ void    InitializeGlobals (void) {
   _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_VALUE_"));
   _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_ROW_"));
   _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_COLUMN_"));
+  _hyApplicationGlobals.Insert(new _String (nexusFileTreeMatrix));
+  _hyApplicationGlobals.Insert(new _String (dataFilePartitionMatrix));
+  _hyApplicationGlobals.Insert(new _String (useLastFString));
+  
   
   _String             dd (GetPlatformDirectoryChar());
   
@@ -199,9 +199,9 @@ void    InitializeGlobals (void) {
   
   CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.), false);
   CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.), false);
-  setParameter        (platformDirectorySeparator, new _FString (dd, false), false); // these should be set globally?
-  setParameter        (hyphyBaseDirectory, new _FString (baseDirectory, false), false);
-  setParameter        (hyphyLibDirectory, new _FString (libDirectory, false), false);
+  setParameter        (platformDirectorySeparator, new _FString (dd, false), nil, false); // these should be set globally?
+  setParameter        (hyphyBaseDirectory, new _FString (baseDirectory, false), nil, false);
+  setParameter        (hyphyLibDirectory, new _FString (libDirectory, false), nil, false);
   
 
 }

@@ -4,19 +4,19 @@ LoadFunctionLibrary ("../parameters.bf");
 LoadFunctionLibrary ("../frequencies.bf");
 LoadFunctionLibrary ("../../UtilityFunctions.bf");
 
-function models.codon.MG_REV.modelDescription (type, code) {
+lfunction models.codon.MG_REV.modelDescription (type, code) {
 
-    models.codon.MG_REV.modelDescription.codons = models.codon.map_code (code);
-
-    return {"alphabet" : models.codon.MG_REV.modelDescription.codons["sense"],
-            "bases" : models.DNA.alphabet,
-            "stop" : models.codon.MG_REV.modelDescription.codons["stop"],
+    codons = models.codon.map_code (code);
+    
+    return {"alphabet" : codons["sense"],
+            "bases" : ^"models.DNA.alphabet",
+            "stop" : codons["stop"],
             "type" : type,
-            "translation-table" : models.codon.MG_REV.modelDescription.codons["translation-table"],
+            "translation-table" : codons["translation-table"],
     		"description" : "The Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution",
     		"canonical"   : 0, // is NOT of the r_ij \times \pi_j form
     		"reversible"  : 1,
-    		terms.efv_estimate_name: terms.freqs.CF3x4,
+    		^"terms.efv_estimate_name": ^"terms.freqs.CF3x4",
     		"parameters" : 	{
     				"global" : {},
     				"local" : {}
@@ -87,9 +87,8 @@ function models.codon.MG_REV.set_branch_length (model, value, parameter) {
     }
 
 
-    models.codon.MG_REV.set_branch_length.lp    = model.parameters.local (model);
-    models.codon.MG_REV.set_branch_length.beta  = models.codon.MG_REV.set_branch_length.lp[terms.nonsynonymous_rate];
-    models.codon.MG_REV.set_branch_length.alpha = models.codon.MG_REV.set_branch_length.lp[terms.synonymous_rate];
+    models.codon.MG_REV.set_branch_length.beta  = model.generic.get_local_parameter (model, terms.nonsynonymous_rate);
+    models.codon.MG_REV.set_branch_length.alpha = model.generic.get_local_parameter (model, terms.synonymous_rate);
 
     models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
     models.codon.MG_REV.set_branch_length.beta.p  = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
@@ -113,12 +112,23 @@ function models.codon.MG_REV.set_branch_length (model, value, parameter) {
                   //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
 
                   parameters.setConstraint (models.codon.MG_REV.set_branch_length.beta.p, "(" + 3*value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" +  model [terms.synonymous_rate] + "))/(" +  model [terms.nonsynonymous_rate] + ")", "");
-
+                  return 1;
+    
                 } else {
                     assert (0, "TBA in models.codon.MG_REV.set_branch_length");
                 }
         } else {
-            assert (0, "TBA in models.codon.MG_REV.set_branch_length");
+            
+            models.codon.MG_REV.set_branch_length.lp = 0;
+            if (parameters.isIndependent (models.codon.MG_REV.set_branch_length.alpha.p)) {
+                Eval (models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
+                models.codon.MG_REV.set_branch_length.lp += 1;
+            }
+            if (parameters.isIndependent (models.codon.MG_REV.set_branch_length.beta.p)) {
+                Eval (models.codon.MG_REV.set_branch_length.beta.p + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
+                models.codon.MG_REV.set_branch_length.lp += 1;
+            }
+            return models.codon.MG_REV.set_branch_length.lp;
         }
     } else {
         if (parameters.isIndependent (models.codon.MG_REV.set_branch_length.alpha.p)) {
@@ -135,4 +145,6 @@ function models.codon.MG_REV.set_branch_length (model, value, parameter) {
             }
         }
     }
+    
+    return 0;
  }

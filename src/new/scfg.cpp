@@ -917,7 +917,7 @@ _String *   Scfg::GetRuleString (long ruleIdx)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-BaseRef     Scfg::toStr  (void)
+BaseRef     Scfg::toStr  (unsigned long)
 {
     _String * result = new _String (128L, true); // allocate a buffer with the initial length of 128 characters
 

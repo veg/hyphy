@@ -2683,7 +2683,7 @@ void    _Polynomial::RankTerms(_SimpleList* receptacle)
 
 //__________________________________________________________________________________
 
-BaseObj* _Polynomial::toStr (void) {
+BaseObj* _Polynomial::toStr (unsigned long padding) {
   _String result (10, true);
   if (theTerms->NumberOfTerms()) {
     long i;
@@ -2738,11 +2738,11 @@ BaseObj* _Polynomial::toStr (void) {
       }
     }
   } else {
-    _String*s = (_String*)compList1.toStr();
+    _String*s = (_String*)compList1.toStr(padding);
     result<<s;
     result<<'\n';
     DeleteObject(s);
-    s = (_String*)compList2.toStr();
+    s = (_String*)compList2.toStr(padding);
     result<<s;
     result<<'\n';
     DeleteObject(s);
@@ -2753,7 +2753,7 @@ BaseObj* _Polynomial::toStr (void) {
 
 //__________________________________________________________________________________
 
-void _Polynomial::toFileStr (FILE*f)
+void _Polynomial::toFileStr (FILE*f, unsigned long padding)
 {
     if (theTerms->NumberOfTerms()&&theTerms->thePowers) {
         fprintf(f,"p(");
@@ -2789,8 +2789,8 @@ void _Polynomial::toFileStr (FILE*f)
             }
         }
     } else {
-        compList1.toFileStr(f);
-        compList2.toFileStr(f);
+        compList1.toFileStr(f, padding);
+        compList2.toFileStr(f, padding);
     }
 }
 

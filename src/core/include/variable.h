@@ -64,8 +64,8 @@ public:
     virtual   void          Initialize (bool = false);
     virtual   void          Duplicate (BaseRef);
     virtual   BaseRef       makeDynamic(void);
-    virtual   BaseRef       toStr (void);
-    virtual    void         toFileStr (FILE*);
+    virtual   BaseRef       toStr (unsigned long = 0UL);
+    virtual    void         toFileStr (FILE*, unsigned long = 0UL);
 
     virtual   void          MarkDone (void);
 
@@ -129,6 +129,8 @@ public:
 
     virtual     void        ClearConstraints    (void);
     virtual     bool        CheckFForDependence (long, bool = false);
+    virtual     bool        HasBeenInitialized (void) const {return !(varFlags & HY_VARIABLE_NOTSET);}
+    virtual     void        MarkModified  (void) {varFlags = varFlags | HY_VARIABLE_CHANGED;}
 
     _String const     ContextFreeName                 (void) const;
     _String const    ParentObjectName                 (void) const;

@@ -886,7 +886,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     if (f >=0 ) {
         f = _HY_GetStringGlobalTypes.GetXtra (f);
     }
-
+  
     switch (f) {
 
         case HY_BL_LIKELIHOOD_FUNCTION: // LikelihoodFunction
@@ -969,7 +969,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 }
                 case HY_BL_BGM: {
                     //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
-					_BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
+                    _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
 
                     switch (sID) {
                         case HY_HBL_GET_STRING_BGM_SCORE: {   // return associative list containing node score cache
@@ -1103,7 +1103,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 } else if (currentArgument->Equal(&timeStamp)) {
                     result = new _String(GetTimeStamp(sID < 0.5));
                 } else {
-                  _Variable* theVar = FetchVar(LocateVarByName (*currentArgument));
+                  _Variable* theVar = FetchVar(LocateVarByName (nmspaced));
                   if (theVar) {
                     if (theVar->IsIndependent()) {
                       result = (_String*)theVar->toStr();
@@ -1177,8 +1177,8 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
         return false;
     }    
 
-    _FString        * outLF = new _FString (new _String (8192L,1));
-    checkPointer    (outLF);
+    _FString        * outLF = new _FString (new _String (8192UL,1));
+ 
     long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER,
              index;
         

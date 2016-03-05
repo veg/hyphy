@@ -106,7 +106,7 @@ public:
     virtual   void    Initialize            (bool = false);
     virtual   void    Duplicate             (BaseRef);
     virtual   BaseRef makeDynamic           (void);
-    virtual   BaseRef toStr                 (void);
+    virtual   BaseRef toStr                 (unsigned long = 0UL);
     virtual   unsigned long    ObjectClass           (void) {
         return NUMBER;
     }

@@ -1,33 +1,4 @@
-LoadFunctionLibrary ("GrabBag");
 LoadFunctionLibrary ("IOFunctions.bf");
-
-function utility.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name) {
-    return utility.loadCodonDataFile (dataset_name, io.readCodonDataSet (dataset_name));
-}
-
-function utility.loadGeneticCodeAndAlignment (dataset_name, datafilter_name, path) {
-    return utility.loadCodonDataFile (dataset_name, io.readCodonDataSetFromPath (dataset_name, path));
-}
-
-function utility.loadCodonDataFile (dataset_name, data_info) {
-    ExecuteCommands ("DataSetFilter `datafilter_name` = CreateFilter (`dataset_name`, 3, , , data_info[\"stop\"])");
-    io.checkAssertion ("`datafilter_name`.sites*3==`dataset_name`.sites","The input alignment must not contain stop codons");
-    data_info ["sites"] = Eval ("`datafilter_name`.sites");
-    data_info ["dataset"] = dataset_name;
-    data_info ["datafilter"] = datafilter_name;
-
-    return data_info;
-}
-
-function utility.readNucleotideAlignment (file_name, dataset_name, datafilter_name) {
-    data_info = io.readNucleotideDataSet (dataset_name, file_name);
-    ExecuteCommands ("DataSetFilter `datafilter_name` = CreateFilter (`dataset_name`,1)");
-    data_info ["sites"] = Eval ("`datafilter_name`.sites");
-    data_info ["dataset"] = dataset_name;
-    data_info ["datafilter"] = datafilter_name;
-
-    return data_info;
-}
 
 function utility.associativeListToJSON(associative_list) {
 
@@ -47,80 +18,6 @@ function utility.associativeListToJSON(associative_list) {
     return associative_list;
 }
 
-function utility.defineFrequencies (datafilter_name) {
-    HarvestFrequencies	          (nuc3, *datafilter_name, 3, 1, 1);
-    nucCF						= CF3x4	(nuc3, GeneticCodeExclusions);
-    codon3x4					= BuildCodonFrequencies (nucCF);
-    return {"raw": nuc3,
-            "nucleotide": nucCF,
-            "codon": codon3x4};
-}
-
-lfunction utility.partition_tree (avl, l) {
-    for (k = 0; k < Abs (avl); k+=1) {
-        if ((avl[k])["Parent"]) {
-            if (Abs ((avl[k])["Children"])) {
-                l [(avl[k])["Name"]] = "internal";
-            } else {
-                l [(avl[k])["Name"]] = "leaf";
-            }
-        }
-    }
-}
-
-function utility.loadAnnotatedTopology (look_for_newick_tree) {
-    return utility.extractTreeInfo (io.getTreeString(look_for_newick_tree));
-}
-
-function utility.loadAnnotatedTopologyAndMap._aux (key, value) {
-    utility.loadAnnotatedTopologyAndMap.reverse[value] = key;
-}
-
-function utility.loadAnnotatedTopologyAndMap (look_for_newick_tree, mapping) {
-    utility.loadAnnotatedTopologyAndMap.reverse = {};
-    mapping ["utility.loadAnnotatedTopologyAndMap._aux"][""];
-    
-    io.checkAssertion ("Abs (mapping) == Abs (utility.loadAnnotatedTopologyAndMap.reverse)", "The mapping between original and normalized tree sequence names must be one to one");
-    utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", utility.loadAnnotatedTopologyAndMap.reverse);
-    utility.loadAnnotatedTopologyAndMap.result = utility.extractTreeInfo (io.getTreeString(look_for_newick_tree));
-    utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", None);
-    return utility.loadAnnotatedTopologyAndMap.result;
-}
-
-
-function utility.extractTreeInfo (tree_string) {
-    Topology     T = tree_string;
-
-    utility.loadAnnotatedTopology.branch_lengths  = BranchLength (T, -1);
-    utility.loadAnnotatedTopology.branch_names    = BranchName (T, -1);
-
-    utility.loadAnnotatedTopology.bls            = {};
-
-    for (utility.loadAnnotatedTopology.k = 0; utility.loadAnnotatedTopology.k < Columns (utility.loadAnnotatedTopology.branch_names) - 1; utility.loadAnnotatedTopology.k += 1) {
-        if (utility.loadAnnotatedTopology.branch_lengths[utility.loadAnnotatedTopology.k] >= 0.) {
-            utility.loadAnnotatedTopology.bls [utility.loadAnnotatedTopology.branch_names[utility.loadAnnotatedTopology.k]] =
-               utility.loadAnnotatedTopology.branch_lengths[utility.loadAnnotatedTopology.k];
-        }
-    }
-
-    GetInformation (modelMap, T);
-
-    leaves_internals    = {};
-
-    utility.partition_tree (T^0, leaves_internals);
-
-    utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", 1);
-    T.str = "" + T;
-    utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", None);
-
-    return {"string"     : Format (T,1,0),
-            "string_with_lengths": Format (T,1,1),
-            "branch_lengths" :  utility.loadAnnotatedTopology.bls,
-            "annotated_string" : T.str ,
-            "model_map"  : modelMap,
-            "partitioned" : leaves_internals,
-            "model_list" :  Columns (modelMap)};
-}
 
 function utility.callFunction (id, arguments) {
 
@@ -133,8 +30,15 @@ function utility.callFunction (id, arguments) {
     return None;
 }
 
-function utility.array1D (m) {
-    return Rows (m) * Columns (m);
+lfunction utility.array1D (m) {
+    if (Type (m) == "Matrix") {
+        return Rows (m) * Columns (m);
+    } else {
+        if (Type (m) == "AssociativeList") {
+            return Abs (m);
+        }
+    }
+    return None;
 }
 
 
@@ -156,6 +60,16 @@ function utility.toggleEnvVariable (var, value) {
 		*var = utilityFunction.toggleEnvVariable.__stash;
 	}
 }
+
+function utility.getEnvVariable (var) {
+	return Eval(var);
+}
+
+function utility.setEnvVariable (var, value) {
+    Eval (var); // this is hack to make sure the variable exists before assigning to it
+	^var = value;
+}
+
 
 lfunction utility.checkCacheFile (data_info) {
     cache_info = {};
@@ -193,6 +107,19 @@ lfunction utility.dict.swap_keys_and_values (dict) {
     return swapped_dict;
 }
 
+
+lfunction utility.array_to_dict (object) {
+    result = {};
+    utility.forEach(object, "_value_", "(`&result`)[_value_['key']] = _value_['value']");
+    return result;
+}
+
+lfunction utility.dict_to_array (object) {
+    result = {1,Abs (object)};
+    utility.forEachPair(object, "key", "_value_", "(`&result`)[+key] = _value_");
+    return result;
+}
+
 function utility.map (object, lambda_name, transform) {
 
     Eval ("`lambda_name` = None");
@@ -201,7 +128,7 @@ function utility.map (object, lambda_name, transform) {
         utility.map.return_object = {};
         utility.map.keys = Rows (object);
         for (utility.map.k = 0; utility.map.k < Abs (object); utility.map.k += 1) {
-            ^(lambda_name) = object [utility.map.keys[utility.map.k]];
+            ^(lambda_name) := object [utility.map.keys[utility.map.k]];
             utility.map.return_object [utility.map.keys[utility.map.k]] = Eval (transform);
         }
         return utility.map.return_object;
@@ -211,10 +138,13 @@ function utility.map (object, lambda_name, transform) {
         utility.map.rows = Rows (object);
         utility.map.columns = Columns (object);
         utility.map.return_object = {utility.map.rows,  utility.map.columns};
+        
         for (utility.map.r = 0; utility.map.r < utility.map.rows; utility.map.r += 1) {
             for (utility.map.c = 0; utility.map.c < utility.map.columns; utility.map.c += 1) {
-                 ^(lambda_name) = object [utility.map.r][utility.map.c];
-                utility.map.return_object [utility.map.r][utility.map.c] = Eval (transform);
+                 ^(lambda_name) := object [utility.map.r][utility.map.c];
+                utility.map.temp = Eval (transform);
+                assert (Type (utility.map.temp) == "Number" || Type (utility.map.temp) == "String", "Unsupported object type in call to utility.map [Matrix]");
+                utility.map.return_object [utility.map.r][utility.map.c] = utility.map.temp;
                
             }
         }
@@ -224,26 +154,154 @@ function utility.map (object, lambda_name, transform) {
     return None;
 }
 
-function utility.forEach (object, lambda_name, transform) {
+lfunction utility.matrix_to_list_of_rows (object) {
+    result = {};
+    rows = Rows (object);
+    cols = Columns (object);
+    
+    for (r = 0; r < rows; r += 1) {
+        row = {1, cols};
+        for (c = 0; c < cols; c+=1) {
+            row[c] = object[r][c];
+        }
+        result + row;
+    }
+    return result;
+}
+
+function utility.filter (object, lambda_name, condition) {
 
     Eval ("`lambda_name` = None");
-
+    
+    utility.filter.return_object = {};
     if (Type (object) == "AssociativeList") {
-        utility.map.keys = Rows (object);
-        for (utility.map.k = 0; utility.map.k < Abs (object); utility.map.k += 1) {
-            ^(lambda_name) = object [utility.map.keys[utility.map.k]];
-            Eval (transform);
+        utility.filter.keys = Rows (object);
+        for (utility.filter.k = 0; utility.filter.k < Abs (object); utility.filter.k += 1) {
+            ^(lambda_name) := object [utility.filter.keys[utility.filter.k]];
+            if (Eval (condition)) {
+                utility.filter.return_object [utility.filter.keys[utility.filter.k]] = ^(lambda_name);
+            }
         }
+        return utility.filter.return_object;
     }
     
     if (Type (object) == "Matrix") {
-        utility.map.rows = Rows (object);
-        utility.map.columns = Columns (object);
-        utility.map.return_object = {utility.map.rows,  utility.map.columns};
-        for (utility.map.r = 0; utility.map.r < utility.map.rows; utility.map.r += 1) {
-            for (utility.map.c = 0; utility.map.c < utility.map.columns; utility.map.c += 1) {
-                 ^(lambda_name) = object [utility.map.r][utility.map.c];
-                Eval (transform);
+        utility.filter.rows = Rows (object);
+        utility.filter.columns = Columns (object);
+        for (utility.filter.r = 0; utility.filter.r < utility.filter.rows; utility.filter.r += 1) {
+            for (utility.filter.c = 0; utility.filter.c < utility.filter.columns; utility.filter.c += 1) {
+                 ^(lambda_name) := object [utility.filter.r][utility.filter.c];
+                if (Eval (condition)) {
+                    utility.filter.return_object + ^(lambda_name);
+                }               
+            }
+        }
+        return utility.filter.return_object;
+    }
+
+    return None;
+}
+
+function utility.forEach (object, lambda_name, transform) {
+    
+    Eval ("`lambda_name` = None");
+
+    if (Type (object) == "Tree" || Type (object) == "Topology") {
+        utility.forEach (BranchName (object, -1), lambda_name, transform);
+        return;
+        
+    }
+
+    if (Type (object) == "AssociativeList") {
+        utility.forEach.keys = Rows (object);
+        for (utility.forEach.k = 0; utility.forEach.k < Abs (object); utility.forEach.k += 1) {
+            ^(lambda_name) := object [utility.forEach.keys[utility.forEach.k]];
+            ExecuteCommands (transform);
+        }
+        return;
+    } 
+    
+    if (Type (object) == "Matrix") {
+        utility.forEach.rows = Rows (object);
+        utility.forEach.columns = Columns (object);
+        utility.forEach.return_object = {utility.forEach.rows,  utility.forEach.columns};
+        for (utility.forEach.r = 0; utility.forEach.r < utility.forEach.rows; utility.forEach.r += 1) {
+            for (utility.forEach.c = 0; utility.forEach.c < utility.forEach.columns; utility.forEach.c += 1) {
+                 ^(lambda_name) := object [utility.forEach.r][utility.forEach.c];
+                ExecuteCommands (transform);
+               
+            }
+        }
+    }
+}
+
+
+
+function utility.checkKey (dict, key, type) {
+    if (None != dict) {
+        if (Type (dict[key]) == type) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}   
+
+function utility.addToSet (set, object) {
+
+    if (Type(object) == "String") {
+        set[object] = 1;
+        return;
+    } 
+    if (Type(object) == "AssociativeList" || Type(object) == "Matrix") {
+        utility.forEach (object, "_value_", "set[_value_] = 1");
+        return;
+    }
+    set ["" + object] = 1;
+}   
+
+function utility.populateDict (from, to, value, lambda) {
+    utility.populateDict.result = {};
+    if (Type (lambda) == "String" && Type (value) == "String") {
+        Eval ("`lambda` = None");
+        for (utility.populateDict.k = from; utility.populateDict.k < to; utility.populateDict.k+=1) {
+            ^lambda = utility.populateDict.k;
+            utility.populateDict.result[utility.populateDict.k] = Eval (value);
+        }
+   } 
+    else {
+        for (utility.populateDict.k = from; utility.populateDict.k < to; utility.populateDict.k+=1) {
+            utility.populateDict.result[utility.populateDict.k] = value;
+        }
+    }
+    return utility.populateDict.result;
+}
+
+function utility.forEachPair (object, key_name, value_name, transform) {
+    
+    Eval ("`key_name` = None");
+    Eval ("`value_name` = None");
+    
+    
+    
+    if (Type (object) == "AssociativeList") {
+        utility.forEachPair.keys = Rows (object);
+        for (utility.forEachPair.k = 0; utility.forEachPair.k < Abs (object); utility.forEachPair.k += 1) {
+            ^(key_name) := utility.forEachPair.keys[utility.forEachPair.k];
+            ^(value_name) := object [utility.forEachPair.keys[utility.forEachPair.k]];
+            ExecuteCommands (transform);
+        }
+        return;
+    }
+    if (Type (object) == "Matrix") {
+        utility.forEachPair.rows = Rows (object);
+        utility.forEachPair.columns = Columns (object);
+        utility.forEachPair.return_object = {utility.forEachPair.rows,  utility.forEachPair.columns};
+        ^(key_name) = {{utility.forEachPair.r,utility.forEachPair.c}};
+        
+        for (utility.forEachPair.r = 0; utility.forEachPair.r < utility.forEachPair.rows; utility.forEachPair.r += 1) {
+            for (utility.forEachPair.c = 0; utility.forEachPair.c < utility.forEachPair.columns; utility.forEachPair.c += 1) {
+                 ^(value_name) := object [utility.forEachPair.r][utility.forEachPair.c];
+                ExecuteCommands (transform);
                
             }
         }
@@ -258,7 +316,15 @@ lfunction utility.keys (object) {
     return None;
 }
 
+lfunction utility.values (object) {
+    if (Type (object) == "AssociativeList") {
+        return Columns (object);
+    }
+    return None;
+}
+
 lfunction utility.dict.ensure_key (dict, key) {
+
     if (Type (dict[key]) != "AssociativeList") {
         dict[key] = {};
     }

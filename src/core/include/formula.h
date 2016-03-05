@@ -62,17 +62,20 @@ class _FormulaParsingContext {
     long                 assignment_ref_id;
     char                 assignment_ref_type;
     bool                 is_volatile;
+    bool                 in_assignment;
     _String            * err_msg;
     _VariableContainer * formula_scope;
     
     public:
         _FormulaParsingContext (_String* = nil, _VariableContainer* = nil);
         bool&       isVolatile (void)                   { return is_volatile; }
+        bool&       inAssignment (void)                 { return in_assignment;}
         long&       assignmentRefID (void)              { return assignment_ref_id; }
         char&       assignmentRefType (void)            { return assignment_ref_type;} 
         _String*    errMsg (void)                       { return err_msg; }
-        _VariableContainer* formulaScope (void)         { return formula_scope; }     
-        _String     contextualizeRef (_String&);
+        _VariableContainer* formulaScope (void)         { return formula_scope; }
+        void        setScope (_String const* scope);
+        _String const     contextualizeRef (_String&);
 };
 
 

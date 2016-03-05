@@ -70,6 +70,7 @@ typedef char* Ptr;
 
 #include <stdio.h>
 
+
 class BaseObj
 {
 
@@ -80,11 +81,9 @@ public:
 
     virtual ~BaseObj(void) {}
 
-    virtual BaseObj* toStr (void);
-
-    virtual BaseObj* toErrStr (void);
-
-    virtual void     toFileStr (FILE*);
+    virtual BaseObj* toStr     (unsigned long = 0UL);
+    virtual BaseObj* toErrStr  (unsigned long = 0UL);
+    virtual void     toFileStr (FILE*, unsigned long = 0UL);
 
     /*virtual operator const char*(void);*/
 
@@ -118,6 +117,8 @@ public:
 typedef BaseObj*  BaseRef;
 typedef BaseObj const * BaseRefCosnt;
 
+
+
 extern  void      DeleteObject (BaseRef); // delete a dynamic object
 
 
@@ -136,8 +137,9 @@ bool    GlobalShutdown();
 
 extern  FILE*   globalErrorFile;
 extern  FILE*   globalMessageFile;
+
 extern  bool    terminateExecution,
-        skipWarningMessages;
+                skipWarningMessages;
 
 extern long     systemCPUCount;
 

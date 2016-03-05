@@ -194,6 +194,7 @@ long     _Trie::FindKey (const _String& key, _SimpleList* path, bool prefixOK) c
     return current_index;
 }
 
+
 //----------------------------------------------------------------------------------------------------------------------
 long     _Trie::FindKey (const char key, bool prefixOK) const {
     long current_index = 0,
@@ -381,7 +382,7 @@ void    _Trie::DumpRaw() {
                                                             
 //----------------------------------------------------------------------------------------------------------------------
 
-BaseRef     _Trie::toStr() {
+BaseRef     _Trie::toStr(unsigned long) {
     _String         * serialized = new _String (128L, true),
                       alph       = Alphabet();
                       

@@ -106,8 +106,7 @@ _List::_List (BaseRef ss, char sep)
 }
 
 // Data constructor (1 member list)
-_List::_List (BaseRef br)
-{
+_List::_List (BaseRef br) {
     lLength = 1;
     laLength = MEMORYSTEP;
     lData = (long*)MemAllocate (laLength * sizeof(Ptr));
@@ -116,8 +115,7 @@ _List::_List (BaseRef br)
 }
 
 // Data constructor (variable number of string constants)
-_List::_List (const char* firstString, const unsigned long number, ...)
-{
+_List::_List (const char* firstString, const unsigned long number, ...) {
     va_list vl;
     AppendNewInstance (new _String (firstString));
     va_start(vl,number);
@@ -126,6 +124,18 @@ _List::_List (const char* firstString, const unsigned long number, ...)
         AppendNewInstance (new _String (val));
     }
     va_end(vl);
+}
+
+// Data constructor (variable number of base refs)
+_List::_List (BaseObj* ref, const unsigned long number, ...) {
+  va_list vl;
+  (*this) << ref;
+  va_start(vl,number);
+  for (unsigned long arg_id =0;arg_id<number;arg_id++) {
+    BaseObj * val=va_arg(vl,BaseObj *);
+    (*this) << val;
+  }
+  va_end(vl);
 }
 
 //Destructor
@@ -637,40 +647,36 @@ void  _List::Replace (long index, BaseRef newObj, bool dup)
 
 // Char* conversion
 //TODO: toFileStr should be ToFileStr to follow convention.
-void _List::toFileStr(FILE* dest)
+void _List::toFileStr(FILE* dest, unsigned long)
 {
     fprintf (dest,"{");
-
-    for (unsigned long i = 0; (i<lLength); i++) {
-        ((BaseRef*)lData)[i]->toFileStr(dest);
-        if (i<lLength-1) {
-            fprintf (dest,",");
-        }
+  
+    if (lLength) {
+      GetItem(0)->toFileStr(dest);
+      for (unsigned long i = 1UL; i<lLength; i++) {
+          fprintf (dest,", ");
+          GetItem(i)->toFileStr(dest);
+      }
     }
     fprintf (dest,"}");
 }
 
 // Char* conversion
 //TODO: toFileStr should be ToStr to follow convention.
-BaseRef _List::toStr(void)
-{
+BaseRef _List::toStr(unsigned long) {
     _String * s = new _String((unsigned long)20*(lLength+1),true);
 
-    checkPointer (s);
-
     (*s)<<'{';
-
-    for (unsigned long i = 0; (i<lLength); i++) {
-        _String* t = (_String*)(((BaseRef*)lData)[i]->toStr());
-        if (t) {
-            (*s)<<t;
-            DeleteObject (t);
-        }
-        if (i<lLength-1) {
-            (*s)<<',';
-        }
+  
+    if (lLength) {
+      s->AppendNewInstance ((_String*)GetItem(0)->toStr());
+      for (unsigned long i = 1UL; i<lLength; i++) {
+          (*s)<< ", ";
+          s->AppendNewInstance ((_String*)GetItem(i)->toStr());
+      }
+      (*s)<<'}';
     }
-    (*s)<<'}';
+  
     s->Finalize();
     return s;
 }

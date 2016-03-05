@@ -20,6 +20,7 @@ function frequencies.empirical.nucleotide (model, namespace, datafilter) {
 
 function frequencies.empirical.corrected.CF3x4 (model, namespace, datafilter) {
 
+
     __dimension = model.dimension (model); 
     __alphabet = model ["alphabet"];
     
@@ -27,11 +28,9 @@ function frequencies.empirical.corrected.CF3x4 (model, namespace, datafilter) {
             "`terms.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4");
 
 
-    GetDataInfo (_givenAlphabet, *datafilter, "CHARACTERS");
-    
  	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", 0);
  	__f = frequencies._aux.empirical.collect_data (datafilter, 3,1,1);
-	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
+ 	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
     
     __estimates = frequencies._aux.CF3x4 (__f, model["bases"], __alphabet, model["stop"]);
  	model[terms.efv_estimate]      = __estimates ["codons"];
@@ -63,32 +62,35 @@ function frequencies._aux.empirical.character_count (datafilter) {
     return Eval ("`datafilter`.sites * `datafilter`.species");
 }
 
-function frequencies._aux.empirical.collect_data (datafilter, unit, stride, position_specific) {
-    assert (Type (datafilter) == "Matrix" || Type (datafilter) == "String", 
-        "`datafilter` must be a matrix or a string in call to frequencies._aux.empirical.collect_data"
+lfunction frequencies._aux.empirical.collect_data (datafilter, unit, stride, position_specific) {
+    
+    assert (Type (datafilter) == "Matrix" || Type (datafilter) == "AssociativeList" || Type (datafilter) == "String", 
+        "datafilter must be a String/Matrix/Associative List in call to frequencies._aux.empirical.collect_data, instead had a " + Type (datafilter)
     );
     if (Type (datafilter) == "String") {
-        HarvestFrequencies (__f, *datafilter, unit,stride,position_specific);
+        HarvestFrequencies (__f, ^datafilter, unit,stride,position_specific);
     } else {
-        frequencies._aux.empirical.collect_data.site_count = 0;
+        site_count = 0;
+        dim = utility.array1D(datafilter);
     
-        for (frequencies._aux.empirical.collect_data.i = 0; 
-             frequencies._aux.empirical.collect_data.i < Rows (datafilter) * Columns (datafilter); 
-             frequencies._aux.empirical.collect_data.i += 1) {
+        for (i = 0; 
+             i < dim; 
+             i += 1) {
             
             
-             ExecuteCommands ("HarvestFrequencies (__f, " + datafilter[frequencies._aux.empirical.collect_data.i] + ",unit,stride,position_specific_)");
-             frequencies._aux.empirical.collect_data.local_sites = frequencies._aux.empirical.character_count (datafilter[frequencies._aux.empirical.collect_data.i]);
+             HarvestFrequencies (__f, ^(datafilter[i]),unit,stride,position_specific);
+             local_sites = frequencies._aux.empirical.character_count (datafilter[i]);
              
-             if (frequencies._aux.empirical.collect_data.i) {
-                __f_composite += __f *  frequencies._aux.empirical.collect_data.local_sites;
+            
+             if (i) {
+                __f_composite += __f * local_sites;
              } else {
-                __f_composite = __f *  frequencies._aux.empirical.collect_data.local_sites;
+                __f_composite  = __f * local_sites;
             
              }
-             frequencies._aux.empirical.collect_data.site_count += frequencies._aux.empirical.collect_data.local_sites;
+             site_count += local_sites;
         }            
-        return __f_composite * (1/frequencies._aux.empirical.collect_data.site_count);
+        return __f_composite * (1/site_count);
     }
     
     return __f;

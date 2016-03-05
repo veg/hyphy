@@ -29,7 +29,7 @@ function parameters.declareGlobal (id, cache) {
     if (Type (id) == "String") {
         if (Abs (id)) {
             if (Type (cache) == "AssociativeList") {
-                if (Abs (cache[id]) == 0) {
+                if (Abs (cache[id]) > 0) {
                     return;
                 } else {
                     cache[id] = 1;
@@ -170,9 +170,12 @@ function parameters.setRange (id, ranges) {
     }
 }
 
-function parameters.isIndependent (id) {
-    ExecuteCommands ("GetString (parameters.isIndependent.t, `id`, -1);");
-    return Type (parameters.isIndependent.t) != "AssociativeList";
+lfunction parameters.isIndependent (parameter) {
+    GetString (info, ^parameter, -1);
+    if (Type (info) == "AssociativeList") {
+        return (utility.checkKey (info, "Local", "Matrix") && utility.checkKey (info, "Global", "Matrix")) == FALSE;
+    }
+    return TRUE;
 }
 
 function parameters.setConstraint (id, value, global_tag) {
@@ -237,6 +240,7 @@ function parameters.helper.copy_definitions (target, source) {
     }
 }
 
+
 lfunction parameters.helper.stick_breaking (parameters, initial_values) {
     left_over   = "";
     weights     = {};
@@ -268,20 +272,31 @@ lfunction parameters.helper.dump_matrix (matrix) {
 }
 
 lfunction parameters.helper.tree_lengths_to_initial_values (dict, type) {
-    keys = Rows (dict);
-    result = {"branch lengths" : { "0" : {} } };
+/** 
+    expects a [0 to N-1] dictrionary of tree objects 
+
+*/
+
+    components = Abs (dict);
+    
+    //result = {"branch lengths" : { "0" : {} } };
 
     if (type == "codon") {
         factor = 1;
     } else {
         factor = 1;
     }
+    
+    result  = {};
 
-    for (i = 0; i < Abs (dict); i += 1) {
-        ((result["branch lengths"])[0])[keys[i]] = {"MLE": factor * dict[keys[i]]};
+    for (i = 0; i < components; i += 1) {
+        //((result["branch lengths"])[0])[keys[i]] = {"MLE": factor * dict[keys[i]]};
+        this_component = {};
+        utility.forEachPair ((dict[i])[^"terms.json.attribute.branch_length"], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {^'terms.json.MLE' : `&factor`*_branch_length_}");
+        result[i] = this_component;
     }
 
-    return result;
+    return {^"terms.json.attribute.branch_length" : result} ;
 }
 
 function parameters.getProfileCI (id, lf, level) {

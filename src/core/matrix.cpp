@@ -1301,30 +1301,31 @@ _PMathObj   _Matrix::MultByFreqs (long freqID)
 
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::Compute (void)
-{
-    //if ((storageType != 1)&&(storageType != 2))
-    if (storageType != _NUMERICAL_TYPE) {
-      if (storageType == _POLYNOMIAL_TYPE) {
-            if (ANALYTIC_COMPUTATION_FLAG) {
-                return this;
-            }
-        }
-        if (IsAStringMatrix()) {
-            return this;
-        }
-
-        if (theValue) {
-            DeleteObject (theValue);
-        }
-        if (storageType != _SIMPLE_FORMULA_TYPE) {
-            theValue = Evaluate(false);
-        } else {
-            theValue  = EvaluateSimple ();
-        }
-        return theValue;
+_PMathObj   _Matrix::Compute (void) {
+  //if ((storageType != 1)&&(storageType != 2))
+  if (storageType != _NUMERICAL_TYPE) {
+    if (storageType == _POLYNOMIAL_TYPE) {
+      if (ANALYTIC_COMPUTATION_FLAG) {
+        return this;
+      }
     }
-    return this;
+    
+    if (IsAStringMatrix()) {
+      return this;
+    }
+    
+    if (theValue) {
+      DeleteObject (theValue);
+    }
+    
+    if (storageType != _SIMPLE_FORMULA_TYPE) {
+      theValue = Evaluate(false);
+    } else {
+      theValue  = EvaluateSimple ();
+    }
+    return theValue;
+  }
+  return this;
 }
 
 //__________________________________________________________________________________
@@ -2910,13 +2911,20 @@ _PMathObj   _Matrix::Evaluate (bool replace)
 void        _Matrix::ConvertToSimpleList (_SimpleList & sl)
 {
     sl.Clear();
-    if (storageType == 1) {
+    if (storageType == _NUMERICAL_TYPE) {
         sl.RequestSpace (hDim*vDim+1);
 
         for (long i=0; i<hDim; i++)
             for (long j=0; j<vDim; j++) {
                 sl << (*this)(i,j);
             }
+    } else {
+      if (storageType == _FORMULA_TYPE) {
+        _Matrix * c = ((_Matrix*)Compute());
+        if (c->storageType == _NUMERICAL_TYPE) {
+          c -> ConvertToSimpleList (sl);
+        }
+      }
     }
 }
 
@@ -7374,9 +7382,11 @@ _Matrix     _Matrix::operator - (_Matrix& m)
 
 //_____________________________________________________________________________________________
 
-BaseRef _Matrix::toStr(void)
-{
-  _String result(2048L,true);
+BaseRef _Matrix::toStr(unsigned long padding) {
+  
+  _String *result  = new _String (2048L,true),
+          padder  (" ", padding);
+  
   checkParameter (printDigitsSpec,printDigits,0);
   
   char number_buffer [256];
@@ -7388,87 +7398,89 @@ BaseRef _Matrix::toStr(void)
  
       _Parameter useJSON = 0.0;
        checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
+      
       bool doJSON = !CheckEqual(useJSON, 0.0);
       
       char openBracket  = doJSON ? '[' : '{',
       closeBracket = doJSON ? ']' : '}';
       
-      result << openBracket;
-      result << '\n';
-      for (long i = 0; i<hDim; i++) {
-        if (i && doJSON) {
-          result << ',';
-        }
-        result<<openBracket;
+      //(*result) << padder;
+      (*result) << openBracket;
+      (*result) << '\n';
+    
+      for (long i = 0L; i<hDim; i++) {
+         (*result)<<padder;
+         (*result)<<openBracket;
         
-        for (long j = 0; j<vDim; j++) {
-          if (printStrings) {
-            result << '"';
+  
+         for (long j = 0L; j<vDim; j++) {
+           if (j) {
+             (*result)<<", ";
+           }
+           
+           if (printStrings) {
+            (*result) << '"';
             _Formula * f = GetFormula (i,j);
             _PMathObj fv;
             if (f && (fv=f->Compute())) {
               if (fv->ObjectClass() == STRING) {
-                result << ((_FString*)fv)->theString;
+                (*result) << ((_FString*)fv)->theString;
               } else {
-                result << (_String*)fv->toStr();
+                (*result) << (_String*)fv->toStr(padding);
               }
             }
-            result << '"';
+            (*result) << '"';
           } else {
             parameterToCharBuffer ((*this)(i,j), number_buffer, 255, doJSON);
-            result<<number_buffer;
-            
-          }
-          if (j<vDim-1) {
-            result<<',';
+            (*result)<<number_buffer;
           }
         }
-        result<<closeBracket;
-        result<<'\n';
+        (*result)<<closeBracket;
+        if (i != hDim -1) {
+          if (doJSON) {
+            (*result) << ',';
+          }
+          (*result)<<'\n';
+        }
       }
-      result<<closeBracket;
-      result<<'\n';
-      result.Finalize();
+      (*result)<<'\n';
+      (*result)<<padder;
+      (*result)<<closeBracket;
+ 
     } else if (storageType == 0) {
       checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
       if (!ANALYTIC_COMPUTATION_FLAG) {
-        return Compute()->toStr();
+        return Compute()->toStr(padding);
       }
+      
       for (long i = 0; i<hDim; i++) {
-        result<<'\n';
-        result<<'[';
+        (*result)<<'\n';
+        (*result)<<'[';
         for (long j = 0; j<vDim; j++) {
           long p = Hash (i,j);
           if (GetMatrixObject(p)) {
             if (p>=0) {
-              _String *sp = (_String*) GetMatrixObject (p)->toStr();
-              result<<sp;
+              result->AppendNewInstance((_String*) GetMatrixObject (p)->toStr());
               if (j<vDim-1) {
-                result<<',';
+                (*result)<<',';
               }
-              result<<' ';
-              DeleteObject (sp);
+              (*result)<<' ';
               continue;
             }
           }
-          result<<'0';
+          (*result)<<'0';
         }
-        result<<']';
+        (*result)<<']';
       }
-      result<<'\n';
-      result<<'\n';
-      result.Finalize();
+      (*result)<<'\n';
+      (*result)<<'\n';
     } else {
-      _Matrix* eval = (_Matrix*)ComputeNumeric();
-      result.Finalize();
-      _String* ss = (_String*)eval->toStr();
-      return ss;
+      result->Finalize(); DeleteObject (result);
+      return ComputeNumeric()->toStr(padding);
     }
-    
-    
   }
-  
-  return result.makeDynamic();
+  result->Finalize();
+  return result;
 }
 
 //_____________________________________________________________________________________________
@@ -7508,7 +7520,10 @@ void     _Matrix::Serialize (_String& res, _String& myID)
 }
 
 //_________________________________________________________
-void    _Matrix::toFileStr (FILE*dest){
+void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
+  
+  _String padder (" ", padding);
+  
   if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
     bool printStrings = storageType != 1;
     long digs         = -1;
@@ -7516,6 +7531,7 @@ void    _Matrix::toFileStr (FILE*dest){
     char number_buffer [256];
     _Parameter useJSON = 0.0;
     checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
+    
     bool doJSON = !CheckEqual(useJSON, 0.0);
     
     char openBracket  = doJSON ? '[' : '{',
@@ -7528,34 +7544,43 @@ void    _Matrix::toFileStr (FILE*dest){
     
     if (!printStrings && digs != -1) {
       _String formatStr;
-      if (digs<=0 || digs>15) {
-        digs = 8;
+    
+      if (digs<=0L || digs>15L) {
+        digs = 8L;
       }
       formatStr = "%";
       formatStr = formatStr&_String(digs+6)&'.'&_String(digs)&'g';
       const char *fs = formatStr.getStr();
-      fprintf (dest, "\n%c", openBracket);
-      for (long i = 0; i<hDim; i++) {
+      fprintf (dest, "%c\n", openBracket);
+      for (long i = 0L; i<hDim; i++) {
+        if (i) {
+          fprintf (dest, "%s", padder.sData);
+        }
         fprintf (dest, "%c", openBracket);
-        for (long j = 0; j<vDim; j++) {
-          fprintf(dest, fs, (*this)(i,j));
-          if (j<vDim-1) {
-            fprintf (dest, ",");
+        for (long j = 0L; j<vDim; j++) {
+          if (j) {
+            fprintf (dest, ", ");
           }
-          if (j%100==0) {
+          fprintf(dest, fs, (*this)(i,j));
+          if (j%100L == 0L) {
             fflush(dest);
           }
         }
-        fprintf (dest, "}\n");
+        fprintf (dest, "%c\n", closeBracket);
       }
-      fprintf (dest, "}\n");
+      fprintf (dest, "%s%c", padder.sData, closeBracket);
     } else {
-      fprintf (dest, "\n{");
+      fprintf (dest, "\n%s%c", padder.sData, openBracket);
       for (long i = 0; i<hDim; i++) {
-        fprintf (dest, "{");
+        fprintf (dest, "%s", padder.sData);
+        if (i) {
+          fprintf (dest, "%s", padder.sData);
+        }
+        fprintf (dest, "%c", openBracket);
+
         for (long j = 0; j<vDim; j++) {
           if (j) {
-            fprintf (dest,",");
+            fprintf (dest,", ");
           }
           
           if (printStrings) {
@@ -7573,7 +7598,7 @@ void    _Matrix::toFileStr (FILE*dest){
         }
         fprintf (dest, "%c%c\n", closeBracket, doJSON ? ',' : ' ');
       }
-      fprintf (dest, "%c\n", closeBracket);
+      fprintf (dest, "%s%c", padder.sData, closeBracket);
     }
   } else if (storageType==0) {
     checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
@@ -9246,7 +9271,11 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool 
         if (aPair.lLength == 2) {
             _String  key        (ProcessLiteralArgument((_String*)aPair(0),theP)),
                      errMsg;
-                     
+          
+            if (key.sLength == 0UL) {
+              key = *(_String*)aPair(0);
+            }
+            
             _Formula value      (*(_String*)aPair(1),theP, doErrors?nil:&errMsg);
 
             _PMathObj   valueC  = value.Compute();
@@ -9271,8 +9300,8 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool 
 
 //_____________________________________________________________________________________________
 
-BaseRef _AssociativeList::toStr (void) {
-    return Serialize  ();
+BaseRef _AssociativeList::toStr (unsigned long padding) {
+    return Serialize  (padding);
 }
 
 //_____________________________________________________________________________________________
@@ -9513,9 +9542,13 @@ void _AssociativeList::MStore (const _String& obj, const _String& info) {
 
 
 //_____________________________________________________________________________________________
-_String* _AssociativeList::Serialize ()  {
-    _String * outString = new _String (1024L,true);
-
+_String* _AssociativeList::Serialize (unsigned long padding)  {
+  
+    _String * outString = new _String (1024L,true),
+              padder (" ", padding);
+  
+  
+  
     (*outString) << "{";
     bool        doComma = false;
     _List * meKeys = GetKeys();
@@ -9524,9 +9557,12 @@ _String* _AssociativeList::Serialize ()  {
         if (thisKey) {
             if (doComma) {
                 (*outString) << ',';
-                (*outString) << '\n';
-            }
-
+             }
+          
+            (*outString) << '\n';
+            (*outString) << padder;
+            (*outString) << ' ';
+          
             (*outString) << '"';
             outString->EscapeAndAppend(*thisKey, false);
             (*outString) << '"';
@@ -9536,14 +9572,16 @@ _String* _AssociativeList::Serialize ()  {
             (*outString) << ':';
             if (anObject->ObjectClass() == STRING) {
                 (*outString) << '"';
-                outString->EscapeAndAppend(_String ((_String*)anObject->toStr()),0);
+                outString->EscapeAndAppend(_String ((_String*)anObject->toStr(padding+2)),0);
                 (*outString) << '"';
             } else {
-                (*outString) << _String ((_String*)anObject->toStr());
+                outString->AppendNewInstance((_String*)anObject->toStr(padding+2));
             }
             doComma = true;
         }
     }
+    (*outString) << '\n';
+    (*outString) << padder;
     (*outString) << "}";
     outString->Finalize ();
     return outString;

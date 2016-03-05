@@ -92,7 +92,7 @@ public:
     virtual     BaseRef     makeDynamic                 (void);
     virtual     void        Duplicate                   (BaseRef);
 
-    virtual     BaseRef     toStr                       (void);
+    virtual     BaseRef     toStr                       (unsigned long);
 
     bool        HasLocals                   (void);
 

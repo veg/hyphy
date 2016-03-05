@@ -406,11 +406,9 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
 
 //______________________________________________________________
 
-BaseRef  _AVLList::toStr (void)
-{
+BaseRef  _AVLList::toStr (unsigned long) {
     _String * str = new _String (128L, true);
-    checkPointer (str);
-
+ 
     if (countitems() == 0) {
         (*str) << "Empty Associative List";
     } else {

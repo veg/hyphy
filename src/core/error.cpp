@@ -150,7 +150,7 @@ _String DecodeError (long errCode)
         return "Export Matrix Called With a Non-polynomial Matrix Argument";
         break;
     case -666:
-        return "Attempting to operate on an undefined value; this is probably a result of an earlier 'soft' error condition";
+        return "Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition";
         break;
     default:
         return "Unclassified Error";

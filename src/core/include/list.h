@@ -100,6 +100,15 @@ class _List:public _SimpleList
         _List(const char*, const unsigned long, ...);
         
         /**
+         * Data constructor list of BaseRefs supplied as a variable
+         * \n\n \b Example: \code _List list = _List((BaseRef)new _String("one")); \endcode
+         * @param char* the first string to add to the list
+         * @param const unsigned long the number of additional char* arguments supplied to the constructor
+         * @param 2-N: char* to be added to the list
+         */
+        _List(BaseObj*, const unsigned long, ...);
+
+        /**
         * The deconstructor
         */
         virtual ~_List(void);
@@ -344,11 +353,11 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual BaseRef toStr(void);
+        virtual BaseRef toStr(unsigned long = 0UL);
 
         /**
         */
-        virtual void toFileStr(FILE*);
+        virtual void toFileStr(FILE*, unsigned long = 0UL);
 
 };
 

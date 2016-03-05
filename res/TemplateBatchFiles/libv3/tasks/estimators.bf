@@ -23,6 +23,7 @@ function estimators.setGlobals2(key, value) {
     __init_value = (initial_values["global"])[key];
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value["fix-me"]) {
+            estimators.applyExistingEstimates.df_correction += parameters.isIndependent (value);
             ExecuteCommands("`value` := " + __init_value["MLE"]);
         } else {
             ExecuteCommands("`value` = " + __init_value["MLE"]);
@@ -61,6 +62,7 @@ function estimators.extractBranchInformation(tree, node, model) {
 }
 
 function estimators.applyBranchLength(tree, node, model, length) {
+    
     return utility.callFunction(model["set-branch-length"], {
         "0": "model",
         "1": length,
@@ -95,8 +97,8 @@ function estimators.branch_lengths_in_string(tree_id, lookup) {
 
 
 function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
-    ExecuteCommands("GetString (estimators.extractMLEs.lfInfo, `likelihood_function_id`,-1)");
 
+    ExecuteCommands("GetString (estimators.extractMLEs.lfInfo, `likelihood_function_id`,-1)");
 
     estimators.extractMLEs.results = {};
     estimators.extractMLEs.partitions = utility.array1D(estimators.extractMLEs.lfInfo["Trees"]);
@@ -105,7 +107,7 @@ function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
 
     estimators.extractMLEs.results["global"] = {};
     model_descriptions["estimators.copyGlobals"][""];
-    estimators.extractMLEs.results["branch lengths"] = {};
+    estimators.extractMLEs.results[terms.json.attribute.branch_length] = {};
     estimators.extractMLEs.results["Trees"] = estimators.extractMLEs.lfInfo["Trees"];
 
     for (estimators.extractMLEs.i = 0; estimators.extractMLEs.i < estimators.extractMLEs.partitions; estimators.extractMLEs.i += 1) {
@@ -113,16 +115,16 @@ function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
 
         ExecuteCommands("GetInformation (estimators.extractMLEs.map, `_tree_name`);");
         estimators.extractMLEs.branch_names = Rows(estimators.extractMLEs.map);
-        (estimators.extractMLEs.results["branch lengths"])[estimators.extractMLEs.i] = {};
+        (estimators.extractMLEs.results[terms.json.attribute.branch_length])[estimators.extractMLEs.i] = {};
 
         for (estimators.extractMLEs.b = 0; estimators.extractMLEs.b < Abs(estimators.extractMLEs.map); estimators.extractMLEs.b += 1) {
             _branch_name = estimators.extractMLEs.branch_names[estimators.extractMLEs.b];
-            ((estimators.extractMLEs.results["branch lengths"])[estimators.extractMLEs.i])[_branch_name] =
+            ((estimators.extractMLEs.results[terms.json.attribute.branch_length])[estimators.extractMLEs.i])[_branch_name] =
             estimators.extractBranchInformation(_tree_name, _branch_name, model_descriptions[estimators.extractMLEs.map[_branch_name]]);
         }
 
         (estimators.extractMLEs.results["Trees"])[estimators.extractMLEs.i] =
-        estimators.branch_lengths_in_string((estimators.extractMLEs.results["Trees"])[estimators.extractMLEs.i], (estimators.extractMLEs.results["branch lengths"])[estimators.extractMLEs.i]);
+        estimators.branch_lengths_in_string((estimators.extractMLEs.results["Trees"])[estimators.extractMLEs.i], (estimators.extractMLEs.results[terms.json.attribute.branch_length])[estimators.extractMLEs.i]);
     }
 
     return estimators.extractMLEs.results;
@@ -130,23 +132,26 @@ function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
 
 function estimators.applyExistingEstimates(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions) {
 
-    ExecuteCommands("GetString (estimators.applyExistingEstimates.lfInfo, `likelihood_function_id`,-1)");
-    estimators.applyExistingEstimates.results = {};
-    estimators.applyExistingEstimates.partitions = Rows(estimators.applyExistingEstimates.lfInfo["Trees"]);
+    // fprintf (stdout, model_descriptions, "\n", initial_values, "\n");
 
+    GetString (estimators.applyExistingEstimates.lfInfo, ^likelihood_function_id,-1);
+    estimators.applyExistingEstimates.results = {};
+    estimators.applyExistingEstimates.partitions = utility.array1D (estimators.applyExistingEstimates.lfInfo["Trees"]);
+
+
+    estimators.applyExistingEstimates.df_correction = 0;
     // copy global variables first
 
     estimators.applyExistingEstimates.results["global"] = {};
-
     model_descriptions["estimators.setGlobals"][""];
-
-    estimators.applyExistingEstimates.df_correction = 0;
+    
+    estimators.applyExistingEstimates.keep_track_of_proportional_scalers = {};
 
     for (estimators.applyExistingEstimates.i = 0; estimators.applyExistingEstimates.i < estimators.applyExistingEstimates.partitions; estimators.applyExistingEstimates.i += 1) {
 
         // fprintf (stdout, initial_values, "\n");
 
-        if (Type((initial_values["branch lengths"])[estimators.applyExistingEstimates.i]) == "AssociativeList") {
+        if (Type((initial_values[terms.json.attribute.branch_length])[estimators.applyExistingEstimates.i]) == "AssociativeList") {
 
             _tree_name = (estimators.applyExistingEstimates.lfInfo["Trees"])[estimators.applyExistingEstimates.i];
 
@@ -155,9 +160,9 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
 
             for (estimators.applyExistingEstimates.b = 0; estimators.applyExistingEstimates.b < Abs(estimators.applyExistingEstimates.map); estimators.applyExistingEstimates.b += 1) {
                 _branch_name = estimators.applyExistingEstimates.branch_names[estimators.applyExistingEstimates.b];
-                _existing_estimate = ((initial_values["branch lengths"])[estimators.applyExistingEstimates.i])[_branch_name];
+                _existing_estimate = ((initial_values[terms.json.attribute.branch_length])[estimators.applyExistingEstimates.i])[_branch_name];
 
-                if (Type(_existing_estimate) == "AssociativeList") {
+                  if (Type(_existing_estimate) == "AssociativeList") {
                     _set_branch_length_to = _existing_estimate["MLE"];
 
                     if (None != branch_length_conditions) {
@@ -167,9 +172,11 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
                                 _set_branch_length_to = {};
                                 _set_branch_length_to[terms.branch_length] = _existing_estimate["MLE"];
                                 _set_branch_length_to[terms.branch_length_scaler] = _application_type;
+                                estimators.applyExistingEstimates.keep_track_of_proportional_scalers [_application_type] = 1;
                             }
                         }
                     }
+                                        
                     estimators.applyExistingEstimates.df_correction += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.applyExistingEstimates.map[_branch_name]], _set_branch_length_to);
                 }
             }
@@ -177,7 +184,7 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
         }
     }
 
-    return estimators.applyExistingEstimates.df_correction;
+    return estimators.applyExistingEstimates.df_correction - Abs (estimators.applyExistingEstimates.keep_track_of_proportional_scalers);
 }
 
 
@@ -216,8 +223,6 @@ function estimators.fitLF(data_filters_list, tree_list, model_map, initial_value
         utility.toggleEnvVariable("USE_LAST_RESULTS", None);
     }
 
-
-
     estimators.fitLF.results = estimators.extractMLEs("estimators.fitLF.likelihoodFunction", model_map);
 
     estimators._aux.parameter_counter = 0;
@@ -240,9 +245,9 @@ function estimators.fitLF(data_filters_list, tree_list, model_map, initial_value
     return estimators.fitLF.results;
 }
 
-function estimators.fitGTR(data_filter, tree, initial_values) {
-    // create a nucleotide filter first
 
+lfunction estimators.fitGTR(data_filter, tree, initial_values) {
+    
     if (Type(data_filter) == "String") {
         return estimators.fitGTR({
             {
@@ -252,62 +257,67 @@ function estimators.fitGTR(data_filter, tree, initial_values) {
             "0": tree
         }, initial_values)
     }
-
-    estimators.fitGTR.components = utility.array1D(data_filter);
-    estimators.fitGTR.filters = {
-        estimators.fitGTR.components, 1
+    
+    components = utility.array1D(data_filter);
+        
+    filters = utility.map ({
+        components, 1
+    } ["_MATRIX_ELEMENT_ROW_"], "_value_", "''+ '`&nuc_data`_' + _value_");
+    
+    lf_components = {
+        2 * components, 1
     };
-    estimators.fitGTR.lf_components = {
-        2 * estimators.fitGTR.components, 1
-    };
-
-    for (estimators.fitGTR.i = 0; estimators.fitGTR.i < estimators.fitGTR.components; estimators.fitGTR.i += 1) {
-
-        estimators.fitGTR.filters[estimators.fitGTR.i] = "estimators.fitGTR.nuc_data_" + estimators.fitGTR.i;
-        estimators.fitGTR.lf_components[2 * estimators.fitGTR.i] = estimators.fitGTR.filters[estimators.fitGTR.i];
-        ExecuteCommands("DataSetFilter `(estimators.fitGTR.filters [estimators.fitGTR.i])` = CreateFilter( `data_filter[estimators.fitGTR.i]`, 1)");
-
-
+    
+    
+    for (i = 0; i < components;i += 1) {
+        lf_components[2 * i] = filters[i];
+        DataSetFilter ^(filters[i]) = CreateFilter(^(data_filter[i]), 1);
     }
+    
+    //utility.setEnvVariable ("VERBOSITY_LEVEL", 10);
+    
+    name_space = &gtr;
 
-    estimators.fitGTR.model = model.generic.define_model("models.DNA.GTR.modelDescription", "estimators.fitGTR.gtr", {
+    gtr_model = model.generic.define_model("models.DNA.GTR.modelDescription", name_space , {
         "0": "terms.global"
-    }, estimators.fitGTR.filters, None);
+    }, filters, None);
+    
 
-    for (estimators.fitGTR.i = 0; estimators.fitGTR.i < estimators.fitGTR.components; estimators.fitGTR.i += 1) {
+    for (i = 0; i < components; i += 1) {
 
-        estimators.fitGTR.lf_components[2 * estimators.fitGTR.i + 1] = "estimators.fitGTR.tree_" + estimators.fitGTR.i;
-        model.applyModelToTree(estimators.fitGTR.lf_components[2 * estimators.fitGTR.i + 1], tree[estimators.fitGTR.i], {
-            "default": estimators.fitGTR.model
+        lf_components[2*i + 1] = "tree_" + i;
+        model.applyModelToTree(Eval("&`lf_components[2*i + 1]`"), tree[i], {
+            "default": gtr_model
         }, None);
     }
-
-    LikelihoodFunction estimators.fitGTR.likelihoodFunction = (estimators.fitGTR.lf_components);
-
-    estimators.fitGTR.df = 0;
+    
+    LikelihoodFunction likelihoodFunction = (lf_components);
+    
+    df = 0;
     if (Type(initial_values) == "AssociativeList") {
         utility.toggleEnvVariable("USE_LAST_RESULTS", 1);
-        estimators.fitGTR.df = estimators.applyExistingEstimates("estimators.fitGTR.likelihoodFunction", {
-            "estimators.fitGTR.gtr": estimators.fitGTR.model
+        df = estimators.applyExistingEstimates("`&likelihoodFunction`", {
+            name_space: gtr_model
         }, initial_values, None);
     }
 
-    Optimize(estimators.fitGTR.mles, estimators.fitGTR.likelihoodFunction);
-    if (Type(initial_values) == "AssociativeList") {
+    Optimize(mles, likelihoodFunction);
+
+     if (Type(initial_values) == "AssociativeList") {
         utility.toggleEnvVariable("USE_LAST_RESULTS", None);
     }
 
-
-    estimators.fitGTR.results = estimators.extractMLEs("estimators.fitGTR.likelihoodFunction", {
-        "estimators.fitGTR.gtr": estimators.fitGTR.model
+ 
+    results = estimators.extractMLEs(&likelihoodFunction, {
+        name_space: gtr_model
     });
 
-    estimators.fitGTR.results["LogL"] = estimators.fitGTR.mles[1][0];
-    estimators.fitGTR.results["parameters"] = estimators.fitGTR.mles[1][1] + 3 + estimators.fitGTR.df;
+    results["LogL"] = mles[1][0];
+    results["parameters"] = mles[1][1] + 3 + df;
 
-    DeleteObject(estimators.fitGTR.likelihoodFunction);
+    DeleteObject(likelihoodFunction);
 
-    return estimators.fitGTR.results;
+    return results;
 }
 
 function estimators.fitMGREV.set_partition_omega(key, value) {
@@ -335,86 +345,141 @@ function estimators.fitMGREVExtractComponentBranchLengths(codon_data, fit_result
     return fit_results;
 }
 
-function estimators.fitMGREV(codon_data, tree, option, initial_values) {
+lfunction estimators.fitMGREV(codon_data, tree,  genetic_code, option, initial_values) {
 
-    estimators.fitMGREV.filter = codon_data["dataset"];
-    estimators.fitMGREV.partitioned_omega = 0;
+    if (Type(data_filter) == "String") {
+        return estimators.fitMGREV({
+            {
+                codon_data__
+            }
+        }, {
+            "0": tree
+        }, 
+        genetic_code,
+        option,
+        initial_values)
+    }
 
-    DataSetFilter estimators.fitMGREV.codon_data = CreateFilter( ^ estimators.fitMGREV.filter, 3, "", "", codon_data["stop"]);
-
-    estimators.fitMGREV.model = model.generic.define_model("models.codon.MG_REV.modelDescription",
-        "estimators.fitMGREV.mg", {
+    components = utility.array1D(codon_data);
+    
+    lf_components = {
+        2 * components, 1
+    };
+    
+    
+    for (i = 0; i < components;i += 1) {
+        GetDataInfo (fi, ^(codon_data[i]), "PARAMETERS");
+        DataSetFilter *("filter_" + i) = CreateFilter (^(codon_data[i]),3,'','',fi["EXCLUSIONS"]);
+        lf_components[2 * i] = "filter_" + i; 
+        // need to do this for global references
+    }    
+    
+    name_space = &model_MGREV;
+        
+     mg_rev = model.generic.define_model("models.codon.MG_REV.modelDescription",
+        name_space, {
             "0": parameters.quote(option["model-type"]),
-            "1": codon_data["code"]
+            "1": genetic_code
         },
-        "estimators.fitMGREV.codon_data",
+        codon_data,
         None);
+   
+    //utility.toggleEnvVariable("VERBOSITY_LEVEL", 1);
 
-    model.applyModelToTree("estimators.fitMGREV.tree", tree, {
-        "default": estimators.fitMGREV.model
-    }, None);
+    df = 0;
+    model_assignment = {"default" : mg_rev};
+    rules = None;
+    model_id_to_object = {
+        name_space: mg_rev
+    };
 
-    //fprintf (stdout, "\n\n", Format (estimators.fitMGREV.tree, 1,1), "\n\n");
-
-    if (option["model-type"] == terms.local && option["partitioned-omega"]) {
-        estimators.fitMGREV.model_list = tree["model_list"];
-        if (Columns(estimators.fitMGREV.model_list) > 1) {
-            estimators.fitMGREV.partitioned_omega = 1;
-        }
+    
+    for (i = 0; i < components; i += 1) {
+        lf_components[2*i + 1] = "tree_" + i;
+        model.applyModelToTree(Eval("&`lf_components[2*i + 1]`"), tree[i], model_assignment, None);
+    }
+    
+    
+    partition_omega = {};
+    if (option["model-type"] == ^"terms.local" && Type (option["partitioned-omega"]) == "AssociativeList") {
+        /**
+            Assumes that option["partitioned-omega"] is a dictionary where each partition has
+            an entry (0-index based), which itself is a dictionary of the form: "branch-name" : "branch-set"
+        */
+        utility.forEach (option["partitioned-omega"], "_value_", "utility.addToSet(`&partition_omega`,utility.values(_value_))");
     }
 
-    LikelihoodFunction estimators.fitMGREV.likelihoodFunction = (estimators.fitMGREV.codon_data, estimators.fitMGREV.tree);
+        
+    if (Abs(partition_omega)) {
 
-    if (estimators.fitMGREV.partitioned_omega) {
-        estimators.fitMGREV.partitioned_omega.parameters = (estimators.fitMGREV.model["parameters"])["global"];
+        /** 
+            declare the global ratios for each branch set 
+            and add them to the model parameter set 
+        */
+        
+        new_globals = {};
+        utility.forEachPair (partition_omega, "_key_", "_value_", 
+                             '`&new_globals` [_key_] = (`&name_space` + ".omega_" + Abs (`&new_globals`)); model.generic.add_global (`&mg_rev`, `&new_globals` [_key_] , (^"terms.omega_ratio") + " for *" + _key_ + "*")');
+        parameters.declareGlobal(new_globals, None);
 
-        for (estimators.fitMGREV.i = 0; estimators.fitMGREV.i < Columns(estimators.fitMGREV.model_list); estimators.fitMGREV.i += 1) {
-            estimators.fitMGREV.partitioned_omega.parameters[estimators.fitMGREV.model_list[estimators.fitMGREV.i]] = "estimators.fitMGREV.mg.omega_" + estimators.fitMGREV.model_list[estimators.fitMGREV.i];
-        }
 
-        parameters.declareGlobal(estimators.fitMGREV.partitioned_omega.parameters, None);
+        /** 
+            now replicate the local constraint for individual branches 
+        */
+        
+        alpha = model.generic.get_local_parameter (mg_rev, ^"terms.synonymous_rate");
+        beta = model.generic.get_local_parameter (mg_rev, ^"terms.nonsynonymous_rate");
+        io.checkAssertion ("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.fitMGREV\`");
 
-        estimators.fitMGREV.lp = model.parameters.local(estimators.fitMGREV.model);
-        estimators.fitMGREV.beta = estimators.fitMGREV.lp[terms.nonsynonymous_rate];
-        estimators.fitMGREV.alpha = estimators.fitMGREV.lp[terms.synonymous_rate];
 
-        (tree["model_map"])["estimators.fitMGREV.set_partition_omega"][""];
-
-        (estimators.fitMGREV.model["parameters"])["global"] = estimators.fitMGREV.partitioned_omega.parameters;
+        apply_constraint := component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name && 1]];
+        
+        for (i = 0; i < components; i += 1) {
+            component_tree     = lf_components[2*i+1];
+            ClearConstraints (*component_tree);
+            branch_map = (option["partitioned-omega"]) [i];
+            component_branches = BranchName (*component_tree, -1);
+            for (j = 0; j < Columns (component_branches) - 1; j += 1) {     
+                /** 
+                    -1 in the upper bound because we don't want to count the root node 
+                */
+                
+                node_name = (component_branches[j]);
+                ExecuteCommands (apply_constraint);
+            }
+        }          
+    } else {
     }
 
-    estimators.fitMGREV.df = 0;
+    LikelihoodFunction likelihoodFunction = (lf_components);
+    //fprintf (stdout, option["proportional-branch-length-scaler"], "\n");
+
     if (Type(initial_values) == "AssociativeList") {
         utility.toggleEnvVariable("USE_LAST_RESULTS", 1);
-        estimators.fitMGREV.df = estimators.applyExistingEstimates("estimators.fitMGREV.likelihoodFunction", {
-            "estimators.fitMGREV.mg": estimators.fitMGREV.model
-        }, initial_values, option["proportional-branch-length-scaler"]);
+        df += estimators.applyExistingEstimates("`&likelihoodFunction`", model_id_to_object , initial_values, option["proportional-branch-length-scaler"]);
     }
 
-    Optimize(estimators.fitMGREV.mles, estimators.fitMGREV.likelihoodFunction);
+    
+    Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.toggleEnvVariable("USE_LAST_RESULTS", None);
     }
+    
+    results = estimators.extractMLEs(&likelihoodFunction, model_id_to_object);
 
-    estimators.fitMGREV.results = estimators.extractMLEs("estimators.fitMGREV.likelihoodFunction", {
-        "estimators.fitMGREV.mg": estimators.fitMGREV.model
-    });
-
-    estimators.fitMGREV.results["LogL"] = estimators.fitMGREV.mles[1][0];
-    estimators.fitMGREV.results["parameters"] = estimators.fitMGREV.mles[1][1] + 9 + estimators.fitMGREV.df;
-
+    results["LogL"]       = mles[1][0];
+    results["parameters"] = mles[1][1] + 9 + df; /* 9 frequency parameters */
+    
     if (option["retain-lf-object"]) {
-        estimators.fitMGREV.results["LF"] = "estimators.fitMGREV.likelihoodFunction";
+       results["LF"] = &likelihoodFunction;
     } else {
-        DeleteObject(estimators.fitMGREV.likelihoodFunction);
+        DeleteObject(likelihoodFunction);
     }
 
     if (option["retain-model-object"]) {
-        estimators.fitMGREV.results["model"] = {
-            "estimators.fitMGREV.mg": estimators.fitMGREV.model
-        };
+        results["model"] = model_id_to_object;
     }
 
-    return estimators.fitMGREV.results;
+    return results;
 }

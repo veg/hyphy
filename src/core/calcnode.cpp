@@ -602,7 +602,7 @@ _Parameter& _CalcNode::operator[] (unsigned long i)
 
 //_______________________________________________________________________________________________
 
-BaseRef _CalcNode::toStr (void)
+BaseRef _CalcNode::toStr (unsigned long)
 {
     _String * res = new _String (16L, true);
     checkPointer (res);
@@ -2136,7 +2136,7 @@ const _String    _TheTree::GetNodeName      (node<long>* n, bool fullName) const
 
 //_______________________________________________________________________________________________
 
-BaseRef     _TheTree::toStr (void) {
+BaseRef     _TheTree::toStr (unsigned long) {
   return _TreeTopology::toStr();
 }
 
@@ -2179,7 +2179,7 @@ _String const  _TreeTopology::GetNodeStringForTree                (node<long> * 
 
   //_______________________________________________________________________________________________
 
-BaseRef     _TreeTopology::toStr (void) {
+BaseRef     _TreeTopology::toStr (unsigned long) {
   _String     * res = new _String((unsigned long)128,true),
   num;
   
@@ -2249,8 +2249,8 @@ BaseRef     _TreeTopology::toStr (void) {
 }
 
 //__________________________________________________________________________________
-void _TreeTopology::toFileStr(FILE* f) {
-    _String * s = (_String*)toStr();
+void _TreeTopology::toFileStr(FILE* f, unsigned long padding) {
+    _String * s = (_String*)toStr(padding);
     fprintf (f, "%s", s->sData);
     DeleteObject(s);
 }
@@ -6555,10 +6555,11 @@ void    _TheTree::MolecularClock (_String const& baseNode, _List& varsToConstrai
 
 node<long>* _CalcNode::LocateMeInTree (void) const {
 
-    _String     node_name    = ContextFreeName();
-    _TheTree    *parentTree = (_TheTree*)FetchVar(*GetName()->Cut (0, GetName()->sLength - node_name.sLength - 1));
+    _String parentName = ParentObjectName (),
+            myName     = ContextFreeName();
   
-    return parentTree->FindNodeByName(&node_name);
+    return  ((_TreeTopology*)FetchVar(LocateVarByName(parentName)))->FindNodeByName(&myName);
+  
 }
 
 //_______________________________________________________________________________________________

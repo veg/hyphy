@@ -2856,14 +2856,14 @@ inline _Parameter sqr (_Parameter x)
           }
           if (independent_vars_l.lLength==1) {
             _Variable * branch_parameter = LocateVar(independent_vars_l.GetElement(0));
-            if (!branch_parameter->HasChanged()) {
+            if (!branch_parameter->HasBeenInitialized () || !branch_parameter->HasChanged()) {
               ReportWarning(_String("Initial guess for ") & branch_parameter->GetName()->getStr() & " is " & (c3*.66667));
               branch_parameter->CheckAndSet (c3*.66667, true);
             }
           } else if (independent_vars_l.lLength>=2) {
             for (unsigned long int p = 0UL; p < independent_vars_l.lLength; p++) {
               _Variable * branch_parameter = LocateVar(independent_vars_l.GetElement(p));
-              if (!branch_parameter->HasChanged()) {
+              if (! branch_parameter->HasBeenInitialized () || !branch_parameter->HasChanged()) {
                 c3 = p == 0 ? c1 : ( p > 1 ? (c1+c2)*0.5 : c2);
                 ReportWarning(_String("Initial guess for ") & branch_parameter->GetName()->getStr() & " is " & (c3));
                 branch_parameter->CheckAndSet (c3, true);
@@ -3650,17 +3650,26 @@ DecideOnDivideBy (this);
     checkParameter (allowBoundary,go2Bound,1.0);
     checkParameter (useInitialDistanceGuess,precision,1);
 
-    if (floor(keepStartingPoint) == 0.0 && precision>0.1) {
+    if (CheckEqual (keepStartingPoint,1.0)) {
+      for (i=0; i<indexInd.lLength; i++) {
+        _Variable *iv = GetIthIndependentVar (i);
+        if (iv->HasBeenInitialized()) {
+          iv->MarkModified();
+        }
+      }
+    }
+    
+    if (!CheckEqual(precision, 0.0)) {
         GetInitialValues();
-     }
+    }
 
     checkParameter  (globalStartingPoint,precision,0.1);
     _Constant     c (precision);
 
     if (fabs(keepStartingPoint) < 0.5) {
-        if ((long)wobble==0) {
+        if (CheckEqual (wobble, 0.0)) {
             for (i=0; i<indexInd.lLength; i++) {
-                _Variable *iv = LocateVar (indexInd.lData[i]);
+                _Variable *iv = GetIthIndependentVar (i);
                 if (iv->IsGlobal()) {
                     if (iv->Value() < 1.e-10) {
                         iv->SetValue(&c);
@@ -3673,7 +3682,7 @@ DecideOnDivideBy (this);
             }
         } else {
             for (i=0; i<indexInd.lLength; i++) {
-                _Variable *iv = LocateVar (indexInd(i));
+                _Variable *iv = GetIthIndependentVar (i);
                 if (!iv->HasChanged()) {
                     _Parameter newV = precision*(1.0+genrand_int32()/(_Parameter)RAND_MAX_32);
                     c.SetValue(newV);
@@ -7314,7 +7323,7 @@ void    _LikelihoodFunction::Setup (void)
                   }
                   isReversiblePartition = isReversiblePartition && alreadyDone;
               }
-              ReportWarning (_String ("Partition ") & i & " reversible model flag computed as " & (long)isReversiblePartition);
+              ReportWarning (_String ("Partition ") & (long)i & " reversible model flag computed as " & (long)isReversiblePartition);
             }
         }
         canUseReversibleSpeedups << isReversiblePartition;
@@ -8852,7 +8861,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
 
 //_______________________________________________________________________________________
 
-BaseRef _LikelihoodFunction::toStr (void) {
+BaseRef _LikelihoodFunction::toStr (unsigned long) {
     _Parameter longOrShort,
                value = 0.0;
 

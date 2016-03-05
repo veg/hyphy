@@ -2,6 +2,7 @@ LoadFunctionLibrary ("DNA.bf");
 LoadFunctionLibrary ("parameters.bf");
 LoadFunctionLibrary ("frequencies.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
+
 //------------------------------------------------------------------------------ 
 
 
@@ -62,6 +63,31 @@ function model.define.from.components (id,q,efv,canonical) {
 
 //------------------------------------------------------------------------------ 
 
+
+function model.generic.add_global (model_spec, id, tag) {
+    ((model_spec["parameters"])[terms.global])[tag] = id;
+}
+
+lfunction model.generic.get_local_parameter (model_spec, tag) {
+   return model.generic.get_a_parameter (model_spec, tag, ^"terms.local");
+}
+
+lfunction model.generic.get_global_parameter (model_spec, tag) {
+   return model.generic.get_a_parameter (model_spec, tag, ^"terms.global");
+}
+
+
+lfunction model.generic.get_a_parameter (model_spec, tag, type) {
+    v = ((model_spec["parameters"])[type])[tag];
+    if (Type (v) == "String") {
+        return v;
+    }
+    return None;
+}
+
+
+
+
 function model.generic.define_model (model_spec, id, arguments, data_filter, estimator_type) {
 	
 	model.generic.define_model.model = utility.callFunction (model_spec, arguments);	
@@ -69,11 +95,11 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 	
 	model.generic.define_model.model = utility.callFunction(model.generic.define_model.model ["defineQ"], {"0" :   "model.generic.define_model.model",
 																						   "1" :    parameters.quote (id)});
+																						   
 	model.generic.define_model.model ["matrix-id"] = "`id`_" + terms.rate_matrix;
 	model.generic.define_model.model ["efv-id"] = "`id`_" + terms.efv_matrix;
 	model.generic.define_model.model ["id"] = id;
-	
-	
+		
 	if (estimator_type != None) {
 		model.generic.define_model.model ["frequency-estimator"] = estimator_type;
 	} 
@@ -83,10 +109,8 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 													    "2":  parameters.quote(data_filter)}); // this sets the EFV field
 													    
 					
-													  
-													  
 	parameters.stringMatrixToFormulas (model.generic.define_model.model ["matrix-id"],model.generic.define_model.model[terms.rate_matrix]);
-	ExecuteCommands (model.generic.define_model.model ["efv-id"]   + " = " + model.generic.define_model.model[terms.efv_estimate]);
+	utility.setEnvVariable (model.generic.define_model.model ["efv-id"], model.generic.define_model.model[terms.efv_estimate]);
 		    
 	model.define.from.components (id, 	model.generic.define_model.model ["matrix-id"], model.generic.define_model.model ["efv-id"], model.generic.define_model.model ["canonical"]);
     
@@ -122,7 +146,7 @@ function models.generic.set_branch_length (model, value, parameter) {
             } else {
                 ExecuteCommands ("FindRoot (models.generic.set_branch_length.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.set_branch_length.bl + ",0,10000)");
                 Eval (parameter + "." + models.generic.set_branch_length.bl + "=" + models.generic.set_branch_length.t);
-            }
+           }
         }
     }
     return 0;
@@ -132,23 +156,20 @@ function models.generic.set_branch_length (model, value, parameter) {
 
 //------------------------------------------------------------------------------ 
 
-function models.generic.attachFilter (model, filter) {
+lfunction models.generic.attachFilter (model, filter) {
 
-    if (Type (filter) == "Matrix") {
-        for (models.generic.attachFilter.i = utility.array1D (filter) - 1; models.generic.attachFilter.i >= 0; models.generic.attachFilter.i = models.generic.attachFilter.i - 1) {
-            models.generic.attachFilter (model, filter[models.generic.attachFilter.i]);
-        }
+    if (Type (filter) != "String") {
+        utility.forEach (filter, "_filter_", "models.generic.attachFilter (`&model`, _filter_)");
         model["data"] = filter;
         return model;
-    }
+    } 
 
-	GetDataInfo (_givenAlphabet, *filter, "CHARACTERS");
-	__alphabet = model ["alphabet"];
+	GetDataInfo (givenAlphabet, ^filter, "CHARACTERS");
+	alphabet = model ["alphabet"];
 
-	assert (Columns (__alphabet) == Columns (_givenAlphabet) && model.matchAlphabets (_givenAlphabet, __alphabet), "The declared model alphabet '" + __alphabet + "' does not match the `filter` filter: '" + _givenAlphabet + "'");
+	assert (Columns (alphabet) == Columns (givenAlphabet) && model.matchAlphabets (givenAlphabet, alphabet), "The declared model alphabet '" +alphabet + "' does not match the `filter` filter: '" + givenAlphabet + "'");
 	
-	model ["alphabet"] = _givenAlphabet;
-	
+	model ["alphabet"] = givenAlphabet;
 	model ["data"] = filter;
 	return model;
 }

@@ -34,6 +34,7 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 															   "2": "namespace",
 															   "3": "__modelType"});
 															   
+															   
             if (Abs (__rp[terms.rate_entry])) {			
                 parameters.declareGlobal (__rp[terms.global], __global_cache);
                 parameters.helper.copy_definitions (modelSpec["parameters"], __rp);

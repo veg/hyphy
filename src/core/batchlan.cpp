@@ -474,7 +474,7 @@ _PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* th
     _String   errMsg;
 
     _Formula  expressionProcessor (*expression, theP, currentProgram?&errMsg:nil);
-    
+  
     if (errMsg.sLength && currentProgram) {
         currentProgram->ReportAnExecutionError (errMsg);
     }
@@ -494,7 +494,8 @@ _PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* th
 
 _String ProcessLiteralArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram)
 {
-    _PMathObj getString = ProcessAnArgumentByType (data, theP, STRING, currentProgram);
+  //NLToConsole(); BufferToConsole("ProcessLiteralArgument:"); StringToConsole(*data); NLToConsole();
+   _PMathObj getString = ProcessAnArgumentByType (data, theP, STRING, currentProgram);
   
     if (getString) {
       _String result (*((_FString*)getString)->theString);
@@ -1094,7 +1095,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
                 errMsg = *existing->theString & '\n' & errMsg;
               }
             }
-            setParameter(_hyLastExecutionError, new _FString (errMsg, false), false);
+            setParameter(_hyLastExecutionError, new _FString (errMsg, false), nil, false);
             
             break;
         default: 
@@ -1139,7 +1140,7 @@ _String       _ExecutionList::GetFileName     (void)  {
 _PMathObj       _ExecutionList::Execute     (void)      // run this execution list
 {
 
-    setParameter(_hyLastExecutionError, new _MathObject, false);
+    setParameter(_hyLastExecutionError, new _MathObject, nil, false);
     
     _ExecutionList*      stashCEL = currentExecutionList;
     callPoints << currentCommand;
@@ -1190,7 +1191,7 @@ _PMathObj       _ExecutionList::Execute     (void)      // run this execution li
     currentExecutionList = stashCEL;
 
     if (stashed) {
-        setParameter        (pathToCurrentBF,stashed,false);
+        setParameter        (pathToCurrentBF,stashed,nil, false);
     }
 
     executionStack.Delete (executionStack.lLength-1);
@@ -1413,7 +1414,7 @@ void        _ExecutionList::ResetFormulae       (void)      // run this executio
 }
 //____________________________________________________________________________________
 
-BaseRef  _ExecutionList::toStr (void)
+BaseRef  _ExecutionList::toStr (unsigned long)
 {
     _String *result = new _String (1,true),
     step ("\n\nStep "),
@@ -1464,10 +1465,8 @@ _String*     _ExecutionList::GetNameSpace ()
 
 //____________________________________________________________________________________
 
-_String  _ExecutionList::AddNameSpaceToID (_String& theID, _String * extra)
-{
-    _String check_dereferences,
-            name_space;
+_String  _ExecutionList::AddNameSpaceToID (_String& theID, _String * extra) {
+    _String name_space;
             
     if (extra && extra->sLength) {
         if (nameSpacePrefix) {
@@ -1505,7 +1504,7 @@ _String  blFor                  ("for("),               // moved
          blFFunction                ("ffunction "),     // moved
          blLFunction                ("lfunction "),     // moved
          blReturn                   ("return "),        // moved
-         blReturn2              ("return("),            // moved
+         blReturnPrefix             ("return"),
          blIf                       ("if("),            // moved
          blElse                     ("else"),           // moved
          blDo                       ("do{"),            // moved
@@ -1559,8 +1558,23 @@ _String  blFor                  ("for("),               // moved
          blSimulateDataSet          ("SimulateDataSet"),
          blAssert                   ("assert(");
 
+_Trie    _HY_HBL_KeywordsPreserveSpaces  ;
 
+/* 
+ 
+  holds all the expressions that require that spaces between them and the next expressions be 
+  maintained, like
+ 
+  return expr
+  DataSet expr = 
+  DateSetFilter expr =
+ 
+  if (expr) is an identifier, then the spaces will be maintained, otherwise they will 
+  be squished, causing incorrect behavior (like DataSet(expr) will gets parsed as a formula)
+ 
+  initialized in _HBL_Init_Const_Arrays
 
+*/
 bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed, bool empty_is_success)
 {
     if (terminateExecution) {
@@ -1679,7 +1693,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         if (!handled) {
             if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)||currentLine.startswith (blLFunction)) { // function declaration
                 _ElementaryCommand::ConstructFunction (currentLine, *this);
-            } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
+            } else if (currentLine.startswith_noident (blReturnPrefix)) { // function return statement
+                                                                          //StringToConsole(currentLine); NLToConsole();
                 _ElementaryCommand::ConstructReturn (currentLine, *this);
             } else if (currentLine.startswith (blIf)) { // if-then-else statement
                 _ElementaryCommand::BuildIfThenElse (currentLine, *this, bc);
@@ -1926,7 +1941,7 @@ const _String _hblCommandAccessor (_ExecutionList* theList, long index) {
 
 //____________________________________________________________________________________
 
-BaseRef   _ElementaryCommand::toStr      (void)
+BaseRef   _ElementaryCommand::toStr      (unsigned long)
 {
     _String result, *converted = nil;
     long k;
@@ -2898,11 +2913,11 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                     errMsg = (((_String)("LF: Not a valid frequency matrix ID: ")& *freq));
                 }
             } else {
-                errMsg = (((_String)("LF: Not a valid tree ID: ")& *tree));
+                errMsg = (((_String)("LF: Not a valid tree ID: `")& *tree & "`"));
             }
 
         } else {
-            errMsg = (((_String)("LF: Not a valid dataset filter: ")& *dataset));
+            errMsg = (((_String)("LF: Not a valid dataset filter `")& *dataset & "`"));
         }
 
         if (errMsg.sLength) {
@@ -3847,10 +3862,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
             }
         } else {
             FILE*   inputBuffer;
-            if (currentParameter.Find('"')==-1) {
-                currentParameter = GetStringFromFormula (&currentParameter,chain.nameSpacePrefix);
-            }
-
+            currentParameter = GetStringFromFormula (&currentParameter,chain.nameSpacePrefix);
             currentParameter.ProcessFileName(false,false,(Ptr)chain.nameSpacePrefix);
             if (terminateExecution) {
                 return;
@@ -5982,10 +5994,17 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 //____________________________________________________________________________________
 
 
-_String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim)
+const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim)
 {
 
-    bool    isString  = false,
+    long    index     = input.Length();
+  
+    if (index == 0L) {
+      return empty;
+    }
+    
+    bool    isStringDouble  = false,
+            isStringSingle  = false,
             skipping  = false;
 
     char    isComment = 0;
@@ -5995,34 +6014,27 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
             matrixScope = 0,
             parenIn  = 0,
             bracketIn   = 0,
-            index,
             saveSI = _String::storageIncrement;
 
     _SimpleList isDoWhileLoop;
 
-    if (input.sLength/4 > saveSI) {
-        _String::storageIncrement = input.sLength/4;
+    if ((input.sLength >> 2) > saveSI) {
+        _String::storageIncrement = (input.sLength >> 2);
     }
 
     _String result (128L,true);
 
     char    lastChar = 0;
 
-    index = input.Length();
-
-    if (!index) {
-        result.Finalize();
-        return empty;
-    }
-
+ 
     // non printable characters at the end ?
     while (index>=0 && !isprint(input[--index])) ;
     input.Trim (0,index, useSoftTrim);
 
-    for (index = 0; index<input.Length(); index++) {
+    for (index = 0L; index<input.Length(); index++) {
         char c = input.sData[index];
 
-        if (!isString && c=='\t') {
+        if (!(isStringDouble || isStringSingle) && c=='\t') {
             c = ' ';
         }
 
@@ -6039,7 +6051,7 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
             lastChar  = 0;
             continue;
         } else {
-            if (!isString && c=='/') {
+            if (!(isStringDouble || isStringSingle) && c=='/') {
                 switch (input.getChar(index+1)) {
                 case '*':
                     isComment = 1;
@@ -6057,9 +6069,18 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
         }
 
 
-        // skip spaces
-        if (!isString && isspace(c)) {
-            if (index >= 6 && input.getChar(index-1) == 'n'
+        // skip spaces, except for special cases, like return and data set filters
+      
+        if (!(isStringDouble || isStringSingle) && isspace(c)) {
+          
+          // skip/compress spaces, unless we are in a higher level HBL statement
+          // where spaces can't be compressed
+          // examples include
+          // DataSet|DataSetFilter|return|LikelihoodFunction (something)
+          // need to maintain spaces for this to work appropriately
+          
+          
+            /*if (index >= 6 && input.getChar(index-1) == 'n'
                     && input.getChar(index-2) == 'r'
                     && input.getChar(index-3) == 'u'
                     && input.getChar(index-4) == 't'
@@ -6068,6 +6089,17 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
                 if (index == 6 || (index > 6 && !(isalnum(input.getChar(index-7)) || input.getChar(index-7) == '_'))) {
                     result<<' ';
                 }
+            }*/
+          
+            if (!skipping && index > 0) {
+              _String lookback = input.Cut (MAX (0, index - 20), index-1);
+              long trie_match = _HY_HBL_KeywordsPreserveSpaces.FindKey(lookback.Flip(), nil, true);
+              if (trie_match != HY_TRIE_NOTFOUND) {
+                long matched_length = _HY_HBL_KeywordsPreserveSpaces.GetValue(trie_match);
+                if (matched_length == index || !(isalnum(input.getChar(index-matched_length-1)) || input.getChar(index-matched_length-1) == '_')) {
+                  result << ' ';
+                }
+              }
             }
 
 
@@ -6076,6 +6108,8 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
         }
 
         if (skipping&&( isalpha(c) || c=='_') && (isalnum(lastChar) || lastChar=='_')) {
+          // this is meant to determine that we are at the beginning of a new ident-like
+          // token and insert a space
             result<<' ';
         }
 
@@ -6083,7 +6117,7 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
 
         result<<c;
 
-        if (isString && c == '\\') {
+        if ((isStringDouble || isStringSingle) && c == '\\') {
             result<< input.getChar(++index);
             continue;
         }
@@ -6091,12 +6125,22 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
         // are we inside a string literal?
 
         if (c=='"') {
-            isString = !isString;
+          if (!isStringSingle) {
+            isStringDouble = !isStringDouble;
             lastChar = 0;
             continue;
+          }
+        } else {
+          if (c == '\'') {
+            if (!isStringDouble) {
+              isStringSingle = !isStringSingle;
+              lastChar = 0;
+              continue;
+            }
+          }
         }
 
-        if (isString) {
+        if (isStringDouble || isStringSingle) {
             continue;
         }
 
@@ -6183,11 +6227,12 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
     result.Finalize();
     _String::storageIncrement = saveSI;
 
-    if (scopeIn||isString||isComment == 1||parenIn||matrixScope) {
+    if (scopeIn||isStringDouble||isStringSingle||isComment == 1||parenIn||matrixScope) {
         if (result!='}') {
             WarnError (_String("Expression appears to be incomplete/syntax error. Scope: ") &scopeIn & ", paretheses depth: "
-                       & parenIn & ", matrix scope: " & matrixScope & '.' & matrixScope & '.' & (isString?"In a literal. ":empty) &
-                       (isComment == 1? "In a comment ":empty) & '\n' & input);
+                       & parenIn & ", matrix scope: " & matrixScope & '.' & (isStringDouble?" In a \"\" literal. ":empty)
+                       & (isStringSingle?" In a '' literal. ":empty) &
+                       (isComment == 1? " In a comment ":empty) & '\n' & input);
             input = empty;
             return empty;
         } else {
@@ -6222,6 +6267,7 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
     } else {
         input.DuplicateErasing (&empty);
     }
+  
 
 
     return result;
@@ -6548,16 +6594,16 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
 
     // look for the data set name first
 
-    long    mark1 = source.FirstSpaceIndex(0,-1,1),
-            mark2 = source.Find ('=', mark1, -1);
+    long    mark1 = source.FirstNonSpaceFollowingSpace(),
+            mark2 = source.FindTerminator(mark1, '='); ;
 
-    _String dsID (source,mark1+1,mark2-1);
-
-    if (mark1==-1 || mark2==-1 || dsID.Length()==0) {
+ 
+    if (mark1==-1 || mark2==-1 || mark2 - 1 <= mark1 ) {
         WarnErrorWhileParsing ("DataSet declaration missing a valid identifier", source);
         return false;
     }
 
+    _String dsID (source,mark1,mark2-1);
     // now look for the opening paren
 
     mark1 = source.Find ('(',mark2,-1);
@@ -6789,34 +6835,17 @@ bool    _ElementaryCommand::ConstructReplicateConstraint (_String&source, _Execu
 // this1 .. etc are all expected to be either trees of nodes of trees with wildcards.
 {
     _List args;
-    ExtractConditions (source,20,args,',');
+  
+    ExtractConditions (source,blReplicate.sLength,args,',');
     if (args.lLength<2) {
         _String errMsg ("Expected: ReplicateConstraint (\"constraint to be replicated in terms of this1,...,thisn and wildcard *\", list of n variables to put in place of this1, this2, ... thisn);");
         acknError (errMsg);
         return false;
     }
-    /*_String *theConstraint = (_String*)args(0), thisString;
-    long k = 0;
-    theConstraint->StripQuotes();
-    do
-    {
-        k++;
-        thisString  = _String("this")&_String(k);
-    }
-    while (theConstraint->Find(thisString)!=-1);
-
-    if (args.lLength!=k)
-    {
-        _String errMsg ("Replicate constraint could not match the number of 'this' arguments with actual variables");
-        acknError (errMsg);
-        return false;
-    }*/
-
+  
     _ElementaryCommand cv;
     cv.code = 26;
-    for (long k=0; k<args.lLength; k++) {
-        cv.parameters << args(k);
-    }
+    cv.parameters << args;
     target&& &cv;
     return true;
 }
@@ -6826,36 +6855,43 @@ bool    _ElementaryCommand::ConstructReplicateConstraint (_String&source, _Execu
 bool    _ElementaryCommand::ConstructTree (_String&source, _ExecutionList&target)
 // Tree   treeid = (...) or Topology = (...);
 {
-    long    mark1 = source.FirstSpaceIndex(0,-1,1), mark2, mark3;
-    mark2 = source.Find ('=', mark1, -1);
-    mark3 = mark2;
+    long    mark1 = source.FirstSpaceIndex(0,-1,1);
+    if (mark1 > 0) {
+      mark1 = source.FirstNonSpaceIndex (mark1 + 1, -1);
+    }
+    
+  
+    long    mark2 = source.FindTerminator(mark1, "=");
+    long    mark3 = mark2;
 
-    if ((mark1==-1)||(mark2==-1)||(mark1+1>mark2-1)) {
-        _String errMsg ("Tree declaration missing a valid identifier");
-        acknError (errMsg);
+    if ( mark1 < 0 || mark2 < 0 || mark2 - mark1 < 1) {
+        acknError ("Tree declaration missing a valid identifier");
         return false;
     }
 
-    _String dsID = source.Cut (mark1+1,mark2-1);
+    _String dsID = source.Cut (mark1,mark2-1);
     // now look for the opening paren
+  
+    //(long& from, char open, char close, bool respectQuote, bool respectEscape)
+    mark3 = source.ExtractEnclosedExpression (mark1, '(', ')', true, true);
+  
 
-    mark1 = source.Find ('(',mark2,-1);
-    mark2 = source.FindBackwards(')',mark1,-1);
-    if ((mark1==-1)||(mark2==-1)||(mark2<mark1)) {
+    if (mark1 < 0 || mark3 < 0 || mark3 <= mark1) {
         if (source.Find(getDString)==-1) {
-            mark1 = mark3+1;
-            mark2 = source.Find (';',mark3,-1)-1;
+            mark1 = mark2+1;
+            mark3 = source.FindTerminator (mark1,";")-1;
         } else {
             source = getDString;
             mark1 = 0;
-            mark2 = -1;
+            mark3 = -1;
         }
     }
 
     _ElementaryCommand * dsc = new _ElementaryCommand(source.startswith(blTree)?7:54);
-    checkPointer     (dsc);
+ 
     dsc->parameters&&(&dsID);
-    dsc->parameters.AppendNewInstance(new _String(source,mark1,mark2));
+    dsc->parameters.AppendNewInstance(new _String(source,mark1,mark3));
+  
     dsc->addAndClean(target,nil,0);
     return true;
 }
@@ -6870,18 +6906,17 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionLi
 {
     // first we must segment out the data set name
 
-    long    mark1 = source.FirstSpaceIndex(0,-1,1),
-            mark2 = source.Find ('=', mark1, -1);
+    long  mark1 = source.FirstNonSpaceFollowingSpace (0,-1,1),
+          mark2 = source.FindTerminator(mark1+1, "=");
 
-    _String dsID    (source,mark1+1,mark2-1),
+    _String dsID    (source,mark1,mark2-1),
             command;
 
     if ( mark1==-1 || mark2==-1 || dsID.Length()==0) {
-        _String errMsg ("DataSetFilter declaration missing a valid identifier");
-        acknError (errMsg);
+        acknError ("DataSetFilter declaration missing a valid identifier");
         return false;
     }
-
+  
     // now look for the opening paren
 
     mark1 = source.Find ('(',mark2,-1);
@@ -7341,29 +7376,28 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 // syntax: LikelihoodFunction id = (filter1, tree1, ..., filterN, treeN, optional compute template)
 // or LikelihoodFunction3 id = (filter1, tree1, freq1, ... filterN, treeN, freqN, optional compute template)
 {
-    long    mark1 = source.FirstSpaceIndex(0,-1,1),
-            mark2 = source.Find ('=', mark1, -1);
+    long    mark1 = source.FirstNonSpaceFollowingSpace(),
+            mark2 = mark1 > 0 ? source.FindTerminator (mark1 + 1, "=") : 0;
 
-    if ( mark1==-1 || mark2==-1 || mark1+1>mark2-1 ) {
-        _String errMsg ("Likelihood function declaration missing a valid identifier");
-        acknError (errMsg);
+    if ( mark1==-1 || mark2==-1 || mark1+1 > mark2  ) {
+        acknError ("Likelihood function declaration missing a valid identifier");
         return false;
     }
 
-    _String lfID (source,mark1+1,mark2-1);
+    _String lfID (source,mark1,mark2-1);
     // now look for the opening paren
 
     _List pieces;
-    mark1 = source.Find ('(',mark2,-1);
-    mark2 = source.FindBackwards(')',mark1,-1);
-    ExtractConditions (source,mark1+1,pieces,',');
+    mark2 ++;
+    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', true, true);
 
-    if ( mark1==-1 || mark2==-1 || mark2<mark1 ) {
+    if ( mark1==-1 || mark2==-1 || mark1<mark2 ) {
         WarnError ("Expected: Likelihood Function ident = (tree1, datasetfilter1,...)");
         return false;
     }
 
-    _ElementaryCommand*  dsc = (_ElementaryCommand*)checkPointer(new _ElementaryCommand (11));
+    ExtractConditions (source,mark2+1,pieces,',');
+   _ElementaryCommand*  dsc = (_ElementaryCommand*)checkPointer(new _ElementaryCommand (11));
     dsc->parameters&&(&lfID);
 
     if (source.startswith(blLF3)) {
@@ -7479,19 +7513,8 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 }
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&target) {
 // syntax: return <statement>
-{
-
-    /*if (!isInFunction)
-    {
-        _ElementaryCommand exit;
-        exit.code = 4;
-        exit.simpleParameters<<-1;
-        target&&(&exit);
-        return true;
-    }*/
-
     long    mark1 = source.FirstNonSpaceIndex(blReturn.sLength,-1,1);
 
     _ElementaryCommand ret;

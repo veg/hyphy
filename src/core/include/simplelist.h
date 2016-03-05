@@ -423,7 +423,7 @@ class _SimpleList:public BaseObj
         */
         void Swap(long, long); //swap two elements
 
-        virtual BaseRef toStr(void);
+        virtual BaseRef toStr(unsigned long = 0UL);
 
 
         /**

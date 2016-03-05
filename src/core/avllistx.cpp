@@ -81,7 +81,7 @@ void _AVLListX::Clear (bool cL)
 
 //______________________________________________________________
 
-BaseRef _AVLListX::toStr (void)
+BaseRef _AVLListX::toStr (unsigned long)
 {
     _String * str = new _String (128L, true);
     checkPointer (str);

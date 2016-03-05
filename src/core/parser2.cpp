@@ -774,7 +774,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 */
 
 {
-    static bool inAssignment = false;
+  //static bool inAssignment = false;
 
     expressionsParsed++;
 
@@ -936,7 +936,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
         if (s.getChar(i) == '=' && s.getChar(i+1) != '=' && (!twoToken || s.getChar(i-1)==':' || s.getChar (i-1) == '+')) { // assignment operator
             _String  errMsg;
 
-            bool check               = !inAssignment,
+            bool check               = !parsingContext.inAssignment(),
                  is_array_assignment = f->IsArrayAccess();
                  
             char deref = 0; 
@@ -958,15 +958,15 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 return HandleFormulaParsingError (errMsg, parsingContext.errMsg(), s, i);
             }
 
-            inAssignment = true;
+            parsingContext.inAssignment() = true;
             _String ss (s,i+1,-1); // this is the RHS
             _Formula  newF;
            
             if (Parse(&newF,ss,parsingContext, f2) != HY_FORMULA_EXPRESSION) {
-                inAssignment = false;
+                parsingContext.inAssignment() = false;
                 return HY_FORMULA_FAILED;
             }
-            inAssignment = false;
+            parsingContext.inAssignment() = false;
             if (!is_array_assignment && lhs_variable)
                 // normal variable assignment
             {
@@ -1122,22 +1122,22 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             _String errMsg;
             char    deref;
             
-            if (inAssignment||f->IsArrayAccess()||! checkLHS (levelOps, levelData, errMsg, deref, f, lhs)) {
+            if (parsingContext.inAssignment()||f->IsArrayAccess()||! checkLHS (levelOps, levelData, errMsg, deref, f, lhs)) {
                return HandleFormulaParsingError ("Can't set bounds like this ", parsingContext.errMsg(), s, i);
             }
 
-            inAssignment = true;
+            parsingContext.inAssignment() = true;
 
             _String ss (s,i+1,-1);
             _Formula newF;
 
             if (Parse(&newF,ss,parsingContext,f2) != HY_FORMULA_EXPRESSION) {
-                inAssignment = false;
+                parsingContext.inAssignment() = false;
                 return HY_FORMULA_FAILED;
             }
 
 
-            inAssignment = false;
+            parsingContext.inAssignment() = false;
 
 
     
@@ -1251,9 +1251,11 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             continue;
         }
 
-        if (s.getChar(i)=='"') { // a string literal
+        if (s.getChar(i)=='"' || s.getChar (i) == '\'') { // a string literal
             long j             = 1,
                  inPlaceID     = -1;
+          
+          char terminator = s.getChar (i);
 
             _String * literal = new _String (16,true);
             _List * formula_list = nil;
@@ -1262,7 +1264,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 char aChar = s.sData[i+j];
                 if (aChar =='\\') {
                     if (i+j+1<s.sLength) {
-                        if (s.sData[i+j+1]=='"' ||s.sData[i+j+1]=='`' ) {
+                        if (s.sData[i+j+1]=='"' ||s.sData[i+j+1]=='`' ||  s.sData[i+j+1]=='\'') {
                             j++;
                             (*literal)<<s.sData[i+j++];
                         } else {
@@ -1273,7 +1275,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     continue;
                 }
 
-                if (aChar =='"' && inPlaceID < 0) {
+                if (aChar == terminator && inPlaceID < 0) {
                     break;
                 }
               
@@ -1378,6 +1380,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 char opChar = s.getChar(i-1);
                 if (((_String*)BuiltInFunctions(HY_OP_CODE_REF))->Equal(opChar)) {
                     takeVarReference = true;
+                    twoToken = false;
                 } else {
                     _String thisOp (opChar);
                     levelOps->AppendNewInstance (new _Operation (thisOp,1L));
@@ -1448,7 +1451,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                     long realVarLoc = LocateVarByName (realVarName);
                     if (realVarLoc<0) { // bad instant variable reference
-                        return HandleFormulaParsingError ("Attempted to take value of undeclared variable ", parsingContext.errMsg(), s, i);
+                        return HandleFormulaParsingError ("Attempted to evaluate an undeclared variable ", parsingContext.errMsg(), s, i);
                      }
                     if (!f2) { // 03/25/2004 ? Confused why the else
                         levelData->AppendNewInstance(new _Operation((_MathObject*)FetchVar (realVarLoc)->Compute()->makeDynamic()));

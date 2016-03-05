@@ -808,7 +808,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
 
     if (treeSelected < treeStrings.lLength) {
         setParameter (dataFileTree,1.0,fState.theNamespace);
-        setParameter (dataFileTreeString, new _FString((*(_String*)treeStrings.lData[treeSelected])),false, fState.theNamespace);
+        setParameter (dataFileTreeString, new _FString((*(_String*)treeStrings.lData[treeSelected])),fState.theNamespace, false);
     }
 
     if (treeStrings.lLength) {

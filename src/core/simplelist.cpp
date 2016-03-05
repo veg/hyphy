@@ -1375,7 +1375,7 @@ void _SimpleList::Swap (long i, long j)
 }
 
 //Char* conversion
-BaseRef _SimpleList::toStr(void)
+BaseRef _SimpleList::toStr(unsigned long)
 {
     if (lLength) {
         unsigned long ssi = _String::storageIncrement,

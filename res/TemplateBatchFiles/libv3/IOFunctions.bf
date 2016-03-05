@@ -1,161 +1,7 @@
 LoadFunctionLibrary("convenience/regexp.bf");
 
-function io.readCodonDataSet(dataset_name) {
-    return io.readCodonDataSetFromPath(dataset_name, None);
-}
-
-function io.readCodonDataSetFromPath(dataset_name, path) {
-    ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
-
-    if (Type(path) == "String") {
-        ExecuteCommands("DataSet `dataset_name` = ReadDataFile (`path`);");
-    } else {
-        ExecuteCommands("DataSet `dataset_name` = ReadDataFile (PROMPT_FOR_FILE);");
-        path = LAST_FILE_PATH;
-    }
-    return {
-        "code": _Genetic_Code,
-        "stop": GeneticCodeExclusions,
-        "file": path,
-        "sequences": Eval("`dataset_name`.species")
-    };
-}
-
-lfunction io.readNucleotideDataSet_aux (dataset_name) {
-
-    partitions = None;
-    
-    if (Type (^"DATA_FILE_PARTITION_MATRIX") == "Matrix") {
-        partitions = {};
-        for (k = 0; k < Columns (^"DATA_FILE_PARTITION_MATRIX"); k += 1) {
-            partitions [(^"DATA_FILE_PARTITION_MATRIX")[0][k]] = (^"DATA_FILE_PARTITION_MATRIX")[1][k];
-        }
-    }
-    return {
-        "sequences": Eval(^"`dataset_name`.species"),
-        "sites": Eval(^"`dataset_name`.sites"),
-        "name-mapping": Eval(^"`dataset_name`.mapping"), 
-        "partitions" : partitions
-    };
-}
-
-function io.readNucleotideDataSet(dataset_name, file_name) {
-    if (Type(file_name) == "String") {
-        ExecuteCommands("DataSet `dataset_name` = ReadDataFile (`file_name`);");
-    } else {
-        ExecuteCommands("DataSet `dataset_name` = ReadDataFile (PROMPT_FOR_FILE);");
-        file_name = LAST_FILE_PATH;
-    }
-
-    io.readNucleotideDataSet.result =  io.readNucleotideDataSet_aux (dataset_name);
-    io.readNucleotideDataSet.result["file"] = file_name;
-    return io.readNucleotideDataSet.result;
-}
-
-function io.readNucleotideDataSetString(dataset_name, data) {
-    ExecuteCommands("DataSet `dataset_name` = ReadFromString (data);");
-    return io.readNucleotideDataSet_aux (dataset_name);
-}
-
-function io.getTreeString._sanitize(string) {
-    if (_DO_TREE_REBALANCE_) {
-        string = RerootTree(string, 0);
-    }
-
-    if (_KEEP_I_LABELS_) {
-        utility.toggleEnvVariable("INTERNAL_NODE_PREFIX", "intNode");
-    }
-    string = string ^ {
-        {
-            "\\)[0-9]+(\\.[0-9]*)?\:", "):"
-        }
-    };
-
-    if (_KEEP_I_LABELS_) {
-        utility.toggleEnvVariable("INTERNAL_NODE_PREFIX", None);
-    }
-    return string;
-}
-
-function io.getTreeString(look_for_newick_tree) {
-
-    UseModel(USE_NO_MODEL);
-
-    if (look_for_newick_tree == 0) {
-        IS_TREE_PRESENT_IN_DATA = 0;
-    }
-
-    if (IS_TREE_PRESENT_IN_DATA) {
-        fprintf(stdout, "\n> A tree was found in the data file: ``", DATAFILE_TREE, "``\n>Would you like to use it? ");
-        fscanf(stdin, "String", io.getTreeString.response);
-        if (io.getTreeString.response == "n" || io.getTreeString.response == "N") {
-            IS_TREE_PRESENT_IN_DATA = 0;
-        } else {
-            io.getTreeString.treeString = io.getTreeString._sanitize(DATAFILE_TREE);
-            IS_TREE_PRESENT_IN_DATA = 1;
-        }
-        fprintf(stdout, "\n\n");
-    }
-
-    if (!IS_TREE_PRESENT_IN_DATA) {
-        SetDialogPrompt("Please select a tree file for the data:");
-        fscanf(PROMPT_FOR_FILE, REWIND, "Raw", io.getTreeString.treeString);
-        fprintf(stdout, "\n");
-            
-        if (regexp.find(io.getTreeString.treeString, "^#NEXUS")) {
-            ExecuteCommands(io.getTreeString.treeString);
-            if (IS_TREE_PRESENT_IN_DATA == 0) {
-                fprintf(stdout, "\n> **This NEXUS file doesn't contain a valid tree block**");
-                return 1;
-            }
-            if (Rows(NEXUS_FILE_TREE_MATRIX) > 1) {
-                ChoiceList(io.getTreeString.treeChoice, "Select a tree", 1, SKIP_NONE, NEXUS_FILE_TREE_MATRIX);
-                if (io.getTreeString.treeChoice < 0) {
-                    return 1;
-                }
-                io.getTreeString.treeString = NEXUS_FILE_TREE_MATRIX[io.getTreeString.treeChoice][1];
-            } else {
-                io.getTreeString.treeString = NEXUS_FILE_TREE_MATRIX[0][1];
-            }
-        } else {
-            io.getTreeString.start = (io.getTreeString.treeString $ "\\(")[0];
-            if (io.getTreeString.start < 0) {
-                fprintf(stdout, "\n> **This doesn't seem to be a valid Newick string file**. Can't find the opening parenthesis. ``", io.getTreeString, "``\n");
-                return 1;
-            } else {
-                io.getTreeString.parenCounter = 1;
-                io.getTreeString.current = io.getTreeString.start + 1;
-                while (io.getTreeString.current < Abs(io.getTreeString.treeString) && io.getTreeString.parenCounter) {
-                    io.getTreeString.char = io.getTreeString.treeString[io.getTreeString.current];
-                    if (io.getTreeString.char == "(") {
-                        io.getTreeString.parenCounter += 1;
-                    } else {
-                        if (io.getTreeString.char == ")") {
-                            io.getTreeString.parenCounter += (-1);
-                        }
-                    }
-                    io.getTreeString.current += 1;
-                }
-
-                if (io.getTreeString.parenCounter) {
-                    fprintf(stdout, "\n> ** This doesn't seem to be a valid Newick string file**. Can't match the parentheses. \n``", io.getTreeString.treeString, "``\n");
-                    return 1;
-                }
-
-                io.getTreeString.treeString = io.getTreeString.treeString[io.getTreeString.start][io.getTreeString.current - 1];
-            }
-
-            io.getTreeString.treeString = io.getTreeString._sanitize(io.getTreeString.treeString);
-
-        }
-    }
-
-    return io.getTreeString.treeString;
-}
-
 function io.checkAssertion(statement, error_msg) {
     ExecuteCommands("assert (`statement`, error_msg)");
-    return None;
 }
 
 lfunction io._reportMessageHelper(analysis, text) {
@@ -206,7 +52,7 @@ lfunction io.reportProgressMessageMD(analysis, stage, text) {
     }
 }
 
-function io.reportProgressBar(analysis, text) {
+lfunction io.reportProgressBar(analysis, text) {
     SetParameter(STATUS_BAR_STATUS_STRING, io._reportMessageHelper(analysis, text), 0);
 }
 
@@ -222,6 +68,100 @@ function io.validate_a_list_of_files(list) {
     return io.validate_a_list_of_files.result;
 }
 
+lfunction io.format_object (object, options) {
+    if (Type (object) == "String") {
+        return object;
+    }
+    if (Type (object) == "Number") {    
+        if (None != options) {
+            if (Abs (options["number-precision"]) > 0) {
+                return Eval ("Format (`&object`, 0, " + options["number-precision"] + ")");
+            }
+        }
+    }
+    
+    return ""+object;
+}
+
+
+lfunction io.format_table_row (row, options) {
+    
+    if (None == options) {
+        options = {};
+    }
+    
+    fprintf (stdout, row, "\n");
+
+    cells = utility.map (row, "_value_", "io.format_object(_value_, `&options`)");
+    
+    min_width = Max (3, options ["min-column-width"]);
+    
+    underline_chars = {{"-","-","-"}};
+    dim = utility.array1D (cells);
+    
+    row = ""; row * 128;
+    if (options ["header"]) {
+        underlines = ""; underlines * 128;
+        widths = {};
+        
+        if (options["align"] == "center") {
+            underline_chars[0] = ':'; underline_chars[2] = ':';
+        } else {
+            if (options["align"] == "right") {
+                underline_chars[2] = ':';
+            }
+       
+        }
+        for (i = 0; i < dim; i += 1) {
+            content_width = Abs (cells[i]);
+            cell_width    = Max (min_width, content_width);
+            widths + cell_width;
+            row * "|";
+            padding = cell_width - content_width;
+            
+            for (k = 0; k < padding$2; k+=1) {
+                row * " ";
+            }        
+            row * cells[i];
+            for (k = 0; k < padding - padding$2; k+=1) {
+                row * " ";
+            }
+            underlines * "|";
+            underlines * underline_chars[0];
+            for (k = 1; k < cell_width - 1; k+=1) {
+             underlines * underline_chars[1];
+            }
+            underlines * underline_chars[2];
+        }    
+        row * "|"; underlines * "|"; underlines * 0;
+        row * "\n";
+        row * underlines;  
+        options ["column-widths"] = widths;
+    } else {
+        for (i = 0; i < dim; i += 1) {
+            content_width = Abs (cells[i]);
+            cell_width    = (options ["column-widths"])[i];
+
+            row * "|";
+            if (cell_width <= content_width + 3) {
+                cells[i] = (cells[i])[0][cell_width-4] + "...";
+                padding = 0;
+            } else {
+                padding = cell_width - content_width;
+            }
+            for (k = 0; k < padding$2; k+=1) {
+                row * " ";
+            }        
+            row * cells[i];
+            for (k = 0; k < padding - padding$2; k+=1) {
+                row * " ";
+            }
+        }    
+        row * "|\n";
+    }
+    row * 0;
+    return row; 
+}
 
 function io.get_a_list_of_files(filename) {
     if (Type(filename) == "String") {
@@ -246,7 +186,7 @@ function io.get_a_list_of_files(filename) {
     }
 }
 
-function io.displayAnalysisBanner(analysis_info) {
+lfunction io.displayAnalysisBanner(analysis_info) {
     if (io.hasStringKey("info", analysis_info)) {
         io.printAndUnderline("Analysis Description", "-");
         fprintf(stdout, io.formatLongStringToWidth(analysis_info["info"], 72), "\n");
@@ -276,24 +216,27 @@ function io.displayAnalysisBanner(analysis_info) {
     return None;
 }
 
-function io.hasStringKey(key, dict) {
+lfunction io.hasStringKey(key, dict) {
     return Type(dict[key]) == "String";
 }
 
-function io.spoolLF(lf_id, trunk_path, tag) {
-    ExecuteCommands("Export (__lf_spool, `lf_id`);");
+lfunction io.spoolLF(lf_id, trunk_path, tag) {
+
+    Export (__lf_spool, ^lf_id);
     if (tag == None) {
         tag = lf_id;
     }
     fprintf(trunk_path + "." + tag + ".bf", CLEAR_FILE, __lf_spool);
 }
 
-function io.printAndUnderline(string, char) {
+lfunction io.printAndUnderline(string, char) {
     fprintf(stdout, "\n", string, "\n");
+    buffer = ""; buffer * (1+Abs (string));
     for (k = 0; k < Abs(string); k += 1) {
-        fprintf(stdout, char[0]);
+        buffer * char[0];
     }
-    fprintf(stdout, "\n");
+    buffer * 0;
+    fprintf(stdout, buffer, "\n");
 }
 
 function io.formatLongStringToWidth(string, width) {

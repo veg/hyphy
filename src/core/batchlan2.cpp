@@ -181,7 +181,7 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_GetStringGlobalTypes.Insert(new _String("Tree"), HY_BL_TREE);
     _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), HY_BL_SCFG);
     _HY_GetStringGlobalTypes.Insert(new _String("Variable"), HY_BL_VARIABLE);
-	_HY_GetStringGlobalTypes.Insert(new _String("BayesianGraphicalModel"), HY_BL_BGM);
+    _HY_GetStringGlobalTypes.Insert(new _String("BayesianGraphicalModel"), HY_BL_BGM);
 
 
     _HY_ValidHBLExpressions.Insert ("function ",                            HY_HBL_COMMAND_FUNCTION);
@@ -385,8 +385,15 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_MatrixRandomValidPDFs.Insert ("Wishart", _HY_MATRIX_RANDOM_WISHART);
     _HY_MatrixRandomValidPDFs.Insert ("InverseWishart", _HY_MATRIX_RANDOM_INVERSE_WISHART);
     _HY_MatrixRandomValidPDFs.Insert ("Multinomial", _HY_MATRIX_RANDOM_MULTINOMIAL);
-
-
+  
+  
+  _List keywords (&blReturn, 6, &blDataSet, &blDataSetFilter, &blTree, &blTopology, &blLF, &blLF3, &blSCFG);
+  
+  for (long key = 0; key < keywords.lLength; key++) {
+    _String* key_string = (_String*)keywords.GetItem (key);
+    _HY_HBL_KeywordsPreserveSpaces.Insert (key_string->Reverse().Cut (1,-1), key_string->Length()-1);
+  }
+  
 }
 
 //____________________________________________________________________________________
@@ -719,20 +726,20 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
 
     if (!isFilter) {
         dataset = (_DataSet*)dataSetList(dsID);
-        dataset -> ProcessPartition (hSpecs,hL,false);
+        dataset -> ProcessPartition (hSpecs,hL,false, nil, nil, chain.GetNameSpace());
         if (code!=6 && vSpecs.sLength==0) {
             vSpecs = _String("0-")&_String(dataset->NoOfColumns()-1);
         }
-        dataset->ProcessPartition (vSpecs,vL,true);
+        dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
     } else {
         _DataSetFilter * dataset1 = (_DataSetFilter*)dataSetFilterList(dsID);
-        dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder);
+        dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
 
         if (code!=6 && vSpecs.sLength==0) {
             vSpecs = _String("0-")&_String(dataset1->GetFullLengthSpecies()-1);
         }
 
-        dataset1->GetData()->ProcessPartition (vSpecs,vL,true,  &dataset1->theOriginalOrder, &dataset1->theNodeMap);
+        dataset1->GetData()->ProcessPartition (vSpecs,vL,true,  &dataset1->theOriginalOrder, &dataset1->theNodeMap, chain.GetNameSpace());
         dataset = (_DataSet*)dataset1;
     }
 
@@ -1514,13 +1521,15 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
     bool        doThisOne = (firstNode->get_parent()!=nil), good = true;
     long        index, ind, i;
 
-    /*if (!doThisOne)
+    /*
+     if (doThisOne)
     {
         BufferToConsole (_String((_String*)theParts.toStr()));
         NLToConsole();
         BufferToConsole (_String((_String*)partIndex.toStr()));
         NLToConsole();
-    }*/
+    }
+     */
 
     // there are a few cases to consider
     for (ind = 1; ind<=firstNode->get_num_nodes(); ind++) { // have children nodes
@@ -1723,9 +1732,10 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
             return ;
         }
 
-        ind2 = LocateVarByName (*(_String*)parameters(ind1));
+        _String namespaced = chain.AddNameSpaceToID(*(_String*)parameters(ind1));
+        ind2 = LocateVarByName (namespaced);
         if (ind2<0) {
-            _String newS = *(_String*)parameters(ind1) & " is undefined in call to ReplicateConstraint.";
+            _String newS = namespaced & " is undefined in call to ReplicateConstraint.";
             acknError (newS);
             return  ;
         }

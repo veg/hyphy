@@ -275,16 +275,16 @@ void    _LikelihoodFunction::RestoreScalingFactors (long index, long branchID, l
 bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList, _String caller)
 {
     long    partCount = CountObjects(0);
-    partsToDo.Populate (partCount, 0, 1);
     if (partitionList) {
         partitionList->ConvertToSimpleList (partsToDo);
-      //DeleteObject (partitionList);
         partsToDo.Sort();
         partsToDo.FilterRange (-1, partCount);
         if (partsToDo.lLength == 0) {
             WarnError (_String("An invalid partition specification in call to ") & caller);
-            return nil;
+            return false;
         }
+    } else {
+      partsToDo.Populate (partCount, 0, 1);
     }
 
     return true;
@@ -308,8 +308,8 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
 
 */
 {
-    _DataSetFilter *dsf             = (_DataSetFilter*)dataSetFilterList (theDataFilters(doTheseOnes.lData[0]));
-    _TheTree        *firstTree      = (_TheTree*)LocateVar(theTrees(doTheseOnes.lData[0]));
+    _DataSetFilter *dsf             = GetIthFilter (doTheseOnes.lData[0]);
+    _TheTree        *firstTree      = GetIthTree   (doTheseOnes.lData[0]);
 
     target.SetTranslationTable      (dsf->GetData());
     target.ConvertRepresentations();
@@ -326,13 +326,13 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
     }
 
     long siteOffset         = 0,
-         patternOffset        = 0,
+         patternOffset      = 0,
          sequenceCount       ;
 
     for (long i = 0; i<doTheseOnes.lLength; i++) {
         long       partIndex    = doTheseOnes.lData[i];
-        _TheTree   *tree        = (_TheTree*)LocateVar(theTrees(partIndex));
-        dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(partIndex));
+        _TheTree   *tree        = GetIthTree (partIndex);
+        dsf = GetIthFilter(partIndex);
 
         long    catCounter = 0;
 
@@ -410,21 +410,21 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
         }
 
 
-        _String * sampledString = (_String*)(*thisSet)(0);
-
+        _String * sampledString = (_String*)thisSet->GetItem(0);
+ 
         for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
             target.AddSite (sampledString->sData[siteIdx]);
         }
 
         for (long seqIdx = 1; seqIdx < sequenceCount; seqIdx++) {
-            sampledString = (_String*)(*thisSet)(seqIdx);
+            sampledString = (_String*)thisSet->GetItem(seqIdx);
             for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
                 target.Write2Site (siteOffset + siteIdx, sampledString->sData[siteIdx]);
             }
         }
         DeleteObject (thisSet);
         DeleteObject (expandedMap);
-        siteOffset    += dsf->GetSiteCount();
+        siteOffset    += dsf->GetFullLengthSpecies();
         patternOffset += dsf->GetSiteCount();
     }
 

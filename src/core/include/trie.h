@@ -93,7 +93,7 @@ class _Trie: public _List
          * @return Nothing. 
          */
        
-        virtual BaseRef toStr(void);
+        virtual BaseRef toStr(unsigned long);
         /**
          * Return a string representation of this object
          * @return An dictionary representation of the trie, i.e. {"key1":"value1", "key2":"value2", ...} pairs

@@ -125,29 +125,29 @@ bool _Variable::CheckFForDependence (long idx, bool opt)
 }
 
 //__________________________________________________________________________________
-BaseRef _Variable::toStr(void)
+BaseRef _Variable::toStr(unsigned long padding)
 {
     if (varValue&&varValue->IsPrintable()) {
-        return varValue->toStr();
+        return varValue->toStr(padding);
     }
     _PMathObj vv = Compute();
     if (!vv) {
         return new _String("NAN");
     }
-    return new _String((_String*)vv->toStr());
+    return new _String((_String*)vv->toStr(padding));
 }
 
 //__________________________________________________________________________________
-void _Variable::toFileStr(FILE* f)
+void _Variable::toFileStr(FILE* f, unsigned long padding)
 {
     if (varValue&&varValue->IsPrintable()) {
-        varValue->toFileStr(f);
+        varValue->toFileStr(f, padding);
     } else {
         _PMathObj vv = Compute();
         if (!vv) {
             fprintf(f,"NAN");
         } else {
-            vv->toFileStr(f);
+            vv->toFileStr(f, padding);
         }
     }
 

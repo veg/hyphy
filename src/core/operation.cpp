@@ -93,15 +93,14 @@ void    _Operation::Duplicate(BaseRef r)
 
 
 //__________________________________________________________________________________
-BaseRef _Operation::toStr(void)
-{
+BaseRef _Operation::toStr (unsigned long) {
     _String * res = new _String;
   
     if (theData != -1) {
         *res = _String("Variable ")& *LocateVar(GetAVariable())->GetName();
     } else if (theNumber) {
         _FString * type = (_FString*)theNumber->Type();
-       *res = _String("Constant (")& *type->theString & ")" & _String((_String*)theNumber->toStr());
+        *res = _String("Constant (")& *type->theString & ")" & _String((_String*)theNumber->toStr());
         DeleteObject(type);
     } else {
         if (IsAFunctionCall())

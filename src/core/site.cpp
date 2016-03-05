@@ -1063,10 +1063,8 @@ void     _DataSet::AddSite (char c)
         if (useHorizontalRep == false) {
             if (lLength < DATA_SET_SWITCH_THRESHOLD) {
                 _Site* nC = new _Site(c);
-                checkPointer(nC);
-                theFrequencies<<1;
-                (*this)<<nC;
-                nC->nInstances --;
+                theFrequencies<<1L;
+                AppendNewInstance(nC);
                 return;
             } else {
                 ConvertRepresentations ();
@@ -1511,7 +1509,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
 
 //___________________________________________________
 
-BaseRef _DataSet::toStr (void)
+BaseRef _DataSet::toStr (unsigned long)
 {
     _String * s = new _String(NoOfSpecies()*30, true),
     *str;
@@ -1536,10 +1534,10 @@ BaseRef _DataSet::toStr (void)
 
 //___________________________________________________
 
-void    _DataSet::toFileStr (FILE* dest)
+void    _DataSet::toFileStr (FILE* dest, unsigned long padding)
 {
     fprintf (dest, "%ld species: ",NoOfSpecies());
-    theNames.toFileStr(dest);
+    theNames.toFileStr(dest, padding);
 
     fprintf (dest, ";\nTotal Sites: %ld",GetNoTypes()) ;
     fprintf (dest, ";\nDistinct Sites: %ld",theFrequencies.lLength);
@@ -1568,9 +1566,10 @@ void    _DataSet::AddName (_String& s)
 
 //_________________________________________________________
 
-void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert, long limit)
+void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert, long limit, _String* scope)
 {
     _String     varName  = isVert ? "siteIndex" : "speciesIndex";
+    varName = AppendContainerName(varName, scope);
     _Variable   *v       = CheckReceptacle (&varName, empty, false);
 
     for (long i=0; i<limit; i++) {
@@ -2688,7 +2687,7 @@ long    _DataSetFilter::GetDimension (bool correct)
 //____________________________________________________________________________________
 //  20110610: SLKP, some cleanup and refactoring
 
-void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool isVertical, _SimpleList* additionalFilter, _SimpleList* otherDimension)
+void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool isVertical, _SimpleList* additionalFilter, _SimpleList* otherDimension, _String* scope)
 {
     if (!input2.sLength) {
         return;
@@ -2706,8 +2705,9 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
 
     if (!input.IsALiteralArgument(true)) { // not a literal argument
         _Formula fmla, lhs;
-
         _FormulaParsingContext fpc;
+        fpc.setScope (scope);
+      
         long     outcome = Parse (&fmla, input, fpc,&lhs);
 
         if (outcome!=HY_FORMULA_EXPRESSION) {
@@ -2721,7 +2721,7 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
             newSpec << ((_FString*)fV)->theString;
             newSpec << '"';
             newSpec.Finalize();
-            ProcessPartition (newSpec, target, isVertical, additionalFilter);
+            ProcessPartition (newSpec, target, isVertical, additionalFilter, nil, scope);
         } else {
             _DataSet::MatchIndices (fmla, target, isVertical, totalLength);
         }
@@ -4886,7 +4886,7 @@ void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine)
     } else {
         treeString.Finalize();
         setParameter (dataFileTree,1.0,fState->theNamespace);
-        setParameter (dataFileTreeString, new _FString (treeString), false);
+        setParameter (dataFileTreeString, new _FString (treeString), nil, false);
     }
 
 }
@@ -5569,11 +5569,10 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
 
 //_________________________________________________________
 
-BaseRef _DataSetFilter::toStr (void)
+BaseRef _DataSetFilter::toStr (unsigned long)
 {
     //return new _String("DataSetFilters only print to files");
     _String * res = new _String (4096L, true);
-    checkPointer (res);
     internalToStr (nil,*res);
     res->Finalize();
     return res;
@@ -5721,7 +5720,7 @@ _String _DataSetFilter::GenerateConsensusString (_SimpleList* majority)
 
 
 //_________________________________________________________
-void    _DataSetFilter::toFileStr (FILE*dest)
+void    _DataSetFilter::toFileStr (FILE*dest, unsigned long)
 {
 // write out the file with this dataset filter
     if (!dest) {
@@ -5883,7 +5882,7 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
         } else {
             rec << _String((long)theNodeMap.lLength);
             rec << '\t';
-            rec << _String((long)theNodeMap.lLength,theOriginalOrder.lLength);
+            rec << _String(theOriginalOrder.lLength);
             rec << '\n';
         }
         // proceed to spool out the data
@@ -5944,7 +5943,7 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
         } else {
             rec << _String((long)theNodeMap.lLength);
             rec << '\t';
-            rec << _String((long)theNodeMap.lLength,theOriginalOrder.lLength);
+            rec << _String(theOriginalOrder.lLength);
             rec << '\n';
         }
         // proceed to spool out the data

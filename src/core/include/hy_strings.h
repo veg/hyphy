@@ -58,8 +58,7 @@ class _ExecutionList; // forward declaration
 #define kAppendAnAssignmentToBufferGlobal     0x08
 
 
-class _String:public BaseObj
-{
+class _String:public BaseObj {
 
     // contructor/destructor methods
 private:
@@ -119,6 +118,11 @@ public:
     * A constructor that copies from a single char.
     */
     _String (const char);
+
+    /**
+     * A constructor that maked N copies of the same char
+     */
+    _String (const _String&, unsigned long);
 
     /**
     * A constructor that reads from an open file.
@@ -223,7 +227,7 @@ public:
     * \n\n \b Example: \code long l = string.Length(); \endcode
     * @return Length of string
     */
-    unsigned long Length(void);
+    unsigned long Length(void) const;
 
     /**
     * Append operator
@@ -316,7 +320,7 @@ public:
     * Converts a good ole char*
     * \n\n \b Example: \code string.toStr(); \endcode
     */
-    virtual     BaseRef toStr (void);
+    virtual     BaseRef toStr (unsigned long = 0UL);
 
     /**
     * Return good ole char*
@@ -359,7 +363,16 @@ public:
     * \n\n \b Example: \code _String("ABC").Flip() \endcode
     * @return Transforms string to "CBA"
     */
-    void    Flip(void);
+    const _String    Flip(void);
+
+    /**
+     *
+     * Return a reversed string
+     * \n s[0]...s[sLength-1] => s[sLength-1]...s[0]
+     * \n\n \b Example: \code _String("ABC").Reverse() \endcode
+     * @return "CBA"
+     */
+    const _String    Reverse(void) const;
 
     /**
     * Trim the string between from and to
@@ -428,7 +441,7 @@ public:
     * @return The index of the first non-space, in the example, 4.
     * @see FirstNonSpaceIndex()
     */
-    long    FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1);
+    long    FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1) const;
 
 
     /**
@@ -441,7 +454,19 @@ public:
     * @return Returns the index of the first non-space. 1 in the example.
     * @sa FirstSpaceIndex()
     */
-    long    FirstSpaceIndex(long start = 0, long end = -1, char direction = 1);
+    long    FirstSpaceIndex(long start = 0, long end = -1, char direction = 1) const;
+
+    /**
+     * Locate the first non-space character of the string following one or more spaces
+     * \n Returns index of first space character
+     * \n\n \b Example: \code _String ("h yphy").FirstSpaceIndex()\endcode
+     * @param start starting index
+     * @param end ending index to search
+     * @param direction If the direction is less than 0, then go backwards
+     * @return Returns the index of the first non-space. 1 in the example.
+     * @sa FirstSpaceIndex()
+     */
+    long    FirstNonSpaceFollowingSpace(long start = 0, long end = -1, char direction = 1) const;
 
     /**
     * Finds end of an ID. An ID is made up of alphanumerics, periods, or '_'
@@ -662,6 +687,17 @@ public:
     * @sa endswith()
     */
     bool startswith (_String const&) const;
+
+    /**
+     * Checks to see if String starts with substring and it can't be extended to make a valid ident
+     * \n\n \b Example: \code _String("return;").startswith("return"); _String("return_me").startswith("return")\endcode
+     * @param s Substring
+     * @return true if string starts with substring. Example 1 would return true, and example 2 would return false
+     * @sa contains()
+     * @sa beginswith()
+     * @sa endswith()
+     */
+    bool startswith_noident (_String const&) const;
 
     /**
     * Checks to see if String ends with substring
