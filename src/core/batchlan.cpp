@@ -3823,11 +3823,19 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
                 shifter = simpleParameters.lData[0] < 0;
 
     bool        skipDataDelete = false;
+  
     _Variable*  iseof          = CheckReceptacle (&hasEndBeenReached,empty,false);
+  
 
     if (currentParameter==_String("stdin")) { //
         if (chain.stdinRedirect) {
             data = chain.FetchFromStdinRedirect ();
+            // echo the input if there is no fprintf redirect in effect
+            _FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
+            if (! (redirect && redirect->theString->sLength)) {
+              StringToConsole (*data); NLToConsole();
+            }
+          
         } else {
             if (!CheckEqual(iseof->Compute()->Value(),0) && currentParameter.Equal (&scanfLastFilePath)) {
                 WarnError ("Ran out of standard input\n");
