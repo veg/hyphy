@@ -94,23 +94,24 @@ void    _Operation::Duplicate(BaseRef r)
 
 //__________________________________________________________________________________
 BaseRef _Operation::toStr (unsigned long) {
-    _String * res = new _String;
+  
   
     if (theData != -1) {
-        *res = _String("Variable ")& *LocateVar(GetAVariable())->GetName();
+        return new _String (_String("Variable ")& *LocateVar(GetAVariable())->GetName());
     } else if (theNumber) {
         _FString * type = (_FString*)theNumber->Type();
-        *res = _String("Constant (")& *type->theString & ")" & _String((_String*)theNumber->toStr());
+        _String res = _String("Constant (")& *type->theString & ")" & _String((_String*)theNumber->toStr());
         DeleteObject(type);
+        return new _String (res);
     } else {
         if (IsAFunctionCall())
-          *res = GetBFFunctionNameByIndex(UserFunctionID());
+          return new _String (GetBFFunctionNameByIndex(UserFunctionID()));
         else
-          *res = _String("Operation ") & *(_String*)BuiltInFunctions(opCode) & " with " & _String((long)numberOfTerms) & " arguments";
+          return new _String (_String("Operation ") & *(_String*)BuiltInFunctions(opCode) & " with " & _String((long)numberOfTerms) & " arguments");
     }
 
   
-    return res;
+    return new _String ("This should not happen");
 
 }
 

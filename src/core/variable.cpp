@@ -222,14 +222,24 @@ void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* t
         varFormula->ScanFForVariables(l,globals, false, true, false,tagger, weight);
     }
 }
+  // long call_count = 0L;
 
 
 //__________________________________________________________________________________
 
 _PMathObj  _Variable::Compute (void) // compute or return the value
 {
+    // call_count++;
+  
+    if (varFlags & HY_VARIABLE_COMPUTING) {
+      FlagError (_String ("A recursive dependency error in _Variable::Compute; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+    }
+  
+    varFlags |= HY_VARIABLE_COMPUTING;
+  
     if (varFormula == nil) { // no formula, just return the value
         if (varValue) {
+            varFlags &= HY_VARIABLE_COMPUTING_CLR;
             return varValue->Compute();
         }
 
@@ -239,23 +249,33 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
 
         varValue =  new _Constant(theValue);
     } else {
-        //printf ("Recomputing value of %s\n", theName->sData);
+        //printf ("Recomputing value of %s (%ld)\n", theName->sData, call_count);
         if (useGlobalUpdateFlag) {
             if ((varFlags & HY_DEP_V_COMPUTED) && varValue) {
+                varFlags &= HY_VARIABLE_COMPUTING_CLR;
                 return varValue;
             } else if (varFormula->HasChanged()||!varValue) {
+                _PMathObj new_value = (_PMathObj)varFormula->Compute()->makeDynamic();
                 DeleteObject (varValue);
-                varValue = (_PMathObj)varFormula->Compute()->makeDynamic();
+                varValue = new_value;
             }
-
             varFlags |= HY_DEP_V_COMPUTED;
+          
         } else if (varFormula->HasChanged()||!varValue) {
+              /* if varFormula depends on *this* variable, doing delete-set
+                 would cause the expression to reference deleted memory.
+               */
+            /*if (call_count == 2467288) {
+              printf ("Here we go...\n");
+            }*/
+            _PMathObj new_value = (_PMathObj)varFormula->Compute()->makeDynamic();
             DeleteObject (varValue);
-            varValue = (_PMathObj)varFormula->Compute()->makeDynamic();
+            varValue = new_value;
         }
 
     }
 
+    varFlags &= HY_VARIABLE_COMPUTING_CLR;
     return varValue;
 }
 
@@ -290,12 +310,25 @@ void  _Variable::SetValue (_Parameter new_value) {
 void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 {
     //hasBeenChanged = true;
+    if (varFlags & HY_VARIABLE_COMPUTING) {
+      if (varFlags & HY_VARIABLE_COMPUTING) {
+        FlagError (_String ("A recursive dependency error in _Variable::SetValue; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+      }
+    }
+  
     varFlags &= HY_VARIABLE_SET;
     varFlags |= HY_VARIABLE_CHANGED;
 
     long     valueClass = theP->ObjectClass();
+  
+    /*bool     doPrint = (*theName) == _String("_value_");
+    if (doPrint) {
+      printf ("Setting %s to %s\n", theName->sData, _String((_String*)theP->toStr()).sData);
+    }*/
 
     if (valueClass==NUMBER) {
+      
+      
         if (varFormula) {
 
             // also update the fact that this variable is no longer dependent in all declared
@@ -342,6 +375,9 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
         }
     } else {
         if (varFormula) {
+            /*if (doPrint) {
+              printf ("Resetting constraint on %s which was %s\n", theName->sData,_String((_String*)varFormula->toStr()).sData);
+            }*/
             delete (varFormula);
             varFormula = nil;
             //theFormula.Clear();
@@ -350,6 +386,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
             DeleteObject (varValue);
             varValue=nil;
         }
+      
         if (valueClass==TREE) {
             variablePtrs.lData[theIndex] = (long)(((_TheTree*)theP)->makeDynamicCopy(GetName()));
             DeleteObject(this);
@@ -367,6 +404,10 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 void  _Variable::SetNumericValue (_Parameter v) // set the value of the var to a number
 {
     //hasBeenChanged = true;
+    if (varFlags & HY_VARIABLE_COMPUTING) {
+      FlagError (_String ("A recursive dependency error in _Variable::SetNumericValue; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+    }
+
     varFlags &= HY_VARIABLE_SET;
     varFlags |= HY_VARIABLE_CHANGED;
     theValue = v;
@@ -477,12 +518,24 @@ bool _Variable::IsConstant (void)
     return false;
 }
 
+  //long wp_count = 0;
+
 //__________________________________________________________________________________
 
 void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a formula
 {
+    if (varFlags & HY_VARIABLE_COMPUTING) {
+      FlagError (_String ("A recursive dependency error in _Variable::SetFormula; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+    }
+
     bool changeMe    = false,
          isAConstant = theF.IsAConstant();
+
+    /*bool     doPrint = (*theName) == _String("_value_");
+    if (doPrint) {
+      wp_count++;
+      printf ("Constraining %s to %s\n", theName->sData, _String((_String*)theF.toStr()).sData);
+    }*/
 
     _Formula* myF = &theF;
 
@@ -490,23 +543,18 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
         _PMathObj theP = theF.Compute();
         if (theP) {
             myF = new _Formula ((_PMathObj)theP->makeDynamic(),false);
-            checkPointer (myF);
         } else {
             return;
         }
     }
 
     _SimpleList vars;
-    {
-        _AVLList vA (&vars);
-        theF.ScanFForVariables (vA,true);
-        vA.ReorderList();
-    }
+    _AVLList vA (&vars);
+    theF.ScanFForVariables (vA,true);
+    vA.ReorderList();
 
     if (vars.BinaryFind(theIndex)>=0) {
-        _String * sf = (_String*)theF.toStr();
-        WarnError ((_String("Can't set variable ")&*GetName()&" to "&*sf&" because it would create a circular dependance."));
-        DeleteObject(sf);
+        WarnError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr())&" because it would create a circular dependance."));
         if (&theF!=myF) {
             delete myF;
         }

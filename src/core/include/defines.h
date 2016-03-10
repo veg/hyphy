@@ -64,17 +64,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_VARIABLE_CHANGED    0x02
 #define  HY_DEP_V_COMPUTED      0x04
 #define  HY_DEP_V_INSPECTED     0x08
-#define  HY_DEP_V_INSPECTED_CLR 0xF7
+#define  HY_DEP_V_INSPECTED_CLR 0xFF7
 #define  HY_DEP_V_MODIFIED      0x10
 #define  HY_DEP_V_MODIFIED_CATS 0x20
 #define  HY_VC_NO_CHECK         0x40 // do not check this variable container in 
 // NeedToExponentiate
 #define  HY_VARIABLE_NOTSET     0x80
 #define  HY_VARIABLE_SET        0x7F
+#define  HY_VARIABLE_COMPUTING  0x100
+#define  HY_VARIABLE_COMPUTING_CLR 0x0FF
 
-#define  HY_VC_CLR_NO_CHECK     0xBF
+#define  HY_VC_CLR_NO_CHECK     0xFBF
 
-#define  HY_DEP_CLEAR_MASK      0xC7
+#define  HY_DEP_CLEAR_MASK      0xFC7
 
 #define  HY_NO_MODEL            (-1)
 
