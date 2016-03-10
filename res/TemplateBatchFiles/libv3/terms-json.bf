@@ -4,6 +4,7 @@ terms.json.attribute.meta = {};
 
 terms.json.fits                     = "fits";
 terms.json.timers                   = "timers";
+terms.json.pmid                     = "PMID";
 terms.json.trees                    = "trees";
 terms.json.MLE                      = "MLE";
 terms.json.headers                  = "headers";

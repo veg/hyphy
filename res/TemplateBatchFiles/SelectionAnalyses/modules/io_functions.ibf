@@ -1,22 +1,22 @@
-RequireVersion("2.25");
+RequireVersion("2.3");
 
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/convenience/regexp.bf");
 
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 lfunction selection.io.defineBranchSets(partition_info) {
 
     available_models = {};
     branch_set = {};
-    
+
     tree_for_analysis = None;
-    
-    if (Abs (partition_info) == 1) { // allow more refined selections if there is only one tree   
+
+    if (Abs (partition_info) == 1) { // allow more refined selections if there is only one tree
         tree_for_analysis = (partition_info[0])["tree"];
         utility.forEach (tree_for_analysis["model_map"], "_value_", "`&available_models`[_value_] += 1");
-        list_models   = utility.keys   (available_models); // get keys    
+        list_models   = utility.keys   (available_models); // get keys
         branch_counts = utility.values (available_models);
         option_count  = Abs (available_models);
     } else {
@@ -45,11 +45,11 @@ lfunction selection.io.defineBranchSets(partition_info) {
     }
 
     ChoiceList(testSet, "Choose the set of branches to test for selection", 1, NO_SKIP, selectTheseForTesting);
-    
+
     io.checkAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
 
     return_set = {};
-    
+
     for (k = 0; k < Abs (partition_info); k+=1) {
         tree_configuration = {};
         tree_for_analysis = (partition_info[k])["tree"];
@@ -63,9 +63,9 @@ lfunction selection.io.defineBranchSets(partition_info) {
                     tag = "leaf";
                 }
             }
-            
+
             utility.forEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.background';}");
-            
+
         } else {
             tag = SELECTION_STRINGS;
             if (tag == "Unlabeled branches") {
@@ -75,12 +75,12 @@ lfunction selection.io.defineBranchSets(partition_info) {
         }
         return_set + tree_configuration;
     }
-    
+
     return return_set;
 
 }
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 lfunction selection.io.startTimer(timers, key, sort_index) {
     timers[key] = {
@@ -90,26 +90,26 @@ lfunction selection.io.startTimer(timers, key, sort_index) {
 
 }
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 lfunction selection.io.stopTimer(timers, key) {
     (timers[key])["timer"] = Time(1) - (timers[key])["timer"];
 }
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 lfunction selection.io.extract_global_MLE(fit, id) {
     return ((fit["global"])[id])["MLE"];
 }
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 lfunction selection.io.extract_global_MLE_re (fit, regexp) {
     matches = utility.filter (utility.keys(fit["global"]), "_tag_", "regexp.find (_tag_, `&regexp`)");
     return utility.map (matches, "_tag_", "{'description': _tag_, 'MLE' : ((`&fit`['global'])[_tag_])['MLE']}");
 }
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 lfunction selection.io.branch.length(branch_info) {
     return branch_info["MLE"];
@@ -122,7 +122,7 @@ lfunction selection.io.getIC(logl, params, samples) {
 }
 
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
 
@@ -138,17 +138,17 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
 
 }
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 lfunction selection.io.adjust_partition_string (string, sites) {
     contig = regexp.split (string, "-");
     if (Abs (contig) == 2) {
         start = +contig[0];
         end   = +contig[1];
-        
-        
-        if (start % 3) { // need to adjust the start position 
-            if (start % 3 == 2) { // move upstream 
+
+
+        if (start % 3) { // need to adjust the start position
+            if (start % 3 == 2) { // move upstream
                 start += 1;
             } else {
                 start += (-1);
@@ -167,11 +167,11 @@ lfunction selection.io.adjust_partition_string (string, sites) {
         io.checkAssertion ("`&start` < `&end`", "Could not adjust the partition '" + string + "' to fall on codon boundaries and remain non-empty");
         string = "" + start + "-" + end;
     }
-    
+
     return string;
 }
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
 
@@ -184,19 +184,19 @@ function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
     }
 }
 
-//------------------------------------------------------------------------------ 
+//------------------------------------------------------------------------------
 
 function selection.io.json_store_branch_attribute(json, attribute_name, attribute_type, display_order, partition, values) {
-    utility.dict.ensure_key(json, terms.json.branch_attributes); 
-    utility.dict.ensure_key(json[terms.json.branch_attributes], partition); 
+    utility.dict.ensure_key(json, terms.json.branch_attributes);
+    utility.dict.ensure_key(json[terms.json.branch_attributes], partition);
     utility.dict.ensure_key(json[terms.json.branch_attributes], terms.json.attribute.meta);
     utility.dict.ensure_key((json[terms.json.branch_attributes])[terms.json.attribute.meta], attribute_name);
     ((json[terms.json.branch_attributes])[terms.json.attribute.meta])[attribute_name] = {terms.json.attribute.meta.type : attribute_type,
-                                                                                            terms.json.attribute.meta.order: display_order}; 
-    
+                                                                                            terms.json.attribute.meta.order: display_order};
+
     utility.forEach (utility.keys (values), "selection.io.json_store_branch_attribute.branch_name",
                              "utility.dict.ensure_key ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
-                             
+
     utility.forEach (utility.keys (values), "selection.io.json_store_branch_attribute.branch_name",
                              "(((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name]");
  }
