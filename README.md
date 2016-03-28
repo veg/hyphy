@@ -30,6 +30,9 @@ to cmake during the configuration, e.g.
 Occasionally, you may have to specify which OSX SDK you are using. e.g.
 `cmake -DCMAKE_OSX_SYSROOT=/Developer/SDKs/MacOSX10.9.sdk/ .`.
 
+If building on a hetereogenous cluster with some nodes that do not support auto-vectorization
+`cmake -DNOAVX=ON .`.
+
 If you're on a UNIX-compatible system,
 and you're comfortable with GNU make,
 then just `make` away with one of the following targets:
