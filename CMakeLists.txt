@@ -126,7 +126,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
-    else(${HAVE_AVX_EXTENSIONS})
+    elseif(${HAVE_AVX_EXTENSIONS})
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
         add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
     else(${HAVE_AVX_EXTENSIONS})
