@@ -5009,9 +5009,7 @@ void      _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
         _String arrayID ("_HYPHY_MPI_INPUT_ARRAY_");
         (*theMessage) << arrayID;
         (*theMessage) << '=';
-        arg3 = ar->Serialize (arrayID);
-        (*theMessage) << arg3;
-        DeleteObject (arg3);
+        theMessage->AppendNewInstance(ar->Serialize(0UL));
         (*theMessage) << ';';
         arrayID = *arg2;
         arrayID.ProcessFileName(false,true,(Ptr)chain.nameSpacePrefix);

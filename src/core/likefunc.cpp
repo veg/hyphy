@@ -3010,10 +3010,10 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
             _String     *mapString  = MPIRecvString (i,senderID);
 
             // this will return the ';' separated string of partition variable names
-            _List       *varNames           = mapString->Tokenize (";"),
+            _List        varNames           = mapString->Tokenize (";"),
                          slaveNodeMapL;
             _AVLListX    slaveNodeMap       (&slaveNodeMapL);
-            slaveNodeMap.PopulateFromList   (*varNames);
+            slaveNodeMap.PopulateFromList   (varNames);
 
             _SimpleList varMap,
                         map2;
@@ -3068,7 +3068,6 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                 transferrableVars = mappedVariables->lLength;
             }
 
-            DeleteObject (varNames);
             DeleteObject (mapString);
 
             //ReportWarning (((_String*)parallelOptimizerTasks.toStr())->getStr());
@@ -3238,14 +3237,14 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
                 for (long i = 1; i<=parallelOptimizerTasks.lLength; i++) {
                     _String         *mapString      =   MPIRecvString (-1,senderID);
-                    _List           *varNames       =   mapString->Tokenize (";");
+                    _List           varNames       =   mapString->Tokenize (";");
                     _SimpleList*    indexedSlaveV   =   (_SimpleList*)parallelOptimizerTasks(senderID-1);
 
-                    for (long i2 = 0; i2 < varNames->lLength; i2++) {
-                        long vi2    = masterNodeMap.Find((*varNames)(i2));
+                    for (long i2 = 0; i2 < varNames.lLength; i2++) {
+                        long vi2    = masterNodeMap.Find(varNames.GetItem(i2));
                         if (vi2 < 0)
                             FlagError (_String ("[MPI] InitMPIOptimizer: Failed to map independent variable ")
-                                       & *(_String*)(*varNames)(i2)
+                                       & *(_String*)varNames.GetItem(i2)
                                        & " for MPI node " & senderID &". Had variable string:"
                                        & *mapString);
 
@@ -3257,7 +3256,6 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                         transferrableVars = indexedSlaveV->lLength;
                     }
 
-                    DeleteObject (varNames);
                     DeleteObject (mapString);
                 }
 
