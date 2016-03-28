@@ -6,6 +6,13 @@ cmake_policy(SET CMP0026 OLD)
 set(CMAKE_CONFIGURATION_TYPES Release)
 
 #-------------------------------------------------------------------------------
+# OPTIONS
+#-------------------------------------------------------------------------------
+
+option(NOAVX OFF)
+
+
+#-------------------------------------------------------------------------------
 # SSE MACROS
 #-------------------------------------------------------------------------------
 
@@ -117,7 +124,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
     PCL_CHECK_FOR_AVX()
 
-    if(${HAVE_AVX_EXTENSIONS})
+    if(NOAVX)
+        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
+    else(${HAVE_AVX_EXTENSIONS})
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
         add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
     else(${HAVE_AVX_EXTENSIONS})
@@ -126,7 +135,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
             add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
         endif(${HAVE_SSE3_EXTENSIONS})
-    endif (${HAVE_AVX_EXTENSIONS})
+    endif (NOAVX)
 
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
