@@ -6,7 +6,7 @@
  Core Developers:
  Sergei L Kosakovsky Pond (spond@temple.edu)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)

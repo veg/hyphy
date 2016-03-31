@@ -4,9 +4,9 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 
 Copyright (C) 1997-now
 Core Developers:
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
   Art FY Poon    (apoon@cfenet.ubc.ca)
-  Steven Weaver (sweaver@ucsd.edu)
+  Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
@@ -2109,7 +2109,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
         for (long myCatID = 0; myCatID <= catCount; myCatID++) {
             long coordinate = containerVariables.FindPointer(LocateVar(categoryVariables.lData[myCatID]));
             if (coordinate < 0) {
-                WarnError ("Internal error in SetupCategoryMap. Please report to spond@ucsd.edu");
+                WarnError ("Internal error in SetupCategoryMap. Please report to sergeilkp@icloud.com");
             }
             localCategories *= classCounter.lData[coordinate];
             remappedIDs << coordinate;
