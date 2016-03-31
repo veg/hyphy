@@ -847,9 +847,9 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
               
                 while (_CalcNode * iterator = ti.Next()) {
                     if (ti.IsAtLeaf()) {
-                        leafNames && iterator->GetName();
+                        leafNames.AppendNewInstance (new _String(iterator->ContextFreeName()));
                     } else {
-                        inodeNames && iterator->GetName();
+                        inodeNames.AppendNewInstance (new _String(iterator->ContextFreeName()));
                     }
                 }
 
