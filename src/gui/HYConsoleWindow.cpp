@@ -279,7 +279,7 @@ bool    _HYConsoleWindow::ProcessEvent (_HYEvent* e)
                         justTheName = userAction;
 
                 bb->_UnpushButton();
-                i = menuChoices.Find (&userAction);
+                i = menuChoices.FindObject (&userAction);
                 if (i>=0) {
                     _ExecutionList uxl;
                     if (k==0) {

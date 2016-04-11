@@ -43,6 +43,7 @@
 #include "avllistx.h"
 #include "simplelist.h"
 #include "preferences.h"
+#include "function_templates.h"
 
 #ifndef  __HEADLESS__
 #include "HYUtils.h"
@@ -310,7 +311,7 @@ void  ReadPreferences (void)
             _ElementaryCommand::ExtractConditions(*((_String*)terms(k)),0,theTerms,'=');
             if (theTerms.lLength == 2) {
                 _String * prefID = (_String*)theTerms.lData[0];
-                long    j = availNames->Find (prefID);
+                long    j = availNames->FindObject (prefID);
 
                 if (j>=0) {
                     *((_String*)availValues->lData[j]) = *(_String*)theTerms.lData[1];
@@ -532,7 +533,7 @@ void  ApplyPreferences (void)
     setParameter    (optimizationPrecision, ((_String*)pfValues->lData[_hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesPrecision))])->toNum());
 
     t               = (_List*)((_List*)globalPreferencesList.lData[5])->lData[keyIndex];
-    long    f       = t->Find (((_String*)pfValues->lData[keyIndex]));
+    long    f       = t->FindObject (((_String*)pfValues->lData[keyIndex]));
 
     switch (f) {
     case 0:
@@ -559,7 +560,7 @@ void  ApplyPreferences (void)
 
     keyIndex = _hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesFormat));
     t = (_List*)((_List*)globalPreferencesList.lData[5])->lData[keyIndex];
-    f = t->Find (((_String*)pfValues->lData[keyIndex]));
+    f = t->FindObject (((_String*)pfValues->lData[keyIndex]));
     if (f<0) {
         f = 6;
     }
@@ -580,7 +581,7 @@ void  ApplyPreferences (void)
 
     keyIndex = _hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesLikelihoodDisp));
     t = (_List*)((_List*)globalPreferencesList.lData[5])->lData[keyIndex];
-    f = t->Find (((_String*)pfValues->lData[keyIndex]));
+    f = t->FindObject (((_String*)pfValues->lData[keyIndex]));
     if (f<0) {
         f = 0;
     }
@@ -588,7 +589,7 @@ void  ApplyPreferences (void)
 
     keyIndex = _hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesNumberFormat));
     t = (_List*)((_List*)globalPreferencesList.lData[5])->lData[keyIndex];
-    f = t->Find (((_String*)pfValues->lData[keyIndex]));
+    f = t->FindObject (((_String*)pfValues->lData[keyIndex]));
     if (f<0) {
         f = 1;
     }
@@ -606,12 +607,12 @@ void  ApplyPreferences (void)
 
     keyIndex = _hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesTreeDisplay));
     t = (_List*)((_List*)globalPreferencesList.lData[5])->lData[keyIndex];
-    f = t->Find (((_String*)pfValues->lData[keyIndex]));
+    f = t->FindObject (((_String*)pfValues->lData[keyIndex]));
     setParameter (treeDisplayOptions, f);
 
     keyIndex = _hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesOptProgress));
     t = (_List*)((_List*)globalPreferencesList.lData[5])->lData[keyIndex];
-    verbosityLevel      = t->Find (((_String*)pfValues->lData[keyIndex]))?5:(-1);
+    verbosityLevel      = t->FindObject (((_String*)pfValues->lData[keyIndex]))?5:(-1);
     setParameter        (VerbosityLevelString,verbosityLevel);
 
     doAutoConsoleMove   = *(((_String*)((_List*)globalPreferencesList.lData[4])->lData[_hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesAutomoveC))]))==_String("Yes");
@@ -640,7 +641,7 @@ void    AddItemToPreferences (long itemCode, long itemKind, _String itemTitle, _
         theTarget&& &dummyList;
     }
 
-    long f = ((_List*)theTarget(1))->Find (&itemTitle);
+    long f = ((_List*)theTarget(1))->FindObject (&itemTitle);
 
     if (f<0) {
         (*((_SimpleList*)theTarget(0)))<<itemCode;
@@ -676,7 +677,7 @@ void    AddItemToPreferences (long itemCode, long itemKind, _String itemTitle, _
 //__________________________________________________________________________________
 void    AddStringToRecentMenu (_String& fName, _String& pName)
 {
-    if (recentPaths.Find (&pName)>=0) {
+    if (recentPaths.FindObject (&pName)>=0) {
         return;    // already in the menu - nothing to do!
     }
 

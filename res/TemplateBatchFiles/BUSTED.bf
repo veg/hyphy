@@ -13,13 +13,13 @@ LoadFunctionLibrary("TreeTools");
 
 
 // namespace 'utility' for convenience functions 
-LoadFunctionLibrary("lib2014/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
 // namespace 'io' for interactive/datamonkey i/o functions
-LoadFunctionLibrary("lib2014/IOFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
 
 // namespace 'models.DNA.GTR' for the nucleotide GTR model
-LoadFunctionLibrary("lib2014/tasks/estimators.bf");
+LoadFunctionLibrary("libv3/tasks/estimators.bf");
 
 
 io.displayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistical test of episodic diversification)

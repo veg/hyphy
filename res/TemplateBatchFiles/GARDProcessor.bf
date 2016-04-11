@@ -1,4 +1,4 @@
-LoadFunctionLibrary ("lib2014/IOFunctions.bf");
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
 VERBOSITY_LEVEL = -1;
 
 SetDialogPrompt ("Please load a nucleotide data file:");

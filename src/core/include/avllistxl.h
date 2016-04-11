@@ -59,7 +59,7 @@ public:
     void SetXtra(long,BaseRef,bool);
 
     virtual ~_AVLListXL(void){}
-    virtual BaseRef toStr(void);
+    virtual BaseRef toStr(unsigned long = 0UL);
     virtual BaseRef GetDataByKey (BaseRef);
 
     virtual long InsertData(BaseRef, long,bool);

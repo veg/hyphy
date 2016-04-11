@@ -43,6 +43,7 @@
 #include      "likefunc.h"
 #include      "bayesgraph.h"
 #include      "scfg.h"
+#include      "function_templates.h"
 
 #if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
     #include "HYConsoleWindow.h"
@@ -294,12 +295,14 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                 dataType = "aminoacid";
             }
         } else {
-            if (thisTT->IsStandardNucleotide())
+          if (thisTT->IsStandardNucleotide()) {
                 if (unitLength==3) {
                     dataType = "codon";
-                } else if (unitLength==2) {
-                    dataType = "dinucleotide";
+                } else {
+                    if (unitLength==2)
+                      dataType = "dinucleotide";
                 }
+          }
         }
 
         if (!dataType.sLength) {
@@ -743,7 +746,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgra
     currentProgram.currentCommand++;
     _String theVersion = ProcessLiteralArgument ((_String*)parameters (0),currentProgram.nameSpacePrefix);
 
-    if (__KERNEL__VERSION__.toNum() < theVersion.toNum()) {
+    if (__HYPHY__VERSION__.toNum() < theVersion.toNum()) {
         currentProgram.ReportAnExecutionError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
         return false;
     }
@@ -883,7 +886,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     if (f >=0 ) {
         f = _HY_GetStringGlobalTypes.GetXtra (f);
     }
-
+  
     switch (f) {
 
         case HY_BL_LIKELIHOOD_FUNCTION: // LikelihoodFunction
@@ -902,9 +905,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
         case HY_BL_HBL_FUNCTION: // UserFunction
             result = (_String*)_HBLObjectNameByType(HY_BL_HBL_FUNCTION,sID);
             if (result) {
-                _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
+                _AssociativeList * resAVL = new _AssociativeList;
                 resAVL->MStore ("ID", new _FString (*result), false);
-                resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(sID)), false);
+                resAVL->MStore ("Arguments", new _Matrix(GetBFFunctionArgumentList(sID)), false);
                 theReceptacle->SetValue (resAVL,false);
                 return true;
             } 
@@ -922,7 +925,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
 
         default: { // everything else...
             // decide what kind of object current argument represents
-            
+          
+          
+          
             _String *currentArgument = (_String*)parameters(1),
                     nmspaced       = AppendContainerName(*currentArgument,currentProgram.nameSpacePrefix);
             long    typeFlag       = HY_BL_ANY,
@@ -964,7 +969,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 }
                 case HY_BL_BGM: {
                     //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
-					_BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
+                    _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
 
                     switch (sID) {
                         case HY_HBL_GET_STRING_BGM_SCORE: {   // return associative list containing node score cache
@@ -1067,8 +1072,8 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 case HY_BL_HBL_FUNCTION: {
                     _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
                     resAVL->MStore ("ID", new _FString (*_HBLObjectNameByType (HY_BL_HBL_FUNCTION, index, false)), false);
-                    resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(index)), false);
-                    resAVL->MStore("Body", new _FString (((_ExecutionList*)batchLanguageFunctions(index))->sourceText,false),false);
+                    resAVL->MStore ("Arguments", new _Matrix(GetBFFunctionArgumentList(index)), false);
+                    resAVL->MStore ("Body", new _FString (GetBFFunctionBody(index).sourceText,false),false);
                     theReceptacle->SetValue (resAVL,false);
                     return true;
                 }
@@ -1078,27 +1083,27 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
             if (currentArgument->Equal(&versionString)) {
                 if (sID > 1.5)
 #ifdef __HEADLESS__
-                    result = new _String(_String ("Library version ") & __KERNEL__VERSION__);
+                    result = new _String(_String ("Library version ") & __HYPHY__VERSION__);
 #else
 #ifdef __MAC__
-                    result = new _String(_String("Macintosh ") & __KERNEL__VERSION__);
+                    result = new _String(_String("Macintosh ") & __HYPHY__VERSION__);
 #else
 #ifdef __WINDOZE__
-                    result = new _String(_String("Windows ") & __KERNEL__VERSION__);
+                    result = new _String(_String("Windows ") & __HYPHY__VERSION__);
 #else
-                    result = new _String(_String("Source ") & __KERNEL__VERSION__);
+                    result = new _String(_String("Source ") & __HYPHY__VERSION__);
 #endif
 #endif
 #endif
                     else if (sID > 0.5) {
                         result = new _String(GetVersionString());
                     } else {
-                        result = new _String(__KERNEL__VERSION__);
+                        result = new _String(__HYPHY__VERSION__);
                     }
                 } else if (currentArgument->Equal(&timeStamp)) {
                     result = new _String(GetTimeStamp(sID < 0.5));
                 } else {
-                  _Variable* theVar = FetchVar(LocateVarByName (*currentArgument));
+                  _Variable* theVar = FetchVar(LocateVarByName (nmspaced));
                   if (theVar) {
                     if (theVar->IsIndependent()) {
                       result = (_String*)theVar->toStr();
@@ -1172,8 +1177,8 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
         return false;
     }    
 
-    _FString        * outLF = new _FString (new _String (8192L,1));
-    checkPointer    (outLF);
+    _FString        * outLF = new _FString (new _String (8192UL,1));
+ 
     long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER,
              index;
         

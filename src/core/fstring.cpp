@@ -86,8 +86,7 @@ _FString::_FString (long inData)
 }
 
 //__________________________________________________________________________________
-_FString::_FString (_String& data, bool meta)
-{
+_FString::_FString (_String const& data, bool meta) {
     if (meta) {
         unsigned long ssi = _String::storageIncrement;
 
@@ -163,6 +162,12 @@ _PMathObj _FString::Add (_PMathObj p)
     _String res (*theString& *((_String*)convStr));
     DeleteObject (convStr);
     return new _FString (res, false);
+}
+
+//__________________________________________________________________________________
+
+_PMathObj _FString::Sum (void) {
+  return new _Constant (theString->toNum());
 }
 
 //__________________________________________________________________________________
@@ -451,18 +456,16 @@ _PMathObj _FString::Greater (_PMathObj p)
 }
 
 //__________________________________________________________________________________
-BaseRef  _FString::toStr()
+BaseRef  _FString::toStr(unsigned long)
 {
-    theString->nInstances++;
+    theString->AddAReference();
     return theString;
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::RerootTree (void)
-{
-    long     stashedModelID = lastMatrixDeclared,
-             totalNodeCount = 0;
-
+_PMathObj _FString::RerootTree (_PMathObj) {
+  
+    long     stashedModelID = lastMatrixDeclared;
     lastMatrixDeclared      = HY_NO_MODEL;
     /* unset current model; do not want the internal tree to have an attached model */
 
@@ -479,86 +482,55 @@ _PMathObj _FString::RerootTree (void)
         DeleteVariable  (internalRerootTreeID);
         return new _FString;
     }
+  
 
-    _CalcNode   *iterator = rTree.DepthWiseTraversal (true),
-                 *rerootAt;
+    _CalcNode   *rerootAt = nil;
+  
+    node<long>* counted_descendants = rTree.theRoot->duplicate_tree(node_count_descendants);
 
-    node<long>  *cNode;
-
-    _GrowingVector  valueCache;
-
-    while       (iterator)
-        // count the number of descendants of a given node, store as numeric value of the CalcNode
-    {
-        cNode    = &rTree.GetCurrentNode();
-        valueCache.Store(iterator->Value());
-        if (long myNodeCount = cNode->get_num_nodes()) {
-            _Parameter tNodeCount = 0.0;
-
-            for (long k = 1; k <= myNodeCount; k++) {
-                tNodeCount += ((_CalcNode*)LocateVar(cNode->go_down(k)->in_object))->Value();
-            }
-
-            iterator->SetNumericValue(tNodeCount+1.0);
-        } else {
-            iterator->SetNumericValue(1.0);
-        }
-
-        iterator = rTree.DepthWiseTraversal (false);
-        totalNodeCount ++;
-    }
-
-    iterator = rTree.DepthWiseTraversal (true);
-
-    long        maxMin = 0;
+    long        maxMin         = 0L,
+                totalNodeCount = counted_descendants->in_object + 1L;
+  
     _Parameter  bRatio  = 0.0;
+  
+    node_iterator<long> ni (counted_descendants, _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (&rTree, _HY_TREE_TRAVERSAL_POSTORDER);
 
-    while       (iterator) {
-        _Parameter      nodeMin   = totalNodeCount-iterator->Value(),
-                        thisRatio = nodeMin/(_Parameter)iterator->Value();
+    while       (_CalcNode * iterator = ti.Next()) {
+        node<long>* counter_tree = ni.Next();
+        long      nodeMin    = totalNodeCount-counter_tree->in_object-1L;
+        _Parameter thisRatio = nodeMin/(1L+counter_tree->in_object);
 
         if (thisRatio>1.0) {
-            thisRatio = 1./thisRatio;
+            thisRatio = 1.0/thisRatio;
         }
 
-        cNode    = &rTree.GetCurrentNode();
-        if (cNode->get_num_nodes()) {
-            for (long k = cNode->get_num_nodes(); k; k--) {
-                long tt = ((_CalcNode*)LocateVar(cNode->go_down(k)->in_object))->Value();
-                if (tt<nodeMin) {
-                    nodeMin = tt;
-                }
-            }
+        if (counter_tree->is_leaf()) {
+          nodeMin = 1L;
         } else {
-            nodeMin = 1;
+            for (int k = counter_tree->get_num_nodes(); k; k--) {
+              long tt = counter_tree->go_down(k)->in_object;
+              if (tt<nodeMin) {
+                nodeMin = tt;
+              }
+            }
         }
 
-        if ((nodeMin>maxMin)||((nodeMin==maxMin)&&(thisRatio>bRatio))) {
+        if (nodeMin>maxMin || (nodeMin==maxMin && thisRatio>bRatio)) {
             bRatio = thisRatio;
             maxMin = nodeMin;
             rerootAt = iterator;
-            if (!cNode->get_parent()) {
+            if (counter_tree->is_root()) {
                 rerootAt = nil;
             }
         }
-        iterator = rTree.DepthWiseTraversal (false);
     }
-
-    iterator        = rTree.DepthWiseTraversal (true);
-    totalNodeCount  = 0;
-    while       (iterator)
-        // restore branch lengths
-    {
-        iterator->SetNumericValue(valueCache.theData[totalNodeCount]);
-        iterator = rTree.DepthWiseTraversal (false);
-        totalNodeCount ++;
-    }
+  
+    counted_descendants->delete_tree(true);
 
     _FString* res;
     if (rerootAt) {
-        _String stringCopy = *rerootAt->GetName();
-        stringCopy.Trim (stringCopy.FindBackwards ('.',0,-1)+1,-1);
-        _FString    rAt  (stringCopy);
+        _FString    rAt  (rerootAt->ContextFreeName());
         res = (_FString*)rTree.RerootTree (&rAt);
     } else {
         res = new _FString (*theString, false);
@@ -584,7 +556,45 @@ _PMathObj _FString::Evaluate (_hyExecutionContext* context)
             return evalTo;
         }
     }
-    return new _Constant (.0);
+    return new _MathObject;
+}
+
+  //__________________________________________________________________________________
+
+_PMathObj _FString::SubstituteAndSimplify(_PMathObj arguments) {
+  /**
+   "arguments" is expected to be a dictionary of with key : value pairs like
+    "x" : 3, 
+    "y" : {{1,2}}
+   
+    etc
+   */
+  if (theString && theString->sLength) {
+    _String     s (*theString);
+    _Formula    evaluator (s);
+    
+    
+    if (!terminateExecution) {
+      _AssociativeList* argument_substitution_map = (_AssociativeList*) (arguments->ObjectClass() == ASSOCIATIVE_LIST ? arguments : nil);
+      if (argument_substitution_map) { // do direct argument substitution
+        for (unsigned long expression_term = 0UL; expression_term < evaluator.Length(); expression_term++) {
+          _Operation* current_term       = evaluator.GetIthTerm(expression_term);
+          _Variable * variable_reference = current_term->RetrieveVar();
+          if (variable_reference) {
+            _PMathObj replacement = argument_substitution_map->GetByKey (*variable_reference->GetName());
+            if (replacement) {
+              current_term->SetAVariable(-1);
+              current_term->SetNumber ((_PMathObj)replacement->makeDynamic());
+            }
+          }
+        }
+      }
+      
+      evaluator.SimplifyConstants();
+      return new _FString ((_String*)evaluator.toStr());
+    }
+  }
+  return new _MathObject;
 }
 
 //__________________________________________________________________________________
@@ -616,8 +626,7 @@ _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* contex
 //__________________________________________________________________________________
 
 
-_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
-{
+_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   {
     switch (opCode) {
     case HY_OP_CODE_NOT: // !
         return FileExists();
@@ -731,6 +740,11 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutio
         return res;
     }
     break;
+        
+    case HY_OP_CODE_MCOORD: // MCoord
+      return new _FString (*theString, true);
+      break;
+
     case HY_OP_CODE_JOIN: // Inverse
         return Join (p);
 
@@ -740,10 +754,13 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutio
         return CharAccess(p,p2);
         break;
     case HY_OP_CODE_REROOTTREE: // RerootTree
-        return RerootTree ();
+        return RerootTree (nil);
         break;
     case HY_OP_CODE_ROWS: // Count Objects of given type
         return CountGlobalObjects();
+        break;
+    case HY_OP_CODE_SIMPLIFY: // Simplify an expression
+        return SubstituteAndSimplify (p);
         break;
     case HY_OP_CODE_TYPE: // Type
         return Type();
@@ -790,7 +807,7 @@ _PMathObj   _FString::MapStringToVector (_PMathObj p)
 
             _SimpleList mapped;
             for (long s = 0; s < theString->sLength; s++) {
-                mapped << mapper[(unsigned char)theString->sData[s]];
+                mapped << mapper[theString->getUChar(s)];
             }
 
             return new _Matrix (mapped);

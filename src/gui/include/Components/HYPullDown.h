@@ -68,7 +68,7 @@ public:
         alignFlags = f;
     }
     virtual long        FindMenuItem  (_String& s) {
-        return menuSelections.Find(&s);
+        return menuSelections.FindString(&s);
     }
     virtual unsigned char
     GetAlignFlags (void) {

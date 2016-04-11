@@ -1,0 +1,1 @@
+LoadFunctionLibrary ("SelectionAnalyses/SLAC.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "3" : "All"});

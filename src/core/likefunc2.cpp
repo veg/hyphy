@@ -37,12 +37,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "likefunc.h"
-#include <math.h>
-
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
+
+#include "likefunc.h"
+#include "function_templates.h"
+
+#include <math.h>
+
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
 
@@ -118,42 +121,43 @@ void            _LikelihoodFunction::PartitionCatVars     (_SimpleList& storage,
 //_______________________________________________________________________________________
 long            _LikelihoodFunction::TotalRateClassesForAPartition    (long partIndex, char mode)
 {
-    if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength) {
-        _List* myList = (_List*)categoryTraversalTemplate(partIndex);
-        if (myList->lLength)
-            if (mode == 0) {
-                return ((_SimpleList*)((*myList)(1)))->Element(-1);
-            } else {
-                long hmmCats = 1;
-                _SimpleList * catVars = (_SimpleList*)(*myList)(0);
-                for (long id = 0; id < catVars->lLength; id++)
-                    if (mode == 1) {
-                        if (((_CategoryVariable*)catVars->lData[id])->IsHiddenMarkov()) {
-                            hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
-                        }
-                    } else if (mode == 2) {
-                        if (((_CategoryVariable*)catVars->lData[id])->IsConstantOnPartition()) {
-                            hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
-                        }
-                    }
-                return hmmCats;
-
+  if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength) {
+    _List* myList = (_List*)categoryTraversalTemplate(partIndex);
+    if (myList->lLength) {
+      if (mode == 0) {
+        return ((_SimpleList*)((*myList)(1)))->Element(-1);
+      } else {
+        long hmmCats = 1;
+        _SimpleList * catVars = (_SimpleList*)(*myList)(0);
+        for (long id = 0; id < catVars->lLength; id++)
+          if (mode == 1) {
+            if (((_CategoryVariable*)catVars->lData[id])->IsHiddenMarkov()) {
+              hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
             }
-    } else if (partIndex < 0) {
-        long catCount = 1;
-        if (mode == 0)
-            for (long k = 0; k < indexCat.lLength; k++) {
-                catCount *= ((_CategoryVariable*)LocateVar (indexCat.lData[k]))->GetNumberOfIntervals();
+          } else if (mode == 2) {
+            if (((_CategoryVariable*)catVars->lData[id])->IsConstantOnPartition()) {
+              hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
             }
-        else if (mode == 1) {
-            for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
-                long partHMMCount = TotalRateClassesForAPartition(k,1);
-                catCount = MAX(partHMMCount,catCount);
-            }
-        }
-        return catCount;
+          }
+        return hmmCats;
+        
+      }
     }
-    return 1;
+  } else if (partIndex < 0) {
+    long catCount = 1;
+    if (mode == 0)
+      for (long k = 0; k < indexCat.lLength; k++) {
+        catCount *= ((_CategoryVariable*)LocateVar (indexCat.lData[k]))->GetNumberOfIntervals();
+      }
+    else if (mode == 1) {
+      for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
+        long partHMMCount = TotalRateClassesForAPartition(k,1);
+        catCount = MAX(partHMMCount,catCount);
+      }
+    }
+    return catCount;
+  }
+  return 1;
 }
 
 //_______________________________________________________________________________________
@@ -271,16 +275,16 @@ void    _LikelihoodFunction::RestoreScalingFactors (long index, long branchID, l
 bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList, _String caller)
 {
     long    partCount = CountObjects(0);
-    partsToDo.Populate (partCount, 0, 1);
     if (partitionList) {
         partitionList->ConvertToSimpleList (partsToDo);
-        DeleteObject (partitionList);
         partsToDo.Sort();
         partsToDo.FilterRange (-1, partCount);
         if (partsToDo.lLength == 0) {
             WarnError (_String("An invalid partition specification in call to ") & caller);
-            return nil;
+            return false;
         }
+    } else {
+      partsToDo.Populate (partCount, 0, 1);
     }
 
     return true;
@@ -304,8 +308,8 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
 
 */
 {
-    _DataSetFilter *dsf             = (_DataSetFilter*)dataSetFilterList (theDataFilters(doTheseOnes.lData[0]));
-    _TheTree        *firstTree      = (_TheTree*)LocateVar(theTrees(doTheseOnes.lData[0]));
+    _DataSetFilter *dsf             = GetIthFilter (doTheseOnes.lData[0]);
+    _TheTree        *firstTree      = GetIthTree   (doTheseOnes.lData[0]);
 
     target.SetTranslationTable      (dsf->GetData());
     target.ConvertRepresentations();
@@ -322,13 +326,13 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
     }
 
     long siteOffset         = 0,
-         patternOffset        = 0,
+         patternOffset      = 0,
          sequenceCount       ;
 
     for (long i = 0; i<doTheseOnes.lLength; i++) {
         long       partIndex    = doTheseOnes.lData[i];
-        _TheTree   *tree        = (_TheTree*)LocateVar(theTrees(partIndex));
-        dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(partIndex));
+        _TheTree   *tree        = GetIthTree (partIndex);
+        dsf = GetIthFilter(partIndex);
 
         long    catCounter = 0;
 
@@ -406,21 +410,21 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
         }
 
 
-        _String * sampledString = (_String*)(*thisSet)(0);
-
+        _String * sampledString = (_String*)thisSet->GetItem(0);
+ 
         for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
             target.AddSite (sampledString->sData[siteIdx]);
         }
 
         for (long seqIdx = 1; seqIdx < sequenceCount; seqIdx++) {
-            sampledString = (_String*)(*thisSet)(seqIdx);
+            sampledString = (_String*)thisSet->GetItem(seqIdx);
             for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
                 target.Write2Site (siteOffset + siteIdx, sampledString->sData[siteIdx]);
             }
         }
         DeleteObject (thisSet);
         DeleteObject (expandedMap);
-        siteOffset    += dsf->GetSiteCount();
+        siteOffset    += dsf->GetFullLengthSpecies();
         patternOffset += dsf->GetSiteCount();
     }
 
@@ -489,8 +493,8 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                         currentHMMCat         = 1,
                         arrayDim              ;
 
-    bool                isTrivial               = variables->lLength == 0,
-                        switchingHMM         = false;
+    bool                isTrivial               = variables->lLength == 0;
+  //switchingHMM         = false;
 
     _CategoryVariable   *catVariable;
 
@@ -551,7 +555,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                     if (hmmCatCount) {
                         currentHMMCat = currentRateCombo / hmmCatCount;
-                        switchingHMM = (currentRateCombo % hmmCatCount) == 0;
+                      //switchingHMM = (currentRateCombo % hmmCatCount) == 0;
                     }
 
                     if (currentRateCombo && remainder  == 0) {

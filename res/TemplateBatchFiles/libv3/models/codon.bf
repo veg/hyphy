@@ -1,8 +1,9 @@
 LoadFunctionLibrary ("chooseGeneticCode", {"0" : "Universal"});
+LoadFunctionLibrary ("../UtilityFunctions.bf");
 
 function models.codon.map_code (genetic_code) {
-	return {"sense" : Columns (ComputeCodonCodeToStringMap (genetic_code)), 
-	        "stop"  : Columns (ComputeCodonCodeToStringMapStop (genetic_code)),
+	return {"sense" : utility.values (ComputeCodonCodeToStringMap (genetic_code)), 
+	        "stop"  : utility.values (ComputeCodonCodeToStringMapStop (genetic_code)),
 	        "translation-table" : defineCodonToAAGivenCode (genetic_code) };
 }
 

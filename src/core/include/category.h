@@ -86,7 +86,7 @@ public:
     virtual
     void        Duplicate               (BaseRef);
     virtual
-    BaseRef     toStr                   (void);
+    BaseRef     toStr                   (unsigned long = 0UL);
 
     virtual
     bool        IsGlobal                (void);

@@ -229,7 +229,7 @@ _HYModelWindow::_HYModelWindow (_String name, _List* labels, char t):_HYTWindow 
 
     columnHeaders->SetColumnSpacing (index,HY_SCROLLER_WIDTH-25,false);
 
-    cellWidth               = 400/labels->lLength+1;
+    cellWidth               = 400/(labels->lLength+1);
     canvasSettings.top      = canvasSettings.bottom     = 20;
     canvasSettings.width    = HY_COMPONENT_BORDER_T|HY_COMPONENT_BORDER_B|HY_COMPONENT_BORDER_R;
 
@@ -960,19 +960,19 @@ void    _HYModelWindow::PrepareParameterMenu (void)
 
 long    _HYModelWindow::FindVarID (_String& s)
 {
-    long f = localVariables.Find(&s);
+    long f = localVariables.FindObject(&s);
 
     if (f>=0) {
         return f;
     }
 
-    f = globalVariables.Find (&s);
+    f = globalVariables.FindObject (&s);
     if (f>=0) {
         return f+localVariables.lLength;
     }
 
 
-    f = categoryVariables.Find (&s);
+    f = categoryVariables.FindObject (&s);
     if (f>=0) {
         return f+localVariables.lLength+globalVariables.lLength;
     }
@@ -1118,7 +1118,7 @@ void    _HYModelWindow::SetParameterMenuState (long ID)
 
 void    _HYModelWindow::SetEFVVector (_String& name)
 {
-    long f = EFVOptions.Find (&name);
+    long f = EFVOptions.FindObject (&name);
     if (f>=0) {
         _HYPullDown* efv = (_HYPullDown*)GetCellObject (MODEL_PARAMETER_ROW,5);
         efv->ChangeSelection (f,true);
@@ -1453,7 +1453,7 @@ void    _HYModelWindow::UpdateParameterName (long newID, long oldID)
             _String * cStr = (_String*)t->GetCellData (j,k),
                       * pStr;
             if (cStr->sLength) {
-                long    f = processedStrings.BinaryFind (cStr);
+                long    f = processedStrings.BinaryFindObject (cStr);
                 if (f>=0) {
                     pStr = (_String*)newStrings(f);
                     if (pStr->sLength) {
@@ -1509,7 +1509,7 @@ bool    _HYModelWindow::RemoveParameterName (long oldID)
             _String * cStr = (_String*)t->GetCellData (j,k),
                       * pStr;
             if (cStr->sLength) {
-                long    f = processedStrings.BinaryFind (cStr);
+                long    f = processedStrings.BinaryFindObject (cStr);
                 if (f>=0) {
                     pStr = (_String*)newStrings(f);
                     if (!pStr->Equal((_String*)processedStrings(f))) {
@@ -1587,7 +1587,7 @@ void    _HYModelWindow::DoMultiplyCells ()
     bb->_UnpushButton ();
 
     s = HandlePullDown (menuChoices,h,v,0);
-    h = menuChoices.Find (&s);
+    h = menuChoices.FindObject (&s);
 
     if (h>=0) {
         _String * t1 = (_String*)menuChoices (h);
@@ -1637,7 +1637,7 @@ void    _HYModelWindow::DoMultiplyCells ()
             _String* cStr = (_String*)t->GetCellData(v,h)->makeDynamic();
 
             if (cStr->sLength) {
-                long ff = doneStrings.BinaryFind (cStr);
+                long ff = doneStrings.BinaryFindObject (cStr);
                 if (ff>=0) {
                     DeleteObject (cStr);
                     cStr = (_String*)doneStrings2 (ff);
@@ -1653,7 +1653,7 @@ void    _HYModelWindow::DoMultiplyCells ()
 
                     cStr2 = (_String*)fla2.toStr();
                     doneStrings.BinaryInsert (cStr);
-                    ff = doneStrings.BinaryFind (cStr);
+                    ff = doneStrings.BinaryFindObject (cStr);
                     doneStrings2.InsertElement (cStr2,ff,false);
                     cStr = cStr2;
                     cStr->nInstances++;
@@ -1739,11 +1739,11 @@ bool    _HYModelWindow::CopySimpleMatrix (_Matrix* mx)
                     if (ff) {
                         ff->SimplifyConstants();
                         _String* fs = (_String*)ff->toStr();
-                        long f = alreadyDone.BinaryFind (fs);
+                        long f = alreadyDone.BinaryFindObject (fs);
                         if (f<0) {
                             AddFormulaParametersToList (*ff,true);
                             alreadyDone.BinaryInsert (fs);
-                            f = alreadyDone.BinaryFind (fs);
+                            f = alreadyDone.BinaryFindObject (fs);
                         }
                         DeleteObject (fs);
                         fs = (_String*)alreadyDone(f);
@@ -1888,7 +1888,7 @@ void    _HYModelWindow::DoSelectCells ()
     bb->_UnpushButton ();
     s = HandlePullDown (menuChoices,h,v,0);
 
-    h = menuChoices.Find (&s);
+    h = menuChoices.FindObject (&s);
 
     switch (h) {
     case 0:
@@ -2218,12 +2218,12 @@ void    _HYModelWindow::DoSave (char mode)
                     _Constant c (j);
                     _PMathObj mod = mods->MAccess (&r,&c);
 
-                    m = vnames.BinaryFind (varName);
+                    m = vnames.BinaryFindObject (varName);
                     if (m<0) {
                         _Formula fl (*varName);
                         _String  *ss = (_String*) fl.toStr (&binames);
                         vnames.BinaryInsert (varName);
-                        m = vnames.BinaryFind (varName);
+                        m = vnames.BinaryFindObject (varName);
                         pvnames.InsertElement (ss,m,false);
                     }
                     varName = (_String*)pvnames (m);
@@ -2253,12 +2253,12 @@ void    _HYModelWindow::DoSave (char mode)
             for (j=k+1; j<stateLabels.lLength; j++) {
                 varName = (_String*)t->GetCellData (j,k);
                 if (varName->sLength) {
-                    m = vnames.BinaryFind (varName);
+                    m = vnames.BinaryFindObject (varName);
                     if (m<0) {
                         _Formula fl (*varName);
                         _String  *ss = (_String*) fl.toStr (&binames);
                         vnames.BinaryInsert (varName);
-                        m = vnames.BinaryFind (varName);
+                        m = vnames.BinaryFindObject (varName);
                         pvnames.InsertElement (ss,m,false);
                     }
                     varName = (_String*)pvnames (m);
@@ -2660,8 +2660,8 @@ void    _HYModelWindow::BuildTemplates (_SimpleList* geneticCode, char type)
             thisList.BuildList (buffer);
             thisList.Execute();
             if (!terminateExecution) {
-                long     tempFunc  = batchLanguageFunctionNames.Find (&buildTemps),
-                         classFunc = batchLanguageFunctionNames.Find (&buildClasses),
+                long     tempFunc  = batchLanguageFunctionNames.FindObject (&buildTemps),
+                         classFunc = batchLanguageFunctionNames.FindObject (&buildClasses),
                          tempNames = LocateVarByName (nameMatrixT),
                          classNames= LocateVarByName (nameMatrixS);
 
@@ -2868,7 +2868,7 @@ void    _HYModelWindow::CheckDependencies (void)
         for (k=0; k<stateLabels.lLength; k++)
             for (long j=k+1; j<stateLabels.lLength; j++) {
                 _String * thisCell = (_String*)tt->GetCellData (k,j);
-                long    f = alreadyDone.BinaryFind (thisCell);
+                long    f = alreadyDone.BinaryFindObject (thisCell);
                 if (f<0) {
                     _Formula ff (*thisCell);
                     ff.ScanFForVariables (da, true, false,false);
@@ -3364,7 +3364,7 @@ bool                OpenModelFromFile (_String& fileName)
         } else {
 
             long        i1 = LocateVarByName (modelDataType),
-                        i2 = batchLanguageFunctionNames.Find (&modelFunction),
+                        i2 = batchLanguageFunctionNames.FindObject (&modelFunction),
                         k;
 
             if (i2>=0) {
@@ -3569,7 +3569,7 @@ void                SpawnStandardLabels (char type, _List& labels)
 //__________________________________________________________
 bool                OpenModelFromMatrix (_String& matrixName, bool setMx)
 {
-    long f = modelNames.Find(&matrixName),
+    long f = modelNames.FindObject(&matrixName),
          i1,
          i2,
          k;
@@ -3644,21 +3644,22 @@ bool                OpenModelFromMatrix (_String& matrixName, bool setMx)
         _HYModelWindow * res = new _HYModelWindow (errMsg,&stateLabels,i1);
         res->BuildTemplates (code,i1);
 
-        if (setMx)
-            if (!res->CopySimpleMatrix (modelMatrix)) {
-                errMsg = "Failed to copy model matrix. Oops.";
-                res->SetTaint (false);
-                postWindowCloseEvent (res->GetID());
-                ProblemReport (errMsg);
-                return false;
-            } else {
-                i2 = modelFrequenciesIndices.lData[f];
-                if (i2<0) {
-                    i2 = -i2-1;
-                }
-                res->CopyEFVMatrix ((_Matrix*)((_Matrix*)LocateVar(i2)->GetValue())->ComputeNumeric());
-                res->BringToFront();
-            }
+        if (setMx) {
+              if (!res->CopySimpleMatrix (modelMatrix)) {
+                  errMsg = "Failed to copy model matrix. Oops.";
+                  res->SetTaint (false);
+                  postWindowCloseEvent (res->GetID());
+                  ProblemReport (errMsg);
+                  return false;
+              } else {
+                  i2 = modelFrequenciesIndices.lData[f];
+                  if (i2<0) {
+                      i2 = -i2-1;
+                  }
+                  res->CopyEFVMatrix ((_Matrix*)((_Matrix*)LocateVar(i2)->GetValue())->ComputeNumeric());
+                  res->BringToFront();
+              }
+        }
         return true;
     }
 

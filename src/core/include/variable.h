@@ -61,11 +61,11 @@ public:
 
     virtual ~_Variable (void);
 
-    virtual   void          Initialize (void);
+    virtual   void          Initialize (bool = false);
     virtual   void          Duplicate (BaseRef);
     virtual   BaseRef       makeDynamic(void);
-    virtual   BaseRef       toStr (void);
-    virtual    void         toFileStr (FILE*);
+    virtual   BaseRef       toStr (unsigned long = 0UL);
+    virtual    void         toFileStr (FILE*, unsigned long = 0UL);
 
     virtual   void          MarkDone (void);
 
@@ -78,6 +78,7 @@ public:
     }
     virtual     bool        IsConstant (void);
     void        SetValue (_PMathObj, bool = true); // set the value of the variable
+    void        SetValue (_Parameter); // set the value of the variable
     void        SetNumericValue (_Parameter);
     void        CheckAndSet (_Parameter, bool = false);
     // set the value of the variable
@@ -109,7 +110,7 @@ public:
     long        GetIndex (void) {
         return theIndex;
     }
-    virtual     void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
+    void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
     virtual     bool        IsContainer (void) {
         return false;
     }
@@ -128,11 +129,13 @@ public:
 
     virtual     void        ClearConstraints    (void);
     virtual     bool        CheckFForDependence (long, bool = false);
+    virtual     bool        HasBeenInitialized (void) const {return !(varFlags & HY_VARIABLE_NOTSET);}
+    virtual     void        MarkModified  (void) {varFlags = varFlags | HY_VARIABLE_CHANGED;}
 
-    _String     ContextFreeName                 (void);
-    _String     ParentObjectName                 (void);
+    _String const     ContextFreeName                 (void) const;
+    _String const    ParentObjectName                 (void) const;
  
-    _String*    GetName                         (void) {
+    _String*    GetName                         (void) const{
         return theName;
     }
     _String*    GetFormulaString        (void) {

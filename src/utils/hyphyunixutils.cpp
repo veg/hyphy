@@ -4,7 +4,7 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (spond@temple.edu)
  Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include "likefunc.h"
+#include "function_templates.h"
 
 
 
@@ -169,7 +170,7 @@ _String*    StringFromConsole   (bool)
             CheckReceptacleAndStore (&hasEndBeenReached,empty,false,new _Constant (1.), false);
             break;
         }
-        *returnme << readAChar;
+        *returnme << (char)readAChar;
     }
 #else
     WarnError ("Unhandled standard input interaction in StringFromConsole for headless HyPhy");
@@ -264,16 +265,18 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                         break;
                     }
 
-                    long f = likeFuncNamesList.Find (lfID->theString);
+                    long type = HY_BL_LIKELIHOOD_FUNCTION, index;
+                    
+                    _LikelihoodFunction *lf = (_LikelihoodFunction *)_HYRetrieveBLObjectByName    (*lfID->theString, type, &index, false, false);
 
-                    if (f<0) {
-                        FlagError ("[MPI] Malformed MPI likelihood function optimization request - LF name to return did not refer to a well-defined likelihood function.\n\n\n");
+                    if (lf == nil) {
+                        FlagError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & *lfID->theString &"' did not refer to a well-defined likelihood function.\n\n\n");
                         break;
                     }
                     _Parameter      pv;
                     checkParameter (shortMPIReturn, pv ,0);
                     resStr       = (_String*)checkPointer(new _String (1024L,true));
-                    ((_LikelihoodFunction*)likeFuncList (f))->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
+                    lf->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                     resStr->Finalize();
                 }
             } else {
@@ -290,6 +293,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
             if (keepState < 0.5) {
                 PurgeAll (true);
+                InitializeGlobals ();
                 pathNames && & baseDir;
             }
         }

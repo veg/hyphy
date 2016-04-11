@@ -120,7 +120,7 @@ public:
     // to make a matrix with C elements per row
     // if <= 0 - a row matrix is returned
 
-    _Matrix ( _List &);                         //make string matrix from a list
+    _Matrix ( _List const &);                         //make string matrix from a list
 
     _Matrix (_Parameter *, unsigned long, unsigned long);
     /*
@@ -136,7 +136,7 @@ public:
 
     virtual void    Clear (void);               //deletes all the entries w/o destroying the matrix
 
-    void    Initialize (void);                  // zeros all matrix structures
+    void    Initialize (bool = false);                  // zeros all matrix structures
 
     virtual void        Serialize (_String&,_String&);
     // write the matrix definition in HBL
@@ -317,9 +317,9 @@ public:
 
     virtual     void        Duplicate   (BaseRef obj); // duplicate this object into a dynamic copy
 
-    virtual     BaseRef     toStr       (void);       // convert this matrix to a string
+    virtual     BaseRef     toStr       (unsigned long = 0UL);       // convert this matrix to a string
 
-    virtual     void        toFileStr   (FILE*dest);
+    virtual     void        toFileStr   (FILE*dest, unsigned long = 0UL);
 
     bool        AmISparse               (void);
 
@@ -343,17 +343,17 @@ public:
 
     _Parameter  FisherExact             (_Parameter, _Parameter, _Parameter);
 
-    virtual     bool        HasChanged  (void);
+    virtual     bool        HasChanged  (bool = false);
     // have any variables which are referenced by the elements changed?
 
-    virtual     long
-    GetHDim                     (void) {
+    virtual     unsigned long
+    GetHDim                     (void) const{
         return hDim;
     }
-    long        GetVDim                     (void) {
+    unsigned long        GetVDim                     (void) const {
         return vDim;
     }
-    long        GetSize                     (void) {
+    unsigned long        GetSize                     (void) const {
         return lDim;
     }
     long        GetMySize                   (void) {
@@ -494,7 +494,7 @@ private:
     _Matrix*    branchLengthStencil (void);
 
     //bool      IsAStringMatrix     (void);
-    void        Add                 (_Matrix&, _Matrix&, bool sub = false);
+    void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
     // aux arithmetic rountines
     bool        AddWithThreshold    (_Matrix&, _Parameter);
     void        RowAndColumnMax     (_Parameter&, _Parameter&, _Parameter* = nil);
@@ -595,29 +595,32 @@ public:
 
     virtual     void        Clear (void);
 
-    virtual     long        GetHDim                     (void) {
+    virtual     unsigned long        GetHDim                     (void) const {
         if (isColumn) {
             return GetUsed();
         }
-        return 1;
+        return 1UL;
     }
-    virtual     long        GetVDim                     (void) {
+    virtual     long        GetVDim                     (void) const {
         if (!isColumn) {
             return GetUsed();
         }
-        return 1;
+        return 1UL;
     }
+  
+    void   Trim             (void);
+  
     long   Store            (_Parameter);
-    long   GetUsed          (void) {
+    long   GetUsed          (void) const {
         return used;
     }
     void     ZeroUsed       (void) {
-        used = 0;
+        used = 0UL;
     }
 
     void    operator <<     (const _SimpleList&);
 
-    long   used;
+    unsigned long   used;
     bool   isColumn;
 };
 
@@ -706,7 +709,7 @@ public:
 
      */
 
-    virtual BaseRef     toStr           (void);
+    virtual BaseRef     toStr           (unsigned long = 0UL);
     virtual _PMathObj   Execute         (long opCode, _PMathObj = nil, _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual BaseRef     makeDynamic     (void);
     virtual _PMathObj   Compute         (void);
@@ -739,14 +742,14 @@ public:
     void                MStore          (_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
     // SLKP 20100811: see the comment for _Matrix::MStore
 
-    void                MStore          (_String  , _PMathObj, bool = true);
-    void                MStore          (_String  , _String);
+    void                MStore          (const _String&  , _PMathObj, bool = true);
+    void                MStore          (const _String&  , const _String&);
     virtual unsigned long        ObjectClass     (void)      {
         return ASSOCIATIVE_LIST;
     }
     _List*              GetKeys         (void);
     void                FillInList      (_List&);
-    _String*            Serialize       (_String&);
+    _String*            Serialize       (unsigned long) ;
     
     /**
      * Traverse the dictionary, cast each value into a float and return their sum.

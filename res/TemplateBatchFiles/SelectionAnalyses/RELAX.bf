@@ -10,15 +10,15 @@ LoadFunctionLibrary("TreeTools");
 
 
 // namespace 'utility' for convenience functions 
-LoadFunctionLibrary("lib2014/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
 // namespace 'io' for interactive/datamonkey i/o functions
-LoadFunctionLibrary("lib2014/IOFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
 
-LoadFunctionLibrary ("lib2014/models/codon/MG_REV.bf");
+LoadFunctionLibrary ("libv3/models/codon/MG_REV.bf");
 
 // namespace 'estimators' for various estimator related functions
-LoadFunctionLibrary("lib2014/tasks/estimators.bf");
+LoadFunctionLibrary("libv3/tasks/estimators.bf");
 
 
 LoadFunctionLibrary("BranchSiteTemplate");
@@ -59,12 +59,13 @@ io.displayAnalysisBanner ({"info" : "RELAX (a random effects test of selection r
                             to test whether a set of 'Test' branches evolves under relaxed 
                             selection relative to a set of 'Reference' branches (R), as measured
                             by the relaxation parameter (K).",
-                           "version" : "1.00",
-                           RELAX.reference : "In revision, preprint at xxx",
-                           "authors" : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and the UCSD viral evolution group",
-                           "contact" : "spond@ucsd.edu",
+                           "version" : "1.0",
+                           "reference" : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
+                           "authors" : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
+                           "contact" : "spond@temple.edu",
                            "requirements" : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"         
                           } );
+
 
 
 
@@ -88,7 +89,6 @@ RELAX.json ["partition"] = relax.selected_branches;
 RELAX.json ["tree"] = relax.tree ["string"];
 
 io.reportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches[RELAX.test]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches[RELAX.test])));
-
 
 ChoiceList  (RELAX.runModel,"Analysis type",1,NO_SKIP,
             "All", "[Default] Fit descriptive models AND run the relax test (4 models)",

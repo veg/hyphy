@@ -62,7 +62,7 @@ _Variable::_Variable (void)
 }
 
 //__________________________________________________________________________________
-void _Variable::Initialize (void)
+void _Variable::Initialize (bool)
 {
     //_Formula::Initialize();
     _Constant::Initialize();
@@ -125,29 +125,29 @@ bool _Variable::CheckFForDependence (long idx, bool opt)
 }
 
 //__________________________________________________________________________________
-BaseRef _Variable::toStr(void)
+BaseRef _Variable::toStr(unsigned long padding)
 {
     if (varValue&&varValue->IsPrintable()) {
-        return varValue->toStr();
+        return varValue->toStr(padding);
     }
     _PMathObj vv = Compute();
     if (!vv) {
         return new _String("NAN");
     }
-    return new _String((_String*)vv->toStr());
+    return new _String((_String*)vv->toStr(padding));
 }
 
 //__________________________________________________________________________________
-void _Variable::toFileStr(FILE* f)
+void _Variable::toFileStr(FILE* f, unsigned long padding)
 {
     if (varValue&&varValue->IsPrintable()) {
-        varValue->toFileStr(f);
+        varValue->toFileStr(f, padding);
     } else {
         _PMathObj vv = Compute();
         if (!vv) {
             fprintf(f,"NAN");
         } else {
-            vv->toFileStr(f);
+            vv->toFileStr(f, padding);
         }
     }
 
@@ -156,7 +156,7 @@ void _Variable::toFileStr(FILE* f)
 
 _Variable::_Variable (_String&s, bool isG)
 {
-    theName         = (_String*)checkPointer(new _String(s));
+    theName         = new _String(s);
     varFlags        = HY_VARIABLE_NOTSET|(isG?HY_VARIABLE_GLOBAL:0);
     varValue        = nil;
     varFormula      = nil;
@@ -194,7 +194,7 @@ _Variable::_Variable (_String&s, _String&f, bool isG)//:  _Formula (f)
 
 _Variable::~_Variable (void)
 {
-    nInstances++;
+  //nInstances++;
     if (varValue) {
         DeleteObject (varValue);
     }
@@ -281,6 +281,12 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
 }
 
 //__________________________________________________________________________________
+void  _Variable::SetValue (_Parameter new_value) {
+// set the value of the var
+  this->SetValue (new _Constant (new_value), false);
+}
+
+//__________________________________________________________________________________
 void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 {
     //hasBeenChanged = true;
@@ -313,7 +319,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
                 }
 
             //_Formula::Clear();
-            delete (varFormula);
+            delete varFormula;
             varFormula = nil;
         }
         if (varValue) {
@@ -461,8 +467,11 @@ bool _Variable::IsConstant (void)
         return varFormula->IsConstant();
     }
 
-    if (varValue && varValue->ObjectClass () != NUMBER) {
-        return varValue->IsConstant();
+    if (varValue) {
+        long varType = varValue->ObjectClass ();
+        if (!(varType & HY_MUTABLE_OBJECT)) {
+            return varValue->IsConstant();
+        }
     }
 
     return false;
@@ -532,34 +541,35 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
 
     // also update the fact that this variable is no longer independent in all declared
     // variable containers which contain references to this variable
-    if (changeMe)
-        if (deferSetFormula) {
-            *deferSetFormula << theIndex;
-            deferIsConstant  << isAConstant;
-        } else {
-            long i;
-            _SimpleList tcache;
-            long        iv;
+    if (changeMe) {
+          if (deferSetFormula) {
+              *deferSetFormula << theIndex;
+              deferIsConstant  << isAConstant;
+          } else {
+              long i;
+              _SimpleList tcache;
+              long        iv;
 
-            i = variableNames.Traverser (tcache,iv,variableNames.GetRoot());
+              i = variableNames.Traverser (tcache,iv,variableNames.GetRoot());
 
-            for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
-                _Variable* theV = FetchVar(i);
-                if (theV->IsContainer()) {
-                    _VariableContainer* theVC = (_VariableContainer*)theV;
-                    if (theVC->SetDependance(theIndex) == -2) {
-                        ReportWarning ((_String("Can't make variable ")&*GetName()&" dependent in the context of "&*theVC->GetName()&" because its template variable is bound by another relation in the global context."));
-                        continue;
-                    }
-                }
-            }
-            {
-                for (long i = 0; i<likeFuncList.lLength; i++)
-                    if (((_String*)likeFuncNamesList(i))->sLength) {
-                        ((_LikelihoodFunction*)likeFuncList(i))->UpdateIndependent(theIndex,isAConstant);
-                    }
-            }
-        }
+              for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
+                  _Variable* theV = FetchVar(i);
+                  if (theV->IsContainer()) {
+                      _VariableContainer* theVC = (_VariableContainer*)theV;
+                      if (theVC->SetDependance(theIndex) == -2) {
+                          ReportWarning ((_String("Can't make variable ")&*GetName()&" dependent in the context of "&*theVC->GetName()&" because its template variable is bound by another relation in the global context."));
+                          continue;
+                      }
+                  }
+              }
+              {
+                  for (long i = 0; i<likeFuncList.lLength; i++)
+                      if (((_String*)likeFuncNamesList(i))->sLength) {
+                          ((_LikelihoodFunction*)likeFuncList(i))->UpdateIndependent(theIndex,isAConstant);
+                      }
+              }
+          }
+    }
 
     if (&theF!=myF) {
         delete myF;
@@ -635,7 +645,7 @@ _PMathObj    _Variable::ComputeReference (_PMathObj context)
 }
 
 //__________________________________________________________________________________
-_String    _Variable::ContextFreeName(void) {
+_String const    _Variable::ContextFreeName(void) const {
     long location = theName->FindBackwards (".", 0, -1);
     if (location > 0) {
        return theName->Cut (location+1,-1); 
@@ -644,7 +654,7 @@ _String    _Variable::ContextFreeName(void) {
 }
 
 //__________________________________________________________________________________
-_String    _Variable::ParentObjectName(void) {
+_String const   _Variable::ParentObjectName(void) const {
     long location = theName->FindBackwards (".", 0, -1);
     if (location > 0) {
        return theName->Cut (0,location-1); 

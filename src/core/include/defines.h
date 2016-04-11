@@ -40,17 +40,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef     __DEFINES__
 #define     __DEFINES__
 
-#define  HY_UNDEFINED       0x00UL
-#define  NUMBER             0x01UL
-#define  MATRIX             0x04UL
-#define  CONTAINER          0x08UL
-#define  TREE_NODE          0x10UL
-#define  TREE               0x20UL
-#define  STRING             0x40UL
-#define  ASSOCIATIVE_LIST   0x80UL
+#define  HY_UNDEFINED       0x000UL
+#define  NUMBER             0x001UL
+#define  MATRIX             0x004UL
+#define  CONTAINER          0x008UL
+#define  TREE_NODE          0x010UL
+#define  TREE               0x020UL
+#define  STRING             0x040UL
+#define  ASSOCIATIVE_LIST   0x080UL
 #define  TOPOLOGY           0x100UL
 #define  POLYNOMIAL         0x200UL
 #define  HY_ANY_OBJECT      0xFFFFUL
+#define  HY_MUTABLE_OBJECT  (NUMBER | STRING | HY_UNDEFINED)
 
 #define  DEFAULTLOWERBOUND  -1e26
 #define  DEFAULTUPPERBOUND  1e26
@@ -139,7 +140,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_OP_CODE_REROOTTREE      (1+HY_OP_CODE_RANDOM) // RerootTree
 #define  HY_OP_CODE_ROWS            (1+HY_OP_CODE_REROOTTREE) // Rows
 #define  HY_OP_CODE_SIMPLEX         (1+HY_OP_CODE_ROWS) // Simplex
-#define  HY_OP_CODE_SIN             (1+HY_OP_CODE_SIMPLEX) // Sin
+#define  HY_OP_CODE_SIMPLIFY        (1+HY_OP_CODE_SIMPLEX) // Simplify
+#define  HY_OP_CODE_SIN             (1+HY_OP_CODE_SIMPLIFY) // Sin
 #define  HY_OP_CODE_SQRT            (1+HY_OP_CODE_SIN) // Sqrt
 #define  HY_OP_CODE_TEXTREESTRING   (1+HY_OP_CODE_SQRT) // TEXTreeString
 
@@ -179,8 +181,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_CONSTANT_FALSE                              _Constant (0.0)
 #define  HY_CONSTANT_TRUE                               _Constant (1.0)
 
-#define   BL_FUNCTION_ALWAYS_UPDATE     0
-#define   BL_FUNCTION_NORMAL_UPDATE     1
 
 //!  Batch Language 'Object' type codes
 /*!

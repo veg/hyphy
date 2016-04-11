@@ -154,10 +154,10 @@ public:
         return ComputePolynomial();
     }
 
-    virtual BaseObj*        toStr (void);
+    virtual BaseObj*        toStr (unsigned long = 0UL);
     void                    CheckTerm(void);
 
-    virtual void            toFileStr (FILE*);
+    virtual void            toFileStr (FILE*, unsigned long = 0UL);
 
     long                    GetNoVariables(void) {
         return variableIndex.countitems();
@@ -173,7 +173,7 @@ public:
         compList2.Duplicate(&c2);
     }
     virtual void            ScanForVariables (_AVLList &l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
-    virtual bool            HasChanged (void);
+    virtual bool            HasChanged (bool = false);
     friend  void            ResetPolynomialCheck
     (_Polynomial*);
     long                    ComputationalSize (void) {

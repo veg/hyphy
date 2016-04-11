@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include "errorfns.h"
 #include "hy_strings.h"
+#include "batchlan.h"
+#include "function_templates.h"
 
 
 
@@ -78,7 +80,7 @@ extern  bool dropIntoDebugMode;
 void    SaveConsole (void);
 #endif
 
-#include "batchlan.h"
+
 
 //_____________________________________________________________
 
@@ -148,7 +150,7 @@ _String DecodeError (long errCode)
         return "Export Matrix Called With a Non-polynomial Matrix Argument";
         break;
     case -666:
-        return "Attempting to operate on an undefined value; this is probably a result of an earlier 'soft' error condition";
+        return "Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition";
         break;
     default:
         return "Unclassified Error";
@@ -315,6 +317,7 @@ void    WarnErrorWhileParsing (_String st, _String& context)
     WarnError (_String ("While parsing:\n") & context & "\n" & st);
 }
 
+extern _List batchLanguageFunctions;
 
 //_______________________________________________________________________
 void WarnError (_String st)
@@ -387,7 +390,10 @@ void WarnError (_String st)
         MPI_Abort (MPI_COMM_WORLD,1);
     }
 #endif
-    //GlobalShutdown();
+    GlobalShutdown();
+  
+  //batchLanguageFunctions.Clear(true);
+  
 
 #ifdef _HY_ABORT_ON_ERROR
     abort ();
@@ -396,6 +402,7 @@ void WarnError (_String st)
       terminateExecution = true;
       ProblemReport (errMsg);
     #else
+  
       exit(1);
     #endif
   

@@ -68,7 +68,7 @@ class _AVLList: public BaseObj
 
         virtual void ReorderList(_SimpleList* = nil);
         virtual long InsertData(BaseRef, long, bool);
-        virtual BaseRef toStr(void);
+        virtual BaseRef toStr(unsigned long padding = 0UL);
         virtual long Traverser(_SimpleList&, long &, long = -1);
         virtual long GetRoot(void){return root;}
         virtual void DeleteXtra(long){};
@@ -77,7 +77,7 @@ class _AVLList: public BaseObj
             DeleteObject(dataList);
         }
 
-        unsigned long countitems(void);
+        unsigned long countitems(void) const;
 
         // 20100623: a shortcut function to look for integers only
         // avoids calling ::Compare

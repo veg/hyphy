@@ -89,7 +89,7 @@ _Constant::_Constant (_Parameter value)
 }
 //__________________________________________________________________________________
 
-void _Constant::Initialize (void)
+void _Constant::Initialize (bool)
 {
     BaseObj::Initialize();
     theValue = 0;
@@ -134,7 +134,7 @@ _Parameter    _Constant::Value (void)
     return theValue;
 }
 //__________________________________________________________________________________
-BaseRef _Constant::toStr(void)
+BaseRef _Constant::toStr(unsigned long)
 {
     return parameterToString(Value());
 }
@@ -205,31 +205,31 @@ _PMathObj _Constant::longDiv (_PMathObj theObj) // div
     }
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Raise (_PMathObj theObj)
-{
-    if (!theObj) {
-        return nil;
+_PMathObj _Constant::Raise (_PMathObj theObj) {
+  if (!theObj) {
+    return nil;
+  }
+  
+  _Parameter    base  = Value(),
+  expon = theObj->Value();
+  
+  if (base>0.0) {
+    return    new  _Constant (exp (log(base)*(expon)));;
+  } else {
+    if (base<0.0) {
+      if (CheckEqual (expon, (long)expon)) {
+        return new _Constant (((((long)expon)%2)?-1:1)*exp (log(-base)*(expon)));
+      } else {
+        _String errMsg ("An invalid base/exponent pair passed to ^");
+        WarnError (errMsg.sData);
+      }
     }
-
-    _Parameter    base  = Value(),
-                  expon = theObj->Value();
-
-    if (base>0.0) {
-        return    new  _Constant (exp (log(base)*(expon)));;
-    } else {
-        if (base<0.0)
-            if (CheckEqual (expon, (long)expon)) {
-                return new _Constant (((((long)expon)%2)?-1:1)*exp (log(-base)*(expon)));
-            } else {
-                _String errMsg ("An invalid base/exponent pair passed to ^");
-                WarnError (errMsg.sData);
-            }
-
-        if (expon != 0.0)
-          return     new _Constant (0.0);
-        else
-          return     new _Constant (1.0);
-    }
+    
+    if (expon != 0.0)
+      return     new _Constant (0.0);
+    else
+      return     new _Constant (1.0);
+  }
 }
 
 //__________________________________________________________________________________
@@ -328,9 +328,8 @@ _PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
     }
 
 #endif
-    a1 = snprintf    (buffer,256, format,Value());
-    _String    t (buffer);
-    return     new _FString (t);
+    snprintf    (buffer,256, format,Value());
+    return     new _FString (new _String (buffer));
 }
 //__________________________________________________________________________________
 _PMathObj _Constant::Log (void)

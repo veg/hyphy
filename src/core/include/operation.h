@@ -50,7 +50,11 @@ extern  _List BuiltInFunctions;
 
 class _Stack;
 class _VariableContainer;
+class _Variable;
 class _Formula;
+
+_Variable * FetchVar (long);
+
 //__________________________________________________________________________________
 class   _Operation : public BaseObj
 {
@@ -61,7 +65,7 @@ class   _Operation : public BaseObj
 
 public:
     _Operation  (void);
-    _Operation  (_String&, const long);
+    _Operation  (_String const&, const long);
     // construct the operation by its symbol and, if relevant -
     // number of operands
     _Operation  (const long,const long);
@@ -80,9 +84,9 @@ public:
     virtual   void          StackDepth          (long&);
 
     bool            ExecutePolynomial   (_Stack&,_VariableContainer* nameSpace = nil, _String* errMsg = nil);
-    virtual   BaseObj*      toStr               (void);    //convert the op to string
+    virtual   BaseObj*      toStr               (unsigned long = 0UL);    //convert the op to string
 
-    virtual   void          Initialize          (void);
+    virtual   void          Initialize          (bool = false);
     virtual   void          Duplicate           (BaseRef);
     _String&    GetCode             (void) {
         return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):empty;
@@ -106,6 +110,13 @@ public:
 
     virtual  void           SetAVariable        (long d) {  // return the index of the variable
         theData=d;
+    }
+  
+    _Variable *             RetrieveVar         (void) {
+      if (theData != -1) {
+        return FetchVar(GetAVariable());
+      }
+      return nil;
     }
 
     virtual  bool           AssignmentVariable  (void) {
@@ -135,6 +146,8 @@ public:
 
 
     virtual bool            EqualOp             (_Operation*);
+  
+    static  long            BinOpCode           (_String const &, long = -1);
 
 protected:
 

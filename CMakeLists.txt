@@ -72,11 +72,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
         set(MACOSX_LION true)
     endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-    
+
     if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
         set(MACOSX_LION false)
     endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
-    
+
 endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
 set(MACOSX_GT_LION false)
@@ -92,6 +92,10 @@ endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 #-------------------------------------------------------------------------------
 # make it fast, scotty
 #-------------------------------------------------------------------------------
+
+set(DEFAULT_WARNING_FLAGS "-w")
+set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
+
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     execute_process(
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
@@ -99,35 +103,37 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     )
 
     set(GCC45 false)
-    set(GCC46 false)
+    set(GCC50 false)
 
     if(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
         set(GCC45 true)
     endif(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
 
-    if(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
-        set(GCC46 true)
-    endif(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
+    if(${GCC_VERSION} VERSION_GREATER 5.0 OR ${GCC_VERSION} VERSION_EQUAL 5.0)
+        set(GCC50 true)
+    endif(${GCC_VERSION} VERSION_GREATER 5.0 OR ${GCC_VERSION} VERSION_EQUAL 5.0)
 
-    if(${MACOSX_LION})
-        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null -Wno-dangling-else -Wno-logical-op-parentheses")
-    endif(${MACOSX_LION})
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
 
-    if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3")
-    else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3")
-    endif(${GCC45})
+    PCL_CHECK_FOR_AVX()
 
-    if(${GCC46})
-        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
-    endif(${GCC46})
+    if(${HAVE_AVX_EXTENSIONS})
+        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
+        add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
+    else(${HAVE_AVX_EXTENSIONS})
+        PCL_CHECK_FOR_SSE3()
+        if(${HAVE_SSE3_EXTENSIONS})
+            add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+        endif(${HAVE_SSE3_EXTENSIONS})
+    endif (${HAVE_AVX_EXTENSIONS})
 
-    if(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
-        set(DEFAULT_COMPILE_FLAGS "-fno-strict-aliasing -fpermissive")
-    endif(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
 
-    
+    set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
+endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
     PCL_CHECK_FOR_AVX()
     if(${HAVE_AVX_EXTENSIONS})
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
@@ -139,10 +145,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
         endif(${HAVE_SSE3_EXTENSIONS})
     endif (${HAVE_AVX_EXTENSIONS})
-    
+endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
-    set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
-endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}")
+#MESSAGE ("HAI! ${DEFAULT_COMPILE_FLAGS}")
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
     set(DEFAULT_COMPILE_FLAGS "")
@@ -343,7 +349,7 @@ if(${OPENCL_FOUND})
     set_target_properties(
         HYPHYOCL
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS}"
         LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
     )
     add_executable(
@@ -393,7 +399,7 @@ if(${MPI_FOUND})
     set_target_properties(
         HYPHYMPI
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS}"
         LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
     )
 endif(${MPI_FOUND})
@@ -414,7 +420,7 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
     LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
 )
 
@@ -439,8 +445,8 @@ set_property(
 set_target_properties(
     HYPHYGTEST
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
 )
 
 #-------------------------------------------------------------------------------
@@ -487,7 +493,7 @@ if((${GTK2_FOUND}))
     set_target_properties(
         HYPHYGTK
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${GTK2_COMPILE_FLAGS}"
         LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
     )
 endif((${GTK2_FOUND}))
@@ -521,7 +527,7 @@ set_property(
 set_target_properties(
     hyphy_mp HYPHYMP
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${OpenMP_CXX_FLAGS}"
     LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
 )
 
@@ -529,7 +535,7 @@ set_target_properties(
 #-------------------------------------------------------------------------------
 # hyphy MacOSX gui target
 #-------------------------------------------------------------------------------
-if(APPLE AND NOT ${MACOSX_GT_LION})
+if(APPLE)
 
     #---------------------------------------------------------------------------
     # MacOSX gui files
@@ -697,7 +703,7 @@ if(APPLE AND NOT ${MACOSX_GT_LION})
         OSX_ARCHITECTURES i386
     )
 
-   
+
     set_target_properties(
         HyPhy HYPHY_DMG
         PROPERTIES
@@ -713,4 +719,4 @@ if(APPLE AND NOT ${MACOSX_GT_LION})
         PROPERTIES
         OSX_ARCHITECTURES i386
     )
-endif(APPLE AND NOT ${MACOSX_GT_LION})
+endif(APPLE)

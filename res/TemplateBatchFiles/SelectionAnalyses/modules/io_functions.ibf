@@ -1,0 +1,221 @@
+RequireVersion("2.25");
+
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+LoadFunctionLibrary("libv3/convenience/regexp.bf");
+
+
+//------------------------------------------------------------------------------ 
+lfunction selection.io.defineBranchSets(partition_info) {
+
+    available_models = {};
+    branch_set = {};
+    
+    tree_for_analysis = None;
+    
+    if (Abs (partition_info) == 1) { // allow more refined selections if there is only one tree   
+        tree_for_analysis = (partition_info[0])["tree"];
+        utility.forEach (tree_for_analysis["model_map"], "_value_", "`&available_models`[_value_] += 1");
+        list_models   = utility.keys   (available_models); // get keys    
+        branch_counts = utility.values (available_models);
+        option_count  = Abs (available_models);
+    } else {
+        option_count = 0;
+    }
+
+    selectTheseForTesting = {
+        option_count + 3, 2
+    };
+
+    selectTheseForTesting[0][0] = "All";
+    selectTheseForTesting[0][1] = "Include all branches in the analysis";
+    selectTheseForTesting[1][0] = "Internal";
+    selectTheseForTesting[1][1] = "Include all internal branches in the analysis";
+    selectTheseForTesting[2][0] = "Leaves";
+    selectTheseForTesting[2][1] = "Include all leaf branches in the analysis";
+
+    for (k = 0; k < option_count; k += 1) {
+        if (list_models[k] != "") {
+            selectTheseForTesting[3 + k][0] = list_models[k];
+            selectTheseForTesting[3 + k][1] = "Set " + list_models[k] + " with " + available_models[list_models[k]] + " branches";
+        } else {
+            selectTheseForTesting[3 + k][0] = "Unlabeled branches";
+            selectTheseForTesting[3 + k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
+        }
+    }
+
+    ChoiceList(testSet, "Choose the set of branches to test for selection", 1, NO_SKIP, selectTheseForTesting);
+    
+    io.checkAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
+
+    return_set = {};
+    
+    for (k = 0; k < Abs (partition_info); k+=1) {
+        tree_configuration = {};
+        tree_for_analysis = (partition_info[k])["tree"];
+        if (testSet < 3) {
+            if (testSet == 0) {
+                tag = None;
+            } else {
+                if (testSet == 1) {
+                    tag = "internal";
+                } else {
+                    tag = "leaf";
+                }
+            }
+            
+            utility.forEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.background';}");
+            
+        } else {
+            tag = SELECTION_STRINGS;
+            if (tag == "Unlabeled branches") {
+                tag = "";
+            }
+            utility.forEachPair (tree_for_analysis["model_map"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.background';}");
+        }
+        return_set + tree_configuration;
+    }
+    
+    return return_set;
+
+}
+
+//------------------------------------------------------------------------------ 
+
+lfunction selection.io.startTimer(timers, key, sort_index) {
+    timers[key] = {
+        "timer": Time(1),
+        "order": sort_index
+    };
+
+}
+
+//------------------------------------------------------------------------------ 
+
+lfunction selection.io.stopTimer(timers, key) {
+    (timers[key])["timer"] = Time(1) - (timers[key])["timer"];
+}
+
+//------------------------------------------------------------------------------ 
+
+lfunction selection.io.extract_global_MLE(fit, id) {
+    return ((fit["global"])[id])["MLE"];
+}
+
+//------------------------------------------------------------------------------ 
+
+lfunction selection.io.extract_global_MLE_re (fit, regexp) {
+    matches = utility.filter (utility.keys(fit["global"]), "_tag_", "regexp.find (_tag_, `&regexp`)");
+    return utility.map (matches, "_tag_", "{'description': _tag_, 'MLE' : ((`&fit`['global'])[_tag_])['MLE']}");
+}
+
+//------------------------------------------------------------------------------ 
+
+lfunction selection.io.branch.length(branch_info) {
+    return branch_info["MLE"];
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction selection.io.getIC(logl, params, samples) {
+    return -2 * logl + 2 * samples / (samples - params - 1) * params;
+}
+
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
+
+    utility.dict.ensure_key(json, terms.json.fits);
+
+    selection.io.json_store_key_value_pair(json, terms.json.fits, name, {
+            terms.json.log_likelihood: ll,
+            terms.json.parameters: df,
+            terms.json.AICc: selection.io.getIC(ll, df, ss),
+            terms.json.rate_distributions: rate_distribution,
+            terms.json.display_order: Abs(json[terms.json.fits])
+    });
+
+}
+
+//------------------------------------------------------------------------------ 
+
+lfunction selection.io.adjust_partition_string (string, sites) {
+    contig = regexp.split (string, "-");
+    if (Abs (contig) == 2) {
+        start = +contig[0];
+        end   = +contig[1];
+        
+        
+        if (start % 3) { // need to adjust the start position 
+            if (start % 3 == 2) { // move upstream 
+                start += 1;
+            } else {
+                start += (-1);
+            }
+        }
+        if (end % 3 ! = 2) { // need to adjust the ending position
+            if (end % 3 == 1) { // move up if possible
+                end += 1;
+            } else {
+                end += (-1);
+            }
+            if (end >= sites) {
+                end = sites$3*3-1;
+            }
+        }
+        io.checkAssertion ("`&start` < `&end`", "Could not adjust the partition '" + string + "' to fall on codon boundaries and remain non-empty");
+        string = "" + start + "-" + end;
+    }
+    
+    return string;
+}
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
+
+
+    if (None == dict_key) {
+        json[key] = value;
+    } else {
+        utility.dict.ensure_key(json, dict_key);
+        (json[dict_key])[key] = value;
+    }
+}
+
+//------------------------------------------------------------------------------ 
+
+function selection.io.json_store_branch_attribute(json, attribute_name, attribute_type, display_order, partition, values) {
+    utility.dict.ensure_key(json, terms.json.branch_attributes); 
+    utility.dict.ensure_key(json[terms.json.branch_attributes], partition); 
+    utility.dict.ensure_key(json[terms.json.branch_attributes], terms.json.attribute.meta);
+    utility.dict.ensure_key((json[terms.json.branch_attributes])[terms.json.attribute.meta], attribute_name);
+    ((json[terms.json.branch_attributes])[terms.json.attribute.meta])[attribute_name] = {terms.json.attribute.meta.type : attribute_type,
+                                                                                            terms.json.attribute.meta.order: display_order}; 
+    
+    utility.forEach (utility.keys (values), "selection.io.json_store_branch_attribute.branch_name",
+                             "utility.dict.ensure_key ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
+                             
+    utility.forEach (utility.keys (values), "selection.io.json_store_branch_attribute.branch_name",
+                             "(((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name]");
+ }
+
+
+//------------------------------------------------------------------------------------------------------------------------
+
+function selection.io._aux.extract_branch_info.callback(key, value) {
+    selection.io.extract_branch_info_result[key] = utility.callFunction(callback, {
+        "0": "value"
+    });
+}
+
+function selection.io.extract_branch_info(branch_spec, callback) {
+    selection.io.extract_branch_info_result = {};
+    branch_spec["selection.io._aux.extract_branch_info.callback"][""];
+    return selection.io.extract_branch_info_result;
+}
+
+function selection.io.branch.length(branch_info) {
+    return branch_info["MLE"];
+}

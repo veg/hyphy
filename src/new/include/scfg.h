@@ -321,7 +321,7 @@ public:
 
     virtual         ~Scfg(void); // virtual destructor because of inheritance
 
-    BaseRef             toStr                   (void); // a string representation of the SCFG
+    BaseRef             toStr                   (unsigned long = 0UL); // a string representation of the SCFG
 
     virtual void        ScanAllVariables        (void);
     virtual _String*    GetRuleString           (long); // return a string representation of a derivation rule

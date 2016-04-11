@@ -376,7 +376,6 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
             if (!ReadNextNexusStatement (fState, f, CurrentLine, key1.sLength, blank, false, false, false,false,true)) {
                 errMsg = _String("CHARSET construct not followed by ';'.");
                 ReportWarning (errMsg);
-                done = true;
                 break;
             } else {
                 pos = blank.Find ('=',1,-1);
@@ -423,7 +422,6 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
 
                                 bool    spoolInto2nd = false,
                                         spoolInto3rd = false,
-                                        hitASpace    = false,
                                         okFlag         = true,
                                         firstFlag  = true;
 
@@ -438,7 +436,6 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                         } else {
                                             numberOne = numberOne & ch;
                                         }
-                                        hitASpace = false;
                                     }
 
                                     if (ch==' ') {
@@ -507,7 +504,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                             }
                                         }
                                         //hitASpace = true;
-                                        hitASpace = false;
+                                      
                                     } else if (ch=='-') {
                                         if (spoolInto2nd||spoolInto3rd) {
                                             errMsg = _String("Misplaced '-' in CHARSET specification: ") & blank.Cut (0,k) & " <=? " & blank.Cut (k+1,-1);
@@ -625,7 +622,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                 readResult = ReadNextNexusStatement (fState, f, CurrentLine, offset, blank, true, true,true,false,false);
                 if (blank.sLength) {
                     if (translationsTo.lLength<translationsFrom.lLength) {
-                        good = (result.GetNames().Find(&blank)>=0);
+                        good = (result.GetNames().FindObject(&blank)>=0);
                         if (good) {
                             translationsTo.InsertElement (&blank, insertPos);
                         } else {
@@ -655,7 +652,6 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
             if (!ReadNextNexusStatement (fState, f, CurrentLine, key2.sLength, blank, false, false, false,false,false, true)) {
                 errMsg = _String("TREE construct not followed by ';'.");
                 ReportWarning (errMsg);
-                done = true;
                 break;
             } else {
                 // here goes the tree string in the form: treeID = treeString
@@ -791,7 +787,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                 }
                 key2 = key1.Cut(i,lastNode-1);
                 i = lastNode-1;
-                lastNode = translationsFrom.BinaryFind (&key2);
+                lastNode = translationsFrom.BinaryFindObject (&key2);
                 if (lastNode>=0) {
                     revisedTreeString<< (_String*)translationsTo.lData[lastNode];
                 } else {
@@ -812,7 +808,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
 
     if (treeSelected < treeStrings.lLength) {
         setParameter (dataFileTree,1.0,fState.theNamespace);
-        setParameter (dataFileTreeString, new _FString((*(_String*)treeStrings.lData[treeSelected])),fState.theNamespace);
+        setParameter (dataFileTreeString, new _FString((*(_String*)treeStrings.lData[treeSelected])),fState.theNamespace, false);
     }
 
     if (treeStrings.lLength) {
@@ -915,7 +911,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
     _List   translations;
     char    missing = '?', gap = '-' , repeat = '.', charSwitcher;
 
-    long    offSet, count, spExp = result.GetNames().lLength, sitesExp = 0;
+    long    offSet = 0L, count, spExp = result.GetNames().lLength, sitesExp = 0;
 
     while (!done) {
         if (!FindNextNexusToken (fState, f, CurrentLine, pos)) {
@@ -1231,7 +1227,6 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
             }
 
 
-            done = false;
             while (1) {
                 _String  blank  ((unsigned long)10, true),
                          blank2 ((unsigned long)10, true),
@@ -1247,7 +1242,6 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                         if ((spExp>0)&&(blank.sLength==0)) {
                             errMsg = _String("Could not find NTAX taxon names in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.";
                             ReportWarning (errMsg);
-                            done = true;
                             blank2.Finalize(); // dmalloc fix 06162005
                             break;
                         }
@@ -1286,7 +1280,6 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                 if (source->sLength==0) {
                     errMsg = _String("Could not find NTAX data strings in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.";
                     ReportWarning (errMsg);
-                    done = true;
                     break;
                 }
                 loopIterations++;
@@ -1311,7 +1304,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                 errMsg = _String ("Expected ")&sitesExp&" sites, but found "&(long)result.lLength;
                 ReportWarning(errMsg);
             }
-            if (loopIterations%spExp) {
+            if (spExp && loopIterations%spExp) {
                 errMsg = _String ("There is an inconsistency between NTAX and the number of data strings in the matrix");
                 ReportWarning(errMsg);
             }
