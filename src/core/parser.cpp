@@ -880,6 +880,7 @@ void    SetupOperationLists (void)
         BuiltInFunctions.AppendNewInstance (new _String ("BranchName"));
         FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHNAME);
         FunctionArgumentCount << 2;
+      
 
         //HY_OP_CODE_CCHI2
         BuiltInFunctions.AppendNewInstance (new _String ("CChi2"));
@@ -890,6 +891,11 @@ void    SetupOperationLists (void)
         BuiltInFunctions.AppendNewInstance (new _String ("CGammaDist"));
         FunctionNameList << BuiltInFunctions (HY_OP_CODE_CGAMMADIST);
         FunctionArgumentCount << 3;
+
+        //HY_OP_CODE_CALL
+        BuiltInFunctions.AppendNewInstance (new _String ("Call"));
+        FunctionNameList << BuiltInFunctions (HY_OP_CODE_CALL);
+        FunctionArgumentCount << 2;
 
         //HY_OP_CODE_COLUMNS
         BuiltInFunctions.AppendNewInstance (new _String ("Columns"));

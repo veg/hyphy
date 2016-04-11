@@ -74,6 +74,7 @@ public:
     virtual _PMathObj ReplaceReqExp     (_PMathObj);
     virtual _PMathObj CountGlobalObjects(void);
     virtual _PMathObj FileExists        (void);
+    virtual _PMathObj Call              (_PMathObj,_hyExecutionContext*);
     virtual _PMathObj Sum               (void);
     virtual _PMathObj Evaluate          (_hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual _PMathObj SubstituteAndSimplify

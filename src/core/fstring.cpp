@@ -42,6 +42,7 @@
 #include "constant.h"
 #include "matrix.h"
 #include "calcnode.h"
+#include "batchlan.h"
 
 extern long lastMatrixDeclared;
 extern _AVLListX _HY_GetStringGlobalTypes;
@@ -636,6 +637,9 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutio
     case HY_OP_CODE_IDIV: // $ match regexp
         return EqualRegExp(p);
         break;
+    case HY_OP_CODE_CALL: // call the function
+        return Call (p, context);
+        break;
     case HY_OP_CODE_MOD: // % equal case insenstive
         return AreEqualCIS(p);
         break;
@@ -846,6 +850,50 @@ _PMathObj   _FString::FileExists (void)
         }
     }
     return retValue;
+}
+
+//__________________________________________________________________________________
+_PMathObj   _FString::Call (_PMathObj arguments, _hyExecutionContext* context) {
+  long function_id = FindBFFunctionName (*theString, NULL);
+  if (function_id >= 0) {
+    if (arguments->ObjectClass() == ASSOCIATIVE_LIST) {
+      _AssociativeList * args = (_AssociativeList *)arguments;
+      
+      
+      _SimpleList tcache;
+      long        iv,
+      k = args->avl.Traverser (tcache, iv, args->avl.GetRoot());
+      
+      _Formula the_call;
+      _List    argument_list;
+      
+      for (; k>=0; k = variableNames.Traverser (tcache, iv)) {
+        //args->GetByKey(<#long#>, <#long#>)
+        _PMathObj payload = (_PMathObj)args->avl.GetXtra (k);
+        payload->AddAReference();
+        argument_list.AppendNewInstance (new _Operation (payload));
+      }
+      
+      the_call.PushTerm(&argument_list);
+      _Operation * function_call_term = new _Operation (function_id, -1L-args->avl.countitems());
+      
+      the_call.PushTerm(function_call_term);
+      DeleteObject (function_call_term);
+      
+      _PMathObj result = the_call.Compute();
+      result->AddAReference();
+      return result;
+      
+      
+    } else {
+      WarnError (_String ("The second argument ('") & _String (*(_String*)arguments->toStr()) & "' to 'Call' was not an HBL function name");
+    }
+  } else {
+    WarnError (_String ("The first argument ('") & *theString & "' to 'Call' was not an HBL function name");
+  }
+  
+  return new _MathObject;
+    
 }
 
 //__________________________________________________________________________________
