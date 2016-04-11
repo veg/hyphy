@@ -860,23 +860,27 @@ _PMathObj   _FString::Call (_PMathObj arguments, _hyExecutionContext* context) {
       _AssociativeList * args = (_AssociativeList *)arguments;
       
       
-      _SimpleList tcache;
-      long        iv,
-      k = args->avl.Traverser (tcache, iv, args->avl.GetRoot());
-      
       _Formula the_call;
-      _List    argument_list;
-      
-      for (; k>=0; k = variableNames.Traverser (tcache, iv)) {
-        //args->GetByKey(<#long#>, <#long#>)
-        _PMathObj payload = (_PMathObj)args->avl.GetXtra (k);
-        payload->AddAReference();
-        argument_list.AppendNewInstance (new _Operation (payload));
+    
+      if (args->avl.countitems()) {
+        _SimpleList tcache;
+     
+        long        iv,
+        k = args->avl.Traverser (tcache, iv, args->avl.GetRoot());
+        
+        _List    argument_list;
+        
+        for (; k>=0; k = variableNames.Traverser (tcache, iv)) {
+          //args->GetByKey(<#long#>, <#long#>)
+          _PMathObj payload = (_PMathObj)args->avl.GetXtra (k);
+          payload->AddAReference();
+          argument_list.AppendNewInstance (new _Operation (payload));
+        }
+        
+        the_call.PushTerm(&argument_list);
       }
       
-      the_call.PushTerm(&argument_list);
       _Operation * function_call_term = new _Operation (function_id, -1L-args->avl.countitems());
-      
       the_call.PushTerm(function_call_term);
       DeleteObject (function_call_term);
       
