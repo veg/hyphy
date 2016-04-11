@@ -159,7 +159,7 @@ public:
     long       theIndex; // index of this variable in the global variable pool
 
     // the class of this variable - i.e global, local, category or random
-    char       varFlags;
+    int       varFlags;
 
     _Parameter lowerBound,
                upperBound;

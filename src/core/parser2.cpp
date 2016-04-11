@@ -1186,10 +1186,11 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
 
             _String matrixDef   (s,i,j);
+            bool has_values = false;
 
-            if (matrixDef.sLength == 2 || matrixDef.FindTerminator(1, ":") >= 0L) {
+            if (matrixDef.sLength == 2 || (has_values = matrixDef.FindTerminator(1, ":") >= 0L) || matrixDef.FirstNonSpaceIndex(1,-1) == matrixDef.sLength - 1) {
                 _AssociativeList *theList = new _AssociativeList ();
-                if (matrixDef.sLength > 2) {
+                if (has_values) {
                     matrixDef.Trim (1,matrixDef.sLength-2);
                     if (!theList->ParseStringRepresentation (matrixDef,parsingContext.errMsg() == nil, parsingContext.formulaScope())) {
                         return HandleFormulaParsingError ("Poorly formed associative array construct ", parsingContext.errMsg(), s, i);

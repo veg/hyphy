@@ -3827,11 +3827,19 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
                 shifter = simpleParameters.lData[0] < 0;
 
     bool        skipDataDelete = false;
+  
     _Variable*  iseof          = CheckReceptacle (&hasEndBeenReached,empty,false);
+  
 
     if (currentParameter==_String("stdin")) { //
         if (chain.stdinRedirect) {
             data = chain.FetchFromStdinRedirect ();
+            // echo the input if there is no fprintf redirect in effect
+            _FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
+            if (! (redirect && redirect->theString->sLength)) {
+              StringToConsole (*data); NLToConsole();
+            }
+          
         } else {
             if (!CheckEqual(iseof->Compute()->Value(),0) && currentParameter.Equal (&scanfLastFilePath)) {
                 WarnError ("Ran out of standard input\n");
@@ -5008,9 +5016,7 @@ void      _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
         _String arrayID ("_HYPHY_MPI_INPUT_ARRAY_");
         (*theMessage) << arrayID;
         (*theMessage) << '=';
-        arg3 = ar->Serialize (arrayID);
-        (*theMessage) << arg3;
-        DeleteObject (arg3);
+        theMessage->AppendNewInstance(ar->Serialize(0UL));
         (*theMessage) << ';';
         arrayID = *arg2;
         arrayID.ProcessFileName(false,true,(Ptr)chain.nameSpacePrefix);

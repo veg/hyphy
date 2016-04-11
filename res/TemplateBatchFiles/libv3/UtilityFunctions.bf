@@ -127,25 +127,25 @@ function utility.map (object, lambda_name, transform) {
     if (Type (object) == "AssociativeList") {
         utility.map.return_object = {};
         utility.map.keys = Rows (object);
+        ^(lambda_name) := object [utility.map.keys[utility.map.k]];
         for (utility.map.k = 0; utility.map.k < Abs (object); utility.map.k += 1) {
-            ^(lambda_name) := object [utility.map.keys[utility.map.k]];
             utility.map.return_object [utility.map.keys[utility.map.k]] = Eval (transform);
         }
         return utility.map.return_object;
     }
-    
+
     if (Type (object) == "Matrix") {
         utility.map.rows = Rows (object);
         utility.map.columns = Columns (object);
         utility.map.return_object = {utility.map.rows,  utility.map.columns};
-        
+
+        ^(lambda_name) := object [utility.map.r][utility.map.c];
         for (utility.map.r = 0; utility.map.r < utility.map.rows; utility.map.r += 1) {
             for (utility.map.c = 0; utility.map.c < utility.map.columns; utility.map.c += 1) {
-                 ^(lambda_name) := object [utility.map.r][utility.map.c];
                 utility.map.temp = Eval (transform);
                 assert (Type (utility.map.temp) == "Number" || Type (utility.map.temp) == "String", "Unsupported object type in call to utility.map [Matrix]");
                 utility.map.return_object [utility.map.r][utility.map.c] = utility.map.temp;
-               
+
             }
         }
         return utility.map.return_object;
@@ -158,7 +158,7 @@ lfunction utility.matrix_to_list_of_rows (object) {
     result = {};
     rows = Rows (object);
     cols = Columns (object);
-    
+
     for (r = 0; r < rows; r += 1) {
         row = {1, cols};
         for (c = 0; c < cols; c+=1) {
@@ -172,28 +172,28 @@ lfunction utility.matrix_to_list_of_rows (object) {
 function utility.filter (object, lambda_name, condition) {
 
     Eval ("`lambda_name` = None");
-    
+
     utility.filter.return_object = {};
     if (Type (object) == "AssociativeList") {
         utility.filter.keys = Rows (object);
+        ^(lambda_name) := object [utility.filter.keys[utility.filter.k]];
         for (utility.filter.k = 0; utility.filter.k < Abs (object); utility.filter.k += 1) {
-            ^(lambda_name) := object [utility.filter.keys[utility.filter.k]];
             if (Eval (condition)) {
                 utility.filter.return_object [utility.filter.keys[utility.filter.k]] = ^(lambda_name);
             }
         }
         return utility.filter.return_object;
     }
-    
+
     if (Type (object) == "Matrix") {
         utility.filter.rows = Rows (object);
         utility.filter.columns = Columns (object);
+        ^(lambda_name) := object [utility.filter.r][utility.filter.c];
         for (utility.filter.r = 0; utility.filter.r < utility.filter.rows; utility.filter.r += 1) {
             for (utility.filter.c = 0; utility.filter.c < utility.filter.columns; utility.filter.c += 1) {
-                 ^(lambda_name) := object [utility.filter.r][utility.filter.c];
                 if (Eval (condition)) {
                     utility.filter.return_object + ^(lambda_name);
-                }               
+                }
             }
         }
         return utility.filter.return_object;
@@ -203,33 +203,32 @@ function utility.filter (object, lambda_name, condition) {
 }
 
 function utility.forEach (object, lambda_name, transform) {
-    
-    Eval ("`lambda_name` = None");
 
     if (Type (object) == "Tree" || Type (object) == "Topology") {
         utility.forEach (BranchName (object, -1), lambda_name, transform);
         return;
-        
     }
+
+    Eval ("`lambda_name` = None");
 
     if (Type (object) == "AssociativeList") {
         utility.forEach.keys = Rows (object);
+        ^(lambda_name) := object [utility.forEach.keys[utility.forEach.k]];
         for (utility.forEach.k = 0; utility.forEach.k < Abs (object); utility.forEach.k += 1) {
-            ^(lambda_name) := object [utility.forEach.keys[utility.forEach.k]];
             ExecuteCommands (transform);
         }
         return;
-    } 
-    
+    }
+
     if (Type (object) == "Matrix") {
         utility.forEach.rows = Rows (object);
         utility.forEach.columns = Columns (object);
         utility.forEach.return_object = {utility.forEach.rows,  utility.forEach.columns};
+        ^(lambda_name) := object [utility.forEach.r][utility.forEach.c];
         for (utility.forEach.r = 0; utility.forEach.r < utility.forEach.rows; utility.forEach.r += 1) {
             for (utility.forEach.c = 0; utility.forEach.c < utility.forEach.columns; utility.forEach.c += 1) {
-                 ^(lambda_name) := object [utility.forEach.r][utility.forEach.c];
                 ExecuteCommands (transform);
-               
+
             }
         }
     }
@@ -244,30 +243,30 @@ function utility.checkKey (dict, key, type) {
         }
     }
     return FALSE;
-}   
+}
 
 function utility.addToSet (set, object) {
 
     if (Type(object) == "String") {
         set[object] = 1;
         return;
-    } 
+    }
     if (Type(object) == "AssociativeList" || Type(object) == "Matrix") {
-        utility.forEach (object, "_value_", "set[_value_] = 1");
+        utility.forEach (object, "_utility.addToSet.value_", "set[_utility.addToSet.value_] = 1");
         return;
     }
     set ["" + object] = 1;
-}   
+}
 
 function utility.populateDict (from, to, value, lambda) {
     utility.populateDict.result = {};
     if (Type (lambda) == "String" && Type (value) == "String") {
         Eval ("`lambda` = None");
+        ^lambda = utility.populateDict.k;
         for (utility.populateDict.k = from; utility.populateDict.k < to; utility.populateDict.k+=1) {
-            ^lambda = utility.populateDict.k;
             utility.populateDict.result[utility.populateDict.k] = Eval (value);
         }
-   } 
+   }
     else {
         for (utility.populateDict.k = from; utility.populateDict.k < to; utility.populateDict.k+=1) {
             utility.populateDict.result[utility.populateDict.k] = value;
@@ -277,17 +276,17 @@ function utility.populateDict (from, to, value, lambda) {
 }
 
 function utility.forEachPair (object, key_name, value_name, transform) {
-    
+
     Eval ("`key_name` = None");
     Eval ("`value_name` = None");
-    
-    
-    
+
+
+
     if (Type (object) == "AssociativeList") {
         utility.forEachPair.keys = Rows (object);
+        ^(key_name) := utility.forEachPair.keys[utility.forEachPair.k];
+        ^(value_name) := object [utility.forEachPair.keys[utility.forEachPair.k]];
         for (utility.forEachPair.k = 0; utility.forEachPair.k < Abs (object); utility.forEachPair.k += 1) {
-            ^(key_name) := utility.forEachPair.keys[utility.forEachPair.k];
-            ^(value_name) := object [utility.forEachPair.keys[utility.forEachPair.k]];
             ExecuteCommands (transform);
         }
         return;
@@ -297,12 +296,12 @@ function utility.forEachPair (object, key_name, value_name, transform) {
         utility.forEachPair.columns = Columns (object);
         utility.forEachPair.return_object = {utility.forEachPair.rows,  utility.forEachPair.columns};
         ^(key_name) = {{utility.forEachPair.r,utility.forEachPair.c}};
-        
+        ^(value_name) := object [utility.forEachPair.r][utility.forEachPair.c];
+
         for (utility.forEachPair.r = 0; utility.forEachPair.r < utility.forEachPair.rows; utility.forEachPair.r += 1) {
             for (utility.forEachPair.c = 0; utility.forEachPair.c < utility.forEachPair.columns; utility.forEachPair.c += 1) {
-                 ^(value_name) := object [utility.forEachPair.r][utility.forEachPair.c];
                 ExecuteCommands (transform);
-               
+
             }
         }
     }

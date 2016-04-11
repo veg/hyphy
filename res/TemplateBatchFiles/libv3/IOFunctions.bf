@@ -4,6 +4,29 @@ function io.checkAssertion(statement, error_msg) {
     ExecuteCommands("assert (`statement`, error_msg)");
 }
 
+lfunction io.prompt_user (prompt,default,lower_bound,upper_bound,is_integer) {
+	value = lower_bound-1;
+
+	while (value < lower_bound || value > upper_bound) {
+		fprintf (stdout, prompt, " (permissible range = [", lower_bound, ",", upper_bound, "], default value = ", default);
+		if (is_integer) {
+			fprintf (stdout, ", integer");
+		}
+		fprintf (stdout, "): ");
+		fscanf  (stdin, "String", str_val);
+
+		if (Abs(str_val) == 0) {
+			value = 0+default;
+		} else {
+		    value = 0+str_val;
+		}
+		if (is_integer) {
+		    value = value $ 1;
+		}
+	}
+	return value;
+}
+
 lfunction io._reportMessageHelper(analysis, text) {
     if (Abs(analysis)) {
         return "[`analysis`] `text`";
@@ -27,28 +50,29 @@ lfunction io.reportProgressMessage(analysis, text) {
     fprintf(stdout, io._reportMessageHelper(analysis, text), "\n");
 }
 
+lfunction io.reportAnalysisStageMD(stage) {
+    fprintf (stdout, "\n>", stage, "\n\n");
+}
+
 lfunction io.reportProgressMessageMD(analysis, stage, text) {
     if (Abs(cache) == 0) {
         cache = {};
     }
     advance = TRUE;
-    if (Abs(cache[analysis])) {
-        if ((cache[analysis])[stage]) {
-            advance = FALSE;
-        }
-        (cache[analysis])[stage] += 1;
-    } else {
-        cache[analysis] = {};
-        (cache[analysis])[stage] = 1;
+    utility.dict.ensure_key (cache, analysis);
+
+    if ((cache[analysis])[stage]) {
+        advance = FALSE;
     }
+    (cache[analysis])[stage] += 1;
 
     if (advance) {
         if (Abs (cache[analysis]) == 1) {
             fprintf (stdout, "\n");
         }
-        fprintf(stdout, Abs(cache[analysis]), ". ", text, "\n");
+        fprintf(stdout, "\n### ", text, "\n");
     } else {
-        fprintf(stdout, "    ", text, "\n");
+        fprintf(stdout, text, "\n");
     }
 }
 
@@ -72,45 +96,43 @@ lfunction io.format_object (object, options) {
     if (Type (object) == "String") {
         return object;
     }
-    if (Type (object) == "Number") {    
+    if (Type (object) == "Number") {
         if (None != options) {
             if (Abs (options["number-precision"]) > 0) {
                 return Eval ("Format (`&object`, 0, " + options["number-precision"] + ")");
             }
         }
     }
-    
+
     return ""+object;
 }
 
 
 lfunction io.format_table_row (row, options) {
-    
+
     if (None == options) {
         options = {};
     }
-    
-    fprintf (stdout, row, "\n");
 
     cells = utility.map (row, "_value_", "io.format_object(_value_, `&options`)");
-    
+
     min_width = Max (3, options ["min-column-width"]);
-    
+
     underline_chars = {{"-","-","-"}};
     dim = utility.array1D (cells);
-    
+
     row = ""; row * 128;
     if (options ["header"]) {
         underlines = ""; underlines * 128;
         widths = {};
-        
+
         if (options["align"] == "center") {
             underline_chars[0] = ':'; underline_chars[2] = ':';
         } else {
             if (options["align"] == "right") {
                 underline_chars[2] = ':';
             }
-       
+
         }
         for (i = 0; i < dim; i += 1) {
             content_width = Abs (cells[i]);
@@ -118,10 +140,10 @@ lfunction io.format_table_row (row, options) {
             widths + cell_width;
             row * "|";
             padding = cell_width - content_width;
-            
+
             for (k = 0; k < padding$2; k+=1) {
                 row * " ";
-            }        
+            }
             row * cells[i];
             for (k = 0; k < padding - padding$2; k+=1) {
                 row * " ";
@@ -132,10 +154,11 @@ lfunction io.format_table_row (row, options) {
              underlines * underline_chars[1];
             }
             underlines * underline_chars[2];
-        }    
+        }
         row * "|"; underlines * "|"; underlines * 0;
         row * "\n";
-        row * underlines;  
+        row * underlines;
+        row * "\n";
         options ["column-widths"] = widths;
     } else {
         for (i = 0; i < dim; i += 1) {
@@ -151,16 +174,16 @@ lfunction io.format_table_row (row, options) {
             }
             for (k = 0; k < padding$2; k+=1) {
                 row * " ";
-            }        
+            }
             row * cells[i];
             for (k = 0; k < padding - padding$2; k+=1) {
                 row * " ";
             }
-        }    
+        }
         row * "|\n";
     }
     row * 0;
-    return row; 
+    return row;
 }
 
 function io.get_a_list_of_files(filename) {

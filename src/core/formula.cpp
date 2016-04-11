@@ -1302,7 +1302,7 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
     return result;
 }
 
-//unsigned long ticker = 0UL;
+  //unsigned long ticker = 0UL;
 
 //__________________________________________________________________________________
 _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
@@ -1328,9 +1328,9 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
       
       
       
-        //ticker++;
-        /*if (ticker++ > 942250) {
-          printf ("_Formula::Compute (%x, %d)  %ld items, Stack %ld\n", this, ticker, theFormula.lLength, theStack.theStack.lLength);
+        /*ticker++;
+        if (ticker >= 1462440) {
+          printf ("\n_Formula::Compute (%x, %d)  %ld terms, stack depth %ld\n", this, ticker, theFormula.lLength, theStack.theStack.lLength);
         }*/
       
         if (startAt == 0 && resultCache && resultCache->lLength) {
@@ -1394,21 +1394,27 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                 }
             }
         } else {
+          
             for (unsigned long i=startAt; i<theFormula.lLength; i++) {
                   _Operation * this_step =((_Operation*)(((BaseRef**)theFormula.lData)[i]));
               
-                  /*if (ticker > 942050 & theFormula.lLength == 10 && i == 9) {
-                    printf ("Step %ld, Stack %ld, Op %s (top stack %s)\n", i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
-                  }*/
+              
+                  /*
+                   if (ticker >= 1462435) {
+                    printf ("[FORMULA %x] Step %ld, Stack %ld, Op %s (top stack %s)\n", this, i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
+                  } 
+                   */
               
                   if (! this_step->Execute(*scrap_here, nameSpace, errMsg)) {
                       wellDone = false;
                       break;
                   }
               
-                  /*if (ticker > 942050 & theFormula.lLength == 10 && i == 9) {
-                    printf ("Step %ld, Stack %ld, Op %s (top stack %s)\n", i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
-                  }*/
+                  /*
+                  if (ticker >= 1462435) {
+                    printf ("[DONE %x] Step %ld, Stack %ld, top stack %s\n", this, i, theStack.theStack.lLength, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
+                  }
+                   */
             }
         }
         if (scrap_here->StackDepth() != 1L || !wellDone) {
