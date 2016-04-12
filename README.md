@@ -1,6 +1,8 @@
 HyPhy - Hypothesis testing using Phylogenies
 ============================================
 
+[![Build Status](https://travis-ci.org/veg/hyphy.svg)](https://travis-ci.org/veg/hyphy)
+
 Installation
 ------------
 

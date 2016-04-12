@@ -48,6 +48,7 @@
 #include "function_templates.h"
 
 
+
 //#include "profiler.h"
 #ifndef __HEADLESS__
 #ifdef __HYPHY_GTK__
@@ -2317,9 +2318,11 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long)
         if (simpleParameters.lLength) {
             result = result & "\nCompiled.";
         } else if (parameters.lLength>2) {
+
             _String inputName ((_String*)parameters(2)->toStr());
             result = result & " reading input from " & inputName;
             _AssociativeList *inputValues = (_AssociativeList *)FetchObjectFromVariableByType(&inputName, ASSOCIATIVE_LIST);
+
             if (inputValues) {
                 result = result & '\n' & _String ((_String*)inputValues->toStr());
             }
@@ -3241,7 +3244,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
     if (parameters.lLength >= 3)
         // stdin redirect (and/or name space prefix)
     {
-        _PMathObj inAVL = ProcessDictionaryArgument ((_String*)parameters(2),chain.nameSpacePrefix);
+
+       _PMathObj inAVL = ProcessDictionaryArgument ((_String*)parameters(2),chain.nameSpacePrefix);
 
         if (!inAVL) {
             if (parameters.lLength == 3) {
@@ -4467,10 +4471,11 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
             if (chain.stdinRedirect) {
                 if (fixedLength == 1) {
                     _String buffer (chain.FetchFromStdinRedirect());
-                    for (choice = 0; choice<theChoices->lLength; choice++)
+                    for (choice = 0; choice<theChoices->lLength; choice++) {
                         if (buffer.Equal ((_String*)(*(_List*)(*theChoices)(choice))(0))) {
                             break;
                         }
+                    }
                     if (choice == theChoices->lLength) {
                         WarnError (_String("Not a valid option: '") & buffer & "' passed to Choice List '" & ((_String*)parameters(1))->sData & "' using redirected stdin input");
                         return;
@@ -4496,14 +4501,16 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                     } else
                         while (1) {
                             _String buffer (chain.FetchFromStdinRedirect());
+
                             if (buffer.sLength) {
-                                for (choice = 0; choice<theChoices->lLength; choice++)
-                                    if (buffer.Equal ((_String*)(*(_List*)(*theChoices)(choice))(0))) {
+                                for (choice = 0; choice<theChoices->lLength; choice++) {
+                                    if (buffer.Equal((_String*)(*(_List*)(*theChoices)(choice))(0))) {
                                         break;
                                     }
-
+                                }
                                 if (choice<theChoices->lLength && sel.Find(choice)==-1) {
                                     sel<<choice;
+                                    break;
                                 } else {
                                     WarnError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to ChoiceList (with multiple selections) '" & ((_String*)parameters(1))->sData & "' using redirected stdin input");
                                     return;
