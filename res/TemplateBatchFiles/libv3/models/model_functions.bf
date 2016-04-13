@@ -93,8 +93,7 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 	model.generic.define_model.model = utility.callFunction (model_spec, arguments);	
 	models.generic.attachFilter (model.generic.define_model.model, data_filter);
 	
-	model.generic.define_model.model = utility.callFunction(model.generic.define_model.model ["defineQ"], {"0" :   "model.generic.define_model.model",
-																						   "1" :    parameters.quote (id)});
+	model.generic.define_model.model = Call (model.generic.define_model.model ["defineQ"], model.generic.define_model.model, id);
 																						   
 	model.generic.define_model.model ["matrix-id"] = "`id`_" + terms.rate_matrix;
 	model.generic.define_model.model ["efv-id"] = "`id`_" + terms.efv_matrix;
@@ -104,9 +103,9 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 		model.generic.define_model.model ["frequency-estimator"] = estimator_type;
 	} 
 		
-	utility.callFunction (model.generic.define_model.model ["frequency-estimator"], {"0": "model.generic.define_model.model", 
-													    "1":  parameters.quote(id),
-													    "2":  parameters.quote(data_filter)}); // this sets the EFV field
+	Call (model.generic.define_model.model ["frequency-estimator"], model.generic.define_model.model, 
+													    id,
+													    data_filter); // this sets the EFV field
 													    
 					
 	parameters.stringMatrixToFormulas (model.generic.define_model.model ["matrix-id"],model.generic.define_model.model[terms.rate_matrix]);
@@ -115,7 +114,7 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 	model.define.from.components (id, 	model.generic.define_model.model ["matrix-id"], model.generic.define_model.model ["efv-id"], model.generic.define_model.model ["canonical"]);
     
     if (Type (model.generic.define_model.model["post-definition"]) == "String") {
-        utility.callFunction (model.generic.define_model.model["post-definition"], {"0" : "model.generic.define_model.model"});
+        Call (model.generic.define_model.model["post-definition"], model.generic.define_model.model);
     }
 	
 	return model.generic.define_model.model;

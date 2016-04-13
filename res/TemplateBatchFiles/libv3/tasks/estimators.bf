@@ -46,11 +46,7 @@ function estimators.extractBranchInformation(tree, node, model) {
     estimators.extractBranchLength.result = {};
 
     if (Abs(model["get-branch-length"])) {
-        estimators.extractBranchLength.result["MLE"] = utility.callFunction(model["get-branch-length"], {
-            "0": "model",
-            "1": "tree",
-            "2": "node"
-        });
+        estimators.extractBranchLength.result["MLE"] = Call (model["get-branch-length"], model, tree, node);
     } else {
         estimators.extractBranchLength.result["MLE"] = Eval("BranchLength (`tree`, \"`node`\")");
     }
@@ -63,11 +59,7 @@ function estimators.extractBranchInformation(tree, node, model) {
 
 function estimators.applyBranchLength(tree, node, model, length) {
     
-    return utility.callFunction(model["set-branch-length"], {
-        "0": "model",
-        "1": length,
-        "2": parameters.quote(tree + "." + node)
-    });
+    return Call (model["set-branch-length"], model, length, tree + "." + node);
 }
 
 function estimators.fixSubsetOfEstimates.helper(key, value) {

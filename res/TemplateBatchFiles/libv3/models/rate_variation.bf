@@ -89,9 +89,9 @@ function  rate_variation.types.gamma_i (model, namespace) {
 			  	 
      ExecuteCommands ("GetInformation (info, `rate_variation.types.gamma_i.main`)");
 			  	 
-     rate_variation.types.gamma_i.q = utility.callFunction (model["original q call-back"],   
-                                                           {"0" : model,
-                                                            "1" : parameters.quote (namespace)});
+     rate_variation.types.gamma_i.q = Call (model["original q call-back"],   
+                                                           model,
+                                                           namespace);
        
      rate_variation.types.gamma_i.q [terms.rate_matrix] = parameters.addMultiplicativeTerm (rate_variation.types.gamma_i.q[terms.rate_matrix], rate_variation.types.gamma_i.main, 0);
      return rate_variation.types.gamma_i.q;                                               

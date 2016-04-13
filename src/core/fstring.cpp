@@ -868,7 +868,7 @@ _PMathObj   _FString::Call (_List* arguments, _hyExecutionContext* context) {
        _Formula the_call;
     
       if (arguments) {
-        for (long k = arguments->countitems()-1; k >=0 ; k --) {
+        for (long k = 0; k < arguments->countitems() ; k ++) {
           _PMathObj payload = (_PMathObj)arguments->GetItem (k);
           _Operation *arg_k = new _Operation (payload);
           payload->AddAReference();

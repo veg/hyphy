@@ -47,11 +47,12 @@ function models.codon.generic.defineQMatrix (modelSpec, namespace) {
                 continue;
             }
         
-            __rp = utility.callFunction (__rate_function, {"0": parameters.quote(__alphabet[_rowChar]), 
-                                                           "1": parameters.quote(__alphabet[_colChar]),
-                                                           "2": "namespace",
-                                                           "3": "__modelType",
-                                                           "4": "__table"});
+            __rp = Call (__rate_function, __alphabet[_rowChar], 
+                                          __alphabet[_colChar],
+                                          namespace,
+                                          __modelType,
+                                          __table);
+                                          
             
             
             if (Abs (__rp[terms.rate_entry])) {
@@ -64,7 +65,7 @@ function models.codon.generic.defineQMatrix (modelSpec, namespace) {
 	}
 	
 	if (__modelType == "global") {
-	    __rp = utility.callFunction (__time_function, {"0" : parameters.quote(__modelType)});
+	    __rp = Call (__time_function, __modelType);
 	
         if (Abs (__rp)) {
             ((modelSpec["parameters"])[terms.local])[terms.synonymous_rate] = __rp; 

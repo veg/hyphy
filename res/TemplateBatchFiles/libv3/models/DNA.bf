@@ -29,10 +29,10 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 	
 	for (_rowChar = 0; _rowChar < 4; _rowChar +=1 ){
 		for (_colChar = _rowChar + 1; _colChar < 4; _colChar += 1) {
-			__rp = utility.callFunction (__rate_function, {"0": parameters.quote(__alphabet[_rowChar]), 
-															   "1": parameters.quote(__alphabet[_colChar]),
-															   "2": "namespace",
-															   "3": "__modelType"});
+			__rp = Call (__rate_function, __alphabet[_rowChar], 
+															__alphabet[_colChar],
+															 namespace,
+															__modelType);
 															   
 															   
             if (Abs (__rp[terms.rate_entry])) {			
@@ -47,7 +47,7 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 		}	
 	}
 	
-	__rp = utility.callFunction (__time_function, {"0" : parameters.quote(__modelType)});
+	__rp = Call (__time_function, __modelType);
 	
 	if (Abs (__rp)) {
 		((modelSpec["parameters"])[terms.local])[terms.timeParameter ()] = __rp; 
