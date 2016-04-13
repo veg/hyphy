@@ -599,9 +599,8 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
     DeleteObject(conv);
 }
 //__________________________________________________________________________________
-bool     _Formula::IsEmpty(void)
+bool     _Formula::IsEmpty(void) const {
 // is there anything in the formula
-{
     return bool(!theFormula.lLength);
 }
 
@@ -1228,7 +1227,7 @@ _Parameter   _Formula::MeanIntegral(_Variable* dx, _Parameter left, _Parameter r
 }
 
 //__________________________________________________________________________________
-long     _Formula::NumberOperations(void)
+long     _Formula::NumberOperations(void) const
 // number of operations in the formula
 {
     return theFormula.lLength;
@@ -1563,6 +1562,20 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
     }
   }
 }
+
+//__________________________________________________________________________________
+long _Formula::StackDepth (long from, long to) const {
+  _SimpleList::NormalizeCoordinates(from, to, NumberOperations());
+  long result = 0L;
+  
+  for (unsigned long i = from; i <= to; i++) {
+     result += GetIthTerm (i)->StackDepth ();
+  }
+  
+  return result;
+  
+}
+
 
 //__________________________________________________________________________________
 bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
@@ -1988,10 +2001,9 @@ bool _Formula::DependsOnVariable (long idx)
 }
 
 //__________________________________________________________________________________
-_Operation* _Formula::GetIthTerm (long idx)
-{
+_Operation* _Formula::GetIthTerm (long idx) const {
     if (idx >= 0 && idx < theFormula.lLength) {
-        return ((_Operation**)theFormula.lData)[idx];
+        return (_Operation*)theFormula.GetItem(idx);
     }
 
     return nil;

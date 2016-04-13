@@ -219,11 +219,18 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
 
 //__________________________________________________________________________________
 
-void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* context)
-{
+void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* context) {
     _FString * t = (_FString*)p->Type();
     context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' is not implemented/defined for a " & *t->theString);        
     DeleteObject (t);
+}
+
+//__________________________________________________________________________________
+
+void        WarnWrongNumberOfArguments (_PMathObj p, long opCode, _hyExecutionContext* context, _List * args) {
+  _FString * t = (_FString*)p->Type();
+  context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' was called with an incorrect number of arguments (" & (long) (args ? args->lLength : 0L) & ") for " & *t->theString);
+  DeleteObject (t);
 }
 
 
@@ -722,7 +729,9 @@ long _parserHelperHandleInlineAssignmentCases (_String& s, _FormulaParsingContex
             return HandleFormulaParsingError ("Invalid RHS in an assignment ", parsingContext.errMsg(), s, i);
         }
         if (twoToken && s.getChar(i-1) == '+') {
-            theV->SetValue(theV->Compute()->Execute(HY_OP_CODE_ADD,varObj));
+            _List arg;
+            arg <<  varObj;
+            theV->SetValue(theV->Compute()->ExecuteSingleOp(HY_OP_CODE_ADD,&arg));
         } else {
             theV->SetValue(varObj);
         }
@@ -731,6 +740,23 @@ long _parserHelperHandleInlineAssignmentCases (_String& s, _FormulaParsingContex
     }
     return HY_FORMULA_EXPRESSION;
 }
+
+//__________________________________________________________________________________
+
+void        _parse_new_level (long & level, _List & operations, _List& operands, _List*& levelOps, _List*& levelData, _String& curOp, _SimpleList& functionCallTags, long function_tag = -1L) {
+  
+  level ++;
+  operations.AppendNewInstance (new _List);
+  operands.AppendNewInstance (new _List);
+  
+  levelOps  = (_List*)(operations(level));
+  levelData = (_List*)(operands(level));
+  
+  functionCallTags << function_tag;
+  
+  curOp = empty;
+}
+
 
 
 //__________________________________________________________________________________
@@ -787,11 +813,18 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
     _SimpleList     squareBrackets,
                     mergeMAccess,
-                    mergeMAccessLevel;
-                    
+                    mergeMAccessLevel,
+                    functionCallTags
+                    /*
+                      for each context level, stores -1, if this level is not a function call,
+                      or the first operation associated with the argument list for this function
+                      call
+                     */
+                    ;
+  
 
 
-    long            level                 = 0;
+    long            level                 = -1;
     /* 04252006 mlevel = -1, */
     /* mcount = 0 ; */
 
@@ -804,12 +837,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
     char            storage     = 0;
 
 
-    operations.AppendNewInstance (new _List);
-    operands.AppendNewInstance (new _List);
-
-    levelOps  = (_List*)(operations(level));
-    levelData = (_List*)(operands(level));
-
+    _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
     for (long i = 0; i<=s.sLength; i++) {
         storage = 0; // no implied ops by default
 
@@ -819,34 +847,24 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
         char     lookAtMe = s.getChar(i);
 
-        if (i==s.sLength || lookAtMe == ')' || lookAtMe == ']' || lookAtMe == ',') // closing ) or ]
+        if (i==s.sLength || lookAtMe == ')' || lookAtMe == ']' || lookAtMe == ',') {
+            // closing ) or ]
             // or a parameter list
-        {
-
-            /* 04252006 if (level == mlevel && s.getChar(i)!=']')*/
+                /* 04252006 if (level == mlevel && s.getChar(i)!=']')*/
             if (squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength-1] == level && lookAtMe != ']') {
                 return HandleFormulaParsingError ("Missing or unbalanced '[]' ", parsingContext.errMsg(), s, i);
-             }
-
-            /* 04252006 if (s.getChar(i)==']' && s.getChar(i+1)!='[')
-                mlevel = -1; */
+            }
 
             if (lookAtMe != ',') {
               if (i != s.sLength) {
                 level--;
               } else {
-                if (level) {
-                  level = -1;
+                if (level != 0L) {
+                  level = -1L;
                 }
               }
             }
-
-            /* 04252206 if (i!=s.sLength && lookAtMe != ',')
-                level --;
-            else
-                if (lookAtMe !=',' && level)
-                    level = -1; */
-
+          
             if (level<0) {
                 return HandleFormulaParsingError ("Unbalanced '()' parentheses ", parsingContext.errMsg(), s, i);
             }
@@ -860,14 +878,12 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     return HandleFormulaParsingError ("Syntax error ", parsingContext.errMsg(), s, i);
                 }
 
-                for (int i = 0; i<levelData->countitems(); i++) {
-                  //f->theFormula << (*levelData)(i);    // mod 07072006 to not duplicate
-                  f->PushTerm (levelData->GetItem (i));
+                for (unsigned long i = 0UL; i<levelData->countitems(); i++) {
+                    f->PushTerm (levelData->GetItem (i));
                 }
 
-
-                for (int k = levelOps->countitems()-1; k>=0; k--) {
-                    f->theFormula << (*levelOps)(k);    // mod 07072006 to not duplicate
+                for (long k = levelOps->countitems()-1L; k>=0; k--) {
+                    f->PushTerm (levelOps->GetItem(k));
                 }
 
                 levelOps->Clear();
@@ -884,10 +900,38 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             levelData->Clear();
 
             if (i<s.sLength && lookAtMe !=',' ) {
-                operations.Delete(level+1);
-                operands.Delete(level+1);
-                levelOps    = (_List*)(operations(level));
-                levelData   = (_List*)(operands(level));
+                operations.Delete (level+1);
+                operands.Delete   (level+1);
+                functionCallTags.Pop();
+              
+                levelOps          = (_List*)operations(level);
+                levelData         = (_List*)operands(level);
+              
+                long function_call_pop = functionCallTags.Element (-1);
+              
+                if (function_call_pop >= 0) {
+                  if (levelData->lLength == 0L && levelOps->lLength == 1L) {
+                    long argument_count = f->StackDepth(function_call_pop);
+                    
+                    _Operation* function_call = (_Operation*)levelOps->GetItem(0);
+                    if (function_call->IsHBLFunctionCall()) {
+                      function_call->SetTerms(-argument_count-1L);
+                    } else {
+                      function_call->SetTerms(argument_count);
+                    }
+                    
+                    f->PushTerm (function_call);
+                    
+                    operations.Delete (level);
+                    operands.Delete   (level);
+                    functionCallTags.Pop();
+                    
+                    levelOps          = (_List*)operations(--level);
+                    levelData         = (_List*)operands(level);
+                 } else {
+                    return HandleFormulaParsingError ("Syntax error ", parsingContext.errMsg(), s, i);
+                  }
+                }
 
                 if (lookAtMe !=']')
                     if ( BinOps.Find(s.getChar(i+1))==-1 && i<s.sLength-1 && s.getChar(i+1)!=')' && s.getChar(i+1)!=']' && s.getChar(i+1)!='[' && HalfOps.Find(s.getChar(i+1))==-1 && s.getChar(i+1)!=',') {
@@ -1230,26 +1274,18 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 }
             }
 
-            squareBrackets << ++level;
-
-            curOp       = empty;
-            operations.AppendNewInstance(new _List);
-            operands.AppendNewInstance(new _List);
-            levelOps   = (_List*) (operations(level));
-            levelData  = (_List*) (operands  (level));
-
+ 
+            _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
+            squareBrackets << level;
             continue;
         }
 
 
         if (s.getChar(i) == '(') { // opening (
-            level++;
-            operations.AppendNewInstance (new _List);
-            operands.AppendNewInstance   (new _List);
-            levelOps    =   (_List*)(operations(level));
-            levelData   =   (_List*)(operands(level));
-            curOp       =   empty;
-            continue;
+          // check to see if this is a function call
+          
+          _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
+          continue;
         }
 
         if (s.getChar(i)=='"' || s.getChar (i) == '\'') { // a string literal
@@ -1429,7 +1465,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     if (takeVarReference) {
                         return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
                     }
-                    levelOps->AppendNewInstance (new _Operation (curOp,FunctionArgumentCount(bLang)));
+                    // built-in function
+                    _Operation * built_in_call = new _Operation (curOp,FunctionArgumentCount(bLang));
+                    _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags, f->NumberOperations());
+                    levelOps->AppendNewInstance (built_in_call);
                     continue;
                 }
 
@@ -1439,7 +1478,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     if (takeVarReference) {
                         return HandleFormulaParsingError ("Cannot make a reference from user-defined function", parsingContext.errMsg(), s, i);
                     }
-                    levelOps->AppendNewInstance (new _Operation (curOp,-bLang-1));
+                    // HBL function
+                    _Operation * hbl_call = new _Operation (curOp,-bLang-1);
+                    _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags, f->NumberOperations());
+                    levelOps->AppendNewInstance (hbl_call);
                     continue;
                 }
 

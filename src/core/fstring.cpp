@@ -627,161 +627,170 @@ _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* contex
 //__________________________________________________________________________________
 
 
-_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   {
-    switch (opCode) {
+_PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)   {
+  
+  switch (opCode) { // first check operations without arguments
     case HY_OP_CODE_NOT: // !
-        return FileExists();
-    case HY_OP_CODE_NEQ: // !=
-        return NotEqual(p);
-        break;
-    case HY_OP_CODE_IDIV: // $ match regexp
-        return EqualRegExp(p);
-        break;
-    case HY_OP_CODE_CALL: // call the function
-        return Call (p, context);
-        break;
-    case HY_OP_CODE_MOD: // % equal case insenstive
-        return AreEqualCIS(p);
-        break;
-    case HY_OP_CODE_AND: { // && upcase or lowercase
-        _Parameter pVal = 0.0;
-        if (p->ObjectClass () == NUMBER) {
-            pVal = p->Value();
-        }
-
-        if (pVal < 0.0) {
-            return (_PMathObj)makeDynamic();
-        } else {
-            _String * t = nil;
-
-
-            if (CheckEqual(pVal,2.0) || CheckEqual(pVal,3.0) || CheckEqual(pVal,4.0) || CheckEqual(pVal,5.0) || CheckEqual(pVal,6.0)) {
-                checkPointer (t = new _String (theString->sLength+1,true));
-                t->EscapeAndAppend (*theString, CheckEqual(pVal,3.0) + 2*CheckEqual(pVal,4.0) + 4*CheckEqual(pVal,5.0) + 5*CheckEqual(pVal,6.0));
-                t->Finalize();
-            } else {
-                t = new _String (*theString);
-                checkPointer (t);
-                if (CheckEqual(pVal,1.0)) {
-                    t->UpCase();
-                } else {
-                    t->LoCase();
-                }
-            }
-
-            return new _FString (t);
-        }
-    }
-    break;
-    case HY_OP_CODE_MUL: // *
-        if (p) {
-         // NOT a dereference
-            if (p->ObjectClass() == MATRIX) {
-                return      MapStringToVector (p);
-            } else {
-                return new _Constant(AddOn(p));
-            }
-        } else {
-            return Dereference(false, context);
-        }
-        break;
-    case HY_OP_CODE_ADD: // +
-        if (p) {
-            return Add(p);
-        } else {
-            return Sum();
-        }
-        break;
-    case HY_OP_CODE_DIV: // /
-        return EqualAmb(p);
-        break;
-    case HY_OP_CODE_LESS: // <
-        return Less(p);
-        break;
-    case HY_OP_CODE_LEQ: // <=
-        return LessEq(p);
-        break;
-    case HY_OP_CODE_EQ: // ==
-        return AreEqual(p);
-        break;
-    case HY_OP_CODE_GREATER: // >
-        return Greater(p);
-        break;
-    case HY_OP_CODE_GEQ: // >=
-        return GreaterEq(p);
-        break;
+      return FileExists();
     case HY_OP_CODE_ABS: // Abs
-        return new _Constant (theString->sLength);
-        break;
-    case HY_OP_CODE_DIFF: // Differentiate
-        return Differentiate(p);
-        break;
+      return new _Constant (theString->sLength);
     case HY_OP_CODE_EVAL: // Eval
-        return Evaluate(context);
-        break;
+      return Evaluate(context);
     case HY_OP_CODE_EXP: // Exp
-        return new _Constant (theString->LempelZivProductionHistory(nil));
-        break;
-    case HY_OP_CODE_FORMAT: { // Format
-        _String cpyString (*theString);
-        _Formula f (cpyString);
-        _PMathObj fv = f.Compute();
-        if (fv && fv->ObjectClass () == NUMBER) {
-            return ((_Constant*)fv)->FormatNumberString (p,p2);
-        } else {
-            ReportWarning (_String("Failed to evaluate ")& *theString & " to a number in call to Format (string...)");
-            return new _FString();
-        }
-    }
-    break;
-    case HY_OP_CODE_INVERSE: { // Inverse
-        _FString * res = new _FString (*theString, false);
-        checkPointer (res);
-        for (long i1 = 0, i2 = theString->sLength-1; i1<theString->sLength; i1++, i2--) {
-            res->theString->sData[i1] = theString->sData[i2];
-        }
-
-        return res;
-    }
-    break;
-        
+      return new _Constant (theString->LempelZivProductionHistory(nil));
+    case HY_OP_CODE_LOG: // Log - check sum
+      return new _Constant (theString->Adler32());
+    case HY_OP_CODE_INVERSE:  // Inverse
+      return new _FString (new _String (theString->Reverse()));
     case HY_OP_CODE_MCOORD: // MCoord
       return new _FString (*theString, true);
-      break;
-
-    case HY_OP_CODE_JOIN: // Inverse
-        return Join (p);
-
-    case HY_OP_CODE_LOG: // Log - check sum
-        return new _Constant (theString->Adler32());
-    case HY_OP_CODE_MACCESS: // MAccess
-        return CharAccess(p,p2);
-        break;
-    case HY_OP_CODE_REROOTTREE: // RerootTree
-        return RerootTree (nil);
-        break;
-    case HY_OP_CODE_ROWS: // Count Objects of given type
-        return CountGlobalObjects();
-        break;
-    case HY_OP_CODE_SIMPLIFY: // Simplify an expression
-        return SubstituteAndSimplify (p);
-        break;
     case HY_OP_CODE_TYPE: // Type
-        return Type();
-        break;
-    case HY_OP_CODE_POWER: // Replace (^)
-        if (p)
-            return ReplaceReqExp (p);
-        return Dereference(true, context);
-        break;
-    case HY_OP_CODE_OR: // Match all instances of the reg.ex (||)
-        return EqualRegExp (p, true);
-        break;
+      return Type();
+    case HY_OP_CODE_REROOTTREE: // RerootTree
+      return RerootTree (nil);
+    case HY_OP_CODE_ROWS: // Count Objects of given type
+      return CountGlobalObjects();
+  }
+  
+  _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
+  
+  switch (opCode) { // next check operations without arguments or with one argument
+    case HY_OP_CODE_MUL: // *
+      if (arg0) {
+        // NOT a dereference
+        if (arg0->ObjectClass() == MATRIX) {
+          return      MapStringToVector (arg0);
+        } else {
+          return new _Constant(AddOn(arg0));
+        }
+      } else {
+        return Dereference(false, context);
+      }
+    case HY_OP_CODE_ADD: // +
+      if (arg0) {
+        return Add(arg0);
+      } else {
+        return Sum();
+      }
+    case HY_OP_CODE_POWER: {
+      // Replace (^)
+      if (arg0)
+        return ReplaceReqExp (arg0);
+      return Dereference(true, context);
     }
+      
+    case HY_OP_CODE_CALL: // call the function
+      return Call (arguments, context);
+  }
+  
+  if (arg0) {
+    switch (opCode) {
+      case HY_OP_CODE_NEQ: // !=
+        return NotEqual(arg0);
+      case HY_OP_CODE_IDIV: // $ match regexp
+        return EqualRegExp(arg0);
+      case HY_OP_CODE_MOD: // % equal case insenstive
+        return AreEqualCIS(arg0);
+      case HY_OP_CODE_AND: { // && upcase or lowercase
+        _Parameter pVal = 0.0;
+        if (arg0->ObjectClass () == NUMBER) {
+          pVal = arg0->Value();
+        }
+        
+        if (pVal < 0.0) {
+          return (_PMathObj)makeDynamic();
+        } else {
+          _String * t = nil;
+          
+          if (CheckEqual(pVal,2.0) || CheckEqual(pVal,3.0) || CheckEqual(pVal,4.0) || CheckEqual(pVal,5.0) || CheckEqual(pVal,6.0)) {
+            t = new _String (theString->sLength+1,true);
+            t->EscapeAndAppend (*theString, CheckEqual(pVal,3.0) + 2*CheckEqual(pVal,4.0) + 4*CheckEqual(pVal,5.0) + 5*CheckEqual(pVal,6.0));
+            t->Finalize();
+          } else {
+            t = new _String (*theString);
+            if (CheckEqual(pVal,1.0)) {
+              t->UpCase();
+            } else {
+              t->LoCase();
+            }
+          }
+          
+          return new _FString (t);
+        }
+      }
+      case HY_OP_CODE_DIV: // /
+        return EqualAmb(arg0);
+      case HY_OP_CODE_LESS: // <
+        return Less(arg0);
+      case HY_OP_CODE_LEQ: // <=
+        return LessEq(arg0);
+      case HY_OP_CODE_EQ: // ==
+        return AreEqual(arg0);
+      case HY_OP_CODE_GREATER: // >
+        return Greater(arg0);
+      case HY_OP_CODE_GEQ: // >=
+        return GreaterEq(arg0);
+      case HY_OP_CODE_DIFF: // Differentiate
+        return Differentiate(arg0);
+      case HY_OP_CODE_JOIN: // Inverse
+        return Join (arg0);
+      case HY_OP_CODE_SIMPLIFY: // Simplify an expression
+        return SubstituteAndSimplify (arg0);
+      case HY_OP_CODE_OR: // Match all instances of the reg.ex (||)
+        return EqualRegExp (arg0, true);
+    }
+    
+    _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
+    
+    switch (opCode) {
+      case HY_OP_CODE_MACCESS: // MAccess
+        return CharAccess(arg0,arg1);
+    }
+    
+    if (arg1) {
+      switch (opCode) {
+        case HY_OP_CODE_FORMAT: { // Format
+          _String   cpyString (*theString);
+          _Formula f (cpyString);
+          _PMathObj fv = f.Compute();
+          if (fv && fv->ObjectClass () == NUMBER) {
+            return ((_Constant*)fv)->FormatNumberString (arg0,arg1);
+          } else {
+            ReportWarning (_String("Failed to evaluate ")& *theString & " to a number in call to Format (string...)");
+            return new _FString();
+          }
+        }
+          
+      }
+    }
+  }
+  
+  switch (opCode) {
+    case HY_OP_CODE_NEQ: // !=
+    case HY_OP_CODE_IDIV: // $ match regexp
+    case HY_OP_CODE_MOD: // % equal case insenstive
+    case HY_OP_CODE_AND:// && upcase or lowercase
+    case HY_OP_CODE_DIV: // /
+    case HY_OP_CODE_LESS: // <
+    case HY_OP_CODE_LEQ: // <=
+    case HY_OP_CODE_EQ: // ==
+    case HY_OP_CODE_GREATER: // >
+    case HY_OP_CODE_GEQ: // >=
+    case HY_OP_CODE_DIFF: // Differentiate
+    case HY_OP_CODE_JOIN: // Inverse
+    case HY_OP_CODE_SIMPLIFY: // Simplify an expression
+    case HY_OP_CODE_OR: // Match all instances of the reg.ex (||)
+    case HY_OP_CODE_MACCESS: // MAccess
+    case HY_OP_CODE_FORMAT:  // Format
+      WarnWrongNumberOfArguments (this, opCode,context, arguments);
+      break;
+    default:
+      WarnNotDefined (this, opCode,context);
 
-    WarnNotDefined (this, opCode,context);
-    return new _FString;
-
+  }
+  
+  return new _MathObject;
+  
 }
 
 //__________________________________________________________________________________
@@ -853,34 +862,22 @@ _PMathObj   _FString::FileExists (void)
 }
 
 //__________________________________________________________________________________
-_PMathObj   _FString::Call (_PMathObj arguments, _hyExecutionContext* context) {
+_PMathObj   _FString::Call (_List* arguments, _hyExecutionContext* context) {
   long function_id = FindBFFunctionName (*theString, NULL);
   if (function_id >= 0) {
-    if (arguments->ObjectClass() == ASSOCIATIVE_LIST) {
-      _AssociativeList * args = (_AssociativeList *)arguments;
-      
-      
-      _Formula the_call;
+       _Formula the_call;
     
-      if (args->avl.countitems()) {
-        _SimpleList tcache;
-     
-        long        iv,
-        k = args->avl.Traverser (tcache, iv, args->avl.GetRoot());
-        
-        _List    argument_list;
-        
-        for (; k>=0; k = variableNames.Traverser (tcache, iv)) {
-          //args->GetByKey(<#long#>, <#long#>)
-          _PMathObj payload = (_PMathObj)args->avl.GetXtra (k);
+      if (arguments) {
+        for (long k = arguments->countitems()-1; k >=0 ; k --) {
+          _PMathObj payload = (_PMathObj)arguments->GetItem (k);
+          _Operation *arg_k = new _Operation (payload);
           payload->AddAReference();
-          argument_list.AppendNewInstance (new _Operation (payload));
+          the_call.PushTerm(arg_k);
+          arg_k->RemoveAReference();
         }
-        
-        the_call.PushTerm(&argument_list);
       }
       
-      _Operation * function_call_term = new _Operation (function_id, -1L-args->avl.countitems());
+      _Operation * function_call_term = new _Operation (function_id, -1L-(arguments?arguments->countitems():0L));
       the_call.PushTerm(function_call_term);
       DeleteObject (function_call_term);
       
@@ -888,12 +885,8 @@ _PMathObj   _FString::Call (_PMathObj arguments, _hyExecutionContext* context) {
       result->AddAReference();
       return result;
       
-      
-    } else {
-      WarnError (_String ("The second argument ('") & _String (*(_String*)arguments->toStr()) & "' to 'Call' was not an HBL function name");
-    }
   } else {
-    WarnError (_String ("The first argument ('") & *theString & "' to 'Call' was not an HBL function name");
+    WarnError (_String ("The first argument ('") & *theString & "') to 'Call' was not an HBL function name");
   }
   
   return new _MathObject;

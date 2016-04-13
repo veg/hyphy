@@ -209,7 +209,8 @@ void        PopulateArraysForASimpleFormula
 (_SimpleList&, _SimpleFormulaDatum*);
 
 void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
-
+void        WarnWrongNumberOfArguments (_PMathObj, long, _hyExecutionContext*, _List *);
+  
 extern      _Parameter  pi_const;
 extern      bool        useGlobalUpdateFlag;
 extern      _String     noneToken;

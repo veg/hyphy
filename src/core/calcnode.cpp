@@ -2392,180 +2392,214 @@ _String*    _TheTree::TreeUserParams (void) const {
 
 //__________________________________________________________________________________
 
-_PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
-{
-
-    switch (opCode) {
-    case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument
-        if (p->ObjectClass()!=NUMBER) {
-            context->ReportError ("Invalid (not a number) 2nd argument is call to $ for trees.");
-            return new _MathObject;
+_PMathObj _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
+  
+  
+  switch (opCode) { // first check operations without arguments
+    case HY_OP_CODE_ABS: // Abs
+      return FlatRepresentation();
+    case HY_OP_CODE_BRANCHCOUNT: //BranchCount
+      return BranchCount();
+    case HY_OP_CODE_TIPCOUNT: // TipCount
+      return TipCount();
+    case HY_OP_CODE_TYPE: // Type
+      return Type();
+  }
+  
+  _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
+  
+  switch (opCode) { // next check operations without arguments or with one argument
+    case HY_OP_CODE_ADD: // +
+      if (!arg0) {
+        return Sum();
+      }
+      AddANode (arg0);
+      return new _Constant (0.0);
+    case HY_OP_CODE_SUB:
+      if (!arg0) {
+        return new _MathObject;
+      }
+      RemoveANode (arg0);
+      return new _Constant (0.0);
+  }
+  
+  if (arg0) {
+    switch (opCode) { // operations that require exactly one argument
+      case HY_OP_CODE_MUL: // compute the strict consensus between T1 and T2
+        return SplitsIdentity (arg0);
+        
+      case HY_OP_CODE_LEQ: { // MatchPattern (<=)
+        
+        if (arg0->ObjectClass()!=TREE && arg0->ObjectClass()!=TOPOLOGY) {
+          context->ReportError ("Invalid (not a tree/topology) 2nd argument is call to <= for trees/topologies.");
+          return new _MathObject;
+        }
+        _String  res (((_TreeTopology*)arg0)->MatchTreePattern (this));
+        return new _Constant (!res.beginswith ("Unequal"));
+      }
+      case HY_OP_CODE_EQ: // ==
+        return  Compare(arg0);
+      case HY_OP_CODE_BRANCHLENGTH: //BranchLength
+        return BranchLength(arg0);
+      case HY_OP_CODE_BRANCHNAME: //BranchName
+        return TreeBranchName(arg0);
+      case HY_OP_CODE_MIN: // COT (Min)
+        return FindCOT (arg0);
+      case HY_OP_CODE_REROOTTREE: // RerootTree
+        return RerootTree(arg0);
+      case HY_OP_CODE_POWER: //^
+        return AVLRepresentation (arg0);
+      case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument
+        if (arg0->ObjectClass()!=NUMBER) {
+          context->ReportError ("Invalid (not a number) 2nd argument is call to $ for trees.");
+          return new _MathObject;
         }
         _Constant*  cc     = (_Constant*)TipCount();
-        long        size   = cc->Value()/p->Value();
-
+        long        size   = cc->Value()/arg0->Value();
+        
         if  ((size<=4)||(size>cc->Value()/2)) {
-            context->ReportError ("Poor choice of the 2nd numeric agrument in to $ for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
-            return new _MathObject;
+          context->ReportError ("Poor choice of the 2nd numeric agrument in to $ for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
+          return new _MathObject;
         }
-
+        
         long        checkSize = 1,
-                    tol       = 0;
-
+        tol       = 0;
+        
         while (tol<size-2) {
-            _List*      resL   = SplitTreeIntoClusters (size,tol);
-
-            checkSize = cc->Value();
-
-            if (resL->lLength) {
-                _Matrix*    mRes   = new _Matrix (resL->lLength, 2, false, true);
-                checkPointer (mRes);
-
-                for (long k = 0; k < resL->lLength; k++) {
-                    _List* thisList = (_List*)(*resL)(k);
-                    long   nL       = ((_Constant*)(*thisList)(1))->Value();
-                    mRes->Store (k,0, nL);
-                    mRes->Store (k,1, thisList->lLength-2);
-                    checkSize -= nL;
-                }
-
-
-                if (checkSize == 0) {
-                    DeleteObject (cc);
-                    _Matrix     selMatrix (1,resL->lLength,false,true);
-                    _List       sortedList;
-                    for (long k = 0; k < resL->lLength; k++) {
-                        _List* thisList = (_List*)(*resL)(k);
-                        sortedList << (_String*)(*thisList)(0);
-                        _FString  *choiceString = new _FString (*(_String*)(*thisList)(0));
-                        _Formula  sf (choiceString);
-                        selMatrix.MStore(0,k,sf);
-                    }
-                    sortedList.Sort();
-                    for (long m = 0; m < sortedList.lLength; m++) {
-                        _FString  *choiceString = new _FString (*(_String*)sortedList(m));
-                        _Formula  sf (choiceString);
-                        selMatrix.MStore(0,m,sf);
-                    }
-
-                    CheckReceptacle (&splitNodeNames, empty, false)->SetValue (&selMatrix);
-                    DeleteObject (resL);
-                    return mRes;
-                }
-
-                DeleteObject (mRes);
+          _List*      resL   = SplitTreeIntoClusters (size,tol);
+          
+          checkSize = cc->Value();
+          
+          if (resL->lLength) {
+            _Matrix*    mRes   = new _Matrix (resL->lLength, 2, false, true);
+            checkPointer (mRes);
+            
+            for (long k = 0; k < resL->lLength; k++) {
+              _List* thisList = (_List*)(*resL)(k);
+              long   nL       = ((_Constant*)(*thisList)(1))->Value();
+              mRes->Store (k,0, nL);
+              mRes->Store (k,1, thisList->lLength-2);
+              checkSize -= nL;
             }
-
-            DeleteObject (resL);
-            tol ++;
+            
+            
+            if (checkSize == 0) {
+              DeleteObject (cc);
+              _Matrix     selMatrix (1,resL->lLength,false,true);
+              _List       sortedList;
+              for (long k = 0; k < resL->lLength; k++) {
+                _List* thisList = (_List*)(*resL)(k);
+                sortedList << (_String*)(*thisList)(0);
+                _FString  *choiceString = new _FString (*(_String*)(*thisList)(0));
+                _Formula  sf (choiceString);
+                selMatrix.MStore(0,k,sf);
+              }
+              sortedList.Sort();
+              for (long m = 0; m < sortedList.lLength; m++) {
+                _FString  *choiceString = new _FString (*(_String*)sortedList(m));
+                _Formula  sf (choiceString);
+                selMatrix.MStore(0,m,sf);
+              }
+              
+              CheckReceptacle (&splitNodeNames, empty, false)->SetValue (&selMatrix);
+              DeleteObject (resL);
+              return mRes;
+            }
+            
+            DeleteObject (mRes);
+          }
+          
+          DeleteObject (resL);
+          tol ++;
         }
-
+        
         DeleteObject (cc);
         return new _Matrix (1,1,false, true);
+      }
     }
-    break;
-
+    
+    _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
+    
+    switch (opCode) {
+      case HY_OP_CODE_MACCESS: // MAccess
+        return TreeBranchName (arg0,true, arg1);
+    }
+    
+    
+    if (arg1) {
+      switch (opCode) {
+        case HY_OP_CODE_FORMAT: { // Format
+          _String  *tStr = new _String  ((unsigned long)1024,true);
+          SubTreeString (theRoot, *tStr, arg0->Compute()->Value() > 0.1 , arg1->Compute()->Value() > 0.1 ? -3:-1, nil);
+          tStr->Finalize();
+          return new _FString (tStr);
+        }
+          
+      }
+    }
+    
+  }
+  
+  switch (opCode) {
     case HY_OP_CODE_MUL: // compute the strict consensus between T1 and T2
-        if (p) 
-            return SplitsIdentity (p);
-        break;
-
-    case HY_OP_CODE_ADD: // +
-        if (!p) {
-            return Sum();
-        }
-        AddANode (p);
-        return new _Constant (0.0);
-        break;
-
-    case HY_OP_CODE_SUB: // +
-        if (!p) {
-            return new _MathObject;
-        }
-        RemoveANode (p);
-        return new _Constant (0.0);
-        break;
-
-    case HY_OP_CODE_LEQ: { // MatchPattern (<=)
-        if ((p->ObjectClass()!=TREE)&&(p->ObjectClass()!=TOPOLOGY)) {
-            context->ReportError ("Invalid (not a tree/topology) 2nd argument is call to <= for trees/topologies.");
-            return new _MathObject;
-       }
-        _String  res (((_TreeTopology*)p)->MatchTreePattern (this));
-        return new _Constant (!res.beginswith ("Unequal"));
-        break;
-    }
+    case HY_OP_CODE_LEQ: // MatchPattern (<=)
     case HY_OP_CODE_EQ: // ==
-        return  Compare(p);
-        break;
-    case HY_OP_CODE_ABS: // Abs
-        return FlatRepresentation();
-        break;
-    case HY_OP_CODE_BRANCHCOUNT: //BranchCount
-        return BranchCount();
-        break;
     case HY_OP_CODE_BRANCHLENGTH: //BranchLength
-        return BranchLength(p);
-        break;
     case HY_OP_CODE_BRANCHNAME: //BranchName
-        return TreeBranchName(p);
-        break;
-    case HY_OP_CODE_FORMAT: { // Format
-        _String  *tStr = new _String  ((unsigned long)1024,true);
-        SubTreeString (theRoot, *tStr, p->Compute()->Value() > 0.1 , p2->Compute()->Value() > 0.1 ? -3:-1, nil);
-        tStr->Finalize();
-        return new _FString (tStr);
-    }
-    case HY_OP_CODE_MACCESS: // MAccess
-        return TreeBranchName (p,true, p2);
-        break;
     case HY_OP_CODE_MIN: // COT (Min)
-        return FindCOT (p);
-        break;
     case HY_OP_CODE_REROOTTREE: // RerootTree
-        return RerootTree(p);
-        break;
-    case HY_OP_CODE_TEXTREESTRING: // TEXTreeString
-        //return TEXTreeString(p);
-        break;
-    case HY_OP_CODE_TIPCOUNT: // TipCount
-        return TipCount();
-        break;
-    case HY_OP_CODE_TIPNAME: // TipName
-        return TipName(p);
-        break;
-    case HY_OP_CODE_TYPE: // Type
-        return Type();
-        break;
     case HY_OP_CODE_POWER: //^
-        if (p)
-            return AVLRepresentation (p);
-    }
-
-    WarnNotDefined (this, opCode, context);
-    return nil;
-
+    case HY_OP_CODE_IDIV:  // Split ($) - 2nd argument
+    case HY_OP_CODE_MACCESS: // MAccess
+    case HY_OP_CODE_FORMAT:  // Format
+      WarnWrongNumberOfArguments (this, opCode,context, arguments);
+      break;
+    default:
+      WarnNotDefined (this, opCode,context);
+  }
+  
+  return new _MathObject;
 }
 
 
 //__________________________________________________________________________________
 
-_PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
-{
+_PMathObj _TheTree::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
 
     switch (opCode) {
-    case HY_OP_CODE_PSTREESTRING: //PlainTreeString
-        return PlainTreeString(p,p2);
-        break;
-    case HY_OP_CODE_TEXTREESTRING: // TEXTreeString
-        return TEXTreeString(p);
-        break;
-    case HY_OP_CODE_TYPE: // Type
+       case HY_OP_CODE_TYPE: // Type
         return Type();
         break;
     }
 
-    return  _TreeTopology::Execute (opCode,p,p2,context);
+    _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
+  
+    if (arg0) {
+      switch (opCode) {
+        case HY_OP_CODE_TEXTREESTRING: // TEXTreeString
+          return TEXTreeString(arg0);
+       }
+      
+      _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
+ 
+      if (arg1) {
+        switch (opCode) {
+          case HY_OP_CODE_PSTREESTRING: //PlainTreeString
+            return PlainTreeString(arg0,arg1);
+        }
+       
+      }
+      
+    }
+  
+    switch (opCode) {
+      case HY_OP_CODE_TEXTREESTRING:
+      case HY_OP_CODE_PSTREESTRING: 
+        WarnWrongNumberOfArguments (this, opCode,context, arguments);
+        return new _MathObject;
+    }
+
+    return  _TreeTopology::ExecuteSingleOp (opCode,arguments,context);
 
 }
 

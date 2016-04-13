@@ -95,8 +95,8 @@ public:
     // 1st argument : execute from this instruction onwards
     // see the commend for ExecuteFormula for the second argument
 
-    bool        IsEmpty             (void); // is there anything in the formula
-    long        NumberOperations    (void); // how many ops in the formula?
+    bool        IsEmpty             (void) const; // is there anything in the formula
+    long        NumberOperations    (void) const; // how many ops in the formula?
 
     friend  long        Parse               (_Formula*, _String&, _FormulaParsingContext&, _Formula*); 
     // the main expression parser
@@ -154,7 +154,7 @@ public:
         given a variable index as an argument, returns true if
         the formula depends on a it; false otherwise
     */
-    _Operation* GetIthTerm          (long);
+    _Operation* GetIthTerm          (long) const;
     /*
         SLKP 20090315: added a missing utility function
         given an index (i) as the argument, the function retrieves
@@ -175,6 +175,11 @@ public:
     */
   
     bool        AmISimple           (long& stackDepth, _SimpleList& variableIndex);
+    long        StackDepth          (long start_at = 0L, long end_at = -1L) const;
+      /** 
+        starting at operation 'start_at', counting up to 'end_at' (-1 == the end),
+        evaluate how many values would be on the stack after the execution of these commands
+       */
     bool        ConvertToSimple     (_SimpleList& variableIndex);
     void        ConvertFromSimple   (_SimpleList& variableIndex);
     void        SimplifyConstants   (void);

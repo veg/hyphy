@@ -128,7 +128,7 @@ public:
     _Polynomial             (_Parameter);
     _Polynomial             (_Variable&);
     virtual                 ~_Polynomial ();
-    virtual                 _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);   // execute this operation with the list of Args
+    virtual                 _MathObject* ExecuteSingleOp (long opCode, _List *arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);   // execute this operation with the list of Args
 
     virtual BaseObj*        makeDynamic(void);
     virtual void            Duplicate  (BaseRef);
