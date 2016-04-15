@@ -14,7 +14,7 @@
   },
  "timers":{
    "Total time":{
-     "timer":1460525177,
+     "timer":1460677681,
      "order":0
     },
    "Model fitting":{
@@ -22,7 +22,7 @@
      "order":1
     },
    "Primary SLAC analysis":{
-     "timer":1460525178,
+     "timer":1460677682,
      "order":2
     }
   },

@@ -134,6 +134,18 @@ public:
      * @param appendToExisting -- append text to existing error
      
      */
+  
+    void        BuildListOfDependancies   (_AVLListX & collection, bool recursive = true);
+  
+    /**
+     
+     Scan the body of this function/code for dependancies on various objects
+     (currently only supports HBL functions), and store them in `collection`.
+     
+     If recursive is true, then new HBL functions will be scanned for dependancies
+     as well.
+     
+    */
 
 
     // data fields
@@ -372,11 +384,26 @@ public:
 
     static  bool      SelectTemplateModel   (_String&, _ExecutionList&);
 
-    static  bool      MakeGeneralizedLoop   (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
+    static  bool      MakeGeneralizedLoop      (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
   
-    bool              DecompileFormulae     (void);
+    bool              DecompileFormulae        (void);
+  
+    void              BuildListOfDependancies  (_AVLListX & collection, bool recursive, _ExecutionList& chain);
+    
+    /**
+     
+     Check this command for
+     (currently only supports HBL functions), and store them in `collection`.
+     
+     If recursive is true, then new HBL functions will be scanned for dependancies
+     as well.
+     
+     */
+
 
 protected:
+  
+    static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList&, bool, _AVLListX& );
 
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
@@ -601,6 +628,9 @@ _HY_BL_FUNCTION_TYPE
          GetBFFunctionType            (long);
 _ExecutionList&
           GetBFFunctionBody           (long);
+
+_String const
+          ExportBFFunction            (long, bool = true);
 
 
 void      ClearBFFunctionLists        (long = -1L);

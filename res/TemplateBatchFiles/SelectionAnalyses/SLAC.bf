@@ -18,6 +18,13 @@ LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
 
+Export (function_def, slac.compute_the_counts);
+
+fprintf (stdout, function_def, "\n");
+
+return 0;
+
+
 /*------------------------------------------------------------------------------
     Display analysis information
 */
@@ -412,8 +419,9 @@ slac.json [terms.json.MLE ] = {terms.json.headers   : slac.table_headers,
 io.spool_json (slac.json, slac.codon_data_info["json"]);
 selection.io.stopTimer (slac.json [terms.json.timers], "Primary SLAC analysis");
 
+
 if (slac.samples > 0) {
-    slac.table_screen_output_samplers = {{"Codon", "Partition", "    S (median, IQR)    ", "    N (median, IQR)    ", "    dS (median, IQR)    ", "    dN (median, IQR)    ", "  p-value (median, IQR)  "}};
+    slac.table_screen_output_samplers = {{"Codon", "Partition", "    S [median, IQR]    ", "    N [median, IQR]    ", "    dS [median, IQR]    ", "    dN [median, IQR]    ", "  p-value [median, IQR]  "}};
     slac.table_output_options_samplers =  {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
 
     selection.io.startTimer (slac.json [terms.json.timers], "Ancestor sampling analysis", 3);

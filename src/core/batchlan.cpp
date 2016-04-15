@@ -46,6 +46,7 @@
 #include "scfg.h"
 #include "bayesgraph.h"
 #include "function_templates.h"
+#include "avllistx.h"
 
 
 
@@ -241,7 +242,70 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 defFileNameValue;
 
 
+//____________________________________________________________________________________
 
+
+_String  blFor                  ("for("),               // moved
+blWhile                    ("while("),         // moved
+blFunction                 ("function "),      // moved
+blFFunction                ("ffunction "),     // moved
+blLFunction                ("lfunction "),     // moved
+blReturn                   ("return "),        // moved
+blReturnPrefix             ("return"),
+blIf                       ("if("),            // moved
+blElse                     ("else"),           // moved
+blDo                       ("do{"),            // moved
+blBreak                    ("break;"),         // moved
+blContinue             ("continue;"),          // moved
+blInclude              ("#include"),           // moved
+blDataSet              ("DataSet "),           // moved
+blDataSetFilter            ("DataSetFilter "),
+blConstructCM          ("ConstructCategoryMatrix("),
+blTree                     ("Tree "),
+blLF                       ("LikelihoodFunction "),
+blLF3                  ("LikelihoodFunction3 "),
+blMolClock                 ("MolecularClock("),
+blfprintf              ("fprintf("),
+blGetString                ("GetString("),
+blfscanf                   ("fscanf("),
+blsscanf                   ("sscanf("),
+blExport                   ("Export("),
+blReplicate                ("ReplicateConstraint("),
+blImport                   ("Import"),
+blCategory             ("category "),
+blClearConstraints         ("ClearConstraints("),
+blSetDialogPrompt      ("SetDialogPrompt("),
+blModel                    ("Model "),
+blChoiceList               ("ChoiceList("),
+blOpenDataPanel            ("OpenDataPanel("),
+blGetInformation           ("GetInformation("),
+blExecuteCommands      ("ExecuteCommands("),
+blExecuteAFile         ("ExecuteAFile("),
+blLoadFunctionLibrary      ("LoadFunctionLibrary("),
+blOpenWindow               ("OpenWindow("),
+blSpawnLF                  ("SpawnLikelihoodFunction("),
+blDifferentiate            ("Differentiate("),
+blFindRoot             ("FindRoot("),
+blMPIReceive               ("MPIReceive("),
+blMPISend                  ("MPISend("),
+blGetDataInfo              ("GetDataInfo("),
+blStateCounter             ("StateCounter("),
+blIntegrate                ("Integrate("),
+blLFCompute                ("LFCompute("),
+blGetURL                   ("GetURL("),
+blDoSQL                    ("DoSQL("),
+blTopology                 ("Topology "),
+blAlignSequences           ("AlignSequences("),
+blGetNeutralNull           ("GetNeutralNull("),
+blHBLProfile               ("#profile"),
+blDeleteObject         ("DeleteObject("),
+blRequireVersion           ("RequireVersion("),
+blSCFG                     ("SCFG "),
+blBGM                      ("BayesianGraphicalModel "),
+blSimulateDataSet          ("SimulateDataSet"),
+blAssert                   ("assert(");
+
+_Trie    _HY_HBL_KeywordsPreserveSpaces  ;
 
 #ifdef      __HYPHYMPI__
 
@@ -591,6 +655,76 @@ _ExecutionList&   GetBFFunctionBody  (long idx) {
 //____________________________________________________________________________________
 _HY_BL_FUNCTION_TYPE   GetBFFunctionType  (long idx) {
   return (_HY_BL_FUNCTION_TYPE) batchLanguageFunctionClassification.Element (idx);
+}
+
+//____________________________________________________________________________________
+_String const ExportBFFunction (long idx, bool recursive) {
+  
+  //printf ("%ld\n", idx);
+  
+  _String bf (8192UL, true);
+  if (IsBFFunctionIndexValid(idx)) {
+  
+    switch (GetBFFunctionType (idx)) {
+      case BL_FUNCTION_SKIP_UPDATE:
+        bf << blFFunction;
+        break;
+      case BL_FUNCTION_LOCAL:
+        bf << blLFunction;
+        break;
+      default:
+        bf << blFunction;
+    }
+    
+    _String hbf_name = GetBFFunctionNameByIndex (idx);
+    
+    _ExecutionList * body = &GetBFFunctionBody(idx);
+    
+    bf << hbf_name;
+    bf << '(';
+    
+    long argument_count = GetBFFunctionArgumentCount (idx);
+    _List * argument_list = &GetBFFunctionArgumentList (idx);
+    for (long argument_id = 0; argument_id < argument_count; argument_id ++) {
+      if (argument_id) {
+        bf << ',';
+      }
+      
+      
+      bf << body->TrimNameSpaceFromID(*(_String*)argument_list->Element (argument_id));
+      if (GetBFFunctionArgumentTypes (idx).GetElement(argument_id) == BL_FUNCTION_ARGUMENT_REFERENCE) {
+        bf << '&';
+      }
+    }
+    bf << ") {\n";
+    bf << body->sourceText;
+    bf << "\n}";
+    
+    
+    if (recursive) {
+      _List      hbl_functions;
+      _AVLListX other_functions (&hbl_functions);
+      
+      other_functions.Insert (new _String (hbf_name), HY_BL_HBL_FUNCTION, false, false);
+      
+      body->BuildListOfDependancies (other_functions, true);
+      
+      for (long i = 0; i < hbl_functions.lLength; i++) {
+        _String * a_name = (_String*)hbl_functions (i);
+        if (! a_name -> Equal( &hbf_name)) {
+          bf << "\n/*----- Called function '";
+          bf << *a_name;
+          bf << "' ------*/\n";
+          bf << ExportBFFunction (FindBFFunctionName(*a_name), false);
+          bf << "\n\n";
+        }
+      }
+    }
+  }
+  
+  bf.Finalize();
+  return bf;
+  
 }
 
 //____________________________________________________________________________________
@@ -1135,7 +1269,15 @@ _String       _ExecutionList::GetFileName     (void)  {
     }
     return empty;
 }
-// doesn't do much
+
+//____________________________________________________________________________________
+
+void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool recursive) {
+  for (unsigned long step = 0UL; step < lLength; step++) {
+    ((_ElementaryCommand*)GetItem(step))->BuildListOfDependancies (collection, recursive, *this);
+  }
+}
+
 //____________________________________________________________________________________
 
 _PMathObj       _ExecutionList::Execute     (void)      // run this execution list
@@ -1496,70 +1638,7 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
     return theID;
 }
 
-//____________________________________________________________________________________
 
-
-_String  blFor                  ("for("),               // moved
-         blWhile                    ("while("),         // moved
-         blFunction                 ("function "),      // moved
-         blFFunction                ("ffunction "),     // moved
-         blLFunction                ("lfunction "),     // moved
-         blReturn                   ("return "),        // moved
-         blReturnPrefix             ("return"),
-         blIf                       ("if("),            // moved
-         blElse                     ("else"),           // moved
-         blDo                       ("do{"),            // moved
-         blBreak                    ("break;"),         // moved
-         blContinue             ("continue;"),          // moved
-         blInclude              ("#include"),           // moved
-         blDataSet              ("DataSet "),           // moved
-         blDataSetFilter            ("DataSetFilter "),
-         blConstructCM          ("ConstructCategoryMatrix("),
-         blTree                     ("Tree "),
-         blLF                       ("LikelihoodFunction "),
-         blLF3                  ("LikelihoodFunction3 "),
-         blMolClock                 ("MolecularClock("),
-         blfprintf              ("fprintf("),
-         blGetString                ("GetString("),
-         blfscanf                   ("fscanf("),
-         blsscanf                   ("sscanf("),
-         blExport                   ("Export("),
-         blReplicate                ("ReplicateConstraint("),
-         blImport                   ("Import"),
-         blCategory             ("category "),
-         blClearConstraints         ("ClearConstraints("),
-         blSetDialogPrompt      ("SetDialogPrompt("),
-         blModel                    ("Model "),
-         blChoiceList               ("ChoiceList("),
-         blOpenDataPanel            ("OpenDataPanel("),
-         blGetInformation           ("GetInformation("),
-         blExecuteCommands      ("ExecuteCommands("),
-         blExecuteAFile         ("ExecuteAFile("),
-         blLoadFunctionLibrary      ("LoadFunctionLibrary("),
-         blOpenWindow               ("OpenWindow("),
-         blSpawnLF                  ("SpawnLikelihoodFunction("),
-         blDifferentiate            ("Differentiate("),
-         blFindRoot             ("FindRoot("),
-         blMPIReceive               ("MPIReceive("),
-         blMPISend                  ("MPISend("),
-         blGetDataInfo              ("GetDataInfo("),
-         blStateCounter             ("StateCounter("),
-         blIntegrate                ("Integrate("),
-         blLFCompute                ("LFCompute("),
-         blGetURL                   ("GetURL("),
-         blDoSQL                    ("DoSQL("),
-         blTopology                 ("Topology "),
-         blAlignSequences           ("AlignSequences("),
-         blGetNeutralNull           ("GetNeutralNull("),
-         blHBLProfile               ("#profile"),
-         blDeleteObject         ("DeleteObject("),
-         blRequireVersion           ("RequireVersion("),
-         blSCFG                     ("SCFG "),
-         blBGM                      ("BayesianGraphicalModel "),
-         blSimulateDataSet          ("SimulateDataSet"),
-         blAssert                   ("assert(");
-
-_Trie    _HY_HBL_KeywordsPreserveSpaces  ;
 
 /* 
  
@@ -2582,9 +2661,8 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
           _Formula f,
                    f2;
 
-          _String* theFla     = (_String*)parameters(0),
-                   errMsg;
-
+          _String* theFla     = (_String*)parameters(0);
+        
           _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
 
           long     parseCode = Parse(&f,(*theFla),fpc,&f2);
@@ -7511,13 +7589,13 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
         batchLanguageFunctionNames.Replace (mark1, funcID, false);
         batchLanguageFunctionParameterLists.Replace (mark1, &arguments, true);
         batchLanguageFunctionParameterTypes.Replace (mark1, &argument_types, true);
-        batchLanguageFunctionClassification.lData[mark1] = isFFunction? BL_FUNCTION_NORMAL_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE;
+      batchLanguageFunctionClassification.lData[mark1] = isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE);
     } else {
         batchLanguageFunctions.AppendNewInstance(functionBody);
         batchLanguageFunctionNames.AppendNewInstance(funcID);
         batchLanguageFunctionParameterLists &&(&arguments);
         batchLanguageFunctionParameterTypes &&(&argument_types);
-        batchLanguageFunctionClassification <<(isFFunction? BL_FUNCTION_NORMAL_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE);
+        batchLanguageFunctionClassification <<(isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE));
     }
 
 

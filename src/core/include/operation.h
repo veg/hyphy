@@ -96,7 +96,8 @@ public:
     }
     virtual  bool           IsAVariable         (bool = true) ; // is this object a variable or not?
     virtual  bool           IsConstant          (void);         // does this object depend on any independent variables or not?
-    virtual  bool           IsHBLFunctionCall          (void) const;
+    virtual  bool           IsHBLFunctionCall   (void) const;
+    virtual  long           GetHBLFunctionID    (void) const;
   
     virtual  long           UserFunctionID      (void) {
         return numberOfTerms < 0 ? -numberOfTerms-1 : -1;

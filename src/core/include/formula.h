@@ -43,7 +43,7 @@
 #include "baseobj.h"
 #include "classes.h"
 #include "defines.h"
-#include "avllistx.h"
+#include "avllistxl.h"
 #include "stack.h"
 #include "operation.h"
 
@@ -213,6 +213,9 @@ public:
     virtual     _Formula operator ^ (const _Formula&);
     
     _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
+  
+    void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive) const;
+
 
 protected:
 

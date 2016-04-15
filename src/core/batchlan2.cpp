@@ -2394,4 +2394,46 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
     return nil;
 }
 
+//____________________________________________________________________________________
+
+
+void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expression, _ExecutionList& chain, bool recursive, _AVLListX& collection ) {
+  
+  _Formula f, f2;
+  
+  _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+  
+  long     parseCode = Parse(&f,*expression,fpc,&f2);
+  
+  if (parseCode != HY_FORMULA_FAILED ) {
+    f.ScanFormulaForHBLFunctions (collection, recursive);
+    f2.ScanFormulaForHBLFunctions(collection, recursive);
+  }
+
+  
+}
+
+//____________________________________________________________________________________
+
+void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection, bool recursive, _ExecutionList& chain) {
+  
+  switch (code) {
+      
+    case 0:
+    case 4:
+    case 14:
+    {
+      if (parameters.lLength) {
+        ScanStringExpressionForHBLFunctions((_String*)parameters (0), chain, recursive, collection);
+      }
+      break;
+    }
+      
+    
+    
+  }
+  
+  return true;
+}
+
 

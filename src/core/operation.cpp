@@ -58,6 +58,7 @@ _Operation::_Operation  (void)
     numberOfTerms = 0;
     theData = -1;
     theNumber = nil;
+    opCode = -1;
 }
 
 //__________________________________________________________________________________
@@ -66,13 +67,13 @@ void    _Operation::Initialize(bool)
     numberOfTerms = 0;
     theData = -1;
     theNumber = nil;
+    opCode = -1;
 }
 
 //__________________________________________________________________________________
 BaseRef _Operation::makeDynamic (void)
 {
     _Operation * res = new _Operation;
-    checkPointer(res);
     //memcpy ((char*)res, (char*)this, sizeof (_Operation));
     res->Duplicate(this);
     return res;
@@ -105,7 +106,7 @@ BaseRef _Operation::toStr (unsigned long) {
         return new _String (res);
     } else {
         if (IsHBLFunctionCall())
-          return new _String (GetBFFunctionNameByIndex(UserFunctionID()));
+          return new _String (_String ("Call HBL function ") & GetBFFunctionNameByIndex(UserFunctionID()));
         else
           return new _String (_String("Operation ") & *(_String*)BuiltInFunctions(opCode) & " with " & _String((long)numberOfTerms) & " arguments");
     }
@@ -253,6 +254,10 @@ bool _Operation::IsHBLFunctionCall (void) const {
     return theData == -1 && numberOfTerms < 0;
 }
 
+//__________________________________________________________________________________
+long _Operation::GetHBLFunctionID (void) const {
+  return opCode;
+}
 
 
 //__________________________________________________________________________________
@@ -348,7 +353,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
     }
     return true;
   }
-  if (theData < -2L) { // WTF is is this?
+  if (theData < -2L) { // place variable value (no compute, i.e. pass by reference)
     theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[-theData-3])->GetValue());
     return true;
   }

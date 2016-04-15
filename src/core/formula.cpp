@@ -1568,7 +1568,7 @@ long _Formula::StackDepth (long from, long to) const {
   _SimpleList::NormalizeCoordinates(from, to, NumberOperations());
   long result = 0L;
   
-  for (unsigned long i = from; i <= to; i++) {
+  for ( long i = from; i <= to; i++) {
      result += GetIthTerm (i)->StackDepth ();
   }
   
@@ -1828,7 +1828,7 @@ bool _Formula::HasChanged (bool ingoreCats)
         } else if (thisOp->numberOfTerms<0) {
             dataID = -thisOp->numberOfTerms-2;
             if (IsBFFunctionIndexValid (dataID)) {
-                if (GetBFFunctionType (dataID) == BL_FUNCTION_NORMAL_UPDATE) {
+                if (GetBFFunctionType (dataID) == BL_FUNCTION_SKIP_UPDATE) {
                     continue;
                 }
             }
@@ -1836,6 +1836,41 @@ bool _Formula::HasChanged (bool ingoreCats)
         }
     }
     return false;
+}
+
+
+//__________________________________________________________________________________
+
+void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive) const {
+  for (unsigned long i = 0; i<theFormula.lLength; i++) {
+    _Operation *this_op = GetIthTerm(i);
+    
+    long hbl_id = -1L;
+    
+    if (this_op -> IsHBLFunctionCall()) {
+      hbl_id = this_op -> GetHBLFunctionID();
+    } else {
+      if (this_op->opCode == HY_OP_CODE_CALL) {
+        if (_Operation * string_arg = GetIthTerm (i - this_op->numberOfTerms)) {
+          if (string_arg->theNumber->ObjectClass() == STRING) {
+            hbl_id = FindBFFunctionName (*((_FString*)string_arg->theNumber->Compute())->theString);
+          }
+        }
+      }
+    }
+    
+    if (IsBFFunctionIndexValid(hbl_id)) {
+      _String function_name = GetBFFunctionNameByIndex(hbl_id);
+      
+      if (collection.Find(&function_name) < 0) {
+        collection.Insert (new _String (function_name), HY_BL_HBL_FUNCTION, false, false);
+        if (recursive) {
+          GetBFFunctionBody(hbl_id).BuildListOfDependancies(collection, true);
+        }
+      }
+    }
+    
+  }
 }
 
 //__________________________________________________________________________________
