@@ -624,7 +624,7 @@ long        HandleFormulaParsingError (_String errMsg, _String* saveError, _Stri
 }
 
 //__________________________________________________________________________________
-bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char & deref, _Formula * f, _Variable*& lhs) {
+bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char & deref, _Formula * f, _Variable*& lhs, _FormulaParsingContext& context) {
     bool check = true;
     
     lhs = nil;
@@ -670,12 +670,33 @@ bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char &
     }
     if (check && levelData->lLength == 1) {
         _Operation * theOp = dynamic_cast<_Operation*>(levelData->GetItem(0));
-        if (!(theOp && theOp->IsAVariable(false))) {
-            errMsg = "The left-hand side of an assignment must be a variable (not a constant)";
-            return false;
-        }        
-        lhs = LocateVar(theOp->GetAVariable());
-    }   
+      
+        check = false;
+        if (theOp) {
+          if (theOp->IsAVariable(false)) {
+            lhs = LocateVar(theOp->GetAVariable());
+            check = true;
+          } else {
+            if (theOp->GetANumber() && theOp->GetANumber()->ObjectClass() == STRING) {
+              // handle things like ^"id" = value
+              if (deref != HY_STRING_DIRECT_REFERENCE) {
+                _hyExecutionContext cntx (context.formulaScope(), context.errMsg());
+                lhs = (_Variable*) ((_FString*)theOp->GetANumber())->Dereference(false, &cntx, true);
+                if (!lhs) {
+                  errMsg = "The left-hand side of an assignment like ^\"id\" must reference an existing variable";
+                } else {
+                  deref = HY_STRING_DIRECT_REFERENCE;
+                  check = true;
+                }
+              }
+            }
+          }
+        }
+      
+        if (!check) {
+          errMsg = "The left-hand side of an assignment must be a variable (not a constant)";
+        }
+    }
     return check;
 }
 
@@ -992,7 +1013,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (is_array_assignment) {
                     (((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->TheCode()) = HY_OP_CODE_MCOORD;
                 } else {
-                    check = checkLHS (levelOps, levelData, errMsg, deref, f, lhs_variable);
+                    check = checkLHS (levelOps, levelData, errMsg, deref, f, lhs_variable, parsingContext);
                 }
             } else {
                 errMsg = "Can't assign within another assignment";
@@ -1166,7 +1187,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             _String errMsg;
             char    deref;
             
-            if (parsingContext.inAssignment()||f->IsArrayAccess()||! checkLHS (levelOps, levelData, errMsg, deref, f, lhs)) {
+            if (parsingContext.inAssignment()||f->IsArrayAccess()||! checkLHS (levelOps, levelData, errMsg, deref, f, lhs, parsingContext)) {
                return HandleFormulaParsingError ("Can't set bounds like this ", parsingContext.errMsg(), s, i);
             }
 
