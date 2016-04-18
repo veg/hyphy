@@ -286,7 +286,7 @@ void    FlagError (_String st)
     SetStatusLine  (errMsg);
 #else
     _SimpleList color (255,2,0,0);
-    StringToConsole(errMsg, &color);
+    StringToConsole(errMsg);
 #endif
 #endif
 
@@ -373,8 +373,8 @@ void WarnError (_String st)
     #ifdef  _MINGW32_MEGA_
         SetStatusLine  (errMsg);
     #else
-        _SimpleList color (255,2,0,0);
-        StringToConsole(errMsg, &color);
+  //_SimpleList color (255,2,0,0);
+        StringToConsole(errMsg);
 #ifdef __HYPHYQT__
     return;
 #endif

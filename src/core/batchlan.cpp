@@ -250,6 +250,7 @@ blWhile                    ("while("),         // moved
 blFunction                 ("function "),      // moved
 blFFunction                ("ffunction "),     // moved
 blLFunction                ("lfunction "),     // moved
+blNameSpace                ("namespace "),
 blReturn                   ("return "),        // moved
 blReturnPrefix             ("return"),
 blIf                       ("if("),            // moved
@@ -317,7 +318,7 @@ void        ReportMPIError                  (int, bool);
 
 #endif
 
-bool        isInFunction = false;
+_hy_nested_check  isInFunction = _HY_NO_FUNCTION;
 
 _Parameter  explicitFormMatrixExponential = 0.0,
             messageLogFlag                = 1.0;
@@ -1280,10 +1281,9 @@ void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool rec
 
 //____________________________________________________________________________________
 
-_PMathObj       _ExecutionList::Execute     (void)      // run this execution list
-{
+_PMathObj       _ExecutionList::Execute     (void) {
 
-    setParameter(_hyLastExecutionError, new _MathObject, nil, false);
+  //setParameter(_hyLastExecutionError, new _MathObject, nil, false);
     
     _ExecutionList*      stashCEL = currentExecutionList;
     callPoints << currentCommand;
@@ -1589,11 +1589,9 @@ void     _ExecutionList::ResetNameSpace (void)
 
 //____________________________________________________________________________________
 
-void     _ExecutionList::SetNameSpace (_String nID)
-{
+void     _ExecutionList::SetNameSpace (_String nID) {
     ResetNameSpace ();
     nameSpacePrefix = new _VariableContainer(nID);
-    checkPointer(nameSpacePrefix);
 }
 
 //____________________________________________________________________________________
@@ -1771,7 +1769,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         // prefix tree lookup 
 
         if (!handled) {
-            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)||currentLine.startswith (blLFunction)) { // function declaration
+            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)||currentLine.startswith (blLFunction) || currentLine.startswith (blNameSpace)) { // function declaration
                 _ElementaryCommand::ConstructFunction (currentLine, *this);
             } else if (currentLine.startswith_noident (blReturnPrefix)) { // function return statement
                                                                           //StringToConsole(currentLine); NLToConsole();
@@ -1917,22 +1915,19 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
 
 //____________________________________________________________________________________
 
-_ElementaryCommand::_ElementaryCommand (void)
-{
+_ElementaryCommand::_ElementaryCommand (void) {
     code = -1;
 }
 
 //____________________________________________________________________________________
 
-_ElementaryCommand::_ElementaryCommand (long ccode)
-{
+_ElementaryCommand::_ElementaryCommand (long ccode) {
     code = ccode;
 }
 
 //____________________________________________________________________________________
 
-_ElementaryCommand::_ElementaryCommand (_String& s)
-{
+_ElementaryCommand::_ElementaryCommand (_String& s) {
     code = -1;
     _String::Duplicate (&s);
 }
@@ -2630,7 +2625,14 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long)
         converted = (_String*)parameters(0)->toStr();
         result = _String ("Assert ") & "'" & *converted & "'";
         break;
-    }
+      }
+        
+      case HY_HBL_COMMAND_NESTED_LIST: {
+        converted = (_String*)parameters(0)->toStr();
+        result = _String("Call a nested list (via namespace):\n ") & *converted;
+        break;
+      }
+        
     }
 
     DeleteObject (converted);
@@ -6075,6 +6077,11 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         HandleAssert (chain);
         break;
 
+    case HY_HBL_COMMAND_NESTED_LIST:
+      chain.currentCommand++;
+      ((_ExecutionList*)parameters.GetItem(0))->Execute();
+      break;
+      
     default:
         chain.currentCommand++;
     }
@@ -6852,7 +6859,6 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
             ExtractConditions (source,0,args,',');
             if (args.lLength>=7UL) {
                 _ElementaryCommand * cv = new _ElementaryCommand (20);
-                checkPointer (cv);
                 cv->parameters&&(&catID);
                 cv->addAndClean(target,&args,0);
                 return true;
@@ -7505,101 +7511,139 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain)
 // syntax: function <ident> (comma separated list of parameters) {body}
 {
-    if (isInFunction) {
+  
+  
+    bool    isFFunction = source.beginswith (blFFunction),
+            isLFunction = source.beginswith (blLFunction),
+            isNameSpace = source.beginswith (blNameSpace);
+  
+    if (!isNameSpace) {
+      if (isInFunction == _HY_FUNCTION) {
         WarnError ("Nested function declarations are not allowed");
         return false;
+      }
+      
     }
 
-    isInFunction = true;
+  
 
-    bool    isFFunction = source.beginswith (blFFunction),
-            isLFunction = source.beginswith (blLFunction);
-
-    long    mark1 = source.FirstNonSpaceIndex((isFFunction||isLFunction)?blFFunction.sLength:blFunction.sLength,-1,1),
-            mark2 = source.Find ('(', mark1, -1);
+    long    mark1 = source.FirstNonSpaceIndex(isNameSpace ? blNameSpace.sLength: ((isFFunction||isLFunction)?blFFunction.sLength:blFunction.sLength),-1,1),
+            mark2 = source.Find (isNameSpace ? '{' : '(', mark1, -1);
 
 
     if ( mark1==-1 || mark2==-1 || mark1>mark2-1) {
         WarnError      (_String("Function declaration missing a valid function identifier or parameter list.\n-----------\n") & source & "\n-----------\n");
-        isInFunction = false;
-        return false;
+      isInFunction = _HY_NO_FUNCTION;
+      return false;
     }
 
-    _String*    funcID  = (_String*)checkPointer(new _String(source.Cut (mark1,mark2-1)));
+    _String*    funcID  = new _String(source.Cut (mark1,mark2-1));
 
+    if (!funcID->IsValidIdentifier(true)) {
+      WarnError      (_String("Not a valid function/namespace identifier '") & *funcID & "'");
+      isInFunction = _HY_NO_FUNCTION;
+      return false;
+    }
+    
     *funcID = chain.AddNameSpaceToID (*funcID);
 
     // now look for the opening paren
 
-    if ((mark1=FindBFFunctionName(*funcID)) >= 0L) {
-        ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
-    }
+    if (!isNameSpace) {
+      isInFunction = _HY_FUNCTION;
 
-    _List       arguments;
-    _SimpleList argument_types;
-
-    long upto = ExtractConditions (source,mark2+1,arguments,',',false);
-
-
-    if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}') {
-        WarnError (_String("Function declaration is missing a valid function body."));
-        isInFunction= false;
-        return false;
-    }
-
-    _String extraNamespace;
-    if (isLFunction)
-        extraNamespace = _HYGenerateANameSpace();
-    
-    for (long k = 0; k < arguments.lLength; k++) {
       
-        _String*   namespaced = new _String(chain.AddNameSpaceToID (*(_String*)arguments(k), & extraNamespace));
-        if (namespaced->getChar(namespaced->sLength - 1L) == '&') {
-          namespaced->Trim(0,namespaced->sLength-2);
-          argument_types << BL_FUNCTION_ARGUMENT_REFERENCE;
-        } else {
-          argument_types << BL_FUNCTION_ARGUMENT_NORMAL;
-        }
-        arguments.Replace (k,namespaced,false);
-    }
+      if ((mark1=FindBFFunctionName(*funcID)) >= 0L) {
+        ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
+      }
+      
+      _List       arguments;
+      _SimpleList argument_types;
 
-    _String          sfunctionBody (source, upto+1,source.Length()-2);
-    _ExecutionList * functionBody;
-        if (isLFunction) {
-            _String * existing_namespace = chain.GetNameSpace();
-            if (existing_namespace) {
-                extraNamespace = *existing_namespace & '.' & extraNamespace;
-            }
-            functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
-        }
-        else {
-            functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
-        }
+      long upto = ExtractConditions (source,mark2+1,arguments,',',false);
+
+
+      if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}') {
+          WarnError (_String("Function declaration is missing a valid function body."));
+          isInFunction= _HY_NO_FUNCTION;
+          return false;
+      }
+
+      _String extraNamespace;
+      if (isLFunction)
+          extraNamespace = _HYGenerateANameSpace();
+      
+      for (long k = 0; k < arguments.lLength; k++) {
+        
+          _String*   namespaced = new _String(chain.AddNameSpaceToID (*(_String*)arguments(k), & extraNamespace));
+          if (namespaced->getChar(namespaced->sLength - 1L) == '&') {
+            namespaced->Trim(0,namespaced->sLength-2);
+            argument_types << BL_FUNCTION_ARGUMENT_REFERENCE;
+          } else {
+            argument_types << BL_FUNCTION_ARGUMENT_NORMAL;
+          }
+          arguments.Replace (k,namespaced,false);
+      }
     
 
-    //  take care of all the return statements
-    while (returnlist.lLength) {
-        ((_ElementaryCommand*)(*functionBody)(returnlist(0)))->simpleParameters<<functionBody->lLength;
-        returnlist.Delete(0);
-    }
+      _String          sfunctionBody (source, upto+1,source.Length()-2);
+      _ExecutionList * functionBody;
+          if (isLFunction) {
+              _String * existing_namespace = chain.GetNameSpace();
+              if (existing_namespace) {
+                  extraNamespace = *existing_namespace & '.' & extraNamespace;
+              }
+              functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
+          }
+          else {
+              functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+          }
+      
+
+      //  take care of all the return statements
+      while (returnlist.lLength) {
+          ((_ElementaryCommand*)(*functionBody)(returnlist(0)))->simpleParameters<<functionBody->lLength;
+          returnlist.Delete(0);
+      }
 
 
-    if (mark1>=0) {
-        batchLanguageFunctions.Replace (mark1, functionBody, false);
-        batchLanguageFunctionNames.Replace (mark1, funcID, false);
-        batchLanguageFunctionParameterLists.Replace (mark1, &arguments, true);
-        batchLanguageFunctionParameterTypes.Replace (mark1, &argument_types, true);
-      batchLanguageFunctionClassification.lData[mark1] = isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE);
+      if (mark1>=0) {
+          batchLanguageFunctions.Replace (mark1, functionBody, false);
+          batchLanguageFunctionNames.Replace (mark1, funcID, false);
+          batchLanguageFunctionParameterLists.Replace (mark1, &arguments, true);
+          batchLanguageFunctionParameterTypes.Replace (mark1, &argument_types, true);
+        batchLanguageFunctionClassification.lData[mark1] = isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE);
+      } else {
+          batchLanguageFunctions.AppendNewInstance(functionBody);
+          batchLanguageFunctionNames.AppendNewInstance(funcID);
+          batchLanguageFunctionParameterLists &&(&arguments);
+          batchLanguageFunctionParameterTypes &&(&argument_types);
+          batchLanguageFunctionClassification <<(isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE));
+      }
     } else {
-        batchLanguageFunctions.AppendNewInstance(functionBody);
-        batchLanguageFunctionNames.AppendNewInstance(funcID);
-        batchLanguageFunctionParameterLists &&(&arguments);
-        batchLanguageFunctionParameterTypes &&(&argument_types);
-        batchLanguageFunctionClassification <<(isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE));
+      if (mark2 == source.sLength || source[mark2]!='{' || source[source.sLength-1]!='}') {
+        WarnError (_String("Namespace declaration is missing a body."));
+        isInFunction= _HY_NO_FUNCTION;
+        return false;
+      }
+      _String          namespace_text (source, mark2+1,source.Length()-2);
+      bool             success = false;
+      
+      _ExecutionList   * namespace_payload = new _ExecutionList (namespace_text, funcID, false, &success);
+      
+      if (success) {
+        _ElementaryCommand * nested_list = new _ElementaryCommand (HY_HBL_COMMAND_NESTED_LIST);
+        nested_list->parameters.AppendNewInstance(namespace_payload);
+        chain.AppendNewInstance(nested_list);
+      } else {
+        DeleteObject (namespace_payload);
+        return false;
+      }
+
     }
 
 
-    isInFunction = false;
+    isInFunction = _HY_NO_FUNCTION;
     return true;
 }
 
@@ -7623,6 +7667,7 @@ bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&targ
         ret.parameters&&(&cut_s);
     }
 
+  
     if (isInFunction) {
         returnlist<<target.lLength;
     } else {

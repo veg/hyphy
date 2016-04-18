@@ -90,7 +90,6 @@ bool        terminateExecution  = false;
 FILE*     globalErrorFile   = nil,
           *   globalMessageFile = nil;
 
-extern    bool          isInFunction;
 
 extern    _String   scanfLastFilePath;
 
@@ -429,7 +428,7 @@ void    PurgeAll (bool all)
     }
     scanfLastFilePath = empty;
     setParameter (randomSeed,globalRandSeed);
-    isInFunction        = false;
+    isInFunction        = _HY_NO_FUNCTION;
     isDefiningATree     = 0;
 #ifdef __HYPHYMPI__
     int            size;

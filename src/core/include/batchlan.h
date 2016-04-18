@@ -179,6 +179,8 @@ public:
 //____________________________________________________________________________________
 // an elementary command
 
+
+
 class   _ElementaryCommand: public _String // string contains the literal for this command
 {
 public:
@@ -730,6 +732,11 @@ _HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _
 
 extern  bool                        numericalParameterSuccessFlag;
 extern  _Parameter                  messageLogFlag;
+
+extern enum       _hy_nested_check {
+  _HY_NO_FUNCTION,
+  _HY_FUNCTION,
+  _HY_NAMESPACE } isInFunction;
 
 
 #endif

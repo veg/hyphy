@@ -19,9 +19,6 @@ LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
 
-Export (function_def, models.codon.MG_REV.generateRate);
-
-
 /*------------------------------------------------------------------------------
     Display analysis information
 */
@@ -35,7 +32,7 @@ io.displayAnalysisBanner({
     if dS differs drom dN.
     The estimates aggregate information over all branches,
     so the signal is derived from
-    pervasive diversification or conservation.A subset of branches can be selected
+    pervasive diversification or conservation. A subset of branches can be selected
     for testing as well.
     Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
