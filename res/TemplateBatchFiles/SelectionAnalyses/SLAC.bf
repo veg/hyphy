@@ -13,16 +13,13 @@ LoadFunctionLibrary("libv3/tasks/ancestral.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
+LoadFunctionLibrary("libv3/tasks/mpi.bf");
 
 LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
 
-Export (function_def, slac.compute_the_counts);
-
-fprintf (stdout, function_def, "\n");
-
-return 0;
+Export (function_def, models.codon.MG_REV.generateRate);
 
 
 /*------------------------------------------------------------------------------
@@ -420,6 +417,18 @@ io.spool_json (slac.json, slac.codon_data_info["json"]);
 selection.io.stopTimer (slac.json [terms.json.timers], "Primary SLAC analysis");
 
 
+lfunction slac.handle_a_sample (lf, partition, branches, counts) {
+    //fprintf (stdout, lf, ":", partition, ":", branches, ":", counts, "\n");
+    slac.sampled   = ancestral.build (lf, partition, {"sample": TRUE});
+    return slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], branches, counts);
+}
+
+lfunction slac.handle_a_sample_callback (node, result, arguments) {
+    (^"slac.sample.results") +  result;
+}
+
+fprintf (stdout, slac.partitioned_mg_results["LF"], "\n");
+
 if (slac.samples > 0) {
     slac.table_screen_output_samplers = {{"Codon", "Partition", "    S [median, IQR]    ", "    N [median, IQR]    ", "    dS [median, IQR]    ", "    dN [median, IQR]    ", "  p-value [median, IQR]  "}};
     slac.table_output_options_samplers =  {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
@@ -439,11 +448,27 @@ if (slac.samples > 0) {
         slac.table_output_options_samplers["header"] = TRUE;
         slac.sample.results = {};
 
+        slac.queue = mpi.create_queue ({"LikelihoodFunctions": {{slac.partitioned_mg_results["LF"]}}});
+        
+
         for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
-            slac.sampled   = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, {"sample": TRUE});
-            slac.sample.results + slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
-            //io.reportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
+        
+            //slac.sampled   = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, {"sample": TRUE});
+            //slac.sample.results + slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
+            
+            io.reportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
+            
+            mpi.queue_job (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"], 
+                                                                "1" : slac.i,
+                                                                "2" : slac.selected_branches[slac.i],
+                                                                "3":  slac.counts},
+                                                                "slac.handle_a_sample_callback");
+                                                                
         }
+        
+        io.reportProgressBar("", "Done with ancestral sampling              \n");
+        
+        mpi.queue_complete (slac.queue);
 
         slac.extractor = {slac.samples, 1};
         slac.sites   = utility.array1D ((slac.filter_specification[slac.i])["coverage"]);

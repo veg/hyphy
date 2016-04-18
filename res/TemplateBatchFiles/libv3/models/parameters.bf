@@ -81,7 +81,7 @@ lfunction parameters.mean (values, weights, d) {
 
 function parameters.quote (arg) {
     if (Type (arg) == "String") {
-	    return "\"" + arg + "\"";
+	    return "\"" + (arg&&2) + "\"";
     }
     return arg;
 }

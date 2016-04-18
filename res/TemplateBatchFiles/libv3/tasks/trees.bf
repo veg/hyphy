@@ -135,8 +135,6 @@ lfunction trees.loadAnnotatedTopologyAndMap (look_for_newick_tree, mapping) {
     io.checkAssertion ("Abs (mapping) == Abs (reverse)", "The mapping between original and normalized tree sequence names must be one to one");
     utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", reverse);
     
-    
-    
     result = trees.extractTreeInfo (trees.getTreeString(look_for_newick_tree));
     utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", None);
     return result;

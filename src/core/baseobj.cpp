@@ -37,6 +37,8 @@
  
  */
 
+//#define __HYPHY_MPI_MESSAGE_LOGGING__
+
 #include "baseobj.h"
 #include "errorfns.h"
 #include "hy_strings.h"
@@ -242,14 +244,14 @@ bool    GlobalStartup (void)
 
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
-#ifndef __HYPHYMPI__
-    _String fileName(errorFileName);
-#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
-    fileName = baseDirectory & fileName;
-#endif
-#else
-    _String fileName = errorFileName & ".mpinode" & (long)_hy_mpi_node_rank;
-#endif
+  #ifndef __HYPHYMPI__
+      _String fileName(errorFileName);
+      #if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
+          fileName = baseDirectory & fileName;
+      #endif
+  #else
+      _String fileName = errorFileName & ".mpinode" & (long)_hy_mpi_node_rank;
+  #endif
 
     globalErrorFile = doFileOpen (fileName.sData,"w+");
     while (globalErrorFile == nil && p<10) {

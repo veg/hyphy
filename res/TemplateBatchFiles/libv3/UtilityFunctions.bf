@@ -30,6 +30,14 @@ function utility.callFunction (id, arguments) {
     return None;
 }
 
+
+function utility.convertToArgumentString (argument) {
+    if (Type (argument) == "String") {
+        return '"' + (argument && 2) + '"';
+    }
+    return argument;
+}
+
 lfunction utility.array1D (m) {
     if (Type (m) == "Matrix") {
         return Rows (m) * Columns (m);
