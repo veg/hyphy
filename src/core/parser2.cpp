@@ -681,9 +681,10 @@ bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char &
               // handle things like ^"id" = value
               if (deref != HY_STRING_DIRECT_REFERENCE) {
                 _hyExecutionContext cntx (context.formulaScope(), context.errMsg());
-                lhs = (_Variable*) ((_FString*)theOp->GetANumber())->Dereference(false, &cntx, true);
+                lhs = (_Variable*) ((_FString*)theOp->GetANumber())->Dereference(deref == HY_STRING_GLOBAL_DEREFERENCE, &cntx, true);
                 if (!lhs) {
                   errMsg = "The left-hand side of an assignment like ^\"id\" must reference an existing variable";
+                  return false;
                 } else {
                   deref = HY_STRING_DIRECT_REFERENCE;
                   check = true;
