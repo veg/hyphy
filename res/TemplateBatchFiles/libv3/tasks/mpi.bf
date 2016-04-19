@@ -3,6 +3,12 @@ LoadFunctionLibrary ("../terms-json.bf");
 namespace mpi {
     job_id = 0;
 
+    function get_job_id () {
+        job_id += 1;
+        return job_id;
+    }
+
+
     lfunction create_queue (nodesetup) {
         /** create and return an empty FIFO queue for MPI jobs */
         mpi_node_count = utility.getEnvVariable ("MPI_NODE_COUNT");
@@ -43,10 +49,6 @@ namespace mpi {
         return queue;
     }
 
-    function queue_export_function (func_id) {
-        ExecuteCommands ("Export (complete_function_dump, `func_id`)");
-        return complete_function_dump;
-    }
 
     lfunction queue_job (queue, job, arguments, result_callback) {
         /** 
@@ -71,9 +73,9 @@ namespace mpi {
             }
 
         
-            complete_function_dump = queue_export_function (job);
-            ^"job_id" += 1;    
-            queue [node] = {"job_id" : ^"job_id", "callback" : result_callback, "arguments" : arguments};
+            complete_function_dump = aux.queue_export_function (job);
+            job_id = get_job_id();   
+            queue [node] = {"job_id" : job_id, "callback" : result_callback, "arguments" : arguments};
             MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');    
         } else {
             Call (result_callback, 0, Eval (job + '(' + Join (",",utility.map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')'), arguments);
@@ -101,6 +103,11 @@ namespace mpi {
     }
 
     namespace aux {
+        function queue_export_function (func_id) {
+            Export (complete_function_dump, ^func_id);
+            return complete_function_dump;
+        }
+
         lfunction _handle_receieve (queue) {
             MPIReceive (-1,from,result);
             Call ((queue [from])["callback"], from, Eval(result), (queue [from])["arguments"]);

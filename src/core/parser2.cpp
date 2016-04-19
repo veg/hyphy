@@ -1453,8 +1453,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 j++;
             }
 
-            curOp =  (s.Cut(i,i+j-1));
-            i+=j-1;
+            curOp =  s.Cut(i,i+=j-1);
 
             if (curOp.Equal(&globalToken)) {
                 if (takeVarReference) {

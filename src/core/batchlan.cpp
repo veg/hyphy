@@ -765,18 +765,22 @@ long GetBFFunctionCount (void) {
 long    FindBFFunctionName (_String&s, _VariableContainer* theP)
 {
     if (theP) {
-        _String testName = *(theP->GetName()) & '.' & s;
+        _String prefix = *(theP->GetName());
 
-        long cutAt = testName.sLength - s.sLength - 2;
-        do {
-            long idx = batchLanguageFunctionNames.FindObject (&testName);
+        while (1) {
+            _String test_id = prefix & '.' & s;
+            long idx = batchLanguageFunctionNames.FindObject (&test_id);
             if (idx >= 0) {
-                s = testName;
+                s = test_id;
                 return idx;
             }
-            testName.Trim (0,cutAt);
-            cutAt = testName.FindBackwards('.',0,-1)-1;
-        } while (cutAt >= 0);
+            long cut_at = prefix.FindBackwards ('.', 0, -1);
+            if (cut_at > 0) {
+              prefix.Trim (0, cut_at - 1);
+            } else {
+              break;
+            }
+        };
     }
 
     return batchLanguageFunctionNames.FindObject (&s);

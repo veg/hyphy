@@ -9,7 +9,15 @@ namespace foo {
             function sum (a,b) {
                 return a + b;
             }
+            
+            function inner_wrapper () {
+                return echo();
+            }
         }
+    }
+    
+    function echo () {
+        return "top level";
     }
     
     function wrapper (a,b) {
@@ -43,6 +51,7 @@ function runTest () {
 	assert (x != "foo", "Incorrectly initialized global scope");
 	assert (foo.wrapper (2,3) == 5, "Incorrect result from a wrapper function");
 	assert (foo.bar.baz.sum (2,3) == 5, "Incorrect result from a fully resolved function");
+	assert (foo.bar.baz.inner_wrapper () == foo.echo (), "Incorrect result from a nested function calling a higher level function");
 	
 	namespace foo.bar.baz {
 	    assert (sum (2,3) == 5, "Local namespace resolution fail");
