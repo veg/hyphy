@@ -2443,6 +2443,8 @@ _PMathObj _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyExec
         return BranchLength(arg0);
       case HY_OP_CODE_BRANCHNAME: //BranchName
         return TreeBranchName(arg0);
+      case HY_OP_CODE_TIPNAME: //BranchName
+        return TipName(arg0);
       case HY_OP_CODE_MIN: // COT (Min)
         return FindCOT (arg0);
       case HY_OP_CODE_REROOTTREE: // RerootTree
