@@ -19,10 +19,10 @@ lfunction math.sum(_data_vector) {
   count = Rows(_data_vector);
   sum = 0;
 
-	if (count == 1) {
-		_data_vector = Transpose(_data_vector);
-		count = Rows(_data_vector);
-	}
+  if (count == 1) {
+    _data_vector = Transpose(_data_vector);
+    count = Rows(_data_vector);
+  }
 
   for (_k = 0; _k < count; _k = _k+1) {
     sum += _data_vector[_k];
@@ -44,12 +44,12 @@ lfunction math.median(_data_vector) {
   // sort tmp_data_vector
   _tmp_data_vector = _data_vector % 0;
 
-	if (count%2) {
-		median = _tmp_data_vector[count/2];
-	}	else {
-		counter = count/2-1;
-		median = (_tmp_data_vector[counter]+_tmp_data_vector[counter+1])/2;
-	}
+  if (count%2) {
+    median = _tmp_data_vector[count/2];
+  } else {
+    counter = count/2-1;
+    median = (_tmp_data_vector[counter]+_tmp_data_vector[counter+1])/2;
+  }
 
   return median;
 
@@ -64,10 +64,10 @@ lfunction math.mean(_data_vector) {
   count = Rows(_data_vector);
   mean = 0;
 
-	if (count == 1) {
-		_data_vector = Transpose(_data_vector);
-		count = Rows(_data_vector);
-	}
+  if (count == 1) {
+    _data_vector = Transpose(_data_vector);
+    count = Rows(_data_vector);
+  }
 
   sum = math.sum(_data_vector);
   mean = sum/count;
@@ -86,10 +86,10 @@ lfunction math.kurtosis(_data_vector) {
   _moment = 0;
   _std = 0;
 
-	if (count == 1) {
-		_data_vector = Transpose(_data_vector);
-		count = Rows(_data_vector);
-	}
+  if (count == 1) {
+    _data_vector = Transpose(_data_vector);
+    count = Rows(_data_vector);
+  }
 
   mean = math.mean(_data_vector);
 
@@ -115,10 +115,10 @@ lfunction math.skewness(_data_vector) {
   _moment = 0;
   _std_cubed = 0;
 
-	if (count == 1) {
-		_data_vector = Transpose(_data_vector);
-		count = Rows(_data_vector);
-	}
+  if (count == 1) {
+    _data_vector = Transpose(_data_vector);
+    count = Rows(_data_vector);
+  }
 
   mean = math.mean(_data_vector);
 
@@ -142,10 +142,10 @@ lfunction math.variance(_data_vector) {
   count = Rows(_data_vector);
   diff = 0;
 
-	if (count == 1) {
-		_data_vector = Transpose(_data_vector);
-		count = Rows(_data_vector);
-	}
+  if (count == 1) {
+    _data_vector = Transpose(_data_vector);
+    count = Rows(_data_vector);
+  }
 
   mean = math.mean(_data_vector);
 
@@ -153,7 +153,7 @@ lfunction math.variance(_data_vector) {
     diff += Abs(_data_vector[_k] - mean)^2;
   }
 
-	return diff/count;
+  return diff/count;
 
 }
 
@@ -168,10 +168,10 @@ lfunction math.std(_data_vector) {
   count = Rows(_data_vector);
   diff = 0;
 
-	if (count == 1) {
-		_data_vector = Transpose(_data_vector);
-		count = Rows(_data_vector);
-	}
+  if (count == 1) {
+    _data_vector = Transpose(_data_vector);
+    count = Rows(_data_vector);
+  }
 
   mean = math.mean(_data_vector);
 
@@ -179,7 +179,7 @@ lfunction math.std(_data_vector) {
     diff += Abs(_data_vector[_k] - mean)^2;
   }
 
-	return Sqrt(diff/count);
+  return Sqrt(diff/count);
 
 };
 
@@ -189,12 +189,12 @@ lfunction math.std(_data_vector) {
 */
 lfunction math.gather_descriptive_stats(_data_vector) {
 
-	_count = Rows(_data_vector);
+  _count = Rows(_data_vector);
 
-	if (count == 1) {
-		_data_vector = Transpose(_data_vector);
-		_count = Rows(_data_vector);
-	}
+  if (count == 1) {
+    _data_vector = Transpose(_data_vector);
+    _count = Rows(_data_vector);
+  }
 
   _sorted_data_vector = _data_vector % 0;
 
@@ -222,7 +222,7 @@ lfunction math.gather_descriptive_stats(_data_vector) {
   _dstats ["Sq. sum"] = math.sum(_data_vector*2);
   _dstats ["Non-negative"]= Abs(_nonnegatives);
 
-	return _dstats;
+  return _dstats;
 
 }
 
