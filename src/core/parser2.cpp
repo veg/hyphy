@@ -1453,8 +1453,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 j++;
             }
 
-            curOp =  s.Cut(i,i+=j-1);
-
+          
+            curOp =  s.Cut(i,i+j-1L);
+            i+=j-1L;
+          
             if (curOp.Equal(&globalToken)) {
                 if (takeVarReference) {
                     return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & globalToken, parsingContext.errMsg(), s, i);
@@ -1471,7 +1473,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                noneObject = true;
                 globalKey  = true;
             }
-                
+          
             if (UnOps.FindKey(curOp)>=0) { // a standard function
                 if (takeVarReference) {
                     return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
