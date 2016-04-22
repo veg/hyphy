@@ -2432,8 +2432,6 @@ void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection
     
     
   }
-  
-  return true;
 }
 
 
