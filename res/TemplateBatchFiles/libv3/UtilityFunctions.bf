@@ -1,5 +1,9 @@
 LoadFunctionLibrary ("IOFunctions.bf");
 
+/**
+* utility.associativeListToJSON
+* @param associative_list
+*/
 function utility.associativeListToJSON(associative_list) {
 
     // Replace inf and nan with 1+e9999 and null, respectively
@@ -18,7 +22,11 @@ function utility.associativeListToJSON(associative_list) {
     return associative_list;
 }
 
-
+/**
+* utility.callFunction
+* @param id
+* @param arguments
+*/
 function utility.callFunction (id, arguments) {
 
     if (Type (id) == "String") {
@@ -30,6 +38,10 @@ function utility.callFunction (id, arguments) {
     return None;
 }
 
+/**
+* utility.array1D
+* @param m
+*/
 lfunction utility.array1D (m) {
     if (Type (m) == "Matrix") {
         return Rows (m) * Columns (m);
@@ -41,7 +53,10 @@ lfunction utility.array1D (m) {
     return None;
 }
 
-
+/**
+* utility.isFunction
+* @param id
+*/
 function utility.isFunction (id) {
 	if (Type (id) == "String" && Abs (id) > 0) {
 		ExecuteCommands ("GetString (__funcInfo, `id`, -1)");
@@ -52,6 +67,11 @@ function utility.isFunction (id) {
 	return 0;
 }
 
+/**
+* utility.toggleEnvVariable
+* @param var
+* @param value
+*/
 function utility.toggleEnvVariable (var, value) {
 	if (None != value) {
 		utilityFunction.toggleEnvVariable.__stash = Eval (var);
@@ -61,16 +81,27 @@ function utility.toggleEnvVariable (var, value) {
 	}
 }
 
+/**
+* utility.getEnvVariable
+* @param var
+*/
 function utility.getEnvVariable (var) {
 	return Eval(var);
 }
 
+/**
+* utility.setEnvVariable
+* @param var
+*/
 function utility.setEnvVariable (var, value) {
     Eval (var); // this is hack to make sure the variable exists before assigning to it
 	^var = value;
 }
 
-
+/**
+* utility.checkCacheFile
+* @param data_info
+*/
 lfunction utility.checkCacheFile (data_info) {
     cache_info = {};
     cache_info["file"] = data_info["file"] + ".hyphy_cache";
@@ -83,6 +114,11 @@ lfunction utility.checkCacheFile (data_info) {
     return cache_info;
 }
 
+/**
+* utility.array.find
+* @param array
+* @param value
+*/
 lfunction utility.array.find (array, value) {
     d = Rows (array) * Columns (array);
     for (i = 0; i < d; i+=1) {
@@ -93,7 +129,10 @@ lfunction utility.array.find (array, value) {
     return -1;
 }
 
-
+/**
+* utility.dict.swap_keys_and_values
+* @param dict
+*/
 lfunction utility.dict.swap_keys_and_values (dict) {
     swapped_dict = {};
     keys         = Rows (dict);
@@ -107,19 +146,33 @@ lfunction utility.dict.swap_keys_and_values (dict) {
     return swapped_dict;
 }
 
-
+/**
+* utility.array_to_dict
+* @param object
+*/
 lfunction utility.array_to_dict (object) {
     result = {};
     utility.forEach(object, "_value_", "(`&result`)[_value_['key']] = _value_['value']");
     return result;
 }
 
+// Only returns unique values
+/**
+* utility.dict_to_array
+* @param object
+*/
 lfunction utility.dict_to_array (object) {
     result = {1,Abs (object)};
     utility.forEachPair(object, "key", "_value_", "(`&result`)[+key] = _value_");
     return result;
 }
 
+/**
+* utility.map
+* @param object
+* @param lambda_name
+* @param transform
+*/
 function utility.map (object, lambda_name, transform) {
 
     Eval ("`lambda_name` = None");
@@ -234,8 +287,6 @@ function utility.forEach (object, lambda_name, transform) {
     }
 }
 
-
-
 function utility.checkKey (dict, key, type) {
     if (None != dict) {
         if (Type (dict[key]) == type) {
@@ -315,6 +366,7 @@ lfunction utility.keys (object) {
     return None;
 }
 
+// Only returns unique values
 lfunction utility.values (object) {
     if (Type (object) == "AssociativeList") {
         return Columns (object);
@@ -328,3 +380,5 @@ lfunction utility.dict.ensure_key (dict, key) {
         dict[key] = {};
     }
 }
+
+
