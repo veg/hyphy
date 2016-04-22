@@ -16,19 +16,7 @@ lfunction math.getIC(logl,params,samples) {
 */
 lfunction math.sum(_data_vector) {
 
-  count = Rows(_data_vector);
-  sum = 0;
-
-  if (count == 1) {
-    _data_vector = Transpose(_data_vector);
-    count = Rows(_data_vector);
-  }
-
-  for (_k = 0; _k < count; _k = _k+1) {
-    sum += _data_vector[_k];
-  }
-
-  return sum;
+  return +_data_vector;
 
 }
 
@@ -38,16 +26,17 @@ lfunction math.sum(_data_vector) {
 */
 lfunction math.median(_data_vector) {
 
-  count = Rows(_data_vector);
-  median = 0;
+  count = utility.array1D (_data_vector);
+     // this will also let you handle other non 1xN vectors
 
   // sort tmp_data_vector
   _tmp_data_vector = _data_vector % 0;
 
   if (count%2) {
-    median = _tmp_data_vector[count/2];
+    median = _tmp_data_vector[count$2];
+    // $ is integer division, so you don't end up taking index 1.5
   } else {
-    counter = count/2-1;
+    counter = count$2-1;
     median = (_tmp_data_vector[counter]+_tmp_data_vector[counter+1])/2;
   }
 
@@ -61,17 +50,7 @@ lfunction math.median(_data_vector) {
 */
 lfunction math.mean(_data_vector) {
 
-  count = Rows(_data_vector);
-  mean = 0;
-
-  if (count == 1) {
-    _data_vector = Transpose(_data_vector);
-    count = Rows(_data_vector);
-  }
-
-  sum = math.sum(_data_vector);
-  mean = sum/count;
-  return mean;
+  return math.sum (_data_vector) / utility.array1D (_data_vector);
 
 }
 
@@ -81,26 +60,19 @@ lfunction math.mean(_data_vector) {
 */
 lfunction math.kurtosis(_data_vector) {
 
-  count = Rows(_data_vector);
-  diff = 0;
-  _moment = 0;
-  _std = 0;
-
-  if (count == 1) {
-    _data_vector = Transpose(_data_vector);
-    count = Rows(_data_vector);
-  }
-
+  count = utility.array1D (_data_vector);
   mean = math.mean(_data_vector);
 
+  /*
   for (_k = 0; _k < count; _k = _k+1) {
     diff += Abs(_data_vector[_k] - mean)^4;
-  }
+  }*/
 
+  // it is MUCH faster to do "iterator ops" like this
+  diff = + _data_vector ["(_MATRIX_ELEMENT_VALUE_ - mean)^4"];
   _moment = diff/count;
-  _std = math.variance(_data_vector)^2;
 
-  return _moment/_std;
+  return _moment/math.variance(_data_vector)^2;
 
 }
 
@@ -110,26 +82,12 @@ lfunction math.kurtosis(_data_vector) {
 */
 lfunction math.skewness(_data_vector) {
 
-  count = Rows(_data_vector);
-  diff = 0;
-  _moment = 0;
-  _std_cubed = 0;
-
-  if (count == 1) {
-    _data_vector = Transpose(_data_vector);
-    count = Rows(_data_vector);
-  }
-
+  count = utility.array1D (_data_vector);
   mean = math.mean(_data_vector);
-
-  for (_k = 0; _k < count; _k = _k+1) {
-    diff += (_data_vector[_k] - mean)^3;
-  }
+  diff = + _data_vector ["(_MATRIX_ELEMENT_VALUE_ - mean)^3"];
 
   _moment = diff/count;
-  _std_cubed = math.std(_data_vector)^3;
-
-  return _moment/_std_cubed;
+  return _moment/math.std(_data_vector)^3;
 
 }
 
@@ -139,20 +97,10 @@ lfunction math.skewness(_data_vector) {
 */
 lfunction math.variance(_data_vector) {
 
-  count = Rows(_data_vector);
-  diff = 0;
-
-  if (count == 1) {
-    _data_vector = Transpose(_data_vector);
-    count = Rows(_data_vector);
-  }
-
+  count = utility.array1D (_data_vector);
   mean = math.mean(_data_vector);
 
-  for (_k = 0; _k < count; _k = _k+1) {
-    diff += Abs(_data_vector[_k] - mean)^2;
-  }
-
+  diff = + _data_vector ["(_MATRIX_ELEMENT_VALUE_ - mean)^2"];
   return diff/count;
 
 }
@@ -162,25 +110,7 @@ lfunction math.variance(_data_vector) {
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.std(_data_vector) {
-
-  // std = sqrt(mean(abs(x - x.mean())**2))
-
-  count = Rows(_data_vector);
-  diff = 0;
-
-  if (count == 1) {
-    _data_vector = Transpose(_data_vector);
-    count = Rows(_data_vector);
-  }
-
-  mean = math.mean(_data_vector);
-
-  for (_k = 0; _k < count; _k = _k+1) {
-    diff += Abs(_data_vector[_k] - mean)^2;
-  }
-
-  return Sqrt(diff/count);
-
+  return Sqrt (math.variance (_data_vector));
 };
 
 /**
@@ -189,13 +119,7 @@ lfunction math.std(_data_vector) {
 */
 lfunction math.gather_descriptive_stats(_data_vector) {
 
-  _count = Rows(_data_vector);
-
-  if (count == 1) {
-    _data_vector = Transpose(_data_vector);
-    _count = Rows(_data_vector);
-  }
-
+  _count = utility.array1D (_data_vector);
   _sorted_data_vector = _data_vector % 0;
 
   _variance = math.variance(_data_vector);
