@@ -347,15 +347,15 @@ bool _Formula::InternalSimplify (node<long>* startNode)
                     case HY_OP_CODE_ADD: { // +
                         if (CheckEqual (theVal,0.0)) { // ?+0 => ?
                             collapse2 = firstConst?2:1;
-                            break;
                         }
+                        break;
                     }
 
                     case HY_OP_CODE_SUB: { // -
                         if (CheckEqual (theVal,0.0)) {
                             collapse2 = firstConst?(-2):1;
-                            break;
                         }
+                        break;
                     }
 
                     case HY_OP_CODE_DIV: { // /
@@ -566,7 +566,7 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
     if (nOps<0)
         // a user-defined function
     {
-        long func_id = -nOps - 1L;
+        long func_id = thisNodeOperation->UserFunctionID();
         result<< & GetBFFunctionNameByIndex(func_id);
         if (currentNode) {
             result<<'(';
@@ -935,6 +935,12 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     }
 
     subNumericValues = 2;
+  
+    /*for (long i = 0; i < theFormula.lLength; i++) {
+      _Operation *op_i = GetIthTerm(i);
+      printf ("%ld: %s\n", i+1, _String((_String*)op_i->toStr()).sData);
+    }*/
+  
     _String msg ((_String*)toStr());
     subNumericValues = 0;
     msg = msg & "=" & rhs;

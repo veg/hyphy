@@ -272,13 +272,13 @@ lfunction parameters.helper.dump_matrix (matrix) {
 }
 
 lfunction parameters.helper.tree_lengths_to_initial_values (dict, type) {
-/** 
-    expects a [0 to N-1] dictrionary of tree objects 
+/**
+    expects a [0 to N-1] dictrionary of tree objects
 
 */
 
     components = Abs (dict);
-    
+
     //result = {"branch lengths" : { "0" : {} } };
 
     if (type == "codon") {
@@ -286,7 +286,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values (dict, type) {
     } else {
         factor = 1;
     }
-    
+
     result  = {};
 
     for (i = 0; i < components; i += 1) {
@@ -300,12 +300,15 @@ lfunction parameters.helper.tree_lengths_to_initial_values (dict, type) {
 }
 
 function parameters.getProfileCI (id, lf, level) {
+
+
+
     utility.toggleEnvVariable ("COVARIANCE_PRECISION", level);
     utility.toggleEnvVariable ("COVARIANCE_PARAMETER", id);
-    ExecuteCommands ("CovarianceMatrix (parameters.getProfileCI.mx, `lf`)");
+    CovarianceMatrix (parameters.getProfileCI.mx, *lf);
     utility.toggleEnvVariable ("COVARIANCE_PRECISION", None);
     utility.toggleEnvVariable ("COVARIANCE_PARAMETER", None);
-    
+
     return {"`terms.lower_bound`" : parameters.getProfileCI.mx[0], "`terms.MLE`" : parameters.getProfileCI.mx[1],"`terms.upper_bound`" : parameters.getProfileCI.mx[2]};
 }
 

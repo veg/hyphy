@@ -100,7 +100,7 @@ public:
     virtual  long           GetHBLFunctionID    (void) const;
   
     virtual  long           UserFunctionID      (void) {
-        return numberOfTerms < 0 ? -numberOfTerms-1 : -1;
+        return numberOfTerms < 0 ? opCode : -1;
     };
     // return a non-neg number (function index) if this is a user function,
     // otherwise, return -1
