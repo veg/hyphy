@@ -698,7 +698,6 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
 // find a root of the formulaic expression, using Brent's method and a bracketed root.
 {
     // check that there is indeed a sign change on the interval
-    _Constant   dummy;
 
     _Parameter  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
                 c = b;
@@ -709,13 +708,11 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     long        it = 0;
 
     if (a>b) { // autobracket to the left
-        dummy.SetValue (b);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(b);
         fb = Compute()->Value();
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fb);
-            (*storeEvals) && & dummy;
+            storeEvals->AppendNewInstance(new _Constant (b));
+            storeEvals->AppendNewInstance(new _Constant (fb));
         }
 
         if (b<0.00001 && b>-0.00001) {
@@ -728,13 +725,11 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             a = min1+0.5*(b-min1);
         }
 
-        dummy.SetValue (a);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(a);
         fa = Compute()->Value()-rhs;
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fa);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (a));
+          storeEvals->AppendNewInstance(new _Constant (fa));
         }
 
         for (long k=0; k<50; k++) {
@@ -756,24 +751,20 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
 
             fb = fa;
 
-            dummy.SetValue (a);
-            unknown->SetValue(&dummy);
+            unknown->SetValue(a);
             fa = Compute()->Value()-rhs;
             if (storeEvals) {
-                (*storeEvals) && & dummy;
-                dummy.SetValue (fa);
-                (*storeEvals) && & dummy;
+              storeEvals->AppendNewInstance(new _Constant (a));
+              storeEvals->AppendNewInstance(new _Constant (fa));
             }
         }
     } else if (CheckEqual (a,b)) { // autobracket to the right
-        dummy.SetValue (a);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(a);
         fa = Compute()->Value()-rhs;
 
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fa);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (a));
+          storeEvals->AppendNewInstance(new _Constant (fa));
         }
         a = b;
 
@@ -787,14 +778,12 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             b = a+0.5*(min2-a);
         }
 
-        dummy.SetValue (b);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(b);
         fb = Compute()->Value()-rhs;
-
+      
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fb);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (b));
+          storeEvals->AppendNewInstance(new _Constant (fb));
         }
 
         for (long k=0; k<50; k++) {
@@ -816,26 +805,22 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
 
             fa = fb;
 
-            dummy.SetValue (b);
-            unknown->SetValue(&dummy);
+            unknown->SetValue(b);
             fb = Compute()->Value()-rhs;
             if (storeEvals) {
-                (*storeEvals) && & dummy;
-                dummy.SetValue (fb);
-                (*storeEvals) && & dummy;
+              storeEvals->AppendNewInstance(new _Constant (b));
+              storeEvals->AppendNewInstance(new _Constant (fb));
             }
         }
     }
 
 
     if (fa == 0.0) {
-        dummy.SetValue (a);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(a);
         fa = Compute()->Value()-rhs;
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fa);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (a));
+          storeEvals->AppendNewInstance(new _Constant (fa));
         }
         if (fa == 0.0) {
             return a;
@@ -843,15 +828,13 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     }
 
     if (fb == 0.0) {
-        dummy.SetValue (b);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(b);
         fb = Compute()->Value()-rhs;
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fb);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (b));
+          storeEvals->AppendNewInstance(new _Constant (fb));
         }
-        if (fb==0) {
+        if (fb == 0.0) {
             return b;
         }
     }
@@ -923,13 +906,11 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
                 b+=fabs(tol1)*(1.*2.*(xm>=.0));
             }
 
-            dummy.SetValue (b);
-            unknown->SetValue(&dummy);
+            unknown->SetValue(b);
             fb = Compute()->Value()-rhs;
             if (storeEvals) {
-                (*storeEvals) && & dummy;
-                dummy.SetValue (fb);
-                (*storeEvals) && & dummy;
+              storeEvals->AppendNewInstance(new _Constant (b));
+              storeEvals->AppendNewInstance(new _Constant (fb));
             }
         }
     }
