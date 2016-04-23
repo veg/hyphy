@@ -1285,14 +1285,21 @@ void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool rec
 
 //____________________________________________________________________________________
 
-_PMathObj       _ExecutionList::Execute     (void) {
+_PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
 
   //setParameter(_hyLastExecutionError, new _MathObject, nil, false);
-    
+  
+  
     _ExecutionList*      stashCEL = currentExecutionList;
     callPoints << currentCommand;
     executionStack       << this;
 
+    if (parent && stdinRedirect == nil) {
+      stdinRedirect = parent->stdinRedirect;
+      stdinRedirectAux = parent->stdinRedirectAux;
+    } else {
+      parent = nil;
+    }
  
     _FString            cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):empty),
                         * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
@@ -1344,6 +1351,11 @@ _PMathObj       _ExecutionList::Execute     (void) {
     executionStack.Delete (executionStack.lLength-1);
     if (result == nil) {
         result = new _MathObject();
+    }
+
+    if (parent) {
+      stdinRedirect = nil;
+      stdinRedirectAux = nil;
     }
 
     return result;
@@ -6083,7 +6095,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 
     case HY_HBL_COMMAND_NESTED_LIST:
       chain.currentCommand++;
-      ((_ExecutionList*)parameters.GetItem(0))->Execute();
+      {
+        ((_ExecutionList*)parameters.GetItem(0))->Execute(&chain);
+      }
       break;
       
     default:

@@ -60,6 +60,10 @@ function utility.isFunction (id) {
 	return 0;
 }
 
+function utility.getGlobalValue (val) {
+    return ^val;
+}
+
 function utility.toggleEnvVariable (var, value) {
 	if (None != value) {
 		utilityFunction.toggleEnvVariable.__stash = Eval (var);

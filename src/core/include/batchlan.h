@@ -94,7 +94,9 @@ public:
     void        Duplicate                   (BaseRef);
     bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
 
-    _PMathObj   Execute                     (void);             // run this execution list
+    _PMathObj   Execute                     (_ExecutionList* parent = nil);
+        // if parent is specified, copy stdin redirects from it
+        // run this execution list
     _PMathObj   GetResult                   (void) {
         return result;
     }

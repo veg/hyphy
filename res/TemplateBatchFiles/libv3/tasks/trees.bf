@@ -53,16 +53,16 @@ lfunction trees.getTreeString(look_for_newick_tree) {
             SetDialogPrompt("Please select a tree file for the data:");
             fscanf(PROMPT_FOR_FILE, REWIND, "Raw", treeString);
             fprintf(stdout, "\n");
-            
+
             if (regexp.find(treeString, "^#NEXUS")) {
                 ExecuteCommands(treeString);
                 if (! utility.getEnvVariable ("IS_TREE_PRESENT_IN_DATA")) {
                     fprintf(stdout, "\n> **This NEXUS file doesn't contain a valid tree block**");
                     return 1;
                 }
-            
+
                 nftm = utility.getEnvVariable ("NEXUS_FILE_TREE_MATRIX")
-            
+
                 if (Rows(nftm) > 1) {
                     ChoiceList(treeChoice, "Select a tree", 1, SKIP_NONE, nftm);
                     if (treeChoice < 0) {
@@ -105,7 +105,7 @@ lfunction trees.getTreeString(look_for_newick_tree) {
             }
         }
     }
-    
+
     return treeString;
 }
 
@@ -130,17 +130,18 @@ lfunction trees.loadAnnotatedTopology (look_for_newick_tree) {
 lfunction trees.loadAnnotatedTopologyAndMap (look_for_newick_tree, mapping) {
 
     reverse = {};
-    utility.forEach (utility.keys (mapping), "_key_", "`&reverse`[`&mapping`[_key_]] = _key_");   
-   
+    utility.forEach (utility.keys (mapping), "_key_", "`&reverse`[`&mapping`[_key_]] = _key_");
+
     io.checkAssertion ("Abs (mapping) == Abs (reverse)", "The mapping between original and normalized tree sequence names must be one to one");
     utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", reverse);
-    
+
     result = trees.extractTreeInfo (trees.getTreeString(look_for_newick_tree));
     utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", None);
     return result;
 }
 
 lfunction trees.loadAnnotatedTreeTopology.match_partitions(partitions, mapping) {
+
 
     partition_count = Rows(partitions);
     partrees = {};
@@ -157,7 +158,6 @@ lfunction trees.loadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
             };
         }
     } else { // no tree matrix; allow if there is a single partition
-
 
         partrees + {
             "name": partitions[0][0],

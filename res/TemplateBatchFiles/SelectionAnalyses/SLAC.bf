@@ -94,112 +94,13 @@ slac.table_headers = {{"ES", "Expected synonymous sites"}
 slac.table_screen_output = {{"Codon", "Partition", "S", "N", "dS", "dN", "Selection detected?"}};
 slac.table_output_options =  {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
 
-slac.codon_data_info = alignments.promptForGeneticCodeAndAlignment("slac.codon_data", "slac.codon_filter");
+namespace slac {
 
-    /** example output
-    {
-        "sequences": 13,
-        "sites": 897,
-        "name-mapping": {
-            "AF082576": "AF082576",
-...
-            "AF234767": "AF234767",
-            "AF_231119": "AF-231119"
-        },
-        "partitions": {
-            {
-                "SPAN_1", "0-587"
-            }
-            ...
-            {
-                "SPAN_5", "1693-2690"
-            }
-        },
-        "code": {
-            {
-                14, 13, 14, 13, 7, 7, 7, 7, 19, 5, 19, 5, 2, 2, 3, 2, 12, 11, 12, 11, 6, 6, 6, 6, 19, 19, 19, 19, 1, 1, 1, 1, 16, 15, 16, 15, 8, 8, 8, 8, 20, 20, 20, 20, 4, 4, 4, 4, 10, 9, 10, 9, 5, 5, 5, 5, 10, 17, 18, 17, 1, 0, 1, 0
-            }
-        },
-        "file": "/Volumes/sergei-raid/hyphy2.2/tests/hbltests/libv3/data/partitioned.nex",
-        "stop": "TAA,TAG,TGA",
-        "dataset": "slac.codon_data",
-        "datafilter": "slac.codon_filter"
-    }
-
-    */
-
-slac.sample_size = slac.codon_data_info["sites"] * slac.codon_data_info["sequences"];
-slac.codon_data_info["json"] = slac.codon_data_info["file"] + ".slac.json";
-slac.name_mapping = slac.codon_data_info[terms.json.name_mapping];
-    /**
-        will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
-    */
-
-if (None == slac.name_mapping) { /** create a 1-1 mapping if nothing was done */
-    slac.name_mapping = {};
-    utility.forEach (alignments.getSequenceNames ("slac.codon_data"), "_value_", "slac.name_mapping[_value_] = _value_");
+    LoadFunctionLibrary ("modules/shared-load-file.bf");
+    load_file ("slac");
 }
 
-slac.partitions_and_trees = trees.loadAnnotatedTreeTopology.match_partitions (slac.codon_data_info[terms.json.partitions], slac.name_mapping);
 
-    /**  this will return a dictionary of partition strings and trees; one set per partition, as in
-    {
-        "0": {
-            "name:" ... ,
-            "filter-string": "0-587",
-            "tree": {
-                "string": ...
-                "string_with_lengths": ...
-                "branch_lengths": {
-                    "AF_231119": 0.00519475,
-                    ...
-                },
-                "annotated_string": ... ,
-                "model_map": {
-                    "AF_231119": "",
-                    ...
-                },
-                "partitioned": {
-                    "AF_231119": "leaf",
-                 },
-                "model_list": {
-                    {
-                }
-            }
-        },
-        ...
-    */
-
-
-
-slac.partition_count = Abs (slac.partitions_and_trees);
-
-utility.forEachPair (slac.partitions_and_trees, "_key_", "_value_", ' (slac.partitions_and_trees[_key_])["filter-string"] = selection.io.adjust_partition_string (_value_["filter-string"], 3*slac.codon_data_info["sites"])');
-    /**
-        ensure that all partitions fall on codon boundaries if they are contiguous
-    */
-
-
-io.reportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + slac.codon_data_info["sequences"] + "** sequences, **" + slac.codon_data_info["sites"] + "** codons, and **" + Abs (slac.partitions_and_trees) + "** partitions from \`" + slac.codon_data_info["file"] + "\`");
-
-slac.selected_branches = selection.io.defineBranchSets(slac.partitions_and_trees);
-    /**  this will return a dictionary of selected branches; one set per partition, like in
-    {
-        "0": {
-            "NODE3": "test",
-            "NODE6": "background",
-    ...
-            "NODE15": "test"
-        },
-
-        ...
-        "4": {
-            "NODE4": "test",
-     ...
-             "NODE2": "background"
-        }
-    }
-    */
 
 slac.samples = io.prompt_user ("\n>Select the number of samples used to assess ancestral reconstruction uncertainty [select 0 to skip]",100,0,100000,TRUE);
 slac.pvalue  = io.prompt_user ("\n>Select the p-value used to for perform the test at",0.1,0,1,FALSE);
@@ -446,25 +347,25 @@ if (slac.samples > 0) {
         slac.sample.results = {};
 
         slac.queue = mpi.create_queue ({"LikelihoodFunctions": {{slac.partitioned_mg_results["LF"]}}});
-        
+
 
         for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
-        
+
             //slac.sampled   = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, {"sample": TRUE});
             //slac.sample.results + slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
-            
+
             io.reportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
-            
-            mpi.queue_job (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"], 
+
+            mpi.queue_job (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"],
                                                                 "1" : slac.i,
                                                                 "2" : slac.selected_branches[slac.i],
                                                                 "3":  slac.counts},
                                                                 "slac.handle_a_sample_callback");
-                                                                
+
         }
-        
+
         io.reportProgressBar("", "Done with ancestral sampling              \n");
-        
+
         mpi.queue_complete (slac.queue);
 
         slac.extractor = {slac.samples, 1};
