@@ -3,6 +3,11 @@ LoadFunctionLibrary ("terms.bf");
 
 parameters.infinity = 1e10;
 
+/**
+* Applies a namespace to parameter ids
+* @param {String} id
+* @param {String} namespace
+*/
 function parameters.applyNameSpace (id, namespace) {
 	if (Type (namespace) == "String") {
 		if (Abs (namespace) > 0) {
@@ -12,6 +17,12 @@ function parameters.applyNameSpace (id, namespace) {
 	return id;
 }
 
+/**
+* parameters.unconstrain_parameter_set 
+* @param {LikelihoodFunction} lf - the likelihood function to operate on
+* @param {Matrix} set - set of parameters to unconstrain
+* @returns nothing
+*/
 function parameters.unconstrain_parameter_set (lf, set) {
     ExecuteCommands ("GetString(parameters.unconstrain_parameter_set.info, `lf`, -1)");
     if (None == set) {
@@ -25,6 +36,12 @@ function parameters.unconstrain_parameter_set (lf, set) {
     }
 }
 
+/**
+* parameters.declareGlobal 
+* @param {String} id
+* @param {Matrix} cache
+* @returns nothing
+*/
 function parameters.declareGlobal (id, cache) {
     if (Type (id) == "String") {
         if (Abs (id)) {
@@ -55,6 +72,12 @@ function parameters.declareGlobal (id, cache) {
     }
 }
 
+/**
+* parameters.normalize_ratio
+* @param {Number} n 
+* @param {Number} d
+* @returns n/d
+*/
 function parameters.normalize_ratio (n, d) {
     if (d == 0) {
         if (n == 0) {
@@ -66,10 +89,23 @@ function parameters.normalize_ratio (n, d) {
     return n/d;
 }
 
+/**
+* Sets value of passed parameter id
+* @param {String} id - id of parameter to set value to
+* @param {Number} value - value to set
+* @returns nothing
+*/
 function parameters.set_value (id, value) {
     Eval ("`id` = " + value);
 }
 
+/**
+* Returns mean of values
+* @param {Matrix} values - values to return mean of
+* @param {Matrix} weights - weights to multiply values by
+* @param {Number} d - does nothing
+* @returns {Number} mean
+*/
 lfunction parameters.mean (values, weights, d) {
     m = 0;
     d = Rows  (values)*Columns (values);
@@ -79,6 +115,11 @@ lfunction parameters.mean (values, weights, d) {
     return m;
 }
 
+/**
+* Quotes the argument
+* @param {String} arg - string to be quoted
+* @returns {String} string in quotes
+*/
 function parameters.quote (arg) {
     if (Type (arg) == "String") {
 	    return "\"" + arg + "\"";
@@ -86,6 +127,13 @@ function parameters.quote (arg) {
     return arg;
 }
 
+/**
+* addMultiplicativeTerm 
+* @param {Matrix} matrix - matrix to scale
+* @param {Number} term - scalar to multiply matrix by
+* @param {Number} do_empties - if element matrix is empty, fill with term
+* @returns {Matrix} New matrix
+*/
 lfunction parameters.addMultiplicativeTerm (matrix, term, do_empties) {
 
 	if (Abs (term) > 0) {
@@ -109,7 +157,12 @@ lfunction parameters.addMultiplicativeTerm (matrix, term, do_empties) {
 	return matrix;
 }
 
-
+/**
+* stringMatrixToFormulas 
+* @param {String} id - matrix to scale
+* @param {Matrix} matrix - if element matrix is empty, fill with term
+* @returns nothing
+*/
 function parameters.stringMatrixToFormulas (id, matrix) {
 	__N = Rows (matrix);
 
@@ -126,6 +179,12 @@ function parameters.stringMatrixToFormulas (id, matrix) {
 
 }
 
+/**
+* parameters.generate_attributed_names 
+* @param prefix 
+* @param attributes 
+* @param delimiter
+*/
 function parameters.generate_attributed_names (prefix, attributes, delimiter) {
     if (delimiter == None) {
         delimiter = "_";
@@ -207,7 +266,6 @@ function parameters.constrainSets (set1, set2) {
     }
 }
 
-
 function parameters.removeConstraint (id) {
     if (Type (id) == "String") {
         if (Abs (id)) {
@@ -226,7 +284,6 @@ function parameters.removeConstraint (id) {
     }
 }
 
-
 function parameters.helper.copy_definitions (target, source) {
     parameters.helper.copy_definitions.key_iterator = {{terms.local, terms.global}};
 
@@ -239,7 +296,6 @@ function parameters.helper.copy_definitions (target, source) {
          }
     }
 }
-
 
 lfunction parameters.helper.stick_breaking (parameters, initial_values) {
     left_over   = "";
@@ -308,5 +364,4 @@ function parameters.getProfileCI (id, lf, level) {
     
     return {"`terms.lower_bound`" : parameters.getProfileCI.mx[0], "`terms.MLE`" : parameters.getProfileCI.mx[1],"`terms.upper_bound`" : parameters.getProfileCI.mx[2]};
 }
-
 

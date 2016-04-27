@@ -4,6 +4,11 @@ LoadFunctionLibrary ("../parameters.bf");
 LoadFunctionLibrary ("../frequencies.bf");
 LoadFunctionLibrary ("../../UtilityFunctions.bf");
 
+/**
+* models.codon.MG_REV.modelDescription
+* @param type
+* @param code
+*/
 lfunction models.codon.MG_REV.modelDescription (type, code) {
 
     codons = models.codon.map_code (code);
@@ -32,7 +37,14 @@ lfunction models.codon.MG_REV.modelDescription (type, code) {
     		};
 }
 
-
+/**
+* models.codon.MG_REV.generateRate 
+* @param fromChar
+* @param toChar
+* @param namespace
+* @param model_type
+* @param _tt
+*/
 function models.codon.MG_REV.generateRate (fromChar, toChar, namespace, model_type, _tt) {
 
 	models.codon.MG_REV.generateRate.p = {};
@@ -75,12 +87,25 @@ function models.codon.MG_REV.generateRate (fromChar, toChar, namespace, model_ty
 	return models.codon.MG_REV.generateRate.p;
 }
 
+/**
+* models.codon.MG_REV.defineQ 
+* @param {Model} mg_rev
+* @param {String} namespace
+* @returns {Model} updated model
+*/
 function models.codon.MG_REV.defineQ (mg_rev, namespace) {
 	models.codon.generic.defineQMatrix (mg_rev, namespace);
 	parameters.setConstraint (((mg_rev["parameters"])[terms.global])[terms.nucleotideRate ("A","G")], "1", "");
 	return mg_rev;
 }
 
+/**
+* models.codon.MG_REV.set_branch_length 
+* @param {Model} model
+* @param {AssociativeList} or {Number} value
+* @param {String} parameter
+* @returns {Number} 0
+*/
 function models.codon.MG_REV.set_branch_length (model, value, parameter) {
     if (model["type"] == terms.global) {
         return models.generic.set_branch_length (model, value, parameter);

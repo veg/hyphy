@@ -3,9 +3,14 @@ LoadFunctionLibrary ("parameters.bf");
 LoadFunctionLibrary ("frequencies.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
 
-//------------------------------------------------------------------------------ 
 
-
+/**
+* model.applyModelToTree (id, tree, model_list, rules)
+* @param id
+* @param tree
+* @param model_list
+* @param rules
+*/
 function model.applyModelToTree (id, tree, model_list, rules) {
 
 	if (Type (rules) == "AssociativeList") {
@@ -55,28 +60,59 @@ function model.applyModelToTree (id, tree, model_list, rules) {
 	}
 }
 
-
+/**
+* model.define.from.components (id,q,efv,canonical)
+* @param id - {String} Name of of Model
+* @param q - {Matrix} instantaneous transition matrix
+* @param evf - {Matrix} the equilibrium frequencies
+* @param {Number} canonical - matrix exponential
+* @example
+* q = {{*,t,kappa*t,t}
+*  {t,*,t,t*kappa}
+*  {t*kappa,t,*,t}
+*  {t,t*kappa,t,*}};
+* evf =  {{0.4}{0.3}{0.2}{0.1}};
+* model.define.from.components(q,evf,1);
+* @returns nothing, sets a global {Model}
+*/
 function model.define.from.components (id,q,efv,canonical) {
 	ExecuteCommands ("Model `id` = (" + q + "," + efv + "," + canonical + ")");
-
 }
 
-//------------------------------------------------------------------------------ 
-
-
+/**
+* model.generic.add_global
+* @param model_spec
+* @param id
+* @param tag
+*/
 function model.generic.add_global (model_spec, id, tag) {
     ((model_spec["parameters"])[terms.global])[tag] = id;
 }
 
+/**
+* model.generic.get_local_parameter
+* @param model_spec
+* @param tag
+*/
 lfunction model.generic.get_local_parameter (model_spec, tag) {
    return model.generic.get_a_parameter (model_spec, tag, ^"terms.local");
 }
 
+/**
+* model.generic.get_global_parameter
+* @param model_spec
+* @param tag
+*/
 lfunction model.generic.get_global_parameter (model_spec, tag) {
    return model.generic.get_a_parameter (model_spec, tag, ^"terms.global");
 }
 
-
+/**
+* model.generic.get_a_parameter
+* @param model_spec
+* @param tag
+* @param type
+*/
 lfunction model.generic.get_a_parameter (model_spec, tag, type) {
     v = ((model_spec["parameters"])[type])[tag];
     if (Type (v) == "String") {
@@ -85,9 +121,14 @@ lfunction model.generic.get_a_parameter (model_spec, tag, type) {
     return None;
 }
 
-
-
-
+/**
+* model.generic.define_model
+* @param model_spec
+* @param id 
+* @param arguments 
+* @param data_filter 
+* @param estimator_type
+*/
 function model.generic.define_model (model_spec, id, arguments, data_filter, estimator_type) {
 	
 	model.generic.define_model.model = utility.callFunction (model_spec, arguments);	
@@ -121,8 +162,11 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 	return model.generic.define_model.model;
 }
 
-//------------------------------------------------------------------------------ 
-
+/**
+* model.generic.get_local_parameter
+* @param {Model} model
+* @returns {String}
+*/
 function models.generic.post.definition  (model) {
     if (Type (model ["id"]) == "String") {
         ExecuteCommands ("GetString (models.generic.post.definition.bl,"+model ["id"]+",-1)");
@@ -131,8 +175,13 @@ function models.generic.post.definition  (model) {
     return model;
 }
 
-//------------------------------------------------------------------------------ 
-
+/**
+* models.generic.set_branch_length
+* @param {Model} model
+* @param {AssociativeList} or {Number} value
+* @param {String} parameter
+* @returns 0
+*/
 function models.generic.set_branch_length (model, value, parameter) {
     if (Abs((model["parameters"])["local"]) == 1) {
         if (Type (model ["branch-length-string"]) == "String") {
@@ -152,10 +201,12 @@ function models.generic.set_branch_length (model, value, parameter) {
     return 0;
 }
 
-
-
-//------------------------------------------------------------------------------ 
-
+/**
+* models.generic.attachFilter
+* @param {Model} model
+* @param {DataSetFilter} filter
+* @returns 0
+*/
 lfunction models.generic.attachFilter (model, filter) {
 
     if (Type (filter) != "String") {
@@ -174,8 +225,11 @@ lfunction models.generic.attachFilter (model, filter) {
 	return model;
 }
 
-//------------------------------------------------------------------------------ 
-
+/**
+* model.dimension
+* @param {Model} model
+* @returns {Matrix} dimensions of model
+*/
 function model.dimension (model) {
     if (Type (model["alphabet"]) == "Matrix") {
         return Columns (model["alphabet"]);
@@ -183,22 +237,32 @@ function model.dimension (model) {
     return None;
 }
 
-//------------------------------------------------------------------------------ 
-
+/**
+* model.parameters.local
+* @param {Model} model
+* @returns {Matrix} local parameters
+*/
 function model.parameters.local (model) {
     return (model["parameters"])["local"];
 }
 
 
-//------------------------------------------------------------------------------ 
-
+/**
+* model.parameters.global 
+* @param {Model} model
+* @returns {Matrix} global parameters
+*/
 function model.parameters.global (model) {
     return (model["parameters"])["global"];
 }
 
-//------------------------------------------------------------------------------ 
-
-lfunction model.matchAlphabets (a1, a2) {
+/**
+* model.matchAlphabets
+* @param {Matrix} a1 - first alphabet to compare
+* @param {Matrix} a2 - second alphabet to compare
+* @returns {Number} 1 if they are equal, 0 if they are not
+*/
+lfunction model.matchAlphabets(a1, a2) {
 
 
 	_validStates = {};

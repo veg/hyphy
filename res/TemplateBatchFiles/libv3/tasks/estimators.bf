@@ -4,7 +4,7 @@ LoadFunctionLibrary("../models/DNA/GTR.bf");
 
 
 function estimators.copyGlobals2(key2, value2) {
-    
+    // TODO: Only used by estimators.copyGlobals, should be marked private
     if (Type ((estimators.extractMLEs.results["global"])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
     }
@@ -16,10 +16,12 @@ function estimators.copyGlobals2(key2, value2) {
 }
 
 function estimators.copyGlobals(key, value) {
+    // TODO: Only used by estimators.extractMLEs, should be marked private
     ((value["parameters"])["global"])["estimators.copyGlobals2"][""];
 }
 
 function estimators.setGlobals2(key, value) {
+    //TODO : Only used by estimators.setGlobal, should be marked private
     __init_value = (initial_values["global"])[key];
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value["fix-me"]) {
@@ -32,10 +34,12 @@ function estimators.setGlobals2(key, value) {
 }
 
 function estimators.setGlobals(key, value) {
+    //TODO : Only used by estimators.extractMLEs, should be marked private
     ((value["parameters"])["global"])["estimators.setGlobals2"][""];
 }
 
 function estimators.extractBranchInformation.copy_local(key, value) {
+    //TODO : Only used by estimators.extractBranchInformation.copy_local, should be marked private
     estimators.extractBranchLength.result[key] = {
         "ID": value,
         "MLE": Eval(estimators.extractBranchLength.parameter_tag + "." + value)
@@ -43,6 +47,7 @@ function estimators.extractBranchInformation.copy_local(key, value) {
 }
 
 function estimators.extractBranchInformation(tree, node, model) {
+    //TODO : Only used by extractMLEs
     estimators.extractBranchLength.result = {};
 
     if (Abs(model["get-branch-length"])) {
@@ -62,7 +67,7 @@ function estimators.extractBranchInformation(tree, node, model) {
 }
 
 function estimators.applyBranchLength(tree, node, model, length) {
-    
+    // TODO: Only used by applyExistingEstimates
     return utility.callFunction(model["set-branch-length"], {
         "0": "model",
         "1": length,
@@ -94,7 +99,6 @@ function estimators.branch_lengths_in_string(tree_id, lookup) {
     utility.toggleEnvVariable("BRANCH_LENGTH_STENCIL", None);
     return estimators.branch_lengths_in_string.string;
 }
-
 
 function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
 
@@ -187,7 +191,6 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
     return estimators.applyExistingEstimates.df_correction - Abs (estimators.applyExistingEstimates.keep_track_of_proportional_scalers);
 }
 
-
 function estimators._aux.countEmpiricalParameters(id, model) {
     estimators._aux.parameter_counter += (model["parameters"])["empirical"];
 }
@@ -215,9 +218,9 @@ function estimators.fitLF(data_filters_list, tree_list, model_map, initial_value
         estimators.applyExistingEstimates("estimators.fitLF.likelihoodFunction", model_map, initial_values, None);
     }
 
-    /*Export (boom, estimators.fitLF.likelihoodFunction);
+    Export (boom, estimators.fitLF.likelihoodFunction);
     fprintf (stdout, boom, "\n");
-    assert (0);*/
+    assert (0);
     Optimize(estimators.fitLF.mles, estimators.fitLF.likelihoodFunction);
     if (Type(initial_values) == "AssociativeList") {
         utility.toggleEnvVariable("USE_LAST_RESULTS", None);
@@ -244,7 +247,6 @@ function estimators.fitLF(data_filters_list, tree_list, model_map, initial_value
 
     return estimators.fitLF.results;
 }
-
 
 lfunction estimators.fitGTR(data_filter, tree, initial_values) {
     
@@ -429,8 +431,7 @@ lfunction estimators.fitMGREV(codon_data, tree,  genetic_code, option, initial_v
         
         alpha = model.generic.get_local_parameter (mg_rev, ^"terms.synonymous_rate");
         beta = model.generic.get_local_parameter (mg_rev, ^"terms.nonsynonymous_rate");
-        io.checkAssertion ("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.fitMGREV\`");
-
+        io.checkAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.fitMGREV\`");
 
         apply_constraint := component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name && 1]];
         

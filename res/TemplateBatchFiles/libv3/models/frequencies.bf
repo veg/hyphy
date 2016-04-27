@@ -3,6 +3,13 @@ LoadFunctionLibrary ("parameters.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
 LoadFunctionLibrary ("model_functions.bf");
 
+/**
+* Sets model's equilibrium frequency estimator to equal frequencies
+* @param {Dictionary} model
+* @param {String} namespace - does nothing
+* @param {DataSetFilter} datafilter - does nothing
+* @returns {Dictionary} updated model
+*/
 function frequencies.equal (model, namespace, datafilter) {
 	__N = Abs (model["alphabet"]);
 	model[terms.efv_estimate]      = {__N,1}["1/__N"];
@@ -11,6 +18,13 @@ function frequencies.equal (model, namespace, datafilter) {
 	return model;
 }
 
+/**
+* Sets model's equilibrium frequency estimator to Nucleotide 4x1 estimator
+* @param {Dictionary} model
+* @param {String} namespace 
+* @param {DataSetFilter} datafilter
+* @returns {Dictionary} updated model
+*/
 function frequencies.empirical.nucleotide (model, namespace, datafilter) {
 	model  = frequencies._aux.empirical.singlechar (model, namespace, datafilter);
 	model[terms.efv_estimate_name] = terms.freqs.4x1;
@@ -18,6 +32,13 @@ function frequencies.empirical.nucleotide (model, namespace, datafilter) {
 	return model;
 }
 
+/**
+* frequencies.empirical.corrected.CF3x4 
+* @param {Dictionary} model 
+* @param {String} namespace
+* @param {DataSetFilter} datafilter
+* @returns {Dictionary} updated model
+*/
 function frequencies.empirical.corrected.CF3x4 (model, namespace, datafilter) {
 
 
@@ -52,23 +73,41 @@ function frequencies.empirical.corrected.CF3x4 (model, namespace, datafilter) {
 	return model;
 }
 
+/**
+* To be implemented
+* @param model 
+* @param namespace 
+* @param datafilter
+*/
 function frequencies.mle (model, namespace, datafilter) {
 	assert (0, "frequencies.mle is TBD");
 }
 
 //--- AUX FUNCTIONS FROM THIS POINT ON ---//
 
+/**
+* Returns entire character count (# of sites * # of species)
+* @param {DataSetFilter} datafilter - the datafilter containing site and species information
+*/
 function frequencies._aux.empirical.character_count (datafilter) {
     return Eval ("`datafilter`.sites * `datafilter`.species");
 }
 
+/**
+* Collects frequency data from dataset
+* @param {DataSetFilter} datafilter 
+* @param {Number} unit 
+* @param {Number} stride 
+* @param {Number} position_specific
+* @returns {Matrix} frequency data
+*/
 lfunction frequencies._aux.empirical.collect_data (datafilter, unit, stride, position_specific) {
     
     assert (Type (datafilter) == "Matrix" || Type (datafilter) == "AssociativeList" || Type (datafilter) == "String", 
         "datafilter must be a String/Matrix/Associative List in call to frequencies._aux.empirical.collect_data, instead had a " + Type (datafilter)
     );
     if (Type (datafilter) == "String") {
-        HarvestFrequencies (__f, ^datafilter, unit,stride,position_specific);
+        HarvestFrequencies (__f, ^datafilter, unit, stride, position_specific);
     } else {
         site_count = 0;
         dim = utility.array1D(datafilter);
@@ -96,7 +135,13 @@ lfunction frequencies._aux.empirical.collect_data (datafilter, unit, stride, pos
     return __f;
 }
 
-
+/**
+* Updates model's equilibrium frequency estimator to not count gaps in frequencies
+* @param {Dictionary} model - the model to update the 
+* @param {String} namespace - does nothing
+* @param {DataSetFilter} datafilter - the datasetfilter to collect data from
+* @returns {Dictionary} updated model
+*/
 function frequencies._aux.empirical.singlechar (model, namespace, datafilter) {
 	utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", 0);
 	__f = frequencies._aux.empirical.collect_data (datafilter, 1,1,1);
@@ -105,7 +150,14 @@ function frequencies._aux.empirical.singlechar (model, namespace, datafilter) {
 	return model;
 }
 
-
+/**
+* frequencies._aux.CF3x4
+* @param observed_3x4
+* @param base_alphabet
+* @param sense_codons 
+* @param stop_codons
+* @returns  {Dictionary} codons and bases
+*/
 function frequencies._aux.CF3x4 (observed_3x4,base_alphabet,sense_codons, stop_codons) {
 
    frequencies._aux.CF3x4.p = {};
@@ -208,6 +260,18 @@ function frequencies._aux.CF3x4 (observed_3x4,base_alphabet,sense_codons, stop_c
 	return {"codons" : Eval("frequencies._aux.codons"), "bases" : frequencies._aux.res};
 }
 
+/**
+* frequencies._aux._CF3x4_minimizer
+* @param p11
+* @param p12
+* @param p13
+* @param p21
+* @param p22
+* @param p23
+* @param p31
+* @param p32
+* @param p33
+*/
 function frequencies._aux._CF3x4_minimizer (p11,p12,p13,p21,p22,p23,p31,p32,p33) {
 	frequencies._aux._CF3x4_minimizer.error = frequencies._aux.N-observed_3x4;
 	return  - (+ frequencies._aux._CF3x4_minimizer.error$frequencies._aux._CF3x4_minimizer.error);

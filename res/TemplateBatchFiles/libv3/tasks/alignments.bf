@@ -31,7 +31,6 @@ lfunction alignments.readCodonDataSetFromPath(dataset_name, path) {
 
 lfunction alignments.readNucleotideDataSet_aux (dataset_name) {
 
-
     partitions = None;
     dfpm = utility.getEnvVariable ("DATA_FILE_PARTITION_MATRIX");
         
@@ -57,8 +56,10 @@ lfunction alignments.getSequenceNames (dataset_name) {
     return result;
 }
 
+// Creates random unique namespace
 lfunction alignments.readNucleotideDataSet(dataset_name, file_name) {
     if (Type(file_name) == "String") {
+        // 
         DataSet ^dataset_name = ReadDataFile (^file_name);
     } else {
         DataSet ^dataset_name = ReadDataFile (PROMPT_FOR_FILE);
@@ -74,7 +75,6 @@ function alignments.readNucleotideDataSetString(dataset_name, data) {
     ExecuteCommands("DataSet `dataset_name` = ReadFromString (data);");
     return alignments.readNucleotideDataSet_aux (dataset_name);
 }
-
 
 function alignments.promptForGeneticCodeAndAlignment (dataset_name, datafilter_name) {
     return alignments.loadCodonDataFile (dataset_name, datafilter_name, alignments.readCodonDataSet (dataset_name));

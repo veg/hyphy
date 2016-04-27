@@ -125,8 +125,6 @@ lfunction trees.loadAnnotatedTopology (look_for_newick_tree) {
     return trees.extractTreeInfo (trees.getTreeString(look_for_newick_tree));
 }
 
-
-
 lfunction trees.loadAnnotatedTopologyAndMap (look_for_newick_tree, mapping) {
 
     reverse = {};
@@ -171,7 +169,6 @@ lfunction trees.loadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
     return partrees;
 
 }
-
 
 function trees.extractTreeInfo (tree_string) {
 

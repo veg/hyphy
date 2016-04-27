@@ -4,6 +4,11 @@ rate_variation.types = {
     "Gamma+I": "rate_variation.types.gamma_i"
 };
 
+/**
+* rate_variation.add 
+* @param model
+* @param specs
+*/
 function rate_variation.add (model, specs) {
 
     rate_variation.add.spec = rate_variation.types [specs["type"]];
@@ -16,17 +21,24 @@ function rate_variation.add (model, specs) {
     return model;
 }
 
+/**
+* to be implemented
+* @param matrix
+* @param variable
+*/
 function rate_variation.multiply_in (matrix, variable) {
     
 }
 
-
-
-function  rate_variation.types.gamma_i (model, namespace) {
+/**
+* rate_variation.types.gamma_i
+* @param model
+* @param namespace
+* @returns rate_variation.types.gamma_i.q
+*/
+function rate_variation.types.gamma_i (model, namespace) {
     
-    __global_cache = {};
-	
-	
+   __global_cache = {};
 	
 	rate_variation.types.gamma_i.alpha = parameters.applyNameSpace ("alpha", namespace);
 	parameters.declareGlobal (rate_variation.types.gamma_i.alpha, __global_cache);
@@ -47,11 +59,12 @@ function  rate_variation.types.gamma_i (model, namespace) {
 	parameters.setRange (rate_variation.types.gamma_i.inv_p, terms.range01);
 
 	rate_variation.types.gamma_i.beta = parameters.applyNameSpace ("beta", namespace);
-    parameters.setConstraint (rate_variation.types.gamma_i.beta, 
+
+  parameters.setConstraint (rate_variation.types.gamma_i.beta, 
                                 "(1-`rate_variation.types.gamma_i.inv_p`)*`rate_variation.types.gamma_i.alpha`", 
                                 "global");
 
-    rate_variation.types.gamma_i.range [terms.upper_bound] = 200;
+  rate_variation.types.gamma_i.range [terms.upper_bound] = 200;
 	parameters.setRange (rate_variation.types.gamma_i.beta, 
                          rate_variation.types.gamma_i.range);
 	
@@ -66,7 +79,7 @@ function  rate_variation.types.gamma_i (model, namespace) {
 	rate_variation.types.gamma_i.cats = parameters.applyNameSpace ("gamma_i.freqs", namespace);
 	
 	ExecuteCommands (rate_variation.types.gamma_i.cats + " = {1 + rate_variation.types.gamma_i.bins, 1}");
-    ExecuteCommands (rate_variation.types.gamma_i.cats + "[0] := `rate_variation.types.gamma_i.inv_p`");
+  ExecuteCommands (rate_variation.types.gamma_i.cats + "[0] := `rate_variation.types.gamma_i.inv_p`");
     	
 	for (rate_variation.types.gamma_i.i=1; rate_variation.types.gamma_i.i<=rate_variation.types.gamma_i.bins;rate_variation.types.gamma_i.i += 1){
         ExecuteCommands (rate_variation.types.gamma_i.cats + 
@@ -87,12 +100,12 @@ function  rate_variation.types.gamma_i (model, namespace) {
 			  	    (1-`rate_variation.types.gamma_i.inv_p`)*CGammaDist(_x_,`rate_variation.types.gamma_i.alpha`+1,`rate_variation.types.gamma_i.beta`)*(`rate_variation.types.gamma_i.alpha`/`rate_variation.types.gamma_i.beta`)*(_x_>0)
 			  	 )");
 			  	 
-     ExecuteCommands ("GetInformation (info, `rate_variation.types.gamma_i.main`)");
+  ExecuteCommands ("GetInformation (info, `rate_variation.types.gamma_i.main`)");
 			  	 
-     rate_variation.types.gamma_i.q = utility.callFunction (model["original q call-back"],   
+  rate_variation.types.gamma_i.q = utility.callFunction (model["original q call-back"],   
                                                            {"0" : model,
                                                             "1" : parameters.quote (namespace)});
        
-     rate_variation.types.gamma_i.q [terms.rate_matrix] = parameters.addMultiplicativeTerm (rate_variation.types.gamma_i.q[terms.rate_matrix], rate_variation.types.gamma_i.main, 0);
-     return rate_variation.types.gamma_i.q;                                               
+  rate_variation.types.gamma_i.q [terms.rate_matrix] = parameters.addMultiplicativeTerm (rate_variation.types.gamma_i.q[terms.rate_matrix], rate_variation.types.gamma_i.main, 0);
+  return rate_variation.types.gamma_i.q;
 }
