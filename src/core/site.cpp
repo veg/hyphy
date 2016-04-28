@@ -4259,7 +4259,7 @@ long    _DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect
 
         count = 1;
         for (m = 0; m<unitLength; m++ ) {
-            theData->theTT->TokenCode (str.sData[m], storeP+theData->theTT->baseLength*m);
+            theData->theTT->TokenCode (str.sData[m], storeP+theData->theTT->baseLength*m, smear);
         }
 
         for (m = unitLength-1; m>=0; m--) {
@@ -5777,7 +5777,7 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
     long i,
          j;
 
-    if (outputFormat < 4 || outputFormat > 8)
+    if (outputFormat < 4 || outputFormat > 8) // not NEXUS or serial
         if (!(theData->theTT->IsStandardNucleotide() || theData->theTT->IsStandardAA())) {
             _String * bSet = &theData->theTT->baseSet;
             if (dest) {
@@ -6489,7 +6489,7 @@ _Matrix * _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _Sim
 
     vD = posSpec?unit/atom:1;
 
-    _Matrix   *  out = (_Matrix*) checkPointer(new _Matrix (hD, vD, false, true));
+    _Matrix   *  out = new _Matrix (hD, vD, false, true);
 
     long     positions  =   unit/atom,
              *store        = new long[atom*theTT->baseLength];
