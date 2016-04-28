@@ -5253,22 +5253,39 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain)
                          site = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix);
 
                     if (parameters.lLength == 4) {
-                        if ((seq>=0)&&(site>=0)&&(seq<dsf->NumberSpecies())&&(site<dsf->NumberDistinctSites())) {
-                            _Matrix             * res = (_Matrix*)checkPointer(new _Matrix (dsf->GetDimension (true), 1, false, true));
-
+                        if (site >=0 && site<dsf->NumberDistinctSites()) {
+                          if ( seq>=0 && seq<dsf->NumberSpecies()) {
+                            _Matrix             * res = new _Matrix (dsf->GetDimension (true), 1, false, true);
+                            
                             _Parameter          onlyTheIndex = 0.0;
                             checkParameter      (getDataInfoReturnsOnlyTheIndex,onlyTheIndex,0.0);
-
+                            
                             long                theValue = dsf->Translate2Frequencies ((*dsf)(site,seq), res->theData,  true);
-
+                            
                             if (onlyTheIndex > 0.5) {
-                                stVar->SetValue (new _Constant (theValue),false);
-                                DeleteObject     (res);
+                              stVar->SetValue (new _Constant (theValue),false);
+                              DeleteObject     (res);
                             } else {
-                                stVar->SetValue (res,false);
+                              stVar->SetValue (res,false);
                             }
+                          } else {
+                            _Parameter          count_gaps = 0.0;
+                            checkParameter      (hfCountGap,count_gaps,1.0);
+                            
+                            
+                            _Matrix * accumulator = new _Matrix (dsf->GetDimension (true), 1, false, true),
+                                    * storage     = new _Matrix (dsf->GetDimension (true), 1, false, true);
+                            
+                            for (long species_index = dsf->NumberSpecies()-1; species_index >= 0; species_index --) {
+                              dsf->Translate2Frequencies ((*dsf)(site,species_index), storage->theData,  count_gaps >= 0.5);
+                              *accumulator += *storage;
+                            }
+                            DeleteObject (storage);
+                            stVar -> SetValue (accumulator, false);
+                            
+                          }
                         } else {
-                            errMsg = _String (seq) & "," & _String (site) & " is an invalid site index ";
+                          errMsg =  _String (site) & " is an invalid site index";
                         }
                     } else {
                         if ((seq>=0)&&(site>=0)&&(seq<dsf->NumberSpecies())&&(site<dsf->NumberSpecies())) {
