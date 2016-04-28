@@ -107,4 +107,78 @@ function load_file (prefix) {
             }
         }
         */
+
+     selection.io.json_store_key_value_pair (json,
+                                             utility.getGlobalValue("terms.json.trees"), utility.getGlobalValue("terms.json.tree.newick"),
+                                             utility.map (partitions_and_trees, "_pt_", '(_pt_["tree"])["string"]&&1')
+                                             );
+     selection.io.json_store_key_value_pair (json, utility.getGlobalValue("terms.json.trees"), "tested", selected_branches);
+
+     filter_specification = alignments.defineFiltersForPartitions (partitions_and_trees, "`prefix`.codon_data" , "`prefix`.filter.", codon_data_info);
+    /** defines codon filters for each partition, and returns the (codon) sites mapped to each filter
+    {
+        {
+            "0": {
+                "name": "slac.filter.SPAN_1",
+                "coverage": {
+                    {
+                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, ...
+                    }
+                }
+            },
+            "1": {
+                "name": "...",
+                "coverage": "..."
+            },
+            ...
+        }
+    }
+    */
+
+     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.partitions"),
+                                                         filter_specification);
+     trees = utility.map (partitions_and_trees, "_partition_", '_partition_["tree"]');
+     filter_names = utility.map (filter_specification, "_partition_", '_partition_["name"]');
+}
+
+function doGTR (prefix) {
+
+    io.reportProgressMessageMD (prefix, "nuc-fit", "Obtaining branch lengths and nucleotide rates under the  GTR model");
+
+
+    gtr_results = estimators.fitGTR(filter_names,
+                                         trees,
+                                         parameters.helper.tree_lengths_to_initial_values (trees, None));
+
+
+    io.reportProgressMessageMD (prefix, "nuc-fit", "* Log(L) = " + Format (gtr_results["LogL"], 8, 2));
+
+}
+
+function doPartitionedMG (prefix, keep_lf) {
+    io.reportProgressMessageMD ("`prefix`", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
+
+
+    scaler_variables = utility.populateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
+
+    utility.forEach (scaler_variables, "_value_", "parameters.declareGlobal(_value_, None);parameters.set_value(_value_, 3);");
+    /** the previous two lines declare per-partition branch length scalers
+        slac.scaler_prefix_0
+        slac.scaler_prefix_1
+        etc
+    */
+
+
+    partitioned_mg_results = estimators.fitMGREV(filter_names, trees, codon_data_info ["code"], {
+        "model-type": utility.getGlobalValue("terms.local"),
+        "proportional-branch-length-scaler": scaler_variables,
+        "partitioned-omega": selected_branches,
+        "retain-lf-object": keep_lf
+    }, gtr_results);
+
+    io.reportProgressMessageMD("`prefix`", "codon-fit", "* Log(L) = " + Format(partitioned_mg_results["LogL"],8,2));
+    global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.omega_ratio"));
+    utility.forEach (global_dnds, "_value_", 'io.reportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+
+    /** extract and report dN/dS estimates */
 }

@@ -8420,7 +8420,6 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     _SimpleList *redirector = nil;
     if (partitionList) {
         redirector = new _SimpleList;
-        checkPointer(redirector);
         for (unsigned long pidx = 0; pidx < partitionList->lLength;
              pidx = pidx + 1) {
             (*redirector) << theDataFilters.lData[partitionList->lData[pidx]];

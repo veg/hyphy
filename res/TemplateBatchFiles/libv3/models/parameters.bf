@@ -48,7 +48,7 @@ function parameters.declareGlobal (id, cache) {
             if (Type (id) == "Matrix") {
                  parameters.declareGlobal.var_count = Columns (id) * Rows (id);
                  for (parameters.declareGlobal.k = 0; parameters.declareGlobal.k <  parameters.declareGlobal.var_count; parameters.declareGlobal.k += 1) {
-                    parameters.declareGlobal (parameters.declareGlobal.names[parameters.declareGlobal.k], cache);
+                    parameters.declareGlobal (id[parameters.declareGlobal.k], cache);
                  }
             }
         }
@@ -178,6 +178,11 @@ lfunction parameters.isIndependent (parameter) {
     return TRUE;
 }
 
+lfunction parameters.getConstraint (parameter) {
+    GetString (info, ^parameter, -2);
+    return info;
+}
+
 function parameters.setConstraint (id, value, global_tag) {
     if (Type (id) == "String") {
         if (Abs (id)) {
@@ -300,8 +305,6 @@ lfunction parameters.helper.tree_lengths_to_initial_values (dict, type) {
 }
 
 function parameters.getProfileCI (id, lf, level) {
-
-
 
     utility.toggleEnvVariable ("COVARIANCE_PRECISION", level);
     utility.toggleEnvVariable ("COVARIANCE_PARAMETER", id);

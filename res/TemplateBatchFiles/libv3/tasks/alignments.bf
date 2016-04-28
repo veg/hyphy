@@ -8,24 +8,24 @@ lfunction alignments.readCodonDataSet(dataset_name) {
 
 lfunction alignments.readCodonDataSetFromPath(dataset_name, path) {
     ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
-    
+
     if (Type(path) == "String") {
         DataSet ^dataset_name = ReadDataFile (path);
     } else {
         DataSet ^dataset_name = ReadDataFile (PROMPT_FOR_FILE);
         path = ^"LAST_FILE_PATH";
     }
-         
-    r =  alignments.readNucleotideDataSet_aux (dataset_name);  
-    
+
+    r =  alignments.readNucleotideDataSet_aux (dataset_name);
+
     r * {
         "code": _Genetic_Code,
         "stop": GeneticCodeExclusions,
         "file": path,
         "sequences": Eval(^"`dataset_name`.species")
     };
-    
-    
+
+
     return r;
 }
 
@@ -34,20 +34,20 @@ lfunction alignments.readNucleotideDataSet_aux (dataset_name) {
 
     partitions = None;
     dfpm = utility.getEnvVariable ("DATA_FILE_PARTITION_MATRIX");
-        
+
     partitions = {{"default",""}};
-    
-         
+
+
     if (Type (dfpm) == "Matrix") {
         if (Rows (dfpm) > 0) {
             partitions = Transpose(dfpm);
         }
-    } 
+    }
 
     return {
         "sequences": Eval("`dataset_name`.species"),
         "sites": Eval("`dataset_name`.sites"),
-        "name-mapping": Eval("`dataset_name`.mapping"), 
+        "name-mapping": Eval("`dataset_name`.mapping"),
         "partitions" : partitions
     };
 }
@@ -115,10 +115,10 @@ lfunction alignments.defineFiltersForPartitions (partitions, source_data, prefix
             diff = test.sites - 3*^(this_filter["name"]+".sites");
             io.checkAssertion ("`&diff` == 0", "Partition " + (filters["names"])[i] + " is either has stop codons or is not in frame");
             this_filter["coverage"] = utility.dict_to_array (utility.map (utility.filter (^(this_filter["name"]+".site_map"), "_value_", "_value_%3==0"), "_value_", "_value_$3"));
-            
+
             filters + this_filter;
         }
-                
+
     } else {
         for (i = 0; i < part_count; i+=1) {
             this_filter = {};
@@ -128,7 +128,88 @@ lfunction alignments.defineFiltersForPartitions (partitions, source_data, prefix
             filters + this_filter;
 
         }
-   
+
     }
     return filters;
+}
+
+lfunction alignments.serialize_site_filter (data_filter, site_index) {
+    GetDataInfo (fi, ^data_filter, "PARAMETERS");
+    utility.toggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 9);
+    utility.toggleEnvVariable ("IS_TREE_PRESENT_IN_DATA", FALSE);
+    DataSetFilter temp = CreateFilter (^data_filter,fi["ATOM_SIZE"],'' + site_index*fi["ATOM_SIZE"] + '-' + ((site_index+1)*fi["ATOM_SIZE"]-1),'',fi["EXCLUSIONS"]);
+    Export (filter_string, temp);
+    utility.toggleEnvVariable ("DATA_FILE_PRINT_FORMAT", None);
+    utility.toggleEnvVariable ("IS_TREE_PRESENT_IN_DATA", None);
+    return '
+        lfunction __make_filter (name) {
+            DataSet hidden = ReadFromString ("`filter_string`");
+            DataSetFilter ^name = CreateFilter (hidden, `""+fi['ATOM_SIZE']`,,,"`fi['EXCLUSIONS']`");
+        };
+    ';
+}
+
+
+lfunction alignments.extract_site_patterns (data_filter) {
+/*
+    for a data filter, returns a dictionary like this
+
+    "pattern id":
+        "sites" : sites (0-based) mapping to this pattern
+        "is_constant" : T/F (is the site constant w/matching ambigs)
+
+        "0":{
+           "sites":{
+             "0":0
+            },
+           "is_constant":0
+          },
+
+         "1":{
+           "sites":{
+             "0":1
+            },
+           "is_constant":1
+          },
+...
+         "34":{
+           "sites":{
+             "0":34,
+             "1":113
+            },
+           "is_constant":1
+          },
+        ...
+*/
+    utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", FALSE);
+
+    site_info = {};
+    GetDataInfo (pattern_list, ^data_filter);
+    site_characters = {};
+    sequence_count = ^(data_filter + ".species");
+
+    utility.forEachPair (pattern_list, "_site_index_", "_pattern_",
+        '
+        utility.dict.ensure_key (`&site_info`, _pattern_);
+        utility.dict.ensure_key (`&site_info`[_pattern_], "sites");
+
+        (`&site_info`[_pattern_])["sites"] + _site_index_[1];
+
+        if (Abs ((`&site_info`[_pattern_])["sites"]) == 1) {
+            // first time we see this site
+            GetDataInfo (`&site_characters`, `data_filter`, -1, _pattern_);
+            `&site_characters` = utility.filter (`&site_characters`,
+                                                 "_value_",
+                                                 "(+_value_>0)");
+
+            (`&site_info`[_pattern_])["is_constant"] = Abs (`&site_characters`) <= 1;
+
+        }
+        '
+    );
+
+    utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
+
+    return site_info;
+
 }

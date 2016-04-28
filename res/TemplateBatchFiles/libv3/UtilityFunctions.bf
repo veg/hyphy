@@ -64,12 +64,15 @@ function utility.getGlobalValue (val) {
     return ^val;
 }
 
+
+utility.toggleEnvVariable.cache = {};
+
 function utility.toggleEnvVariable (var, value) {
 	if (None != value) {
-		utilityFunction.toggleEnvVariable.__stash = Eval (var);
+		utility.toggleEnvVariable.cache[var] = Eval (var);
 		*var = value;
 	} else {
-		*var = utilityFunction.toggleEnvVariable.__stash;
+		*var = utility.toggleEnvVariable.cache[var];
 	}
 }
 
@@ -330,6 +333,18 @@ lfunction utility.keys (object) {
 lfunction utility.values (object) {
     if (Type (object) == "AssociativeList") {
         return Columns (object);
+    }
+    return None;
+}
+
+lfunction utility.unique_values (object) {
+    if (Type (object) == "AssociativeList") {
+        return Columns (object);
+    }
+    if (Type (object) == "Matrix") {
+        result = {};
+        utility.forEach (object, "_value_", "`&result`[_value_] += 1");
+        return Rows (result);
     }
     return None;
 }

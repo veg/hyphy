@@ -170,6 +170,23 @@ lfunction trees.loadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
 
 }
 
+lfunction trees.branch_names (tree, respect_case) {
+    result       = {};
+    branch_names = BranchName (tree, -1);
+    branch_count = Columns (branch_names) - 1;
+    if (respect_case) {
+        for (k = 0; k < branch_count; k += 1) {
+            result + branch_names[k];
+        }
+    } else {
+        for (k = 0; k < branch_count; k += 1) {
+            result + (branch_names[k] && 1);
+        }
+
+    }
+    return result;
+}
+
 
 function trees.extractTreeInfo (tree_string) {
 

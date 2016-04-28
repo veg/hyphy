@@ -1,13 +1,27 @@
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
 /**
-* Computes AIC
+* Computes small-sample AIC
 * @param logl
 * @param params
 * @param samples
 */
 lfunction math.getIC(logl,params,samples) {
   return -2*logl + 2*samples/(samples-params-1)*params;
+}
+
+/**
+* Computes the LRT and p-value
+* @param lognull
+* @param logalt
+* @param df
+*/
+lfunction math.doLRT (lognull,logalt,df) {
+  lrt = 2 * (logalt - lognull);
+  return {
+           "LRT"     : lrt,
+           "p-value" : 1-CChi2 (lrt, df)
+         }
 }
 
 /**
