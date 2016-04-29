@@ -3,7 +3,11 @@ LoadFunctionLibrary ("../terms-json.bf");
 LoadFunctionLibrary ("../convenience/regexp.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
 
-
+/**
+* Returns sanitized Newick tree string
+* @param {String} string
+* @returns {String} sanitized string
+*/
 lfunction trees.getTreeString._sanitize(string) {
     if (utility.getEnvVariable ("_DO_TREE_REBALANCE_")) {
         string = RerootTree(string, 0);
@@ -25,6 +29,11 @@ lfunction trees.getTreeString._sanitize(string) {
     return string;
 }
 
+/**
+* Looks for a newick tree in an alignment file
+* @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
+* @returns {String} a newick tree string
+*/
 lfunction trees.getTreeString(look_for_newick_tree) {
 
     UseModel(USE_NO_MODEL);
@@ -109,6 +118,11 @@ lfunction trees.getTreeString(look_for_newick_tree) {
     return treeString;
 }
 
+/**
+* Partitions a tree by assigning nodes to either being internal or leaf
+* @param {Dictionary} avl - an AVL representation of the tree to be partitioned
+* @returns nothing
+*/
 lfunction trees.partition_tree (avl, l) {
     for (k = 0; k < Abs (avl); k+=1) {
         if ((avl[k])["Parent"]) {
@@ -121,10 +135,20 @@ lfunction trees.partition_tree (avl, l) {
     }
 }
 
+/**
+* Returns tree information from extractTreeInfo after calling getTreeString
+* @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
+* @returns {Dictionary} extracted tree information
+*/
 lfunction trees.loadAnnotatedTopology (look_for_newick_tree) {
     return trees.extractTreeInfo (trees.getTreeString(look_for_newick_tree));
 }
 
+/**
+* alignments.readCodonDataSet
+* @param dataset_name
+* @returns nothing
+*/
 lfunction trees.loadAnnotatedTopologyAndMap (look_for_newick_tree, mapping) {
 
     reverse = {};
