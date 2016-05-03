@@ -396,8 +396,6 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
     components = Abs(dict);
 
-    //result = {"branch lengths" : { "0" : {} } };
-
     if (type == "codon") {
         factor = 1;
     } else {

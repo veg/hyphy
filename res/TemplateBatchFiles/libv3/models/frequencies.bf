@@ -30,7 +30,7 @@ function frequencies.equal(model, namespace, datafilter) {
  */
 function frequencies.empirical.nucleotide(model, namespace, datafilter) {
     model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
-    model[terms.efv_estimate_name] = terms.freqs .4 x1;
+    model[terms.efv_estimate_name] = terms.freqs.4x1;
     (model["parameters"])["empirical"] = 3;
     return model;
 }

@@ -10,7 +10,7 @@ function models.DNA.HKY85.modelDescription(type) {
         "description": "Hasegawa Kishino Yano 85 (HKY85) model of nucleotide substitution",
         "canonical": 1, // is of the r_ij \times \pi_j form
         "reversible": 1,
-        terms.efv_estimate_name: terms.freqs .4 x1,
+        terms.efv_estimate_name: terms.freqs.4x1,
         "parameters": {
             "global": {},
             "local": {},
