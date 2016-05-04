@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -606,8 +606,7 @@ void _SimpleList::Duplicate(BaseRef theRef)
 
 //Element location functions (0,llength - 1)
 //Negative indices return offsets from the end of the list
-long _SimpleList::Element(long index) const
-{
+long _SimpleList::Element(long index) const {
     if (index >= 0 && index < lLength) {
         return lData[index];
     }

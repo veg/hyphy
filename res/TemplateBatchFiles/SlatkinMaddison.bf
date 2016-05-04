@@ -25,7 +25,7 @@ function computeMigrationEvents (assignmentVector)
 		for (k=0; k<kindCount; k=k+1)
 		{
 			aMx[0][k] = s2;
-			aMx[1][k] = 1-(k==s2);	
+			aMx[1][k] = 1-(k==s2);
 		}
 
 		specName = TipName (givenTree, specIndex);
@@ -37,17 +37,17 @@ function computeMigrationEvents (assignmentVector)
 		nodeInfo 		= treeAVL[node];
 		nodeChildren	= nodeInfo ["Children"];
 		cCount			= Abs(nodeChildren);
-		
+
 		if (cCount)
 		{
 			localMatrices = {};
-			
+
 			nodeName = nodeInfo["Name"];
-			
+
 			/*
 			fprintf (stdout, "\n@----------\nNode ", nodeName, "\n");
 			*/
-			
+
 			for (s1 = 0; s1<cCount; s1=s1+1)
 			{
 				childIndex = nodeChildren[s1];
@@ -58,9 +58,9 @@ function computeMigrationEvents (assignmentVector)
 				fprintf (stdout, "\nChild ", childName, localMatrices[s1], "\n");
 				*/
 			}
-			
+
 			twoWay = {kindCount,1};
-			
+
 			for (s2 = 0; s2 < kindCount; s2 = s2+1)
 			{
 				lc = 0;
@@ -71,20 +71,20 @@ function computeMigrationEvents (assignmentVector)
 				}
 				twoWay[s2] = lc;
 			}
-			
+
 			/*
 			fprintf (stdout, ">> TWO-WAY ", twoWay, "\n");
 			*/
-			
+
 			if (nodeInfo["Parent"])
 			{
 				aMx = {2,kindCount};
-				
+
 				for (s2 = 0; s2 < kindCount; s2 = s2+1)
 				{
 					minV = 1e100;
 					minI = 0;
-					
+
 					for (s3 = 0; s3 < kindCount; s3 = s3+1)
 					{
 						aCost = (s3!=s2) + twoWay[s3];
@@ -92,13 +92,13 @@ function computeMigrationEvents (assignmentVector)
 						{
 							minV  = aCost;
 							minI  = s3;
-						}	
+						}
 					}
-					
+
 					aMx[0][s2] = minI;
 					aMx[1][s2] = minV;
 				}
-				
+
 				/*
 				fprintf (stdout, "NODE MATRIX", aMx, "\n");
 				*/
@@ -108,15 +108,15 @@ function computeMigrationEvents (assignmentVector)
 			{
 				totalCost = 1e100;
 				nodeState [nodeName] = 0;
-				
-				
+
+
 				for (s2 = 0; s2 < kindCount; s2 = s2+1)
 				{
 					if (twoWay[s2] < totalCost)
 					{
 						totalCost = twoWay[s2];
 						nodeState [nodeName] = s2;
-					}	
+					}
 				}
 			}
 		}
@@ -158,7 +158,10 @@ function spoolBranchClass (classTag, classAVL, doPrint)
 
 SetDialogPrompt ("Load a Newick tree file");
 ACCEPT_ROOTED_TREES = 1;
-fscanf (PROMPT_FOR_FILE,"Tree",givenTree);
+fscanf (PROMPT_FOR_FILE,"String",treeString);
+
+Topology givenTree = treeString;
+
 ACCEPT_ROOTED_TREES = 0;
 leafCount = TipCount (givenTree);
 
@@ -189,7 +192,7 @@ while (goOn)
 
 		st     = "";
 		aClade = {};
-		
+
 		if (defClades < kindCount-1)
 		{
 			fprintf (stdout,"\nEnter a reg exp used to define clade ",defClades+1,":");
@@ -199,7 +202,7 @@ while (goOn)
 			{
 				specName = TipName (givenTree, specIndex);
 				specMatch = specName $ theRegExp;
-				
+
 				if (specMatch[0]>=0 && matchedSoFar[specIndex] == 0)
 				{
 					aClade [specName] = 1;
@@ -211,7 +214,7 @@ while (goOn)
 					{
 						st = specName;
 					}
-					
+
 					matchedSoFar [specIndex] = 1;
 					leafAllocs   [specIndex] = defClades;
 				}
@@ -236,9 +239,9 @@ while (goOn)
 					matchedSoFar [specIndex] = 1;
 					leafAllocs   [specIndex] = kindCount-1;
 				}
-			}		
+			}
 		}
-		
+
 		if (Abs(aClade) == 0)
 		{
 			fprintf (stdout, "ERROR: an empty clade for reg-exp ", goOn, "\n");
@@ -247,7 +250,7 @@ while (goOn)
 		}
 		else
 		{
-			fprintf (stdout, "Matched: ",st,"\n");	
+			fprintf (stdout, "Matched: ",st,"\n");
 		}
 		strings[Abs(strings)] = st;
 		clades [Abs(clades) ] = aClade;
@@ -267,7 +270,7 @@ while (goOn)
 				fprintf (stdout, "\t", cladeKeys[specIndex],"\n");
 			}
 		}
-		
+
 		fprintf (stdout, "\nIs this partitioning correct (y/n)");
 		fscanf (stdin, "String", goOn);
 		goOn = (goOn[0] == "n" || goOn[0] == "N");
@@ -313,7 +316,7 @@ for (node = 2; node < treeSize; node = node + 1)
 	nodeName   		= nodeInfo["Name"];
 	myState    		= assignmentMatrices[nodeName];
 	myState    		= myState[0][parentNode];
-	
+
 	if (parentNode != myState)
 	{
 		aKey = descriptives[parentNode] + " --> " + descriptives[myState];
@@ -344,9 +347,9 @@ returnAVL = {"MIGRATIONS": Abs(transitions)};
 if (Abs(transitions))
 {
 	fprintf (stdout, "\nThe following branches have migration events:\n\n");
-	
+
 	keys = Rows (transitions);
-	
+
 	for (cc = 0; cc < Columns (keys); cc = cc + 1)
 	{
 		aKey = keys[cc];
@@ -359,7 +362,7 @@ if (Abs(transitions))
 if (Abs(sameState))
 {
 	keys = Rows (sameState);
-	
+
 	for (cc = 0; cc < Columns (keys); cc = cc + 1)
 	{
 		aKey = keys[cc];
@@ -372,39 +375,39 @@ if (Abs(sameState))
 ChoiceList (resample,"Permutation Test",1,SKIP_NONE,
 					 "Skip","Do not perform a permutation test.",
 				     "Most certainly","Randomly allocate sequences into classes and tabulate the distribution of migration events.");
-				 
+
 
 if (resample)
 {
 	sampleCount = 0;
 	totalPossible = factorial(leafCount);
-	
+
 	for (k=0; k<kindCount; k=k+1)
 	{
 		totalPossible = totalPossible/factorial(Abs(clades[k]));
 	}
-	
+
 	while (sampleCount < 1)
 	{
 		fprintf (stdout, "\nHow many permutations would you like to perform (total of ", totalPossible, " unique permutations available)?");
 		fscanf (stdin,"Number",sampleCount);
 	}
-	
+
 	histogram = {};
-	
+
 	step = sampleCount$20;
 	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
 	{
 		aSample = Random(leafAllocs,0);
 		k = computeMigrationEvents(aSample);
 		histogram[k] = histogram[k] + 1;
-	
+
 		if ((sampleID+1)%step == 0)
 		{
 			fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n");
 		}
 	}
-	
+
 	k2 = Abs (histogram);
 	countMatrix = {k2,3};
 	s1 = Rows (histogram);
@@ -414,10 +417,10 @@ if (resample)
 		countMatrix[sampleID][0] = s2;
 		countMatrix[sampleID][1] = histogram[s2];
 	}
-	
+
 	countMatrix = countMatrix % 0;
 	pVal = 0;
-	
+
 	for (sampleID = 0; sampleID < k2; sampleID = sampleID+1)
 	{
 		if (countMatrix[sampleID][0] <= observedEvents)
@@ -430,14 +433,14 @@ if (resample)
 		}
 		else
 		{
-			countMatrix[sampleID][2] = countMatrix[sampleID][1]/sampleCount;	
+			countMatrix[sampleID][2] = countMatrix[sampleID][1]/sampleCount;
 		}
 	}
-	
+
 	fprintf (stdout, "\n\nProb{as many or fewer migration events by chance} = ", pVal/sampleCount,"\n\n");
-	
+
 	labels = {{"Events","Count","Cumulative Weight"}};
-	
+
 	OpenWindow (CHARTWINDOW,{{"Simulated distribution of migration events"}
 			{"labels"}
 			{"countMatrix"}
@@ -456,7 +459,7 @@ if (resample)
 			{"16"}
 			},
 			"SCREEN_WIDTH-100;SCREEN_HEIGHT-100;50;50");
-			
+
 	returnAVL["p"] = pVal/sampleCount;
 }
 

@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -842,39 +842,51 @@ void    _Polynomial::Duplicate  (BaseRef tp)
 //__________________________________________________________________________________
 
 
-_PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
+_PMathObj _Polynomial::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)
 {
-    switch (opCode) {
-    case HY_OP_CODE_MUL: //*
-        if (p)
-            return Mult(p);
-        break;
-    case HY_OP_CODE_ADD: // +
-        if (p) {
-            return Add(p);
-        } else {
-            return Sum ();
-        }
-        break;
-    case HY_OP_CODE_SUB: // -
-        if (p) {
-            return Sub(p);
-        } else {
-            return Minus();
-        }
-        break;
+  switch (opCode) { // first check operations without arguments
     case HY_OP_CODE_TYPE: // Type
-        return Type();
-        break;
-    case HY_OP_CODE_POWER: // ^
-        if (p)
-            Raise(p);
-        break;
+      return Type();
+  }
+  
+  _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
+  
+  switch (opCode) { // next check operations without arguments or with one argument
+    case HY_OP_CODE_SUB: // -
+      if (arg0) {
+        return Sub(arg0);
+      } else {
+        return Minus();
+      }
+    case HY_OP_CODE_ADD: // +
+      if (arg0) {
+        return Add(arg0);
+      } else {
+        return Sum ();
+      }
+  }
+  
+  if (arg0) {
+    switch (opCode) {
+      case HY_OP_CODE_MUL: //*
+        return Mult(arg0);
+      case HY_OP_CODE_POWER: // ^
+        return Raise(arg0);
     }
-
-    WarnNotDefined (this, opCode, context);
-    return nil;
-
+    
+  }
+  
+  switch (opCode) {
+    case HY_OP_CODE_MUL:
+    case HY_OP_CODE_POWER:
+      WarnWrongNumberOfArguments (this, opCode,context, arguments);
+      break;
+    default:
+      WarnNotDefined (this, opCode,context);
+  }
+  
+  return new _MathObject;
+  
 }
 
 //__________________________________________________________________________________

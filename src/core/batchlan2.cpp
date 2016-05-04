@@ -3,9 +3,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -847,9 +847,9 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
               
                 while (_CalcNode * iterator = ti.Next()) {
                     if (ti.IsAtLeaf()) {
-                        leafNames && iterator->GetName();
+                        leafNames.AppendNewInstance (new _String(iterator->ContextFreeName()));
                     } else {
-                        inodeNames && iterator->GetName();
+                        inodeNames.AppendNewInstance (new _String(iterator->ContextFreeName()));
                     }
                 }
 
@@ -2392,6 +2392,46 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
     }
     type = HY_BL_NOT_DEFINED;
     return nil;
+}
+
+//____________________________________________________________________________________
+
+
+void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expression, _ExecutionList& chain, bool recursive, _AVLListX& collection ) {
+  
+  _Formula f, f2;
+  
+  _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+  
+  long     parseCode = Parse(&f,*expression,fpc,&f2);
+  
+  if (parseCode != HY_FORMULA_FAILED ) {
+    f.ScanFormulaForHBLFunctions (collection, recursive);
+    f2.ScanFormulaForHBLFunctions(collection, recursive);
+  }
+
+  
+}
+
+//____________________________________________________________________________________
+
+void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection, bool recursive, _ExecutionList& chain) {
+  
+  switch (code) {
+      
+    case 0:
+    case 4:
+    case 14:
+    {
+      if (parameters.lLength) {
+        ScanStringExpressionForHBLFunctions((_String*)parameters (0), chain, recursive, collection);
+      }
+      break;
+    }
+      
+    
+    
+  }
 }
 
 

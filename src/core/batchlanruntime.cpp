@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -1179,7 +1179,7 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
 
     _FString        * outLF = new _FString (new _String (8192UL,1));
  
-    long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER,
+    long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER | HY_BL_HBL_FUNCTION,
              index;
         
     BaseRef objectToExport = _HYRetrieveBLObjectByName (objectID, typeFlag, &index);
@@ -1195,7 +1195,7 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
             case HY_BL_DATASET_FILTER: {
                 outLF->theString->Finalize();
                 DeleteObject (outLF->theString);
-                checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)objectToExport)->toStr()));
+                outLF->theString = new _String ((_String*)((_DataSetFilter*)objectToExport)->toStr());
                 break;
             }
             case HY_BL_MODEL: {
@@ -1203,7 +1203,12 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
                 outLF->theString->Finalize();
                 break;
             }
-                
+            case HY_BL_HBL_FUNCTION: {
+                (*outLF->theString) << ExportBFFunction (index);
+                outLF->theString->Finalize();
+                break;
+            }
+            
         }
     }
 

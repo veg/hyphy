@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -58,6 +58,7 @@ _Operation::_Operation  (void)
     numberOfTerms = 0;
     theData = -1;
     theNumber = nil;
+    opCode = -1;
 }
 
 //__________________________________________________________________________________
@@ -66,13 +67,13 @@ void    _Operation::Initialize(bool)
     numberOfTerms = 0;
     theData = -1;
     theNumber = nil;
+    opCode = -1;
 }
 
 //__________________________________________________________________________________
 BaseRef _Operation::makeDynamic (void)
 {
     _Operation * res = new _Operation;
-    checkPointer(res);
     //memcpy ((char*)res, (char*)this, sizeof (_Operation));
     res->Duplicate(this);
     return res;
@@ -87,7 +88,7 @@ void    _Operation::Duplicate(BaseRef r)
     theNumber      = o->theNumber;
     opCode         = o->opCode;
     if (theNumber) {
-        theNumber->nInstances++;
+        theNumber->AddAReference();
     }
 }
 
@@ -104,8 +105,8 @@ BaseRef _Operation::toStr (unsigned long) {
         DeleteObject(type);
         return new _String (res);
     } else {
-        if (IsAFunctionCall())
-          return new _String (GetBFFunctionNameByIndex(UserFunctionID()));
+        if (IsHBLFunctionCall())
+          return new _String (_String ("Call HBL function ") & GetBFFunctionNameByIndex(UserFunctionID()));
         else
           return new _String (_String("Operation ") & *(_String*)BuiltInFunctions(opCode) & " with " & _String((long)numberOfTerms) & " arguments");
     }
@@ -249,11 +250,15 @@ bool _Operation::IsAVariable(bool deep)
 }
 
 //__________________________________________________________________________________
-bool _Operation::IsAFunctionCall (void)
-{
+bool _Operation::IsHBLFunctionCall (void) const {
     return theData == -1 && numberOfTerms < 0;
-
 }
+
+//__________________________________________________________________________________
+long _Operation::GetHBLFunctionID (void) const {
+  return opCode;
+}
+
 
 //__________________________________________________________________________________
 bool _Operation::IsConstant (void)
@@ -320,6 +325,20 @@ bool        _Operation::ReportOperationExecutionError(_String text, _String * er
 }
 
 //__________________________________________________________________________________
+long        _Operation::StackDepth (void) const {
+  if (theNumber || theData != -1L) {
+    return 1L;
+  }
+  
+  if (numberOfTerms<0L) { // execute a user-defined function
+    return (numberOfTerms + 2); // assumes a return value
+  }
+  
+  return (1-numberOfTerms);
+}
+
+
+//__________________________________________________________________________________
 bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg) {
   if (theNumber) { // push value
     theScrap.Push(theNumber);
@@ -334,7 +353,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
     }
     return true;
   }
-  if (theData < -2L) { // WTF is is this?
+  if (theData < -2L) { // place variable value (no compute, i.e. pass by reference)
     theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[-theData-3])->GetValue());
     return true;
   }
@@ -458,6 +477,8 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
       
       if (ret) {
         theScrap.Push (ret);
+      } else {
+        theScrap.Push (new _MathObject);
       }
     
     //printf ("\nFunction result = %s\n", _String ((_String*)theScrap.Pop (false)->toStr()).getStr());
@@ -487,35 +508,28 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
     
   }
   
-  _PMathObj term1, term2 = nil, term3 = nil, temp;
+  _PMathObj arg0 = ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
+            temp;
   
   _hyExecutionContext localContext (nameSpace, errMsg);
   
-  
-  if (numberOfTerms >= 3) {
-    long sL = theScrap.theStack.lLength-1;
-    term3 = (_PMathObj)theScrap.theStack.lData[sL--];
-    term2 = (_PMathObj)theScrap.theStack.lData[sL--];
-    term1 = (_PMathObj)theScrap.theStack.lData[sL];
-    theScrap.theStack.lLength = sL;
-    temp = term1->Execute (opCode, term2, term3, &localContext);
-    DeleteObject (term1);
-    DeleteObject (term2);
-    DeleteObject (term3);
-  } else if (numberOfTerms == 2) {
-    long sL = theScrap.theStack.lLength-1;
-    term2 = (_PMathObj)theScrap.theStack.lData[sL--];
-    term1 = (_PMathObj)theScrap.theStack.lData[sL];
-    theScrap.theStack.lLength = sL;
-    temp = term1->Execute (opCode, term2, nil, &localContext);
-    DeleteObject (term1);
-    DeleteObject (term2);
+  if (numberOfTerms > 1) {
+    _List arguments;
+    
+    for (long k = numberOfTerms-1; k >= 1; k --) {
+      arguments.AppendNewInstance ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
+    }
+    
+    temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
+    theScrap.theStack.lLength -= (numberOfTerms);
+    
   } else {
-    term1 = (_PMathObj)theScrap.theStack.lData[--theScrap.theStack.lLength];
-    temp = term1->Execute (opCode, nil, nil, &localContext);
-    DeleteObject (term1);
+    temp =  ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
+    theScrap.theStack.lLength--;
   }
-  
+
+  DeleteObject (arg0);
+
   
   if (temp) {
     theScrap.theStack.Place(temp);
@@ -570,31 +584,37 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
                    " needs "&_String(numberOfTerms)& " arguments. Only "&_String(theScrap.StackDepth())&" were given", errMsg);
     }
 
-    _PMathObj term1,
-              term2 = nil,
-              temp;
 
-    bool      opResult = true;
-
-    if (numberOfTerms == 2) {
-        term2 = theScrap.Pop();
-    }
-
+    _PMathObj arg0 = ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
+    temp;
+    
     _hyExecutionContext localContext (nameSpace, errMsg);
-    term1 = theScrap.Pop();
-    temp  = term1->Execute (opCode, term2, nil, &localContext);
-    DeleteObject (term1);
-
-    if (temp) {
-        theScrap.Push (temp, false);
+    
+    if (numberOfTerms > 1) {
+      _List arguments;
+      
+      for (long k = numberOfTerms-1; k >= 1; k --) {
+        arguments.AppendNewInstance ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
+      }
+      
+      temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
+      theScrap.theStack.lLength -= (numberOfTerms);
+      
     } else {
-        opResult = false;
+      temp =  ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
+      theScrap.theStack.lLength--;
     }
-
-    if (term2) {
-        DeleteObject (term2);
+    
+    DeleteObject (arg0);
+    
+    
+    if (temp) {
+      theScrap.theStack.Place(temp);
+      return true;
+    } else {
+      return false;
     }
-
-    return opResult;
+  
+  
 }
 

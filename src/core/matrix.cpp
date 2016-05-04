@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -1372,141 +1372,151 @@ _PMathObj   _Matrix::RetrieveNumeric (void)
 }
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::Sum (void)
-{
+_PMathObj   _Matrix::Sum (void) {
     return new _Constant (MaxElement (1));
 }
 
 //__________________________________________________________________________________
 
 
-_PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
-{
-    //_Constant res;
-    // why was static?? mod 07/21/2003
+_PMathObj _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)  {
 
-
-    switch (opCode) {
-    case HY_OP_CODE_IDIV: // $
-    case HY_OP_CODE_DIV: // /
-        return MultElements(p,opCode == HY_OP_CODE_DIV);
-        break;
-    case HY_OP_CODE_MOD: // %
-        return SortMatrixOnColumn (p);
-        break;
-    case HY_OP_CODE_AND: // &&
-        return pFDR (p);
-        break;
-    case HY_OP_CODE_MUL: // *
-        if (p)
-            return MultObj(p);
-        break;
-    case HY_OP_CODE_ADD: // +
-        if (p) {
-            return AddObj (p);
-        } else {
-            return Sum ();
-        }
-        break;
-    case HY_OP_CODE_SUB: // -
-        if (p) {
-            return SubObj(p);
-        } else {
-            return (_PMathObj)((*this)*(-1.0)).makeDynamic();
-        }
-        break;
-    case HY_OP_CODE_LESS: // <
-        return PathLogLikelihood(p);
-        break;
-    case HY_OP_CODE_LEQ: // <=
-        return K_Means(p);
-        break;
-    case HY_OP_CODE_EQ: // ==
-        return ProfileMeanFit(p);
-        break;
-    case HY_OP_CODE_GREATER: // >
-        return NeighborJoin (!CheckEqual(p->Value(),0.0));
-        break;
-    case HY_OP_CODE_GEQ: // >=
-        return MakeTreeFromParent (p->Value());
-        break;
-    case HY_OP_CODE_ABS: // Abs
+  
+    switch (opCode) { // first check operations without arguments
+      case HY_OP_CODE_ABS: // Abs
         return Abs();
-        break;
-    case HY_OP_CODE_CCHI2: //CChi2
-        if (p->ObjectClass()==NUMBER && p->Value()>0.999 ) {
-            return new _Constant (FisherExact(5.,80.,1.));
-        } else {
-            return new _Constant (FisherExact(0.,0.,0.));
-        }
-        break;
-    case HY_OP_CODE_COLUMNS:  //Columns
+      case HY_OP_CODE_COLUMNS:  //Columns
         return new _Constant (vDim);
-        break;
-    case HY_OP_CODE_EIGENSYSTEM: //Eigensystem
-        return Eigensystem();
-        break;
-    case HY_OP_CODE_EVAL: //Eval
-        return (_PMathObj)ComputeNumeric()->makeDynamic();
-        break;
-    case HY_OP_CODE_EXP: //Exp
-        return Exponentiate();
-        break;
-    case HY_OP_CODE_INVERSE: //Inverse
+      case HY_OP_CODE_INVERSE: //Inverse
         return Inverse();
-        break;
-    case HY_OP_CODE_LUDECOMPOSE: // LUDecompose
+      case HY_OP_CODE_EIGENSYSTEM: //Eigensystem
+        return Eigensystem();
+      case HY_OP_CODE_EVAL: //Eval
+        return (_PMathObj)ComputeNumeric()->makeDynamic();
+      case HY_OP_CODE_EXP: //Exp
+        return Exponentiate();
+      case HY_OP_CODE_LUDECOMPOSE: // LUDecompose
         return LUDecompose();
-        break;
-    case HY_OP_CODE_LUSOLVE: // LUSolve
-        return LUSolve (p);
-        break;
-    case HY_OP_CODE_LOG: // Log
+      case HY_OP_CODE_LOG: // Log
         return Log();
-        break;
-    case HY_OP_CODE_MACCESS: // MAccess
-        return MAccess (p,p2);
-        break;
-    case HY_OP_CODE_MAX: // Max
-    case HY_OP_CODE_MIN: // Max
-        if (p->ObjectClass()==NUMBER) {
-            if (CheckEqual (p->Value(), 1)) {
-                long index = 0L;
-                _Parameter v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (0,&index):MinElement(0,&index),0.0};
-                v[1] = index;
-                return new _Matrix (v,1,2);
-            }
-        }
-        return new _Constant (opCode == HY_OP_CODE_MAX?MaxElement (0):MinElement (0));
-        break;
-
-    case HY_OP_CODE_MCOORD: // MCoord
-        return MCoord (p,p2);
-        break;
-    case HY_OP_CODE_RANDOM: // Random
-        return Random (p);
-        break;
-    case HY_OP_CODE_ROWS: // Rows
+      case HY_OP_CODE_ROWS: // Rows
         return new _Constant (hDim);
-        break;
-    case HY_OP_CODE_SIMPLEX: // Simplex
+      case HY_OP_CODE_SIMPLEX: // Simplex
         return SimplexSolve();
-        break;
-    case HY_OP_CODE_TRANSPOSE: { // Transpose
+      case HY_OP_CODE_TRANSPOSE: { // Transpose
         _Matrix* result = (_Matrix*)makeDynamic();
         result->Transpose();
         return result;
-    }
-    case HY_OP_CODE_TYPE: // Type
+      }
+      case HY_OP_CODE_TYPE: // Type
         return Type();
-        break;
-    case HY_OP_CODE_POWER: // ^ (Poisson log-likelihood)
-        if (p)
-            return  PoissonLL (p);
+   }
+  
+  _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
+  
+  switch (opCode) { // next check operations without arguments or with one argument
+    case HY_OP_CODE_ADD: // +
+      if (arg0) {
+        return AddObj (arg0);
+      } else {
+        return Sum ();
+      }
+      break;
+    case HY_OP_CODE_SUB: // -
+      if (arg0) {
+        return SubObj(arg0);
+      } else {
+        return (_PMathObj)((*this)*(-1.0)).makeDynamic();
+      }
+      break;
+  }
+  
+  if (arg0) {
+    switch (opCode) { // operations that require exactly one argument
+      case HY_OP_CODE_IDIV: // $
+      case HY_OP_CODE_DIV:  // /
+        return MultElements(arg0,opCode == HY_OP_CODE_DIV);
+      case HY_OP_CODE_MOD: // %
+        return SortMatrixOnColumn (arg0);
+      case HY_OP_CODE_AND: // &&
+        return pFDR (arg0);
+      case HY_OP_CODE_MUL: // *
+        return MultObj(arg0);
+      case HY_OP_CODE_LESS: // <
+        return PathLogLikelihood(arg0);
+      case HY_OP_CODE_LEQ: // <=
+        return K_Means(arg0);
+      case HY_OP_CODE_EQ: // ==
+        return ProfileMeanFit(arg0);
+      case HY_OP_CODE_GREATER: // >
+        return NeighborJoin (!CheckEqual(arg0->Value(),0.0));
+      case HY_OP_CODE_GEQ: // >=
+        return MakeTreeFromParent (arg0->Value());
+      case HY_OP_CODE_CCHI2: //CChi2
+        if (arg0->ObjectClass()==NUMBER && arg0->Value()>0.999 ) {
+          return new _Constant (FisherExact(5.,80.,1.));
+        } else {
+          return new _Constant (FisherExact(0.,0.,0.));
+        }
+      case HY_OP_CODE_LUSOLVE: // LUSolve
+        return LUSolve (arg0);
+      case HY_OP_CODE_RANDOM: // Random
+        return Random (arg0);
+      case HY_OP_CODE_POWER: // ^ (Poisson log-likelihood)
+          return  PoissonLL (arg0);
+      case HY_OP_CODE_MAX: // Max
+      case HY_OP_CODE_MIN: // Max
+        if (arg0->ObjectClass()==NUMBER) {
+          if (CheckEqual (arg0->Value(), 1)) {
+            long index = 0L;
+            _Parameter v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (0,&index):MinElement(0,&index),0.0};
+            v[1] = index;
+            return new _Matrix (v,1,2);
+          }
+        }
+        return new _Constant (opCode == HY_OP_CODE_MAX?MaxElement (0):MinElement (0));
+   }
+    _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
+    
+     switch (opCode) {
+        
+      case HY_OP_CODE_MACCESS: // MAccess
+        return MAccess (arg0,arg1);
+        
+      case HY_OP_CODE_MCOORD: // MCoord
+        return MCoord (arg0, arg1);
     }
+    
+  }
+  
+  switch (opCode) {
+    case HY_OP_CODE_ADD: // +
+    case HY_OP_CODE_SUB: // -
+    case HY_OP_CODE_IDIV: // $
+    case HY_OP_CODE_DIV:  // /
+    case HY_OP_CODE_MOD: // %
+    case HY_OP_CODE_AND: // &&
+    case HY_OP_CODE_MUL: // *
+    case HY_OP_CODE_LESS: // <
+    case HY_OP_CODE_LEQ: // <=
+    case HY_OP_CODE_EQ: // ==
+    case HY_OP_CODE_GREATER: // >
+    case HY_OP_CODE_GEQ: // >=
+    case HY_OP_CODE_CCHI2: //CChi2
+    case HY_OP_CODE_LUSOLVE: // LUSolve
+    case HY_OP_CODE_RANDOM: // Random
+    case HY_OP_CODE_POWER: // ^ (Poisson log-likelihood)
+    case HY_OP_CODE_MAX: // Max
+    case HY_OP_CODE_MIN: // Max
+    case HY_OP_CODE_MACCESS: // MAccess
+    case HY_OP_CODE_MCOORD: // MCoord
+      WarnWrongNumberOfArguments (this, opCode,context, arguments);
+      break;
+    default:
+      WarnNotDefined (this, opCode,context);
+  }
 
-    WarnNotDefined (this, opCode, context);
-    return nil;
+  return nil;
 }
 //_____________________________________________________________________________________________
 
@@ -9508,7 +9518,10 @@ void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long 
 
     if (f>=0) { // already exists - replace
         if (opCode == HY_OP_CODE_ADD) {
-            _PMathObj newObject = ((_PMathObj)avl.GetXtra(f))->Execute (HY_OP_CODE_ADD,inObject);
+            _List arguments;
+            arguments << inObject;
+          
+            _PMathObj newObject = ((_PMathObj)avl.GetXtra(f))->ExecuteSingleOp(HY_OP_CODE_ADD,&arguments);
             if (repl == false) {
                 DeleteObject (inObject);
             } else {
@@ -9693,81 +9706,102 @@ _PMathObj        _AssociativeList::Sum (void)
 //__________________________________________________________________________________
 
 
-_PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
-{
-
-    switch (opCode) {
-    case HY_OP_CODE_ADD: // +
-        if (p){
-            MStore (_String((long)avl.countitems()), p, true);
-            return new _Constant (avl.countitems());
-        } else {
-            return Sum();
-        }
-
-    case HY_OP_CODE_MUL: // merge
-        Merge (p);
-        return new _Constant (avl.countitems());
-
-    case HY_OP_CODE_SUB:
+_PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)  {
+  
+  switch (opCode) {
     case HY_OP_CODE_ABS:
-        if (opCode == HY_OP_CODE_SUB) {
-            DeleteByKey (p);
-        }
-        return new _Constant (avl.countitems());
-        break;
-    case HY_OP_CODE_MACCESS: // MAccess
-        if (p2) {
-            return MIterator (p,p2);
-        } else {
-            return MAccess   (p);
-        }
-        break;
-    case HY_OP_CODE_MCOORD: // MCoord
-        return MCoord (p);
-        break;
+      return new _Constant (avl.countitems());
     case HY_OP_CODE_COLUMNS: {
-        // Columns -- get all unique values (as strings) 
-          _List    unique_values_aux;
-          _AVLList unique_values (&unique_values_aux);
-          
-          for (unsigned long k=0UL; k<avl.dataList->lLength; k++) {
-                BaseRef anItem = ((BaseRef*)avl.dataList->lData)[k];
-                if (anItem) {
-                   _String* string_value = (_String*) avl.GetXtra(k)->toStr();
-                    if (unique_values.Insert (string_value, 0L, false) < 0) {
-                      DeleteObject(string_value);
-                    }
-                }
-            }
-          unique_values.ReorderList();
-          return new _Matrix (*(_List*)unique_values.dataList);
-          
-          break;
+      // Columns -- get all unique values (as strings)
+      _List    unique_values_aux;
+      _AVLList unique_values (&unique_values_aux);
+      
+      for (unsigned long k=0UL; k<avl.dataList->lLength; k++) {
+        BaseRef anItem = ((BaseRef*)avl.dataList->lData)[k];
+        if (anItem) {
+          _String* string_value = (_String*) avl.GetXtra(k)->toStr();
+          if (unique_values.Insert (string_value, 0L, false) < 0) {
+            DeleteObject(string_value);
+          }
         }
-    case HY_OP_CODE_ROWS: // Rows - get keys
-        if (avl.emptySlots.lLength) {
-            _List  dataListCompact;
-            for (long k=0; k<avl.dataList->lLength; k++) {
-                BaseRef anItem = ((BaseRef*)avl.dataList->lData)[k];
-                if (anItem) {
-                    dataListCompact << anItem;
-                }
-            }
-            return new _Matrix (dataListCompact);
-        } else {
-            return new _Matrix (*(_List*)avl.dataList);
-        }
-        break;
-    case HY_OP_CODE_TYPE: // Type
-        return Type();
-        break;
+      }
+      unique_values.ReorderList();
+      return new _Matrix (*(_List*)unique_values.dataList);
     }
-
-
-    WarnNotDefined (this, opCode, context);
-    return nil;
-
+      
+    case HY_OP_CODE_ROWS: {
+      // Rows - get keys
+      if (avl.emptySlots.lLength) {
+        _List  dataListCompact;
+        for (long k=0; k<avl.dataList->lLength; k++) {
+          BaseRef anItem = ((BaseRef*)avl.dataList->lData)[k];
+          if (anItem) {
+            dataListCompact << anItem;
+          }
+        }
+        return new _Matrix (dataListCompact);
+      }
+      return new _Matrix (*(_List*)avl.dataList);
+    }
+      
+    case HY_OP_CODE_TYPE: // Type
+      return Type();
+      
+  }
+  
+  _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
+  
+  switch (opCode) { // next check operations without arguments or with one argument
+    case HY_OP_CODE_ADD: // +
+      if (arg0) {
+        MStore (_String((long)avl.countitems()), arg0, true);
+        return new _Constant (avl.countitems());
+      }
+      return Sum ();
+  }
+  
+  if (arg0) {
+    switch (opCode) { // operations that require exactly one argument
+      case HY_OP_CODE_MCOORD: // MCoord
+        return MCoord (arg0);
+        
+      case HY_OP_CODE_MUL: // merge
+        Merge (arg0);
+        return new _Constant (avl.countitems());
+        
+      case HY_OP_CODE_SUB:
+        DeleteByKey (arg0);
+        return new _Constant (avl.countitems());
+        
+    }
+    _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
+    
+    switch (opCode) { //  check operations with 1 or 2 arguments
+      case HY_OP_CODE_MACCESS: // MAccess
+        if (arg1) {
+          return MIterator (arg0,arg1);
+        } else {
+          return MAccess   (arg0);
+        }
+    }
+  }
+  
+  
+  switch (opCode) {
+    case HY_OP_CODE_TYPE:
+    case HY_OP_CODE_ADD:
+    case HY_OP_CODE_MCOORD:
+    case HY_OP_CODE_MUL:
+    case HY_OP_CODE_SUB:
+    case HY_OP_CODE_MACCESS:
+      WarnWrongNumberOfArguments (this, opCode,context, arguments);
+      break;
+    default:
+      WarnNotDefined (this, opCode,context);
+  }
+  
+  return new _MathObject;
+  
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/

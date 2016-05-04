@@ -526,13 +526,11 @@ void hyphyBreak (int signo)
 }
 
 //__________________________________________________________________________________
-void    SetStatusBarValue           (long,_Parameter,_Parameter)
-{
+void    SetStatusBarValue           (long,_Parameter,_Parameter){
 
 }
 //__________________________________________________________________________________
-void    SetStatusLine               (_String s)
-{
+void    SetStatusLine               (_String s) {
 #ifdef  _MINGW32_MEGA_
     if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE) {
         DWORD bytesWritten = 0;
@@ -549,11 +547,11 @@ void    SetStatusLine               (_String s)
 }
 
 //__________________________________________________________________________________
-void    SetStatusLineUser   (_String s)
+void    SetStatusLineUser   (_String const s)
 {
-    setvbuf(stdout, NULL, _IONBF, 0);
-    BufferToConsole("\33[2K\r");
-    StringToConsole(s);
+    setvbuf(stderr, NULL, _IONBF, 0);
+    BufferToConsole("\33[2K\r", stderr);
+    StringToConsole(s, stderr);
     needExtraNL = true;
 }
 

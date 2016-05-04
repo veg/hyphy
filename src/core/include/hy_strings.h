@@ -1010,7 +1010,7 @@ void    SetStatusLine               (_String, _String, _String, long l);
 void    SetStatusLine               (_String, _String, _String);
 void    SetStatusLine               (_String, _String, _String, long, char);
 
-void    SetStatusLineUser           (_String);
+void    SetStatusLineUser           (_String const);
 
 
 Ptr     PrepRegExp                  (_String*, int&, bool);
@@ -1023,9 +1023,10 @@ void    WarnError                   (_String);
 _String GetVersionString            (void);
 _String GetTimeStamp                (bool = false);
 
-void    StringToConsole             (_String&, _SimpleList* = nil);
-void    BufferToConsole             (const char*, _SimpleList* = nil);
-void    NLToConsole                 (void);
+void    StringToConsole             (_String const, void * extra = nil);
+void    BufferToConsole             (const char*, void * extra = nil);
+void    NLToConsole                 (void * extra = nil);
+
 _String*StringFromConsole           (bool=true);
 
 char    GetPlatformDirectoryChar    (void);

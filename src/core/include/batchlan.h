@@ -94,7 +94,9 @@ public:
     void        Duplicate                   (BaseRef);
     bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
 
-    _PMathObj   Execute                     (void);             // run this execution list
+    _PMathObj   Execute                     (_ExecutionList* parent = nil);
+        // if parent is specified, copy stdin redirects from it
+        // run this execution list
     _PMathObj   GetResult                   (void) {
         return result;
     }
@@ -134,6 +136,18 @@ public:
      * @param appendToExisting -- append text to existing error
      
      */
+  
+    void        BuildListOfDependancies   (_AVLListX & collection, bool recursive = true);
+  
+    /**
+     
+     Scan the body of this function/code for dependancies on various objects
+     (currently only supports HBL functions), and store them in `collection`.
+     
+     If recursive is true, then new HBL functions will be scanned for dependancies
+     as well.
+     
+    */
 
 
     // data fields
@@ -166,6 +180,8 @@ public:
 
 //____________________________________________________________________________________
 // an elementary command
+
+
 
 class   _ElementaryCommand: public _String // string contains the literal for this command
 {
@@ -372,11 +388,26 @@ public:
 
     static  bool      SelectTemplateModel   (_String&, _ExecutionList&);
 
-    static  bool      MakeGeneralizedLoop   (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
+    static  bool      MakeGeneralizedLoop      (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
   
-    bool              DecompileFormulae     (void);
+    bool              DecompileFormulae        (void);
+  
+    void              BuildListOfDependancies  (_AVLListX & collection, bool recursive, _ExecutionList& chain);
+    
+    /**
+     
+     Check this command for
+     (currently only supports HBL functions), and store them in `collection`.
+     
+     If recursive is true, then new HBL functions will be scanned for dependancies
+     as well.
+     
+     */
+
 
 protected:
+  
+    static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList&, bool, _AVLListX& );
 
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
@@ -602,6 +633,9 @@ _HY_BL_FUNCTION_TYPE
 _ExecutionList&
           GetBFFunctionBody           (long);
 
+_String const
+          ExportBFFunction            (long, bool = true);
+
 
 void      ClearBFFunctionLists        (long = -1L);
 bool      IsBFFunctionIndexValid      (long);
@@ -700,6 +734,11 @@ _HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _
 
 extern  bool                        numericalParameterSuccessFlag;
 extern  _Parameter                  messageLogFlag;
+
+extern enum       _hy_nested_check {
+  _HY_NO_FUNCTION,
+  _HY_FUNCTION,
+  _HY_NAMESPACE } isInFunction;
 
 
 #endif

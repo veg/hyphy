@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -8420,7 +8420,6 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     _SimpleList *redirector = nil;
     if (partitionList) {
         redirector = new _SimpleList;
-        checkPointer(redirector);
         for (unsigned long pidx = 0; pidx < partitionList->lLength;
              pidx = pidx + 1) {
             (*redirector) << theDataFilters.lData[partitionList->lData[pidx]];

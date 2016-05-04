@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -286,7 +286,7 @@ void    FlagError (_String st)
     SetStatusLine  (errMsg);
 #else
     _SimpleList color (255,2,0,0);
-    StringToConsole(errMsg, &color);
+    StringToConsole(errMsg);
 #endif
 #endif
 
@@ -373,8 +373,8 @@ void WarnError (_String st)
     #ifdef  _MINGW32_MEGA_
         SetStatusLine  (errMsg);
     #else
-        _SimpleList color (255,2,0,0);
-        StringToConsole(errMsg, &color);
+  //_SimpleList color (255,2,0,0);
+        StringToConsole(errMsg);
 #ifdef __HYPHYQT__
     return;
 #endif

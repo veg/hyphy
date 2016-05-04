@@ -50,6 +50,10 @@
 
 class   _MathObject : public BaseObj  //abstract math operations class
 {
+  
+protected:
+  _MathObject* _extract_argument (_List * arguments, unsigned long index, bool fill_in) const;
+
 
 public:
 
@@ -303,7 +307,8 @@ public:
     // 1 - number
     // 4 - matrix
 
-    virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+  
+    virtual _MathObject* ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     // execute this operation with the list of Args
 
     virtual bool         HasChanged (bool = false) {

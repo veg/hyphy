@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -347,15 +347,15 @@ bool _Formula::InternalSimplify (node<long>* startNode)
                     case HY_OP_CODE_ADD: { // +
                         if (CheckEqual (theVal,0.0)) { // ?+0 => ?
                             collapse2 = firstConst?2:1;
-                            break;
                         }
+                        break;
                     }
 
                     case HY_OP_CODE_SUB: { // -
                         if (CheckEqual (theVal,0.0)) {
                             collapse2 = firstConst?(-2):1;
-                            break;
                         }
+                        break;
                     }
 
                     case HY_OP_CODE_DIV: { // /
@@ -566,7 +566,7 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
     if (nOps<0)
         // a user-defined function
     {
-        long func_id = -nOps - 1L;
+        long func_id = thisNodeOperation->UserFunctionID();
         result<< & GetBFFunctionNameByIndex(func_id);
         if (currentNode) {
             result<<'(';
@@ -599,9 +599,8 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
     DeleteObject(conv);
 }
 //__________________________________________________________________________________
-bool     _Formula::IsEmpty(void)
+bool     _Formula::IsEmpty(void) const {
 // is there anything in the formula
-{
     return bool(!theFormula.lLength);
 }
 
@@ -699,7 +698,6 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
 // find a root of the formulaic expression, using Brent's method and a bracketed root.
 {
     // check that there is indeed a sign change on the interval
-    _Constant   dummy;
 
     _Parameter  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
                 c = b;
@@ -710,13 +708,11 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     long        it = 0;
 
     if (a>b) { // autobracket to the left
-        dummy.SetValue (b);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(b);
         fb = Compute()->Value();
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fb);
-            (*storeEvals) && & dummy;
+            storeEvals->AppendNewInstance(new _Constant (b));
+            storeEvals->AppendNewInstance(new _Constant (fb));
         }
 
         if (b<0.00001 && b>-0.00001) {
@@ -729,13 +725,11 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             a = min1+0.5*(b-min1);
         }
 
-        dummy.SetValue (a);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(a);
         fa = Compute()->Value()-rhs;
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fa);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (a));
+          storeEvals->AppendNewInstance(new _Constant (fa));
         }
 
         for (long k=0; k<50; k++) {
@@ -757,24 +751,20 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
 
             fb = fa;
 
-            dummy.SetValue (a);
-            unknown->SetValue(&dummy);
+            unknown->SetValue(a);
             fa = Compute()->Value()-rhs;
             if (storeEvals) {
-                (*storeEvals) && & dummy;
-                dummy.SetValue (fa);
-                (*storeEvals) && & dummy;
+              storeEvals->AppendNewInstance(new _Constant (a));
+              storeEvals->AppendNewInstance(new _Constant (fa));
             }
         }
     } else if (CheckEqual (a,b)) { // autobracket to the right
-        dummy.SetValue (a);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(a);
         fa = Compute()->Value()-rhs;
 
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fa);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (a));
+          storeEvals->AppendNewInstance(new _Constant (fa));
         }
         a = b;
 
@@ -788,14 +778,12 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             b = a+0.5*(min2-a);
         }
 
-        dummy.SetValue (b);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(b);
         fb = Compute()->Value()-rhs;
-
+      
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fb);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (b));
+          storeEvals->AppendNewInstance(new _Constant (fb));
         }
 
         for (long k=0; k<50; k++) {
@@ -817,26 +805,22 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
 
             fa = fb;
 
-            dummy.SetValue (b);
-            unknown->SetValue(&dummy);
+            unknown->SetValue(b);
             fb = Compute()->Value()-rhs;
             if (storeEvals) {
-                (*storeEvals) && & dummy;
-                dummy.SetValue (fb);
-                (*storeEvals) && & dummy;
+              storeEvals->AppendNewInstance(new _Constant (b));
+              storeEvals->AppendNewInstance(new _Constant (fb));
             }
         }
     }
 
 
     if (fa == 0.0) {
-        dummy.SetValue (a);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(a);
         fa = Compute()->Value()-rhs;
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fa);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (a));
+          storeEvals->AppendNewInstance(new _Constant (fa));
         }
         if (fa == 0.0) {
             return a;
@@ -844,15 +828,13 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     }
 
     if (fb == 0.0) {
-        dummy.SetValue (b);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(b);
         fb = Compute()->Value()-rhs;
         if (storeEvals) {
-            (*storeEvals) && & dummy;
-            dummy.SetValue (fb);
-            (*storeEvals) && & dummy;
+          storeEvals->AppendNewInstance(new _Constant (b));
+          storeEvals->AppendNewInstance(new _Constant (fb));
         }
-        if (fb==0) {
+        if (fb == 0.0) {
             return b;
         }
     }
@@ -924,18 +906,22 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
                 b+=fabs(tol1)*(1.*2.*(xm>=.0));
             }
 
-            dummy.SetValue (b);
-            unknown->SetValue(&dummy);
+            unknown->SetValue(b);
             fb = Compute()->Value()-rhs;
             if (storeEvals) {
-                (*storeEvals) && & dummy;
-                dummy.SetValue (fb);
-                (*storeEvals) && & dummy;
+              storeEvals->AppendNewInstance(new _Constant (b));
+              storeEvals->AppendNewInstance(new _Constant (fb));
             }
         }
     }
 
     subNumericValues = 2;
+  
+    /*for (long i = 0; i < theFormula.lLength; i++) {
+      _Operation *op_i = GetIthTerm(i);
+      printf ("%ld: %s\n", i+1, _String((_String*)op_i->toStr()).sData);
+    }*/
+  
     _String msg ((_String*)toStr());
     subNumericValues = 0;
     msg = msg & "=" & rhs;
@@ -1228,7 +1214,7 @@ _Parameter   _Formula::MeanIntegral(_Variable* dx, _Parameter left, _Parameter r
 }
 
 //__________________________________________________________________________________
-long     _Formula::NumberOperations(void)
+long     _Formula::NumberOperations(void) const
 // number of operations in the formula
 {
     return theFormula.lLength;
@@ -1565,6 +1551,20 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
 }
 
 //__________________________________________________________________________________
+long _Formula::StackDepth (long from, long to) const {
+  _SimpleList::NormalizeCoordinates(from, to, NumberOperations());
+  long result = 0L;
+  
+  for ( long i = from; i <= to; i++) {
+     result += GetIthTerm (i)->StackDepth ();
+  }
+  
+  return result;
+  
+}
+
+
+//__________________________________________________________________________________
 bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 {
     if (!theFormula.lLength) {
@@ -1815,7 +1815,7 @@ bool _Formula::HasChanged (bool ingoreCats)
         } else if (thisOp->numberOfTerms<0) {
             dataID = -thisOp->numberOfTerms-2;
             if (IsBFFunctionIndexValid (dataID)) {
-                if (GetBFFunctionType (dataID) == BL_FUNCTION_NORMAL_UPDATE) {
+                if (GetBFFunctionType (dataID) == BL_FUNCTION_SKIP_UPDATE) {
                     continue;
                 }
             }
@@ -1823,6 +1823,41 @@ bool _Formula::HasChanged (bool ingoreCats)
         }
     }
     return false;
+}
+
+
+//__________________________________________________________________________________
+
+void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive) const {
+  for (unsigned long i = 0; i<theFormula.lLength; i++) {
+    _Operation *this_op = GetIthTerm(i);
+    
+    long hbl_id = -1L;
+    
+    if (this_op -> IsHBLFunctionCall()) {
+      hbl_id = this_op -> GetHBLFunctionID();
+    } else {
+      if (this_op->opCode == HY_OP_CODE_CALL) {
+        if (_Operation * string_arg = GetIthTerm (i - this_op->numberOfTerms)) {
+          if (string_arg->theNumber->ObjectClass() == STRING) {
+            hbl_id = FindBFFunctionName (*((_FString*)string_arg->theNumber->Compute())->theString);
+          }
+        }
+      }
+    }
+    
+    if (IsBFFunctionIndexValid(hbl_id)) {
+      _String function_name = GetBFFunctionNameByIndex(hbl_id);
+      
+      if (collection.Find(&function_name) < 0) {
+        collection.Insert (new _String (function_name), HY_BL_HBL_FUNCTION, false, false);
+        if (recursive) {
+          GetBFFunctionBody(hbl_id).BuildListOfDependancies(collection, true);
+        }
+      }
+    }
+    
+  }
 }
 
 //__________________________________________________________________________________
@@ -1988,10 +2023,9 @@ bool _Formula::DependsOnVariable (long idx)
 }
 
 //__________________________________________________________________________________
-_Operation* _Formula::GetIthTerm (long idx)
-{
+_Operation* _Formula::GetIthTerm (long idx) const {
     if (idx >= 0 && idx < theFormula.lLength) {
-        return ((_Operation**)theFormula.lData)[idx];
+        return (_Operation*)theFormula.GetItem(idx);
     }
 
     return nil;

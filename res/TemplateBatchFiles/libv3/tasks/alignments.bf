@@ -202,3 +202,83 @@ lfunction alignments.defineFiltersForPartitions(partitions, source_data, prefix,
     }
     return filters;
 }
+lfunction alignments.serialize_site_filter (data_filter, site_index) {
+    GetDataInfo (fi, ^data_filter, "PARAMETERS");
+    utility.toggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 9);
+    utility.toggleEnvVariable ("IS_TREE_PRESENT_IN_DATA", FALSE);
+    DataSetFilter temp = CreateFilter (^data_filter,fi["ATOM_SIZE"],'' + site_index*fi["ATOM_SIZE"] + '-' + ((site_index+1)*fi["ATOM_SIZE"]-1),'',fi["EXCLUSIONS"]);
+    Export (filter_string, temp);
+    utility.toggleEnvVariable ("DATA_FILE_PRINT_FORMAT", None);
+    utility.toggleEnvVariable ("IS_TREE_PRESENT_IN_DATA", None);
+    return '
+        lfunction __make_filter (name) {
+            DataSet hidden = ReadFromString ("`filter_string`");
+            DataSetFilter ^name = CreateFilter (hidden, `""+fi['ATOM_SIZE']`,,,"`fi['EXCLUSIONS']`");
+        };
+    ';
+}
+
+
+lfunction alignments.extract_site_patterns (data_filter) {
+/*
+    for a data filter, returns a dictionary like this
+
+    "pattern id":
+        "sites" : sites (0-based) mapping to this pattern
+        "is_constant" : T/F (is the site constant w/matching ambigs)
+
+        "0":{
+           "sites":{
+             "0":0
+            },
+           "is_constant":0
+          },
+
+         "1":{
+           "sites":{
+             "0":1
+            },
+           "is_constant":1
+          },
+...
+         "34":{
+           "sites":{
+             "0":34,
+             "1":113
+            },
+           "is_constant":1
+          },
+        ...
+*/
+    utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", FALSE);
+
+    site_info = {};
+    GetDataInfo (pattern_list, ^data_filter);
+    site_characters = {};
+    sequence_count = ^(data_filter + ".species");
+
+    utility.forEachPair (pattern_list, "_site_index_", "_pattern_",
+        '
+        utility.dict.ensure_key (`&site_info`, _pattern_);
+        utility.dict.ensure_key (`&site_info`[_pattern_], "sites");
+
+        (`&site_info`[_pattern_])["sites"] + _site_index_[1];
+
+        if (Abs ((`&site_info`[_pattern_])["sites"]) == 1) {
+            // first time we see this site
+            GetDataInfo (`&site_characters`, `data_filter`, -1, _pattern_);
+            `&site_characters` = utility.filter (`&site_characters`,
+                                                 "_value_",
+                                                 "(+_value_>0)");
+
+            (`&site_info`[_pattern_])["is_constant"] = Abs (`&site_characters`) <= 1;
+
+        }
+        '
+    );
+
+    utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
+
+    return site_info;
+
+}

@@ -110,9 +110,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_OP_CODE_BRANCHLENGTH    (1+HY_OP_CODE_BRANCHCOUNT) // BranchLength
 #define  HY_OP_CODE_BRANCHNAME      (1+HY_OP_CODE_BRANCHLENGTH) // BranchName
 
+
 #define  HY_OP_CODE_CCHI2           (1+HY_OP_CODE_BRANCHNAME) // CChi2
 #define  HY_OP_CODE_CGAMMADIST      (1+HY_OP_CODE_CCHI2) // CGammaDist
-#define  HY_OP_CODE_COLUMNS         (1+HY_OP_CODE_CGAMMADIST) // Columns
+#define  HY_OP_CODE_CALL            (1+HY_OP_CODE_CGAMMADIST) // Call
+#define  HY_OP_CODE_COLUMNS         (1+HY_OP_CODE_CALL) // Columns
 #define  HY_OP_CODE_COS             (1+HY_OP_CODE_COLUMNS) // Cos
 #define  HY_OP_CODE_DIFF            (1+HY_OP_CODE_COS) // D
 #define  HY_OP_CODE_EIGENSYSTEM     (1+HY_OP_CODE_DIFF) // Eigensystem
@@ -281,6 +283,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_SIMULATE_DATA_SET                              563L
 #define   HY_HBL_COMMAND_ASSERT                                         564L
 #define   HY_HBL_COMMAND_REPLICATE_CONSTRAINT                           565L
+#define   HY_HBL_COMMAND_NESTED_LIST                                    566L
 
 
 //!  HyPhy standard directory locations 

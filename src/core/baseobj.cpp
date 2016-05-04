@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -36,6 +36,8 @@
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
  */
+
+//#define __HYPHY_MPI_MESSAGE_LOGGING__
 
 #include "baseobj.h"
 #include "errorfns.h"
@@ -88,7 +90,6 @@ bool        terminateExecution  = false;
 FILE*     globalErrorFile   = nil,
           *   globalMessageFile = nil;
 
-extern    bool          isInFunction;
 
 extern    _String   scanfLastFilePath;
 
@@ -242,14 +243,14 @@ bool    GlobalStartup (void)
 
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
-#ifndef __HYPHYMPI__
-    _String fileName(errorFileName);
-#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
-    fileName = baseDirectory & fileName;
-#endif
-#else
-    _String fileName = errorFileName & ".mpinode" & (long)_hy_mpi_node_rank;
-#endif
+  #ifndef __HYPHYMPI__
+      _String fileName(errorFileName);
+      #if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
+          fileName = baseDirectory & fileName;
+      #endif
+  #else
+      _String fileName = errorFileName & ".mpinode" & (long)_hy_mpi_node_rank;
+  #endif
 
     globalErrorFile = doFileOpen (fileName.sData,"w+");
     while (globalErrorFile == nil && p<10) {
@@ -427,7 +428,7 @@ void    PurgeAll (bool all)
     }
     scanfLastFilePath = empty;
     setParameter (randomSeed,globalRandSeed);
-    isInFunction        = false;
+    isInFunction        = _HY_NO_FUNCTION;
     isDefiningATree     = 0;
 #ifdef __HYPHYMPI__
     int            size;

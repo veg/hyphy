@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -46,6 +46,7 @@
 #include "scfg.h"
 #include "bayesgraph.h"
 #include "function_templates.h"
+#include "avllistx.h"
 
 
 
@@ -241,7 +242,71 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 defFileNameValue;
 
 
+//____________________________________________________________________________________
 
+
+_String  blFor                  ("for("),               // moved
+blWhile                    ("while("),         // moved
+blFunction                 ("function "),      // moved
+blFFunction                ("ffunction "),     // moved
+blLFunction                ("lfunction "),     // moved
+blNameSpace                ("namespace "),
+blReturn                   ("return "),        // moved
+blReturnPrefix             ("return"),
+blIf                       ("if("),            // moved
+blElse                     ("else"),           // moved
+blDo                       ("do{"),            // moved
+blBreak                    ("break;"),         // moved
+blContinue             ("continue;"),          // moved
+blInclude              ("#include"),           // moved
+blDataSet              ("DataSet "),           // moved
+blDataSetFilter            ("DataSetFilter "),
+blConstructCM          ("ConstructCategoryMatrix("),
+blTree                     ("Tree "),
+blLF                       ("LikelihoodFunction "),
+blLF3                  ("LikelihoodFunction3 "),
+blMolClock                 ("MolecularClock("),
+blfprintf              ("fprintf("),
+blGetString                ("GetString("),
+blfscanf                   ("fscanf("),
+blsscanf                   ("sscanf("),
+blExport                   ("Export("),
+blReplicate                ("ReplicateConstraint("),
+blImport                   ("Import"),
+blCategory             ("category "),
+blClearConstraints         ("ClearConstraints("),
+blSetDialogPrompt      ("SetDialogPrompt("),
+blModel                    ("Model "),
+blChoiceList               ("ChoiceList("),
+blOpenDataPanel            ("OpenDataPanel("),
+blGetInformation           ("GetInformation("),
+blExecuteCommands      ("ExecuteCommands("),
+blExecuteAFile         ("ExecuteAFile("),
+blLoadFunctionLibrary      ("LoadFunctionLibrary("),
+blOpenWindow               ("OpenWindow("),
+blSpawnLF                  ("SpawnLikelihoodFunction("),
+blDifferentiate            ("Differentiate("),
+blFindRoot             ("FindRoot("),
+blMPIReceive               ("MPIReceive("),
+blMPISend                  ("MPISend("),
+blGetDataInfo              ("GetDataInfo("),
+blStateCounter             ("StateCounter("),
+blIntegrate                ("Integrate("),
+blLFCompute                ("LFCompute("),
+blGetURL                   ("GetURL("),
+blDoSQL                    ("DoSQL("),
+blTopology                 ("Topology "),
+blAlignSequences           ("AlignSequences("),
+blGetNeutralNull           ("GetNeutralNull("),
+blHBLProfile               ("#profile"),
+blDeleteObject         ("DeleteObject("),
+blRequireVersion           ("RequireVersion("),
+blSCFG                     ("SCFG "),
+blBGM                      ("BayesianGraphicalModel "),
+blSimulateDataSet          ("SimulateDataSet"),
+blAssert                   ("assert(");
+
+_Trie    _HY_HBL_KeywordsPreserveSpaces  ;
 
 #ifdef      __HYPHYMPI__
 
@@ -253,7 +318,7 @@ void        ReportMPIError                  (int, bool);
 
 #endif
 
-bool        isInFunction = false;
+_hy_nested_check  isInFunction = _HY_NO_FUNCTION;
 
 _Parameter  explicitFormMatrixExponential = 0.0,
             messageLogFlag                = 1.0;
@@ -594,6 +659,76 @@ _HY_BL_FUNCTION_TYPE   GetBFFunctionType  (long idx) {
 }
 
 //____________________________________________________________________________________
+_String const ExportBFFunction (long idx, bool recursive) {
+  
+  //printf ("%ld\n", idx);
+  
+  _String bf (8192UL, true);
+  if (IsBFFunctionIndexValid(idx)) {
+  
+    switch (GetBFFunctionType (idx)) {
+      case BL_FUNCTION_SKIP_UPDATE:
+        bf << blFFunction;
+        break;
+      case BL_FUNCTION_LOCAL:
+        bf << blLFunction;
+        break;
+      default:
+        bf << blFunction;
+    }
+    
+    _String hbf_name = GetBFFunctionNameByIndex (idx);
+    
+    _ExecutionList * body = &GetBFFunctionBody(idx);
+    
+    bf << hbf_name;
+    bf << '(';
+    
+    long argument_count = GetBFFunctionArgumentCount (idx);
+    _List * argument_list = &GetBFFunctionArgumentList (idx);
+    for (long argument_id = 0; argument_id < argument_count; argument_id ++) {
+      if (argument_id) {
+        bf << ',';
+      }
+      
+      
+      bf << body->TrimNameSpaceFromID(*(_String*)argument_list->Element (argument_id));
+      if (GetBFFunctionArgumentTypes (idx).GetElement(argument_id) == BL_FUNCTION_ARGUMENT_REFERENCE) {
+        bf << '&';
+      }
+    }
+    bf << ") {\n";
+    bf << body->sourceText;
+    bf << "\n}";
+    
+    
+    if (recursive) {
+      _List      hbl_functions;
+      _AVLListX other_functions (&hbl_functions);
+      
+      other_functions.Insert (new _String (hbf_name), HY_BL_HBL_FUNCTION, false, false);
+      
+      body->BuildListOfDependancies (other_functions, true);
+      
+      for (long i = 0; i < hbl_functions.lLength; i++) {
+        _String * a_name = (_String*)hbl_functions (i);
+        if (! a_name -> Equal( &hbf_name)) {
+          bf << "\n/*----- Called function '";
+          bf << *a_name;
+          bf << "' ------*/\n";
+          bf << ExportBFFunction (FindBFFunctionName(*a_name), false);
+          bf << "\n\n";
+        }
+      }
+    }
+  }
+  
+  bf.Finalize();
+  return bf;
+  
+}
+
+//____________________________________________________________________________________
 void ClearBFFunctionLists (long start_here) {
   if (start_here > 0L && start_here < batchLanguageFunctionNames.countitems()) {
     
@@ -630,18 +765,22 @@ long GetBFFunctionCount (void) {
 long    FindBFFunctionName (_String&s, _VariableContainer* theP)
 {
     if (theP) {
-        _String testName = *(theP->GetName()) & '.' & s;
+        _String prefix = *(theP->GetName());
 
-        long cutAt = testName.sLength - s.sLength - 2;
-        do {
-            long idx = batchLanguageFunctionNames.FindObject (&testName);
+        while (1) {
+            _String test_id = prefix & '.' & s;
+            long idx = batchLanguageFunctionNames.FindObject (&test_id);
             if (idx >= 0) {
-                s = testName;
+                s = test_id;
                 return idx;
             }
-            testName.Trim (0,cutAt);
-            cutAt = testName.FindBackwards('.',0,-1)-1;
-        } while (cutAt >= 0);
+            long cut_at = prefix.FindBackwards ('.', 0, -1);
+            if (cut_at > 0) {
+              prefix.Trim (0, cut_at - 1);
+            } else {
+              break;
+            }
+        };
     }
 
     return batchLanguageFunctionNames.FindObject (&s);
@@ -1135,18 +1274,32 @@ _String       _ExecutionList::GetFileName     (void)  {
     }
     return empty;
 }
-// doesn't do much
+
 //____________________________________________________________________________________
 
-_PMathObj       _ExecutionList::Execute     (void)      // run this execution list
-{
+void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool recursive) {
+  for (unsigned long step = 0UL; step < lLength; step++) {
+    ((_ElementaryCommand*)GetItem(step))->BuildListOfDependancies (collection, recursive, *this);
+  }
+}
 
-    setParameter(_hyLastExecutionError, new _MathObject, nil, false);
-    
+//____________________________________________________________________________________
+
+_PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
+
+  //setParameter(_hyLastExecutionError, new _MathObject, nil, false);
+  
+  
     _ExecutionList*      stashCEL = currentExecutionList;
     callPoints << currentCommand;
     executionStack       << this;
 
+    if (parent && stdinRedirect == nil) {
+      stdinRedirect = parent->stdinRedirect;
+      stdinRedirectAux = parent->stdinRedirectAux;
+    } else {
+      parent = nil;
+    }
  
     _FString            cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):empty),
                         * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
@@ -1198,6 +1351,11 @@ _PMathObj       _ExecutionList::Execute     (void)      // run this execution li
     executionStack.Delete (executionStack.lLength-1);
     if (result == nil) {
         result = new _MathObject();
+    }
+
+    if (parent) {
+      stdinRedirect = nil;
+      stdinRedirectAux = nil;
     }
 
     return result;
@@ -1447,11 +1605,9 @@ void     _ExecutionList::ResetNameSpace (void)
 
 //____________________________________________________________________________________
 
-void     _ExecutionList::SetNameSpace (_String nID)
-{
+void     _ExecutionList::SetNameSpace (_String nID) {
     ResetNameSpace ();
     nameSpacePrefix = new _VariableContainer(nID);
-    checkPointer(nameSpacePrefix);
 }
 
 //____________________________________________________________________________________
@@ -1496,70 +1652,7 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
     return theID;
 }
 
-//____________________________________________________________________________________
 
-
-_String  blFor                  ("for("),               // moved
-         blWhile                    ("while("),         // moved
-         blFunction                 ("function "),      // moved
-         blFFunction                ("ffunction "),     // moved
-         blLFunction                ("lfunction "),     // moved
-         blReturn                   ("return "),        // moved
-         blReturnPrefix             ("return"),
-         blIf                       ("if("),            // moved
-         blElse                     ("else"),           // moved
-         blDo                       ("do{"),            // moved
-         blBreak                    ("break;"),         // moved
-         blContinue             ("continue;"),          // moved
-         blInclude              ("#include"),           // moved
-         blDataSet              ("DataSet "),           // moved
-         blDataSetFilter            ("DataSetFilter "),
-         blConstructCM          ("ConstructCategoryMatrix("),
-         blTree                     ("Tree "),
-         blLF                       ("LikelihoodFunction "),
-         blLF3                  ("LikelihoodFunction3 "),
-         blMolClock                 ("MolecularClock("),
-         blfprintf              ("fprintf("),
-         blGetString                ("GetString("),
-         blfscanf                   ("fscanf("),
-         blsscanf                   ("sscanf("),
-         blExport                   ("Export("),
-         blReplicate                ("ReplicateConstraint("),
-         blImport                   ("Import"),
-         blCategory             ("category "),
-         blClearConstraints         ("ClearConstraints("),
-         blSetDialogPrompt      ("SetDialogPrompt("),
-         blModel                    ("Model "),
-         blChoiceList               ("ChoiceList("),
-         blOpenDataPanel            ("OpenDataPanel("),
-         blGetInformation           ("GetInformation("),
-         blExecuteCommands      ("ExecuteCommands("),
-         blExecuteAFile         ("ExecuteAFile("),
-         blLoadFunctionLibrary      ("LoadFunctionLibrary("),
-         blOpenWindow               ("OpenWindow("),
-         blSpawnLF                  ("SpawnLikelihoodFunction("),
-         blDifferentiate            ("Differentiate("),
-         blFindRoot             ("FindRoot("),
-         blMPIReceive               ("MPIReceive("),
-         blMPISend                  ("MPISend("),
-         blGetDataInfo              ("GetDataInfo("),
-         blStateCounter             ("StateCounter("),
-         blIntegrate                ("Integrate("),
-         blLFCompute                ("LFCompute("),
-         blGetURL                   ("GetURL("),
-         blDoSQL                    ("DoSQL("),
-         blTopology                 ("Topology "),
-         blAlignSequences           ("AlignSequences("),
-         blGetNeutralNull           ("GetNeutralNull("),
-         blHBLProfile               ("#profile"),
-         blDeleteObject         ("DeleteObject("),
-         blRequireVersion           ("RequireVersion("),
-         blSCFG                     ("SCFG "),
-         blBGM                      ("BayesianGraphicalModel "),
-         blSimulateDataSet          ("SimulateDataSet"),
-         blAssert                   ("assert(");
-
-_Trie    _HY_HBL_KeywordsPreserveSpaces  ;
 
 /* 
  
@@ -1692,7 +1785,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         // prefix tree lookup 
 
         if (!handled) {
-            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)||currentLine.startswith (blLFunction)) { // function declaration
+            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)||currentLine.startswith (blLFunction) || currentLine.startswith (blNameSpace)) { // function declaration
                 _ElementaryCommand::ConstructFunction (currentLine, *this);
             } else if (currentLine.startswith_noident (blReturnPrefix)) { // function return statement
                                                                           //StringToConsole(currentLine); NLToConsole();
@@ -1838,22 +1931,19 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
 
 //____________________________________________________________________________________
 
-_ElementaryCommand::_ElementaryCommand (void)
-{
+_ElementaryCommand::_ElementaryCommand (void) {
     code = -1;
 }
 
 //____________________________________________________________________________________
 
-_ElementaryCommand::_ElementaryCommand (long ccode)
-{
+_ElementaryCommand::_ElementaryCommand (long ccode) {
     code = ccode;
 }
 
 //____________________________________________________________________________________
 
-_ElementaryCommand::_ElementaryCommand (_String& s)
-{
+_ElementaryCommand::_ElementaryCommand (_String& s) {
     code = -1;
     _String::Duplicate (&s);
 }
@@ -2551,7 +2641,14 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long)
         converted = (_String*)parameters(0)->toStr();
         result = _String ("Assert ") & "'" & *converted & "'";
         break;
-    }
+      }
+        
+      case HY_HBL_COMMAND_NESTED_LIST: {
+        converted = (_String*)parameters(0)->toStr();
+        result = _String("Call a nested list (via namespace):\n ") & *converted;
+        break;
+      }
+        
     }
 
     DeleteObject (converted);
@@ -2582,9 +2679,8 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
           _Formula f,
                    f2;
 
-          _String* theFla     = (_String*)parameters(0),
-                   errMsg;
-
+          _String* theFla     = (_String*)parameters(0);
+        
           _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
 
           long     parseCode = Parse(&f,(*theFla),fpc,&f2);
@@ -5157,22 +5253,39 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain)
                          site = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix);
 
                     if (parameters.lLength == 4) {
-                        if ((seq>=0)&&(site>=0)&&(seq<dsf->NumberSpecies())&&(site<dsf->NumberDistinctSites())) {
-                            _Matrix             * res = (_Matrix*)checkPointer(new _Matrix (dsf->GetDimension (true), 1, false, true));
-
+                        if (site >=0 && site<dsf->NumberDistinctSites()) {
+                          if ( seq>=0 && seq<dsf->NumberSpecies()) {
+                            _Matrix             * res = new _Matrix (dsf->GetDimension (true), 1, false, true);
+                            
                             _Parameter          onlyTheIndex = 0.0;
                             checkParameter      (getDataInfoReturnsOnlyTheIndex,onlyTheIndex,0.0);
-
+                            
                             long                theValue = dsf->Translate2Frequencies ((*dsf)(site,seq), res->theData,  true);
-
+                            
                             if (onlyTheIndex > 0.5) {
-                                stVar->SetValue (new _Constant (theValue),false);
-                                DeleteObject     (res);
+                              stVar->SetValue (new _Constant (theValue),false);
+                              DeleteObject     (res);
                             } else {
-                                stVar->SetValue (res,false);
+                              stVar->SetValue (res,false);
                             }
+                          } else {
+                            _Parameter          count_gaps = 0.0;
+                            checkParameter      (hfCountGap,count_gaps,1.0);
+                            
+                            
+                            _Matrix * accumulator = new _Matrix (dsf->GetDimension (true), 1, false, true),
+                                    * storage     = new _Matrix (dsf->GetDimension (true), 1, false, true);
+                            
+                            for (long species_index = dsf->NumberSpecies()-1; species_index >= 0; species_index --) {
+                              dsf->Translate2Frequencies ((*dsf)(site,species_index), storage->theData,  count_gaps >= 0.5);
+                              *accumulator += *storage;
+                            }
+                            DeleteObject (storage);
+                            stVar -> SetValue (accumulator, false);
+                            
+                          }
                         } else {
-                            errMsg = _String (seq) & "," & _String (site) & " is an invalid site index ";
+                          errMsg =  _String (site) & " is an invalid site index";
                         }
                     } else {
                         if ((seq>=0)&&(site>=0)&&(seq<dsf->NumberSpecies())&&(site<dsf->NumberSpecies())) {
@@ -5997,6 +6110,13 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         HandleAssert (chain);
         break;
 
+    case HY_HBL_COMMAND_NESTED_LIST:
+      chain.currentCommand++;
+      {
+        ((_ExecutionList*)parameters.GetItem(0))->Execute(&chain);
+      }
+      break;
+      
     default:
         chain.currentCommand++;
     }
@@ -6774,7 +6894,6 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
             ExtractConditions (source,0,args,',');
             if (args.lLength>=7UL) {
                 _ElementaryCommand * cv = new _ElementaryCommand (20);
-                checkPointer (cv);
                 cv->parameters&&(&catID);
                 cv->addAndClean(target,&args,0);
                 return true;
@@ -7427,101 +7546,139 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain)
 // syntax: function <ident> (comma separated list of parameters) {body}
 {
-    if (isInFunction) {
+  
+  
+    bool    isFFunction = source.beginswith (blFFunction),
+            isLFunction = source.beginswith (blLFunction),
+            isNameSpace = source.beginswith (blNameSpace);
+  
+    if (!isNameSpace) {
+      if (isInFunction == _HY_FUNCTION) {
         WarnError ("Nested function declarations are not allowed");
         return false;
+      }
+      
     }
 
-    isInFunction = true;
+  
 
-    bool    isFFunction = source.beginswith (blFFunction),
-            isLFunction = source.beginswith (blLFunction);
-
-    long    mark1 = source.FirstNonSpaceIndex((isFFunction||isLFunction)?blFFunction.sLength:blFunction.sLength,-1,1),
-            mark2 = source.Find ('(', mark1, -1);
+    long    mark1 = source.FirstNonSpaceIndex(isNameSpace ? blNameSpace.sLength: ((isFFunction||isLFunction)?blFFunction.sLength:blFunction.sLength),-1,1),
+            mark2 = source.Find (isNameSpace ? '{' : '(', mark1, -1);
 
 
     if ( mark1==-1 || mark2==-1 || mark1>mark2-1) {
         WarnError      (_String("Function declaration missing a valid function identifier or parameter list.\n-----------\n") & source & "\n-----------\n");
-        isInFunction = false;
-        return false;
+      isInFunction = _HY_NO_FUNCTION;
+      return false;
     }
 
-    _String*    funcID  = (_String*)checkPointer(new _String(source.Cut (mark1,mark2-1)));
+    _String*    funcID  = new _String(source.Cut (mark1,mark2-1));
 
+    if (!funcID->IsValidIdentifier(true)) {
+      WarnError      (_String("Not a valid function/namespace identifier '") & *funcID & "'");
+      isInFunction = _HY_NO_FUNCTION;
+      return false;
+    }
+    
     *funcID = chain.AddNameSpaceToID (*funcID);
 
     // now look for the opening paren
 
-    if ((mark1=FindBFFunctionName(*funcID)) >= 0L) {
-        ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
-    }
+    if (!isNameSpace) {
+      isInFunction = _HY_FUNCTION;
 
-    _List       arguments;
-    _SimpleList argument_types;
-
-    long upto = ExtractConditions (source,mark2+1,arguments,',',false);
-
-
-    if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}') {
-        WarnError (_String("Function declaration is missing a valid function body."));
-        isInFunction= false;
-        return false;
-    }
-
-    _String extraNamespace;
-    if (isLFunction)
-        extraNamespace = _HYGenerateANameSpace();
-    
-    for (long k = 0; k < arguments.lLength; k++) {
       
-        _String*   namespaced = new _String(chain.AddNameSpaceToID (*(_String*)arguments(k), & extraNamespace));
-        if (namespaced->getChar(namespaced->sLength - 1L) == '&') {
-          namespaced->Trim(0,namespaced->sLength-2);
-          argument_types << BL_FUNCTION_ARGUMENT_REFERENCE;
-        } else {
-          argument_types << BL_FUNCTION_ARGUMENT_NORMAL;
-        }
-        arguments.Replace (k,namespaced,false);
-    }
+      if ((mark1=FindBFFunctionName(*funcID)) >= 0L) {
+        ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
+      }
+      
+      _List       arguments;
+      _SimpleList argument_types;
 
-    _String          sfunctionBody (source, upto+1,source.Length()-2);
-    _ExecutionList * functionBody;
-        if (isLFunction) {
-            _String * existing_namespace = chain.GetNameSpace();
-            if (existing_namespace) {
-                extraNamespace = *existing_namespace & '.' & extraNamespace;
-            }
-            functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
-        }
-        else {
-            functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
-        }
+      long upto = ExtractConditions (source,mark2+1,arguments,',',false);
+
+
+      if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}') {
+          WarnError (_String("Function declaration is missing a valid function body."));
+          isInFunction= _HY_NO_FUNCTION;
+          return false;
+      }
+
+      _String extraNamespace;
+      if (isLFunction)
+          extraNamespace = _HYGenerateANameSpace();
+      
+      for (long k = 0; k < arguments.lLength; k++) {
+        
+          _String*   namespaced = new _String(chain.AddNameSpaceToID (*(_String*)arguments(k), & extraNamespace));
+          if (namespaced->getChar(namespaced->sLength - 1L) == '&') {
+            namespaced->Trim(0,namespaced->sLength-2);
+            argument_types << BL_FUNCTION_ARGUMENT_REFERENCE;
+          } else {
+            argument_types << BL_FUNCTION_ARGUMENT_NORMAL;
+          }
+          arguments.Replace (k,namespaced,false);
+      }
     
 
-    //  take care of all the return statements
-    while (returnlist.lLength) {
-        ((_ElementaryCommand*)(*functionBody)(returnlist(0)))->simpleParameters<<functionBody->lLength;
-        returnlist.Delete(0);
-    }
+      _String          sfunctionBody (source, upto+1,source.Length()-2);
+      _ExecutionList * functionBody;
+          if (isLFunction) {
+              _String * existing_namespace = chain.GetNameSpace();
+              if (existing_namespace) {
+                  extraNamespace = *existing_namespace & '.' & extraNamespace;
+              }
+              functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
+          }
+          else {
+              functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+          }
+      
+
+      //  take care of all the return statements
+      while (returnlist.lLength) {
+          ((_ElementaryCommand*)(*functionBody)(returnlist(0)))->simpleParameters<<functionBody->lLength;
+          returnlist.Delete(0);
+      }
 
 
-    if (mark1>=0) {
-        batchLanguageFunctions.Replace (mark1, functionBody, false);
-        batchLanguageFunctionNames.Replace (mark1, funcID, false);
-        batchLanguageFunctionParameterLists.Replace (mark1, &arguments, true);
-        batchLanguageFunctionParameterTypes.Replace (mark1, &argument_types, true);
-        batchLanguageFunctionClassification.lData[mark1] = isFFunction? BL_FUNCTION_NORMAL_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE;
+      if (mark1>=0) {
+          batchLanguageFunctions.Replace (mark1, functionBody, false);
+          batchLanguageFunctionNames.Replace (mark1, funcID, false);
+          batchLanguageFunctionParameterLists.Replace (mark1, &arguments, true);
+          batchLanguageFunctionParameterTypes.Replace (mark1, &argument_types, true);
+        batchLanguageFunctionClassification.lData[mark1] = isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE);
+      } else {
+          batchLanguageFunctions.AppendNewInstance(functionBody);
+          batchLanguageFunctionNames.AppendNewInstance(funcID);
+          batchLanguageFunctionParameterLists &&(&arguments);
+          batchLanguageFunctionParameterTypes &&(&argument_types);
+          batchLanguageFunctionClassification <<(isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE));
+      }
     } else {
-        batchLanguageFunctions.AppendNewInstance(functionBody);
-        batchLanguageFunctionNames.AppendNewInstance(funcID);
-        batchLanguageFunctionParameterLists &&(&arguments);
-        batchLanguageFunctionParameterTypes &&(&argument_types);
-        batchLanguageFunctionClassification <<(isFFunction? BL_FUNCTION_NORMAL_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE);
+      if (mark2 == source.sLength || source[mark2]!='{' || source[source.sLength-1]!='}') {
+        WarnError (_String("Namespace declaration is missing a body."));
+        isInFunction= _HY_NO_FUNCTION;
+        return false;
+      }
+      _String          namespace_text (source, mark2+1,source.Length()-2);
+      bool             success = false;
+      
+      _ExecutionList   * namespace_payload = new _ExecutionList (namespace_text, funcID, false, &success);
+      
+      if (success) {
+        _ElementaryCommand * nested_list = new _ElementaryCommand (HY_HBL_COMMAND_NESTED_LIST);
+        nested_list->parameters.AppendNewInstance(namespace_payload);
+        chain.AppendNewInstance(nested_list);
+      } else {
+        DeleteObject (namespace_payload);
+        return false;
+      }
+
     }
 
 
-    isInFunction = false;
+    isInFunction = _HY_NO_FUNCTION;
     return true;
 }
 
@@ -7545,6 +7702,7 @@ bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&targ
         ret.parameters&&(&cut_s);
     }
 
+  
     if (isInFunction) {
         returnlist<<target.lLength;
     } else {

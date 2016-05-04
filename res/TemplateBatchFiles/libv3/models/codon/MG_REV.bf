@@ -118,6 +118,8 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
     models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
 
+
+
     if (Type(value) == "AssociativeList") {
         if (value[terms.branch_length_scaler] == terms.branch_length_constrain) {
             if (parameters.isIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {

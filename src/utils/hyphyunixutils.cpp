@@ -6,7 +6,7 @@
  Core Developers:
  Sergei L Kosakovsky Pond (spond@temple.edu)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -182,16 +182,14 @@ _String*    StringFromConsole   (bool)
 
 //__________________________________________________________________________________
 
-void    StringToConsole (_String & s,  _SimpleList *)
-{
-    BufferToConsole ((const char*)s.sData);
+void    StringToConsole (_String const s,  void * extra) {
+    BufferToConsole ((const char*)s.sData, extra);
 }
 
 
 //__________________________________________________________________________________
 
-void    BufferToConsole (const char* s, _SimpleList *)
-{
+void    BufferToConsole (const char* s, void * extra) {
 #ifdef __HYPHYMPI__
     if (_hy_mpi_node_rank == 0)
 #endif
@@ -201,15 +199,18 @@ void    BufferToConsole (const char* s, _SimpleList *)
             globalInterfaceInstance->PushOutString(&st);
         }
 #else
-        printf ("%s",s);
+  if (extra) {
+    fprintf ((FILE*)extra, "%s",s);
+  } else {
+    printf ("%s",s);
+  }
 #endif
 }
 
 //__________________________________________________________________________________
 
-void    NLToConsole (void)
-{
-    BufferToConsole ("\n");
+void    NLToConsole (void * extra) {
+    BufferToConsole ("\n", extra);
 }
 
 #endif
@@ -250,9 +251,10 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
         } else {
             if (theMessage->beginswith ("#NEXUS")) {
                 _String             msgCopy (*theMessage);
-                ReportWarning       ("[MPI] Received a function to optimize");
+                ReportWarning       ("[MPI] Received a likelihood function");
+                //ReportWarning       (msgCopy);
                 ReadDataSetFile     (nil,true,theMessage);
-                ReportWarning       ("[MPI] Done with the optimization");
+                ReportWarning       ("[MPI] Read/optimized the likelihood function");
                 _Variable*          lfName = FetchVar(LocateVarByName(MPI_NEXUS_FILE_RETURN));
 
                 if (lfName) {
@@ -280,6 +282,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     resStr->Finalize();
                 }
             } else {
+              //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 _ExecutionList exL (*theMessage);
                 _PMathObj res = exL.Execute();
                 resStr = res?(_String*)res->toStr():new _String ("0");
@@ -295,6 +298,9 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                 PurgeAll (true);
                 InitializeGlobals ();
                 pathNames && & baseDir;
+                ReportWarning("Reset node state");
+            } else {
+                ReportWarning("Preserved node state");
             }
         }
         DeleteObject (theMessage);
