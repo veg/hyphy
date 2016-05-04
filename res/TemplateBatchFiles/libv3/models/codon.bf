@@ -1,12 +1,22 @@
 LoadFunctionLibrary ("chooseGeneticCode", {"0" : "Universal"});
 LoadFunctionLibrary ("../UtilityFunctions.bf");
 
+/**
+ * models.codon.map_code
+ * @param {String} genetic_code
+ * @returns {Dictionary} the sense, stop, and translation-table for the genetic code
+ */
 function models.codon.map_code (genetic_code) {
 	return {"sense" : utility.values (ComputeCodonCodeToStringMap (genetic_code)), 
 	        "stop"  : utility.values (ComputeCodonCodeToStringMapStop (genetic_code)),
 	        "translation-table" : defineCodonToAAGivenCode (genetic_code) };
 }
 
+/**
+ * models.codon.generic.defineQMatrix
+ * @param modelSpect
+ * @param namespace
+ */
 function models.codon.generic.defineQMatrix (modelSpec, namespace) {
 	
 	__base_alphabet = modelSpec ["bases"];

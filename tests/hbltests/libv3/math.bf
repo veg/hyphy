@@ -30,3 +30,5 @@ assert(Format(math.skewness(_data_vector), 3, 3) == "0.652","skewness == 0.652 f
 
 // gather descriptive stats
 assert(Abs(math.gather_descriptive_stats(_data_vector)) == 15, "not all stats accounted for");
+
+fprintf(stdout, math.gather_descriptive_stats(_data_vector));

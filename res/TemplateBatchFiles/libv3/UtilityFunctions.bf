@@ -1,5 +1,9 @@
 LoadFunctionLibrary ("IOFunctions.bf");
 
+/**
+ * utility.associativeListToJSON
+ * @param associative_list
+ */
 function utility.associativeListToJSON(associative_list) {
 
     // Replace inf and nan with 1+e9999 and null, respectively
@@ -18,7 +22,11 @@ function utility.associativeListToJSON(associative_list) {
     return associative_list;
 }
 
-
+/**
+ * utility.callFunction
+ * @param id
+ * @param arguments
+ */
 function utility.callFunction (id, arguments) {
 
     if (Type (id) == "String") {
@@ -30,7 +38,6 @@ function utility.callFunction (id, arguments) {
     return None;
 }
 
-
 function utility.convertToArgumentString (argument) {
     if (Type (argument) == "String") {
         return '"' + (argument && 2) + '"';
@@ -38,6 +45,10 @@ function utility.convertToArgumentString (argument) {
     return argument;
 }
 
+/**
+ * utility.array1D
+ * @param m
+ */
 lfunction utility.array1D (m) {
     if (Type (m) == "Matrix") {
         return Rows (m) * Columns (m);
@@ -49,7 +60,10 @@ lfunction utility.array1D (m) {
     return None;
 }
 
-
+/**
+ * utility.isFunction
+ * @param id
+ */
 function utility.isFunction (id) {
 	if (Type (id) == "String" && Abs (id) > 0) {
 		ExecuteCommands ("GetString (__funcInfo, `id`, -1)");
@@ -67,6 +81,11 @@ function utility.getGlobalValue (val) {
 
 utility.toggleEnvVariable.cache = {};
 
+/**
+ * utility.toggleEnvVariable
+ * @param var
+ * @param value
+ */
 function utility.toggleEnvVariable (var, value) {
 	if (None != value) {
 		utility.toggleEnvVariable.cache[var] = Eval (var);
@@ -76,16 +95,27 @@ function utility.toggleEnvVariable (var, value) {
 	}
 }
 
+/**
+ * utility.getEnvVariable
+ * @param var
+ */
 function utility.getEnvVariable (var) {
 	return Eval(var);
 }
 
+/**
+ * utility.setEnvVariable
+ * @param var
+ */
 function utility.setEnvVariable (var, value) {
     Eval (var); // this is hack to make sure the variable exists before assigning to it
 	^var = value;
 }
 
-
+/**
+ * utility.checkCacheFile
+ * @param data_info
+ */
 lfunction utility.checkCacheFile (data_info) {
     cache_info = {};
     cache_info["file"] = data_info["file"] + ".hyphy_cache";
@@ -98,6 +128,11 @@ lfunction utility.checkCacheFile (data_info) {
     return cache_info;
 }
 
+/**
+ * utility.array.find
+ * @param array
+ * @param value
+ */
 lfunction utility.array.find (array, value) {
     d = Rows (array) * Columns (array);
     for (i = 0; i < d; i+=1) {
@@ -108,7 +143,10 @@ lfunction utility.array.find (array, value) {
     return -1;
 }
 
-
+/**
+ * utility.dict.swap_keys_and_values
+ * @param dict
+ */
 lfunction utility.dict.swap_keys_and_values (dict) {
     swapped_dict = {};
     keys         = Rows (dict);
@@ -122,19 +160,32 @@ lfunction utility.dict.swap_keys_and_values (dict) {
     return swapped_dict;
 }
 
-
+/**
+ * utility.array_to_dict
+ * @param object
+ */
 lfunction utility.array_to_dict (object) {
     result = {};
     utility.forEach(object, "_value_", "(`&result`)[_value_['key']] = _value_['value']");
     return result;
 }
 
+/**
+ * utility.dict_to_array
+ * @param object
+ */
 lfunction utility.dict_to_array (object) {
     result = {1,Abs (object)};
     utility.forEachPair(object, "key", "_value_", "(`&result`)[+key] = _value_");
     return result;
 }
 
+/**
+ * utility.map
+ * @param object
+ * @param lambda_name
+ * @param transform
+ */
 function utility.map (object, lambda_name, transform) {
 
     Eval ("`lambda_name` = None");
@@ -169,6 +220,11 @@ function utility.map (object, lambda_name, transform) {
     return None;
 }
 
+/**
+ * utility.matrix_to_list_of_rows 
+ * @param {Matrix} object - MxN matrix to convert 
+ * @param {Matrix} converted 1 x (M*N) Row vector
+ */
 lfunction utility.matrix_to_list_of_rows (object) {
     result = {};
     rows = Rows (object);
@@ -184,6 +240,13 @@ lfunction utility.matrix_to_list_of_rows (object) {
     return result;
 }
 
+/**
+ * utility.filter
+ * @param {Dictionary} or {Matrix} object - matrix to convert 
+ * @param {Function} lambda_name - function to discern whether element is filtered. All elements of iterable object that are false will be removed.
+ * @param condition
+ * @param {Dictionary} or {Matrix} filtered object
+ */
 function utility.filter (object, lambda_name, condition) {
 
     Eval ("`lambda_name` = None");
@@ -217,6 +280,13 @@ function utility.filter (object, lambda_name, condition) {
     return None;
 }
 
+/**
+ * utility.forEach
+ * @param {Tree}, {Dictionary} or {Matrix} object - matrix to convert 
+ * @param {Function} lambda_name
+ * @param {Function} transform
+ * @returns nothing
+ */
 function utility.forEach (object, lambda_name, transform) {
 
     if (Type (object) == "Tree" || Type (object) == "Topology") {
@@ -249,8 +319,13 @@ function utility.forEach (object, lambda_name, transform) {
     }
 }
 
-
-
+/**
+ * utility.checkKey 
+ * @param {Dictionary} dict - dictionary to check for key
+ * @param {String} key - key to check for existence
+ * @param {String} type - check whether key is "Matrix", "AssociativeList", "String", or "Tree"
+ * @returns {Bool} TRUE if key exists and is of expected type, otherwise FALASE
+ */
 function utility.checkKey (dict, key, type) {
     if (None != dict) {
         if (Type (dict[key]) == type) {
@@ -260,6 +335,12 @@ function utility.checkKey (dict, key, type) {
     return FALSE;
 }
 
+/**
+ * Adds string or list of strings to a dictionary and sets value to 1
+ * @param {AssociativeList} set - 
+ * @param {String}, {Matrix}, or {AssociativeList} object
+ * @returns nothing
+ */
 function utility.addToSet (set, object) {
 
     if (Type(object) == "String") {
@@ -273,6 +354,14 @@ function utility.addToSet (set, object) {
     set ["" + object] = 1;
 }
 
+/**
+ * utility.populateDict 
+ * @param from
+ * @param to
+ * @param value
+ * @param lambda
+ * @returns nothing
+ */
 function utility.populateDict (from, to, value, lambda) {
     utility.populateDict.result = {};
     if (Type (lambda) == "String" && Type (value) == "String") {
@@ -290,6 +379,14 @@ function utility.populateDict (from, to, value, lambda) {
     return utility.populateDict.result;
 }
 
+/**
+ * utility.forEachPair 
+ * @param object
+ * @param key_name
+ * @param value_name
+ * @param transform
+ * @returns nothing
+ */
 function utility.forEachPair (object, key_name, value_name, transform) {
 
     Eval ("`key_name` = None");
@@ -323,6 +420,11 @@ function utility.forEachPair (object, key_name, value_name, transform) {
 
 }
 
+/**
+ * Returns keys from a dictionary
+ * @param object - {Dictionary} the object to return keys from
+ * @returns {Matrix} List of keys in dictionary
+ */
 lfunction utility.keys (object) {
     if (Type (object) == "AssociativeList") {
         return Rows (object);
@@ -330,6 +432,11 @@ lfunction utility.keys (object) {
     return None;
 }
 
+/**
+ * Returns values from a dictionary. Only returns unique values
+ * @param object - {Dictionary} the object to return keys from
+ * @returns {Matrix} List of keys in dictionary
+ */
 lfunction utility.values (object) {
     if (Type (object) == "AssociativeList") {
         return Columns (object);
@@ -337,6 +444,11 @@ lfunction utility.values (object) {
     return None;
 }
 
+/**
+ * Returns values from a dictionary. Only returns unique values
+ * @param object - {Dictionary} the object to return keys from
+ * @returns {Matrix} List of keys in dictionary
+ */
 lfunction utility.unique_values (object) {
     if (Type (object) == "AssociativeList") {
         return Columns (object);
@@ -349,6 +461,12 @@ lfunction utility.unique_values (object) {
     return None;
 }
 
+/**
+ * Ensures a key exists in a dictionary
+ * @param {Dictionary} dict - the object to return keys from
+ * @param {String} key - key to ensure exists
+ * @returns nothing
+ */
 lfunction utility.dict.ensure_key (dict, key) {
 
     if (Type (dict[key]) != "AssociativeList") {
