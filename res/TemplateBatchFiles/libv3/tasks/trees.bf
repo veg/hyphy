@@ -1,28 +1,29 @@
-LoadFunctionLibrary ("../IOFunctions.bf");
-LoadFunctionLibrary ("../terms-json.bf");
-LoadFunctionLibrary ("../convenience/regexp.bf");
-LoadFunctionLibrary ("../UtilityFunctions.bf");
+LoadFunctionLibrary("../IOFunctions.bf");
+LoadFunctionLibrary("../terms-json.bf");
+LoadFunctionLibrary("../convenience/regexp.bf");
+LoadFunctionLibrary("../UtilityFunctions.bf");
 
 /**
-* Returns sanitized Newick tree string
-* @param {String} string
-* @returns {String} sanitized string
-*/
+ * Returns sanitized Newick tree string
+ * @param {String} string
+ * @returns {String} sanitized string
+ */
 lfunction trees.getTreeString._sanitize(string) {
-    if (utility.getEnvVariable ("_DO_TREE_REBALANCE_")) {
+    if (utility.getEnvVariable("_DO_TREE_REBALANCE_")) {
         string = RerootTree(string, 0);
     }
 
-    if (utility.getEnvVariable ("_KEEP_I_LABELS_")) {
+    if (utility.getEnvVariable("_KEEP_I_LABELS_")) {
         utility.toggleEnvVariable("INTERNAL_NODE_PREFIX", "intNode");
     }
     string = string ^ {
         {
-            "\\)[0-9]+(\\.[0-9]*)?\:", "):"
+            "\\)[0-9]+(\\.[0-9]*)?\:",
+            "):"
         }
     };
 
-    if (utility.getEnvVariable ("_KEEP_I_LABELS_")) {
+    if (utility.getEnvVariable("_KEEP_I_LABELS_")) {
         utility.toggleEnvVariable("INTERNAL_NODE_PREFIX", None);
     }
 
@@ -30,47 +31,47 @@ lfunction trees.getTreeString._sanitize(string) {
 }
 
 /**
-* Looks for a newick tree in an alignment file
-* @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
-* @returns {String} a newick tree string
-*/
+ * Looks for a newick tree in an alignment file
+ * @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
+ * @returns {String} a newick tree string
+ */
 lfunction trees.getTreeString(look_for_newick_tree) {
 
     UseModel(USE_NO_MODEL);
 
-    if (Type (look_for_newick_tree) == "String") {
-         treeString = trees.getTreeString._sanitize(look_for_newick_tree);
+    if (Type(look_for_newick_tree) == "String") {
+        treeString = trees.getTreeString._sanitize(look_for_newick_tree);
     } else {
         if (look_for_newick_tree == FALSE) {
-            utility.setEnvVariable ("IS_TREE_PRESENT_IN_DATA", FALSE);
+            utility.setEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);
         }
 
-        if (utility.getEnvVariable ("IS_TREE_PRESENT_IN_DATA")) {
+        if (utility.getEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
             fprintf(stdout, "\n> A tree was found in the data file: ``", utility.getEnvVariable("DATAFILE_TREE"), "``\n>Would you like to use it? ");
             fscanf(stdin, "String", response);
             if (response == "n" || response == "N") {
-                utility.setEnvVariable ("IS_TREE_PRESENT_IN_DATA", FALSE);
+                utility.setEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);
                 IS_TREE_PRESENT_IN_DATA = 0;
             } else {
-                treeString = trees.getTreeString._sanitize (utility.getEnvVariable("DATAFILE_TREE"));
-                utility.setEnvVariable ("IS_TREE_PRESENT_IN_DATA", TRUE);
+                treeString = trees.getTreeString._sanitize(utility.getEnvVariable("DATAFILE_TREE"));
+                utility.setEnvVariable("IS_TREE_PRESENT_IN_DATA", TRUE);
             }
             fprintf(stdout, "\n\n");
         }
 
-        if (! utility.getEnvVariable ("IS_TREE_PRESENT_IN_DATA")) {
+        if (!utility.getEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
             SetDialogPrompt("Please select a tree file for the data:");
             fscanf(PROMPT_FOR_FILE, REWIND, "Raw", treeString);
             fprintf(stdout, "\n");
 
             if (regexp.find(treeString, "^#NEXUS")) {
                 ExecuteCommands(treeString);
-                if (! utility.getEnvVariable ("IS_TREE_PRESENT_IN_DATA")) {
+                if (!utility.getEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
                     fprintf(stdout, "\n> **This NEXUS file doesn't contain a valid tree block**");
                     return 1;
                 }
 
-                nftm = utility.getEnvVariable ("NEXUS_FILE_TREE_MATRIX")
+                nftm = utility.getEnvVariable("NEXUS_FILE_TREE_MATRIX")
 
                 if (Rows(nftm) > 1) {
                     ChoiceList(treeChoice, "Select a tree", 1, SKIP_NONE, nftm);
@@ -119,46 +120,46 @@ lfunction trees.getTreeString(look_for_newick_tree) {
 }
 
 /**
-* Partitions a tree by assigning nodes to either being internal or leaf
-* @param {Dictionary} avl - an AVL representation of the tree to be partitioned
-* @returns nothing
-*/
-lfunction trees.partition_tree (avl, l) {
-    for (k = 0; k < Abs (avl); k+=1) {
+ * Partitions a tree by assigning nodes to either being internal or leaf
+ * @param {Dictionary} avl - an AVL representation of the tree to be partitioned
+ * @returns nothing
+ */
+lfunction trees.partition_tree(avl, l) {
+    for (k = 0; k < Abs(avl); k += 1) {
         if ((avl[k])["Parent"]) {
-            if (Abs ((avl[k])["Children"])) {
-                l [(avl[k])["Name"]] = "internal";
+            if (Abs((avl[k])["Children"])) {
+                l[(avl[k])["Name"]] = "internal";
             } else {
-                l [(avl[k])["Name"]] = "leaf";
+                l[(avl[k])["Name"]] = "leaf";
             }
         }
     }
 }
 
 /**
-* Returns tree information from extractTreeInfo after calling getTreeString
-* @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
-* @returns {Dictionary} extracted tree information
-*/
-lfunction trees.loadAnnotatedTopology (look_for_newick_tree) {
-    return trees.extractTreeInfo (trees.getTreeString(look_for_newick_tree));
+ * Returns tree information from extractTreeInfo after calling getTreeString
+ * @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
+ * @returns {Dictionary} extracted tree information
+ */
+lfunction trees.loadAnnotatedTopology(look_for_newick_tree) {
+    return trees.extractTreeInfo(trees.getTreeString(look_for_newick_tree));
 }
 
 /**
-* alignments.readCodonDataSet
-* @param dataset_name
-* @returns nothing
-*/
-lfunction trees.loadAnnotatedTopologyAndMap (look_for_newick_tree, mapping) {
+ * alignments.readCodonDataSet
+ * @param dataset_name
+ * @returns nothing
+ */
+lfunction trees.loadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
 
     reverse = {};
-    utility.forEach (utility.keys (mapping), "_key_", "`&reverse`[`&mapping`[_key_]] = _key_");
+    utility.forEach(utility.keys(mapping), "_key_", "`&reverse`[`&mapping`[_key_]] = _key_");
 
-    io.checkAssertion ("Abs (mapping) == Abs (reverse)", "The mapping between original and normalized tree sequence names must be one to one");
-    utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", reverse);
+    io.checkAssertion("Abs (mapping) == Abs (reverse)", "The mapping between original and normalized tree sequence names must be one to one");
+    utility.toggleEnvVariable("TREE_NODE_NAME_MAPPING", reverse);
 
-    result = trees.extractTreeInfo (trees.getTreeString(look_for_newick_tree));
-    utility.toggleEnvVariable ("TREE_NODE_NAME_MAPPING", None);
+    result = trees.extractTreeInfo(trees.getTreeString(look_for_newick_tree));
+    utility.toggleEnvVariable("TREE_NODE_NAME_MAPPING", None);
     return result;
 }
 
@@ -192,10 +193,10 @@ lfunction trees.loadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
 
 }
 
-lfunction trees.branch_names (tree, respect_case) {
-    result       = {};
-    branch_names = BranchName (tree, -1);
-    branch_count = Columns (branch_names) - 1;
+lfunction trees.branch_names(tree, respect_case) {
+    result = {};
+    branch_names = BranchName(tree, -1);
+    branch_count = Columns(branch_names) - 1;
     if (respect_case) {
         for (k = 0; k < branch_count; k += 1) {
             result + branch_names[k];
@@ -210,38 +211,39 @@ lfunction trees.branch_names (tree, respect_case) {
 }
 
 
-function trees.extractTreeInfo (tree_string) {
+function trees.extractTreeInfo(tree_string) {
 
-    Topology  T = tree_string;
+    Topology T = tree_string;
 
-    trees.loadAnnotatedTopology.branch_lengths  = BranchLength (T, -1);
-    trees.loadAnnotatedTopology.branch_names    = BranchName (T, -1);
+    trees.loadAnnotatedTopology.branch_lengths = BranchLength(T, -1);
+    trees.loadAnnotatedTopology.branch_names = BranchName(T, -1);
 
-    trees.loadAnnotatedTopology.bls            = {};
+    trees.loadAnnotatedTopology.bls = {};
 
-    for (trees.loadAnnotatedTopology.k = 0; trees.loadAnnotatedTopology.k < Columns (trees.loadAnnotatedTopology.branch_names) - 1; trees.loadAnnotatedTopology.k += 1) {
+    for (trees.loadAnnotatedTopology.k = 0; trees.loadAnnotatedTopology.k < Columns(trees.loadAnnotatedTopology.branch_names) - 1; trees.loadAnnotatedTopology.k += 1) {
         if (trees.loadAnnotatedTopology.branch_lengths[trees.loadAnnotatedTopology.k] >= 0.) {
-            trees.loadAnnotatedTopology.bls [trees.loadAnnotatedTopology.branch_names[trees.loadAnnotatedTopology.k]] =
-               trees.loadAnnotatedTopology.branch_lengths[trees.loadAnnotatedTopology.k];
+            trees.loadAnnotatedTopology.bls[trees.loadAnnotatedTopology.branch_names[trees.loadAnnotatedTopology.k]] =
+                trees.loadAnnotatedTopology.branch_lengths[trees.loadAnnotatedTopology.k];
         }
     }
 
-    GetInformation (modelMap, T);
+    GetInformation(modelMap, T);
 
-    leaves_internals    = {};
+    leaves_internals = {};
 
-    trees.partition_tree (T^0, leaves_internals);
+    trees.partition_tree(T ^ 0, leaves_internals);
 
-    utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", 1);
+    utility.toggleEnvVariable("INCLUDE_MODEL_SPECS", 1);
     T.str = "" + T;
-    utility.toggleEnvVariable ("INCLUDE_MODEL_SPECS", None);
+    utility.toggleEnvVariable("INCLUDE_MODEL_SPECS", None);
 
-    return {"string"     : Format (T,1,0),
-            "string_with_lengths": Format (T,1,1),
-            terms.json.attribute.branch_length :  trees.loadAnnotatedTopology.bls,
-            "annotated_string" : T.str ,
-            "model_map"  : modelMap,
-            "partitioned" : leaves_internals,
-            "model_list" :  Columns (modelMap)};
+    return {
+        "string": Format(T, 1, 0),
+        "string_with_lengths": Format(T, 1, 1),
+        terms.json.attribute.branch_length: trees.loadAnnotatedTopology.bls,
+        "annotated_string": T.str,
+        "model_map": modelMap,
+        "partitioned": leaves_internals,
+        "model_list": Columns(modelMap)
+    };
 }
-
