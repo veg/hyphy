@@ -1,0 +1,35 @@
+# Standard
+.svn/
+*.tmp
+*~
+.DS_Store
+src/ocl/opencl_kernels.h
+*.cxx
+tags
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+cmake_uninstall.cmake
+
+# HYPHY binaries
+HYPHYMP
+HYPHYMPI
+HyPhy.app
+iHyPhyDebug.app
+HYPHYDEBUG
+
+# GTEST 
+HYPHYGTEST
+contrib/gtest-1.7.0/libgtest.a
+gmon.out
+
+#HyPhy generated files
+**/*.log*
+**/*.log*
+**/data/*.samples*
+messages.log
+errors.log
