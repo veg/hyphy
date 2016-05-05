@@ -1,10 +1,12 @@
 LoadFunctionLibrary ("terms.bf");
 LoadFunctionLibrary ("frequencies.bf");
 
+/** @module models.DNA */
+
 models.DNA.alphabet = {{"A","C","G","T"}};
 
 /**
- * models.DNA.generic.defineQMatrix
+ * @name models.DNA.generic.defineQMatrix
  * @param {Dictionary} modelSpec
  * @param {String} namespace
  */
@@ -64,7 +66,7 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 }
 
 /**
- * models.DNA.generic.time
+ * @name models.DNA.generic.time
  * @param option - does nothing
  * @returns default time
  */

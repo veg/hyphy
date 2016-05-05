@@ -4,10 +4,12 @@ LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
 
+/** @module models.codon.MG_REV */
+
 /**
- * models.codon.MG_REV.modelDescription
- * @param type
- * @param code
+ * @name models.codon.MG_REV.modelDescription
+ * @param {String} type
+ * @param {String} code
  */
 lfunction models.codon.MG_REV.modelDescription(type, code) {
 
@@ -39,18 +41,17 @@ lfunction models.codon.MG_REV.modelDescription(type, code) {
 }
 
 /**
- * models.codon.MG_REV.generateRate 
- * @param fromChar
- * @param toChar
- * @param namespace
- * @param model_type
- * @param _tt
+ * @name models.codon.MG_REV.generateRate 
+ * @param {Number} fromChar
+ * @param {Number} toChar
+ * @param {String} namespace
+ * @param {String} model_type
+ * @param {Matrix} _tt - transition table
  */
 function models.codon.MG_REV.generateRate(fromChar, toChar, namespace, model_type, _tt) {
 
     models.codon.MG_REV.generateRate.p = {};
     models.codon.MG_REV.generateRate.diff = models.codon.diff(fromChar, toChar);
-
 
     if (None != models.codon.MG_REV.generateRate.diff) {
         models.codon.MG_REV.generateRate.p[model_type] = {};
@@ -88,7 +89,7 @@ function models.codon.MG_REV.generateRate(fromChar, toChar, namespace, model_typ
 }
 
 /**
- * models.codon.MG_REV.defineQ 
+ * @name models.codon.MG_REV.defineQ 
  * @param {Model} mg_rev
  * @param {String} namespace
  * @returns {Model} updated model
@@ -100,9 +101,9 @@ function models.codon.MG_REV.defineQ(mg_rev, namespace) {
 }
 
 /**
- * models.codon.MG_REV.set_branch_length 
+ * @name models.codon.MG_REV.set_branch_length 
  * @param {Model} model
- * @param {AssociativeList} or {Number} value
+ * @param {AssociativeList|Number} value
  * @param {String} parameter
  * @returns {Number} 0
  */

@@ -1,7 +1,7 @@
 LoadFunctionLibrary ("IOFunctions.bf");
 
 /**
- * utility.associativeListToJSON
+ * @name utility.associativeListToJSON
  * @param associative_list
  */
 function utility.associativeListToJSON(associative_list) {
@@ -23,7 +23,7 @@ function utility.associativeListToJSON(associative_list) {
 }
 
 /**
- * utility.callFunction
+ * @name utility.callFunction
  * @param id
  * @param arguments
  */
@@ -46,7 +46,7 @@ function utility.convertToArgumentString (argument) {
 }
 
 /**
- * utility.array1D
+ * @name utility.array1D
  * @param m
  */
 lfunction utility.array1D (m) {
@@ -61,7 +61,7 @@ lfunction utility.array1D (m) {
 }
 
 /**
- * utility.isFunction
+ * @name utility.isFunction
  * @param id
  */
 function utility.isFunction (id) {
@@ -82,7 +82,7 @@ function utility.getGlobalValue (val) {
 utility.toggleEnvVariable.cache = {};
 
 /**
- * utility.toggleEnvVariable
+ * @name utility.toggleEnvVariable
  * @param var
  * @param value
  */
@@ -96,7 +96,7 @@ function utility.toggleEnvVariable (var, value) {
 }
 
 /**
- * utility.getEnvVariable
+ * @name utility.getEnvVariable
  * @param var
  */
 function utility.getEnvVariable (var) {
@@ -104,7 +104,7 @@ function utility.getEnvVariable (var) {
 }
 
 /**
- * utility.setEnvVariable
+ * @name utility.setEnvVariable
  * @param var
  */
 function utility.setEnvVariable (var, value) {
@@ -113,7 +113,7 @@ function utility.setEnvVariable (var, value) {
 }
 
 /**
- * utility.checkCacheFile
+ * @name utility.checkCacheFile
  * @param data_info
  */
 lfunction utility.checkCacheFile (data_info) {
@@ -129,7 +129,7 @@ lfunction utility.checkCacheFile (data_info) {
 }
 
 /**
- * utility.array.find
+ * @name utility.array.find
  * @param array
  * @param value
  */
@@ -144,7 +144,7 @@ lfunction utility.array.find (array, value) {
 }
 
 /**
- * utility.dict.swap_keys_and_values
+ * @name utility.dict.swap_keys_and_values
  * @param dict
  */
 lfunction utility.dict.swap_keys_and_values (dict) {
@@ -161,7 +161,7 @@ lfunction utility.dict.swap_keys_and_values (dict) {
 }
 
 /**
- * utility.array_to_dict
+ * @name utility.array_to_dict
  * @param object
  */
 lfunction utility.array_to_dict (object) {
@@ -171,7 +171,7 @@ lfunction utility.array_to_dict (object) {
 }
 
 /**
- * utility.dict_to_array
+ * @name utility.dict_to_array
  * @param object
  */
 lfunction utility.dict_to_array (object) {
@@ -181,7 +181,7 @@ lfunction utility.dict_to_array (object) {
 }
 
 /**
- * utility.map
+ * @name utility.map
  * @param object
  * @param lambda_name
  * @param transform
@@ -221,7 +221,7 @@ function utility.map (object, lambda_name, transform) {
 }
 
 /**
- * utility.matrix_to_list_of_rows 
+ * @name utility.matrix_to_list_of_rows 
  * @param {Matrix} object - MxN matrix to convert 
  * @param {Matrix} converted 1 x (M*N) Row vector
  */
@@ -241,7 +241,7 @@ lfunction utility.matrix_to_list_of_rows (object) {
 }
 
 /**
- * utility.filter
+ * @name utility.filter
  * @param {Dictionary} or {Matrix} object - matrix to convert 
  * @param {Function} lambda_name - function to discern whether element is filtered. All elements of iterable object that are false will be removed.
  * @param condition
@@ -281,7 +281,7 @@ function utility.filter (object, lambda_name, condition) {
 }
 
 /**
- * utility.forEach
+ * @name utility.forEach
  * @param {Tree}, {Dictionary} or {Matrix} object - matrix to convert 
  * @param {Function} lambda_name
  * @param {Function} transform
@@ -320,7 +320,7 @@ function utility.forEach (object, lambda_name, transform) {
 }
 
 /**
- * utility.checkKey 
+ * @name utility.checkKey 
  * @param {Dictionary} dict - dictionary to check for key
  * @param {String} key - key to check for existence
  * @param {String} type - check whether key is "Matrix", "AssociativeList", "String", or "Tree"
@@ -337,6 +337,7 @@ function utility.checkKey (dict, key, type) {
 
 /**
  * Adds string or list of strings to a dictionary and sets value to 1
+ * @name utility.addToSet
  * @param {AssociativeList} set - 
  * @param {String}, {Matrix}, or {AssociativeList} object
  * @returns nothing
@@ -355,7 +356,7 @@ function utility.addToSet (set, object) {
 }
 
 /**
- * utility.populateDict 
+ * @name utility.populateDict 
  * @param from
  * @param to
  * @param value
@@ -380,7 +381,7 @@ function utility.populateDict (from, to, value, lambda) {
 }
 
 /**
- * utility.forEachPair 
+ * @name utility.forEachPair 
  * @param object
  * @param key_name
  * @param value_name
@@ -422,6 +423,7 @@ function utility.forEachPair (object, key_name, value_name, transform) {
 
 /**
  * Returns keys from a dictionary
+ * @name utility.keys
  * @param object - {Dictionary} the object to return keys from
  * @returns {Matrix} List of keys in dictionary
  */
@@ -434,6 +436,7 @@ lfunction utility.keys (object) {
 
 /**
  * Returns values from a dictionary. Only returns unique values
+ * @name utility.values
  * @param object - {Dictionary} the object to return keys from
  * @returns {Matrix} List of keys in dictionary
  */
@@ -446,6 +449,7 @@ lfunction utility.values (object) {
 
 /**
  * Returns values from a dictionary. Only returns unique values
+ * @name utility.unique_values
  * @param object - {Dictionary} the object to return keys from
  * @returns {Matrix} List of keys in dictionary
  */
@@ -463,6 +467,7 @@ lfunction utility.unique_values (object) {
 
 /**
  * Ensures a key exists in a dictionary
+ * @name utility.dict.ensure_key
  * @param {Dictionary} dict - the object to return keys from
  * @param {String} key - key to ensure exists
  * @returns nothing

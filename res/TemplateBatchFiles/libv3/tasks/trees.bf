@@ -3,8 +3,12 @@ LoadFunctionLibrary("../terms-json.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 
+/** @module trees */
+
 /**
  * Returns sanitized Newick tree string
+ * @name trees.getTreeString._sanitize
+ * @private
  * @param {String} string
  * @returns {String} sanitized string
  */
@@ -32,6 +36,7 @@ lfunction trees.getTreeString._sanitize(string) {
 
 /**
  * Looks for a newick tree in an alignment file
+ * @name trees.getTreeString
  * @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
  * @returns {String} a newick tree string
  */
@@ -121,6 +126,7 @@ lfunction trees.getTreeString(look_for_newick_tree) {
 
 /**
  * Partitions a tree by assigning nodes to either being internal or leaf
+ * @name trees.partition_tree
  * @param {Dictionary} avl - an AVL representation of the tree to be partitioned
  * @returns nothing
  */
@@ -138,6 +144,7 @@ lfunction trees.partition_tree(avl, l) {
 
 /**
  * Returns tree information from extractTreeInfo after calling getTreeString
+ * @name trees.loadAnnotatedTopology
  * @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
  * @returns {Dictionary} extracted tree information
  */
@@ -146,7 +153,7 @@ lfunction trees.loadAnnotatedTopology(look_for_newick_tree) {
 }
 
 /**
- * alignments.readCodonDataSet
+ * @name trees.loadAnnotatedTopologyAndMap
  * @param dataset_name
  * @returns nothing
  */
@@ -163,6 +170,12 @@ lfunction trees.loadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
     return result;
 }
 
+/**
+ * @name trees.loadAnnotatedTreeTopology.match_partitions
+ * @param partitions
+ * @param mapping
+ * @returns {Dictionary} of matched partitions
+ */
 lfunction trees.loadAnnotatedTreeTopology.match_partitions(partitions, mapping) {
 
 
@@ -193,6 +206,12 @@ lfunction trees.loadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
 
 }
 
+/**
+ * @name trees.branch_names
+ * @param tree
+ * @param respect_case
+ * @returns result
+ */
 lfunction trees.branch_names(tree, respect_case) {
     result = {};
     branch_names = BranchName(tree, -1);
@@ -210,7 +229,17 @@ lfunction trees.branch_names(tree, respect_case) {
     return result;
 }
 
-
+/**
+ * @name trees.extractTreeInfo
+ * @param {String} tree_string
+ * @returns a {Dictionary} of the following tree information :
+ * * newick string
+ * * newick string with branch lengths
+ * * annotated string
+ * * model map
+ * * internal leaves
+ * * list of models
+ */
 function trees.extractTreeInfo(tree_string) {
 
     Topology T = tree_string;

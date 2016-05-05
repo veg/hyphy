@@ -1,6 +1,11 @@
+
+
+/** @module matrix */
+
 /** 
  * upper triangle gets copied to lower triangle
  * for non-square matrices, the largest square minor is symmetrized        
+ * @name matrix.symmetrize
  * @param {Matrix} mx - matrix to perform transform on
  * @returns nothing
  */

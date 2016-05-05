@@ -3,6 +3,12 @@ LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
 
+/** @module models.DNA.HKY85 */
+
+/**
+ * @name models.DNA.HKY85.modelDescription
+ * @param {String} type
+ */
 function models.DNA.HKY85.modelDescription(type) {
 
     return {
@@ -28,11 +34,23 @@ function models.DNA.HKY85.modelDescription(type) {
     };
 }
 
-
+/**
+ * @name models.DNA.HKY85.is_transition
+ * @param {Number} fromChar
+ * @param {Number} toChar
+ */
 function models.DNA.HKY85.is_transition(fromChar, toChar) {
     return fromChar == "A" && toChar == "G" || fromChar == "G" && toChar == "A" || fromChar == "C" && toChar == "T" || fromChar == "T" && toChar == "C";
 }
 
+/**
+ * @name models.DNA.HKY85.generateRate
+ * @param {Number} fromChar
+ * @param {Number} toChar
+ * @param {String} namespace
+ * @param {String} model_type
+ * @return models.DNA.HKY85.generateRate.p 
+ */
 function models.DNA.HKY85.generateRate(fromChar, toChar, namespace, model_type) {
     models.DNA.HKY85.generateRate.p = {};
     models.DNA.HKY85.generateRate.p[model_type] = {};
@@ -59,8 +77,12 @@ function models.DNA.HKY85.generateRate(fromChar, toChar, namespace, model_type) 
     return models.DNA.HKY85.generateRate.p;
 }
 
+/**
+ * @name models.DNA.HKY85.defineQ
+ * @param {Dictionary} hky85
+ * @param {String} namespace
+ */
 function models.DNA.HKY85.defineQ(hky85, namespace) {
-
     models.DNA.generic.defineQMatrix(hky85, namespace);
     return hky85;
 }

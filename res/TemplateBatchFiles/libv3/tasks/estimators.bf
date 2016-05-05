@@ -2,6 +2,12 @@ LoadFunctionLibrary("../models/model_functions.bf");
 LoadFunctionLibrary("../models/terms.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
 
+/**
+ * @name estimators.getGlobalMLE
+ * @param {Dictionary} results
+ * @param {String} tag
+ * @returns None
+ */
 lfunction estimators.getGlobalMLE(results, tag) {
     estimate = (results[ ^ "terms.global"])[tag];
     if (Type(estimate) == "AssociativeList") {
@@ -10,6 +16,13 @@ lfunction estimators.getGlobalMLE(results, tag) {
     return None;
 }
 
+/**
+ * @name estimators.copyGlobals2
+ * @private
+ * @param {String} key2
+ * @param {String} value2
+ * @returns nothing
+ */
 function estimators.copyGlobals2(key2, value2) {
 
     if (Type((estimators.extractMLEs.results["global"])[key2]) == "AssociativeList") {
@@ -26,6 +39,13 @@ function estimators.copyGlobals2(key2, value2) {
     }
 }
 
+/**
+ * @name estimators.copyGlobals
+ * @private
+ * @param {String} key
+ * @param {String} value 
+ * @returns nothing
+ */
 function estimators.copyGlobals(key, value) {
     ((value["parameters"])["global"])["estimators.copyGlobals2"][""];
 }
@@ -42,10 +62,21 @@ function estimators.setGlobals2(key, value) {
     }
 }
 
+/**
+ * @name estimators.setGlobals
+ * @param {String} key
+ * @param {String} value
+ * @returns nothing
+ */
 function estimators.setGlobals(key, value) {
     ((value["parameters"])["global"])["estimators.setGlobals2"][""];
 }
 
+/**
+ * @name estimators.extractBranchInformation.copy_local
+ * @param {String} key
+ * @param {String} value
+ */
 function estimators.extractBranchInformation.copy_local(key, value) {
 
     estimators.extractBranchInformation.copy_local.var_name = estimators.extractBranchLength.parameter_tag + "." + value;
@@ -61,6 +92,13 @@ function estimators.extractBranchInformation.copy_local(key, value) {
 
 }
 
+/**
+ * @name estimators.extractBranchInformation
+ * @param {String} type
+ * @param {String} node
+ * @param {String} model
+ * @returns {Dictionary} branch information
+ */
 function estimators.extractBranchInformation(tree, node, model) {
     estimators.extractBranchLength.result = {};
 
@@ -76,27 +114,64 @@ function estimators.extractBranchInformation(tree, node, model) {
     return estimators.extractBranchLength.result;
 }
 
-
+/**
+ * @name estimators.applyBranchLength
+ * @private
+ * @param {String} tree
+ * @param {String} node
+ * @param {String} model
+ * @param {String} length
+ */
 function estimators.applyBranchLength(tree, node, model, length) {
     return Call(model["set-branch-length"], model, length, tree + "." + node);
 }
 
+/**
+ * @name estimators.fixSubsetOfEstimates.helper
+ * @private
+ * @param {String} key
+ * @param {String} value
+ */
 function estimators.fixSubsetOfEstimates.helper(key, value) {
     value["fix-me"] = 1;
 }
 
+/**
+ * @name estimators.fixSubsetOfEstimates.helper_condition
+ * @private
+ * @param {String} key
+ */
 function estimators.fixSubsetOfEstimates.helper_condition(key) {
     return Type(variables[key]) != Unknown;
 }
 
+/**
+ * @name estimators.fixSubsetOfEstimates
+ * @private
+ * @param {String} estimates
+ * @param {String} variables
+ * @returns nothing
+ */
 function estimators.fixSubsetOfEstimates(estimates, variables) {
     (estimates["global"])["estimators.fixSubsetOfEstimates.helper"]["estimators.fixSubsetOfEstimates.helper_condition"];
 }
 
+/**
+ * @name estimators.branch_lengths_in_string.map
+ * @private
+ * @param {String} id
+ * @param {String} value
+ */
 function estimators.branch_lengths_in_string.map(id, value) {
     estimators.branch_lengths_in_string.lookup[id] = value["MLE"];
 }
 
+/**
+ * @name estimators.branch_lengths_in_string
+ * @param {String} tree_id
+ * @param {String} lookup
+ * @returns {String} branch lenghts in tree string
+ */
 function estimators.branch_lengths_in_string(tree_id, lookup) {
     estimators.branch_lengths_in_string.lookup = {};
     lookup["estimators.branch_lengths_in_string.map"][""];
@@ -106,7 +181,12 @@ function estimators.branch_lengths_in_string(tree_id, lookup) {
     return estimators.branch_lengths_in_string.string;
 }
 
-
+/**
+ * @name estimators.extractMLEs
+ * @param {String} likelihood_function_id
+ * @param {String} model_descriptions
+ * @returns results
+ */
 function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
 
     ExecuteCommands("GetString (estimators.extractMLEs.lfInfo, `likelihood_function_id`,-1)");
@@ -141,6 +221,14 @@ function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
     return estimators.extractMLEs.results;
 }
 
+/**
+ * @name estimators.applyExistingEstimates
+ * @param {String} likelihood_function_id 
+ * @param {Dictionary} model_descriptions 
+ * @param {Matrix} initial_values 
+ * @param branch_length_conditions
+ * @returns estimators.applyExistingEstimates.df_correction - Abs(estimators.applyExistingEstimates.keep_track_of_proportional_scalers);
+ */
 function estimators.applyExistingEstimates(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions) {
 
     // fprintf (stdout, model_descriptions, "\n", initial_values, "\n");
@@ -205,11 +293,26 @@ function estimators.applyExistingEstimates(likelihood_function_id, model_descrip
     return estimators.applyExistingEstimates.df_correction - Abs(estimators.applyExistingEstimates.keep_track_of_proportional_scalers);
 }
 
-
+/**
+ * @name estimators._aux.countEmpiricalParameters
+ * @private
+ * @param {String} id
+ * @param {Dictionary} model
+ * @returns nothing
+ */
 function estimators._aux.countEmpiricalParameters(id, model) {
     estimators._aux.parameter_counter += (model["parameters"])["empirical"];
 }
 
+/**
+ * Fits a LikelihoodFunction
+ * @name estimators.fitLF
+ * @param {Matrix} data_filters_list  - a vector of {DataFilter}s
+ * @param {Matrix} tree_list  - a vector of {Tree}s
+ * @param model_map 
+ * @param initial_values
+ * @returns LF results
+ */
 function estimators.fitLF(data_filters_list, tree_list, model_map, initial_values) {
     estimators.fitLF.component_count = utility.array1D(data_filters_list);
 
@@ -265,7 +368,13 @@ function estimators.fitLF(data_filters_list, tree_list, model_map, initial_value
     return estimators.fitLF.results;
 }
 
-
+/**
+ * @name estimators.fitGTR
+ * @param {DataFilter} data_filter
+ * @param {Tree} tree
+ * @param {Matrix} initial_values
+ * @returns results
+ */
 lfunction estimators.fitGTR(data_filter, tree, initial_values) {
 
     if (Type(data_filter) == "String") {
@@ -342,16 +451,27 @@ lfunction estimators.fitGTR(data_filter, tree, initial_values) {
     return results;
 }
 
+/**
+ * @name estimators.fitMGREV.set_partition_omega
+ * @private
+ * @param {String} key
+ * @param {String} value
+ */
 function estimators.fitMGREV.set_partition_omega(key, value) {
     Eval("estimators.fitMGREV.tree.`key`.`estimators.fitMGREV.alpha` = 0.1");
     ExecuteCommands("estimators.fitMGREV.tree.`key`.`estimators.fitMGREV.beta`:=estimators.fitMGREV.tree.`key`.`estimators.fitMGREV.alpha`*" + estimators.fitMGREV.partitioned_omega.parameters[value]);
 }
 
+/**
+ * @name estimators.fitMGREV.set_partition_omega
+ * @private
+ * @param {String} key
+ * @param {String} value
+ */
 function estimators.fitMGREVExtractComponentBranchLengths(codon_data, fit_results) {
-    /**
-        extract fitted trees with branch lengths scaled on synonymous and non-synonymous
-        substitutions per site
-    */
+
+    //extract fitted trees with branch lengths scaled on synonymous and non-synonymous
+    //substitutions per site
 
     estimators.fitMGREVExtractComponentBranchLengths.stencils = genetic_code.ComputeBranchLengthStencils(codon_data["code"]);
 
@@ -367,8 +487,18 @@ function estimators.fitMGREVExtractComponentBranchLengths(codon_data, fit_result
     return fit_results;
 }
 
+/**
+ * @name estimators.fitMGREV
+ * @param {DataFilter} codon_data
+ * @param {Tree} tree
+ * @param {String} genetic_code
+ * @param {Dictionary} option
+ * @param {Dictionary} initial_values
+ * @returns MGREV results
+ */
 lfunction estimators.fitMGREV(codon_data, tree, genetic_code, option, initial_values) {
 
+    //TODO: Where is data_filter being set?
     if (Type(data_filter) == "String") {
         return estimators.fitMGREV({
                 {

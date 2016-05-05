@@ -4,6 +4,7 @@ LoadFunctionLibrary("../terms-json.bf");
 
 /**
  * Get metadata from existing dataset
+ * @name alignments.readCodonDataSet
  * @param dataset_name - id of dataset
  * @returns {Dictionary} r - metadata pertaining to the dataset
  */
@@ -13,6 +14,7 @@ lfunction alignments.readCodonDataSet(dataset_name) {
 
 /**
  * Reads dataset from a file path
+ * @name alignments.readCodonDataSetFromPath
  * @param {String} dataset_name - name of variable you would like to set the dataset to
  * @param {String} path - path to alignment file
  * @returns {Dictionary} r - metadata pertaining to the dataset
@@ -42,6 +44,8 @@ lfunction alignments.readCodonDataSetFromPath(dataset_name, path) {
 
 /**
  * Helper function to readCodonDataSetFromPath; do not use
+ * @name alignments.readNucleotideDataSet_aux
+ * @private
  * @param dataset_name
  * @returns {Dictionary} r - metadata pertaining to the dataset
  */
@@ -74,6 +78,7 @@ lfunction alignments.readNucleotideDataSet_aux(dataset_name) {
 
 /**
  * Get sequence names from existing dataset
+ * @name alignments.getSequenceNames
  * @param {String} dataset_name - name of dataset to get sequence names from
  * @returns {Dictionary} list of sequence names
  */
@@ -84,6 +89,7 @@ lfunction alignments.getSequenceNames(dataset_name) {
 
 /**
  * Read Nucleotide dataset from file_name
+ * @name alignments.readNucleotideDataSet
  * @param dataset_name - the name of the dataset you wish to use
  * @param file_name - path to file
  * @returns {Dictionary} r - metadata pertaining to the dataset
@@ -104,6 +110,7 @@ lfunction alignments.readNucleotideDataSet(dataset_name, file_name) {
 
 /**
  * Read dataset from data
+ * @name alignments.readNucleotideDataSetString
  * @param {String} dataset_name - the name of the dataset you wish to use
  * @param {String} data - the data you wish to parse
  * @returns {Dictionary} r - metadata pertaining to the dataset
@@ -115,6 +122,7 @@ function alignments.readNucleotideDataSetString(dataset_name, data) {
 
 /**
  * Prompts user for genetic code and alignment
+ * @name alignments.promptForGeneticCodeAndAlignment
  * @param {String} dataset_name - the name  of the dataset you wish to use
  * @param {String} datafilter_name - the name  of the dataset filter you wish to use
  * @returns {Dictionary} r - metadata pertaining to the dataset
@@ -125,6 +133,7 @@ function alignments.promptForGeneticCodeAndAlignment(dataset_name, datafilter_na
 
 /**
  * Loads genetic code and alignment from file path
+ * @name alignments.loadGeneticCodeAndAlignment
  * @param {String} dataset_name - the name  of the dataset you wish to use
  * @param {String} datafilter_name - the name  of the dataset filter you wish to use
  * @param {String} path - path to file
@@ -136,6 +145,7 @@ function alignments.loadGeneticCodeAndAlignment(dataset_name, datafilter_name, p
 
 /**
  * Creates codon dataset filter from data set
+ * @name alignments.loadCodonDataFile
  * @param {String} datafilter_name - the name  of the dataset filter you wish to use
  * @param {String} dataset_name - the name of the existing dataset
  * @param {Dictionary} data_info - DataSet metadata information
@@ -152,6 +162,7 @@ function alignments.loadCodonDataFile(dataset_name, datafilter_name, data_info) 
 
 /**
  * Creates nucleotide dataset filter from file
+ * @name alignments.readNucleotideAlignment
  * @param {String} file_name - The location of the alignment file
  * @param {String} datafilter_name - the name  of the dataset filter you wish to use
  * @param {String} dataset_name - the name of the dataset you wish to use
@@ -169,6 +180,7 @@ function alignments.readNucleotideAlignment(file_name, dataset_name, datafilter_
 
 /**
  * Defines filters for multiple partitions
+ * @name alignments.defineFiltersForPartitions
  * @param {Matrix} partitions - a row vector of dictionaries with partition information containing "name" and "filter-string" attributes
  * @param {DataSet} source_data - the existing dataset to partition
  * @returns {Matrix} filters - a list of newly created dataset filters
@@ -202,6 +214,13 @@ lfunction alignments.defineFiltersForPartitions(partitions, source_data, prefix,
     }
     return filters;
 }
+
+/**
+ * @name alignments.serialize_site_filter
+ * @param {DataFilter} data_filter
+ * @param {Number} site_index
+ * @returns {String} a string representation of data_filter
+ */
 lfunction alignments.serialize_site_filter (data_filter, site_index) {
     GetDataInfo (fi, ^data_filter, "PARAMETERS");
     utility.toggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 9);
@@ -218,38 +237,39 @@ lfunction alignments.serialize_site_filter (data_filter, site_index) {
     ';
 }
 
-
+/**
+ * @name alignments.extract_site_patterns
+ * @param {DataFilter} data_filter
+ * @returns for a data filter, returns a dictionary like this
+ *
+ *    "pattern id":
+ *        "sites" : sites (0-based) mapping to this pattern
+ *        "is_constant" : T/F (is the site constant w/matching ambigs)
+ *
+ *        "0":{
+ *           "sites":{
+ *             "0":0
+ *            },
+ *           "is_constant":0
+ *          },
+ *
+ *         "1":{
+ *           "sites":{
+ *             "0":1
+ *            },
+ *           "is_constant":1
+ *          },
+ *...
+ *         "34":{
+ *           "sites":{
+ *             "0":34,
+ *             "1":113
+ *            },
+ *           "is_constant":1
+ *          },
+ *        ...
+ */
 lfunction alignments.extract_site_patterns (data_filter) {
-/*
-    for a data filter, returns a dictionary like this
-
-    "pattern id":
-        "sites" : sites (0-based) mapping to this pattern
-        "is_constant" : T/F (is the site constant w/matching ambigs)
-
-        "0":{
-           "sites":{
-             "0":0
-            },
-           "is_constant":0
-          },
-
-         "1":{
-           "sites":{
-             "0":1
-            },
-           "is_constant":1
-          },
-...
-         "34":{
-           "sites":{
-             "0":34,
-             "1":113
-            },
-           "is_constant":1
-          },
-        ...
-*/
     utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", FALSE);
 
     site_info = {};
