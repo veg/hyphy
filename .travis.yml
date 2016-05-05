@@ -5,9 +5,9 @@ sudo : false
 notifications:
     email:
         recipients:
-            - sweaver@ucsd.edu
-            - spond@ucsd.edu
-        on_success: change
+            - steven@stevenweaver.org
+            - spond@temple.edu
+        on_success: always
         on_failure: always
 
 branches:
