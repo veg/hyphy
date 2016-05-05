@@ -239,7 +239,7 @@ lfunction alignments.serialize_site_filter (data_filter, site_index) {
 
 /**
  * @name alignments.extract_site_patterns
- * @params {DataFilter} data_filter
+ * @param {DataFilter} data_filter
  * @returns for a data filter, returns a dictionary like this
  *
  *    "pattern id":

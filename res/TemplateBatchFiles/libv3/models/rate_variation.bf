@@ -1,5 +1,7 @@
 LoadFunctionLibrary("parameters.bf");
 
+/** @module rate_variation */
+
 rate_variation.types = {
     "Gamma+I": "rate_variation.types.gamma_i"
 };

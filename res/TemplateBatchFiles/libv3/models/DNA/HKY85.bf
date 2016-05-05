@@ -3,6 +3,8 @@ LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
 
+/** @module models.DNA.HKY85 */
+
 /**
  * @name models.DNA.HKY85.modelDescription
  * @param {String} type

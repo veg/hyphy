@@ -1,3 +1,6 @@
+
+/** @module regexp */
+
 /**
  * @name regexp.split
  * @param {String} string

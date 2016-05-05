@@ -3,6 +3,8 @@ LoadFunctionLibrary("../terms-json.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 
+/** @module trees */
+
 /**
  * Returns sanitized Newick tree string
  * @name trees.getTreeString._sanitize

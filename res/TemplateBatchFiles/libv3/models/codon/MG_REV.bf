@@ -4,6 +4,8 @@ LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
 
+/** @module models.codon.MG_REV */
+
 /**
  * @name models.codon.MG_REV.modelDescription
  * @param {String} type

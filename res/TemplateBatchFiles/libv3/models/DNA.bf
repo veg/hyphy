@@ -1,6 +1,8 @@
 LoadFunctionLibrary ("terms.bf");
 LoadFunctionLibrary ("frequencies.bf");
 
+/** @module models.DNA */
+
 models.DNA.alphabet = {{"A","C","G","T"}};
 
 /**

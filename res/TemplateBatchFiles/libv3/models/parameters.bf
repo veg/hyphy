@@ -1,6 +1,8 @@
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("terms.bf");
 
+/** @module parameters */
+
 parameters.infinity = 1e10;
 
 /**

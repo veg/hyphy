@@ -1,5 +1,7 @@
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
+/** @module math */
+
 /**
 * Computes small-sample AIC
 * @name math.getIC
@@ -98,7 +100,7 @@ lfunction math.kurtosis(_data_vector) {
 
 /**
 * Returns skewness of 1xN vector
-* math.skewness
+* @name math.skewness
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.skewness(_data_vector) {

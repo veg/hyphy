@@ -3,6 +3,9 @@ LoadFunctionLibrary("parameters.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 LoadFunctionLibrary("model_functions.bf");
 
+
+/** @module frequencies */
+
 /**
  * Sets model's equilibrium frequency estimator to equal frequencies
  * @name frequencies.equal

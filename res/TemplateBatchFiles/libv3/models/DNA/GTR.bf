@@ -3,6 +3,8 @@ LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
 
+/** @module models.DNA.GTR */
+
 /**
  * @name models.DNA.GTR.modelDescription
  * @param {String} type

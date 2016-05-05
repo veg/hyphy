@@ -1,6 +1,8 @@
 LoadFunctionLibrary ("chooseGeneticCode", {"0" : "Universal"});
 LoadFunctionLibrary ("../UtilityFunctions.bf");
 
+/** @module models.codon */
+
 /**
  * @name models.codon.map_code
  * @param {String} genetic_code
