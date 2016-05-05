@@ -5,13 +5,15 @@ sudo : false
 notifications:
     email:
         recipients:
-            - sweaver@ucsd.edu
-        on_success: change
+            - spond@temple.edu
+            - steven@stevenweaver.org
+        on_success: always
         on_failure: always
 
 branches:
   only:
     - master
+    - v2.3-alpha
 
 cache:
   directories:
@@ -47,4 +49,7 @@ install:
 
 script: 
   - ./HYPHYGTEST
-
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/math.bf
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/iofunctions.bf
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC.wbf
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC-partitioned.wbf
