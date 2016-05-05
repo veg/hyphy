@@ -1,0 +1,5694 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8' />
+  <title>  | Documentation</title>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <link href='assets/bass.css' type='text/css' rel='stylesheet' />
+  <link href='assets/style.css' type='text/css' rel='stylesheet' />
+  <link href='assets/github.css' type='text/css' rel='stylesheet' />
+</head>
+<body class='documentation'>
+  <div class='container'>
+    <div class='clearfix md-mxn2'>
+      <div class='fixed md-show fix-3 overflow-auto max-height-100'>
+        <div class='py1 px2'>
+          <h3 class='mb0 no-anchor'></h3>
+          <div class='mb1'><code></code></div>
+          <input
+            placeholder='Filter'
+            id='filter-input'
+            class='col12 block field'
+            type='text' />
+          <div id='toc'>
+              <a
+                href='#alignments.defineFiltersForPartitions'
+                class='block bold'>
+                alignments.defineFiltersForPartitions
+              </a>
+              <a
+                href='#alignments.extract_site_patterns'
+                class='block bold'>
+                alignments.extract_site_patterns
+              </a>
+              <a
+                href='#alignments.getSequenceNames'
+                class='block bold'>
+                alignments.getSequenceNames
+              </a>
+              <a
+                href='#alignments.loadCodonDataFile'
+                class='block bold'>
+                alignments.loadCodonDataFile
+              </a>
+              <a
+                href='#alignments.loadGeneticCodeAndAlignment'
+                class='block bold'>
+                alignments.loadGeneticCodeAndAlignment
+              </a>
+              <a
+                href='#alignments.promptForGeneticCodeAndAlignment'
+                class='block bold'>
+                alignments.promptForGeneticCodeAndAlignment
+              </a>
+              <a
+                href='#alignments.readCodonDataSet'
+                class='block bold'>
+                alignments.readCodonDataSet
+              </a>
+              <a
+                href='#alignments.readCodonDataSetFromPath'
+                class='block bold'>
+                alignments.readCodonDataSetFromPath
+              </a>
+              <a
+                href='#alignments.readNucleotideAlignment'
+                class='block bold'>
+                alignments.readNucleotideAlignment
+              </a>
+              <a
+                href='#alignments.readNucleotideDataSet'
+                class='block bold'>
+                alignments.readNucleotideDataSet
+              </a>
+              <a
+                href='#alignments.readNucleotideDataSetString'
+                class='block bold'>
+                alignments.readNucleotideDataSetString
+              </a>
+              <a
+                href='#alignments.serialize_site_filter'
+                class='block bold'>
+                alignments.serialize_site_filter
+              </a>
+              <a
+                href='#estimators.applyExistingEstimates'
+                class='block bold'>
+                estimators.applyExistingEstimates
+              </a>
+              <a
+                href='#estimators.branch_lengths_in_string'
+                class='block bold'>
+                estimators.branch_lengths_in_string
+              </a>
+              <a
+                href='#estimators.extractBranchInformation'
+                class='block bold'>
+                estimators.extractBranchInformation
+              </a>
+              <a
+                href='#estimators.extractBranchInformation.copy_local'
+                class='block bold'>
+                estimators.extractBranchInformation.copy_local
+              </a>
+              <a
+                href='#estimators.extractMLEs'
+                class='block bold'>
+                estimators.extractMLEs
+              </a>
+              <a
+                href='#estimators.fitGTR'
+                class='block bold'>
+                estimators.fitGTR
+              </a>
+              <a
+                href='#estimators.fitLF'
+                class='block bold'>
+                estimators.fitLF
+              </a>
+              <a
+                href='#estimators.fitMGREV'
+                class='block bold'>
+                estimators.fitMGREV
+              </a>
+              <a
+                href='#estimators.getGlobalMLE'
+                class='block bold'>
+                estimators.getGlobalMLE
+              </a>
+              <a
+                href='#estimators.setGlobals'
+                class='block bold'>
+                estimators.setGlobals
+              </a>
+              <a
+                href='#frequencies'
+                class='block bold'>
+                frequencies
+              </a>
+              <a
+                href='#frequencies.empirical.corrected.CF3x4'
+                class='block bold'>
+                frequencies.empirical.corrected.CF3x4
+              </a>
+              <a
+                href='#frequencies.empirical.nucleotide'
+                class='block bold'>
+                frequencies.empirical.nucleotide
+              </a>
+              <a
+                href='#frequencies.equal'
+                class='block bold'>
+                frequencies.equal
+              </a>
+              <a
+                href='#frequencies.mle'
+                class='block bold'>
+                frequencies.mle
+              </a>
+              <a
+                href='#io.checkAssertion'
+                class='block bold'>
+                io.checkAssertion
+              </a>
+              <a
+                href='#io.displayAnalysisBanner'
+                class='block bold'>
+                io.displayAnalysisBanner
+              </a>
+              <a
+                href='#io.format_object'
+                class='block bold'>
+                io.format_object
+              </a>
+              <a
+                href='#io.format_table_row'
+                class='block bold'>
+                io.format_table_row
+              </a>
+              <a
+                href='#io.formatLongStringToWidth'
+                class='block bold'>
+                io.formatLongStringToWidth
+              </a>
+              <a
+                href='#io.get_a_list_of_files'
+                class='block bold'>
+                io.get_a_list_of_files
+              </a>
+              <a
+                href='#io.hasStringKey'
+                class='block bold'>
+                io.hasStringKey
+              </a>
+              <a
+                href='#io.printAndUnderline'
+                class='block bold'>
+                io.printAndUnderline
+              </a>
+              <a
+                href='#io.prompt_user'
+                class='block bold'>
+                io.prompt_user
+              </a>
+              <a
+                href='#io.reportAnalysisStageMD'
+                class='block bold'>
+                io.reportAnalysisStageMD
+              </a>
+              <a
+                href='#io.reportProgressBar'
+                class='block bold'>
+                io.reportProgressBar
+              </a>
+              <a
+                href='#io.reportProgressMessage'
+                class='block bold'>
+                io.reportProgressMessage
+              </a>
+              <a
+                href='#io.reportProgressMessageMD'
+                class='block bold'>
+                io.reportProgressMessageMD
+              </a>
+              <a
+                href='#io.reportStatsMD'
+                class='block bold'>
+                io.reportStatsMD
+              </a>
+              <a
+                href='#io.spool_json'
+                class='block bold'>
+                io.spool_json
+              </a>
+              <a
+                href='#io.spoolLF'
+                class='block bold'>
+                io.spoolLF
+              </a>
+              <a
+                href='#io.spoolLF'
+                class='block bold'>
+                io.spoolLF
+              </a>
+              <a
+                href='#io.validate_a_list_of_files'
+                class='block bold'>
+                io.validate_a_list_of_files
+              </a>
+              <a
+                href='#math'
+                class='block bold'>
+                math
+              </a>
+              <a
+                href='#math.doLRT'
+                class='block bold'>
+                math.doLRT
+              </a>
+              <a
+                href='#math.gather_descriptive_stats'
+                class='block bold'>
+                math.gather_descriptive_stats
+              </a>
+              <a
+                href='#math.getIC'
+                class='block bold'>
+                math.getIC
+              </a>
+              <a
+                href='#math.kurtosis'
+                class='block bold'>
+                math.kurtosis
+              </a>
+              <a
+                href='#math.mean'
+                class='block bold'>
+                math.mean
+              </a>
+              <a
+                href='#math.median'
+                class='block bold'>
+                math.median
+              </a>
+              <a
+                href='#math.skewness'
+                class='block bold'>
+                math.skewness
+              </a>
+              <a
+                href='#math.std'
+                class='block bold'>
+                math.std
+              </a>
+              <a
+                href='#math.sum'
+                class='block bold'>
+                math.sum
+              </a>
+              <a
+                href='#math.variance'
+                class='block bold'>
+                math.variance
+              </a>
+              <a
+                href='#matrix'
+                class='block bold'>
+                matrix
+              </a>
+              <a
+                href='#matrix.symmetrize'
+                class='block bold'>
+                matrix.symmetrize
+              </a>
+              <a
+                href='#model'
+                class='block bold'>
+                model
+              </a>
+              <a
+                href='#model.applyModelToTree'
+                class='block bold'>
+                model.applyModelToTree
+              </a>
+              <a
+                href='#model.define.from.components'
+                class='block bold'>
+                model.define.from.components
+              </a>
+              <a
+                href='#model.dimension'
+                class='block bold'>
+                model.dimension
+              </a>
+              <a
+                href='#model.generic.add_global'
+                class='block bold'>
+                model.generic.add_global
+              </a>
+              <a
+                href='#model.generic.define_model'
+                class='block bold'>
+                model.generic.define_model
+              </a>
+              <a
+                href='#model.generic.get_a_parameter'
+                class='block bold'>
+                model.generic.get_a_parameter
+              </a>
+              <a
+                href='#model.generic.get_global_parameter'
+                class='block bold'>
+                model.generic.get_global_parameter
+              </a>
+              <a
+                href='#model.generic.get_local_parameter'
+                class='block bold'>
+                model.generic.get_local_parameter
+              </a>
+              <a
+                href='#model.generic.get_local_parameter'
+                class='block bold'>
+                model.generic.get_local_parameter
+              </a>
+              <a
+                href='#model.matchAlphabets'
+                class='block bold'>
+                model.matchAlphabets
+              </a>
+              <a
+                href='#model.parameters.global'
+                class='block bold'>
+                model.parameters.global
+              </a>
+              <a
+                href='#model.parameters.local'
+                class='block bold'>
+                model.parameters.local
+              </a>
+              <a
+                href='#models.codon'
+                class='block bold'>
+                models.codon
+              </a>
+              <a
+                href='#models.codon.generic.defineQMatrix'
+                class='block bold'>
+                models.codon.generic.defineQMatrix
+              </a>
+              <a
+                href='#models.codon.map_code'
+                class='block bold'>
+                models.codon.map_code
+              </a>
+              <a
+                href='#models.codon.MG_REV'
+                class='block bold'>
+                models.codon.MG_REV
+              </a>
+              <a
+                href='#models.codon.MG_REV.defineQ'
+                class='block bold'>
+                models.codon.MG_REV.defineQ
+              </a>
+              <a
+                href='#models.codon.MG_REV.generateRate'
+                class='block bold'>
+                models.codon.MG_REV.generateRate
+              </a>
+              <a
+                href='#models.codon.MG_REV.modelDescription'
+                class='block bold'>
+                models.codon.MG_REV.modelDescription
+              </a>
+              <a
+                href='#models.codon.MG_REV.set_branch_length'
+                class='block bold'>
+                models.codon.MG_REV.set_branch_length
+              </a>
+              <a
+                href='#models.DNA'
+                class='block bold'>
+                models.DNA
+              </a>
+              <a
+                href='#models.DNA.generic.defineQMatrix'
+                class='block bold'>
+                models.DNA.generic.defineQMatrix
+              </a>
+              <a
+                href='#models.DNA.generic.time'
+                class='block bold'>
+                models.DNA.generic.time
+              </a>
+              <a
+                href='#models.DNA.GTR'
+                class='block bold'>
+                models.DNA.GTR
+              </a>
+              <a
+                href='#models.DNA.GTR.defineQ'
+                class='block bold'>
+                models.DNA.GTR.defineQ
+              </a>
+              <a
+                href='#models.DNA.GTR.generateRate'
+                class='block bold'>
+                models.DNA.GTR.generateRate
+              </a>
+              <a
+                href='#models.DNA.GTR.modelDescription'
+                class='block bold'>
+                models.DNA.GTR.modelDescription
+              </a>
+              <a
+                href='#models.DNA.HKY85'
+                class='block bold'>
+                models.DNA.HKY85
+              </a>
+              <a
+                href='#models.DNA.HKY85.defineQ'
+                class='block bold'>
+                models.DNA.HKY85.defineQ
+              </a>
+              <a
+                href='#models.DNA.HKY85.generateRate'
+                class='block bold'>
+                models.DNA.HKY85.generateRate
+              </a>
+              <a
+                href='#models.DNA.HKY85.is_transition'
+                class='block bold'>
+                models.DNA.HKY85.is_transition
+              </a>
+              <a
+                href='#models.DNA.HKY85.modelDescription'
+                class='block bold'>
+                models.DNA.HKY85.modelDescription
+              </a>
+              <a
+                href='#models.generic.attachFilter'
+                class='block bold'>
+                models.generic.attachFilter
+              </a>
+              <a
+                href='#models.generic.set_branch_length'
+                class='block bold'>
+                models.generic.set_branch_length
+              </a>
+              <a
+                href='#parameters'
+                class='block bold'>
+                parameters
+              </a>
+              <a
+                href='#parameters.addMultiplicativeTerm'
+                class='block bold'>
+                parameters.addMultiplicativeTerm
+              </a>
+              <a
+                href='#parameters.applyNameSpace'
+                class='block bold'>
+                parameters.applyNameSpace
+              </a>
+              <a
+                href='#parameters.constrainSets'
+                class='block bold'>
+                parameters.constrainSets
+              </a>
+              <a
+                href='#parameters.declareGlobal'
+                class='block bold'>
+                parameters.declareGlobal
+              </a>
+              <a
+                href='#parameters.generate_attributed_names'
+                class='block bold'>
+                parameters.generate_attributed_names
+              </a>
+              <a
+                href='#parameters.generate_sequential_names'
+                class='block bold'>
+                parameters.generate_sequential_names
+              </a>
+              <a
+                href='#parameters.getProfileCI'
+                class='block bold'>
+                parameters.getProfileCI
+              </a>
+              <a
+                href='#parameters.helper.copy_definitions'
+                class='block bold'>
+                parameters.helper.copy_definitions
+              </a>
+              <a
+                href='#parameters.helper.dump_matrix'
+                class='block bold'>
+                parameters.helper.dump_matrix
+              </a>
+              <a
+                href='#parameters.helper.stick_breaking'
+                class='block bold'>
+                parameters.helper.stick_breaking
+              </a>
+              <a
+                href='#parameters.helper.tree_lengths_to_initial_values'
+                class='block bold'>
+                parameters.helper.tree_lengths_to_initial_values
+              </a>
+              <a
+                href='#parameters.isIndependent'
+                class='block bold'>
+                parameters.isIndependent
+              </a>
+              <a
+                href='#parameters.mean'
+                class='block bold'>
+                parameters.mean
+              </a>
+              <a
+                href='#parameters.normalize_ratio'
+                class='block bold'>
+                parameters.normalize_ratio
+              </a>
+              <a
+                href='#parameters.quote'
+                class='block bold'>
+                parameters.quote
+              </a>
+              <a
+                href='#parameters.removeConstraint'
+                class='block bold'>
+                parameters.removeConstraint
+              </a>
+              <a
+                href='#parameters.set_value'
+                class='block bold'>
+                parameters.set_value
+              </a>
+              <a
+                href='#parameters.setConstraint'
+                class='block bold'>
+                parameters.setConstraint
+              </a>
+              <a
+                href='#parameters.setRange'
+                class='block bold'>
+                parameters.setRange
+              </a>
+              <a
+                href='#parameters.stringMatrixToFormulas'
+                class='block bold'>
+                parameters.stringMatrixToFormulas
+              </a>
+              <a
+                href='#parameters.unconstrain_parameter_set'
+                class='block bold'>
+                parameters.unconstrain_parameter_set
+              </a>
+              <a
+                href='#rate_variation'
+                class='block bold'>
+                rate_variation
+              </a>
+              <a
+                href='#rate_variation.add'
+                class='block bold'>
+                rate_variation.add
+              </a>
+              <a
+                href='#rate_variation.multiply_in'
+                class='block bold'>
+                rate_variation.multiply_in
+              </a>
+              <a
+                href='#rate_variation.types.gamma_i'
+                class='block bold'>
+                rate_variation.types.gamma_i
+              </a>
+              <a
+                href='#regexp'
+                class='block bold'>
+                regexp
+              </a>
+              <a
+                href='#regexp.find'
+                class='block bold'>
+                regexp.find
+              </a>
+              <a
+                href='#regexp.split'
+                class='block bold'>
+                regexp.split
+              </a>
+              <a
+                href='#stats.quantile'
+                class='block bold'>
+                stats.quantile
+              </a>
+              <a
+                href='#trees'
+                class='block bold'>
+                trees
+              </a>
+              <a
+                href='#trees.branch_names'
+                class='block bold'>
+                trees.branch_names
+              </a>
+              <a
+                href='#trees.extractTreeInfo'
+                class='block bold'>
+                trees.extractTreeInfo
+              </a>
+              <a
+                href='#trees.getTreeString'
+                class='block bold'>
+                trees.getTreeString
+              </a>
+              <a
+                href='#trees.loadAnnotatedTopology'
+                class='block bold'>
+                trees.loadAnnotatedTopology
+              </a>
+              <a
+                href='#trees.loadAnnotatedTopologyAndMap'
+                class='block bold'>
+                trees.loadAnnotatedTopologyAndMap
+              </a>
+              <a
+                href='#trees.loadAnnotatedTreeTopology.match_partitions'
+                class='block bold'>
+                trees.loadAnnotatedTreeTopology.match_partitions
+              </a>
+              <a
+                href='#trees.partition_tree'
+                class='block bold'>
+                trees.partition_tree
+              </a>
+              <a
+                href='#utility.addToSet'
+                class='block bold'>
+                utility.addToSet
+              </a>
+              <a
+                href='#utility.array_to_dict'
+                class='block bold'>
+                utility.array_to_dict
+              </a>
+              <a
+                href='#utility.array.find'
+                class='block bold'>
+                utility.array.find
+              </a>
+              <a
+                href='#utility.array1D'
+                class='block bold'>
+                utility.array1D
+              </a>
+              <a
+                href='#utility.associativeListToJSON'
+                class='block bold'>
+                utility.associativeListToJSON
+              </a>
+              <a
+                href='#utility.callFunction'
+                class='block bold'>
+                utility.callFunction
+              </a>
+              <a
+                href='#utility.checkCacheFile'
+                class='block bold'>
+                utility.checkCacheFile
+              </a>
+              <a
+                href='#utility.checkKey'
+                class='block bold'>
+                utility.checkKey
+              </a>
+              <a
+                href='#utility.dict_to_array'
+                class='block bold'>
+                utility.dict_to_array
+              </a>
+              <a
+                href='#utility.dict.ensure_key'
+                class='block bold'>
+                utility.dict.ensure_key
+              </a>
+              <a
+                href='#utility.dict.swap_keys_and_values'
+                class='block bold'>
+                utility.dict.swap_keys_and_values
+              </a>
+              <a
+                href='#utility.filter'
+                class='block bold'>
+                utility.filter
+              </a>
+              <a
+                href='#utility.forEach'
+                class='block bold'>
+                utility.forEach
+              </a>
+              <a
+                href='#utility.forEachPair'
+                class='block bold'>
+                utility.forEachPair
+              </a>
+              <a
+                href='#utility.getEnvVariable'
+                class='block bold'>
+                utility.getEnvVariable
+              </a>
+              <a
+                href='#utility.isFunction'
+                class='block bold'>
+                utility.isFunction
+              </a>
+              <a
+                href='#utility.keys'
+                class='block bold'>
+                utility.keys
+              </a>
+              <a
+                href='#utility.map'
+                class='block bold'>
+                utility.map
+              </a>
+              <a
+                href='#utility.matrix_to_list_of_rows'
+                class='block bold'>
+                utility.matrix_to_list_of_rows
+              </a>
+              <a
+                href='#utility.populateDict'
+                class='block bold'>
+                utility.populateDict
+              </a>
+              <a
+                href='#utility.setEnvVariable'
+                class='block bold'>
+                utility.setEnvVariable
+              </a>
+              <a
+                href='#utility.toggleEnvVariable'
+                class='block bold'>
+                utility.toggleEnvVariable
+              </a>
+              <a
+                href='#utility.unique_values'
+                class='block bold'>
+                utility.unique_values
+              </a>
+              <a
+                href='#utility.values'
+                class='block bold'>
+                utility.values
+              </a>
+          </div>
+        </div>
+      </div>
+      <div class='fix-margin-3'>
+        <div class='px2'>
+<div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.defineFiltersForPartitions' class='mt0'>
+    alignments.defineFiltersForPartitions<span class='gray'>(partitions, source_data)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Defines filters for multiple partitions</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>partitions</strong>
+          :
+          <div class='force-inline'>
+            <p>a row vector of dictionaries with partition information containing "name" and "filter-string" attributes</p>
+
+          </div>
+        </li>
+        <li>DataSet
+ <strong>source_data</strong>
+          :
+          <div class='force-inline'>
+            <p>the existing dataset to partition</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>filters - a list of newly created dataset filters</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.extract_site_patterns' class='mt0'>
+    alignments.extract_site_patterns<span class='gray'>(data_filter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>DataFilter
+ <strong>data_filter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>for a data filter, returns a dictionary like this</p>
+<p>"pattern id":
+"sites" : sites (0-based) mapping to this pattern
+"is_constant" : T/F (is the site constant w/matching ambigs)</p>
+<pre><code>   "0":{
+      "sites":{
+        "0":0
+       },
+      "is_constant":0
+     },
+
+    "1":{
+      "sites":{
+        "0":1
+       },
+      "is_constant":1
+     },
+</code></pre>
+<p>...
+"34":{
+"sites":{
+"0":34,
+"1":113
+},
+"is_constant":1
+},
+...</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.getSequenceNames' class='mt0'>
+    alignments.getSequenceNames<span class='gray'>(dataset_name)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Get sequence names from existing dataset</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>name of dataset to get sequence names from</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>list of sequence names</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.loadCodonDataFile' class='mt0'>
+    alignments.loadCodonDataFile<span class='gray'>(datafilter_name, dataset_name, data_info)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Creates codon dataset filter from data set</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>datafilter_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name  of the dataset filter you wish to use</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name of the existing dataset</p>
+
+          </div>
+        </li>
+        <li>Dictionary
+ <strong>data_info</strong>
+          :
+          <div class='force-inline'>
+            <p>DataSet metadata information</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>updated data_info that includes the number of sites, dataset, and datafilter name</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.loadGeneticCodeAndAlignment' class='mt0'>
+    alignments.loadGeneticCodeAndAlignment<span class='gray'>(dataset_name, datafilter_name, path)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Loads genetic code and alignment from file path</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name  of the dataset you wish to use</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>datafilter_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name  of the dataset filter you wish to use</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>path</strong>
+          :
+          <div class='force-inline'>
+            <p>path to file</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>r - metadata pertaining to the dataset</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.promptForGeneticCodeAndAlignment' class='mt0'>
+    alignments.promptForGeneticCodeAndAlignment<span class='gray'>(dataset_name, datafilter_name)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Prompts user for genetic code and alignment</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name  of the dataset you wish to use</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>datafilter_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name  of the dataset filter you wish to use</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>r - metadata pertaining to the dataset</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.readCodonDataSet' class='mt0'>
+    alignments.readCodonDataSet<span class='gray'>(dataset_name)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Get metadata from existing dataset</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>id of dataset</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>r - metadata pertaining to the dataset</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.readCodonDataSetFromPath' class='mt0'>
+    alignments.readCodonDataSetFromPath<span class='gray'>(dataset_name, path)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Reads dataset from a file path</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>name of variable you would like to set the dataset to</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>path</strong>
+          :
+          <div class='force-inline'>
+            <p>path to alignment file</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>r - metadata pertaining to the dataset</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.readNucleotideAlignment' class='mt0'>
+    alignments.readNucleotideAlignment<span class='gray'>(file_name, datafilter_name, dataset_name)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Creates nucleotide dataset filter from file</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>file_name</strong>
+          :
+          <div class='force-inline'>
+            <p>The location of the alignment file</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>datafilter_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name  of the dataset filter you wish to use</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name of the dataset you wish to use</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>updated data_info that includes the number of sites, dataset, and datafilter name</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.readNucleotideDataSet' class='mt0'>
+    alignments.readNucleotideDataSet<span class='gray'>(dataset_name, file_name)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Read Nucleotide dataset from file_name</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name of the dataset you wish to use</p>
+
+          </div>
+        </li>
+        <li> <strong>file_name</strong>
+          :
+          <div class='force-inline'>
+            <p>path to file</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>r - metadata pertaining to the dataset</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.readNucleotideDataSetString' class='mt0'>
+    alignments.readNucleotideDataSetString<span class='gray'>(dataset_name, data)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Read dataset from data</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            <p>the name of the dataset you wish to use</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>data</strong>
+          :
+          <div class='force-inline'>
+            <p>the data you wish to parse</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>r - metadata pertaining to the dataset</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='alignments.serialize_site_filter' class='mt0'>
+    alignments.serialize_site_filter<span class='gray'>(data_filter, site_index)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>DataFilter
+ <strong>data_filter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>site_index</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>a string representation of data_filter</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.applyExistingEstimates' class='mt0'>
+    estimators.applyExistingEstimates<span class='gray'>(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>likelihood_function_id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Dictionary
+ <strong>model_descriptions</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Matrix
+ <strong>initial_values</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>branch_length_conditions</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>estimators.applyExistingEstimates.df_correction - Abs(estimators.applyExistingEstimates.keep_track_of_proportional_scalers);</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.branch_lengths_in_string' class='mt0'>
+    estimators.branch_lengths_in_string<span class='gray'>(tree_id, lookup)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>tree_id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>lookup</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>branch lenghts in tree string</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.extractBranchInformation' class='mt0'>
+    estimators.extractBranchInformation<span class='gray'>(type, node, model)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>node</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>branch information</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.extractBranchInformation.copy_local' class='mt0'>
+    estimators.extractBranchInformation.copy_local<span class='gray'>(key, value)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>key</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>value</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.extractMLEs' class='mt0'>
+    estimators.extractMLEs<span class='gray'>(likelihood_function_id, model_descriptions)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>likelihood_function_id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>model_descriptions</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>results</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.fitGTR' class='mt0'>
+    estimators.fitGTR<span class='gray'>(data_filter, tree, initial_values)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>DataFilter
+ <strong>data_filter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Tree
+ <strong>tree</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Matrix
+ <strong>initial_values</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>results</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.fitLF' class='mt0'>
+    estimators.fitLF<span class='gray'>(data_filters_list, tree_list, model_map, initial_values)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Fits a LikelihoodFunction</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>data_filters_list</strong>
+          :
+          <div class='force-inline'>
+            <p>a vector of {DataFilter}s</p>
+
+          </div>
+        </li>
+        <li>Matrix
+ <strong>tree_list</strong>
+          :
+          <div class='force-inline'>
+            <p>a vector of {Tree}s</p>
+
+          </div>
+        </li>
+        <li> <strong>model_map</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>initial_values</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>LF results</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.fitMGREV' class='mt0'>
+    estimators.fitMGREV<span class='gray'>(codon_data, tree, genetic_code, option, initial_values)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>DataFilter
+ <strong>codon_data</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Tree
+ <strong>tree</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>genetic_code</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Dictionary
+ <strong>option</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Dictionary
+ <strong>initial_values</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>MGREV results</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.getGlobalMLE' class='mt0'>
+    estimators.getGlobalMLE<span class='gray'>(results, tag)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>results</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>tag</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>None</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='estimators.setGlobals' class='mt0'>
+    estimators.setGlobals<span class='gray'>(key, value)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>key</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>value</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='frequencies' class='mt0'>
+    frequencies<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='frequencies.empirical.corrected.CF3x4' class='mt0'>
+    frequencies.empirical.corrected.CF3x4<span class='gray'>(model, namespace, datafilter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>DataSetFilter
+ <strong>datafilter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>updated model</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='frequencies.empirical.nucleotide' class='mt0'>
+    frequencies.empirical.nucleotide<span class='gray'>(model, namespace, datafilter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Sets model's equilibrium frequency estimator to Nucleotide 4x1 estimator</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>DataSetFilter
+ <strong>datafilter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>updated model</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='frequencies.equal' class='mt0'>
+    frequencies.equal<span class='gray'>(model, namespace, datafilter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Sets model's equilibrium frequency estimator to equal frequencies</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            <p>does nothing</p>
+
+          </div>
+        </li>
+        <li>DataSetFilter
+ <strong>datafilter</strong>
+          :
+          <div class='force-inline'>
+            <p>does nothing</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>updated model</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='frequencies.mle' class='mt0'>
+    frequencies.mle<span class='gray'>(model, namespace, datafilter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>To be implemented</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>datafilter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.checkAssertion' class='mt0'>
+    io.checkAssertion<span class='gray'>(statement, error_msg)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>statement</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>error_msg</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.displayAnalysisBanner' class='mt0'>
+    io.displayAnalysisBanner<span class='gray'>(analysis_info)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>analysis_info</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.format_object' class='mt0'>
+    io.format_object<span class='gray'>(object, options)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>object</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>options</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.format_table_row' class='mt0'>
+    io.format_table_row<span class='gray'>(row, options)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>row</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>options</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.formatLongStringToWidth' class='mt0'>
+    io.formatLongStringToWidth<span class='gray'>(string, width)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>string</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>width</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>formatted string</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.get_a_list_of_files' class='mt0'>
+    io.get_a_list_of_files<span class='gray'>(filename)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>filename</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.hasStringKey' class='mt0'>
+    io.hasStringKey<span class='gray'>(key, dict)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>key</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>dict</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.printAndUnderline' class='mt0'>
+    io.printAndUnderline<span class='gray'>(string, char)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>string</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>char</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.prompt_user' class='mt0'>
+    io.prompt_user<span class='gray'>(statement, default, lower_bound, upper_bound, is_integer)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>statement</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>default</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>lower_bound</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>upper_bound</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>is_integer</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.reportAnalysisStageMD' class='mt0'>
+    io.reportAnalysisStageMD<span class='gray'>(stage)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>stage</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.reportProgressBar' class='mt0'>
+    io.reportProgressBar<span class='gray'>(analysis, text)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>analysis</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>text</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.reportProgressMessage' class='mt0'>
+    io.reportProgressMessage<span class='gray'>(analysis, text)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>analysis</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>text</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.reportProgressMessageMD' class='mt0'>
+    io.reportProgressMessageMD<span class='gray'>(analysis, stage, text)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>analysis</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>stage</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>text</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.reportStatsMD' class='mt0'>
+    io.reportStatsMD<span class='gray'>(label, stats)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Reports stats generated from math.gather_descriptive_stats</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>label</strong>
+          :
+          <div class='force-inline'>
+            <p>Typically the name of the method used</p>
+
+          </div>
+        </li>
+        <li> <strong>stats</strong>
+          :
+          <div class='force-inline'>
+            <p>The stats dict generated by math.gather_descriptive_stats</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.spool_json' class='mt0'>
+    io.spool_json<span class='gray'>(json, file)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>json</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>file</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.spoolLF' class='mt0'>
+    io.spoolLF<span class='gray'>(lf_id, trunk_path, tag)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>lf_id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>trunk_path</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>tag</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.spoolLF' class='mt0'>
+    io.spoolLF<span class='gray'>(lf_id, trunk_path, tag)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>lf_id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>trunk_path</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>tag</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.validate_a_list_of_files' class='mt0'>
+    io.validate_a_list_of_files<span class='gray'>(list)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>list</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math' class='mt0'>
+    math<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.doLRT' class='mt0'>
+    math.doLRT<span class='gray'>(lognull, logalt, df)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Computes the LRT and p-value</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>lognull</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>logalt</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>df</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.gather_descriptive_stats' class='mt0'>
+    math.gather_descriptive_stats<span class='gray'>(_data_vector)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns suite of statistical information of a 1xN vector</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>_data_vector</strong>
+          :
+          <div class='force-inline'>
+            <p>1xN vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.getIC' class='mt0'>
+    math.getIC<span class='gray'>(logl, params, samples)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Computes small-sample AIC</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>logl</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>params</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>samples</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.kurtosis' class='mt0'>
+    math.kurtosis<span class='gray'>(_data_vector)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns kurtosis of 1xN vector</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>_data_vector</strong>
+          :
+          <div class='force-inline'>
+            <p>1xN vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.mean' class='mt0'>
+    math.mean<span class='gray'>(_data_vector)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns mean average of 1xN vector</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>_data_vector</strong>
+          :
+          <div class='force-inline'>
+            <p>1xN vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.median' class='mt0'>
+    math.median<span class='gray'>(_data_vector)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns median average of 1xN vector</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>_data_vector</strong>
+          :
+          <div class='force-inline'>
+            <p>1xN vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.skewness' class='mt0'>
+    math.skewness<span class='gray'>(_data_vector)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns skewness of 1xN vector</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>_data_vector</strong>
+          :
+          <div class='force-inline'>
+            <p>1xN vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.std' class='mt0'>
+    math.std<span class='gray'>(_data_vector)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns standard deviation of 1xN vector</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>_data_vector</strong>
+          :
+          <div class='force-inline'>
+            <p>1xN vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.sum' class='mt0'>
+    math.sum<span class='gray'>(_data_vector)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Computes sum of 1xN vector</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>_data_vector</strong>
+          :
+          <div class='force-inline'>
+            <p>1xN vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='math.variance' class='mt0'>
+    math.variance<span class='gray'>(_data_vector)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns variance of 1xN vector</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>_data_vector</strong>
+          :
+          <div class='force-inline'>
+            <p>1xN vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='matrix' class='mt0'>
+    matrix<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='matrix.symmetrize' class='mt0'>
+    matrix.symmetrize<span class='gray'>(mx)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>upper triangle gets copied to lower triangle
+for non-square matrices, the largest square minor is symmetrized</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>mx</strong>
+          :
+          <div class='force-inline'>
+            <p>matrix to perform transform on</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model' class='mt0'>
+    model<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.applyModelToTree' class='mt0'>
+    model.applyModelToTree<span class='gray'>(id, tree, model_list, rules)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>tree</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>model_list</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>rules</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.define.from.components' class='mt0'>
+    model.define.from.components<span class='gray'>(id, q, evf, canonical)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>id</strong>
+          :
+          <div class='force-inline'>
+            <p>{String} Name of of Model</p>
+
+          </div>
+        </li>
+        <li> <strong>q</strong>
+          :
+          <div class='force-inline'>
+            <p>{Matrix} instantaneous transition matrix</p>
+
+          </div>
+        </li>
+        <li> <strong>evf</strong>
+          :
+          <div class='force-inline'>
+            <p>{Matrix} the equilibrium frequencies</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>canonical</strong>
+          :
+          <div class='force-inline'>
+            <p>matrix exponential</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing, sets a global {Model}</p>
+
+      </div>
+    <h4>Examples</h4>
+
+    <pre class='overflow-auto'>q = {{*,t,kappa*t,t}
+ {t,*,t,t*kappa}
+ {t*kappa,t,*,t}
+ {t,t*kappa,t,*}};
+evf =  {{<span class="hljs-number">0.4</span>}{<span class="hljs-number">0.3</span>}{<span class="hljs-number">0.2</span>}{<span class="hljs-number">0.1</span>}};
+model.define.from.components(q,evf,<span class="hljs-number">1</span>);</pre>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.dimension' class='mt0'>
+    model.dimension<span class='gray'>(model)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>dimensions of model</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.generic.add_global' class='mt0'>
+    model.generic.add_global<span class='gray'>(model_spec, id, tag)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model_spec</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>tag</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.generic.define_model' class='mt0'>
+    model.generic.define_model<span class='gray'>(model_spec, id, arguments, data_filter, estimator_type)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model_spec</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>arguments</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>data_filter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>estimator_type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.generic.get_a_parameter' class='mt0'>
+    model.generic.get_a_parameter<span class='gray'>(model_spec, tag, type)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model_spec</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>tag</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.generic.get_global_parameter' class='mt0'>
+    model.generic.get_global_parameter<span class='gray'>(model_spec, tag)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model_spec</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>tag</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.generic.get_local_parameter' class='mt0'>
+    model.generic.get_local_parameter<span class='gray'>(model)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+</code>
+      
+      <div class='force-inline'>
+        
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.generic.get_local_parameter' class='mt0'>
+    model.generic.get_local_parameter<span class='gray'>(model_spec, tag)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model_spec</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>tag</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.matchAlphabets' class='mt0'>
+    model.matchAlphabets<span class='gray'>(a1, a2)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>a1</strong>
+          :
+          <div class='force-inline'>
+            <p>first alphabet to compare</p>
+
+          </div>
+        </li>
+        <li>Matrix
+ <strong>a2</strong>
+          :
+          <div class='force-inline'>
+            <p>second alphabet to compare</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>1 if they are equal, 0 if they are not</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.parameters.global' class='mt0'>
+    model.parameters.global<span class='gray'>(model)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>global parameters</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.parameters.local' class='mt0'>
+    model.parameters.local<span class='gray'>(model)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>local parameters</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon' class='mt0'>
+    models.codon<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.generic.defineQMatrix' class='mt0'>
+    models.codon.generic.defineQMatrix<span class='gray'>(modelSpect, namespace)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>modelSpect</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.map_code' class='mt0'>
+    models.codon.map_code<span class='gray'>(genetic_code)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>genetic_code</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>the sense, stop, and translation-table for the genetic code</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.MG_REV' class='mt0'>
+    models.codon.MG_REV<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.MG_REV.defineQ' class='mt0'>
+    models.codon.MG_REV.defineQ<span class='gray'>(mg_rev, namespace)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>mg_rev</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Model
+</code>
+      :
+      <div class='force-inline'>
+        <p>updated model</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.MG_REV.generateRate' class='mt0'>
+    models.codon.MG_REV.generateRate<span class='gray'>(fromChar, toChar, namespace, model_type, _tt)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>fromChar</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>toChar</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>model_type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Matrix
+ <strong>_tt</strong>
+          :
+          <div class='force-inline'>
+            <p>transition table</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.MG_REV.modelDescription' class='mt0'>
+    models.codon.MG_REV.modelDescription<span class='gray'>(type, code)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>code</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.MG_REV.set_branch_length' class='mt0'>
+    models.codon.MG_REV.set_branch_length<span class='gray'>(model, value, parameter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>(
+AssociativeList
+|
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+)
+ <strong>value</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>parameter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>0</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA' class='mt0'>
+    models.DNA<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.generic.defineQMatrix' class='mt0'>
+    models.DNA.generic.defineQMatrix<span class='gray'>(modelSpec, namespace)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>modelSpec</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.generic.time' class='mt0'>
+    models.DNA.generic.time<span class='gray'>(option)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>option</strong>
+          :
+          <div class='force-inline'>
+            <p>does nothing</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>default time</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.GTR' class='mt0'>
+    models.DNA.GTR<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.GTR.defineQ' class='mt0'>
+    models.DNA.GTR.defineQ<span class='gray'>(gtr, namespace)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>gtr</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.GTR.generateRate' class='mt0'>
+    models.DNA.GTR.generateRate<span class='gray'>(fromChar, toChar, namespace, model_type)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>fromChar</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>toChar</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>model_type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>models.DNA.GTR.generateRate.p</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.GTR.modelDescription' class='mt0'>
+    models.DNA.GTR.modelDescription<span class='gray'>(type)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.HKY85' class='mt0'>
+    models.DNA.HKY85<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.HKY85.defineQ' class='mt0'>
+    models.DNA.HKY85.defineQ<span class='gray'>(hky85, namespace)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>hky85</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.HKY85.generateRate' class='mt0'>
+    models.DNA.HKY85.generateRate<span class='gray'>(fromChar, toChar, namespace, model_type)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>fromChar</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>toChar</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>model_type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>models.DNA.HKY85.generateRate.p</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.HKY85.is_transition' class='mt0'>
+    models.DNA.HKY85.is_transition<span class='gray'>(fromChar, toChar)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>fromChar</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>toChar</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.DNA.HKY85.modelDescription' class='mt0'>
+    models.DNA.HKY85.modelDescription<span class='gray'>(type)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.generic.attachFilter' class='mt0'>
+    models.generic.attachFilter<span class='gray'>(model, filter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>DataSetFilter
+ <strong>filter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>0</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.generic.set_branch_length' class='mt0'>
+    models.generic.set_branch_length<span class='gray'>(model, or, parameter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>AssociativeList
+ <strong>or</strong>
+          :
+          <div class='force-inline'>
+            <p>{Number} value</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>parameter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>0</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters' class='mt0'>
+    parameters<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.addMultiplicativeTerm' class='mt0'>
+    parameters.addMultiplicativeTerm<span class='gray'>(matrix, term, do_empties)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>matrix</strong>
+          :
+          <div class='force-inline'>
+            <p>matrix to scale</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>term</strong>
+          :
+          <div class='force-inline'>
+            <p>scalar to multiply matrix by</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>do_empties</strong>
+          :
+          <div class='force-inline'>
+            <p>if element matrix is empty, fill with term</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>New matrix</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.applyNameSpace' class='mt0'>
+    parameters.applyNameSpace<span class='gray'>(id, namespace)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Applies a namespace to parameter ids</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.constrainSets' class='mt0'>
+    parameters.constrainSets<span class='gray'>(set1, set2)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>constraint set of parameters</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>AssociativeList
+ <strong>set1</strong>
+          :
+          <div class='force-inline'>
+            <p>-</p>
+
+          </div>
+        </li>
+        <li>AssociativeList
+ <strong>set2</strong>
+          :
+          <div class='force-inline'>
+            <p>-</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.declareGlobal' class='mt0'>
+    parameters.declareGlobal<span class='gray'>(id, cache)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Matrix
+ <strong>cache</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.generate_attributed_names' class='mt0'>
+    parameters.generate_attributed_names<span class='gray'>(prefix, attributes, delimiter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>prefix</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Dictionary
+ <strong>attributes</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>delimiter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.generate_sequential_names' class='mt0'>
+    parameters.generate_sequential_names<span class='gray'>(prefix, count, delimiter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>prefix</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>count</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>delimiter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>1 x <count> row vector of generated names</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.getProfileCI' class='mt0'>
+    parameters.getProfileCI<span class='gray'>(id, lf, Number)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Profiles likelihood function based on covariance precision level</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>id</strong>
+          :
+          <div class='force-inline'>
+            <p>covariance parameter id</p>
+
+          </div>
+        </li>
+        <li>LikelihoodFunction
+ <strong>lf</strong>
+          :
+          <div class='force-inline'>
+            <p>likelihood function to profile</p>
+
+          </div>
+        </li>
+        <li> <strong>Number</strong>
+          :
+          <div class='force-inline'>
+            <p>Covariance precision level</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>a dictionary containing profiling information</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.helper.copy_definitions' class='mt0'>
+    parameters.helper.copy_definitions<span class='gray'>(target, source)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Copies definitions from target to source</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>target</strong>
+          :
+          <div class='force-inline'>
+            <p>the target dictionary</p>
+
+          </div>
+        </li>
+        <li>Dictionary
+ <strong>source</strong>
+          :
+          <div class='force-inline'>
+            <p>the source element to copy to target</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.helper.dump_matrix' class='mt0'>
+    parameters.helper.dump_matrix<span class='gray'>(matrix)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Prints matrix to screen</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>matrix</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.helper.stick_breaking' class='mt0'>
+    parameters.helper.stick_breaking<span class='gray'>(parameters, initial_values)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>AssociativeList
+ <strong>parameters</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Matrix
+ <strong>initial_values</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>weights</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.helper.tree_lengths_to_initial_values' class='mt0'>
+    parameters.helper.tree_lengths_to_initial_values<span class='gray'>(dict, type)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Sets tree lengths to initial values</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>dict</strong>
+          :
+          <div class='force-inline'>
+            <p>a [0 to N-1] dictrionary of tree objects</p>
+
+          </div>
+        </li>
+        <li> <strong>type</strong>
+          :
+          <div class='force-inline'>
+            <p>codon or nucleotide</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>dictionary of initial branch lengths</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.isIndependent' class='mt0'>
+    parameters.isIndependent<span class='gray'>(parameter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Check if parameter is independent</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>parameter</strong>
+          :
+          <div class='force-inline'>
+            <p>id of parameter to check</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Bool
+</code>
+      :
+      <div class='force-inline'>
+        <p>TRUE if independent, FALSE otherwise</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.mean' class='mt0'>
+    parameters.mean<span class='gray'>(values, weights, d)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns mean of values</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>values</strong>
+          :
+          <div class='force-inline'>
+            <p>values to return mean of</p>
+
+          </div>
+        </li>
+        <li>Matrix
+ <strong>weights</strong>
+          :
+          <div class='force-inline'>
+            <p>weights to multiply values by</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>d</strong>
+          :
+          <div class='force-inline'>
+            <p>does nothing</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>mean</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.normalize_ratio' class='mt0'>
+    parameters.normalize_ratio<span class='gray'>(n, d)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>n</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>d</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>n/d</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.quote' class='mt0'>
+    parameters.quote<span class='gray'>(arg)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Quotes the argument</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>arg</strong>
+          :
+          <div class='force-inline'>
+            <p>string to be quoted</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>string in quotes</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.removeConstraint' class='mt0'>
+    parameters.removeConstraint<span class='gray'>(id)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Removes a constraint from a parameter</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>id</strong>
+          :
+          <div class='force-inline'>
+            <p>id of parameter to remove constraint from</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.set_value' class='mt0'>
+    parameters.set_value<span class='gray'>(id, value)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Sets value of passed parameter id</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>id</strong>
+          :
+          <div class='force-inline'>
+            <p>id of parameter to set value to</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>value</strong>
+          :
+          <div class='force-inline'>
+            <p>value to set</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.setConstraint' class='mt0'>
+    parameters.setConstraint<span class='gray'>(or, value, global_tag)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>sets constraint on parameter</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>or</strong>
+          :
+          <div class='force-inline'>
+            <p>{AssociativeList} id - id(s) of parameter(s) to set constraint on</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>value</strong>
+          :
+          <div class='force-inline'>
+            <p>the constraint to set on the parameter</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>global_tag</strong>
+          :
+          <div class='force-inline'>
+            <p>the global namespace of the parameter</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.setRange' class='mt0'>
+    parameters.setRange<span class='gray'>(id, ranges)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>ranges</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.stringMatrixToFormulas' class='mt0'>
+    parameters.stringMatrixToFormulas<span class='gray'>(id, matrix)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>id</strong>
+          :
+          <div class='force-inline'>
+            <p>matrix to scale</p>
+
+          </div>
+        </li>
+        <li>Matrix
+ <strong>matrix</strong>
+          :
+          <div class='force-inline'>
+            <p>if element matrix is empty, fill with term</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='parameters.unconstrain_parameter_set' class='mt0'>
+    parameters.unconstrain_parameter_set<span class='gray'>(lf, set)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>LikelihoodFunction
+ <strong>lf</strong>
+          :
+          <div class='force-inline'>
+            <p>the likelihood function to operate on</p>
+
+          </div>
+        </li>
+        <li>Matrix
+ <strong>set</strong>
+          :
+          <div class='force-inline'>
+            <p>set of parameters to unconstrain</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='rate_variation' class='mt0'>
+    rate_variation<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='rate_variation.add' class='mt0'>
+    rate_variation.add<span class='gray'>(model, specs)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>specs</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='rate_variation.multiply_in' class='mt0'>
+    rate_variation.multiply_in<span class='gray'>(matrix, variable)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>to be implemented</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>matrix</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>variable</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='rate_variation.types.gamma_i' class='mt0'>
+    rate_variation.types.gamma_i<span class='gray'>(model, namespace)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>rate_variation.types.gamma_i.q</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='regexp' class='mt0'>
+    regexp<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='regexp.find' class='mt0'>
+    regexp.find<span class='gray'>(string, re)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>string</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>
+ <strong>re</strong>
+          :
+          <div class='force-inline'>
+            <p>the regular expression</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>the portion of the string that is matching</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='regexp.split' class='mt0'>
+    regexp.split<span class='gray'>(string, re)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>string</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>
+ <strong>re</strong>
+          :
+          <div class='force-inline'>
+            <p>the regular expression</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>a dictionary containing split strings</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='stats.quantile' class='mt0'>
+    stats.quantile<span class='gray'>(column, p)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>The R-8 method <a href="https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample">https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample</a></p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>column</strong>
+          :
+          <div class='force-inline'>
+            <p>the vector to operate on</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>p</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>the quantile</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='trees' class='mt0'>
+    trees<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='trees.branch_names' class='mt0'>
+    trees.branch_names<span class='gray'>(tree, respect_case)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>tree</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>respect_case</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>result</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='trees.extractTreeInfo' class='mt0'>
+    trees.extractTreeInfo<span class='gray'>(tree_string)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>tree_string</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>a {Dictionary} of the following tree information :</p>
+<ul>
+<li>newick string</li>
+<li>newick string with branch lengths</li>
+<li>annotated string</li>
+<li>model map</li>
+<li>internal leaves</li>
+<li>list of models</li>
+</ul>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='trees.getTreeString' class='mt0'>
+    trees.getTreeString<span class='gray'>(or)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Looks for a newick tree in an alignment file</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>or</strong>
+          :
+          <div class='force-inline'>
+            <p>{Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file.</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>a newick tree string</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='trees.loadAnnotatedTopology' class='mt0'>
+    trees.loadAnnotatedTopology<span class='gray'>(or)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns tree information from extractTreeInfo after calling getTreeString</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>or</strong>
+          :
+          <div class='force-inline'>
+            <p>{Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file.</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>extracted tree information</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='trees.loadAnnotatedTopologyAndMap' class='mt0'>
+    trees.loadAnnotatedTopologyAndMap<span class='gray'>(dataset_name)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>dataset_name</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='trees.loadAnnotatedTreeTopology.match_partitions' class='mt0'>
+    trees.loadAnnotatedTreeTopology.match_partitions<span class='gray'>(partitions, mapping)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>partitions</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>mapping</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>of matched partitions</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='trees.partition_tree' class='mt0'>
+    trees.partition_tree<span class='gray'>(avl)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Partitions a tree by assigning nodes to either being internal or leaf</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>avl</strong>
+          :
+          <div class='force-inline'>
+            <p>an AVL representation of the tree to be partitioned</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.addToSet' class='mt0'>
+    utility.addToSet<span class='gray'>(set, String)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Adds string or list of strings to a dictionary and sets value to 1</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>AssociativeList
+ <strong>set</strong>
+          :
+          <div class='force-inline'>
+            <p>-</p>
+
+          </div>
+        </li>
+        <li> <strong>String</strong>
+          :
+          <div class='force-inline'>
+            <p>, {Matrix}, or {AssociativeList} object</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.array_to_dict' class='mt0'>
+    utility.array_to_dict<span class='gray'>(object)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>object</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.array.find' class='mt0'>
+    utility.array.find<span class='gray'>(array, value)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>array</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>value</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.array1D' class='mt0'>
+    utility.array1D<span class='gray'>(m)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>m</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.associativeListToJSON' class='mt0'>
+    utility.associativeListToJSON<span class='gray'>(associative_list)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>associative_list</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.callFunction' class='mt0'>
+    utility.callFunction<span class='gray'>(id, arguments)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>arguments</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.checkCacheFile' class='mt0'>
+    utility.checkCacheFile<span class='gray'>(data_info)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>data_info</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.checkKey' class='mt0'>
+    utility.checkKey<span class='gray'>(dict, key, type)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>dict</strong>
+          :
+          <div class='force-inline'>
+            <p>dictionary to check for key</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>key</strong>
+          :
+          <div class='force-inline'>
+            <p>key to check for existence</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>type</strong>
+          :
+          <div class='force-inline'>
+            <p>check whether key is "Matrix", "AssociativeList", "String", or "Tree"</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Bool
+</code>
+      :
+      <div class='force-inline'>
+        <p>TRUE if key exists and is of expected type, otherwise FALASE</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.dict_to_array' class='mt0'>
+    utility.dict_to_array<span class='gray'>(object)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>object</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.dict.ensure_key' class='mt0'>
+    utility.dict.ensure_key<span class='gray'>(dict, key)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Ensures a key exists in a dictionary</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>dict</strong>
+          :
+          <div class='force-inline'>
+            <p>the object to return keys from</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>key</strong>
+          :
+          <div class='force-inline'>
+            <p>key to ensure exists</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.dict.swap_keys_and_values' class='mt0'>
+    utility.dict.swap_keys_and_values<span class='gray'>(dict)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>dict</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.filter' class='mt0'>
+    utility.filter<span class='gray'>(or, lambda_name, condition, or)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>or</strong>
+          :
+          <div class='force-inline'>
+            <p>{Matrix} object - matrix to convert</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>
+ <strong>lambda_name</strong>
+          :
+          <div class='force-inline'>
+            <p>function to discern whether element is filtered. All elements of iterable object that are false will be removed.</p>
+
+          </div>
+        </li>
+        <li> <strong>condition</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>Dictionary
+ <strong>or</strong>
+          :
+          <div class='force-inline'>
+            <p>{Matrix} filtered object</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.forEach' class='mt0'>
+    utility.forEach<span class='gray'>(Tree, lambda_name, transform)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>Tree</strong>
+          :
+          <div class='force-inline'>
+            <p>, {Dictionary} or {Matrix} object - matrix to convert</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>
+ <strong>lambda_name</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>
+ <strong>transform</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.forEachPair' class='mt0'>
+    utility.forEachPair<span class='gray'>(object, key_name, value_name, transform)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>object</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>key_name</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>value_name</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>transform</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.getEnvVariable' class='mt0'>
+    utility.getEnvVariable<span class='gray'>(var)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>var</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.isFunction' class='mt0'>
+    utility.isFunction<span class='gray'>(id)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>id</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.keys' class='mt0'>
+    utility.keys<span class='gray'>(object)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns keys from a dictionary</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>object</strong>
+          :
+          <div class='force-inline'>
+            <p>{Dictionary} the object to return keys from</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>List of keys in dictionary</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.map' class='mt0'>
+    utility.map<span class='gray'>(object, lambda_name, transform)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>object</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>lambda_name</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>transform</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.matrix_to_list_of_rows' class='mt0'>
+    utility.matrix_to_list_of_rows<span class='gray'>(object, converted)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Matrix
+ <strong>object</strong>
+          :
+          <div class='force-inline'>
+            <p>MxN matrix to convert</p>
+
+          </div>
+        </li>
+        <li>Matrix
+ <strong>converted</strong>
+          :
+          <div class='force-inline'>
+            <p>1 x (M*N) Row vector</p>
+
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.populateDict' class='mt0'>
+    utility.populateDict<span class='gray'>(from, to, value, lambda)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>from</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>to</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>value</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>lambda</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.setEnvVariable' class='mt0'>
+    utility.setEnvVariable<span class='gray'>(var)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>var</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.toggleEnvVariable' class='mt0'>
+    utility.toggleEnvVariable<span class='gray'>(var, value)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>var</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>value</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.unique_values' class='mt0'>
+    utility.unique_values<span class='gray'>(object)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns values from a dictionary. Only returns unique values</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>object</strong>
+          :
+          <div class='force-inline'>
+            <p>{Dictionary} the object to return keys from</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>List of keys in dictionary</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.values' class='mt0'>
+    utility.values<span class='gray'>(object)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Returns values from a dictionary. Only returns unique values</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>object</strong>
+          :
+          <div class='force-inline'>
+            <p>{Dictionary} the object to return keys from</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Matrix
+</code>
+      :
+      <div class='force-inline'>
+        <p>List of keys in dictionary</p>
+
+      </div>
+</section>
+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src='assets/anchor.js'></script>
+  <script src='assets/site.js'></script>
+</body>
+</html>
