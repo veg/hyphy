@@ -4,7 +4,7 @@ LoadFunctionLibrary ("frequencies.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
 
 /**
- * model.applyModelToTree (id, tree, model_list, rules)
+ * @name model.applyModelToTree
  * @param id
  * @param tree
  * @param model_list
@@ -60,7 +60,7 @@ function model.applyModelToTree (id, tree, model_list, rules) {
 }
 
 /**
- * model.define.from.components (id,q,efv,canonical)
+ * @name model.define.from.components
  * @param id - {String} Name of of Model
  * @param q - {Matrix} instantaneous transition matrix
  * @param evf - {Matrix} the equilibrium frequencies
@@ -80,7 +80,7 @@ function model.define.from.components (id,q,efv,canonical) {
 }
 
 /**
- * model.generic.add_global
+ * @name model.generic.add_global
  * @param model_spec
  * @param id
  * @param tag
@@ -90,7 +90,7 @@ function model.generic.add_global (model_spec, id, tag) {
 }
 
 /**
- * model.generic.get_local_parameter
+ * @name model.generic.get_local_parameter
  * @param model_spec
  * @param tag
  */
@@ -99,7 +99,7 @@ lfunction model.generic.get_local_parameter (model_spec, tag) {
 }
 
 /**
- * model.generic.get_global_parameter
+ * @name model.generic.get_global_parameter
  * @param model_spec
  * @param tag
  */
@@ -108,7 +108,7 @@ lfunction model.generic.get_global_parameter (model_spec, tag) {
 }
 
 /**
- * model.generic.get_a_parameter
+ * @name model.generic.get_a_parameter
  * @param model_spec
  * @param tag
  * @param type
@@ -124,7 +124,7 @@ lfunction model.generic.get_a_parameter (model_spec, tag, type) {
 
 
 /**
- * model.generic.define_model
+ * @name model.generic.define_model
  * @param model_spec
  * @param id 
  * @param arguments 
@@ -164,7 +164,7 @@ function model.generic.define_model (model_spec, id, arguments, data_filter, est
 }
 
 /**
- * model.generic.get_local_parameter
+ * @name model.generic.get_local_parameter
  * @param {Model} model
  * @returns {String}
  */
@@ -177,7 +177,7 @@ function models.generic.post.definition  (model) {
 }
 
 /**
- * models.generic.set_branch_length
+ * @name models.generic.set_branch_length
  * @param {Model} model
  * @param {AssociativeList} or {Number} value
  * @param {String} parameter
@@ -205,7 +205,7 @@ function models.generic.set_branch_length (model, value, parameter) {
 
 
 /**
- * models.generic.attachFilter
+ * @name models.generic.attachFilter
  * @param {Model} model
  * @param {DataSetFilter} filter
  * @returns 0
@@ -229,7 +229,7 @@ lfunction models.generic.attachFilter (model, filter) {
 }
 
 /**
- * model.dimension
+ * @name model.dimension
  * @param {Model} model
  * @returns {Matrix} dimensions of model
  */
@@ -241,7 +241,7 @@ function model.dimension (model) {
 }
 
 /**
- * model.parameters.local
+ * @name model.parameters.local
  * @param {Model} model
  * @returns {Matrix} local parameters
  */
@@ -251,7 +251,7 @@ function model.parameters.local (model) {
 
 
 /**
- * model.parameters.global 
+ * @name model.parameters.global 
  * @param {Model} model
  * @returns {Matrix} global parameters
  */
@@ -260,7 +260,7 @@ function model.parameters.global (model) {
 }
 
 /**
- * model.matchAlphabets
+ * @name model.matchAlphabets
  * @param {Matrix} a1 - first alphabet to compare
  * @param {Matrix} a2 - second alphabet to compare
  * @returns {Number} 1 if they are equal, 0 if they are not

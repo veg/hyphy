@@ -5,6 +5,7 @@ LoadFunctionLibrary("model_functions.bf");
 
 /**
  * Sets model's equilibrium frequency estimator to equal frequencies
+ * @name frequencies.equal
  * @param {Dictionary} model
  * @param {String} namespace - does nothing
  * @param {DataSetFilter} datafilter - does nothing
@@ -23,6 +24,7 @@ function frequencies.equal(model, namespace, datafilter) {
 
 /**
  * Sets model's equilibrium frequency estimator to Nucleotide 4x1 estimator
+ * @name frequencies.empirical.nucleotide
  * @param {Dictionary} model
  * @param {String} namespace 
  * @param {DataSetFilter} datafilter
@@ -36,7 +38,7 @@ function frequencies.empirical.nucleotide(model, namespace, datafilter) {
 }
 
 /**
- * frequencies.empirical.corrected.CF3x4 
+ * @name frequencies.empirical.corrected.CF3x4 
  * @param {Dictionary} model 
  * @param {String} namespace
  * @param {DataSetFilter} datafilter
@@ -78,6 +80,7 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
 
 /**
  * To be implemented
+ * @name frequencies.mle
  * @param model 
  * @param namespace 
  * @param datafilter
@@ -90,6 +93,8 @@ function frequencies.mle(model, namespace, datafilter) {
 
 /**
  * Returns entire character count (# of sites * # of species)
+ * @name frequencies._aux.empirical.character_count
+ * @private
  * @param {DataSetFilter} datafilter - the datafilter containing site and species information
  */
 function frequencies._aux.empirical.character_count(datafilter) {
@@ -98,6 +103,8 @@ function frequencies._aux.empirical.character_count(datafilter) {
 
 /**
  * Collects frequency data from dataset
+ * @name frequencies._aux.empirical.collect_data
+ * @private
  * @param {DataSetFilter} datafilter 
  * @param {Number} unit 
  * @param {Number} stride 
@@ -138,6 +145,8 @@ lfunction frequencies._aux.empirical.collect_data(datafilter, unit, stride, posi
 
 /**
  * Updates model's equilibrium frequency estimator to not count gaps in frequencies
+ * @name frequencies._aux.empirical.singlechar
+ * @private
  * @param {Dictionary} model - the model to update the 
  * @param {String} namespace - does nothing
  * @param {DataSetFilter} datafilter - the datasetfilter to collect data from
@@ -152,7 +161,8 @@ function frequencies._aux.empirical.singlechar(model, namespace, datafilter) {
 }
 
 /**
- * frequencies._aux.CF3x4
+ * @name frequencies._aux.CF3x4
+ * @private
  * @param observed_3x4
  * @param base_alphabet
  * @param sense_codons 
@@ -279,7 +289,8 @@ function frequencies._aux.CF3x4(observed_3x4, base_alphabet, sense_codons, stop_
 }
 
 /**
- * frequencies._aux._CF3x4_minimizer
+ * @name frequencies._aux._CF3x4_minimizer
+ * @private
  * @param p11
  * @param p12
  * @param p13

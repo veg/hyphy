@@ -5,7 +5,7 @@ rate_variation.types = {
 };
 
 /**
- * rate_variation.add 
+ * @name rate_variation.add 
  * @param model
  * @param specs
  */
@@ -23,6 +23,7 @@ function rate_variation.add(model, specs) {
 
 /**
  * to be implemented
+ * @name rate_variation.multiply_in
  * @param matrix
  * @param variable
  */
@@ -31,7 +32,7 @@ function rate_variation.multiply_in(matrix, variable) {
 }
 
 /**
- * rate_variation.types.gamma_i
+ * @name rate_variation.types.gamma_i
  * @param model
  * @param namespace
  * @returns rate_variation.types.gamma_i.q

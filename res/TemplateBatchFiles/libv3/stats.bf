@@ -1,8 +1,10 @@
+
 /**
- * the R-8 method https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample
+ * The R-8 method https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample
+ * @name stats.quantile
  * @param {Matrix} column - the vector to operate on
- * @param p
- * @returns the quantile
+ * @param {Number} p
+ * @returns {Number} the quantile
  */
 lfunction stats.quantile(column, p) {
 

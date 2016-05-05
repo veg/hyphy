@@ -2,6 +2,7 @@ LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
 /**
 * Computes small-sample AIC
+* @name math.getIC
 * @param logl
 * @param params
 * @param samples
@@ -12,6 +13,7 @@ lfunction math.getIC(logl,params,samples) {
 
 /**
 * Computes the LRT and p-value
+* @name math.doLRT
 * @param lognull
 * @param logalt
 * @param df
@@ -26,6 +28,7 @@ lfunction math.doLRT (lognull,logalt,df) {
 
 /**
 * Computes sum of 1xN vector
+* @name math.sum
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.sum(_data_vector) {
@@ -36,6 +39,7 @@ lfunction math.sum(_data_vector) {
 
 /**
 * Returns median average of 1xN vector
+* @name math.median
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.median(_data_vector) {
@@ -60,6 +64,7 @@ lfunction math.median(_data_vector) {
 
 /**
 * Returns mean average of 1xN vector
+* @name math.mean
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.mean(_data_vector) {
@@ -70,6 +75,7 @@ lfunction math.mean(_data_vector) {
 
 /**
 * Returns kurtosis of 1xN vector
+* @name math.kurtosis
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.kurtosis(_data_vector) {
@@ -92,6 +98,7 @@ lfunction math.kurtosis(_data_vector) {
 
 /**
 * Returns skewness of 1xN vector
+* math.skewness
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.skewness(_data_vector) {
@@ -107,6 +114,7 @@ lfunction math.skewness(_data_vector) {
 
 /**
 * Returns variance of 1xN vector
+* @name math.variance
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.variance(_data_vector) {
@@ -121,6 +129,7 @@ lfunction math.variance(_data_vector) {
 
 /**
 * Returns standard deviation of 1xN vector
+* @name math.std
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.std(_data_vector) {
@@ -129,6 +138,7 @@ lfunction math.std(_data_vector) {
 
 /**
 * Returns suite of statistical information of a 1xN vector
+* @name math.gather_descriptive_stats
 * @param {Matrix} _data_vector - 1xN vector
 */
 lfunction math.gather_descriptive_stats(_data_vector) {

@@ -1,5 +1,5 @@
 /**
- * regexp.split
+ * @name regexp.split
  * @param {String} string
  * @param {Function} re - the regular expression
  * @returns {Dictionary} a dictionary containing split strings
@@ -36,7 +36,7 @@ lfunction regexp.split(string, re) {
 }
 
 /**
- * regexp.find
+ * @name regexp.find
  * @param {String} string
  * @param {Function} re - the regular expression
  * @returns {String} the portion of the string that is matching

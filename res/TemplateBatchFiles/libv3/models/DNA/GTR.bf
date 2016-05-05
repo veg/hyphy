@@ -3,6 +3,10 @@ LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
 
+/**
+ * @name models.DNA.GTR.modelDescription
+ * @param {String} type
+ */
 function models.DNA.GTR.modelDescription(type) {
 
     return {
@@ -28,7 +32,14 @@ function models.DNA.GTR.modelDescription(type) {
     };
 }
 
-
+/**
+ * @name models.DNA.GTR.generateRate
+ * @param {Number} fromChar
+ * @param {Number} toChar
+ * @param {String} namespace
+ * @param {String} model_type
+ * @returns models.DNA.GTR.generateRate.p
+ */
 function models.DNA.GTR.generateRate(fromChar, toChar, namespace, model_type) {
     models.DNA.GTR.generateRate.p = {};
     models.DNA.GTR.generateRate.p[model_type] = {};
@@ -49,6 +60,11 @@ function models.DNA.GTR.generateRate(fromChar, toChar, namespace, model_type) {
     return models.DNA.GTR.generateRate.p;
 }
 
+/**
+ * @name models.DNA.GTR.defineQ
+ * @param {Dictionary} gtr
+ * @param {String} namespace
+ */
 function models.DNA.GTR.defineQ(gtr, namespace) {
 
     models.DNA.generic.defineQMatrix(gtr, namespace);

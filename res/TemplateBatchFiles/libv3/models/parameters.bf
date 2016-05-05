@@ -5,6 +5,7 @@ parameters.infinity = 1e10;
 
 /**
  * Applies a namespace to parameter ids
+ * @name parameters.applyNameSpace
  * @param {String} id
  * @param {String} namespace
  */
@@ -18,7 +19,7 @@ function parameters.applyNameSpace(id, namespace) {
 }
 
 /**
- * parameters.unconstrain_parameter_set 
+ * @name parameters.unconstrain_parameter_set 
  * @param {LikelihoodFunction} lf - the likelihood function to operate on
  * @param {Matrix} set - set of parameters to unconstrain
  * @returns nothing
@@ -41,7 +42,7 @@ function parameters.unconstrain_parameter_set(lf, set) {
 }
 
 /**
- * parameters.declareGlobal 
+ * @name parameters.declareGlobal 
  * @param {String} id
  * @param {Matrix} cache
  * @returns nothing
@@ -77,7 +78,7 @@ function parameters.declareGlobal(id, cache) {
 }
 
 /**
- * parameters.normalize_ratio
+ * @name parameters.normalize_ratio
  * @param {Number} n 
  * @param {Number} d
  * @returns n/d
@@ -95,6 +96,7 @@ function parameters.normalize_ratio(n, d) {
 
 /**
  * Sets value of passed parameter id
+ * @name parameters.set_value
  * @param {String} id - id of parameter to set value to
  * @param {Number} value - value to set
  * @returns nothing
@@ -105,6 +107,7 @@ function parameters.set_value(id, value) {
 
 /**
  * Returns mean of values
+ * @name parameters.mean
  * @param {Matrix} values - values to return mean of
  * @param {Matrix} weights - weights to multiply values by
  * @param {Number} d - does nothing
@@ -121,6 +124,7 @@ lfunction parameters.mean(values, weights, d) {
 
 /**
  * Quotes the argument
+ * @name parameters.quote
  * @param {String} arg - string to be quoted
  * @returns {String} string in quotes
  */
@@ -132,7 +136,7 @@ function parameters.quote(arg) {
 }
 
 /**
- * addMultiplicativeTerm 
+ * @name parameters.addMultiplicativeTerm 
  * @param {Matrix} matrix - matrix to scale
  * @param {Number} term - scalar to multiply matrix by
  * @param {Number} do_empties - if element matrix is empty, fill with term
@@ -162,7 +166,7 @@ lfunction parameters.addMultiplicativeTerm(matrix, term, do_empties) {
 }
 
 /**
- * stringMatrixToFormulas 
+ * @name parameters.stringMatrixToFormulas 
  * @param {String} id - matrix to scale
  * @param {Matrix} matrix - if element matrix is empty, fill with term
  * @returns nothing
@@ -184,7 +188,7 @@ function parameters.stringMatrixToFormulas(id, matrix) {
 }
 
 /**
- * parameters.generate_attributed_names 
+ * @name parameters.generate_attributed_names 
  * @param {String} prefix 
  * @param {Dictionary} attributes 
  * @param {String} delimiter
@@ -201,7 +205,7 @@ function parameters.generate_attributed_names(prefix, attributes, delimiter) {
 }
 
 /**
- * parameters.generate_sequential_names 
+ * @name parameters.generate_sequential_names 
  * @param {String} prefix 
  * @param {Number} count 
  * @param {String} delimiter
@@ -219,7 +223,7 @@ function parameters.generate_sequential_names(prefix, count, delimiter) {
 }
 
 /**
- * parameters.setRange 
+ * @name parameters.setRange 
  * @param id
  * @param ranges
  * @returns nothing
@@ -248,8 +252,9 @@ function parameters.setRange(id, ranges) {
 
 /**
  * Check if parameter is independent
+ * @name parameters.isIndependent
  * @param parameter - id of parameter to check
- * @returns {BOOL} TRUE if independent, FALSE otherwise
+ * @returns {Bool} TRUE if independent, FALSE otherwise
  */
 lfunction parameters.isIndependent(parameter) {
     GetString(info, ^ parameter, -1);
@@ -266,6 +271,7 @@ lfunction parameters.getConstraint(parameter) {
 
 /**
  * sets constraint on parameter
+ * @name parameters.setConstraint
  * @param {String} or {AssociativeList} id - id(s) of parameter(s) to set constraint on
  * @param {Number} value - the constraint to set on the parameter
  * @param {String} global_tag - the global namespace of the parameter
@@ -291,6 +297,7 @@ function parameters.setConstraint(id, value, global_tag) {
 
 /**
  * constraint set of parameters
+ * @name parameters.constrainSets
  * @param {AssociativeList} set1 - 
  * @param {AssociativeList} set2 - 
  * @returns nothing
@@ -308,6 +315,7 @@ function parameters.constrainSets(set1, set2) {
 
 /**
  * Removes a constraint from a parameter
+ * @name parameters.removeConstraint
  * @param {String} id - id of parameter to remove constraint from
  * @returns nothing
  */
@@ -332,6 +340,7 @@ function parameters.removeConstraint(id) {
 
 /**
  * Copies definitions from target to source
+ * @name parameters.helper.copy_definitions
  * @param {Dictionary} target - the target dictionary 
  * @param {Dictionary} source - the source element to copy to target
  * @returns nothing
@@ -352,7 +361,7 @@ function parameters.helper.copy_definitions(target, source) {
 }
 
 /**
- * parameters.helper.stick_breaking 
+ * @name parameters.helper.stick_breaking 
  * @param {AssociativeList} parameters
  * @param {Matrix} initial_values
  * @returns weights
@@ -376,6 +385,12 @@ lfunction parameters.helper.stick_breaking(parameters, initial_values) {
     return weights;
 }
 
+/**
+ * Prints matrix to screen
+ * @name parameters.helper.dump_matrix
+ * @param {Matrix} matrix
+ * @returns nothing
+ */
 lfunction parameters.helper.dump_matrix(matrix) {
     for (i = 0; i < Rows( ^ matrix); i += 1) {
         for (j = 0; j < Columns( ^ matrix); j += 1) {
@@ -388,6 +403,7 @@ lfunction parameters.helper.dump_matrix(matrix) {
 
 /**
  * Sets tree lengths to initial values
+ * @name parameters.helper.tree_lengths_to_initial_values
  * @param dict - a [0 to N-1] dictrionary of tree objects 
  * @param type - codon or nucleotide
  * @returns {Dictionary} dictionary of initial branch lengths
@@ -419,6 +435,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
 /**
  * Profiles likelihood function based on covariance precision level
+ * @name parameters.getProfileCI
  * @param {String} id - covariance parameter id
  * @param {LikelihoodFunction} lf - likelihood function to profile
  * @param {Number} - Covariance precision level 
