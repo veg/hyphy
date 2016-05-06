@@ -362,20 +362,17 @@ TEST_F(SimpleListTest, _ClearFormulasInListTest){
     EXPECT_EQ(7, max);
 }
 
-TEST_F(SimpleListTest, _DebugVarListTest){
-    //We don't have to do a UnitTest for this
-}
-
 TEST_F(SimpleListTest, _CountingSortTest){
+
     _SimpleList sl; 
     _SimpleList ordering_list;
     sl.Populate(4,1,2);
 
-    _SimpleList* returned_list;
+    //_SimpleList* returned_list;
+    sl.CountingSort(20, &ordering_list);
 
-    returned_list = sl.CountingSort(20, &ordering_list);
-    long ret = returned_list->Element(1);
     EXPECT_EQ(1,1);
+
 }
 
 TEST_F(SimpleListTest, _BinaryInsertTest){

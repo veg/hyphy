@@ -167,12 +167,10 @@ TEST_F(ListTest,paranthesisTest){
 TEST_F(ListTest,EqualOpTest){
 
     _List str_list = createStrList();
-    _List list = _List();
-    list = str_list;
-
+    _List list = str_list;
     _String* return_string = (_String*)list[4];
-
     EXPECT_STREQ("four", return_string->getStr());
+
 }
 
 TEST_F(ListTest,EqualTest){
@@ -194,16 +192,14 @@ TEST_F(ListTest,AmpersandOpTest){
     //Append Operator
     _List str_list = createStrList();
     _String string ("one,two,three");
-    _List* list = string.Tokenize(','); 
+    _List list = string.Tokenize(','); 
 
     _String append_string("four,five,six");
-    _List* append_list = append_string.Tokenize(','); 
+    _List append_list = append_string.Tokenize(','); 
 
     _String expected_string("one,two,three,four,five,six");
 
-    _List* expected_list = expected_string.Tokenize(','); 
-
-    _List result_list = *list & *append_list;
+    _List result_list = list & append_list;
 
     _String* result_string = (_String*)result_list[0];
     EXPECT_STREQ("one", result_string->getStr());
@@ -259,21 +255,21 @@ TEST_F(ListTest,DoubleLessOpTest){
 }
 
 TEST_F(ListTest,DoubleLess2OpTest){
-    //Append Operator
 
+    //Append Operator
     _List str_list = createStrList();
     _String string ("one,two,three");
 
-    _List* list = string.Tokenize(','); 
+    _List list = string.Tokenize(','); 
 
     _String append_string("four,five,six");
-    _List* append_list = append_string.Tokenize(','); 
+    _List append_list = append_string.Tokenize(','); 
 
     _String* expected_string = new _String("six");
 
-    *list << *append_list;
+    list << append_list;
 
-    _List result_list = *list;
+    _List result_list = list;
 
     _String* result_string = (_String*)result_list[5];
     EXPECT_STREQ(expected_string->getStr(), result_string->getStr());
@@ -310,12 +306,14 @@ TEST_F(ListTest,InsertElementTest){
 }
 
 TEST_F(ListTest,getStrTest){
+
     _List str_list = createStrList();
 
-    _String* str = new _String("{zero,one,two,three,four,five,six}");
+    _String* str = new _String("{zero, one, two, three, four, five, six}");
     _String* result_string = (_String*)str_list.toStr();
 
     EXPECT_STREQ(str->getStr(), result_string->getStr());
+
 }
 
 TEST_F(ListTest, makeDynamicTest){
@@ -338,21 +336,8 @@ TEST_F(ListTest,bumpNInstTest){
     EXPECT_STREQ("three", result_string->getStr());
 }
 
-TEST_F(ListTest,FindTest){
-    //This cast the object as a string and then checks if it's equal. 
-    //Why do we send in a BaseRef when we could just pass in a _String if it's strings only.
-    _List str_list = createStrList();
-    
-    _String* needle = new _String("two");
-
-    int index = str_list.Find((BaseRef)needle);
-    EXPECT_EQ(2, index);
-
-    index = str_list.Find((BaseRef)"seventeen");
-    EXPECT_EQ(-1, index);
-}
-
 TEST_F(ListTest,FindStringTest){
+
     //Find the position of a search string in the list of strings (ONLY)
     long upTo = -1;
     _List str_list = createStrList();
@@ -383,10 +368,9 @@ TEST_F(ListTest,JoinTest){
 TEST_F(ListTest,BinaryFindTest){
 
     //Find the position of a search string in the list of strings (ONLY)
-    int upTo = -1;
     _List str_list = createStrList();
     _String* needle = new _String("six");
-    int index = str_list.BinaryFind((BaseRef)needle); 
+    int index = str_list.BinaryFindObject((BaseRef)needle); 
     EXPECT_EQ(-4, index);
 
 }
