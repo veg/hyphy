@@ -76,6 +76,17 @@ lfunction io.spool_json(json, file) {
 }
 
 /** 
+ * Parses json from file_path
+ * @name io.parse_json
+ * @param file
+ */
+lfunction io.parse_json(file_path) {
+    fscanf(file_path, "Raw", test);
+    parsed_test = Eval(test);
+    return parsed_test;
+}
+
+/** 
  * @name io.reportProgressMessage
  * @param analysis
  * @param text
