@@ -22,6 +22,16 @@
             type='text' />
           <div id='toc'>
               <a
+                href='#'
+                class='block bold'>
+                
+              </a>
+              <a
+                href='#'
+                class='block bold'>
+                
+              </a>
+              <a
                 href='#alignments.defineFiltersForPartitions'
                 class='block bold'>
                 alignments.defineFiltersForPartitions
@@ -190,6 +200,11 @@
                 href='#io.hasStringKey'
                 class='block bold'>
                 io.hasStringKey
+              </a>
+              <a
+                href='#io.parse_json'
+                class='block bold'>
+                io.parse_json
               </a>
               <a
                 href='#io.printAndUnderline'
@@ -752,9 +767,19 @@
                 utility.getEnvVariable
               </a>
               <a
+                href='#utility.intersect'
+                class='block bold'>
+                utility.intersect
+              </a>
+              <a
                 href='#utility.isFunction'
                 class='block bold'>
                 utility.isFunction
+              </a>
+              <a
+                href='#utility.keyExists'
+                class='block bold'>
+                utility.keyExists
               </a>
               <a
                 href='#utility.keys'
@@ -802,6 +827,30 @@
       <div class='fix-margin-3'>
         <div class='px2'>
 <div class='py1'><section class='py2 clearfix'>
+  <h2 id='' class='mt0'>
+    <span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>store pairs of {partition, site, positive selection (if false => negative selection)} to print to screen (after sampling done if necessary)</p>
+
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='' class='mt0'>
+    <span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>store pairs of {partition, site, positive selection (if false => negative selection)} to print to screen (after sampling done if necessary)</p>
+
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
   <h2 id='alignments.defineFiltersForPartitions' class='mt0'>
     alignments.defineFiltersForPartitions<span class='gray'>(partitions, source_data)</span>
   </h2>
@@ -2052,6 +2101,28 @@
     </ul>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='io.parse_json' class='mt0'>
+    io.parse_json<span class='gray'>(file)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>TODO: Does not support arrays in JSON
+Parses json from file_path</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>file</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
   <h2 id='io.printAndUnderline' class='mt0'>
     io.printAndUnderline<span class='gray'>(string, char)</span>
   </h2>
@@ -2438,7 +2509,7 @@
   
   
   
-  <p>Returns suite of statistical information of a 1xN vector</p>
+  <p>Returns suite of statistical information for a 1xN vector</p>
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
@@ -2960,6 +3031,32 @@ model.define.from.components(q,evf,<span class="hljs-number">1</span>);</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='model.generic.get_local_parameter' class='mt0'>
+    model.generic.get_local_parameter<span class='gray'>(model_spec, tag)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li> <strong>model_spec</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li> <strong>tag</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='model.generic.get_local_parameter' class='mt0'>
     model.generic.get_local_parameter<span class='gray'>(model)</span>
   </h2>
   
@@ -2985,32 +3082,6 @@ model.define.from.components(q,evf,<span class="hljs-number">1</span>);</pre>
       <div class='force-inline'>
         
       </div>
-</section>
-</div><div class='py1'><section class='py2 clearfix'>
-  <h2 id='model.generic.get_local_parameter' class='mt0'>
-    model.generic.get_local_parameter<span class='gray'>(model_spec, tag)</span>
-  </h2>
-  
-  
-  
-  
-  
-  
-    <h4>Parameters</h4>
-    <ul class='suppress-p-margin'>
-        <li> <strong>model_spec</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-        <li> <strong>tag</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-    </ul>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='model.matchAlphabets' class='mt0'>
@@ -5042,22 +5113,36 @@ AssociativeList
   
   
   
-  
+  <p>Find an element in the array.</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>array</strong>
+        <li>Matrix
+ <strong>array</strong>
           :
           <div class='force-inline'>
             
           </div>
         </li>
-        <li> <strong>value</strong>
+        <li>(
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+|
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+)
+ <strong>value</strong>
           :
           <div class='force-inline'>
             
           </div>
         </li>
     </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>-1 if value is not found, otherwise returns the position</p>
+
+      </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='utility.array1D' class='mt0'>
@@ -5154,14 +5239,15 @@ AssociativeList
   
   
   
-  
+  <p>Checks whether key is a certain type</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
         <li>Dictionary
  <strong>dict</strong>
           :
           <div class='force-inline'>
-            <p>dictionary to check for key</p>
+            <p>dictionary to check</p>
 
           </div>
         </li>
@@ -5169,7 +5255,7 @@ AssociativeList
  <strong>key</strong>
           :
           <div class='force-inline'>
-            <p>key to check for existence</p>
+            <p>key to check</p>
 
           </div>
         </li>
@@ -5187,7 +5273,7 @@ AssociativeList
 </code>
       :
       <div class='force-inline'>
-        <p>TRUE if key exists and is of expected type, otherwise FALASE</p>
+        <p>TRUE if key exists and is of expected type, otherwise FALSE</p>
 
       </div>
 </section>
@@ -5271,25 +5357,30 @@ AssociativeList
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='utility.filter' class='mt0'>
-    utility.filter<span class='gray'>(or, lambda_name, condition, or)</span>
+    utility.filter<span class='gray'>(object, lambda_name, condition, or)</span>
   </h2>
   
   
   
   
   
-  
+  <p>Filters 1xN Matrix or Dictionary</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li>Dictionary
- <strong>or</strong>
+        <li>(
+Dictionary
+|
+Matrix
+)
+ <strong>object</strong>
           :
           <div class='force-inline'>
-            <p>{Matrix} object - matrix to convert</p>
+            <p>matrix to convert</p>
 
           </div>
         </li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
  <strong>lambda_name</strong>
           :
           <div class='force-inline'>
@@ -5312,10 +5403,20 @@ AssociativeList
           </div>
         </li>
     </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>filtered object</p>
+
+      </div>
+    <h4>Examples</h4>
+
+    <pre class='overflow-auto'>_nonnegatives = utility.filter (_data_vector, <span class="hljs-string">"_value_"</span>, <span class="hljs-string">"_value_ &gt;= 0"</span>);</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='utility.forEach' class='mt0'>
-    utility.forEach<span class='gray'>(Tree, lambda_name, transform)</span>
+    utility.forEach<span class='gray'>(object, lambda_name, transform)</span>
   </h2>
   
   
@@ -5325,21 +5426,28 @@ AssociativeList
   
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>Tree</strong>
+        <li>(
+Tree
+|
+Dictionary
+|
+Matrix
+)
+ <strong>object</strong>
           :
           <div class='force-inline'>
-            <p>, {Dictionary} or {Matrix} object - matrix to convert</p>
+            <p>matrix to convert</p>
 
           </div>
         </li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
  <strong>lambda_name</strong>
           :
           <div class='force-inline'>
             
           </div>
         </li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
  <strong>transform</strong>
           :
           <div class='force-inline'>
@@ -5364,31 +5472,40 @@ AssociativeList
   
   
   
-  
+  <p>Iterates over dictionaries</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>object</strong>
+        <li>Dictionary
+ <strong>object</strong>
           :
           <div class='force-inline'>
-            
+            <p>the dictionary to iterate over</p>
+
           </div>
         </li>
-        <li> <strong>key_name</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>key_name</strong>
           :
           <div class='force-inline'>
-            
+            <p>the variable name for the key in the lambda expression</p>
+
           </div>
         </li>
-        <li> <strong>value_name</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>value_name</strong>
           :
           <div class='force-inline'>
-            
+            <p>the variable name for the value in the lambda expression</p>
+
           </div>
         </li>
-        <li> <strong>transform</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>transform</strong>
           :
           <div class='force-inline'>
-            
+            <p>the lambda expression to use</p>
+
           </div>
         </li>
     </ul>
@@ -5399,6 +5516,10 @@ AssociativeList
         <p>nothing</p>
 
       </div>
+    <h4>Examples</h4>
+
+    <pre class='overflow-auto'>utility.forEachPair (dict, <span class="hljs-string">"_key_"</span>, <span class="hljs-string">"_selection_"</span>,
+       <span class="hljs-string">"fprintf(stdout, _key_);"</span>);</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='utility.getEnvVariable' class='mt0'>
@@ -5421,6 +5542,52 @@ AssociativeList
     </ul>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.intersect' class='mt0'>
+    utility.intersect<span class='gray'>(set, set1, set2)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Set intersection</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>AssociativeList
+ <strong>set</strong>
+          :
+          <div class='force-inline'>
+            <p>associative list to hold intersection</p>
+
+          </div>
+        </li>
+        <li>AssociativeList
+ <strong>set1</strong>
+          :
+          <div class='force-inline'>
+            <p>First set to intersect</p>
+
+          </div>
+        </li>
+        <li>AssociativeList
+ <strong>set2</strong>
+          :
+          <div class='force-inline'>
+            <p>Second set to intersect</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
   <h2 id='utility.isFunction' class='mt0'>
     utility.isFunction<span class='gray'>(id)</span>
   </h2>
@@ -5439,6 +5606,45 @@ AssociativeList
           </div>
         </li>
     </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='utility.keyExists' class='mt0'>
+    utility.keyExists<span class='gray'>(dict, key)</span>
+  </h2>
+  
+  
+  
+  
+  
+  <p>Checks whether key exists in dictionary</p>
+
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Dictionary
+ <strong>dict</strong>
+          :
+          <div class='force-inline'>
+            <p>dictionary to check</p>
+
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>key</strong>
+          :
+          <div class='force-inline'>
+            <p>key to check for existence</p>
+
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Bool
+</code>
+      :
+      <div class='force-inline'>
+        <p>TRUE if key exists and is of expected type, otherwise FALSE</p>
+
+      </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='utility.keys' class='mt0'>
@@ -5469,6 +5675,10 @@ AssociativeList
         <p>List of keys in dictionary</p>
 
       </div>
+    <h4>Examples</h4>
+
+    <pre class='overflow-auto'>keys = utility.keys(absrel.stats);
+  keys == {<span class="hljs-string">"Count"</span>, <span class="hljs-string">"Mean"</span>, <span class="hljs-string">"Median"</span>, <span class="hljs-string">"Min"</span>, <span class="hljs-string">"Max"</span>, <span class="hljs-string">"2.5%"</span>, <span class="hljs-string">"97.5%"</span>, <span class="hljs-string">"Sum"</span>, <span class="hljs-string">"Std.Dev"</span>};</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='utility.map' class='mt0'>
@@ -5482,22 +5692,32 @@ AssociativeList
   
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>object</strong>
+        <li>(
+AssociativeList
+|
+Matrix
+)
+ <strong>object</strong>
           :
           <div class='force-inline'>
-            
+            <p>object to iterate over</p>
+
           </div>
         </li>
-        <li> <strong>lambda_name</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>lambda_name</strong>
           :
           <div class='force-inline'>
-            
+            <p>variable name for transform</p>
+
           </div>
         </li>
-        <li> <strong>transform</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>transform</strong>
           :
           <div class='force-inline'>
-            
+            <p>function transform</p>
+
           </div>
         </li>
     </ul>
@@ -5544,25 +5764,37 @@ AssociativeList
   
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>from</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>from</strong>
           :
           <div class='force-inline'>
             
           </div>
         </li>
-        <li> <strong>to</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+ <strong>to</strong>
           :
           <div class='force-inline'>
             
           </div>
         </li>
-        <li> <strong>value</strong>
+        <li>(
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+|
+AssociativeList
+|
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+|
+Matrix
+)
+ <strong>value</strong>
           :
           <div class='force-inline'>
             
           </div>
         </li>
-        <li> <strong>lambda</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>lambda</strong>
           :
           <div class='force-inline'>
             
