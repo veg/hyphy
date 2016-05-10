@@ -76,6 +76,7 @@ lfunction io.spool_json(json, file) {
 }
 
 /** 
+ * TODO: Does not support arrays in JSON
  * Parses json from file_path
  * @name io.parse_json
  * @param file

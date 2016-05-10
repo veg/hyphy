@@ -139,7 +139,7 @@ lfunction math.std(_data_vector) {
 };
 
 /**
-* Returns suite of statistical information of a 1xN vector
+* Returns suite of statistical information for a 1xN vector
 * @name math.gather_descriptive_stats
 * @param {Matrix} _data_vector - 1xN vector
 */
