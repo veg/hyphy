@@ -7,11 +7,11 @@ parameters.infinity = 1e10;
 
 /**
  * Applies a namespace to parameter ids
- * @name parameters.applyNameSpace
+ * @name parameters.ApplyNameSpace
  * @param {String} id
  * @param {String} namespace
  */
-function parameters.applyNameSpace(id, namespace) {
+function parameters.ApplyNameSpace(id, namespace) {
     if (Type(namespace) == "String") {
         if (Abs(namespace) > 0) {
             return namespace + "." + id;
@@ -21,13 +21,13 @@ function parameters.applyNameSpace(id, namespace) {
 }
 
 /**
- * @name parameters.unconstrain_parameter_set 
+ * @name parameters.UnconstrainParameterSet 
  * @param {LikelihoodFunction} lf - the likelihood function to operate on
  * @param {Matrix} set - set of parameters to unconstrain
  * @returns nothing
  */
-function parameters.unconstrain_parameter_set(lf, set) {
-    ExecuteCommands("GetString(parameters.unconstrain_parameter_set.info, `lf`, -1)");
+function parameters.UnconstrainParameterSet(lf, set) {
+    ExecuteCommands("GetString(parameters.UnconstrainParameterSet.info, `lf`, -1)");
     if (None == set) {
         set = {
             {
@@ -35,21 +35,21 @@ function parameters.unconstrain_parameter_set(lf, set) {
             }
         };
     }
-    for (parameters.unconstrain_parameter_set.s = 0; parameters.unconstrain_parameter_set.s < Columns(set); parameters.unconstrain_parameter_set.s += 1) {
-        parameters.unconstrain_parameter_set.m = parameters.unconstrain_parameter_set.info[set[parameters.unconstrain_parameter_set.s]];
-        for (parameters.unconstrain_parameter_set.i = 0; parameters.unconstrain_parameter_set.i < Columns(parameters.unconstrain_parameter_set.m); parameters.unconstrain_parameter_set.i += 1) {
-            Eval(parameters.unconstrain_parameter_set.m[parameters.unconstrain_parameter_set.i] + "=" + Eval(parameters.unconstrain_parameter_set.m[parameters.unconstrain_parameter_set.i]));
+    for (parameters.UnconstrainParameterSet.s = 0; parameters.UnconstrainParameterSet.s < Columns(set); parameters.UnconstrainParameterSet.s += 1) {
+        parameters.UnconstrainParameterSet.m = parameters.UnconstrainParameterSet.info[set[parameters.UnconstrainParameterSet.s]];
+        for (parameters.UnconstrainParameterSet.i = 0; parameters.UnconstrainParameterSet.i < Columns(parameters.UnconstrainParameterSet.m); parameters.UnconstrainParameterSet.i += 1) {
+            Eval(parameters.UnconstrainParameterSet.m[parameters.UnconstrainParameterSet.i] + "=" + Eval(parameters.UnconstrainParameterSet.m[parameters.UnconstrainParameterSet.i]));
         }
     }
 }
 
 /**
- * @name parameters.declareGlobal 
+ * @name parameters.DeclareGlobal 
  * @param {String} id
  * @param {Matrix} cache
  * @returns nothing
  */
-function parameters.declareGlobal(id, cache) {
+function parameters.DeclareGlobal(id, cache) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(cache) == "AssociativeList") {
@@ -63,16 +63,16 @@ function parameters.declareGlobal(id, cache) {
         }
     } else {
         if (Type(id) == "AssociativeList") {
-            parameters.declareGlobal.var_count = Abs(id);
-            parameters.declareGlobal.names = Columns(id);
-            for (parameters.declareGlobal.k = 0; parameters.declareGlobal.k < parameters.declareGlobal.var_count; parameters.declareGlobal.k += 1) {
-                parameters.declareGlobal(parameters.declareGlobal.names[parameters.declareGlobal.k], cache);
+            parameters.DeclareGlobal.var_count = Abs(id);
+            parameters.DeclareGlobal.names = Columns(id);
+            for (parameters.DeclareGlobal.k = 0; parameters.DeclareGlobal.k < parameters.DeclareGlobal.var_count; parameters.DeclareGlobal.k += 1) {
+                parameters.DeclareGlobal(parameters.DeclareGlobal.names[parameters.DeclareGlobal.k], cache);
             }
         } else {
             if (Type(id) == "Matrix") {
-                parameters.declareGlobal.var_count = Columns(id) * Rows(id);
-                for (parameters.declareGlobal.k = 0; parameters.declareGlobal.k < parameters.declareGlobal.var_count; parameters.declareGlobal.k += 1) {
-                    parameters.declareGlobal(id[parameters.declareGlobal.k], cache);
+                parameters.DeclareGlobal.var_count = Columns(id) * Rows(id);
+                for (parameters.DeclareGlobal.k = 0; parameters.DeclareGlobal.k < parameters.DeclareGlobal.var_count; parameters.DeclareGlobal.k += 1) {
+                    parameters.DeclareGlobal(id[parameters.DeclareGlobal.k], cache);
                 }
             }
         }
@@ -80,12 +80,12 @@ function parameters.declareGlobal(id, cache) {
 }
 
 /**
- * @name parameters.normalize_ratio
+ * @name parameters.NormalizeRatio
  * @param {Number} n 
  * @param {Number} d
  * @returns n/d
  */
-function parameters.normalize_ratio(n, d) {
+function parameters.NormalizeRatio(n, d) {
     if (d == 0) {
         if (n == 0) {
             return 1;
@@ -98,24 +98,24 @@ function parameters.normalize_ratio(n, d) {
 
 /**
  * Sets value of passed parameter id
- * @name parameters.set_value
+ * @name parameters.SetValue
  * @param {String} id - id of parameter to set value to
  * @param {Number} value - value to set
  * @returns nothing
  */
-function parameters.set_value(id, value) {
+function parameters.SetValue(id, value) {
     Eval("`id` = " + value);
 }
 
 /**
  * Returns mean of values
- * @name parameters.mean
+ * @name parameters.Mean
  * @param {Matrix} values - values to return mean of
  * @param {Matrix} weights - weights to multiply values by
  * @param {Number} d - does nothing
  * @returns {Number} mean
  */
-lfunction parameters.mean(values, weights, d) {
+lfunction parameters.Mean(values, weights, d) {
     m = 0;
     d = Rows(values) * Columns(values);
     for (i = 0; i < d; i += 1) {
@@ -126,11 +126,11 @@ lfunction parameters.mean(values, weights, d) {
 
 /**
  * Quotes the argument
- * @name parameters.quote
+ * @name parameters.Quote
  * @param {String} arg - string to be quoted
  * @returns {String} string in quotes
  */
-function parameters.quote(arg) {
+function parameters.Quote(arg) {
     if (Type(arg) == "String") {
         return "\"" + (arg && 2) + "\"";
     }
@@ -138,13 +138,13 @@ function parameters.quote(arg) {
 }
 
 /**
- * @name parameters.addMultiplicativeTerm 
+ * @name parameters.AddMultiplicativeTerm 
  * @param {Matrix} matrix - matrix to scale
  * @param {Number} term - scalar to multiply matrix by
  * @param {Number} do_empties - if element matrix is empty, fill with term
  * @returns {Matrix} New matrix
  */
-lfunction parameters.addMultiplicativeTerm(matrix, term, do_empties) {
+lfunction parameters.AddMultiplicativeTerm(matrix, term, do_empties) {
 
     if (Abs(term) > 0) {
         __N = Rows(matrix);
@@ -168,12 +168,12 @@ lfunction parameters.addMultiplicativeTerm(matrix, term, do_empties) {
 }
 
 /**
- * @name parameters.stringMatrixToFormulas 
+ * @name parameters.StringMatrixToFormulas 
  * @param {String} id - matrix to scale
  * @param {Matrix} matrix - if element matrix is empty, fill with term
  * @returns nothing
  */
-function parameters.stringMatrixToFormulas(id, matrix) {
+function parameters.StringMatrixToFormulas(id, matrix) {
     __N = Rows(matrix);
 
     ExecuteCommands("`id` = {__N,__N}");
@@ -190,12 +190,12 @@ function parameters.stringMatrixToFormulas(id, matrix) {
 }
 
 /**
- * @name parameters.generate_attributed_names 
+ * @name parameters.GenerateAttributedNames 
  * @param {String} prefix 
  * @param {Dictionary} attributes 
  * @param {String} delimiter
  */
-function parameters.generate_attributed_names(prefix, attributes, delimiter) {
+function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
     if (delimiter == None) {
         delimiter = "_";
     }
@@ -207,13 +207,13 @@ function parameters.generate_attributed_names(prefix, attributes, delimiter) {
 }
 
 /**
- * @name parameters.generate_sequential_names 
+ * @name parameters.GenerateSequentialNames 
  * @param {String} prefix 
  * @param {Number} count 
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
-function parameters.generate_sequential_names(prefix, count, delimiter) {
+function parameters.GenerateSequentialNames(prefix, count, delimiter) {
     if (delimiter == None) {
         delimiter = "_";
     }
@@ -225,12 +225,12 @@ function parameters.generate_sequential_names(prefix, count, delimiter) {
 }
 
 /**
- * @name parameters.setRange 
+ * @name parameters.SetRange 
  * @param id
  * @param ranges
  * @returns nothing
  */
-function parameters.setRange(id, ranges) {
+function parameters.SetRange(id, ranges) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {
@@ -244,9 +244,9 @@ function parameters.setRange(id, ranges) {
         }
     } else {
         if (Type(id) == "AssociativeList") {
-            parameters.setRange.var_count = Abs(id);
-            for (parameters.setRange.k = 0; parameters.setRange.k < parameters.setRange.var_count; parameters.setRange.k += 1) {
-                parameters.setRange(id[parameters.setRange.k], ranges);
+            parameters.SetRange.var_count = Abs(id);
+            for (parameters.SetRange.k = 0; parameters.SetRange.k < parameters.SetRange.var_count; parameters.SetRange.k += 1) {
+                parameters.SetRange(id[parameters.SetRange.k], ranges);
             }
         }
     }
@@ -254,14 +254,14 @@ function parameters.setRange(id, ranges) {
 
 /**
  * Check if parameter is independent
- * @name parameters.isIndependent
+ * @name parameters.IsIndependent
  * @param parameter - id of parameter to check
  * @returns {Bool} TRUE if independent, FALSE otherwise
  */
-lfunction parameters.isIndependent(parameter) {
+lfunction parameters.IsIndependent(parameter) {
     GetString(info, ^ parameter, -1);
     if (Type(info) == "AssociativeList") {
-        return (utility.checkKey(info, "Local", "Matrix") && utility.checkKey(info, "Global", "Matrix")) == FALSE;
+        return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;
     }
     return TRUE;
 }
@@ -273,13 +273,13 @@ lfunction parameters.getConstraint(parameter) {
 
 /**
  * sets constraint on parameter
- * @name parameters.setConstraint
+ * @name parameters.SetConstraint
  * @param {String} or {AssociativeList} id - id(s) of parameter(s) to set constraint on
  * @param {Number} value - the constraint to set on the parameter
  * @param {String} global_tag - the global namespace of the parameter
  * @returns nothing
  */
-function parameters.setConstraint(id, value, global_tag) {
+function parameters.SetConstraint(id, value, global_tag) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             ExecuteCommands("`global_tag` `id` := " + value);
@@ -287,10 +287,10 @@ function parameters.setConstraint(id, value, global_tag) {
     } else {
         if (Type(id) == "AssociativeList" && Type(value) == "AssociativeList") {
 
-            parameters.setConstraint.var_count = Abs(id);
-            for (parameters.setConstraint.k = 0; parameters.setConstraint.k < parameters.setConstraint.var_count; parameters.setConstraint.k += 1) {
-                parameters.setConstraint(id[parameters.setConstraint.k],
-                    value[parameters.setConstraint.k],
+            parameters.SetConstraint.var_count = Abs(id);
+            for (parameters.SetConstraint.k = 0; parameters.SetConstraint.k < parameters.SetConstraint.var_count; parameters.SetConstraint.k += 1) {
+                parameters.SetConstraint(id[parameters.SetConstraint.k],
+                    value[parameters.SetConstraint.k],
                     global_tag);
             }
         }
@@ -299,41 +299,41 @@ function parameters.setConstraint(id, value, global_tag) {
 
 /**
  * constraint set of parameters
- * @name parameters.constrainSets
+ * @name parameters.ConstrainSets
  * @param {AssociativeList} set1 - 
  * @param {AssociativeList} set2 - 
  * @returns nothing
  */
-function parameters.constrainSets(set1, set2) {
-    parameters.constrainSets.tags = Rows(set1);
-    for (parameters.constrainSets.k = 0; parameters.constrainSets.k < Abs(set1); parameters.constrainSets.k += 1) {
+function parameters.ConstrainSets(set1, set2) {
+    parameters.ConstrainSets.tags = Rows(set1);
+    for (parameters.ConstrainSets.k = 0; parameters.ConstrainSets.k < Abs(set1); parameters.ConstrainSets.k += 1) {
 
-        if (Type(set2[parameters.constrainSets.tags[parameters.constrainSets.k]]) == "String") {
-            ExecuteCommands(set2[parameters.constrainSets.tags[parameters.constrainSets.k]] + ":=" +
-                set1[parameters.constrainSets.tags[parameters.constrainSets.k]]);
+        if (Type(set2[parameters.ConstrainSets.tags[parameters.ConstrainSets.k]]) == "String") {
+            ExecuteCommands(set2[parameters.ConstrainSets.tags[parameters.ConstrainSets.k]] + ":=" +
+                set1[parameters.ConstrainSets.tags[parameters.ConstrainSets.k]]);
         }
     }
 }
 
 /**
  * Removes a constraint from a parameter
- * @name parameters.removeConstraint
+ * @name parameters.RemoveConstraint
  * @param {String} id - id of parameter to remove constraint from
  * @returns nothing
  */
-function parameters.removeConstraint(id) {
+function parameters.RemoveConstraint(id) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             Eval("`id` = " + Eval(id));
         }
     } else {
         if (Type(id) == "AssociativeList") {
-            return parameters.removeConstraint(Columns(id));
+            return parameters.RemoveConstraint(Columns(id));
         }
         if (Type(id) == "Matrix") {
-            parameters.removeConstraint.var_count = Columns(id) * Rows(id);
-            for (parameters.removeConstraint.k = 0; parameters.removeConstraint.k < parameters.removeConstraint.var_count; parameters.removeConstraint.k += 1) {
-                parameters.removeConstraint(id[parameters.removeConstraint.k]);
+            parameters.RemoveConstraint.var_count = Columns(id) * Rows(id);
+            for (parameters.RemoveConstraint.k = 0; parameters.RemoveConstraint.k < parameters.RemoveConstraint.var_count; parameters.RemoveConstraint.k += 1) {
+                parameters.RemoveConstraint(id[parameters.RemoveConstraint.k]);
             }
         }
     }
@@ -427,7 +427,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
     for (i = 0; i < components; i += 1) {
         //((result["branch lengths"])[0])[keys[i]] = {"MLE": factor * dict[keys[i]]};
         this_component = {};
-        utility.forEachPair((dict[i])[ ^ "terms.json.attribute.branch_length"], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {^'terms.json.MLE' : `&factor`*_branch_length_}");
+        utility.ForEachPair((dict[i])[ ^ "terms.json.attribute.branch_length"], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {^'terms.json.MLE' : `&factor`*_branch_length_}");
         result[i] = this_component;
     }
 
@@ -437,23 +437,23 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
 /**
  * Profiles likelihood function based on covariance precision level
- * @name parameters.getProfileCI
+ * @name parameters.GetProfileCI
  * @param {String} id - covariance parameter id
  * @param {LikelihoodFunction} lf - likelihood function to profile
  * @param {Number} - Covariance precision level 
  * @returns {Dictionary} a dictionary containing profiling information
  */
-function parameters.getProfileCI(id, lf, level) {
+function parameters.GetProfileCI(id, lf, level) {
 
-    utility.toggleEnvVariable("COVARIANCE_PRECISION", level);
-    utility.toggleEnvVariable("COVARIANCE_PARAMETER", id);
-    CovarianceMatrix(parameters.getProfileCI.mx, * lf);
-    utility.toggleEnvVariable("COVARIANCE_PRECISION", None);
-    utility.toggleEnvVariable("COVARIANCE_PARAMETER", None);
+    utility.ToggleEnvVariable("COVARIANCE_PRECISION", level);
+    utility.ToggleEnvVariable("COVARIANCE_PARAMETER", id);
+    CovarianceMatrix(parameters.GetProfileCI.mx, * lf);
+    utility.ToggleEnvVariable("COVARIANCE_PRECISION", None);
+    utility.ToggleEnvVariable("COVARIANCE_PARAMETER", None);
 
     return {
-        "`terms.lower_bound`": parameters.getProfileCI.mx[0],
-        "`terms.MLE`": parameters.getProfileCI.mx[1],
-        "`terms.upper_bound`": parameters.getProfileCI.mx[2]
+        "`terms.lower_bound`": parameters.GetProfileCI.mx[0],
+        "`terms.MLE`": parameters.GetProfileCI.mx[1],
+        "`terms.upper_bound`": parameters.GetProfileCI.mx[2]
     };
 }

@@ -76,7 +76,7 @@ for (h=0; h<filteredData.sites; h=h+1)
 	}
 }
 
-io.printAndUnderline ("Data summary", "-");
+io.PrintAndUnderline ("Data summary", "-");
 
 fprintf (stdout, "\nSequences :", filteredData.species,
 				 "\nSites     :", filteredData.sites,
@@ -123,7 +123,7 @@ m1 = computeMeanDivergence ("givenTree");
 fprintf  (stdout, "\nMean divergence : ", m1*100, "%\n");
 
 
-io.printAndUnderline ("Fitting a single-tree, multiple partition model", "-");
+io.PrintAndUnderline ("Fitting a single-tree, multiple partition model", "-");
 
 USE_DISTANCES = 0;
 
@@ -156,7 +156,7 @@ lfDef = "";
 lfDef * 128;
 lfDef  * "LikelihoodFunction multiPart  = (";
 
-io.printAndUnderline ("Fitting a mutilple tree, multiple partition model", "-");
+io.PrintAndUnderline ("Fitting a mutilple tree, multiple partition model", "-");
 
 for (pccounter = 0; pccounter < readPCount; pccounter = pccounter + 1)
 {
@@ -185,7 +185,7 @@ myDF = baseParams + res[1][1];
 fullCAIC = -2(res[1][0]-myDF*filteredData.sites/(filteredData.sites-myDF-1));
 
 
-io.printAndUnderline ("Topological Incongruence Summary", "-");
+io.PrintAndUnderline ("Topological Incongruence Summary", "-");
 
 fprintf  (stdout, "\nGARD vs the single partition model: c-AIC = ", fullCAIC, 
                     "\nDelta AIC = ", nullCAIC-fullCAIC,
@@ -237,7 +237,7 @@ else
 	cutThreshold		= 2 * OPTIMIZATION_PRECISION;
 }
 
-io.printAndUnderline ("KH Testing", "-");
+io.PrintAndUnderline ("KH Testing", "-");
 
 
 for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)

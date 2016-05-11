@@ -11,7 +11,7 @@ namespace mpi {
 
     lfunction create_queue (nodesetup) {
         /** create and return an empty FIFO queue for MPI jobs */
-        mpi_node_count = utility.getEnvVariable ("MPI_NODE_COUNT");
+        mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
     
         queue = {};
         send_to_nodes = ""; 
@@ -21,12 +21,12 @@ namespace mpi {
             if (None != nodesetup) {
                 if (Abs (nodesetup)) {
                 
-                    utility.setEnvVariable ("LF_NEXUS_EXPORT_EXTRA", 
+                    utility.SetEnvVariable ("LF_NEXUS_EXPORT_EXTRA", 
                                             'PRESERVE_SLAVE_NODE_STATE = TRUE; MPI_NEXUS_FILE_RETURN = "None";');
                 
                     send_to_nodes * 128;
                 
-                    utility.forEach (nodesetup["LikelihoodFunctions"], "_value_", 
+                    utility.ForEach (nodesetup["LikelihoodFunctions"], "_value_", 
                                      '
                                         ExecuteCommands ("Export (create_queue.temp, " + _value_ + ")");
                                         for (`&k` = 1; `&k` < `mpi_node_count`; `&k` += 1) {
@@ -59,7 +59,7 @@ namespace mpi {
         
         */
     
-        mpi_node_count = utility.getEnvVariable ("MPI_NODE_COUNT");
+        mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
     
         if (mpi_node_count > 1) {    
             for (node = 1; node < mpi_node_count; node += 1) {
@@ -76,15 +76,15 @@ namespace mpi {
             complete_function_dump = aux.queue_export_function (job);
             job_id = get_job_id();   
             queue [node] = {"job_id" : job_id, "callback" : result_callback, "arguments" : arguments};
-            MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');    
+            MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');    
         } else {
-            Call (result_callback, 0, Eval (job + '(' + Join (",",utility.map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')'), arguments);
+            Call (result_callback, 0, Eval (job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')'), arguments);
         }
     }
 
     lfunction queue_complete (queue) {
        
-        mpi_node_count = utility.getEnvVariable ("MPI_NODE_COUNT");
+        mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
     
         if (mpi_node_count > 1) {
             do {

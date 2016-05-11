@@ -5,11 +5,11 @@
 /** 
  * upper triangle gets copied to lower triangle
  * for non-square matrices, the largest square minor is symmetrized        
- * @name matrix.symmetrize
+ * @name matrix.Symmetrize
  * @param {Matrix} mx - matrix to perform transform on
  * @returns nothing
  */
-lfunction matrix.symmetrize(mx) {
+lfunction matrix.Symmetrize(mx) {
 
     copy_dim = Min(Rows(mx), Columns(mx));
 

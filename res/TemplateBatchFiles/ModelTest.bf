@@ -429,7 +429,7 @@ function doHierarchicalTest (echoFlag)
 	
 	if (echoFlag)
 	{
-		fprintf (stdout,"\n1). Checking for equilibrium frequencies equality.\n");
+		fprintf (stdout,"\n1). Checking for equilibrium frequencies.equality.\n");
 	}
 
 	pVal 		=  compareTwoModels (modelStrings[0],0,0,modelStrings[0],0,1,0, echoFlag);

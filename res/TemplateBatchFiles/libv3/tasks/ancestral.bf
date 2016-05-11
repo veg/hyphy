@@ -211,7 +211,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         "TREE_AVL": _bac_tree_avl,
         "AMBIGS": _bacHandledResolutionsAmbig,
         "MAPPING": reverse_mapping
-            //"AMBIGS_REV": utility.dict.swap_keys_and_values (_bacHandledResolutionsAmbig)
+            //"AMBIGS_REV": utility.SwapKeysAndValues (_bacHandledResolutionsAmbig)
     };
 }
 

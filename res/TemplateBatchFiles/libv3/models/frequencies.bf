@@ -50,16 +50,16 @@ function frequencies.empirical.nucleotide(model, namespace, datafilter) {
 function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
 
 
-    __dimension = model.dimension(model);
+    __dimension = model.Dimension(model);
     __alphabet = model["alphabet"];
 
     assert(Type(model[terms.rate_matrix]) == "Matrix" && Rows(model[terms.rate_matrix]) == __dimension && Columns(model[terms.rate_matrix]) == __dimension,
         "`terms.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4");
 
 
-    utility.toggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
     __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
-    utility.toggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
 
     __estimates = frequencies._aux.CF3x4(__f, model["bases"], __alphabet, model["stop"]);
     model[terms.efv_estimate] = __estimates["codons"];
@@ -123,7 +123,7 @@ lfunction frequencies._aux.empirical.collect_data(datafilter, unit, stride, posi
         HarvestFrequencies(__f, ^ datafilter, unit, stride, position_specific);
     } else {
         site_count = 0;
-        dim = utility.array1D(datafilter);
+        dim = utility.Array1D(datafilter);
 
         for (i = 0; i < dim; i += 1) {
 
@@ -156,9 +156,9 @@ lfunction frequencies._aux.empirical.collect_data(datafilter, unit, stride, posi
  * @returns {Dictionary} updated model
  */
 function frequencies._aux.empirical.singlechar(model, namespace, datafilter) {
-    utility.toggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
     __f = frequencies._aux.empirical.collect_data(datafilter, 1, 1, 1);
-    utility.toggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
     model[terms.efv_estimate] = __f;
     return model;
 }
@@ -179,9 +179,9 @@ function frequencies._aux.CF3x4(observed_3x4, base_alphabet, sense_codons, stop_
     frequencies._aux.CF3x4.args = {};
 
     for (frequencies._aux.CF3x4.k = 0; frequencies._aux.CF3x4.k < 3; frequencies._aux.CF3x4.k += 1) {
-        frequencies._aux.CF3x4.p[frequencies._aux.CF3x4.k] = parameters.generate_sequential_names("frequencies._aux.CF3x4.p" + frequencies._aux.CF3x4.k, 3, None);
-        parameters.declareGlobal(frequencies._aux.CF3x4.p[frequencies._aux.CF3x4.k], None);
-        parameters.setRange(frequencies._aux.CF3x4.p[frequencies._aux.CF3x4.k], terms.range01);
+        frequencies._aux.CF3x4.p[frequencies._aux.CF3x4.k] = parameters.GenerateSequentialNames("frequencies._aux.CF3x4.p" + frequencies._aux.CF3x4.k, 3, None);
+        parameters.DeclareGlobal(frequencies._aux.CF3x4.p[frequencies._aux.CF3x4.k], None);
+        parameters.SetRange(frequencies._aux.CF3x4.p[frequencies._aux.CF3x4.k], terms.range01);
         frequencies._aux.CF3x4.args + (Join(",", frequencies._aux.CF3x4.p[frequencies._aux.CF3x4.k]));
     }
 
@@ -190,8 +190,8 @@ function frequencies._aux.CF3x4(observed_3x4, base_alphabet, sense_codons, stop_
     frequencies._aux.CF3x4.n = {};
 
     for (frequencies._aux.CF3x4.k = 0; frequencies._aux.CF3x4.k < 3; frequencies._aux.CF3x4.k += 1) {
-        frequencies._aux.CF3x4.n[frequencies._aux.CF3x4.k] = parameters.generate_attributed_names("frequencies._aux.CF3x4.n" + frequencies._aux.CF3x4.k, base_alphabet, None);
-        parameters.setConstraint(frequencies._aux.CF3x4.n[frequencies._aux.CF3x4.k],
+        frequencies._aux.CF3x4.n[frequencies._aux.CF3x4.k] = parameters.GenerateAttributedNames("frequencies._aux.CF3x4.n" + frequencies._aux.CF3x4.k, base_alphabet, None);
+        parameters.SetConstraint(frequencies._aux.CF3x4.n[frequencies._aux.CF3x4.k],
             parameters.helper.stick_breaking(frequencies._aux.CF3x4.p[frequencies._aux.CF3x4.k], observed_3x4[-1][frequencies._aux.CF3x4.k]),
             "global");
     }
@@ -237,7 +237,7 @@ function frequencies._aux.CF3x4(observed_3x4, base_alphabet, sense_codons, stop_
     }
 
 
-    parameters.setConstraint("frequencies._aux.CF3x4.denominator", frequencies._aux.CF3x4.denominator, "global");
+    parameters.SetConstraint("frequencies._aux.CF3x4.denominator", frequencies._aux.CF3x4.denominator, "global");
 
     frequencies._aux.N = {
         Columns(base_alphabet),

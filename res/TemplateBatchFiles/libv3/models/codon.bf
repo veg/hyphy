@@ -4,22 +4,22 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
 /** @module models.codon */
 
 /**
- * @name models.codon.map_code
+ * @name models.codon.MapCode
  * @param {String} genetic_code
  * @returns {Dictionary} the sense, stop, and translation-table for the genetic code
  */
-function models.codon.map_code (genetic_code) {
-	return {"sense" : utility.values (ComputeCodonCodeToStringMap (genetic_code)), 
-	        "stop"  : utility.values (ComputeCodonCodeToStringMapStop (genetic_code)),
+function models.codon.MapCode (genetic_code) {
+	return {"sense" : utility.Values (ComputeCodonCodeToStringMap (genetic_code)), 
+	        "stop"  : utility.Values (ComputeCodonCodeToStringMapStop (genetic_code)),
 	        "translation-table" : defineCodonToAAGivenCode (genetic_code) };
 }
 
 /**
- * @name models.codon.generic.defineQMatrix
+ * @name models.codon.generic.DefineQMatrix
  * @param modelSpect
  * @param namespace
  */
-function models.codon.generic.defineQMatrix (modelSpec, namespace) {
+function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 	
 	__base_alphabet = modelSpec ["bases"];
 	assert (Type (__base_alphabet) == "Matrix" && Columns (__base_alphabet) == 4, "Unsupported codon bases '" + __base_alphabet + "'");
@@ -27,7 +27,7 @@ function models.codon.generic.defineQMatrix (modelSpec, namespace) {
 	__alphabet      = modelSpec ["alphabet"];
 	// need at least one codon per amino-acid
 	
-	__dimension     = model.dimension (modelSpec);
+	__dimension     = model.Dimension (modelSpec);
 	
 	__stops         = modelSpec ["stop"];
 	__table         = modelSpec ["translation-table"];
@@ -42,10 +42,10 @@ function models.codon.generic.defineQMatrix (modelSpec, namespace) {
 	assert (__modelType == terms.local || __modelType == terms.global, "Unsupported or missing model type '" + __modelType + "'");
 	
 	__rate_function = modelSpec ["q_ij"];
-	assert (utility.isFunction (__rate_function), "Missing q_ij callback in model specification");
+	assert (utility.IsFunction (__rate_function), "Missing q_ij callback in model specification");
 
 	__time_function = modelSpec ["time"];
-	assert (utility.isFunction (__time_function), "Missing time callback in model specification");
+	assert (utility.IsFunction (__time_function), "Missing time callback in model specification");
 		
 	__rate_matrix = {__dimension,__dimension};
 	__rate_matrix [0][0] = "";
@@ -68,7 +68,7 @@ function models.codon.generic.defineQMatrix (modelSpec, namespace) {
             
             
             if (Abs (__rp[terms.rate_entry])) {
-                parameters.declareGlobal (__rp[terms.global], __global_cache);
+                parameters.DeclareGlobal (__rp[terms.global], __global_cache);
                 parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
                 __rate_matrix [_rowChar][_colChar] = __rp[terms.rate_entry];
                 __rate_matrix [_colChar][_rowChar] = __rp[terms.rate_entry];
@@ -81,7 +81,7 @@ function models.codon.generic.defineQMatrix (modelSpec, namespace) {
 	
         if (Abs (__rp)) {
             ((modelSpec["parameters"])[terms.local])[terms.synonymous_rate] = __rp; 
-            modelSpec [terms.rate_matrix] = parameters.addMultiplicativeTerm (__rate_matrix, __rp, 0);
+            modelSpec [terms.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, 0);
         } else {
             modelSpec [terms.rate_matrix] = __rate_matrix;
         }
