@@ -18,4 +18,28 @@ absrel.stats = {
  "Non-negative":4
 };
 
-io.reportStatsMD("aBSREL", absrel.stats);
+function test_reportStatsMD () {
+
+    io.reportStatsMD("aBSREL", absrel.stats);
+}
+
+
+// TODO: Doesn't work due to not being able to parse arrays
+function test_parse_json() {
+    file_path = "./data/CD2.nex.slac.json";
+    parsed_json = io.parse_json(file_path);
+    fprintf(stdout, parsed_json);
+}
+
+function test_check_key() {
+    assert(utility.keyExists(absrel.stats, "Count"), "Count not found");
+}
+
+expected_loglikelihood = -3467.072352344857; 
+actual = -3467.082352344857;
+
+fprintf(stdout,  Abs(actual - expected_loglikelihood));
+assert(Abs(actual - expected_loglikelihood) <= 1, "whoops");
+
+test_reportStatsMD();
+test_check_key();

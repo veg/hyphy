@@ -7,7 +7,7 @@ notifications:
         recipients:
             - spond@temple.edu
             - steven@stevenweaver.org
-        on_success: always
+        on_success: change
         on_failure: always
 
 branches:

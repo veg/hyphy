@@ -129,9 +129,11 @@ lfunction utility.checkCacheFile (data_info) {
 }
 
 /**
+ * Find an element in the array.
  * @name utility.array.find
- * @param array
- * @param value
+ * @param {Matrix} array
+ * @param {String|Number} value
+ * @returns -1 if value is not found, otherwise returns the position
  */
 lfunction utility.array.find (array, value) {
     d = Rows (array) * Columns (array);
@@ -182,9 +184,9 @@ lfunction utility.dict_to_array (object) {
 
 /**
  * @name utility.map
- * @param object
- * @param lambda_name
- * @param transform
+ * @param {AssociativeList|Matrix} object - object to iterate over
+ * @param {String} lambda_name - variable name for transform
+ * @param {String} transform - function transform
  */
 function utility.map (object, lambda_name, transform) {
 
@@ -241,11 +243,15 @@ lfunction utility.matrix_to_list_of_rows (object) {
 }
 
 /**
+ * Filters 1xN Matrix or Dictionary
  * @name utility.filter
- * @param {Dictionary} or {Matrix} object - matrix to convert 
- * @param {Function} lambda_name - function to discern whether element is filtered. All elements of iterable object that are false will be removed.
+ * @param {Dictionary|Matrix} object - matrix to convert 
+ * @param {String} lambda_name - function to discern whether element is filtered. All elements of iterable object that are false will be removed.
  * @param condition
  * @param {Dictionary} or {Matrix} filtered object
+ * @returns filtered object
+ * @example
+ * _nonnegatives = utility.filter (_data_vector, "_value_", "_value_ >= 0");
  */
 function utility.filter (object, lambda_name, condition) {
 
@@ -282,9 +288,9 @@ function utility.filter (object, lambda_name, condition) {
 
 /**
  * @name utility.forEach
- * @param {Tree}, {Dictionary} or {Matrix} object - matrix to convert 
- * @param {Function} lambda_name
- * @param {Function} transform
+ * @param {Tree|Dictionary|Matrix} object - matrix to convert 
+ * @param {String} lambda_name
+ * @param {String} transform
  * @returns nothing
  */
 function utility.forEach (object, lambda_name, transform) {
@@ -320,11 +326,30 @@ function utility.forEach (object, lambda_name, transform) {
 }
 
 /**
- * @name utility.checkKey 
- * @param {Dictionary} dict - dictionary to check for key
+ * Checks whether key exists in dictionary
+ * @name utility.keyExists
+ * @param {Dictionary} dict - dictionary to check
  * @param {String} key - key to check for existence
+ * @returns {Bool} TRUE if key exists and is of expected type, otherwise FALSE
+ */
+function utility.keyExists(dict, key) {
+
+    keys = utility.keys(dict);
+
+    if(utility.array.find(keys, key) != -1) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+/**
+ * Checks whether key is a certain type
+ * @name utility.checkKey 
+ * @param {Dictionary} dict - dictionary to check
+ * @param {String} key - key to check
  * @param {String} type - check whether key is "Matrix", "AssociativeList", "String", or "Tree"
- * @returns {Bool} TRUE if key exists and is of expected type, otherwise FALASE
+ * @returns {Bool} TRUE if key exists and is of expected type, otherwise FALSE
  */
 function utility.checkKey (dict, key, type) {
     if (None != dict) {
@@ -348,19 +373,52 @@ function utility.addToSet (set, object) {
         set[object] = 1;
         return;
     }
+
     if (Type(object) == "AssociativeList" || Type(object) == "Matrix") {
         utility.forEach (object, "_utility.addToSet.value_", "set[_utility.addToSet.value_] = 1");
         return;
     }
+
     set ["" + object] = 1;
+
+
 }
 
 /**
+ * Set intersection
+ * @name utility.intersect
+ * @param {AssociativeList} set - associative list to hold intersection
+ * @param {AssociativeList} set1 - First set to intersect
+ * @param {AssociativeList} set2 - Second set to intersect
+ * @returns nothing
+ */
+function utility.intersect(set, set1, set2) {
+
+    keys1 = utility.keys(set1);
+    keys2 = utility.keys(set2);
+
+    if(Abs(Columns(keys1)) >  Abs(Columns(keys2))) {
+        tmp_keys = keys2;
+        keys2 = keys1;
+        keys1 = tmp_keys;
+    }
+
+    for(k=0; k<Abs(Columns(keys1)); k+=1) {
+        if(utility.array.find(keys2, keys1[k]) != -1) {
+            item = keys1[k];
+            set["" + item] = 1;
+        }
+    }
+
+}
+
+
+/**
  * @name utility.populateDict 
- * @param from
- * @param to
- * @param value
- * @param lambda
+ * @param {Number} from
+ * @param {Number} to
+ * @param {Number|AssociativeList|String|Matrix} value
+ * @param {String} lambda
  * @returns nothing
  */
 function utility.populateDict (from, to, value, lambda) {
@@ -381,19 +439,21 @@ function utility.populateDict (from, to, value, lambda) {
 }
 
 /**
+ * Iterates over dictionaries
  * @name utility.forEachPair 
- * @param object
- * @param key_name
- * @param value_name
- * @param transform
+ * @param {Dictionary} object - the dictionary to iterate over
+ * @param {String} key_name - the variable name for the key in the lambda expression
+ * @param {String} value_name - the variable name for the value in the lambda expression
+ * @param {String} transform - the lambda expression to use
  * @returns nothing
+ * @example
+ *    utility.forEachPair (dict, "_key_", "_selection_",
+ *        "fprintf(stdout, _key_);");
  */
-function utility.forEachPair (object, key_name, value_name, transform) {
+function utility.forEachPair(object, key_name, value_name, transform) {
 
     Eval ("`key_name` = None");
     Eval ("`value_name` = None");
-
-
 
     if (Type (object) == "AssociativeList") {
         utility.forEachPair.keys = Rows (object);
@@ -426,6 +486,9 @@ function utility.forEachPair (object, key_name, value_name, transform) {
  * @name utility.keys
  * @param object - {Dictionary} the object to return keys from
  * @returns {Matrix} List of keys in dictionary
+ * @example
+ *   keys = utility.keys(absrel.stats);
+ *   keys == {"Count", "Mean", "Median", "Min", "Max", "2.5%", "97.5%", "Sum", "Std.Dev"};
  */
 lfunction utility.keys (object) {
     if (Type (object) == "AssociativeList") {
