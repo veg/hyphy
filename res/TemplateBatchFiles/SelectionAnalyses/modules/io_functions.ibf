@@ -15,9 +15,9 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
     if (Abs (partition_info) == 1) { // allow more refined selections if there is only one tree
         tree_for_analysis = (partition_info[0])["tree"];
-        utility.forEach (tree_for_analysis["model_map"], "_value_", "`&available_models`[_value_] += 1");
-        list_models   = utility.keys   (available_models); // get keys
-        branch_counts = utility.values (available_models);
+        utility.ForEach (tree_for_analysis["model_map"], "_value_", "`&available_models`[_value_] += 1");
+        list_models   = utility.Keys   (available_models); // get keys
+        branch_counts = utility.Values (available_models);
         option_count  = Abs (available_models);
     } else {
         option_count = 0;
@@ -46,7 +46,7 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
     ChoiceList(testSet, "Choose the set of branches to test for selection", 1, NO_SKIP, selectTheseForTesting);
 
-    io.checkAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
+    io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
 
     return_set = {};
 
@@ -64,14 +64,14 @@ lfunction selection.io.defineBranchSets(partition_info) {
                 }
             }
 
-            utility.forEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.background';}");
+            utility.ForEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.background';}");
 
         } else {
             tag = SELECTION_STRINGS;
             if (tag == "Unlabeled branches") {
                 tag = "";
             }
-            utility.forEachPair (tree_for_analysis["model_map"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.background';}");
+            utility.ForEachPair (tree_for_analysis["model_map"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.background';}");
         }
         return_set + tree_configuration;
     }
@@ -105,8 +105,8 @@ lfunction selection.io.extract_global_MLE(fit, id) {
 //------------------------------------------------------------------------------
 
 lfunction selection.io.extract_global_MLE_re (fit, regexp) {
-    matches = utility.filter (utility.keys(fit["global"]), "_tag_", "regexp.find (_tag_, `&regexp`)");
-    return utility.map (matches, "_tag_", "{'description': _tag_, 'MLE' : ((`&fit`['global'])[_tag_])['MLE']}");
+    matches = utility.Filter (utility.Keys(fit["global"]), "_tag_", "regexp.Find (_tag_, `&regexp`)");
+    return utility.Map (matches, "_tag_", "{'description': _tag_, 'MLE' : ((`&fit`['global'])[_tag_])['MLE']}");
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ lfunction selection.io.getIC(logl, params, samples) {
 
 function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
 
-    utility.dict.ensure_key(json, terms.json.fits);
+    utility.EnsureKey(json, terms.json.fits);
 
     selection.io.json_store_key_value_pair(json, terms.json.fits, name, {
             terms.json.log_likelihood: ll,
@@ -141,7 +141,7 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
 //------------------------------------------------------------------------------
 
 lfunction selection.io.adjust_partition_string (string, sites) {
-    contig = regexp.split (string, "-");
+    contig = regexp.Split (string, "-");
     if (Abs (contig) == 2) {
         start = +contig[0];
         end   = +contig[1];
@@ -164,7 +164,7 @@ lfunction selection.io.adjust_partition_string (string, sites) {
                 end = sites$3*3-1;
             }
         }
-        io.checkAssertion ("`&start` < `&end`", "Could not adjust the partition '" + string + "' to fall on codon boundaries and remain non-empty");
+        io.CheckAssertion ("`&start` < `&end`", "Could not adjust the partition '" + string + "' to fall on codon boundaries and remain non-empty");
         string = "" + start + "-" + end;
     }
 
@@ -179,7 +179,7 @@ function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
     if (None == dict_key) {
         json[key] = value;
     } else {
-        utility.dict.ensure_key(json, dict_key);
+        utility.EnsureKey(json, dict_key);
         (json[dict_key])[key] = value;
     }
 }
@@ -187,17 +187,17 @@ function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
 //------------------------------------------------------------------------------
 
 function selection.io.json_store_branch_attribute(json, attribute_name, attribute_type, display_order, partition, values) {
-    utility.dict.ensure_key(json, terms.json.branch_attributes);
-    utility.dict.ensure_key(json[terms.json.branch_attributes], partition);
-    utility.dict.ensure_key(json[terms.json.branch_attributes], terms.json.attribute.meta);
-    utility.dict.ensure_key((json[terms.json.branch_attributes])[terms.json.attribute.meta], attribute_name);
+    utility.EnsureKey(json, terms.json.branch_attributes);
+    utility.EnsureKey(json[terms.json.branch_attributes], partition);
+    utility.EnsureKey(json[terms.json.branch_attributes], terms.json.attribute.meta);
+    utility.EnsureKey((json[terms.json.branch_attributes])[terms.json.attribute.meta], attribute_name);
     ((json[terms.json.branch_attributes])[terms.json.attribute.meta])[attribute_name] = {terms.json.attribute.meta.type : attribute_type,
                                                                                             terms.json.attribute.meta.order: display_order};
 
-    utility.forEach (utility.keys (values), "selection.io.json_store_branch_attribute.branch_name",
-                             "utility.dict.ensure_key ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
+    utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
+                             "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
 
-    utility.forEach (utility.keys (values), "selection.io.json_store_branch_attribute.branch_name",
+    utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
                              "(((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name]");
  }
 
@@ -205,7 +205,7 @@ function selection.io.json_store_branch_attribute(json, attribute_name, attribut
 //------------------------------------------------------------------------------------------------------------------------
 
 function selection.io._aux.extract_branch_info.callback(key, value) {
-    selection.io.extract_branch_info_result[key] = utility.callFunction(callback, {
+    selection.io.extract_branch_info_result[key] = utility.CallFunction(callback, {
         "0": "value"
     });
 }

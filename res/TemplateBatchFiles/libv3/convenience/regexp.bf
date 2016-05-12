@@ -2,12 +2,12 @@
 /** @module regexp */
 
 /**
- * @name regexp.split
+ * @name regexp.Split
  * @param {String} string
  * @param {Function} re - the regular expression
  * @returns {Dictionary} a dictionary containing split strings
  */
-lfunction regexp.split(string, re) {
+lfunction regexp.Split(string, re) {
     coordinates = string || re;
     if (coordinates[0] >= 0) {
         result = {};
@@ -39,12 +39,12 @@ lfunction regexp.split(string, re) {
 }
 
 /**
- * @name regexp.find
+ * @name regexp.Find
  * @param {String} string
  * @param {Function} re - the regular expression
  * @returns {String} the portion of the string that is matching
  */
-lfunction regexp.find(string, re) {
+lfunction regexp.Find(string, re) {
     coordinates = string $ re;
     if (coordinates[0] >= 0) {
         return string[coordinates[0]][coordinates[1]];

@@ -26,7 +26,7 @@ LoadFunctionLibrary("modules/io_functions.ibf");
     Display analysis information
 */
 
-io.displayAnalysisBanner({
+io.DisplayAnalysisBanner({
     "info": "FEL (Fixed Effects Likelihood)
     estimates site-wise synonymous (&alpha;) and non-synonymous (&beta;) rates, and
     uses a likelihood ratio test to determine if beta &neq; alpha at a site.
@@ -51,7 +51,7 @@ io.displayAnalysisBanner({
     Environment setup
 */
 
-utility.setEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
+utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
 /*------------------------------------------------------------------------------
     Globals
@@ -96,12 +96,12 @@ serialized = alignments.serialize_site_filter (fel.filter_names[0], 0);
 
 
 fel.partition_count = Abs (fel.filter_specification);
-fel.pvalue  = io.prompt_user ("\n>Select the p-value used to for perform the test at",0.1,0,1,FALSE);
-io.reportProgressMessageMD('FEL',  'selector', 'Branches to include in the FEL analysis');
+fel.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",0.1,0,1,FALSE);
+io.ReportProgressMessageMD('FEL',  'selector', 'Branches to include in the FEL analysis');
 
-utility.forEachPair (fel.selected_branches, "_partition_", "_selection_",
-    "_selection_ = utility.filter (_selection_, '_value_', '_value_ == terms.json.attribute.test');
-     io.reportProgressMessageMD('FEL',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in FEL calculations: \\\`' + Join (', ',utility.keys(_selection_)) + '\\\`')");
+utility.ForEachPair (fel.selected_branches, "_partition_", "_selection_",
+    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.json.attribute.test');
+     io.ReportProgressMessageMD('FEL',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in FEL calculations: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
@@ -118,17 +118,17 @@ namespace fel {
 }
 
 
-io.reportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
+io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
-fel.final_partitioned_mg_results = estimators.fitMGREV (fel.filter_names, fel.trees, fel.codon_data_info ["code"], {
+fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info ["code"], {
     "model-type": terms.global,
     "partitioned-omega": fel.selected_branches,
     "retain-lf-object": TRUE
 }, fel.partitioned_mg_results);
 
-io.reportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results["LogL"],8,2));
+io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results["LogL"],8,2));
 fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.omega_ratio);
-utility.forEach (fel.global_dnds, "_value_", 'io.reportProgressMessageMD ("fel", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
 
 estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_partitioned_mg_results["global"]);
 
@@ -138,10 +138,10 @@ selection.io.json_store_lf(
     fel.final_partitioned_mg_results["LogL"],
     fel.final_partitioned_mg_results["parameters"],
     fel.sample_size,
-    utility.array_to_dict (utility.map (fel.global_dnds, "_value_", "{'key': _value_['description'], 'value' : Eval({{_value_ ['MLE'],1}})}"))
+    utility.ArrayToDict (utility.Map (fel.global_dnds, "_value_", "{'key': _value_['description'], 'value' : Eval({{_value_ ['MLE'],1}})}"))
 );
 
-utility.forEachPair (fel.filter_specification, "_key_", "_value_",
+utility.ForEachPair (fel.filter_specification, "_key_", "_value_",
     'selection.io.json_store_branch_attribute(fel.json, "Global MG94xREV model", terms.json.attribute.branch_length, 0,
                                              _key_,
                                              selection.io.extract_branch_info((fel.final_partitioned_mg_results[terms.json.attribute.branch_length])[_key_], "selection.io.branch.length"));');
@@ -151,9 +151,9 @@ selection.io.stopTimer (fel.json [terms.json.timers], "Model fitting");
 // define the site-level likelihood function
 
 
-fel.site.mg_rev = model.generic.define_model("models.codon.MG_REV.modelDescription",
+fel.site.mg_rev = model.generic.DefineModel("models.codon.MG_REV.ModelDescription",
         "fel_mg", {
-            "0": parameters.quote(terms.local),
+            "0": parameters.Quote(terms.local),
             "1": fel.codon_data_info["code"]
         },
         fel.filter_names,
@@ -163,9 +163,9 @@ fel.site_model_mapping = {"fel_mg" : fel.site.mg_rev};
 
 /* set up the local constraint model */
 
-fel.alpha = model.generic.get_local_parameter (fel.site.mg_rev, ^"terms.synonymous_rate");
-fel.beta = model.generic.get_local_parameter (fel.site.mg_rev, ^"terms.nonsynonymous_rate");
-io.checkAssertion ("None!=fel.alpha && None!=fel.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.fitMGREV\`");
+fel.alpha = model.generic.GetLocalParameter (fel.site.mg_rev, ^"terms.synonymous_rate");
+fel.beta = model.generic.GetLocalParameter (fel.site.mg_rev, ^"terms.nonsynonymous_rate");
+io.CheckAssertion ("None!=fel.alpha && None!=fel.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
 //----------------------------------------------------------------------------------------
 function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
@@ -183,10 +183,10 @@ function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_par
 
 fel.scalers = {{"fel.alpha_scaler", "fel.beta_scaler_test", "fel.beta_scaler_nuisance"}};
 
-model.generic.add_global (fel.site.mg_rev, "fel.alpha_scaler", fel.site_alpha);
-model.generic.add_global (fel.site.mg_rev, "fel.beta_scaler_test", fel.site_beta);
-model.generic.add_global (fel.site.mg_rev, "fel.beta_scaler_nuisance", fel.site_beta_nuisance);
-parameters.declareGlobal (fel.scalers, {});
+model.generic.AddGlobal (fel.site.mg_rev, "fel.alpha_scaler", fel.site_alpha);
+model.generic.AddGlobal (fel.site.mg_rev, "fel.beta_scaler_test", fel.site_beta);
+model.generic.AddGlobal (fel.site.mg_rev, "fel.beta_scaler_nuisance", fel.site_beta_nuisance);
+parameters.DeclareGlobal (fel.scalers, {});
 
 export_index = 0;
 
@@ -201,8 +201,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     __make_filter ((lfInfo["Datafilters"])[0]);
 
-    utility.setEnvVariable ("USE_LAST_RESULTS", TRUE);
-    utility.setEnvVariable ("VERBOSITY_LEVEL", 10);
+    utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
+    utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
 
     ^"fel.alpha_scaler" = 1;
     ^"fel.beta_scaler_test"  = 1;
@@ -218,15 +218,15 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     Optimize (results, ^lf);
 
 
-    alternative = estimators.extractMLEs (lf, model_mapping);
+    alternative = estimators.ExtractMLEs (lf, model_mapping);
     alternative [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
 
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
-    parameters.setConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
+    parameters.SetConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
 
     Optimize (results, ^lf);
 
-    null = estimators.extractMLEs (lf, model_mapping);
+    null = estimators.ExtractMLEs (lf, model_mapping);
     null [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
 
     return {"alternative" : alternative, "null": null};
@@ -246,21 +246,21 @@ lfunction fel.store_results (node, result, arguments) {
 
 
     if (None != result) { // not a constant site
-        lrt = math.doLRT ((result["null"])[utility.getGlobalValue("terms.json.log_likelihood")],
+        lrt = math.DoLRT ((result["null"])[utility.getGlobalValue("terms.json.log_likelihood")],
                           (result["alternative"])[utility.getGlobalValue("terms.json.log_likelihood")],
                           1);
-        result_row [0] = estimators.getGlobalMLE (result["alternative"], ^"fel.site_alpha");
-        result_row [1] = estimators.getGlobalMLE (result["alternative"], ^"fel.site_beta");
-        result_row [2] = estimators.getGlobalMLE (result["null"], ^"fel.site_beta");
+        result_row [0] = estimators.GetGlobalMLE (result["alternative"], ^"fel.site_alpha");
+        result_row [1] = estimators.GetGlobalMLE (result["alternative"], ^"fel.site_beta");
+        result_row [2] = estimators.GetGlobalMLE (result["null"], ^"fel.site_beta");
         result_row [3] = lrt ["LRT"];
         result_row [4] = lrt ["p-value"];
     }
 
     fprintf (stdout, result_row, "\n");
 
-    utility.dict.ensure_key (^"fel.site_results", partition_index);
+    utility.EnsureKey (^"fel.site_results", partition_index);
 
-    utility.forEach (pattern_info["sites"], "_value_",
+    utility.ForEach (pattern_info["sites"], "_value_",
         '
             (fel.site_results[`&partition_index`])[_value_] = `&result_row`;
         '
@@ -273,17 +273,17 @@ lfunction fel.store_results (node, result, arguments) {
 fel.site_results = {};
 
 for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.partition_index += 1) {
-    model.applyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {"default" : fel.site.mg_rev}, None);
+    model.ApplyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {"default" : fel.site.mg_rev}, None);
 
     fel.case_respecting_node_names = trees.branch_names (fel.site_tree, TRUE);
 
-    fel.site_patterns = alignments.extract_site_patterns ((fel.filter_specification[fel.partition_index])["name"]);
+    fel.site_patterns = alignments.Extract_site_patterns ((fel.filter_specification[fel.partition_index])["name"]);
 
     // apply constraints to the site tree
     // alpha = alpha_scaler * branch_length
     // beta  = beta_scaler_test * branch_length or beta_nuisance_test * branch_length
 
-    utility.forEach (fel.case_respecting_node_names, "_node_",
+    utility.ForEach (fel.case_respecting_node_names, "_node_",
             '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_ && 1];
              if (_node_class_ == "test") {
                 _beta_scaler = fel.scalers[1];
@@ -305,11 +305,11 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     LikelihoodFunction fel.site_likelihood = (fel.site_filter, fel.site_tree);
     fel.queue = mpi.create_queue ({"LikelihoodFunctions": {{"fel.site_likelihood"}}});
 
-    estimators.applyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping, fel.final_partitioned_mg_results,
+    estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping, fel.final_partitioned_mg_results,
                                         "globals only");
 
     /* run the main loop over all unique site pattern combinations */
-    utility.forEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
+    utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
         '
             if (_pattern_info_["is_constant"]) {
                 fel.store_results (-1,None,{"0" : "fel.site_likelihood",
@@ -343,8 +343,8 @@ return 0;
 selection.io.startTimer (slac.json [terms.json.timers], "Primary SLAC analysis", 2);
 
 
-io.spoolLF (slac.partitioned_mg_results["LF"], slac.codon_data_info["file"], "SLAC");
-io.reportProgressMessageMD("SLAC", "anc", "Performing joint maximum likelihood ancestral state reconstruction");
+io.SpoolLF (slac.partitioned_mg_results["LF"], slac.codon_data_info["file"], "SLAC");
+io.ReportProgressMessageMD("SLAC", "anc", "Performing joint maximum likelihood ancestral state reconstruction");
 slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE});
 slac.results   = {};
 
@@ -384,24 +384,24 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
     slac.ancestors         = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, None);
     slac.results           [slac.i] = slac.compute_the_counts (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
 
-    slac.partition_sites   = utility.array1D ((slac.filter_specification[slac.i])["coverage"]);
+    slac.partition_sites   = utility.Array1D ((slac.filter_specification[slac.i])["coverage"]);
 
 
 
 
     for (slac.site = 0; slac.site < slac.partition_sites; slac.site += 1) {
-        slac.row = utility.map ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][-1],
+        slac.row = utility.Map ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][-1],
                              "_entry_",
                              "Format (0+_entry_, 0, 3)");
 
         slac.print_row = None;
         if (slac.negative_p <= slac.pvalue) {
-            utility.dict.ensure_key (slac.report_to_screen, slac.i);
+            utility.EnsureKey (slac.report_to_screen, slac.i);
             (slac.report_to_screen[slac.i])[slac.site] = 9;
             slac.print_row = slac.report_negative_site;
         } else {
             if (slac.positive_p <= slac.pvalue) {
-                utility.dict.ensure_key (slac.report_to_screen, slac.i);
+                utility.EnsureKey (slac.report_to_screen, slac.i);
                 (slac.report_to_screen[slac.i])[slac.site] = 8;
                 slac.print_row = slac.report_positive_site;
             }
@@ -410,15 +410,15 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
 
         if (None != slac.print_row) {
             if (!slac.printed_header_sampler) {
-                io.reportProgressMessageMD("SLAC", "anc" + slac.i, "For partition " + (slac.i+1) + " these sites are significant at p <=" + slac.pvalue + "\n");
+                io.ReportProgressMessageMD("SLAC", "anc" + slac.i, "For partition " + (slac.i+1) + " these sites are significant at p <=" + slac.pvalue + "\n");
                 fprintf (stdout,
-                    io.format_table_row (slac.table_screen_output,slac.table_output_options));
+                    io.FormatTableRow (slac.table_screen_output,slac.table_output_options));
                 slac.printed_header_sampler = TRUE;
                 slac.table_output_options["header"] = FALSE;
             }
 
             fprintf (stdout,
-                io.format_table_row (slac.print_row,slac.table_output_options));
+                io.FormatTableRow (slac.print_row,slac.table_output_options));
         }
     }
 
@@ -452,7 +452,7 @@ slac.json [terms.json.MLE ] = {terms.json.headers   : slac.table_headers,
                                terms.json.content : slac.results };
 
 
-io.spool_json (slac.json, slac.codon_data_info["json"]);
+io.SpoolJSON (slac.json, slac.codon_data_info["json"]);
 selection.io.stopTimer (slac.json [terms.json.timers], "Primary SLAC analysis");
 
 
@@ -474,12 +474,12 @@ if (slac.samples > 0) {
 
     selection.io.startTimer (slac.json [terms.json.timers], "Ancestor sampling analysis", 3);
 
-    io.reportProgressMessageMD ("SLAC", "sampling", "Ancestor sampling analysis");
-    io.reportAnalysisStageMD ("Generating `slac.samples` ancestral sequence samples to obtain confidence intervals");
+    io.ReportProgressMessageMD ("SLAC", "sampling", "Ancestor sampling analysis");
+    io.ReportAnalysisStageMD ("Generating `slac.samples` ancestral sequence samples to obtain confidence intervals");
 
-    utility.dict.ensure_key (slac.json, "sample-median");
-    utility.dict.ensure_key (slac.json, "sample-2.5");
-    utility.dict.ensure_key (slac.json, "sample-97.5");
+    utility.EnsureKey (slac.json, "sample-median");
+    utility.EnsureKey (slac.json, "sample-2.5");
+    utility.EnsureKey (slac.json, "sample-97.5");
 
     for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
 
@@ -495,7 +495,7 @@ if (slac.samples > 0) {
             //slac.sampled   = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, {"sample": TRUE});
             //slac.sample.results + slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
 
-            io.reportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
+            io.ReportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
 
             mpi.queue_job (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"],
                                                                 "1" : slac.i,
@@ -505,12 +505,12 @@ if (slac.samples > 0) {
 
         }
 
-        io.reportProgressBar("", "Done with ancestral sampling              \n");
+        io.ReportProgressBar("", "Done with ancestral sampling              \n");
 
         mpi.queue_complete (slac.queue);
 
         slac.extractor = {slac.samples, 1};
-        slac.sites   = utility.array1D ((slac.filter_specification[slac.i])["coverage"]);
+        slac.sites   = utility.Array1D ((slac.filter_specification[slac.i])["coverage"]);
         slac.columns = Rows (slac.table_headers);
 
 
@@ -526,28 +526,28 @@ if (slac.samples > 0) {
                     slac.key_value = slac.keys[slac.key];
                     slac.col = slac._extract_vector (slac.extractor, slac.sample.results, slac.key_value, slac.s,slac.c);
 
-                    (((slac.json["sample-median"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.5);
-                    (((slac.json["sample-2.5"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.025);
-                    (((slac.json["sample-97.5"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.quantile (slac.col, 0.975);
+                    (((slac.json["sample-median"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.5);
+                    (((slac.json["sample-2.5"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.025);
+                    (((slac.json["sample-97.5"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.975);
                 }
             }
             if ((slac.report_to_screen[slac.i])[slac.s]) {
 
                 if (!slac.printed_header_sampler) {
-                    io.reportProgressMessageMD("SLAC", "sampling", "Resampling results for partition " + (slac.i+1) + "\n");
+                    io.ReportProgressMessageMD("SLAC", "sampling", "Resampling results for partition " + (slac.i+1) + "\n");
                     fprintf (stdout,
-                        io.format_table_row (slac.table_screen_output_samplers,slac.table_output_options_samplers));
+                        io.FormatTableRow (slac.table_screen_output_samplers,slac.table_output_options_samplers));
                     slac.printed_header_sampler = TRUE;
                     slac.table_output_options_samplers["header"] = FALSE;
                 }
 
-                slac.row_median = utility.map ((((slac.json["sample-median"])[slac.i])["RESOLVED"])[slac.s][-1],
+                slac.row_median = utility.Map ((((slac.json["sample-median"])[slac.i])["RESOLVED"])[slac.s][-1],
                              "_entry_",
                              "Format (0+_entry_, 0, 2)");
-                slac.row_25 = utility.map ((((slac.json["sample-2.5"])[slac.i])["RESOLVED"])[slac.s][-1],
+                slac.row_25 = utility.Map ((((slac.json["sample-2.5"])[slac.i])["RESOLVED"])[slac.s][-1],
                              "_entry_",
                              "Format (0+_entry_, 0, 2)");
-                slac.row_975 = utility.map ((((slac.json["sample-97.5"])[slac.i])["RESOLVED"])[slac.s][-1],
+                slac.row_975 = utility.Map ((((slac.json["sample-97.5"])[slac.i])["RESOLVED"])[slac.s][-1],
                              "_entry_",
                              "Format (0+_entry_, 0, 2)");
 
@@ -562,7 +562,7 @@ if (slac.samples > 0) {
                                         slac.row_median[slac.pi] + " [" + slac.row_25[slac.pi] + "-" + slac.row_975[slac.pi] + "]"}};
 
                 fprintf (stdout,
-                    io.format_table_row (slac.print_row,slac.table_output_options_samplers));
+                    io.FormatTableRow (slac.print_row,slac.table_output_options_samplers));
               }
         }
     }
@@ -571,10 +571,10 @@ if (slac.samples > 0) {
 }
 
 selection.io.stopTimer (slac.json [terms.json.timers], "Total time");
-io.spool_json (slac.json, slac.codon_data_info["json"]);
+io.SpoolJSON (slac.json, slac.codon_data_info["json"]);
 
 if (Abs (slac.report_to_screen) == 0) {
-    io.reportProgressMessageMD ("SLAC", "results", "** No sites found to be under positive or negative selection at p <= " + slac.pvalue + "**");
+    io.ReportProgressMessageMD ("SLAC", "results", "** No sites found to be under positive or negative selection at p <= " + slac.pvalue + "**");
 }
 
 /*___________________________________________________________________________________________________________*/
@@ -686,8 +686,8 @@ lfunction slac.substituton_mapper (matrix, tree, ambig_lookup, pairwise_counts, 
 
                 } else {
                     collect_residues = {};
-                    utility.forEach ( ambig_lookup[-code-2], "_for_each_", "`&collect_residues`[`&integer_mapping`[_for_each_]] = 1");
-                    code_lookup [code] = Join ("", utility.keys (collect_residues));
+                    utility.ForEach ( ambig_lookup[-code-2], "_for_each_", "`&collect_residues`[`&integer_mapping`[_for_each_]] = 1");
+                    code_lookup [code] = Join ("", utility.Keys (collect_residues));
                 }
             }
 
@@ -698,8 +698,8 @@ lfunction slac.substituton_mapper (matrix, tree, ambig_lookup, pairwise_counts, 
                 if (code != -1) {
                     resolution = (ambig_lookup[-code-2])$(ambig_lookup[-code-2])["_MATRIX_ELEMENT_ROW_"];
                     resolution = resolution[resolution];
-                    (branch_info["synonymous substitution count"]) [s] = + utility.map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPS\"])[`&parent_code`][_mapper_]");
-                    (branch_info["non-synonymous substitution count"]) [s] = + utility.map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPN\"])[`&parent_code`][_mapper_]");
+                    (branch_info["synonymous substitution count"]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPS\"])[`&parent_code`][_mapper_]");
+                    (branch_info["non-synonymous substitution count"]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPN\"])[`&parent_code`][_mapper_]");
                 }
 
             }
@@ -707,7 +707,7 @@ lfunction slac.substituton_mapper (matrix, tree, ambig_lookup, pairwise_counts, 
             (branch_info["amino-acid"])[s] = code_lookup[code];
         }
 
-        utility.forEach (utility.keys (branch_info), "slac.substituton_mapper.key",
+        utility.ForEach (utility.Keys (branch_info), "slac.substituton_mapper.key",
                          "(`&result`[slac.substituton_mapper.key])[`&bname`] = `&branch_info`[slac.substituton_mapper.key]");
 
      }
@@ -722,7 +722,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
 //#profile START;
 
     site_count = Columns (matrix);
-    selected_branches = utility.filter (selected_branches, "_value_", "_value_ == 'test'");
+    selected_branches = utility.Filter (selected_branches, "_value_", "_value_ == 'test'");
 
 
 
@@ -749,7 +749,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
 
 
     selected_branch_total_length  = +selected_branches_lengths;
-    io.checkAssertion ("`&selected_branch_total_length`>0", "SLAC cannot be applied to a branch selection with total zero branch length (i.e. no variation)");
+    io.CheckAssertion ("`&selected_branch_total_length`>0", "SLAC cannot be applied to a branch selection with total zero branch length (i.e. no variation)");
 
     /*  columns
            0 Expected synonymous     sites

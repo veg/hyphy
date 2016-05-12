@@ -20,19 +20,19 @@ absrel.stats = {
 
 function test_reportStatsMD () {
 
-    io.reportStatsMD("aBSREL", absrel.stats);
+    io.ReportStatsMD("aBSREL", absrel.stats);
 }
 
 
 // TODO: Doesn't work due to not being able to parse arrays
 function test_parse_json() {
     file_path = "./data/CD2.nex.slac.json";
-    parsed_json = io.parse_json(file_path);
+    parsed_json = io.ParseJSON(file_path);
     fprintf(stdout, parsed_json);
 }
 
 function test_check_key() {
-    assert(utility.keyExists(absrel.stats, "Count"), "Count not found");
+    assert(utility.KeyExists(absrel.stats, "Count"), "Count not found");
 }
 
 expected_loglikelihood = -3467.072352344857; 

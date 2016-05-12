@@ -30,7 +30,7 @@ LoadFunctionLibrary("libv3/stats.bf");
 /*------------------------------------------------------------------------------*/
 
 
-io.displayAnalysisBanner({
+io.DisplayAnalysisBanner({
     "info": "Load a pre-specified codon file with a tree that has given branch lengths,
     and fit the MG94xREV model (local) while holding branch lengths constant
     ",
@@ -46,11 +46,11 @@ io.displayAnalysisBanner({
 
 codon_data_info = utility.loadGeneticCodeAndAlignment("codon_data", "codon_filter",PATH_TO_CURRENT_BF + "../data/CD2.nex");
 
-io.reportProgressMessageMD ("", "data", ">Loaded an MSA with **" + codon_data_info["sequences"] + "** sequences and **" + codon_data_info["sites"] + "** codons from \`" + codon_data_info["file"] + "\`");
+io.ReportProgressMessageMD ("", "data", ">Loaded an MSA with **" + codon_data_info["sequences"] + "** sequences and **" + codon_data_info["sites"] + "** codons from \`" + codon_data_info["file"] + "\`");
 codon_frequencies = utility.defineFrequencies("codon_filter");
 tree = utility.loadAnnotatedTopology(1);
 
-io.reportProgressMessageMD ("", "fixed", "* Fitting the **fixed branch lengths** model");
+io.ReportProgressMessageMD ("", "fixed", "* Fitting the **fixed branch lengths** model");
 
 fit_options = {
     "model-type": terms.local,
@@ -61,19 +61,19 @@ fit_options = {
 
 (fit_options["proportional-branch-length-scaler"])[0] = terms.branch_length_constrain;
 
-constrained_mg_results = estimators.fitMGREV(codon_data_info,
+constrained_mg_results = estimators.FitMGREV(codon_data_info,
                                              tree,
                                              fit_options ,
                                              parameters.helper.tree_lengths_to_initial_values (tree["branch_lengths"], "codon")
                                              );
 
-io.reportProgressMessageMD ("", "fixed",  "* Log(L) = **" + Format(constrained_mg_results["LogL"],8,2) + "**");
-io.reportProgressMessageMD ("", "fixed", "*"  + (constrained_mg_results["Trees"])[0]);
+io.ReportProgressMessageMD ("", "fixed",  "* Log(L) = **" + Format(constrained_mg_results["LogL"],8,2) + "**");
+io.ReportProgressMessageMD ("", "fixed", "*"  + (constrained_mg_results["Trees"])[0]);
 
-io.reportProgressMessageMD ("", "free", "* Fitting the **free branch length** model");
+io.ReportProgressMessageMD ("", "free", "* Fitting the **free branch length** model");
 
 fit_options - "proportional-branch-length-scaler";
 
-unconstrained_mg_results = estimators.fitMGREV(codon_data_info, tree, fit_options , constrained_mg_results);
-io.reportProgressMessageMD ("", "free",  "* Log(L) = **" + Format(unconstrained_mg_results["LogL"],8,2) + "**");
-io.reportProgressMessageMD ("", "free", "*" + (unconstrained_mg_results["Trees"])[0]);
+unconstrained_mg_results = estimators.FitMGREV(codon_data_info, tree, fit_options , constrained_mg_results);
+io.ReportProgressMessageMD ("", "free",  "* Log(L) = **" + Format(unconstrained_mg_results["LogL"],8,2) + "**");
+io.ReportProgressMessageMD ("", "free", "*" + (unconstrained_mg_results["Trees"])[0]);

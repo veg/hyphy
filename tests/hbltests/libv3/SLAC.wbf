@@ -10,15 +10,15 @@ margin_of_error = .05;
 
 function check_keys() {
     // Ensure that all top-level keys exists
-    assert(utility.keyExists(slac.json, "fits"), "fits not found");
-    assert(utility.keyExists(slac.json, "timers"), "timers not found");
-    assert(utility.keyExists(slac.json, "trees"), "trees not found");
-    assert(utility.keyExists(slac.json, "partitions"), "partitions not found");
-    assert(utility.keyExists(slac.json, "branch attributes"), "branch attributes not found");
-    assert(utility.keyExists(slac.json, "MLE"), "MLE not found");
-    assert(utility.keyExists(slac.json, "sample-median"), "sample-median not found");
-    assert(utility.keyExists(slac.json, "sample-2.5"), "sample-2.5 not found");
-    assert(utility.keyExists(slac.json, "sample-97.5"), "sample-97.5 not found");
+    assert(utility.KeyExists(slac.json, "fits"), "fits not found");
+    assert(utility.KeyExists(slac.json, "timers"), "timers not found");
+    assert(utility.KeyExists(slac.json, "trees"), "trees not found");
+    assert(utility.KeyExists(slac.json, "partitions"), "partitions not found");
+    assert(utility.KeyExists(slac.json, "branch attributes"), "branch attributes not found");
+    assert(utility.KeyExists(slac.json, "MLE"), "MLE not found");
+    assert(utility.KeyExists(slac.json, "sample-median"), "sample-median not found");
+    assert(utility.KeyExists(slac.json, "sample-2.5"), "sample-2.5 not found");
+    assert(utility.KeyExists(slac.json, "sample-97.5"), "sample-97.5 not found");
 }
 
 
@@ -40,27 +40,27 @@ function check_global_mg94_results() {
 function check_tree_results() {
     trees = slac.json["trees"];
     // ensure tested and newick exists
-    assert(utility.keyExists(trees, "newick"), "newick not found");
-    assert(utility.keyExists(trees, "tested"), "tested not found");
+    assert(utility.KeyExists(trees, "newick"), "newick not found");
+    assert(utility.KeyExists(trees, "tested"), "tested not found");
 }
 
 // Branch Attributes
 // Ensure each node has attributes only specified in attributes
 function node_assertion(node, attribute_keys) {
-    node_keys = utility.keys(node);
-    find_values = utility.map(node_keys, "_key_",
-    "utility.array.find(attribute_keys, _key_)");
-    elems = utility.filter (find_values, "_value_", "_value_ == -1");
+    node_keys = utility.Keys(node);
+    find_values = utility.Map(node_keys, "_key_",
+    "utility.Find(attribute_keys, _key_)");
+    elems = utility.Filter (find_values, "_value_", "_value_ == -1");
     assert(Abs(elems) == 0, "node has undefined attribute");
 }
 
 function check_branch_attributes() {
 
     branch_attributes = (slac.json["branch attributes"])["attributes"];
-    attribute_keys = utility.keys(branch_attributes);
+    attribute_keys = utility.Keys(branch_attributes);
     branch_nodes = (slac.json["branch attributes"])["0"];
 
-    utility.forEachPair(branch_nodes, "_key_", "_node_", "node_assertion(_node_,attribute_keys);");
+    utility.ForEachPair(branch_nodes, "_key_", "_node_", "node_assertion(_node_,attribute_keys);");
 
     // Spot check some branch values 
     expected_baboon_length = 0.001712680876653717;
@@ -69,7 +69,7 @@ function check_branch_attributes() {
     assert(Abs(expected_baboon_length - actual_baboon_length) <= margin_of_error,
     "wrong baboon branch length");
 
-    baboon_substitution_count = math.sum((branch_nodes["BABOON"])["synonymous substitution count"]);
+    baboon_substitution_count = math.Sum((branch_nodes["BABOON"])["synonymous substitution count"]);
     assert(baboon_substitution_count == 1, "unexpected number of substitutions in BABOON");
 
 }
@@ -82,20 +82,20 @@ function check_mle_results() {
     mle_sites = mle["by-site"];
     mle_branches = mle["by-branch"];
 
-    mle_site_averaged = utility.matrix_to_list_of_rows(mle_sites["AVERAGED"]);
-    mle_site_resolved = utility.matrix_to_list_of_rows(mle_sites["RESOLVED"]);
+    mle_site_averaged = utility.MatrixToListOfRows(mle_sites["AVERAGED"]);
+    mle_site_resolved = utility.MatrixToListOfRows(mle_sites["RESOLVED"]);
 
-    mle_branch_averaged = utility.matrix_to_list_of_rows(mle_branches["AVERAGED"]);
-    mle_branch_resolved = utility.matrix_to_list_of_rows(mle_branches["RESOLVED"]);
+    mle_branch_averaged = utility.MatrixToListOfRows(mle_branches["AVERAGED"]);
+    mle_branch_resolved = utility.MatrixToListOfRows(mle_branches["RESOLVED"]);
 
 
     // averaged expected at site 2
     site_two_averaged = {{0.3164762974660306, 1.107667041131107, 0, 0, 0, 0, 0,
     0, 1,1, 1.469689356952376}};
 
-    site_two_averaged_sum = math.sum(site_two_averaged);
+    site_two_averaged_sum = math.Sum(site_two_averaged);
 
-    actual_stas = math.sum(mle_site_averaged[2]);
+    actual_stas = math.Sum(mle_site_averaged[2]);
 
     assert(Abs(site_two_averaged_sum - actual_stas) < margin_of_error, "site two
     mle averaged a bit different than expected");
@@ -105,9 +105,9 @@ function check_mle_results() {
     site_two_resolved = {{0.3164762974660306, 1.107667041131107, 0, 0, 0, 0, 0,
     0, 1, 1, 1.469689356952376}};
 
-    site_two_resolved_sum = math.sum(site_two_resolved);
+    site_two_resolved_sum = math.Sum(site_two_resolved);
 
-    actual_strs = math.sum(mle_site_resolved[2]);
+    actual_strs = math.Sum(mle_site_resolved[2]);
     assert(Abs(site_two_resolved_sum - actual_strs) < margin_of_error, "site two
     mle averaged a bit different than expected");
 
@@ -118,8 +118,10 @@ function check_mle_results() {
     -1.477152420790018, 0.9155151026839652, 0.301582822813361,
     1.725467201084868}};
 
-    site_five_averaged_sum = math.sum(site_five_averaged);
-    actual_sfas = math.sum(mle_site_averaged[5]);
+    site_five_averaged_sum = math.Sum(site_five_averaged);
+    actual_sfas = math.Sum(mle_site_averaged[5]);
+
+    fprintf(stdout, Abs(site_five_averaged_sum - actual_sfas));
 
     assert(Abs(site_five_averaged_sum - actual_sfas) < margin_of_error, "site
     five mle averaged a bit different than expected");
@@ -131,9 +133,10 @@ function check_mle_results() {
     -1.477152420790018, 0.9155151026839652, 0.301582822813361,
     1.725467201084868}};
 
-    site_five_resolved_sum = math.sum(site_five_resolved);
+    site_five_resolved_sum = math.Sum(site_five_resolved);
 
-    actual_sfrs = math.sum(mle_site_resolved[5]);
+    actual_sfrs = math.Sum(mle_site_resolved[5]);
+
     assert(Abs(site_five_resolved_sum - actual_sfrs) < margin_of_error, "site
     five mle resolved a bit different than expected");
 
@@ -144,9 +147,9 @@ function check_mle_results() {
     -0.004032235811121753, 0.6757502943780094, 0.4699319961488463,
     1.469689356952376}};
 
-    branch_two_averaged_sum = math.sum(branch_two_averaged);
+    branch_two_averaged_sum = math.Sum(branch_two_averaged);
 
-    actual_btas = math.sum(mle_branch_averaged[2]);
+    actual_btas = math.Sum(mle_branch_averaged[2]);
     assert(Abs(branch_two_averaged_sum - actual_btas) < margin_of_error, "branch two
     mle averaged a bit different than expected");
 
@@ -157,9 +160,9 @@ function check_mle_results() {
     -0.004032235811121753, 0.6757502943780094, 0.4699319961488463,
     1.469689356952376}};
 
-    branch_two_resolved_sum = math.sum(branch_two_resolved);
+    branch_two_resolved_sum = math.Sum(branch_two_resolved);
 
-    actual_btrs = math.sum(mle_branch_resolved[2]);
+    actual_btrs = math.Sum(mle_branch_resolved[2]);
     assert(Abs(branch_two_resolved_sum - actual_btrs) < margin_of_error, "branch two
     mle resolved a bit different than expected");
 
@@ -170,8 +173,8 @@ function check_mle_results() {
     -0.01215296843779284, 0.8643787187173687, 0.2528416485727941,
     1.725467201084868}};
 
-    branch_five_averaged_sum = math.sum(branch_five_averaged);
-    actual_bfas = math.sum(mle_branch_averaged[5]);
+    branch_five_averaged_sum = math.Sum(branch_five_averaged);
+    actual_bfas = math.Sum(mle_branch_averaged[5]);
 
     assert(Abs(branch_five_averaged_sum - actual_bfas) < margin_of_error,
     "branch five mle averaged a bit different than expected");
@@ -182,9 +185,9 @@ function check_mle_results() {
     -0.01215296843779284, 0.8643787187173687, 0.2528416485727941,
     1.725467201084868}};
 
-    branch_five_resolved_sum = math.sum(branch_five_resolved);
+    branch_five_resolved_sum = math.Sum(branch_five_resolved);
 
-    actual_bfrs = math.sum(mle_branch_resolved[5]);
+    actual_bfrs = math.Sum(mle_branch_resolved[5]);
     assert(Abs(branch_five_resolved_sum - actual_bfrs) < margin_of_error, "branch five mle resolved a bit different than expected");
 
     return 1;

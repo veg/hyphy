@@ -6,11 +6,11 @@ LoadFunctionLibrary ("frequencies.bf");
 models.DNA.alphabet = {{"A","C","G","T"}};
 
 /**
- * @name models.DNA.generic.defineQMatrix
+ * @name models.DNA.generic.DefineQMatrix
  * @param {Dictionary} modelSpec
  * @param {String} namespace
  */
-function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
+function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
 	
 	__alphabet = modelSpec ["alphabet"];
 	assert (Type (__alphabet) == "Matrix" && Columns (__alphabet) == 4, "Unsupported or missing alphabet '" + __alphabet + "'");
@@ -23,10 +23,10 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 	assert (__modelType == terms.local || __modelType == terms.global, "Unsupported or missing model type '" + __modelType + "'");
 	
 	__rate_function = modelSpec ["q_ij"];
-	assert (utility.isFunction (__rate_function), "Missing q_ij callback in model specification");
+	assert (utility.IsFunction (__rate_function), "Missing q_ij callback in model specification");
 
 	__time_function = modelSpec ["time"];
-	assert (utility.isFunction (__time_function), "Missing time callback in model specification");
+	assert (utility.IsFunction (__time_function), "Missing time callback in model specification");
 	
 	
 	__rate_matrix = {4,4};
@@ -43,7 +43,7 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 															   
 															   
             if (Abs (__rp[terms.rate_entry])) {			
-                parameters.declareGlobal (__rp[terms.global], __global_cache);
+                parameters.DeclareGlobal (__rp[terms.global], __global_cache);
                 parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
                             
                 __rate_matrix [_rowChar][_colChar] = __rp[terms.rate_entry];
@@ -58,7 +58,7 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 	
 	if (Abs (__rp)) {
 		((modelSpec["parameters"])[terms.local])[terms.timeParameter ()] = __rp; 
-	    modelSpec [terms.rate_matrix] = parameters.addMultiplicativeTerm (__rate_matrix, __rp, 0);
+	    modelSpec [terms.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, 0);
 	} else {
 	    modelSpec [terms.rate_matrix] = __rate_matrix;
 	}
@@ -66,11 +66,11 @@ function models.DNA.generic.defineQMatrix (modelSpec, namespace) {
 }
 
 /**
- * @name models.DNA.generic.time
+ * @name models.DNA.generic.Time
  * @param option - does nothing
  * @returns default time
  */
-function models.DNA.generic.time (option) {
+function models.DNA.generic.Time (option) {
 	return terms.default_time;
 }
 
