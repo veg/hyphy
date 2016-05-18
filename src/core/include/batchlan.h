@@ -128,7 +128,7 @@ public:
             return errorState;
     }
 
-    void              ReportAnExecutionError (_String  errMsg, bool doCommand = true, bool appendToExisting = false);
+    void              ReportAnExecutionError (_String errMsg, bool doCommand = true, bool appendToExisting = false);
     /**
      * Handle an error message according to the reporting policy of this execution list (defined by errorHandlingMode)
      * @param errMsg -- the current command text stream
@@ -466,8 +466,6 @@ extern  _List
 dataSetList,
 dataSetNamesList,
 likeFuncList,
-dataSetFilterList,
-dataSetFilterNamesList,
 templateModelList,
 scfgNamesList,
 scfgList,
@@ -618,13 +616,17 @@ extern  long                        globalRandSeed,
                                     matrixExpCount;
  
 
-long      FindDataSetName                 (_String&);
-long      FindDataSetFilterName           (_String&);
-long      FindSCFGName                    (_String&);
-long      FindBFFunctionName              (_String&, _VariableContainer* = nil);
+long      FindDataSetName                 (_String const&);
+long      FindSCFGName                    (_String const&);
+long      FindBFFunctionName              (_String const&, _VariableContainer const* = nil);
+long    FindBgmName                       (_String const&);
+// added by afyp, March 18, 2007
+
+long    FindLikeFuncName                  (_String const&, bool = false);
+long    FindModelName                     (_String const&);
 
 
-_String&  GetBFFunctionNameByIndex        (long);
+const _String&  GetBFFunctionNameByIndex        (long);
 long      GetBFFunctionArgumentCount  (long);
 _List&    GetBFFunctionArgumentList   (long);
 _SimpleList&    GetBFFunctionArgumentTypes   (long);
@@ -642,11 +644,6 @@ bool      IsBFFunctionIndexValid      (long);
 long      GetBFFunctionCount          (void);
 
 
-long    FindBgmName                  (_String &);
-// added by afyp, March 18, 2007
-
-long    FindLikeFuncName             (_String&, bool = false);
-long    FindModelName                (_String const&);
 void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, bool inclG, long modelID2, bool inclCat);
 /* 20100316 SLKP:
     factored out a function call to scan a particular model
@@ -659,8 +656,8 @@ _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
 _Parameter
-ProcessNumericArgument               (_String*,_VariableContainer*, _ExecutionList* = nil);
-_String ProcessLiteralArgument       (_String*,_VariableContainer*, _ExecutionList* = nil);
+ProcessNumericArgument               (_String*,_VariableContainer const*, _ExecutionList* = nil);
+const _String ProcessLiteralArgument (_String const*,_VariableContainer const*, _ExecutionList* = nil);
 _AssociativeList*
 ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
@@ -670,19 +667,16 @@ void    ExecuteBLString              (_String&,_VariableContainer*);
 void    SerializeModel               (_String&,long,_AVLList* = nil, bool = false);
 bool    Get_a_URL                    (_String&,_String* = nil);
 
-long    AddFilterToList              (_String&,_DataSetFilter*,bool = false);
 long    AddDataSetToList             (_String&,_DataSet*);
-void    SetDataFilterParameters      (_String&, _DataSetFilter*, bool);
-void    KillDataFilterRecord         (long, bool = false);
 void    KillLFRecord                 (long, bool = true);
 void    KillDataSetRecord            (long);
 void    KillModelRecord              (long);
 void    KillExplicitModelFormulae    (void);
 bool    PushFilePath                 (_String&, bool = true);
 void    PopFilePath                  (void);
-_Matrix*CheckMatrixArg               (_String*, bool);
+_Matrix*CheckMatrixArg               (_String const*, bool);
 _AssociativeList *
-CheckAssociativeListArg      (_String*);
+CheckAssociativeListArg      (_String const*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
@@ -690,12 +684,12 @@ bool    IsModelOfExplicitForm        (long);
 
 void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);
-_String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
+
 const _String _hblCommandAccessor          (_ExecutionList*, long);
 _String _HYGenerateANameSpace             (void);
 
 _PMathObj
-ProcessAnArgumentByType      (_String*, _VariableContainer*, long, _ExecutionList* = nil);
+ProcessAnArgumentByType      (_String const*, _VariableContainer const*, long, _ExecutionList* = nil);
 
 void    _HBL_Init_Const_Arrays       (void);
 
@@ -724,7 +718,9 @@ void    ReturnCurrentCallStack       (_List&, _List&);
     @version 20120324
 */
 
-BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+
+BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 
 _String _HYHBLTypeToText                (long type);
 _String _HYStandardDirectory            (const unsigned long);

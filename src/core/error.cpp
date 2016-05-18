@@ -219,8 +219,7 @@ void*   checkPointer (void* p)
 }
 
 //_______________________________________________________________________
-void    ReportWarning (_String st)
-{
+void    ReportWarning (_String const& st) {
     checkParameter          (MessageLogging, messageLogFlag, 1.0);
 
 #ifdef  __HEADLESS__
@@ -241,8 +240,7 @@ void    ReportWarning (_String st)
 
 
 //_______________________________________________________________________
-void    FlagError (_String st)
-{
+void    FlagError (_String const& st) {
 #ifdef  __HEADLESS__
     if (globalInterfaceInstance) {
         globalInterfaceInstance->PushError (&st);
@@ -312,15 +310,14 @@ void    FlagError (_String st)
 }
 
 //_______________________________________________________________________
-void    WarnErrorWhileParsing (_String st, _String& context)
-{
+void    WarnErrorWhileParsing (_String const&st, _String& context) {
     WarnError (_String ("While parsing:\n") & context & "\n" & st);
 }
 
 extern _List batchLanguageFunctions;
 
 //_______________________________________________________________________
-void WarnError (_String st)
+void WarnError (_String const & st)
 {
     if (currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
         currentExecutionList->ReportAnExecutionError(st, true);

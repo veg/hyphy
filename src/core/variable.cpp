@@ -46,6 +46,7 @@
 #include "polynoml.h"
 #include "batchlan.h"
 
+
 extern _SimpleList freeSlots;
 extern _SimpleList deferIsConstant;
 
@@ -154,7 +155,7 @@ void _Variable::toFileStr(FILE* f, unsigned long padding)
 }
 //__________________________________________________________________________________
 
-_Variable::_Variable (_String&s, bool isG)
+_Variable::_Variable (_String const&s, bool isG)
 {
     theName         = new _String(s);
     varFlags        = HY_VARIABLE_NOTSET|(isG?HY_VARIABLE_GLOBAL:0);
@@ -166,11 +167,11 @@ _Variable::_Variable (_String&s, bool isG)
 
 //__________________________________________________________________________________
 
-_Variable::_Variable (_String&s, _String&f, bool isG)//:  _Formula (f)
+_Variable::_Variable (_String const&s, _String const &f, bool isG)//:  _Formula (f)
 {
     //hasBeenChanged = false;
     //isGlobal = isG;
-    theName     = (_String*)checkPointer(new _String(s));
+    theName     = new _String(s);
     varFlags    = isG?HY_VARIABLE_GLOBAL:0;
     varValue    = nil;
     SetBounds   (DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
@@ -676,18 +677,16 @@ bool  _Variable::HasChanged (bool ignoreCats) // does this variable need recompu
 
 //__________________________________________________________________________________
 
-void _Variable::MarkDone (void)
-{
+void _Variable::MarkDone (void) {
     if (!varFormula && (varFlags & HY_VARIABLE_CHANGED) && !(varValue && varValue->IsVariable())) {
         varFlags -= HY_VARIABLE_CHANGED;
     }
 }
 
 //__________________________________________________________________________________
-_PMathObj    _Variable::ComputeReference (_PMathObj context)
-{
+_PMathObj    _Variable::ComputeReference (_MathObject const * context) const {
     _String reference_string (*GetName());
-    reference_string = AppendContainerName(reference_string, (_VariableContainer*)context);
+    reference_string = AppendContainerName(reference_string, (_VariableContainer const*)context);
     
     return new _FString (reference_string, false);
 }
@@ -710,8 +709,15 @@ _String const   _Variable::ParentObjectName(void) const {
     return empty;
 }
 
+_String const WrapInNamespace (_String const& name, _String const* context) {
+  if (context) {
+    return *context & '.' & name;
+  }
+  return name;
+}
+
 //__________________________________________________________________________________
-long    DereferenceString (_PMathObj v, _PMathObj context, char reference_type){
+long    DereferenceString (_PMathObj v, _MathObject const * context, char reference_type){
     if (v && v->ObjectClass () == STRING) {
         _FString * value = (_FString*)v;
         _String referencedVariable = *value->theString;
@@ -724,7 +730,7 @@ long    DereferenceString (_PMathObj v, _PMathObj context, char reference_type){
 }
 
 //__________________________________________________________________________________
-long    DereferenceVariable (long index, _PMathObj context, char reference_type){
+long    DereferenceVariable (long index, _MathObject const * context, char reference_type){
     if (reference_type == HY_STRING_DIRECT_REFERENCE) {
         return index;
     }

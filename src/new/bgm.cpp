@@ -138,30 +138,6 @@ void        ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _Strin
 
 
 //___________________________________________________________________________________________
-
-long integerPower (long base, long exponent)
-{
-    long    result = 1L,
-            mask   = 1L<<(sizeof(long)*8-2); // left shift to left-most position of binary sequence for long integer
-    // e.g. 100...0 (30 zeroes for signed long)
-
-    while ((exponent & mask) == 0) {
-        mask >>= 1;    // bitwise AND, right-shift mask until overlaps with first '1'
-    }
-
-    while (mask) {
-        result *= result;
-        if (exponent & mask) {
-            result = result * base;
-        }
-        mask >>= 1;
-    }
-    return result;
-}
-
-
-
-//___________________________________________________________________________________________
 //  afyp Oct. 15, 2008, replaced wrapper function for _Constant member function
 //  with this local function.
 _Parameter Bgm::LnGamma(_Parameter theValue)

@@ -56,8 +56,8 @@ class _Variable : public _Constant
 public:
 
     _Variable (void);
-    _Variable (_String&, bool isG = false); // name
-    _Variable (_String&, _String&, bool isG = false); // name and formula
+    _Variable (_String const&, bool isG = false); // name
+    _Variable (_String const&, _String const&, bool isG = false); // name and formula
 
     virtual ~_Variable (void);
 
@@ -98,7 +98,7 @@ public:
     virtual     bool        IsCategory (void) {
         return false;
     }
-    virtual     long        GetAVariable (void) {
+    virtual     long        GetAVariable (void) const{
         return theIndex;
     }
     virtual unsigned long        ObjectClass (void) {
@@ -143,7 +143,7 @@ public:
     }
 
     virtual     void        CompileListOfDependents (_SimpleList&);
-    virtual     _PMathObj   ComputeReference        (_PMathObj);
+    _PMathObj   ComputeReference        (_MathObject const *) const;
 
 
     friend      void        ResetVariables          (void);
@@ -169,8 +169,9 @@ public:
 
 };
 
-long    DereferenceVariable (long index, _PMathObj context, char reference_type);
-long    DereferenceString   (_PMathObj, _PMathObj context, char reference_type);
+long    DereferenceVariable (long index, _MathObject const *  context, char reference_type);
+long    DereferenceString   (_PMathObj, _MathObject const * context, char reference_type);
+_String const WrapInNamespace (_String const&, _String const*);
 
 
 #endif

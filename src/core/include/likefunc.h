@@ -123,6 +123,14 @@ struct  MSTCache {
 
 };
 
+enum _LikelihoodFunctionCountType {
+  kLFCountPartitions,
+  kLFCountGlobalVariables,
+  kLFCountLocalCariables,
+  kLFCountDependentVariables,
+  kLFCountCategoryVariables
+} ;
+
 //_______________________________________________________________________________________
 
 class   _LikelihoodFunction: public BaseObj
@@ -149,12 +157,12 @@ public:
 
     virtual void        Duplicate (BaseRef);         // duplicate an object into this one
 
-    _SimpleList&GetIndependentVars (void); // return a list of all indepenent variables
-    _SimpleList&GetDependentVars   (void); // get all dependent vars of this object
-    _SimpleList&GetCategoryVars    (void); // get all category variables
-    void        GetGlobalVars      (_SimpleList&);
+    _SimpleList const &GetIndependentVars (void) const; // return a list of all indepenent variables
+    _SimpleList const &GetDependentVars   (void) const; // get all dependent vars of this object
+    _SimpleList const &GetCategoryVars    (void) const; // get all category variables
+    void        GetGlobalVars      (_SimpleList&) const;
 
-    long        CountObjects       (char);     // return object count
+    unsigned long        CountObjects       (_LikelihoodFunctionCountType) const;     // return object count
     // 0 - partitions
     // 1 - global variables
     // 2 - local independents
@@ -162,18 +170,18 @@ public:
     // 4 - category variables
 
 
-    _Parameter  GetIthIndependent           (long);     // get the value of i-th independent variable
-    _Parameter  GetIthDependent             (long);     // get the value of i-th dependent variable
-    void        GetAllIndependent           (_Matrix&); // store all indepenent values in a matrix
-    _Variable*  GetIthIndependentVar        (long);     // get the variable object of i-th independent variable
-    _Variable*  GetIthDependentVar          (long);     // get the variable object of i-th dependent variable
-    _Parameter  GetIthIndependentBound      (long, bool isLower = true);
+    _Parameter  GetIthIndependent           (long) const;     // get the value of i-th independent variable
+    _Parameter  GetIthDependent             (long) const;     // get the value of i-th dependent variable
+    void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix
+    _Variable*  GetIthIndependentVar        (long) const;     // get the variable object of i-th independent variable
+    _Variable*  GetIthDependentVar          (long) const;     // get the variable object of i-th dependent variable
+    _Parameter  GetIthIndependentBound      (long, bool isLower = true) const;
     // get the lower / upper bound for the i-th indepdendent variable
 
     void        SetIthIndependent (long, _Parameter);           // set the value of i-th independent variable
     bool        CheckAndSetIthIndependent (long, _Parameter);   // set the value of i-th independent variable
     void        SetIthDependent           (long, _Parameter);   // set the value of i-th dependent variable
-    bool        IsIthParameterGlobal      (long);
+    bool        IsIthParameterGlobal      (long) const;
 
     long        SetAllIndependent         (_Matrix*);
 
@@ -220,7 +228,6 @@ public:
         return theDataFilters.Find(ID)>=0;
     }
     bool        MapTreeTipsToData       (long, bool leafScan = false);
-    bool        UpdateFilterSize        (long);
     void        VoidOldResults          (void) {
         computationalResults.ZeroUsed();
     }
@@ -228,21 +235,17 @@ public:
     FindCategoryVar         (long);
     // return the category variable for a given partition
     void        RankVariables           (_AVLListX* tagger = nil);
-    _SimpleList&GetTheTrees             (void) {
-        return theTrees;
-    }
+  
   
     _TheTree*         GetIthTree            (long) const;
-    _DataSetFilter *  GetIthFilter          (long) const;
-    _Matrix*          GetIthFrequencies     (long) const;
+    _DataSetFilter const *  GetIthFilter    (long) const;
+    _DataSetFilter *  GetIthFilterMutable   (long) const;
+    _String const*         GetIthFilterName      (long) const;
   
-    _SimpleList&GetTheFilters           (void) {
-        return theDataFilters;
-    }
-    _SimpleList&GetBaseFreqs            (void) {
-        return theProbabilities;
-    }
-    
+    _Matrix*          GetIthFrequencies     (long) const;
+    _String const*         GetIthFrequenciesName (long) const;
+ 
+  
     void        FillInConditionals      (long = -1);
     
     void        Setup                   (void);
@@ -255,7 +258,7 @@ public:
     long        SiteCount               (void);
     void        Rebuild                 (void);
     void        SerializeLF             (_String&, char=0, _SimpleList* = nil, _SimpleList* = nil);
-    _Formula*   HasComputingTemplate    (void) {
+    _Formula*   HasComputingTemplate    (void) const{
         return computingTemplate;
     }
     void        StateCounter            (long);
@@ -279,7 +282,7 @@ public:
 #endif
 #endif
 
-    bool            ProcessPartitionList        (_SimpleList&, _Matrix*, _String);
+    bool            ProcessPartitionList        (_SimpleList&, _Matrix*, _String const&) const;
     // given a matrix argument (argument 2; can be nil to include all)
     // populate a sorted list (argument 1)
     // of partitions indexed in the matrix (e.g. {{1,3}} would include the 2-nd and 4-th partitions
@@ -308,7 +311,7 @@ public:
        @version 20110608
     */
 
-    _AssociativeList*CollectLFAttributes         (void);
+    _AssociativeList*CollectLFAttributes         (void) const;
 protected:
 
     _Matrix*        PairwiseDistances       (long index);
@@ -372,8 +375,8 @@ protected:
     bool            SingleBuildLeafProbs  (node<long>&, long, _SimpleList&, _SimpleList&, _TheTree*, bool,_DataSetFilter*, _SimpleList* = nil);
     void            CodonNeutralSimulate  (node<long>&, long, bool,_Matrix*,_Matrix*, _Parameter&, _Parameter&);
 
-    bool            HasBlockChanged       (long);
-    long            BlockLength           (long);
+    bool            HasBlockChanged       (long) const;
+    long            BlockLength           (long) const;
     void            PartitionCatVars      (_SimpleList&, long);
     // 20090210: extract variable indices for category variables in i-th partition
     // and append them to _SimpleList
@@ -402,7 +405,7 @@ protected:
     */
 
 
-private:
+protected:
 
 
     void            ComputeParameterPenalty     (void);
@@ -433,8 +436,8 @@ private:
     void            BuildIncrements             (long, _SimpleList&);
     char            HighestBit                  (long);
     char            LowestBit                   (long);
-    long            HasHiddenMarkov             (long, bool hmm = true);
-    _Matrix*        RemapMatrix                 (_Matrix*, const _SimpleList&);
+    long            HasHiddenMarkov             (long, bool hmm = true) const;
+    _Matrix*        RemapMatrix                 (_Matrix*, const _SimpleList&) const;
     /* given a matrix where each column corresponds to a site pattern
      and a list of partitions that are covered
      this function returns a new matrix where each pattern is mapped
@@ -456,7 +459,7 @@ private:
     // allows the calculation of the probability vector while setting a specific interior branch
     // to a given sequence
 
-    _Parameter          SumUpHiddenMarkov (const _Parameter *, _Matrix&, _Matrix&, _SimpleList *, const _SimpleList*, long);
+    _Parameter          SumUpHiddenMarkov (const _Parameter *, _Matrix&, _Matrix&, _SimpleList const *, const _SimpleList*, long);
     /*
         SLKP 20090420
 
@@ -499,7 +502,7 @@ private:
 
 
     _List*          RecoverAncestralSequencesMarginal
-    (long, _Matrix&,_List&, bool = false);
+    (long, _Matrix&,_List const&, bool = false);
     void            DetermineLocalUpdatePolicy  (void);
     void            FlushLocalUpdatePolicy      (void);
     void            RestoreScalingFactors       (long, long, long, long*, long *);

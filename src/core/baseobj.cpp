@@ -46,6 +46,8 @@
 #include "batchlan.h"
 #include "category.h"
 #include "likefunc.h"
+#include "hbl_env.h"
+#include "global_object_lists.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -396,17 +398,17 @@ bool    GlobalShutdown (void)
 
 //____________________________________________________________________________________
 
-void    PurgeAll (bool all)
-{
+void    PurgeAll (bool all) {
+  using namespace hyphy_global_objects;
+  
     ClearBFFunctionLists();
     executionStack.Clear();
     loadedLibraryPaths.Clear(true);
     _HY_HBL_Namespaces.Clear();
     if (all) {
+        ClearAllGlobals ();
         likeFuncList.Clear();
         likeFuncNamesList.Clear();
-        dataSetFilterList.Clear();
-        dataSetFilterNamesList.Clear();
         dataSetList.Clear();
         dataSetNamesList.Clear();
         compiledFormulaeParameters.Clear();

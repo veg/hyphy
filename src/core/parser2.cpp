@@ -1522,10 +1522,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     if (!f2) { // 03/25/2004 ? Confused why the else
                         levelData->AppendNewInstance(new _Operation((_MathObject*)FetchVar (realVarLoc)->Compute()->makeDynamic()));
                     } else {
-                        _Operation theVar (true, realVarName, globalKey, parsingContext.formulaScope());
-                        theVar.SetTerms(-variableNames.GetXtra (realVarLoc)-1);
-                        theVar.SetAVariable(-2);
-                        (*levelData) && (&theVar);
+                        _Operation * variable_op = new _Operation (true, realVarName, globalKey, parsingContext.formulaScope());
+                        variable_op -> SetTerms(-variableNames.GetXtra (realVarLoc)-1);
+                        variable_op ->SetAVariable(-2);
+                        (*levelData) < variable_op;
                     }
                 } else {
                     if (noneObject)
@@ -1718,7 +1718,7 @@ long     VerbosityLevel (void)
 
 
 //__________________________________________________________________________________
-void  stashParameter (_String& name, _Parameter v, bool set)
+void  stashParameter (_String const& name, _Parameter v, bool set)
 {
     static  _Parameter stash = 0.0;
 
@@ -1741,7 +1741,7 @@ void  stashParameter (_String& name, _Parameter v, bool set)
 
 
 //__________________________________________________________________________________
-void  setParameter (_String& name, _Parameter def, _String* namespc)
+void  setParameter (_String const & name, _Parameter def, _String* namespc)
 {
     if (namespc) {
         _String namespcd = AppendContainerName(name,namespc);
@@ -1759,7 +1759,7 @@ void  setParameter (_String& name, _Parameter def, _String* namespc)
 
 //__________________________________________________________________________________
 
-void  setParameter (_String& name, _PMathObj def, _String* namespc, bool dup)
+void  setParameter (_String const& name, _PMathObj def, _String* namespc, bool dup)
 {
     if (namespc) {
         _String namespcd = AppendContainerName(name,namespc);

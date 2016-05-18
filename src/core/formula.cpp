@@ -1291,7 +1291,7 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
   //unsigned long ticker = 0UL;
 
 //__________________________________________________________________________________
-_PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
+_PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
 // compute the value of the formula
 {
     _Stack * scrap_here;
@@ -1352,9 +1352,9 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                                 scrap_here->Push ((_PMathObj)(*resultCache)(cacheID+1));
                             } else {
  
-                                scrap_here->Push ((_PMathObj)(*additionalCacheArguments)(0));
+                                scrap_here->Push ((_PMathObj)additionalCacheArguments->GetItem (0));
                                 resultCache->Replace(cacheID,scrap_here->Pop(false),true);
-                                resultCache->Replace(cacheID+1,(*additionalCacheArguments)(0),false);
+                                resultCache->Replace(cacheID+1,(_PMathObj)additionalCacheArguments->GetItem (0),false);
                                 additionalCacheArguments->Delete (0, false);                              
                                 //printf ("_Formula::Compute additional arguments %ld\n", additionalCacheArguments->lLength);
                            }
@@ -2108,17 +2108,17 @@ long _Formula::ObjectClass (void)
 }
 
 //__________________________________________________________________________________
-_Formula::_Formula (_String&s, _VariableContainer* theParent, _String* reportErrors)
-// the parser itself
-{
+_Formula::_Formula (_String const &s, _VariableContainer const* theParent, _String* reportErrors) {
     theTree     = nil;
     resultCache = nil;
     recursion_calls = nil;
     call_count = 0UL;
 
     _FormulaParsingContext fpc (reportErrors, theParent);
-    
-    if (Parse (this, s, fpc, nil) != HY_FORMULA_EXPRESSION) {
+  
+    _String formula_copy (s);
+  
+    if (Parse (this, formula_copy, fpc, nil) != HY_FORMULA_EXPRESSION) {
         Clear();
     }
 }
@@ -2787,7 +2787,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
 
 //__________________________________________________________________________________
-_FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer* scope) {
+_FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer const* scope) {
     assignment_ref_id   = -1;
     assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
     is_volatile = false;

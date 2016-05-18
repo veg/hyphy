@@ -338,7 +338,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-void        _TheTree::FillInConditionals        (_DataSetFilter*        theFilter, _Parameter*  iNodeCache,  _SimpleList*   tcc)
+void        _TheTree::FillInConditionals        (_DataSetFilter const*        theFilter, _Parameter*  iNodeCache,  _SimpleList*   tcc)
 // this utility function will simply fill in all the conditional probability vectors for internal nodes,
 // including those that were skipped due to column sorting optimization
 // this is useful to avoid code duplication for other functions (e.g. ancestral sampling) that
@@ -349,7 +349,7 @@ void        _TheTree::FillInConditionals        (_DataSetFilter*        theFilte
     }
 
     long            alphabetDimension     =         theFilter->GetDimension(),
-                    siteCount           =         theFilter->NumberDistinctSites();
+                    siteCount           =         theFilter->GetPatternCount();
 
     for  (long nodeID = 0; nodeID < flatTree.lLength; nodeID++) {
         _Parameter * conditionals       = iNodeCache +(nodeID  * siteCount) * alphabetDimension;
@@ -421,7 +421,7 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          upd
     long            alphabetDimension     =         theFilter->GetDimension(),
                     // the number of characters (and the dimension of transition matrices)
 
-                    siteCount           =         theFilter->NumberDistinctSites();
+                    siteCount           =         theFilter->GetPatternCount();
     // how many unique sites are there
 
     for  (long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
@@ -573,7 +573,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
 
     _SimpleList     taggedInternals                 (flatNodes.lLength, 0, 0);
     long            alphabetDimension     =         theFilter->GetDimension(),
-                    siteCount           =         theFilter->NumberDistinctSites(),
+                    siteCount           =         theFilter->GetPatternCount(),
                     alphabetDimensionmod4  =      alphabetDimension-alphabetDimension%4;
 
     _CalcNode       *currentTreeNode;
@@ -1103,7 +1103,7 @@ void            _TheTree::ComputeBranchCache    (
     long        myParent               = brID       -flatLeaves.lLength,
                 alphabetDimension     =            theFilter->GetDimension(),
                 alphabetDimensionmod4  =         alphabetDimension - alphabetDimension % 4,
-                siteCount               =            theFilter->NumberDistinctSites();
+                siteCount               =            theFilter->GetPatternCount();
 
     if (siteTo  > siteCount)    {
         siteTo = siteCount;
@@ -1486,7 +1486,7 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
 {
     long        alphabetDimension      = theFilter->GetDimension(),
                 //alphabetDimensionmod4  = alphabetDimension - alphabetDimension % 4,
-                siteCount            =  theFilter->NumberDistinctSites();
+                siteCount            =  theFilter->GetPatternCount();
 
     if (siteTo  > siteCount)    {
         siteTo = siteCount;
@@ -1580,7 +1580,7 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
     // process the leaves first
 
     long            alphabetDimension      =            theFilter->GetDimension(),
-                    siteCount            =            theFilter->NumberDistinctSites(),
+                    siteCount            =            theFilter->GetPatternCount(),
                     alphabetDimensionmod4  =          alphabetDimension-alphabetDimension%4;
 
     _CalcNode       *theNode               =            ((_CalcNode*) flatCLeaves (0));
@@ -1697,8 +1697,8 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
 
 //_______________________________________________________________________________________________
 
-void     _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache,
-        _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)
+void     _TheTree::SampleAncestorsBySequence (_DataSetFilter const* dsf, _SimpleList const& siteOrdering, node<long>* currentNode, _AVLListX const* nodeToIndex, _Parameter const* iNodeCache,
+        _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter const* catAssignments, long catCount)
 
 // must be called initially with the root node
 
@@ -1719,19 +1719,19 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& 
     long                      childrenCount     = currentNode->get_num_nodes();
 
     if (childrenCount) {
-        long            siteCount                       = dsf->NumberDistinctSites  (),
+        long            siteCount                       = dsf->GetPatternCount  (),
                         alphabetDimension              = dsf->GetDimension         (),
                         nodeIndex                       = nodeToIndex->GetXtra (nodeToIndex->Find ((BaseRef)currentNode)),
                         unitLength                     = dsf->GetUnitLength(),
-                        catBlockShifter                    = catAssignments?(dsf->NumberDistinctSites()*GetINodeCount()):0;
+                        catBlockShifter                    = catAssignments?(dsf->GetPatternCount()*GetINodeCount()):0;
 
 
         _CalcNode *     currentTreeNode = ((_CalcNode*) flatTree (nodeIndex));
-        _SimpleList     sampledStates     (dsf->GetSiteCount (), 0, 0);
+        _SimpleList     sampledStates     (dsf->GetPatternCount (), 0, 0);
 
-        _Parameter  *       _hprestrict_ transitionMatrix = (catAssignments|| !parentStates)?nil:currentTreeNode->GetCompExp()->theData;
-        _Parameter  *       _hprestrict_ conditionals     = catAssignments?nil:(iNodeCache + nodeIndex  * siteCount * alphabetDimension);
-        _Parameter  *       _hprestrict_ cache            = new _Parameter [alphabetDimension];
+        _Parameter  const *  transitionMatrix = (catAssignments|| !parentStates)?nil:currentTreeNode->GetCompExp()->theData;
+        _Parameter  const *  conditionals     = catAssignments?nil:(iNodeCache + nodeIndex  * siteCount * alphabetDimension);
+        _Parameter        *  cache            = new _Parameter [alphabetDimension];
 
         for (long           pattern = 0; pattern < siteCount; pattern++) {
             _SimpleList*    patternMap = (_SimpleList*) expandedSiteMap (siteOrdering.lData[pattern]);
@@ -1750,7 +1750,7 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& 
                 _Parameter  randVal  = genrand_real2(),
                             totalSum = 0.;
 
-                _Parameter  *       _hprestrict_  matrixRow;
+                _Parameter  const *   matrixRow;
 
                 if  (parentStates == nil) {
                     matrixRow = theProbs;
@@ -1802,14 +1802,14 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& 
 
 //_______________________________________________________________________________________________
 
-_List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
-        _SimpleList& siteOrdering,
-        _List& expandedSiteMap,
-        _Parameter* iNodeCache,
-        _Parameter* catAssignments,
+_List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
+        _SimpleList const& siteOrdering,
+        _List const& expandedSiteMap,
+        _Parameter * iNodeCache,
+        _Parameter const* catAssignments,
         long catCount,
         long* lNodeFlags,
-        _GrowingVector* lNodeResolutions,
+        _GrowingVector * lNodeResolutions,
         bool              alsoDoLeaves
                                              )
 
@@ -1823,12 +1823,12 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 // alsoDoLeaves:                if true, also return ML reconstruction of observed (or partially observed) sequences
 
 {
-    long            patternCount                    = dsf->NumberDistinctSites  (),
+    long            patternCount                    = dsf->GetPatternCount  (),
                     alphabetDimension                = dsf->GetDimension         (),
                     unitLength                        = dsf->GetUnitLength        (),
                     iNodeCount                        = GetINodeCount             (),
                     leafCount                     = GetLeafCount              (),
-                    siteCount                        = dsf->GetSiteCount         (),
+                    siteCount                        = dsf->GetPatternCount         (),
                     allNodeCount                    = 0,
                     stateCacheDim                    = (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount)),
                     *stateCache                        = new long [patternCount*(iNodeCount-1)*alphabetDimension],
@@ -1878,7 +1878,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
         }
 
         _CalcNode *          currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):((_CalcNode*) flatTree    (nodeCode));
-        _Parameter  *       _hprestrict_ transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
+        _Parameter  const*        transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
         // this will need to be toggled on a per site basis
         _Parameter  *       childVector;
 
@@ -1891,7 +1891,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
                 transitionMatrix = currentTreeNode->GetCompExp(catAssignments[siteOrdering.lData[siteID]])->theData;
             }
 
-            _Parameter  _hprestrict_ *tMatrix = transitionMatrix;
+            _Parameter  const *tMatrix = transitionMatrix;
             if (isLeaf) {
                 long siteState = lNodeFlags[nodeCode*patternCount + siteOrdering.lData[siteID]] ;
                 if (siteState >= 0)
@@ -2021,7 +2021,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
             howManyOnes += rootConditionals[k]==1.;
         }
 
-        _SimpleList*    patternMap = (_SimpleList*) expandedSiteMap (siteOrdering.lData[siteID]);
+        _SimpleList const*    patternMap = (_SimpleList const*) expandedSiteMap.GetItem(siteOrdering.lData[siteID]);
 
         if (howManyOnes != alphabetDimension) {
             for (long c = 0; c < alphabetDimension; c++) {
@@ -2165,7 +2165,7 @@ _Parameter   _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, l
                                       * matrix2 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[2]->in_object)))->GetCompExp(catID)->theData,
                                         overallResult = 0.;
 
-    long        patternCount =  dsf->NumberDistinctSites();
+    long        patternCount =  dsf->GetPatternCount();
 
     _Parameter  currentAccumulator = 1.;
 
@@ -2531,13 +2531,13 @@ _CalcNode *     _TreeIterator:: Next (void) {
       return Next();
     }
   
-    return _mapNodeToCalcNode(nn);
+    return map_node_to_calcnode(nn);
   }
   return nil;
 }
 
 _CalcNode *     _TreeIterator::Current (void) const {
-  return _mapNodeToCalcNode(iterator.Current());
+  return map_node_to_calcnode(iterator.Current());
 }
 
 long     _TreeIterator::Depth (void) const {

@@ -41,6 +41,7 @@
 #include      "scfg.h"
 #include      <ctype.h>
 #include      "function_templates.h"
+#include      "global_object_lists.h"
 
 #include      "bayesgraph.h"
 
@@ -56,7 +57,7 @@
 #include "dmalloc.h"
 #endif
 
-
+using namespace hyphy_global_objects;
 
 //____________________________________________________________________________________
 // global variables
@@ -387,7 +388,9 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_MatrixRandomValidPDFs.Insert ("Multinomial", _HY_MATRIX_RANDOM_MULTINOMIAL);
   
   
-  _List keywords (&blReturn, 6, &blDataSet, &blDataSetFilter, &blTree, &blTopology, &blLF, &blLF3, &blSCFG);
+  _List keywords;
+  keywords << &blReturn << &blDataSet << &blDataSetFilter << &blTree << &blTopology << &blLF << &blLF3 << &blSCFG;
+  
   
   for (long key = 0; key < keywords.lLength; key++) {
     _String* key_string = (_String*)keywords.GetItem (key);
@@ -397,8 +400,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
 }
 
 //____________________________________________________________________________________
-void         InsertVarIDsInList     (_AssociativeList* theList , _String theKey, _SimpleList& varIDs)
-{
+void         InsertVarIDsInList     (_AssociativeList* theList , _String const& theKey, _SimpleList const& varIDs) {
     _FString arrayKey (theKey, false);
     _Matrix *mxEntry = nil;
 
@@ -415,20 +417,18 @@ void         InsertVarIDsInList     (_AssociativeList* theList , _String theKey,
         mxEntry = new _Matrix;
     }
 
-    checkPointer (mxEntry);
     theList->MStore (&arrayKey,mxEntry,false);
 }
 
 //____________________________________________________________________________________
-void         InsertStringListIntoAVL    (_AssociativeList* theList , _String theKey, _SimpleList& stringsToPick, _List& theStrings)
-{
+void         InsertStringListIntoAVL    (_AssociativeList* theList , _String const& theKey, _SimpleList const& stringsToPick, _List const& theStrings) {
     _FString arrayKey (theKey, false);
     _Matrix *mxEntry = nil;
 
     if (stringsToPick.lLength) {
         _List     theNames;
         for (unsigned long i=0; i < stringsToPick.lLength; i++) {
-            _String * v = (_String*)theStrings (stringsToPick.lData[i]);
+            _String * v = (_String*)theStrings.GetItem(stringsToPick.lData[i]);
             if (v) {
                 theNames << v;
             }
@@ -438,14 +438,13 @@ void         InsertStringListIntoAVL    (_AssociativeList* theList , _String the
         mxEntry = new _Matrix;
     }
 
-    checkPointer (mxEntry);
     theList->MStore (&arrayKey,mxEntry,false);
 }
 
 
 //____________________________________________________________________________________
 
-_Matrix *   CheckMatrixArg          (_String* mxName, bool onlyStrings)
+_Matrix *   CheckMatrixArg          (_String const* mxName, bool onlyStrings)
 {
     _Variable * mVar = FetchVar (LocateVarByName (*mxName));
     if (mVar && mVar->ObjectClass() == MATRIX) {
@@ -460,7 +459,7 @@ _Matrix *   CheckMatrixArg          (_String* mxName, bool onlyStrings)
 
 //____________________________________________________________________________________
 
-_AssociativeList *   CheckAssociativeListArg (_String* mxName)
+_AssociativeList *   CheckAssociativeListArg (_String const* mxName)
 {
     _Variable * mVar = FetchVar (LocateVarByName (*mxName));
     if (mVar && mVar->ObjectClass() == ASSOCIATIVE_LIST) {
@@ -569,8 +568,10 @@ int  _HYSQLBusyCallBack (void* data, int callCount)
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
-{
+void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
+  
+    using namespace hyphy_global_objects;
+  
     chain.currentCommand++;
 
     _String dataObjectID = chain.AddNameSpaceToID(*(_String*)parameters(1));
@@ -579,7 +580,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
     bool isFilter       = false;
 
     if (dsID == -1) {
-        dsID = (parameters.lLength>2)?FindDataSetFilterName (dataObjectID):-1;
+        dsID = (parameters.lLength>2)? FindDataFilter (dataObjectID):-1;
         if (dsID == -1) {
             _AssociativeList * numericFilter = (_AssociativeList*)FetchObjectFromVariableByType(&dataObjectID, ASSOCIATIVE_LIST);
             if (numericFilter) {
@@ -638,34 +639,25 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
                             }
 
                             if (goodSeqs.lLength == seqNames.lLength) {
+                                _String             dataFilterID (chain.AddNameSpaceToID(*(_String*)parameters(0))),
+                                                    dataSetName  = dataFilterID & "_internal_ds";
+ 
                                 _DataSet * dummyDS = new _DataSet;
+                              
                                 dummyDS->SetNoSpecies (seqNames.lLength);
-                                dummyDS->GetNames().Duplicate (&seqNames);
+                                dummyDS->SetNames     (&seqNames);
                                 dummyDS->GetTheMap().Populate (sitePatterns,0,1);
-                                errCode = (*(_String*)parameters(0)) & "_internal_ds";
-                                dsID = FindDataSetName (errCode);
-                                if (dsID < 0) {
-                                    dataSetList         <<dummyDS;
-                                    DeleteObject        (dummyDS);
-                                    dataSetNamesList&&  &errCode;
-                                } else {
-                                    dataSetList.Replace (dsID,dummyDS,false);
-                                }
+ 
+                                AddDataSetToList  (dataSetName, dummyDS);
 
-                                errCode = (*(_String*)parameters(0));
                                 _DataSetFilterNumeric * dsn = new _DataSetFilterNumeric (freqList,goodSeqs,dummyDS,categoryCount);
-                                checkPointer (dsn);
-                                dsID    = FindDataSetFilterName (errCode);
-
-                                if (dsID < 0) {
-                                    dataSetFilterList<<  dsn;
-                                    DeleteObject        (dsn);
-                                    dataSetFilterNamesList&& & errCode;
-                                } else {
-                                    dataSetFilterList.Replace (dsID,dsn,false);
+                              
+                                if (StoreDataFilter (dataFilterID, dsn) >= 0) {
+                                  return;
                                 }
-                                return;
-
+                                
+                                errCode = _String ("Failed to store _DataSetFilterNumeric '") & dataFilterID & "'";
+                              
                             } else {
                                 errCode = _String ("Site frequency patterns/numeric vectors did not pass dimension checks in call to CreateFilter");
                             }
@@ -695,17 +687,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
                         hSpecs,
                         vSpecs;
 
-    long                status  = FindDataSetFilterName (dataFilterID);
 
-    _DataSetFilter      *thedf;
-
-    if (status!=-1) {
-        thedf = (_DataSetFilter*)dataSetFilterList (status);
-    } else {
-        thedf               = new _DataSetFilter();
-        checkPointer        (thedf);
-        AddFilterToList     (dataFilterID,thedf,false);
-    }
 
     if (parameters.lLength>3) {
         vSpecs = *(_String*)parameters(3);
@@ -732,11 +714,11 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
         }
         dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
     } else {
-        _DataSetFilter * dataset1 = (_DataSetFilter*)dataSetFilterList(dsID);
+        const _DataSetFilter * dataset1 = GetDataFilter (dsID);
         dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
 
         if (code!=6 && vSpecs.sLength==0) {
-            vSpecs = _String("0-")&_String(dataset1->GetFullLengthSpecies()-1);
+            vSpecs = _String("0-")&_String(dataset1->GetSiteCount()-1);
         }
 
         dataset1->GetData()->ProcessPartition (vSpecs,vL,true,  &dataset1->theOriginalOrder, &dataset1->theNodeMap, chain.GetNameSpace());
@@ -754,8 +736,9 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
 
             vSpecs = vSpecs & ". The partition has been trimmed at the end.";
             ReportWarning (vSpecs);
-            for (status = vL.lLength%unit; status>0; status--) {
-                vL.Delete (vL.lLength-1);
+          
+            for (long chop = vL.lLength%unit; chop>0; chop--) {
+                vL.Pop();
             }
         }
         if (code == 27) {
@@ -766,24 +749,26 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
 
     }
 
+    _DataSetFilter * thedf = new _DataSetFilter;
     thedf->SetFilter (dataset, unit, hL, vL, isFilter);
 
     if (parameters.lLength>5) {
         hSpecs = GetStringFromFormula((_String*)parameters(5),chain.nameSpacePrefix);
-        thedf->SetExclusions(&hSpecs);
-    } else if ((code!=6)&&isFilter) {
-        _DataSetFilter * df1 = (_DataSetFilter*)dataSetFilterList(dsID);
+        thedf->SetExclusions (&hSpecs);
+    } else if ( code!=6 && isFilter ) {
+        const _DataSetFilter * df1 = GetDataFilter (dsID);
         if (df1->theExclusions.lLength) {
-            thedf->theExclusions.Duplicate (&df1->theExclusions);
+            thedf->theExclusions << df1->theExclusions;
             thedf->SetDimensions();
         }
     }
 
     thedf->SetDimensions();
     thedf->SetupConversion();
-
-    SetDataFilterParameters (dataFilterID, thedf, true);
+  
+    StoreDataFilter(dataObjectID, thedf);
 }
+
 //____________________________________________________________________________________
 
 void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
@@ -829,10 +814,10 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
             objectID = testTree->IsLinkedToALF (pid);
             if (objectID >= 0) {
                 _LikelihoodFunction * anLF      = (_LikelihoodFunction*) likeFuncList (objectID);
-                _DataSetFilter      * dsf       = (_DataSetFilter*) dataSetFilterList (anLF->GetTheFilters()(pid));
+                const _DataSetFilter      * dsf       = anLF->GetIthFilter (pid);
                 anLF->PrepareToCompute();
                 anLF->Compute         ();
-                objectID                        = dsf->NumberDistinctSites();
+                objectID                        = dsf->GetPatternCount();
 
                 _Matrix             *condMx     = new _Matrix   (2*objectID*(testTree->GetLeafCount()
                         + testTree->GetINodeCount()) * testTree->categoryCount,
@@ -1821,7 +1806,7 @@ void      _ElementaryCommand::ExecuteCase57 (_ExecutionList& chain)
                         sMatrix->GetHDim()  ==  nsMatrix->GetVDim() ) {
                     _LikelihoodFunction * theLF = (_LikelihoodFunction*)likeFuncList (f);
 
-                    if (((_DataSetFilter*)dataSetFilterList (theLF->GetTheFilters() (0)))->GetDimension (true) == sMatrix->GetHDim()) {
+                    if (theLF->GetIthFilter(0)->GetDimension (true) == sMatrix->GetHDim()) {
                         long itCount = itCountV;
                         if (itCount>0) {
                             _AssociativeList * res = theLF->SimulateCodonNeutral ((_Matrix*)sMatrix, (_Matrix*)nsMatrix, itCount);
@@ -2296,8 +2281,9 @@ _String _HYHBLTypeToText (long type) {
 
 //____________________________________________________________________________________
 
-BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bool errMsg, bool tryLiteralLookup)
-{
+BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long *index, bool errMsg, bool tryLiteralLookup) {
+    using namespace hyphy_global_objects;
+  
     long loc = -1;
     if (type & HY_BL_DATASET) {
         loc = FindDataSetName (name);
@@ -2311,13 +2297,13 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
     }
 
     if (type & HY_BL_DATASET_FILTER) {
-        loc = FindDataSetFilterName (name);
+        loc = FindDataFilter (name);
         if (loc >= 0) {
             type = HY_BL_DATASET_FILTER;
             if (index) {
                 *index = loc;
             }
-            return dataSetFilterList (loc);
+            return GetDataFilter (loc);
         }
     }
 
@@ -2392,6 +2378,107 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
     }
     type = HY_BL_NOT_DEFINED;
     return nil;
+}
+
+//____________________________________________________________________________________
+
+BaseRef _HYRetrieveBLObjectByNameMutable    (_String const& name, long& type, long *index, bool errMsg, bool tryLiteralLookup) {
+  using namespace hyphy_global_objects;
+  
+  long loc = -1;
+  if (type & HY_BL_DATASET) {
+    loc = FindDataSetName (name);
+    if (loc >= 0) {
+      type = HY_BL_DATASET;
+      if (index) {
+        *index = loc;
+      }
+      return dataSetList (loc);
+    }
+  }
+  
+  if (type & HY_BL_DATASET_FILTER) {
+    loc = FindDataFilter (name);
+    if (loc >= 0) {
+      type = HY_BL_DATASET_FILTER;
+      if (index) {
+        *index = loc;
+      }
+      return ExclusiveLockDataFilter (loc);
+    }
+  }
+  
+  if (type & HY_BL_LIKELIHOOD_FUNCTION) {
+    loc = FindLikeFuncName (name);
+    if (loc >= 0) {
+      type = HY_BL_LIKELIHOOD_FUNCTION;
+      if (index) {
+        *index = loc;
+      }
+      return likeFuncList (loc);
+    }
+  }
+  
+  if (type & HY_BL_SCFG) {
+    loc = FindSCFGName (name);
+    if (loc >= 0) {
+      type = HY_BL_SCFG;
+      if (index) {
+        *index = loc;
+      }
+      return scfgList (loc);
+    }
+  }
+  
+  if (type & HY_BL_BGM) {
+    loc = FindBgmName (name);
+    if (loc >= 0) {
+      type = HY_BL_BGM;
+      if (index) {
+        *index = loc;
+      }
+      return bgmList (loc);
+    }
+  }
+  
+  if (type & HY_BL_MODEL) {
+    loc = FindModelName(name);
+    if (loc < 0 && (name.Equal (&lastModelParameterList) || name.Equal (&useLastModel))) {
+      loc = lastMatrixDeclared;
+    }
+    if (loc >= 0) {
+      type = HY_BL_MODEL;
+      if (index) {
+        *index = loc;
+      }
+      if (IsModelOfExplicitForm(loc)) {
+        return (BaseRef)modelMatrixIndices.lData[loc];
+      }
+      return LocateVar (modelMatrixIndices.lData[loc]);
+    }
+  }
+  
+  if (type & HY_BL_HBL_FUNCTION) {
+    loc = FindBFFunctionName(name);
+    if (loc >= 0) {
+      type = HY_BL_HBL_FUNCTION;
+      if (index) {
+        *index = loc;
+      }
+      return &GetBFFunctionBody (loc);
+    }
+  }
+  
+  if (tryLiteralLookup) {
+    _String nameIDRef = ProcessLiteralArgument(&name, nil);
+    return _HYRetrieveBLObjectByNameMutable (nameIDRef, type, index, errMsg, false);
+  }
+  
+  if (errMsg) {
+    WarnError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
+  }
+  type = HY_BL_NOT_DEFINED;
+  return nil;
 }
 
 //____________________________________________________________________________________

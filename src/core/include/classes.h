@@ -53,6 +53,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #define SWAP(a,b,c) ((c)=(a),(a)=(b),(b)=(c))
+#define EXCHANGE(a,b) {auto c = (a); (a) = (b); (b) = c;} 
 #define DEBUG 0
 
 #include "simplelist.h"

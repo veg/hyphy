@@ -45,8 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define  MEMORYSTEP 8
 
-class _SimpleList:public BaseObj
-{
+class _SimpleList:public BaseObj {
     friend class _AVLList;
 
     protected:
@@ -73,7 +72,7 @@ class _SimpleList:public BaseObj
         _SimpleList(unsigned long);
 
         // stack copy contructor
-        _SimpleList(_SimpleList&,long=0,long=-1);
+        _SimpleList(_SimpleList const&,long=0,long=-1);
 
         // data constructor (1 member list)
         _SimpleList(long);
@@ -103,7 +102,7 @@ class _SimpleList:public BaseObj
         long& operator [] (const long);
 
         // element location functions - read only
-        long operator () (const unsigned long);
+        long operator () (const unsigned long) const;
 
         // assignment operator
         virtual _SimpleList const & operator = (_SimpleList const&);
@@ -117,7 +116,7 @@ class _SimpleList:public BaseObj
         // append number to this if it's not in the list (search first). List assumed unsorted.
         virtual bool operator >> (long);
 
-        virtual void operator << (_SimpleList&);
+        virtual void operator << (_SimpleList const &);
 
 
         /*
@@ -201,9 +200,49 @@ class _SimpleList:public BaseObj
         */
         virtual void DeleteList(const _SimpleList&);
 
-        // shift a range of elements in the array
+        /** shift a range of elements in the array
+         * Move a block of elements in the list 
+         * Example: SimpleList (1,3,5,7).Displace (1,2,1) = (1,7,3,5)
+         * @param from start the block here (0-based, inclusive)
+         * @param to end the block here (0-based, inclusive)
+         * @param delta number of slots to move (positive or negative, range checked)
+         */
         void Displace(long,long,long);
+        
+        /** Adjust the argument for skipped elements in the [0-max] range
+         * so that the argument is increased by however many elements in the list
+         * are less than it. The list must be sorted
+         * Example: SimpleList (2,4,5).SkipCorrect (2) = 3 
+         * Example: SimpleList (2,4,5).SkipCorrect (4) = 7
+         
+         * @param index the index to correct
+         * @return the corrected index
+         */
+        long SkipCorrect (long) const;
 
+        /** Adjust the argument for skipped elements in the [0-max] range
+         * so that the argument is remapped to the range with elements in this
+         * list excluded. (*this) list must be sorted
+         * Example: SimpleList (2,4,5).SkipCorrect (3) = 2
+         
+         * @param index the index to correct
+         * @param excluded the value to return if index is in the list
+         * @return the corrected index
+         */
+        long CorrectForExclusions (long index, long excluded = -1) const;
+
+        /** Adjust the [sorted] list of indcies argument for skipped elements in the [0-max] range
+         * so that the arguments is remapped to the range with elements in this
+         * list excluded. (*this) list must be sorted
+         * Example: SimpleList (2,4,5).SkipCorrect ([2,3],2) = 1 (and the list is now [2])
+         
+         * @param index the list of indices to correct; corrected indices are written here
+         * @param count the length of indices
+         * @return the number of entires in the indices list that are not excluded
+         */
+  
+        long CorrectForExclusions (long * indices, long count) const;
+  
         /**
         * Much like [] and () except negative indices return offsets from the end. Invalid indices return 0;
         * Example: SimpleList(1,3,5,7).Element(1) = [3]
@@ -235,7 +274,7 @@ class _SimpleList:public BaseObj
         * @param startAt Index to start at 
         * @return -1 if not found, index if found
         */
-        virtual long Find(long, long startAt = 0);
+        virtual long Find(long, long startAt = 0) const;
 
         /**
         * Same as find, but steps over indices 
@@ -269,7 +308,7 @@ class _SimpleList:public BaseObj
 
         void Intersect(_SimpleList&, _SimpleList&);
 
-        BaseRef ListToPartitionString(void);
+        BaseRef ListToPartitionString(void) const;
 
         virtual BaseRef makeDynamic(void);
 
@@ -449,6 +488,20 @@ class _SimpleList:public BaseObj
         * @return Nothing. Acts on the List object it was called from. 
         */
         void Sort(bool ascending=true);
+  
+        /**
+         * Maps the integer argument to the value of the corresponding 
+         * element in the list. Performs range checks, and returns default value 
+         * if the mapping failed. Equivalent to 
+         * return index >= 0 && index < lLength ? lData[index] : map_failed
+         
+         * @param index the index to map
+         * @param map_failed the value to return if the index is out of range
+         * @return the mapped value
+         */
+  
+         long Map (long index, long map_failed = -1L) const;
+ 
 
 
         /**

@@ -136,10 +136,9 @@ _String::_String (void)
 }
 
 //Length constructor
-_String::_String (unsigned long sL, bool flag)
-{
+_String::_String (unsigned long sL, bool is_buffer) {
 
-    if (flag) {
+    if (is_buffer) {
         sLength = 0;
         nInstances = sL>storageIncrement?sL:storageIncrement;
         sData = (char*)MemAllocate (nInstances*sizeof (char));
@@ -339,8 +338,7 @@ bool _String::operator == (_String const& s) const {
 }
 
 //Append operator
-const _String _String::operator & (const _String s) const
-{
+const _String _String::operator & (const _String& s) const {
     if (sLength+s.sLength == 0UL) {
         return empty;
     }
@@ -360,8 +358,7 @@ const _String _String::operator & (const _String s) const
 }
 
 // append operator
-void _String::operator << (const _String* s)
-{
+_String& _String::operator << (const _String* s) {
   if ( s && s->sLength) {
     if (nInstances < sLength + s->sLength) {
       unsigned long incBy = sLength + s->sLength - nInstances;
@@ -389,30 +386,30 @@ void _String::operator << (const _String* s)
     //memcpy(sData+sLength,s->sData,s->sLength);
     sLength+=s->sLength;
   }
+  
+  return *this;
 }
 
 // append operator
-void _String::operator << (const _String& s)
-{
-   (*this) << &s;
+_String& _String::operator << (const _String& s) {
+   return (*this) << &s;
 }
 
 //Append operator
-void _String::operator << (const char* str)
-{
+_String& _String::operator << (const char* str) {
     _String conv (str);
-    (*this)<<&conv;
+    return (*this)<<&conv;
 }
 
 //Append operator
-void _String::operator << (const char c)
-{
-    if (nInstances <= sLength) {
-        nInstances  += ((storageIncrement*8 > sLength)? storageIncrement: (sLength/8+1));
-        checkPointer (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)));
-    }
+_String& _String::operator << (const char c) {
+  if (nInstances <= sLength) {
+      nInstances  += ((storageIncrement*8 > sLength)? storageIncrement: (sLength/8+1));
+      checkPointer (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)));
+  }
 
-    sData[sLength++]=c;
+  sData[sLength++]=c;
+  return *this;
 }
 
 //Return good ole char*
@@ -421,32 +418,27 @@ _String::operator const char* (void) const {
 }
 
 //Lexicographic comparison
-bool _String::operator > (_String s)
-{
+bool _String::operator > (_String const& s) const {
     return Greater(&s);
 }
 
 //Lexicographic comparison
-bool _String::operator <= (_String s)
-{
+bool _String::operator <= (_String const & s) const {
     return !((*this)>s);
 }
 
 //Lexicographic comparison
-bool _String::operator >= (_String s)
-{
-    return (((*this)>s)||(*this==s));
+bool _String::operator >= (_String const &s) const {
+    return !((*this) < s);
 }
 
 //Lexicographic comparison
-bool _String::operator != (_String s)
-{
+bool _String::operator != (_String const& s) const {
     return !(*this==s);
 }
 
 //Lexicographic comparison
-bool _String::operator < (_String s)
-{
+bool _String::operator < (_String const & s) const {
     return Less(&s);
 }
 
@@ -1193,8 +1185,7 @@ const char * _String::getStr (void) const
 }
 
 //Element location functions
-const char _String::getChar (long index) const
-{
+const char _String::getChar (long index) const {
     if (((unsigned long)index)<sLength) {
         return sData[index];
     }
@@ -1435,13 +1426,19 @@ _String* _String::Sort (_SimpleList* index)
     return new _String;
 }
 
-void    _String::StripQuotes (void)
-{
+void    _String::StripQuotes (void) {
     if (sLength&&(sData[sLength-1]=='"')&&(sData[0]=='"')) {
         Trim(1,sLength-2);
     }    
 }
 
+const _String _String::Enquote (char quote_char) const {
+  _String quoted (2UL + sLength, true);
+  quoted << quote_char;
+  quoted << *this;
+  quoted << quote_char;
+  return quoted;
+}
 
 const _List _String::Tokenize (_String const& s) const {
     _List pieces;
@@ -1808,16 +1805,14 @@ bool _String::EqualWithWildChar (_String* s, char wildchar)
     return (*sP==0);
 }
 
-bool _String::Greater (_String *s)
-{
+bool _String::Greater (_String const *s) const {
     unsigned long top = ((s->sLength>sLength)?sLength:s->sLength);
 
     for (long i=0; i<top; i++) {
-        int j = sData[i]-s->sData[i];
-        if (j>0) {
+        if (sData[i] > s->sData[i]) {
             return true;
         }
-        if (j<0) {
+        if (sData[i] < s->sData[i]) {
             return false;
         }
     }
@@ -1825,19 +1820,17 @@ bool _String::Greater (_String *s)
     return (sLength>s->sLength);
 }
 
-bool _String::Less (_String *s)
-{
+bool _String::Less (_String const *s) const {
     unsigned long top = ((s->sLength>sLength)?sLength:s->sLength);
 
     for (long i=0; i<top; i++) {
-        int j= sData[i]-s->sData[i];
-        if (j>0) {
-            return false;
-        }
-        if (j<0) {
-            return true;
-        }
-    }
+      if (sData[i] < s->sData[i]) {
+        return true;
+      }
+      if (sData[i] > s->sData[i]) {
+        return false;
+      }
+   }
 
     return (sLength<s->sLength);
 
@@ -2557,7 +2550,7 @@ void    _String::AppendNCopies   (_String const& value, unsigned long copies) {
 }
 
 
-unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object, _String * context) {
+unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object, _String const * context) const {
     char first_char    = getChar(0);
     bool is_func_ref  = getChar(sLength-1) == '&';
          
