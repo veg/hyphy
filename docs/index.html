@@ -37,9 +37,9 @@
                 alignments.DefineFiltersForPartitions
               </a>
               <a
-                href='#alignments.Extract_site_patterns'
+                href='#alignments.ExtractSitePatterns'
                 class='block bold'>
-                alignments.Extract_site_patterns
+                alignments.ExtractSitePatterns
               </a>
               <a
                 href='#alignments.GetSequenceNames'
@@ -397,6 +397,16 @@
                 models.codon
               </a>
               <a
+                href='#models.codon.BSREL'
+                class='block bold'>
+                models.codon.BSREL
+              </a>
+              <a
+                href='#models.codon.BSREL.ModelDescription'
+                class='block bold'>
+                models.codon.BSREL.ModelDescription
+              </a>
+              <a
                 href='#models.codon.generic.DefineQMatrix'
                 class='block bold'>
                 models.codon.generic.DefineQMatrix
@@ -417,6 +427,11 @@
                 models.codon.MG_REV._DefineQ
               </a>
               <a
+                href='#models.codon.MG_REV._DefineQ'
+                class='block bold'>
+                models.codon.MG_REV._DefineQ
+              </a>
+              <a
                 href='#models.codon.MG_REV._GenerateRate'
                 class='block bold'>
                 models.codon.MG_REV._GenerateRate
@@ -425,6 +440,11 @@
                 href='#models.codon.MG_REV.ModelDescription'
                 class='block bold'>
                 models.codon.MG_REV.ModelDescription
+              </a>
+              <a
+                href='#models.codon.MG_REV.set_branch_length'
+                class='block bold'>
+                models.codon.MG_REV.set_branch_length
               </a>
               <a
                 href='#models.codon.MG_REV.set_branch_length'
@@ -470,21 +490,6 @@
                 href='#models.DNA.HKY85'
                 class='block bold'>
                 models.DNA.HKY85
-              </a>
-              <a
-                href='#models.DNA.HKY85._DefineQ'
-                class='block bold'>
-                models.DNA.HKY85._DefineQ
-              </a>
-              <a
-                href='#models.DNA.HKY85._GenerateRate'
-                class='block bold'>
-                models.DNA.HKY85._GenerateRate
-              </a>
-              <a
-                href='#models.DNA.HKY85.is_transition'
-                class='block bold'>
-                models.DNA.HKY85.is_transition
               </a>
               <a
                 href='#models.DNA.HKY85.ModelDescription'
@@ -890,8 +895,8 @@
       </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
-  <h2 id='alignments.Extract_site_patterns' class='mt0'>
-    alignments.Extract_site_patterns<span class='gray'>(data_filter)</span>
+  <h2 id='alignments.ExtractSitePatterns' class='mt0'>
+    alignments.ExtractSitePatterns<span class='gray'>(data_filter)</span>
   </h2>
   
   
@@ -1222,6 +1227,9 @@
         <p>updated data_info that includes the number of sites, dataset, and datafilter name</p>
 
       </div>
+    <h4>Examples</h4>
+
+    <pre class='overflow-auto'>results = alignments.ReadNucleotideAlignment(file_name, <span class="hljs-string">"hky85.nuc_data"</span>, <span class="hljs-string">"hky85.nuc_filter"</span>);</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='alignments.ReadNucleotideDataSet' class='mt0'>
@@ -1236,14 +1244,16 @@
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>dataset_name</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>dataset_name</strong>
           :
           <div class='force-inline'>
             <p>the name of the dataset you wish to use</p>
 
           </div>
         </li>
-        <li> <strong>file_name</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>file_name</strong>
           :
           <div class='force-inline'>
             <p>path to file</p>
@@ -1259,6 +1269,9 @@
         <p>r - metadata pertaining to the dataset</p>
 
       </div>
+    <h4>Examples</h4>
+
+    <pre class='overflow-auto'>alignments.ReadNucleotideDataSet(<span class="hljs-string">"nuc_data"</span>, PATH_TO_CURRENT_BF + <span class="hljs-string">"data/CD2.nex"</span>);</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='alignments.ReadNucleotideDataSetString' class='mt0'>
@@ -1626,7 +1639,8 @@
   
   
   
-  
+  <p>Returns the maximum likelihood estimates using the MGREV substitution model</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
         <li>DataFilter
@@ -2779,34 +2793,53 @@ for non-square matrices, the largest square minor is symmetrized</p>
   
   
   
-  
+  <p>Defines a model to use with the included tree</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>id</strong>
+        <li>(
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+|
+Matrix
+)
+ <strong>id</strong>
           :
           <div class='force-inline'>
-            
+            <p>the id of the new tree</p>
+
           </div>
         </li>
-        <li> <strong>tree</strong>
+        <li>Tree
+ <strong>tree</strong>
           :
           <div class='force-inline'>
-            
+            <p>the tree to apply the model to</p>
+
           </div>
         </li>
-        <li> <strong>model_list</strong>
+        <li>Matrix
+ <strong>model_list</strong>
           :
           <div class='force-inline'>
-            
+            <p>the list of models to apply</p>
+
           </div>
         </li>
-        <li> <strong>rules</strong>
+        <li>Dictionary
+ <strong>rules</strong>
           :
           <div class='force-inline'>
             
           </div>
         </li>
     </ul>
+      <h4>Returns</h4>
+      <code></code>
+      :
+      <div class='force-inline'>
+        <p>nothing. The id parameter will be used to create a variable for a new Tree.</p>
+
+      </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='model.define_from_components' class='mt0'>
@@ -2929,47 +2962,80 @@ model.define_from_components(q,evf,<span class="hljs-number">1</span>);</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='model.generic.DefineModel' class='mt0'>
-    model.generic.DefineModel<span class='gray'>(model_spec, id, arguments, data_filter, estimator_type)</span>
+    model.generic.DefineModel<span class='gray'>(model_spec, id, arguments, estimator_type)</span>
   </h2>
   
   
   
   
   
-  
+  <p>Defines a substitution model to use.</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>model_spec</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>model_spec</strong>
           :
           <div class='force-inline'>
-            
+            <p>the name of the ModelDescription function to use.
+Generally, these are found in the models / directory and are of the following form:
+{
+"alphabet": models.DNA.alphabet,
+"description": "Hasegawa Kishino Yano 85 (HKY85) model of nucleotide substitution",
+"canonical": 1, // is of the r_ij \times \pi_j form
+"reversible": 1,
+terms.efv_estimate_name: terms.freqs.4x1,
+"parameters": {
+"global": {},
+"local": {},
+"empirical": 3
+},
+"type": type,
+"get-branch-length": "",
+"set-branch-length": "models.generic.SetBranchLength",
+"constrain-branch-length": "models.generic.constrain_branch_length",
+"frequency-estimator": "frequencies.empirical.nucleotide",
+"q_ij": "models.DNA.HKY85._GenerateRate",
+"time": "models.DNA.generic.Time",
+"defineQ": "models.DNA.HKY85._DefineQ",
+"post-definition": "models.generic.post.definition"
+};</p>
+
           </div>
         </li>
-        <li> <strong>id</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>id</strong>
           :
           <div class='force-inline'>
-            
+            <p>the id of the namespace to work within</p>
+
           </div>
         </li>
-        <li> <strong>arguments</strong>
+        <li>Dictionary
+ <strong>arguments</strong>
           :
           <div class='force-inline'>
-            
+            <p>a list of the arguments to be passed to <code>model_spec</code></p>
+
           </div>
         </li>
-        <li> <strong>data_filter</strong>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>estimator_type</strong>
           :
           <div class='force-inline'>
-            
-          </div>
-        </li>
-        <li> <strong>estimator_type</strong>
-          :
-          <div class='force-inline'>
-            
+            <p>type of estimator to use as defined in tasks/estimators.bf</p>
+
           </div>
         </li>
     </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>the defined model</p>
+
+      </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='model.generic.get_a_parameter' class='mt0'>
@@ -3191,6 +3257,45 @@ model.define_from_components(q,evf,<span class="hljs-number">1</span>);</pre>
   
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.BSREL' class='mt0'>
+    models.codon.BSREL<span class='gray'></span>
+  </h2>
+  
+  
+  
+  
+  
+  
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.BSREL.ModelDescription' class='mt0'>
+    models.codon.BSREL.ModelDescription<span class='gray'>(type, code)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>type</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>code</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
   <h2 id='models.codon.generic.DefineQMatrix' class='mt0'>
     models.codon.generic.DefineQMatrix<span class='gray'>(modelSpect, namespace)</span>
   </h2>
@@ -3255,6 +3360,42 @@ model.define_from_components(q,evf,<span class="hljs-number">1</span>);</pre>
   
   
   
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.MG_REV._DefineQ' class='mt0'>
+    models.codon.MG_REV._DefineQ<span class='gray'>(mg_rev, namespace)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>mg_rev</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>namespace</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code>Model
+</code>
+      :
+      <div class='force-inline'>
+        <p>updated model</p>
+
+      </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='models.codon.MG_REV._DefineQ' class='mt0'>
@@ -3369,6 +3510,53 @@ model.define_from_components(q,evf,<span class="hljs-number">1</span>);</pre>
           </div>
         </li>
     </ul>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='models.codon.MG_REV.set_branch_length' class='mt0'>
+    models.codon.MG_REV.set_branch_length<span class='gray'>(model, value, parameter)</span>
+  </h2>
+  
+  
+  
+  
+  
+  
+    <h4>Parameters</h4>
+    <ul class='suppress-p-margin'>
+        <li>Model
+ <strong>model</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li>(
+AssociativeList
+|
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+)
+ <strong>value</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+ <strong>parameter</strong>
+          :
+          <div class='force-inline'>
+            
+          </div>
+        </li>
+    </ul>
+      <h4>Returns</h4>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+</code>
+      :
+      <div class='force-inline'>
+        <p>0</p>
+
+      </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='models.codon.MG_REV.set_branch_length' class='mt0'>
@@ -3605,111 +3793,6 @@ AssociativeList
   
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
-  <h2 id='models.DNA.HKY85._DefineQ' class='mt0'>
-    models.DNA.HKY85._DefineQ<span class='gray'>(hky85, namespace)</span>
-  </h2>
-  
-  
-  
-  
-  
-  
-    <h4>Parameters</h4>
-    <ul class='suppress-p-margin'>
-        <li>Dictionary
- <strong>hky85</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
- <strong>namespace</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-    </ul>
-</section>
-</div><div class='py1'><section class='py2 clearfix'>
-  <h2 id='models.DNA.HKY85._GenerateRate' class='mt0'>
-    models.DNA.HKY85._GenerateRate<span class='gray'>(fromChar, toChar, namespace, model_type)</span>
-  </h2>
-  
-  
-  
-  
-  
-  
-    <h4>Parameters</h4>
-    <ul class='suppress-p-margin'>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
- <strong>fromChar</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
- <strong>toChar</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
- <strong>namespace</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
- <strong>model_type</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-    </ul>
-      <h4>Returns</h4>
-      <code></code>
-      :
-      <div class='force-inline'>
-        <p>models.DNA.HKY85._GenerateRate.p</p>
-
-      </div>
-</section>
-</div><div class='py1'><section class='py2 clearfix'>
-  <h2 id='models.DNA.HKY85.is_transition' class='mt0'>
-    models.DNA.HKY85.is_transition<span class='gray'>(fromChar, toChar)</span>
-  </h2>
-  
-  
-  
-  
-  
-  
-    <h4>Parameters</h4>
-    <ul class='suppress-p-margin'>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
- <strong>fromChar</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
- <strong>toChar</strong>
-          :
-          <div class='force-inline'>
-            
-          </div>
-        </li>
-    </ul>
-</section>
-</div><div class='py1'><section class='py2 clearfix'>
   <h2 id='models.DNA.HKY85.ModelDescription' class='mt0'>
     models.DNA.HKY85.ModelDescription<span class='gray'>(type)</span>
   </h2>
@@ -3718,17 +3801,35 @@ AssociativeList
   
   
   
-  
+  <p>Describes and returns the HKY85 substitution model.
+To be used with models.generic.DefineModel</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
         <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
  <strong>type</strong>
           :
           <div class='force-inline'>
-            
+            <p>a type defined in models/terms.bf, such as <code>terms.local</code> or <code>terms.global</code></p>
+
           </div>
         </li>
     </ul>
+      <h4>Returns</h4>
+      <code>Dictionary
+</code>
+      :
+      <div class='force-inline'>
+        <p>HKY85 model description</p>
+
+      </div>
+    <h4>Examples</h4>
+
+    <pre class='overflow-auto'>hky85 = model.generic.DefineModel(<span class="hljs-string">"models.DNA.HKY85.ModelDescription"</span>, 
+                                  <span class="hljs-string">"hky"</span>, 
+                                  {<span class="hljs-string">"0"</span> : <span class="hljs-string">"terms.global"</span>}, 
+                                  codon_data, 
+                                  None);</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='models.generic.AttachFilter' class='mt0'>
@@ -4896,7 +4997,7 @@ AssociativeList
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='trees.GetTreeString' class='mt0'>
-    trees.GetTreeString<span class='gray'>(or)</span>
+    trees.GetTreeString<span class='gray'>(look_for_newick_tree)</span>
   </h2>
   
   
@@ -4907,11 +5008,15 @@ AssociativeList
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
- <strong>or</strong>
+        <li>(
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+|
+Bool
+)
+ <strong>look_for_newick_tree</strong>
           :
           <div class='force-inline'>
-            <p>{Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file.</p>
+            <p>If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file.</p>
 
           </div>
         </li>
@@ -4927,22 +5032,28 @@ AssociativeList
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='trees.LoadAnnotatedTopology' class='mt0'>
-    trees.LoadAnnotatedTopology<span class='gray'>(or)</span>
+    trees.LoadAnnotatedTopology<span class='gray'>(look_for_newick_tree)</span>
   </h2>
   
   
   
   
   
-  <p>Returns tree information from extractTreeInfo after calling getTreeString</p>
+  <p>Loads an annatotaed tree topology from a newick tree</p>
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
- <strong>or</strong>
+        <li>(
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>
+|
+Bool
+)
+ <strong>look_for_newick_tree</strong>
           :
           <div class='force-inline'>
-            <p>{Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file.</p>
+            <p>If a string, sanitizes and
+returns the string. If TRUE, search the alignment file for a newick tree. If
+FALSE, the user will be prompted for a nwk tree file.</p>
 
           </div>
         </li>
@@ -4952,7 +5063,7 @@ AssociativeList
 </code>
       :
       <div class='force-inline'>
-        <p>extracted tree information</p>
+        <p>an annotated tree</p>
 
       </div>
 </section>
@@ -4976,10 +5087,11 @@ AssociativeList
         </li>
     </ul>
       <h4>Returns</h4>
-      <code></code>
+      <code>Dictionary
+</code>
       :
       <div class='force-inline'>
-        <p>nothing</p>
+        <p>an annotated tree</p>
 
       </div>
 </section>
@@ -4992,19 +5104,26 @@ AssociativeList
   
   
   
-  
+  <p>Loads a tree topology with node name label mappings and annotations from a list of partitions</p>
+
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li> <strong>partitions</strong>
+        <li>Matrix
+ <strong>partitions</strong>
           :
           <div class='force-inline'>
-            
+            <p>a 1xN vector of partition names, typically
+retrieved from the <code>partitions</code> key in the dictionary returned from an
+alignments parser function.</p>
+
           </div>
         </li>
-        <li> <strong>mapping</strong>
+        <li>Dictionary
+ <strong>mapping</strong>
           :
           <div class='force-inline'>
-            
+            <p>a mapping of node names to labels</p>
+
           </div>
         </li>
     </ul>
@@ -5016,6 +5135,29 @@ AssociativeList
         <p>of matched partitions</p>
 
       </div>
+    <h4>Examples</h4>
+
+    <pre class='overflow-auto'>hky85_nucdata_info = alignments.ReadNucleotideAlignment(file_name, <span class="hljs-string">"hky85.nuc_data"</span>, <span class="hljs-string">"hky85.nuc_filter"</span>);
+ name_mapping = {
+  <span class="hljs-string">"HUMAN"</span>:<span class="hljs-string">"HUMAN"</span>,
+  <span class="hljs-string">"CHIMP"</span>:<span class="hljs-string">"CHIMP"</span>,
+  <span class="hljs-string">"BABOON"</span>:<span class="hljs-string">"BABOON"</span>,
+  <span class="hljs-string">"RHMONKEY"</span>:<span class="hljs-string">"RHMONKEY"</span>,
+  <span class="hljs-string">"COW"</span>:<span class="hljs-string">"COW"</span>,
+  <span class="hljs-string">"PIG"</span>:<span class="hljs-string">"PIG"</span>,
+  <span class="hljs-string">"HORSE"</span>:<span class="hljs-string">"HORSE"</span>,
+  <span class="hljs-string">"CAT"</span>:<span class="hljs-string">"CAT"</span>,
+  <span class="hljs-string">"MOUSE"</span>:<span class="hljs-string">"MOUSE"</span>,
+  <span class="hljs-string">"RAT"</span>:<span class="hljs-string">"RAT"</span>
+ };
+ trees.LoadAnnotatedTreeTopology.match_partitions(hky85_nucdata_info[terms.json.partitions], name_mapping);
+ =&gt; 
+ {
+  <span class="hljs-string">"0"</span>:{
+    <span class="hljs-string">"name"</span>:<span class="hljs-string">"default"</span>,
+    <span class="hljs-string">"filter-string"</span>:<span class="hljs-string">""</span>,
+    <span class="hljs-string">"tree"</span>: *    }
+ }</pre>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='trees.PartitionTree' class='mt0'>
