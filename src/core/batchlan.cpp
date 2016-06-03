@@ -761,7 +761,7 @@ long GetBFFunctionCount (void) {
 }
 
 //____________________________________________________________________________________
-long    FindBFFunctionName (_String&s, _VariableContainer const* theP) {
+long    FindBFFunctionName (_String const&s, _VariableContainer const* theP) {
     if (theP) {
         _String prefix = *(theP->GetName());
 
@@ -769,7 +769,7 @@ long    FindBFFunctionName (_String&s, _VariableContainer const* theP) {
             _String test_id = prefix & '.' & s;
             long idx = batchLanguageFunctionNames.FindObject (&test_id);
             if (idx >= 0) {
-                s = test_id;
+                //s = test_id;
                 return idx;
             }
             long cut_at = prefix.FindBackwards ('.', 0, -1);
@@ -786,8 +786,7 @@ long    FindBFFunctionName (_String&s, _VariableContainer const* theP) {
 
 
 //____________________________________________________________________________________
-long    FindBgmName (_String&s)
-{
+long    FindBgmName (_String const&s) {
     return bgmNamesList.FindObject (&s);
 }
 
@@ -5204,7 +5203,8 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
                             _Parameter          onlyTheIndex = 0.0;
                             checkParameter      (getDataInfoReturnsOnlyTheIndex,onlyTheIndex,0.0);
                             
-                            long                theValue = dsf->Translate2Frequencies ((*dsf)(site,seq), res->theData,  true);
+                            
+                            long                theValue = dsf->Translate2Frequencies (dsf->RetrieveState(site, seq), res->theData,  true);
                             
                             if (onlyTheIndex > 0.5) {
                               stVar->SetValue (new _Constant (theValue),false);
@@ -5221,7 +5221,7 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
                                     * storage     = new _Matrix (dsf->GetDimension (true), 1, false, true);
                             
                             for (long species_index = dsf->NumberSpecies()-1; species_index >= 0; species_index --) {
-                              dsf->Translate2Frequencies ((*dsf)(site,species_index), storage->theData,  count_gaps >= 0.5);
+                              dsf->Translate2Frequencies (*dsf->RetrieveState(site,species_index), storage->theData,  count_gaps >= 0.5);
                               *accumulator += *storage;
                             }
                             DeleteObject (storage);
@@ -5237,13 +5237,13 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
                             _Matrix * res;
 
                             if (pcAmbiguitiesAverage.Equal (resFlag)) {
-                                res = dsf->ComputePairwiseDifferences (seq,site,1);
+                                res = dsf->ComputePairwiseDifferences (seq,site,kAmbiguityHandlingAverageFrequencyAware);
                             } else if (pcAmbiguitiesResolve.Equal (resFlag)) {
-                                res = dsf->ComputePairwiseDifferences (seq,site,2);
+                                res = dsf->ComputePairwiseDifferences (seq,site,kAmbiguityHandlingResolve);
                             } else if (pcAmbiguitiesSkip.Equal (resFlag)) {
-                                res = dsf->ComputePairwiseDifferences (seq,site,3);
+                                res = dsf->ComputePairwiseDifferences (seq,site,kAmbiguityHandlingSkip);
                             } else {
-                                res = dsf->ComputePairwiseDifferences (seq,site,0);
+                                res = dsf->ComputePairwiseDifferences (seq,site,kAmbiguityHandlingResolveFrequencyAware);
                             }
 
                             stVar->SetValue (res,false);
@@ -5289,10 +5289,10 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
         k = FindBFFunctionName (callBack);
 
         if (k<0) {
-            errMsg = _String ("'") & *arg2 & "' is not a defined user batch language function ";
+            errMsg = arg2->Enquote() & " is not a defined user batch language function ";
         } else {
             if (GetBFFunctionArgumentCount(k)!=2L) {
-                errMsg = *arg2 & " callback function must depend on 2 parameters ";
+                errMsg = arg2->Enquote() & " callback function must depend on 2 parameters ";
             } else {
                 lf->StateCounter (k);
             }
@@ -5309,8 +5309,7 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
-{
+void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
     chain.currentCommand++;
 
@@ -5401,8 +5400,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
                                         long    s = ds->GetNames().lLength;
 
                                         if (s<2) {
-                                            _String rt ("Root");
-                                            ds->GetNames().InsertElement (&rt,0,true);
+                                            ds->InsertName (_String ("Root"),0L);
                                             s ++;
                                         }
 
@@ -5462,12 +5460,12 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
                                         }
                                         if (errMsg.sLength == 0) {
 
-                                            long       filterID = store_data_filter(simulationFilter, newFilter);
+                                            long       filterID = StoreDataFilter (simulationFilter, newFilter);
                                           
                                             spawningTree->SetUp();
                                             spawningTree->InitializeTreeFrequencies((_Matrix*)freqVar->Compute(),true);
                                           
-                                            _String filter_specification = *get_filter_name(filterID) & spawningTree->GetName()->Enquote(',') & *freqVar->GetName();
+                                            _String filter_specification = *GetFilterName (filterID) & spawningTree->GetName()->Enquote(',') & *freqVar->GetName();
                                           
                                             _LikelihoodFunction lf (filter_specification, nil);
 
@@ -5534,7 +5532,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
 
                                                 StoreADataSet (simDataSet, simName);
                                                 DeleteObject (simName);
-                                                KillDataFilterRecord (filterID);
+                                                DeleteDataFilter (filterID);
                                                 errMsg = empty;
                                             }
                                         }

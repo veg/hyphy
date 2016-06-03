@@ -1046,7 +1046,7 @@ _Parameter          _LikelihoodFunction::SumUpHiddenMarkov (const _Parameter * p
 
 void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 const _Parameter * patternLikelihoods,
         _Matrix & hmm,                  _Matrix& hmf,
-        _SimpleList * duplicateMap,       const _SimpleList* scalers,
+        _SimpleList const * duplicateMap,       const _SimpleList* scalers,
         long bl )
 {
     long               ni           = hmm.GetHDim(),

@@ -186,6 +186,15 @@ namespace hyphy_global_objects {
    
    */
   
+  unsigned long CountObjectsByType (const long type);
+  /**
+   Returns the count of objects for a specific type
+   
+   @type the type of the object
+   
+   @return the number of objects of the requested type
+   
+   */
 
   
   AVLListXLIterator  ObjectIndexer (const long type);
@@ -199,7 +208,7 @@ namespace hyphy_global_objects {
    */
 
   
-  const   _String* GetObjectNameByType       (const long type, const long index, bool correct_for_empties = false);
+  const   _String* GetObjectNameByType       (const long type, const long index, bool correct_for_empties = true);
   
   
   const   _String  GenerateUniqueObjectIDByType (_String const & base, const long type);

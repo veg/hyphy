@@ -109,7 +109,7 @@ void InitializeArray (ARG_TYPE* array, unsigned long dimension, ARG_TYPE&& value
 }
 
 template <typename ARG_TYPE>
-const _SimpleList & SplitIntoDigits (ARG_TYPE composition, unsigned long places, unsigned long radix) {
+const _SimpleList SplitIntoDigits (ARG_TYPE composition, unsigned long places, unsigned long radix) {
   /**
    Deconstruct a number into 'places' digits according to the supplied radix
    
@@ -144,7 +144,7 @@ ARG_TYPE & CombineDigits (ARG_TYPE const* digits, unsigned long places, unsigned
   ARG_TYPE number = 0,
            multiplier = 1;
   
-  for (unsigned long digit = places-1; digit >= 0; digit --  ) {
+  for (long digit = places-1; digit >= 0L; digit --  ) {
     number += multiplier * digits[digit];
     multiplier *= radix;
   }
@@ -152,4 +152,21 @@ ARG_TYPE & CombineDigits (ARG_TYPE const* digits, unsigned long places, unsigned
   return number;
 }
 
-
+template <typename ARG_TYPE>
+unsigned long DrawFromDiscrete (ARG_TYPE const * cdf, unsigned long dimension) {
+  /** 
+    assuming that cdf is an array of probabilities summing to 1,
+    draw a random index from the distribution
+   
+  */
+  
+  unsigned long index  = 0UL;
+  ARG_TYPE sum_so_far  = cdf[0],
+           random_draw = genrand_real2 ();
+  
+  while (sum_so_far < random_draw && index < dimension) {
+    sum_so_far += cdf[++index];
+  }
+  
+  return index;
+}

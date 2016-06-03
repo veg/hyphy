@@ -198,7 +198,7 @@ namespace hyphy_global_objects {
 
   long    StoreDataFilter (_String const& name, _DataSetFilter* object, bool handle_errors) {
     
-    if (name.IsValidIdentifier(false)) {
+    if (name.IsValidIdentifier(true)) {
       long exists_already = FindDataFilter(name);
       if (exists_already >= 0L) {
         if (_IsObjectLocked(exists_already, HY_BL_DATASET_FILTER)) {
@@ -214,17 +214,18 @@ namespace hyphy_global_objects {
         exists_already = _data_filters.Insert (new _String(name), (long)object, false, false);
       }
       
-      if (handle_errors) {
-        WarnError (_String ("The name ") & name.Enquote() & " is not a valid HyPhy id in call to (store_data_filter)");
-      }
 
       _SetDataFilterParameters (name, *object);
       return exists_already;
+    } else {
+      if (handle_errors) {
+        WarnError (_String ("The name ") & name.Enquote() & " is not a valid HyPhy id in call to (store_data_filter)");
+      }
     }
     return -1;
   }
   
-  bool    delete_data_filter (long index) {
+  bool    DeleteDataFilter (long index) {
     if (_data_filters.IsValidIndex (index)) {
       if (_IsObjectLocked(index, HY_BL_DATASET_FILTER)) {
         return false;
@@ -238,6 +239,7 @@ namespace hyphy_global_objects {
   bool    DeleteDataFilter (_String const& name) {
     return DeleteDataFilter (FindDataFilter(name));
   }
+  
   
   _String const * GetFilterName (long index) {
     if (_data_filters.IsValidIndex(index)) {
@@ -297,8 +299,18 @@ namespace hyphy_global_objects {
         return AVLListXLIterator (&_data_filters);
         break;
     }
-    WarnError ("Called Object Indexer with an unsupported type");
+    WarnError (_String("Called ") & __PRETTY_FUNCTION__ & " with an unsupported type");
     return AVLListXLIterator (nil);
+  }
+
+  unsigned long  CountObjectsByType (const long type) {
+    switch (type) {
+      case HY_BL_DATASET_FILTER:
+        return _data_filters.countitems();
+        break;
+    }
+    WarnError (_String("Called ") & __PRETTY_FUNCTION__ & " with an unsupported type");
+    return 0UL;
   }
 
   
@@ -339,7 +351,7 @@ namespace hyphy_global_objects {
     if (theList) {
       // account for deleted objects
       if (!correct_for_empties)
-        return (_String*)theList->GetItem (index);
+        return (_String*)theList->GetItemRangeCheck (index);
       
       long counter = 0;
       for (unsigned long name_index = 0; name_index < theList->lLength; name_index++) {

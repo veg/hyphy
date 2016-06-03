@@ -416,7 +416,7 @@ public:
     // if element was not found, the number returned
     // indicates the first available slot
 
-    _Parameter*       fastIndex(void)   {
+    _Parameter*       fastIndex(void)  const {
         return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(_Parameter*)theData:nil;
     }
     inline            _Parameter&         directIndex(long k)   {

@@ -102,10 +102,9 @@ _SimpleList::_SimpleList (_SimpleList const & l, long from, long to) {
   }
   RequestSpace(to-from);
   long upto = to-from ; 
-  for (long k = 0; k < upto; k++) {
-      lData[k] = l.lData[from+k];
+  for (lLength = 0; lLength < upto; lLength++) {
+      lData[lLength] = l.lData[from+lLength];
   }
-  
 }
 
 // Data constructor (variable number of long constants)

@@ -109,13 +109,15 @@ public:
      characters to base, and populate buffer with
      their codes. For example `TokenResolutions ('ATR', buffer) will
      return 2 and set buffer[0] = 12 [0*16+3*4+0], buffer[1] = 14 [0*16+3*4+2], assuming the translation
-     table has the standard IUPAC nucleotdie code
+     table has the standard IUPAC nucleotdie code. Passing NULL as buffer will result in 
+     returning the code for the resolution (if UNIQUE), otherwise -1.
      
      @param tokens the characters (unique or ambiguous) to translate
      @param buffer store the resolved characters (up to baseLength) here [must be at least baseLength ^ length (token) long]
+            can be set to NULL in which case the return behavior is modified
      @param gap_to_one if `true`, map gaps (or equivalents) to fully ambiguous characters
      
-     @return the number of resolutions
+     @return the number of resolutions OR (if buffer == NULL) the code for the SINGLE resolution or -1 (multiple or invalid resolutions)
     */
 
     void    AddTokenCode                    (char, _String&);
@@ -347,6 +349,7 @@ public:
         return lLength;
     }
     void        AddName                 (_String const&);
+    void        InsertName              (_String const& name, long where);
   
     _String*   GetSequenceName      (unsigned long i) const {
       return (_String*)theNames.GetItem (i) ;
@@ -363,7 +366,9 @@ public:
     bool   SetSequenceName (long index, _String * new_name) {
       if (index >= 0L && index < theNames.lLength) {
         theNames.Replace (index, new_name, false);
+        return true;
       }
+      return false;
     }
   
     void  SetNames (_List const& copy_from) {
@@ -425,10 +430,10 @@ private:
 };
 
 enum _hy_dataset_filter_ambiguity_resolution {
-  _HY_AMBIGUITY_HANDLING_RESOLVE,
-  _HY_AMBIGUITY_HANDLING_RESOLVE_FREQUENCY_AWARE,
-  _HY_AMBIGUITY_HANDLING_AVERAGE_FREQUENCY_AWARE,
-  _HY_AMBIGUITY_HANDLING_SKIP
+  kAmbiguityHandlingResolve,
+  kAmbiguityHandlingResolveFrequencyAware,
+  kAmbiguityHandlingAverageFrequencyAware,
+  kAmbiguityHandlingSkip
 };
 
 //_________________________________________________________
@@ -472,6 +477,10 @@ public:
         return theOriginalOrder.lLength;
     }
 
+    virtual  long GetSiteCountInUnits (void) const{
+      return theOriginalOrder.lLength / unitLength;
+    }
+
     virtual  long
     GetPatternCount        (void) const{
         return theFrequencies.lLength;
@@ -490,17 +499,28 @@ public:
     long     GetOriginalToShortMap (long i);
 
     void     ComputePairwiseDifferences (_Matrix&, long, long) const;
-    _Matrix* ComputePairwiseDifferences (long, long, _hy_dataset_filter_ambiguity_resolution = _HY_AMBIGUITY_HANDLING_RESOLVE) const;
+    _Matrix* ComputePairwiseDifferences (long, long, _hy_dataset_filter_ambiguity_resolution = kAmbiguityHandlingResolveFrequencyAware) const;
 
     BaseRefConst  GetMap (void) const {
         return theNodeMap.lLength?&theNodeMap:NULL;
     }
 
+    BaseRefConst  GetDuplicateSiteMap (void) const {
+      return duplicateMap.lLength?&duplicateMap:NULL;
+    }
+
     virtual  _String&   operator () (unsigned long site, unsigned long pos);
     // site indexes unique sites
 
+    const _String&   RetrieveState (unsigned long site, unsigned long pos) const;
+      // site indexes all sites, including duplicates
+
     virtual  void   RetrieveState (unsigned long site, unsigned long pos, _String&, bool = true) const;
     // site indexes all sites, including duplicates
+  
+    _TranslationTable const * GetTranslationTable (void) const {
+        return theData->theTT;
+    }
   
     _String* MakeSiteBuffer (void) const;
     /**
@@ -559,7 +579,7 @@ public:
     /**
     * Find all unique sequences in the data filter. 
     *
-    * \n Usage: FindDuplicateSequences(uniqueIndex, instanceCount, true);
+    * \n Usage: FindUniqueSequences (uniqueIndex, instanceCount, true);
     * @author SLKP
     * @param indices For each sequence - the list of indices corresponding to the unique strings
                      For example, if sequence 1 == sequence 3 and sequence 4 == sequence 5 this list 
@@ -570,7 +590,7 @@ public:
     * @param counts  The number of copies for each unique string found
                      For example, if sequence 1 == sequence 3 and sequence 4 == sequence 5 this list 
                      will contain 2,1,2
-    * @param strict  Controls is the strings must match exactly (0), exactly + gap (1), via the superset rule (2) or via the partial match rule (3).
+    * @param mode  Controls is the strings must match exactly (0), exactly + gap (1), via the superset rule (2) or via the partial match rule (3).
                      Nucleotide letters A and - (or ?) (IUPAC code for A or G) will count as mismatched for mode 0 and matched for mode 1.
                      Nucleotide letters A and R (IUPAC code for A or G) will count as mismatched for mode 0 and matched for
                      modes 2 and 3 because R is a superset of A. (note that R matches R in all modes, even though the letter is
@@ -581,7 +601,7 @@ public:
                     
     * @return The number of unique sequences. 
     */
-    unsigned long                   FindUniqueSequences      (_SimpleList&, _SimpleList&, _SimpleList&, short = 0);
+    unsigned long                   FindUniqueSequences      (_SimpleList& indices, _SimpleList& map, _SimpleList& counts, short mode = 0) const;
 
 
     long                            CorrectCode                 (long code) const;
@@ -605,7 +625,7 @@ public:
      * the indices of all sites that have the same pattern in the original alignment
     */
   
-    void                            PatternToSiteMapper         (void*, void*, char, long);
+    void                            PatternToSiteMapper         (void*, void*, char, long) const;
     /*
         20090325: SLKP
         a function that takes per pattern values (source, argument 1)
@@ -648,9 +668,6 @@ private:
     _DataSet*       theData;
 //      _SimpleList     conversionCache;
 
-    void            XferwCorrection (_Matrix& , _Parameter*, long) const;
-    void            XferwCorrection (_Parameter* , _Parameter*, long) const;
-    void            XferwCorrection (long* , _Parameter*, long) const;
 };
 
 
@@ -677,7 +694,7 @@ public:
     }
 
     _Parameter*                 getProbabilityVector    (long,long,long = 0);
-    virtual  bool               CompareTwoSites         (unsigned long, unsigned long,unsigned long);
+    virtual  bool               CompareTwoSites         (unsigned long, unsigned long,unsigned long) const;
 
     long                    shifter,
                             categoryShifter,

@@ -252,7 +252,15 @@ class _SimpleList:public BaseObj {
         long Element(long) const;
 
         /**
-        * Checks if list is identical to other list 
+         * no range checking element access
+         * Example: SimpleList(1,3,5,7).Get (1) = [3]
+         * @param index Which item you want.
+         * @return A long
+         */
+        inline const long Get (long index) const {return lData[index];}
+
+        /**
+        * Checks if list is identical to other list
         * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4 
         * @return true if equal. 
         */

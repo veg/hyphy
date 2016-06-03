@@ -456,7 +456,7 @@ public:
         return *currentNode;
     }*/
   
-    const _List    RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
+    const _List&    RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
     void            SubTreeString                       (node<long>* root, _String&, bool = false, long = -1, _AVLListXL* = nil) const;
 
     _String         CompareTrees                        (_TreeTopology*) const;
@@ -609,8 +609,8 @@ public:
     _List*      SampleAncestors                 (_DataSetFilter*, node<long>*);
     void        PurgeTree                       (void);
 
-    long        ComputeReleafingCost            (_DataSetFilter*, long, long, _SimpleList* = nil, long = 0) const;
-    long        ComputeReleafingCostChar        (_DataSetFilter*, long, long) const;
+    long        ComputeReleafingCost            (_DataSetFilter const*, long, long, _SimpleList* = nil, long = 0) const;
+    long        ComputeReleafingCostChar        (_DataSetFilter const*, long, long) const;
     void        DumpingOrder                    (_DataSetFilter*, _SimpleList&);
     void        SetTreeCodeBase                 (long);
     long        IsLinkedToALF                   (long&) const;
@@ -744,7 +744,7 @@ public:
 #ifdef  _SLKP_LFENGINE_REWRITE_
     void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, _Parameter const*, _List&, _SimpleList*, _List&, _Parameter const*, long);
 
-    _Parameter      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
+    _Parameter      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
     long            DetermineNodesForUpdate         (_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true);
     void            ExponentiateMatrices            (_List&, long, long = -1);
     void            FillInConditionals              (_DataSetFilter const*, _Parameter*,  _SimpleList*);
@@ -753,7 +753,7 @@ public:
             long nodeID,
             _Parameter*         cache,
             _Parameter*         iNodeCache,
-            _DataSetFilter*     theFilter,
+            _DataSetFilter const*     theFilter,
             long           *        lNodeFlags,
             _Parameter*         scalingAdjustments,
             long*                   siteCorrectionCounts,
@@ -770,7 +770,7 @@ public:
         _SimpleList&            siteOrdering,
         long                    brID,
         _Parameter*         cache,
-        _DataSetFilter*     theFilter,
+        _DataSetFilter const*     theFilter,
         long                    siteFrom,
         long                    siteTo,
         long                    catID,
@@ -779,7 +779,7 @@ public:
 
     _Parameter          ComputeTwoSequenceLikelihood    (
         _SimpleList&            siteOrdering,
-        _DataSetFilter*     theFilter,
+        _DataSetFilter const*     theFilter,
         long           *        lNodeFlags,
         _GrowingVector*     lNodeResolutions,
         long siteFrom,

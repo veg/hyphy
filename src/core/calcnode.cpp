@@ -2318,7 +2318,10 @@ void _TheTree::SetUp (void) {
     }
 
     flatParents << flatINodeParents;
-    _SimpleList parentlist (flatNodes), indexer (flatNodes.lLength,0,1);
+  
+    _SimpleList parentlist (flatNodes),
+                indexer (flatNodes.lLength,0,1);
+  
     SortLists   (&parentlist,&indexer);
     for (long k=0L; k<flatParents.lLength; k++)
         if (flatParents.lData[k]) {
@@ -2606,7 +2609,7 @@ _PMathObj _TheTree::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
 
   //_______________________________________________________________________________________________
 
-const _List     _TreeTopology::RetrieveNodeNames (bool doTips, bool doInternals, int traversalType) const {
+const _List &    _TreeTopology::RetrieveNodeNames (bool doTips, bool doInternals, int traversalType) const {
   _List result;
   
   node_iterator<long> ni (theRoot, traversalType);
@@ -6398,7 +6401,7 @@ void    _TheTree::MarkDone (void) {
 
 //_______________________________________________________________________________________________
 
-long    _TheTree::ComputeReleafingCostChar (_DataSetFilter* dsf, long firstIndex, long secondIndex) const {
+long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firstIndex, long secondIndex) const {
 
     const char *pastState = dsf->GetColumn(firstIndex),
                *thisState = dsf->GetColumn(secondIndex);
@@ -6441,7 +6444,7 @@ void    _TheTree::ClearConstraints (void) {
 
 //_______________________________________________________________________________________________
 
-long    _TheTree::ComputeReleafingCost (_DataSetFilter* dsf, long firstIndex, long secondIndex, _SimpleList* traversalTags, long orderIndex) const {
+long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstIndex, long secondIndex, _SimpleList* traversalTags, long orderIndex) const {
 
     long        filterL = dsf->GetPatternCount();
 

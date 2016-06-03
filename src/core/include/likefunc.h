@@ -175,6 +175,7 @@ public:
     void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix
     _Variable*  GetIthIndependentVar        (long) const;     // get the variable object of i-th independent variable
     _Variable*  GetIthDependentVar          (long) const;     // get the variable object of i-th dependent variable
+    _CategoryVariable*  GetIthCategoryVar           (long) const;     // get the variable object of i-th category variable
     _Parameter  GetIthIndependentBound      (long, bool isLower = true) const;
     // get the lower / upper bound for the i-th indepdendent variable
 
@@ -205,7 +206,7 @@ public:
     _Parameter  SimplexMethod               (_Parameter& precision);
     void        Anneal                      (_Parameter& precision);
 
-    void        Simulate                    (_DataSet &,_List&, _Matrix* = nil, _Matrix* = nil, _Matrix* = nil, _String* = nil);
+    void        Simulate                    (_DataSet &,_List&, _Matrix* = nil, _Matrix* = nil, _Matrix* = nil, _String* = nil) const;
 
     void        ReconstructAncestors        (_DataSet &, _SimpleList&, _String&, bool = false, bool = false, bool = false);
     // 20090224: added an argument to allow the marginal state reconstruction
@@ -221,10 +222,10 @@ public:
 
     virtual     void        RescanAllVariables      (void);
 
-    long        DependOnTree            (_String&);
+    long        DependOnTree            (_String const&) const;
     long        DependOnModel           (_String const&) const;
-    long        DependOnDS              (long);
-    bool        DependOnDF              (long ID) {
+    long        DependOnDS              (long) const;
+    bool        DependOnDF              (long ID) const{
         return theDataFilters.Find(ID)>=0;
     }
     bool        MapTreeTipsToData       (long, bool leafScan = false);
@@ -255,7 +256,7 @@ public:
     void        ComputePruningEfficiency(long&, long&);
 
     long        SequenceCount           (long);
-    long        SiteCount               (void);
+    unsigned long        SiteCount               (void) const;
     void        Rebuild                 (void);
     void        SerializeLF             (_String&, char=0, _SimpleList* = nil, _SimpleList* = nil);
     _Formula*   HasComputingTemplate    (void) const{
@@ -369,10 +370,10 @@ protected:
     _Parameter      SetParametersAndCompute
     (long, _Parameter, _Matrix* = nil, _Matrix* = nil);
 
-    long            CostOfPath            (_DataSetFilter*, _TheTree* , _SimpleList&, _SimpleList* = nil);
+    long            CostOfPath            (_DataSetFilter const*, _TheTree const* , _SimpleList&, _SimpleList* = nil) const;
 
-    void            BuildLeafProbs        (node<long>& , long*, long&, _DataSet&, _TheTree*, long&, bool, long, _DataSetFilter*, long, _DataSet* = nil);
-    bool            SingleBuildLeafProbs  (node<long>&, long, _SimpleList&, _SimpleList&, _TheTree*, bool,_DataSetFilter*, _SimpleList* = nil);
+    void            BuildLeafProbs        (node<long>& , unsigned long*, unsigned long, _DataSet&, _TheTree*, unsigned long&, bool, long, _DataSetFilter const*, long, _DataSet* = nil) const;
+    bool            SingleBuildLeafProbs  (node<long>&, long, _SimpleList&, _SimpleList&, _TheTree*, bool,_DataSetFilter const*, _SimpleList* = nil) const;
     void            CodonNeutralSimulate  (node<long>&, long, bool,_Matrix*,_Matrix*, _Parameter&, _Parameter&);
 
     bool            HasBlockChanged       (long) const;
@@ -475,7 +476,7 @@ protected:
         compute the log likelihood of the partition using the forward HMM algorithm with scaling
      */
 
-    void                    RunViterbi (_Matrix & , const _Parameter * , _Matrix& , _Matrix& , _SimpleList * ,  const _SimpleList* , long );
+    void                    RunViterbi (_Matrix & , const _Parameter * , _Matrix& , _Matrix& , _SimpleList const * ,  const _SimpleList* , long );
     /* Viterbi decoding for HMM; parameter meanings as in SumUpHiddenMarkov,
        except the first, which will store the optimal path to be returned */
 

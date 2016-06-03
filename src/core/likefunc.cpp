@@ -717,7 +717,15 @@ void     _LikelihoodFunction::Rebuild (void)
 void     _LikelihoodFunction::Clear (void)
 {
     DeleteCaches  ();
+  
+    unsigned long partition_count = CountObjects(kLFCountPartitions);
+  
     theTrees.Clear();
+  
+    for (unsigned long i = 0UL; i < partition_count; i++) {
+        ReleaseDataFilterLock(theDataFilters.GetElement(i));
+    }
+  
     theDataFilters.Clear();
     theProbabilities.Clear();
     indexInd.Clear();
@@ -1141,6 +1149,12 @@ _Parameter  _LikelihoodFunction::GetIthDependent (long index) const {
 _Variable*  _LikelihoodFunction::GetIthIndependentVar (long index) const {
     return LocateVar (indexInd.lData[index]);
 }
+
+  //_______________________________________________________________________________________
+_CategoryVariable*  _LikelihoodFunction::GetIthCategoryVar (long index) const {
+  return (_CategoryVariable*)LocateVar (indexCat.lData[index]);
+}
+
 //_______________________________________________________________________________________
 _Variable*  _LikelihoodFunction::GetIthDependentVar (long index) const {
     return LocateVar (indexDep.lData[index]);
@@ -1444,12 +1458,12 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
                     // if a partition that does not depend on category variables
                     // then the matrix is already populated with zeros
                 {
-                    _SimpleList      *catVarType         = (_SimpleList*)((*(_List*)categoryTraversalTemplate(i))(4)),
-                                      *filterMap          = &((_DataSetFilter*)dataSetFilterList (theDataFilters(i)))->duplicateMap;
+                    _SimpleList      *catVarType             = (_SimpleList*)((*(_List*)categoryTraversalTemplate(i))(4));
+                    _SimpleList   const * duplicate_site_map = (_SimpleList   const*)GetIthFilter (i) -> GetDuplicateSiteMap();
 
                     long             categoryType        = catVarType->Element (-1),
                                      blockSize          = BlockLength (i),
-                                     siteCount          = filterMap->lLength;
+                                     siteCount          = duplicate_site_map->lLength;
 
                     // check to see if we need to handle HMM or COP variables
                     if (categoryType & _hyphyCategoryHMM) {
@@ -1465,7 +1479,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
                                     siteResults->theData,
                                     *hmmVar->ComputeHiddenMarkov(),
                                     *hmmVar->ComputeHiddenMarkovFreqs(),
-                                    &((_DataSetFilter*)dataSetFilterList (theDataFilters(i)))->duplicateMap,
+                                    duplicate_site_map,
                                     &siteScalerBuffer,
                                     blockSize);
 
@@ -1755,7 +1769,7 @@ void    _LikelihoodFunction::ComputeBlockForTemplate        (long i, bool force)
 
 void    _LikelihoodFunction::ComputeBlockForTemplate2       (long i, _Parameter* resTo, _Parameter* resFrom, long blockWidth)
 {
-    _DataSetFilter      *df = ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]));
+    _DataSetFilter    const   *df = GetIthFilter(i);
     long*               dupMap = df->duplicateMap.lData,
                         dupL   = df->duplicateMap.lLength;
 
@@ -1966,7 +1980,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
             for (long partID=0; partID<theTrees.lLength; partID++) {
                 ComputeSiteLikelihoodsForABlock      (partID, bySiteResults->theData + blockWidth*theTrees.lLength, *(_SimpleList*)partScalingCache(theTrees.lLength));
                 if (usedCachedResults == false) {
-                    _DataSetFilter * thisBlockFilter      = (_DataSetFilter*)dataSetFilterList (theDataFilters.lData[partID]);
+                    _DataSetFilter const * thisBlockFilter      = GetIthFilter(partID);
                     thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0, blockWidth);
                     thisBlockFilter->PatternToSiteMapper (((_SimpleList*)partScalingCache(theTrees.lLength))->lData, ((_SimpleList*)partScalingCache(partID))->lData, 1, blockWidth);
                 }
@@ -2090,6 +2104,7 @@ bool        _LikelihoodFunction::HasBlockChanged(long index) const {
 void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependance, long highestIndex, _Parameter weight, _Matrix& cache)
 {
     _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
+  
     if (index<highestIndex) {
         if ((!CheckNthBit(dependance,index))||thisC->IsHiddenMarkov()) {
             RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight);
@@ -2108,49 +2123,46 @@ void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long
             }
         }
     } else {
-        long        nI            = thisC->GetNumberOfIntervals (),
-                    currentOffset = BlockLength(blockIndex),
-                    hBit        = HighestBit(blockDependancies.lData[blockIndex]);
+        long        category_count         = thisC->GetNumberOfIntervals (),
+                    current_index_offset   = BlockLength(blockIndex),
+                    high_bit               = HighestBit(blockDependancies.lData[blockIndex]);
 
         thisC->Refresh();
 
-        _Parameter* sR = siteResults->fastIndex();
-        _Matrix*    cws= thisC->GetWeights();
+        _Parameter* site_results     = siteResults->fastIndex();
+        _Matrix*    category_weights = thisC->GetWeights();
 
-        _DataSetFilter* df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(blockIndex)));
+        _DataSetFilter const * data_filter = GetIthFilter(blockIndex);
 
-        for (long k = 0; k<nI; k++) {
-            thisC->SetIntervalValue(k,!k);
+        for (unsigned long category_index = 0UL;  category_index < category_count; category_index ++) {
+            thisC->SetIntervalValue(category_index,!category_index);
 
-            for   (long kk = 0; kk<currentOffset; kk++) {
-                sR[kk] = 0.0;
-            }
+            InitializeArray (site_results, current_index_offset, 0.0);
 
             //sR -= currentOffset;
 
-            if (hBit>index) {
-                offsetCounter *= nI;
-                RecurseCategory (blockIndex,index+1,blockDependancies.lData[blockIndex],hBit,1);
-                offsetCounter /= nI;
+            if (high_bit > index) {
+                offsetCounter *= category_count;
+                RecurseCategory (blockIndex,index+1,blockDependancies.lData[blockIndex],high_bit,1);
+                offsetCounter /= category_count;
             } else {
-                ComputeBlock (blockIndex,sR);
+                ComputeBlock (blockIndex,site_results);
             }
 
-            _Parameter prod = 0.0;
-            {
-                for   (long kk = 0; kk<currentOffset; kk++,sR++) {
-                    prod +=  myLog (*sR)*df->theFrequencies.lData[kk];
-                }
+            _Parameter log_sum  = 0.0;
+            for   (long kk = 0; kk<current_index_offset; kk++,site_results++) {
+              log_sum +=  myLog (*site_results)*data_filter->GetFrequency(kk);
             }
-            prod += myLog (cws->theData[k]*weight);
-            cache.theData[categID] = prod;
+          
+            log_sum += myLog (category_weights->theData[category_index]*weight);
+            cache.theData[categID] = log_sum;
 
             categID+=offsetCounter;
-            sR -= currentOffset;
+            site_results -= current_index_offset;
         }
 
         if (offsetCounter>1) {
-            categID-=nI*offsetCounter;
+            categID -= category_count*offsetCounter;
         }
     }
 }
@@ -2591,7 +2603,7 @@ inline _Parameter sqr (_Parameter x)
   void        _LikelihoodFunction::GetInitialValues (void) const {
       // compute pairwise distances for block index
     for (long partition_index=0UL; partition_index<theTrees.lLength; partition_index++) {
-      _DataSetFilter* filter       = GetIthFilter(partition_index);
+      _DataSetFilter const* filter       = GetIthFilter(partition_index);
       _TheTree      * tree         = GetIthTree  (partition_index);
       _Matrix       * eq_freqs     = GetIthFrequencies(partition_index);
       unsigned long tip_count      = filter->NumberSpecies();
@@ -3271,7 +3283,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void)
 
     for (long i=0; i<theTrees.lLength; i++) {
         _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-        _DataSetFilter *theFilter = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
+        _DataSetFilter const *theFilter = GetIthFilter(i);
 
         conditionalInternalNodeLikelihoodCaches[i] = nil;
         conditionalTerminalNodeStateFlag       [i] = nil;
@@ -3308,18 +3320,16 @@ void            _LikelihoodFunction::SetupLFCaches              (void)
             siteCorrectionsBackup.AppendNewInstance (new _SimpleList (cT->categoryCount*patternCount,0,0));
         }
 
-        for (long k = 0; k < patternCount*iNodeCount*cT->categoryCount; (siteScalingFactors[i])[k] = 1., k++) ;
-
+        InitializeArray(siteScalingFactors[i] , patternCount*iNodeCount*cT->categoryCount, 1.);
+      
         // now process filter characters by site / column
 
         _List        foundCharactersAux;
         _AVLListX    foundCharacters (&foundCharactersAux);
         _String      aState ((unsigned long)atomSize);
 
-        char            ** columnBlock      = new char*[atomSize];
-        checkPointer (columnBlock);
+        char  const ** columnBlock      = new char const*[atomSize];
         _Parameter      * translationCache  = new _Parameter [stateSpaceDim];
-        checkPointer (translationCache);
         _GrowingVector  * ambigs            = new _GrowingVector();
 
         for (long siteID = 0; siteID < patternCount; siteID ++) {
@@ -4641,11 +4651,10 @@ _Parameter _LikelihoodFunction::SetParametersAndCompute (long index, _Parameter 
 }
 
 //_______________________________________________________________________________________
-void _LikelihoodFunction::GetAllIndependent (_Matrix & storage)
-{
+void _LikelihoodFunction::GetAllIndependent (_Matrix & storage) const {
     storage.Clear();
     CreateMatrix (&storage, indexInd.lLength,1,false,true, false);
-    for (unsigned long i=0; i<indexInd.lLength; i++) {
+    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         storage.theData[i]=GetIthIndependent(i);
     }
 
@@ -6675,25 +6684,25 @@ void    _LikelihoodFunction::RescanAllVariables (void)
 }
 
 //_______________________________________________________________________________________
-long    _LikelihoodFunction::DependOnTree (_String& treeName)
-{
+long    _LikelihoodFunction::DependOnTree (_String const & treeName) const {
     long f = LocateVarByName (treeName);
-    if (f>=0) {
+    if (f>=0L) {
         return theTrees.Find(variableNames.GetXtra(f));
     }
-
-    return -1;
+    return -1L;
 }
 
 //_______________________________________________________________________________________
-long    _LikelihoodFunction::DependOnDS (long ID)
-{
-    for (long k = 0; k<theDataFilters.lLength; k++)
-        if (dataSetList._SimpleList::Find
-                ((long)((_DataSetFilter*)dataSetFilterList (theDataFilters.lData[k]))->GetData()) == ID) {
-            return k;
-        }
-    return -1;
+long    _LikelihoodFunction::DependOnDS (long ID) const {
+  
+    void * data_set_pointer = dataSetList.GetItem (ID);
+  
+    for (long k = 0L; k<theDataFilters.lLength; k++) {
+      if (GetIthFilter (k) -> GetData() == data_set_pointer) {
+        return k;
+      }
+    }
+    return -1L;
 }
 
 //_______________________________________________________________________________________
@@ -7122,11 +7131,12 @@ void    _LikelihoodFunction::UpdateDependent (long index)
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::Cleanup (void)
-{
-    DeleteObject (parameterValuesAndRanges);
-    DeleteCaches();
+void    _LikelihoodFunction::Cleanup (void) {
+    //DeleteCaches();
 
+    Clear();
+    DeleteObject (parameterValuesAndRanges);
+  
 #ifdef MDSOCL
 	for (int i = 0; i < theTrees.lLength; i++)
 	{
@@ -7217,7 +7227,7 @@ void    _LikelihoodFunction::Setup (void)
                 _SimpleList*    s = (_SimpleList*)optimalOrders(i),
                                 *   l = (_SimpleList*)leafSkips(i);
 
-                _DataSetFilter* df          = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
+                _DataSetFilter const * df   = GetIthFilter(i);
                 _Matrix       *glFreqs      = (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
                 _TheTree      *t            = ((_TheTree*)LocateVar(theTrees.lData[i]));
 
@@ -7244,10 +7254,11 @@ void    _LikelihoodFunction::Setup (void)
     _Parameter assumeRev = 0.;
     checkParameter (assumeReversible,assumeRev,0.0);
 
-    for (unsigned long i=0; i<theTrees.lLength; i++) {
-        _Matrix         *glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
-        _DataSetFilter* df      = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
-        _TheTree        *t       = ((_TheTree*)LocateVar(theTrees.lData[i]));
+  
+    for (unsigned long i=0UL; i<theTrees.lLength; i++) {
+        _Matrix         *glFreqs = GetIthFrequencies(i);
+        _DataSetFilter const* df      = GetIthFilter(i);
+        _TheTree        *t       = GetIthTree (i);
         t->InitializeTreeFrequencies (glFreqs, true);
         _SimpleList        *s = new _SimpleList,
         *l = new _SimpleList;
@@ -7318,11 +7329,11 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
     // set up global matrix frequencies
 
-    _SimpleList               *sl = (_SimpleList*)optimalOrders.lData[index];
+    _SimpleList               *sl = (_SimpleList*)optimalOrders.GetItem(index);
 
-    _Matrix                   *glFreqs          = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
-    _DataSetFilter            *df               = ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[index]));
-    _TheTree                   *t               = ((_TheTree*)LocateVar(theTrees.lData[index]));
+    _Matrix                   *glFreqs          = GetIthFrequencies(index);
+    _DataSetFilter            const *df         = GetIthFilter(index);
+    _TheTree                   *t               = GetIthTree(index);
     bool                       canClear         = true,
                                rootFreqsChange  = forceRecomputation?true:glFreqs->HasChanged();
 
@@ -7714,11 +7725,10 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 }
 
 //_______________________________________________________________________________________
-long        _LikelihoodFunction::CostOfPath  (_DataSetFilter* df, _TheTree* t, _SimpleList& sl, _SimpleList* tcc)
-{
-    long res = 0;
-    for (long i=0; i<(long)sl.lLength-1; i++) {
-        res+=t->ComputeReleafingCost (df,sl.lData[i],sl.lData[i+1], tcc, i+1);
+long        _LikelihoodFunction::CostOfPath  (_DataSetFilter const* df, _TheTree const* t, _SimpleList& sl, _SimpleList* tcc) const {
+    long res = 0L;
+    for (long i=1L; i<(long)sl.lLength; i++) {
+        res+=t->ComputeReleafingCost (df,sl.Get (i-1L),sl.Get(i), tcc, i);
     }
     return res;
 }
@@ -7879,7 +7889,7 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
 void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
 {
 
-    _DataSetFilter* df = (_DataSetFilter*)(dataSetFilterList(theDataFilters (index)));
+    _DataSetFilter const* df = GetIthFilter (index);
 
     long            partition           = -1,
                     totalSites           = 0,
@@ -8281,23 +8291,23 @@ void    _LikelihoodFunction::ComputePruningEfficiency (long& full, long& saved)
 //_______________________________________________________________________________________
 
 unsigned long    _LikelihoodFunction::CountObjects (_LikelihoodFunctionCountType kind) const {
-    switch (flag) {
-    case kLFCountGlobalVariables: {
-        unsigned long res = 0UL;
-        for (unsigned long k=0UL; k<indexInd.lLength; k++) {
-            _Variable *v = LocateVar (indexInd.lData[k]);
-            if (v->IsGlobal()) {
-                res++;
-            }
-        }
-        return res;
-    }
-    case kLFCountLocalCariables:
-        return indexInd.lLength - CountObjects (kLFCountGlobalVariables);
-    case kLFCountDependentVariables:
-        return indexDep.lLength;
-    case kLFCountCategoryVariables:
-        return indexCat.lLength;
+    switch (kind) {
+      case kLFCountGlobalVariables: {
+          unsigned long res = 0UL;
+          for (unsigned long k=0UL; k<indexInd.lLength; k++) {
+              _Variable *v = LocateVar (indexInd.lData[k]);
+              if (v->IsGlobal()) {
+                  res++;
+              }
+          }
+          return res;
+      }
+      case kLFCountLocalCariables:
+          return indexInd.lLength - CountObjects (kLFCountGlobalVariables);
+      case kLFCountDependentVariables:
+          return indexDep.lLength;
+      case kLFCountCategoryVariables:
+          return indexCat.lLength;
     }
   
     return theTrees.lLength;
@@ -8392,12 +8402,14 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     for (unsigned long idx = 0; idx < redirector->lLength; idx++) {
 
         long tIdx = dataSetList._SimpleList::Find(
-            (long)(((_DataSetFilter *)dataSetFilterList(redirector->lData[idx]))
+            (long)(GetDataFilter(redirector->Get(idx))
                        ->GetData()));
+    
+      
         tIdx = taggedDS.Insert((BaseRef) tIdx, taggedDS.countitems());
 
-        if (tIdx < 0) {
-            tIdx = -tIdx - 1;
+        if (tIdx < 0L) {
+            tIdx = -tIdx - 1L;
         }
 
         dataSetsByFilter << tIdx;
@@ -8441,9 +8453,8 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     if (partitionList || !exportPart) {
         for (unsigned long idx = 0; idx < redirector->lLength; idx++) {
 
-            _SimpleList *originalOrderFF =
-                &((_DataSetFilter *)dataSetFilterList(redirector->lData[idx]))
-                    ->theOriginalOrder;
+            _SimpleList const *originalOrderFF =
+                &GetDataFilter(redirector->Get(idx))->theOriginalOrder;
 
             _AVLListX *involvedSitesL =
                 (_AVLListX *)(involvedSites(dataSetsByFilter.lData[idx]));
@@ -8662,8 +8673,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
 
     for (long idx = 0; idx < redirector->lLength; idx++) {
         if (writtenDF.Insert((BaseRef) redirector->lData[idx]) >= 0) {
-            _DataSetFilter *theDF =
-                (_DataSetFilter *)dataSetFilterList(redirector->lData[idx]);
+            _DataSetFilter const *theDF = GetDataFilter (redirector->Get(idx));
             _String *horPart = nil;
 
             if (partitionList || !exportPart) {
@@ -8684,27 +8694,25 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
             // else
             // horPart = (_String*)theDF->theOriginalOrder.ListToPartitionString();
 
-            rec << "DataSetFilter ";
-            rec << ((_String *)dataSetFilterNamesList(redirector->lData[idx]))
-                       ->getStr();
-            rec << " = CreateFilter(";
-            rec << ((_String *)dataSetNamesList(
+            rec     << "DataSetFilter "
+                    << *GetFilterName(redirector->Get(idx))
+                    << " = CreateFilter("
+                    << ((_String *)dataSetNamesList(
                        indexedDataSets.lData[dataSetsByFilter.lData[idx]]))
-                       ->getStr();
-            rec << ',';
-            rec << _String((long) theDF->GetUnitLength());
-            rec << ',';
+                       ->getStr()
+                    << ','
+                    << _String((long) theDF->GetUnitLength())
+                    << ',';
+          
             if (horPart) {
-              rec << '"';
-              rec << *horPart;
-              rec << '"';
+              rec << horPart->Enquote('"');
               DeleteObject(horPart);
             }
             horPart = (_String *)theDF->theNodeMap.ListToPartitionString();
-            rec << ',';
-            rec << '"';
-            rec << *horPart;
-            rec << '"';
+          
+            rec << ','
+                << horPart->Enquote('"');
+          
             DeleteObject(horPart);
 
             horPart = theDF->GetExclusions();
@@ -8737,9 +8745,9 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
                 dsID = 1;
             }
 
-            rec << (_String *)dataSetFilterNamesList(redirector->lData[idx]);
-            rec << ',';
-            rec << *LocateVar(redirectorT->lData[idx])->GetName();
+            rec << *GetFilterName(redirector->Get(idx))
+             << ','
+             << *LocateVar(redirectorT->lData[idx])->GetName();
         }
     }
     if (computingTemplate && templateKind == 1) {
@@ -9072,450 +9080,372 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
   WarnError ("This feature has not yet been implemented in the new LF engine framework");
 }
   
-//_______________________________________________________________________________________
-
-void    _LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Matrix* catValues, _Matrix* catNames, _Matrix* spawnValues, _String* storeIntermediates)
-{
-    // will step thru multiple trees of the project and simulate  a dataset from the likelihood function
-
-    long i,
-         j,
-         k;
-
-    char catSim = 0;
-    // 0 - not at all
-    // 1 - discrete,
-    // 2 - continuous
-
-    /*for (i=0; i<theTrees.lLength; i++)
-    {
-    }*/
-
-    _SimpleList     catCont,
-                    catDiscrete,
-                    catHMM,
-                    HMMState;
-
-    bool            columnWise = false;
-
+    //_______________________________________________________________________________________
+  
+  void    _LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Matrix* catValues, _Matrix* catNames, _Matrix* spawnValues, _String* storeIntermediates) const {
+      // will step thru multiple trees of the project and simulate  a dataset from the likelihood function
+    
+    enum {
+      kLFSimulateCategoriesNone,
+      kLFSimulateCategoriesDiscrete,
+      kLFSimulateCategoriesContinuous
+    } category_simulation_mode = kLFSimulateCategoriesNone;
+    
+      //char catSim = 0;
+      // 0 - not at all
+      // 1 - discrete,
+      // 2 - continuous
+    
+    
+    _SimpleList     continuous_category_variables,
+    discrete_category_variables,
+    HMM_category_variables,
+    HMM_state;
+    
+    bool            simulate_column_wise = false;
+    
     if (indexCat.lLength) {
-        checkParameter (categorySimulationMethod,categorySimMethod,2.0);
-        // check to see if continuous method can actually be implemented
-        catSim = (char)categorySimMethod;
-        if (categorySimMethod >1.5) {
-            for (i=0; i<indexCat.lLength; i++) {
-                _CategoryVariable* thisC = (_CategoryVariable*)LocateVar (indexCat.lData[i]);
-                if (thisC->IsHiddenMarkov()) {
-                    catHMM << i;
-                    HMMState << 0;
-                } else if (thisC->GetCumulative().IsEmpty()) {
-                    _String warnMsg ("SimulateDataSet will treat category variable ");
-                    warnMsg = warnMsg & *thisC->GetName() & " as discrete since no cumulative dist'n is available.";
-                    ReportWarning(warnMsg);
-                    catDiscrete<<i;
-                    HMMState<<i;
-                } else {
-                    catCont<<i;
-                }
-            }
-        } else
-            for (i=0; i<indexCat.lLength; i++) {
-                ((_CategoryVariable*)LocateVar (indexCat.lData[i]))->Refresh(true); // mod Jan 3rd 2006
-                catDiscrete<<i;
-            }
-
-        if ((catNames)&&(indexCat.lLength)) {
-            catNames->Clear();
-            CreateMatrix (catNames,indexCat.lLength,1,false,true,false);
-            catNames->Convert2Formulas();
-            _String   thisFla;
-            for (i=0; i<catHMM.lLength; i++) {
-                thisFla = _String ("\"") & *LocateVar(indexCat.lData[catHMM.lData[i]])->GetName() & _String ("\"");
-                _Formula f (thisFla);
-                catNames->StoreFormula (i,0,f);
-            }
-            for (i=0; i<catDiscrete.lLength; i++) {
-                thisFla = _String ("\"") & *LocateVar(indexCat.lData[catDiscrete.lData[i]])->GetName() & _String ("\"");
-                _Formula f (thisFla);
-                catNames->StoreFormula (i+catHMM.lLength,0,f);
-            }
-            for (i=0; i<catCont.lLength; i++) {
-                thisFla = _String ("\"") & *LocateVar(indexCat.lData[catCont.lData[i]])->GetName() & _String ("\"");
-                _Formula f (thisFla);
-                catNames->StoreFormula (i+catHMM.lLength+catDiscrete.lLength,0,f);
-            }
+      checkParameter (categorySimulationMethod,categorySimMethod,2.0);
+      
+      if (categorySimMethod > 1.5) {
+        category_simulation_mode = kLFSimulateCategoriesContinuous;
+      } else {
+        if (categorySimMethod > 0.5) {
+          category_simulation_mode = kLFSimulateCategoriesDiscrete;
         }
-    }
-    /*else
-    {
-        Compute();
-    }*/
-
-    _DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(0));
-    //_String duh ("Simulated Species #");
-
-    i = dsf->NumberSpecies();
-
-    target.GetNames ().RequestSpace (i);
-
-    {
-        _List       * dsfNames = &dsf->GetData()->GetNames();
-        _SimpleList * mapList  = (_SimpleList*)dsf->GetMap();
-
-        for (long i2=0; i2< i; i2++) {
-            target.GetNames() <<  (*dsfNames)(mapList->lData[i2]);
+      }
+      
+      
+      if (category_simulation_mode  == kLFSimulateCategoriesContinuous) {
+        for (unsigned long cat_index = 0UL; cat_index < indexCat.lLength; cat_index ++) {
+          _CategoryVariable* ith_category = GetIthCategoryVar(cat_index);
+          if (ith_category->IsHiddenMarkov()) {
+            HMM_category_variables << cat_index;
+            HMM_state << 0L;
+          } else if (ith_category->GetCumulative().IsEmpty()) {
+            ReportWarning(_String (__PRETTY_FUNCTION__) & " will treat category variable " & ith_category->GetName()->Enquote() &
+                          " as discrete since no cumulative distribution is available.");
+            discrete_category_variables << cat_index;
+            HMM_state << cat_index;
+          } else {
+            continuous_category_variables << cat_index;
+          }
         }
+      } else {
+        for (unsigned long cat_index = 0UL; cat_index < indexCat.lLength; cat_index ++) {
+          GetIthCategoryVar(cat_index)->Refresh (true);
+          discrete_category_variables << cat_index;
+        }
+      }
+      
+      if (catNames && indexCat.lLength) {
+        
+        catNames->Clear();
+        CreateMatrix (catNames,indexCat.lLength,1,false,true,false);
+        catNames->Convert2Formulas();
+        
+        _SimpleList* all_arrays[3] = { & HMM_category_variables, & discrete_category_variables, & continuous_category_variables };
+        
+        unsigned long through_index = 0UL;
+        
+        for (_SimpleList * array : all_arrays) {
+          for (unsigned long i = 0UL; i < array->lLength; i++, through_index++) {
+            catNames->StoreFormula (through_index,0L,*new _Formula (new _FString (*LocateVar (array->GetElement(i))->GetName())), false, false);
+          }
+        }
+        
+      }
     }
-
-    long    countIntermediates = target.GetNames().lLength;
-
+    
+    _DataSetFilter const *first_filter = GetIthFilter(0);
+    
+    unsigned long species_count = first_filter->NumberSpecies();
+    
+    for (unsigned long sequence_index = 0UL; sequence_index < species_count; sequence_index ++) {
+      target.AddName(*first_filter->GetSequenceName(sequence_index));
+    }
+    
+    unsigned long    internal_node_count = 0UL;
+    
     if (storeIntermediates && storeIntermediates->sLength == 0) {
-        _TheTree *datree = (_TheTree*)LocateVar(theTrees(0));
-        datree->AddNodeNamesToDS (&target,false,true,0);
-        countIntermediates = target.GetNames().lLength - countIntermediates;
-    } else {
-        countIntermediates = 0;
+      GetIthTree (0L)->AddNodeNamesToDS (&target,false,true,0); // only add internal node names
+      internal_node_count = target.GetNames().lLength - species_count;
     }
-
-    target.SetTranslationTable (dsf->GetData());
-
-    _List*      localExc;
-    _SimpleList localExclusions;
-    long   DSOffset       = 0,
-           siteOffset      = 0,
-           totalPositions = 0;
-
-    for (i = 0; i<theTrees.lLength; i++) {
-        dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
-        totalPositions += dsf->theOriginalOrder.lLength/dsf->GetUnitLength();
+    target.SetTranslationTable (first_filter->GetData());
+    
+    unsigned long sequences_to_simulate = target.GetNames().lLength,
+    site_offset_raw       = 0UL,
+      // raw offset (e.g. in nucleotides for codon data
+    site_offset          = 0UL,
+    total_sites          = 0UL;
+    
+    for (unsigned long i = 0UL; i<theTrees.lLength; i++) {
+      total_sites += GetIthFilter(i)->GetSiteCountInUnits();
     }
-
-    if ((catValues)&&(indexCat.lLength)) {
-        catValues->Clear();
-        CreateMatrix (catValues,indexCat.lLength,totalPositions,false,true,false);
+    
+    if (catValues && indexCat.lLength) {
+      catValues->Clear();
+      CreateMatrix (catValues,indexCat.lLength,total_sites,false,true,false);
     }
+    
+    TimerDifferenceFunction (false);
+    
+    
+    bool       column_wise  = false;
+    
+    
+    for (unsigned long partition_index = 0UL; partition_index<theTrees.lLength; partition_index++) { // loop thru the trees one at a time
+                                                                                                     // will propagate a complete column thru the tree
+                                                                                                     // first generate a root sequence
+      _SimpleList user_exclusions_numeric;
+      
+      _DataSetFilter const * this_filter  = GetIthFilter(partition_index);
+      if (this_filter->NumberSpecies()+internal_node_count != sequences_to_simulate) {
+        ReportWarning (_String ("Ignoring partition ") & _String ((long) (partition_index + 1L)) & " of the likelihood function since it has a different number of sequences/tree than the first part.");
+        continue;
+      }
+      _Parameter * this_freqs = ((_Matrix*)GetIthFrequencies(partition_index)->ComputeNumeric())->fastIndex();
+      _TheTree *this_tree = GetIthTree (partition_index);
+      
+      
+      unsigned long    this_site_count  = this_filter->GetSiteCountInUnits(),
+      leaf_count       = 0L,
+      good_sites       = 0L,
+      filter_dimension = this_filter->GetDimension(true),
+      sites_per_unit    = this_filter->GetUnitLength(),
+      this_raw_site_count = this_filter->GetSiteCount();
 
-    _Constant lastTime (0.0),
-              currentTime (0.0);
-    _PMathObj tValue = lastTime.Time();
-    lastTime.SetValue (tValue->Value());
-    DeleteObject (tValue);
-
-    for (i = 0; i<theTrees.lLength; i++) { // loop thru the trees one at a time
-        // will propagate a complete column thru the tree
-        // first generate a root sequence
-        dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
-        if (dsf->NumberSpecies()+countIntermediates!=target.GetNames().lLength) { // incompatible likelihood function
-            ReportWarning ((_String("DataSet Simulation had to ignore part ")&_String(i)&" of the likelihood function since it has a different length than the first part."));
-            continue;
-        }
-        _Parameter *freqs = ((_Matrix*)LocateVar(theProbabilities(i))->Compute())->fastIndex();
-        _TheTree *tree = (_TheTree*)LocateVar(theTrees(i));
-        // how large will the propagating vector be?
-        long    vecSize = 0,leafCount = 0, good = 0;
-
-        localExclusions.Clear();
-
-        vecSize = dsf->theOriginalOrder.lLength/dsf->GetUnitLength();
-
-        if (theExclusions.lLength>i) {
-            localExc = (_List*)theExclusions(i);
-            if (localExc->lLength) {
-                _Parameter* translatedState = new _Parameter [dsf->GetDimension(false)];
-                checkPointer(translatedState);
-                for (j=0; j<localExc->lLength; j++) {
-                    dsf->Translate2Frequencies(*(_String*)(*localExc)(j),translatedState,true);
-                    k      = 0;
-                    long l = -1;
-
-                    for (long h=dsf->GetDimension(false)-1; h>=0; h--)
-                        if (translatedState[h]!=0) {
-                            k++;
-                            l = h;
-                        }
-
-                    if (k != 1) {
-                        _String warnMsg ("Excluded character ");
-                        warnMsg = warnMsg & *(_String*)(*localExc)(j) &" does not represent a unique state and will therefore be ignored in data simulation";
-                        ReportWarning (warnMsg);
-                    }
-
-                    localExclusions<<l;
-                }
-                delete [] translatedState;
-                columnWise = true;
-            }
-        }
-
-        if (catSim != 0) {
-            columnWise = true;
-        }
-
-        if (columnWise) {
-            _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-            cT->SetUpMatrices(1);
-            while (good<vecSize) {
-                _Parameter randVal = genrand_real2(),
-                           sumSoFar = 0.0;
-
-                long rootState = 0;
-
-                if (catSim) {
-                    while (randVal<1.0e-30) {
-                        randVal = genrand_real2();
-                    }
-
-                    for (j=0; j<catHMM.lLength; j++) { // deal with HMM
-                        _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[catHMM.lData[j]]);
-                        _Parameter* iWeights;
-
-                        if (good==0) {
-                            iWeights = thisC->GetWeights()->fastIndex();
-                        } else {
-                            _Matrix * hmm = thisC->ComputeHiddenMarkov();
-                            iWeights = hmm->theData+hmm->GetVDim()*HMMState.lData[j];
-                        }
-
-                        while (sumSoFar<randVal) {
-                            sumSoFar+=iWeights[rootState++];
-                        }
-
-                        if (rootState) {
-                            rootState--;
-                        }
-                        thisC->SetIntervalValue(rootState);
-                        if (good>0) {
-                            HMMState.lData[j] = rootState;
-                        }
-
-                        randVal = genrand_real2();
-                        rootState = 0;
-                        sumSoFar = 0.0;
-
-                        if (randVal==0.0) {
-                            j--;
-                            continue;
-                        }
-                        if (catValues) {
-                            catValues->Store (j,siteOffset+good,thisC->Compute()->Value());
-                        }
-                    }
-
-                    for (j=0; j<catDiscrete.lLength; j++) { // use discrete values here
-                        _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[catDiscrete.lData[j]]);
-                        _Parameter* iWeights = thisC->GetWeights()->fastIndex();
-
-                        while (sumSoFar<randVal) {
-                            sumSoFar+=iWeights[rootState++];
-                        }
-
-                        if (rootState) {
-                            rootState--;
-                        }
-                        thisC->SetIntervalValue(rootState);
-                        randVal = genrand_real2();
-                        rootState = 0;
-                        sumSoFar = 0.0;
-                        if (randVal==0.0) {
-                            j--;
-                            continue;
-                        }
-                        if (catValues) {
-                            catValues->Store (j+catHMM.lLength,siteOffset+good,thisC->Compute()->Value());
-                        }
-                    }
-
-                    for (j=0; j<catCont.lLength; j++) { // use continuous values here
-                        _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[catCont.lData[j]]);
-                        randVal = thisC->GetCumulative().Newton(thisC->GetDensity(),randVal,thisC->GetMinX(),thisC->GetMaxX(),_x_);
-                        _Constant randCat (randVal);
-                        thisC->SetValue(&randCat);
-                        if (catValues) {
-                            catValues->Store (j+catHMM.lLength+catDiscrete.lLength,siteOffset+good,randVal);
-                        }
-                        randVal = 0.0;
-                        while (randVal<1.0e-30) {
-                            randVal = genrand_real2();
-                        }
-
-                    }
-                }
-
-                if (randVal==0.0) {
-                    continue;
-                }
-
-                if (spawnValues) {
-                    rootState = spawnValues->theData[siteOffset+good];
-                } else {
-                    k=0;
-                    while (randVal>sumSoFar) {
-                        sumSoFar+=freqs[k];
-                        k++;
-                    }
-                    if (k==0) {
-                        rootState = 0;
-                    } else {
-                        rootState=k-1;
-                    }
-                }
-
-                _SimpleList intermediates,
-                            thisSite;
-
-                if (SingleBuildLeafProbs    (tree->GetRoot(), rootState, thisSite, localExclusions,tree, true, dsf, storeIntermediates?&intermediates:nil)) {
-                    good++;
-                    //add this site to the simulated dataset
-                    rootState = dsf->GetUnitLength();
-
-                    _String topState(dsf->ConvertCodeToLetters (dsf->CorrectCode(thisSite.lData[0]),rootState));
-                    for (k=0; k<topState.sLength; k++) {
-                        target.AddSite(topState.sData[k]);
-                        leafCount++;
-                    }
-                    for (j=1; j<dsf->NumberSpecies(); j++) {
-                        topState = dsf->ConvertCodeToLetters (dsf->CorrectCode(thisSite.lData[j]),rootState);
-                        for (k=0; k<topState.sLength; k++) {
-                            target.Write2Site(DSOffset+leafCount-rootState+k,topState.sData[k]);
-                        }
-                    }
-
-                    target.ResetIHelper();
-                    for (k=0; k<topState.sLength; k++) {
-                        target.Compact(DSOffset+leafCount-rootState+k);
-                    }
-
-                    if (storeIntermediates) {
-                        for (j=0; j<intermediates.lLength; j++) {
-                            topState = dsf->ConvertCodeToLetters (dsf->CorrectCode(intermediates.lData[j]),rootState);
-                            for (k=0; k<topState.sLength; k++) {
-                                target.Write2Site(DSOffset+leafCount-rootState+k,topState.sData[k]);
-                            }
-                            target.ResetIHelper();
-                            for (k=0; k<topState.sLength; k++) {
-                                target.Compact(DSOffset+leafCount-rootState+k);
-                            }
-                        }
-                    }
-                    //for (k=0; k<rootState; k++)
-                    //target.CheckMapping (DSOffset+leafCount-rootState+k);
-
-                }
-                currentTime.SetValue (0.0);
-                tValue = currentTime.Time();
-                currentTime.SetValue (tValue->Value());
-                DeleteObject (tValue);
-                if (currentTime.Value()-lastTime.Value () > .25) {
-#if !defined __UNIX__ || defined __HEADLESS__
-                    SetStatusBarValue (100.*(DSOffset+good)/totalPositions, 1, 0);
-#endif
-                    lastTime.SetValue (currentTime.Value());
-#ifndef __UNIX__
-                    yieldCPUTime();
-#endif
-                }
-            }
-            DSOffset   += dsf->theOriginalOrder.lLength;
-            siteOffset += dsf->theOriginalOrder.lLength/dsf->GetUnitLength();
-            cT->CleanUpMatrices();
-            continue;
-        }
-
-        long*   baseVector = (long*)MemAllocate (sizeof(long)*(vecSize));
-
-        // generate a random "spawning vector"
-
-        if (spawnValues) // use supplied starting values
-            for (j=0;  j<vecSize; j++) {
-                baseVector[j] = spawnValues->theData[j+DSOffset];
-            }
-
-        else
-            for (j=0;  j<vecSize; j++) {
-                _Parameter randVal  = genrand_real2(),
-                           sumSoFar = 0;
-
-                if (randVal==0.0) {
-                    j--;
-                    continue;
-                }
-                k=0;
-                while (randVal>sumSoFar) {
-                    sumSoFar+=freqs[k];
-                    k++;
-                }
-                if (k==0) {
-                    baseVector[j]=0;
-                } else {
-                    baseVector[j]=k-1;
-                }
-            }
-
-        // now proceed down the tree branches to get the values of the probabilities at the leaves
-        // this is done recursively
-
-        _DataSet * intermediates = nil;
-
-        if (storeIntermediates) {
-            if (storeIntermediates->sLength) {
-                FILE * iff = doFileOpen (storeIntermediates->sData,"w");
-                if (!iff) {
-                    _String errMsg = _String ("Failed to open ") & *storeIntermediates & " for writing.";
-                    WarnError (errMsg);
-                    target.Finalize();
-                    return;
-                } else {
-                    intermediates = new _DataSet (iff);
-                    _TheTree *datree = (_TheTree*)LocateVar(theTrees(0));
-                    datree->AddNodeNamesToDS (intermediates,false,true,0);
-                }
+      
+      if (theExclusions.lLength>partition_index) {
+        _List*      user_exclusions = (_List*)theExclusions(partition_index);
+        
+        
+        if (user_exclusions->countitems() > 0) {
+          const _TranslationTable* this_translation_table = this_filter->GetTranslationTable();
+          
+          for (unsigned long state = 0UL; state < user_exclusions->lLength; state++) {
+            long resolved_state = this_translation_table->MultiTokenResolutions(*(_String*)user_exclusions->GetItem(state), NULL);
+            if (resolved_state < 0L) {
+              ReportWarning (_String ("Excluded character ") & ((_String*)user_exclusions->GetItem(state))->Enquote() & " does not represent a unique state and will therefore be ignored in data simulation");
             } else {
-                intermediates = new _DataSet (vecSize);
+              user_exclusions_numeric << state;
+            }
+          }
+          
+          column_wise = true;
+        }
+      }
+      
+      if (category_simulation_mode != kLFSimulateCategoriesNone) {
+        column_wise = true;
+      }
+      
+      if (column_wise) {
+        
+        _TheTree * this_tree = GetIthTree (partition_index);
+        this_tree->SetUpMatrices(1);
+        while (good_sites < this_site_count) {
+          
+          if (category_simulation_mode != kLFSimulateCategoriesNone ) {
+            
+            for (unsigned long hmm_category_index =0UL;
+                 hmm_category_index < HMM_category_variables.lLength;
+                 hmm_category_index ++) { // deal with HMM
+              
+              _CategoryVariable* hmm_cat = GetIthCategoryVar(HMM_category_variables(hmm_category_index));
+              
+              _Matrix* category_weight_matrix = hmm_cat->GetWeights();
+              _Parameter* category_weights;
+              
+              unsigned long category_count = hmm_cat->GetNumberOfIntervals();
+              
+              if (good_sites == 0L) {
+                category_weights = category_weight_matrix->fastIndex();
+              } else {
+                _Matrix * hmm = hmm_cat->ComputeHiddenMarkov();
+                category_weights = hmm->theData+hmm->GetVDim()* HMM_state(hmm_category_index);
+              }
+              
+              unsigned long root_state = DrawFromDiscrete(category_weights, category_count);
+              
+              hmm_cat->SetIntervalValue(root_state);
+              if (good_sites > 0L) {
+                HMM_state [hmm_category_index] = root_state;
+              }
+              
+              if (catValues) {
+                catValues->Store (hmm_category_index,site_offset+good_sites,hmm_cat->Compute()->Value());
+              }
+            }
+            
+            for (unsigned long discrete_category_index = 0UL;
+                 discrete_category_index < discrete_category_variables.lLength;
+                 discrete_category_index++) {
+              
+              
+              _CategoryVariable* discrete_cat = GetIthCategoryVar(discrete_category_variables(discrete_category_index));
+              
+              unsigned long category_value = DrawFromDiscrete(discrete_cat->GetWeights()->fastIndex(), discrete_cat->GetNumberOfIntervals());
+              
+              discrete_cat->SetIntervalValue(category_value);
+              
+              if (catValues) {
+                catValues->Store (discrete_category_index+HMM_category_variables.lLength,site_offset+good_sites,discrete_cat->Compute()->Value());
+              }
+            }
+            
+            for (unsigned long continuous_category_index = 0UL;
+                 continuous_category_index < continuous_category_variables.lLength;
+                 continuous_category_index++) { // use discrete values here
+              
+              _CategoryVariable* continuous_cat_var = GetIthCategoryVar(continuous_category_variables(continuous_category_index));
+              
+              _Parameter  category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),_x_);
+              
+              continuous_cat_var->SetValue(new _Constant (category_value), false);
+              if (catValues) {
+                catValues->Store (continuous_category_index+discrete_category_variables.lLength+HMM_category_variables.lLength,site_offset+good_sites,category_value);
+              }
+            }
+          } // end category initialization block
+          
+          unsigned long root_state;
+          
+          if (spawnValues) {
+            root_state = spawnValues->theData[site_offset+good_sites];
+          } else {
+            root_state = DrawFromDiscrete(this_freqs, filter_dimension);
+          }
+          
+          _SimpleList ancestral_values,
+                      leaf_values;
+          
+          if (SingleBuildLeafProbs    (this_tree->GetRoot(), root_state, leaf_values, user_exclusions_numeric,this_tree, true, this_filter, storeIntermediates?&ancestral_values:nil)) {
+            good_sites++;
+              //add this site to the simulated dataset
+            
+            _String simulated_unit (this_filter->ConvertCodeToLetters(this_filter->CorrectCode(leaf_values(0)), sites_per_unit));
+            
+            for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+              target.AddSite (simulated_unit (character_index));
+              leaf_count ++;
             }
 
-            checkPointer (intermediates);
-            intermediates->SetTranslationTable (dsf->GetData());
-        }
-
-        BuildLeafProbs (tree->GetRoot(), baseVector, vecSize, target, tree, leafCount, true, dsf->GetUnitLength(), dsf, DSOffset,intermediates);
-
-        if (intermediates) {
-            intermediates->Finalize();
-            if (storeIntermediates->sLength == 0) {
-                long      siteCount = intermediates->GetTheMap().lLength;
-
-                for (long p = 0; p<countIntermediates; p++)
-                    for (long c=DSOffset; c<siteCount+DSOffset; c++) {
-                        _Site*  aSite = intermediates->GetSite(c-DSOffset);
-                        target.Write2Site (c,aSite->sData[p]);
-                    }
+            for (unsigned long sequence_index; sequence_index < species_count; sequence_index++) {
+              simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(leaf_values(sequence_index)), sites_per_unit);
+              for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
+              }
             }
-            DeleteObject (intermediates);
+
+            
+            target.ResetIHelper();
+            for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+              target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
+            }
+            
+            if (storeIntermediates && storeIntermediates->sLength == 0UL) {
+              for (unsigned long internal_node_index = 0UL; internal_node_index < internal_node_count; internal_node_index++) {
+                simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(ancestral_values(internal_node_index)), sites_per_unit);
+                for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                  target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
+                }
+                target.ResetIHelper();
+                for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                  target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
+                }
+                
+              }
+            }
+          }
+          
+          _Parameter time_elapsed = TimerDifferenceFunction (true);
+          
+
+          if (time_elapsed > .25) {
+#if !defined __UNIX__ || defined __HEADLESS__
+            SetStatusBarValue (100.*(site_offset_raw+good_sites)/total_sites, 1, 0);
+#endif
+            TimerDifferenceFunction (false);
+          }
         }
+        this_tree->CleanUpMatrices();
 
-        free (baseVector);
-        DSOffset += dsf->theOriginalOrder.lLength;
+      } else {// end simulate column by column
+      
+        
+        unsigned long *  simulated_sequence = new unsigned long [this_site_count];
+        
+          // generate a random "spawning vector"
+        
+        if (spawnValues) { // use supplied starting values
+          for (unsigned long site_index = 0UL;  site_index < this_site_count; site_index++) {
+            simulated_sequence[site_index] = spawnValues->theData[site_index+site_offset];
+          }
+        } else {
+          for (unsigned long site_index = 0UL;  site_index < this_site_count; site_index++) {
+            simulated_sequence[site_index] = DrawFromDiscrete(this_freqs, filter_dimension);
+          }
+        }
+        
+          // now proceed down the tree branches to get the values of the probabilities at the leaves
+          // this is done recursively
+        
+        _DataSet * ancestral_sequences = nil;
+        
+        if (storeIntermediates) {
+          if (storeIntermediates->sLength) {
+            FILE * file_for_ancestral_sequences = doFileOpen (storeIntermediates->sData,"w");
+            if (!file_for_ancestral_sequences) {
+              WarnError (_String ("Failed to open ") & storeIntermediates->Enquote() & " for writing.");
+              target.Finalize();
+              return;
+            } else {
+              ancestral_sequences = new _DataSet (file_for_ancestral_sequences);
+              _TheTree *datree = (_TheTree*)LocateVar(theTrees(0));
+              datree->AddNodeNamesToDS (ancestral_sequences,false,true,0);
+            }
+          } else {
+            ancestral_sequences = new _DataSet (this_site_count);
+          }
+          
+          ancestral_sequences->SetTranslationTable (this_filter->GetData());
+        }
+        
+        BuildLeafProbs (this_tree->GetRoot(), simulated_sequence, this_site_count, target, this_tree, leaf_count, true, sites_per_unit, this_filter, site_offset_raw ,ancestral_sequences);
+        
+        if (ancestral_sequences) {
+          ancestral_sequences->Finalize();
+          if (storeIntermediates->sLength == 0) {
+            for (unsigned long sequence_index = 0UL; sequence_index < internal_node_count; sequence_index ++ ) {
+              for (unsigned long raw_site_index = 0UL; raw_site_index < this_raw_site_count; raw_site_index++) {
+                target.Write2Site(site_offset_raw + raw_site_index, ancestral_sequences->GetSite (raw_site_index)->sData[sequence_index]);
+              }
+            }
+          }
+          DeleteObject (ancestral_sequences);
+        }
+        
+        delete [] simulated_sequence;
+      } // end over sequence-wise simulation
+      
+      site_offset_raw   += this_raw_site_count;
+      site_offset += this_site_count;
 
-    }
-
-    /*for (i=0; i<theTrees.lLength; i++)
-    {
-        _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-        cT->CleanUpMatrices();
-    }*/
-
+    } // end loop over partitions
+    
     target.Finalize();
     target.SetNoSpecies(target.GetNames().lLength);
-}
+  }
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long* baseVector, long& vecSize, _DataSet& target, _TheTree* curTree, long& leafCount, bool isRoot, long baseLength, _DataSetFilter* dsf, long DSOffset, _DataSet* intNodes)
+void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned * baseVector, unsigned long vecSize, _DataSet& target, _TheTree* curTree, unsigned long& leafCount, bool isRoot, long baseLength, _DataSetFilter const* dsf, long DSOffset, _DataSet* intNodes) const
 /* SLKP TODO check that this works with the new category spec route */
 
 {
-    long* curVector = nil,
-          i,
+  unsigned long * curVector = nil;
+  long    i,
           k,
           m;
 
@@ -9523,7 +9453,7 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long* baseVect
 
     if (!isRoot) {
 
-        curVector = (long*)MemAllocate (vecSize*sizeof(long));
+        curVector = new unsigned long [vecSize];
         // first "mutate" the parent vector
 
         if (ccurNode->NeedNewCategoryExponential(-1)) {
@@ -9612,13 +9542,13 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long* baseVect
     }
 
     if (curVector) {
-        free (curVector);
+        delete [] curVector;
     }
 }
 
 //_______________________________________________________________________________________
 
-bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long parentState, _SimpleList& target, _SimpleList& theExc, _TheTree* curTree, bool isRoot, _DataSetFilter* dsf, _SimpleList * iNodes)
+bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long parentState, _SimpleList& target, _SimpleList& theExc, _TheTree* curTree, bool isRoot, _DataSetFilter const* dsf, _SimpleList * iNodes) const
 {
     long myState = 0;
     if (!isRoot) {
@@ -10032,13 +9962,12 @@ long    _LikelihoodFunction::SequenceCount (long partID)
 
 //_______________________________________________________________________________________
 
-long    _LikelihoodFunction::SiteCount (void)
-{
-    long res = 0;
+unsigned long    _LikelihoodFunction::SiteCount (void) const {
+  
+    unsigned long res = 0UL;
 
-    for (long i=0; i<theDataFilters.lLength; i++) {
-        _DataSetFilter * df = (_DataSetFilter*) dataSetFilterList (theDataFilters.lData[i]);
-        res += df->theOriginalOrder.lLength;
+    for (unsigned long i=0UL; i<theDataFilters.lLength; i++) {
+        res += GetIthFilter (i)->GetSiteCount();
     }
 
     return res;
@@ -10124,8 +10053,8 @@ void    _LikelihoodFunction::FillInConditionals(long partIndex) {
         PartitionCatVars        (pcats,partIndex);
         catCounter            = pcats.lLength;
 
-        _TheTree   *tree        = (_TheTree*)LocateVar(theTrees(partIndex));
-        _DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(partIndex));
+        _TheTree   *tree        = GetIthTree (partIndex);
+        _DataSetFilter const *dsf = GetIthFilter (partIndex);;
 
         _SimpleList* tcc            = (_SimpleList*)treeTraversalMasks(partIndex);
         if (tcc) {
@@ -10300,8 +10229,7 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
 
 //_______________________________________________________________________________________
 
-_CustomFunction::_CustomFunction (_String* arg)
-{
+_CustomFunction::_CustomFunction (_String* arg) {
     _String body    (*arg),
             errMsg ;
 
@@ -10309,15 +10237,15 @@ _CustomFunction::_CustomFunction (_String* arg)
 
     if (Parse (&myBody, body, fpc, nil) == HY_FORMULA_EXPRESSION) {
         _SimpleList myVars;
-        {
-            _AVLList al (&myVars);
-            myBody.ScanFForVariables(al,true,false,false);
-            al.ReorderList();
+        _AVLList al (&myVars);
+        myBody.ScanFForVariables(al,true,false,false);
+        al.ReorderList();
+      
+        for (unsigned long k=0UL; k<myVars.lLength; k++) {
+              if (LocateVar(myVars.lData[k])->IsIndependent()) {
+                  indexInd << myVars.lData[k];
+              }
         }
-        for (unsigned long k=0; k<myVars.lLength; k++)
-            if (LocateVar(myVars.lData[k])->IsIndependent()) {
-                GetIndependentVars() << myVars.lData[k];
-            }
     } else {
         WarnError (_String ("An invalid expression supplied for formula-based custom LF: '") & errMsg & '\'');
     }
@@ -10325,11 +10253,10 @@ _CustomFunction::_CustomFunction (_String* arg)
 
 //_______________________________________________________________________________________
 
-_Parameter _CustomFunction::Compute (void)
-{
+_Parameter _CustomFunction::Compute (void) {
     likeFuncEvalCallCount++;
-    _SimpleList * iv = &GetIndependentVars ();
-    for (unsigned long i=0; i<iv->lLength; i++) {
+    _SimpleList const * iv = &GetIndependentVars ();
+    for (unsigned long i=0UL; i<iv->lLength; i++) {
         _Parameter result = GetIthIndependent(i);
 
         if (result<GetIthIndependentBound (i,true) || result>GetIthIndependentBound (i,false)) {

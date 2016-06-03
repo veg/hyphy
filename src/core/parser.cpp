@@ -570,8 +570,7 @@ bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool 
 
 
 //__________________________________________________________________________________
-bool CheckReceptacleAndStore (_String* name, _String fID, bool checkValid, _PMathObj v, bool dup)
-{
+bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid, _PMathObj v, bool dup) {
     _Variable * theV = CheckReceptacle(name, fID, checkValid);
     if (theV) {
         theV->SetValue (v, dup);

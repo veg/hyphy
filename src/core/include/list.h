@@ -115,6 +115,13 @@ class _List:public _SimpleList
         virtual BaseRef GetItem     (const unsigned long) const;
 
         /**
+         * Element location functions - read only
+         * used to avoid (*list)(3) which are hard to read
+         * checks for valid index range and returns NULL if outside the range
+         */
+        virtual BaseRef GetItemRangeCheck     (const unsigned long) const;
+
+        /**
         * Element location functions - read only
         */
         virtual const _List operator = (const _List&);

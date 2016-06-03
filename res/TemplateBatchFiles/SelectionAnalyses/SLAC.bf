@@ -286,11 +286,7 @@ if (slac.samples > 0) {
 
         slac.queue = mpi.create_queue ({"LikelihoodFunctions": {{slac.partitioned_mg_results["LF"]}}});
 
-
         for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
-
-            //slac.sampled   = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, {"sample": TRUE});
-            //slac.sample.results + slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
 
             io.reportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
 

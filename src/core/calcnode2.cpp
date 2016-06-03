@@ -538,7 +538,7 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          upd
            in simple cases it is fixed for the duration of optimization, but for more
            complex models it may change from iteration to iteration
          */
-        result += log(accumulator) * theFilter->theFrequencies [siteID];
+        result += log(accumulator) * theFilter->theFrequencies.Get (siteID);
         // correct for the fact that identical alignment columns may appear more than once
     }
 
@@ -552,7 +552,7 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          upd
 _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList&        siteOrdering,
         _SimpleList&        updateNodes,
         _SimpleList*        tcc,
-        _DataSetFilter*     theFilter,
+        _DataSetFilter const*     theFilter,
         _Parameter*         iNodeCache,
         long      *         lNodeFlags,
         _Parameter*         scalingAdjustments,
@@ -764,7 +764,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         parentConditionals [1]                             *= _lfScalerUpwards;
                         parentConditionals [2]                             *= _lfScalerUpwards;
                         parentConditionals [3]                             *= _lfScalerUpwards;
-                        localScalerChange                                  += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                        localScalerChange                                  += theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                         scalingAdjustments [parentCode*siteCount + siteID]  = tryScale;
                         didScale                                            = 1;
                     }
@@ -775,7 +775,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         parentConditionals [1]                             *= _lfScalingFactorThreshold;
                         parentConditionals [2]                             *= _lfScalingFactorThreshold;
                         parentConditionals [3]                             *= _lfScalingFactorThreshold;
-                        localScalerChange                                  -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                        localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                         didScale                                            = -1;
                     }
                 }
@@ -935,7 +935,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                             parentConditionals [c] *= _lfScalerUpwards;
                         }
 
-                        localScalerChange                                      += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                        localScalerChange                                      += theFilter->theFrequencies.Get(siteOrdering.lData[siteID]);
                         didScale                                                = 1;
                     }
                 } else {
@@ -944,7 +944,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         for (long c = 0; c < alphabetDimension; c++) {
                             parentConditionals [c] *= _lfScalingFactorThreshold;
                         }
-                        localScalerChange                                  -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                        localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                         didScale                                            = -1;
                     }
                 }
@@ -982,7 +982,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                                 siteCorrectionCounts [siteOrdering.lData[sid]] += didScale;
                             }
                             scalingAdjustments   [parentCode*siteCount + sid] *= scM;
-                            localScalerChange                               += didScale * theFilter->theFrequencies [siteOrdering.lData[sid]];
+                            localScalerChange                               += didScale * theFilter->theFrequencies (siteOrdering.lData[sid]);
                         } else {
                             break;
                         }
@@ -1038,8 +1038,8 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
             _Parameter term,
                        temp_sum;
           
-            if (theFilter->theFrequencies [siteOrdering.lData[siteID]] > 1) {
-                term = log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+            if (theFilter->theFrequencies (siteOrdering.lData[siteID]) > 1) {
+                term = log(accumulator) * theFilter->theFrequencies (siteOrdering.lData[siteID]);
             } else {
                 term = log(accumulator);
             }
@@ -1080,7 +1080,7 @@ void            _TheTree::ComputeBranchCache    (
     long                    brID,
     _Parameter*         cache,
     _Parameter*         iNodeCache,
-    _DataSetFilter*     theFilter,
+    _DataSetFilter const*     theFilter,
     long           *        lNodeFlags,
     _Parameter*         scalingAdjustments,
     long        *           siteCorrectionCounts,
@@ -1329,7 +1329,7 @@ void            _TheTree::ComputeBranchCache    (
                             parentConditionals[2]                             *= _lfScalerUpwards;
                             parentConditionals[3]                             *= _lfScalerUpwards;
 
-                            localScalerChange                                  += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                            localScalerChange                                  += theFilter->theFrequencies (siteOrdering.lData[siteID]);
                             didScale                                            = 1;
                         }
                     } else {
@@ -1339,7 +1339,7 @@ void            _TheTree::ComputeBranchCache    (
                             parentConditionals [2]                             *= _lfScalingFactorThreshold;
                             parentConditionals [3]                             *= _lfScalingFactorThreshold;
 
-                            localScalerChange                                  -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                            localScalerChange                                  -= theFilter->theFrequencies (siteOrdering.lData[siteID]);
                             didScale                                            = -1;
                         }
                     }
@@ -1434,7 +1434,7 @@ void            _TheTree::ComputeBranchCache    (
                                 parentConditionals [c] *= _lfScalerUpwards;
                             }
 
-                            localScalerChange                                      += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                            localScalerChange                                      += theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                             didScale                                                = 1;
                         }
                     } else {
@@ -1443,7 +1443,7 @@ void            _TheTree::ComputeBranchCache    (
                                 parentConditionals [c] *= _lfScalingFactorThreshold;
                             }
 
-                            localScalerChange                                  -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                            localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                             didScale                                            = -1;
                         }
                     }
@@ -1477,7 +1477,7 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
     _SimpleList&            siteOrdering,
     long                    brID,
     _Parameter*         cache,
-    _DataSetFilter*     theFilter,
+    _DataSetFilter const*     theFilter,
     long                    siteFrom,
     long                    siteTo,
     long                    catID,
@@ -1546,8 +1546,8 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
                 break;
             }
             _Parameter term;
-            if (theFilter->theFrequencies [siteOrdering.lData[siteID]] > 1) {
-                term = log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]] - correction;
+            if (theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) > 1) {
+                term = log(accumulator) * theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) - correction;
             } else {
                 term = log(accumulator) - correction;
             }
@@ -1566,7 +1566,7 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
 _Parameter      _TheTree::ComputeTwoSequenceLikelihood
 (
     _SimpleList   & siteOrdering,
-    _DataSetFilter* theFilter,
+    _DataSetFilter const* theFilter,
     long      *         lNodeFlags,
     _GrowingVector* lNodeResolutions,
     long                siteFrom,
@@ -1687,7 +1687,7 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
                 return -A_LARGE_NUMBER;
             } else {
                 //printf ("%d: %g\n", siteID, sum);
-                result += log(sum) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                result += log(sum) * theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
             }
         }
     }

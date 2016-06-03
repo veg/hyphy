@@ -164,6 +164,12 @@ BaseRef _List::GetItem (const unsigned long i) const {
     return ((BaseRef*)lData)[i];
 }
 
+  // Element location functions (0,llength - 1)
+BaseRef _List::GetItemRangeCheck(const unsigned long i) const {
+  return i < lLength ? ((BaseRef*)lData)[i] : nil;
+}
+
+
 // Assignment operator
 const _List _List::operator = (const _List& l) {
     Clear(true);
