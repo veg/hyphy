@@ -1233,7 +1233,7 @@ _Matrix*    _LikelihoodFunction::RemapMatrix(_Matrix* source, const _SimpleList&
          offsetInTarget      =   0;
 
     for (unsigned long i=0; i<partsToDo.lLength; i++) {
-        vDim += GetIthFilter (partsToDo.lData[i])->GetPatternCount();
+        vDim += GetIthFilter (partsToDo.lData[i])->GetSiteCount();
     }
 
     _Matrix* res = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
@@ -1241,7 +1241,7 @@ _Matrix*    _LikelihoodFunction::RemapMatrix(_Matrix* source, const _SimpleList&
     for (long aPart = 0; aPart<partsToDo.lLength; aPart++) {
         long partIndex = partsToDo.lData[aPart];
         _DataSetFilter  const * dsf = GetIthFilter (partIndex);
-        long filterSize = dsf->GetPatternCount();
+        long filterSize = dsf->GetSiteCount();
 
         if (HasHiddenMarkov(blockDependancies.lData[partIndex])>=0)
             // do nothing, just copy
