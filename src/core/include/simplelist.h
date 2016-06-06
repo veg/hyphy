@@ -111,7 +111,7 @@ class _SimpleList:public BaseObj {
         virtual _SimpleList operator & (_SimpleList);
 
         // append number to this
-        virtual void operator << (long);
+        _SimpleList& operator << (long);
 
         // append number to this if it's not in the list (search first). List assumed unsorted.
         virtual bool operator >> (long);

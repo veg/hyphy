@@ -141,7 +141,7 @@ _TranslationTable::_TranslationTable (void)
 }
 
 //_________________________________________________________
-_TranslationTable::_TranslationTable (char baseL)
+_TranslationTable::_TranslationTable (unsigned char baseL)
 {
     baseLength = (baseL==20)?20:4;
     checkTable = NULL;
@@ -288,127 +288,131 @@ const _String&   _TranslationTable::ExpandToken            (char token) const {
 //_________________________________________________________
 
 long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* receptacle, bool gapToOnes) const {
-  long * large_store,
-         large_store_static [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
   
-  
-  if (baseLength * tokens.sLength + tokens.sLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
-    large_store = new long [baseLength * tokens.sLength + tokens.sLength];
+  if (tokens.sLength == 1UL) {
+    return TokenResolutions (tokens.getChar(0UL), receptacle, gapToOnes);
   } else {
-    large_store = large_store_static;
-  }
   
-  /*
-   large_store is a linear array which stores the following data
-   
-   [0,unitLength) -- the number of resolutions for the i-th character
-   
-   [unitLength,unitLength + baseLength] -- the actual resolutions for the 1st char
-   [unitLength + baseLength, unitLength + 2*baseLength] -- the actual resolutions for the 2nd char
-   ...
-   */
-  
-  long resolution_count = 1L;
-  
-  for (unsigned long char_index = 0; char_index < tokens.sLength ; char_index++) {
-    large_store [char_index] = TokenResolutions (tokens.sData[char_index], large_store + tokens.sLength + baseLength * char_index, gapToOnes);
-    if (gapToOnes && large_store [char_index] == 0) {
-      large_store [char_index] = baseLength;
-      InitializeArray(large_store + tokens.sLength + baseLength * char_index, baseLength, 1L);
-    }
-    resolution_count *= large_store [char_index] > 0 ? large_store [char_index] : 0;
-  }
-  
-  if (resolution_count == 1L) {
-    for (unsigned long char_index = 0; char_index < tokens.sLength ; char_index++) {
-      large_store[char_index] = large_store[tokens.sLength + baseLength * char_index];
+    long * large_store,
+           large_store_static [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
+    
+    
+    if (baseLength * tokens.sLength + tokens.sLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
+      large_store = new long [baseLength * tokens.sLength + tokens.sLength];
+    } else {
+      large_store = large_store_static;
     }
     
-    if (receptacle) {
-      receptacle [0]   = CombineDigits(large_store, tokens.sLength, baseLength);
-    } else {
-      resolution_count = CombineDigits(large_store, tokens.sLength, baseLength);
+    /*
+     large_store is a linear array which stores the following data
+     
+     [0,unitLength) -- the number of resolutions for the i-th character
+     
+     [unitLength,unitLength + baseLength] -- the actual resolutions for the 1st char
+     [unitLength + baseLength, unitLength + 2*baseLength] -- the actual resolutions for the 2nd char
+     ...
+     */
+    
+    long resolution_count = 1L;
+    
+    for (unsigned long char_index = 0; char_index < tokens.sLength ; char_index++) {
+      large_store [char_index] = TokenResolutions (tokens.sData[char_index], large_store + tokens.sLength + baseLength * char_index, gapToOnes);
+      if (gapToOnes && large_store [char_index] == 0) {
+        large_store [char_index] = baseLength;
+        InitializeArray(large_store + tokens.sLength + baseLength * char_index, baseLength, 1L);
+      }
+      resolution_count *= large_store [char_index] > 0 ? large_store [char_index] : 0;
     }
-  } else {
-    if (receptacle) {
-      // handle cases of 2 and 3 characters separately since they are the most common
-      
-      if (resolution_count > HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
-        FlagError(_String ("Too many ambiguous states in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
-        return -1L;
+    
+    if (resolution_count == 1L) {
+      for (unsigned long char_index = 0; char_index < tokens.sLength ; char_index++) {
+        large_store[char_index] = large_store[tokens.sLength + baseLength * char_index];
       }
       
-      if (tokens.sLength == 3) {
-        long digits[3],
-            *resolution_arrays [3] = {large_store + tokens.sLength, large_store + tokens.sLength + baseLength,large_store + tokens.sLength + 2*baseLength},
-            resolutions_index = 0L;
+      if (receptacle) {
+        receptacle [0]   = CombineDigits(large_store, tokens.sLength, baseLength);
+      } else {
+        resolution_count = CombineDigits(large_store, tokens.sLength, baseLength);
+      }
+    } else {
+      if (receptacle) {
+        // handle cases of 2 and 3 characters separately since they are the most common
         
-        for (unsigned long digit1 = 0; digit1 < large_store[0]; digit1 ++) {
-          for (unsigned long digit2 = 0; digit2 < large_store[1]; digit2 ++) {
-            for (unsigned long digit3 = 0; digit3 < large_store[2]; digit3 ++) {
-              receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength * baseLength + resolution_arrays[1][digit2] * baseLength + resolution_arrays[2][digit3];
-            }
-          }
+        if (resolution_count > HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
+          FlagError(_String ("Too many ambiguous states in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
+          return -1L;
         }
         
-      } else {
-        
-        
-        if (tokens.sLength == 2) {
-          long digits[2],
-               *resolution_arrays [2] = {large_store + tokens.sLength,large_store + tokens.sLength + baseLength},
-               resolutions_index = 0L;
+        if (tokens.sLength == 3) {
+          long digits[3],
+              *resolution_arrays [3] = {large_store + tokens.sLength, large_store + tokens.sLength + baseLength,large_store + tokens.sLength + 2*baseLength},
+              resolutions_index = 0L;
           
           for (unsigned long digit1 = 0; digit1 < large_store[0]; digit1 ++) {
             for (unsigned long digit2 = 0; digit2 < large_store[1]; digit2 ++) {
-              receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength + resolution_arrays[1][digit2];
-            }
-          }
-        } else { // more than 3 tokens [rare!]
-          
-          if (tokens.sLength >= 32) {
-            FlagError(_String ("The token string is too long in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
-            return -1L;
-          }
-          
-          long digits[32] {},
-               resolutions_index = 0L;
-          
-          do {
-            // assemble the current token, backwards
-            long this_resolution = 0L,
-                 weight = 1L;
-            for (long digit = tokens.sLength - 1; digit >= 0; digit --) {
-              this_resolution += weight * *(large_store + tokens.sLength + baseLength * digit + digits[digit]);
-              weight *= tokens.sLength;
-            }
-            
-            receptacle[resolutions_index++] = this_resolution;
-            
-            for (long digit = tokens.sLength - 1; digit >= 0; digit --) {
-              if (++digits[digit] < large_store[digit]) {
-                break;
-              }
-              if (digit > 0) {
-                digits[digit] = 0L;
+              for (unsigned long digit3 = 0; digit3 < large_store[2]; digit3 ++) {
+                receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength * baseLength + resolution_arrays[1][digit2] * baseLength + resolution_arrays[2][digit3];
               }
             }
-            
-          } while (digits[0] < large_store[tokens.sLength]);
+          }
           
+        } else {
+          if (tokens.sLength == 2) {
+            long digits[2],
+                 *resolution_arrays [2] = {large_store + tokens.sLength,large_store + tokens.sLength + baseLength},
+                 resolutions_index = 0L;
+            
+            for (unsigned long digit1 = 0; digit1 < large_store[0]; digit1 ++) {
+              for (unsigned long digit2 = 0; digit2 < large_store[1]; digit2 ++) {
+                receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength + resolution_arrays[1][digit2];
+              }
+            }
+          } else { // more than 3 tokens [rare!]
+            
+            if (tokens.sLength >= 32) {
+              FlagError(_String ("The token string is too long in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
+              return -1L;
+            }
+            
+            long digits[32] {},
+                 resolutions_index = 0L;
+            
+            do {
+              // assemble the current token, backwards
+              long this_resolution = 0L,
+                   weight = 1L;
+              for (long digit = tokens.sLength - 1; digit >= 0; digit --) {
+                this_resolution += weight * *(large_store + tokens.sLength + baseLength * digit + digits[digit]);
+                weight *= tokens.sLength;
+              }
+              
+              receptacle[resolutions_index++] = this_resolution;
+              
+              for (long digit = tokens.sLength - 1; digit >= 0; digit --) {
+                if (++digits[digit] < large_store[digit]) {
+                  break;
+                }
+                if (digit > 0) {
+                  digits[digit] = 0L;
+                }
+              }
+              
+            } while (digits[0] < large_store[0]);
+            
+          }
         }
+      } else {
+        resolution_count = -1L;
       }
-    } else {
-      resolution_count = -1L;
     }
+    
+    
+    if (large_store != large_store_static) {
+      delete [] large_store;
+    }
+    
+    return resolution_count;
   }
-  
-  
-  if (large_store != large_store_static) {
-    delete [] large_store;
-  }
-  
-  return resolution_count;
 
 }
 
@@ -886,7 +890,7 @@ char    _TranslationTable::GetGapChar (void) const {
 }
 
 //_________________________________________________________
-const _String& _TranslationTable::ConvertCodeToLetters (long code, char base) const {
+const _String _TranslationTable::ConvertCodeToLetters (long code, unsigned char base) const {
 
     _String res (base,false);
     if (code >= 0) {
@@ -942,7 +946,7 @@ const _String& _TranslationTable::ConvertCodeToLetters (long code, char base) co
             }
     } else {
         char c = GetGapChar();
-        for (long k=0; k<base; k++) {
+        for (long k=0L; k<base; k++) {
             res.sData[k] = c;
         }
     }

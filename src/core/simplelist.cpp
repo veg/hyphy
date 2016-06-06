@@ -206,9 +206,9 @@ _SimpleList _SimpleList::operator & (_SimpleList l)
     return res;
 }
 
-void _SimpleList::operator << (long br)
-{
+_SimpleList& _SimpleList::operator << (long br) {
   _SimpleList::InsertElement ((BaseRef)br, -1, false, false);
+  return *this;
 }
 
 bool _SimpleList::operator >> (long br)
@@ -564,9 +564,11 @@ long _SimpleList::CorrectForExclusions(long * index,  long length) const {
   
   for (long k=0UL; k < length; k++) {
     if (exclusion_index < lLength && index[k] >= lData[exclusion_index]) {
-      if (index[k] == lData[exclusion_index++]) {
-        continue;
+      if (index[k] > lData[exclusion_index]) {
+        k--;
       }
+      exclusion_index++;
+      continue;
     }
     index[mapped++] = index[k] - exclusion_index;
   }

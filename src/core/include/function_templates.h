@@ -132,7 +132,7 @@ const _SimpleList SplitIntoDigits (ARG_TYPE composition, unsigned long places, u
 }
 
 template <typename ARG_TYPE>
-ARG_TYPE & CombineDigits (ARG_TYPE const* digits, unsigned long places, unsigned long radix) {
+const ARG_TYPE CombineDigits (ARG_TYPE const* digits, unsigned long places, unsigned long radix) {
   /**
    Reconstruct a number from digits according to the supplied radix.
    

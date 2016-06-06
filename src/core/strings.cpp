@@ -374,7 +374,7 @@ _String& _String::operator << (const _String* s) {
       nInstances+=incBy;
       
       if (! (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)))) {
-        return;
+        return *this;
       }
       
     }

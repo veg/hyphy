@@ -64,7 +64,7 @@ private:
 public:
 
     _TranslationTable                       (void);
-    _TranslationTable                       (char);
+    _TranslationTable                       (unsigned char);
     _TranslationTable                       (_String&);
     /* 20100618: SLKP
 
@@ -125,7 +125,7 @@ public:
     bool    IsCharLegal                     (char);
     char    GetSkipChar                     (void);
     char    GetGapChar                      (void) const;
-    const _String& ConvertCodeToLetters            (long, char) const;
+    const _String ConvertCodeToLetters            (long, unsigned char) const;
     long    LengthOfAlphabet                (void) const;
     bool    IsStandardBinary                (void) const {
         return baseLength==2 && baseSet.sLength==0;
@@ -160,7 +160,7 @@ public:
   
     static const _String&                   GetDefaultTable (long tableType);
 
-    char                                    baseLength;
+    unsigned char                                    baseLength;
     // number of "fundamental" tokens
     //(4 for nucl, ACGT; 20 for amino acids)
 
