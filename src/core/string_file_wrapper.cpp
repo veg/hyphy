@@ -71,6 +71,10 @@ StringFileWrapper& StringFileWrapper::operator << (const _String& buffer) {
   return *this;
 }
 
+StringFileWrapper& StringFileWrapper::operator << (const _String* buffer) {
+  return (*this) << *buffer;
+}
+
 StringFileWrapper& StringFileWrapper::operator << (const StringFileWrapperConstants& special) {
   if (string_buffer) {
     switch (special) {

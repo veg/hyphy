@@ -512,7 +512,7 @@ public:
     virtual  _String&   operator () (unsigned long site, unsigned long pos);
     // site indexes unique sites
 
-    const _String&   RetrieveState (unsigned long site, unsigned long pos) const;
+    const _String   RetrieveState (unsigned long site, unsigned long pos) const;
       // site indexes all sites, including duplicates
 
     virtual  void   RetrieveState (unsigned long site, unsigned long pos, _String&, bool = true) const;

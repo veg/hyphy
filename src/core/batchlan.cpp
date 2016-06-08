@@ -474,8 +474,7 @@ _String*    MPIRecvString       (long senderT, long& senderID)
 
 //____________________________________________________________________________________
 
-_String GetStringFromFormula (_String* data,_VariableContainer* theP)
-{
+const _String GetStringFromFormula (_String* data,_VariableContainer* theP) {
     _Formula  nameForm (*data,theP);
     _PMathObj formRes = nameForm.Compute();
 

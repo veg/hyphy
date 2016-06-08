@@ -5,11 +5,11 @@ LoadFunctionLibrary("../UtilityFunctions.bf");
 ancestral._ancestralRecoveryCache = {};
 
 /*******************************************
-	call _buildAncestralCache function with the likelihood function ID 
+	call _buildAncestralCache function with the likelihood function ID
 	and a 0-based partition index to produce an
-	internal structure storing internal states at 
+	internal structure storing internal states at
 	nodes;
-	
+
 	returns an integer index to reference
 	the opaque structure for subsequent operations
 
@@ -44,7 +44,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     _bac_treeID = (_bac_lfInfo["Trees"])[_lfComponentID];
     _bac_filterID = (_bac_lfInfo["Datafilters"])[_lfComponentID];
 
-    /* 2; construct a temporary likelihood function with 
+    /* 2; construct a temporary likelihood function with
        the tree and the filter; and an AVL representation of the tree */
 
     if (doSample) {
@@ -62,6 +62,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     }
 
     _bac_tree_avl = ( ^ _bac_treeID) ^ 0;
+
     GetString(_bacSequenceNames, ^ _bac_filterID, -1);
 
 
@@ -79,12 +80,12 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     GetDataInfo(_bacAncestralPatternMap, _bacAF);
 
     /* now start building a matrix of mapped states;
-       
-       each row in the matrix corresponds to a tree NODE in the same order as 
-       they are listed in the tree AVL 
-       
+
+       each row in the matrix corresponds to a tree NODE in the same order as
+       they are listed in the tree AVL
+
        each column correponds to a site
-       
+
        the entries are as follows:
     	   0.._bacFilterDimension-1 an unambigous character
     	   -1 a deletion/complete ambiguity
@@ -102,7 +103,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     _bacHandledResolutionsAmbig = {};
     _bacHandledResolutionsCodons = {};
 
-    /* map where sequences are in the filter vs where they are in the 
+    /* map where sequences are in the filter vs where they are in the
 	tree structure */
 
     _bacMapTreeNodeToDF = {};
@@ -218,12 +219,12 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
 
 /*******************************************
 	count subsitutions at a given site;
-	returns an AVL with 
-	
+	returns an AVL with
+
 	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix 
+	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
 				 with counts of substitutions at the site
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -259,12 +260,12 @@ lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
 
 /*******************************************
 	count subsitutions at a given site;
-	along a subset of branches. 
-	
+	along a subset of branches.
+
 	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix 
+	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
 				 with counts of substitutions at the site
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -301,12 +302,12 @@ function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
 
 /*******************************************
 	returns the reconstructed root state for a given site;
-	returns an AVL with 
-	
+	returns an AVL with
+
 	["CHAR"]  - the root character
 	["INDEX"] - the index of the root character (consisent with the data filter representation),
 			  - this value will be negative if the root state is ambiguous (e.g. a gap)
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -331,7 +332,7 @@ function _rootState(_ancID, _siteID) {
 }
 
 /*******************************************
-	map all site substitutions or character states to a tree; 
+	map all site substitutions or character states to a tree;
 	'_scaled' != 0 will use branch lengths to draw the tree
 	returns PostScript code for the image
 
@@ -476,7 +477,7 @@ function _mapSubstitutionsBySiteAux(_ancID, _siteID, _scaled, mode) {
 }
 
 /*******************************************
-	map all site substitutions (or character states) to a tree; 
+	map all site substitutions (or character states) to a tree;
 	'_scaled' != 0 will use branch lengths to draw the tree
 	returns Newick code for the annotated tree
 
@@ -525,9 +526,9 @@ function _mapSubstitutionsBySiteNewickAux(_ancID, _siteID, _scaled, mode) {
 
 
 /*******************************************
-	
+
 	_filterDimensions returns a {{sites,branches}} matrix
-	
+
 *******************************************/
 
 function _filterDimensions(_ancID) {
@@ -545,8 +546,8 @@ function _filterDimensions(_ancID) {
 }
 
 /*******************************************
-	
-	_countSubstitutionsByBranchSite returns a 
+
+	_countSubstitutionsByBranchSite returns a
 	binary vector (one entry per branch) which
 	contains '1' if the branch has substitutions
 	defined by '_filter' (a CxC matrix)
@@ -590,7 +591,7 @@ function _countSubstitutionsByBranchSite(_ancID, _siteID, _filter) {
 
 
 /*******************************************
-	
+
 	_tabulateSubstitutionsAtSiteByBranch returns
 	a dictionary with keys = branch names and
 	values = counts of synonymous and non-synonymous

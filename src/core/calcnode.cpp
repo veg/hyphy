@@ -231,6 +231,7 @@ _CalcNode::_CalcNode    ()
 {
     theProbs = nil;    // default constructor, doesn't do much
     compExp = nil;
+    matrixCache = nil;
     referenceNode=-1;
 }
 
@@ -260,6 +261,7 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
     cBase         = 0;
     theProbs      = nil;
     compExp       = nil;
+    matrixCache   = nil;
     referenceNode = -1;
     slaveNodes    = 0;
 
@@ -2609,7 +2611,7 @@ _PMathObj _TheTree::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
 
   //_______________________________________________________________________________________________
 
-const _List &    _TreeTopology::RetrieveNodeNames (bool doTips, bool doInternals, int traversalType) const {
+const _List     _TreeTopology::RetrieveNodeNames (bool doTips, bool doInternals, int traversalType) const {
   _List result;
   
   node_iterator<long> ni (theRoot, traversalType);

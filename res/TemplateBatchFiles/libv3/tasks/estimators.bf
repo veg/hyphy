@@ -43,7 +43,7 @@ function estimators.copyGlobals2(key2, value2) {
  * @name estimators.copyGlobals
  * @private
  * @param {String} key
- * @param {String} value 
+ * @param {String} value
  * @returns nothing
  */
 function estimators.copyGlobals(key, value) {
@@ -223,9 +223,9 @@ function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
 
 /**
  * @name estimators.applyExistingEstimates
- * @param {String} likelihood_function_id 
- * @param {Dictionary} model_descriptions 
- * @param {Matrix} initial_values 
+ * @param {String} likelihood_function_id
+ * @param {Dictionary} model_descriptions
+ * @param {Matrix} initial_values
  * @param branch_length_conditions
  * @returns estimators.applyExistingEstimates.df_correction - Abs(estimators.applyExistingEstimates.keep_track_of_proportional_scalers);
  */
@@ -309,7 +309,7 @@ function estimators._aux.countEmpiricalParameters(id, model) {
  * @name estimators.fitLF
  * @param {Matrix} data_filters_list  - a vector of {DataFilter}s
  * @param {Matrix} tree_list  - a vector of {Tree}s
- * @param model_map 
+ * @param model_map
  * @param initial_values
  * @returns LF results
  */

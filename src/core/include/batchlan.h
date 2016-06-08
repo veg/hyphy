@@ -661,7 +661,7 @@ const _String ProcessLiteralArgument (_String const*,_VariableContainer const*, 
 _AssociativeList*
 ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
-_String GetStringFromFormula         (_String*,_VariableContainer*);
+const _String GetStringFromFormula         (_String*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);
 
 void    SerializeModel               (_String&,long,_AVLList* = nil, bool = false);

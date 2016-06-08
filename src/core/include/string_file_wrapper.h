@@ -91,6 +91,13 @@ public:
    @return this for chaining
    */
   
+  StringFileWrapper & operator << (const _String* buffer);
+  /** Write _String* to the underlying buffer
+   
+   @param buffer the string to write
+   @return this for chaining
+   */
+
   StringFileWrapper & operator << (const StringFileWrapperConstants& constant);
   /** Write a special character to the underlying buffer
    

@@ -456,7 +456,7 @@ public:
         return *currentNode;
     }*/
   
-    const _List&    RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
+    const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
     void            SubTreeString                       (node<long>* root, _String&, bool = false, long = -1, _AVLListXL* = nil) const;
 
     _String         CompareTrees                        (_TreeTopology*) const;

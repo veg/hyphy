@@ -1719,7 +1719,7 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter const* dsf, _Simple
     long                      childrenCount     = currentNode->get_num_nodes();
 
     if (childrenCount) {
-        long            siteCount                       = dsf->GetPatternCount  (),
+      long              siteCount                       = dsf->GetPatternCount  (),
                         alphabetDimension              = dsf->GetDimension         (),
                         nodeIndex                       = nodeToIndex->GetXtra (nodeToIndex->Find ((BaseRef)currentNode)),
                         unitLength                     = dsf->GetUnitLength(),
@@ -1727,7 +1727,7 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter const* dsf, _Simple
 
 
         _CalcNode *     currentTreeNode = ((_CalcNode*) flatTree (nodeIndex));
-        _SimpleList     sampledStates     (dsf->GetPatternCount (), 0, 0);
+        _SimpleList     sampledStates     (dsf->GetSiteCountInUnits (), 0, 0);
 
         _Parameter  const *  transitionMatrix = (catAssignments|| !parentStates)?nil:currentTreeNode->GetCompExp()->theData;
         _Parameter  const *  conditionals     = catAssignments?nil:(iNodeCache + nodeIndex  * siteCount * alphabetDimension);
@@ -1828,7 +1828,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
                     unitLength                        = dsf->GetUnitLength        (),
                     iNodeCount                        = GetINodeCount             (),
                     leafCount                     = GetLeafCount              (),
-                    siteCount                        = dsf->GetPatternCount         (),
+                    siteCount                        = dsf->GetSiteCountInUnits    (),
                     allNodeCount                    = 0,
                     stateCacheDim                    = (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount)),
                     *stateCache                        = new long [patternCount*(iNodeCount-1)*alphabetDimension],
@@ -1840,8 +1840,6 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     _Parameter          *buffer                         = new _Parameter [alphabetDimension];
     // iNodeCache will be OVERWRITTEN with conditional pair (i,j) conditional likelihoods
 
-    checkPointer    (stateCache);
-    checkPointer    (leafBuffer);
 
     _SimpleList     taggedInternals (iNodeCount, 0, 0),
                     postToIn;

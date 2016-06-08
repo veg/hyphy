@@ -110,7 +110,7 @@ namespace hyphy_global_objects {
     }
     
     if (source) {
-      return source->FindLong (index);
+      return source->FindLong (index) >= 0;
     }
     
     return false;
@@ -203,12 +203,12 @@ namespace hyphy_global_objects {
       if (exists_already >= 0L) {
         if (_IsObjectLocked(exists_already, HY_BL_DATASET_FILTER)) {
           if (handle_errors) {
-            WarnError (_String ("DataSetFilter ") & name.Enquote() & " could not be stored because the existing filter of the same name is locked");
+            WarnError (_String ("DataSetFilter ") & name.Enquote() & " could not be created because an existing filter of the same name is locked");
           }
           return -1;
         }
-        DeleteObject ((_DataSetFilter*)_data_filters.GetXtra (exists_already));
-        _data_filters.SetXtra(exists_already, object, false);
+        //DeleteObject ((_DataSetFilter*)_data_filters.GetXtra (exists_already));
+        _data_filters.SetXtra(exists_already, object, false); // this will delete the existing object
         
       } else {
         exists_already = _data_filters.Insert (new _String(name), (long)object, false, false);
@@ -231,7 +231,7 @@ namespace hyphy_global_objects {
         return false;
       }
       _KillDataFilterParameters( *GetFilterName (index));
-     _data_filters.Delete ((BaseRef)index, true);
+     _data_filters.Delete ((BaseRef)GetFilterName(index), true);
      }
     return true;
   }

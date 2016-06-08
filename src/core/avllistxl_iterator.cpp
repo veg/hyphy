@@ -80,7 +80,7 @@ AVLListXLIterator& AVLListXLIterator::operator =  (const AVLListXLIterator& assi
   return *this;
 }
 
-AVLListXLIteratorKeyValue const & AVLListXLIterator::operator* (void) {
+AVLListXLIteratorKeyValue const  AVLListXLIterator::operator* (void) {
   if (this->current_location >= 0) {
     return AVLListXLIteratorKeyValue (this->current_location, the_list->GetXtra(this->current_location));
   }

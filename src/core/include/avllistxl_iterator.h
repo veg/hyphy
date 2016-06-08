@@ -127,7 +127,7 @@ public:
    * @return true if the iterators are not the same
    */
 
-   AVLListXLIteratorKeyValue const &   operator * (void);
+   AVLListXLIteratorKeyValue const    operator * (void);
   
   /**
    * Return an object pointed to by the iterator

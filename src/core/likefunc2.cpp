@@ -815,7 +815,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                     iNodeCount                        = blockTree->GetINodeCount  (),
                     leafCount                     = blockTree->GetLeafCount   (),
                     matrixSize                       = doLeaves?leafCount:iNodeCount,
-                    siteCount                        = dsf->GetPatternCount         (),
+                    siteCount                        = dsf->GetSiteCount         (),
                     shiftForTheNode                 = patternCount * alphabetDimension;
 
     _Parameter      *siteLikelihoods                = new _Parameter [2*patternCount],

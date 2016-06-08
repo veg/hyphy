@@ -288,7 +288,7 @@ const _String&   _TranslationTable::ExpandToken            (char token) const {
 //_________________________________________________________
 
 long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* receptacle, bool gapToOnes) const {
-  
+
   if (tokens.sLength == 1UL) {
     return TokenResolutions (tokens.getChar(0UL), receptacle, gapToOnes);
   } else {
@@ -3229,9 +3229,9 @@ _String&     _DataSetFilter::operator () (unsigned long site, unsigned long pos)
 
 //_______________________________________________________________________
 
-const _String&     _DataSetFilter::RetrieveState (unsigned long site, unsigned long pos) const {
+const _String     _DataSetFilter::RetrieveState (unsigned long site, unsigned long pos) const {
   _String state ((unsigned long)unitLength, false);
-  RetrieveState (site, pos, state);
+  RetrieveState (site, pos, state, false);
   return state;
   
 }

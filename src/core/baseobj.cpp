@@ -388,6 +388,9 @@ bool    GlobalShutdown (void)
         delete ((_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra(cn));
         cn = _HY_HBLCommandHelper.Traverser (hist,ls);
     }
+  
+    PurgeAll(true);
+  
     _HY_HBLCommandHelper.Clear();
     _HY_ValidHBLExpressions.Clear();
     listOfCompiledFormulae.Clear();

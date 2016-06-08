@@ -787,7 +787,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
             return false;
         } else {
           if (!ExclusiveLockDataFilter(objectID)) {
-            WarnError (_String("Could not locate obtain exclusive lock to datafilter ")& object_name.Enquote());
+            WarnError (_String("Could not obtain exclusive lock to datafilter ")& object_name.Enquote());
             return false;
           }
           theDataFilters<<objectID;
