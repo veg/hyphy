@@ -4080,11 +4080,11 @@ _PMathObj _TreeTopology::TreeBranchName (_PMathObj p, bool subtree, _PMathObj p2
 void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,long branchLengths,_AVLListXL* subs) const {
   long    last_level        = 0L;
   
-    //_String t;
   
   node_iterator<long> ni (root, _HY_TREE_TRAVERSAL_POSTORDER);
   
   while (node <long>* iterator = ni.Next()) {
+    //printf ("[%s] %s\n", GetNodeName(root).sData, GetNodeName(iterator).sData);
     if (ni.Level() > last_level) {
       if (last_level) {
         res<<',';
@@ -4096,6 +4096,8 @@ void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,
       res<<',';
     }
     
+    last_level = ni.Level();
+
     _String node_name = GetNodeName (iterator);
     if (subs) {
       long mapIdx = subs->Find (&node_name);
@@ -4104,7 +4106,6 @@ void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,
       }
     }
     
-    last_level = ni.Level();
     if (!iterator->is_root()) {
       if (allNames || (!node_name.startswith (iNodePrefix))) {
         res << node_name;
@@ -4117,6 +4118,9 @@ void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,
 
 //__________________________________________________________________________________
 void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long originator, bool passedRoot, _String&res, long blOption, bool firstTime) const {
+  
+  //printf ("[RerootTreeInternalTraverser]%s %ld %ld\n", GetNodeName(iterator).sData, originator, passedRoot);
+  
     if (passedRoot) {
         SubTreeString (iterator, res, false, blOption);
     } else {
@@ -4125,19 +4129,24 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
       
         if (iterator != theRoot) { // not root yet
             res<<'(';
-            RerootTreeInternalTraverser (iterator_parent, iterator->get_child_num(),false,res,blOption);
-            for (long i = 1; i<=iterator_parent->get_num_nodes(); i++) {
-                if (i!=originator) {
-                  res<<',';
-                  SubTreeString (iterator_parent->go_down(i),res, false,blOption);
-                }
-            }
+            long the_index_of_this_child = iterator->get_child_num();
+            RerootTreeInternalTraverser (iterator_parent, the_index_of_this_child ,false,res,blOption);
+          
+            if (iterator_parent->get_parent()) {
+            
+              for (long i = 1; i<=iterator_parent->get_num_nodes(); i++) {
+                  if (i!=the_index_of_this_child) {
+                    res<<',';
+                    SubTreeString (iterator_parent->go_down(i),res, false,blOption);
+                  }
+              }
+             }
             res<<')';
             if (!firstTime) {
-                _String node_name = GetNodeName (iterator);
-                if (!node_name.startswith(iNodePrefix)) {
-                    res<<node_name;
-                }
+              _String node_name = GetNodeName (iterator);
+              if (!node_name.startswith(iNodePrefix)) {
+                res<<node_name;
+              }
             }
             PasteBranchLength (iterator,res,blOption);
         } else {
@@ -4348,7 +4357,8 @@ _PMathObj _TreeTopology::RerootTree (_PMathObj p)
         _String tNodeN = (_String*)p->toStr();
 
         node<long>* reroot_at = FindNodeByName (&tNodeN);
-
+      
+ 
         if (reroot_at) { // good node name, can reroot
             if (reroot_at->is_root()) {
                 SubTreeString (theRoot, *res,0,-2);
@@ -4366,6 +4376,9 @@ _PMathObj _TreeTopology::RerootTree (_PMathObj p)
     }
 
     res->Finalize();
+  
+    //printf ("%s\n", res->sData);
+  
     return new _FString (res);
 }
 //__________________________________________________________________________________

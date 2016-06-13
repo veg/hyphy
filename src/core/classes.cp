@@ -90,30 +90,37 @@ template <class node_data> node<node_data>* node_iterator<node_data>::Next(_Simp
             this->push_history_item (history);
             this->traversal_level++;
           }
+          //printf ("[node_iterator init]%ld\n", this->traversal_level);
           return  this->iterator_state;
         }
         
-        test_node = this->iterator_state;
-        test_node = this->travseral_kind == _HY_TREE_TRAVERSAL_POSTORDER ? test_node->go_next() : test_node->go_previous();
-        
-        if (test_node) {
-          this->pop_history_item (history);
-          this->iterator_state=test_node;
-          this->push_history_item (history);
-          while ((test_node = this->iterator_state->go_down(this->travseral_kind == _HY_TREE_TRAVERSAL_POSTORDER ? 1 : iterator_state->get_num_nodes()))) {
-            this->iterator_state = test_node;
-            this->push_history_item (history);
-            this->traversal_level++;
-          }
-          return this->iterator_state;
-        }
-        this->iterator_state=this->iterator_state->go_up();
-        this->pop_history_item (history);
         if (this->traversal_level == 0L) {
           // need this if traversal is initiated at an interior node which is not root
           this->iterator_state = nil;
         } else {
-          this->traversal_level--;
+          test_node = this->iterator_state;
+          test_node = this->travseral_kind == _HY_TREE_TRAVERSAL_POSTORDER ? test_node->go_next() : test_node->go_previous();
+         
+          if (test_node) {
+            this->pop_history_item (history);
+            this->iterator_state=test_node;
+            this->push_history_item (history);
+            while ((test_node = this->iterator_state->go_down(this->travseral_kind == _HY_TREE_TRAVERSAL_POSTORDER ? 1 : iterator_state->get_num_nodes()))) {
+              this->iterator_state = test_node;
+              this->push_history_item (history);
+              this->traversal_level++;
+            }
+            return this->iterator_state;
+          }
+          this->iterator_state=this->iterator_state->go_up();
+          this->pop_history_item (history);
+          //printf ("[node_iterator up]%ld\n", this->traversal_level);
+          if (this->traversal_level == 0L) {
+            // need this if traversal is initiated at an interior node which is not root
+            this->iterator_state = nil;
+          } else {
+            this->traversal_level--;
+          }
         }
       }
       break;

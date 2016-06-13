@@ -1233,7 +1233,7 @@ _Matrix*    _LikelihoodFunction::RemapMatrix(_Matrix* source, const _SimpleList&
          offsetInTarget      =   0;
 
     for (unsigned long i=0; i<partsToDo.lLength; i++) {
-        vDim += GetIthFilter (partsToDo.lData[i])->GetSiteCount();
+        vDim += GetIthFilter (partsToDo.lData[i])->GetSiteCountInUnits();
     }
 
     _Matrix* res = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
@@ -1241,7 +1241,7 @@ _Matrix*    _LikelihoodFunction::RemapMatrix(_Matrix* source, const _SimpleList&
     for (long aPart = 0; aPart<partsToDo.lLength; aPart++) {
         long partIndex = partsToDo.lData[aPart];
         _DataSetFilter  const * dsf = GetIthFilter (partIndex);
-        long filterSize = dsf->GetSiteCount();
+        long filterSize = dsf->GetSiteCountInUnits();
 
         if (HasHiddenMarkov(blockDependancies.lData[partIndex])>=0)
             // do nothing, just copy
@@ -1385,12 +1385,12 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
     // compute the number of columns in the matrix
   
     if (templateKind < 0) {
-        vDim    =   GetIthFilter(whichParts.lData[0])->GetSiteCount();
+        vDim    =   GetIthFilter(whichParts.lData[0])->GetSiteCountInUnits();
     } else
         for (long i=0; i<whichParts.lLength; i++)
             if (runMode != _hyphyLFConstructCategoryMatrixConditionals
                     && HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0) {
-                vDim    +=  GetIthFilter(whichParts.lData[i])->GetSiteCount();
+                vDim    +=  GetIthFilter(whichParts.lData[i])->GetSiteCountInUnits();
             }
     // all sites
             else {

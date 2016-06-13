@@ -173,8 +173,6 @@ function runTest ()
     DeleteObject (lf);
     GetString (objectID0_2, LikelihoodFunction, 0);
 
-    fprintf (stdout, objectID0_2, "\n");
-
 	assert (Type (objectID2) == "Unknown" && objectID0 == "lf" && objectID1 == "ds" && Type (objectInfo) == "AssociativeList" && Type (objectInfoInvalid) == "Unknown" &&
 	        objectID0_2 == "IntermediateCodon_AA_LF", "Retrieve identifiers of HBL objects by index");
 

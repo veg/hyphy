@@ -4542,7 +4542,6 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                     } else
                         while (1) {
                             _String buffer (chain.FetchFromStdinRedirect());
-
                             if (buffer.sLength) {
                                 for (choice = 0; choice<theChoices->lLength; choice++) {
                                     if (buffer.Equal((_String*)(*(_List*)(*theChoices)(choice))(0))) {
@@ -4551,7 +4550,6 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                                 }
                                 if (choice<theChoices->lLength && sel.Find(choice)==-1) {
                                     sel<<choice;
-                                    break;
                                 } else {
                                     WarnError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to ChoiceList (with multiple selections) '" & ((_String*)parameters(1))->sData & "' using redirected stdin input");
                                     return;
@@ -6863,11 +6861,12 @@ bool    _ElementaryCommand::ConstructStateCounter (_String&source, _ExecutionLis
 
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&target)
-{
+bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&target) {
     _List args;
+  
+  
     ExtractConditions (source,blChoiceList.sLength,args,',');
-    if (args.lLength<5) {
+    if (args.lLength<5UL) {
         WarnError  ("ChoiceList needs at least 5 arguments");
         return false;
     }
@@ -6875,27 +6874,28 @@ bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&t
 
     cv->parameters<<args(0);
     ((_String*)args.lData[1])->StripQuotes();
-    cv->parameters<<args(1);
-    cv->parameters<<args(2);
-    cv->parameters<<args(3);
+    cv->parameters<<args(1)
+                  <<args(2)
+                  <<args(3);
 
-    if  (args.lLength>5) {
-        _List   choices;
-        for (long k = 4; k<args.lLength-1; k+=2) {
+    if  (args.lLength>5UL) {
+        _List * choices = new _List;
+        for (long k = 4L; k<args.lLength-1; k+=2) {
             ((_String*)args.lData[k])->StripQuotes();
             ((_String*)args.lData[k+1])->StripQuotes();
-            _List thisChoice;
-            thisChoice<< args(k);
-            thisChoice<< args(k+1);
-            choices&& & thisChoice;
+            _List * thisChoice = new _List;
+            *thisChoice << args(k);
+            *thisChoice << args(k+1);
+            *choices < thisChoice;
         }
-        cv->parameters && & choices;
+        cv->parameters < choices;
         cv->simpleParameters<<0;
     } else {
         cv->parameters<< args(4);
         cv->simpleParameters<<1;
     }
 
+  
     cv->addAndClean(target,nil,0);
     return true;
 }
@@ -7469,7 +7469,7 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
     }
 
     ExtractConditions (source,mark2+1,pieces,',');
-   _ElementaryCommand*  dsc = (_ElementaryCommand*)checkPointer(new _ElementaryCommand (11));
+   _ElementaryCommand*  dsc = new _ElementaryCommand (11);
     dsc->parameters&&(&lfID);
 
     if (source.startswith(blLF3)) {

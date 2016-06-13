@@ -671,9 +671,9 @@ BaseRef _List::toStr(unsigned long) {
           (*s)<< ", ";
           s->AppendNewInstance ((_String*)GetItem(i)->toStr());
       }
-      (*s)<<'}';
     }
   
+    (*s)<<'}';
     s->Finalize();
     return s;
 }

@@ -2095,28 +2095,27 @@ bool    _ElementaryCommand::DecompileFormulae (void) {
 }
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target) {
 // syntax: SCFG ident = (Rules1, Rules2 <,start>)
-{
 
-    long    mark1 = source.FirstSpaceIndex(0,-1,1),
-            mark2 = source.Find ('=', mark1, -1);
+    long    mark1 = source.FirstNonSpaceFollowingSpace (),
+            mark2 = mark1 > 0 ? source.FindTerminator (mark1 + 1, "=") : 0;
 
-    _String scfgID (source, mark1+1,mark2-1);
-
-    if (mark1==-1 || mark2==-1 || mark1+1>mark2-1 || !scfgID.IsValidIdentifier(true)) {
+ 
+    if ( mark1==-1 || mark2==-1 || mark1+1 > mark2  ) {
         WarnError ("SCFG declaration missing a valid identifier");
         return false;
     }
 
+    _String scfgID (source,mark1,mark2-1);
+ 
     _List pieces;
+    mark2 ++;
+    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', true, true);
 
-    mark1 = source.Find ('(',mark2,-1);
-    if (mark1 >= 0) {
-        ExtractConditions (source,mark1+1,pieces,',');
-    }
-
-    if (pieces.lLength != 2 && pieces.lLength != 3) {
+    ExtractConditions (source,mark2+1,pieces,',');
+ 
+    if ( mark1==-1 || mark2==-1 || mark1<mark2 || (pieces.lLength != 2 && pieces.lLength != 3)) {
         WarnError ("Expected: SCFG ident = (Rules1, Rules2 <,start>)");
         return false;
     }
@@ -2132,28 +2131,27 @@ bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target
 bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 // syntax: BGM ident = (<nodes>)
 {
-	ReportWarning(_String("ConstructBGM()"));
+    //ReportWarning(_String("ConstructBGM()"));
     // locate ident in HBL string
-    long    mark1 = source.FirstSpaceIndex(0,-1,1),
-            mark2 = source.Find ('=', mark1, -1);
+    long    mark1 = source.FirstNonSpaceFollowingSpace (),
+            mark2 = mark1 > 0 ? source.FindTerminator (mark1 + 1, "=") : 0;
 
     // assign ident to _String variable
-    _String bgmID (source, mark1+1,mark2-1);
 
-    if (mark1==-1 || mark2==-1 || mark1+1>mark2-1 || !bgmID.IsValidIdentifier(true)) {
+    if ( mark1==-1 || mark2==-1 || mark1+1 > mark2  ) {
         WarnError ("BGM declaration missing a valid identifier");
         return false;
     }
 
-    // extract arguments from remainder of HBL string
+    _String bgmID (source,mark1,mark2-1);
+
     _List pieces;
+    mark2 ++;
+    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', true, true);
+    
+    ExtractConditions (source,mark2+1,pieces,',');
 
-    mark1 = source.Find ('(',mark2,-1);
-    if (mark1 >= 0) {
-        ExtractConditions (source,mark1+1,pieces,',');
-    }
-
-    if (pieces.lLength != 1) {
+    if ( mark1==-1 || mark2==-1 || mark1<mark2 || (pieces.lLength != 1)) {
         WarnError ("Expected: BGM ident = (<nodes>)");
         return false;
     }
