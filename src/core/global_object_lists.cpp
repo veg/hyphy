@@ -70,7 +70,7 @@ namespace hyphy_global_objects {
   
   void  _SetDataFilterParameters (_String const& name, _DataSetFilter const& filter) {
     setParameter (WrapInNamespace ("species", &name), filter.NumberSpecies());
-    setParameter (WrapInNamespace ("sites", &name), filter.GetSiteCount()/filter.GetUnitLength());
+    setParameter (WrapInNamespace ("sites", &name), filter.GetSiteCountInUnits());
     
     _Parameter size_cutoff;
     checkParameter  (defaultLargeFileCutoff,size_cutoff, 100000.);

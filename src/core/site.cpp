@@ -5418,12 +5418,12 @@ BaseRef _DataSetFilter::toStr (unsigned long)
 
 void    _DataSetFilter::PatternToSiteMapper (void* source, void* target, char mode, long padup) const {
   
-  unsigned long site_count = GetSiteCount();
+  unsigned long site_count = GetSiteCountInUnits();
   
   switch (mode) {
     case 0: {
-      _Parameter * target_array = (_Parameter*) target;
-      long       * source_array = (long*) source;
+      _Parameter * target_array = (_Parameter*) target,
+                 * source_array = (_Parameter*) source;
       
       for (unsigned site = 0UL; site < site_count; site++ ) {
         target_array [site] = source_array [duplicateMap.lData[site]];

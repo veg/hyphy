@@ -774,8 +774,9 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
 {
 
     Clear ();
-    long i = 0;
-    for (; i< (long)triplets.lLength-2; i+=3) {
+    long i = 0L;
+  
+    for (; i< (long)triplets.lLength-2L; i+=3L) {
         _String  object_name;
         long     objectID;
 
@@ -786,7 +787,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
             WarnError (_String("Could not locate a datafilter ")& object_name.Enquote());
             return false;
         } else {
-          if (!ExclusiveLockDataFilter(objectID)) {
+          if (theDataFilters.Find (objectID) < 0 && !ExclusiveLockDataFilter(objectID)) {
             WarnError (_String("Could not obtain exclusive lock to datafilter ")& object_name.Enquote());
             return false;
           }
@@ -907,7 +908,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                 }
 
                 for (long f=0; f<theDataFilters.lLength; f++) {
-                    long            currentFilterSize =  GetIthFilter (f)->GetSiteCount();
+                    long            currentFilterSize =  GetIthFilter (f)->GetSiteCountInUnits();
 
                     if (currentFilterSize > maxFilterSize) {
                         maxFilterSize = currentFilterSize;
@@ -9967,7 +9968,7 @@ unsigned long    _LikelihoodFunction::SiteCount (void) const {
     unsigned long res = 0UL;
 
     for (unsigned long i=0UL; i<theDataFilters.lLength; i++) {
-        res += GetIthFilter (i)->GetSiteCount();
+        res += GetIthFilter (i)->GetSiteCountInUnits();
     }
 
     return res;

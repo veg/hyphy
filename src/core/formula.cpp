@@ -1781,7 +1781,7 @@ _PMathObj _Formula::ConstructPolynomial (void) // compute the value of the formu
     _String errMsg; 
 
     for (long i=0; i<theFormula.lLength; i++)
-        if (!((_Operation*)((BaseRef**)theFormula.lData)[i])->ExecutePolynomial(theStack, nil, &errMsg)) {
+        if (!GetIthTerm(i)->ExecutePolynomial(theStack, nil, &errMsg)) {
             wellDone = false;
             break;
         }

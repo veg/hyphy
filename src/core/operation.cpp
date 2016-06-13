@@ -608,7 +608,7 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
     DeleteObject (arg0);
     
     
-    if (temp) {
+    if (temp && temp->ObjectClass() != HY_UNDEFINED ) {
       theScrap.theStack.Place(temp);
       return true;
     } else {
