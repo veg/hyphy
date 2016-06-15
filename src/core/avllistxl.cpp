@@ -97,11 +97,11 @@ BaseRef _AVLListXL::toStr (unsigned long)
         cn = Traverser (hist,ls,root);
 
         while (cn>=0) {
-            _String * keyVal = (_String*)Retrieve (cn);
-            (*str) << keyVal;
-            (*str) << " : ";
-            (*str) << (_String*)GetXtra (cn);
+            (*str) << (_String*)Retrieve (cn)
+                   << " : ";
+            str->AppendNewInstance((_String*)GetXtra (cn)->toStr());
             (*str) << '\n';
+          
             cn = Traverser (hist,ls);
         }
     }

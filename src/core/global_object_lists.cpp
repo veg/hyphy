@@ -110,7 +110,7 @@ namespace hyphy_global_objects {
     }
     
     if (source) {
-      return source->FindLong (index) >= 0;
+      return source->FindLong (index) >= 0L;
     }
     
     return false;
@@ -200,6 +200,16 @@ namespace hyphy_global_objects {
     
     if (name.IsValidIdentifier(true)) {
       long exists_already = FindDataFilter(name);
+      
+      /*printf ("[StoreDataFilter] %s %d\n", name.sData, exists_already);
+      
+      _SimpleList history;
+      long locked_index = _data_filter_locks.Next (-1, history);
+      while (locked_index >= 0) {
+        printf ("\tLOCKED %s\n", GetFilterName((long)_data_filter_locks.Retrieve(locked_index))->sData);
+        locked_index = _data_filter_locks.Next (locked_index, history);
+      } */
+      
       if (exists_already >= 0L) {
         if (_IsObjectLocked(exists_already, HY_BL_DATASET_FILTER)) {
           if (handle_errors) {

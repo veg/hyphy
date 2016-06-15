@@ -193,7 +193,7 @@ export_index = 0;
 //----------------------------------------------------------------------------------------
 lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping) {
 
-    fprintf (stdout, filter_data);
+    //fprintf (stdout, filter_data);
 
     ExecuteCommands (filter_data);
 
@@ -202,7 +202,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     __make_filter ((lfInfo["Datafilters"])[0]);
 
     utility.setEnvVariable ("USE_LAST_RESULTS", TRUE);
-    utility.setEnvVariable ("VERBOSITY_LEVEL", 10);
+    //utility.setEnvVariable ("VERBOSITY_LEVEL", 10);
 
     ^"fel.alpha_scaler" = 1;
     ^"fel.beta_scaler_test"  = 1;
@@ -211,9 +211,10 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     //Export (lfs, ^lf);
     //fprintf ("/tmp/" + ^"export_index" + ".lf", CLEAR_FILE, lfs);
 
-    ^"export_index" += 1;
+    /*^"export_index" += 1;
 
     assert (^"export_index" < 3);
+    */
 
     Optimize (results, ^lf);
 
@@ -303,6 +304,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     __make_filter ("fel.site_filter");
 
     LikelihoodFunction fel.site_likelihood = (fel.site_filter, fel.site_tree);
+
     fel.queue = mpi.create_queue ({"LikelihoodFunctions": {{"fel.site_likelihood"}}});
 
     estimators.applyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping, fel.final_partitioned_mg_results,

@@ -411,19 +411,28 @@ BaseRef  _AVLList::toStr (unsigned long) {
     _String * str = new _String (128L, true);
  
     if (countitems() == 0) {
-        (*str) << "Empty Associative List";
+        (*str) << "()";
     } else {
         _SimpleList  hist;
         long         ls, cn;
 
         cn = Traverser (hist,ls,root);
-
+      
+        bool first = true;
+      
+        (*str) << '(';
+      
         while (cn>=0) {
-            long keyVal = (long)Retrieve (cn);
-            (*str) << _String(keyVal);
-            (*str) << '\n';
+            if (first) {
+              first = false;
+            } else {
+              (*str) << ", ";
+            }
+           (*str) << _String((long)Retrieve (cn));
             cn = Traverser (hist,ls);
         }
+      
+        (*str) << ')';
     }
 
     str->Finalize();

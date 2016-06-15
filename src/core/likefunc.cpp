@@ -553,7 +553,7 @@ _DataSetFilter const * _LikelihoodFunction::GetIthFilter (long f) const {
 //_______________________________________________________________________________________
 
 _String const* _LikelihoodFunction::GetIthFilterName (long f) const {
-  return GetFilterName(f);
+  return GetFilterName(theDataFilters.lData[f]);
 }
 
 //_______________________________________________________________________________________
@@ -783,6 +783,9 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
         // add datasetfilter
         object_name = AppendContainerName (*(_String*)triplets(i), theP);
         objectID   = FindDataFilter (object_name);
+      
+      //printf ("[_LikelihoodFunction::Construct] %s / %s\n", object_name.sData, GetFilterName(objectID)->sData);
+      
         if (objectID < 0) {
             WarnError (_String("Could not locate a datafilter ")& object_name.Enquote());
             return false;

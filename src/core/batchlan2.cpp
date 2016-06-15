@@ -766,7 +766,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     thedf->SetDimensions();
     thedf->SetupConversion();
   
-    StoreDataFilter(dataFilterID, thedf);
+    StoreDataFilter(dataFilterID, thedf, true);
 }
 
 //____________________________________________________________________________________
