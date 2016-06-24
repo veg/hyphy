@@ -1109,7 +1109,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 } else {
                   _Variable* theVar = FetchVar(LocateVarByName (nmspaced));
                   if (theVar) {
-                    if (theVar->IsIndependent()) {
+                    if (theVar->IsIndependent() && sID != -3) {
                       result = (_String*)theVar->toStr();
                     } else {
                       if (sID == -1){
@@ -1129,14 +1129,31 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                       }
                       
                       else {  // formula string
-                        _Matrix * formula_matrix = (sID2 >= 0 && theVar->ObjectClass() == MATRIX) ? (_Matrix*)theVar->GetValue () : nil;
-                        if (formula_matrix) {
-                         _Formula* cell = formula_matrix->GetFormula(sID, sID2);
-                         if (cell) {
-                            result = (_String*) cell->toStr();
+                        
+                        if (sID == -3) {
+                          _String local, global;
+                          _SimpleList var_index;
+                          var_index << theVar->GetAVariable ();
+                          if (theVar->IsIndependent()) {
+                            //printf ("ExportIndVariables\n");
+                            ExportIndVariables (global, local, &var_index);
+                          } else {
+                            //printf ("ExportDepVariables\n");
+                            ExportDepVariables(global, local, &var_index);
                           }
+                          result = new _String (128L, true);
+                          (*result) << global << local << '\n';
+                          result->Finalize();
                         } else {
-                          result = (_String*)theVar->GetFormulaString ();
+                          _Matrix * formula_matrix = (sID2 >= 0 && theVar->ObjectClass() == MATRIX) ? (_Matrix*)theVar->GetValue () : nil;
+                          if (formula_matrix) {
+                           _Formula* cell = formula_matrix->GetFormula(sID, sID2);
+                           if (cell) {
+                              result = (_String*) cell->toStr();
+                            }
+                          } else {
+                            result = (_String*)theVar->GetFormulaString ();
+                          }
                         }
                       }
                     }

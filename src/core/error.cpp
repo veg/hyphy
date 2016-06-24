@@ -85,7 +85,7 @@ void    SaveConsole (void);
 //_____________________________________________________________
 
 _String  DecodeError                    (long);
-_String* ConstructAnErrorMessage        (_String&);
+_String* ConstructAnErrorMessage        (_String const&);
 
 
 //_____________________________________________________________
@@ -410,7 +410,7 @@ void WarnError (_String const & st)
 
 //____________________________________________________________________________________
 
-_String* ConstructAnErrorMessage         (_String& theMessage)
+_String* ConstructAnErrorMessage         (_String const& theMessage)
 {
     _String* errMsg = new _String (128L,true);
 

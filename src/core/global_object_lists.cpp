@@ -32,7 +32,7 @@
  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include "defines.h"
@@ -41,6 +41,7 @@
 #include "function_templates.h"
 #include "variable.h"
 #include "batchlan.h"
+#include "likefunc.h"
 
 
 /** Legacy declarations */
@@ -49,21 +50,26 @@ extern _List batchLanguageFunctionNames;
 
 
 _List        _data_filter_aux;
-
 _AVLListXL   _data_filters (&_data_filter_aux);
 
 _SimpleList  _data_filter_locks_aux;
-
 _AVLList     _data_filter_locks (&_data_filter_locks_aux);
 
-
+_SimpleList  _data_filter_listeners_aux;
+_AVLListXL   _data_filter_listeners (&_data_filter_listeners_aux);
 
 namespace hyphy_global_objects {
+  /**
+   notification types enum
+   */
   
+  enum kNotificationType {
+    kNotificationTypeChange,
+    kNotificationTypeDelete
+  };
   
-  
-  /** 
-      data filter objects -- internal
+  /**
+   data filter objects -- internal
    */
   
   
@@ -93,10 +99,27 @@ namespace hyphy_global_objects {
       DeleteVariable(WrapInNamespace(*(_String*)kill_these_arguments.GetItem(i), &filter_name));
     }
   }
-
   
-   /**
-      generic hidden functions
+  void    _NotifyDataFilterListeners (const long index, kNotificationType event_type) {
+    _List * listeners = (_List*)_data_filter_listeners.GetDataByKey( (BaseRef) index);
+    if (listeners) {
+      for (unsigned long k = 0UL; k < listeners->lLength; k++) {
+        BaseRef this_listener = listeners->GetItem(k);
+        
+        if (_LikelihoodFunction* lf = dynamic_cast<_LikelihoodFunction*> (this_listener)) {
+          if (event_type == kNotificationTypeChange) {
+            lf->Rebuild();
+          } else if (event_type == kNotificationTypeDelete) {
+            WarnError ("Attempted to delete a data set filter which is still being referenced by a likelihood function");
+          }
+        }
+      }
+    }
+  }
+  
+  
+  /**
+   generic hidden functions
    */
   
   bool   _IsObjectLocked (long index, long object_class) {
@@ -152,8 +175,8 @@ namespace hyphy_global_objects {
     return false;
   }
   
-  /** 
-    public facing functions for data filter objects
+  /**
+   public facing functions for data filter objects
    */
   
   const   _DataSetFilter * GetDataFilter (long index) {
@@ -162,7 +185,7 @@ namespace hyphy_global_objects {
     }
     return nil;
   }
-
+  
   const   _DataSetFilter * GetDataFilter (_String const& name ) {
     return GetDataFilter(FindDataFilter (name));
   }
@@ -175,7 +198,7 @@ namespace hyphy_global_objects {
     }
     return nil;
   }
-
+  
   _DataSetFilter * ExclusiveLockDataFilter (_String const& name) {
     return ExclusiveLockDataFilter(FindDataFilter(name));
   }
@@ -186,29 +209,85 @@ namespace hyphy_global_objects {
     }
     return false;
   }
-
+  
   bool    ReleaseDataFilterLock (_String const& name) {
     return ReleaseDataFilterLock(FindDataFilter(name));
   }
-
+  
+  
+  bool    UnregisterChangeListenerForDataFilter (long const index, BaseRef listener) {
+    if (_data_filters.IsValidIndex (index)) {
+      
+      if (dynamic_cast <_LikelihoodFunction*> (listener)) {
+        _List * current_listeners = (_List *)_data_filter_listeners.GetDataByKey ((BaseRef)index);
+        if (current_listeners) {
+          long listener_index = current_listeners->_SimpleList::Find((long)listener);
+          if (listener_index >= 0) {
+            current_listeners->Delete (listener_index);
+            return true;
+          }
+        }
+      }
+      WarnError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));
+    }
+    
+    return false;
+  }
+  
+  
+  bool    RegisterChangeListenerForDataFilter (long const index, BaseRef listener) {
+    if (_data_filters.IsValidIndex (index)) {
+      
+      if (dynamic_cast <_LikelihoodFunction*> (listener)) {
+        _List * current_listeners = (_List *)_data_filter_listeners.GetDataByKey ((BaseRef)index);
+        if (!current_listeners) {
+          current_listeners = new _List;
+          _data_filter_listeners.Insert ((BaseRef)index, (long)current_listeners, false, false);
+        }
+        
+        
+        if (current_listeners->_SimpleList::Find((long)listener) < 0L) {
+          (*current_listeners) << listener;
+        }
+        return true;
+        
+      }
+      
+      
+      WarnError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));
+      
+      
+    }
+    
+    return false;
+  }
+  
+  
+  bool    RegisterChangeListenerForDataFilter (_String const& name, BaseRef listener) {
+    return RegisterChangeListenerForDataFilter(FindDataFilter (name), listener);
+  }
+  
+  bool    UnregisterChangeListenerForDataFilter (_String const& name, BaseRef listener) {
+    return RegisterChangeListenerForDataFilter(FindDataFilter (name), listener);
+  }
   
   long    FindDataFilter (_String const& name) {
     return _data_filters.Find (&name);
   }
-
+  
   long    StoreDataFilter (_String const& name, _DataSetFilter* object, bool handle_errors) {
     
     if (name.IsValidIdentifier(true)) {
       long exists_already = FindDataFilter(name);
       
       /*printf ("[StoreDataFilter] %s %d\n", name.sData, exists_already);
-      
-      _SimpleList history;
-      long locked_index = _data_filter_locks.Next (-1, history);
-      while (locked_index >= 0) {
-        printf ("\tLOCKED %s\n", GetFilterName((long)_data_filter_locks.Retrieve(locked_index))->sData);
-        locked_index = _data_filter_locks.Next (locked_index, history);
-      } */
+       
+       _SimpleList history;
+       long locked_index = _data_filter_locks.Next (-1, history);
+       while (locked_index >= 0) {
+       printf ("\tLOCKED %s\n", GetFilterName((long)_data_filter_locks.Retrieve(locked_index))->sData);
+       locked_index = _data_filter_locks.Next (locked_index, history);
+       } */
       
       if (exists_already >= 0L) {
         if (_IsObjectLocked(exists_already, HY_BL_DATASET_FILTER)) {
@@ -217,19 +296,22 @@ namespace hyphy_global_objects {
           }
           return -1;
         }
+        
         //DeleteObject ((_DataSetFilter*)_data_filters.GetXtra (exists_already));
         _data_filters.SetXtra(exists_already, object, false); // this will delete the existing object
+        _NotifyDataFilterListeners (exists_already, kNotificationTypeChange);
         
       } else {
         exists_already = _data_filters.Insert (new _String(name), (long)object, false, false);
       }
       
-
+      
+      
       _SetDataFilterParameters (name, *object);
       return exists_already;
     } else {
       if (handle_errors) {
-        WarnError (_String ("The name ") & name.Enquote() & " is not a valid HyPhy id in call to (store_data_filter)");
+        WarnError (_String ("The name ") & name.Enquote() & " is not a valid HyPhy id in call to " & __PRETTY_FUNCTION__);
       }
     }
     return -1;
@@ -241,8 +323,8 @@ namespace hyphy_global_objects {
         return false;
       }
       _KillDataFilterParameters( *GetFilterName (index));
-     _data_filters.Delete ((BaseRef)GetFilterName(index), true);
-     }
+      _data_filters.Delete ((BaseRef)GetFilterName(index), true);
+    }
     return true;
   }
   
@@ -270,7 +352,7 @@ namespace hyphy_global_objects {
   }
   
   //____________________________________________________________________________________
-
+  
   _String const  GenerateUniqueObjectIDByType (_String const & base, const long type) {
     _AVLList   * names = nil;
     _List*       legacy_list = nil;
@@ -312,7 +394,7 @@ namespace hyphy_global_objects {
     WarnError (_String("Called ") & __PRETTY_FUNCTION__ & " with an unsupported type");
     return AVLListXLIterator (nil);
   }
-
+  
   unsigned long  CountObjectsByType (const long type) {
     switch (type) {
       case HY_BL_DATASET_FILTER:
@@ -322,7 +404,7 @@ namespace hyphy_global_objects {
     WarnError (_String("Called ") & __PRETTY_FUNCTION__ & " with an unsupported type");
     return 0UL;
   }
-
+  
   
   //____________________________________________________________________________________
   
@@ -341,7 +423,7 @@ namespace hyphy_global_objects {
         theList = &_data_filter_aux;
         break;
         
-       case HY_BL_LIKELIHOOD_FUNCTION:
+      case HY_BL_LIKELIHOOD_FUNCTION:
         theList = &likeFuncNamesList;
         break;
       case HY_BL_HBL_FUNCTION:

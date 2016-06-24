@@ -71,8 +71,7 @@ typedef char* Ptr;
 #include <stdio.h>
 
 
-class BaseObj
-{
+class BaseObj {
 
     //base object class
 public:

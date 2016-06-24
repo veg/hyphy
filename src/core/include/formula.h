@@ -214,7 +214,7 @@ public:
     
     _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
   
-    void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive) const;
+    void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive);
 
 
 protected:

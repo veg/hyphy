@@ -249,7 +249,7 @@ public:
   
     void        FillInConditionals      (long = -1);
     
-    void        Setup                   (void);
+    void        Setup                   (bool check_reversibility = true);
     bool&       HasBeenOptimized (void) {
         return hasBeenOptimized;
     }
@@ -314,6 +314,10 @@ public:
 
     _AssociativeList*CollectLFAttributes         (void) const;
 protected:
+  
+  
+    void            AllocateTemplateCaches  (void);
+    bool            CheckIthPartition       (unsigned long index, _String const* = nil, _String const * = nil, _String const * = nil);
 
     _Matrix*        PairwiseDistances       (long index);
     void            CheckDependentBounds    (void);

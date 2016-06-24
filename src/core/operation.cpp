@@ -171,6 +171,16 @@ bool _Operation::CanResultsBeCached (_Operation* prev, bool exp_only)
 
 //__________________________________________________________________________________
 
+bool   _Operation::IsConstantOfType   (const long type) const {
+  if (theNumber && (theNumber->ObjectClass() & type)) {
+    return true;
+  }
+  return false;
+}
+
+
+//__________________________________________________________________________________
+
 bool _Operation::HasChanged (void)
 {
     if (theNumber) {

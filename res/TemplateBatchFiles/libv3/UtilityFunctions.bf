@@ -79,7 +79,6 @@ function utility.getGlobalValue (val) {
 }
 
 
-utility.toggleEnvVariable.cache = {};
 
 /**
  * @name utility.toggleEnvVariable
@@ -88,6 +87,9 @@ utility.toggleEnvVariable.cache = {};
  */
 function utility.toggleEnvVariable (var, value) {
 	if (None != value) {
+	    if (Type (utility.toggleEnvVariable.cache) != "AssociativeList") {
+	        utility.toggleEnvVariable.cache = {};
+	    }
 		utility.toggleEnvVariable.cache[var] = Eval (var);
 		*var = value;
 	} else {
@@ -221,8 +223,8 @@ function utility.map (object, lambda_name, transform) {
 }
 
 /**
- * @name utility.matrix_to_list_of_rows 
- * @param {Matrix} object - MxN matrix to convert 
+ * @name utility.matrix_to_list_of_rows
+ * @param {Matrix} object - MxN matrix to convert
  * @param {Matrix} converted 1 x (M*N) Row vector
  */
 lfunction utility.matrix_to_list_of_rows (object) {
@@ -242,7 +244,7 @@ lfunction utility.matrix_to_list_of_rows (object) {
 
 /**
  * @name utility.filter
- * @param {Dictionary} or {Matrix} object - matrix to convert 
+ * @param {Dictionary} or {Matrix} object - matrix to convert
  * @param {Function} lambda_name - function to discern whether element is filtered. All elements of iterable object that are false will be removed.
  * @param condition
  * @param {Dictionary} or {Matrix} filtered object
@@ -282,7 +284,7 @@ function utility.filter (object, lambda_name, condition) {
 
 /**
  * @name utility.forEach
- * @param {Tree}, {Dictionary} or {Matrix} object - matrix to convert 
+ * @param {Tree}, {Dictionary} or {Matrix} object - matrix to convert
  * @param {Function} lambda_name
  * @param {Function} transform
  * @returns nothing
@@ -320,7 +322,7 @@ function utility.forEach (object, lambda_name, transform) {
 }
 
 /**
- * @name utility.checkKey 
+ * @name utility.checkKey
  * @param {Dictionary} dict - dictionary to check for key
  * @param {String} key - key to check for existence
  * @param {String} type - check whether key is "Matrix", "AssociativeList", "String", or "Tree"
@@ -338,7 +340,7 @@ function utility.checkKey (dict, key, type) {
 /**
  * Adds string or list of strings to a dictionary and sets value to 1
  * @name utility.addToSet
- * @param {AssociativeList} set - 
+ * @param {AssociativeList} set -
  * @param {String}, {Matrix}, or {AssociativeList} object
  * @returns nothing
  */
@@ -356,7 +358,7 @@ function utility.addToSet (set, object) {
 }
 
 /**
- * @name utility.populateDict 
+ * @name utility.populateDict
  * @param from
  * @param to
  * @param value
@@ -381,7 +383,7 @@ function utility.populateDict (from, to, value, lambda) {
 }
 
 /**
- * @name utility.forEachPair 
+ * @name utility.forEachPair
  * @param object
  * @param key_name
  * @param value_name

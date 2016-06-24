@@ -813,7 +813,10 @@ long  AddDataSetToList (_String& theName,_DataSet* theDS) {
 void KillLFRecord (long lfID, bool completeKill) {
     /* compile the list of variables which will no longer be referenced */
 
+  
+  
     if (lfID>=0) {
+        //printf ("\n****\nKillLFRecord\n%s\n****\n", (char const*) * (_String*)likeFuncNamesList.GetItem (lfID));
         _LikelihoodFunction *me = (_LikelihoodFunction*)likeFuncList (lfID);
 
         if (completeKill) {
@@ -5201,7 +5204,8 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
                             checkParameter      (getDataInfoReturnsOnlyTheIndex,onlyTheIndex,0.0);
                             
                             
-                            long                theValue = dsf->Translate2Frequencies (dsf->RetrieveState(site, seq), res->theData,  true);
+                            _String             character (dsf->RetrieveState(site, seq));
+                            long                theValue = dsf->Translate2Frequencies (character, res->theData,  true);
                             
                             if (onlyTheIndex > 0.5) {
                               stVar->SetValue (new _Constant (theValue),false);
@@ -5217,12 +5221,19 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
                             _Matrix * accumulator = new _Matrix (dsf->GetDimension (true), 1, false, true),
                                     * storage     = new _Matrix (dsf->GetDimension (true), 1, false, true);
                             
+                            
+                            
+                            _String *buffer = dsf->MakeSiteBuffer();
+                            
                             for (long species_index = dsf->NumberSpecies()-1; species_index >= 0; species_index --) {
-                              dsf->Translate2Frequencies (*dsf->RetrieveState(site,species_index), storage->theData,  count_gaps >= 0.5);
+                              dsf->RetrieveState(site,species_index,*buffer, false);
+                              dsf->Translate2Frequencies (*buffer, storage->theData,  count_gaps >= 0.5);
                               *accumulator += *storage;
                             }
                             DeleteObject (storage);
                             stVar -> SetValue (accumulator, false);
+                            
+                            DeleteObject (buffer);
                             
                           }
                         } else {

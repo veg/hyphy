@@ -566,7 +566,8 @@ _DataSetFilter * _LikelihoodFunction::GetIthFilterMutable (long f) const {
 //_______________________________________________________________________________________
 
 _Matrix * _LikelihoodFunction::GetIthFrequencies (long f) const {
-  return (_Matrix*) LocateVar(theProbabilities.Element(f))->GetValue();
+  _Variable *freq_variable = LocateVar(theProbabilities.Element(f));
+  return freq_variable ? (_Matrix*) freq_variable->GetValue() : NULL;
 }
 
 //_______________________________________________________________________________________
@@ -702,15 +703,24 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
 
 //_______________________________________________________________________________________
 
-void     _LikelihoodFunction::Rebuild (void)
-{
-    blockDependancies.Clear();
-    computationalResults.Clear();
-    hasBeenSetUp     = 0;
-    hasBeenOptimized = false;
-    Cleanup();
-    RescanAllVariables();
-    Setup();
+void     _LikelihoodFunction::Rebuild (void) {
+  computationalResults.Clear();
+  hasBeenSetUp     = 0;
+  hasBeenOptimized = false;
+  try {
+    for (unsigned long k = 0UL; k < theDataFilters.lLength; k++) {
+      if (! (GetIthFilter (k) && GetIthTree (k) && GetIthFrequencies(k) && CheckIthPartition(k))) {
+        throw (k);
+      }
+    }
+  }
+  catch (unsigned long code) {
+    ReportWarning (_String ("Likelihood function cleared because partition ") & (long) code & " points to invalid components");
+    Clear();
+    return;
+  }
+  AllocateTemplateCaches();
+  Setup(false);
 }
 //_______________________________________________________________________________________
 
@@ -723,7 +733,7 @@ void     _LikelihoodFunction::Clear (void)
     theTrees.Clear();
   
     for (unsigned long i = 0UL; i < partition_count; i++) {
-        ReleaseDataFilterLock(theDataFilters.GetElement(i));
+        UnregisterChangeListenerForDataFilter(theDataFilters.GetElement(i), this);
     }
   
     theDataFilters.Clear();
@@ -762,7 +772,69 @@ void     _LikelihoodFunction::Clear (void)
 
 //_______________________________________________________________________________________
 
-bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* theP)
+void     _LikelihoodFunction::AllocateTemplateCaches (void) {
+  partScalingCache.Clear();
+  DeleteObject(bySiteResults);
+  
+  if (templateKind < 0 || templateKind == _hyphyLFComputationalTemplateBySite) {
+    
+    long max_filter_size = 0L;
+    for (unsigned long f=0UL; f<theDataFilters.lLength; f++) {
+      StoreIfGreater(max_filter_size, GetIthFilter (f)->GetSiteCountInUnits());
+    }
+
+    
+#ifdef __HYPHYMPI__
+    bySiteResults = new _Matrix    (theTrees.lLength+3,max_filter_size,false,true);
+#else
+    bySiteResults = new _Matrix    (theTrees.lLength+2,max_filter_size,false,true);
+#endif
+    for (unsigned long k = 0UL; k <= theTrees.lLength; k++) {
+      partScalingCache < new _SimpleList(max_filter_size, 0,0);
+    }
+  } else {
+    bySiteResults = nil;
+  }
+}
+//_______________________________________________________________________________________
+
+bool     _LikelihoodFunction::CheckIthPartition(unsigned long partition, _String const * df, _String const * tree, _String const * efv) {
+  _DataSetFilter const*     filter = GetIthFilter (partition);
+  
+  long filter_dimension          = filter->GetDimension(true),
+       freq_dimension           = GetIthFrequencies(partition)->GetHDim ();
+  
+  if (freq_dimension  != filter_dimension) {
+    if (df && efv) {
+      WarnError (_String("The dimension of the equilibrium frequencies vector ") &
+               efv->Enquote() & " (" & freq_dimension & ") doesn't match the number of states in the dataset filter (" & filter_dimension & ") " & df->Enquote());
+    }
+    else {
+      WarnError (_String ("Incompatible dimensions between the filter (") & filter_dimension & ") and the frequencies matrix (" & freq_dimension & ")");
+    }
+    return false;
+  }
+  
+  if (filter->IsNormalFilter() == false)
+    // do checks for the numeric filter
+  {
+    if (filter->NumberSpecies() != 3 || filter_dimension != 4) {
+      WarnError (_String ("Datafilters with numerical probability vectors must contain exactly three sequences and contain nucleotide data. Had ") & (long) filter->NumberSpecies() & " sequences on alphabet of dimension " & (long) filter_dimension & '.');
+      
+      return false;
+    }
+  }
+  // first - produce the list of tip node names
+  if (!MapTreeTipsToData (partition)) {
+    return false;
+  }
+
+  return true;
+}
+
+//_______________________________________________________________________________________
+
+bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* theP) {
 /* SLKP v2.0 code cleanup 20090316 */
 
 /* modified the code to take arguments as a pre-partitioned list,
@@ -771,7 +843,6 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
 
 // from triplets
 // format: datasetfilter name, tree name, frequency matrix name; etc...
-{
 
     Clear ();
     long i = 0L;
@@ -790,8 +861,8 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
             WarnError (_String("Could not locate a datafilter ")& object_name.Enquote());
             return false;
         } else {
-          if (theDataFilters.Find (objectID) < 0 && !ExclusiveLockDataFilter(objectID)) {
-            WarnError (_String("Could not obtain exclusive lock to datafilter ")& object_name.Enquote());
+          if (!RegisterChangeListenerForDataFilter(objectID,this)) {
+            WarnError (_String("Could register likelihood function as listener for ")& object_name.Enquote());
             return false;
           }
           theDataFilters<<objectID;
@@ -811,41 +882,16 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
         object_name = AppendContainerName (*(_String*)triplets(i+2), theP);
         objectID   = LocateVarByName(object_name);
         _Matrix*   efv              = (_Matrix*)FetchObjectFromVariableByTypeIndex(objectID, MATRIX);
-        long       efvDim;
         if (!efv) {
             WarnError (_String("Could not locate a frequencies matrix named ") & object_name.Enquote());
             return false;
         } else {
-            efvDim = efv->GetHDim();
             theProbabilities<<variableNames.GetXtra(objectID);
         }
-        // at this stage also check to see whether tree tips match to species names in the dataset filter and
-        // if they do - then remap
-      
-        _SimpleList         remap;
-        _DataSetFilter const*     df = GetIthFilter (theDataFilters.lLength-1);
-
-        long dfDim          = df->GetDimension(true);
-
-        if ( efvDim!=dfDim) {
-            WarnError (_String("The dimension of the equilibrium frequencies vector ") &
-                       *(_String*)triplets(i+2) & " (" & efvDim & ") doesn't match the number of states in the dataset filter (" & dfDim & ") " &*(_String*)triplets(i));
-            return false;
-        }
-
-        if (df->IsNormalFilter() == false)
-            // do checks for the numeric filter
-        {
-            if (df->NumberSpecies() != 3 || df->GetDimension () != 4) {
-                WarnError ("Datafilters with numerical probability vectors must contain exactly three sequences and contain nucleotide data");
-
-                return false;
-            }
-        }
-        // first - produce the list of tip node names
-        if (!MapTreeTipsToData (theTrees.lLength-1)) {
-            return false;
-        }
+      if (!CheckIthPartition (theTrees.lLength-1L, (_String*)triplets.GetItem(i), (_String*)triplets.GetItem(i+1), (_String*)triplets.GetItem(i+2))) {
+        return false;
+      }
+ 
     }
     if (i && i == triplets.lLength-1) {
         _String templateFormulaString (ProcessLiteralArgument((_String*)triplets(i),theP));
@@ -910,14 +956,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                     templateKind = _hyphyLFComputationalTemplateBySite;
                 }
 
-                for (long f=0; f<theDataFilters.lLength; f++) {
-                    long            currentFilterSize =  GetIthFilter (f)->GetSiteCountInUnits();
-
-                    if (currentFilterSize > maxFilterSize) {
-                        maxFilterSize = currentFilterSize;
-                    }
-                }
-            } else {
+             } else {
                 templateKind = hasBlkMx?_hyphyLFComputationalTemplateByPartition : _hyphyLFComputationalTemplateNone;
             }
 
@@ -959,20 +998,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
             }
 
             computingTemplate = (_Formula*)templateFormula.makeDynamic();
-
-            if (templateKind < 0 || templateKind == _hyphyLFComputationalTemplateBySite) {
-#ifdef __HYPHYMPI__
-                bySiteResults = (_Matrix*)checkPointer(new _Matrix    (theTrees.lLength+3,maxFilterSize,false,true));
-#else
-                 bySiteResults = (_Matrix*)checkPointer(new _Matrix    (theTrees.lLength+2,maxFilterSize,false,true));
-#endif
-                for (long k = 0; k <= theTrees.lLength; k++) {
-                    partScalingCache.AppendNewInstance    (new _SimpleList(maxFilterSize, 0,0));
-                }
-            } else {
-                bySiteResults = nil;
-            }
-
+            AllocateTemplateCaches();
         }
     }
 
@@ -1026,12 +1052,6 @@ _LikelihoodFunction::_LikelihoodFunction (_LikelihoodFunction& lf) // stack copy
 BaseRef _LikelihoodFunction::makeDynamic (void)  // dynamic copy of this object
 {
     _LikelihoodFunction * res = new _LikelihoodFunction;
-    checkPointer(res);
-    memcpy ((char*)res, (char*)this, sizeof (_LikelihoodFunction));
-    if (!res) {
-        isError(0);
-        return nil;
-    }
     res->Duplicate(this);
     return res;
 }
@@ -1973,7 +1993,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
 
                 //printf ("[RECEIVE]: %d\n", partID, "\n");
 
-                _DataSetFilter * thisBlockFilter      = (_DataSetFilter*)dataSetFilterList (theDataFilters.lData[partID]);
+                _DataSetFilter const * thisBlockFilter      = GetIthFilter(partID);
                 thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0,blockWidth);
                 _SimpleList* blockScalers = ((_SimpleList*)partScalingCache(partID));
                 thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + (blockWidth*theTrees.lLength+blockPatternSize), blockScalers->lData, 2,blockWidth);
@@ -3092,7 +3112,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
                 if ( hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto ) {
                     _SimpleList    * optimalOrder = (_SimpleList*)(optimalOrders (0));
-                    _DataSetFilter * aDSF         = (_DataSetFilter*)dataSetFilterList(theDataFilters.lData[0]);
+                    _DataSetFilter const * aDSF   = GetIthFilter(0L);
 
                     _Parameter    minPatternsPerNode = 0.;
                     checkParameter (minimumSitesForAutoParallelize, minPatternsPerNode, 50.);
@@ -3105,8 +3125,8 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                                   unitLength  =  aDSF->GetUnitLength();
 
 
-                    _SimpleList * dupMap    = &aDSF->duplicateMap,
-                                  * orOrder   = &aDSF->theOriginalOrder;
+                    _SimpleList const * dupMap    = &aDSF->duplicateMap,
+                                * orOrder   = &aDSF->theOriginalOrder;
 
                     totalNodeCount     = slaveNodes + 1;
 
@@ -7211,7 +7231,7 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::Setup (void)
+void    _LikelihoodFunction::Setup (bool check_reversibility)
 {
     _Parameter kp       = 0.0;
     //RankVariables();
@@ -7273,31 +7293,32 @@ void    _LikelihoodFunction::Setup (void)
         optimalOrders.AppendNewInstance(s);
         leafSkips.AppendNewInstance(l);
 
-        _SimpleList treeModels;
-        t->CompileListOfModels (treeModels);
-        bool isReversiblePartition = true;
-        if (assumeRev > 0.5) {
-            ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a reversible model");
-        } else {
-            if (assumeRev < -0.5) {
-              isReversiblePartition = false;
-              ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a non-reversible model");
-            } else {
-              for (unsigned long m = 0; m < treeModels.lLength && isReversiblePartition; m++) {
-                  long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
-                  if (alreadyDone>=0) {
-                      alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
-                  } else {
-                      alreadyDone = IsModelReversible (treeModels.lData[m]);
-                      alreadyDoneModels.Insert ((BaseRef)treeModels.lData[m], alreadyDone);
-                  }
-                  isReversiblePartition = isReversiblePartition && alreadyDone;
+        if (check_reversibility) {
+          _SimpleList treeModels;
+          t->CompileListOfModels (treeModels);
+          bool isReversiblePartition = true;
+          if (assumeRev > 0.5) {
+              ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a reversible model");
+          } else {
+              if (assumeRev < -0.5) {
+                isReversiblePartition = false;
+                ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a non-reversible model");
+              } else {
+                for (unsigned long m = 0; m < treeModels.lLength && isReversiblePartition; m++) {
+                    long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
+                    if (alreadyDone>=0) {
+                        alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
+                    } else {
+                        alreadyDone = IsModelReversible (treeModels.lData[m]);
+                        alreadyDoneModels.Insert ((BaseRef)treeModels.lData[m], alreadyDone);
+                    }
+                    isReversiblePartition = isReversiblePartition && alreadyDone;
+                }
+                ReportWarning (_String ("Partition ") & (long)i & " reversible model flag computed as " & (long)isReversiblePartition);
               }
-              ReportWarning (_String ("Partition ") & (long)i & " reversible model flag computed as " & (long)isReversiblePartition);
-            }
+          }
+          canUseReversibleSpeedups << isReversiblePartition;
         }
-        canUseReversibleSpeedups << isReversiblePartition;
-
     }
 
 }

@@ -32,7 +32,7 @@
  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include "site.h"
@@ -41,27 +41,27 @@
 /**
  The namespace and attendant functions are meant as an intermediate
  phase for controlling access to non-variable globally accessible types:
-  DataSet, DataSetFilter, LikelihoodFunction, SCFG, BGM, Model
-*/
+ DataSet, DataSetFilter, LikelihoodFunction, SCFG, BGM, Model
+ */
 
 namespace hyphy_global_objects {
-
-  /** 
-      Functions for accessing and manipulating DataSetFilters
+  
+  /**
+   Functions for accessing and manipulating DataSetFilters
    */
   
   const   _DataSetFilter * GetDataFilter (long index);
-  /** 
-    Retrieve a read-only pointer to a DataSetFilter object
+  /**
+   Retrieve a read-only pointer to a DataSetFilter object
    
-    @param index the direct referencing index for this object
-    @return the object pointer or null if reference is invalid
+   @param index the direct referencing index for this object
+   @return the object pointer or null if reference is invalid
    
-    @see get_data_filter (_String const)
-  */
-   
-   const   _DataSetFilter * GetDataFilter (_String const& name);
-
+   @see get_data_filter (_String const)
+   */
+  
+  const   _DataSetFilter * GetDataFilter (_String const& name);
+  
   /**
    Retrieve a read-only pointer to a DataSetFilter object
    
@@ -70,22 +70,22 @@ namespace hyphy_global_objects {
    
    @see get_data_filter (long index)
    */
-
+  
   _DataSetFilter * ExclusiveLockDataFilter (long index);
- 
+  
   /**
-   Retrieve a read-write reference to a DataSetFilter object and mark it 
-   as exclusively locked; trying to delete this object or exclusively 
+   Retrieve a read-write reference to a DataSetFilter object and mark it
+   as exclusively locked; trying to delete this object or exclusively
    lock it again will return a null
    
    @param index the direct referencing index for this object
-   @return the object pointer or null if reference is invalid or the lock could\  
-           not be obtained
+   @return the object pointer or null if reference is invalid or the lock could\
+   not be obtained
    
    @see get_data_filter (_String const)
    @see release_data_filter_lock
    */
-
+  
   _DataSetFilter * ExclusiveLockDataFilter (_String const& name);
   
   /**
@@ -100,7 +100,7 @@ namespace hyphy_global_objects {
    @see get_data_filter (_String const)
    @see release_data_filter_lock
    */
-
+  
   bool    ReleaseDataFilterLock (long index);
   /**
    Release a previously acquired lock to this data set filter object
@@ -123,7 +123,7 @@ namespace hyphy_global_objects {
    */
   
   long    StoreDataFilter  (_String const& name, _DataSetFilter *filter, bool handle_errors = true);
-
+  
   /**
    Store a reference to a DataSetFilter object in the global namespace
    
@@ -132,8 +132,8 @@ namespace hyphy_global_objects {
    @param handle_errors if true, calls error handling functions if something bad happens
    @return the index of the stored object or <0 if the store operation failed
    
-  */
-
+   */
+  
   const _String* GetFilterName  (long index);
   
   /**
@@ -143,18 +143,18 @@ namespace hyphy_global_objects {
    @return the name of the associated object, or NULL if failed (no such index)
    
    */
-
+  
   long    FindDataFilter   (_String const& name);
-
+  
   /**
    Find the referencing index for a given DataSetFilter object name
    @name the globally scoped name of this object
    @return the index of the corresponding object or <0 if no such object exists
    
    */
-
+  
   bool    DeleteDataFilter (long index);
-
+  
   /**
    Delete the DataSetFilter object
    
@@ -162,7 +162,7 @@ namespace hyphy_global_objects {
    @return true if the object was deleted
    
    */
-
+  
   bool    DeleteDataFilter (_String const& name);
   
   /**
@@ -172,41 +172,87 @@ namespace hyphy_global_objects {
    @return true if the object was deleted
    
    */
-
+  
   void    ClearFilters (void);
-
+  
   /**
    Delete all DataSetFilter objects
    
    */
-
+  
   void    ClearAllGlobals (void);
   /**
    Delete all global objects
    
    */
   
+  
+  bool    RegisterChangeListenerForDataFilter (const long index, BaseRef listener);
+  /**
+   Add an object to the list of listeners that will be notified if a data filter changes
+   
+   @param index the index of the datafilter to which the listener will be bound
+   @param listener the object that will be listening to changes on this filter
+   
+   @return whether or not the registration was successful
+   
+   */
+  
+  bool    RegisterChangeListenerForDataFilter (_String const & name, BaseRef listener);
+  /**
+   Add an object to the list of listeners that will be notified if a data filter changes
+   
+   @param the name of the datafilter to which the listener will be bound
+   @param listener the object that will be listening to changes on this filter
+   
+   @return whether or not the registration was successful
+   
+   */
+  
+
+  bool    UnregisterChangeListenerForDataFilter (const long index, BaseRef listener);
+  /**
+   Remove an object from the list of listeners that will be notified if a data filter changes
+   
+   @param index the index of the datafilter from which the listener will be unbound
+   @param listener the object that will no longer be listening to changes on this filter
+   
+   @return whether or not the un-registration was successful
+   
+   */
+  
+  bool    UnregisterChangeListenerForDataFilter (_String const & name, BaseRef listener);
+  /**
+   Remove an object from the list of listeners that will be notified if a data filter changes
+   
+   @param the name of the datafilter from which the listener will be unbound
+   @param listener the object that will no longer be listening to changes on this filter
+   
+   @return whether or not the un-registration was successful
+   
+   */
+
   unsigned long CountObjectsByType (const long type);
   /**
    Returns the count of objects for a specific type
    
-   @type the type of the object
+   @param type the type of the object
    
    @return the number of objects of the requested type
    
    */
-
+  
   
   AVLListXLIterator  ObjectIndexer (const long type);
   /**
    Returns a range-compiant object to iterate over the requested object type
    
-   @type the type of the object
+   @param type the type of the object
    
    @return an iterator for the right object type
    
    */
-
+  
   
   const   _String* GetObjectNameByType       (const long type, const long index, bool correct_for_empties = true);
   
@@ -221,5 +267,5 @@ namespace hyphy_global_objects {
    @return a unique ID
    
    */
- 
+  
 }

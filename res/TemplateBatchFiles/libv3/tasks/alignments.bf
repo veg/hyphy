@@ -298,7 +298,6 @@ lfunction alignments.extract_site_patterns (data_filter) {
     );
 
     utility.toggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
-
     return site_info;
 
 }

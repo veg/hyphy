@@ -146,6 +146,8 @@ public:
     long            PrecedenceLevel     (void);
 
     bool            CanResultsBeCached (_Operation *, bool exp_only = false);
+  
+    bool            IsConstantOfType   (const long type) const;
 
 
     virtual bool            EqualOp             (_Operation*);

@@ -6240,7 +6240,7 @@ bool     _TheTree::IntPopulateLeaves (_DataSetFilter const* dsf, long site_index
         dsf->RetrieveState(site_index, leaf_index, *buffer, false);
       
       site_has_all_gaps &= ((iterator->lastState = dsf->Translate2Frequencies (*buffer, iterator->theProbs, true))<0); // ambig
-      site_has_all_gaps &= (!ArrayAny (iterator->theProbs, cBase, [](_Parameter x, unsigned long) {return x == 0.0; })); // completely unresolved
+      site_has_all_gaps &= (!ArrayAny (iterator->theProbs, cBase, [](_Parameter x, unsigned long) {return x == 0.0; })); //completely unresolved
       map_node_to_calcnode (((node <long>*)flatLeaves.GetElement(leaf_index))->parent)->cBase = -1;
     }
 

@@ -21,7 +21,7 @@ function parameters.applyNameSpace(id, namespace) {
 }
 
 /**
- * @name parameters.unconstrain_parameter_set 
+ * @name parameters.unconstrain_parameter_set
  * @param {LikelihoodFunction} lf - the likelihood function to operate on
  * @param {Matrix} set - set of parameters to unconstrain
  * @returns nothing
@@ -44,7 +44,7 @@ function parameters.unconstrain_parameter_set(lf, set) {
 }
 
 /**
- * @name parameters.declareGlobal 
+ * @name parameters.declareGlobal
  * @param {String} id
  * @param {Matrix} cache
  * @returns nothing
@@ -81,7 +81,7 @@ function parameters.declareGlobal(id, cache) {
 
 /**
  * @name parameters.normalize_ratio
- * @param {Number} n 
+ * @param {Number} n
  * @param {Number} d
  * @returns n/d
  */
@@ -138,7 +138,7 @@ function parameters.quote(arg) {
 }
 
 /**
- * @name parameters.addMultiplicativeTerm 
+ * @name parameters.addMultiplicativeTerm
  * @param {Matrix} matrix - matrix to scale
  * @param {Number} term - scalar to multiply matrix by
  * @param {Number} do_empties - if element matrix is empty, fill with term
@@ -168,7 +168,7 @@ lfunction parameters.addMultiplicativeTerm(matrix, term, do_empties) {
 }
 
 /**
- * @name parameters.stringMatrixToFormulas 
+ * @name parameters.stringMatrixToFormulas
  * @param {String} id - matrix to scale
  * @param {Matrix} matrix - if element matrix is empty, fill with term
  * @returns nothing
@@ -190,9 +190,9 @@ function parameters.stringMatrixToFormulas(id, matrix) {
 }
 
 /**
- * @name parameters.generate_attributed_names 
- * @param {String} prefix 
- * @param {Dictionary} attributes 
+ * @name parameters.generate_attributed_names
+ * @param {String} prefix
+ * @param {Dictionary} attributes
  * @param {String} delimiter
  */
 function parameters.generate_attributed_names(prefix, attributes, delimiter) {
@@ -207,9 +207,9 @@ function parameters.generate_attributed_names(prefix, attributes, delimiter) {
 }
 
 /**
- * @name parameters.generate_sequential_names 
- * @param {String} prefix 
- * @param {Number} count 
+ * @name parameters.generate_sequential_names
+ * @param {String} prefix
+ * @param {Number} count
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
@@ -225,7 +225,7 @@ function parameters.generate_sequential_names(prefix, count, delimiter) {
 }
 
 /**
- * @name parameters.setRange 
+ * @name parameters.setRange
  * @param id
  * @param ranges
  * @returns nothing
@@ -300,8 +300,8 @@ function parameters.setConstraint(id, value, global_tag) {
 /**
  * constraint set of parameters
  * @name parameters.constrainSets
- * @param {AssociativeList} set1 - 
- * @param {AssociativeList} set2 - 
+ * @param {AssociativeList} set1 -
+ * @param {AssociativeList} set2 -
  * @returns nothing
  */
 function parameters.constrainSets(set1, set2) {
@@ -343,7 +343,7 @@ function parameters.removeConstraint(id) {
 /**
  * Copies definitions from target to source
  * @name parameters.helper.copy_definitions
- * @param {Dictionary} target - the target dictionary 
+ * @param {Dictionary} target - the target dictionary
  * @param {Dictionary} source - the source element to copy to target
  * @returns nothing
  */
@@ -363,7 +363,7 @@ function parameters.helper.copy_definitions(target, source) {
 }
 
 /**
- * @name parameters.helper.stick_breaking 
+ * @name parameters.helper.stick_breaking
  * @param {AssociativeList} parameters
  * @param {Matrix} initial_values
  * @returns weights
@@ -406,7 +406,7 @@ lfunction parameters.helper.dump_matrix(matrix) {
 /**
  * Sets tree lengths to initial values
  * @name parameters.helper.tree_lengths_to_initial_values
- * @param dict - a [0 to N-1] dictrionary of tree objects 
+ * @param dict - a [0 to N-1] dictrionary of tree objects
  * @param type - codon or nucleotide
  * @returns {Dictionary} dictionary of initial branch lengths
  */
@@ -440,7 +440,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
  * @name parameters.getProfileCI
  * @param {String} id - covariance parameter id
  * @param {LikelihoodFunction} lf - likelihood function to profile
- * @param {Number} - Covariance precision level 
+ * @param {Number} - Covariance precision level
  * @returns {Dictionary} a dictionary containing profiling information
  */
 function parameters.getProfileCI(id, lf, level) {
@@ -456,4 +456,19 @@ function parameters.getProfileCI(id, lf, level) {
         "`terms.MLE`": parameters.getProfileCI.mx[1],
         "`terms.upper_bound`": parameters.getProfileCI.mx[2]
     };
+}
+
+/**
+ * Geneate an HBL string needed to define a parameter
+ * @name parameters.ExportParameterDefinition
+ * @param {String} id - the name of the parameter to export;
+ * @returns {String} the string for an HBL definition of the parameter
+ * e.g. "global x := 2.3; x :> 1; x :< 3"; note that the definition will
+ * be NOT recursive, so if x depends on y and z, then y and z need to be
+ * exported separately
+ */
+
+lfunction parameters.ExportParameterDefinition (id) {
+    GetString (parameter_definition, ^id, -3);
+    return parameter_definition;
 }

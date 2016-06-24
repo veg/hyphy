@@ -336,12 +336,12 @@ void mpiOptimizerLoop (int rank, int size)
             // send back the list of independent variables
 
             _LikelihoodFunction * theLF = (_LikelihoodFunction*)likeFuncList (0);
-            if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL && theLF->CountObjects (4)) {
+            if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL && theLF->CountObjects (kLFCountCategoryVariables)) {
                 FlagError (_String("[MPI] Likelihood functions spawned off to slave MPI nodes can't have category variables.n\n\n"));
                 break;
             }
 
-            _SimpleList* ivl = & theLF->GetIndependentVars();
+            _SimpleList const * ivl = & theLF->GetIndependentVars();
             _String      variableSpec (128L, true);
 
             (variableSpec) << LocateVar(ivl->lData[0])->GetName();

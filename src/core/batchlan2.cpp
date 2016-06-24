@@ -575,7 +575,10 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     chain.currentCommand++;
 
     _String dataObjectID = chain.AddNameSpaceToID(*(_String*)parameters(1));
-    
+  
+    /*printf ("%s raw : '%s' processed : '%s'\n", __PRETTY_FUNCTION__,  (const char*)*(_String*)parameters(1), (const char*) dataObjectID);
+    */
+  
     long dsID           = (parameters.lLength>2)?FindDataSetName (dataObjectID):-1;
     bool isFilter       = false;
 
@@ -645,7 +648,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
                                 _DataSet * dummyDS = new _DataSet;
                               
                                 dummyDS->SetNoSpecies (seqNames.lLength);
-                                dummyDS->SetNames     (&seqNames);
+                                dummyDS->SetNames     (seqNames);
                                 dummyDS->GetTheMap().Populate (sitePatterns,0,1);
  
                                 AddDataSetToList  (dataSetName, dummyDS);
