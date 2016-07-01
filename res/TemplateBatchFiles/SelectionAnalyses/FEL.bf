@@ -230,7 +230,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
 /* echo to screen calls */
 
-fel.report.header_done   = FALSE;
 fel.report.counts        = {{0,0}};
 
 
@@ -333,6 +332,9 @@ lfunction fel.store_results (node, result, arguments) {
 fel.site_results = {};
 
 for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.partition_index += 1) {
+    fel.report.header_done = FALSE;
+    fel.table_output_options["header"] = TRUE;
+
     model.applyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {"default" : fel.site.mg_rev}, None);
 
     fel.case_respecting_node_names = trees.branch_names (fel.site_tree, TRUE);
