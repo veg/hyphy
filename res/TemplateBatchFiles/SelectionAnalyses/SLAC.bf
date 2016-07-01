@@ -143,10 +143,35 @@ utility.forEachPair (slac.filter_specification, "_key_", "_value_",
 
 selection.io.startTimer (slac.json [terms.json.timers], "Primary SLAC analysis", 2);
 
+slac.nucleotide_frequencies    = (slac.gtr_results[terms.efv_estimate])["VALUEINDEXORDER"][0];
+
+/*_EFV_MATRIX0_ = {{1,AC__*pooledFreqs[1],pooledFreqs[2],AT__*pooledFreqs[3]}
+				{AC__*pooledFreqs[0],1,CG__*pooledFreqs[2],CT__*pooledFreqs[3]}
+				{pooledFreqs[0],CG__*pooledFreqs[3],1,GT__*pooledFreqs[3]}
+				{AT__*pooledFreqs[0],CT__*pooledFreqs[3],GT__*pooledFreqs[2],1}};
+*/
+
+
+slac.counting_bias_matrix = {4,4}["1"];
+
+for (slac.i = 0; slac.i < 4; slac.i += 1) {
+    for (slac.j = slac.i + 1; slac.j < 4; slac.j += 1) {
+        slac.counting_bias_matrix[slac.i][slac.j] = ((slac.partitioned_mg_results[terms.global])[terms.nucleotideRate (models.DNA.alphabet[slac.i], models.DNA.alphabet[slac.j])])[terms.MLE];
+        slac.counting_bias_matrix[slac.j][slac.i] = slac.counting_bias_matrix[slac.i][slac.j] * slac.nucleotide_frequencies [slac.i];
+        slac.counting_bias_matrix[slac.i][slac.j] = slac.counting_bias_matrix[slac.i][slac.j] * slac.nucleotide_frequencies [slac.j];
+    }
+}
+
+
+slac.counting_bias_array = {};
+slac.counting_bias_array + slac.counting_bias_matrix;
+slac.counting_bias_array + slac.counting_bias_matrix;
+slac.counting_bias_array + slac.counting_bias_matrix;
+
 
 io.spoolLF (slac.partitioned_mg_results["LF"], slac.codon_data_info["file"], "slac");
 io.reportProgressMessageMD("slac", "anc", "Performing joint maximum likelihood ancestral state reconstruction");
-slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE});
+slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE, "weighting-matrix" : slac.counting_bias_array});
 slac.results   = {};
 
 
