@@ -50,6 +50,17 @@ function estimators.copyGlobals(key, value) {
     ((value["parameters"])["global"])["estimators.copyGlobals2"][""];
 }
 
+/**
+ * @name estimators.CopyFrequencies
+ * @private
+ * @param {String} key
+ * @param {Dictionary} value
+ * @returns nothing
+ */
+function estimators.CopyFrequencies(model_name, model_decription) {
+    (estimators.extractMLEs.results[terms.efv_estimate])[model_name] = model_decription[terms.efv_estimate];
+}
+
 function estimators.setGlobals2(key, value) {
     __init_value = (initial_values["global"])[key];
     if (Type(__init_value) == "AssociativeList") {
@@ -198,13 +209,15 @@ function estimators.extractMLEs(likelihood_function_id, model_descriptions) {
 
     estimators.extractMLEs.results["global"] = {};
     model_descriptions["estimators.copyGlobals"][""];
+    estimators.extractMLEs.results[terms.efv_estimate] = {};
+    model_descriptions["estimators.CopyFrequencies"][""];
     estimators.extractMLEs.results[terms.json.attribute.branch_length] = {};
     estimators.extractMLEs.results["Trees"] = estimators.extractMLEs.lfInfo["Trees"];
 
     for (estimators.extractMLEs.i = 0; estimators.extractMLEs.i < estimators.extractMLEs.partitions; estimators.extractMLEs.i += 1) {
         _tree_name = (estimators.extractMLEs.lfInfo["Trees"])[estimators.extractMLEs.i];
 
-        ExecuteCommands("GetInformation (estimators.extractMLEs.map, `_tree_name`);");
+        GetInformation (estimators.extractMLEs.map, *_tree_name);
         estimators.extractMLEs.branch_names = Rows(estimators.extractMLEs.map);
         (estimators.extractMLEs.results[terms.json.attribute.branch_length])[estimators.extractMLEs.i] = {};
 
