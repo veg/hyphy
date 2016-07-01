@@ -5789,7 +5789,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       << ";\n\tTAXLABELS\n\t\t";
       
       for (unsigned long i=0UL; i< sequence_count; i++) {
-        write_here << theData->GetSequenceName(i)->Enquote('\'') << ' ';
+         write_here << theData->GetSequenceName(i)->Enquote('\'') << ' ';
       }
       
       write_here << ";\nEND;\n\nBEGIN CHARACTERS;\n\tDIMENSIONS NCHAR = "

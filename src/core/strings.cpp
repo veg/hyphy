@@ -1435,6 +1435,7 @@ void    _String::StripQuotes (void) {
 const _String _String::Enquote (char quote_char) const {
   _String quoted (2UL + sLength, true);
   quoted << quote_char  << *this << quote_char;
+  quoted.Finalize();
   return quoted;
 }
 
