@@ -2094,12 +2094,11 @@ void    _Matrix::Convert2Formulas (void)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
+_Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 // takes two separate formats
 // 1st : {{i11,...,i1n}{i21,...,i2n}....{in1,...,inn}} // all elements must be explicitly specified
 // 2st : {hor dim, <vert dim>,{hor index, vert index, value or formula}{...}...}
-{
-    // decide which input type is being presented
+
     Initialize();
 
     bool    isAConstant = true; // is this a matrix of numbers, or formulas
@@ -2350,8 +2349,7 @@ _Matrix::_Matrix (_Matrix& m)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_SimpleList& sl, long colArg)
-{
+_Matrix::_Matrix (_SimpleList const& sl, long colArg) {
     if (sl.lLength) {
         if (colArg > 0 && colArg < sl.lLength) {
             CreateMatrix (this, sl.lLength/colArg + colArg*(sl.lLength%colArg > 0), colArg,     false, true, false);
@@ -9271,8 +9269,7 @@ BaseRef _AssociativeList::makeDynamic (void)
 
 //_____________________________________________________________________________________________
 
-bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool doErrors, _VariableContainer* theP)
-{
+bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool doErrors, _VariableContainer const* theP) {
     _List               splitKeys;
     _ElementaryCommand::ExtractConditions (serializedForm, 0, splitKeys, ',' , false);
     for (long k = 0; k < splitKeys.lLength; k = k + 1) {
@@ -9546,6 +9543,22 @@ void _AssociativeList::MStore (const _String& obj, _PMathObj inObject, bool repl
     _FString f (obj);
     MStore (&f,inObject, repl);
 }
+
+//_____________________________________________________________________________________________
+
+_AssociativeList &  _AssociativeList:: operator <<     (_associative_list_key_value pair) {
+  MStore (pair.key, pair.payload, true);
+  return *this;
+}
+
+//_____________________________________________________________________________________________
+
+
+_AssociativeList &  _AssociativeList:: operator <     (_associative_list_key_value pair) {
+  MStore (pair.key, pair.payload, false);
+  return *this;
+}
+
 
 //_____________________________________________________________________________________________
 void _AssociativeList::MStore (const _String& obj, const _String& info) {

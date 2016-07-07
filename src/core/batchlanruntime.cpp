@@ -56,6 +56,10 @@
 #include "hyphy_qt_helpers.h"
 #endif
 
+#include "global_object_lists.h"
+
+using namespace hyphy_global_objects;
+
 _List       openFileHandlesBackend;
 
 _AVLListX   openFileHandles     (&openFileHandlesBackend);
@@ -78,7 +82,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
 
 
     long       objectType = HY_BL_DATASET|HY_BL_DATASET_FILTER;
-    BaseRef    sourceObject = _HYRetrieveBLObjectByName (dataID, objectType,nil,false);
+    BaseRefConst    sourceObject = _HYRetrieveBLObjectByName (dataID, objectType,nil,false);
     
     long      unit      = ProcessNumericArgument((_String*)parameters(2),currentProgram.nameSpacePrefix),
               posspec   = ProcessNumericArgument((_String*)parameters(4),currentProgram.nameSpacePrefix),
@@ -100,7 +104,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
             hSpecs = *(_String*)parameters(6);
         }
         
-        _DataSet * dataset = (_DataSet*)sourceObject;
+        _DataSet const * dataset = (_DataSet const*)sourceObject;
         _SimpleList     hL, vL;
         dataset->ProcessPartition (hSpecs,hL,false);
         dataset->ProcessPartition (vSpecs,vL,true);
@@ -108,7 +112,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
         receptacle = dataset->HarvestFrequencies(unit,atom,posspec,hL, vL,cghf>0.5);
     } else { // harvest from a DataSetFilter
         if (objectType == HY_BL_DATASET_FILTER) {
-            receptacle = ((_DataSetFilter*)sourceObject)->HarvestFrequencies(unit,atom,posspec,cghf>0.5);
+            receptacle = ((_DataSetFilter const*)sourceObject)->HarvestFrequencies(unit,atom,posspec,cghf>0.5);
         } else {
             errMsg = _String ("'") & dataID & "' is neither a DataSet nor a DataSetFilter";
         }
@@ -487,7 +491,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
     long objectIndex,
          typeFlag    = HY_BL_ANY;
     
-    BaseRef theObject      = _HYRetrieveBLObjectByName (nmspc, typeFlag, &objectIndex);
+    BaseRef theObject      = _HYRetrieveBLObjectByNameMutable (nmspc, typeFlag, &objectIndex);
     
     switch (typeFlag)
     {
@@ -616,7 +620,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                 _LikelihoodFunction * lkf = (_LikelihoodFunction *) theObject;
                 currentArgument = (_String*)parameters(1);
                 long g = ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix);
-                if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
+                if (lkf->GetIndependentVars().Map (g) < 0L) {
                     currentProgram.ReportAnExecutionError (*currentArgument & " (=" & g & ") is not a valid parameter index");
                     return false;
                 }
@@ -630,30 +634,29 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         case HY_BL_DATASET:
         case HY_BL_DATASET_FILTER: {
             _DataSet * ds = nil;
+          
             
-            long f  = ProcessNumericArgument ((_String*)parameters(1),currentProgram.nameSpacePrefix);
+            long sequence_index  = ProcessNumericArgument ((_String*)parameters(1),currentProgram.nameSpacePrefix);
             if (typeFlag == HY_BL_DATASET) {
                 ds = (_DataSet*) theObject;
             }
             else {
                 _DataSetFilter *dsf = (_DataSetFilter*)theObject;
                 ds = dsf->GetData ();
-                if (f >= 0 && f < dsf->theNodeMap.lLength){
-                    f  = dsf->theNodeMap.lData[f];
-                }
-                else
-                    f = -1;
+                sequence_index = dsf->theNodeMap.Map (sequence_index);
             }
-            
+          
+            if (typeFlag == HY_BL_DATASET_FILTER) {
+              ReleaseDataFilterLock(objectIndex);
+            }
         
-            _List*  dsNames = &ds->GetNames();
-            
-            if (f<0 || f>=dsNames->lLength) {
-                currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index");
-                return false;
-            }
-
-            dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix)), false);
+          
+          
+          if (! ds->SetSequenceName (sequence_index, new _String(ProcessLiteralArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix)))) {
+            currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " (=" & sequence_index & ") is not a valid sequence index");
+            return false;
+           
+          }
         } // end data set and data set filter
         break; 
         // Dataset and Datasetfilter
@@ -665,7 +668,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                 if (*((_String*)parameters(1)) == _String("MODEL")) {
                     _String modelName = AppendContainerName(*((_String*)parameters(2)),currentProgram.nameSpacePrefix);
                     long modelType = HY_BL_MODEL, modelIndex;
-                    BaseRef modelObject      = _HYRetrieveBLObjectByName (modelName, modelType, &modelIndex, true);
+                    BaseRef modelObject      = _HYRetrieveBLObjectByNameMutable (modelName, modelType, &modelIndex, true);
                     if (modelObject) {
                         _VariableContainer * parentTree = treeNode->ParentTree();
                         if (!parentTree) {
@@ -674,7 +677,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                         }
                         long pID, lfID = ((_TheTree*)parentTree->Compute())->IsLinkedToALF(pID);
                         if (lfID>=0){
-                             currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *_HBLObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &") and cannot be modified ");
+                             currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &") and cannot be modified ");
                              return false;
                         }
                         
@@ -760,7 +763,7 @@ bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& currentProgram)
     for (unsigned long objCount = 0; objCount < parameters.lLength; objCount++) {
         long       objectType = HY_BL_LIKELIHOOD_FUNCTION,
                    f = -1;
-        BaseRef    sourceObject = _HYRetrieveBLObjectByName (AppendContainerName(*(_String*)parameters(objCount),currentProgram.nameSpacePrefix), objectType,&f,false);
+        BaseRef    sourceObject = _HYRetrieveBLObjectByNameMutable (AppendContainerName(*(_String*)parameters(objCount),currentProgram.nameSpacePrefix), objectType,&f,false);
 
         if  (sourceObject) {
             KillLFRecord (f,true);
@@ -894,7 +897,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
         case HY_BL_DATASET_FILTER:
         case HY_BL_SCFG:
         case HY_BL_BGM: {
-            result = (_String*)_HBLObjectNameByType(f,sID);
+            result = (_String*)GetObjectNameByType(f,sID);
             if (result) {
                 result = (_String*) result->makeDynamic();
 				//ReportWarning(_String((const char*)"In HandleGetString(): ") & result);
@@ -903,7 +906,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
         }
            
         case HY_BL_HBL_FUNCTION: // UserFunction
-            result = (_String*)_HBLObjectNameByType(HY_BL_HBL_FUNCTION,sID);
+            result = (_String*)GetObjectNameByType(HY_BL_HBL_FUNCTION,sID);
             if (result) {
                 _AssociativeList * resAVL = new _AssociativeList;
                 resAVL->MStore ("ID", new _FString (*result), false);
@@ -933,14 +936,14 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
             long    typeFlag       = HY_BL_ANY,
                     index          = -1;
                     
-            BaseRef theObject      = _HYRetrieveBLObjectByName (nmspaced, typeFlag, &index);
+            BaseRefConst theObject      = _HYRetrieveBLObjectByName (nmspaced, typeFlag, &index);
 
             if (theObject) {
                 switch (typeFlag) {
                 case HY_BL_DATASET: {
-                    _DataSet* dataSetObject = (_DataSet*)theObject;
+                    _DataSet const* dataSetObject = (_DataSet const*)theObject;
                     if (sID>=0 && sID<dataSetObject->NoOfSpecies()) {
-                        result = (_String*)(dataSetObject->GetNames())(sID)->makeDynamic();
+                        result = (_String*)(dataSetObject->GetNames().GetItem(sID))->makeDynamic();
                     } else {
                         if (sID < 0) {
                             theReceptacle->SetValue (new _Matrix (dataSetObject->GetNames()), false);
@@ -950,16 +953,17 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                     break;
                 }
                 case HY_BL_DATASET_FILTER: {
-                    _DataSetFilter* dataSetFilterObject = (_DataSetFilter*)theObject;
+                    _DataSetFilter const* dataSetFilterObject = (_DataSetFilter const*)theObject;
 
                     if (sID >=0 && sID<dataSetFilterObject->NumberSpecies()) {
-                        result = (_String*)(dataSetFilterObject->GetData()->GetNames())(dataSetFilterObject->theNodeMap(sID))->makeDynamic();
+                        result = (_String*)dataSetFilterObject->GetData()->GetNames().GetItem(dataSetFilterObject->theNodeMap.Element(sID))->makeDynamic();
                     } else {
                         if (sID < 0) {
-                            _List filterSeqNames,
-                                  *originalNames = &dataSetFilterObject->GetData()->GetNames();
+                            _List filterSeqNames;
+                            _List const * originalNames = &dataSetFilterObject->GetData()->GetNames();
+                          
                             for (long seqID=0; seqID<dataSetFilterObject->NumberSpecies(); seqID++) {
-                                filterSeqNames << (*originalNames)(dataSetFilterObject->theNodeMap(seqID));
+                                filterSeqNames << originalNames->GetItem (dataSetFilterObject->theNodeMap.Element (seqID));
                             }
                             theReceptacle->SetValue (new _Matrix (filterSeqNames), false);
                             return true;
@@ -1071,7 +1075,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 }
                 case HY_BL_HBL_FUNCTION: {
                     _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
-                    resAVL->MStore ("ID", new _FString (*_HBLObjectNameByType (HY_BL_HBL_FUNCTION, index, false)), false);
+                    resAVL->MStore ("ID", new _FString (*GetObjectNameByType (HY_BL_HBL_FUNCTION, index, false)), false);
                     resAVL->MStore ("Arguments", new _Matrix(GetBFFunctionArgumentList(index)), false);
                     resAVL->MStore ("Body", new _FString (GetBFFunctionBody(index).sourceText,false),false);
                     theReceptacle->SetValue (resAVL,false);
@@ -1105,7 +1109,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 } else {
                   _Variable* theVar = FetchVar(LocateVarByName (nmspaced));
                   if (theVar) {
-                    if (theVar->IsIndependent()) {
+                    if (theVar->IsIndependent() && sID != -3) {
                       result = (_String*)theVar->toStr();
                     } else {
                       if (sID == -1){
@@ -1125,14 +1129,31 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                       }
                       
                       else {  // formula string
-                        _Matrix * formula_matrix = (sID2 >= 0 && theVar->ObjectClass() == MATRIX) ? (_Matrix*)theVar->GetValue () : nil;
-                        if (formula_matrix) {
-                         _Formula* cell = formula_matrix->GetFormula(sID, sID2);
-                         if (cell) {
-                            result = (_String*) cell->toStr();
+                        
+                        if (sID == -3) {
+                          _String local, global;
+                          _SimpleList var_index;
+                          var_index << theVar->GetAVariable ();
+                          if (theVar->IsIndependent()) {
+                            //printf ("ExportIndVariables\n");
+                            ExportIndVariables (global, local, &var_index);
+                          } else {
+                            //printf ("ExportDepVariables\n");
+                            ExportDepVariables(global, local, &var_index);
                           }
+                          result = new _String (128L, true);
+                          (*result) << global << local << '\n';
+                          result->Finalize();
                         } else {
-                          result = (_String*)theVar->GetFormulaString ();
+                          _Matrix * formula_matrix = (sID2 >= 0 && theVar->ObjectClass() == MATRIX) ? (_Matrix*)theVar->GetValue () : nil;
+                          if (formula_matrix) {
+                           _Formula* cell = formula_matrix->GetFormula(sID, sID2);
+                           if (cell) {
+                              result = (_String*) cell->toStr();
+                            }
+                          } else {
+                            result = (_String*)theVar->GetFormulaString ();
+                          }
                         }
                       }
                     }
@@ -1182,7 +1203,7 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
     long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER | HY_BL_HBL_FUNCTION,
              index;
         
-    BaseRef objectToExport = _HYRetrieveBLObjectByName (objectID, typeFlag, &index);
+    BaseRef objectToExport = _HYRetrieveBLObjectByNameMutable (objectID, typeFlag, &index);
     if (! objectToExport) {
         errMsg = _String ("'") & objectID & "' is not a supported type";
     } else {
@@ -1196,6 +1217,7 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
                 outLF->theString->Finalize();
                 DeleteObject (outLF->theString);
                 outLF->theString = new _String ((_String*)((_DataSetFilter*)objectToExport)->toStr());
+                ReleaseDataFilterLock(index);
                 break;
             }
             case HY_BL_MODEL: {
@@ -1389,9 +1411,10 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                 
                 
                 if (thePrintObject == nil) {
-                    long typeFlag = HY_BL_ANY;
-                    
-                    thePrintObject = _HYRetrieveBLObjectByName (nmspace, typeFlag);
+                    long typeFlag = HY_BL_ANY,
+                         index;
+                  
+                    thePrintObject = _HYRetrieveBLObjectByNameMutable (nmspace, typeFlag, &index);
                     
                     if (!thePrintObject) {
                         _String argCopy = *varname,
@@ -1406,6 +1429,10 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                             else
                                 throw (_String ("Argument ") & i & " is not a simple expression");
                         }
+                    } else {
+                      if (typeFlag == HY_BL_DATASET_FILTER) {
+                        ReleaseDataFilterLock(index);
+                      }
                     }
                 }
             }

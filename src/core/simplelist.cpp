@@ -93,19 +93,18 @@ _SimpleList::_SimpleList (unsigned long l)
 }
 
 //Stack copy contructor
-_SimpleList::_SimpleList (_SimpleList & l, long from, long to)
-{
-    if (from == 0 && to == -1) { // copy the whole thing
-        Duplicate (&l);
-    } else {
-        Initialize           ();
-        NormalizeCoordinates (from, to, l.lLength);
-        RequestSpace(to-from);
-        long upto = to-from ; 
-        for (long k = 0; k < upto; k++) {
-            lData[k] = l.lData[from+k];
-        }
-    }
+_SimpleList::_SimpleList (_SimpleList const & l, long from, long to) {
+  Initialize           (false);
+  if (from == 0 && to == -1) {
+    to = l.lLength;
+  } else {
+    NormalizeCoordinates (from, to, l.lLength);
+  }
+  RequestSpace(to-from);
+  long upto = to-from ; 
+  for (lLength = 0; lLength < upto; lLength++) {
+      lData[lLength] = l.lData[from+lLength];
+  }
 }
 
 // Data constructor (variable number of long constants)
@@ -159,8 +158,7 @@ long& _SimpleList::operator [] (const long i)
     return lData[in];
 }
 //Element location functions (0,llength - 1)
-long _SimpleList::operator () (const unsigned long i)
-{
+long _SimpleList::operator () (const unsigned long i) const {
     //if (lLength == 0) return 0;
     //Is there a reason why this is commented out?
     //if (i>=lLength) i = lLength-1;
@@ -208,9 +206,9 @@ _SimpleList _SimpleList::operator & (_SimpleList l)
     return res;
 }
 
-void _SimpleList::operator << (long br)
-{
+_SimpleList& _SimpleList::operator << (long br) {
   _SimpleList::InsertElement ((BaseRef)br, -1, false, false);
+  return *this;
 }
 
 bool _SimpleList::operator >> (long br)
@@ -222,9 +220,8 @@ bool _SimpleList::operator >> (long br)
     return false;
 }
 
-void _SimpleList::operator << (_SimpleList& source)
-{
-    for (unsigned long k=0; k<source.lLength; k++) {
+void _SimpleList::operator << (_SimpleList const & source) {
+    for (unsigned long k=0UL; k<source.lLength; k++) {
         (*this) << source.lData[k];
     }
 }
@@ -541,6 +538,44 @@ void  _SimpleList::DeleteList (const _SimpleList& toDelete)
     }
 }
 
+
+long _SimpleList::SkipCorrect (long index) const {
+  for (unsigned long k=0UL; k < lLength; k++)
+    if (index >= lData[k]) {
+      index++;
+    }
+  return index;
+}
+
+long _SimpleList::CorrectForExclusions(long index, long excluded_value) const {
+  long correction = 0L;
+  for (unsigned long k=0UL; k < lLength && index >= lData[k]; k++) {
+    if (index == lData[k]) {
+      return excluded_value;
+    }
+    correction++;
+  }
+  return index - correction;
+}
+
+long _SimpleList::CorrectForExclusions(long * index,  long length) const {
+  long exclusion_index = 0L,
+       mapped = 0UL;
+  
+  for (long k=0UL; k < length; k++) {
+    if (exclusion_index < lLength && index[k] >= lData[exclusion_index]) {
+      if (index[k] > lData[exclusion_index]) {
+        k--;
+      }
+      exclusion_index++;
+      continue;
+    }
+    index[mapped++] = index[k] - exclusion_index;
+  }
+  return mapped;
+}
+
+
 //Shift the range from start to end
 void  _SimpleList::Displace (long start, long end, long delta)
 {
@@ -631,8 +666,7 @@ bool _SimpleList::Equal(_SimpleList const& l2) const
     return false;
 }
 
-long  _SimpleList::Find (long s, long startAt)
-{
+long  _SimpleList::Find (long s, long startAt) const {
     for (unsigned long i = startAt; i<lLength; i++) {
         if ( ((long*)(lData))[i] == s ) {
             return i;
@@ -738,36 +772,32 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
 }
 
 //Convert a list into a partition style string
-BaseRef _SimpleList::ListToPartitionString ()
-{
-    _String *result = new _String ((unsigned long)64,true),
-    conv;
-
-    for (long k=0; k<lLength; k++) {
-        long m;
-        for (m=k+1; m<lLength; m++)
+BaseRef _SimpleList::ListToPartitionString () const {
+    _String *result = new _String ((unsigned long)64,true);
+  
+    for (unsigned long k=0UL; k<lLength; k++) {
+        unsigned long m;
+        for (m=k+1UL; m<lLength; m++)
             if (lData[m]-lData[m-1]!=1) {
                 break;
             }
-        if (m>k+2) {
-            conv = lData[k];
-            (*result) << & conv;
-            (*result) << '-';
-            conv = lData[m-1];
-            (*result) << & conv;
+        if (m>k+2UL) {
+            (*result) << _String (lData[k])
+                      << '-'
+                      << _String (lData[m-1UL]);
+
             if (m<lLength) {
                 (*result) << ',';
             }
-            k = m-1;
+            k = m-1UL;
         } else {
-            conv = lData[k];
-            (*result) << &conv;
+            (*result) << _String (lData[k]);
             if (k<lLength-1) {
                 (*result) << ',';
             }
         }
     }
-    (*result).Finalize();
+    result->Finalize();
     return result;
 }
 
@@ -1727,3 +1757,6 @@ void    _SimpleList::XOR (_SimpleList& l1, _SimpleList& l2)
     }
 }
 
+long _SimpleList::Map (long index, long map_failed) const {
+  return lData && index >= 0L && index < lLength ? lData[index]: map_failed;
+}

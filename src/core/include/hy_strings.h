@@ -235,7 +235,7 @@ public:
     * @return "AB"
     * @sa EscapeAndAppend()
     */
-    const _String operator & (const _String) const;
+    const _String operator & (const _String &) const;
 
     /**
     * Append operator
@@ -243,12 +243,12 @@ public:
     * @return "AB"
     * @sa EscapteAndAppend()
     */
-    virtual void operator << (const _String*);
+    _String & operator << (const _String*);
 
     /**
     * Append operator
     */
-    virtual void operator << (const _String&);
+    _String & operator << (const _String&);
 
     /**
     * Append operator
@@ -271,7 +271,7 @@ public:
     * @return "AB"
     * @sa AppendNewInstance()
     */
-    virtual void operator << (const char);
+    _String& operator << (const char);
 
     /**
     * Escape all characters in a string and append to this string
@@ -301,7 +301,7 @@ public:
     /**
     * Append into operator
     */
-    virtual void operator << (const char*);
+    _String& operator << (const char*);
 
     /**
     * Finalizes a string by putting a 0 at the end of the string.
@@ -608,13 +608,13 @@ public:
     * Checks if String is lexicographically greater
     * @see Greater()
     */
-    bool operator > (_String);
+    bool operator > (_String const&) const;
 
     /**
     * Checks if String is lexicographically less
     * @see Less()
     */
-    bool operator < (_String);
+    bool operator < (_String const&) const;
 
     /**
     * Checks if String is lexicographically greater
@@ -622,7 +622,7 @@ public:
     * \n\n \b Example: \code _String ("House").Greater("Household")\endcode
     * \n @return House > Household would be false. The example returns false.
     */
-    bool Greater (_String*);
+    bool Greater (_String const*) const;
 
     /**
     * Checks if String is lexicographically greater
@@ -630,25 +630,25 @@ public:
     * \n\n \b Example: \code _String ("House").Lesser("Household")\endcode
     * \n House < Household would be true. The example would return true.
     */
-    bool Less (_String*);
+    bool Less (_String const*) const;
 
     /**
     * Checks if String is lexicographically greater or equal
     * @see Greater()
     */
-    bool operator >= (_String);
+    bool operator >= (_String const&) const;
 
     /**
     * Checks if String is lexicographically less or equal
     * @see Less()
     */
-    bool operator <= (_String);
+    bool operator <= (_String const&) const;
 
     /**
     * Checks if string is not lexicographically equal
     * @see Equal()
     */
-    bool operator != (_String);
+    bool operator != (_String const&) const;
 
     /**
     * Checks to see if string contains substring
@@ -787,11 +787,18 @@ public:
     _String PathSubtraction (_String&, char);
 
     /**
-    * Returns a list from a string split by a substr.
+    * Strips quotes from around the string if present (in place)
     * \n\n \b Example: \code _String("\"hyphy\"").StripQuotes("")\endcode
-    * @return string with no quotes. "hyphy" in this example.
     */
     void    StripQuotes(void);
+
+    /**
+     * Decorates the string with quotes
+
+     * @param quote_char which character to use as a "quote"
+     * @return quote_char + *this + quote_char
+     */
+    const    _String Enquote (char quote_char = '\'') const;
 
     /**
     * Checks if String is valid ident
@@ -862,7 +869,7 @@ public:
     * @see IsValidIdentifier()
     */
 
-    unsigned char  ProcessVariableReferenceCases (_String& referenced_object, _String * context = nil);
+    unsigned char  ProcessVariableReferenceCases (_String& referenced_object, _String const * context = nil) const;
 
     
     static  unsigned long     storageIncrement;
@@ -1016,10 +1023,10 @@ void    SetStatusLineUser           (_String const);
 Ptr     PrepRegExp                  (_String*, int&, bool);
 void    FlushRegExp                 (Ptr);
 _String GetRegExpError              (int);
-void    ReportWarning               (_String);
-void    FlagError                   (_String);
-void    WarnErrorWhileParsing       (_String, _String&);
-void    WarnError                   (_String);
+void    ReportWarning               (_String const &);
+void    FlagError                   (_String const &);
+void    WarnErrorWhileParsing       (_String const&, _String&);
+void    WarnError                   (_String const&);
 _String GetVersionString            (void);
 _String GetTimeStamp                (bool = false);
 

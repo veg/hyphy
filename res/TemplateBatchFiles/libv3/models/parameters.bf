@@ -210,6 +210,9 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
  * @name parameters.GenerateSequentialNames 
  * @param {String} prefix 
  * @param {Number} count 
+ * @name parameters.generate_sequential_names
+ * @param {String} prefix
+ * @param {Number} count
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
@@ -343,7 +346,7 @@ function parameters.RemoveConstraint(id) {
 /**
  * Copies definitions from target to source
  * @name parameters.helper.copy_definitions
- * @param {Dictionary} target - the target dictionary 
+ * @param {Dictionary} target - the target dictionary
  * @param {Dictionary} source - the source element to copy to target
  * @returns nothing
  */
@@ -363,7 +366,7 @@ function parameters.helper.copy_definitions(target, source) {
 }
 
 /**
- * @name parameters.helper.stick_breaking 
+ * @name parameters.helper.stick_breaking
  * @param {AssociativeList} parameters
  * @param {Matrix} initial_values
  * @returns weights
@@ -406,7 +409,7 @@ lfunction parameters.helper.dump_matrix(matrix) {
 /**
  * Sets tree lengths to initial values
  * @name parameters.helper.tree_lengths_to_initial_values
- * @param dict - a [0 to N-1] dictrionary of tree objects 
+ * @param dict - a [0 to N-1] dictrionary of tree objects
  * @param type - codon or nucleotide
  * @returns {Dictionary} dictionary of initial branch lengths
  */
@@ -440,7 +443,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
  * @name parameters.GetProfileCI
  * @param {String} id - covariance parameter id
  * @param {LikelihoodFunction} lf - likelihood function to profile
- * @param {Number} - Covariance precision level 
+ * @param {Number} - Covariance precision level
  * @returns {Dictionary} a dictionary containing profiling information
  */
 function parameters.GetProfileCI(id, lf, level) {
@@ -456,4 +459,19 @@ function parameters.GetProfileCI(id, lf, level) {
         "`terms.MLE`": parameters.GetProfileCI.mx[1],
         "`terms.upper_bound`": parameters.GetProfileCI.mx[2]
     };
+}
+
+/**
+ * Geneate an HBL string needed to define a parameter
+ * @name parameters.ExportParameterDefinition
+ * @param {String} id - the name of the parameter to export;
+ * @returns {String} the string for an HBL definition of the parameter
+ * e.g. "global x := 2.3; x :> 1; x :< 3"; note that the definition will
+ * be NOT recursive, so if x depends on y and z, then y and z need to be
+ * exported separately
+ */
+
+lfunction parameters.ExportParameterDefinition (id) {
+    GetString (parameter_definition, ^id, -3);
+    return parameter_definition;
 }

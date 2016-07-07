@@ -49,12 +49,12 @@ class _VariableContainer;
 
 class _hyExecutionContext {
 
-  _VariableContainer* contextSpec;
+  _VariableContainer const * contextSpec;
   _String           * errMsg;
 
 public:
-                      _hyExecutionContext                   (_VariableContainer * = nil, _String* = nil);
-  _VariableContainer* GetContext                            (void);
+                      _hyExecutionContext                   (_VariableContainer const * = nil, _String* = nil);
+  _VariableContainer const* GetContext                      (void) const;
   void                ReportError                           (_String);
   _String           * GetErrorBuffer                        (void);
   

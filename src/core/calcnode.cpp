@@ -231,6 +231,7 @@ _CalcNode::_CalcNode    ()
 {
     theProbs = nil;    // default constructor, doesn't do much
     compExp = nil;
+    matrixCache = nil;
     referenceNode=-1;
 }
 
@@ -260,6 +261,7 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
     cBase         = 0;
     theProbs      = nil;
     compExp       = nil;
+    matrixCache   = nil;
     referenceNode = -1;
     slaveNodes    = 0;
 
@@ -1330,7 +1332,7 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty) 
         
         top->GetBranchValue (iterator,nodeVS);
         top->GetNodeName    (iterator,nodeName);
-        nodeSpec = _mapNodeToCalcNode(iterator)->GetBranchSpec();
+        nodeSpec = map_node_to_calcnode(iterator)->GetBranchSpec();
         
         FinalizeNode (iterator, 0, top->GetNodeName    (iterator), *nodeSpec, nodeVS);
         DeleteObject (nodeSpec);
@@ -2096,14 +2098,14 @@ const _String    _TreeTopology::GetNodeName (node<long>* n, bool fullName) const
 
 //_______________________________________________________________________________________________
 
-_String*    _TreeTopology::GetNodeModel (node<long>* n) const {
+_String const*    _TreeTopology::GetNodeModel (node<long>* n) const {
   return (_String*)flatCLeaves.GetItem(n->in_object);
 }
 
 //_______________________________________________________________________________________________
 
-_String*    _TheTree::GetNodeModel (node<long>* n) const {
-    return ((_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]))->GetModelName();
+_String const*    _TheTree::GetNodeModel (node<long>* n) const {
+    return ((_VariableContainer*)LocateVar (n->in_object))->GetModelName ();
 }
 
 //_______________________________________________________________________________________________
@@ -2128,9 +2130,9 @@ void    _TreeTopology::SetLeafName(long res, _String* newName)
 const _String    _TheTree::GetNodeName      (node<long>* n, bool fullName) const
 {
     if (fullName) {
-        return *_mapNodeToCalcNode(n)->GetName();
+        return *map_node_to_calcnode(n)->GetName();
     }
-    return _mapNodeToCalcNode(n)->GetName()->Cut (GetName()->sLength+1,-1);
+    return map_node_to_calcnode(n)->GetName()->Cut (GetName()->sLength+1,-1);
 }
 
 
@@ -2151,9 +2153,8 @@ _List*     _TreeTopology::MapNodesToModels (void) {
     if (iterator->is_root())
       break;
     _List * node_record = new _List;
-    node_record->AppendNewInstance(new _String (GetNodeName(iterator)));
-    (*node_record) << GetNodeModel(iterator);
-    map->AppendNewInstance(node_record);
+    (*node_record) < new _String (GetNodeName(iterator)) < new _String(*GetNodeModel(iterator));
+    (*map) < node_record;
   }
   return map;
 }
@@ -2169,7 +2170,7 @@ _String const  _TreeTopology::GetNodeStringForTree                (node<long> * 
   }
   
   if (flags & kGetNodeStringForTreeModel) {
-    _String *mSpec = GetNodeModel (n);
+    _String const *mSpec = GetNodeModel (n);
     if (mSpec->sLength) {
       node_desc = node_desc & '{' & *mSpec & '}';
     }
@@ -2319,7 +2320,10 @@ void _TheTree::SetUp (void) {
     }
 
     flatParents << flatINodeParents;
-    _SimpleList parentlist (flatNodes), indexer (flatNodes.lLength,0,1);
+  
+    _SimpleList parentlist (flatNodes),
+                indexer (flatNodes.lLength,0,1);
+  
     SortLists   (&parentlist,&indexer);
     for (long k=0L; k<flatParents.lLength; k++)
         if (flatParents.lData[k]) {
@@ -2610,12 +2614,11 @@ _PMathObj _TheTree::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
 const _List     _TreeTopology::RetrieveNodeNames (bool doTips, bool doInternals, int traversalType) const {
   _List result;
   
-  
   node_iterator<long> ni (theRoot, traversalType);
   
   while (node<long> * iterator = ni.Next()) {
     if (iterator->is_leaf() && doTips || doInternals && !iterator->is_leaf()) {
-      result.AppendNewInstance (new _String (GetNodeName(iterator)));
+      result < new _String (GetNodeName(iterator));
     }
   }
   
@@ -4077,11 +4080,11 @@ _PMathObj _TreeTopology::TreeBranchName (_PMathObj p, bool subtree, _PMathObj p2
 void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,long branchLengths,_AVLListXL* subs) const {
   long    last_level        = 0L;
   
-    //_String t;
   
   node_iterator<long> ni (root, _HY_TREE_TRAVERSAL_POSTORDER);
   
   while (node <long>* iterator = ni.Next()) {
+    //printf ("[%s] %s\n", GetNodeName(root).sData, GetNodeName(iterator).sData);
     if (ni.Level() > last_level) {
       if (last_level) {
         res<<',';
@@ -4093,6 +4096,8 @@ void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,
       res<<',';
     }
     
+    last_level = ni.Level();
+
     _String node_name = GetNodeName (iterator);
     if (subs) {
       long mapIdx = subs->Find (&node_name);
@@ -4101,7 +4106,6 @@ void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,
       }
     }
     
-    last_level = ni.Level();
     if (!iterator->is_root()) {
       if (allNames || (!node_name.startswith (iNodePrefix))) {
         res << node_name;
@@ -4114,6 +4118,9 @@ void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,
 
 //__________________________________________________________________________________
 void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long originator, bool passedRoot, _String&res, long blOption, bool firstTime) const {
+  
+  //printf ("[RerootTreeInternalTraverser]%s %ld %ld\n", GetNodeName(iterator).sData, originator, passedRoot);
+  
     if (passedRoot) {
         SubTreeString (iterator, res, false, blOption);
     } else {
@@ -4122,19 +4129,24 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
       
         if (iterator != theRoot) { // not root yet
             res<<'(';
-            RerootTreeInternalTraverser (iterator_parent, iterator->get_child_num(),false,res,blOption);
-            for (long i = 1; i<=iterator_parent->get_num_nodes(); i++) {
-                if (i!=originator) {
-                  res<<',';
-                  SubTreeString (iterator_parent->go_down(i),res, false,blOption);
-                }
-            }
+            long the_index_of_this_child = iterator->get_child_num();
+            RerootTreeInternalTraverser (iterator_parent, the_index_of_this_child ,false,res,blOption);
+          
+            if (iterator_parent->get_parent()) {
+            
+              for (long i = 1; i<=iterator_parent->get_num_nodes(); i++) {
+                  if (i!=the_index_of_this_child) {
+                    res<<',';
+                    SubTreeString (iterator_parent->go_down(i),res, false,blOption);
+                  }
+              }
+             }
             res<<')';
             if (!firstTime) {
-                _String node_name = GetNodeName (iterator);
-                if (!node_name.startswith(iNodePrefix)) {
-                    res<<node_name;
-                }
+              _String node_name = GetNodeName (iterator);
+              if (!node_name.startswith(iNodePrefix)) {
+                res<<node_name;
+              }
             }
             PasteBranchLength (iterator,res,blOption);
         } else {
@@ -4345,7 +4357,8 @@ _PMathObj _TreeTopology::RerootTree (_PMathObj p)
         _String tNodeN = (_String*)p->toStr();
 
         node<long>* reroot_at = FindNodeByName (&tNodeN);
-
+      
+ 
         if (reroot_at) { // good node name, can reroot
             if (reroot_at->is_root()) {
                 SubTreeString (theRoot, *res,0,-2);
@@ -4363,6 +4376,9 @@ _PMathObj _TreeTopology::RerootTree (_PMathObj p)
     }
 
     res->Finalize();
+  
+    //printf ("%s\n", res->sData);
+  
     return new _FString (res);
 }
 //__________________________________________________________________________________
@@ -5197,10 +5213,10 @@ void    _TheTree::BuildTopLevelCache (void) {
           
             unsigned long children_count = node_object->get_num_nodes();
             for (unsigned long k = 1UL; k <= children_count; k++) {
-                iterator->cBase += _mapNodeToCalcNode(node_object->go_down (k))->cBase;
+                iterator->cBase += map_node_to_calcnode(node_object->go_down (k))->cBase;
             }
-            iterator->categoryIndexVars << _mapNodeToCalcNode(node_object->go_down (1))->categoryIndexVars.Element(-2);
-            iterator->categoryIndexVars << _mapNodeToCalcNode(node_object->go_down (children_count))->categoryIndexVars.Element(-1);
+            iterator->categoryIndexVars << map_node_to_calcnode(node_object->go_down (1))->categoryIndexVars.Element(-2);
+            iterator->categoryIndexVars << map_node_to_calcnode(node_object->go_down (children_count))->categoryIndexVars.Element(-1);
             iterator->lastState = iNodeCounter++;
         }
     }
@@ -5209,7 +5225,7 @@ void    _TheTree::BuildTopLevelCache (void) {
 
     for (unsigned long level = 1UL; level <= theRoot->nodes.length; level++) {
         node<long>* child_node_object = theRoot->go_down (level);
-        _CalcNode*  child_node        = _mapNodeToCalcNode(child_node_object);
+        _CalcNode*  child_node        = map_node_to_calcnode(child_node_object);
       
         if (child_node->cBase>1L) { // an internal node
             topLevelNodes << child_node->lastState;
@@ -5318,7 +5334,7 @@ nodeCoord   _TheTree::TreeTEXRecurse (node<nodeCoord>* iterator, _String&res, _P
         h = hSize + iterator->in_object.h*hScale;
         res<< (_String ("\n\\put(")&h&','&v&"){\\circle*{2}}");
         res<< (_String ("\n\\put(")&(h+2.)&','&(v-1.)&"){\\makebox{\\tiny{");
-        res<< _mapNodeToCalcNode(iterator)->ContextFreeName();
+        res<< map_node_to_calcnode(iterator)->ContextFreeName();
         res.AppendNCopies('}',3);
     } else {
         v = vSize-iterator->in_object.v*vScale;
@@ -5346,7 +5362,7 @@ nodeCoord   _TheTree::TreeTEXRecurse (node<nodeCoord>* iterator, _String&res, _P
         if ( ! iterator->is_root()) {
             res<< (_String ("\n\\put(")&(h+2.)&','&(v-1.)&"){\\makebox{\\tiny{");
           
-            _String node_name = _mapNodeToCalcNode(iterator)->ContextFreeName();
+            _String node_name = map_node_to_calcnode(iterator)->ContextFreeName();
           
             if (node_name.beginswith(iNodePrefix)) {
                 node_name.Trim (iNodePrefix.Length(), -1);
@@ -5385,7 +5401,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, _Parame
 
     if (!iterator->is_root()) {
         if (iterator->in_object.varRef >=0) {
-          varName = *_mapNodeToCalcNode(iterator)->GetName();
+          varName = *map_node_to_calcnode(iterator)->GetName();
         }
     } else {
         hc = GetRoot().in_object;
@@ -5490,7 +5506,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, _Parame
             node<nodeCoord>* child = iterator->go_down(k);
 
             if (child->in_object.varRef>=0) {
-                t = _mapNodeToCalcNode(child)->ContextFreeName();
+                t = map_node_to_calcnode(child)->ContextFreeName();
             } else {
                 t = empty;
             }
@@ -6212,34 +6228,30 @@ long     _TheTree::IsLinkedToALF (long& pid) const {
 
 //_______________________________________________________________________________________________
 
-bool     _TheTree::IntPopulateLeaves (_DataSetFilter* dsf, long index, long) {
+bool     _TheTree::IntPopulateLeaves (_DataSetFilter const* dsf, long site_index, long) {
 // assign proper values to leaf conditional probability vectors
-    bool allGaps = true;
+    bool site_has_all_gaps = true;
+  
+    _String* buffer = dsf->MakeSiteBuffer();
 
-    for (long nodeCount = 0; nodeCount<flatLeaves.lLength; nodeCount++)
-        //if (lastIndex<0 || !dsf->CompareTwoSites(lastIndex,index,nodeCount))
-    {
-        _CalcNode * travNode = (_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]);
-        allGaps &= ((travNode->lastState = dsf->Translate2Frequencies ((*dsf)(index,nodeCount), travNode->theProbs, true))<0);
-        if (allGaps) // check to see if all
-            for (long b = 0; b < cBase; b++)
-                if (travNode->theProbs[b] == 0.0) {
-                    allGaps = false;
-                    break;
-                }
-
-        _CalcNode * theChildNode = ((_CalcNode*)((BaseRef*)variablePtrs.lData)
-                                    [((node <long>*)(flatLeaves.lData[nodeCount]))->parent->in_object]);
-        theChildNode->cBase = -1;
+    for (long leaf_index = 0; leaf_index<flatLeaves.lLength; leaf_index++) {
+ 
+        _CalcNode * iterator = (_CalcNode*)flatCLeaves.GetItem(leaf_index);
+        dsf->RetrieveState(site_index, leaf_index, *buffer, false);
+      
+      site_has_all_gaps &= ((iterator->lastState = dsf->Translate2Frequencies (*buffer, iterator->theProbs, true))<0); // ambig
+      site_has_all_gaps &= (!ArrayAny (iterator->theProbs, cBase, [](_Parameter x, unsigned long) {return x == 0.0; })); //completely unresolved
+      map_node_to_calcnode (((node <long>*)flatLeaves.GetElement(leaf_index))->parent)->cBase = -1;
     }
 
-    return allGaps;
+    DeleteObject (buffer);
+    return site_has_all_gaps;
 }
 
 
 //_______________________________________________________________________________________________
 
-void     _TheTree::RecoverNodeSupportStates (_DataSetFilter* dsf, long index, long lastIndex, _Matrix& resultMatrix)
+void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long index, long lastIndex, _Matrix& resultMatrix)
 // assume current values of all parameters
 // return 2 sets of vectors for each branch
 //   - top-down  conditionals
@@ -6249,7 +6261,7 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter* dsf, long index, lo
 {
 
     long      globalShifter        = (flatLeaves.lLength+flatTree.lLength)*cBase,
-              catShifer             = dsf->NumberDistinctSites() * 2 * globalShifter;
+              catShifer             = dsf->GetPatternCount() * 2 * globalShifter;
 
     IntPopulateLeaves (dsf, index,lastIndex);
 
@@ -6404,11 +6416,12 @@ void    _TheTree::MarkDone (void) {
 
 //_______________________________________________________________________________________________
 
-long    _TheTree::ComputeReleafingCostChar (_DataSetFilter* dsf, long firstIndex, long secondIndex) const {
+long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firstIndex, long secondIndex) const {
 
-    char *pastState = dsf->GetColumn(firstIndex),
-         *thisState = dsf->GetColumn(secondIndex);
+    const char *pastState = dsf->GetColumn(firstIndex),
+               *thisState = dsf->GetColumn(secondIndex);
 
+  
     _SimpleList markedNodes (flatTree.lLength, 0, 0);
 
     for (long nodeID = 0; nodeID<flatLeaves.lLength; nodeID++) {
@@ -6446,9 +6459,9 @@ void    _TheTree::ClearConstraints (void) {
 
 //_______________________________________________________________________________________________
 
-long    _TheTree::ComputeReleafingCost (_DataSetFilter* dsf, long firstIndex, long secondIndex, _SimpleList* traversalTags, long orderIndex) const {
+long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstIndex, long secondIndex, _SimpleList* traversalTags, long orderIndex) const {
 
-    long        filterL = dsf->NumberDistinctSites();
+    long        filterL = dsf->GetPatternCount();
 
     _SimpleList     markedNodes (flatTree.lLength,0,0);
 
@@ -6496,14 +6509,14 @@ void    _TheTree::MarkMatches (_DataSetFilter* dsf, long firstIndex, long second
 
     for (unsigned long n = 0UL; n<flatLeaves.lLength; n++) {
         if (!dsf->CompareTwoSites(firstIndex,secondIndex,n)) {
-            _mapNodeToCalcNode(((node <long>*)flatLeaves.Element(n))->parent)->cBase = -1L;
+            map_node_to_calcnode(((node <long>*)flatLeaves.Element(n))->parent)->cBase = -1L;
         }
     }
   
     for (unsigned long n=0UL; n<flatTree.lLength; n++) {
         _CalcNode * iterator = (_CalcNode*)flatTree.GetItem(n);
         if (iterator->cBase == -1) {
-            iterator = _mapNodeToCalcNode(((node <long>*)(flatNodes.Element (n)))->parent);
+            iterator = map_node_to_calcnode(((node <long>*)(flatNodes.Element (n)))->parent);
             if (iterator) {
                 iterator->cBase = -1L;
             }
@@ -6559,10 +6572,10 @@ void    _TheTree::MolecularClock (_String const& baseNode, _List& varsToConstrai
         topNode = &GetRoot();
         _String*  childNameP;
         if (rooted == ROOTED_LEFT) { // run separate constraint on the right child of the root
-           MolecularClock (_mapNodeToCalcNode(theRoot->go_down (theRoot->get_num_nodes()))->ContextFreeName(), varsToConstrain);
+           MolecularClock (map_node_to_calcnode(theRoot->go_down (theRoot->get_num_nodes()))->ContextFreeName(), varsToConstrain);
           
         } else if (rooted == ROOTED_RIGHT) {
-           MolecularClock (_mapNodeToCalcNode(theRoot->go_down (1))->ContextFreeName(), varsToConstrain);
+           MolecularClock (map_node_to_calcnode(theRoot->go_down (1))->ContextFreeName(), varsToConstrain);
         }
     } else {
         topNode = FindNodeByName (&baseNode);
@@ -6581,7 +6594,7 @@ void    _TheTree::MolecularClock (_String const& baseNode, _List& varsToConstrai
                 WarnError (_String ("Molecular clock constraint has failed, since variable' ") &*(_String*)varsToConstrain (k) &"' is undefined.");
                 return ;
             }
-            _mapNodeToCalcNode(topNode)->RecurseMC (variableNames.GetXtra(varIndex), topNode, true, rooted);
+            map_node_to_calcnode(topNode)->RecurseMC (variableNames.GetXtra(varIndex), topNode, true, rooted);
         }
 }
 
@@ -6678,7 +6691,7 @@ _Formula*   _CalcNode::RecurseMC (long varToConstrain, node<long>* whereAmI, boo
 
     for (k=start+1; k<=descendants; k++) {
         node<long>* downWeGo = whereAmI->go_down(k);
-        if (!(nodeConditions[k-1-start] = _mapNodeToCalcNode(downWeGo)->RecurseMC (varToConstrain, downWeGo))) {
+        if (!(nodeConditions[k-1-start] = map_node_to_calcnode(downWeGo)->RecurseMC (varToConstrain, downWeGo))) {
             for (long f2 = 0; f2 < k-start-1; f2++) {
                 delete nodeConditions[f2];
             }
@@ -6844,8 +6857,13 @@ void     _TheTree::AddNodeNamesToDS (_DataSet* ds, bool doTips, bool doInternals
     return;
   }
   
-  ds->GetNames() << RetrieveNodeNames (doTips, doInternals,
-                                       dOrS ? _HY_TREE_TRAVERSAL_POSTORDER : _HY_TREE_TRAVERSAL_PREORDER);
+  const _List nodenames = RetrieveNodeNames (doTips, doInternals,
+                                             dOrS ? _HY_TREE_TRAVERSAL_POSTORDER : _HY_TREE_TRAVERSAL_PREORDER);
+  
+  for (unsigned long i = 0; i < nodenames.countitems(); i++) {
+    ds->AddName(* (_String const*)nodenames.GetItem(i));
+  }
+  
   
 }
 

@@ -618,9 +618,9 @@ bool    Scfg::CheckANT  (long lhs, long rhs1, long rhs2, _AVLListX& tempNT, long
 
 void    Scfg::ScanAllVariables  (void)
 {
-    GetIndependentVars().Clear();
-    GetDependentVars().Clear();
-    GetCategoryVars().Clear();
+    indexInd.Clear();
+    indexDep.Clear();
+    indexCat.Clear();
 
     _SimpleList allVariables;
     _AVLList    scannerList(&allVariables);
@@ -634,11 +634,11 @@ void    Scfg::ScanAllVariables  (void)
     for (long varID = 0; varID < allVariables.lLength; varID++) {
         _Variable * aParameter = LocateVar (allVariables.lData[varID]);
         if (aParameter->IsCategory()) {
-            GetCategoryVars() << allVariables.lData[varID];
+            indexCat << allVariables.lData[varID];
         } else if (aParameter->IsIndependent()) {
-            GetIndependentVars() << allVariables.lData[varID];
+            indexInd << allVariables.lData[varID];
         } else {
-            GetDependentVars() << allVariables.lData[varID];
+            indexDep << allVariables.lData[varID];
         }
     }
 }

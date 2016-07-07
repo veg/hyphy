@@ -466,7 +466,7 @@ void    _HYDataPanel::GenerateStatusLine (void)
         statBar = statBar & _String (theDS->NoOfColumns()) &" sites ("&_String (theDS->NoOfUniqueColumns())&" distinct patterns), "&
                   _String(theDS->NoOfSpecies())& " species.";
     } else
-        statBar = statBar & _String (dataWrapper->GetFullLengthSpecies()) &" sites ("&_String (dataWrapper->NumberDistinctSites())&" distinct patterns), "&
+        statBar = statBar & _String (dataWrapper->GetSiteCount()) &" sites ("&_String (dataWrapper->GetPatternCount())&" distinct patterns), "&
                   _String(dataWrapper->NumberSpecies())& " species.";
     statBar = statBar & selectionStatPrefix & "empty";
     SetStatusBar(statBar);
@@ -1405,8 +1405,8 @@ void    _HYDataPanel::ShowCharacterUsage (long partIndex, bool useEntropy)
     long            stateCount      = df->GetDimension (true),
                     fullCount        = df->GetDimension (false),
                     stateSize       = df->GetUnitLength(),
-                    siteCount          = df->GetFullLengthSpecies()/stateSize,
-                    patternCount    = df->NumberDistinctSites();
+                    siteCount          = df->GetSiteCount()/stateSize,
+                    patternCount    = df->GetPatternCount();
 
     _Matrix         res  (useEntropy?1:stateCount, siteCount, false, true),
                     res2 (useEntropy?1:stateCount, patternCount, false, true);
@@ -1542,8 +1542,8 @@ void    _HYDataPanel::ShowAssociation (long partIndex, char options)
         _DataSetFilter *df = (_DataSetFilter*)dataSetFilterList(dataPartitions.lData[partIndex]);
 
         long            stateSize       = df->GetUnitLength(),
-                        siteCount          = df->GetFullLengthSpecies()/stateSize,
-                        patternCount    = df->NumberDistinctSites();
+                        siteCount          = df->GetSiteCount()/stateSize,
+                        patternCount    = df->GetPatternCount();
 
         if (options == 2 && (siteCount > 4 || siteCount < 2)) {
             prompt = "Pairwise contigency tables only work with filters with 2,3 or 4 sites - otherwise too many windows would need to be open. Chop your data partition into smaller sections.";
@@ -7959,7 +7959,7 @@ void  _HYDataPanel::ShowConstantSites (bool deletions, bool relaxed, bool sequen
         sp->selection.Clear();
         sp->selection.Duplicate(&constantSites);
         outWord = "sites";
-        fnd = 100.*((_Parameter)sp->selection.lLength)/df->GetFullLengthSpecies();
+        fnd = 100.*((_Parameter)sp->selection.lLength)/df->GetSiteCount();
         fndc = sp->selection.lLength/df->GetUnitLength();
     }
     UpdateSelDepPartitionOperations ();

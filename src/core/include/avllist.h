@@ -45,8 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  MEMORYSTEP 8
 
 //_____________________________________________________________________________
-class _AVLList: public BaseObj
-{
+class _AVLList: public BaseObj {
 
     public:
 
@@ -69,8 +68,8 @@ class _AVLList: public BaseObj
         virtual void ReorderList(_SimpleList* = nil);
         virtual long InsertData(BaseRef, long, bool);
         virtual BaseRef toStr(unsigned long padding = 0UL);
-        virtual long Traverser(_SimpleList&, long &, long = -1);
-        virtual long GetRoot(void){return root;}
+        virtual long Traverser(_SimpleList&, long &, long = -1) const;
+        virtual long GetRoot(void) const {return root;}
         virtual void DeleteXtra(long){};
         virtual void DeleteAll(bool cL){
             Clear(cL);        
@@ -79,18 +78,22 @@ class _AVLList: public BaseObj
 
         unsigned long countitems(void) const;
 
-        // 20100623: a shortcut function to look for integers only
-        // avoids calling ::Compare
 
-        long Find(BaseRef);
-        long Find(BaseRef,_SimpleList&);
-        long FindLong(long);
-        char FindBest(BaseRef, long&);
+        long Find(BaseRefConst) const;
+        long Find(BaseRefConst,_SimpleList&) const;
+  
+  // 20100623: a shortcut function to look for integers only
+  // avoids calling ::Compare
+  
+        long FindLong(long) const;
+        char FindBest(BaseRefConst, long&) const;
 
-        long Next(long,_SimpleList&);
-        long Prev(long,_SimpleList&);
-        long First(void);
-        long Last(void);
+        long Next(long,_SimpleList&) const;
+        long Prev(long,_SimpleList&) const;
+        long First(void) const;
+        long Last(void) const;
+  
+        bool IsValidIndex (long) const;
 
         long GetByIndex(const long);
 
@@ -99,7 +102,7 @@ class _AVLList: public BaseObj
         // will cause failed inserts (key already exists) to delete the key
         long Insert(BaseRef,long = 0,bool=true,bool=false);
 
-        BaseRef Retrieve(long);
+        BaseRef Retrieve(long) const;
 
         void Delete(BaseRef,bool=false);
         void ConsistencyCheck(void);

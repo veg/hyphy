@@ -85,8 +85,7 @@ struct      _CompiledMatrixData {
 
 /*__________________________________________________________________________________________________________________________________________ */
 
-class       _Matrix: public _MathObject
-{
+class       _Matrix: public _MathObject {
 
 public:
 
@@ -94,7 +93,7 @@ public:
 
     _Matrix ();                                 // default constructor, doesn't do much
 
-    _Matrix (_String&, bool = false, _VariableContainer* = nil);
+    _Matrix (_String&, bool = false, _VariableContainer const* = nil);
     // matrix from a string of the form
     // {{i11,i12,...}{i21,i22,..}{in1,in2..)})
     // or {# rows,<# cols>{i1,j1,expr}{i2,j2,expr}..}
@@ -113,9 +112,9 @@ public:
     // where the third parameter specifies the percentage of 0 entries and
     // the first flag indicates how to store the matrix: as spars or usual
 
-    _Matrix ( _Matrix &);                       //duplicator
+    _Matrix ( _Matrix&);                       //duplicator
 
-    _Matrix ( _SimpleList &, long = -1);        // make matrix from simple list
+    _Matrix ( _SimpleList const &, long = -1);        // make matrix from simple list
     // the optional argument C (if > 0) tells HyPhy
     // to make a matrix with C elements per row
     // if <= 0 - a row matrix is returned
@@ -417,7 +416,7 @@ public:
     // if element was not found, the number returned
     // indicates the first available slot
 
-    _Parameter*       fastIndex(void)   {
+    _Parameter*       fastIndex(void)  const {
         return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(_Parameter*)theData:nil;
     }
     inline            _Parameter&         directIndex(long k)   {
@@ -691,13 +690,18 @@ private:
 
 /*__________________________________________________________________________________________________________________________________________ */
 
+struct _associative_list_key_value {
+  const char * key;
+  _PMathObj  payload;
+};
+
 class           _AssociativeList: public _MathObject
 {
 public:
     _AssociativeList                    (void);
     virtual ~_AssociativeList           (void) {}
 
-    bool    ParseStringRepresentation   (_String&, bool = true, _VariableContainer* = nil);
+    bool    ParseStringRepresentation   (_String&, bool = true, _VariableContainer const* = nil);
     /* SLKP 20090803
 
         Parse the list represented as
@@ -744,6 +748,14 @@ public:
     // SLKP 20100811: see the comment for _Matrix::MStore
 
     void                MStore          (const _String&  , _PMathObj, bool = true);
+  
+    /* a convenience build-out function to push key-value pairs
+       << adds a reference count to the payload
+    */
+  
+    _AssociativeList &  operator <<     (_associative_list_key_value pair);
+    _AssociativeList &  operator <     (_associative_list_key_value pair);
+  
     void                MStore          (const _String&  , const _String&);
     virtual unsigned long        ObjectClass     (void)      {
         return ASSOCIATIVE_LIST;
@@ -773,6 +785,6 @@ extern  _Matrix *GlobalFrequenciesMatrix;
 // the matrix of frequencies for the trees to be set by block likelihood evaluator
 extern  _Parameter  ANALYTIC_COMPUTATION_FLAG;
 
-void       InsertStringListIntoAVL  (_AssociativeList* , _String, _SimpleList&, _List&);
-void       InsertVarIDsInList       (_AssociativeList* , _String, _SimpleList&);
+void       InsertStringListIntoAVL  (_AssociativeList* , _String const&, _SimpleList const&, _List const&);
+void       InsertVarIDsInList       (_AssociativeList* , _String const&, _SimpleList const&);
 #endif

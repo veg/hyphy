@@ -79,7 +79,6 @@ function utility.getGlobalValue (val) {
 }
 
 
-utility.ToggleEnvVariable.cache = {};
 
 /**
  * @name utility.ToggleEnvVariable
@@ -88,6 +87,9 @@ utility.ToggleEnvVariable.cache = {};
  */
 function utility.ToggleEnvVariable (var, value) {
 	if (None != value) {
+	    if (Type (utility.ToggleEnvVariable.cache) != "AssociativeList") {
+	        utility.ToggleEnvVariable.cache = {};
+	    }
 		utility.ToggleEnvVariable.cache[var] = Eval (var);
 		*var = value;
 	} else {
@@ -224,7 +226,7 @@ function utility.Map (object, lambda_name, transform) {
 
 /**
  * @name utility.MatrixToListOfRows 
- * @param {Matrix} object - MxN matrix to convert 
+ * @param {Matrix} object - MxN matrix to convert
  * @param {Matrix} converted 1 x (M*N) Row vector
  */
 lfunction utility.MatrixToListOfRows (object) {
@@ -247,8 +249,6 @@ lfunction utility.MatrixToListOfRows (object) {
  * @name utility.Filter
  * @param {Dictionary|Matrix} object - matrix to convert 
  * @param {String} lambda_name - function to discern whether element is filtered. All elements of iterable object that are false will be removed.
- * @param condition
- * @param {Dictionary} or {Matrix} filtered object
  * @returns filtered object
  * @example
  * _nonnegatives = utility.Filter (_data_vector, "_value_", "_value_ >= 0");

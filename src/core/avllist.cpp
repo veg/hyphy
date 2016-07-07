@@ -63,8 +63,7 @@ _AVLList::_AVLList (_SimpleList* d)
 
 //______________________________________________________________
 
-long  _AVLList::Find (BaseRef obj)
-{
+long  _AVLList::Find (BaseRefConst obj) const {
     long curNode = root;
 
     while (curNode>=0) {
@@ -84,8 +83,7 @@ long  _AVLList::Find (BaseRef obj)
 
 //______________________________________________________________
 
-long  _AVLList::FindLong (long obj)
-{
+long  _AVLList::FindLong (long obj) const {
     long curNode = root;
 
     while (curNode>=0) {
@@ -105,8 +103,7 @@ long  _AVLList::FindLong (long obj)
 
 //______________________________________________________________
 
-char  _AVLList::FindBest (BaseRef obj, long& lastNode)
-{
+char  _AVLList::FindBest (BaseRefConst obj, long& lastNode) const {
     long curNode  = root,
          comp     = 1;
 
@@ -128,8 +125,7 @@ char  _AVLList::FindBest (BaseRef obj, long& lastNode)
 
 //______________________________________________________________
 
-long  _AVLList::Find (BaseRef obj, _SimpleList& hist)
-{
+long  _AVLList::Find (BaseRefConst obj, _SimpleList& hist) const {
     long curNode = root;
 
     while (curNode>=0) {
@@ -151,8 +147,7 @@ long  _AVLList::Find (BaseRef obj, _SimpleList& hist)
 
 //______________________________________________________________
 
-long  _AVLList::Next (long d, _SimpleList& hist)
-{
+long  _AVLList::Next (long d, _SimpleList& hist) const {
     if (d >= 0) {
         if (rightChild.lData [d] >= 0) {
             hist << d;
@@ -164,10 +159,7 @@ long  _AVLList::Next (long d, _SimpleList& hist)
             return d;
         } else {
             while (hist.countitems()) {
-                long x = hist.lData[hist.lLength-1];
-
-
-                hist.Delete (hist.lLength-1);
+                long x = hist.Pop();
 
                 if (rightChild.lData[x] != d) {
                     return x;
@@ -182,16 +174,16 @@ long  _AVLList::Next (long d, _SimpleList& hist)
 
     d = root;
     while (d >= 0 && leftChild.lData[d] >=0) {
-        d = leftChild.lData[d];
+      hist << d;
+      d = leftChild.lData[d];
     }
-
+    
     return d;
 }
 
 //______________________________________________________________
 
-long  _AVLList::First (void)
-{
+long  _AVLList::First (void) const {
     long   d = root;
     while (d >= 0 && leftChild.lData[d] >=0) {
         d = leftChild.lData[d];
@@ -202,14 +194,62 @@ long  _AVLList::First (void)
 
 //______________________________________________________________
 
-long  _AVLList::Last (void)
-{
+long  _AVLList::Last (void) const {
     long   d = root;
     while (d >= 0 && rightChild.lData[d] >=0) {
         d = rightChild.lData[d];
     }
 
     return d;
+}
+
+//______________________________________________________________
+
+long  _AVLList::Prev (long d, _SimpleList& hist) const {
+  if (d >= 0) {
+    if (leftChild.lData [d] >= 0) {
+      hist << d;
+      d = leftChild.lData [d];
+      while (rightChild.lData[d] >= 0) {
+        hist << d;
+        d = rightChild.lData[d];
+      }
+      return d;
+    } else {
+      while (hist.countitems()) {
+        long x = hist.lData[hist.lLength-1];
+        
+        hist.Delete (hist.lLength-1);
+        
+        if (leftChild.lData[x] != d) {
+          return x;
+        }
+        //TODO:???
+        d = x;
+      }
+      
+      return -1;
+    }
+  }
+  
+  d = root;
+  while (d >= 0 && rightChild.lData[d] >=0) {
+    hist << d;
+    d = rightChild.lData[d];
+  }
+  
+  return d;
+  
+}
+
+
+//______________________________________________________________
+
+bool  _AVLList::IsValidIndex(long index) const {
+  if (index >= 0 && index < dataList->lLength) {
+    return Retrieve(index);
+  }
+  return false;
 }
 
 //______________________________________________________________
@@ -242,44 +282,6 @@ long  _AVLList::GetByIndex (const long theIndex)
     }
 
     return -1;
-}
-//______________________________________________________________
-
-long  _AVLList::Prev (long d, _SimpleList& hist)
-{
-    if (d >= 0) {
-        if (leftChild.lData [d] >= 0) {
-            hist << d;
-            d = leftChild.lData [d];
-            while (rightChild.lData[d] >= 0) {
-                hist << d;
-                d = rightChild.lData[d];
-            }
-            return d;
-        } else {
-            while (hist.countitems()) {
-                long x = hist.lData[hist.lLength-1];
-
-                hist.Delete (hist.lLength-1);
-
-                if (leftChild.lData[x] != d) {
-                    return x;
-                }
-                //TODO:???
-                d = x;
-            }
-
-            return -1;
-        }
-    }
-
-    d = root;
-    while (d >= 0 && rightChild.lData[d] >=0) {
-        d = rightChild.lData[d];
-    }
-
-    return d;
-
 }
 
 //______________________________________________________________
@@ -381,8 +383,7 @@ void  _AVLList::ConsistencyCheck (void)
 
 //______________________________________________________________
 
-long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
-{
+long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r) const {
     if  (r >= 0) {
         t = r;
         nodeStack.Clear();
@@ -410,19 +411,28 @@ BaseRef  _AVLList::toStr (unsigned long) {
     _String * str = new _String (128L, true);
  
     if (countitems() == 0) {
-        (*str) << "Empty Associative List";
+        (*str) << "()";
     } else {
         _SimpleList  hist;
         long         ls, cn;
 
         cn = Traverser (hist,ls,root);
-
+      
+        bool first = true;
+      
+        (*str) << '(';
+      
         while (cn>=0) {
-            long keyVal = (long)Retrieve (cn);
-            (*str) << _String(keyVal);
-            (*str) << '\n';
+            if (first) {
+              first = false;
+            } else {
+              (*str) << ", ";
+            }
+           (*str) << _String((long)Retrieve (cn));
             cn = Traverser (hist,ls);
         }
+      
+        (*str) << ')';
     }
 
     str->Finalize();
@@ -431,8 +441,7 @@ BaseRef  _AVLList::toStr (unsigned long) {
 
 //______________________________________________________________
 
-BaseRef _AVLList::Retrieve (long idx)
-{
+BaseRef _AVLList::Retrieve (long idx) const {
     return ((BaseRef*)dataList->lData)[idx];
 }
 
@@ -485,8 +494,16 @@ unsigned long _AVLList::countitems (void) const {
 
 //______________________________________________________________
 
-long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear)
-{
+long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
+/** 
+  Insert a key (and possibly a value) into this _AVLList
+ 
+  @param b the key to insert; this operation will NOT increase reference counts for b
+  @param xtra the payload
+  @param cp if true, the insertion operation will add a reference count to payload
+  @param clear if insertion fails (key already exists), then the _key_ will be deleted
+ 
+ */
     if (dataList->lLength-emptySlots.lLength) {
         long        y = root,
                     z = -1,

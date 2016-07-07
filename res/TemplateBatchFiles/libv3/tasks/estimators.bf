@@ -43,12 +43,25 @@ function estimators.copyGlobals2(key2, value2) {
  * @name estimators.copyGlobals
  * @private
  * @param {String} key
- * @param {String} value 
+ * @param {String} value
  * @returns nothing
  */
 function estimators.copyGlobals(key, value) {
     ((value["parameters"])["global"])["estimators.copyGlobals2"][""];
 }
+
+/**
+ * @name estimators.CopyFrequencies
+ * @private
+ * @param {String} key
+ * @param {Dictionary} value
+ * @returns nothing
+ */
+function estimators.CopyFrequencies(model_name, model_decription) {
+    (estimators.ExtractMLEs.results[terms.efv_estimate])[model_name] = model_decription[terms.efv_estimate];
+}
+
+
 
 function estimators.SetGlobals2(key, value) {
     __init_value = (initial_values["global"])[key];
@@ -198,13 +211,15 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
 
     estimators.ExtractMLEs.results["global"] = {};
     model_descriptions["estimators.copyGlobals"][""];
+    estimators.ExtractMLEs.results[terms.efv_estimate] = {};
+    model_descriptions["estimators.CopyFrequencies"][""];
     estimators.ExtractMLEs.results[terms.json.attribute.branch_length] = {};
     estimators.ExtractMLEs.results["Trees"] = estimators.ExtractMLEs.lfInfo["Trees"];
 
     for (estimators.ExtractMLEs.i = 0; estimators.ExtractMLEs.i < estimators.ExtractMLEs.partitions; estimators.ExtractMLEs.i += 1) {
         _tree_name = (estimators.ExtractMLEs.lfInfo["Trees"])[estimators.ExtractMLEs.i];
 
-        ExecuteCommands("GetInformation (estimators.ExtractMLEs.map, `_tree_name`);");
+        GetInformation (estimators.ExtractMLEs.map, *_tree_name);
         estimators.ExtractMLEs.branch_names = Rows(estimators.ExtractMLEs.map);
         (estimators.ExtractMLEs.results[terms.json.attribute.branch_length])[estimators.ExtractMLEs.i] = {};
 
@@ -309,7 +324,7 @@ function estimators._aux.countEmpiricalParameters(id, model) {
  * @name estimators.FitLF
  * @param {Matrix} data_filters_list  - a vector of {DataFilter}s
  * @param {Matrix} tree_list  - a vector of {Tree}s
- * @param model_map 
+ * @param model_map
  * @param initial_values
  * @returns LF results
  */

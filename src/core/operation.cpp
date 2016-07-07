@@ -171,6 +171,16 @@ bool _Operation::CanResultsBeCached (_Operation* prev, bool exp_only)
 
 //__________________________________________________________________________________
 
+bool   _Operation::IsConstantOfType   (const long type) const {
+  if (theNumber && (theNumber->ObjectClass() & type)) {
+    return true;
+  }
+  return false;
+}
+
+
+//__________________________________________________________________________________
+
 bool _Operation::HasChanged (void)
 {
     if (theNumber) {
@@ -184,7 +194,7 @@ bool _Operation::HasChanged (void)
 }
 
 //__________________________________________________________________________________
-_Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContainer* theParent, bool take_a_reference)
+_Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContainer const* theParent, bool take_a_reference)
 {
     if (isVar) { // creating a variable
         long f;
@@ -339,7 +349,7 @@ long        _Operation::StackDepth (void) const {
 
 
 //__________________________________________________________________________________
-bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg) {
+bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nameSpace, _String* errMsg) {
   if (theNumber) { // push value
     theScrap.Push(theNumber);
     return true;
@@ -367,7 +377,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
       
       if (theScrap.StackDepth()<arguments) {
         return ReportOperationExecutionError (_String("User-defined function:") &
-                                              & GetBFFunctionNameByIndex (opCode)
+                                              GetBFFunctionNameByIndex (opCode)
                                               &" needs "&_String(long(arguments))& " parameters: "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
       }
       
@@ -608,7 +618,7 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
     DeleteObject (arg0);
     
     
-    if (temp) {
+    if (temp && temp->ObjectClass() != HY_UNDEFINED ) {
       theScrap.theStack.Place(temp);
       return true;
     } else {

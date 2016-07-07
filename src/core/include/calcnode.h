@@ -432,7 +432,7 @@ public:
     _List*          MapNodesToModels                    (void);
 
     virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
-    virtual _String*        GetNodeModel                        (node<long> *) const;
+    virtual const _String*        GetNodeModel                        (node<long> *) const;
     virtual void            GetBranchLength                     (node<long> *, _String&, bool = false) const;
     // SLKP 20100901:
     //               added a boolean flag to ask to return branch length expression (if true) (returns "" for topologies)
@@ -456,7 +456,7 @@ public:
         return *currentNode;
     }*/
   
-    const _List    RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
+    const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
     void            SubTreeString                       (node<long>* root, _String&, bool = false, long = -1, _AVLListXL* = nil) const;
 
     _String         CompareTrees                        (_TreeTopology*) const;
@@ -594,7 +594,7 @@ public:
     virtual  _Parameter     GetBranchLength             (node<long> *) const ;
     virtual  void           GetBranchValue              (node<long> *, _String&) const ;
     virtual  void           GetBranchVarValue           (node<long> *, _String&, long) const ;
-    virtual _String*        GetNodeModel                (node<long> *) const;
+    virtual _String const*        GetNodeModel                (node<long> *) const;
     
     void            InitializeTreeFrequencies   (_Matrix *, bool = false);
 
@@ -603,14 +603,14 @@ public:
 
 
 
-    _List*      RecoverAncestralSequences       (_DataSetFilter*, _SimpleList&, _List&, _Parameter*, _Parameter*, long, long*, _GrowingVector*, bool = false);
-    void        RecoverNodeSupportStates        (_DataSetFilter*, long, long, _Matrix&);
+    _List*      RecoverAncestralSequences       (_DataSetFilter const*, _SimpleList const&, _List const&, _Parameter *, _Parameter const*, long, long*, _GrowingVector*, bool = false);
+    void        RecoverNodeSupportStates        (_DataSetFilter const*, long, long, _Matrix&);
     void        RecoverNodeSupportStates2       (node<long>*,_Parameter*,_Parameter*,long);
     _List*      SampleAncestors                 (_DataSetFilter*, node<long>*);
     void        PurgeTree                       (void);
 
-    long        ComputeReleafingCost            (_DataSetFilter*, long, long, _SimpleList* = nil, long = 0) const;
-    long        ComputeReleafingCostChar        (_DataSetFilter*, long, long) const;
+    long        ComputeReleafingCost            (_DataSetFilter const*, long, long, _SimpleList* = nil, long = 0) const;
+    long        ComputeReleafingCostChar        (_DataSetFilter const*, long, long) const;
     void        DumpingOrder                    (_DataSetFilter*, _SimpleList&);
     void        SetTreeCodeBase                 (long);
     long        IsLinkedToALF                   (long&) const;
@@ -742,18 +742,18 @@ public:
 #endif
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
-    void            SampleAncestorsBySequence       (_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);
+    void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, _Parameter const*, _List&, _SimpleList*, _List&, _Parameter const*, long);
 
-    _Parameter      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
+    _Parameter      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
     long            DetermineNodesForUpdate         (_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true);
     void            ExponentiateMatrices            (_List&, long, long = -1);
-    void            FillInConditionals              (_DataSetFilter*, _Parameter*,  _SimpleList*);
+    void            FillInConditionals              (_DataSetFilter const*, _Parameter*,  _SimpleList*);
 
     void            ComputeBranchCache              ( _SimpleList&,
             long nodeID,
             _Parameter*         cache,
             _Parameter*         iNodeCache,
-            _DataSetFilter*     theFilter,
+            _DataSetFilter const*     theFilter,
             long           *        lNodeFlags,
             _Parameter*         scalingAdjustments,
             long*                   siteCorrectionCounts,
@@ -770,7 +770,7 @@ public:
         _SimpleList&            siteOrdering,
         long                    brID,
         _Parameter*         cache,
-        _DataSetFilter*     theFilter,
+        _DataSetFilter const*     theFilter,
         long                    siteFrom,
         long                    siteTo,
         long                    catID,
@@ -779,7 +779,7 @@ public:
 
     _Parameter          ComputeTwoSequenceLikelihood    (
         _SimpleList&            siteOrdering,
-        _DataSetFilter*     theFilter,
+        _DataSetFilter const*     theFilter,
         long           *        lNodeFlags,
         _GrowingVector*     lNodeResolutions,
         long siteFrom,
@@ -804,7 +804,7 @@ public:
 protected:
 
 
-    bool        IntPopulateLeaves   (_DataSetFilter*, long, long);
+    bool        IntPopulateLeaves   (_DataSetFilter const*, long, long);
 
     virtual     void                PreTreeConstructor                  (bool);
     virtual     void                PostTreeConstructor                 (bool);
@@ -854,7 +854,7 @@ public:
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-template <class data_type> _CalcNode* _mapNodeToCalcNode (node<data_type>* n) {
+template <class data_type> _CalcNode* map_node_to_calcnode (node<data_type>* n) {
   if (n) {
     return (_CalcNode*)(variablePtrs.GetItem(n->in_object));
   }

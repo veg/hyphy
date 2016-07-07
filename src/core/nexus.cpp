@@ -43,6 +43,10 @@
 #include "stdlib.h"
 #include "list.h"
 #include "batchlan.h"
+#include "hbl_env.h"
+#include "global_object_lists.h"
+
+using namespace hyphy_global_objects;
 
 #include "math.h"
 #ifdef    __HYPHYDMALLOC__
@@ -304,12 +308,12 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
                     _String blank ((unsigned long)10, true);
                     if (ReadNextNexusStatement (fState, f, CurrentLine,offset, blank, true,true,true,false,false)) {
                         if (blank.sLength) {
-                            result.GetNames()&& & blank;
+                          result.AddName(blank);
                         }
                         break;
                     } else {
                         if (blank.sLength) {
-                            result.GetNames()&& & blank;
+                          result.AddName(blank);;
                         }
                     }
                     offset = 0;
@@ -392,21 +396,19 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                             }
 
                             if (j>=0) {
-                                _String CharSetID (blank.Cut (j,pos2));
+                                _String nexus_name (blank,j,pos2),
+                                        charset_id (nexus_name);
 
-                                if (!CharSetID.IsValidIdentifier()) {
-                                    _String dummy;
-                                    errMsg = CharSetID & " is not a valid data filter identifier in HYPHY. Replacing with: ";
-                                    CharSetID.ConvertToAnIdent();
-                                    FindUnusedObjectName (dummy,CharSetID, dataSetFilterNamesList, true);
-                                    FindUnusedObjectName (dummy,CharSetID,charSetIDs, false);
-                                    errMsg = errMsg &  CharSetID;
-                                    ReportWarning (errMsg);
-                                } else {
-                                    _String dummy;
-                                    FindUnusedObjectName (dummy,CharSetID, dataSetFilterNamesList, true);
-                                    FindUnusedObjectName (dummy,CharSetID,charSetIDs, false);
+                                if (!nexus_name.IsValidIdentifier()) {
+                                    charset_id.ConvertToAnIdent();
                                 }
+                              
+                                charset_id = charSetIDs.GenerateUniqueNameForList(GenerateUniqueObjectIDByType (nexus_name, HY_BL_DATASET_FILTER), false);
+                              
+                                if (charset_id != nexus_name) {
+                                  ReportWarning(nexus_name.Enquote('\'') & " has been renamed to " & charset_id.Enquote('\'') & " to avoid naming conflicts and/or comply with HyPhy ID requirements");
+                                }
+                                
 
                                 //  now get the rest of the tree string
                                 pos2 = blank.FirstNonSpaceIndex(pos+1,-1);
@@ -528,7 +530,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                 hpSpec.Finalize();
 
                                 if (okFlag) {
-                                    charSetIDs && & CharSetID;
+                                    charSetIDs  && & charset_id;
                                     charSetSpec && & hpSpec;
                                 }
                             }
@@ -594,8 +596,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
 
 //_________________________________________________________
 
-void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result)
-{
+void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result) {
     _String key1 = "TRANSLATE", key2 = "TREE", errMsg, keyEnd = "END";
 
     bool    done = false, readResult, good;
@@ -671,23 +672,21 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                                 treeSelected = treeIdents.lLength;
                             }
                             if (j>=0) {
-                                _String TreeID (blank.Cut (j,pos2));
-
-                                if (!TreeID.IsValidIdentifier()) {
-                                    _String dummy;
-                                    errMsg = TreeID & " is not a valid variable (tree) identifier in HYPHY. Replacing with: ";
-                                    TreeID = "Tree";
-                                    FindUnusedObjectName (dummy, TreeID, variableNames, true);
-                                    FindUnusedObjectName (dummy, TreeID, treeIdents, true);
-                                    errMsg = errMsg & TreeID;
-                                    ReportWarning (errMsg);
-                                } else {
-                                    _String dummy;
-                                    FindUnusedObjectName (dummy, TreeID, variableNames, true);
-                                    FindUnusedObjectName (dummy, TreeID, treeIdents, true);
+                                _String nexus_tree_id (blank,j,pos2),
+                                        tree_id (nexus_tree_id);
+                              
+                                if (!nexus_tree_id.IsValidIdentifier()) {
+                                  tree_id.ConvertToAnIdent();
+                                }
+                                
+                                tree_id = treeIdents.GenerateUniqueNameForList(GenerateUniqueObjectIDByType (nexus_tree_id, HY_BL_TREE) ,false);
+                              
+                                if (tree_id != nexus_tree_id) {
+                                  ReportWarning(nexus_tree_id.Enquote('\'') & " has been renamed to " & tree_id.Enquote('\'') & " to avoid naming conflicts and/or comply with HyPhy ID requirements");
                                 }
 
-                                treeIdents && & TreeID;
+                              
+                                treeIdents && & tree_id;
                                 //  now get the rest of the tree string
                                 pos2 = blank.FirstNonSpaceIndex(pos+1,-1);
                                 blank.Trim (pos2,-1);
@@ -845,8 +844,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
 
 //_________________________________________________________
 
-void    ProcessNexusHYPHY (FileState& fState, long pos, FILE*file, _String& CurrentLine, _DataSet&)
-{
+void    ProcessNexusHYPHY (FileState& fState, long pos, FILE*file, _String& CurrentLine, _DataSet&) {
     _String endMark ("END;"),
             bfBody  (128L,true);
 
@@ -1179,14 +1177,14 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                 if (charState) {
                     checkTTStatus (&fState);
                     if (charState==1) {
-                        newAlph = aminoAcidOneCharCodes;
+                        newAlph = _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_PROTEIN);
                         fState.translationTable->baseLength = 20;
                     } else {
-                        newAlph = binaryOneCharCodes;
+                        newAlph = _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_BINARY);
                         fState.translationTable->baseLength = 2;
                     }
                 } else {
-                    newAlph = dnaOneCharCodes;
+                    newAlph = _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_DNA);
                 }
             }
             // set up translations
@@ -1223,7 +1221,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
 
             long loopIterations = 0;
             if (labels == true) {
-                result.GetNames().Clear();
+                result.ClearNames();
             }
 
 
@@ -1278,8 +1276,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                 }
 
                 if (source->sLength==0) {
-                    errMsg = _String("Could not find NTAX data strings in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.";
-                    ReportWarning (errMsg);
+                    ReportWarning (_String("Could not find NTAX data strings in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.");
                     break;
                 }
                 loopIterations++;

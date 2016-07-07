@@ -59,7 +59,7 @@ _AVLListX::_AVLListX (_SimpleList* d):_AVLList(d)
 
 //______________________________________________________________
 
-long    _AVLListX::GetXtra (long d)
+long    _AVLListX::GetXtra (long d) const
 {
     return xtraD.lData[d];
 }

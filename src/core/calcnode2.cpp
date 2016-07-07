@@ -338,7 +338,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-void        _TheTree::FillInConditionals        (_DataSetFilter*        theFilter, _Parameter*  iNodeCache,  _SimpleList*   tcc)
+void        _TheTree::FillInConditionals        (_DataSetFilter const*        theFilter, _Parameter*  iNodeCache,  _SimpleList*   tcc)
 // this utility function will simply fill in all the conditional probability vectors for internal nodes,
 // including those that were skipped due to column sorting optimization
 // this is useful to avoid code duplication for other functions (e.g. ancestral sampling) that
@@ -349,7 +349,7 @@ void        _TheTree::FillInConditionals        (_DataSetFilter*        theFilte
     }
 
     long            alphabetDimension     =         theFilter->GetDimension(),
-                    siteCount           =         theFilter->NumberDistinctSites();
+                    siteCount           =         theFilter->GetPatternCount();
 
     for  (long nodeID = 0; nodeID < flatTree.lLength; nodeID++) {
         _Parameter * conditionals       = iNodeCache +(nodeID  * siteCount) * alphabetDimension;
@@ -421,7 +421,7 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          upd
     long            alphabetDimension     =         theFilter->GetDimension(),
                     // the number of characters (and the dimension of transition matrices)
 
-                    siteCount           =         theFilter->NumberDistinctSites();
+                    siteCount           =         theFilter->GetPatternCount();
     // how many unique sites are there
 
     for  (long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
@@ -538,7 +538,7 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          upd
            in simple cases it is fixed for the duration of optimization, but for more
            complex models it may change from iteration to iteration
          */
-        result += log(accumulator) * theFilter->theFrequencies [siteID];
+        result += log(accumulator) * theFilter->theFrequencies.Get (siteID);
         // correct for the fact that identical alignment columns may appear more than once
     }
 
@@ -552,7 +552,7 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          upd
 _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList&        siteOrdering,
         _SimpleList&        updateNodes,
         _SimpleList*        tcc,
-        _DataSetFilter*     theFilter,
+        _DataSetFilter const*     theFilter,
         _Parameter*         iNodeCache,
         long      *         lNodeFlags,
         _Parameter*         scalingAdjustments,
@@ -573,7 +573,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
 
     _SimpleList     taggedInternals                 (flatNodes.lLength, 0, 0);
     long            alphabetDimension     =         theFilter->GetDimension(),
-                    siteCount           =         theFilter->NumberDistinctSites(),
+                    siteCount           =         theFilter->GetPatternCount(),
                     alphabetDimensionmod4  =      alphabetDimension-alphabetDimension%4;
 
     _CalcNode       *currentTreeNode;
@@ -764,7 +764,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         parentConditionals [1]                             *= _lfScalerUpwards;
                         parentConditionals [2]                             *= _lfScalerUpwards;
                         parentConditionals [3]                             *= _lfScalerUpwards;
-                        localScalerChange                                  += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                        localScalerChange                                  += theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                         scalingAdjustments [parentCode*siteCount + siteID]  = tryScale;
                         didScale                                            = 1;
                     }
@@ -775,7 +775,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         parentConditionals [1]                             *= _lfScalingFactorThreshold;
                         parentConditionals [2]                             *= _lfScalingFactorThreshold;
                         parentConditionals [3]                             *= _lfScalingFactorThreshold;
-                        localScalerChange                                  -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                        localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                         didScale                                            = -1;
                     }
                 }
@@ -935,7 +935,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                             parentConditionals [c] *= _lfScalerUpwards;
                         }
 
-                        localScalerChange                                      += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                        localScalerChange                                      += theFilter->theFrequencies.Get(siteOrdering.lData[siteID]);
                         didScale                                                = 1;
                     }
                 } else {
@@ -944,7 +944,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         for (long c = 0; c < alphabetDimension; c++) {
                             parentConditionals [c] *= _lfScalingFactorThreshold;
                         }
-                        localScalerChange                                  -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                        localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                         didScale                                            = -1;
                     }
                 }
@@ -982,7 +982,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                                 siteCorrectionCounts [siteOrdering.lData[sid]] += didScale;
                             }
                             scalingAdjustments   [parentCode*siteCount + sid] *= scM;
-                            localScalerChange                               += didScale * theFilter->theFrequencies [siteOrdering.lData[sid]];
+                            localScalerChange                               += didScale * theFilter->theFrequencies (siteOrdering.lData[sid]);
                         } else {
                             break;
                         }
@@ -1038,8 +1038,8 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
             _Parameter term,
                        temp_sum;
           
-            if (theFilter->theFrequencies [siteOrdering.lData[siteID]] > 1) {
-                term = log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+            if (theFilter->theFrequencies (siteOrdering.lData[siteID]) > 1) {
+                term = log(accumulator) * theFilter->theFrequencies (siteOrdering.lData[siteID]);
             } else {
                 term = log(accumulator);
             }
@@ -1080,7 +1080,7 @@ void            _TheTree::ComputeBranchCache    (
     long                    brID,
     _Parameter*         cache,
     _Parameter*         iNodeCache,
-    _DataSetFilter*     theFilter,
+    _DataSetFilter const*     theFilter,
     long           *        lNodeFlags,
     _Parameter*         scalingAdjustments,
     long        *           siteCorrectionCounts,
@@ -1103,7 +1103,7 @@ void            _TheTree::ComputeBranchCache    (
     long        myParent               = brID       -flatLeaves.lLength,
                 alphabetDimension     =            theFilter->GetDimension(),
                 alphabetDimensionmod4  =         alphabetDimension - alphabetDimension % 4,
-                siteCount               =            theFilter->NumberDistinctSites();
+                siteCount               =            theFilter->GetPatternCount();
 
     if (siteTo  > siteCount)    {
         siteTo = siteCount;
@@ -1329,7 +1329,7 @@ void            _TheTree::ComputeBranchCache    (
                             parentConditionals[2]                             *= _lfScalerUpwards;
                             parentConditionals[3]                             *= _lfScalerUpwards;
 
-                            localScalerChange                                  += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                            localScalerChange                                  += theFilter->theFrequencies (siteOrdering.lData[siteID]);
                             didScale                                            = 1;
                         }
                     } else {
@@ -1339,7 +1339,7 @@ void            _TheTree::ComputeBranchCache    (
                             parentConditionals [2]                             *= _lfScalingFactorThreshold;
                             parentConditionals [3]                             *= _lfScalingFactorThreshold;
 
-                            localScalerChange                                  -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                            localScalerChange                                  -= theFilter->theFrequencies (siteOrdering.lData[siteID]);
                             didScale                                            = -1;
                         }
                     }
@@ -1434,7 +1434,7 @@ void            _TheTree::ComputeBranchCache    (
                                 parentConditionals [c] *= _lfScalerUpwards;
                             }
 
-                            localScalerChange                                      += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                            localScalerChange                                      += theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                             didScale                                                = 1;
                         }
                     } else {
@@ -1443,7 +1443,7 @@ void            _TheTree::ComputeBranchCache    (
                                 parentConditionals [c] *= _lfScalingFactorThreshold;
                             }
 
-                            localScalerChange                                  -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                            localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
                             didScale                                            = -1;
                         }
                     }
@@ -1477,7 +1477,7 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
     _SimpleList&            siteOrdering,
     long                    brID,
     _Parameter*         cache,
-    _DataSetFilter*     theFilter,
+    _DataSetFilter const*     theFilter,
     long                    siteFrom,
     long                    siteTo,
     long                    catID,
@@ -1486,7 +1486,7 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
 {
     long        alphabetDimension      = theFilter->GetDimension(),
                 //alphabetDimensionmod4  = alphabetDimension - alphabetDimension % 4,
-                siteCount            =  theFilter->NumberDistinctSites();
+                siteCount            =  theFilter->GetPatternCount();
 
     if (siteTo  > siteCount)    {
         siteTo = siteCount;
@@ -1546,8 +1546,8 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
                 break;
             }
             _Parameter term;
-            if (theFilter->theFrequencies [siteOrdering.lData[siteID]] > 1) {
-                term = log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]] - correction;
+            if (theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) > 1) {
+                term = log(accumulator) * theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) - correction;
             } else {
                 term = log(accumulator) - correction;
             }
@@ -1566,7 +1566,7 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
 _Parameter      _TheTree::ComputeTwoSequenceLikelihood
 (
     _SimpleList   & siteOrdering,
-    _DataSetFilter* theFilter,
+    _DataSetFilter const* theFilter,
     long      *         lNodeFlags,
     _GrowingVector* lNodeResolutions,
     long                siteFrom,
@@ -1580,7 +1580,7 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
     // process the leaves first
 
     long            alphabetDimension      =            theFilter->GetDimension(),
-                    siteCount            =            theFilter->NumberDistinctSites(),
+                    siteCount            =            theFilter->GetPatternCount(),
                     alphabetDimensionmod4  =          alphabetDimension-alphabetDimension%4;
 
     _CalcNode       *theNode               =            ((_CalcNode*) flatCLeaves (0));
@@ -1687,7 +1687,7 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
                 return -A_LARGE_NUMBER;
             } else {
                 //printf ("%d: %g\n", siteID, sum);
-                result += log(sum) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+                result += log(sum) * theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
             }
         }
     }
@@ -1697,8 +1697,8 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
 
 //_______________________________________________________________________________________________
 
-void     _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache,
-        _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)
+void     _TheTree::SampleAncestorsBySequence (_DataSetFilter const* dsf, _SimpleList const& siteOrdering, node<long>* currentNode, _AVLListX const* nodeToIndex, _Parameter const* iNodeCache,
+        _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter const* catAssignments, long catCount)
 
 // must be called initially with the root node
 
@@ -1719,19 +1719,19 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& 
     long                      childrenCount     = currentNode->get_num_nodes();
 
     if (childrenCount) {
-        long            siteCount                       = dsf->NumberDistinctSites  (),
+      long              siteCount                       = dsf->GetPatternCount  (),
                         alphabetDimension              = dsf->GetDimension         (),
                         nodeIndex                       = nodeToIndex->GetXtra (nodeToIndex->Find ((BaseRef)currentNode)),
                         unitLength                     = dsf->GetUnitLength(),
-                        catBlockShifter                    = catAssignments?(dsf->NumberDistinctSites()*GetINodeCount()):0;
+                        catBlockShifter                    = catAssignments?(dsf->GetPatternCount()*GetINodeCount()):0;
 
 
         _CalcNode *     currentTreeNode = ((_CalcNode*) flatTree (nodeIndex));
-        _SimpleList     sampledStates     (dsf->GetSiteCount (), 0, 0);
+        _SimpleList     sampledStates     (dsf->GetSiteCountInUnits (), 0, 0);
 
-        _Parameter  *       _hprestrict_ transitionMatrix = (catAssignments|| !parentStates)?nil:currentTreeNode->GetCompExp()->theData;
-        _Parameter  *       _hprestrict_ conditionals     = catAssignments?nil:(iNodeCache + nodeIndex  * siteCount * alphabetDimension);
-        _Parameter  *       _hprestrict_ cache            = new _Parameter [alphabetDimension];
+        _Parameter  const *  transitionMatrix = (catAssignments|| !parentStates)?nil:currentTreeNode->GetCompExp()->theData;
+        _Parameter  const *  conditionals     = catAssignments?nil:(iNodeCache + nodeIndex  * siteCount * alphabetDimension);
+        _Parameter        *  cache            = new _Parameter [alphabetDimension];
 
         for (long           pattern = 0; pattern < siteCount; pattern++) {
             _SimpleList*    patternMap = (_SimpleList*) expandedSiteMap (siteOrdering.lData[pattern]);
@@ -1750,7 +1750,7 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& 
                 _Parameter  randVal  = genrand_real2(),
                             totalSum = 0.;
 
-                _Parameter  *       _hprestrict_  matrixRow;
+                _Parameter  const *   matrixRow;
 
                 if  (parentStates == nil) {
                     matrixRow = theProbs;
@@ -1802,14 +1802,14 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& 
 
 //_______________________________________________________________________________________________
 
-_List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
-        _SimpleList& siteOrdering,
-        _List& expandedSiteMap,
-        _Parameter* iNodeCache,
-        _Parameter* catAssignments,
+_List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
+        _SimpleList const& siteOrdering,
+        _List const& expandedSiteMap,
+        _Parameter * iNodeCache,
+        _Parameter const* catAssignments,
         long catCount,
         long* lNodeFlags,
-        _GrowingVector* lNodeResolutions,
+        _GrowingVector * lNodeResolutions,
         bool              alsoDoLeaves
                                              )
 
@@ -1823,12 +1823,12 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 // alsoDoLeaves:                if true, also return ML reconstruction of observed (or partially observed) sequences
 
 {
-    long            patternCount                    = dsf->NumberDistinctSites  (),
+    long            patternCount                    = dsf->GetPatternCount  (),
                     alphabetDimension                = dsf->GetDimension         (),
                     unitLength                        = dsf->GetUnitLength        (),
                     iNodeCount                        = GetINodeCount             (),
                     leafCount                     = GetLeafCount              (),
-                    siteCount                        = dsf->GetSiteCount         (),
+                    siteCount                        = dsf->GetSiteCountInUnits    (),
                     allNodeCount                    = 0,
                     stateCacheDim                    = (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount)),
                     *stateCache                        = new long [patternCount*(iNodeCount-1)*alphabetDimension],
@@ -1840,8 +1840,6 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
     _Parameter          *buffer                         = new _Parameter [alphabetDimension];
     // iNodeCache will be OVERWRITTEN with conditional pair (i,j) conditional likelihoods
 
-    checkPointer    (stateCache);
-    checkPointer    (leafBuffer);
 
     _SimpleList     taggedInternals (iNodeCount, 0, 0),
                     postToIn;
@@ -1878,7 +1876,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
         }
 
         _CalcNode *          currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):((_CalcNode*) flatTree    (nodeCode));
-        _Parameter  *       _hprestrict_ transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
+        _Parameter  const*        transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
         // this will need to be toggled on a per site basis
         _Parameter  *       childVector;
 
@@ -1891,7 +1889,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
                 transitionMatrix = currentTreeNode->GetCompExp(catAssignments[siteOrdering.lData[siteID]])->theData;
             }
 
-            _Parameter  _hprestrict_ *tMatrix = transitionMatrix;
+            _Parameter  const *tMatrix = transitionMatrix;
             if (isLeaf) {
                 long siteState = lNodeFlags[nodeCode*patternCount + siteOrdering.lData[siteID]] ;
                 if (siteState >= 0)
@@ -2021,7 +2019,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
             howManyOnes += rootConditionals[k]==1.;
         }
 
-        _SimpleList*    patternMap = (_SimpleList*) expandedSiteMap (siteOrdering.lData[siteID]);
+        _SimpleList const*    patternMap = (_SimpleList const*) expandedSiteMap.GetItem(siteOrdering.lData[siteID]);
 
         if (howManyOnes != alphabetDimension) {
             for (long c = 0; c < alphabetDimension; c++) {
@@ -2165,7 +2163,7 @@ _Parameter   _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, l
                                       * matrix2 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[2]->in_object)))->GetCompExp(catID)->theData,
                                         overallResult = 0.;
 
-    long        patternCount =  dsf->NumberDistinctSites();
+    long        patternCount =  dsf->GetPatternCount();
 
     _Parameter  currentAccumulator = 1.;
 
@@ -2531,13 +2529,13 @@ _CalcNode *     _TreeIterator:: Next (void) {
       return Next();
     }
   
-    return _mapNodeToCalcNode(nn);
+    return map_node_to_calcnode(nn);
   }
   return nil;
 }
 
 _CalcNode *     _TreeIterator::Current (void) const {
-  return _mapNodeToCalcNode(iterator.Current());
+  return map_node_to_calcnode(iterator.Current());
 }
 
 long     _TreeIterator::Depth (void) const {

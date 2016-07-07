@@ -4,7 +4,7 @@
 	_expectedLL = 			{{-1137.68873768577,-1114.64174822308,-1106.44533632047}};
 	ExecuteAFile 			("../Shared/TestInstrumentation.bf");
 	startTestTimer 			(_testDescription);
-	
+
 /* end test preamble */
 
 VERBOSITY_LEVEL			   = 1;
@@ -16,7 +16,7 @@ runTimer = Time (1);
 
 inputOptions = {};
 inputOptions ["00"] = "Universal";
-inputOptions ["01"] = PATH_TO_CURRENT_BF + ".." + DIRECTORY_SEPARATOR + "data" + DIRECTORY_SEPARATOR + "HIVenvSweden.seq"; 
+inputOptions ["01"] = PATH_TO_CURRENT_BF + ".." + DIRECTORY_SEPARATOR + "data" + DIRECTORY_SEPARATOR + "HIVenvSweden.seq";
 inputOptions ["02"] = "y";
 inputOptions ["03"] = "Run Custom";
 inputOptions ["04"] = "Single Rate";
@@ -27,6 +27,8 @@ inputOptions ["08"] = "Default";
 inputOptions ["09"] = "GY94 3x4";
 inputOptions ["10"] = "0.9";
 inputOptions ["11"] = PATH_TO_CURRENT_BF + ".." + DIRECTORY_SEPARATOR + "Results" + DIRECTORY_SEPARATOR + "HIVSweden.out";
+
+fprintf (stdout, inputOptions, "\n");
 
 ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "NielsenYang.bf", inputOptions);
 

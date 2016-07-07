@@ -43,18 +43,20 @@
 #include "matrix.h"
 #include "calcnode.h"
 #include "batchlan.h"
+#include "global_object_lists.h"
 
 extern long lastMatrixDeclared;
 extern _AVLListX _HY_GetStringGlobalTypes;
 
 extern _List likeFuncList,
              batchLanguageFunctionNames,
-             dataSetFilterList,
              dataSetList,
              scfgList;
 
 extern _SimpleList modelMatrixIndices;
 extern _String lastModelParameterList;
+
+using namespace hyphy_global_objects;
 
 _String internalRerootTreeID("_INTERNAL_REROOT_TREE_");
 //__________________________________________________________________________________
@@ -909,7 +911,7 @@ _PMathObj   _FString::CountGlobalObjects (void)
     case HY_BL_DATASET:
         return new _Constant (dataSetList.lLength);
     case HY_BL_DATASET_FILTER:
-        return new _Constant (dataSetFilterList.lLength);
+        return new _Constant (CountObjectsByType (HY_BL_DATASET_FILTER));
     case HY_BL_HBL_FUNCTION:
         return new _Constant (batchLanguageFunctionNames.lLength);
     case HY_BL_TREE: {

@@ -246,7 +246,7 @@ _String*   FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, co
 }
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long objectClass, long command_id, _String *errMsg)
+_PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg)
 {
     if (id) {
         _Variable * v = FetchVar (LocateVarByName (*id));
@@ -287,8 +287,7 @@ _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long ob
 }
 
 //__________________________________________________________________________________
-long LocateVarByName (_String& name)
-{
+long LocateVarByName (_String const& name) {
     return variableNames.Find (&name);
 }
 
@@ -393,8 +392,7 @@ void DeleteVariable (long dv, bool deleteself)
                 }
             }
 
-            _Variable* delvar = (FetchVar(dv));
-            DeleteObject (delvar);
+            DeleteObject (FetchVar(dv));
 
             variableNames.Delete (variableNames.Retrieve(dv),true);
             (*((_SimpleList*)&variablePtrs))[vidx]=0;
@@ -505,8 +503,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
     }
 }
 //__________________________________________________________________________________
-void DeleteVariable (_String&name, bool deleteself)
-{
+void DeleteVariable (_String const &name, bool deleteself) {
     DeleteVariable(LocateVarByName (name), deleteself);
 }
 
@@ -517,7 +514,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 }
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacle (_String* name, _String const & fID, bool checkValid, bool isGlobal)
+_Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
         _String errMsg = *name & " is not a valid variable identifier in call to " & fID;
@@ -536,7 +533,7 @@ _Variable* CheckReceptacle (_String* name, _String const & fID, bool checkValid,
 
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
+_Variable* CheckReceptacleCommandID (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
         _String errMsg = _String ("'") & *name & "' is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.';
@@ -558,7 +555,7 @@ _Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkVal
 }
 
 //__________________________________________________________________________________
-bool CheckReceptacleCommandIDAndStore (_String* name, const long id, bool checkValid, _PMathObj v, bool dup, bool isGlobal)
+bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool checkValid, _PMathObj v, bool dup, bool isGlobal)
 {
     _Variable *theV = CheckReceptacleCommandID (name, id, checkValid, isGlobal);
     if (theV) {
@@ -573,8 +570,7 @@ bool CheckReceptacleCommandIDAndStore (_String* name, const long id, bool checkV
 
 
 //__________________________________________________________________________________
-bool CheckReceptacleAndStore (_String* name, _String fID, bool checkValid, _PMathObj v, bool dup)
-{
+bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid, _PMathObj v, bool dup) {
     _Variable * theV = CheckReceptacle(name, fID, checkValid);
     if (theV) {
         theV->SetValue (v, dup);
@@ -635,14 +631,12 @@ void  InsertVar (_Variable* theV)
 }
 
 //__________________________________________________________________________________
-_String&  AppendContainerName (_String& inString, _VariableContainer* theP)
-{
+_String const&  AppendContainerName (_String const& inString, _VariableContainer const* theP) {
     return AppendContainerName (inString, theP?theP->GetName():nil);
 }
 
 //__________________________________________________________________________________
-_String&  AppendContainerName (_String& inString, _String* namescp)
-{
+_String const&  AppendContainerName (_String const& inString, _String const* namescp) {
     static _String returnMe;
 
     if (_hyApplicationGlobals.Find (&inString) >= 0) {
@@ -697,8 +691,7 @@ void  RenameVariable (_String* oldName, _String* newName)
 }
 
 //__________________________________________________________________________________
-void  ReplaceVar (_Variable* theV)
-{
+void  ReplaceVar (_Variable* theV) {
     long pos = variableNames.Find (theV->theName);
     if (pos>=0) {
         pos = variableNames.GetXtra(pos);
@@ -709,45 +702,43 @@ void  ReplaceVar (_Variable* theV)
     }
 }
 
-//__________________________________________________________________________________
-void    SetupOperationLists (void)
-{
 
-    _List all_unary_ops ("-",29,
-                         "!",
-                         "+",
-                         "*",
-                         "^",
-                         "&",
-                         "Abs",
-                         "Sin",
-                         "Cos",
-                         "Tan",
-                         "Exp",
-                         "Log",
-                         "Arctan",
-                         "Time",
-                         "Gamma",
-                         "Transpose",
-                         "Sqrt",
-                         "Erf",
-                         "Rows",
-                         "Columns",
-                         "LUDecompose",
-                         "Inverse",
-                         "BranchCount",
-                         "TipCount",
-                         "ZCDF",
-                         "Eigensystem",
-                         "Simplex",
-                         "Type",
-                         "Eval",
-                         "LnGamma"
-                         );
+//__________________________________________________________________________________
+void    SetupOperationLists (void) {
+
+  
+    UnOps  < "-" <
+             "!" <
+             "+" <
+             "*" <
+             "^" <
+             "&" <
+             "Abs" <
+             "Sin" <
+             "Cos" <
+             "Tan" <
+             "Exp" <
+             "Log" <
+             "Arctan" <
+             "Time" <
+             "Gamma" <
+             "Transpose" <
+             "Sqrt" <
+             "Erf" <
+             "Rows" <
+             "Columns" <
+             "LUDecompose" <
+             "Inverse" <
+             "BranchCount" <
+             "TipCount" <
+             "ZCDF" <
+             "Eigensystem" <
+             "Simplex" <
+             "Type" <
+             "Eval" <
+             "LnGamma";
  
 
-    UnOps.Insert (all_unary_ops);
-        
     BinOps<<'|'*256+'|';
     opPrecedence<<1;
     BinOps<<'&'*256+'&';
@@ -1135,48 +1126,6 @@ void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAl
 
 }
 
-//__________________________________________________________________________________
-
-void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bool sorted)
-{
-    if (partName.sLength==0) {
-        partName = prefix;
-    }
-
-    _String tryName (partName);
-    long    k = 1;
-
-    if (sorted)
-        while (names.BinaryFindObject (&tryName)>=0) {
-            k++;
-            tryName = partName&k;
-        }
-    else
-        while (names.FindObject(&tryName)>=0) {
-            k++;
-            tryName = partName&k;
-        }
-
-    partName = tryName;
-}
-//__________________________________________________________________________________
-
-void  FindUnusedObjectName (_String& prefix, _String& partName, _AVLListX& names, bool)
-{
-    if (partName.sLength==0) {
-        partName = prefix;
-    }
-
-    _String tryName (partName);
-    long    k = 1;
-
-    while (names.Find(&tryName)>=0) {
-        k++;
-        tryName = partName&k;
-    }
-
-    partName = tryName;
-}
 
 //__________________________________________________________________________________
 

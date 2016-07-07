@@ -46,11 +46,14 @@
 #include "polynoml.h"
 #include "batchlan.h"
 
+#include "global_object_lists.h"
+
+using namespace hyphy_global_objects;
+
 
 //__________________________________________________________________________________
 
-_VariableContainer::_VariableContainer (void)
-{
+_VariableContainer::_VariableContainer (void) {
     theParent = nil;
     theModel = -1;
     iVariables = nil;
@@ -210,8 +213,8 @@ _Formula* _VariableContainer::GetExplicitFormModel (void) const {
 
 //__________________________________________________________________________________
 
-_String* _VariableContainer::GetModelName (void) {
-    _String * res = _HBLObjectNameByType (HY_BL_MODEL, theModel, false);
+_String const* _VariableContainer::GetModelName (void)  const{
+    _String const * res = GetObjectNameByType (HY_BL_MODEL, theModel, false);
     if (res) {
         return res;
     }

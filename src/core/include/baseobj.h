@@ -71,8 +71,7 @@ typedef char* Ptr;
 #include <stdio.h>
 
 
-class BaseObj
-{
+class BaseObj {
 
     //base object class
 public:
@@ -115,7 +114,7 @@ public:
 };
 
 typedef BaseObj*  BaseRef;
-typedef BaseObj const * BaseRefCosnt;
+typedef BaseObj const * BaseRefConst;
 
 
 

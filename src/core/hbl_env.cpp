@@ -1,5 +1,4 @@
 /*
- 
  HyPhy - Hypothesis Testing Using Phylogenies.
  
  Copyright (C) 1997-now
@@ -33,51 +32,19 @@
  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
  */
 
-#include "_hyExecutionContext.h"
-#include "variablecontainer.h"
-#include "hy_strings.h"
+#include "hbl_env.h"
 
-_hyExecutionContext _hyDefaultExecutionContextAux (nil, nil),
-                    *_hyDefaultExecutionContext = &_hyDefaultExecutionContextAux;
+//_________________________________________________________
 
-//_____________________________________________________________
-
-_hyExecutionContext::_hyExecutionContext (_VariableContainer const *context, _String* errorBuffer) {
-    contextSpec = context;
-    errMsg      = errorBuffer;
-}
-
-//_____________________________________________________________
-
-_VariableContainer const* _hyExecutionContext::GetContext (void)  const{
-    return contextSpec;
-}
-
-//_____________________________________________________________
-
-_String * _hyExecutionContext::GetErrorBuffer (void) {
-    return errMsg;
-}
-
-//_____________________________________________________________
-
-void _hyExecutionContext::ReportError (_String errText) {
-    if (errMsg) {
-        *errMsg = *errMsg & errText & ".\n";
-    } else {
-        WarnError (errText);
-    }
-    
-}
-
-//_____________________________________________________________
-//EOF
-
-
-
-
+_String           dataFileTree             ("IS_TREE_PRESENT_IN_DATA"),
+                  dataFileTreeString       ("DATAFILE_TREE"),
+                  nexusFileTreeMatrix      ("NEXUS_FILE_TREE_MATRIX"),
+                  dataFilePartitionMatrix  ("DATA_FILE_PARTITION_MATRIX"),
+                  useTraversalHeuristic    ("USE_TRAVERSAL_HEURISTIC"),
+                  normalizeSequenceNames   ("NORMALIZE_SEQUENCE_NAMES"),
+                  defaultLargeFileCutoff   ("USE_MEMORY_SAVING_DATA_STRUCTURES")
+;
 

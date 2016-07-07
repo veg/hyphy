@@ -709,8 +709,12 @@ int main (int argc, char* argv[])
   _MathObject *pl = ((_Polynomial*)f1.ConstructPolynomial ())->Add (f2.ConstructPolynomial());
   
   fprintf (stdout, "%s\n", _String ((_String*)pl->toStr()).getStr());*/
-           
-
+  
+    /*_SimpleList exclusions = _SimpleList () << 48 << 50 << 56;
+    long        codes[7] = {10,48,50,51,56,57,63};
+    exclusions.CorrectForExclusions(codes, 7);
+     */
+  
     _ExecutionList ex;
   
   

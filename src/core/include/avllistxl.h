@@ -48,19 +48,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_____________________________________________________________________________
 
-class _AVLListXL: public _AVLList
-{
+class _AVLListXL: public _AVLList {
 
 public:
 
     _AVLListXL(_SimpleList*);
-    BaseRef GetXtra(long);
+    BaseRef GetXtra(long) const;
 
     void SetXtra(long,BaseRef,bool);
 
     virtual ~_AVLListXL(void){}
     virtual BaseRef toStr(unsigned long = 0UL);
-    virtual BaseRef GetDataByKey (BaseRef);
+    virtual BaseRef GetDataByKey (BaseRef) const;
 
     virtual long InsertData(BaseRef, long,bool);
     virtual void Clear(bool = false);
@@ -70,6 +69,7 @@ public:
     _List xtraD;
 
 };
+
 
 //_____________________________________________________________________________
 

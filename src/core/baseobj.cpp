@@ -46,6 +46,8 @@
 #include "batchlan.h"
 #include "category.h"
 #include "likefunc.h"
+#include "hbl_env.h"
+#include "global_object_lists.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -79,7 +81,7 @@ extern int _hy_mpi_node_rank;
   mach_timebase_info_data_t    sTimebaseInfo;
 #endif
 
-
+#define     __HYPHY_MPI_MESSAGE_LOGGING__
 
 bool        terminateExecution  = false;
 
@@ -324,60 +326,7 @@ bool    GlobalShutdown (void)
   fflush (stdout);  
 #endif
 
-#ifdef  __HYPHYMPI__
-    // MPI_Barrier (MPI_COMM_WORLD);
-    ReportWarning ("Calling MPI_Finalize");
-#ifdef __USE_ABORT_HACK__
-    MPI_Abort(MPI_COMM_WORLD,0);
-#else
-    MPI_Finalized(&flag);
-    if (!flag)
-        MPI_Finalize();
-#endif
-    ReportWarning ("Returned from MPI_Finalize");
-#endif
-
   
-
-    if (globalErrorFile) {
-        fflush (globalErrorFile);
-        fseek(globalErrorFile,0,SEEK_END);
-        unsigned long fileSize = ftell(globalErrorFile);
-        if (fileSize) {
-#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
-
-#else
-            fprintf (stderr, "\nCheck %s for details on execution errors.\n",errorFileName.getStr());
-#endif
-            res = false;
-            fclose (globalErrorFile);
-
-        } else {
-            fclose (globalErrorFile);
-#ifdef __HYPHYXCODE__
-            remove (DoMacToPOSIX(errorFileName).getStr());
-#else
-            remove (errorFileName.getStr());
-#endif
-        }
-    }
-    if (globalMessageFile) {
-        if (ftell(globalMessageFile)) {
-#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
-#else
-            fprintf (stderr, "\nCheck %s details of this run.\n",messageFileName.getStr());
-#endif
-            fclose (globalMessageFile);
-        } else {
-            fclose (globalMessageFile);
-#ifdef __HYPHYXCODE__
-            remove (DoMacToPOSIX(messageFileName).getStr());
-#else
-            remove (messageFileName.getStr());
-#endif
-        }
-    }
-    
     _SimpleList  hist;
     long         ls,
                  cn = _HY_HBLCommandHelper.Traverser (hist,ls,_HY_HBLCommandHelper.GetRoot());
@@ -386,27 +335,84 @@ bool    GlobalShutdown (void)
         delete ((_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra(cn));
         cn = _HY_HBLCommandHelper.Traverser (hist,ls);
     }
+  
+    PurgeAll(true);
+  
     _HY_HBLCommandHelper.Clear();
     _HY_ValidHBLExpressions.Clear();
     listOfCompiledFormulae.Clear();
+
+#ifdef  __HYPHYMPI__
+  // MPI_Barrier (MPI_COMM_WORLD);
+  ReportWarning ("Calling MPI_Finalize");
+#ifdef __USE_ABORT_HACK__
+  MPI_Abort(MPI_COMM_WORLD,0);
+#else
+  MPI_Finalized(&flag);
+  if (!flag)
+    MPI_Finalize();
+#endif
+  ReportWarning ("Returned from MPI_Finalize");
+#endif
   
+  
+  
+  if (globalErrorFile) {
+    fflush (globalErrorFile);
+    fseek(globalErrorFile,0,SEEK_END);
+    unsigned long fileSize = ftell(globalErrorFile);
+    if (fileSize) {
+#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
+      
+#else
+      fprintf (stderr, "\nCheck %s for details on execution errors.\n",errorFileName.getStr());
+#endif
+      res = false;
+      fclose (globalErrorFile);
+      
+    } else {
+      fclose (globalErrorFile);
+#ifdef __HYPHYXCODE__
+      remove (DoMacToPOSIX(errorFileName).getStr());
+#else
+      remove (errorFileName.getStr());
+#endif
+    }
+  }
+  if (globalMessageFile) {
+    if (ftell(globalMessageFile)) {
+#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
+#else
+      fprintf (stderr, "\nCheck %s details of this run.\n",messageFileName.getStr());
+#endif
+      fclose (globalMessageFile);
+    } else {
+      fclose (globalMessageFile);
+#ifdef __HYPHYXCODE__
+      remove (DoMacToPOSIX(messageFileName).getStr());
+#else
+      remove (messageFileName.getStr());
+#endif
+    }
+  }
+
 
     return res;
 }
 
 //____________________________________________________________________________________
 
-void    PurgeAll (bool all)
-{
+void    PurgeAll (bool all) {
+  using namespace hyphy_global_objects;
+  
     ClearBFFunctionLists();
     executionStack.Clear();
     loadedLibraryPaths.Clear(true);
     _HY_HBL_Namespaces.Clear();
     if (all) {
+        ClearAllGlobals ();
         likeFuncList.Clear();
         likeFuncNamesList.Clear();
-        dataSetFilterList.Clear();
-        dataSetFilterNamesList.Clear();
         dataSetList.Clear();
         dataSetNamesList.Clear();
         compiledFormulaeParameters.Clear();
