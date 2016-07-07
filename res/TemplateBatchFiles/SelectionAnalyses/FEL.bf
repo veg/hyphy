@@ -260,15 +260,15 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
 
      if (None != fel.print_row) {
             if (!fel.report.header_done) {
-                io.reportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
+                io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
                 fprintf (stdout,
-                    io.format_table_row (fel.table_screen_output,fel.table_output_options));
+                    io.FormatTableRow (fel.table_screen_output,fel.table_output_options));
                 fel.report.header_done = TRUE;
                 fel.table_output_options["header"] = FALSE;
             }
 
             fprintf (stdout,
-                io.format_table_row (fel.print_row,fel.table_output_options));
+                io.FormatTableRow (fel.print_row,fel.table_output_options));
         }
 
 }
@@ -302,7 +302,7 @@ lfunction fel.store_results (node, result, arguments) {
         sum = 0;
         alternative_lengths = ((result["alternative"])[^"terms.json.attribute.branch_length"])[0];
 
-        utility.forEach (^"fel.case_respecting_node_names", "_node_",
+        utility.ForEach (^"fel.case_respecting_node_names", "_node_",
                 '_node_class_ = ((^"fel.selected_branches")[`&partition_index`])[_node_ && 1];
                  if (_node_class_ == "test") {
                     `&sum` += ((`&alternative_lengths`)[_node_])[^"terms.json.MLE"];
@@ -400,7 +400,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     mpi.queue_complete (fel.queue);
     fel.partition_matrix = {Abs (fel.site_results[fel.partition_index]), Rows (fel.table_headers)};
 
-    utility.forEachPair (fel.site_results[fel.partition_index], "_key_", "_value_",
+    utility.ForEachPair (fel.site_results[fel.partition_index], "_key_", "_value_",
     '
         for (fel.index = 0; fel.index < Rows (fel.table_headers); fel.index += 1) {
             fel.partition_matrix [0+_key_][fel.index] = _value_[fel.index];
@@ -417,11 +417,11 @@ fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
                                terms.json.content : fel.site_results };
 
 
-io.reportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites under positive and _" + fel.report.counts[1] + "_ sites under negative selection at p <= " + fel.pvalue + "**");
+io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites under positive and _" + fel.report.counts[1] + "_ sites under negative selection at p <= " + fel.pvalue + "**");
 
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");
 
-io.spool_json (fel.json, fel.codon_data_info["json"]);
+io.SpoolJSON (fel.json, fel.codon_data_info["json"]);
 
 

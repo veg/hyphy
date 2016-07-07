@@ -210,7 +210,7 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
  * @name parameters.GenerateSequentialNames 
  * @param {String} prefix 
  * @param {Number} count 
- * @name parameters.generate_sequential_names
+ * @name parameters.GenerateSequentialNames
  * @param {String} prefix
  * @param {Number} count
  * @param {String} delimiter
