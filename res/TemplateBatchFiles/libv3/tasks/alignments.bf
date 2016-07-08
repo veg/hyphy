@@ -96,10 +96,9 @@ lfunction alignments.GetSequenceNames(dataset_name) {
  */
 lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
     if (Type(file_name) == "String") {
-        //
-        DataSet ^ dataset_name = ReadDataFile( ^ file_name);
+        DataSet ^dataset_name = ReadDataFile(file_name);
     } else {
-        DataSet ^ dataset_name = ReadDataFile(PROMPT_FOR_FILE);
+        DataSet ^dataset_name = ReadDataFile(PROMPT_FOR_FILE);
         file_name = LAST_FILE_PATH;
     }
 

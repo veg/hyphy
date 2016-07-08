@@ -2,8 +2,77 @@ LoadFunctionLibrary("../IOFunctions.bf");
 LoadFunctionLibrary("../terms-json.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
+LoadFunctionLibrary("TreeTools");
 
 /** @module trees */
+
+/*
+ * Sample tree object
+ * trees = {
+ *       "string":"((((PIG,COW)Node3,HORSE,CAT)Node2,((RHMONKEY,BABOON)Node9,(HUMAN,CHIMP)Node12)Node8)Node1,RAT,MOUSE)",
+ *       "string_with_lengths":"((((PIG:0.147969,COW:0.21343)Node3:0.085099,HORSE:0.165787,CAT:0.264806)Node2:0.058611,((RHMONKEY:0.002015,BABOON:0.003108)Node9:0.022733,(HUMAN:0.004349,CHIMP:0.000799)Node12:0.011873)Node8:0.101856)Node1:0.340802,RAT:0.050958,MOUSE:0.09795)",
+ *       "branch length":{
+ *         "PIG":0.147969,
+ *         "COW":0.21343,
+ *         "Node3":0.08509899999999999,
+ *         "HORSE":0.165787,
+ *         "CAT":0.264806,
+ *         "Node2":0.058611,
+ *         "RHMONKEY":0.002015,
+ *         "BABOON":0.003108,
+ *         "Node9":0.022733,
+ *         "HUMAN":0.004349,
+ *         "CHIMP":0.000799,
+ *         "Node12":0.011873,
+ *         "Node8":0.101856,
+ *         "Node1":0.340802,
+ *         "RAT":0.050958,
+ *         "MOUSE":0.09795
+ *        },
+ *       "annotated_string":"((((PIG,COW)Node3,HORSE,CAT)Node2,((RHMONKEY{PR},BABOON{PR})Node9{PR},(HUMAN{PR},CHIMP{PR})Node12{PR})Node8{PR})Node1{PR},RAT,MOUSE);",
+ *       "model_map":{
+ *         "PIG":"",
+ *         "COW":"",
+ *         "Node3":"",
+ *         "HORSE":"",
+ *         "CAT":"",
+ *         "Node2":"",
+ *         "RHMONKEY":"PR",
+ *         "BABOON":"PR",
+ *         "Node9":"PR",
+ *         "HUMAN":"PR",
+ *         "CHIMP":"PR",
+ *         "Node12":"PR",
+ *         "Node8":"PR",
+ *         "Node1":"PR",
+ *         "RAT":"",
+ *         "MOUSE":""
+ *        },
+ *       "partitioned":{
+ *         "PIG":"leaf",
+ *         "COW":"leaf",
+ *         "Node3":"internal",
+ *         "HORSE":"leaf",
+ *         "CAT":"leaf",
+ *         "Node2":"internal",
+ *         "RHMONKEY":"leaf",
+ *         "BABOON":"leaf",
+ *         "Node9":"internal",
+ *         "HUMAN":"leaf",
+ *         "CHIMP":"leaf",
+ *         "Node12":"internal",
+ *         "Node8":"internal",
+ *         "Node1":"internal",
+ *         "RAT":"leaf",
+ *         "MOUSE":"leaf"
+ *        },
+ *       "model_list":{
+ *        {"", "PR"}
+ *        }
+ *      }
+ * 
+ */
+
 
 /**
  * Returns sanitized Newick tree string
@@ -37,7 +106,7 @@ lfunction trees.GetTreeString._sanitize(string) {
 /**
  * Looks for a newick tree in an alignment file
  * @name trees.GetTreeString
- * @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
+ * @param {String|Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
  * @returns {String} a newick tree string
  */
 lfunction trees.GetTreeString(look_for_newick_tree) {
@@ -143,10 +212,12 @@ lfunction trees.PartitionTree(avl, l) {
 }
 
 /**
- * Returns tree information from extractTreeInfo after calling getTreeString
+ * Loads an annatotaed tree topology from a newick tree
  * @name trees.LoadAnnotatedTopology
- * @param {String} or {Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
- * @returns {Dictionary} extracted tree information
+ * @param {String|Bool} look_for_newick_tree - If a string, sanitizes and
+ *  returns the string. If TRUE, search the alignment file for a newick tree. If
+ *  FALSE, the user will be prompted for a nwk tree file. 
+ * @returns {Dictionary} an annotated tree
  */
 lfunction trees.LoadAnnotatedTopology(look_for_newick_tree) {
     return trees.ExtractTreeInfo(trees.GetTreeString(look_for_newick_tree));
@@ -155,7 +226,7 @@ lfunction trees.LoadAnnotatedTopology(look_for_newick_tree) {
 /**
  * @name trees.LoadAnnotatedTopologyAndMap
  * @param dataset_name
- * @returns nothing
+ * @returns {Dictionary} an annotated tree
  */
 lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
 
@@ -171,10 +242,35 @@ lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
 }
 
 /**
+ * Loads a tree topology with node name label mappings and annotations from a list of partitions
  * @name trees.LoadAnnotatedTreeTopology.match_partitions
- * @param partitions
- * @param mapping
+ * @param {Matrix} partitions - a 1xN vector of partition names, typically
+ * retrieved from the `partitions` key in the dictionary returned from an
+ * alignments parser function.
+ * @param {Dictionary} mapping - a mapping of node names to labels
  * @returns {Dictionary} of matched partitions
+ * @example 
+ *  hky85_nucdata_info = alignments.ReadNucleotideAlignment(file_name, "hky85.nuc_data", "hky85.nuc_filter");
+ *  name_mapping = {
+ *   "HUMAN":"HUMAN",
+ *   "CHIMP":"CHIMP",
+ *   "BABOON":"BABOON",
+ *   "RHMONKEY":"RHMONKEY",
+ *   "COW":"COW",
+ *   "PIG":"PIG",
+ *   "HORSE":"HORSE",
+ *   "CAT":"CAT",
+ *   "MOUSE":"MOUSE",
+ *   "RAT":"RAT"
+ *  };
+ *  trees.LoadAnnotatedTreeTopology.match_partitions(hky85_nucdata_info[terms.json.partitions], name_mapping);
+ *  => 
+ *  {
+ *   "0":{
+ *     "name":"default",
+ *     "filter-string":"",
+ *     "tree": *    }
+ *  } 
  */
 lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) {
 
@@ -233,12 +329,12 @@ lfunction trees.branch_names(tree, respect_case) {
  * @name trees.ExtractTreeInfo
  * @param {String} tree_string
  * @returns a {Dictionary} of the following tree information :
- * * newick string
- * * newick string with branch lengths
- * * annotated string
- * * model map
- * * internal leaves
- * * list of models
+ * - newick string
+ * - newick string with branch lengths
+ * - annotated string
+ * - model map
+ * - internal leaves
+ * - list of models
  */
 function trees.ExtractTreeInfo(tree_string) {
 
@@ -276,3 +372,48 @@ function trees.ExtractTreeInfo(tree_string) {
         "model_list": Columns(modelMap)
     };
 }
+
+/**
+ * Gets total branch count of supplied tree
+ * @name trees.GetBranchCount
+ * @param {String} tree_string
+ * @returns {Number} total branch count
+ */
+function trees.GetBranchCount(tree_string) {
+    Topology T = tree_string;
+    return BranchCount(T) + TipCount(T);
+}
+
+/**
+ * Sorts branch lengths in a descending order
+ * @name trees.SortedBranchLengths
+ * @param {String} tree_string
+ * @returns {Number} total branch count
+ */
+function trees.SortedBranchLengths(tree_string) {
+
+    tree_count = trees.GetBranchCount(tree_string);
+    Tree T = tree_string;
+
+    branch_lengths = BranchLength(T,-1);
+
+    sorted_bls = {};
+    sorted_bls = {tree_count, 2}["branch_lengths[_MATRIX_ELEMENT_ROW_]*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==1)"];
+    sorted_bls = sorted_bls%0;
+    return sorted_bls;
+
+}
+
+/**
+ * Return branch names
+ * @name trees.BranchNames
+ * @param {String} tree_string
+ * @returns {Matrix} 1xN sorted branch names
+ */
+function trees.BranchNames(tree) {
+    tree_string = tree["string"];
+    Topology T = tree_string;
+    branch_names = BranchName(T, -1);
+    return branch_names;
+}
+
