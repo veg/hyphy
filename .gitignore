@@ -6,6 +6,7 @@
 src/ocl/opencl_kernels.h
 *.cxx
 tags
+.ctags
 
 # CMake generated files
 CMakeCache.txt
@@ -21,6 +22,7 @@ HYPHYMPI
 HyPhy.app
 iHyPhyDebug.app
 HYPHYDEBUG
+HYPHYDEBUG.dSYM
 
 # GTEST 
 HYPHYGTEST
