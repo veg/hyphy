@@ -22,11 +22,10 @@ LoadFunctionLibrary("libv3/convenience/math.bf");
 LoadFunctionLibrary("modules/io_functions.ibf");
 
 
-/*------------------------------------------------------------------------------
-    Display analysis information
+/*------------------------------------------------------------------------------ Display analysis information
 */
 
-io.displayAnalysisBanner({
+io.DisplayAnalysisBanner({
     "info": "FEL (Fixed Effects Likelihood)
     estimates site-wise synonymous (&alpha;) and non-synonymous (&beta;) rates, and
     uses a likelihood ratio test to determine if beta &neq; alpha at a site.
@@ -51,7 +50,7 @@ io.displayAnalysisBanner({
     Environment setup
 */
 
-utility.setEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
+utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
 /*------------------------------------------------------------------------------
     Globals
@@ -96,12 +95,12 @@ namespace fel {
 
 
 fel.partition_count = Abs (fel.filter_specification);
-fel.pvalue  = io.prompt_user ("\n>Select the p-value used to for perform the test at",0.1,0,1,FALSE);
-io.reportProgressMessageMD('FEL',  'selector', 'Branches to include in the FEL analysis');
+fel.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",0.1,0,1,FALSE);
+io.ReportProgressMessageMD('FEL',  'selector', 'Branches to include in the FEL analysis');
 
-utility.forEachPair (fel.selected_branches, "_partition_", "_selection_",
-    "_selection_ = utility.filter (_selection_, '_value_', '_value_ == terms.json.attribute.test');
-     io.reportProgressMessageMD('FEL',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in FEL calculations: \\\`' + Join (', ',utility.keys(_selection_)) + '\\\`')");
+utility.ForEachPair (fel.selected_branches, "_partition_", "_selection_",
+    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.json.attribute.test');
+     io.ReportProgressMessageMD('FEL',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in FEL calculations: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
@@ -118,18 +117,17 @@ namespace fel {
 }
 
 
+io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
-io.reportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
-
-fel.final_partitioned_mg_results = estimators.fitMGREV (fel.filter_names, fel.trees, fel.codon_data_info ["code"], {
+fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info ["code"], {
     "model-type": terms.global,
     "partitioned-omega": fel.selected_branches,
     "retain-lf-object": TRUE
 }, fel.partitioned_mg_results);
 
-io.reportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results["LogL"],8,2));
+io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results["LogL"],8,2));
 fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.omega_ratio);
-utility.forEach (fel.global_dnds, "_value_", 'io.reportProgressMessageMD ("fel", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
 
 estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_partitioned_mg_results["global"]);
 
@@ -139,10 +137,10 @@ selection.io.json_store_lf(
     fel.final_partitioned_mg_results["LogL"],
     fel.final_partitioned_mg_results["parameters"],
     fel.sample_size,
-    utility.array_to_dict (utility.map (fel.global_dnds, "_value_", "{'key': _value_['description'], 'value' : Eval({{_value_ ['MLE'],1}})}"))
+    utility.ArrayToDict (utility.Map (fel.global_dnds, "_value_", "{'key': _value_['description'], 'value' : Eval({{_value_ ['MLE'],1}})}"))
 );
 
-utility.forEachPair (fel.filter_specification, "_key_", "_value_",
+utility.ForEachPair (fel.filter_specification, "_key_", "_value_",
     'selection.io.json_store_branch_attribute(fel.json, "Global MG94xREV model", terms.json.attribute.branch_length, 0,
                                              _key_,
                                              selection.io.extract_branch_info((fel.final_partitioned_mg_results[terms.json.attribute.branch_length])[_key_], "selection.io.branch.length"));');
@@ -152,9 +150,9 @@ selection.io.stopTimer (fel.json [terms.json.timers], "Model fitting");
 // define the site-level likelihood function
 
 
-fel.site.mg_rev = model.generic.define_model("models.codon.MG_REV.modelDescription",
+fel.site.mg_rev = model.generic.DefineModel("models.codon.MG_REV.ModelDescription",
         "fel_mg", {
-            "0": parameters.quote(terms.local),
+            "0": parameters.Quote(terms.local),
             "1": fel.codon_data_info["code"]
         },
         fel.filter_names,
@@ -164,9 +162,9 @@ fel.site_model_mapping = {"fel_mg" : fel.site.mg_rev};
 
 /* set up the local constraint model */
 
-fel.alpha = model.generic.get_local_parameter (fel.site.mg_rev, ^"terms.synonymous_rate");
-fel.beta = model.generic.get_local_parameter (fel.site.mg_rev, ^"terms.nonsynonymous_rate");
-io.checkAssertion ("None!=fel.alpha && None!=fel.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.fitMGREV\`");
+fel.alpha = model.generic.GetLocalParameter (fel.site.mg_rev, ^"terms.synonymous_rate");
+fel.beta = model.generic.GetLocalParameter (fel.site.mg_rev, ^"terms.nonsynonymous_rate");
+io.CheckAssertion ("None!=fel.alpha && None!=fel.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
 selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 
@@ -186,10 +184,10 @@ function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_par
 
 fel.scalers = {{"fel.alpha_scaler", "fel.beta_scaler_test", "fel.beta_scaler_nuisance"}};
 
-model.generic.add_global (fel.site.mg_rev, "fel.alpha_scaler", fel.site_alpha);
-model.generic.add_global (fel.site.mg_rev, "fel.beta_scaler_test", fel.site_beta);
-model.generic.add_global (fel.site.mg_rev, "fel.beta_scaler_nuisance", fel.site_beta_nuisance);
-parameters.declareGlobal (fel.scalers, {});
+model.generic.AddGlobal (fel.site.mg_rev, "fel.alpha_scaler", fel.site_alpha);
+model.generic.AddGlobal (fel.site.mg_rev, "fel.beta_scaler_test", fel.site_beta);
+model.generic.AddGlobal (fel.site.mg_rev, "fel.beta_scaler_nuisance", fel.site_beta_nuisance);
+parameters.DeclareGlobal (fel.scalers, {});
 
 
 //----------------------------------------------------------------------------------------
@@ -199,7 +197,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     ExecuteCommands (filter_data);
     __make_filter ((lfInfo["Datafilters"])[0]);
 
-    utility.setEnvVariable ("USE_LAST_RESULTS", TRUE);
+    utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
 
     ^"fel.alpha_scaler" = 1;
     ^"fel.beta_scaler_test"  = 1;
@@ -207,15 +205,15 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     Optimize (results, ^lf);
 
-    alternative = estimators.extractMLEs (lf, model_mapping);
+    alternative = estimators.ExtractMLEs (lf, model_mapping);
     alternative [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
 
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
-    parameters.setConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
+    parameters.SetConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
 
     Optimize (results, ^lf);
 
-    null = estimators.extractMLEs (lf, model_mapping);
+    null = estimators.ExtractMLEs (lf, model_mapping);
     null [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
 
     /*
@@ -262,15 +260,15 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
 
      if (None != fel.print_row) {
             if (!fel.report.header_done) {
-                io.reportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
+                io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
                 fprintf (stdout,
-                    io.format_table_row (fel.table_screen_output,fel.table_output_options));
+                    io.FormatTableRow (fel.table_screen_output,fel.table_output_options));
                 fel.report.header_done = TRUE;
                 fel.table_output_options["header"] = FALSE;
             }
 
             fprintf (stdout,
-                io.format_table_row (fel.print_row,fel.table_output_options));
+                io.FormatTableRow (fel.print_row,fel.table_output_options));
         }
 
 }
@@ -292,19 +290,19 @@ lfunction fel.store_results (node, result, arguments) {
 
 
     if (None != result) { // not a constant site
-        lrt = math.doLRT ((result["null"])[utility.getGlobalValue("terms.json.log_likelihood")],
+        lrt = math.DoLRT ((result["null"])[utility.getGlobalValue("terms.json.log_likelihood")],
                           (result["alternative"])[utility.getGlobalValue("terms.json.log_likelihood")],
                           1);
-        result_row [0] = estimators.getGlobalMLE (result["alternative"], ^"fel.site_alpha");
-        result_row [1] = estimators.getGlobalMLE (result["alternative"], ^"fel.site_beta");
-        result_row [2] = estimators.getGlobalMLE (result["null"], ^"fel.site_beta");
+        result_row [0] = estimators.GetGlobalMLE (result["alternative"], ^"fel.site_alpha");
+        result_row [1] = estimators.GetGlobalMLE (result["alternative"], ^"fel.site_beta");
+        result_row [2] = estimators.GetGlobalMLE (result["null"], ^"fel.site_beta");
         result_row [3] = lrt ["LRT"];
         result_row [4] = lrt ["p-value"];
 
         sum = 0;
         alternative_lengths = ((result["alternative"])[^"terms.json.attribute.branch_length"])[0];
 
-        utility.forEach (^"fel.case_respecting_node_names", "_node_",
+        utility.ForEach (^"fel.case_respecting_node_names", "_node_",
                 '_node_class_ = ((^"fel.selected_branches")[`&partition_index`])[_node_ && 1];
                  if (_node_class_ == "test") {
                     `&sum` += ((`&alternative_lengths`)[_node_])[^"terms.json.MLE"];
@@ -315,9 +313,9 @@ lfunction fel.store_results (node, result, arguments) {
     }
 
 
+    utility.EnsureKey (^"fel.site_results", partition_index);
 
-    utility.dict.ensure_key (^"fel.site_results", partition_index);
-    utility.forEach (pattern_info["sites"], "_value_",
+    utility.ForEach (pattern_info["sites"], "_value_",
         '
             (fel.site_results[`&partition_index`])[_value_] = `&result_row`;
             fel.report.echo (_value_, `&partition_index`, `&result_row`);
@@ -334,17 +332,17 @@ fel.site_results = {};
 for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.partition_index += 1) {
     fel.report.header_done = FALSE;
     fel.table_output_options["header"] = TRUE;
-
-    model.applyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {"default" : fel.site.mg_rev}, None);
+    model.ApplyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {"default" : fel.site.mg_rev}, None);
 
     fel.case_respecting_node_names = trees.branch_names (fel.site_tree, TRUE);
-    fel.site_patterns = alignments.extract_site_patterns ((fel.filter_specification[fel.partition_index])["name"]);
+
+    fel.site_patterns = alignments.Extract_site_patterns ((fel.filter_specification[fel.partition_index])["name"]);
 
     // apply constraints to the site tree
     // alpha = alpha_scaler * branch_length
     // beta  = beta_scaler_test * branch_length or beta_nuisance_test * branch_length
 
-    utility.forEach (fel.case_respecting_node_names, "_node_",
+    utility.ForEach (fel.case_respecting_node_names, "_node_",
             '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_ && 1];
              if (_node_class_ == "test") {
                 _beta_scaler = fel.scalers[1];
@@ -367,7 +365,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
 
 
 
-    estimators.applyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping, fel.final_partitioned_mg_results,
+    estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping, fel.final_partitioned_mg_results,
                                         "globals only");
 
     fel.queue = mpi.create_queue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
@@ -376,7 +374,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
                                  });
 
     /* run the main loop over all unique site pattern combinations */
-    utility.forEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
+    utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
         '
             if (_pattern_info_["is_constant"]) {
                 fel.store_results (-1,None,{"0" : "fel.site_likelihood",
@@ -402,7 +400,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     mpi.queue_complete (fel.queue);
     fel.partition_matrix = {Abs (fel.site_results[fel.partition_index]), Rows (fel.table_headers)};
 
-    utility.forEachPair (fel.site_results[fel.partition_index], "_key_", "_value_",
+    utility.ForEachPair (fel.site_results[fel.partition_index], "_key_", "_value_",
     '
         for (fel.index = 0; fel.index < Rows (fel.table_headers); fel.index += 1) {
             fel.partition_matrix [0+_key_][fel.index] = _value_[fel.index];
@@ -415,17 +413,15 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
 
 }
 
-
-
 fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
                                terms.json.content : fel.site_results };
 
 
-io.reportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites under positive and _" + fel.report.counts[1] + "_ sites under negative selection at p <= " + fel.pvalue + "**");
+io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites under positive and _" + fel.report.counts[1] + "_ sites under negative selection at p <= " + fel.pvalue + "**");
 
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");
 
-io.spool_json (fel.json, fel.codon_data_info["json"]);
+io.SpoolJSON (fel.json, fel.codon_data_info["json"]);
 
 

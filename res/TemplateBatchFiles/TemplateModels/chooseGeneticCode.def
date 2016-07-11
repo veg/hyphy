@@ -683,8 +683,8 @@ lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
         }
     }
 
-    matrix.symmetrize(SS);
-    matrix.symmetrize(NS);
+    matrix.Symmetrize(SS);
+    matrix.Symmetrize(NS);
 
     return {"synonymous" : SS, "non-synonymous" : NS};
     
@@ -873,7 +873,7 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
             }
         };
 
-        matrix.symmetrize(ntp_matrix);
+        matrix.Symmetrize(ntp_matrix);
         
 
         for (codon_1 = 0; codon_1 < 64; codon_1 += 1) {
@@ -978,11 +978,11 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
             }
         }
 
-        matrix.symmetrize(EPS);
-        matrix.symmetrize(EPN);
-        matrix.symmetrize(OPS);
-        matrix.symmetrize(OPN);
-        matrix.symmetrize(NTP);
+        matrix.Symmetrize(EPS);
+        matrix.Symmetrize(EPN);
+        matrix.Symmetrize(OPS);
+        matrix.Symmetrize(OPN);
+        matrix.Symmetrize(NTP);
 
         SS_sense = {senseCodonCount, 1};
         NS_sense = {senseCodonCount, 1};

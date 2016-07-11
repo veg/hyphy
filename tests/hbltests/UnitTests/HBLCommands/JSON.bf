@@ -8,7 +8,7 @@ test_json    =    {"fits"           : {},
                   };
 
 
-new_test_json = utility.associativeListToJSON(test_json);
+new_test_json = utility.AssociativeListToJSON(test_json);
 
 new_test_string = " " + new_test_json + " ";
 

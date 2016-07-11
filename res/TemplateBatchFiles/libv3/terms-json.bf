@@ -27,3 +27,13 @@ terms.json.display_order            = "display order";
 terms.json.tree.newick              = "newick";
 terms.json.partitions               = "partitions";
 terms.json.name_mapping             = "name-mapping";
+
+// tree structure
+terms.trees = {};
+terms.trees.newick = "string";
+terms.trees.newick_with_lengths = "string_with_lengths";
+terms.trees.newick_annotated = "annotated_string";
+terms.trees.branch_lengths = "branch length";
+terms.trees.model_map = "model_map";
+terms.trees.partitioned = "partitioned";
+terms.trees.model_list = "model_list";

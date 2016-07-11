@@ -172,6 +172,7 @@ BaseRef _List::GetItemRangeCheck(const unsigned long i) const {
 
 // Assignment operator
 const _List _List::operator = (const _List& l) {
+
     Clear(true);
   
     lLength = l.lLength;
@@ -180,7 +181,9 @@ const _List _List::operator = (const _List& l) {
         ((BaseRef*)(lData))[i] = l.GetItem (i);
         ((BaseRef*)(lData))[i] -> AddAReference();
     }
+
     return *this;
+
 }
 
 // Assignment compare 

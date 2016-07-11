@@ -22,7 +22,7 @@ LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
 
 
-io.displayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistical test of episodic diversification)
+io.DisplayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistical test of episodic diversification)
                             uses a random effects branch-site model fitted jointly to all or a subset of tree branches
                             in order to test for alignment-wide evidence of episodic diversifying selection. 
                             This version of BUSTED allows synonymous substitution rates to vary from site to site (but not
@@ -61,7 +61,7 @@ _BUSTED_json    = {"fits" : {},
 
 codon_data_info = utility.promptForGeneticCodeAndAlignment ("codon_data", "codon_filter");
 codon_data_info["json"] = codon_data_info["file"] + ".BUSTED-SRV.json";
-io.reportProgressMessage ("BUSTED", "Loaded an MSA with " + codon_data_info["sequences"] + " sequences and " + codon_data_info["sites"] + " codons from '" + codon_data_info["file"] + "'");
+io.ReportProgressMessage ("BUSTED", "Loaded an MSA with " + codon_data_info["sequences"] + " sequences and " + codon_data_info["sites"] + " codons from '" + codon_data_info["file"] + "'");
 
 codon_frequencies = utility.defineFrequencies ("codon_filter");
 tree_definition   = utility.loadAnnotatedTopology(1);
@@ -69,14 +69,14 @@ tree_definition   = utility.loadAnnotatedTopology(1);
 busted.selected_branches = busted.io.selectBranchesToTest (tree_definition);
 _BUSTED_json ["test set"] = Join (",",Rows(busted.selected_branches));
 
-io.reportProgressMessage ("BUSTED", "Selected " + Abs (busted.selected_branches) + " branches as the test (foreground) set: " + Join (",", Rows (busted.selected_branches)));
+io.ReportProgressMessage ("BUSTED", "Selected " + Abs (busted.selected_branches) + " branches as the test (foreground) set: " + Join (",", Rows (busted.selected_branches)));
 
 busted.model_definitions = busted.io.define_bsrel_models  ("FG","BG", codon_frequencies);
-io.reportProgressMessage ("BUSTED", "Obtaining initial branch lengths under the GTR model");
-busted.gtr_results = estimators.fitGTR     ("codon_filter", tree_definition, None);
-io.reportProgressMessage ("BUSTED", "Log(L) = " + busted.gtr_results["LogL"]);
+io.ReportProgressMessage ("BUSTED", "Obtaining initial branch lengths under the GTR model");
+busted.gtr_results = estimators.FitGTR     ("codon_filter", tree_definition, None);
+io.ReportProgressMessage ("BUSTED", "Log(L) = " + busted.gtr_results["LogL"]);
 
-model.applyModelToTree ("busted.tree", tree_definition, "", {"DEFAULT" : (busted.model_definitions["BG"])["model"], 
+model.ApplyModelToTree ("busted.tree", tree_definition, "", {"DEFAULT" : (busted.model_definitions["BG"])["model"], 
                                                              (busted.model_definitions["FG"])["model"] : Rows (busted.selected_branches)});
                                                              
                                                              
@@ -93,9 +93,9 @@ BUSTED.model_specification = {};
 BUSTED.model_specification[(busted.model_definitions["FG"])["model"]] = busted.model_definitions;
 BUSTED.model_specification[(busted.model_definitions["BG"])["model"]] = busted.model_definitions;
 
-estimators.applyExistingEstimates ("busted.LF", BUSTED.model_specification, busted.gtr_results);
+estimators.ApplyExistingEstimates ("busted.LF", BUSTED.model_specification, busted.gtr_results);
 
-io.reportProgressMessage ("BUSTED", "Fitting the unconstrained branch-site model");
+io.ReportProgressMessage ("BUSTED", "Fitting the unconstrained branch-site model");
 
 USE_LAST_RESULTS = 1;
 OPTIMIZATION_PRECISION = 0.1;
@@ -104,13 +104,13 @@ ASSUME_REVERSIBLE_MODELS = 1;
 busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
 Optimize (busted.MLE_HA, busted.LF);
 
-parameters.unconstrain_parameter_set ("busted.LF", {{terms.lf.local.constrained}});
+parameters.UnconstrainParameterSet ("busted.LF", {{terms.lf.local.constrained}});
 
 OPTIMIZATION_PRECISION = 0.001;
 Optimize (busted.MLE_HA, busted.LF);
-io.spoolLF ("busted.LF", codon_data_info["file"], None);
+io.SpoolLF ("busted.LF", codon_data_info["file"], None);
 busted_positive_class = busted.checkForPS (busted.model_definitions);
-io.reportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_HA[1][0] + ". Unrestricted class omega = " + busted_positive_class["omega"] + " (weight = " + busted_positive_class["weight"] + ")");
+io.ReportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_HA[1][0] + ". Unrestricted class omega = " + busted_positive_class["omega"] + " (weight = " + busted_positive_class["weight"] + ")");
 
 
 busted.sample_size             =codon_data_info["sites"] * codon_data_info["sequences"];
@@ -138,23 +138,23 @@ busted.profiles = {};
 
 
 if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8) {
-    io.reportProgressMessage ("BUSTED", "No evidence for positive selection under the unconstrained model, skipping constrained model fitting");
+    io.ReportProgressMessage ("BUSTED", "No evidence for positive selection under the unconstrained model, skipping constrained model fitting");
     _BUSTED_json ["test results"] = busted.runLRT (0, 0);
 } else {
     busted.taskTimerStart (1);
 
-    io.reportProgressMessage ("BUSTED", "Fitting the branch-site model that disallows omega > 1 among foreground branches");
+    io.ReportProgressMessage ("BUSTED", "Fitting the branch-site model that disallows omega > 1 among foreground branches");
     busted.constrainTheModel (busted.model_definitions);
     (_BUSTED_json ["profiles"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
     Optimize (busted.MLE_H0, busted.LF);
-    io.spoolLF ("busted.LF", codon_data_info["file"], "null");
+    io.SpoolLF ("busted.LF", codon_data_info["file"], "null");
     (_BUSTED_json ["profiles"])["optimized null"] = busted.computeSiteLikelihoods ("busted.LF");;
-    io.reportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_H0[1][0]);
+    io.ReportProgressMessage ("BUSTED", "Log(L) = " + busted.MLE_H0[1][0]);
     busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);
     
     _BUSTED_json ["test results"] = busted.LRT;
     
-    io.reportProgressMessage ("BUSTED", "Likelihood ratio test for episodic positive selection, p = " + busted.LRT["p"]);
+    io.ReportProgressMessage ("BUSTED", "Likelihood ratio test for episodic positive selection, p = " + busted.LRT["p"]);
      busted.taskTimerStop (1);
     
     busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);

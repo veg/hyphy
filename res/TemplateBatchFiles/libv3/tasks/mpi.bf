@@ -11,8 +11,8 @@ namespace mpi {
 
     lfunction create_queue (nodesetup) {
         /** create and return an empty FIFO queue for MPI jobs */
-        mpi_node_count = utility.getEnvVariable ("MPI_NODE_COUNT");
-
+        mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
+    
         queue = {};
         send_to_nodes = "";
         if (mpi_node_count > 1) {
@@ -20,13 +20,13 @@ namespace mpi {
 
             if (None != nodesetup) {
                 if (Abs (nodesetup)) {
-
-                    utility.setEnvVariable ("LF_NEXUS_EXPORT_EXTRA",
+                
+                    utility.SetEnvVariable ("LF_NEXUS_EXPORT_EXTRA", 
                                             'PRESERVE_SLAVE_NODE_STATE = TRUE; MPI_NEXUS_FILE_RETURN = "None";');
 
                     send_to_nodes * 128;
-
-                    utility.forEach (nodesetup["LikelihoodFunctions"], "_value_",
+                
+                    utility.ForEach (nodesetup["LikelihoodFunctions"], "_value_", 
                                      '
                                         ExecuteCommands ("Export (create_queue.temp, " + _value_ + ")");
                                         for (`&k` = 1; `&k` < `mpi_node_count`; `&k` += 1) {
@@ -38,7 +38,7 @@ namespace mpi {
 
                                      ');
 
-                    utility.forEach (nodesetup["Headers"], "_value_",
+                    utility.ForEach (nodesetup["Headers"], "_value_",
                         '
                             `&send_to_nodes` * ("LoadFunctionLibrary (\'" + _value_ + "\')");
                         '
@@ -46,16 +46,16 @@ namespace mpi {
 
                     globals_to_export = {};
                     functions_to_export = {};
-                    model_count = utility.array1D (nodesetup["Models"]);
+                    model_count = utility.Array1D (nodesetup["Models"]);
                     for (m = 0; m < model_count; m+=1) {
                         model_name = (nodesetup["Models"])[m];
-                        model_globals = utility.values(((^model_name)["parameters"])[^"terms.global"]);
-                        model_global_count = utility.array1D (model_globals);
+                        model_globals = utility.Values(((^model_name)["parameters"])[^"terms.global"]);
+                        model_global_count = utility.Array1D (model_globals);
                         for (v = 0; v < model_global_count; v+=1) {
                             globals_to_export [model_globals[v]] = 1;
                         }
 
-                        utility.forEach ({{"get-branch-length","set-branch-length"}}, "_value_",
+                        utility.ForEach ({{"get-branch-length","set-branch-length"}}, "_value_",
                         '
                             _test_id_ = (^(`&model_name`))[_value_];
                             if (Type (_test_id_) == "String" && Abs (_test_id_) > 0) {
@@ -64,13 +64,13 @@ namespace mpi {
                         ');
                     }
 
-                    utility.forEach (utility.keys(globals_to_export), "_value_",
+                    utility.ForEach (utility.Keys(globals_to_export), "_value_",
                         '
                             `&send_to_nodes` * parameters.ExportParameterDefinition (_value_);
                         '
                     );
 
-                    utility.forEach (utility.keys(functions_to_export), "_value_",
+                    utility.ForEach (utility.Keys(functions_to_export), "_value_",
                         '
                             ExecuteCommands ("Export (_test_id_," + _value_ + ")");
                             `&send_to_nodes` * _test_id_;
@@ -108,7 +108,7 @@ namespace mpi {
 
         */
 
-        mpi_node_count = utility.getEnvVariable ("MPI_NODE_COUNT");
+        mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
 
         if (mpi_node_count > 1) {
             for (node = 1; node < mpi_node_count; node += 1) {
@@ -126,16 +126,17 @@ namespace mpi {
             job_id = get_job_id();
             //fprintf (stdout, "Sending to node ", node, "\n");
             queue [node] = {"job_id" : job_id, "callback" : result_callback, "arguments" : arguments};
-            MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');
+            MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');    
+
         } else {
-            Call (result_callback, 0, Eval (job + '(' + Join (",",utility.map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')'), arguments);
+            Call (result_callback, 0, Eval (job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')'), arguments);
         }
     }
 
     lfunction queue_complete (queue) {
-
-        mpi_node_count = utility.getEnvVariable ("MPI_NODE_COUNT");
-
+       
+        mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
+    
         if (mpi_node_count > 1) {
             do {
 

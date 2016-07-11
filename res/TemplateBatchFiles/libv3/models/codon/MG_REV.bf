@@ -7,13 +7,13 @@ LoadFunctionLibrary("../../UtilityFunctions.bf");
 /** @module models.codon.MG_REV */
 
 /**
- * @name models.codon.MG_REV.modelDescription
+ * @name models.codon.MG_REV.ModelDescription
  * @param {String} type
  * @param {String} code
  */
-lfunction models.codon.MG_REV.modelDescription(type, code) {
+lfunction models.codon.MG_REV.ModelDescription(type, code) {
 
-    codons = models.codon.map_code(code);
+    codons = models.codon.MapCode(code);
 
     return {
         "alphabet": codons["sense"],
@@ -33,70 +33,70 @@ lfunction models.codon.MG_REV.modelDescription(type, code) {
         "set-branch-length": "models.codon.MG_REV.set_branch_length",
         "constrain-branch-length": "models.generic.constrain_branch_length",
         "frequency-estimator": "frequencies.empirical.corrected.CF3x4",
-        "q_ij": "models.codon.MG_REV.generateRate",
-        "time": "models.DNA.generic.time",
-        "defineQ": "models.codon.MG_REV.defineQ",
+        "q_ij": "models.codon.MG_REV._GenerateRate",
+        "time": "models.DNA.generic.Time",
+        "defineQ": "models.codon.MG_REV._DefineQ",
         "post-definition": "models.generic.post.definition"
     };
 }
 
 /**
- * @name models.codon.MG_REV.generateRate 
+ * @name models.codon.MG_REV._GenerateRate 
  * @param {Number} fromChar
  * @param {Number} toChar
  * @param {String} namespace
  * @param {String} model_type
  * @param {Matrix} _tt - transition table
  */
-function models.codon.MG_REV.generateRate(fromChar, toChar, namespace, model_type, _tt) {
+function models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, _tt) {
 
-    models.codon.MG_REV.generateRate.p = {};
-    models.codon.MG_REV.generateRate.diff = models.codon.diff(fromChar, toChar);
+    models.codon.MG_REV._GenerateRate.p = {};
+    models.codon.MG_REV._GenerateRate.diff = models.codon.diff(fromChar, toChar);
 
-    if (None != models.codon.MG_REV.generateRate.diff) {
-        models.codon.MG_REV.generateRate.p[model_type] = {};
-        models.codon.MG_REV.generateRate.p[terms.global] = {};
+    if (None != models.codon.MG_REV._GenerateRate.diff) {
+        models.codon.MG_REV._GenerateRate.p[model_type] = {};
+        models.codon.MG_REV._GenerateRate.p[terms.global] = {};
 
-        if (models.codon.MG_REV.generateRate.diff["from"] > models.codon.MG_REV.generateRate.diff["to"]) {
-            models.codon.MG_REV.nuc_rate = "theta_" + models.codon.MG_REV.generateRate.diff["to"] + models.codon.MG_REV.generateRate.diff["from"];
+        if (models.codon.MG_REV._GenerateRate.diff["from"] > models.codon.MG_REV._GenerateRate.diff["to"]) {
+            models.codon.MG_REV.nuc_rate = "theta_" + models.codon.MG_REV._GenerateRate.diff["to"] + models.codon.MG_REV._GenerateRate.diff["from"];
         } else {
-            models.codon.MG_REV.nuc_rate = "theta_" + models.codon.MG_REV.generateRate.diff["from"] + models.codon.MG_REV.generateRate.diff["to"];
+            models.codon.MG_REV.nuc_rate = "theta_" + models.codon.MG_REV._GenerateRate.diff["from"] + models.codon.MG_REV._GenerateRate.diff["to"];
         }
 
-        models.codon.MG_REV.nuc_rate = parameters.applyNameSpace(models.codon.MG_REV.nuc_rate, namespace);
-        (models.codon.MG_REV.generateRate.p[terms.global])[terms.nucleotideRate(models.codon.MG_REV.generateRate.diff["from"], models.codon.MG_REV.generateRate.diff["to"])] = models.codon.MG_REV.nuc_rate;
+        models.codon.MG_REV.nuc_rate = parameters.ApplyNameSpace(models.codon.MG_REV.nuc_rate, namespace);
+        (models.codon.MG_REV._GenerateRate.p[terms.global])[terms.nucleotideRate(models.codon.MG_REV._GenerateRate.diff["from"], models.codon.MG_REV._GenerateRate.diff["to"])] = models.codon.MG_REV.nuc_rate;
 
         if (_tt[fromChar] != _tt[toChar]) {
             if (model_type == terms.global) {
-                models.codon.MG_REV.aa_rate = parameters.applyNameSpace("omega", namespace);
-                (models.codon.MG_REV.generateRate.p[model_type])[terms.omega_ratio] = models.codon.MG_REV.aa_rate;
+                models.codon.MG_REV.aa_rate = parameters.ApplyNameSpace("omega", namespace);
+                (models.codon.MG_REV._GenerateRate.p[model_type])[terms.omega_ratio] = models.codon.MG_REV.aa_rate;
             } else {
                 models.codon.MG_REV.aa_rate = "beta";
-                (models.codon.MG_REV.generateRate.p[model_type])[terms.nonsynonymous_rate] = models.codon.MG_REV.aa_rate;
+                (models.codon.MG_REV._GenerateRate.p[model_type])[terms.nonsynonymous_rate] = models.codon.MG_REV.aa_rate;
             }
-            models.codon.MG_REV.generateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate + "*" + models.codon.MG_REV.aa_rate;
+            models.codon.MG_REV._GenerateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate + "*" + models.codon.MG_REV.aa_rate;
         } else {
             if (model_type == terms.local) {
-                (models.codon.MG_REV.generateRate.p[model_type])[terms.synonymous_rate] = "alpha";
-                models.codon.MG_REV.generateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate + "*alpha";
+                (models.codon.MG_REV._GenerateRate.p[model_type])[terms.synonymous_rate] = "alpha";
+                models.codon.MG_REV._GenerateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate + "*alpha";
             } else {
-                models.codon.MG_REV.generateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate;
+                models.codon.MG_REV._GenerateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate;
             }
         }
     }
 
-    return models.codon.MG_REV.generateRate.p;
+    return models.codon.MG_REV._GenerateRate.p;
 }
 
 /**
- * @name models.codon.MG_REV.defineQ 
+ * @name models.codon.MG_REV._DefineQ 
  * @param {Model} mg_rev
  * @param {String} namespace
  * @returns {Model} updated model
  */
-function models.codon.MG_REV.defineQ(mg_rev, namespace) {
-    models.codon.generic.defineQMatrix(mg_rev, namespace);
-    parameters.setConstraint(((mg_rev["parameters"])[terms.global])[terms.nucleotideRate("A", "G")], "1", "");
+function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
+    models.codon.generic.DefineQMatrix(mg_rev, namespace);
+    parameters.SetConstraint(((mg_rev["parameters"])[terms.global])[terms.nucleotideRate("A", "G")], "1", "");
     return mg_rev;
 }
 
@@ -109,12 +109,12 @@ function models.codon.MG_REV.defineQ(mg_rev, namespace) {
  */
 function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     if (model["type"] == terms.global) {
-        return models.generic.set_branch_length(model, value, parameter);
+        return models.generic.SetBranchLength(model, value, parameter);
     }
 
 
-    models.codon.MG_REV.set_branch_length.beta = model.generic.get_local_parameter(model, terms.nonsynonymous_rate);
-    models.codon.MG_REV.set_branch_length.alpha = model.generic.get_local_parameter(model, terms.synonymous_rate);
+    models.codon.MG_REV.set_branch_length.beta = model.generic.GetLocalParameter(model, terms.nonsynonymous_rate);
+    models.codon.MG_REV.set_branch_length.alpha = model.generic.GetLocalParameter(model, terms.synonymous_rate);
 
     models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
     models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
@@ -123,7 +123,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
     if (Type(value) == "AssociativeList") {
         if (value[terms.branch_length_scaler] == terms.branch_length_constrain) {
-            if (parameters.isIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
+            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                 if (Abs(model[terms.synonymous_rate]) == 0) {
                     bl_string = model["branch-length-string"];
 
@@ -139,7 +139,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
                 //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
 
-                parameters.setConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.synonymous_rate] + "))/(" + model[terms.nonsynonymous_rate] + ")", "");
+                parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.synonymous_rate] + "))/(" + model[terms.nonsynonymous_rate] + ")", "");
                 return 1;
 
             } else {
@@ -148,23 +148,23 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
         } else {
 
             models.codon.MG_REV.set_branch_length.lp = 0;
-            if (parameters.isIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
+            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                 Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
                 models.codon.MG_REV.set_branch_length.lp += 1;
             }
-            if (parameters.isIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
+            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
                 Eval(models.codon.MG_REV.set_branch_length.beta.p + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
                 models.codon.MG_REV.set_branch_length.lp += 1;
             }
             return models.codon.MG_REV.set_branch_length.lp;
         }
     } else {
-        if (parameters.isIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
-            if (parameters.isIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
-                models.codon.MG_REV.set_branch_length.lp = parameters.normalize_ratio(Eval(models.codon.MG_REV.set_branch_length.beta), Eval(models.codon.MG_REV.set_branch_length.alpha));
-                parameters.setConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
+        if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
+            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
+                models.codon.MG_REV.set_branch_length.lp = parameters.NormalizeRatio(Eval(models.codon.MG_REV.set_branch_length.beta), Eval(models.codon.MG_REV.set_branch_length.alpha));
+                parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
                 ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model["branch-length-string"] + ")-" + value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
-                parameters.removeConstraint(models.codon.MG_REV.set_branch_length.beta);
+                parameters.RemoveConstraint(models.codon.MG_REV.set_branch_length.beta);
                 Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
                 Eval("`models.codon.MG_REV.set_branch_length.beta.p` =" + Eval(models.codon.MG_REV.set_branch_length.beta.p));
             } else {

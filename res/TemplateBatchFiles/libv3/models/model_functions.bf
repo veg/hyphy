@@ -6,13 +6,13 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
 /** @module model */
 
 /**
- * @name model.applyModelToTree
+ * @name model.ApplyModelToTree
  * @param id
  * @param tree
  * @param model_list
  * @param rules
  */
-function model.applyModelToTree (id, tree, model_list, rules) {
+function model.ApplyModelToTree (id, tree, model_list, rules) {
 
 	if (Type (rules) == "AssociativeList") {
 	    // this has the form 
@@ -31,38 +31,38 @@ function model.applyModelToTree (id, tree, model_list, rules) {
 	    
 	    }
 	    
-	    model.applyModelToTree.ids = Rows (rules);
-	    for (model.applyModelToTree.k = 0; model.applyModelToTree.k < Abs (rules); model.applyModelToTree.k += 1) {
-	        model.applyModelToTree.name = model.applyModelToTree.ids[model.applyModelToTree.k];
-	        if ( model.applyModelToTree.name != "DEFAULT") {
-                model.applyModelToTree.list = rules[model.applyModelToTree.name];
-                if (Type (model.applyModelToTree.list) == "AssociativeList") {
-                    model.applyModelToTree.list = Rows (model.applyModelToTree.list);
+	    model.ApplyModelToTree.ids = Rows (rules);
+	    for (model.ApplyModelToTree.k = 0; model.ApplyModelToTree.k < Abs (rules); model.ApplyModelToTree.k += 1) {
+	        model.ApplyModelToTree.name = model.ApplyModelToTree.ids[model.ApplyModelToTree.k];
+	        if ( model.ApplyModelToTree.name != "DEFAULT") {
+                model.ApplyModelToTree.list = rules[model.ApplyModelToTree.name];
+                if (Type (model.ApplyModelToTree.list) == "AssociativeList") {
+                    model.ApplyModelToTree.list = Rows (model.ApplyModelToTree.list);
                 }
                 
                 if (Type (model_list) == "AssociativeList") {
-                    model.applyModelToTree.apply_model = model_list[model.applyModelToTree.name];
+                    model.ApplyModelToTree.apply_model = model_list[model.ApplyModelToTree.name];
                 } else {
-                    model.applyModelToTree.apply_model = model.applyModelToTree.name;
+                    model.ApplyModelToTree.apply_model = model.ApplyModelToTree.name;
                 }
                 
-                for (model.applyModelToTree.b = 0; model.applyModelToTree.b < Columns (model.applyModelToTree.list); model.applyModelToTree.b += 1) {
-                    //fprintf (stdout, "SetParameter (`id`." + model.applyModelToTree.list[model.applyModelToTree.b] + ",MODEL," + model.applyModelToTree.apply_model + ")", "\n");
-                    ExecuteCommands ("SetParameter (`id`." + model.applyModelToTree.list[model.applyModelToTree.b] + ",MODEL," + model.applyModelToTree.apply_model + ")");
+                for (model.ApplyModelToTree.b = 0; model.ApplyModelToTree.b < Columns (model.ApplyModelToTree.list); model.ApplyModelToTree.b += 1) {
+                    //fprintf (stdout, "SetParameter (`id`." + model.ApplyModelToTree.list[model.ApplyModelToTree.b] + ",MODEL," + model.ApplyModelToTree.apply_model + ")", "\n");
+                    ExecuteCommands ("SetParameter (`id`." + model.ApplyModelToTree.list[model.ApplyModelToTree.b] + ",MODEL," + model.ApplyModelToTree.apply_model + ")");
                 }
             }
 	    }
 	    
 	} else {
-		model.applyModelToTree.modelID = model_list[model_list ["INDEXORDER"][0]];
-		ExecuteCommands ("UseModel (" + model.applyModelToTree.modelID["id"] + ");
+		model.ApplyModelToTree.modelID = model_list[model_list ["INDEXORDER"][0]];
+		ExecuteCommands ("UseModel (" + model.ApplyModelToTree.modelID["id"] + ");
 						  Tree `id` = " + tree["string"] + ";
 						  ");
 	}
 }
 
 /**
- * @name model.define.from.components
+ * @name model.define_from_components
  * @param id - {String} Name of of Model
  * @param q - {Matrix} instantaneous transition matrix
  * @param evf - {Matrix} the equilibrium frequencies
@@ -73,39 +73,39 @@ function model.applyModelToTree (id, tree, model_list, rules) {
  *  {t*kappa,t,*,t}
  *  {t,t*kappa,t,*}};
  * evf =  {{0.4}{0.3}{0.2}{0.1}};
- * model.define.from.components(q,evf,1);
+ * model.define_from_components(q,evf,1);
  * @returns nothing, sets a global {Model}
  */
-function model.define.from.components (id,q,efv,canonical) {
+function model.define_from_components (id,q,efv,canonical) {
 	ExecuteCommands ("Model `id` = (" + q + "," + efv + "," + canonical + ")");
 
 }
 
 /**
- * @name model.generic.add_global
+ * @name model.generic.AddGlobal
  * @param model_spec
  * @param id
  * @param tag
  */
-function model.generic.add_global (model_spec, id, tag) {
+function model.generic.AddGlobal (model_spec, id, tag) {
     ((model_spec["parameters"])[terms.global])[tag] = id;
 }
 
 /**
- * @name model.generic.get_local_parameter
+ * @name model.generic.GetLocalParameter
  * @param model_spec
  * @param tag
  */
-lfunction model.generic.get_local_parameter (model_spec, tag) {
+lfunction model.generic.GetLocalParameter (model_spec, tag) {
    return model.generic.get_a_parameter (model_spec, tag, ^"terms.local");
 }
 
 /**
- * @name model.generic.get_global_parameter
+ * @name model.generic.GetGlobalParameter
  * @param model_spec
  * @param tag
  */
-lfunction model.generic.get_global_parameter (model_spec, tag) {
+lfunction model.generic.GetGlobalParameter (model_spec, tag) {
    return model.generic.get_a_parameter (model_spec, tag, ^"terms.global");
 }
 
@@ -126,47 +126,47 @@ lfunction model.generic.get_a_parameter (model_spec, tag, type) {
 
 
 /**
- * @name model.generic.define_model
+ * @name model.generic.DefineModel
  * @param model_spec
  * @param id 
  * @param arguments 
  * @param data_filter 
  * @param estimator_type
  */
-function model.generic.define_model (model_spec, id, arguments, data_filter, estimator_type) {
+function model.generic.DefineModel (model_spec, id, arguments, data_filter, estimator_type) {
 	
-	model.generic.define_model.model = utility.callFunction (model_spec, arguments);	
-	models.generic.attachFilter (model.generic.define_model.model, data_filter);
+	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);	
+	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
 	
-	model.generic.define_model.model = Call (model.generic.define_model.model ["defineQ"], model.generic.define_model.model, id);
+	model.generic.DefineModel.model = Call (model.generic.DefineModel.model ["defineQ"], model.generic.DefineModel.model, id);
 																						   
-	model.generic.define_model.model ["matrix-id"] = "`id`_" + terms.rate_matrix;
-	model.generic.define_model.model ["efv-id"] = "`id`_" + terms.efv_matrix;
-	model.generic.define_model.model ["id"] = id;
+	model.generic.DefineModel.model ["matrix-id"] = "`id`_" + terms.rate_matrix;
+	model.generic.DefineModel.model ["efv-id"] = "`id`_" + terms.efv_matrix;
+	model.generic.DefineModel.model ["id"] = id;
 		
 	if (estimator_type != None) {
-		model.generic.define_model.model ["frequency-estimator"] = estimator_type;
+		model.generic.DefineModel.model ["frequency-estimator"] = estimator_type;
 	} 
 		
-	Call (model.generic.define_model.model ["frequency-estimator"], model.generic.define_model.model, 
+	Call (model.generic.DefineModel.model ["frequency-estimator"], model.generic.DefineModel.model, 
 													    id,
 													    data_filter); // this sets the EFV field
 													    
 					
-	parameters.stringMatrixToFormulas (model.generic.define_model.model ["matrix-id"],model.generic.define_model.model[terms.rate_matrix]);
-	utility.setEnvVariable (model.generic.define_model.model ["efv-id"], model.generic.define_model.model[terms.efv_estimate]);
+	parameters.StringMatrixToFormulas (model.generic.DefineModel.model ["matrix-id"],model.generic.DefineModel.model[terms.rate_matrix]);
+	utility.SetEnvVariable (model.generic.DefineModel.model ["efv-id"], model.generic.DefineModel.model[terms.efv_estimate]);
 		    
-	model.define.from.components (id, 	model.generic.define_model.model ["matrix-id"], model.generic.define_model.model ["efv-id"], model.generic.define_model.model ["canonical"]);
+	model.define_from_components (id, 	model.generic.DefineModel.model ["matrix-id"], model.generic.DefineModel.model ["efv-id"], model.generic.DefineModel.model ["canonical"]);
     
-    if (Type (model.generic.define_model.model["post-definition"]) == "String") {
-        Call (model.generic.define_model.model["post-definition"], model.generic.define_model.model);
+    if (Type (model.generic.DefineModel.model["post-definition"]) == "String") {
+        Call (model.generic.DefineModel.model["post-definition"], model.generic.DefineModel.model);
     }
 	
-	return model.generic.define_model.model;
+	return model.generic.DefineModel.model;
 }
 
 /**
- * @name model.generic.get_local_parameter
+ * @name model.generic.GetLocalParameter
  * @param {Model} model
  * @returns {String}
  */
@@ -179,25 +179,25 @@ function models.generic.post.definition  (model) {
 }
 
 /**
- * @name models.generic.set_branch_length
+ * @name models.generic.SetBranchLength
  * @param {Model} model
  * @param {AssociativeList} or {Number} value
  * @param {String} parameter
  * @returns 0
  */
-function models.generic.set_branch_length (model, value, parameter) {
+function models.generic.SetBranchLength (model, value, parameter) {
     if (Abs((model["parameters"])["local"]) == 1) {
         if (Type (model ["branch-length-string"]) == "String") {
-            models.generic.set_branch_length.bl = (Columns ((model["parameters"])["local"]))[0];
+            models.generic.SetBranchLength.bl = (Columns ((model["parameters"])["local"]))[0];
             if (Type (value) == "AssociativeList") {
-                ExecuteCommands ("FindRoot (models.generic.set_branch_length.t,(" + model ["branch-length-string"] + ")-" + value[terms.branch_length] + "," + models.generic.set_branch_length.bl + ",0,10000)");
-                Eval (parameter + "." + models.generic.set_branch_length.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.set_branch_length.t);
-                //fprintf (stdout, parameter + "." + models.generic.set_branch_length.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.set_branch_length.t, "\n");
+                ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+                //fprintf (stdout, parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t, "\n");
                 return 1;
            
             } else {
-                ExecuteCommands ("FindRoot (models.generic.set_branch_length.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.set_branch_length.bl + ",0,10000)");
-                Eval (parameter + "." + models.generic.set_branch_length.bl + "=" + models.generic.set_branch_length.t);
+                ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
            }
         }
     }
@@ -207,15 +207,15 @@ function models.generic.set_branch_length (model, value, parameter) {
 
 
 /**
- * @name models.generic.attachFilter
+ * @name models.generic.AttachFilter
  * @param {Model} model
  * @param {DataSetFilter} filter
  * @returns 0
  */
-lfunction models.generic.attachFilter (model, filter) {
+lfunction models.generic.AttachFilter (model, filter) {
 
     if (Type (filter) != "String") {
-        utility.forEach (filter, "_filter_", "models.generic.attachFilter (`&model`, _filter_)");
+        utility.ForEach (filter, "_filter_", "models.generic.AttachFilter (`&model`, _filter_)");
         model["data"] = filter;
         return model;
     } 
@@ -223,7 +223,7 @@ lfunction models.generic.attachFilter (model, filter) {
 	GetDataInfo (givenAlphabet, ^filter, "CHARACTERS");
 	alphabet = model ["alphabet"];
 
-	assert (Columns (alphabet) == Columns (givenAlphabet) && model.matchAlphabets (givenAlphabet, alphabet), "The declared model alphabet '" +alphabet + "' does not match the `filter` filter: '" + givenAlphabet + "'");
+	assert (Columns (alphabet) == Columns (givenAlphabet) && model.MatchAlphabets (givenAlphabet, alphabet), "The declared model alphabet '" +alphabet + "' does not match the `filter` filter: '" + givenAlphabet + "'");
 	
 	model ["alphabet"] = givenAlphabet;
 	model ["data"] = filter;
@@ -231,11 +231,11 @@ lfunction models.generic.attachFilter (model, filter) {
 }
 
 /**
- * @name model.dimension
+ * @name model.Dimension
  * @param {Model} model
  * @returns {Matrix} dimensions of model
  */
-function model.dimension (model) {
+function model.Dimension (model) {
     if (Type (model["alphabet"]) == "Matrix") {
         return Columns (model["alphabet"]);
     }
@@ -243,31 +243,31 @@ function model.dimension (model) {
 }
 
 /**
- * @name model.parameters.local
+ * @name model.parameters.Local
  * @param {Model} model
  * @returns {Matrix} local parameters
  */
-function model.parameters.local (model) {
+function model.parameters.Local (model) {
     return (model["parameters"])["local"];
 }
 
 
 /**
- * @name model.parameters.global 
+ * @name model.parameters.Global 
  * @param {Model} model
  * @returns {Matrix} global parameters
  */
-function model.parameters.global (model) {
+function model.parameters.Global (model) {
     return (model["parameters"])["global"];
 }
 
 /**
- * @name model.matchAlphabets
+ * @name model.MatchAlphabets
  * @param {Matrix} a1 - first alphabet to compare
  * @param {Matrix} a2 - second alphabet to compare
  * @returns {Number} 1 if they are equal, 0 if they are not
  */
-lfunction model.matchAlphabets (a1, a2) {
+lfunction model.MatchAlphabets (a1, a2) {
 
 
 	_validStates = {};

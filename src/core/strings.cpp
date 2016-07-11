@@ -501,18 +501,25 @@ void _String::AppendAnAssignmentToBuffer(_String* id, _String *value, unsigned l
     if (flags & kAppendAnAssignmentToBufferAssignment) {
         (*this) << ':';
     }
+
     (*this) << '=';
+
     if (flags & kAppendAnAssignmentToBufferQuote) {
         (*this) << '"';
     }
+
     (*this) << value;
+
     if (flags & kAppendAnAssignmentToBufferQuote) {
         (*this) << '"';
     }
+
     (*this) << ";\n";
+
     if (flags & kAppendAnAssignmentToBufferFree) {
         DeleteObject (value);
     }
+
 }
 
 
