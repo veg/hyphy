@@ -128,10 +128,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${GCC46})
 
     if(${GCC6})
-      set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -std=gnu++98")
+      set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -std=gnu++98 -fno-strict-aliasing -fpermissive")
       set(DEFAULT_WARNING_FLAGS "${DEFAULT_WARNING_FLAGS} -Wno-error=narrowing")
     endif(${GCC6})
-    
+
     PCL_CHECK_FOR_AVX()
     if(${HAVE_AVX_EXTENSIONS})
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
@@ -218,7 +218,7 @@ file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 
-set(SRC_LINK src/lib/Link/THyPhy.cpp)
+set(SRC_LINK src/lib/link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
 set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
