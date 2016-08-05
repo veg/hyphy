@@ -1,4 +1,4 @@
-[![HyPhy.org](http://hyphy.org/w/skins/common/images/HyphyLogo_135x135.png)](http://hyphy.org) HyPhy - Hypothesis testing using Phylogenies
+[![HyPhy.org](http://hyphy.org/w/skins/common/images/HyphyLogo_135x135.png =50x50)](http://hyphy.org) HyPhy - Hypothesis testing using Phylogenies
 ============================================
 
 [![Build Status](https://travis-ci.org/veg/hyphy.svg)](https://travis-ci.org/veg/hyphy)
