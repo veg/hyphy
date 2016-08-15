@@ -3007,7 +3007,7 @@ bool    ReadDataFromFile (_String fileName, char delimiter, _Matrix& data, _List
             for (long k=0; k<columns; k++) {
                 _String * thisString = (_String*)readStrings (lastRead*columns+k);
                 if ((thisString->sLength)&&(thisString->FirstNonSpaceIndex (0,-1)>=0)) {
-                    _Formula f (*thisString,nil,false);
+                    _Formula f (*thisString,nil,nil);
                     v.SetValue (k);
                     if (!f.IsEmpty()) {
                         data.MStore (&h,&v,f);
@@ -4527,7 +4527,7 @@ void    _HYDistributionChartWindow::AddVariable (_String * expr)
 
         aPrompt = newExpression;
 
-        _Formula f (newExpression, nil,false);
+        _Formula f (newExpression, nil, nil);
 
         if (f.IsEmpty()) {
             newExpression = _String("Failed to parse the expression :") & aPrompt;
