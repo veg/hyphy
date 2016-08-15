@@ -1,4 +1,4 @@
-HyPhy - Hypothesis testing using Phylogenies
+[![HyPhy.org](http://veg.github.io/hyphy/assets/logo_50x50.png)](http://hyphy.org) HyPhy - Hypothesis testing using Phylogenies
 ============================================
 
 [![Build Status](https://travis-ci.org/veg/hyphy.svg)](https://travis-ci.org/veg/hyphy)
