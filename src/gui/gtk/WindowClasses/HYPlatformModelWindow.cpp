@@ -173,7 +173,7 @@ bool _HYModelWindow::_CheckClipboard (void)
     {
         _String cText ((char*)scrapHandle);
         skipWarningMessages = true;
-        _Formula f (cText,nil,false);
+        _Formula f (cText,nil,nil);
         skipWarningMessages = false;
         if (f.GetList().lLength)
         {
