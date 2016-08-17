@@ -161,6 +161,7 @@ bool    Get_a_URL (_String& urls, _String* fileName)
 
 _String*    StringFromConsole   (bool)
 {
+    fflush(stdout);
     _String * returnme = new _String (32L, true);
 #if not defined __HEADLESS__ && not defined _MINGW32_MEGA_
     int       readAChar;
