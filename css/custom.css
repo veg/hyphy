@@ -1,0 +1,116 @@
+
+body {
+    padding-top: 70px; /* Required padding for .navbar-fixed-top. Remove if using .navbar-static-top. Change if height of navigation changes. */
+}
+
+.thumbnail-download, .thumbnail-datamonkey, .thumbnail-tutorials, .thumbnail-issues {
+  display: block;
+  padding: 4px;
+  margin-bottom: 20px;
+  line-height: 1.42857143;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  -webkit-transition: border .2s ease-in-out;
+       -o-transition: border .2s ease-in-out;
+          transition: border .2s ease-in-out;
+}
+
+a.thumbnail-download:hover,
+a.thumbnail-download:focus {
+  border-color: #1a3cff !important;
+}
+a.thumbnail-tutorials:hover,
+a.thumbnail-tutorials:focus {
+  border-color:  #057a15 !important;
+}
+a.thumbnail-datamonkey:hover,
+a.thumbnail-datamonkey:focus {
+  border-color: #b03636 !important;
+}
+a.thumbnail-issues:hover,
+a.thumbnail-issues:focus {
+  border-color: #cca300 !important;
+}
+
+.container .jumbotron,
+.container-fluid .jumbotron {
+  min-width: 250px;
+  background-color: #ffa366;
+  margin-right: 100px;
+  margin-left: 100px;
+  padding: 12px;
+  border-radius: 20px;
+}
+.jumbotron h1{
+  font-size: 42px;
+  font-weight: 600;
+  text-align: center;
+}
+.jumbotron p {
+  margin-top: 40px;
+  font-size: 20px;
+  font-weight: 200;
+}
+.jumbotron .container {
+  max-width: 100%;
+}
+
+
+.container .subjumbotron,
+.container-fluid .subjumbotron {
+  padding-right: 40px;
+  padding-left: 40px;
+  padding-top: 15px;
+  padding-bottom: 2px;
+  border-radius: 20px;
+  margin-right: 125px;
+  margin-left: 125px;
+  background-color: #e6e6e6;
+//  background-color: #99b3e6;
+}
+.subjumbotron p {
+  font-size: 20px;
+  line-height: 1.35em;
+  font-weight: 200;
+}
+.subjumbotron div {
+  text-align: center;
+  font-size: 35px;
+  color: black;
+}
+.subjumbotron div a {
+  margin-left: 25px;
+  margin-right: 25px;
+  padding: 10px;
+  text-decoration: none;
+  color: black;
+}
+.subjumbotron > div > a:hover, .subjumbotron > div > a:focus {
+  color: #e65c00;
+  text-decoration: none;
+}
+
+
+
+.navbar {
+  font-size: 17px;
+  padding-bottom: 0;
+  padding-top: 5px;
+  padding-left: 100px;
+
+}
+
+
+.custom-spacer {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+.custom-feature {
+    margin-bottom: 30px;
+}
+
+footer {
+    margin: 50px 0;
+}

@@ -1,9 +1,168 @@
-<html>
-  <head></head>
-  <body>
-    <ul>
-      <li><a href="docs">libv3 docs</a></li>
-      <li><a href="doxygen">src documentation</a></li>
-    </ul>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>HyPhy</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/custom.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- Favicon link -->
+    <link rel="shortcut icon"  href="/img/favicon.ico">
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <!--
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Start Bootstrap</a>
+            </div>
+            -->
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="https://github.com/veg/hyphy">Github</a>
+                    </li>
+                    <li>
+                        <a href="http://twitter.com/HyPhy_DM">Twitter</a>
+                    </li>
+                    <li>
+                        <a href="http://www.hyphy.org/w/index.php/Main_Page">Old Site</a>
+                    </li>
+                    <li>
+                        <a href="http://veg.github.io/hyphy/docs/">libv3 docs</a>
+                    </li>
+                    <li>
+                        <a href="http://veg.github.io/hyphy/doxygen/">src docs</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container">
+
+        <!-- Jumbotron Header -->
+        <header class="jumbotron custom-spacer">
+            <h1>HyPhy: Hypothesis Testing using Phylogenies</h1>
+        </header>
+
+      <header class="subjumbotron custom-spacer">
+          <p>
+              HyPhy is an <b>open-source software package for the analysis of genetic sequences </b> using techniques in phylogenetics, molecular evolution, and machine learning. It features a complete graphical user interface (GUI) and a rich scripting language for limitless customization of analyses. Additionally, HyPhy features support for parallel computing environments (via message passing interface) and it can be compiled as a shared library and called from other programming environments such as Python or R. HyPhy has been cited in over 2000 peer-reviewed publications and has nearly 10,000 registered users. Continued development of HyPhy is currently supported in part by an NIGMS R01 award 2R01GM093939.
+              <br><br>
+              If you use HyPhy, please cite: <br>
+               SL Kosakovsky Pond, SDW Frost, and SV Muse.<a href="http://bioinformatics.oxfordjournals.org/content/21/5/676.short"> HyPhy: hypothesis testing using phylogenetics.</a> Bioinformatics 21, 676–679 (2005)
+            </p>
+          <!-- Brief stint w/ font awesome github and twitter below, they've been moved to navbar -->
+          <!--
+            <div>
+              <a href="https://github.com/veg/hyphy/"> <i class="icon-github-sign icon-large"></i></a>
+              <a href="https://twitter.com/HyPhy_DM/"> <i class="icon-twitter-sign icon-large"></i></a>
+            </div>
+          -->
+        </header>
+
+        <!-- Page Features -->
+          <div class="row text-center">
+
+
+              <div class="col-lg-3 col-sm-4 col-xs-6">
+                  <a href="http://www.hyphy.org/RegistrationDatabase/active_mw.php/" class="thumbnail-download">
+                       <img src="img/download_box.png" class="img-responsive">
+                  </a>
+              </div>
+
+              <div class="col-lg-3 col-sm-4 col-xs-6">
+                  <a href="http://www.datamonkey.org/" class="thumbnail-datamonkey">
+                       <img src="img/datamonkey_box.png" class="img-responsive">
+                  </a>
+              </div>
+
+              <div class="col-lg-3 col-sm-4 col-xs-6">
+                  <a href="http://www.hyphy.org/w/index.php/User_Guides" class="thumbnail-tutorials">
+                       <img src="img/tutorials_box.png" class="img-responsive">
+                  </a>
+              </div>
+
+
+              <div class="col-lg-3 col-sm-4 col-xs-6">
+                  <a href="https://github.com/veg/hyphy/issues" class="thumbnail-issues">
+                       <img src="img/issues_box.png" class="img-responsive">
+                  </a>
+              </div>
+
+
+            <!-- Below is forthcoming. Change above col-md-4 classes back to col-md-3 when ready -->
+            <!--
+              <div class="col-md-3 col-sm-6 custom-feature">
+                <div class="thumbnail">
+                    <a href="/methods.html"> <img src="img/methods_box.png" alt=""></a>
+                </div>
+              </div>
+            -->
+
+
+        </div>
+        <!-- /.row -->
+
+        <hr>
+
+        <!-- Footer -->
+        <footer>
+            <div class="row">
+                <div class="col-lg-12">
+                    <p>Maintained by <a href="http://sjspielman.org"> Stephanie J. Spielman</a></p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+    <!-- /.container -->
+
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+
+</body>
+
 </html>

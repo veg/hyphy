@@ -2,7 +2,7 @@
 .svn/
 *.tmp
 *~
-.DS_Store
+**/.DS_Store
 src/ocl/opencl_kernels.h
 *.cxx
 tags
@@ -33,3 +33,6 @@ gmon.out
 **/data/*.samples*
 messages.log
 errors.log
+
+#gh-pages build
+_site/
