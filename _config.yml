@@ -2,8 +2,8 @@
 title: HyPhy
 email: stephanie.spielman@temple.edu
 description: Official Website for the HyPhy Software
-baseurl: "/hyphy" # the subpath of your site, e.g. /blog/
-url: "http://veg.github.io/" # the base hostname & protocol for your site
+baseurl: "/hyphy"
+url: "http://veg.github.io/" 
 twitter_username: HyPhy_DM
 github_username:  veg/hyphy
 
