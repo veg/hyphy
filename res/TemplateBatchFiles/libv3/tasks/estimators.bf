@@ -238,9 +238,9 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
 
 /**
  * @name estimators.ApplyExistingEstimates
- * @param {String} likelihood_function_id 
- * @param {Dictionary} model_descriptions 
- * @param {Matrix} initial_values 
+ * @param {String} likelihood_function_id
+ * @param {Dictionary} model_descriptions
+ * @param {Matrix} initial_values
  * @param branch_length_conditions
  * @returns estimators.ApplyExistingEstimates.df_correction - Abs(estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers);
  */
@@ -384,22 +384,24 @@ function estimators.FitLF(data_filters_list, tree_list, model_map, initial_value
 }
 
 /**
- * @name estimators.FitGTR
+ * @name estimators.FitGTR_Ext
  * @param {DataFilter} data_filter
  * @param {Tree} tree
  * @param {Matrix} initial_values
+ * @param {Dict} run_options
  * @returns results
  */
-lfunction estimators.FitGTR(data_filter, tree, initial_values) {
+
+lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options) {
 
     if (Type(data_filter) == "String") {
-        return estimators.FitGTR({
+        return estimators.FitGTR_Ext ({
             {
                 data_filter__
             }
         }, {
             "0": tree
-        }, initial_values)
+        }, initial_values, run_options)
     }
 
     components = utility.Array1D(data_filter);
@@ -461,9 +463,24 @@ lfunction estimators.FitGTR(data_filter, tree, initial_values) {
     results["LogL"] = mles[1][0];
     results["parameters"] = mles[1][1] + 3 + df;
 
-    DeleteObject(likelihoodFunction);
+    if (run_options["retain-lf-object"]) {
+        results["LF"] = & likelihoodFunction;
+    } else {
+        DeleteObject(likelihoodFunction);
+    }
 
     return results;
+}
+
+/**
+ * @name estimators.FitGTR
+ * @param {DataFilter} data_filter
+ * @param {Tree} tree
+ * @param {Matrix} initial_values
+ * @returns results
+ */
+lfunction estimators.FitGTR(data_filter, tree, initial_values) {
+    return estimators.FitGTR_Ext(data_filter, tree, initial_values, {});
 }
 
 /**

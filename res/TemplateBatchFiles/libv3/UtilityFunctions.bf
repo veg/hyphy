@@ -225,7 +225,7 @@ function utility.Map (object, lambda_name, transform) {
 }
 
 /**
- * @name utility.MatrixToListOfRows 
+ * @name utility.MatrixToListOfRows
  * @param {Matrix} object - MxN matrix to convert
  * @param {Matrix} converted 1 x (M*N) Row vector
  */
@@ -247,7 +247,7 @@ lfunction utility.MatrixToListOfRows (object) {
 /**
  * Filters 1xN Matrix or Dictionary
  * @name utility.Filter
- * @param {Dictionary|Matrix} object - matrix to convert 
+ * @param {Dictionary|Matrix} object - matrix to convert
  * @param {String} lambda_name - function to discern whether element is filtered. All elements of iterable object that are false will be removed.
  * @returns filtered object
  * @example
@@ -288,7 +288,7 @@ function utility.Filter (object, lambda_name, condition) {
 
 /**
  * @name utility.ForEach
- * @param {Tree|Dictionary|Matrix} object - matrix to convert 
+ * @param {Tree|Dictionary|Matrix} object - matrix to convert
  * @param {String} lambda_name
  * @param {String} transform
  * @returns nothing
@@ -345,7 +345,7 @@ function utility.KeyExists(dict, key) {
 
 /**
  * Checks whether key is a certain type
- * @name utility.CheckKey 
+ * @name utility.CheckKey
  * @param {Dictionary} dict - dictionary to check
  * @param {String} key - key to check
  * @param {String} type - check whether key is "Matrix", "AssociativeList", "String", or "Tree"
@@ -363,7 +363,7 @@ function utility.CheckKey (dict, key, type) {
 /**
  * Adds string or list of strings to a dictionary and sets value to 1
  * @name utility.AddToSet
- * @param {AssociativeList} set - 
+ * @param {AssociativeList} set -
  * @param {String}, {Matrix}, or {AssociativeList} object
  * @returns nothing
  */
@@ -414,7 +414,7 @@ function utility.Intersect(set, set1, set2) {
 
 
 /**
- * @name utility.PopulateDict 
+ * @name utility.PopulateDict
  * @param {Number} from
  * @param {Number} to
  * @param {Number|AssociativeList|String|Matrix} value
@@ -425,7 +425,7 @@ function utility.PopulateDict (from, to, value, lambda) {
     utility.PopulateDict.result = {};
     if (Type (lambda) == "String" && Type (value) == "String") {
         Eval ("`lambda` = None");
-        ^lambda = utility.PopulateDict.k;
+        ^lambda := utility.PopulateDict.k;
         for (utility.PopulateDict.k = from; utility.PopulateDict.k < to; utility.PopulateDict.k+=1) {
             utility.PopulateDict.result[utility.PopulateDict.k] = Eval (value);
         }
@@ -440,7 +440,7 @@ function utility.PopulateDict (from, to, value, lambda) {
 
 /**
  * Iterates over dictionaries
- * @name utility.ForEachPair 
+ * @name utility.ForEachPair
  * @param {Dictionary} object - the dictionary to iterate over
  * @param {String} key_name - the variable name for the key in the lambda expression
  * @param {String} value_name - the variable name for the value in the lambda expression

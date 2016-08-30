@@ -15,7 +15,6 @@ ancestral._ancestralRecoveryCache = {};
 
 *******************************************/
 
-//LoadFunctionLibrary			("TreeTools.ibf");
 
 ancestral._bacCacheInstanceCounter = 0;
 
@@ -216,6 +215,118 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     };
 }
 
+/**
+ * Prepare a substitution matrix for use by BGM
+ * @name ancestral.ComputeSubstitutionCounts
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
+
+ * @param {Function/None} substitution_filter - how to decide if the substitution should count
+          None -- different characters (except anything vs a gap) yields a 1
+          Function -- callback (state1, state2, ancestral_data) will return the value
+
+ * @param {Function/None} site_filter - how to decide which sites will be kept
+          None     -- at least one substitution
+          Function -- callback (substitution vector) will T/F
+
+ * @returns
+        {
+         "Branches" :  {Matrix Nx1} names of selected branches,
+         "Sites"    :  {Matrix Sx1} indices of sites passing filter,
+         "Counts"   :  {Matrix NxS} of substitution counts,
+        }
+
+        N = number of selected branches
+        S = number of sites passing filter
+
+ */
+
+/*******************************************/
+
+lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, substitution_filter, site_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+    coordinates = {{k-1, parent-1}};
+
+    for (k = 1; k < Abs(ancestral_data["TREE_AVL"]); k+=1) {
+        parent = ((ancestral_data["TREE_AVL"])[k])["Parent"];
+
+        if (parent) {
+            node_name = ((ancestral_data["TREE_AVL"])[k])["Name"];
+            if (None != branch_filter) {
+                if (Type (branch_filter) == "AssociativeList") {
+                    if (branch_filter [node_name] != TRUE) {
+                        continue;
+                    }
+                } else {
+                    if (Call (branch_filter, node_name) == FALSE) {
+                        continue;
+                    }
+                }
+            }
+            selected_branches + Eval (coordinates);
+            selected_branch_names + node_name;
+        }
+    }
+
+    branches = Abs (selected_branches);
+
+    sites  = (ancestral_data["DIMENSIONS"])["SITES"];
+    counts = {branches,sites};
+    retained_sites = {};
+
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        parent = (selected_branches[b])[1];
+        for (s = 0; s < sites; s += 1) {
+            own_state    = (ancestral_data["MATRIX"])[self][s];
+            parent_state = (ancestral_data["MATRIX"])[parent][s];
+            if (None == substitution_filter) {
+                counts[b][s] = (own_state != parent_state) && (own_state != -1) && (parent_state != -1);
+            } else {
+                counts[b][s] = Call (substitution_filter, own_state, parent_state, ancestral_data);
+            }
+        }
+    }
+
+    for (s = 0; s < sites; s += 1) {
+        site_counts = counts [-1][s];
+        if (None == site_filter) {
+            if (+site_counts == 0) {
+                continue;
+            }
+        } else {
+            if (Call(site_filter, site_counts) == FALSE) {
+                continue;
+            }
+        }
+        retained_sites + s;
+    }
+
+    retained_site_count = Abs (retained_sites);
+    retained_counts = {branches, retained_site_count};
+
+    for (s = 0; s < retained_site_count; s+=1) {
+        full_index = retained_sites [s];
+        for (b = 0; b < branches; b += 1) {
+            retained_counts[b][s] = counts[b][full_index];
+        }
+    }
+
+    counts = None;
+
+    return  {
+             "Branches"  : selected_branch_names,
+             "Sites"     : retained_sites,
+             "Counts"    : retained_counts
+            };
+
+}
 
 /*******************************************
 	count subsitutions at a given site;
