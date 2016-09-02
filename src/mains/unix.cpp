@@ -625,8 +625,7 @@ int main (int argc, char* argv[])
     libArgDir     = libDirectory;
     baseDirectory = baseDir;
     baseArgDir    = baseDirectory;
-
-  
+    
 #ifdef _OPENMP
     systemCPUCount = omp_get_max_threads();
 #endif

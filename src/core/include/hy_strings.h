@@ -597,12 +597,12 @@ public:
     /**
     * Lexicographic comparison with a wild character
     * \n Checks if Strings are equal lexicographically
-    * @param s Second string to compare
+    * @param pattrern Second string to compare
     * @param wildchar The wildcharacter
     * @return true if strings are equal
     * @sa Equal()
     */
-    bool EqualWithWildChar (_String* s, char wildChar = '*');
+    bool EqualWithWildChar (_String const* s, char const wildChar = '*', unsigned long start_this = 0UL, unsigned long start_pattern = 0UL) const;
 
     /**
     * Checks if String is lexicographically greater

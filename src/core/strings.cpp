@@ -1748,67 +1748,63 @@ bool _String::Equal (const char c)
     return sLength == 1 &&  sData[0] == c;
 }
 
-//S may contain a wild char
-bool _String::EqualWithWildChar (_String* s, char wildchar)
-{
-    char *sP = sData, *ssP = (s->sData); // optimize
-    // we start comparing the strings until we run into a wildchar.
-    long matchLength, t, q, p, curPos = 0;
-    while (*ssP) {
-        if (*ssP!=wildchar) {
-            if (*ssP==*sP) {
-                ssP++;
-                sP++;
-                curPos++;
+bool _String::EqualWithWildChar(const _String *pattern, const char wildchar, unsigned long start_this, unsigned long start_pattern) const {
+    // wildcards only matter in the second string
+  
+  if (pattern->sLength > start_pattern && wildchar != '\0') {
+    unsigned long   match_this_char = start_pattern;
+      // the position we are currently trying to match in the pattern
+    
+    bool            is_wildcard = pattern->sData[match_this_char] == wildchar,
+    scanning_pattern = is_wildcard;
+    
+    unsigned long i = start_this;
+      // the position we are currently trying to match in *this
+    
+    while (i <= sLength) {
+      
+      if (scanning_pattern) { // skip consecutive wildcards in "pattern"
+        scanning_pattern = pattern->sData[++match_this_char] == wildchar;
+      } else {
+        if (sData[i] == pattern->sData[match_this_char]) {
+          
+            if (is_wildcard) {
+              // could either match the next char or consume it into the wildcard
+              if (EqualWithWildChar (pattern, wildchar, i, match_this_char)) {
+                  // matching worked
+                return true;
+              } else {
+                i++;
                 continue;
+              }
             } else {
-                return false;
+              // try character match
+              // note that the terminal '0' characters will always match, so
+              // this is where we terminate
+              i++;
+              match_this_char++;
+              if (i > sLength || match_this_char > pattern->sLength) {
+                break;
+              }
+              is_wildcard =  pattern->sData[match_this_char] == wildchar;
+              scanning_pattern = is_wildcard;
             }
+        } else { // match wildcard
+          if (!is_wildcard) {
+            return false;
+          }
+          scanning_pattern = false;
+          i++;
         }
-        // wildchar found
-        // skip the wildchar and scroll the 1st string until match is found
-        matchLength = 0;
-        ssP++;
-        while (*ssP&&(*ssP!=wildchar)) {
-            ssP++;
-            matchLength++;
-        }
-        if (!matchLength) { // wildchar is the last symbol in expression
-            if (!*ssP) {
-                return true; // expressions matched
-            }
-        } else { // check sP for a possible match
-            t = matchLength-1;
-            q = matchLength+curPos-1;
-            ssP--;
-            while (q<sLength) {
-                if (sP[t]==*ssP) {
-                    p = 1;
-                    while (p<matchLength) {
-                        char c = *(ssP-p);
-                        if (sP[t-p]!=c) {
-                            break;
-                        }
-                        p++;
-                    }
-                    if (p==matchLength) {
-                        sP += t+1;
-                        curPos = q+1;
-                        ssP++;
-                        break;
-//                      ssP++;
-                    }
-                }
-                t++;
-                q++;
-            }
-            if (q==sLength) {
-                return false;
-            }
-        }
+      }
     }
-
-    return (*sP==0);
+    
+    return match_this_char > pattern->sLength;
+  } else {
+    return sLength == start_this;
+  }
+  
+  return false;
 }
 
 bool _String::Greater (_String const *s) const {
