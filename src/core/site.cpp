@@ -1969,7 +1969,7 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
                 /* use AddSite write out the first sequence */
                 unsigned long site_index = 0UL;
                 for (site_index = 0UL; site_index < sites_in_this_set; site_index ++) {
-                    combined_data->AddSite ((*current_data_set)(site_index,0,1));
+                    combined_data->AddSite ((*current_data_set)(site_index,0UL,1));
                 }
                 for (; site_index < max_sites ; site_index++) {
                     combined_data->AddSite (emptySlot);
@@ -1978,7 +1978,7 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
                 /* use Write2Site to create subsequence sequences */
                 unsigned long site_index = 0UL;
                 for (site_index = 0UL; site_index < sites_in_this_set; site_index ++) {
-                  combined_data->Write2Site (site_index, (*current_data_set)(site_index,0,1));
+                  combined_data->Write2Site (site_index, (*current_data_set)(site_index,seq_index,1));
                 }
                 for (; site_index < max_sites ; site_index++) {
                   combined_data->Write2Site (site_index, emptySlot);
@@ -3710,12 +3710,13 @@ _Matrix*        _DataSetFilter::GetFilterCharacters (bool flip) const {
 
 _String*        _DataSetFilter::GetSequenceCharacters (long seqID)  const{
     long            unitSizeL   = GetUnitLength();
-    _String * aSequence = new _String (theOriginalOrder.lLength,true);
+  
+    _String * aSequence = new _String (GetSiteCount(),true);
 
     if (seqID >= 0 && seqID < theNodeMap.lLength) {
         _String      aState (unitSizeL,false);
-        long        upTo = theOriginalOrder.lLength/unitSizeL;
-        for (long k2=0; k2<upTo; k2++) {
+        unsigned long        upTo = GetSiteCountInUnits();
+        for (unsigned long k2=0UL; k2<upTo; k2++) {
             RetrieveState(k2,seqID,aState);
             (*aSequence) << aState;
         }
