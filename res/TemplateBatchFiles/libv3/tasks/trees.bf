@@ -70,7 +70,7 @@ LoadFunctionLibrary("TreeTools");
  *        {"", "PR"}
  *        }
  *      }
- * 
+ *
  */
 
 
@@ -106,10 +106,11 @@ lfunction trees.GetTreeString._sanitize(string) {
 /**
  * Looks for a newick tree in an alignment file
  * @name trees.GetTreeString
- * @param {String|Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file. 
+ * @param {String|Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file.
  * @returns {String} a newick tree string
  */
 lfunction trees.GetTreeString(look_for_newick_tree) {
+
 
     UseModel(USE_NO_MODEL);
 
@@ -216,7 +217,7 @@ lfunction trees.PartitionTree(avl, l) {
  * @name trees.LoadAnnotatedTopology
  * @param {String|Bool} look_for_newick_tree - If a string, sanitizes and
  *  returns the string. If TRUE, search the alignment file for a newick tree. If
- *  FALSE, the user will be prompted for a nwk tree file. 
+ *  FALSE, the user will be prompted for a nwk tree file.
  * @returns {Dictionary} an annotated tree
  */
 lfunction trees.LoadAnnotatedTopology(look_for_newick_tree) {
@@ -249,7 +250,7 @@ lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
  * alignments parser function.
  * @param {Dictionary} mapping - a mapping of node names to labels
  * @returns {Dictionary} of matched partitions
- * @example 
+ * @example
  *  hky85_nucdata_info = alignments.ReadNucleotideAlignment(file_name, "hky85.nuc_data", "hky85.nuc_filter");
  *  name_mapping = {
  *   "HUMAN":"HUMAN",
@@ -264,13 +265,13 @@ lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
  *   "RAT":"RAT"
  *  };
  *  trees.LoadAnnotatedTreeTopology.match_partitions(hky85_nucdata_info[terms.json.partitions], name_mapping);
- *  => 
+ *  =>
  *  {
  *   "0":{
  *     "name":"default",
  *     "filter-string":"",
  *     "tree": *    }
- *  } 
+ *  }
  */
 lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) {
 
@@ -291,11 +292,15 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
         }
     } else { // no tree matrix; allow if there is a single partition
 
-        partrees + {
-            "name": partitions[0][0],
-            "filter-string": partitions[0][1],
-            "tree": trees.LoadAnnotatedTopologyAndMap(TRUE, mapping)
-        };
+        tree_info = trees.LoadAnnotatedTopologyAndMap(TRUE, mapping);
+
+        for (i = 0; i < partition_count; i += 1) {
+            partrees + {
+                "name": partitions[i][0],
+                "filter-string": partitions[i][1],
+                "tree": tree_info
+            };
+        }
     }
 
     return partrees;

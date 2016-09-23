@@ -1192,12 +1192,12 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
     _String objectID (currentProgram.AddNameSpaceToID(*(_String*)parameters(1))),
             arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
             errMsg;
-    
+  
     _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_EXPORT, true, false, &currentProgram);
     if (!theReceptacle) {
         return false;
     }    
-
+ 
     _FString        * outLF = new _FString (new _String (8192UL,1));
  
     long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER | HY_BL_HBL_FUNCTION,

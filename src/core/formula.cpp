@@ -166,7 +166,7 @@ BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
 {
     ConvertToTree(false);
 
-    _String * result = (_String*)checkPointer(new _String((unsigned long)16,true));
+    _String * result = new _String(16UL,true);
 
     long          savepd = printDigits;
     printDigits          = 0;
@@ -236,6 +236,7 @@ _Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from
     for (unsigned long k=0UL; k < varRefs.lLength; k++) {
         _Variable* thisVar = LocateVar (varRefs.lData[k]);
         _Formula * dYdX;
+      
         if (thisVar->IsIndependent()) {
             dYdX = new _Formula ((thisVar->GetName()->Equal (&varName))?new _Constant (1.0):new _Constant (0.0));
             dYdX->ConvertToTree();
@@ -275,7 +276,26 @@ _Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from
 
     res->theFormula.AppendNewInstance (new _Operation(new _Constant (0.0))) ;
     res->theTree         = dTree;
+  
+    // consistency check
+  
+    /*_SimpleList preOrderNodes;
+    node_iterator<long> iterator (dTree, _HY_TREE_TRAVERSAL_PREORDER);
+    
+    while (node <long> * ni = iterator.Next()) {
+      printf ("Differentiate %x\n", ni);
+      if (preOrderNodes.Find ((long)ni) >= 0) {
+        WarnError ("Tree construction error!");
+        return;
+      }
+      preOrderNodes << (long)ni;
+    }
+  
+    StringToConsole (_String("\nNode count:") & (long) preOrderNodes.countitems());
+    NLToConsole();*/
+  
     res->InternalSimplify (dTree);
+  
     if (convert_from_tree)
       res->ConvertFromTree  ();
     return res;
@@ -288,32 +308,36 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 // returns true if the subexpression at
 // and below startnode is constant
 {
-    long        numChildren = startNode->get_num_nodes(),
-                k,
-                collapse2 = -1;
-
-    bool        isConstant  = true,
-                firstConst  = true,
-                secondConst = (numChildren>1);
-
-    _Parameter  theVal      = 0.0;
-
-    _PMathObj   newVal      = nil;
+    long        numChildren = startNode->get_num_nodes();
 
     _Operation* op = GetIthTerm(startNode->get_data());
-
+  
     if  (numChildren == 0) {
-        return !op->IsAVariable();
+      return !op->IsAVariable();
     }
 
-    for  (k=1; k<=numChildren; k++) {
-        InternalSimplify (startNode->go_down(k));
-        if (k==1) {
+  
+    bool        isConstant  = true,
+                firstConst  = true,
+                secondConst = (numChildren>1L);
+  
+    long        prune_this_child = -1;
+
+    _Parameter  theVal      = 0.0;
+    _PMathObj   newVal      = nil;
+
+
+    //printf ("InternalSimplify %x\n", startNode);
+  
+    for  (unsigned long k=1UL; k<=numChildren; k++) {
+        if (k==1UL) {
             firstConst = InternalSimplify (startNode->go_down(k));
-        } else if (k==2) {
+        } else if (k==2UL) {
             secondConst = InternalSimplify (startNode->go_down(k));
         } else {
-            isConstant = isConstant && InternalSimplify (startNode->go_down(k));
+          if (!InternalSimplify (startNode->go_down(k))) {
+            isConstant = false;
+          }
         }
     }
 
@@ -322,7 +346,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
     if (op->opCode > HY_OP_CODE_NONE) {
         if (isConstant) { // this executes the subxpression starting at the current node
             _Stack scrap;
-            for  (k=1; k<=numChildren; k++) {
+            for  (unsigned long k=1UL; k<=numChildren; k++) {
                 ((_Operation*)theFormula (startNode->go_down(k)->get_data()))->Execute (scrap);
             }
             op->Execute (scrap);
@@ -332,55 +356,67 @@ bool _Formula::InternalSimplify (node<long>* startNode)
               
                 _PMathObj constant_value = ((_Operation*)theFormula (startNode->go_down(firstConst?1:2)->get_data()))->GetANumber();
               
-                if (constant_value->ObjectClass() != HY_UNDEFINED) {
+              
+                if (constant_value->ObjectClass() == NUMBER) {
                   theVal  = constant_value->Value();
 
                   switch (op->opCode) {
                       case HY_OP_CODE_MUL: { // *
                           if (CheckEqual (theVal,0.0)) { // *0 => 0
+                                                         //printf ("*0\n");
                               newVal = new _Constant (0.0);
                               break;
                           }
-                          if (CheckEqual (theVal,1.0)) { // ?*1 => ?
-                              collapse2 = firstConst?2:1;
+                          if (CheckEqual (theVal,1.0)) { // x*1 => x
+                                                         //printf ("*1\n");
+                              prune_this_child = firstConst?1:2;
                               break;
                           }
                       }
                       break;
 
                       case HY_OP_CODE_ADD: { // +
-                          if (CheckEqual (theVal,0.0)) { // ?+0 => ?
-                              collapse2 = firstConst?2:1;
+                          if (CheckEqual (theVal,0.0)) { // x+0 => x
+                                                         //printf ("+0\n");
+                              prune_this_child = firstConst?1:2;
                           }
                           break;
                       }
 
-                      case HY_OP_CODE_SUB: { // -
+                      case HY_OP_CODE_SUB: { // x-0 => x
+                                             // 0-x => -x
+                        
                           if (CheckEqual (theVal,0.0)) {
-                              collapse2 = firstConst?(-2):1;
+                              //printf ("-0\n");
+                             prune_this_child = firstConst? -2 : 2;
                           }
                           break;
                       }
 
                       case HY_OP_CODE_DIV: { // /
-                          if (firstConst&&CheckEqual (theVal,0.0)) { // 0/? => 0
+                          if (firstConst&&CheckEqual (theVal,0.0)) { // 0/x => 0
                               newVal = new _Constant (0.0);
+                              //printf ("0/\n");
+
                               break;
                           }
-                          if (secondConst&&CheckEqual (theVal,1.0)) { // ?/1 => ?
-                              collapse2 = 1;
+                          if (secondConst&&CheckEqual (theVal,1.0)) { // x/1 => x
+                                                                      //printf ("/1\n");
+                              prune_this_child = 2;
                               break;
                           }
                       }
                       break;
 
                       case HY_OP_CODE_POWER: { // ^
-                          if (firstConst&&CheckEqual (theVal,1.0)) { // 1^? => 1
+                          if (firstConst&&CheckEqual (theVal,1.0)) { // 1^x => 1
+                                                                     //printf ("1^\n");
                               newVal = new _Constant (1.0);
                               break;
                           }
-                          if (secondConst&&CheckEqual (theVal,1.0)) { // ?^1 => ?
-                              collapse2 = 1;
+                          if (secondConst&&CheckEqual (theVal,1.0)) { // x^1 => ?
+                                                                      //printf ("^1\n");
+                              prune_this_child = 1;
                               break;
                           }
                       }
@@ -392,36 +428,36 @@ bool _Formula::InternalSimplify (node<long>* startNode)
     }
 
     if (newVal) {
-        for  (k=numChildren; k; k--) {
+        for  (int k=1; k <= numChildren; k++) {
             startNode->go_down(k)->delete_tree(true);
-            startNode->kill_node (k);
         }
+        startNode->kill_all_nodes();
         startNode->in_object = theFormula.lLength;
-        theFormula.AppendNewInstance (new _Operation(newVal));
-    }
+        theFormula < (new _Operation(newVal));
+    } else {
 
-    if (collapse2 !=- 1) {
-        if (collapse2>0) {
-            k = 3-collapse2;
+      if (prune_this_child !=- 1L) {
+          if (prune_this_child > 0L) {
 
-            startNode->go_down(k)->delete_tree(true);
-            node <long>*    replaceWith = startNode->go_down(collapse2);
 
-            startNode->kill_node(1);
-            startNode->kill_node(2);
+              startNode->go_down(prune_this_child)->delete_tree(true);
+              startNode->kill_node (prune_this_child);
+              node <long>*    replaceWith = startNode->go_down(1);
 
-            for (k=1; k<=replaceWith->get_num_nodes(); k++) {
-                startNode->add_node (*replaceWith->go_down(k));
-            }
+              startNode->kill_all_nodes();
 
-            startNode->in_object = replaceWith->in_object;
+              for (unsigned long k=1; k<=replaceWith->get_num_nodes(); k++) {
+                  startNode->add_node (*replaceWith->go_down(k));
+              }
+              startNode->in_object = replaceWith->in_object;
+              delete (replaceWith);
 
-            delete (replaceWith);
-
-        } else { // 0-? => -?
-            delete   (startNode->go_down(1));
-            startNode->kill_node(1);
-        }
+          } else { // 0-? => -?
+              startNode->go_down(1)->delete_tree(true);
+              startNode->kill_node(1);
+             //startNode->kill_node(1);
+          }
+      }
     }
     return isConstant;
 }
@@ -2205,6 +2241,8 @@ void    _Formula::ConvertToTree (bool err_msg) {
         } else {
             theTree = (node<long>*)nodeStack(0);
         }
+      
+      
     }
 }
 //__________________________________________________________________________________
@@ -2259,8 +2297,9 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
     switch (op->opCode) {
     case HY_OP_CODE_MUL: {
+      
         node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
-                    * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
+                  * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
 
         if (!b1 || !b2) {
             newNode->delete_tree(true);
@@ -2280,10 +2319,9 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         *         newOp2 = new _Operation (opC ,2),
         *         newOp3 = new _Operation (opC ,2);
 
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-
+      
+      
+      
         node<long>*       newNode2 = (node<long>*)checkPointer(new node<long>);
         node<long>*       newNode3 = (node<long>*)checkPointer(new node<long>);
 
@@ -2370,24 +2408,12 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         *         newOp5 = new _Operation (opC  ,2),
         *         newOp6 = new _Operation (new _Constant (2.0));
 
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-        checkPointer      (newOp4);
-        checkPointer      (newOp5);
-        checkPointer      (newOp6);
-
+ 
         node<long>*       newNode2 = new node<long>;
         node<long>*       newNode3 = new node<long>;
         node<long>*       newNode4 = new node<long>;
         node<long>*       newNode5 = new node<long>;
         node<long>*       newNode6 = new node<long>;
-
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
-        checkPointer      (newNode5);
-        checkPointer      (newNode6);
 
         newNode6->add_node (*b1);
         newNode6->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
@@ -2405,6 +2431,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         newNode->add_node  (*newNode2);
 
         newNode6->in_object = tgt.theFormula.lLength;
+      
+      
         tgt.theFormula.AppendNewInstance(newOp5);
         newNode5->in_object = tgt.theFormula.lLength;
         tgt.theFormula.AppendNewInstance(newOp4);

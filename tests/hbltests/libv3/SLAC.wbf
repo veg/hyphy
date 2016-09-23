@@ -25,7 +25,7 @@ function check_keys() {
 // Check Global MG94xREV results
 function check_global_mg94_results() {
     mg94 = (slac.json["fits"])["Global MG94xREV"];
-    expected_loglikelihood = -3467.072352344857; 
+    expected_loglikelihood = -3467.072352344857;
     assert(Abs(mg94["log likelihood"] - expected_loglikelihood) <= margin_of_error, "Log likelihood is substantially different expected");
     assert(mg94["parameters"] == 31, "number parameters not 31");
 
@@ -62,7 +62,7 @@ function check_branch_attributes() {
 
     utility.ForEachPair(branch_nodes, "_key_", "_node_", "node_assertion(_node_,attribute_keys);");
 
-    // Spot check some branch values 
+    // Spot check some branch values
     expected_baboon_length = 0.001712680876653717;
 
     actual_baboon_length = (branch_nodes["BABOON"])["Global MG94xREV model"];
@@ -89,8 +89,8 @@ function check_mle_results() {
     mle_branch_resolved = utility.MatrixToListOfRows(mle_branches["RESOLVED"]);
 
     // averaged expected at site 2
-    site_two_averaged = {{0.3164762974660306, 1.107667041131107, 0, 0, 0, 0, 0,
-    0, 1,1, 1.469689356952376}};
+    site_two_averaged = {{0.3772411305151312, 1.046902172450062, 0, 0, 0.2648898672834971, 0, 0, 0, 1, 1, 1.469689307762431}};
+
 
     site_two_averaged_sum = math.Sum(site_two_averaged);
 
@@ -101,8 +101,7 @@ function check_mle_results() {
 
 
     // resolved expected at site 2
-    site_two_resolved = {{0.3164762974660306, 1.107667041131107, 0, 0, 0, 0, 0,
-    0, 1, 1, 1.469689356952376}};
+    site_two_resolved = {{0.3772411203525483, 1.04690221824459, 0, 0, 0.2648898535200481, 0, 0, 0, 1, 1, 1.469689357894816}};
 
     site_two_resolved_sum = math.Sum(site_two_resolved);
 
@@ -113,13 +112,11 @@ function check_mle_results() {
 
     // averaged expected at site 5
     site_five_averaged =  {
-        {0.575319494184476, 2.424680505815524, 2, 6, 0.1917731647281587, 3.476329274805871, 2.47455282690201, -0.5805827032000984, 0.8147450044440796, 0.4722889658421286, 1.725467263117202}
-    };
+        {0.5753194197475396, 2.424680580252462, 2, 6, 0.1917731399158465, 3.476329724586101, 2.47455275093401, -0.5805830283994067, 0.8147450573151976, 0.4722888915671207, 1.725467202191326}
+     };
 
     site_five_averaged_sum = math.Sum(site_five_averaged);
     actual_sfas = math.Sum(mle_site_averaged[5]);
-
-    fprintf(stdout, Abs(site_five_averaged_sum - actual_sfas));
 
     assert(Abs(site_five_averaged_sum - actual_sfas) < margin_of_error, "site
     five mle averaged a bit different than expected");
@@ -127,7 +124,7 @@ function check_mle_results() {
 
     // resolved expected at site 5
     site_five_resolved = {
-        {0.5754604213806104, 2.424539578619389, 2, 6, 0.1918201404602035, 3.475477940258201, 2.474696661135388, -0.5800360117207659, 0.814644896600269, 0.4724295791661327, 1.725377836720589}
+        {0.5753194197475396, 2.424680580252462, 2, 6, 0.1917731399158465, 3.476329724586101, 2.47455275093401, -0.5805830283994067, 0.8147450573151976, 0.4722888915671207, 1.725467202191326}
     };
 
     site_five_resolved_sum = math.Sum(site_five_resolved);

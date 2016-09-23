@@ -9773,6 +9773,7 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
       return Sum ();
   }
   
+
   if (arg0) {
     switch (opCode) { // operations that require exactly one argument
       case HY_OP_CODE_MCOORD: // MCoord
@@ -9785,6 +9786,14 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
       case HY_OP_CODE_SUB:
         DeleteByKey (arg0);
         return new _Constant (avl.countitems());
+        
+      case HY_OP_CODE_DIV:
+        if (arg0->ObjectClass () == STRING) {
+          if (avl.Find (((_FString*)arg0)->theString) >= 0) {
+              //return new _COnstant
+          }
+        }
+        return new _MathObject;
         
     }
     _MathObject * arg1 = _extract_argument (arguments, 1UL, false);

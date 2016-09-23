@@ -29,7 +29,7 @@ function frequencies.equal(model, namespace, datafilter) {
  * Sets model's equilibrium frequency estimator to Nucleotide 4x1 estimator
  * @name frequencies.empirical.nucleotide
  * @param {Dictionary} model
- * @param {String} namespace 
+ * @param {String} namespace
  * @param {DataSetFilter} datafilter
  * @returns {Dictionary} updated model
  */
@@ -41,8 +41,23 @@ function frequencies.empirical.nucleotide(model, namespace, datafilter) {
 }
 
 /**
- * @name frequencies.empirical.corrected.CF3x4 
- * @param {Dictionary} model 
+ * Sets model's equilibrium frequency estimator to protein 20x1 estimator
+ * @name frequencies.empirical.protein
+ * @param {Dictionary} model
+ * @param {String} namespace
+ * @param {DataSetFilter} datafilter
+ * @returns {Dictionary} updated model
+ */
+function frequencies.empirical.protein (model, namespace, datafilter) {
+    model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
+    model[terms.efv_estimate_name] = terms.freqs.20x1;
+    (model["parameters"])["empirical"] = 19;
+    return model;
+}
+
+/**
+ * @name frequencies.empirical.corrected.CF3x4
+ * @param {Dictionary} model
  * @param {String} namespace
  * @param {DataSetFilter} datafilter
  * @returns {Dictionary} updated model
@@ -84,8 +99,8 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
 /**
  * To be implemented
  * @name frequencies.mle
- * @param model 
- * @param namespace 
+ * @param model
+ * @param namespace
  * @param datafilter
  */
 function frequencies.mle(model, namespace, datafilter) {
@@ -108,9 +123,9 @@ function frequencies._aux.empirical.character_count(datafilter) {
  * Collects frequency data from dataset
  * @name frequencies._aux.empirical.collect_data
  * @private
- * @param {DataSetFilter} datafilter 
- * @param {Number} unit 
- * @param {Number} stride 
+ * @param {DataSetFilter} datafilter
+ * @param {Number} unit
+ * @param {Number} stride
  * @param {Number} position_specific
  * @returns {Matrix} frequency data
  */
@@ -150,7 +165,7 @@ lfunction frequencies._aux.empirical.collect_data(datafilter, unit, stride, posi
  * Updates model's equilibrium frequency estimator to not count gaps in frequencies
  * @name frequencies._aux.empirical.singlechar
  * @private
- * @param {Dictionary} model - the model to update the 
+ * @param {Dictionary} model - the model to update the
  * @param {String} namespace - does nothing
  * @param {DataSetFilter} datafilter - the datasetfilter to collect data from
  * @returns {Dictionary} updated model
@@ -168,7 +183,7 @@ function frequencies._aux.empirical.singlechar(model, namespace, datafilter) {
  * @private
  * @param observed_3x4
  * @param base_alphabet
- * @param sense_codons 
+ * @param sense_codons
  * @param stop_codons
  * @returns  {Dictionary} codons and bases
  */

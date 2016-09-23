@@ -70,6 +70,7 @@ function estimators.SetGlobals2(key, value) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
             ExecuteCommands("`value` := " + __init_value["MLE"]);
         } else {
+            //fprintf (stdout, "Setting `value` to " + __init_value["MLE"] + "\n");
             ExecuteCommands("`value` = " + __init_value["MLE"]);
         }
     }
@@ -383,25 +384,27 @@ function estimators.FitLF(data_filters_list, tree_list, model_map, initial_value
     return estimators.FitLF.results;
 }
 
+
 /**
- * @name estimators.FitGTR_Ext
+ * @name estimators.FitSingleModel_Ext
  * @param {DataFilter} data_filter
  * @param {Tree} tree
+ * @param {Dict} model
  * @param {Matrix} initial_values
  * @param {Dict} run_options
  * @returns results
  */
 
-lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options) {
+lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, initial_values, run_options) {
 
     if (Type(data_filter) == "String") {
-        return estimators.FitGTR_Ext ({
+        return estimators.FitSingleModel_Ext ({
             {
                 data_filter__
             }
         }, {
             "0": tree
-        }, initial_values, run_options)
+        }, model, initial_values, run_options)
     }
 
     components = utility.Array1D(data_filter);
@@ -422,20 +425,17 @@ lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options)
         DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
     }
 
-    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+    name_space = & user;
 
-    name_space = & gtr;
-
-    gtr_model = model.generic.DefineModel("models.DNA.GTR.ModelDescription", name_space, {
-        "0": "terms.global"
-    }, filters, None);
-
+    user_model = model.generic.DefineModel(model_template, name_space, {
+            "0": "terms.global"
+        }, filters, None);
 
     for (i = 0; i < components; i += 1) {
 
         lf_components[2 * i + 1] = "tree_" + i;
         model.ApplyModelToTree(Eval("&`lf_components[2*i + 1]`"), tree[i], {
-            "default": gtr_model
+            "default": user_model
         }, None);
     }
 
@@ -445,8 +445,8 @@ lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options)
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", {
-            name_space: gtr_model
-        }, initial_values, None);
+            name_space: user_model
+        }, initial_values, run_options["proportional-branch-length-scaler"]);
     }
 
     Optimize(mles, likelihoodFunction);
@@ -457,7 +457,7 @@ lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options)
 
 
     results = estimators.ExtractMLEs( & likelihoodFunction, {
-        name_space: gtr_model
+        name_space: user_model
     });
 
     results["LogL"] = mles[1][0];
@@ -470,6 +470,19 @@ lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options)
     }
 
     return results;
+}
+
+/**
+ * @name estimators.FitGTR_Ext
+ * @param {DataFilter} data_filter
+ * @param {Tree} tree
+ * @param {Matrix} initial_values
+ * @param {Dict} run_options
+ * @returns results
+ */
+
+lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options) {
+    return estimators.FitSingleModel_Ext (data_filter, tree, "models.DNA.GTR.ModelDescription", initial_values, run_options)
 }
 
 /**

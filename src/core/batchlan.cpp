@@ -659,7 +659,6 @@ _HY_BL_FUNCTION_TYPE   GetBFFunctionType  (long idx) {
 //____________________________________________________________________________________
 _String const ExportBFFunction (long idx, bool recursive) {
   
-  //printf ("%ld\n", idx);
   
   _String bf (8192UL, true);
   if (IsBFFunctionIndexValid(idx)) {
@@ -698,7 +697,6 @@ _String const ExportBFFunction (long idx, bool recursive) {
     bf << ") {\n";
     bf << body->sourceText;
     bf << "\n}";
-    
     
     if (recursive) {
       _List      hbl_functions;
@@ -4995,8 +4993,10 @@ void      _ElementaryCommand::ExecuteCase43 (_ExecutionList& chain)
         if (terminateExecution) {
             return;
         }
+      
 
         _Formula * dF = (code==43)?theExpression.Differentiate (*(_String*)parameters(2),false):nil;
+
 
         _Parameter    lb = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix),
                       ub = ProcessNumericArgument ((_String*)parameters(4),chain.nameSpacePrefix);

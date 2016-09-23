@@ -20,6 +20,7 @@ LoadFunctionLibrary("CF3x4");
 LoadFunctionLibrary("BranchSiteTemplate");
 LoadFunctionLibrary("TreeTools");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 
 ChoiceList  (oldBSREL,"Run the adaptive version of BS-REL?", 1,NO_SKIP,
@@ -79,7 +80,9 @@ for (matrix_id = 1; matrix_id <= maximum_number_of_omegas; matrix_id += 1) {
 PopulateModelMatrix			  ("MGMatrixLocal",  nucCF, "syn", "", "nonsyn");
 codon3x4					= BuildCodonFrequencies (nucCF);
 
-tree_info = utility.loadAnnotatedTopology (1);
+tree_info = trees.LoadAnnotatedTopology (1);
+
+fprintf (stdout, tree_info, "\n");
 
 Model	  MGL				= (MGMatrixLocal, codon3x4, 0);
 

@@ -60,6 +60,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         });
     }
 
+
     _bac_tree_avl = ( ^ _bac_treeID) ^ 0;
 
     GetString(_bacSequenceNames, ^ _bac_filterID, -1);
@@ -136,6 +137,8 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         Columns(_bacCharHandles)
     }["_MATRIX_ELEMENT_COLUMN_"];
 
+
+    debug = 0;
     /* loop over branches (rows) */
     for (_bacBranchCounter = 1; _bacBranchCounter <= _bacBranchCount; _bacBranchCounter += 1) {
         _bacRowIndex = _bacMapTreeNodeToDF[_bacBranchCounter - 1];

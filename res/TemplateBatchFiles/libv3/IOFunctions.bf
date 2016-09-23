@@ -60,7 +60,7 @@ lfunction io._reportMessageHelper(analysis, text) {
     }
 }
 
-/** 
+/**
  * @name io.SpoolJSON
  * @param json
  * @param file
@@ -75,7 +75,7 @@ lfunction io.SpoolJSON(json, file) {
     utility.ToggleEnvVariable("USE_JSON_FOR_MATRIX", None);
 }
 
-/** 
+/**
  * TODO: Does not support arrays in JSON
  * Parses json from file_path
  * @name io.ParseJSON
@@ -87,7 +87,7 @@ lfunction io.ParseJSON(file_path) {
     return parsed_test;
 }
 
-/** 
+/**
  * @name io.ReportProgressMessage
  * @param analysis
  * @param text
@@ -96,7 +96,7 @@ lfunction io.ReportProgressMessage(analysis, text) {
     fprintf(stdout, io._reportMessageHelper(analysis, text), "\n");
 }
 
-/** 
+/**
  * @name io.ReportAnalysisStageMD
  * @param stage
  */
@@ -104,7 +104,7 @@ lfunction io.ReportAnalysisStageMD(stage) {
     fprintf(stdout, "\n>", stage, "\n\n");
 }
 
-/** 
+/**
  * @name io.ReportProgressMessageMD
  * @param analysis
  * @param stage
@@ -188,7 +188,7 @@ lfunction io.ReportStatsMD(_label, _stats) {
     return 0;
 }
 
-/** 
+/**
  * @name io.ReportProgressBar
  * @param analysis
  * @param text
@@ -197,23 +197,25 @@ lfunction io.ReportProgressBar(analysis, text) {
     SetParameter(STATUS_BAR_STATUS_STRING, io._reportMessageHelper(analysis, text), 0);
 }
 
-/** 
+/**
  * @name io.validate_a_list_of_files
  * @param list
  */
-function io.validate_a_list_of_files(list) {
-    io.validate_a_list_of_files.result = {};
-    for (io.validate_a_list_of_files.i = 0; io.validate_a_list_of_files.i < Rows(list) * Columns(list); io.validate_a_list_of_files.i += 1) {
-        if (Abs(list[io.validate_a_list_of_files.i])) {
-            io.validate_a_list_of_files.fn = list[io.validate_a_list_of_files.i];
-            io.CheckAssertion("!io.validate_a_list_of_files.fn", "HyPhy cannot open '" + io.validate_a_list_of_files.fn + "' for reading");
-            io.validate_a_list_of_files.result + io.validate_a_list_of_files.fn;
+lfunction io.validate_a_list_of_files(list) {
+    result = {};
+    dim = utility.Array1D (list);
+
+    for (i = 0; i < dim; i += 1) {
+        if (Abs(list[i])) {
+            fn = list[i];
+            io.CheckAssertion("!`&fn`", "HyPhy cannot open '" + fn + "' for reading");
+            result + fn;
         }
     }
-    return io.validate_a_list_of_files.result;
+    return result;
 }
 
-/** 
+/**
  * @name io.format_object
  * @param object
  * @param options
@@ -234,7 +236,7 @@ lfunction io.format_object(object, options) {
     return "" + object;
 }
 
-/** 
+/**
  * @name io.FormatTableRow
  * @param row
  * @param options

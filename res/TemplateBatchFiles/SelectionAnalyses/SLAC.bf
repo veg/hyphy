@@ -211,7 +211,6 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
 
     slac.partition_sites   = utility.Array1D ((slac.filter_specification[slac.i])["coverage"]);
 
-
     for (slac.site = 0; slac.site < slac.partition_sites; slac.site += 1) {
         slac.row = utility.Map ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][-1],
                              "_entry_",
@@ -738,14 +737,14 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
 
             total_subs = (*mx)[s*column_count + 2] + (*mx)[s*column_count + 3];
 
-            if (total_subs) {
-                (*mx) [s*column_count + 4] = (*mx) [s*column_count + 0]/((*mx) [s*column_count + 1]+(*mx) [s*column_count + 0]);
-                (*mx) [s*column_count + 5] = (*mx) [s*column_count + 2]/(*mx) [s*column_count + 0];
-                (*mx) [s*column_count + 6] = (*mx) [s*column_count + 3]/(*mx) [s*column_count + 1];
+            (*mx) [s*column_count + 4] = (*mx) [s*column_count + 0]/((*mx) [s*column_count + 1]+(*mx) [s*column_count + 0]);
+            (*mx) [s*column_count + 5] = (*mx) [s*column_count + 2]/(*mx) [s*column_count + 0];
+            (*mx) [s*column_count + 6] = (*mx) [s*column_count + 3]/(*mx) [s*column_count + 1];
+            if (k > 0) {
+                (*mx) [s*column_count + 7] = ((*mx) [s*column_count + 6] - (*mx) [s*column_count + 5])/k;
+            }
 
-                if (k > 0) {
-                    (*mx) [s*column_count + 7] = ((*mx) [s*column_count + 6] - (*mx) [s*column_count + 5])/k;
-                }
+            if (total_subs) {
 
                 syn_count = (*mx) [s*column_count + 2];
                 (*mx) [s*column_count + 8] = slac.extendedBinTail(total_subs,(*mx) [s*column_count + 4],syn_count);

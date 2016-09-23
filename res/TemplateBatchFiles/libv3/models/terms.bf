@@ -24,6 +24,8 @@ terms.rate_matrix = "Q";
 terms.efv_matrix = "pi";
 terms.efv_estimate_name = "Equilibrium frequency estimator";
 terms.efv_estimate = "EFV";
+terms.freqs.20x1 = "Protein 20x1 estimator";
+terms.freqs.predefined = "Based on a training set";
 
 terms.lf.local.constrained = "Local Constrained";
 terms.lf.global.constrained = "Global Constrained";
