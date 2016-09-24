@@ -1106,6 +1106,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                     }
                 } else if (currentArgument->Equal(&timeStamp)) {
                     result = new _String(GetTimeStamp(sID < 0.5));
+                } else if (currentArgument->Equal(&listLoadedLibraries)) {
+                  theReceptacle->SetValue (new _Matrix (loadedLibraryPaths.Keys()));
+                  return true;
                 } else {
                   _Variable* theVar = FetchVar(LocateVarByName (nmspaced));
                   if (theVar) {
