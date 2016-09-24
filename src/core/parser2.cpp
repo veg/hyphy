@@ -866,8 +866,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
         if (isspace(s.getChar(i))) { // skip spaces and tabs
             continue;
         }
-
+      
+ 
         char     lookAtMe = s.getChar(i);
+        //printf ("at '%c', the formula looks like this %s\n", lookAtMe, (const char*)_String ((_String*)f->GetList().toStr()));
 
         if (i==s.sLength || lookAtMe == ')' || lookAtMe == ']' || lookAtMe == ',') {
             // closing ) or ]
@@ -1258,15 +1260,14 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 _AssociativeList *theList = new _AssociativeList ();
                 if (has_values) {
                     matrixDef.Trim (1,matrixDef.sLength-2);
-                    if (!theList->ParseStringRepresentation (matrixDef,parsingContext.errMsg() == nil, parsingContext.formulaScope())) {
+                    if (!theList->ParseStringRepresentation (matrixDef,parsingContext)) {
                         return HandleFormulaParsingError ("Poorly formed associative array construct ", parsingContext.errMsg(), s, i);
                     }
                 }
 
                 levelData->AppendNewInstance (new _Operation (theList));
             } else {
-                _Matrix *theMatrix = new _Matrix (matrixDef,false,parsingContext.formulaScope());
-                levelData->AppendNewInstance (new _Operation (theMatrix));
+                levelData->AppendNewInstance (new _Operation ( new _Matrix (matrixDef,false,parsingContext.formulaScope())));
             }
 
             i = j;
@@ -1357,6 +1358,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         if (parse_result != HY_FORMULA_EXPRESSION) {
                           return HandleFormulaParsingError ("Not a valid/simple expression inside `` ", parsingContext.errMsg(), s, i);
                         }
+                      
                       
                         if (expressionProcessor.IsConstant()) {
                           _PMathObj constant_literal = expressionProcessor.Compute (0, nil, nil, nil, STRING);

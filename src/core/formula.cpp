@@ -2859,6 +2859,7 @@ _FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer
     assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
     is_volatile = false;
     in_assignment = false;
+    build_complex_objects = true;
     err_msg = err;
     formula_scope = scope;
 }

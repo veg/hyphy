@@ -701,7 +701,7 @@ public:
     _AssociativeList                    (void);
     virtual ~_AssociativeList           (void) {}
 
-    bool    ParseStringRepresentation   (_String&, bool = true, _VariableContainer const* = nil);
+    bool    ParseStringRepresentation   (_String&, _FormulaParsingContext&);
     /* SLKP 20090803
 
         Parse the list represented as

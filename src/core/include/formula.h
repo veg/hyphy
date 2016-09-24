@@ -63,6 +63,13 @@ class _FormulaParsingContext {
     char                 assignment_ref_type;
     bool                 is_volatile;
     bool                 in_assignment;
+    bool                 build_complex_objects;
+        /* 
+            this controls whether or not
+            [matrix, TBD] and dictionary constant are built in place (default)
+            or deferred (is false)
+         
+        */
     _String            * err_msg;
     _VariableContainer const * formula_scope;
     
@@ -70,6 +77,7 @@ class _FormulaParsingContext {
         _FormulaParsingContext (_String* = nil, _VariableContainer const* = nil);
         bool&       isVolatile (void)                   { return is_volatile; }
         bool&       inAssignment (void)                 { return in_assignment;}
+        bool&       buildComplexObjects (void)          { return build_complex_objects;}
         long&       assignmentRefID (void)              { return assignment_ref_id; }
         char&       assignmentRefType (void)            { return assignment_ref_type;} 
         _String*    errMsg (void)                       { return err_msg; }

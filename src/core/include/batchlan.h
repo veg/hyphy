@@ -556,6 +556,7 @@ lfDoneCompute                   ,
 getURLFileFlag                  ,
 versionString                   ,
 timeStamp                       ,
+listLoadedLibraries             ,
 simulationFilter                ,
 prefixDS                        ,
 prefixDF                        ,
@@ -607,7 +608,8 @@ extern  _ExecutionList              *currentExecutionList;
 extern  _AVLList                    loadedLibraryPaths;
 extern  _AVLListX                   _HY_HBLCommandHelper,
                                     _HY_GetStringGlobalTypes;
-                                    
+
+
 extern  _Trie                       _HY_ValidHBLExpressions,
                                     _HY_HBL_Namespaces,
                                     _HY_HBL_KeywordsPreserveSpaces;

@@ -2489,9 +2489,9 @@ void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expressio
   
   _Formula f, f2;
   
-    //printf ("\n\n%s\n",(const char*)*expression);
   
   _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+  fpc.buildComplexObjects() = false;
   
   long     parseCode = Parse(&f,*expression,fpc,&f2);
   

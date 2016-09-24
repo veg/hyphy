@@ -202,6 +202,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 getURLFileFlag                  ("SAVE_TO_FILE"),
                                 versionString                   ("HYPHY_VERSION"),
                                 timeStamp                       ("TIME_STAMP"),
+                                listLoadedLibraries             ("LIST_OF_LOADED_LIBRARIES"),
                                 simulationFilter                ("_SIM_INTERNAL_FILTER_"),
                                 prefixDS                        ("DataSet_"),
                                 prefixDF                        ("Partition_"),
@@ -475,6 +476,7 @@ _String*    MPIRecvString       (long senderT, long& senderID)
 //____________________________________________________________________________________
 
 const _String GetStringFromFormula (_String* data,_VariableContainer* theP) {
+  
     _Formula  nameForm (*data,theP);
     _PMathObj formRes = nameForm.Compute();
 
@@ -2695,7 +2697,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
               _FormulaParsingContext fpc (nil,  chain.nameSpacePrefix);
               long status = Parse (expression, *(_String*)parameters(0), fpc, nil);
 
-              //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
+              //printf ("Print formula: %s\n", _String((_String*)expression->toStr()).sData);
 
               if (status== HY_FORMULA_EXPRESSION) {
                 if (fpc.isVolatile() == false) {
@@ -2717,13 +2719,16 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
           } else {
               _PMathObj result;
               if (expression) {
-                //printf ("\n*** Interpreted condition\n");
+                  //printf ("\n*** Interpreted condition\n");
                 result = expression->Compute();
               } else {
-                //printf ("\n*** Compiled condition\n");
+                  //printf ("\n*** Compiled condition\n");
                 result = ((_Formula*)simpleParameters(2))->Compute();
               }
-               if (terminateExecution && !result) {
+
+              // printf ("\n*** %s\n", ((_String*)result->toStr())->sData);
+
+            if (terminateExecution && !result) {
                   subNumericValues = 2;
                   _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr();
                   subNumericValues = 0;
@@ -3200,7 +3205,6 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
     } else {
         _String filePath = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix),
                 originalPath = filePath;
-      
       
 
         FILE * commandSource = nil;
@@ -4821,20 +4825,21 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
   chain.currentCommand++;
   
   _String matrixName = chain.AddNameSpaceToID(*(_String*)parameters(0)),
-  *objectName = (_String*)parameters(1);
+         *objectName = (_String*)parameters(1);
   
   
   _Matrix *result = nil;
   
   // object is a non-empty string
-  if (objectName->sLength > 2 && objectName->sData[0] == '"' && objectName->sData[objectName->sLength-1] == '"')
+  if (objectName->sLength > 2 && objectName->sData[0] == '"' && objectName->sData[objectName->sLength-1] == '"') {
     // regular expression
-  {
     _String regExp = GetStringFromFormula (objectName,chain.nameSpacePrefix);
     int errNo = 0;
     Ptr regex = PrepRegExp (&regExp, errNo, true);
     if (regex) {
       _List       matches;
+      
+      
       
       _SimpleList tcache;
       long        iv,
@@ -7311,19 +7316,19 @@ bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _Execution
     long  code = 39;
 
     switch (execAFile) {
-    case 0:
-        ExtractConditions (source,blExecuteCommands.sLength,pieces,',');
-        break;
+      case 0:
+          ExtractConditions (source,blExecuteCommands.sLength,pieces,',');
+          break;
 
-    case 1:
-        ExtractConditions (source,blExecuteAFile.sLength,pieces,',');
-        code = 62;
-        break;
+      case 1:
+          ExtractConditions (source,blExecuteAFile.sLength,pieces,',');
+          code = 62;
+          break;
 
-    case 2:
-        ExtractConditions (source,blLoadFunctionLibrary.sLength,pieces,',');
-        code = 66;
-        break;
+      case 2:
+          ExtractConditions (source,blLoadFunctionLibrary.sLength,pieces,',');
+          code = 66;
+          break;
     }
 
     if (pieces.lLength < 1 || pieces.lLength > 3) {

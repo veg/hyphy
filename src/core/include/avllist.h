@@ -40,7 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _AVLLIST_
 #define _AVLLIST_
 //#pragma once
-#include "simplelist.h"
+#include "list.h"
 
 #define  MEMORYSTEP 8
 
@@ -106,6 +106,8 @@ class _AVLList: public BaseObj {
 
         void Delete(BaseRef,bool=false);
         void ConsistencyCheck(void);
+  
+        const _List Keys (void) const;
 
 };
 
