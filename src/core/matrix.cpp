@@ -2186,7 +2186,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
                                 lterm = empty;    // dummy element in probability matrix
                             }
 
-                            _Formula*  theTerm = (_Formula*)checkPointer(new _Formula (lterm, theP));
+                            _Formula*  theTerm = new _Formula (lterm, theP);
 
                             if (isAConstant) {
                               // there is hope that this matrix is of numbers
@@ -2310,14 +2310,13 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
                             term = empty;    // dummy element in probability matrix
                         }
 
-                        _Formula theTerm (term,theP);
-                        if (isAConstant) { // there is hope that this matrix is of numbers
-                            isAConstant = theTerm.IsAConstant();
-                        }
-
+                        _Formula * theTerm = new _Formula (term,theP);
+                        isAConstant = isAConstant && theTerm->IsAConstant();
+  
+                      
                         (*this)[vDim*hPos+vPos];
                         k = Hash (hPos,vPos);
-                        ((_Formula**)theData)[k]=(_Formula*)theTerm.makeDynamic();
+                        ((_Formula**)theData)[k]=theTerm;
                     }
                     i = j;
                 }
@@ -9269,13 +9268,18 @@ BaseRef _AssociativeList::makeDynamic (void)
 
 //_____________________________________________________________________________________________
 
-bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool doErrors, _VariableContainer const* theP) {
+bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, _FormulaParsingContext& fpc ) {
     _List               splitKeys;
+    bool                doErrors = fpc.errMsg() == nil,
+                        compute_keys_values = fpc.buildComplexObjects();
+   _VariableContainer const* theP = fpc.formulaScope();
+  
     _ElementaryCommand::ExtractConditions (serializedForm, 0, splitKeys, ',' , false);
-    for (long k = 0; k < splitKeys.lLength; k = k + 1) {
+  
+    for (unsigned long k = 0UL; k < splitKeys.lLength; k ++) {
         _List aPair;
         _ElementaryCommand::ExtractConditions (*(_String*)splitKeys(k), 0, aPair, ':' , false);
-        if (aPair.lLength == 2) {
+        if (aPair.lLength == 2UL) {
             _String  key        (ProcessLiteralArgument((_String*)aPair(0),theP)),
                      errMsg;
           
@@ -9283,11 +9287,11 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool 
               key = *(_String*)aPair(0);
             }
             
-            _Formula value      (*(_String*)aPair(1),theP, doErrors?nil:&errMsg);
-
-            _PMathObj   valueC  = value.Compute();
+            _Formula value      (*(_String*)aPair(1),theP, doErrors?nil :&errMsg);
+            _PMathObj   valueC  = compute_keys_values ? value.Compute() : new _MathObject;
+          
             if (valueC) {
-                MStore (key, valueC, true);
+                MStore (key, valueC, compute_keys_values);
             } else {
                 if (doErrors) {
                     WarnError (*(_String*)aPair(1) & " could not be evaluated");
@@ -9788,12 +9792,13 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
         return new _Constant (avl.countitems());
         
       case HY_OP_CODE_DIV:
+        
         if (arg0->ObjectClass () == STRING) {
           if (avl.Find (((_FString*)arg0)->theString) >= 0) {
-              //return new _COnstant
+            return new _Constant (1.0);
           }
         }
-        return new _MathObject;
+        return new _Constant (0.0);
         
     }
     _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
@@ -9816,6 +9821,7 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
     case HY_OP_CODE_MUL:
     case HY_OP_CODE_SUB:
     case HY_OP_CODE_MACCESS:
+    case HY_OP_CODE_DIV:
       WarnWrongNumberOfArguments (this, opCode,context, arguments);
       break;
     default:
