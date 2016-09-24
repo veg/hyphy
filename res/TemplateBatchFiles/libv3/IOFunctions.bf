@@ -117,9 +117,10 @@ lfunction io.ReportProgressMessageMD(analysis, stage, text) {
     advance = TRUE;
     utility.EnsureKey(cache, analysis);
 
-    if ((cache[analysis])[stage]) {
+    if (utility.Has (cache[analysis],stage,"Number")) {
         advance = FALSE;
     }
+
     (cache[analysis])[stage] += 1;
 
     if (advance) {
@@ -467,4 +468,60 @@ function io.FormatLongStringToWidth(string, width) {
     }
 
     return Join("\n", lines);
+}
+
+/**
+ * I am tired of typing fprintf (stdout, ...)
+ * @returns nothing
+ */
+lfunction console.log (arg) {
+    fprintf (stdout, arg, "\n");
+    return res;
+}
+
+/**
+ * I am tired of typing fprintf (MESSAGE_LOG, ...)
+ * @returns nothing
+ */
+lfunction messages.log (arg) {
+    fprintf (MESSAGE_LOG, arg, "\n");
+    return res;
+}
+
+/**
+ * Checks if there is a file exists
+ * @param {String} path the path to check
+ * @returns {Number} TRUE if file exists and is readable; FALSE otherwise
+ */
+
+lfunction io.FileExists  (path) {
+    return !path;
+}
+
+/**
+ * Checks if there is a cache file; creates if empty
+ * @param {String} path  the path to the cache file; will be created if it doesn't exist
+ * @returns {Dict} the contents of the file
+ */
+lfunction io.LoadCacheFromFile  (path) {
+    if (io.FileExists (path) == TRUE) { // exists
+        fscanf (path, REWIND, "Raw", contents);
+        contents =  Eval (contents);
+        if (Type (contents) == "AssociativeList") {
+            return contents;
+        }
+    } else {
+        fprintf (path, CLEAR_FILE, {});
+    }
+    return {};
+}
+
+/**
+ * Checks if there is a cache file; creates if empty
+ * @param {String} path  the path to the cache file; will be created if it doesn't exist
+ * @param {Dict} data  the contents of the cache to save to a file
+ * @returns nothing
+ */
+lfunction io.WriteCacheToFile  (path, data) {
+    fprintf (path, CLEAR_FILE, data);
 }
