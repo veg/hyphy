@@ -541,3 +541,65 @@ lfunction utility.EnsureKey (dict, key) {
         dict[key] = {};
     }
 }
+
+/**
+ * Ensures a key exists in a dictionary
+ * @name utility.Has
+ * @param {Dictionary} d - the object to return keys from
+ * @param {String/Matrix} key - check to see if key is in the dictionary
+ * if the value is a matrix, checks for [key[0]][key[1]][...][key[N]] nested keys
+ * type check is performed on the last level
+ * @param {String/None} type - if specified will further check if the object has the right type
+ * @returns value mapped to the key or None
+ */
+lfunction utility.Has (d, key, type) {
+
+    if (Type (key) == "String") {
+        if (d/key) {
+            if (type == None) {
+                return TRUE;
+            }
+            return Type (d[key]) == type;
+        }
+        return FALSE;
+    }
+
+    if (Type (key) == "Matrix") {
+        depth = utility.Array1D (key);
+        current_check = &d;
+        current_key   = key[0];
+
+        for (i = 1; i < depth; i += 1) {
+             if (Eval ("`current_check`/'`current_key`'")) {
+                current_check = "(" + current_check + ")['`current_key`']";
+                if (Eval ("Type(`current_check`)") != "AssociativeList") {
+                    return FALSE;
+                }
+                current_key = key[i];
+            } else {
+                return FALSE;
+            }
+        }
+
+
+        if ( Eval ("`current_check`/'`current_key`'") ) {
+            if (type == None) {
+                return TRUE;
+            }
+            return Eval ("Type((`current_check`)['`current_key`'])") == type;
+        }
+    }
+    return FALSE;
+}
+
+
+/**
+ * Returns the list of modules loaded with `LoadFunctionLibrary`
+ * @returns a string matrix with (absolute) file paths for loaded modules
+ */
+lfunction utility.GetListOfLoadedModules () {
+    GetString (res, LIST_OF_LOADED_LIBRARIES, -1);
+    return res;
+}
+
+
