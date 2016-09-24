@@ -69,7 +69,7 @@
 #define MOD_ADLER 65521
 
 _String   compileDate = __DATE__,
-          __HYPHY__VERSION__ = _String ("2.30alpha") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+          __HYPHY__VERSION__ = _String ("2.31alpha") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
                                                                                                   Replace("Mar", "03", true).
                                                                                                   Replace("Apr", "04", true).
@@ -2006,12 +2006,14 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             if (caller && caller->IsErrorState()) {
                 return false;
             }
+ 
         } else {
             StripQuotes();
         }
 
         if (!sLength) {
-            return true;
+           CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+           return true;
         }
     }
     
@@ -2197,6 +2199,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
         }
     }
 #endif
+    CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
     return true;
 }
 
