@@ -286,10 +286,9 @@ long  _AVLList::GetByIndex (const long theIndex)
 
 //______________________________________________________________
 
-void  _AVLList::ReorderList (_SimpleList *s)
-{
+void  _AVLList::ReorderList (_SimpleList *s) {
     _SimpleList reorderMe ((unsigned long)(dataList->lLength-emptySlots.lLength+1)),
-                nodeStack ((unsigned long)32);
+                nodeStack ((unsigned long)64);
 
     long        curNode = root;
 
@@ -438,6 +437,26 @@ BaseRef  _AVLList::toStr (unsigned long) {
     str->Finalize();
     return str;
 }
+
+  //______________________________________________________________
+
+const _List  _AVLList::Keys (void) const {
+  _List keys;
+   if (countitems() > 0UL) {
+      _SimpleList  hist;
+      long         ls, cn;
+      
+      cn = Traverser (hist,ls,root);
+      
+      bool first = true;
+      while (cn>=0) {
+        keys << Retrieve (cn);
+        cn = Traverser (hist,ls);
+      }
+  }
+  return keys;
+}
+
 
 //______________________________________________________________
 
