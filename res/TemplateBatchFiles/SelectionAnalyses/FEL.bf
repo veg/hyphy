@@ -368,7 +368,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping, fel.final_partitioned_mg_results,
                                         "globals only");
 
-    fel.queue = mpi.create_queue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
+    fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                    "Models" : {{"fel.site.mg_rev"}},
                                    "Headers" : {{"libv3/terms-json.bf"}}
                                  });
@@ -384,7 +384,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
                                                                 "4" : fel.site_model_mapping
                                                                 });
             } else {
-                mpi.queue_job (fel.queue, "fel.handle_a_site", {"0" : "fel.site_likelihood",
+                mpi.QueueJob (fel.queue, "fel.handle_a_site", {"0" : "fel.site_likelihood",
                                                                 "1" : alignments.serialize_site_filter
                                                                    ((fel.filter_specification[fel.partition_index])["name"],
                                                                    (_pattern_info_["sites"])[0]),
@@ -397,7 +397,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
         '
     );
 
-    mpi.queue_complete (fel.queue);
+    mpi.QueueComplete (fel.queue);
     fel.partition_matrix = {Abs (fel.site_results[fel.partition_index]), Rows (fel.table_headers)};
 
     utility.ForEachPair (fel.site_results[fel.partition_index], "_key_", "_value_",

@@ -307,13 +307,13 @@ if (slac.samples > 0) {
         slac.table_output_options_samplers["header"] = TRUE;
         slac.sample.results = {};
 
-        slac.queue = mpi.create_queue ({"LikelihoodFunctions": {{slac.partitioned_mg_results["LF"]}}});
+        slac.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{slac.partitioned_mg_results["LF"]}}});
 
         for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
 
             io.ReportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
 
-            mpi.queue_job (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"],
+            mpi.QueueJob (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"],
                                                                 "1" : slac.i,
                                                                 "2" : slac.selected_branches[slac.i],
                                                                 "3":  slac.counts},
@@ -323,7 +323,7 @@ if (slac.samples > 0) {
 
         io.ReportProgressBar("", "Done with ancestral sampling              \n");
 
-        mpi.queue_complete (slac.queue);
+        mpi.QueueComplete (slac.queue);
 
         slac.extractor = {slac.samples, 1};
         slac.sites   = utility.Array1D ((slac.filter_specification[slac.i])["coverage"]);
