@@ -1,16 +1,33 @@
 LoadFunctionLibrary ("../terms-json.bf");
 
+/** @module mpi
+        Functions for creating, populating, and manipulating
+        MPI job queues. In the absence of an MPI environment
+        the jobs are executed serially
+ */
+
+
+
 namespace mpi {
     job_id = 0;
 
-    function get_job_id () {
+    function get_next_job_id () {
         job_id += 1;
         return job_id;
     }
 
 
-    lfunction create_queue (nodesetup) {
-        /** create and return an empty FIFO queue for MPI jobs */
+    lfunction CreateQueue (nodesetup) {
+        /** create and return an empty FIFO queue for MPI jobs
+         * @name mpi.CreateQueue
+         * @param  {Dict} nodesetup
+         *      controls what gets passed to slave nodes
+         *      "Headers" -> iterable (matrix/dict) of string paths of header files to load
+         *      "Models" ->  matrix of model names to make available to slave nodes
+         *      "LikelihoodFunctions" -> iterable (matrix/dict) of LikelihoodFunction IDs to export to slave nodes
+         * @return {Dict} an "opaque" queue structure
+         */
+
         mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
 
         queue = {};
@@ -26,6 +43,7 @@ namespace mpi {
 
                     send_to_nodes * 128;
 
+
                     utility.ForEach (nodesetup["LikelihoodFunctions"], "_value_",
                                      '
                                         ExecuteCommands ("Export (create_queue.temp, " + _value_ + ")");
@@ -38,44 +56,50 @@ namespace mpi {
 
                                      ');
 
-                    utility.ForEach (nodesetup["Headers"], "_value_",
-                        '
-                            `&send_to_nodes` * ("LoadFunctionLibrary (\'" + _value_ + "\')");
-                        '
-                    );
 
-                    globals_to_export = {};
-                    functions_to_export = {};
-                    model_count = utility.Array1D (nodesetup["Models"]);
-                    for (m = 0; m < model_count; m+=1) {
-                        model_name = (nodesetup["Models"])[m];
-                        model_globals = utility.Values(((^model_name)["parameters"])[^"terms.global"]);
-                        model_global_count = utility.Array1D (model_globals);
-                        for (v = 0; v < model_global_count; v+=1) {
-                            globals_to_export [model_globals[v]] = 1;
-                        }
-
-                        utility.ForEach ({{"get-branch-length","set-branch-length"}}, "_value_",
-                        '
-                            _test_id_ = (^(`&model_name`))[_value_];
-                            if (Type (_test_id_) == "String" && Abs (_test_id_) > 0) {
-                                `&functions_to_export` [_test_id_] = 1;
-                            }
-                        ');
+                    if (utility.Has (nodesetup, "Headers", None)) {
+                        send_to_nodes * "PRESERVE_SLAVE_NODE_STATE = TRUE;\n";
+                        send_to_nodes * (Join (";\n",utility.Map (nodesetup["Headers"], "_value_", "'LoadFunctionLibrary(\"' + _value_ +'\")'")) + ";");
                     }
 
-                    utility.ForEach (utility.Keys(globals_to_export), "_value_",
-                        '
-                            `&send_to_nodes` * parameters.ExportParameterDefinition (_value_);
-                        '
-                    );
+                    model_count = utility.Array1D (nodesetup["Models"]);
 
-                    utility.ForEach (utility.Keys(functions_to_export), "_value_",
-                        '
-                            ExecuteCommands ("Export (_test_id_," + _value_ + ")");
-                            `&send_to_nodes` * _test_id_;
-                        '
-                    );
+                    if (model_count) {
+                        send_to_nodes * "PRESERVE_SLAVE_NODE_STATE = TRUE;\n";
+
+                        globals_to_export = {};
+                        functions_to_export = {};
+
+                        for (m = 0; m < model_count; m+=1) {
+                            model_name = (nodesetup["Models"])[m];
+                            model_globals = utility.Values(((^model_name)["parameters"])[^"terms.global"]);
+                            model_global_count = utility.Array1D (model_globals);
+                            for (v = 0; v < model_global_count; v+=1) {
+                                globals_to_export [model_globals[v]] = 1;
+                            }
+
+                            utility.ForEach ({{"get-branch-length","set-branch-length"}}, "_value_",
+                            '
+                                _test_id_ = (^(`&model_name`))[_value_];
+                                if (Type (_test_id_) == "String" && Abs (_test_id_) > 0) {
+                                    `&functions_to_export` [_test_id_] = 1;
+                                }
+                            ');
+                        }
+
+                        utility.ForEach (utility.Keys(globals_to_export), "_value_",
+                            '
+                                `&send_to_nodes` * parameters.ExportParameterDefinition (_value_);
+                            '
+                        );
+
+                        utility.ForEach (utility.Keys(functions_to_export), "_value_",
+                            '
+                                ExecuteCommands ("Export (_test_id_," + _value_ + ")");
+                                `&send_to_nodes` * _test_id_;
+                            '
+                        );
+                    }
 
 
                     send_to_nodes * 0;
@@ -99,7 +123,7 @@ namespace mpi {
     }
 
 
-    lfunction queue_job (queue, job, arguments, result_callback) {
+    lfunction QueueJob (queue, job, arguments, result_callback) {
         /**
             send the job function with provided arguments to
             the first available node.
@@ -123,7 +147,7 @@ namespace mpi {
 
 
             complete_function_dump = aux.queue_export_function (job);
-            job_id = get_job_id();
+            job_id = get_next_job_id();
             //fprintf (stdout, "Sending to node ", node, "\n");
             queue [node] = {"job_id" : job_id, "callback" : result_callback, "arguments" : arguments};
             MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');
@@ -133,7 +157,7 @@ namespace mpi {
         }
     }
 
-    lfunction queue_complete (queue) {
+    lfunction QueueComplete (queue) {
 
         mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
 
