@@ -120,7 +120,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(GCC50 true)
     endif(${GCC_VERSION} VERSION_GREATER 5.0 OR ${GCC_VERSION} VERSION_EQUAL 5.0)
 
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=c++14")
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
 
     PCL_CHECK_FOR_AVX()
 
