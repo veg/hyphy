@@ -287,6 +287,52 @@ function utility.Filter (object, lambda_name, condition) {
 }
 
 /**
+ * Find the first element in a matrix or an array that matches the predicate; none otherwise
+ * Keys are traversed alphabetically; matrices, by column - then row
+ * @name utility.First
+ * @param {Dictionary|Matrix} object - matrix to convert
+ * @param {String} lambda_name - function to discern whether element is filtered.
+ * @returns first matched object or none
+ * @example
+ * _nonnegatives = utility.Filter (_data_vector, "_value_", "_value_ >= 0");
+ */
+function utility.First (object, lambda_name, condition) {
+
+
+    Eval ("`lambda_name` = None");
+
+    utility.Filter.return_object = {};
+    if (Type (object) == "AssociativeList") {
+        utility.Filter.keys = Rows (object);
+        ^(lambda_name) := object [utility.Filter.keys[utility.Filter.k]];
+        for (utility.Filter.k = 0; utility.Filter.k < Abs (object); utility.Filter.k += 1) {
+
+
+            if (Eval (condition)) {
+                return ^(lambda_name);
+            }
+        }
+        return None;
+    }
+
+    if (Type (object) == "Matrix") {
+        utility.Filter.rows = Rows (object);
+        utility.Filter.columns = Columns (object);
+        ^(lambda_name) := object [utility.Filter.r][utility.Filter.c];
+        for (utility.Filter.r = 0; utility.Filter.r < utility.Filter.rows; utility.Filter.r += 1) {
+            for (utility.Filter.c = 0; utility.Filter.c < utility.Filter.columns; utility.Filter.c += 1) {
+                if (Eval (condition)) {
+                    return ^(lambda_name);
+                }
+            }
+        }
+        return None;
+    }
+
+    return None;
+}
+
+/**
  * @name utility.ForEach
  * @param {Tree|Dictionary|Matrix} object - matrix to convert
  * @param {String} lambda_name

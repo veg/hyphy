@@ -1277,21 +1277,29 @@ _PMathObj   _Matrix::MultByFreqs (long freqID)
                         theMatrix[i] *= (*freqMatrix)[i%vDim];
                     }
                 } else {
-                    for (long i=0; i<lDim; i++) {
-                        theMatrix[i] *= freqMatrix->theData[i%vDim];
+                    for (unsigned long column=0UL; column<vDim; column++) {
+                      const _Parameter freq_i = freqMatrix->theData[column];
+                      unsigned long entry = column;
+                      for (;entry < lDim - vDim; entry += vDim) {
+                        theMatrix[entry] *= freq_i;
+                        theMatrix[entry+=vDim] *= freq_i;
+                      }
+                      if (entry < lDim) {
+                        theMatrix[entry] *= freq_i;
+                      }
                     }
                 }
             }
-            {
-                for (long i=0; i<lDim; i+=(vDim+1)) {
-                    theMatrix[i] = 0.;
-                }
-            }
-            for (long i=0; i<lDim; i++) {
-                long h = i/vDim,v = i%vDim;
-                if (h!=v) {
-                    theMatrix[h*vDim+h]-=theMatrix[h*vDim+v];
-                }
+          
+            for (unsigned long row_start = 0UL, row = 0UL; row_start < lDim; row_start+=vDim, row++) {
+              unsigned long diag = row_start + row;
+              theMatrix [diag] = 0.;
+              for (unsigned long col = 0UL; col < row; col++) {
+                theMatrix[diag] -= theMatrix[row_start + col];
+              }
+              for (unsigned long col = row+1; col < vDim; col++) {
+                theMatrix[diag] -= theMatrix[row_start + col];
+              }
             }
         }
 
@@ -3635,39 +3643,121 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
             if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
                 /* two square dense matrices */
             {
-                long cumulativeIndex = 0,
-                     dimm4 = vDim - vDim%4;
+               unsigned long cumulativeIndex = 0UL;
+              
+               const unsigned long
+                              dimm4 = vDim - vDim%4,
+                              column_shift4 = secondArg.vDim<<2,
+                              column_shift2 = secondArg.vDim<<1,
+                              column_shift3 = secondArg.vDim * 3;
 
-                _Parameter _hprestrict_ * row = theData;
-                _Parameter _hprestrict_ * dest = storage.theData;
+                const _Parameter * row = theData;
+                _Parameter  * dest = storage.theData;
 
 #ifndef _SLKP_SSE_VECTORIZATION_
+              
                 
-               
-                for (long i=0; i<hDim; i++, row += vDim) {
-                    for (long j=0; j<secondArg.vDim; j++) {
+                
+/*#ifdef  _SLKP_USE_AVX_INTRINSICS
+              __m256d buffer1,
+                      buffer2;
+              __m128d two1,
+                      two2;
+              
+              double  d[2] __attribute__ ((aligned (16)));
+
+              for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
+                for (unsigned long j=0; j<secondArg.vDim; j++) {
+                  _Parameter resCell  = 0.0;
+                  
+           
+                  unsigned long k = 0,
+                  column = j;
+                  
+                  
+                  for (; k < dimm4; k+=4, column += column_shift4) {
+                    buffer1 = _mm256_loadu_pd (row+k);
+                    buffer2 = _mm256_set_pd  (secondArg.theData [column + column_shift3],
+                                              secondArg.theData [column + column_shift2],
+                                              secondArg.theData [column + secondArg.vDim],
+                                              secondArg.theData [column]);
+                    
+                                              
+                    buffer1 = _mm256_mul_pd      (buffer1,buffer2);
+                    buffer1 = _mm256_add_pd     (
+                                                  _mm256_shuffle_pd (buffer1, buffer1, 0x0),_mm256_shuffle_pd (buffer1, buffer1, 0xf));
+ 
+                    two1 = _mm256_extractf128_pd(buffer1,0);
+                    two2 = _mm256_extractf128_pd(buffer1,1);
+                    
+                    _mm_store_pd(d,_mm_add_pd(two1, two2));
+                    resCell += d[0];
+                   
+                  }
+                  
+                  if (dimm4 < vDim)
+                    for (; k < vDim; k++, column += secondArg.vDim) {
+                      resCell += row[k] * secondArg.theData[column];
+                    }
+                  
+                  dest[cumulativeIndex++] = resCell;
+                  
+                }
+              }
+#else*/
+              
+              if (dimm4 == vDim) {
+                for (unsigned long column = 0UL; column < secondArg.vDim; column ++) {
+                  
+                    //unsigned long element = row*vDim;
+                  for (unsigned long vector_index = 0UL; vector_index < vDim; vector_index += 4UL) {
+                      _Parameter c0 = secondArg.theData[column],
+                                 c1 = secondArg.theData[column+secondArg.vDim],
+                                 c2 = secondArg.theData[column+column_shift2],
+                                 c3 = secondArg.theData[column+column_shift3];
+                  }
+                  
+                  for (unsigned long row = 0UL; row < hDim; row ++) {
+                    _Parameter resCell  = 0.0;
+                    
+                    unsigned long element = row*vDim;
+                    for (unsigned long index = 0UL; index < vDim; index += 4) {
+                      _Parameter c1
+                    }
+                  }
+                }
+                
+                
+              } else {
+                for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
+                    for (unsigned long j=0; j<secondArg.vDim; j++) {
                         _Parameter resCell  = 0.0;
 
-                        long k = 0, 
-                             column = j;
+                        unsigned long k = 0,
+                                     column = j;
+                      
                         
-                        for (; k < dimm4; k+=4, column += (secondArg.vDim<<2)) {
+                        for (; k < dimm4; k+=4, column += column_shift4) {
                             _Parameter pr1 = row[k]   * secondArg.theData [column],                         
                                        pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
-                                       pr3 = row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)],
-                                       pr4 = row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
-                            resCell += pr1 + pr2 + pr3 + pr4;
+                                       pr3 = row[k+2] * secondArg.theData [column + column_shift2],
+                                       pr4 = row[k+3] * secondArg.theData [column + column_shift3];
+                          
+                            pr1 += pr2;
+                            pr3 += pr4;
+                          
+                            resCell += pr1 + pr3;
                         }
                         
-                        if (dimm4 < vDim)
-                            for (; k < vDim; k++, column += secondArg.vDim) {
-                                resCell += row[k] * secondArg.theData[column];
-                            }
+                        for (; k < vDim; k++, column += secondArg.vDim) {
+                            resCell += row[k] * secondArg.theData[column];
 
                         dest[cumulativeIndex++] = resCell;
 
                     }
                 }
+              }
+                //#endif
                 /*_Parameter cache [128];
                 for (long i=0; i<hDim; i++, row += vDim) {
                     for (long j=0; j<secondArg.vDim; j++) {
@@ -3885,7 +3975,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 #ifdef  _SLKP_USE_AVX_INTRINSICS
                         __m256d buffer1,
                                 buffer2,
-                                value_op = _mm256_set_pd (value,value,value,value);
+                                 value_op = _mm256_set_pd (value,value,value,value);
                         
                         if (((long int)secArg & 0x11111b) == 0 && ((long int)res & 0x11111b) == 0) {
                             for (long i = 0; i < loopBound; i+=4) {
@@ -5719,12 +5809,14 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
         if (hDim==4)
             // special case for nucleotides
         {
-            for (long i=0, k = 0; i<16; i+=4) {
-                for (long j=0; j<4; j++, k++) {
-                    stash[k] = theData[i]   * theData [j]
-                               + theData[i+1] * theData [j+4]
-                               + theData[i+2] * theData [j+8]
-                               + theData[i+3] * theData [j+12];
+            for (unsigned long i=0UL, k = 0UL; i<16; i+=4) {
+                for (unsigned long j=0UL; j<4UL; j++, k++) {
+                  _Parameter p1 = theData[i]   * theData [j];
+                  _Parameter p2 = theData[i+1] * theData [j+4];
+                   p1 += theData[i+2] * theData [j+8];
+                   p2 += theData[i+3] * theData [j+12];
+                  
+                   stash[k] = p1+p2;
                 }
             }
         } else {

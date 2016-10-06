@@ -282,7 +282,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     resStr->Finalize();
                 }
             } else {
-              //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
+                //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 _ExecutionList exL (*theMessage);
                 _PMathObj res = exL.Execute();
                 resStr = res?(_String*)res->toStr():new _String ("0");
@@ -342,14 +342,18 @@ void mpiOptimizerLoop (int rank, int size)
             }
 
             _SimpleList const * ivl = & theLF->GetIndependentVars();
+  
+          
             _String      variableSpec (128L, true);
 
-            (variableSpec) << LocateVar(ivl->lData[0])->GetName();
 
+            (variableSpec) << LocateVar(ivl->lData[0])->GetName();
+            
             for (long kk = 1; kk < ivl->lLength; kk++) {
-                (variableSpec) << ';';
-                (variableSpec) << LocateVar(ivl->lData[kk])->GetName();
+              (variableSpec) << ';';
+              (variableSpec) << LocateVar(ivl->lData[kk])->GetName();
             }
+          
             variableSpec.Finalize();
             ReportWarning         (_String("[MPI] Sending back the following variable list\n") & variableSpec);
             MPISendString         (variableSpec,senderID);
@@ -358,6 +362,8 @@ void mpiOptimizerLoop (int rank, int size)
                                                hyphyMPIOptimizerMode  == _hyphyLFMPIModeSiteTemplate));
             theLF->DoneComputing();
             PurgeAll (true);
+            InitializeGlobals ();
+            ReportWarning("Reset node state at the end of MPI optimizaer loop");
         }
         DeleteObject (theMessage);
         theMessage = MPIRecvString (-1,senderID);

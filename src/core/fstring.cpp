@@ -637,7 +637,7 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
     case HY_OP_CODE_ABS: // Abs
       return new _Constant (theString->sLength);
     case HY_OP_CODE_EVAL: // Eval
-      return Evaluate(context);
+        return Evaluate(context);
     case HY_OP_CODE_EXP: // Exp
       return new _Constant (theString->LempelZivProductionHistory(nil));
     case HY_OP_CODE_LOG: // Log - check sum

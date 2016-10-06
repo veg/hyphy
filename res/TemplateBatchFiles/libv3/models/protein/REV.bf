@@ -16,7 +16,7 @@ function models.protein.REV.ModelDescription(type) {
         "description": "General time reversible model for protein sequences",
         "canonical": 1, // is of the r_ij \times \pi_j form
         "reversible": 1,
-        terms.efv_estimate_name: terms.freqs.predefined,
+        terms.efv_estimate_name: terms.freqs.20x1,
         "parameters": {
             "global": {},
             "local": {},
@@ -62,5 +62,13 @@ function models.protein.REV._GenerateRate(fromChar, toChar, namespace, model_typ
  */
 function models.protein.REV._DefineQ(model_dict, namespace) {
     models.protein.generic.DefineQMatrix (model_dict, namespace);
+    if (model_dict["type"] == terms.global) {
+        parameters.SetConstraint(((model_dict["parameters"])[terms.global])[terms.aminoacidRate("I", "L")], "1", "");
+    }
+    if (model_dict["type"] == terms.local) {
+        parameters.SetConstraint(((model_dict["parameters"])[terms.local])[terms.aminoacidRate("I", "L")], "1", "");
+    }
+
+
     return model_dict;
 }

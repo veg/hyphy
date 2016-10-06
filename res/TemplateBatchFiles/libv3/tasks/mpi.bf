@@ -62,6 +62,24 @@ namespace mpi {
                         send_to_nodes * (Join (";\n",utility.Map (nodesetup["Headers"], "_value_", "'LoadFunctionLibrary(\"' + _value_ +'\")'")) + ";");
                     }
 
+                    if (utility.Has (nodesetup, "Functions", None)) {
+                        send_to_nodes * "PRESERVE_SLAVE_NODE_STATE = TRUE;\n";
+                        utility.ForEach (nodesetup["Functions"], "_value_",
+                            '
+                                ExecuteCommands ("Export (_test_id_," + _value_ + ")");
+                                `&send_to_nodes` * _test_id_;
+                            '
+                        );
+                    }
+
+                    if (utility.Has (nodesetup, "Variables", None)) {
+                        utility.ForEach (nodesetup["Variables"], "_value_",
+                            '
+                                `&send_to_nodes` * ("\n" + _value_ + " = " +  ("" + ^_value_) + ";\n") ;
+                            '
+                        );
+                    }
+
                     model_count = utility.Array1D (nodesetup["Models"]);
 
                     if (model_count) {

@@ -246,7 +246,6 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
  * @returns estimators.ApplyExistingEstimates.df_correction - Abs(estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers);
  */
 function estimators.ApplyExistingEstimates(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions) {
-
     // fprintf (stdout, model_descriptions, "\n", initial_values, "\n");
 
     GetString(estimators.ApplyExistingEstimates.lfInfo, ^ likelihood_function_id, -1);
@@ -284,8 +283,9 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                 _branch_name = estimators.ApplyExistingEstimates.branch_names[estimators.ApplyExistingEstimates.b];
                 _existing_estimate = ((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name];
 
+
                 if (Type(_existing_estimate) == "AssociativeList") {
-                    _set_branch_length_to = _existing_estimate["MLE"];
+                    _set_branch_length_to = (((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])["MLE"];
 
                     if (None != branch_length_conditions) {
                         if (Abs(branch_length_conditions)) {
@@ -305,6 +305,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
         }
     }
+
 
     return estimators.ApplyExistingEstimates.df_correction - Abs(estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers);
 }
@@ -444,9 +445,11 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     df = 0;
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-        df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", {
-            name_space: user_model
-        }, initial_values, run_options["proportional-branch-length-scaler"]);
+            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", {
+                name_space: user_model
+            }, initial_values, run_options["proportional-branch-length-scaler"]);
+
+
     }
 
     Optimize(mles, likelihoodFunction);

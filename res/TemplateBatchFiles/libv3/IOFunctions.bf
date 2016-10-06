@@ -476,7 +476,6 @@ function io.FormatLongStringToWidth(string, width) {
  */
 lfunction console.log (arg) {
     fprintf (stdout, arg, "\n");
-    return res;
 }
 
 /**
@@ -485,7 +484,6 @@ lfunction console.log (arg) {
  */
 lfunction messages.log (arg) {
     fprintf (MESSAGE_LOG, arg, "\n");
-    return res;
 }
 
 /**

@@ -5931,7 +5931,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           if (j % printWidth == 0) {
             write_here << kStringFileWrapperNewLine;
           }
-          write_here << ',' << (*theData)(theOriginalOrder(j),theNodeMap(i),1);
+          write_here << (*theData)(theOriginalOrder(j),theNodeMap(i),1);
         }
         write_here << kStringFileWrapperNewLine;
       }
