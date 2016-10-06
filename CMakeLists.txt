@@ -10,7 +10,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 #-------------------------------------------------------------------------------
 
 option(NOAVX OFF)
-
+option(NOSSE3 OFF)
 
 #-------------------------------------------------------------------------------
 # SSE MACROS
@@ -126,16 +126,26 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
-    elseif(${HAVE_AVX_EXTENSIONS})
-        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
-        add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
-    else(${HAVE_AVX_EXTENSIONS})
-        PCL_CHECK_FOR_SSE3()
-        if(${HAVE_SSE3_EXTENSIONS})
-            add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
-        endif(${HAVE_SSE3_EXTENSIONS})
-    endif (NOAVX)
+        if(NOSSE3)
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
+        else(NOSSE)
+            if(${HAVE_SSE3_EXTENSIONS})
+                add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
+                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+            endif(${HAVE_SSE3_EXTENSIONS})
+        end(NOSSE3)
+    else(NOAVX)
+        if(${HAVE_AVX_EXTENSIONS})
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
+            add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
+        else(${HAVE_AVX_EXTENSIONS})
+            PCL_CHECK_FOR_SSE3()
+            if(${HAVE_SSE3_EXTENSIONS})
+                add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
+                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+            endif(${HAVE_SSE3_EXTENSIONS})
+        endif(${HAVE_AVX_EXTENSIONS})
+    endif(NOAVX)
 
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
@@ -157,7 +167,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}")
-#MESSAGE ("HAI! ${DEFAULT_COMPILE_FLAGS}")
+MESSAGE ("Set compiler flags to ${DEFAULT_COMPILE_FLAGS}")
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
     set(DEFAULT_COMPILE_FLAGS "")

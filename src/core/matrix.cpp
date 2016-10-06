@@ -3706,7 +3706,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
               }
 #else*/
               
-              if (dimm4 == vDim) {
+              /*if (dimm4 == vDim) {
                 for (unsigned long column = 0UL; column < secondArg.vDim; column ++) {
                   
                     //unsigned long element = row*vDim;
@@ -3728,7 +3728,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                 }
                 
                 
-              } else {
+              } else */ {
                 for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
                     for (unsigned long j=0; j<secondArg.vDim; j++) {
                         _Parameter resCell  = 0.0;
@@ -3756,6 +3756,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 
                     }
                 }
+              }
               }
                 //#endif
                 /*_Parameter cache [128];
