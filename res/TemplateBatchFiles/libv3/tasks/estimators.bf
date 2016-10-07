@@ -70,11 +70,11 @@ function estimators.SetGlobals2(key, value) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
             ExecuteCommands("`value` := " + __init_value["MLE"]);
         } else {
-            //fprintf (stdout, "Setting `value` to " + __init_value["MLE"] + "\n");
             if (parameters.IsIndependent (value)) {
+                //fprintf (stdout, "Setting `value` to " + __init_value["MLE"] + "\n", parameters.IsIndependent (value), "\n");
                 ExecuteCommands("`value` = " + __init_value["MLE"]);
             } else {
-                warning.log (value + " was already constrained in " + estimators.SetGlobals2);
+                warning.log (value + " was already constrained in estimators.SetGlobals2");
             }
         }
     }

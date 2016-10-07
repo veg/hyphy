@@ -29,7 +29,7 @@ function models.protein.REV.ModelDescription(type) {
         "frequency-estimator": "frequencies.empirical.protein",
         "q_ij": "models.protein.REV._GenerateRate",
         "time": "models.protein.generic.Time",
-        "defineQ": "models.protein.empirical._DefineQ",
+        "defineQ": "models.protein.REV._DefineQ",
         "post-definition": "models.generic.post.definition"
     };
 }
