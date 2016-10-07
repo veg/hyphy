@@ -787,4 +787,9 @@ extern  _Parameter  ANALYTIC_COMPUTATION_FLAG;
 
 void       InsertStringListIntoAVL  (_AssociativeList* , _String const&, _SimpleList const&, _List const&);
 void       InsertVarIDsInList       (_AssociativeList* , _String const&, _SimpleList const&);
+
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+  const double _avx_sum_4 (__m256d const &) ;
+#endif
+
 #endif

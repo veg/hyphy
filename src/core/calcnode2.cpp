@@ -899,7 +899,38 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         sum += (parentConditionals[p] *= accumulator);
                     }
                 }
-                else
+                else {
+                    #ifdef _SLKP_USE_AVX_INTRINSICS
+                    if (alphabetDimension == 20UL) {
+                      for (long p = 0; p < alphabetDimension; p++) {
+                              __m256d t_matrix[5] = {_mm256_loadu_pd(tMatrix),
+                                _mm256_loadu_pd(tMatrix+4UL),
+                                _mm256_loadu_pd(tMatrix+8UL),
+                                _mm256_loadu_pd(tMatrix+12UL),
+                                _mm256_loadu_pd(tMatrix+16UL)},
+                              
+                              c_vector[5] = {_mm256_loadu_pd(childVector),
+                                _mm256_loadu_pd(childVector+4UL),
+                                _mm256_loadu_pd(childVector+8UL),
+                                _mm256_loadu_pd(childVector+12UL),
+                                _mm256_loadu_pd(childVector+16UL)};
+                              
+                              t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
+                              t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
+                              t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
+                              t_matrix[3] = _mm256_mul_pd(t_matrix[3], c_vector[3]);
+                              t_matrix[4] = _mm256_mul_pd(t_matrix[4], c_vector[4]);
+                              
+                              t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
+                              t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
+                              t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
+                              
+                              tMatrix               += 20UL;
+                              sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
+                           }
+                      } else
+                    #endif
+
                     for (long p = 0; p < alphabetDimension; p++) {
                         _Parameter      accumulator = 0.0;
 
@@ -912,6 +943,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         tMatrix               += alphabetDimension;
                         sum += (parentConditionals[p] *= accumulator);
                     }
+                }
 #else
                 for (long p = 0; p < alphabetDimension; p++) {
                     _Parameter      accumulator = 0.0;
@@ -1351,7 +1383,40 @@ void            _TheTree::ComputeBranchCache    (
 #endif
 #ifndef _SLKP_SSE_VECTORIZATION_
                 for (long p = 0; p < alphabetDimension; p++) {
-                    _Parameter      accumulator = 0.0;
+                  
+#ifdef _SLKP_USE_AVX_INTRINSICS
+                  if (alphabetDimension == 20UL) {
+                    
+                    __m256d t_matrix[5] = {_mm256_loadu_pd(tMatrix),
+                                           _mm256_loadu_pd(tMatrix+4UL),
+                                           _mm256_loadu_pd(tMatrix+8UL),
+                                           _mm256_loadu_pd(tMatrix+12UL),
+                                            _mm256_loadu_pd(tMatrix+16UL)},
+                    
+                            c_vector[5] = {_mm256_loadu_pd(childVector),
+                              _mm256_loadu_pd(childVector+4UL),
+                              _mm256_loadu_pd(childVector+8UL),
+                              _mm256_loadu_pd(childVector+12UL),
+                              _mm256_loadu_pd(childVector+16UL)};
+                    
+                    t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
+                    t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
+                    t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
+                    t_matrix[3] = _mm256_mul_pd(t_matrix[3], c_vector[3]);
+                    t_matrix[4] = _mm256_mul_pd(t_matrix[4], c_vector[4]);
+                    
+                    t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
+                    t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
+                    t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
+                    
+                    tMatrix               += 20UL;
+                    sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
+                    continue;
+                    
+                  }
+#endif
+                  _Parameter      accumulator = 0.0;
+                
 #ifdef _SLKP_USE_SSE_INTRINSICS
 
                         __m128d buffer1,
@@ -1394,8 +1459,7 @@ void            _TheTree::ComputeBranchCache    (
                         accumulator = buffer[0] + buffer[1];
                     
 #else
-                   for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
-                    {
+                    for (long c = 0; c < alphabetDimensionmod4; c+=4) { // 4 - unroll the loop
                         _Parameter  pr1 =    tMatrix[c]   * childVector[c],
                                     pr2 =    tMatrix[c+1] * childVector[c+1],
                                     pr3 =    tMatrix[c+2] * childVector[c+2],
@@ -1521,13 +1585,52 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
                              (branchConditionals[0] *  transitionMatrix[12] + branchConditionals[1] *  transitionMatrix[13] + branchConditionals[2] *  transitionMatrix[14] + branchConditionals[3] *  transitionMatrix[15]);
             rootConditionals += 4;
         } else {
-            long       rmx = 0;
-            for (long p = 0; p < alphabetDimension; p++,rootConditionals++) {
-                _Parameter     r2 = 0.;
-                for (long c = 0; c < alphabetDimension; c++, rmx++) {
-                    r2 += branchConditionals[c] *  transitionMatrix[rmx];
+            #ifdef _SLKP_USE_AVX_INTRINSICS
+              if (alphabetDimension == 20UL) {
+
+                __m256d bc_vector[5] = {_mm256_loadu_pd(branchConditionals),
+                  _mm256_loadu_pd(branchConditionals+4UL),
+                  _mm256_loadu_pd(branchConditionals+8UL),
+                  _mm256_loadu_pd(branchConditionals+12UL),
+                  _mm256_loadu_pd(branchConditionals+16UL)};
+
+                
+              _Parameter const * tm = transitionMatrix;
+                
+              for (long p = 0; p < 20; p++, rootConditionals++) {
+                  
+                  __m256d t_matrix[5] = {_mm256_loadu_pd(tm),
+                                         _mm256_loadu_pd(tm+4UL),
+                                         _mm256_loadu_pd(tm+8UL),
+                                         _mm256_loadu_pd(tm+12UL),
+                                          _mm256_loadu_pd(tm+16UL)};
+                
+                
+                  t_matrix[0] = _mm256_mul_pd(t_matrix[0], bc_vector[0]);
+                  t_matrix[1] = _mm256_mul_pd(t_matrix[1], bc_vector[1]);
+                  t_matrix[2] = _mm256_mul_pd(t_matrix[2], bc_vector[2]);
+                  t_matrix[3] = _mm256_mul_pd(t_matrix[3], bc_vector[3]);
+                  t_matrix[4] = _mm256_mul_pd(t_matrix[4], bc_vector[4]);
+                  
+                  t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
+                  t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
+                  t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
+                  
+                  tm += 20UL;
+                
+                  accumulator += *rootConditionals * theProbs[p] * _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4]));
                 }
-                accumulator += *rootConditionals * theProbs[p] * r2;
+              } else
+            #endif
+            {
+              long       rmx = 0;
+              for (long p = 0; p < alphabetDimension; p++,rootConditionals++) {
+                  _Parameter     r2 = 0.;
+                  for (long c = 0; c < alphabetDimension; c++, rmx++) {
+                      r2 += branchConditionals[c] *  transitionMatrix[rmx];
+                  }
+                  accumulator += *rootConditionals * theProbs[p] * r2;
+              }
             }
 
         }

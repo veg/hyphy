@@ -132,6 +132,36 @@ _Parameter  lnGamma (_Parameter),
             gammaDeviate (double, double = 1.);
 
 
+#ifdef _SLKP_USE_AVX_INTRINSICS
+  void echo_avx_sum_4 (__m256d const x) {
+    double a[4];
+    _mm256_storeu_pd(a, x);
+    printf ("%g|%g|%g|%g\n", a[0], a[1], a[2], a[3]);
+  }
+
+  const double _avx_sum_4 (__m256d const & x) {
+      // x = (x3, x2, x1, x0)
+      //echo_avx_sum_4 (x);
+      //echo_avx_sum_4 (_mm256_shuffle_pd (x, x, 0x0));
+      //echo_avx_sum_4 (_mm256_shuffle_pd (x, x, 0xf));
+    
+    __m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
+                               // (x3,x3,x1,x1)
+                               _mm256_shuffle_pd (x, x, 0xf)
+                               // (x2,x2,x0,x0);
+                               );
+                                // (x3+x2, x3+x2, x1+x0, x1+x0)
+    //echo_avx_sum_4 (t);
+    //printf ("\n\n");
+    return _mm_cvtsd_f64 (_mm_add_pd(
+                                     _mm256_castpd256_pd128 (t), // (x3+x2,x3+x2)
+                                     _mm256_extractf128_pd(t,1)  // (x1+x0,x0+x1);
+                                    ));
+    
+    
+  }
+#endif
+
 //__________________________________________________________________________________________________________
 _Parameter  lnGamma(_Parameter theValue)
 {
@@ -3647,12 +3677,13 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
               
                const unsigned long
                               dimm4 = vDim - vDim%4,
-                              column_shift4 = secondArg.vDim<<2,
-                              column_shift2 = secondArg.vDim<<1,
-                              column_shift3 = secondArg.vDim * 3;
+                              column_shift2 = secondArg.vDim * 2,
+                              column_shift3 = secondArg.vDim * 3,
+                              column_shift4 = secondArg.vDim * 4;
 
                 const _Parameter * row = theData;
                 _Parameter  * dest = storage.theData;
+              
 
 #ifndef _SLKP_SSE_VECTORIZATION_
               
@@ -3706,100 +3737,140 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
               }
 #else*/
               
-              /*if (dimm4 == vDim) {
-                for (unsigned long column = 0UL; column < secondArg.vDim; column ++) {
+              if (dimm4 == vDim) {
+                InitializeArray (dest, lDim, 0.0);
+                for (unsigned long c = 0UL; c < secondArg.vDim; c ++) {
                   
-                    //unsigned long element = row*vDim;
-                  for (unsigned long vector_index = 0UL; vector_index < vDim; vector_index += 4UL) {
-                      _Parameter c0 = secondArg.theData[column],
-                                 c1 = secondArg.theData[column+secondArg.vDim],
-                                 c2 = secondArg.theData[column+column_shift2],
-                                 c3 = secondArg.theData[column+column_shift3];
-                  }
-                  
-                  for (unsigned long row = 0UL; row < hDim; row ++) {
-                    _Parameter resCell  = 0.0;
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+
+                  if (vDim == 20) { // special case for amino-acids
                     
-                    unsigned long element = row*vDim;
-                    for (unsigned long index = 0UL; index < vDim; index += 4) {
-                      _Parameter c1
-                    }
-                  }
-                }
-                
-                
-              } else */ {
-                for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
-                    for (unsigned long j=0; j<secondArg.vDim; j++) {
-                        _Parameter resCell  = 0.0;
-
-                        unsigned long k = 0,
-                                     column = j;
+                    __m256d __attribute__ ((aligned (32))) col_buffer[5];
+                    __m256d __attribute__ ((aligned (32))) row_buffer[5];
+                    
+                    __m128d two1, two2;
+                    double  d[2] __attribute__ ((aligned (16)));
+                    
+                    _Parameter col[4] __attribute__ ((aligned (32)));
+                     unsigned long col_index = c;
+                     for (unsigned long quad = 0UL; quad < 5UL; quad ++) {
+                       for (unsigned long i = 0UL; i < 4UL; i++, col_index += 20UL) {
+                         col [i] = secondArg.theData[col_index];
+                       }
+                       col_buffer[quad] = _mm256_load_pd (col);
+                     }
+                  
+                    
+                    _Parameter const * p = theData;
+                    for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
                       
-                        
-                        for (; k < dimm4; k+=4, column += column_shift4) {
-                            _Parameter pr1 = row[k]   * secondArg.theData [column],                         
-                                       pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
-                                       pr3 = row[k+2] * secondArg.theData [column + column_shift2],
-                                       pr4 = row[k+3] * secondArg.theData [column + column_shift3];
-                          
-                            pr1 += pr2;
-                            pr3 += pr4;
-                          
-                            resCell += pr1 + pr3;
-                        }
-                        
-                        for (; k < vDim; k++, column += secondArg.vDim) {
-                            resCell += row[k] * secondArg.theData[column];
-
-                        dest[cumulativeIndex++] = resCell;
-
+                      row_buffer[0] = _mm256_mul_pd(_mm256_loadu_pd(p), col_buffer[0]);
+                      row_buffer[1] = _mm256_mul_pd(_mm256_loadu_pd(p+4), col_buffer[1]);
+                      row_buffer[2] = _mm256_mul_pd(_mm256_loadu_pd(p+8), col_buffer[2]);
+                      row_buffer[3] = _mm256_mul_pd(_mm256_loadu_pd(p+12), col_buffer[3]);
+                      row_buffer[4] = _mm256_mul_pd(_mm256_loadu_pd(p+16), col_buffer[4]);
+                      
+                      row_buffer[0] = _mm256_add_pd(row_buffer[0], row_buffer[1]);
+                      row_buffer[2] = _mm256_add_pd(row_buffer[2], row_buffer[3]);
+                      row_buffer[2] = _mm256_add_pd(row_buffer[2], row_buffer[4]);
+                      row_buffer[0] = _mm256_add_pd(row_buffer[0], row_buffer[2]);
+ 
+                      /*row_buffer[1] = _mm256_add_pd     (
+                                                   _mm256_shuffle_pd (row_buffer[0], row_buffer[0], 0x0),_mm256_shuffle_pd (row_buffer[0], row_buffer[0], 0xf));
+                      
+                      two1 = _mm256_castpd256_pd128 (row_buffer[1]);
+                      two2 = _mm256_extractf128_pd(row_buffer[1],1);*/
+                      
+                      dest[r*vDim + c] = _avx_sum_4 (row_buffer[0]);
+                      /*__m256d sum = _mm256_add_pd(row_buffer[0], row_buffer[2]);
+                        // (x3,x2,x1,x0)
+                      const __m128d hiQuad = _mm256_extractf128_pd(sum, 1);
+                        // (x1,x0)
+                      const __m128d loQuad = _mm256_castpd256_pd128(sum);
+                        // (x3,x2)
+                      const __m128d sumQuads = _mm_add_pd(hiQuad, loQuad);
+                        // (x3+x1, x2+x0)
+                      const __m128d shuffledQuad = _mm_shuffle_pd(sumQuads, sumQuads, 1);
+                        // (x2+x0, --)
+                      const __m128d sum_lo = _mm_add_pd(sumQuads, shuffledQuad);
+                        // (x2+x0+x3+x2, --)
+                      
+                      
+                      
+                      dest[r*vDim + c] = _mm_cvtsd_f64 (sum_lo);*/
                     }
+                    continue;
+                    
+                  }
+
+#endif
+                  /*
+                   load a series of 4 consecutive elements from a column in the second matrix,
+                   say c [] = [i,i+1,i+2,i+3: c]
+                   
+                   next, iterate over all rows in the first matrix, looking for matched consecutive
+                   elements, e.g.
+                   
+                   r [] = [r: i,i+1,i+2,i+3]
+                   
+                   compute sum_{t=0..3} c[t] * r[t]
+                   
+                   add to the element (r,c) in the destination matrix
+                   
+                   */
+                  
+                   for (unsigned long i = 0UL, vector_index = c; i < secondArg.hDim; i += 4UL, vector_index += column_shift4) {
+                      _Parameter c0 = secondArg.theData[vector_index],
+                                 c1 = secondArg.theData[vector_index+secondArg.vDim],
+                                 c2 = secondArg.theData[vector_index+column_shift2],
+                                 c3 = secondArg.theData[vector_index+column_shift3];
+                
+                      for (unsigned long r = 0UL; r < hDim; r ++) {
+                        
+                        unsigned long element = r*vDim + i;
+                        
+                        _Parameter r0 = theData[element]   * c0,
+                                   r1 = theData[element+1] * c1,
+                                   r2 = theData[element+2] * c2,
+                                   r3 = theData[element+3] * c3;
+                        
+                        r0 += r1;
+                        r2 += r3;
+                        dest[r*vDim + c] += r0 + r2;
+                  
+                      }
+                   }
                 }
-              }
-              }
-                //#endif
-                /*_Parameter cache [128];
-                for (long i=0; i<hDim; i++, row += vDim) {
-                    for (long j=0; j<secondArg.vDim; j++) {
-                        _Parameter resCell  = 0.0;
-                        for (long l = 0, m = j; l < secondArg.vDim; l++, m += secondArg.vDim)
-                            cache[l] = secondArg.theData [m ];
+              } else {
+                  for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
+                      for (unsigned long j=0UL; j<secondArg.vDim; j++) {
+                          _Parameter resCell  = 0.0;
+
+                          unsigned long k = 0UL,
+                                       column = j;
+                        
+                          
+                          for (; k < dimm4; k+=4, column += column_shift4) {
+                              _Parameter pr1 = row[k]   * secondArg.theData [column],                         
+                                         pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
+                                         pr3 = row[k+2] * secondArg.theData [column + column_shift2],
+                                         pr4 = row[k+3] * secondArg.theData [column + column_shift3];
                             
-                        long k = 0;
+                              pr1 += pr2;
+                              pr3 += pr4;
+                            
+                              resCell += pr1 + pr3;
+                          }
+                          
+                          for (; k < vDim; k++, column += secondArg.vDim) {
+                              resCell += row[k] * secondArg.theData[column];
+                          }
                         
-                        for (; k < dimm4; k+=4) {
-                            _Parameter pr1 = row[k]   * cache[k],                         
-                            pr2 = row[k+1] * cache[k+1],      
-                            pr3 = row[k+2] * cache[k+2],
-                            pr4 = row[k+3] * cache[k+3];
-                            pr1 += pr2;
-                            pr3 += pr4;
-                            resCell += pr1 + pr3;
-                        }
-                        
-                        if (dimm4 < vDim)
-                            for (; k < vDim; k++) {
-                                resCell += row[k] * cache[k];
-                            }
-                        
-                        storage.theData[cumulativeIndex++] = resCell;
-                        
-                    }
-                }*/
-                /*} else {
-                    for (long i=0; i<hDim; i++, row += vDim) {
-                        for (long j=0; j<secondArg.vDim; j++) {
-                            _Parameter resCell = 0.0;
-
-                            for (long k = 0, column = j; k < vDim; k++, column += secondArg.vDim) {
-                                resCell += row[k] * secondArg.theData[column];
-                            }
-
-                            storage.theData[cumulativeIndex++] = resCell;
-                        }
-                    }
-                }*/
+                          dest[cumulativeIndex++] = resCell;
+                     }
+                  }
+              }
+              
 #else
                 secondArg.Transpose();
                 for (long i=0; i<hDim; i++, row += vDim) {
@@ -5931,7 +6002,7 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
                         buffer[0] += row[k] * column [k];
                     }
                     
-                    stash[i+j] = buffer[0] + buffer[1] + buffer[2] + buffer[3];
+                    stash[i+j] = (buffer[0] + buffer[1]) + (buffer[2] + buffer[3]);
                     
                 }
 
