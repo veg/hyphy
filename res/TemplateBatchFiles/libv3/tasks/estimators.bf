@@ -71,7 +71,11 @@ function estimators.SetGlobals2(key, value) {
             ExecuteCommands("`value` := " + __init_value["MLE"]);
         } else {
             //fprintf (stdout, "Setting `value` to " + __init_value["MLE"] + "\n");
-            ExecuteCommands("`value` = " + __init_value["MLE"]);
+            if (parameters.IsIndependent (value)) {
+                ExecuteCommands("`value` = " + __init_value["MLE"]);
+            } else {
+                warning.log (value + " was already constrained in " + estimators.SetGlobals2);
+            }
         }
     }
 }
