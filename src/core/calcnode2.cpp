@@ -85,7 +85,7 @@ _GrowingVector      _scalerMultipliers,
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-inline void _handle4x4_pruning_case (double* childVector, double* tMatrix, double* parentConditionals) {
+inline void _handle4x4_pruning_case (double const* childVector, double const* tMatrix, double* parentConditionals, void* transposed_mx) {
 #ifdef _SLKP_USE_SSE_INTRINSICS
         double tv [4]     __attribute__ ((aligned (16))) = {childVector[0],
                                                             childVector[1],
@@ -130,16 +130,57 @@ inline void _handle4x4_pruning_case (double* childVector, double* tMatrix, doubl
         _mm_storeu_pd (parentConditionals+2, matrix01);
 
                
-#else  
+  /*
+   A1*B1 + A2*B2 + A3*B3 + A4*B4, where A4 = 1-A1-A2-A3 can be done with three multipications
+   and 3 extra additions, like
+   
+   A1*(B1-B4) + A2*(B2-B4) + A3*(B3-B4) + B4
+   
+   */
+
+#elif defined _SLKP_USE_AVX_INTRINSICS
+  
+
+      __m256d c3     = _mm256_set1_pd(childVector[3]),
+              c0     = _mm256_sub_pd(_mm256_set1_pd(childVector[0]),c3),
+              c1     = _mm256_sub_pd(_mm256_set1_pd(childVector[1]),c3),
+              c2     = _mm256_sub_pd(_mm256_set1_pd(childVector[2]),c3),
+              t0,t1,t2,t3;
+  
+          if (transposed_mx) {
+             t0    = ((__m256d*)transposed_mx)[0];
+             t1    = ((__m256d*)transposed_mx)[1];
+             t2    = ((__m256d*)transposed_mx)[2];
+             t3    = ((__m256d*)transposed_mx)[3];
+            
+          } else {
+              t0     = (__m256d) {tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]},
+              t1     = (__m256d) {tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]},
+              t2     = (__m256d) {tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]},
+              t3     = (__m256d) {tMatrix[3],tMatrix[7],tMatrix[11],tMatrix[15]};
+          }
+  
+        // load transition matrix by column
+  
+        __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
+                sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), c3);
+  
+        _mm256_store_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
+  
+
+
+#else
+        // 12 multiplications, 16 additions, 3 subtractions
+  
         _Parameter t1 = childVector[0] - childVector[3],
                    t2 = childVector[1] - childVector[3],
                    t3 = childVector[2] - childVector[3],
                    t4 = childVector[3];
                    
-        parentConditionals [0] *= tMatrix[0]  * t1 + tMatrix[1] * t2 + tMatrix[2] * t3 + t4;
-        parentConditionals [1] *= tMatrix[4]  * t1 + tMatrix[5] * t2 + tMatrix[6] * t3 + t4;
-        parentConditionals [2] *= tMatrix[8]  * t1 + tMatrix[9] * t2 + tMatrix[10] * t3 + t4;
-        parentConditionals [3] *= tMatrix[12] * t1 + tMatrix[13] * t2 + tMatrix[14] * t3 + t4;
+        parentConditionals [0] *= (tMatrix[0]  * t1 + tMatrix[1] * t2) + (tMatrix[2] * t3 + t4);
+        parentConditionals [1] *= (tMatrix[4]  * t1 + tMatrix[5] * t2) + (tMatrix[6] * t3 + t4);
+        parentConditionals [2] *= (tMatrix[8]  * t1 + tMatrix[9] * t2) + (tMatrix[10] * t3 + t4);
+        parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);
 #endif
 
 }
@@ -645,9 +686,18 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
         currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):
                           ((_CalcNode*) flatTree    (nodeCode));
 
-        _Parameter  *       _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+        _Parameter  const * transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
         _Parameter  *       childVector,
-                    *     lastUpdatedSite;
+                    *       lastUpdatedSite;
+      
+#ifdef _SLKP_USE_AVX_INTRINSICS
+      __m256d tmatrix_transpose [4] = {
+        (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+        (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+        (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+        (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+      };
+#endif
 
         if (!isLeaf) {
             childVector = iNodeCache + (siteFrom + nodeCode * siteCount) * alphabetDimension;
@@ -696,8 +746,8 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                 parentTCCIBit++;
             }
 
-            _Parameter  *tMatrix = transitionMatrix,
-                         sum         = 0.0;
+            _Parameter  const *tMatrix = transitionMatrix;
+            _Parameter  sum         = 0.0;
 
             char        didScale = 0;
 
@@ -751,12 +801,16 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
 
             if (alphabetDimension == 4) { // special case for nuc data
 
-                _handle4x4_pruning_case (childVector, tMatrix, parentConditionals);
-
+#ifdef _SLKP_USE_AVX_INTRINSICS
+              _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
+#else
+              _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, nil);
+#endif
                 // handle scaling if necessary
-                // the check for sum > 0.0 is necessary for 'degenerate' log-L functions (-infinity)
+                // the check for sum > 0.0 is necessary for 'inadmissible' log-L functions (-infinity)
+                // for example if a change must happen on a zero-branch length
 
-                sum     = parentConditionals [0] + parentConditionals [1] + parentConditionals [2] + parentConditionals [3];
+                sum     = (parentConditionals [0] + parentConditionals [1]) + (parentConditionals [2] + parentConditionals [3]);
                 if (sum < _lfScalingFactorThreshold && sum > 0.0) {
                     _Parameter tryScale                                 = scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards;
                     if (tryScale < HUGE_VAL) {
@@ -784,33 +838,12 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
             } else {
                 _Parameter sum = 0.0;
 
-#ifndef _SLKP_SSE_VECTORIZATION_
-
                 if (alphabetDimension > alphabetDimensionmod4){
-                    
-                    /*_Parameter maxParentP = _lfScalingFactorThreshold;
-                    
-                    for (long p = 0; p < alphabetDimension; p++)
-                        if (parentConditionals[p] > maxParentP) {
-                            maxParentP = parentConditionals[p];
-                        } 
-                        
-                    maxParentP *= DBL_EPSILON;  */      
-                    
-#ifdef _SLKP_USE_SSE_INTRINSICS
-                    double buffer[2] __attribute__ ((aligned (16)));
-#endif
-#ifdef _SLKP_USE_AVX_INTRINSICS
-                    double buffer[4] __attribute__ ((aligned (32)));
-#endif
-                    for (long p = 0; p < alphabetDimension; p++) {
-                        /*if (parentConditionals[p] < maxParentP) {
-                            tMatrix               += alphabetDimension;
-                            continue;
-                        }*/
-                        
-                        _Parameter      accumulator = 0.0;
-
+                  
+                  
+                    for (long p = 0L; p < alphabetDimension; p++) {
+                         _Parameter      accumulator = 0.0;
+                      
 #ifdef _SLKP_USE_SSE_INTRINSICS
 
                         __m128d buffer1,
@@ -849,36 +882,37 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         }
                         
                         buffer3 = _mm_add_pd (buffer3, buffer4);    
+                        double buffer[2] __attribute__ ((aligned (16)));
                         _mm_store_pd (buffer, buffer3);
                         accumulator = buffer[0] + buffer[1];
-#elif defined _SLKP_USE_AVX_INTRINSICS
+                      
+#elif defined _SLKP_USE_AVX_INTRINSICS // end _SLKP_USE_SSE_INTRINSICS
                         
-                        __m256d buffer1,
-                                buffer3 = _mm256_setzero_pd(),
-                                load1,
-                                load3;
-                        
-                        
-                        if (((long int)tMatrix & 0x11111b) == 0 && ((long int)childVector & 0x11111b) == 0){
-                            for (long c = 0; c < alphabetDimensionmod4; c+=4) {
-                                load1 = _mm256_load_pd (tMatrix+c);
-                                load3 = _mm256_load_pd (childVector+c);
-                                buffer1 = _mm256_mul_pd (load1, load3);
-                                buffer3 = _mm256_add_pd (buffer1,buffer3);
+                        __m256d sum256 = _mm256_setzero_pd();
+                      
+                        /*if (((long int)tMatrix & 0x11111b) == 0 && ((long int)childVector & 0x11111b) == 0){
+                            for (long c = 0L; c < alphabetDimensionmod4; c+=4L) {
+                                sum = _mm256_add_pd (sum,_mm256_mul_pd (_mm256_load_pd (tMatrix+c), _mm256_load_pd (childVector+c)));
                              }
-                        } else {
-                            for (long c = 0; c < alphabetDimensionmod4; c+=4) {
-                                load1 = _mm256_loadu_pd (tMatrix+c);
-                                load3 = _mm256_loadu_pd (childVector+c);
-                                buffer1 = _mm256_mul_pd (load1, load3);
-                                buffer3 = _mm256_add_pd (buffer1,buffer3);
+                        } else {*/
+                            for (long c = 0; c < alphabetDimensionmod4; c+=4L) {
+                              __m256d matrix_quad = _mm256_loadu_pd (tMatrix+c),
+                                      child_quad = _mm256_loadu_pd (childVector+c),
+                                      prod = _mm256_mul_pd (matrix_quad, child_quad);
+                              
+                                sum256 = _mm256_add_pd (sum256,prod);
                             }
                             
-                        }
-                        
-                        _mm256_store_pd (buffer, buffer3);
-                        accumulator = buffer[0] + buffer[1] + buffer[2] + buffer[3];
-#else
+                        //}
+                        //double buffer[4] __attribute__ ((aligned (32)));
+                        //_mm256_store_pd(buffer, sum256);
+                      
+                        //accumulator = (buffer[0] + buffer[1]) + (buffer[2] + buffer[3]);
+                      
+                        accumulator = _avx_sum_4(sum256);
+                        //NOT sure why copy to doubles and add is faster
+                        // that AVX istructions
+#else // _SLKP_USE_AVX_INTRINSICS
                         for (long c = 0; c < alphabetDimensionmod4; c+=4) {
                         // 4 - unroll the loop
                              _Parameter pr1 =    tMatrix[c]   * childVector[c],
@@ -889,7 +923,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                             pr3 += pr4;
                             accumulator += pr1+pr3;
                         }
-#endif
+#endif // regular code
 
                         for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
                             accumulator +=  tMatrix[c] * childVector[c];
@@ -929,7 +963,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                               sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
                            }
                       } else
-                    #endif
+                     #endif // _SLKP_USE_AVX_INTRINSICS
 
                     for (long p = 0; p < alphabetDimension; p++) {
                         _Parameter      accumulator = 0.0;
@@ -944,19 +978,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         sum += (parentConditionals[p] *= accumulator);
                     }
                 }
-#else
-                for (long p = 0; p < alphabetDimension; p++) {
-                    _Parameter      accumulator = 0.0;
 
-                    for (long c = 0; c < alphabetDimension; c++) {
-                        accumulator +=  tMatrix[c]   * childVector[c];
-                    }
-
-                    tMatrix               += alphabetDimension;
-                    sum += (parentConditionals[p] *= accumulator);
-                }
-
-#endif
 
 
                 if (sum < _lfScalingFactorThreshold && sum > 0.0) {
@@ -1270,9 +1292,18 @@ void            _TheTree::ComputeBranchCache    (
         _CalcNode    * currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):
                                          ((_CalcNode*) flatTree    (notPassedRoot?nodeCode:parentCode));
 
-        _Parameter  *       _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+        _Parameter  const * _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
 
-        _Parameter  *       childVector,
+        #ifdef _SLKP_USE_AVX_INTRINSICS
+              __m256d tmatrix_transpose [4] = {
+                (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+              };
+        #endif
+      
+       _Parameter  *       childVector,
                     *     lastUpdatedSite;
 
         if (!isLeaf) {
@@ -1296,16 +1327,15 @@ void            _TheTree::ComputeBranchCache    (
         }
 
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += alphabetDimension) {
-            _Parameter  *tMatrix = transitionMatrix;
+            _Parameter  const *tMatrix = transitionMatrix;
 
             char canScale = !notPassedRoot;
 
             if (isLeaf) {
                 long siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.lData[siteID]] ;
-                if (siteState >= 0)
+                if (siteState >= 0) {
                     // a single character state; sweep down the appropriate column
-                {
-                    if (alphabetDimension == 4) { // special case for nuc data
+                     if (alphabetDimension == 4) { // special case for nuc data
                         parentConditionals[0] *= tMatrix[siteState];
                         parentConditionals[1] *= tMatrix[siteState+4];
                         parentConditionals[2] *= tMatrix[siteState+8];
@@ -1349,7 +1379,11 @@ void            _TheTree::ComputeBranchCache    (
             char       didScale = 0;
 
             if (alphabetDimension == 4) { // special case for nuc data
-                _handle4x4_pruning_case (childVector, tMatrix, parentConditionals);
+                #ifdef _SLKP_USE_AVX_INTRINSICS
+                      _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
+                #else
+                      _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, nil);
+                #endif
 
                 if (canScale) {
                     sum     = parentConditionals [0] + parentConditionals [1] + parentConditionals [2] + parentConditionals [3];
@@ -1548,16 +1582,35 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
     _Parameter*         storageVec
 )
 {
-    long        alphabetDimension      = theFilter->GetDimension(),
-                //alphabetDimensionmod4  = alphabetDimension - alphabetDimension % 4,
-                siteCount            =  theFilter->GetPatternCount();
+  auto bookkeeping =  [&siteOrdering, &storageVec, &theFilter] (const long siteID, const _Parameter accumulator, _Parameter& correction, _Parameter& result) ->  void {
+    if (storageVec) {
+      storageVec [siteOrdering.lData[siteID]] = accumulator;
+    } else {
+      if (accumulator <= 0.0) {
+        throw (1L+siteOrdering.lData[siteID]);
+      }
+      _Parameter term;
+      if (theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) > 1) {
+        term = log(accumulator) * theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) - correction;
+      } else {
+        term = log(accumulator) - correction;
+      }
+      _Parameter temp_sum = result + term;
+      correction = (temp_sum - result) - term;
+      result = temp_sum;
+        //result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+    }
+  };
+
+  const unsigned long          alphabetDimension      = theFilter->GetDimension(),
+                               siteCount              =  theFilter->GetPatternCount();
 
     if (siteTo  > siteCount)    {
         siteTo = siteCount;
     }
 
-    _Parameter _hprestrict_ *branchConditionals = cache              + siteFrom * alphabetDimension;
-    _Parameter _hprestrict_ *rootConditionals   = branchConditionals + siteCount * alphabetDimension;
+    _Parameter const _hprestrict_ *branchConditionals = cache              + siteFrom * alphabetDimension;
+    _Parameter const _hprestrict_ *rootConditionals   = branchConditionals + siteCount * alphabetDimension;
     _Parameter  result = 0.0,
                 correction = 0.0;
 
@@ -1567,101 +1620,240 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
     _CalcNode *givenTreeNode = brID < flatLeaves.lLength ? (((_CalcNode**) flatCLeaves.lData)[brID]):
                                (((_CalcNode**) flatTree.lData)   [brID - flatLeaves.lLength]);
 
-    _Parameter  *   _hprestrict_ transitionMatrix = givenTreeNode->GetCompExp(catID)->theData;
+    _Parameter  const *   _hprestrict_ transitionMatrix = givenTreeNode->GetCompExp(catID)->theData;
 
-    for (long siteID = siteFrom; siteID < siteTo; siteID++) {
-        _Parameter accumulator = 0.;
-        
+  
+// cases by alphabet dimension
 
+  try {
+    switch (alphabetDimension) {
+/****
+ 
+  NUCLEOTIDES
+ 
+ ****/
+        case 4UL: {
+          #ifdef _SLKP_USE_AVX_INTRINSICS
+                  __m256d tmatrix_transpose [4] = {
+                    (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                    (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                    (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                    (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+                  };
+          #endif
 
-        if (alphabetDimension == 4) {
-            accumulator =    rootConditionals[0] * theProbs[0] *
-                             (branchConditionals[0] *  transitionMatrix[0] + branchConditionals[1] *  transitionMatrix[1] + branchConditionals[2] *  transitionMatrix[2] + branchConditionals[3] *  transitionMatrix[3]) +
-                             rootConditionals[1] * theProbs[1] *
-                             (branchConditionals[0] *  transitionMatrix[4] + branchConditionals[1] *  transitionMatrix[5] + branchConditionals[2] *  transitionMatrix[6] + branchConditionals[3] *  transitionMatrix[7]) +
-                             rootConditionals[2] * theProbs[2] *
-                             (branchConditionals[0] *  transitionMatrix[8] + branchConditionals[1] *  transitionMatrix[9] + branchConditionals[2] *  transitionMatrix[10] + branchConditionals[3] *  transitionMatrix[11]) +
-                             rootConditionals[3] * theProbs[3] *
-                             (branchConditionals[0] *  transitionMatrix[12] + branchConditionals[1] *  transitionMatrix[13] + branchConditionals[2] *  transitionMatrix[14] + branchConditionals[3] *  transitionMatrix[15]);
-            rootConditionals += 4;
-        } else {
-            #ifdef _SLKP_USE_AVX_INTRINSICS
-              if (alphabetDimension == 20UL) {
-
-                __m256d bc_vector[5] = {_mm256_loadu_pd(branchConditionals),
-                  _mm256_loadu_pd(branchConditionals+4UL),
-                  _mm256_loadu_pd(branchConditionals+8UL),
-                  _mm256_loadu_pd(branchConditionals+12UL),
-                  _mm256_loadu_pd(branchConditionals+16UL)};
-
-                
-              _Parameter const * tm = transitionMatrix;
-                
-              for (long p = 0; p < 20; p++, rootConditionals++) {
-                  
-                  __m256d t_matrix[5] = {_mm256_loadu_pd(tm),
-                                         _mm256_loadu_pd(tm+4UL),
-                                         _mm256_loadu_pd(tm+8UL),
-                                         _mm256_loadu_pd(tm+12UL),
-                                          _mm256_loadu_pd(tm+16UL)};
-                
-                
-                  t_matrix[0] = _mm256_mul_pd(t_matrix[0], bc_vector[0]);
-                  t_matrix[1] = _mm256_mul_pd(t_matrix[1], bc_vector[1]);
-                  t_matrix[2] = _mm256_mul_pd(t_matrix[2], bc_vector[2]);
-                  t_matrix[3] = _mm256_mul_pd(t_matrix[3], bc_vector[3]);
-                  t_matrix[4] = _mm256_mul_pd(t_matrix[4], bc_vector[4]);
-                  
-                  t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
-                  t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
-                  t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
-                  
-                  tm += 20UL;
-                
-                  accumulator += *rootConditionals * theProbs[p] * _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4]));
-                }
-              } else
-            #endif
-            {
-              long       rmx = 0;
-              for (long p = 0; p < alphabetDimension; p++,rootConditionals++) {
-                  _Parameter     r2 = 0.;
-                  for (long c = 0; c < alphabetDimension; c++, rmx++) {
-                      r2 += branchConditionals[c] *  transitionMatrix[rmx];
+          for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+            _Parameter accumulator = 0.;
+             #ifdef _SLKP_USE_AVX_INTRINSICS
+               __m256d root_c = _mm256_loadu_pd (rootConditionals),
+               probs  = _mm256_loadu_pd (theProbs),
+               b_cond0 = _mm256_set1_pd(branchConditionals[0]),
+               b_cond1 = _mm256_set1_pd(branchConditionals[1]),
+               b_cond2 = _mm256_set1_pd(branchConditionals[2]),
+               b_cond3 = _mm256_set1_pd(branchConditionals[3]),
+               s01    = _mm256_add_pd ( _mm256_mul_pd (b_cond0, tmatrix_transpose[0]), _mm256_mul_pd (b_cond1, tmatrix_transpose[1])),
+               s23    = _mm256_add_pd ( _mm256_mul_pd (b_cond2, tmatrix_transpose[2]), _mm256_mul_pd (b_cond3, tmatrix_transpose[3]));
+               accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));
+            
+              #else
+                  accumulator =    rootConditionals[0] * theProbs[0] *
+                  (branchConditionals[0] *  transitionMatrix[0] + branchConditionals[1] *  transitionMatrix[1] + branchConditionals[2] *  transitionMatrix[2] + branchConditionals[3] *  transitionMatrix[3]) +
+                  rootConditionals[1] * theProbs[1] *
+                  (branchConditionals[0] *  transitionMatrix[4] + branchConditionals[1] *  transitionMatrix[5] + branchConditionals[2] *  transitionMatrix[6] + branchConditionals[3] *  transitionMatrix[7]) +
+                  rootConditionals[2] * theProbs[2] *
+                  (branchConditionals[0] *  transitionMatrix[8] + branchConditionals[1] *  transitionMatrix[9] + branchConditionals[2] *  transitionMatrix[10] + branchConditionals[3] *  transitionMatrix[11]) +
+                  rootConditionals[3] * theProbs[3] *
+                  (branchConditionals[0] *  transitionMatrix[12] + branchConditionals[1] *  transitionMatrix[13] + branchConditionals[2] *  transitionMatrix[14] + branchConditionals[3] *  transitionMatrix[15]);
+              #endif
+              rootConditionals += 4UL;
+              branchConditionals += 4UL;
+              bookkeeping (siteID, accumulator, correction, result);
+          } // siteID
+        }
+        break;
+/****
+ 
+ AMINOACIDS
+ 
+ ****/
+      case 20UL: {
+        for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+          _Parameter accumulator = 0.;
+          #ifdef _SLKP_USE_AVX_INTRINSICS
+            __m256d bc_vector[5] = {_mm256_loadu_pd(branchConditionals),
+              _mm256_loadu_pd(branchConditionals+4UL),
+              _mm256_loadu_pd(branchConditionals+8UL),
+              _mm256_loadu_pd(branchConditionals+12UL),
+              _mm256_loadu_pd(branchConditionals+16UL)};
+            
+            
+            _Parameter const * tm = transitionMatrix;
+            
+            for (unsigned long p = 0UL; p < 20UL; p++, rootConditionals++) {
+              
+              __m256d t_matrix[5] = { _mm256_loadu_pd(tm),
+                                      _mm256_loadu_pd(tm+4UL),
+                                      _mm256_loadu_pd(tm+8UL),
+                                      _mm256_loadu_pd(tm+12UL),
+                                      _mm256_loadu_pd(tm+16UL)};
+              
+              
+              t_matrix[0] = _mm256_mul_pd(t_matrix[0], bc_vector[0]);
+              t_matrix[1] = _mm256_mul_pd(t_matrix[1], bc_vector[1]);
+              t_matrix[2] = _mm256_mul_pd(t_matrix[2], bc_vector[2]);
+              t_matrix[3] = _mm256_mul_pd(t_matrix[3], bc_vector[3]);
+              t_matrix[4] = _mm256_mul_pd(t_matrix[4], bc_vector[4]);
+              
+              t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
+              t_matrix[1] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
+              t_matrix[3] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
+              
+              tm += 20UL;
+              
+              accumulator += *rootConditionals * theProbs[p] * _avx_sum_4(_mm256_add_pd (t_matrix[3],t_matrix[4]));
+            }
+          #else // _SLKP_USE_AVX_INTRINSICS
+            unsigned long rmx = 0UL;
+            for (unsigned long p = 0UL; p < 20UL; p++,rootConditionals++) {
+                _Parameter     r2 = 0.;
+      
+                  for (unsigned long c = 0UL; c < 20UL; c+=4UL, rmx +=4UL) {
+                    r2 += (branchConditionals[c]   *  transitionMatrix[rmx] +
+                          branchConditionals[c+1] *  transitionMatrix[rmx+1]) +
+                          (branchConditionals[c+2] *  transitionMatrix[rmx+2] +
+                          branchConditionals[c+3] *  transitionMatrix[rmx+3]);
                   }
-                  accumulator += *rootConditionals * theProbs[p] * r2;
-              }
+              
+                accumulator += *rootConditionals * theProbs[p] * r2;
             }
-
-        }
-
-        branchConditionals += alphabetDimension;
-
-        if (storageVec) {
-            storageVec [siteOrdering.lData[siteID]] = accumulator;
-        } else {
-            if (accumulator <= 0.0) {
-                result = -A_LARGE_NUMBER;
-                #pragma omp critical
-                {
-                    ReportWarning (_String("Site ") & (1L+siteOrdering.lData[siteID]) & " evaluated to a 0 probability in ComputeLLWithBranchCache");
-                }
-                break;
-            }
-            _Parameter term;
-            if (theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) > 1) {
-                term = log(accumulator) * theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) - correction;
-            } else {
-                term = log(accumulator) - correction;
-            }
-            _Parameter temp_sum = result + term;
-            correction = (temp_sum - result) - term;
-            result = temp_sum;
+          #endif  // _SLKP_USE_AVX_INTRINSICS
+          branchConditionals += 20UL;
+          bookkeeping (siteID, accumulator, correction, result);
           
-            //result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+      } // siteID
+        
+      } // case 20
+      break;
+        /****
+         
+         CODONS
+         
+         ****/
+      case 60UL:
+      case 61UL:
+      case 62UL:
+      case 63UL: {
+        for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+          _Parameter accumulator = 0.;
+          
+          unsigned long rmx = 0UL;
+          for (unsigned long p = 0UL; p < alphabetDimension; p++,rootConditionals++) {
+            _Parameter     r2 = 0.;
+            unsigned       long c = 0UL;
+            
+           #ifdef _SLKP_USE_AVX_INTRINSICS
+            
+            __m256d sum256 = _mm256_setzero_pd ();
+            
+            for (; c < 60UL; c+=12UL, rmx +=12UL) {
+              
+              __m256d branches0 = _mm256_loadu_pd (branchConditionals+c),
+                      branches1 = _mm256_loadu_pd (branchConditionals+c+4),
+                      branches2 = _mm256_loadu_pd (branchConditionals+c+8),
+                      matrix0   = _mm256_loadu_pd (transitionMatrix+rmx),
+                      matrix1   = _mm256_loadu_pd (transitionMatrix+rmx+4),
+                      matrix2   = _mm256_loadu_pd (transitionMatrix+rmx+8);
+              
+                branches0 = _mm256_mul_pd(branches0, matrix0);
+                branches1 = _mm256_mul_pd(branches1, matrix1);
+                branches2 = _mm256_mul_pd(branches2, matrix2);
+              
+                branches0 = _mm256_add_pd (branches0,branches2);
+                sum256 = _mm256_add_pd (branches0,_mm256_add_pd (sum256, branches1));
+             }
+            
+              r2 = _avx_sum_4(sum256);
+            
+           #else // _SLKP_USE_AVX_INTRINSICS
+             for (; c < 60UL; c+=4UL, rmx +=4UL) {
+                r2 += (branchConditionals[c]   *  transitionMatrix[rmx] +
+                       branchConditionals[c+1] *  transitionMatrix[rmx+1]) +
+                (branchConditionals[c+2] *  transitionMatrix[rmx+2] +
+                 branchConditionals[c+3] *  transitionMatrix[rmx+3]);
+              }
+            #endif
+            
+            for (; c < alphabetDimension; c++, rmx ++) {
+              r2 += branchConditionals[c]   *  transitionMatrix[rmx];
+            }
+            
+            accumulator += *rootConditionals * theProbs[p] * r2;
+          }
+        
+          branchConditionals += alphabetDimension;
+          bookkeeping (siteID, accumulator, correction, result);
+          
         }
+      } // cases 60-63
+      break;
+      default: { // valid alphabetDimension >= 2
+        
+        if (alphabetDimension % 2) { // odd
+          unsigned long alphabetDimension_minus1 = alphabetDimension-1;
+          for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+            _Parameter accumulator = 0.;
+            
+            unsigned long rmx = 0UL;
+            for (unsigned long p = 0UL; p < alphabetDimension; p++,rootConditionals++) {
+              _Parameter     r2 = 0.;
+              
+              for (unsigned long c = 0UL; c < alphabetDimension_minus1; c+=2UL, rmx +=2UL) {
+                r2 +=  branchConditionals[c]   *  transitionMatrix[rmx] +
+                       branchConditionals[c+1] *  transitionMatrix[rmx+1];
+              }
+              
+              r2 += branchConditionals[alphabetDimension_minus1]   *  transitionMatrix[rmx++];
+              
+              accumulator += *rootConditionals * theProbs[p] * r2;
+            }
+            
+            branchConditionals += alphabetDimension;
+            bookkeeping (siteID, accumulator, correction, result);
+            
+          }
+        } else {
+          for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+            _Parameter accumulator = 0.;
+            
+            unsigned long rmx = 0UL;
+            for (unsigned long p = 0UL; p < alphabetDimension; p++,rootConditionals++) {
+              _Parameter     r2 = 0.;
+              unsigned       long c = 0UL;
+              
+              for (unsigned long c = 0UL; c < alphabetDimension; c+=2UL, rmx +=2UL) {
+                r2 +=  branchConditionals[c]   *  transitionMatrix[rmx] +
+                       branchConditionals[c+1] *  transitionMatrix[rmx+1];
+              }
+              
+              accumulator += *rootConditionals * theProbs[p] * r2;
+            }
+            
+            branchConditionals += alphabetDimension;
+            bookkeeping (siteID, accumulator, correction, result);
+            
+          }
+        }
+        
+      } // default
+    } // switch (alphabetDimension)
+  } catch (long site) {
+    #pragma omp critical
+    {
+      ReportWarning (_String("Site ") & _String(site) & " evaluated to a 0 probability in ComputeLLWithBranchCache");
     }
-    return result;
+    return -A_LARGE_NUMBER;
+  }
+  return result;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/

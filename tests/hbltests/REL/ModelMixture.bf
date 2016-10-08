@@ -3055,7 +3055,6 @@ DataSetFilter filteredData_1 = CreateFilter(ds_1,3,"0-401","9,3,0-2,4-8,24,16,23
 
 AUTO_PARALLELIZE_OPTIMIZE = 2;
 
-USE_ADAPTIVE_VARIABLE_STEP	= 0;
 VERBOSITY_LEVEL			    = 1;
 
 
