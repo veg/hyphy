@@ -302,7 +302,7 @@ function frequencies._aux.CF3x4(observed_3x4, base_alphabet, sense_codons, stop_
 
     return {
         "codons": Eval("frequencies._aux.codons"),
-        "bases": frequencies._aux.res
+        "bases":  utility.Map (frequencies._aux.res,"_value_", "Eval(_value_)") // this is an in-place shallow copy
     };
 }
 
