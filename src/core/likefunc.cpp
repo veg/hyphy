@@ -150,7 +150,7 @@ long      likeFuncEvalCallCount = 0,
           lockedLFID         = -1;
 
 #ifndef  __HYALTIVEC__
-#define  STD_GRAD_STEP 1.0e-8
+#define  STD_GRAD_STEP 1.0e-6
 #else
 #define  STD_GRAD_STEP 5.0e-6
 #endif
@@ -5593,7 +5593,7 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  
                 SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
                 _Parameter temp = Compute();
                 SetIthIndependent(index,GetIthIndependent(index)+2*gradientStep);
-                gradient[index]=(Compute()-temp)/gradientStep/2;
+                gradient[index]=(Compute()-temp)/gradientStep*0.5;
                 SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
             }
         }
@@ -7752,7 +7752,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
               
                 // check results
 
-                /*_Parameter checksum = t->ComputeLLWithBranchCache (*sl,
+                 _Parameter checksum = t->ComputeLLWithBranchCache (*sl,
                                                    doCachedComp,
                                                    bc,
                                                    df,
@@ -7762,8 +7762,8 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                    siteRes)
                 - _logLFScaler * overallScalingFactors.lData[index];
               
-                if (fabs (checksum-sum) > 0.000001) {
-                  _Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
+                if (fabs (checksum-sum) > 0.001) {
+                  /*_Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
                                                                    *branches,
                                                                    tcc,
                                                                    df,
@@ -7778,14 +7778,15 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                                    siteRes,
                                                                    scc,
                                                                    branchIndex,
-                                                                   branchIndex >= 0 ? branchValues->lData: nil);
+                                                                   branchIndex >= 0 ? branchValues->lData: nil);*/
                   
                   
-                  StringToConsole (_String("Error in ComputeBranchCache (branch ") & doCachedComp &  " )"& checksum & " / " & sum & " / " & check2 & ".");
-                  NLToConsole();
+                  WarnError (_String("Internal error in ComputeBranchCache (branch ") & doCachedComp &
+                              " ) reversible model cached likelihood = "& checksum & ", directly computed likelihood = " & sum & 
+                             ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
                   WarnError ("Bailing");
                   return -A_LARGE_NUMBER;
-                }*/
+                }
 
               
                 // need to update siteRes when computing cache and changing scaling factors!

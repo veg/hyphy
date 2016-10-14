@@ -717,7 +717,12 @@ int main (int argc, char* argv[])
     _ExecutionList ex;
   
   
-  if (calculatorMode) {
+    if (calculatorMode) {
+        if (argFile.sLength) {
+          PushFilePath  (argFile);
+          ReadBatchFile (argFile,ex);
+          ex.Execute();
+        }
         printf ("\nHYPHY is running in calculator mode. Type 'exit' when you are finished.\n");
         while (ExpressionCalculator()) ;
         return 0;
