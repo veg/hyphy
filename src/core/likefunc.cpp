@@ -37,7 +37,7 @@
  
  */
 
-//#define _UBER_VERBOSE_LF_DEBUG
+  //#define _UBER_VERBOSE_LF_DEBUG
 
 #include <string.h>
 #include <stdlib.h>
@@ -54,6 +54,8 @@
 #include "global_object_lists.h"
 
 using namespace hyphy_global_objects;
+
+  //#define _UBER_VERBOSE_LF_DEBUG 1
 
 
 #ifdef __WINDOZE__
@@ -3415,17 +3417,16 @@ _Matrix*        _LikelihoodFunction::Optimize ()
     RescanAllVariables ();
 
     if (indexInd.lLength == 0) {
-        _Matrix result (2,indexDep.lLength<3?3:indexDep.lLength, false, true);
+        _Matrix * result = new _Matrix (2,indexDep.lLength<3?3:indexDep.lLength, false, true);
         PrepareToCompute();
-        result.Store (1,0,Compute());
-        result.Store (1,1,indexInd.lLength);
-        result.Store (1,2,0);
-        for (long i=0; i<indexDep.lLength; i++) {
-            _PMathObj pm = (_PMathObj)(LocateVar (indexDep(i)))->Compute();
-            result.Store(0,i,pm->Value());
+        result->Store (1,0,Compute());
+        result->Store (1,1,0);
+        result->Store (1,2,0);
+        for (unsigned long i=0UL; i<indexDep.lLength; i++) {
+            result->Store(0,i,this->GetIthDependent(i));
         }
         DoneComputing();
-        return (_Matrix*)result.makeDynamic();
+        return result;
     }
 
 #ifdef      __MACPROFILE__
@@ -3487,8 +3488,8 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 #endif
 
 
-    for (i=0; i<theTrees.lLength; i++) {
-        ((_TheTree*)(LocateVar(theTrees(i))))->CountTreeCategories();
+    for (unsigned long tree_index = 0UL; tree_index <theTrees.lLength; tree_index ++) {
+        GetIthTree (tree_index)->CountTreeCategories();
     }
 
     SetupLFCaches       ();
@@ -4297,6 +4298,8 @@ DecideOnDivideBy (this);
 
                 long brackStepSave = bracketFCount,
                      oneDStepSave  = oneDFCount;
+              
+                _Parameter         lastLogL = maxSoFar;
 
                 if (useAdaptiveStep>0.5) {
                     if (convergenceMode < 2) {
@@ -4317,9 +4320,9 @@ DecideOnDivideBy (this);
                     if (cj != 0.) {
                         averageChange += fabs (ch/cj);
                     }
-                    if (ch < precisionStep*0.1 && inCount == 0) {
+                    /*if ((ch < precisionStep*0.1 || lastLogL - maxSoFar < precision * 0.1) && inCount == 0) {
                         nc2 << j;
-                    }
+                    }*/
                 } else {
                     averageChange  += ch;
                     averageChange2 += cj;
@@ -4439,7 +4442,7 @@ DecideOnDivideBy (this);
             logLHistory.Store(maxSoFar);
 
             if (verbosityLevel>5) {
-                snprintf (buffer, sizeof(buffer),"\nAverage Variable Change: %g %g %g %g %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
+                snprintf (buffer, sizeof(buffer),"\nAverage Variable Change: %g, percent done: %g, divFactor: %g, oldAverage/averageChange: %g, stayPut: %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
                 BufferToConsole (buffer);
                 snprintf (buffer, sizeof(buffer),"\nDiff: %g, Precision: %16.12g, termFactor: %ld", maxSoFar-lastMaxValue, precision, termFactor);
                 BufferToConsole (buffer);
@@ -4464,13 +4467,14 @@ DecideOnDivideBy (this);
 
             lastMaxValue = maxSoFar;
 
-            if (useAdaptiveStep < 0.5)
-                if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )) {
-                    _Matrix             bestMSoFar;
-                    GetAllIndependent   (bestMSoFar);
-                    ConjugateGradientDescent (currentPrecision, bestMSoFar);
-                    logLHistory.Store(maxSoFar);
-                }
+            if (useAdaptiveStep < 0.5) {
+                  if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )) {
+                      _Matrix             bestMSoFar;
+                      GetAllIndependent   (bestMSoFar);
+                      ConjugateGradientDescent (currentPrecision, bestMSoFar);
+                      logLHistory.Store(maxSoFar);
+                  }
+            }
 
             if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
                 ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
@@ -4706,7 +4710,8 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
                saveR     = NAN,
                saveLV    = index<0?middleValue:0.0,
                saveMV    = index<0?0.0:middleValue,
-               saveRV    = 0.0;
+               saveRV    = 0.0,
+               track_best = middleValue;
 
 
 
@@ -4762,6 +4767,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     }
 
 
+
     /*if (index < 0)
     {
         printf                                 ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
@@ -4784,17 +4790,26 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     */
     
     while (1) {
+      
+        while (middle-leftStep < lowerBound) {
+            if (verbosityLevel > 100) {
+              char buf [512];
+              snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : LB = %g, current try = %g, current evaluated midpoint value = %g (%s)", index, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
+              BufferToConsole (buf);
+            }
 
-        while ((middle-leftStep)<lowerBound) {
             leftStep*=.125;
-            if ((leftStep<initialStep*.1 && index >0) || (index < 0 && leftStep < STD_GRAD_STEP)) {
+            if ( leftStep<initialStep*.1 && index >0 || index < 0 && leftStep < STD_GRAD_STEP) {
                 if (!first) {
                     if (go2Bound>.1) {
-                        middle=lowerBound==0.0?PERTURBATION_OF_ZERO:lowerBound;
+                        middle = lowerBound==0.0 ? PERTURBATION_OF_ZERO : lowerBound;
                         middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                        if (verbosityLevel > 100) {
+                          char buf [512];
+                          snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED middle to %15.12g, LogL = %15.12g]", index, middle, middleValue);
+                          BufferToConsole (buf);
+                        }
                     }
-                    //if (index == 8)
-                    //  printf ("\n[FAIL lowerBound -2 %g]\n", middle);
                     return -2;
                 } else {
                     middle=MIN(lowerBound+initialStep*.1,upperBound-rightStep);
@@ -4804,15 +4819,13 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         }
 
 
-        while ((rightStep+middle)>upperBound) {
+        while (rightStep+middle > upperBound) {
             rightStep*=.125;
-            if ((rightStep<initialStep*.1 && index >0) || (index < 0 && rightStep < STD_GRAD_STEP)) {
+            if (rightStep<initialStep*.1 && index >0 || index < 0 && rightStep < STD_GRAD_STEP) {
                 if (!first) {
                     if (go2Bound>.1) {
                         middleValue = SetParametersAndCompute (index, middle=upperBound, &currentValues, gradient);
                     }
-                    //if (index == 8)
-                    //  printf ("\n[FAIL upperBound -2 %g]\n", middle);
                     return -2;
                 } else {
                     middle=MAX(upperBound-initialStep*.1,lowerBound+leftStep);
@@ -4860,7 +4873,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
         if (verbosityLevel > 100) {
             char buf [512];
-            snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): BRACKET %g (diff: %15.12g) - %g (logL: %15.12g) - %g (diff: %15.12g)]", index, left, leftValue-middleValue, middle, middleValue, right, rightValue-middleValue);
+            snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): BRACKET %g (LogL : %15.12g diff: %15.12g) - %g (logL: %15.12g) - %g (LogL : %15.12g diff: %15.12g)]", index, left, leftValue, leftValue-middleValue, middle, middleValue, right, rightValue, rightValue-middleValue);
             BufferToConsole (buf);
         }
 
@@ -4935,8 +4948,20 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (curVar) {
         if (CheckAndSetIthIndependent(index,middle)) {
-            middleValue = Compute();
-        }
+          CheckAndSetIthIndependent(index,left);
+          _Parameter lc = Compute();
+          CheckAndSetIthIndependent(index,right);
+          _Parameter rc = Compute();
+          CheckAndSetIthIndependent(index,middle);
+           middleValue = Compute();
+          
+           if (verbosityLevel > 100) {
+              char buf [256];
+              snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [%g/%g:%g%g]]", index, middle, middleValue, leftValue,lc, rightValue,rc);
+              BufferToConsole (buf);
+               //exit (0);
+            }
+         }
     } else {
         middleValue         = SetParametersAndCompute (index, middle, &currentValues, gradient);
     }
@@ -4947,7 +4972,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET SUCCESSFUL: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
         BufferToConsole (buf);
     }
-
+  
 
     bracketFCount+=likeFuncEvalCallCount-funcCounts;
     bracketCount++;
@@ -4955,8 +4980,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 }
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::CheckStep (_Parameter& tryStep, _Matrix vect, _Matrix* selection)
-{
+void    _LikelihoodFunction::CheckStep (_Parameter& tryStep, _Matrix vect, _Matrix* selection) {
     for (unsigned long index = 0; index<indexInd.lLength; index++) {
 
         _Parameter  Bound,
@@ -5659,10 +5683,14 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
                 maxSoFar          = Compute(),
                 initial_value     = maxSoFar,
                 currentPrecision = localOnly?precision:.01;
-                
+  
     if (check_value != A_LARGE_NUMBER) {
       if (!CheckEqual(check_value, maxSoFar)) {
-        ReportWarning (_String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & check_value & "] does not match the last recorded LF maximum [" & maxSoFar & "]");
+        ReportWarning (_String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]");
+        if (check_value - 0.01 > maxSoFar) {
+          WarnError ("Very strange difference");
+          return;
+        }
         //return;
       }
     }
@@ -6282,7 +6310,12 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
         middle      = X;
          
         if (middleValue<maxSoFar) {
-            SetIthIndependent(index,bestVal);
+            if (verbosityLevel > 50) {
+              char buf [256];
+              snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) RESETTING THE VALUE (worse log likelihood obtained) ]\n\n", index);
+              BufferToConsole (buf);
+            }
+           SetIthIndependent(index,bestVal);
         } else {
             if (!CheckEqual(GetIthIndependent(index),middle)) {
                 SetIthIndependent (index,middle);
@@ -7560,6 +7593,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 } else {
                     doCachedComp = nodeID;
                 }
+              
             } else {
                 RestoreScalingFactors       (index, *cbid, patternCnt, scc, sccb);
 
@@ -7691,14 +7725,19 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 doCachedComp = -doCachedComp-1;
                 //printf ("Set up %d\n", doCachedComp);
                 *cbid = doCachedComp;
+              
 
                 overallScalingFactorsBackup.lData[index] = overallScalingFactors.lData[index];
                 if (sccb)
                     for (long recoverIndex = 0; recoverIndex < patternCnt; recoverIndex++) {
                         sccb[recoverIndex] = scc[recoverIndex];
                     }
-
-                #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
+              
+                /*for (unsigned long p_id = 0; p_id < indexInd.lLength; p_id++) {
+                  printf ("%ld %s = %15.12g\n", p_id, GetIthIndependentVar(p_id)->GetName()->sData, (*parameterValuesAndRanges)(p_id,0));
+                }*/
+              
+                 #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
                 for (blockID = 0; blockID < np; blockID ++) {
                     t->ComputeBranchCache (*sl,doCachedComp, bc, inc, df,
                                            conditionalTerminalNodeStateFlag[index],
@@ -7710,7 +7749,45 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                            (1+blockID) * sitesPerP,
                                            catID,tcc,siteRes);
                 }
+              
+                // check results
 
+                /*_Parameter checksum = t->ComputeLLWithBranchCache (*sl,
+                                                   doCachedComp,
+                                                   bc,
+                                                   df,
+                                                   0,
+                                                   df->GetPatternCount (),
+                                                   catID,
+                                                   siteRes)
+                - _logLFScaler * overallScalingFactors.lData[index];
+              
+                if (fabs (checksum-sum) > 0.000001) {
+                  _Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
+                                                                   *branches,
+                                                                   tcc,
+                                                                   df,
+                                                                   inc,
+                                                                   conditionalTerminalNodeStateFlag[index],
+                                                                   ssf,
+                                                                   (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                                                   overallScalingFactors.lData[index],
+                                                                   0,
+                                                                   df->GetPatternCount(),
+                                                                   catID,
+                                                                   siteRes,
+                                                                   scc,
+                                                                   branchIndex,
+                                                                   branchIndex >= 0 ? branchValues->lData: nil);
+                  
+                  
+                  StringToConsole (_String("Error in ComputeBranchCache (branch ") & doCachedComp &  " )"& checksum & " / " & sum & " / " & check2 & ".");
+                  NLToConsole();
+                  WarnError ("Bailing");
+                  return -A_LARGE_NUMBER;
+                }*/
+
+              
                 // need to update siteRes when computing cache and changing scaling factors!
             }
             return sum;
