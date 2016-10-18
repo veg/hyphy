@@ -204,10 +204,10 @@ set(DEFAULT_LIBRARIES dl pthread)
 # LIBCurl support
 #-------------------------------------------------------------------------------
 find_package(CURL)
-if(${CURL_FOUND})
+if(${CURL_FOUND} AND NOT APPLE)
     set(DEFAULT_LIBRARIES dl pthread crypto curl ssl)
     add_definitions (-D__HYPHYCURL__)
-endif(${CURL_FOUND})
+endif(${CURL_FOUND} AND NOT APPLE)
 
 #-------------------------------------------------------------------------------
 # gtest dependency

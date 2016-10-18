@@ -9476,7 +9476,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 //_____________________________________________________________________________________________
 _PMathObj _AssociativeList::GetByKey (_String const& key, long objType) const {
     _PMathObj res = GetByKey(key);
-    if (res && (res->ObjectClass() & objType > 0L)) {
+    if (res && ((res->ObjectClass() & objType) > 0L)) {
       return res;
     }
     return nil;
