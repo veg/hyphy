@@ -409,7 +409,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
             }
         }, {
             "0": tree
-        }, model, initial_values, run_options)
+        }, model_template, initial_values, run_options)
     }
 
     components = utility.Array1D(data_filter);
