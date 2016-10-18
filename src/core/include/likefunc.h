@@ -171,6 +171,7 @@ public:
 
 
     _Parameter  GetIthIndependent           (long) const;     // get the value of i-th independent variable
+    const _String*  GetIthIndependentName           (long) const;     // get the name of i-th independent variable
     _Parameter  GetIthDependent             (long) const;     // get the value of i-th dependent variable
     void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix
     _Variable*  GetIthIndependentVar        (long) const;     // get the variable object of i-th independent variable
@@ -495,6 +496,14 @@ protected:
      compute the log likelihood of the partition
 
      */
+  
+     /** optimization logger functions **/
+  
+    void LoggerLogL               (_Parameter logL);
+    void LoggerAddGradientPhase   (_Parameter precision);
+    void LoggerAddCoordinatewisePhase (_Parameter shrinkage, char convergence_mode);
+    void LoggerAllVariables          ();
+    void LoggerSingleVariable        (unsigned long index, _Parameter logL, _Parameter bracket_precision, _Parameter brent_precision, _Parameter bracket_width, unsigned long bracket_evals, unsigned long brent_evals);
 
 
     void            UpdateBlockResult           (long, _Parameter);
@@ -679,6 +688,8 @@ protected:
                         // on a site-by-site basis; includes scratch cache for remapping
                         gradientBlocks
                         ;
+  
+    _AssociativeList    *optimizatonHistory;
 
 #ifdef  _OPENMP
     long                lfThreadCount;

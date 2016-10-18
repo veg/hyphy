@@ -70,8 +70,7 @@ _String    _HYGenerateANameSpace () {
 
 //____________________________________________________________________________________
 
-_String    _HYStandardDirectory (const unsigned long which_one) 
-{
+_String    _HYStandardDirectory (const unsigned long which_one) {
     _String dirSpacer (GetPlatformDirectoryChar());
 
     switch (which_one) {
@@ -80,7 +79,7 @@ _String    _HYStandardDirectory (const unsigned long which_one)
             return libDirectory & "TemplateBatchFiles" & dirSpacer & "TemplateModels" & dirSpacer;
     }
 
-    return empty;
+    return emptyString;
 }
 
 //____________________________________________________________________________________
@@ -230,7 +229,7 @@ bool    PushFilePath (_String& pName, bool trim)
     } else if (pathNames.lLength) {
         pathNames && pathNames(pathNames.lLength-1);
     } else {
-        pathNames && & empty;
+        pathNames && & emptyString;
     }
 
     return false;
@@ -340,7 +339,7 @@ _String ProcessStringArgument (_String* data) {
             }
         }
     }
-    return empty;
+    return emptyString;
 }
 
 //____________________________________________________________________________________
@@ -386,7 +385,7 @@ _String WriteFileDialogInput(void) {
     if (resolvedFilePath.sLength == 0) {
         terminateExecution = true;
     }
-    defFileNameValue = empty;
+    defFileNameValue = emptyString;
     return resolvedFilePath;
 
 }

@@ -225,6 +225,16 @@ void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* t
 }
   // long call_count = 0L;
 
+  //__________________________________________________________________________________
+
+_PMathObj  _Variable::ComputeMatchingType(long type) {
+  _PMathObj computed_value = Compute();
+  if (computed_value && (computed_value->ObjectClass() & type) > 0L) {
+    return computed_value;
+  }
+  return nil;
+}
+
 
 //__________________________________________________________________________________
 
@@ -706,7 +716,7 @@ _String const   _Variable::ParentObjectName(void) const {
     if (location > 0) {
        return theName->Cut (0,location-1); 
     }  
-    return empty;
+    return emptyString;
 }
 
 _String const WrapInNamespace (_String const& name, _String const* context) {

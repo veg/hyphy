@@ -464,7 +464,7 @@ _String  _Trie::RetrieveKeyByPayload (const long key){
         return _String(RetrieveStringFromPath(traversal_history, &alph));
         
     }
-    return empty;
+    return emptyString;
 }
 
 

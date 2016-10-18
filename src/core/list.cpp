@@ -396,14 +396,14 @@ void  _List::Clear (bool completeClear)
     }
 }
 
-long  _List::Compare (long i, long j) {
+long  _List::Compare (long i, long j) const {
     _String             *si = (_String*)lData[i],
                          *sj = (_String*)lData[j];
 
     return  si->Compare(sj);
 }
 
-long  _List::Compare (BaseObj const * i, long j) {
+long  _List::Compare (BaseObj const * i, long j) const {
     _String const       *sj = (_String const*)lData[j],
                         *si = (_String const*)i;
 

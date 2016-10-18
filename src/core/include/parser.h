@@ -92,8 +92,8 @@ extern      _String         HalfOps;
 
 extern      _Trie           UnOps;
 
-extern      _Parameter      printDigits,
-            verbosityLevel;
+extern      long            printDigits,
+                            verbosityLevel;
 
 extern      long            lastMatrixDeclared,
             subNumericValues;

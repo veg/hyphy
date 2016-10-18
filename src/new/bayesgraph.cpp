@@ -1701,31 +1701,31 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
     if (optMethod < 2) {
         ReportWarning (_String("... starting K2 algorithm"));
 
-        _Parameter  num_restarts,           // HBL settings
+        long        num_restarts,           // HBL settings
                     num_randomize;
 
-        checkParameter (_HYBgm_K2_RESTARTS, num_restarts, 1.);
+        checkParameter (_HYBgm_K2_RESTARTS, num_restarts, 1L);
         checkParameter (_HYBgm_K2_RANDOMIZE, num_randomize, num_nodes);
 
         checkPointer (output_matrix =  new _Matrix (num_nodes * num_nodes, 2, false, true));
         K2Search (optMethod, num_restarts, num_randomize, output_matrix);
     } else {
         _String         oops;
-        _Parameter      mcmc_steps, mcmc_burnin, mcmc_samples;
+        long      mcmc_steps, mcmc_burnin, mcmc_samples;
 
 
         // acquisition of HBL arguments with a few sanity checks
-        checkParameter (_HYBgm_MCMC_MAXSTEPS, mcmc_steps, 0);
+        checkParameter (_HYBgm_MCMC_MAXSTEPS, mcmc_steps, 0L);
         if (mcmc_steps <= 0)    {
             oops = _String ("You asked HyPhy to run MCMC with zero steps in the chain! Did you forget to set Bgm_MCMC_STEPS?\n");
         }
 
-        checkParameter (_HYBgm_MCMC_BURNIN, mcmc_burnin, 0);
+        checkParameter (_HYBgm_MCMC_BURNIN, mcmc_burnin, 0L);
         if (mcmc_burnin < 0)    {
             oops = _String("You can't have a negative burn-in (_HYBgm_MCMC_BURNIN)!\n");
         }
 
-        checkParameter (_HYBgm_MCMC_SAMPLES, mcmc_samples, 0);
+        checkParameter (_HYBgm_MCMC_SAMPLES, mcmc_samples, 0L);
         if (mcmc_samples < 0)   {
             oops = _String ("You can't have a negative sample size!");
         }
@@ -2027,10 +2027,11 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
 
     _Parameter      current_score, proposed_score, best_score,
                     lk_ratio,
-                    prob_swap, param_max_fails;
+                    prob_swap;
+  
 
     long            sampling_interval = mcmc_steps / mcmc_samples,
-                    max_fails;
+                    max_fails, param_max_fails;
 
     _SimpleList *   proposed_order  = new _SimpleList();
     _SimpleList     current_order;
@@ -2044,7 +2045,7 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
         return;
     }
 
-    checkParameter (_HYBgm_MCMC_MAXFAILS, param_max_fails, 100);
+    checkParameter (_HYBgm_MCMC_MAXFAILS, param_max_fails, 100L);
     if (param_max_fails <= 0.) {
         WarnError ("BGM_MCMC_MAXFAILS must be assigned a value greater than 0");
         return;
@@ -2480,12 +2481,12 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
     SetStatusLine     (empty,_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")), empty ,0,HY_SL_TASK|HY_SL_PERCENT);
 #else
     _String         * progressReportFile = NULL;
-    _Variable       * progressFile = CheckReceptacle (&optimizationStatusFile, empty, false);
+    _Variable       * progressFile = CheckReceptacle (&optimizationStatusFile, emptyString, false);
 
     if (progressFile->ObjectClass () == STRING) {
         progressReportFile = ((_FString*)progressFile->Compute())->theString;
     }
-    ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")), -1., progressReportFile);
+    ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? emptyString : _String(" burnin")), -1., progressReportFile);
 #endif
 #endif
 
@@ -2576,7 +2577,7 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
         /*SLKP 20070926; include progress report updates */
         if (TimerDifferenceFunction(true)>1.0) { // time to update
             howManyTimesUpdated ++;
-            _String statusLine = _HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")) & " " & (step+1) & "/" & n_steps
+            _String statusLine = _HYBgm_STATUS_LINE_MCMC & (do_sampling ? emptyString : _String(" burnin")) & " " & (step+1) & "/" & n_steps
                                  & " steps (" & (1.0+step)/howManyTimesUpdated & "/second)";
 #if  defined __HEADLESS__
             SetStatusLine (statusLine);

@@ -39,7 +39,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 template <typename ARG_TYPE>
-void        checkParameter  (_String const& name, ARG_TYPE& dest, const _Parameter def, const _VariableContainer* theP = nil) {
+void        checkParameter  (_String const& name, ARG_TYPE& dest, const ARG_TYPE def, const _VariableContainer* theP = nil) {
   _Variable *v = FetchVar(LocateVarByName(WrapInNamespace(name, theP ? theP->GetName() : nil)));
   dest = v ? v->Value() : def;
 }
@@ -51,6 +51,22 @@ bool        StoreIfGreater (ARG_TYPE& current_max, ARG_TYPE const & value_to_che
     return true;
   }
   return false;
+}
+
+template <typename ARG_TYPE>
+ARG_TYPE        Maximum (ARG_TYPE const a, ARG_TYPE const b) {
+  if (a > b) {
+    return a;
+  }
+  return b;
+}
+
+template <typename ARG_TYPE>
+ARG_TYPE        Minimum (ARG_TYPE const a, ARG_TYPE const b) {
+  if (a > b) {
+    return b;
+  }
+  return a;
 }
 
 template <typename ARG_TYPE>

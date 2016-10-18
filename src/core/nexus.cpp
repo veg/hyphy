@@ -466,9 +466,9 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                     hpSpec << (_String)(kk);
                                                 }
 
-                                                numberOne   = empty;
-                                                numberTwo   = empty;
-                                                numberThree = empty;
+                                                numberOne   = emptyString;
+                                                numberTwo   = emptyString;
+                                                numberThree = emptyString;
                                             } else {
                                                 errMsg = _String("Invalid from-to\\step specification: ") & blank.Cut (0,k) & " <=? " & blank.Cut (k+1,-1);
                                                 ReportWarning (errMsg);
@@ -490,7 +490,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                 hpSpec << '-';
                                                 numberTwo = numberTwo.toNum()-1;
                                                 hpSpec << numberTwo;
-                                                numberTwo = empty;
+                                                numberTwo = emptyString;
                                                 firstFlag = false;
 
                                             } else {
@@ -501,7 +501,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                     }
                                                     hpSpec << numberOne;
                                                 }
-                                                numberOne = empty;
+                                                numberOne = emptyString;
                                                 firstFlag = false;
                                             }
                                         }
@@ -977,7 +977,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                         if ((blank==_String("DNA"))||(blank==_String("RNA"))||(blank==_String("NUCLEOTIDE"))) {
                             if (newAlph.sLength) {
                                 errMsg = _String("DNA|RNA|NUCLEOTIDE datatype directive will over-ride the custom symbols definition: ") & newAlph;
-                                newAlph = empty;
+                                newAlph = emptyString;
                                 ReportWarning (errMsg);
                             }
                             if (done) {
@@ -989,7 +989,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                             charState = 1+(blank==_String("BINARY"));
                             if (newAlph.sLength) {
                                 errMsg = _String("PROTEIN|BINARY datatype directive will override the custom symbols definition: ") & newAlph;
-                                newAlph = empty;
+                                newAlph = emptyString;
                                 ReportWarning (errMsg);
                             }
                             if (done) {
@@ -1100,7 +1100,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                         translations&& &meaning;
                     }
                     charSwitcher = 0;
-                    blank = empty;
+                    blank = emptyString;
                 }
 
                 offSet = 0;

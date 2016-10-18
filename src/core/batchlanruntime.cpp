@@ -118,7 +118,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
         }
     }
     
-    SetStatusLine           (empty);
+    SetStatusLine           (emptyString);
     
     if (errMsg.sLength || receptacle == nil) {
         DeleteObject (receptacle);
@@ -814,7 +814,7 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
     } else {
         treeName    = *theObject->GetName();
         theTree     = (_TheTree*)theObject;
-        theBaseNode = empty;
+        theBaseNode = emptyString;
     }
     
     theTree->MolecularClock(theBaseNode,parameters);
@@ -1338,7 +1338,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
             }
         }
         
-        checkParameter (printDigitsSpec,printDigits,0);
+        checkParameter (printDigitsSpec,printDigits,0L);
         
         if (!print_to_stdout) {
             fnm = *targetName;

@@ -789,17 +789,18 @@ _Parameter _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _Simp
     
 	
 	_Parameter      log_score           = 0,
-					denom, this_prob,
-					impute_maxsteps, impute_burnin, impute_samples; // HBL settings
+  denom, this_prob;
+  
+	long				impute_maxsteps, impute_burnin, impute_samples; // HBL settings
     
 	double			urn;	// uniform random number
 	
 	
 	
 	// set Gibbs sampler parameters from batch language definitions
-    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_maxsteps, 0);
-    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 0);
-    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_samples, 0);
+    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_maxsteps, 0L);
+    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 0L);
+    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_samples, 0L);
 	
     if (impute_maxsteps <= 0 || impute_burnin < 0 || impute_samples <= 0 || impute_samples > impute_maxsteps) {
         WarnError (_String("ERROR: Invalid IMPUTE setting(s) in ImputeNodeScore()"));
@@ -1114,14 +1115,14 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 
     _Parameter      log_score           = 0,
 
-                    impute_maxsteps, impute_burnin, impute_samples, // HBL settings
-
+ 
                     parent_state, child_state = 0.0,
 
                     // prior hyperparameters for CG nodes
                     rho = prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0,
                     phi = prior_scale (node_id, 0);
 
+    long            impute_maxsteps, impute_burnin, impute_samples; // HBL settings
 
     double          urn;            // uniform random number
 
@@ -1139,9 +1140,9 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 	
 
     // set Gibbs sampler parameters from batch language definitions
-    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_maxsteps, 0);
-    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 0);
-    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_samples, 0);
+    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_maxsteps, 0L);
+    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 0L);
+    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_samples, 0L);
 
     if (impute_maxsteps <= 0 || impute_burnin < 0 || impute_samples <= 0 || impute_samples > impute_maxsteps) {
         WarnError (_String("ERROR: Invalid IMPUTE setting(s) in ImputeNodeScore()"));

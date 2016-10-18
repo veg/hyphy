@@ -104,10 +104,6 @@ extern  long    lastFileTypeSelection;
 #endif
 
 
-#ifdef      __MACPROFILE__
-#include "profiler.h"
-#endif
-
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
@@ -332,10 +328,6 @@ extern      _String             MATRIX_AGREEMENT,
             ANAL_COMP_FLAG;
 
 
-extern      _Parameter          toPolyOrNot,
-            toMorNot2M,
-            ANALYTIC_COMPUTATION_FLAG;
-
 extern      _SimpleList         freeSlots;
 
 
@@ -404,7 +396,7 @@ void    MPISendString       (_String& theMessage, long destID, bool isError)
 
     _FString*    sentVal = new _FString;
     sentVal->theString = (_String*)theMessage.makeDynamic();
-    _Variable *   mpiMsgVar = CheckReceptacle (&mpiLastSentMsg, empty, false);
+    _Variable *   mpiMsgVar = CheckReceptacle (&mpiLastSentMsg, emptyString, false);
     mpiMsgVar->SetValue (sentVal, false);
     //setParameter (mpiLastSentMsg, &sentVal);
 
@@ -572,7 +564,7 @@ const _String ProcessLiteralArgument (_String const* data, _VariableContainer co
       return result;
     }
     
-    return empty;
+    return emptyString;
 }
 
 //____________________________________________________________________________________
@@ -794,7 +786,7 @@ long    FindBgmName (_String const&s) {
 //__________________________________________________________
 long  AddDataSetToList (_String& theName,_DataSet* theDS) {
     theName = GenerateUniqueObjectIDByType(theName, HY_BL_DATASET);
-    long k = dataSetNamesList.FindObject (&empty);
+    long k = dataSetNamesList.FindObject (&emptyString);
     if (k==-1) {
         dataSetList.AppendNewInstance (theDS);
         dataSetNamesList&& & theName;
@@ -893,7 +885,7 @@ void KillLFRecord (long lfID, bool completeKill) {
         if (lfID<likeFuncList.lLength-1) {
             DeleteObject(likeFuncList(lfID));
             likeFuncList.lData[lfID] = 0L;
-            likeFuncNamesList.Replace(lfID,&empty,true);
+            likeFuncNamesList.Replace(lfID,&emptyString,true);
         } else {
             likeFuncList.Delete(lfID);
             likeFuncNamesList.Delete(lfID);
@@ -945,7 +937,7 @@ void KillDataSetRecord (long dsID)
     if (dsID<dataSetList.lLength-1) {
         DeleteObject(dataSetList(dsID));
         dataSetList.lData[dsID] = 0;
-        dataSetNamesList.Replace(dsID,&empty,true);
+        dataSetNamesList.Replace(dsID,&emptyString,true);
     } else {
         dataSetList.Delete(dsID);
         dataSetNamesList.Delete(dsID);
@@ -1030,7 +1022,7 @@ void KillModelRecord (long mdID)
         modelMatrixIndices.lData[mdID] = -1;
         modelTypeList.lData[mdID] = 0;
         modelFrequenciesIndices.lData[mdID] = -1;
-        modelNames.Replace(mdID,&empty,true);
+        modelNames.Replace(mdID,&emptyString,true);
     } else {
         modelNames.Delete(mdID);
         modelMatrixIndices.Delete (modelMatrixIndices.lLength-1);
@@ -1223,7 +1215,7 @@ _String       _ExecutionList::GetFileName     (void)  {
         if (pathNames.lLength)
             return *(_String*)pathNames.GetElement (-1);
     }
-    return empty;
+    return emptyString;
 }
 
 //____________________________________________________________________________________
@@ -1252,7 +1244,7 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
       parent = nil;
     }
  
-    _FString            cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):empty),
+    _FString            cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):emptyString),
                         * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
 
     if (stashed) {
@@ -1876,7 +1868,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         }
     }
     s.sData = savePointer;
-    s.DuplicateErasing (&empty);
+    s.DuplicateErasing (&emptyString);
     return empty_is_success || countitems();
 }
 
@@ -2840,7 +2832,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
     }
 
 
-    // 20110802: need to check that this data set is not empty
+    // 20110802: need to check that this data set is not emptyString
 
     if (ds->NoOfSpecies() && ds->NoOfColumns()) {
         _String  * dsID = new _String (chain.AddNameSpaceToID(*(_String*)parameters(0)));
@@ -2999,7 +2991,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
         {
             DeleteObject (lkf);
         } else {
-            likeFuncObjectID = likeFuncNamesList.FindObject(&empty);
+            likeFuncObjectID = likeFuncNamesList.FindObject(&emptyString);
             // see if there are any vacated spots in the list
 
             if (likeFuncObjectID < 0) {
@@ -3603,7 +3595,7 @@ void      _ElementaryCommand::ExecuteCase40 (_ExecutionList& chain)
                                 continue;
                             }
                         }
-                        columnHeaders && & empty;
+                        columnHeaders && & emptyString;
 
                     }
 
@@ -3877,7 +3869,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
 
     bool        skipDataDelete = false;
   
-    _Variable*  iseof          = CheckReceptacle (&hasEndBeenReached,empty,false);
+    _Variable*  iseof          = CheckReceptacle (&hasEndBeenReached,emptyString,false);
   
 
     if (currentParameter==_String("stdin")) { //
@@ -3908,7 +3900,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
             skipDataDelete = true;
 
             if (iseof->Compute()->Value() > 0.) {
-                scanfLastFilePath = empty;
+                scanfLastFilePath = emptyString;
             }
 
             if (!currentParameter.Equal (&scanfLastFilePath) || shifter) {
@@ -3935,7 +3927,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
             }
 
             if (iseof->Compute()->Value()>0) {
-                scanfLastFilePath = empty;
+                scanfLastFilePath = emptyString;
             }
 
             if (!currentParameter.Equal (&scanfLastFilePath) || shifter) {
@@ -3983,7 +3975,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
         v = LocateVarByName (namespacedParameter);
         if (v<0) {
             if (simpleParameters.lData[r]!=2) {
-                v = CheckReceptacle(&namespacedParameter,empty,false)->GetAVariable();
+                v = CheckReceptacle(&namespacedParameter,emptyString,false)->GetAVariable();
             }
         } else {
             if (simpleParameters.lData[r]==2)
@@ -4055,7 +4047,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
                             if (lastP<loopP) {
                                 lines.AppendNewInstance (new _String (inData,lastP, loopP-1));
                             } else {
-                                lines && & empty;
+                                lines && & emptyString;
                             }
 
                             lastP = loopP+1;
@@ -4071,7 +4063,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
                     if (lastP < inData.sLength && lastP<loopP) {
                         lines.AppendNewInstance (new _String (inData,lastP, loopP-1));
                     } else if (lines.lLength == 0) {
-                        lines && & empty;
+                        lines && & emptyString;
                     }
 
                     theReceptacle->SetValue (new _Matrix (lines), false);
@@ -4276,7 +4268,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
     long existingIndex = modelNames.FindObject(&arg0);
 
     if (existingIndex == -1) { // name not found
-        lastMatrixDeclared = modelNames.FindObject (&empty);
+        lastMatrixDeclared = modelNames.FindObject (&emptyString);
 
         if (lastMatrixDeclared>=0) {
             modelNames.Replace (lastMatrixDeclared,&arg0,true);
@@ -4686,7 +4678,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 #endif
             }
 
-            _Variable* sStrV = CheckReceptacle(&selectionStrings,empty,false);
+            _Variable* sStrV = CheckReceptacle(&selectionStrings,emptyString,false);
 
             if (fixedLength == 1) {
                 if (choice>=0) {
@@ -4794,7 +4786,7 @@ void      _ElementaryCommand::ExecuteCase36 (_ExecutionList& chain)
 
 #if !defined __UNIX__ && !defined __HEADLESS__
 
-    _HYDataPanel*  newDP = new _HYDataPanel (empty,empty);
+    _HYDataPanel*  newDP = new _HYDataPanel (emptyString,emptyString);
     if (speciesList.lLength) {
         newDP->SetDataSetReference (*(_String*)dataSetNamesList(f),&speciesList);
     } else {
@@ -4830,7 +4822,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
   
   _Matrix *result = nil;
   
-  // object is a non-empty string
+  // object is a non-emptyString string
   if (objectName->sLength > 2 && objectName->sData[0] == '"' && objectName->sData[objectName->sLength-1] == '"') {
     // regular expression
     _String regExp = GetStringFromFormula (objectName,chain.nameSpacePrefix);
@@ -4967,7 +4959,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
     result = new _Matrix (0,0,false,false);
   }
   
-  CheckReceptacleAndStore (&matrixName, empty, true, result, false);
+  CheckReceptacleAndStore (&matrixName, emptyString, true, result, false);
   
 }
 
@@ -5079,7 +5071,7 @@ void      _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
     }
 
     if (theMessage == nil || theMessage->sLength==0) {
-        WarnError (*arg2 & " is not a valid (or is an empty) string (LF ID) in call to MPISend.");
+        WarnError (*arg2 & " is not a valid (or is an emptyString) string (LF ID) in call to MPISend.");
     } else {
         MPISendString (*theMessage, destID);
     }
@@ -5339,7 +5331,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
     }
 
     if (siteCount < 1) {
-        errMsg = *(_String*)parameters (4) & " must either evaluate to a positive integer or be a non-empty string of root states";
+        errMsg = *(_String*)parameters (4) & " must either evaluate to a positive integer or be a non-emptyString string of root states";
         WarnError (errMsg);
         return;
     }
@@ -5379,7 +5371,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
                     if (unitSize >= 1) {
                         _Formula* exclusionFormula = alphabetMatrix->GetFormula(1,1);
-                        _String* theExclusions = &empty;
+                        _String* theExclusions = &emptyString;
                         
                         if (exclusionFormula)
                             theExclusions = ((_FString*)exclusionFormula->Compute())->theString;
@@ -5497,7 +5489,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
                                             FILE*   mainFile = nil;
 
-                                            errMsg = empty;
+                                            errMsg = emptyString;
 
                                             if (parameters.lLength > 6) {
                                                 spoolFile = ProcessLiteralArgument ((_String*)parameters (6),chain.nameSpacePrefix);
@@ -5537,7 +5529,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                                 _Matrix* catNames       = new _Matrix (1,1,false,true);
 
                                                 SetStatusLine ("Simulating Data");
-                                                lf.Simulate (*simDataSet, exclusions, catValues, catNames, rootStates, doInternals?(mainFile?&spoolFile:&empty):nil);
+                                                lf.Simulate (*simDataSet, exclusions, catValues, catNames, rootStates, doInternals?(mainFile?&spoolFile:&emptyString):nil);
                                                 SetStatusLine ("Idle");
 
                                                 catValVar->SetValue(catValues, false);
@@ -5546,7 +5538,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                                 StoreADataSet (simDataSet, simName);
                                                 DeleteObject (simName);
                                                 DeleteDataFilter (filterID);
-                                                errMsg = empty;
+                                                errMsg = emptyString;
                                             }
                                         }
                                         DeleteObject   (ds);
@@ -6087,7 +6079,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
     long    index     = input.Length();
   
     if (index == 0L) {
-      return empty;
+      return emptyString;
     }
     
     bool    isStringDouble  = false,
@@ -6249,8 +6241,8 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
             parenIn--;
             if (parenIn < 0) {
                 WarnError (_String("Too many closing ')' near '") & input.Cut (MAX(0,index-32),index) & "'.");
-                input = empty;
-                return empty;
+                input = emptyString;
+                return emptyString;
             }
             lastChar = 0;
             continue;
@@ -6317,13 +6309,13 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
     if (scopeIn||isStringDouble||isStringSingle||isComment == 1||parenIn||matrixScope) {
         if (result!='}') {
             WarnError (_String("Expression appears to be incomplete/syntax error. Scope: ") &scopeIn & ", paretheses depth: "
-                       & parenIn & ", matrix scope: " & matrixScope & '.' & (isStringDouble?" In a \"\" literal. ":empty)
-                       & (isStringSingle?" In a '' literal. ":empty) &
-                       (isComment == 1? " In a comment ":empty) & '\n' & input);
-            input = empty;
-            return empty;
+                       & parenIn & ", matrix scope: " & matrixScope & '.' & (isStringDouble?" In a \"\" literal. ":emptyString)
+                       & (isStringSingle?" In a '' literal. ":emptyString) &
+                       (isComment == 1? " In a comment ":emptyString) & '\n' & input);
+            input = emptyString;
+            return emptyString;
         } else {
-            result = empty;
+            result = emptyString;
         }
     }
 
@@ -6341,7 +6333,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
 
         if (result.sLength-index2-1 <lastChar) {
             ReportWarning ((_String)("Expression appears to be incomplete/syntax error and will be ignored:")&input);
-            result.DuplicateErasing (&empty);
+            result.DuplicateErasing (&emptyString);
         } else {
             result.Trim(lastChar,result.sLength-1-lastChar);
         }
@@ -6352,7 +6344,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
     } else if (useSoftTrim) {
         input.sLength = 0;
     } else {
-        input.DuplicateErasing (&empty);
+        input.DuplicateErasing (&emptyString);
     }
   
 
@@ -7343,7 +7335,7 @@ bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _Execution
     if (pathNames.lLength) {
         exc->parameters && pathNames (pathNames.lLength-1);
     } else {
-        exc->parameters && & empty;
+        exc->parameters && & emptyString;
     }
 
     if (pieces.lLength >1) {

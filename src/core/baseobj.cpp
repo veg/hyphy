@@ -200,8 +200,8 @@ void    InitializeGlobals (void) {
   
   _HBL_Init_Const_Arrays  ();
   
-  CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.), false);
-  CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.), false);
+  CheckReceptacleAndStore(&_hy_TRUE, emptyString, false, new _Constant (1.), false);
+  CheckReceptacleAndStore(&_hy_FALSE, emptyString, false, new _Constant (0.), false);
   setParameter        (platformDirectorySeparator, new _FString (dd, false), nil, false); // these should be set globally?
   setParameter        (hyphyBaseDirectory, new _FString (baseDirectory, false), nil, false);
   setParameter        (hyphyLibDirectory, new _FString (libDirectory, false), nil, false);
@@ -432,7 +432,7 @@ void    PurgeAll (bool all) {
         _n_ = nil;
         pathNames.Clear();
     }
-    scanfLastFilePath = empty;
+    scanfLastFilePath = emptyString;
     setParameter (randomSeed,globalRandSeed);
     isInFunction        = _HY_NO_FUNCTION;
     isDefiningATree     = 0;

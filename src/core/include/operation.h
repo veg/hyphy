@@ -89,7 +89,7 @@ public:
     virtual   void          Initialize          (bool = false);
     virtual   void          Duplicate           (BaseRef);
     _String&    GetCode             (void) {
-        return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):empty;
+        return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):emptyString;
     }
     long&       TheCode             (void) {
         return opCode;

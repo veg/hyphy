@@ -65,7 +65,7 @@ BaseRef _AVLListXL::GetXtra (long d) const {
 
 //______________________________________________________________
 
-BaseRef _AVLListXL::GetDataByKey(BaseRef key) const {
+BaseRef _AVLListXL::GetDataByKey(BaseRefConst key) const {
     long f = Find (key);
     if (f < 0L) {
         return nil;

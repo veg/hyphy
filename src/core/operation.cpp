@@ -419,7 +419,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
           }
         }
         
-        _Variable* argument_var = CheckReceptacle (argument_k, empty, false, false);
+        _Variable* argument_var = CheckReceptacle (argument_k, emptyString, false, false);
         
         if (!isRefVar) {
           if (argument_var->IsIndependent()) {
@@ -456,7 +456,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             *refArgName = AppendContainerName (*refArgName, nameSpace);
           }
           
-          _Variable* reference_var = CheckReceptacle (refArgName, empty, false, false);
+          _Variable* reference_var = CheckReceptacle (refArgName, emptyString, false, false);
           
           variableNames.SetXtra (new_index, reference_var->GetAVariable());
           

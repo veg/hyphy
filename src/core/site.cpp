@@ -130,7 +130,7 @@ const _String& _TranslationTable::GetDefaultTable(long tableType) {
       return *(_String*)_list_of_default_tables (0);
   }
   
-  return empty;
+  return emptyString;
   
 }
 
@@ -776,7 +776,7 @@ const _String& _TranslationTable::GetAlphabetString (void) const {
     return _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_BINARY);
   }
   
-  return empty;
+  return emptyString;
 
 }
 
@@ -812,7 +812,7 @@ void    _TranslationTable::AddTokenCode (char token, _String& code) {
 
     f = baseSet.Find (token);
     if (killBS) {
-        baseSet = empty;
+        baseSet = emptyString;
     }
     if (f>=0) {
         return;
@@ -1254,7 +1254,7 @@ void     _DataSet::AddSite (char c)
                 } else {
                     fprintf (streamThrough,">Sequence 1\n");
                 }
-                (*this) && & empty;
+                (*this) && & emptyString;
             }
 
             theMap.lData[1]++;
@@ -1779,7 +1779,7 @@ void    _DataSet::InsertName (_String const& name, long where ) {
 void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert, long limit, _String const* scope) const {
     _String     varName  = isVert ? "siteIndex" : "speciesIndex";
     varName = AppendContainerName(varName, scope);
-    _Variable   *v       = CheckReceptacle (&varName, empty, false);
+    _Variable   *v       = CheckReceptacle (&varName, emptyString, false);
 
     for (long i=0; i<limit; i++) {
         v->SetValue (new _Constant(i), nil);
@@ -1812,7 +1812,7 @@ _TranslationTable*      _DataSet::CheckCompatibility (_SimpleList const & ref, c
     _TranslationTable* theEnd = new _TranslationTable (*(currentSet->theTT));
     checkPointer(theEnd);
     long    refNo     =  concatOrCombine?currentSet->NoOfSpecies():currentSet->NoOfColumns();
-    char    emptyChar = theEnd->GetSkipChar();
+    char    emptyStringChar = theEnd->GetSkipChar();
 
     for (long k=1; k<ref.lLength; k++) {
         currentSet = (_DataSet*)dataSetList(ref.Element(k));
@@ -1820,7 +1820,7 @@ _TranslationTable*      _DataSet::CheckCompatibility (_SimpleList const & ref, c
         _TranslationTable* tryMe = theEnd->MergeTables (currentSet->theTT);
 
         if (tryMe) {
-            if (emptyChar) {
+            if (emptyStringChar) {
                 DeleteObject (theEnd);
                 theEnd = tryMe;
                 continue;
@@ -1876,7 +1876,7 @@ _DataSet*   _DataSet::Concatenate (_SimpleList const & ref)
 
     _DataSet *currentSet;
 
-    char     emptySlot = jointTable->GetSkipChar();
+    char     emptyStringSlot = jointTable->GetSkipChar();
 
     for (long i=0; i<ref.lLength; i++) {
         currentSet = (_DataSet*)dataSetList(ref(i));
@@ -1904,7 +1904,7 @@ _DataSet*   _DataSet::Concatenate (_SimpleList const & ref)
 
             if (cns<=k)
                 for (long j=0; j< cnc; j++, siteIndex++) {
-                    bigDataSet->Write2Site(siteIndex,emptySlot);
+                    bigDataSet->Write2Site(siteIndex,emptyStringSlot);
                 }
             else
                 for (long j=0; j< cnc; j++, siteIndex++) {
@@ -1949,7 +1949,7 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
 
   
 
-    char     emptySlot = joint_table->GetSkipChar();
+    char     emptyStringSlot = joint_table->GetSkipChar();
 
     for (unsigned long set_index =0UL; set_index <ref.lLength;  set_index++) {
         _DataSet const *current_data_set = (_DataSet const*)dataSetList(ref.Element (set_index));
@@ -1972,7 +1972,7 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
                     combined_data->AddSite ((*current_data_set)(site_index,0UL,1));
                 }
                 for (; site_index < max_sites ; site_index++) {
-                    combined_data->AddSite (emptySlot);
+                    combined_data->AddSite (emptyStringSlot);
                 }
             } else {
                 /* use Write2Site to create subsequence sequences */
@@ -1981,7 +1981,7 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
                   combined_data->Write2Site (site_index, (*current_data_set)(site_index,seq_index,1));
                 }
                 for (; site_index < max_sites ; site_index++) {
-                  combined_data->Write2Site (site_index, emptySlot);
+                  combined_data->Write2Site (site_index, emptyStringSlot);
                 }
             }
         }
@@ -2422,7 +2422,7 @@ void    _DataSetFilter::SetFilter (_DataSet* ds, char unit, _SimpleList& horizon
 
     // security checks
     if (!horizontalList.lLength||(verticalList.lLength<unit)) {
-        ReportWarning (_String("Row and/or column partition is empty. All the data will be used by default."));
+        ReportWarning (_String("Row and/or column partition is emptyString. All the data will be used by default."));
         if (horizontalList.lLength==0) {
             if (!isFilteredAlready) {
                 j = ds->NoOfSpecies();
@@ -2650,7 +2650,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc)
         }
 
         if (sitesWithDeletions.lLength==theFrequencies.lLength) {
-            _String errMsg ("All the sites in the datafilter have deletions and removing them creates an empty filter");
+            _String errMsg ("All the sites in the datafilter have deletions and removing them creates an emptyString filter");
             ReportWarning(errMsg);
         }
 
@@ -3795,7 +3795,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
     
     
     if (conversionCache.lLength == 0) {
-      throw _String ("ComputePairwiseDifferences called on a filter with empty conversionCache");
+      throw _String ("ComputePairwiseDifferences called on a filter with emptyString conversionCache");
     }
     
     long        *tcodes  = conversionCache.lData+89,
@@ -4607,7 +4607,7 @@ void    processCommand (_String*s, FileState*fs)
             if (*s!=_String("BASE20")) {
                 fs->translationTable->AddBaseSet (*s);
             } else {
-                fs->translationTable->AddBaseSet (empty);
+                fs->translationTable->AddBaseSet (emptyString);
                 fs->translationTable->baseLength = 20;
             }
             break;
@@ -5076,11 +5076,11 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     //if (f==NULL) return (_DataSet*)result.makeDynamic();
     // nothing to do
 
-    CurrentLine = empty;
+    CurrentLine = emptyString;
 
     ReadNextLine (f,&CurrentLine,&fState);
     if (!CurrentLine.sLength) {
-        CurrentLine = "Empty File Encountered By ReadDataSet.";
+        CurrentLine = "emptyString File Encountered By ReadDataSet.";
         WarnError (CurrentLine);
         return result;
     } else {
@@ -5346,7 +5346,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     // check to see if result may be an amino-acid data
     if (doAlphaConsistencyCheck && result->theTT == &defaultTranslationTable) {
         if (result->GetNoTypes() == 0)
-            // empty data set
+            // emptyString data set
             // try binary data
         {
             _TranslationTable *trialTable = new _TranslationTable (defaultTranslationTable);
@@ -5395,9 +5395,9 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
 #endif
 
             nexusBF.ExecuteAndClean(bfl);
-            nexusBFBody         = empty;
+            nexusBFBody         = emptyString;
         } else if (execBF == 0) {
-            nexusBFBody         = empty;
+            nexusBFBody         = emptyString;
         }
     }
 
@@ -5485,7 +5485,7 @@ long    _DataSetFilter::GetOriginalToShortMap(long index)
 _String const &_DataSetFilter::GenerateConsensusString (_SimpleList* majority) const {
   
     if (unitLength > 3) {
-        return empty;
+        return emptyString;
     }
 
     _String     result ((unsigned long)theOriginalOrder.lLength),
@@ -6024,7 +6024,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
     _Parameter normalizeSeqNames = 1.;
     checkParameter (normalizeSequenceNames, normalizeSeqNames, 0.0);
   
-    CheckReceptacleAndStore (*setName&".mapping",empty,false, new _MathObject, false);
+    CheckReceptacleAndStore (*setName&".mapping",emptyString,false, new _MathObject, false);
     if (normalizeSeqNames > 0.1) {
       _List _id_mapping;
       _AVLListXL id_mapping (&_id_mapping);
@@ -6062,13 +6062,13 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
           current_index = id_mapping.Traverser(history, t);
         }
         
-        CheckReceptacleAndStore (*setName&".mapping",empty,false, mapping, false);
+        CheckReceptacleAndStore (*setName&".mapping",emptyString,false, mapping, false);
      }
     }
 
-    CheckReceptacleAndStore (*setName&".species",empty,false, new _Constant (ds->NoOfSpecies()), false);
-    CheckReceptacleAndStore (*setName&".sites",empty,false, new _Constant (ds->NoOfColumns()), false);
-    CheckReceptacleAndStore (*setName&".unique_sites",empty,false, new _Constant (ds->NoOfUniqueColumns()), false);
+    CheckReceptacleAndStore (*setName&".species",emptyString,false, new _Constant (ds->NoOfSpecies()), false);
+    CheckReceptacleAndStore (*setName&".sites",emptyString,false, new _Constant (ds->NoOfColumns()), false);
+    CheckReceptacleAndStore (*setName&".unique_sites",emptyString,false, new _Constant (ds->NoOfUniqueColumns()), false);
 
     return true;
 }

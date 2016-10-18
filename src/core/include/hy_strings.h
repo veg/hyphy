@@ -1003,7 +1003,7 @@ public:
 
 
 
-extern _String empty,
+extern _String emptyString,
        emptyAssociativeList,
        hyphyCiteString;
 

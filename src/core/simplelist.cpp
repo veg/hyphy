@@ -311,16 +311,15 @@ void _SimpleList::ClearFormulasInList(void)
         }
 }
 
-long _SimpleList::Sum (void) {
-    long sum = 0;
-    for (unsigned long k = 0; k < lLength; k++) {
+long _SimpleList::Sum (void) const{
+    long sum = 0L;
+    for (unsigned long k = 0UL; k < lLength; k++) {
        sum += lData[k];
     }
     return sum;
 }
 
-long  _SimpleList::Compare (long i, long j)
-{
+long  _SimpleList::Compare (long i, long j) const {
     long    v1 = ((long*)lData)[i],
             v2 = ((long*)lData)[j];
 
@@ -337,8 +336,7 @@ long  _SimpleList::Compare (long i, long j)
     //return ((long*)lData)[i]-((long*)lData)[j];
 }
 
-long  _SimpleList::Compare (BaseObj const *i, long j)
-{
+long  _SimpleList::Compare (BaseObj const *i, long j) const {
     long    v1 = (long)i,
             v2 = ((long*)lData)[j];
 
@@ -355,8 +353,7 @@ long  _SimpleList::Compare (BaseObj const *i, long j)
 }
 
 // Compute the number of shared of two sorted lists
-long    _SimpleList::CountCommonElements (_SimpleList& l1, bool yesNo)
-{
+long    _SimpleList::CountCommonElements (_SimpleList const& l1, bool yesNo) const {
     long  c1    = 0,
           c2    = 0,
           res   = 0;
@@ -812,8 +809,7 @@ BaseRef _SimpleList::makeDynamic(void)
     return Res;
 }
 
-long _SimpleList::Max(void)
-{
+long _SimpleList::Max(void) const{
     long res = LONG_MIN;
     for  (long e = 0; e < lLength; e++)
         if (lData[e] > res) {
@@ -822,8 +818,7 @@ long _SimpleList::Max(void)
     return res;
 }
 
-long _SimpleList::Min(void)
-{
+long _SimpleList::Min(void) const {
     long res = LONG_MAX;
     for  (long e = 0; e < lLength; e++)
         if (lData[e] < res) {

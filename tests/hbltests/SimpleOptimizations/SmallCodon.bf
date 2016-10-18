@@ -662,7 +662,7 @@ USE_ADAPTIVE_VARIABLE_STEP = 1;
 
 Optimize 			(res,lf);
 
-fprintf (stdout, "\n\n", res[1][0], "\n\n");
+//fprintf (stdout, "\n\n", lf.trace, "\n\n");
 
 /* test epilogue */
 	timeMatrix = endTestTimer 				  (_testDescription);

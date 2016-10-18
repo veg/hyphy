@@ -218,7 +218,7 @@ _String const* _VariableContainer::GetModelName (void)  const{
     if (res) {
         return res;
     }
-    return &empty;
+    return &emptyString;
 }
 
 //__________________________________________________________________________________

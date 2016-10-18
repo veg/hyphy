@@ -100,11 +100,11 @@ _Parameter  _Matrix::truncPrecision = 1e-8;
 
 _Parameter  analMatrixTolerance = 1e-6,
             zero = 0,
-            ANALYTIC_COMPUTATION_FLAG = 0,
             AUTO_PAD_DIAGONAL = 1,
             toPolyOrNot=0.0,
             toMorNot2M=1.0;
 
+long        ANALYTIC_COMPUTATION_FLAG = 0;
 
 _List       builtInMatrixFunctions;
 
@@ -410,7 +410,7 @@ inline static void ROTATE(_Parameter * a, long i, long j, long k, long l, _Param
 void        _Matrix::Balance (void)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        _String errorMsg ("Balance only works with numerical non-empty square dense matrices");
+        _String errorMsg ("Balance only works with numerical non-emptyString square dense matrices");
         WarnError (errorMsg);
         return;
     }
@@ -467,7 +467,7 @@ void        _Matrix::Balance (void)
 void        _Matrix::Schur (void)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        _String errorMsg ("Hessenberg only works with numerical non-empty square dense matrices");
+        _String errorMsg ("Hessenberg only works with numerical non-emptyString square dense matrices");
         WarnError (errorMsg);
         return;
     }
@@ -530,7 +530,7 @@ void        _Matrix::Schur (void)
 void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        _String errorMsg ("EigenDecomp only works with numerical non-empty square dense matrices");
+        _String errorMsg ("EigenDecomp only works with numerical non-emptyString square dense matrices");
         WarnError (errorMsg);
         return;
     }
@@ -722,7 +722,7 @@ _PMathObj   _Matrix::Eigensystem (void)
     // a square matrix where columns are the corresponding eigenvalues
 
     if ((storageType!=1)||(hDim!=vDim)||(hDim==0)) { // only works for numerical matrices at this stage
-        _String errorMsg ("Eigensystem only works with numerical non-empty square matrices");
+        _String errorMsg ("Eigensystem only works with numerical non-emptyString square matrices");
         WarnError (errorMsg);
         return    new _AssociativeList();
     }
@@ -939,7 +939,7 @@ _PMathObj   _Matrix::LUDecompose (void)
     // the return object is an nx(n+1) matrix which contains the LU decomposition followed
     // by a vector of row interchanges
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        _String errorMsg ("LUDecompose only works with numerical non-empty square matrices");
+        _String errorMsg ("LUDecompose only works with numerical non-emptyString square matrices");
         WarnError (errorMsg);
         return    new _Matrix();
     }
@@ -1051,7 +1051,7 @@ _PMathObj   _Matrix::LUSolve (_PMathObj p)
 {
 
     if ((storageType!=1)||(hDim+1!=vDim)||(vDim<=0)) { // only works for numerical matrices at this stage
-        _String errorMsg ("LUSolve only works with numerical non-empty matrices of dimension nx(n+1) returned by LUDecompose.");
+        _String errorMsg ("LUSolve only works with numerical non-emptyString matrices of dimension nx(n+1) returned by LUDecompose.");
         WarnError (errorMsg);
         return    nil;
     }
@@ -1112,7 +1112,7 @@ _PMathObj   _Matrix::CholeskyDecompose (void)
        --------------------------------------------------- */
 
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical square matrices at this stage
-        _String errorMsg ("CholeskyDecompose only works with numerical non-empty square matrices");
+        _String errorMsg ("CholeskyDecompose only works with numerical non-emptyString square matrices");
         WarnError (errorMsg);
         return    new _Matrix();
     }
@@ -1187,7 +1187,7 @@ _PMathObj   _Matrix::Log (void)
 _PMathObj   _Matrix::Inverse (void)
 {
     if ((storageType!=1)||(hDim!=vDim)||(hDim==0)) {
-        _String errorMsg ("Inverse only works with numerical non-empty square matrices.");
+        _String errorMsg ("Inverse only works with numerical non-emptyString square matrices.");
         WarnError (errorMsg);
         return    nil;
     }
@@ -2071,7 +2071,7 @@ void _Matrix::Duplicate (BaseRef obj)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)    // create an empty matrix of given dimensions;
+_Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)    // create an emptyString matrix of given dimensions;
 // the flag specifies whether it is sparse or not
 
 {
@@ -2130,7 +2130,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
     _String terminators (",}");
 
-    if (j>i && s.sLength>4) { // non-empty string
+    if (j>i && s.sLength>4) { // non-emptyString string
         _String term;
         if (s.sData[i]=='{' && s.sData[j]=='{') { // first type
             i = j+1;
@@ -2194,13 +2194,13 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
                         if (isNumeric) {
                             if (lterm.sLength == 1 && lterm.sData[0]=='*') {
-                                lterm = empty;    // dummy element in probability matrix
+                                lterm = emptyString;    // dummy element in probability matrix
                             }
 
                             theData[vDim*hPos+vPos] = lterm.toNum();
                         } else {
                             if (lterm.sLength == 1 && lterm.sData[0]=='*') {
-                                lterm = empty;    // dummy element in probability matrix
+                                lterm = emptyString;    // dummy element in probability matrix
                             }
 
                             _Formula*  theTerm = new _Formula (lterm, theP);
@@ -2316,7 +2316,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
                     if (isNumeric) {
                         if ((term.sLength == 1) && (term.sData[0]=='*')) {
-                            term = empty;    // dummy element in probability matrix
+                            term = emptyString;    // dummy element in probability matrix
                         }
 
                         (*this)[vDim*hPos+vPos];
@@ -2324,7 +2324,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
                         theData[k]=term.toNum();
                     } else {
                         if ((term.sLength == 1) && (term.sData[0]=='*')) {
-                            term = empty;    // dummy element in probability matrix
+                            term = emptyString;    // dummy element in probability matrix
                         }
 
                         _Formula * theTerm = new _Formula (term,theP);
@@ -2342,7 +2342,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
         if (!isNumeric) {
             storageType = 2; // formula elements
-            checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
+            checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
             if ((ANALYTIC_COMPUTATION_FLAG)&&!isAConstant) {
                 ConvertFormulas2Poly (false);
             }
@@ -3399,7 +3399,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                         for (i = 0; i<secondArg.lDim; i++)
                             if (secondArg.IsNonEmpty(i)) {
                                 long hb =secondArg.HashBack (i), h = Hash (hb/vDim, hb%vDim);
-                                if (h<0) { // empty slot in matrix 1
+                                if (h<0) { // emptyString slot in matrix 1
                                     storage.StoreObject (hb,secondArg.GetMatrixObject(i)->Minus());
                                 } else {
                                     storage.StoreObject (hb, GetMatrixObject(h)->Sub (secondArg.GetMatrixObject(i)));
@@ -3409,7 +3409,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                         for (i = 0; i<secondArg.lDim; i++)
                             if (secondArg.IsNonEmpty(i)) {
                                 long hb =secondArg.HashBack (i), h = Hash (hb/vDim, hb%vDim);
-                                if (h<0) { // empty slot in matrix 1
+                                if (h<0) { // emptyString slot in matrix 1
                                     storage.StoreObject (hb,secondArg.GetMatrixObject(i),true);
                                 } else {
                                     storage.StoreObject (hb,GetMatrixObject(h)->Add (secondArg.GetMatrixObject(i)));
@@ -5002,9 +5002,9 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
         cell_row   ("_MATRIX_ELEMENT_ROW_"),
         cell_column("_MATRIX_ELEMENT_COLUMN_");
         
-        _Variable * cv = CheckReceptacle(&cell_value, empty, false),
-        * cr = CheckReceptacle(&cell_row, empty, false),
-        * cc = CheckReceptacle(&cell_column, empty, false);
+        _Variable * cv = CheckReceptacle(&cell_value, emptyString, false),
+        * cr = CheckReceptacle(&cell_row, emptyString, false),
+        * cc = CheckReceptacle(&cell_column, emptyString, false);
         
         cv->CheckAndSet (0.0);
         cr->CheckAndSet (0.0);
@@ -6375,7 +6375,7 @@ _PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp)
         if (mp->ObjectClass () == MATRIX) {
             m = (_Matrix*)mp->Compute();
             if (m->GetHDim() == m->GetVDim()) {
-                errMsg = empty;
+                errMsg = emptyString;
             }
         }
     }
@@ -7414,7 +7414,7 @@ BaseRef _Matrix::toStr(unsigned long padding) {
   _String *result  = new _String (2048L,true),
           padder  (" ", padding);
   
-  checkParameter (printDigitsSpec,printDigits,0);
+  checkParameter (printDigitsSpec,printDigits,0L);
   
   char number_buffer [256];
   
@@ -7475,7 +7475,7 @@ BaseRef _Matrix::toStr(unsigned long padding) {
       (*result)<<closeBracket;
  
     } else if (storageType == 0) {
-      checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
+      checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
       if (!ANALYTIC_COMPUTATION_FLAG) {
         return Compute()->toStr(padding);
       }
@@ -7565,7 +7565,7 @@ void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
          closeBracket = doJSON ? ']' : '}';
     
     if (!printStrings) {
-      checkParameter (printDigitsSpec,printDigits,0);
+      checkParameter (printDigitsSpec,printDigits,0L);
       digs =  printDigits;
     }
     
@@ -7628,7 +7628,7 @@ void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
       fprintf (dest, "%s%c", padder.sData, closeBracket);
     }
   } else if (storageType==0) {
-    checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
+    checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
     if (!ANALYTIC_COMPUTATION_FLAG) {
       Compute()->toFileStr(dest);
       return;
@@ -7700,7 +7700,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource)
             buffer [i] = 0;
             _String varName (buffer);
 
-            _Variable * ppv = CheckReceptacle (&varName, empty, true);
+            _Variable * ppv = CheckReceptacle (&varName, emptyString, true);
             varList << ppv->GetAVariable();
             i = 0;
         } else {
@@ -8696,7 +8696,7 @@ _Matrix*    _Matrix::SimplexSolve (_Parameter desiredPrecision )
 // upon return, will contain a row matrix of either C-1 cells:
 // extreme value of the objective function in the first cell
 // variable values in the same order as originally supplied
-// if an empty matrix is returned - no feasible solution could be found
+// if an emptyString matrix is returned - no feasible solution could be found
 // if a 1x1 matrix is returned - the objective function is unbounded
 
 {
@@ -9065,7 +9065,7 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
 #if !defined __UNIX__ || defined __HEADLESS__
             TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
 #if !defined __HEADLESS__
-            SetStatusLine     (empty,_HYMultinomialStatus, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+            SetStatusLine     (emptyString,_HYMultinomialStatus, emptyString, 0, HY_SL_TASK|HY_SL_PERCENT);
 #else
             SetStatusLine     (_HYMultinomialStatus);
 #endif
@@ -9094,7 +9094,7 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
 #if defined __HEADLESS__
                     SetStatusLine (statusLine);
 #else
-                    SetStatusLine (empty,statusLine,empty,100*(float)it/(samples),HY_SL_TASK|HY_SL_PERCENT);
+                    SetStatusLine (emptyString,statusLine,emptyString,100*(float)it/(samples),HY_SL_TASK|HY_SL_PERCENT);
 #endif
                     TimerDifferenceFunction (false); // reset timer for the next second
                     yieldCPUTime (); // let the GUI handle user actions
@@ -9229,7 +9229,7 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
 
                 DeleteObject (cholesky);
             } else {
-                return (cholesky);  // empty _Matrix from error in CholeskyDecompose()
+                return (cholesky);  // emptyString _Matrix from error in CholeskyDecompose()
             }
         }
     }
@@ -9398,7 +9398,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
                 WarnError ("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)");
             } else {
                 if (fID2 >= 0 && GetBFFunctionArgumentCount (fID2) != 1L) {
-                    WarnError ("The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument");
+                    WarnError ("The second argument in an iterator call for Associative Arrays must be either emptyString or a valid identifier of a function taking a single argument");
                 }
 
                 _Formula      testFormula,
@@ -9406,11 +9406,11 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 
                 actionFormula.GetList().AppendNewInstance(new _Operation());
                 actionFormula.GetList().AppendNewInstance(new _Operation());
-                actionFormula.GetList().AppendNewInstance(new _Operation(empty,-fID-1));
+                actionFormula.GetList().AppendNewInstance(new _Operation(emptyString,-fID-1));
 
                 if (fID2 >= 0) {
                     testFormula.GetList().AppendNewInstance(new _Operation());
-                    testFormula.GetList().AppendNewInstance(new _Operation(empty,-fID2-1));
+                    testFormula.GetList().AppendNewInstance(new _Operation(emptyString,-fID2-1));
                 }
 
 
@@ -9474,38 +9474,29 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (_String& key, long objType)
-{
-    long        f = avl.Find (&key);
-
-    if (f>=0) {
-        _PMathObj res = (_PMathObj)avl.GetXtra (f);
-        if (res->ObjectClass () == objType) {
-            return res;
-        }
+_PMathObj _AssociativeList::GetByKey (_String const& key, long objType) const {
+    _PMathObj res = GetByKey(key);
+    if (res && (res->ObjectClass() & objType > 0L)) {
+      return res;
     }
-
     return nil;
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (_String& key)
-{
-    long        f = avl.Find (&key);
-
-    if (f>=0) {
-        return (_PMathObj)avl.GetXtra (f);
-    }
-
-    return nil;
+_PMathObj _AssociativeList::GetByKey (_String const& key) const {
+    return (_PMathObj)avl.GetDataByKey(&key);
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (long nKey, long objType)
-{
-    _String key (nKey);
-    return GetByKey (key, objType);
+_PMathObj _AssociativeList::GetByKey (long nKey, long objType) const {
+    return GetByKey (_String(nKey), objType);
 }
+
+  //_____________________________________________________________________________________________
+void _AssociativeList::Clear (void) {
+  avl.Clear(true);
+}
+
 
 //_____________________________________________________________________________________________
 void _AssociativeList::DeleteByKey (_PMathObj p)
@@ -9571,7 +9562,12 @@ void _AssociativeList::MStore (const _String& obj, _PMathObj inObject, bool repl
 //_____________________________________________________________________________________________
 
 _AssociativeList &  _AssociativeList:: operator <<     (_associative_list_key_value pair) {
-  MStore (pair.key, pair.payload, true);
+  if (pair.key) {
+    MStore (pair.key, pair.payload, true);
+  } else {
+    _String next_index ((long)Length());
+    MStore (next_index, pair.payload, true);
+  }
   return *this;
 }
 
@@ -9579,7 +9575,12 @@ _AssociativeList &  _AssociativeList:: operator <<     (_associative_list_key_va
 
 
 _AssociativeList &  _AssociativeList:: operator <     (_associative_list_key_value pair) {
-  MStore (pair.key, pair.payload, false);
+  if (pair.key) {
+    MStore (pair.key, pair.payload, false);
+  } else {
+    _String next_index ((long)Length());
+    MStore (next_index, pair.payload, false);
+  }
   return *this;
 }
 
@@ -9747,7 +9748,7 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
   
   switch (opCode) {
     case HY_OP_CODE_ABS:
-      return new _Constant (avl.countitems());
+      return new _Constant (Length());
     case HY_OP_CODE_COLUMNS: {
       // Columns -- get all unique values (as strings)
       _List    unique_values_aux;
@@ -9932,7 +9933,7 @@ _NTupleStorage::_NTupleStorage (unsigned long N, unsigned long K)
     // now compute what dimension of the matrix will be required
     // handle the special cases first
 
-    if (storageK) { // not just the empty set
+    if (storageK) { // not just the emptyString set
         // populate C_NK_Lookup
         for (long i2=0; i2<=storageN; i2++) {
             C_NK_Lookup << 1;    // N choose 0 is always 1 for every N

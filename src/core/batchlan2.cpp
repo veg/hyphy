@@ -698,7 +698,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     if (parameters.lLength>4) {
         hSpecs = *(_String*)parameters(4);
     } else {
-        hSpecs = empty;
+        hSpecs = emptyString;
     }
 
     _DataSet            *dataset;

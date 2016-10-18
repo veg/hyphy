@@ -59,7 +59,7 @@ public:
 
     virtual ~_AVLListXL(void){}
     virtual BaseRef toStr(unsigned long = 0UL);
-    virtual BaseRef GetDataByKey (BaseRef) const;
+    virtual BaseRef GetDataByKey (BaseRefConst) const;
 
     virtual long InsertData(BaseRef, long,bool);
     virtual void Clear(bool = false);

@@ -429,9 +429,9 @@ _String* ConstructAnErrorMessage         (_String const& theMessage)
         _FormulaParsingContext fpc (&errMsgLocal, nil);
         
         if (Parse    (&expression, expr, fpc, nil) == HY_FORMULA_EXPRESSION) {
-            CheckReceptacleAndStore(&errorReportFormatExpressionStr, empty, false, new _FString (theMessage, false), false);
-            CheckReceptacleAndStore(&errorReportFormatExpressionStack, empty, false, new _Matrix (calls), false);
-            CheckReceptacleAndStore(&errorReportFormatExpressionStdin, empty, false, new _Matrix (stdins, false), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStr, emptyString, false, new _FString (theMessage, false), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStack, emptyString, false, new _Matrix (calls), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStdin, emptyString, false, new _Matrix (stdins, false), false);
             _PMathObj expr = expression.Compute();
             if (!terminateExecution && expr && expr->ObjectClass() == STRING) {
                 (*errMsg) << ((_FString*)expr)->theString;

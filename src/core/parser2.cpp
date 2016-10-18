@@ -82,7 +82,7 @@ extern    _Parameter    tolerance,
 extern    _String       intPrecFact ,
           intMaxIter;
 
-_Parameter  verbosityLevel = 0.0;
+long      verbosityLevel = 0L;
 
 extern _Parameter twoOverSqrtPi;
 
@@ -776,7 +776,7 @@ void        _parse_new_level (long & level, _List & operations, _List& operands,
   
   functionCallTags << function_tag;
   
-  curOp = empty;
+  curOp = emptyString;
 }
 
 
@@ -1714,7 +1714,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
 long     VerbosityLevel (void)
 {
-    checkParameter (VerbosityLevelString, verbosityLevel, -1.0);
+    checkParameter (VerbosityLevelString, verbosityLevel, -1L);
     return verbosityLevel;
 }
 

@@ -217,11 +217,11 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual long Compare(long,long);
+        virtual long Compare(long,long) const;
 
         /**
         */
-        virtual long Compare(BaseObj const *,long);
+        virtual long Compare(BaseObj const *,long) const;
 
         /**
         * Return number of elements 

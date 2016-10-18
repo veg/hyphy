@@ -270,7 +270,7 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
 
     _String            matrixName (parms,0, f>=0?f-1:-1);
 
-    InitializeVarCont (empty, matrixName, theP, aCache);
+    InitializeVarCont (emptyString, matrixName, theP, aCache);
 
     if (GetModelIndex() == HY_NO_MODEL && parms.Length()) {
         f = 0;
@@ -1287,7 +1287,7 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
         isDefiningATree         = 0;
         PostTreeConstructor      (false);
     } else {
-        WarnError ("Can't create an empty tree");
+        WarnError ("Can't create an emptyString tree");
         return;
     }
 }
@@ -1310,14 +1310,14 @@ _TheTree::_TheTree              (_String name, _TheTree* otherTree):_TreeTopolog
         isDefiningATree         = 0;
         PostTreeConstructor      (false);
     } else {
-        WarnError ("Can't create an empty tree");
+        WarnError ("Can't create an emptyString tree");
         return;
     }
 }
 
 
   //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty) {
+_TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), emptyString) {
   PreTreeConstructor   (false);
   if (top->theRoot) {
     isDefiningATree         = 1;
@@ -1340,13 +1340,13 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty) 
     }
     isDefiningATree         = 0;
   } else {
-    WarnError ("Can't create an empty tree");
+    WarnError ("Can't create an emptyString tree");
     return;
   }
 }
 
 //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology    (_String name, _String& parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,empty)
+_TreeTopology::_TreeTopology    (_String name, _String& parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,emptyString)
 // builds a tree from a string
 {
     PreTreeConstructor   (dupMe);
@@ -1359,7 +1359,7 @@ _TreeTopology::_TreeTopology    (_String name, _String& parms, bool dupMe, _Asso
 }
 
 //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology    (_String* name):_CalcNode (*name,empty) {
+_TreeTopology::_TreeTopology    (_String* name):_CalcNode (*name,emptyString) {
 
 }
 
@@ -1458,7 +1458,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames, _A
               }
             }
             FinalizeNode (parentNode, nodeNumbers(lastNode), nodeName, nodeParameters, nodeValue, &nodeComment);
-            nodeName = empty;
+            nodeName = emptyString;
             nodeStack.Delete(lastNode, false);
             nodeNumbers.Delete(lastNode, false);
 
@@ -1590,7 +1590,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames, _A
 
     if (!theRoot) {
       isDefiningATree = 0;
-      WarnError ("Can't create empty trees.");
+      WarnError ("Can't create emptyString trees.");
       return false;
     }
 
@@ -1630,8 +1630,8 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
         }
     }
     if (nodie == theRoot) {
-        nodeParameters = empty;
-        nodeValue      = empty;
+        nodeParameters = emptyString;
+        nodeValue      = emptyString;
     } else {
         if (!nodeParameters.sLength && lastMatrixDeclared!=-1) {
             nodeParameters=*(((_String**)modelNames.lData)[lastMatrixDeclared]);
@@ -1705,14 +1705,14 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
 
     nodeVar->SetValue (&val);
 
-    nodeName       = empty;
-    nodeParameters = empty;
-    nodeValue      = empty;
+    nodeName       = emptyString;
+    nodeParameters = emptyString;
+    nodeValue      = emptyString;
     if (nodeComment && nodeComment->sLength)
     {
         _String commentName = *nodeVar->GetName() & "._comment";
-        CheckReceptacleAndStore(&commentName, empty, false, new _FString (*nodeComment));
-        *nodeComment    = empty;
+        CheckReceptacleAndStore(&commentName, emptyString, false, new _FString (*nodeComment));
+        *nodeComment    = emptyString;
     }
 
     nodeVar->categoryVariables.TrimMemory();
@@ -1742,11 +1742,11 @@ bool    _TreeTopology::FinalizeNode (node<long>* nodie, long number , _String no
 
     ((_GrowingVector*)compExp)->Store (nodeValue.ProcessTreeBranchLength());
 
-    nodeName       = empty;
-    nodeParameters = empty;
-    nodeValue      = empty;
+    nodeName       = emptyString;
+    nodeParameters = emptyString;
+    nodeValue      = emptyString;
     if (nodeComment)
-        *nodeComment    = empty;
+        *nodeComment    = emptyString;
 
     return true;
 }
@@ -1894,18 +1894,18 @@ void    _TreeTopology::AddANode (_PMathObj newNode)
             }
             if (branchLengthSelf) {
               _String bl (branchLengthSelf->Value());
-              FinalizeNode (newt, 0, *newName->theString,   empty, bl);
+              FinalizeNode (newt, 0, *newName->theString,   emptyString, bl);
             } else {
-              FinalizeNode (newt, 0, *newName->theString,   empty, empty);
+              FinalizeNode (newt, 0, *newName->theString,   emptyString, emptyString);
             }
         }
 
         if (newp && ! newParent->IsEmpty()) {
             if (branchLengthParent) {
               _String bl (branchLengthParent->Value());
-               FinalizeNode (newp, 0, *newParent->theString, empty, bl);
+               FinalizeNode (newp, 0, *newParent->theString, emptyString, bl);
             } else {
-              FinalizeNode (newp, 0, *newParent->theString, empty, empty);
+              FinalizeNode (newp, 0, *newParent->theString, emptyString, emptyString);
             }
           
         }
@@ -2507,7 +2507,7 @@ _PMathObj _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyExec
                 selMatrix.MStore(0,m,sf);
               }
               
-              CheckReceptacle (&splitNodeNames, empty, false)->SetValue (&selMatrix);
+              CheckReceptacle (&splitNodeNames, emptyString, false)->SetValue (&selMatrix);
               DeleteObject (resL);
               return mRes;
             }
@@ -3539,7 +3539,7 @@ const _String&  _TheTree::FindMaxCommonSubTree (_TheTree const*  compareTo, long
             }
         }
     }
-    return empty;
+    return emptyString;
 }
 
 
@@ -3814,7 +3814,7 @@ _PMathObj _TreeTopology::TipName (_PMathObj p) {
           }
         }
     }
-    return new _FString (empty);
+    return new _FString (emptyString);
 }
 
 //__________________________________________________________________________________
@@ -4214,7 +4214,7 @@ void            _TreeTopology::PasteBranchLength (node<long>* iterator, _String&
 void            _TreeTopology::GetBranchLength (node<long> * n, _String& r, bool getBL) const
 {
     if (getBL) {
-        r = empty;
+        r = emptyString;
     } else {
         r = compExp->theData[n->in_object];
     }
@@ -4239,7 +4239,7 @@ void            _TheTree::GetBranchLength (node<long> * n, _String& r, bool getB
         if (mm && fv) {
             r.CopyDynamicString(mm->BranchLengthExpression(fv,mbf), true);
         } else {
-            r = empty;
+            r = emptyString;
         }
 
     } else {
@@ -4254,7 +4254,7 @@ _Parameter            _TheTree::GetBranchLength (node<long> * n) const {
 
 //__________________________________________________________________________________
 void            _TreeTopology::GetBranchValue (node<long> *, _String& r) const{
-    r = empty;
+    r = emptyString;
 }
 
 //__________________________________________________________________________________
@@ -4264,7 +4264,7 @@ void            _TheTree::GetBranchValue (node<long> * n, _String& r) const
     if (t != -1.) {
         r = t;
     } else {
-        r = empty;
+        r = emptyString;
     }
 }
 
@@ -4319,7 +4319,7 @@ _String*            _CalcNode::GetBranchSpec (void) {
 
 //__________________________________________________________________________________
 void            _TreeTopology::GetBranchVarValue (node<long> *, _String& r, long) const {
-    r = empty;
+    r = emptyString;
 }
 
 //__________________________________________________________________________________
@@ -4479,7 +4479,7 @@ _String      _TreeTopology::DetermineBranchLengthMappingMode (_String* param, ch
         }
 
     }
-    return empty;
+    return emptyString;
 }
 //__________________________________________________________________________________
 
@@ -5292,16 +5292,15 @@ void    _TheTree::KillTopLevelCache (void)
 }
 //_______________________________________________________________________________________________
 
-long    _TheTree::CountTreeCategories (void)
-{
+long    _TheTree::CountTreeCategories (void) {
     categoryVariables.Clear();
     {
         _AVLList           cVA (&categoryVariables);
         ScanForCVariables (cVA);
         cVA.ReorderList   ();
     }
-    categoryCount = 1;
-    for (unsigned long k=0; k<categoryVariables.lLength; k++) {
+    categoryCount = 1L;
+    for (unsigned long k=0UL; k<categoryVariables.lLength; k++) {
         categoryCount *= ((_CategoryVariable*)LocateVar(categoryVariables.lData[k]))->GetNumberOfIntervals();
     }
     return categoryCount;
@@ -5431,7 +5430,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, _Parame
     if (is_leaf || nodeLabel)
         // terminal node or default label
     {
-        t = empty;
+        t = emptyString;
         _Parameter myAngle = layout==1?iterator->in_object.label2*DEGREES_PER_RADIAN:0.0;
         if (layout == 1) {
             res << (_String(myAngle) & " rotate\n");
@@ -5508,7 +5507,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, _Parame
             if (child->in_object.varRef>=0) {
                 t = map_node_to_calcnode(child)->ContextFreeName();
             } else {
-                t = empty;
+                t = emptyString;
             }
 
             newV += child->in_object.v;
@@ -5649,7 +5648,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, _Parame
                         }
                     }
                     DeleteObject (multiColor);
-                    t = empty;
+                    t = emptyString;
                 } else {
                     res<< (_String(hc - lineWidthInset) & ' ' & _String (child->in_object.v) & " moveto\n");
                     t = _String(child->in_object.h) & ' ' & _String (child->in_object.v + lineWidthInset) & " lineto\n";
@@ -5931,7 +5930,8 @@ _PMathObj _TheTree::TEXTreeString (_PMathObj p) const {
 
 void _TheTree::SetUpMatrices (long categCount) {
   //fprintf (stderr, "[_TheTree::SetUpMatrices] %ld\n", categCount);
-    categoryCount = categCount>=1?categCount:1;
+  
+    categoryCount = Maximum (categCount,1L);
 
     _TreeIterator ti (this, _HY_TREE_TRAVERSAL_POSTORDER);
  
@@ -5941,13 +5941,11 @@ void _TheTree::SetUpMatrices (long categCount) {
         }
         iterator->ConvertToSimpleMatrix();
       
-        if (categoryCount==1) {
+        if (categoryCount==1L) {
             iterator->matrixCache = nil;
         } else {
             iterator->matrixCache = (_Matrix**)MemAllocate (categoryCount*sizeof(_Matrix*));
-            for (unsigned long i=0; i<categoryCount; i++) {             
-                iterator->matrixCache[i] = nil;
-            }
+            InitializeArray (iterator->matrixCache, categCount, (_Matrix*)nil);
         }
     }
 }

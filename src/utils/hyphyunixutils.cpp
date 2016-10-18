@@ -167,7 +167,7 @@ _String*    StringFromConsole   (bool)
     int       readAChar;
     while    ((readAChar = getc(stdin)) != '\n') {
         if (readAChar == EOF) {
-            CheckReceptacleAndStore (&hasEndBeenReached,empty,false,new _Constant (1.), false);
+            CheckReceptacleAndStore (&hasEndBeenReached,emptyString,false,new _Constant (1.), false);
             break;
         }
         *returnme << (char)readAChar;

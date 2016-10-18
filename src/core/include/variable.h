@@ -70,6 +70,8 @@ public:
     virtual   void          MarkDone (void);
 
     virtual     _PMathObj   Compute (void);       // compute or return the value
+                _PMathObj   ComputeMatchingType (long);
+                // return a value if the type is matched, otherwise nil
     virtual     bool        IsVariable (void); //
     virtual     bool        IsIndependent (void) {
         return (varFormula&&varFormula->theFormula.lLength)?
@@ -139,7 +141,7 @@ public:
         return theName;
     }
     _String*    GetFormulaString        (void) {
-        return varFormula?(_String*)varFormula->toStr():(_String*)empty.makeDynamic();
+        return varFormula?(_String*)varFormula->toStr():new _String;
     }
 
     virtual     void        CompileListOfDependents (_SimpleList&);

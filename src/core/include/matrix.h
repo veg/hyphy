@@ -618,6 +618,10 @@ public:
     }
 
     void    operator <<     (const _SimpleList&);
+    _GrowingVector&    operator <<     (_Parameter p) {
+        Store (p);
+        return *this;
+    }
 
     unsigned long   used;
     bool   isColumn;
@@ -695,8 +699,7 @@ struct _associative_list_key_value {
   _PMathObj  payload;
 };
 
-class           _AssociativeList: public _MathObject
-{
+class           _AssociativeList: public _MathObject {
 public:
     _AssociativeList                    (void);
     virtual ~_AssociativeList           (void) {}
@@ -718,6 +721,7 @@ public:
     // execute this operation with the list of Args
     virtual BaseRef     makeDynamic     (void);
     virtual _PMathObj   Compute         (void);
+    void                Clear           (void);
     virtual void        Merge           (_PMathObj);
     /* 20100907: SLKP
             A simple function to merge two lists;
@@ -739,9 +743,9 @@ public:
        returns the number of items processed
     */
 
-    _PMathObj           GetByKey        (_String&, long);
-    _PMathObj           GetByKey        (_String&);
-    _PMathObj           GetByKey        (long, long);
+    _PMathObj           GetByKey        (_String const&, long) const;
+    _PMathObj           GetByKey        (_String const&) const;
+    _PMathObj           GetByKey        (long, long) const;
     void                DeleteByKey     (_PMathObj);
     _PMathObj           MCoord          (_PMathObj);
     void                MStore          (_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
@@ -762,6 +766,9 @@ public:
     }
     _List*              GetKeys         (void);
     void                FillInList      (_List&);
+    unsigned long       Length          (void) const {
+      return avl.countitems();
+    }
     _String*            Serialize       (unsigned long) ;
     
     /**
@@ -783,7 +790,7 @@ private:
 
 extern  _Matrix *GlobalFrequenciesMatrix;
 // the matrix of frequencies for the trees to be set by block likelihood evaluator
-extern  _Parameter  ANALYTIC_COMPUTATION_FLAG;
+extern  long  ANALYTIC_COMPUTATION_FLAG;
 
 void       InsertStringListIntoAVL  (_AssociativeList* , _String const&, _SimpleList const&, _List const&);
 void       InsertVarIDsInList       (_AssociativeList* , _String const&, _SimpleList const&);

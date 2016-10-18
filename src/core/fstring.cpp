@@ -306,7 +306,7 @@ _PMathObj _FString::ReplaceReqExp (_PMathObj p)
 
                 if (!regex) {
                     WarnError (GetRegExpError (errNo));
-                    return new _FString (empty);
+                    return new _FString (emptyString);
                 }
 
                 theString->RegExpMatchAll(regex, matches);
@@ -344,7 +344,7 @@ _PMathObj _FString::ReplaceReqExp (_PMathObj p)
 
         WarnError ("Invalid 2nd argument in call to string^{{pattern,replacement}}");
     }
-    return new _FString (empty,false);
+    return new _FString (emptyString,false);
 }
 
 //__________________________________________________________________________________

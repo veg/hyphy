@@ -727,7 +727,7 @@ BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type,
 _String _HYHBLTypeToText                (long type);
 _String _HYStandardDirectory            (const unsigned long);
 
-_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = empty, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = emptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 
 
 extern  bool                        numericalParameterSuccessFlag;

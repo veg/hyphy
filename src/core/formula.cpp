@@ -58,7 +58,7 @@ extern _Parameter tolerance;
 extern _String intPrecFact;
 extern _String intMaxIter;
 
-#define         maxRombergSteps  8
+#define         maxRombergSteps  8L
 #define         integrationPrecisionFactor  1.e-5
 
 _Formula::_Formula (void)

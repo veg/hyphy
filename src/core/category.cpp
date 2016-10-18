@@ -53,7 +53,7 @@ _String    defaultEqual         ("EQUAL"),
            maxCatIvals            ("MAX_CATEGORY_INTERVALS"),
            constantOnPartition    ("CONSTANT_ON_PARTITION");
 
-_Parameter maxCategoryIntervals = 100.0;
+unsigned long maxCategoryIntervals = 100UL;
 
 #ifdef     _SLKP_LFENGINE_REWRITE_
 #define    SLIGHT_SHIFT  0.
@@ -135,12 +135,12 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
     if (_hyApplicationGlobals.Find (&xname) < 0) {
         _hyApplicationGlobals.Insert (new _String (xname));
     }
-    _x_ = CheckReceptacle (&xname,empty,false,false);
+    _x_ = CheckReceptacle (&xname,emptyString,false,false);
     xname = "_n_";
     if (_hyApplicationGlobals.Find (&xname) < 0) {
         _hyApplicationGlobals.Insert (new _String (xname));
     }
-    _n_ = CheckReceptacle (&xname,empty,false,false);
+    _n_ = CheckReceptacle (&xname,emptyString,false,false);
 
     _String     errorMsg = _String ("While attempting to construct category variable ") & *GetName() & ": ";
 
@@ -157,7 +157,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
     Clear(); // clear this variable if needed
 
 
-    checkParameter (maxCatIvals, maxCategoryIntervals, 100);
+    checkParameter (maxCatIvals, maxCategoryIntervals, 100UL);
     // set up the number of intervals and the matrices
     _String*            param = (_String*)parameters(0);
     intervals                 = ProcessNumericArgument(param,theP);

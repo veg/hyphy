@@ -84,7 +84,7 @@ _String   compileDate = __DATE__,
                                                                                                   & compileDate.Cut (4,5).Replace (" ", "0", true) & "beta";
 
  
-_String     empty(""),
+_String     emptyString (""),
             emptyAssociativeList ("{}"),
             hyphyCiteString ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n");
 
@@ -340,7 +340,7 @@ bool _String::operator == (_String const& s) const {
 //Append operator
 const _String _String::operator & (const _String& s) const {
     if (sLength+s.sLength == 0UL) {
-        return empty;
+        return emptyString;
     }
 
     _String res (sLength+s.sLength,false);
@@ -555,7 +555,7 @@ void _String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
 const _String _String::Chop(long from, long to) const
 {
     if (sLength == 0UL) {
-        return empty;
+        return emptyString;
     }
     if (from == -1) {
         from = 0L;
@@ -564,7 +564,7 @@ const _String _String::Chop(long from, long to) const
         to = sLength-1UL;
     }
     if (to<from) {
-        return empty;
+        return emptyString;
     }
   
     _String res (sLength+from-to+1, false);
@@ -643,7 +643,7 @@ const _String _String::Cut(long from, long to) const
         return res;
       }
     }
-    return empty;
+    return emptyString;
 }
 
 //Delete range char operator
@@ -1300,7 +1300,7 @@ BaseRef _String::makeDynamic (void)
 const _String _String::Replace(const _String s, const _String d, bool flag) const
 {
     if (!sLength) {
-        return empty;
+        return emptyString;
     }
     if (sLength<s.sLength) {
         return *this;
@@ -1976,7 +1976,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
                         throw ("Failed to create a temporary file name");
                     }
                     *this = tmpFileName;
-                    CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+                    CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
                     close (fileDescriptor);
                     return true;
                 #else
@@ -1997,7 +1997,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             #endif
             ,caller);
             
-            CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+            CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
             return true;
         }
 
@@ -2012,7 +2012,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
         }
 
         if (!sLength) {
-           CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+           CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
            return true;
         }
     }
@@ -2195,11 +2195,11 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             }
             *this = lastPath->Cut(0,f+1)& Cut(k,-1);
         } else {
-            *this = empty;
+            *this = emptyString;
         }
     }
 #endif
-    CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+    CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
     return true;
 }
 
@@ -2220,7 +2220,7 @@ _String _String::PathComposition (_String relPath)
             result.Trim(0,f+1);
 
             if (f==-1) {
-                return empty;
+                return emptyString;
             }
             k++;
 
@@ -2232,7 +2232,7 @@ _String _String::PathComposition (_String relPath)
     else {
         return relPath;
     }
-    return empty;
+    return emptyString;
 }
 
 //Mac only so far
@@ -2266,7 +2266,7 @@ _String _String::PathSubtraction (_String& p2, char)
             return result;
         }
     }
-    return empty;
+    return emptyString;
 }
 
 //TODO: These are global methods. Should they even be here?
@@ -2561,7 +2561,7 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
          
     if (first_char == '*' || first_char == '^') {
         if (is_func_ref) {
-            referenced_object = empty;
+            referenced_object = emptyString;
             return HY_STRING_INVALID_REFERENCE;
         }
         bool is_global_ref = first_char == '^';
@@ -2616,6 +2616,6 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
         }
     }
     
-    referenced_object = empty;
+    referenced_object = emptyString;
     return HY_STRING_INVALID_REFERENCE;
 }

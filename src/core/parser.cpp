@@ -73,7 +73,7 @@ _AVLList        *lookAside = nil;
 _AVLListX       variableNames (&varNamesSupportList),
                 _hyApplicationGlobals (&globalNamesSupportList);
 
-_Parameter printDigits;
+long            printDigits;
 
 
 
@@ -220,7 +220,7 @@ _String FetchObjectNameFromType (const unsigned long objectClass) {
             return "Any HyPhy object";
     }
     
-    return empty;
+    return emptyString;
 }
 
 //__________________________________________________________________________________

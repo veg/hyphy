@@ -160,10 +160,10 @@ class _SimpleList:public BaseObj {
         * @param j The second index to compare
         * @return -1 if i<j, 0 if i==j, or 1 if i>j 
         */
-        virtual long Compare(long,long);
-        virtual long Compare(BaseObj const*,long);
+        virtual long Compare(long,long) const;
+        virtual long Compare(BaseObj const*,long) const;
 
-        long CountCommonElements(_SimpleList&, bool=false);
+        long CountCommonElements(_SimpleList const&, bool=false) const;
 
         /**
         //Lists length
@@ -173,7 +173,14 @@ class _SimpleList:public BaseObj {
         inline unsigned long countitems(void) const {return lLength;}
 
         /**
-        * SLKP: 20090611    
+         //Is the list empty
+         * Example: SimpleList SimpleList([4, 1, 2]).empty() = false
+         * @return True if the list is empty
+         */
+        bool empty (void) const {return lLength == 0UL;}
+
+        /**
+        * SLKP: 20090611
         * Print the names of variables whose indices are
         * contained in the list
         * @return Nothing. Prints out to screen 
@@ -326,7 +333,7 @@ class _SimpleList:public BaseObj {
         * Example: _SimpleList([4, 1, 2]).Min() = 1 
         * @return maximum value in the list 
         */
-        long Max(void);
+        long Max(void) const;
 
 
         /**
@@ -335,7 +342,7 @@ class _SimpleList:public BaseObj {
         * Example: _SimpleList([4, 1, 2]).Sum() = 7 
         * @return the sum of all values in the list 
         */
-        long Sum (void);
+        long Sum (void) const;
 
         /**
         * Populate a Simple List with integers incrementally.
@@ -353,7 +360,7 @@ class _SimpleList:public BaseObj {
         * Example: _SimpleList([4, 1, 2]).Min() = 1 
         * @return minimum value in the list 
         */
-        long Min(void);
+        long Min(void) const;
 
 
         /**
