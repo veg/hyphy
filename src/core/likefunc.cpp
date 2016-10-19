@@ -4320,7 +4320,7 @@ DecideOnDivideBy (this);
                     if (cj != 0.) {
                         averageChange += fabs (ch/cj);
                     }
-                    if ((ch < precisionStep*0.01 || lastLogL - maxSoFar < 1e-6) && inCount == 0) {
+                    if ((ch < precisionStep*0.01 /*|| lastLogL - maxSoFar < 1e-6*/) && inCount == 0) {
                         nc2 << current_index;
                     }
                 } else {
