@@ -12,6 +12,11 @@ terms.range01 = {
     "UB": "1"
 };
 
+terms.range_almost_01 = {
+    "LB": "1e-8",
+    "UB": "1"
+};
+
 terms.range_gte1 = {
     "LB": "1",
     "UB": "1e26"

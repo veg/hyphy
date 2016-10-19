@@ -279,10 +279,10 @@ function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
     relax.init_omegas = {{0.05,0.25,4}};
     relax.init_omegas = relax.init_omegas * (1/ parameters.Mean (relax.init_omegas, model_parameters["weights"], Abs (model_parameters["omegas"])));
 
-    parameters.SetRange ((model_parameters["omegas"])[0], terms.range01);
+    parameters.SetRange ((model_parameters["omegas"])[0], terms.range_almost_01);
     parameters.SetValue ((model_parameters["omegas"])[0], relax.init_omegas[0]);
 
-    parameters.SetRange ((model_parameters["omegas"])[1], terms.range01);
+    parameters.SetRange ((model_parameters["omegas"])[1], terms.range_almost_01);
     parameters.SetValue ((model_parameters["omegas"])[1], relax.init_omegas[1]);
 
     parameters.SetRange ((model_parameters["omegas"])[2], terms.range_gte1);
