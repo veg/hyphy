@@ -4168,10 +4168,10 @@ DecideOnDivideBy (this);
                     
                     if (gradientBlocks.lLength) {
                         for (long b = 0; b < gradientBlocks.lLength; b++) {
-                            ConjugateGradientDescent (prec, bestMSoFar,true,20,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
+                            ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
                         }
                     } else {
-                        ConjugateGradientDescent (prec, bestMSoFar,true,20,nil,maxSoFar);
+                        ConjugateGradientDescent (prec, bestMSoFar,true,10,nil,maxSoFar);
                     }
                     
                     GetAllIndependent   (bestMSoFar);
@@ -4305,7 +4305,7 @@ DecideOnDivideBy (this);
                     if (convergenceMode < 2) {
                         LocateTheBump (current_index,precisionStep, maxSoFar, bestVal);
                     } else {
-                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, convergenceMode == 2? precisionStep*0.1: precisionStep*0.01);
+                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, convergenceMode == 2? precisionStep*0.25: precisionStep*0.0625);
                     }
                 } else {
                     LocateTheBump (current_index,brackStep, maxSoFar, bestVal);
