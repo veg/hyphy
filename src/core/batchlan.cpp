@@ -5032,8 +5032,8 @@ void      _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
                *theMessage = nil;
 
 
-    _Parameter      nodeCount;
-    checkParameter (mpiNodeCount,nodeCount,1);
+    long      nodeCount;
+    checkParameter (mpiNodeCount,nodeCount,1L);
 
     long            destID = ProcessNumericArgument (arg1,chain.nameSpacePrefix),
                     g;
@@ -5095,8 +5095,8 @@ void      _ElementaryCommand::ExecuteCase45 (_ExecutionList& chain)
              *arg2 = (_String*)parameters(1),
               *arg3 = (_String*)parameters(2);
 
-    _Parameter      nodeCount;
-    checkParameter (mpiNodeCount,nodeCount,1);
+    long      nodeCount;
+    checkParameter (mpiNodeCount,nodeCount,1L);
 
     long            srcT = ProcessNumericArgument (arg1,chain.nameSpacePrefix),
                     srcID,

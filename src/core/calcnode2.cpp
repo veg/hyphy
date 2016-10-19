@@ -1521,10 +1521,18 @@ void            _TheTree::ComputeBranchCache    (
     if (!siteCorrectionCounts && localScalerChange) {
         #pragma omp atomic
         overallScaler += localScalerChange;
+      
+      //#pragma omp atomic
+      // printf ("Rescale in ComputeBranchCache at branch %ld %ld\n", brID, localScalerChange);
     }
 }
 
+/*----------------------------------------------------------------------------------------------------------*/
 
+const _CalcNode* _TheTree::GetNodeFromFlatIndex(long index) const {
+  return index < flatLeaves.lLength ? (((_CalcNode**) flatCLeaves.lData)[index]):
+  (((_CalcNode**) flatTree.lData)   [index - flatLeaves.lLength]);
+}
 
 /*----------------------------------------------------------------------------------------------------------*/
 
@@ -1574,8 +1582,7 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
 
     //printf ("ComputeLLWithBranchCache @ %d catID = %d branchID = %d\n", likeFuncEvalCallCount, catID, brID);
 
-    _CalcNode *givenTreeNode = brID < flatLeaves.lLength ? (((_CalcNode**) flatCLeaves.lData)[brID]):
-                               (((_CalcNode**) flatTree.lData)   [brID - flatLeaves.lLength]);
+    _CalcNode const *givenTreeNode = GetNodeFromFlatIndex (brID);
 
     _Parameter  const *   _hprestrict_ transitionMatrix = givenTreeNode->GetCompExp(catID)->theData;
 

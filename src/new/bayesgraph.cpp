@@ -1073,8 +1073,8 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
 
 
 #if defined __HYPHYMPI__
-    _Parameter  use_mpi_caching;
-    checkParameter (_HYBgm_MPI_CACHING, use_mpi_caching, 0);
+    bool  use_mpi_caching;
+    checkParameter (_HYBgm_MPI_CACHING, use_mpi_caching, false);
 
     if (use_mpi_caching) {
         ReportWarning (_String ("Using MPI to cache node scores."));
@@ -1576,11 +1576,11 @@ void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
 
     _String *   bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
 
-    _Parameter  impute_max_steps, impute_burnin, impute_sample_size;    // permit user to reset impute settings
+    long  impute_max_steps, impute_burnin, impute_sample_size;    // permit user to reset impute settings
 
-    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_max_steps, 10000);
-    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 1000);
-    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_sample_size, 100);
+    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_max_steps, 10000L);
+    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 1000L);
+    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_sample_size, 100L);
 
     rec << "USE_MPI_CACHING=1;\n";
     rec << "PRINT_DIGITS=-1;\n";

@@ -276,7 +276,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                         break;
                     }
                     _Parameter      pv;
-                    checkParameter (shortMPIReturn, pv ,0);
+                    checkParameter (shortMPIReturn, pv ,0.);
                     resStr       = (_String*)checkPointer(new _String (1024L,true));
                     lf->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                     resStr->Finalize();

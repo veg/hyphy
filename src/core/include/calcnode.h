@@ -726,6 +726,8 @@ public:
        see comments for remapMyCategories in _CalcNode
      */
 
+    const _CalcNode * GetNodeFromFlatIndex (long index) const;
+  
     _Parameter  VerySimpleLikelihoodEvaluator   (_SimpleList&            updateNodes,
             _DataSetFilter*      theFilter,
             _Parameter*          iNodeCache,

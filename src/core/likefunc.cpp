@@ -1779,8 +1779,12 @@ void    _LikelihoodFunction::PostCompute        (void)
     //useGlobalUpdateFlag = false;
     // mod 20060125 comment out the compute loop; seems redundant
     {
-        for (unsigned long i=0; i<indexInd.lLength; i++) {
-            LocateVar (indexInd.lData[i])->MarkDone();
+        for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+            _Variable * this_p = GetIthIndependentVar(i);
+            if (this_p->varFlags & HY_VARIABLE_CHANGED) {
+              this_p->varFlags -= HY_VARIABLE_CHANGED;
+            }
+            //LocateVar (indexInd.lData[i])->MarkDone();
         }
     }
 }
@@ -7758,7 +7762,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                    siteRes)
                 - _logLFScaler * overallScalingFactors.lData[index];
               
-                if (fabs (checksum-sum) > 0.001) {
+                if (fabs ((checksum-sum)/sum) > 0.00001) {
                   /*_Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
                                                                    *branches,
                                                                    tcc,
@@ -7775,9 +7779,11 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                                    scc,
                                                                    branchIndex,
                                                                    branchIndex >= 0 ? branchValues->lData: nil);*/
+
+                  _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName();
+
                   
-                  
-                  WarnError (_String("Internal error in ComputeBranchCache (branch ") & doCachedComp &
+                  WarnError (_String("Internal error in ComputeBranchCache (branch ") & *node_name &
                               " ) reversible model cached likelihood = "& checksum & ", directly computed likelihood = " & sum & 
                              ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
                   WarnError ("Bailing");
