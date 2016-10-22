@@ -7752,44 +7752,45 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
               
                 // check results
 
-                 _Parameter checksum = t->ComputeLLWithBranchCache (*sl,
-                                                   doCachedComp,
-                                                   bc,
-                                                   df,
-                                                   0,
-                                                   df->GetPatternCount (),
-                                                   catID,
-                                                   siteRes)
-                - _logLFScaler * overallScalingFactors.lData[index];
-              
-                if (fabs ((checksum-sum)/sum) > 0.00001) {
-                  /*_Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
-                                                                   *branches,
-                                                                   tcc,
-                                                                   df,
-                                                                   inc,
-                                                                   conditionalTerminalNodeStateFlag[index],
-                                                                   ssf,
-                                                                   (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
-                                                                   overallScalingFactors.lData[index],
-                                                                   0,
-                                                                   df->GetPatternCount(),
-                                                                   catID,
-                                                                   siteRes,
-                                                                   scc,
-                                                                   branchIndex,
-                                                                   branchIndex >= 0 ? branchValues->lData: nil);*/
+                if (sum > -A_LARGE_NUMBER) {
+                   _Parameter checksum = t->ComputeLLWithBranchCache (*sl,
+                                                     doCachedComp,
+                                                     bc,
+                                                     df,
+                                                     0,
+                                                     df->GetPatternCount (),
+                                                     catID,
+                                                     siteRes)
+                  - _logLFScaler * overallScalingFactors.lData[index];
+                
+                  if (fabs ((checksum-sum)/sum) > 0.00001) {
+                    /*_Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
+                                                                     *branches,
+                                                                     tcc,
+                                                                     df,
+                                                                     inc,
+                                                                     conditionalTerminalNodeStateFlag[index],
+                                                                     ssf,
+                                                                     (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                                                     overallScalingFactors.lData[index],
+                                                                     0,
+                                                                     df->GetPatternCount(),
+                                                                     catID,
+                                                                     siteRes,
+                                                                     scc,
+                                                                     branchIndex,
+                                                                     branchIndex >= 0 ? branchValues->lData: nil);*/
 
-                  _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName();
+                    _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName();
 
-                  
-                  WarnError (_String("Internal error in ComputeBranchCache (branch ") & *node_name &
-                              " ) reversible model cached likelihood = "& checksum & ", directly computed likelihood = " & sum & 
-                             ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
-                  WarnError ("Bailing");
-                  return -A_LARGE_NUMBER;
+                    
+                    WarnError (_String("Internal error in ComputeBranchCache (branch ") & *node_name &
+                                " ) reversible model cached likelihood = "& checksum & ", directly computed likelihood = " & sum & 
+                               ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
+                    WarnError ("Bailing");
+                    return -A_LARGE_NUMBER;
+                  }
                 }
-
               
                 // need to update siteRes when computing cache and changing scaling factors!
             }

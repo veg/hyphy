@@ -5659,7 +5659,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       
       for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
         write_here << seqDelimiter
-        << (_String *)theData->GetSequenceName(theNodeMap(i))
+        << GetSequenceName(i)
         << kStringFileWrapperNewLine;
       }
       
@@ -5701,7 +5701,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       
       // proceed to spool out the data
       for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
-        _String const * sequence_name = theData->GetSequenceName(theNodeMap(i));
+        _String const * sequence_name = GetSequenceName(i);
         _String sequence_name_10;
         
         if (outputFormat == 2) { // PHYLIP
@@ -5740,7 +5740,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       
       // proceed to spool out the data
       for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
-        write_here << trim_to_10 (*theData->GetSequenceName(theNodeMap(i)));
+        write_here << trim_to_10 (*GetSequenceName(i));
         
         for (unsigned long j = 0UL; j<theOriginalOrder.lLength; j++) {
           if (j==printWidth) {
@@ -5790,7 +5790,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       << ";\n\tTAXLABELS\n\t\t";
       
       for (unsigned long i=0UL; i< sequence_count; i++) {
-         write_here << theData->GetSequenceName(theNodeMap(i))->Enquote('\'') << ' ';
+         write_here << GetSequenceName(i)->Enquote('\'') << ' ';
       }
       
       write_here << ";\nEND;\n\nBEGIN CHARACTERS;\n\tDIMENSIONS NCHAR = "
@@ -5848,13 +5848,13 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       unsigned long max_length = 0UL;
       
       for (unsigned long i=0UL; i<sequence_count; i++) {
-        StoreIfGreater (max_length, GetSequenceName(theNodeMap(i))->sLength);
+        StoreIfGreater (max_length, GetSequenceName(i)->sLength);
       }
       
       _SimpleList taxaNamesPadding;
       
       for (unsigned long i=0UL; i<sequence_count; i++) {
-        taxaNamesPadding <<  max_length - GetSequenceName(theNodeMap(i))->sLength;
+        taxaNamesPadding <<  max_length - GetSequenceName(i)->sLength;
       }
       
       
@@ -5862,7 +5862,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
         for (unsigned long i=0UL; i< sequence_count; i++) {
           if (outputFormat == 4) { // labels
             write_here << "\n\t'"
-            << GetSequenceName(theNodeMap(i))
+            << GetSequenceName(i)
             << '"'
             << _String (" ", taxaNamesPadding (i));
             
@@ -5889,7 +5889,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           for (unsigned long i=0UL; i< sequence_count; i++) {
             if (outputFormat == 5) { // labels
               write_here << "\n\t'"
-              << GetSequenceName(theNodeMap(i))
+              << GetSequenceName(i)
               << '"'
               << _String (" ", taxaNamesPadding (i));
             } else {
@@ -5926,7 +5926,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       char seqDelimiter = (outputFormat==9)?'>':'#';
       
       for (unsigned long i = 0UL; i< sequence_count; i++) {
-        write_here << seqDelimiter << GetSequenceName(theNodeMap(i));
+        write_here << seqDelimiter << GetSequenceName(i);
         for (unsigned long j = 0UL; j<site_count; j++) {
           if (j % printWidth == 0) {
             write_here << kStringFileWrapperNewLine;
