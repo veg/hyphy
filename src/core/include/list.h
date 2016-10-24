@@ -46,6 +46,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_____________________________________________________________________________
 
+class _String;
+// forward declaration
+
 //_____________________________________________________________________________
 
 class _List:public _SimpleList
@@ -91,15 +94,6 @@ class _List:public _SimpleList
         _List(BaseRef);
 
         /**
-        * Data constructor list of char* supplied as a variable 
-        * \n\n \b Example: \code _List list = _List((BaseRef)new _String("one")); \endcode
-        * @param char* the first string to add to the list
-        * @param const unsigned long the number of additional char* arguments supplied to the constructor
-        * @param 2-N: char* to be added to the list
-        */
-        _List(const char*, const unsigned long, ...);
-        
-        /**
         * The deconstructor
         */
         virtual ~_List(void);
@@ -118,12 +112,19 @@ class _List:public _SimpleList
         * Element location functions - read only
         * used to avoid (*list)(3) which are hard to read
         */
-        virtual BaseRef GetItem     (const unsigned long);
+        virtual BaseRef GetItem     (const unsigned long) const;
+
+        /**
+         * Element location functions - read only
+         * used to avoid (*list)(3) which are hard to read
+         * checks for valid index range and returns NULL if outside the range
+         */
+        virtual BaseRef GetItemRangeCheck     (const unsigned long) const;
 
         /**
         * Element location functions - read only
         */
-        virtual _List operator = (_List&);
+        virtual const _List operator = (const _List&);
 
 
         /**
@@ -131,46 +132,49 @@ class _List:public _SimpleList
         * \n\n \b Example: \code _List result_list = list & append_list; \endcode 
         * @return New concatenated list
         */
-        _List operator & (_List&);
+        const _List operator & (_List const&) const;
 
         /**
         * Append operator
         * \n\n \b Example: \code _List result_list = list && new _String("one"); \endcode 
         * @return Nothing. Acts on list that is being operated on
         */
-        void operator && (BaseRef);
+        _List& operator && (BaseRef);
 
         /**
         * Append operator
         * \n\n \b Example: \code _List result_list = list && "one"; \endcode 
         */
-        void operator && (const char*);
+        _List& operator && (const char*);
 
         /**
-        * Append reference to *this
+        * Append reference to *this (<< also increments the reference counter)
         * \n\n \b Example: \code _List result_list << new _String("one"); \endcode 
         * @return Nothing. Operates on the _List.
         */
-        void operator << (BaseRef);
+        _List& operator << (BaseRef);
+        _List& operator <  (BaseRef);
 
         /**
-        * Appends existing list to *this
+        * Appends existing list to *this (<< also increments the reference counters)
         * \n\n \b Example: \code _List result_list << existing_list \endcode 
         * @param l2 The list to be appended
         * @return Nothing. Operates on the _List.
         * @sa AppendNewInstance()
         */
-        void operator << (_List&);
+        _List& operator << (_List const&);
+        _List& operator < (_List const&);
+        _List& operator < (const char *);
 
         /**
         * Append operator
         */
-        _List operator & (BaseRef);
+        const _List operator & (BaseRef) const;
 
         /**
         * @sa Equal()
         */
-        bool operator == (_List&);
+        bool operator == (_List const&) const;
 
         /**
         * Append reference to *this
@@ -180,6 +184,13 @@ class _List:public _SimpleList
         * @sa AppendNewInstance()
         */
         void AppendNewInstance(BaseRef);
+  
+        /**
+         * Append a variable number of arguments without increasing ref counts
+         
+         * @sa _List constructors()
+         */
+        void AppendNewInstance (BaseObj* ref, const unsigned long number, ...);
 
         /**
         * Find the position of a search string in the list of strings (ONLY)
@@ -193,7 +204,7 @@ class _List:public _SimpleList
         * @sa Find()
         * @sa BinaryFind()
         */
-        virtual long BinaryFind(BaseRef);
+        virtual long BinaryFindObject (BaseObj const *, long startAt = 0) const;
 
         /**
         * Insert an element into the sorted list preserving the sortedness
@@ -206,11 +217,11 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual long Compare(long,long);
+        virtual long Compare(long,long) const;
 
         /**
         */
-        virtual long Compare(BaseRef,long);
+        virtual long Compare(BaseObj const *,long) const;
 
         /**
         * Return number of elements 
@@ -242,7 +253,7 @@ class _List:public _SimpleList
         * @return bool, true if identical.
         * @sa AppendNewInstance()
         */
-        bool Equal(_List&);
+        bool Equal(_List const&) const;
 
         /**
         * Find the position of a search string in the list of strings (ONLY)
@@ -253,7 +264,7 @@ class _List:public _SimpleList
         * @param s The integer to find
         * @return -1 if not found, index if found
         */
-        virtual long Find(BaseRef, long startat = 0);
+        virtual long FindObject (BaseRefConst, long startat = 0) const;
 
         /**
         */
@@ -290,7 +301,7 @@ class _List:public _SimpleList
         * @param increment by Pass true for a case sensitive search 
         * @return Nothing. Acts on the List object it was called from. 
         */
-        virtual void InsertElement(BaseRef br,long insertAt=-1, bool store=true);
+        virtual void InsertElement(BaseRef br,long insertAt=-1, bool store=true, bool pointer=true);
 
         /**
         */
@@ -344,11 +355,23 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual BaseRef toStr(void);
+        virtual BaseRef toStr(unsigned long = 0UL);
 
         /**
         */
-        virtual void toFileStr(FILE*);
+        virtual void toFileStr(FILE*, unsigned long = 0UL);
+  
+        /**
+         Generate a string that is not present in the list.
+         The string will look like 'base_[autogenerated number]'
+         
+         @param base the prefix to use for the name
+         @sorted is the list sorted?
+         
+         @return a unique string
+         
+         */
+        const _String GenerateUniqueNameForList (_String const& base, bool sorted) const;
 
 };
 

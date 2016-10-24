@@ -71,16 +71,18 @@ DataSet	 				mlAncestors = ReconstructAncestors (_lf_ID);
 DataSetFilter			_AncestalFilter	= CreateFilter (mlAncestors,1);
 GetDataInfo				(_AncestalFilterChars,_AncestalFilter,"CHARACTERS");
 
-for (k = 0; k < _AncestalFilter.species; k = k+1)
+for (k = 0; k < _AncestalFilter.species; k += 1)
 {
 	GetDataInfo (aSeq, _AncestalFilter, k);
+
 	if 	(aSeq != expectedSequences[k])
 	{
 		fprintf (stdout, "[ERROR: MISMATCHED ", k+1, "-TH SEQUENCE]\nRecovered:\n", aSeq, "\nExpected:\n", expectedSequences[k]);
 		return 1;
 	}
-	
+
 }
+
 
 fprintf (stdout, "[OK: ML SEQUENCE RECONSTRUCTION]\n");
 
@@ -106,10 +108,8 @@ _idx_3 = 0;
 _utility_Vector1 = {1,_characterDimension}["1"];
 _utility_Vector2 = {1,_characterDimension}["_MATRIX_ELEMENT_COLUMN_"];
 
-for (_idx_1 = 0; _idx_1 < _AncestalFilter.species; _idx_1 = _idx_1 + 1)
-{
-	for (_idx_2 = 0; _idx_2 < _AncestalFilter.sites; _idx_2 = _idx_2 + 1)
-	{
+for (_idx_1 = 0; _idx_1 < _AncestalFilter.species; _idx_1 += 1) {
+	for (_idx_2 = 0; _idx_2 < _AncestalFilter.sites; _idx_2 += 1) {
 		GetDataInfo (_charInfo, _AncestalFilter, _idx_1, _AncestalFilterSiteToPatternMap[_idx_2]);
 		_whichChar = (_utility_Vector1*_charInfo)[0];
 		if (_whichChar > 1)
@@ -132,7 +132,7 @@ for (k = 0; k < _samplingIterates; k = k + 1)
 	DataSet	 			_sampledSequences = SampleAncestors (_lf_ID);
 	DataSetFilter		_sampledFilter	  = CreateFilter (_sampledSequences,1);
 	_idx_3 								  = 0;
-	
+
 	GetDataInfo (_sampledFilterSiteToPatternMap, _sampledFilter);
 	for (_idx_1 = 0; _idx_1 < _sampledFilter.species; _idx_1 = _idx_1 + 1)
 	{
@@ -147,7 +147,8 @@ for (k = 0; k < _samplingIterates; k = k + 1)
 
 DataSet	 		_marginalAncestors 			= ReconstructAncestors (_lf_ID,MARGINAL);
 DataSetFilter	_marginalAncestorsFilter	= CreateFilter 		   (_marginalAncestors, 1);
-GetDataInfo 	(_marginalFilterSiteToPatternMap, filteredData);
+GetDataInfo 	(_marginalFilterSiteToPatternMap, _marginalAncestorsFilter);
+
 
 _idx_3 = 0;
 for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
@@ -161,7 +162,7 @@ for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 
 }
 
-_outputCSV = ""; _outputCSV * 2048; 
+_outputCSV = ""; _outputCSV * 2048;
 _outputCSV * "Sequence,Site,ML Joint";
 for (_idx_1 = 0; _idx_1 < _characterDimension; _idx_1 = _idx_1 + 1)
 {
@@ -178,10 +179,10 @@ for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 	for (_idx_2 = 0; _idx_2 < _marginalAncestorsFilter.sites; _idx_2 = _idx_2 + 1)
 	{
 		_outputCSV * ("\n" + _AncestralNodeNames[_idx_1] + "," + (1+_idx_2) + "," + _AncestalFilterChars[_mlInformation[_idx_3]]);
-		
+
 		_maxValue = 0;
 		_maxIndex = 0;
-		
+
 		for (_idx_4 = 0; _idx_4 < _characterDimension; _idx_4 = _idx_4 + 1)
 		{
 			_thisCharacter = (_sampledInformation[_idx_3])[_idx_4]/_samplingIterates;
@@ -213,7 +214,7 @@ for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 			fprintf (stdout, _idx_1, ":", _idx_2+1, " is discrepant\n");
 		}
 		_idx_3 = _idx_3 + 1;
-		
+
 	}
 }
 

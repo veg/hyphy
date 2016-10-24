@@ -43,7 +43,7 @@ BEGIN HYPHY;
 OPTIMIZATION_PRECISION = 0.001;
 VERBOSITY_LEVEL        = -1;
 
-LF_SMOOTHING_SCALER = 0.001;
+//LF_SMOOTHING_SCALER = 0.001;
 
 global AT=1;
 global CT=1;
@@ -662,7 +662,7 @@ USE_ADAPTIVE_VARIABLE_STEP = 1;
 
 Optimize 			(res,lf);
 
-fprintf (stdout, "\n\n", res[1][0], "\n\n");
+//fprintf (stdout, "\n\n", lf.trace, "\n\n");
 
 /* test epilogue */
 	timeMatrix = endTestTimer 				  (_testDescription);

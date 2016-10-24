@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -1684,7 +1684,7 @@ bool  ProceedPromptWithCheck (_String& pr, _String& cpr, bool& cs, Ptr par)
 //__________________________________________________________________
 _String*        RetrieveCachedSelection (_String* title)
 {
-    long        f = cachedDialogTitles.BinaryFind (title);
+    long        f = cachedDialogTitles.BinaryFindObject (title);
 
     if (f>=0) {
         _String * sel = (_String*)cachedDialogSelections(f);
@@ -1698,7 +1698,7 @@ _String*        RetrieveCachedSelection (_String* title)
 //__________________________________________________________________
 void            StoreDialogSelection    (_String* title,_String* selection)
 {
-    long        f = cachedDialogTitles.BinaryFind (title);
+    long        f = cachedDialogTitles.BinaryFindObject (title);
 
     if (f<0) {
         f = cachedDialogTitles.BinaryInsert (title);
@@ -1758,7 +1758,7 @@ _String  NewTreeWindow (long sourceDF)
         }
         long    tipCount = ((_String*)treeSettings->lData[3])->toNum();
         dsNames.Clear();
-        k = ((_List*)(*settingsValues)(4))->Find(setName);
+        k = ((_List*)(*settingsValues)(4))->FindObject(setName);
         if ((k>=1)||(sourceDF>=0)) { // use data set
             if (sourceDF<0) {
                 dsNames.Duplicate (&((_DataSet*)dataSetList(k-1))->GetNames());
@@ -1785,7 +1785,7 @@ _String  NewTreeWindow (long sourceDF)
         tipCount = dsNames.lLength;
         _String treeString ((unsigned long)32,true);
         setName = (_String*)treeSettings->lData[6];
-        k = ((_List*)(*settingsValues)(6))->Find(setName);
+        k = ((_List*)(*settingsValues)(6))->FindObject(setName);
         setName = (_String*)treeSettings->lData[7];
         _Parameter defL = setName->toNum();
 
@@ -2439,7 +2439,7 @@ bool    _HYPartitionDialog::ProcessEvent (_HYEvent* e)
 
             done = partName->IsValidIdentifier ();
             if (done) {
-                f = dataSetFilterNamesList.Find (partName);
+                f = dataSetFilterNamesList.FindObject (partName);
                 if ((f>=0)&&(f!=dfID)) {
                     done = false;
                 }
@@ -4518,7 +4518,7 @@ bool    OpenDataFile (_String* defLoc)
     _ExecutionList      ex (BLCommand);
     ex.Execute();
     SetStatusLine ("Idle");
-    long k = dataSetNamesList.Find(&dataFileName);
+    long k = dataSetNamesList.FindObject(&dataFileName);
     if (k>=0) {
         _DataSet* theDS = (_DataSet*)dataSetList (k);
         if (theDS->NoOfSpecies()>0 && theDS->NoOfColumns()>0) {

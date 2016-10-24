@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -61,6 +61,7 @@
 #include "HYButtonBar.h"
 #include "HYTableComponent.h"
 #include "HYEventTypes.h"
+#include "function_templates.h"
 
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
@@ -465,7 +466,7 @@ void    _HYDataPanel::GenerateStatusLine (void)
         statBar = statBar & _String (theDS->NoOfColumns()) &" sites ("&_String (theDS->NoOfUniqueColumns())&" distinct patterns), "&
                   _String(theDS->NoOfSpecies())& " species.";
     } else
-        statBar = statBar & _String (dataWrapper->GetFullLengthSpecies()) &" sites ("&_String (dataWrapper->NumberDistinctSites())&" distinct patterns), "&
+        statBar = statBar & _String (dataWrapper->GetSiteCount()) &" sites ("&_String (dataWrapper->GetPatternCount())&" distinct patterns), "&
                   _String(dataWrapper->NumberSpecies())& " species.";
     statBar = statBar & selectionStatPrefix & "empty";
     SetStatusBar(statBar);
@@ -699,7 +700,6 @@ bool    _HYDataPanel::ProcessEvent (_HYEvent* e)
             }
         }
         firstArg = e->EventCode().Cut (f+1,-1);
-        k = firstArg.toNum();
         if (i==0)
             // selection change in the sequence pane
         {
@@ -895,7 +895,7 @@ bool    _HYDataPanel::ProcessEvent (_HYEvent* e)
 
                             bb->_UnpushButton();
                             firstArg = HandlePullDown (menuOptions,h,v,0);
-                            k = menuOptions.Find (&firstArg);
+                            k = menuOptions.FindObject (&firstArg);
                             switch (k) {
                             case 0:
                                 ShowConstantSites (false);
@@ -998,9 +998,9 @@ bool    _HYDataPanel::ProcessEvent (_HYEvent* e)
                         case DF_TYPE_COLUMN: { // data type change
                             if (i==5) {
                                 ConstructDataTypeOptions (mOptions);
-                                mChoice = HandlePullDown (mOptions,k,p,mOptions.Find (currentType)+1);
+                                mChoice = HandlePullDown (mOptions,k,p,mOptions.FindObject (currentType)+1);
                                 if (mChoice.sLength&&(!mChoice.Equal(currentType))) {
-                                    if (DataTypeChange (r,mOptions.Find (&mChoice))) {
+                                    if (DataTypeChange (r,mOptions.FindObject (&mChoice))) {
                                         pl->SetCellData (&mChoice,r,c,pl->cellTypes.lData[f],true);
                                         mOptions.Clear();
                                         GenerateModelList (mOptions,r);
@@ -1017,7 +1017,7 @@ bool    _HYDataPanel::ProcessEvent (_HYEvent* e)
                                 break;
                             }
                             GenerateTreeList (mOptions);
-                            mChoice = HandlePullDown (mOptions,k,p,mOptions.Find (currentType)+1);
+                            mChoice = HandlePullDown (mOptions,k,p,mOptions.FindObject (currentType)+1);
                             if (mChoice.sLength) {
                                 _String mRes;
                                 if (i==5) {
@@ -1075,7 +1075,7 @@ bool    _HYDataPanel::ProcessEvent (_HYEvent* e)
                                     break;
                                 }
                             }
-                            mChoice = HandlePullDown (mOptions,k,p,mOptions.Find (currentType)+1);
+                            mChoice = HandlePullDown (mOptions,k,p,mOptions.FindObject (currentType)+1);
                             if (mChoice.sLength) {
                                 if (i==5) {
                                     if (mChoice.Equal(currentType)) {
@@ -1092,7 +1092,7 @@ bool    _HYDataPanel::ProcessEvent (_HYEvent* e)
                                     }
                                 }
 
-                                k = mOptions.Find(&mChoice);
+                                k = mOptions.FindObject(&mChoice);
                                 ModelChange (&mChoice,r,k);
                                 RefreshPartRow(mOptions,r,false);
                                 if (i==6) {
@@ -1130,7 +1130,7 @@ bool    _HYDataPanel::ProcessEvent (_HYEvent* e)
                                         }
 
                                         for (long jj = 0; jj<mOptions.countitems();)
-                                            if (lOptions.Find (mOptions (jj))<0) {
+                                            if (lOptions.FindObject (mOptions (jj))<0) {
                                                 mOptions.Delete (jj);
                                             } else {
                                                 jj++;
@@ -1138,7 +1138,7 @@ bool    _HYDataPanel::ProcessEvent (_HYEvent* e)
                                     }
                             }
 
-                            mChoice = HandlePullDown (mOptions,k,p,mOptions.Find (currentType)+1);
+                            mChoice = HandlePullDown (mOptions,k,p,mOptions.FindObject (currentType)+1);
 
                             if (mChoice.sLength&&(!mChoice.Equal(currentType))) {
                                 if (c==DF_MDL_OPT_COLUMN) {
@@ -1405,8 +1405,8 @@ void    _HYDataPanel::ShowCharacterUsage (long partIndex, bool useEntropy)
     long            stateCount      = df->GetDimension (true),
                     fullCount        = df->GetDimension (false),
                     stateSize       = df->GetUnitLength(),
-                    siteCount          = df->GetFullLengthSpecies()/stateSize,
-                    patternCount    = df->NumberDistinctSites();
+                    siteCount          = df->GetSiteCount()/stateSize,
+                    patternCount    = df->GetPatternCount();
 
     _Matrix         res  (useEntropy?1:stateCount, siteCount, false, true),
                     res2 (useEntropy?1:stateCount, patternCount, false, true);
@@ -1542,8 +1542,8 @@ void    _HYDataPanel::ShowAssociation (long partIndex, char options)
         _DataSetFilter *df = (_DataSetFilter*)dataSetFilterList(dataPartitions.lData[partIndex]);
 
         long            stateSize       = df->GetUnitLength(),
-                        siteCount          = df->GetFullLengthSpecies()/stateSize,
-                        patternCount    = df->NumberDistinctSites();
+                        siteCount          = df->GetSiteCount()/stateSize,
+                        patternCount    = df->GetPatternCount();
 
         if (options == 2 && (siteCount > 4 || siteCount < 2)) {
             prompt = "Pairwise contigency tables only work with filters with 2,3 or 4 sites - otherwise too many windows would need to be open. Chop your data partition into smaller sections.";
@@ -1564,7 +1564,7 @@ void    _HYDataPanel::ShowAssociation (long partIndex, char options)
             DeleteObject (sitePat);
         }
 
-        delete (fv);
+        delete [] fv;
 
         long    totalCount = patternCount*(patternCount-1)/2,
                 totalDone  = 0,
@@ -2220,7 +2220,7 @@ void    _HYDataPanel::InputPartitionString (void)
 
 void    _HYDataPanel::SetDataSetReference (_String& varName, _SimpleList* specFilter)
 {
-    long f = dataSetNamesList.Find(&varName);
+    long f = FindDataSetName(varName);
     dataType = 0;
     if (f>=0) {
         _DataSet        * theDS    = (_DataSet*) dataSetList (f);
@@ -3170,7 +3170,7 @@ void    _HYDataPanel::BuildLikelihoodFunction (_String* lName, _SimpleList* subs
                     treeName   = *thisTree->GetName();
 
                     if (!(infer && inferCache.lLength))
-                        if ((treesList.Find (&treeName)>=0)||(otherTreeList.Find (&treeName)>=0)) {
+                        if ((treesList.FindObject (&treeName)>=0)||(otherTreeList.FindObject (&treeName)>=0)) {
                             _String  os (128L, true);
                             os << "\nTree topology";
                             os << treeName;
@@ -3193,7 +3193,7 @@ void    _HYDataPanel::BuildLikelihoodFunction (_String* lName, _SimpleList* subs
                     if (inferCount < inferCache.lLength) {
                         treeName = *(_String*)inferCache (inferCount);
                     } else {
-                        if ((treesList.Find (&treeName)>=0)||(otherTreeList.Find (&treeName)>=0)) {
+                        if ((treesList.FindObject (&treeName)>=0)||(otherTreeList.FindObject (&treeName)>=0)) {
                             FindUnusedObjectName (treeName,treeName,variableNames,true);
                         }
 
@@ -3295,7 +3295,7 @@ void    _HYDataPanel::BuildLikelihoodFunction (_String* lName, _SimpleList* subs
 
     _PaintThermRect();
 
-    lfID = likeFuncNamesList.Find (&errMsg);
+    lfID = FindLikeFuncName(errMsg);
 
     if (!infer) {
         _LikelihoodFunction *lf = (_LikelihoodFunction*)likeFuncList (lfID);
@@ -3992,7 +3992,7 @@ bool    _HYDataPanel::SaveDataPanel (bool saveAs, _String* saveFile, _String* ds
             if (treeVarReferences.lData[k]>=0) {
                 _String * tName = LocateVar (treeVarReferences.lData[k])->GetName();
                 partInfo << tName;
-                if (treeList.Find (tName) < 0) {
+                if (treeList.FindObject (tName) < 0) {
                     treeList << tName;
                 }
             } else {
@@ -4517,7 +4517,6 @@ _HYRect  _HYDataPanel::ComputeNavRect (void)
         res.right = res.left+3;
     }
 
-    visProp    = (seqPane->endRow-seqPane->startRow)/(_Parameter)seqPane->RowCount();
     res.top    = 0;
     res.bottom = HY_DATAPANEL_THERMWIDTH;
     return res;
@@ -4980,97 +4979,101 @@ void  _HYDataPanel::UpdateTranslationString (_String& newDataString, long index,
 
 bool  _HYDataPanel::GetTranslationString (_String& newDataString, long index, char resolve, long filterID, _List * cachedResolutions)
 {
-    // go filter by filter; take each codon filter, apply properties and translate
-
-    _Parameter     *freqVector = (_Parameter*)MemAllocate(sizeof(_Parameter)*64);
-    long    k,
-            index2;
-
-    _String newData (16, true),
-            spaces  (3, false);
-
-    for (k=filterID>=0?filterID:0; k<dataPartitions.lLength; k++) {
-        _DataSetFilter* df = (_DataSetFilter*)dataSetFilterList(dataPartitions.lData[k]);
-        _String         gaps (3,false);
-        gaps.sData[0] = df->GetData()->GetTT()->GetGapChar();
-        gaps.sData[1] = gaps.sData[0];
-        gaps.sData[2] = gaps.sData[0];
-
-        if (df->GetUnitLength() == 3) { // a codon filter; proceed
-            if  (resolve) {
-                index2 = df->theNodeMap.Find (index);
+  // go filter by filter; take each codon filter, apply properties and translate
+  
+  _Parameter     *freqVector = new _Parameter[64];
+  long    k,
+  index2;
+  
+  _String newData (16, true),
+  spaces  (3, false);
+  
+  for (k=filterID>=0?filterID:0; k<dataPartitions.lLength; k++) {
+    _DataSetFilter* df = (_DataSetFilter*)dataSetFilterList(dataPartitions.lData[k]);
+    _String         gaps (3,false);
+    gaps.sData[0] = df->GetData()->GetTT()->GetGapChar();
+    gaps.sData[1] = gaps.sData[0];
+    gaps.sData[2] = gaps.sData[0];
+    
+    if (df->GetUnitLength() == 3) { // a codon filter; proceed
+      if  (resolve) {
+        index2 = df->theNodeMap.Find (index);
+      }
+      
+      _SimpleList     backup;
+      bool rev;
+      char offset;
+      long genCode;
+      LongToPartData (partData.lData[k],offset,rev,genCode);
+      
+      _SimpleList*    gencode         = ((_SimpleList*)((*(_List*)geneticCodes(genCode))(2)));
+      
+      _List           *thisFilterMap = nil;
+      
+      if (resolve > 0) {
+        if (cachedResolutions) {
+          if  (cachedResolutions->lLength <= k) {
+            _List * thisFilterResolution = new _List;
+            for (long m=offset; m<df->theOriginalOrder.lLength-2; m+=3) {
+              thisFilterResolution->AppendNewInstance(df->CountAndResolve(df->duplicateMap[df->theOriginalOrder.lData[m]/3],freqVector,resolve-1));
             }
-
-            _SimpleList     backup;
-            bool rev;
-            char offset;
-            long genCode;
-            LongToPartData (partData.lData[k],offset,rev,genCode);
-
-            _SimpleList*    gencode         = ((_SimpleList*)((*(_List*)geneticCodes(genCode))(2)));
-
-            _List           *thisFilterMap = nil;
-
-            if (resolve > 0) {
-                if (cachedResolutions && cachedResolutions->lLength <= k) {
-                    _List * thisFilterResolution = new _List;
-                    for (long m=offset; m<df->theOriginalOrder.lLength-2; m+=3) {
-                        thisFilterResolution->AppendNewInstance(df->CountAndResolve(df->duplicateMap[df->theOriginalOrder.lData[m]/3],freqVector,resolve-1));
-                    }
-
-                    cachedResolutions->AppendNewInstance (thisFilterResolution);
-                }
-                thisFilterMap = (_List*)(*cachedResolutions)(k);
-            } else {
-                backup.Duplicate (&df->theExclusions);
-                df->theExclusions.Clear();
-            }
-
-            if (rev) // reverse direction
-                //for (long m=2+(df->theOriginalOrder.lLength-offset)%3; m<df->theOriginalOrder.lLength-offset; m+=3)
-                for (long m=df->theOriginalOrder.lLength-offset-1; m>=2; m-=3) {
-                    spaces.sData[0] = (*df->GetData())(df->theOriginalOrder.lData[m],index,1);
-                    spaces.sData[1] = (*df->GetData())(df->theOriginalOrder.lData[m-1],index,1);
-                    spaces.sData[2] = (*df->GetData())(df->theOriginalOrder.lData[m-2],index,1);
-                    if (resolve && thisFilterMap) {
-                        newData << CodeToAA (df->CorrectCode(((_SimpleList*)thisFilterMap->lData[m/3])->lData[index2]),gencode);
-                    } else if (spaces.Equal(&gaps)) {
-                        newData << '-';
-                    } else {
-                        newData << CodeToAA (df->Translate2Frequencies(spaces,freqVector,false),gencode,freqVector);
-                    }
-
-                }
-            else
-                for (long m=offset; m<df->theOriginalOrder.lLength-2; m+=3) {
-                    spaces.sData[0] = (*df->GetData())(df->theOriginalOrder.lData[m],index,1);
-                    spaces.sData[1] = (*df->GetData())(df->theOriginalOrder.lData[m+1],index,1);
-                    spaces.sData[2] = (*df->GetData())(df->theOriginalOrder.lData[m+2],index,1);
-                    if (resolve && thisFilterMap) {
-                        newData << CodeToAA (df->CorrectCode(((_SimpleList*)thisFilterMap->lData[m/3])->lData[index2]),gencode);
-                    } else if (spaces.Equal(&gaps)) {
-                        newData << '-';
-                    } else {
-                        newData << CodeToAA (df->Translate2Frequencies(spaces,freqVector,false),gencode,freqVector);
-                    }
-                }
-            if (resolve == 0) {
-                df->theExclusions.Duplicate (&backup);
-            }
-            if (filterID>=0) {
-                free (freqVector);
-                newData.Finalize();
-                newDataString = newData;
-                return rev;
-            }
+            
+            cachedResolutions->AppendNewInstance (thisFilterResolution);
+          }
+          thisFilterMap = (_List*)(*cachedResolutions)(k);
         }
+        
+        
+      } else {
+        backup.Duplicate (&df->theExclusions);
+        df->theExclusions.Clear();
+      }
+      
+      if (rev) // reverse direction
+               //for (long m=2+(df->theOriginalOrder.lLength-offset)%3; m<df->theOriginalOrder.lLength-offset; m+=3)
+        for (long m=df->theOriginalOrder.lLength-offset-1; m>=2; m-=3) {
+          spaces.sData[0] = (*df->GetData())(df->theOriginalOrder.lData[m],index,1);
+          spaces.sData[1] = (*df->GetData())(df->theOriginalOrder.lData[m-1],index,1);
+          spaces.sData[2] = (*df->GetData())(df->theOriginalOrder.lData[m-2],index,1);
+          if (resolve && thisFilterMap) {
+            newData << CodeToAA (df->CorrectCode(((_SimpleList*)thisFilterMap->lData[m/3])->lData[index2]),gencode);
+          } else if (spaces.Equal(&gaps)) {
+            newData << '-';
+          } else {
+            newData << CodeToAA (df->Translate2Frequencies(spaces,freqVector,false),gencode,freqVector);
+          }
+          
+        }
+      else
+        for (long m=offset; m<df->theOriginalOrder.lLength-2; m+=3) {
+          spaces.sData[0] = (*df->GetData())(df->theOriginalOrder.lData[m],index,1);
+          spaces.sData[1] = (*df->GetData())(df->theOriginalOrder.lData[m+1],index,1);
+          spaces.sData[2] = (*df->GetData())(df->theOriginalOrder.lData[m+2],index,1);
+          if (resolve && thisFilterMap) {
+            newData << CodeToAA (df->CorrectCode(((_SimpleList*)thisFilterMap->lData[m/3])->lData[index2]),gencode);
+          } else if (spaces.Equal(&gaps)) {
+            newData << '-';
+          } else {
+            newData << CodeToAA (df->Translate2Frequencies(spaces,freqVector,false),gencode,freqVector);
+          }
+        }
+      if (resolve == 0) {
+        df->theExclusions.Duplicate (&backup);
+      }
+      if (filterID>=0) {
+        delete [] freqVector;
+        newData.Finalize();
+        newDataString = newData;
+        return rev;
+      }
     }
-
-    free (freqVector);
-    newData.Finalize();
-    newDataString = newData;
-
-    return true;
+  }
+  
+  delete [] freqVector;
+  newData.Finalize();
+  newDataString = newData;
+  
+  return true;
 }
 
 //__________________________________________________________
@@ -6255,314 +6258,315 @@ void _HYDataPanel::PartitionPropsMenu (void)
 
 void _HYDataPanel::ProcessContextualPopUpMain (long l, long t)
 {
-    _HYSequencePane*  sp = (_HYSequencePane*)GetObject (0);
-    _List             menuItems;
-
-    _String           buffer;
-
-    if (sp->selection.lLength) {
-        if (dataType&HY_DATAPANEL_NUCDATA) {
-            menuItems&& & contextString1;
-        } else if (dataType&HY_DATAPANEL_PROTDATA) {
-            menuItems&& & contextString2;
-        } else if (dataType&HY_DATAPANEL_BINARYDATA) {
-            menuItems&& & contextString1_5;
-        }
-
-        menuItems&& & contextString13;
-        if (dataType&HY_DATAPANEL_PROTDATA) {
-            menuItems&& & contextString17;
-        }
-
-        menuItems&& & contextString15;
-
-        if (sp->selection.lLength==1) {
-            if (menuItems.lLength) {
-                buffer = menuSeparator;
-                menuItems&& & buffer;
-            }
-            menuItems && & contextString4;
-            menuItems && & contextString14;
-        }
-
-        buffer = HandlePullDown (menuItems,l,t,0);
-
-        if (buffer.Equal (&contextString4)) {
-            // select all sites like this one
-            _SimpleList     matches;
-            if (dataWrapper) {
-                dataWrapper->FindAllSitesLikeThisOne(sp->selection.lData[0],matches);
-            } else {
-                _DataSet* ds = (_DataSet*)dataSetList (dataSetID);
-                ds->FindAllSitesLikeThisOne(sp->selection.lData[0],matches);
-            }
-            _String fres (32L, true);
-            if (matches.lLength>1) {
-                sp->selection.Clear();
-                sp->selection.Duplicate (&matches);
-                sp->BuildPane();
-                sp->_MarkForUpdate();
-                UpdateSelDepPartitionOperations();
-                fres << "Found ";
-                fres << (long)matches.lLength;
-                fres << " sites like the one selected\n";
-            } else {
-                BufferToConsole ("Selected site is unique\n");
-            }
-        } else if (buffer.Equal (&contextString1) || buffer.Equal (&contextString2) || buffer.Equal (&contextString1_5) ) {
-            char      bufferS [512];
-            _DataSet* ds = (_DataSet*)dataSetList (dataSetID);
-            _Matrix*  freqs = ds->HarvestFrequencies(1,1,false,sp->speciesIndex,sp->selection);
-            long      totCount = sp->speciesIndex.lLength*sp->selection.lLength;
-            if (buffer.Equal (&contextString1)) {
-                snprintf (bufferS, sizeof(bufferS),"\nNucleotide counts and frequencies (%luu sites)\nA:\t%g\t%g\nC:\t%g\t%g\nG:\t%g\t%g\nT:\t%g\t%g\n",sp->selection.lLength,
-                         (totCount*(*freqs)[0]),(*freqs)[0],(totCount*(*freqs)[1]),(*freqs)[1],(totCount*(*freqs)[2]),(*freqs)[2],(totCount*(*freqs)[3]),(*freqs)[3]);
-                BufferToConsole (bufferS);
-            } else if (buffer.Equal (&contextString2)) {
-                snprintf (bufferS, sizeof(bufferS),"\nAminoacid counts and frequencies (%lu sites)",sp->selection.lLength);
-                BufferToConsole (bufferS);
-                for (long k=0; k<aminoAcidOneCharCodes.sLength; k++) {
-                    snprintf (bufferS, sizeof(bufferS),"\n%c:\t%g\t%g",aminoAcidOneCharCodes.sData[k],(totCount*(*freqs)[k]),(*freqs)[k]);
-                    BufferToConsole (bufferS);
-                }
-                NLToConsole ();
-            } else {
-                snprintf (bufferS, sizeof(bufferS),"\nBinary counts and frequencies (%lu sites)\n0:\t%g\t%g\n1:\t%g\t%g\n",sp->selection.lLength,
-                         (totCount*(*freqs)[0]),(*freqs)[0],(totCount*(*freqs)[1]),(*freqs)[1]);
-                BufferToConsole (bufferS);
-            }
-            DeleteObject(freqs);
-        } else {
-            if (buffer.Equal (&contextString13) || buffer.Equal (&contextString17)) {
-                _String *toCopy;
-                if (buffer.Equal (&contextString13)) {
-                    toCopy = (_String*)sp->selection.ListToPartitionString();
-                } else {
-                    _SimpleList dup;
-                    dup.RequestSpace (sp->selection.lLength*3);
-                    for (long k=0; k<sp->selection.lLength; k++) {
-                        dup << 3*sp->selection.lData[k];
-                        dup << 3*sp->selection.lData[k]+1;
-                        dup << 3*sp->selection.lData[k]+2;
-                    }
-                    toCopy = (_String*)dup.ListToPartitionString();
-                }
-
-                PlaceStringInClipboard (*toCopy, (Ptr)this);
-                DeleteObject (toCopy);
-            } else {
-                if (buffer.Equal (&contextString14)) {
-                    _DataSet*       ds    = (_DataSet*)dataSetList (dataSetID);
-                    _String         aSite (*(_String*) (ds->_List::operator ()) (ds->GetTheMap().lData[sp->selection.lData[0]]));
-
-                    _SimpleList     remap;
-                    DeleteObject    (aSite.Sort(&remap));
-                    sp->SetSequenceOrder (remap);
-
-                } else if (buffer.Equal (&contextString15)) {
-                    _String  nhc ("Please choose a new highlight color");
-                    _HYColor newC = SelectAColor (sp->highlightColor,nhc);
-                    if (!(newC==sp->highlightColor)) {
-                        sp->SetHighliteColor (newC);
-                    }
-                }
-            }
-        }
-    } else {
-        _SimpleList     treeIDs;
-        for (long l2=0; l2<treeVarReferences.lLength; l2++) {
-            long t = treeVarReferences.lData[l2];
-            if (t>=0) {
-                buffer = _String("Order as in '")&*LocateVar(t)->GetName()&"'";
-                menuItems && & buffer;
-                treeIDs << l2;
-            }
-        }
-
-        if (sp->vselection.lLength==1) {
-            if (addedLines&HY_DATAPANEL_CONSENSUS) {
-                if (menuItems.lLength) {
-                    menuItems && & menuSeparator;
-                }
-                menuItems && & contextString5;
-                menuItems && & contextString10;
-            }
-
-            if ((addedLines&HY_DATAPANEL_REFERENCE)&&(genCodeID<0)) {
-                if (menuItems.lLength) {
-                    menuItems && & menuSeparator;
-                }
-                menuItems && & contextString8;
-            }
-        }
-
-        if (sp->vselection.lLength) {
-            menuItems && & copySeqsToClip;
-            menuItems && & contextString11;
-            menuItems && & contextString12;
-            menuItems && & contextString16;
-        }
-
-        if (menuItems.lLength) {
-            buffer = HandlePullDown (menuItems,l,t,0);
-            if (buffer.sLength)
-                if (buffer.Equal(&contextString5)||buffer.Equal(&contextString8)) {
-                    _SimpleList noMatch;
-                    t = sp->speciesIndex.lData[sp->vselection[0]];
-                    long        sl = 0;
-                    if (buffer.Equal (&contextString8)) {
-                        sl = ((_String*)statusData(l))->sLength-1;
-                    }
-                    for (l=0; l<sp->columnStrings.lLength; l++) {
-                        if (((_String*)sp->columnStrings(l))->sData[t]!=((_String*)statusData(l))->sData[sl]) {
-                            noMatch << l;
-                        }
-                    }
-                    if (noMatch.lLength==0) {
-                        BufferToConsole ("A perfect match!\n");
-                    } else {
-                        sp->vselection.Clear();
-                        sp->selection.Clear();
-                        sp->selection.Duplicate (&noMatch);
-                        sp->BuildPane();
-                        sp->_MarkForUpdate();
-                        UpdateSelDepPartitionOperations();
-                        char buffer [256];
-                        snprintf (buffer, sizeof(buffer),"%lu (%g %%) mismatches found\n",noMatch.lLength,
-                                 noMatch.lLength*100./(_Parameter)sp->columnStrings.lLength);
-                        BufferToConsole (buffer);
-                    }
-                } else {
-                    if (buffer.Equal(&contextString10)) {
-                        _String consString (sp->columnStrings.lLength,true);
-                        for (long kl =0; kl<sp->columnStrings.lLength; kl++) {
-                            consString << ((_String*)statusData(kl))->sData[0];
-                        }
-                        consString.Finalize();
-                        PlaceStringInClipboard (consString, GetOSWindowData());
-                    } else {
-                        if (buffer.Equal (&copySeqsToClip)) {
-                            _String theSeqs (sp->vselection.lLength*sp->columnStrings.lLength,true);
-
-                            for (long sc = 0; sc < sp->vselection.lLength; sc ++) {
-                                long seqIndex = sp->speciesIndex.lData[sp->vselection.lData[sc]];
-
-                                theSeqs << '>';
-                                theSeqs << *(_String*)sp->rowHeaders (seqIndex);
-                                theSeqs << '\n';
-                                for (long kl =0; kl<sp->columnStrings.lLength; kl++) {
-                                    theSeqs << ((_String*)sp->columnStrings(kl))->sData[seqIndex];
-                                }
-
-                                theSeqs << '\n';
-                            }
-                            theSeqs.Finalize();
-
-                            PlaceStringInClipboard (theSeqs, GetOSWindowData());
-                        } else {
-                            if (buffer.Equal (&contextString11)) {
-                                _DataSet* newDS     = new _DataSet (),
-                                * thisDS    = (_DataSet*)dataSetList (dataSetID);
-
-                                checkPointer (newDS);
-                                newDS->SetTranslationTable (thisDS->GetTT());
-                                for (long sc = 0; sc < sp->vselection.lLength; sc ++) {
-                                    long seqIndex = sp->speciesIndex.lData[sp->vselection.lData[sc]];
-
-                                    newDS->AddName (*(_String*)sp->rowHeaders (seqIndex));
-                                    if (sc == 0) {
-                                        for (long kl =0; kl<sp->columnStrings.lLength; kl++) {
-                                            newDS->AddSite (((_String*)sp->columnStrings(kl))->sData[seqIndex]);
-                                        }
-                                    } else
-                                        for (long kl =0; kl<sp->columnStrings.lLength; kl++) {
-                                            newDS->Write2Site (kl,((_String*)sp->columnStrings(kl))->sData[seqIndex]);
-                                        }
-                                }
-                                newDS->Finalize();
-                                newDS->SetNoSpecies (sp->vselection.lLength);
-                                _String newName (GetTitle());
-                                newName.Trim(newName.FirstSpaceIndex (0,-1,-1)+1,-1);
-                                AddDataSetToList (newName,newDS);
-                                _HYDataPanel* myTWindow = new _HYDataPanel(newName,newName);
-                                myTWindow->BringToFront();
-                            } else {
-                                if (buffer.Equal (&contextString12)) {
-                                    _String           res,
-                                                      prompt ("Minimum ambiguity %-age to be selected:");
-
-                                    if (EnterStringDialog (res,prompt,(Ptr)this)) {
-                                        _Parameter    gateValue = res.toNum();
-                                        if (gateValue < 0.0 || gateValue > 100.0) {
-                                            res = _String ("Invalid percentage: ") & res;
-                                            ProblemReport (res,(Ptr)this);
-                                        } else {
-                                            _SimpleList         newVerticalSelection;
-                                            _DataSet* thisDS    = (_DataSet*)dataSetList (dataSetID);
-                                            _TranslationTable* myTT = thisDS->GetTT();
-
-                                            long                charCount = myTT->LengthOfAlphabet(),
-                                                                *charSpool = new long [charCount],
-                                            dsLength  = thisDS->NoOfColumns();
-
-                                            checkPointer        (charSpool);
-
-                                            for (long sc = 0; sc < sp->vselection.lLength; sc ++) {
-                                                long seqIndex   = sp->speciesIndex.lData[sp->vselection.lData[sc]],
-                                                     ambigCount = 0;
-
-                                                for (long cc = 0; cc < dsLength; cc ++) {
-                                                    myTT->TokenCode ((*thisDS)(cc,seqIndex,1),charSpool);
-                                                    char countMe = 0;
-
-                                                    for (long cc2 = 0; cc2 < charCount && countMe < 2; cc2++) {
-                                                        countMe += charSpool[cc2];
-                                                    }
-
-                                                    if (countMe > 1) {
-                                                        ambigCount ++;
-                                                    }
-                                                }
-
-                                                if ((ambigCount*100.0)/dsLength >= gateValue) {
-                                                    newVerticalSelection << sp->vselection.lData[sc];
-                                                }
-                                            }
-
-                                            sp->SelectRange (newVerticalSelection,true);
-                                            delete charSpool;
-
-                                        }
-                                    }
-                                } else if (buffer.Equal (&contextString16)) {
-                                    long choice = SelectOpenWindowObjects (HY_WINDOW_KIND_TREE, "tree panel", treeSelectorPopulator, (Ptr)this);
-                                    if (choice>=0) {
-                                        _HYTreePanel * tp        = ((_HYTreePanel*)windowObjectRefs(choice));
-                                        _List          selectedSequences;
-                                        _String        treeNameString (*tp->LocateMyTreeVariable()->GetName()&'.');
-
-                                        for (long sc = 0; sc < sp->vselection.lLength; sc ++) {
-                                            _String seqName = treeNameString & *(_String*)sp->rowHeaders (sp->speciesIndex.lData[sp->vselection.lData[sc]]);
-                                            selectedSequences && & seqName;
-                                        }
-                                        selectedSequences.Sort();
-                                        tp->SelectRangeAndScroll(selectedSequences, false);
-
-                                    }
-                                } else {
-                                    t = treeIDs.lData[menuItems.Find(&buffer)];
-                                    _DataSetFilter* fi = (_DataSetFilter*)dataSetFilterList (dataPartitions(t));
-                                    if (((_TheTree*)LocateVar(treeVarReferences.lData[t]))->MatchLeavesToDF (treeIDs, fi, true)) {
-                                        sp->SetSequenceOrder (treeIDs);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-        }
+  _HYSequencePane*  sp = (_HYSequencePane*)GetObject (0);
+  _List             menuItems;
+  
+  _String           buffer;
+  
+  if (sp->selection.lLength) {
+    if (dataType&HY_DATAPANEL_NUCDATA) {
+      menuItems&& & contextString1;
+    } else if (dataType&HY_DATAPANEL_PROTDATA) {
+      menuItems&& & contextString2;
+    } else if (dataType&HY_DATAPANEL_BINARYDATA) {
+      menuItems&& & contextString1_5;
     }
-    _UpdateSelectionChoices(IsSelectionNonEmpty());
+    
+    menuItems&& & contextString13;
+    if (dataType&HY_DATAPANEL_PROTDATA) {
+      menuItems&& & contextString17;
+    }
+    
+    menuItems&& & contextString15;
+    
+    if (sp->selection.lLength==1) {
+      if (menuItems.lLength) {
+        buffer = menuSeparator;
+        menuItems&& & buffer;
+      }
+      menuItems && & contextString4;
+      menuItems && & contextString14;
+    }
+    
+    buffer = HandlePullDown (menuItems,l,t,0);
+    
+    if (buffer.Equal (&contextString4)) {
+      // select all sites like this one
+      _SimpleList     matches;
+      if (dataWrapper) {
+        dataWrapper->FindAllSitesLikeThisOne(sp->selection.lData[0],matches);
+      } else {
+        _DataSet* ds = (_DataSet*)dataSetList (dataSetID);
+        ds->FindAllSitesLikeThisOne(sp->selection.lData[0],matches);
+      }
+      _String fres (32L, true);
+      if (matches.lLength>1) {
+        sp->selection.Clear();
+        sp->selection.Duplicate (&matches);
+        sp->BuildPane();
+        sp->_MarkForUpdate();
+        UpdateSelDepPartitionOperations();
+        fres << "Found ";
+        fres << (long)matches.lLength;
+        fres << " sites like the one selected\n";
+      } else {
+        BufferToConsole ("Selected site is unique\n");
+      }
+    } else if (buffer.Equal (&contextString1) || buffer.Equal (&contextString2) || buffer.Equal (&contextString1_5) ) {
+      char      bufferS [512];
+      _DataSet* ds = (_DataSet*)dataSetList (dataSetID);
+      _Matrix*  freqs = ds->HarvestFrequencies(1,1,false,sp->speciesIndex,sp->selection);
+      long      totCount = sp->speciesIndex.lLength*sp->selection.lLength;
+      if (buffer.Equal (&contextString1)) {
+        snprintf (bufferS, sizeof(bufferS),"\nNucleotide counts and frequencies (%luu sites)\nA:\t%g\t%g\nC:\t%g\t%g\nG:\t%g\t%g\nT:\t%g\t%g\n",sp->selection.lLength,
+                  (totCount*(*freqs)[0]),(*freqs)[0],(totCount*(*freqs)[1]),(*freqs)[1],(totCount*(*freqs)[2]),(*freqs)[2],(totCount*(*freqs)[3]),(*freqs)[3]);
+        BufferToConsole (bufferS);
+      } else if (buffer.Equal (&contextString2)) {
+        snprintf (bufferS, sizeof(bufferS),"\nAminoacid counts and frequencies (%lu sites)",sp->selection.lLength);
+        BufferToConsole (bufferS);
+        for (long k=0; k<aminoAcidOneCharCodes.sLength; k++) {
+          snprintf (bufferS, sizeof(bufferS),"\n%c:\t%g\t%g",aminoAcidOneCharCodes.sData[k],(totCount*(*freqs)[k]),(*freqs)[k]);
+          BufferToConsole (bufferS);
+        }
+        NLToConsole ();
+      } else {
+        snprintf (bufferS, sizeof(bufferS),"\nBinary counts and frequencies (%lu sites)\n0:\t%g\t%g\n1:\t%g\t%g\n",sp->selection.lLength,
+                  (totCount*(*freqs)[0]),(*freqs)[0],(totCount*(*freqs)[1]),(*freqs)[1]);
+        BufferToConsole (bufferS);
+      }
+      DeleteObject(freqs);
+    } else {
+      if (buffer.Equal (&contextString13) || buffer.Equal (&contextString17)) {
+        _String *toCopy;
+        if (buffer.Equal (&contextString13)) {
+          toCopy = (_String*)sp->selection.ListToPartitionString();
+        } else {
+          _SimpleList dup;
+          dup.RequestSpace (sp->selection.lLength*3);
+          for (long k=0; k<sp->selection.lLength; k++) {
+            dup << 3*sp->selection.lData[k];
+            dup << 3*sp->selection.lData[k]+1;
+            dup << 3*sp->selection.lData[k]+2;
+          }
+          toCopy = (_String*)dup.ListToPartitionString();
+        }
+        
+        PlaceStringInClipboard (*toCopy, (Ptr)this);
+        DeleteObject (toCopy);
+      } else {
+        if (buffer.Equal (&contextString14)) {
+          _DataSet*       ds    = (_DataSet*)dataSetList (dataSetID);
+          _String         aSite (*(_String*) (ds->_List::operator ()) (ds->GetTheMap().lData[sp->selection.lData[0]]));
+          
+          _SimpleList     remap;
+          DeleteObject    (aSite.Sort(&remap));
+          sp->SetSequenceOrder (remap);
+          
+        } else if (buffer.Equal (&contextString15)) {
+          _String  nhc ("Please choose a new highlight color");
+          _HYColor newC = SelectAColor (sp->highlightColor,nhc);
+          if (!(newC==sp->highlightColor)) {
+            sp->SetHighliteColor (newC);
+          }
+        }
+      }
+    }
+  } else {
+    _SimpleList     treeIDs;
+    for (long l2=0; l2<treeVarReferences.lLength; l2++) {
+      long t = treeVarReferences.lData[l2];
+      if (t>=0) {
+        buffer = _String("Order as in '")&*LocateVar(t)->GetName()&"'";
+        menuItems && & buffer;
+        treeIDs << l2;
+      }
+    }
+    
+    if (sp->vselection.lLength==1) {
+      if (addedLines&HY_DATAPANEL_CONSENSUS) {
+        if (menuItems.lLength) {
+          menuItems && & menuSeparator;
+        }
+        menuItems && & contextString5;
+        menuItems && & contextString10;
+      }
+      
+      if ((addedLines&HY_DATAPANEL_REFERENCE)&&(genCodeID<0)) {
+        if (menuItems.lLength) {
+          menuItems && & menuSeparator;
+        }
+        menuItems && & contextString8;
+      }
+    }
+    
+    if (sp->vselection.lLength) {
+      menuItems && & copySeqsToClip;
+      menuItems && & contextString11;
+      menuItems && & contextString12;
+      menuItems && & contextString16;
+    }
+    
+    if (menuItems.lLength) {
+      buffer = HandlePullDown (menuItems,l,t,0);
+      if (buffer.sLength) {
+        if (buffer.Equal(&contextString5)||buffer.Equal(&contextString8)) {
+          _SimpleList noMatch;
+          t = sp->speciesIndex.lData[sp->vselection[0]];
+          long        sl = 0;
+          if (buffer.Equal (&contextString8)) {
+            sl = ((_String*)statusData(l))->sLength-1;
+          }
+          for (l=0; l<sp->columnStrings.lLength; l++) {
+            if (((_String*)sp->columnStrings(l))->sData[t]!=((_String*)statusData(l))->sData[sl]) {
+              noMatch << l;
+            }
+          }
+          if (noMatch.lLength==0) {
+            BufferToConsole ("A perfect match!\n");
+          } else {
+            sp->vselection.Clear();
+            sp->selection.Clear();
+            sp->selection.Duplicate (&noMatch);
+            sp->BuildPane();
+            sp->_MarkForUpdate();
+            UpdateSelDepPartitionOperations();
+            char buffer [256];
+            snprintf (buffer, sizeof(buffer),"%lu (%g %%) mismatches found\n",noMatch.lLength,
+                      noMatch.lLength*100./(_Parameter)sp->columnStrings.lLength);
+            BufferToConsole (buffer);
+          }
+        } else {
+          if (buffer.Equal(&contextString10)) {
+            _String consString (sp->columnStrings.lLength,true);
+            for (long kl =0; kl<sp->columnStrings.lLength; kl++) {
+              consString << ((_String*)statusData(kl))->sData[0];
+            }
+            consString.Finalize();
+            PlaceStringInClipboard (consString, GetOSWindowData());
+          } else {
+            if (buffer.Equal (&copySeqsToClip)) {
+              _String theSeqs (sp->vselection.lLength*sp->columnStrings.lLength,true);
+              
+              for (long sc = 0; sc < sp->vselection.lLength; sc ++) {
+                long seqIndex = sp->speciesIndex.lData[sp->vselection.lData[sc]];
+                
+                theSeqs << '>';
+                theSeqs << *(_String*)sp->rowHeaders (seqIndex);
+                theSeqs << '\n';
+                for (long kl =0; kl<sp->columnStrings.lLength; kl++) {
+                  theSeqs << ((_String*)sp->columnStrings(kl))->sData[seqIndex];
+                }
+                
+                theSeqs << '\n';
+              }
+              theSeqs.Finalize();
+              
+              PlaceStringInClipboard (theSeqs, GetOSWindowData());
+            } else {
+              if (buffer.Equal (&contextString11)) {
+                _DataSet* newDS     = new _DataSet (),
+                * thisDS    = (_DataSet*)dataSetList (dataSetID);
+                
+                checkPointer (newDS);
+                newDS->SetTranslationTable (thisDS->GetTT());
+                for (long sc = 0; sc < sp->vselection.lLength; sc ++) {
+                  long seqIndex = sp->speciesIndex.lData[sp->vselection.lData[sc]];
+                  
+                  newDS->AddName (*(_String*)sp->rowHeaders (seqIndex));
+                  if (sc == 0) {
+                    for (long kl =0; kl<sp->columnStrings.lLength; kl++) {
+                      newDS->AddSite (((_String*)sp->columnStrings(kl))->sData[seqIndex]);
+                    }
+                  } else
+                    for (long kl =0; kl<sp->columnStrings.lLength; kl++) {
+                      newDS->Write2Site (kl,((_String*)sp->columnStrings(kl))->sData[seqIndex]);
+                    }
+                }
+                newDS->Finalize();
+                newDS->SetNoSpecies (sp->vselection.lLength);
+                _String newName (GetTitle());
+                newName.Trim(newName.FirstSpaceIndex (0,-1,-1)+1,-1);
+                AddDataSetToList (newName,newDS);
+                _HYDataPanel* myTWindow = new _HYDataPanel(newName,newName);
+                myTWindow->BringToFront();
+              } else {
+                if (buffer.Equal (&contextString12)) {
+                  _String           res,
+                  prompt ("Minimum ambiguity %-age to be selected:");
+                  
+                  if (EnterStringDialog (res,prompt,(Ptr)this)) {
+                    _Parameter    gateValue = res.toNum();
+                    if (gateValue < 0.0 || gateValue > 100.0) {
+                      res = _String ("Invalid percentage: ") & res;
+                      ProblemReport (res,(Ptr)this);
+                    } else {
+                      _SimpleList         newVerticalSelection;
+                      _DataSet* thisDS    = (_DataSet*)dataSetList (dataSetID);
+                      _TranslationTable* myTT = thisDS->GetTT();
+                      
+                      long                charCount = myTT->LengthOfAlphabet(),
+                      *charSpool = new long [charCount],
+                      dsLength  = thisDS->NoOfColumns();
+                      
+                      checkPointer        (charSpool);
+                      
+                      for (long sc = 0; sc < sp->vselection.lLength; sc ++) {
+                        long seqIndex   = sp->speciesIndex.lData[sp->vselection.lData[sc]],
+                        ambigCount = 0;
+                        
+                        for (long cc = 0; cc < dsLength; cc ++) {
+                          myTT->TokenCode ((*thisDS)(cc,seqIndex,1),charSpool);
+                          char countMe = 0;
+                          
+                          for (long cc2 = 0; cc2 < charCount && countMe < 2; cc2++) {
+                            countMe += charSpool[cc2];
+                          }
+                          
+                          if (countMe > 1) {
+                            ambigCount ++;
+                          }
+                        }
+                        
+                        if ((ambigCount*100.0)/dsLength >= gateValue) {
+                          newVerticalSelection << sp->vselection.lData[sc];
+                        }
+                      }
+                      
+                      sp->SelectRange (newVerticalSelection,true);
+                      delete [] charSpool;
+                      
+                    }
+                  }
+                } else if (buffer.Equal (&contextString16)) {
+                  long choice = SelectOpenWindowObjects (HY_WINDOW_KIND_TREE, "tree panel", treeSelectorPopulator, (Ptr)this);
+                  if (choice>=0) {
+                    _HYTreePanel * tp        = ((_HYTreePanel*)windowObjectRefs(choice));
+                    _List          selectedSequences;
+                    _String        treeNameString (*tp->LocateMyTreeVariable()->GetName()&'.');
+                    
+                    for (long sc = 0; sc < sp->vselection.lLength; sc ++) {
+                      _String seqName = treeNameString & *(_String*)sp->rowHeaders (sp->speciesIndex.lData[sp->vselection.lData[sc]]);
+                      selectedSequences && & seqName;
+                    }
+                    selectedSequences.Sort();
+                    tp->SelectRangeAndScroll(selectedSequences, false);
+                    
+                  }
+                } else {
+                  t = treeIDs.lData[menuItems.FindObject(&buffer)];
+                  _DataSetFilter* fi = (_DataSetFilter*)dataSetFilterList (dataPartitions(t));
+                  if (((_TheTree*)LocateVar(treeVarReferences.lData[t]))->MatchLeavesToDF (treeIDs, fi, true)) {
+                    sp->SetSequenceOrder (treeIDs);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  _UpdateSelectionChoices(IsSelectionNonEmpty());
 }
 
 //__________________________________________________________
@@ -6635,7 +6639,7 @@ void _HYDataPanel::ProcessContextualPopUpAux (long l, long t)
 
         buffer = HandlePullDown (menuItems,l,t,0);
 
-        m = menuItems.Find (&buffer);
+        m = menuItems.FindObject (&buffer);
 
         if (m==0) {
             _List       rowTitles;
@@ -6764,7 +6768,7 @@ _String  _HYDataPanel::TreeTopologyChange (long filterID, _String* menuChoice)
                         continue;
                     }
 
-                    if (before.BinaryFind (thisTree)<0) {
+                    if (before.BinaryFindObject (thisTree)<0) {
 #ifndef USE_AVL_NAMES
                         newTreeID = variableReindex.lData[LocateVarByName(*thisTree)];
 #else
@@ -6789,7 +6793,6 @@ _String  _HYDataPanel::TreeTopologyChange (long filterID, _String* menuChoice)
 
     if (oldTreeID!=newTreeID) {
         if (newTreeID==-2) {
-            newTreeID = oldTreeID;
             if (oldTreeID>=0) {
                 res = *LocateVar (oldTreeID)->GetName();
             } else if (oldTreeID == -3) {
@@ -6816,10 +6819,8 @@ void  _HYDataPanel::ModelChange (_String* menuChoice, long filterID, long newMod
 
     long         oldModelID;
 
-    oldModelID = modelReferences.lData[filterID];
 
     if (menuChoice->Equal(&none)) {
-        newModelID = 0;
         modelReferences.lData[filterID] = 0;
     } else {
         _List*        theList = FindModelTemplate (menuChoice);
@@ -7488,9 +7489,9 @@ bool  _HYDataPanel::AdjustStatusLine (long onOff, bool force, long preselected)
             }
 
             if (HandlePreferences (theList, "Reference Sequence Setup", false)) {
-                sel  = seqNames.Find((*((_List*)theList.lData[4]))(1));
+                sel  = seqNames.FindObject ((*((_List*)theList.lData[4]))(1));
                 if (dataType == HY_DATAPANEL_NUCDATA) {
-                    sel2  = gCodes.Find((*((_List*)theList.lData[4]))(3))-1;
+                    sel2  = gCodes.FindObject ((*((_List*)theList.lData[4]))(3))-1;
                 }
             } else {
                 return addedLines&HY_DATAPANEL_REFERENCE;
@@ -7662,118 +7663,120 @@ void  _HYDataPanel::AdjustInfoNames (void)
 
 void  _HYDataPanel::CodeTo3AA (_String& rec, long code, _SimpleList* genCode, _Parameter* freqVector)
 {
-    if (code<0) {
-        if (freqVector) {
-            long shift     = 0,
-                 codeB        = -1;
-
-            for (long k=0; k<64; k++)
-                if (genCode->lData[k] == 10) {
-                    shift++;
-                } else if (freqVector[k-shift] > 0.0)
-                    if (code < 0) {
-                        code = genCode->lData[k];
-                    } else {
-                        long code2 = genCode->lData[k];
-                        if (code2 != code) {
-                            if ((code == 13 && code2 == 15)
-                                    || (code == 15 && code2 == 13)
-                                    || (code == 12 && code2 == 16)
-                                    || (code == 16 && code2 == 12)) {
-                                codeB = MIN(code,code2);
-                                continue;
-                            }
-                        }
-                        rec = "???";
-                        return;
-                    }
-            if (codeB >= 0)
-                if (codeB == 13) {
-                    code = 21;
-                } else {
-                    code = 22;
-                }
-
-        } else {
+  if (code<0) {
+    if (freqVector) {
+      long shift     = 0,
+      codeB        = -1;
+      
+      for (long k=0; k<64; k++)
+        if (genCode->lData[k] == 10) {
+          shift++;
+        } else if (freqVector[k-shift] > 0.0) {
+          if (code < 0) {
+            code = genCode->lData[k];
+          } else {
+            long code2 = genCode->lData[k];
+            if (code2 != code) {
+              if ((code == 13 && code2 == 15)
+                  || (code == 15 && code2 == 13)
+                  || (code == 12 && code2 == 16)
+                  || (code == 16 && code2 == 12)) {
+                codeB = MIN(code,code2);
+                continue;
+              }
+            }
             rec = "???";
             return;
-
+          }
         }
+      if (codeB >= 0) {
+        if (codeB == 13) {
+          code = 21;
+        } else {
+          code = 22;
+        }
+      }
+      
     } else {
-        code = genCode->lData[code];
+      rec = "???";
+      return;
+      
     }
-
-    switch (code) {
+  } else {
+    code = genCode->lData[code];
+  }
+  
+  switch (code) {
     case 0:
-        rec = "Phe";
-        break;
+      rec = "Phe";
+      break;
     case 1:
-        rec = "Leu";
-        break;
+      rec = "Leu";
+      break;
     case 2:
-        rec = "Ile";
-        break;
+      rec = "Ile";
+      break;
     case 3:
-        rec = "Met";
-        break;
+      rec = "Met";
+      break;
     case 4:
-        rec = "Val";
-        break;
+      rec = "Val";
+      break;
     case 5:
-        rec = "Ser";
-        break;
+      rec = "Ser";
+      break;
     case 6:
-        rec = "Pro";
-        break;
+      rec = "Pro";
+      break;
     case 7:
-        rec = "Thr";
-        break;
+      rec = "Thr";
+      break;
     case 8:
-        rec = "Ala";
-        break;
+      rec = "Ala";
+      break;
     case 9:
-        rec = "Tyr";
-        break;
+      rec = "Tyr";
+      break;
     case 10:
-        rec = "XXX";
-        break;
+      rec = "XXX";
+      break;
     case 11:
-        rec = "His";
-        break;
+      rec = "His";
+      break;
     case 12:
-        rec = "Gln";
-        break;
+      rec = "Gln";
+      break;
     case 13:
-        rec = "Asn";
-        break;
+      rec = "Asn";
+      break;
     case 14:
-        rec = "Lys";
-        break;
+      rec = "Lys";
+      break;
     case 15:
-        rec = "Asp";
-        break;
+      rec = "Asp";
+      break;
     case 16:
-        rec = "Glu";
-        break;
+      rec = "Glu";
+      break;
     case 17:
-        rec = "Cys";
-        break;
+      rec = "Cys";
+      break;
     case 18:
-        rec = "Trp";
-        break;
+      rec = "Trp";
+      break;
     case 19:
-        rec = "Arg";
-        break;
+      rec = "Arg";
+      break;
     case 20:
-        rec = "Gly";
-        break;
+      rec = "Gly";
+      break;
     case 21:
-        rec = "Asx";
-        break;
+      rec = "Asx";
+      break;
     case 22:
-        rec = "Glx";
-        break;
-    }
+      rec = "Glx";
+      break;
+  }
 }
 
 //__________________________________________________________
@@ -7956,7 +7959,7 @@ void  _HYDataPanel::ShowConstantSites (bool deletions, bool relaxed, bool sequen
         sp->selection.Clear();
         sp->selection.Duplicate(&constantSites);
         outWord = "sites";
-        fnd = 100.*((_Parameter)sp->selection.lLength)/df->GetFullLengthSpecies();
+        fnd = 100.*((_Parameter)sp->selection.lLength)/df->GetSiteCount();
         fndc = sp->selection.lLength/df->GetUnitLength();
     }
     UpdateSelDepPartitionOperations ();
@@ -8026,118 +8029,120 @@ void  _HYDataPanel::ShowDuplicateSequences (bool relaxed)
 
 char  _HYDataPanel::CodeToAA (long code, _SimpleList* genCode, _Parameter* freqVector)
 {
-    if (code<0) {
-        if (freqVector) {
-            long shift     = 0,
-                 codeB        = -1;
-
-            for (long k=0; k<64; k++)
-                if (genCode->lData[k] == 10) {
-                    shift++;
-                } else if (freqVector[k-shift] > 0.0)
-                    if (code < 0) {
-                        code = genCode->lData[k];
-                    } else {
-                        long code2 = genCode->lData[k];
-                        if (code2 != code) {
-                            if ((code == 13 && code2 == 15)
-                                    || (code == 15 && code2 == 13)
-                                    || (code == 12 && code2 == 16)
-                                    || (code == 16 && code2 == 12)) {
-                                codeB = MIN(code,code2);
-                                continue;
-                            }
-                        }
-                        return '?';
-                    }
-            if (codeB >= 0)
-                if (codeB == 13) {
-                    code = 21;
-                } else {
-                    code = 22;
-                }
-
-        } else {
+  if (code<0) {
+    if (freqVector) {
+      long shift     = 0,
+      codeB        = -1;
+      
+      for (long k=0; k<64; k++)
+        if (genCode->lData[k] == 10) {
+          shift++;
+        } else if (freqVector[k-shift] > 0.0) {
+          if (code < 0) {
+            code = genCode->lData[k];
+          } else {
+            long code2 = genCode->lData[k];
+            if (code2 != code) {
+              if ((code == 13 && code2 == 15)
+                  || (code == 15 && code2 == 13)
+                  || (code == 12 && code2 == 16)
+                  || (code == 16 && code2 == 12)) {
+                codeB = MIN(code,code2);
+                continue;
+              }
+            }
             return '?';
+          }
         }
+      if (codeB >= 0) {
+        if (codeB == 13) {
+          code = 21;
+        } else {
+          code = 22;
+        }
+      }
+      
     } else {
-        code = genCode->lData[code];
+      return '?';
     }
-
-    switch (code) {
+  } else {
+    code = genCode->lData[code];
+  }
+  
+  switch (code) {
     case 0:
-        return 'F';
-        break;
+      return 'F';
+      break;
     case 1:
-        return 'L';
-        break;
+      return 'L';
+      break;
     case 2:
-        return 'I';
-        break;
+      return 'I';
+      break;
     case 3:
-        return 'M';
-        break;
+      return 'M';
+      break;
     case 4:
-        return 'V';
-        break;
+      return 'V';
+      break;
     case 5:
-        return 'S';
-        break;
+      return 'S';
+      break;
     case 6:
-        return 'P';
-        break;
+      return 'P';
+      break;
     case 7:
-        return 'T';
-        break;
+      return 'T';
+      break;
     case 8:
-        return 'A';
-        break;
+      return 'A';
+      break;
     case 9:
-        return 'Y';
-        break;
+      return 'Y';
+      break;
     case 10:
-        return 'X';
-        break;
+      return 'X';
+      break;
     case 11:
-        return 'H';
-        break;
+      return 'H';
+      break;
     case 12:
-        return 'Q';
-        break;
+      return 'Q';
+      break;
     case 13:
-        return 'N';
-        break;
+      return 'N';
+      break;
     case 14:
-        return 'K';
-        break;
+      return 'K';
+      break;
     case 15:
-        return 'D';
-        break;
+      return 'D';
+      break;
     case 16:
-        return 'E';
-        break;
+      return 'E';
+      break;
     case 17:
-        return 'C';
-        break;
+      return 'C';
+      break;
     case 18:
-        return 'W';
-        break;
+      return 'W';
+      break;
     case 19:
-        return 'R';
-        break;
+      return 'R';
+      break;
     case 20:
-        return 'G';
-        break;
+      return 'G';
+      break;
     case 21:
-        return 'B';
-        break;
+      return 'B';
+      break;
     case 22:
-        return 'Z';
-        break;
-
-    }
-
-    return 'X';
+      return 'Z';
+      break;
+      
+  }
+  
+  return 'X';
 }
 
 //__________________________________________________________
@@ -8221,20 +8226,21 @@ _String*  _HYDataPanel::LFSnapshot (void)
 
 bool    _HYDataPanel::LFRestore (long index)
 {
-    if (lfID>=0)
-        if (lfID!=lockedLFID) {
-            if (index<savedLFStates.lLength) {
-                _String dupList (*(_String*)savedLFStates(index));
-                _ExecutionList exl (dupList);
-                exl.Execute();
-                ((_LikelihoodFunction*)likeFuncList(lfID))->RescanAllVariables();
-                RefreshCategoryVars();
-                return true;
-            }
-        } else {
-            ProblemReport (lfCantKillWarning);
-        }
-    return false;
+  if (lfID>=0) {
+    if (lfID!=lockedLFID) {
+      if (index<savedLFStates.lLength) {
+        _String dupList (*(_String*)savedLFStates(index));
+        _ExecutionList exl (dupList);
+        exl.Execute();
+        ((_LikelihoodFunction*)likeFuncList(lfID))->RescanAllVariables();
+        RefreshCategoryVars();
+        return true;
+      }
+    } else {
+      ProblemReport (lfCantKillWarning);
+    }
+  }
+  return false;
 }
 
 //__________________________________________________________
@@ -8271,7 +8277,7 @@ void    _HYDataPanel::SetHypothesis (_String* s, bool alt)
     }
 
     long k = GetHypothesis (alt),
-         f = savedLFNames.Find (s);
+         f = savedLFNames.FindObject (s);
 
     if (k>=0) {
         ((_String*)savedLFNames(k))->Trim(0,((_String*)savedLFNames(k))->sLength-suffix.sLength-1);
@@ -8291,14 +8297,14 @@ void    _HYDataPanel::SetHypothesis (_String* s, bool alt)
 
 long    _HYDataPanel::FindLFState (_String s)
 {
-    long f = savedLFNames.Find (&s);
+    long f = savedLFNames.FindObject (&s);
     if (f<0) {
         _String s2;
         s2 = s &  alterSuffix;
-        f = savedLFNames.Find (&s2);
+        f = savedLFNames.FindObject (&s2);
         if (f<0) {
             s2 = s & nullSuffix;
-            f = savedLFNames.Find (&s2);
+            f = savedLFNames.FindObject (&s2);
 
         }
     }
@@ -8766,7 +8772,7 @@ void ReadGeneticCodes (void)
             curCodeIndex = line4.toNum();
 
             if (line1.sLength&&line2.sLength&&line3.sLength&&(curCodeIndex>=0)) {
-                if (line1.IsValidIdentifier()&&(addedNames.Find(&line1)==-1)&&(codeIndex.Find(curCodeIndex)==-1)) {
+                if (line1.IsValidIdentifier()&&(addedNames.FindObject(&line1)==-1)&&(codeIndex.Find(curCodeIndex)==-1)) {
                     _List partition;
                     _SimpleList translations;
                     _ElementaryCommand::ExtractConditions (line3,0,partition,',');
@@ -8858,9 +8864,9 @@ void ReadModelTemplates (void)
 
             if (terminateExecution==false) {
                 /* check for variables and functions */
-                long     popFunc = batchLanguageFunctionNames.Find (&modelFunction),
-                         efvFunc = batchLanguageFunctionNames.Find (&efvFunction),
-                         codonFunc = batchLanguageFunctionNames.Find (&buildCodonFrequencies),
+                long     popFunc = FindBFFunctionName(modelFunction),
+                         efvFunc = FindBFFunctionName (efvFunction),
+                         codonFunc = FindBFFunctionName (buildCodonFrequencies),
                          tLong;
                 if (popFunc>=0) {
                     long var1 = LocateVarByName (modelName);
@@ -8889,7 +8895,7 @@ void ReadModelTemplates (void)
                                         thisList && ((_FString*)v1->GetValue())->theString;
                                         thisList && & modelParams;
                                         thisList << receptacle(k);
-                                        if (addedNames.Find (thisList(0))<0) {
+                                        if (addedNames.FindObject (thisList(0))<0) {
                                             modelTemplates && & thisList;
                                             addedNames << thisList (0);
                                         }
@@ -9019,7 +9025,7 @@ void  NewGeneticCodeTable (long starting)
 
         line2 = *(_String*)(*codeSettings)(2);
         for (k = 4; k< 68 ; k++) {
-            translationTable.lData[k-4] = protein.Find((*codeSettings)(k));
+            translationTable.lData[k-4] = protein.FindObject((*codeSettings)(k));
         }
 
         // add  the code to the table

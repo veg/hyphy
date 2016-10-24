@@ -49,6 +49,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ROOTED_LEFT                     1
 #define ROOTED_RIGHT                    2
 
+#define HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS  0.000000001
 
 #ifdef MDSOCL
 
@@ -140,7 +141,7 @@ public:
     virtual BaseRef     makeDynamic     (void);
     // creates a dynamic copy of this object
 
-    virtual BaseRef     toStr           (void);
+    virtual BaseRef     toStr           (unsigned long = 0UL);
     // converts this object to string
 
     _Parameter&         operator[]      (unsigned long);
@@ -156,8 +157,8 @@ public:
     // store it in compExp.
     // return TRUE if the matrix is an explicit exponential form
 
-    virtual bool        HasChanged       (void);
-    virtual bool        NeedToExponentiate(long = -1L);
+    virtual bool        HasChanged       (bool = false);
+    virtual bool        NeedNewCategoryExponential (long = -1L) const;
     virtual void        SetModel         (long, _AVLListXL*);
 
     bool                IsFlagged        (void) {
@@ -190,7 +191,7 @@ public:
 
     void                SetCompExp      (_Matrix*, long = -1);
     void                SetCompMatrix   (long);
-    _Matrix*            GetCompExp      (long catID = -1, bool = false);
+    _Matrix*            GetCompExp      (long catID = -1, bool = false) const;
 
     _Formula*           RecurseMC       (long , node<long>* , bool first = false, char rooted = UNROOTED);
 
@@ -198,12 +199,12 @@ public:
         return cBase;
     }
 
-    _Parameter          BranchLength    (void);
+    _Parameter          ComputeBranchLength    (void);
     virtual long        SetDependance   (long);
 
-    node<long>*         LocateMeInTree  (void);
+    node<long>*         LocateMeInTree  (void) const;
     // return the tree structure node corresponing to this one...
-    long                ConvertToSimpleMatrix (void);
+    void                ConvertToSimpleMatrix (void) const;
     void                ConvertFromSimpleMatrix (void);
     _Matrix*            ComputeModelMatrix(bool expMe=false);
     long                GetTheModelID   (void) {
@@ -227,7 +228,9 @@ public:
     virtual void        ClearCategoryMap(void) {
         remapMyCategories.Clear();
     }
-    
+  
+    _String*            GetBranchSpec (void);
+  
     _VariableContainer*           ParentTree      (void);
 
     virtual void        SetupCategoryMap(_List&, _SimpleList&, _SimpleList&);
@@ -287,8 +290,9 @@ protected:
 #define     HY_BRANCH_SELECT        0x01
 #define     HY_BRANCH_DESELECT      0xFFFFFFFE
 
-struct      nodeCoord {
+class      nodeCoord {
 
+public:
     _Parameter  h,
                 v,
                 auxD,
@@ -302,6 +306,8 @@ struct      nodeCoord {
                 color,
                 labelColor,
                 flags;
+  
+    operator long (void) {return varRef;}
 
     _String     branchName,
                 branchTag;
@@ -317,21 +323,23 @@ typedef bool _HYTopologyTraversalFunction (node<long>*, Ptr);
 class _TheTree; // forward declaration for xlc
 
 
+#define kGetNodeStringForTreeName   0x01
+#define kGetNodeStringForTreeModel  0x02
+
 //_______________________________________________________________________________________________
 
-class _TreeTopology: public _CalcNode
-{
+class _TreeTopology: public _CalcNode {
 
 protected:
 
     virtual void            PreTreeConstructor                  (bool);
-    virtual bool            MainTreeConstructor                 (_String&,bool = true);
+    virtual bool            MainTreeConstructor                 (_String&,bool = true, _AssociativeList* mapping = nil);
     virtual void            PostTreeConstructor                 (bool);
-    node<long>*     prepTree4Comparison                 (_List&, _SimpleList&, node<long>* = nil);
-    void            destroyCompTree                     (node<long>*);
-    _List*          SplitTreeIntoClustersInt            (node<long>*, _List*, _AVLListX&, long, long);
-    char            internalTreeCompare                 (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology*, bool = false);
-    char            internalNodeCompare                 (node<long>*, node<long>*, _SimpleList&, _SimpleList*, bool, long, node<long>*, _TreeTopology*, bool = false);
+    node<long>*     prepTree4Comparison                 (_List&, _SimpleList&, node<long>* = nil) const;
+    void            destroyCompTree                     (node<long>*) const;
+    _List*          SplitTreeIntoClustersInt            (node<long>*, _List*, _AVLListX&, long, long) const;
+    char            internalTreeCompare                 (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology const*, bool = false) const;
+    char            internalNodeCompare                 (node<long>*, node<long>*, _SimpleList&, _SimpleList*, bool, long, node<long>*, _TreeTopology const*, bool = false) const;
     virtual _PMathObj       FlatRepresentation                  (void);
     void            FindCOTHelper                       (node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, _Parameter);
     void            FindCOTHelper2                      (node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, _Parameter);
@@ -356,23 +364,23 @@ protected:
         Delete a node from the tree by name
      
      */
+  
 
 public:
 
-    node<long>      *theRoot,
-         *currentNode;
-
+    node<long>      *theRoot;
+  
     _List           flatTree,
                     flatCLeaves;
 
     char            rooted;
 
-    virtual void            toFileStr                           (FILE*);
-    virtual BaseRef         toStr                               (void);
-    void            RerootTreeInternalTraverser         (long, bool,_String&, long  = -1, bool = false);
+    virtual void            toFileStr                           (FILE*, unsigned long);
+    virtual BaseRef         toStr                               (unsigned long = 0UL);
+    void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_String&, long  = -1, bool = false) const;
 
     _TreeTopology                       (void);
-    _TreeTopology                       (_String, _String&, bool = true);
+    _TreeTopology                       (_String, _String&, bool = true, _AssociativeList* mapping = nil);
     _TreeTopology                       (_String*);
     _TreeTopology                       (_TheTree*);
 
@@ -381,14 +389,10 @@ public:
     virtual  _FString*      Compare                             (_PMathObj);
     virtual  BaseRef        makeDynamic                         (void);
     node<long>* CopyTreeStructure                   (node<long>*, bool);
-    virtual  bool           FinalizeNode                        (node<long>*, long, _String&, _String&, _String&, _String* = NULL);
+    virtual  bool           FinalizeNode                        (node<long>*, long, _String, _String&, _String&, _String* = NULL);
 
 
-    bool            IsCurrentNodeATip                   (void);
-    bool            IsCurrentNodeTheRoot                (void);
-    bool            IsDegenerate                        (void);
-
-    virtual _PMathObj       Execute                             (long, _PMathObj = nil , _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual _PMathObj       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual void            EdgeCount                           (long&, long&);
     // SLKP 20100827: a utility function to count edges in a tree
     //              : note that the root node WILL be counted as an internal node
@@ -400,10 +404,13 @@ public:
     virtual unsigned long   ObjectClass                         (void) {
         return TOPOLOGY;
     }
+    virtual bool IsDegenerate(void) { return theRoot && theRoot->get_num_nodes() == 1L; }
+  
+ 
     virtual _AssociativeList*
     FindCOT                             (_PMathObj);
 
-    node<long>      *FindNodeByName                     (_String*);
+    node<long>      *FindNodeByName                     (_String const*) const;
     /*
 
      20091006: SLKP
@@ -413,46 +420,52 @@ public:
 
      */
 
+    /*
     void            DepthWiseT                          (bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil);
     void            DepthWiseTRight                     (bool = false);
     void            DepthWiseTLevel                     (long& level, bool = false);
     void            StepWiseT                           (bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil);
     void            StepWiseTLevel                      (long&, bool = false);
     void            LeafWiseT                           (bool = false);
+    */
     
     _List*          MapNodesToModels                    (void);
 
-    virtual void            GetNodeName                         (node<long> *, _String&, bool = false);
-    virtual _String*        GetNodeModel                        (node<long> *);
-    virtual void            GetBranchLength                     (node<long> *, _String&, bool = false);
+    virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
+    virtual const _String*        GetNodeModel                        (node<long> *) const;
+    virtual void            GetBranchLength                     (node<long> *, _String&, bool = false) const;
     // SLKP 20100901:
     //               added a boolean flag to ask to return branch length expression (if true) (returns "" for topologies)
     //               just the numeric value (if false)
 
 
-    virtual void            GetBranchLength                     (node<long> *, _Parameter&);
-    virtual void            GetBranchValue                      (node<long> *, _String&);
-    virtual void            GetBranchVarValue                   (node<long> *, _String&, long);
-    virtual void            PasteBranchLength                   (node<long> *, _String&, long, _Parameter factor = 1.);
+    virtual _Parameter      GetBranchLength                     (node<long> *) const;
+    virtual void            GetBranchValue                      (node<long> *, _String&) const;
+    virtual void            GetBranchVarValue                   (node<long> *, _String&, long) const;
+    virtual _String const  GetNodeStringForTree                (node<long> *, int flags) const;
+    virtual void            PasteBranchLength                   (node<long> *, _String&, long, _Parameter factor = 1.) const;
 
-    node<long>&     GetRoot                             (void) {
-        return *theRoot;
+    node<long>&     GetRoot                             (void) const {
+      return  *theRoot;
     }
     void            SetRoot                             (node<long>* r) {
         theRoot = r;
     }
-    node<long>&     GetCurrentNode                      (void) {
+  
+    /*node<long>&     GetCurrentNode                      (void) {
         return *currentNode;
-    }
-    void            SubTreeString                       (_String&, bool = false, long = -1, _AVLListXL* = nil);
+    }*/
+  
+    const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
+    void            SubTreeString                       (node<long>* root, _String&, bool = false, long = -1, _AVLListXL* = nil) const;
 
-    _String         CompareTrees                        (_TreeTopology*);
-    _String         MatchTreePattern                    (_TreeTopology*);
+    _String         CompareTrees                        (_TreeTopology*) const;
+    const _String         MatchTreePattern                    (_TreeTopology const*) const;
     virtual _PMathObj       TipName                             (_PMathObj);
-    virtual _PMathObj       BranchName                          (_PMathObj, bool = false, _PMathObj = nil);
+    _PMathObj       TreeBranchName                          (_PMathObj, bool = false, _PMathObj = nil);
     virtual _PMathObj       BranchLength                        (_PMathObj);
     virtual _PMathObj       RerootTree                          (_PMathObj);
-    _List*          SplitTreeIntoClusters               (unsigned long, unsigned long);
+    _List*          SplitTreeIntoClusters               (unsigned long, unsigned long) const;
     void            SetLeafName                         (long, _String*);
     _String         DetermineBranchLengthMappingMode    (_String*, char&);
     _AssociativeList*
@@ -518,6 +531,7 @@ public:
 
 };
 
+
 #if USE_SCALING_TO_FIX_UNDERFLOW
 extern _Parameter scalingLogConstant;
 #endif
@@ -539,10 +553,11 @@ public:
 
 
     virtual                 ~_TheTree                   (void);
-    virtual bool            HasChanged                  (void);
+    virtual bool            HasChanged                  (bool = false);
     virtual void            MarkDone                    (void);
     bool            HasChanged2                 (void);
 
+    /*
     _CalcNode*      DepthWiseTraversal          (bool = false);
     //performs a post-order traversal
     _CalcNode*      DepthWiseTraversalRight     (bool = false);
@@ -558,78 +573,47 @@ public:
 
     _CalcNode*      LeafWiseTraversal           (bool = false);
     //iterate through the leaves (left-to-right)
+     */
 
-    virtual  bool           FinalizeNode                (node<long>*, long, _String&, _String&, _String&, _String* = NULL);
+    virtual  bool           FinalizeNode                (node<long>*, long, _String, _String&, _String&, _String* = NULL);
     virtual  BaseRef        makeDynamic                 (void);
 
     virtual  BaseRef        makeDynamicCopy             (_String*);
     node<long>* DuplicateTreeStructure      (node<long>*, _String*, bool);
-    virtual  BaseRef        toStr                       (void);
+    virtual  BaseRef        toStr                       (unsigned long = 0UL);
     virtual unsigned long           ObjectClass                 (void) {
         return TREE;
     }
 
-    virtual  _PMathObj      Execute                     (long, _PMathObj = nil , _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
-    virtual  _PMathObj      TEXTreeString               (_PMathObj);
+    virtual _PMathObj       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual  _PMathObj      TEXTreeString               (_PMathObj) const;
     virtual  _PMathObj      PlainTreeString             (_PMathObj,_PMathObj);
 
-    virtual  void           GetNodeName                 (node<long> *, _String&, bool = false);
-    virtual  void           GetBranchLength             (node<long> *, _String&, bool = false);
-    virtual  void           GetBranchLength             (node<long> *, _Parameter&);
-    virtual  void           GetBranchValue              (node<long> *, _String&);
-    virtual  _String*       GetBranchSpec               (node<long> *);
-    virtual  void           GetBranchVarValue           (node<long> *, _String&, long);
-    virtual _String*        GetNodeModel                (node<long> *);
+    virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
+    virtual  void           GetBranchLength             (node<long> *, _String&, bool = false) const;
+    virtual  _Parameter     GetBranchLength             (node<long> *) const ;
+    virtual  void           GetBranchValue              (node<long> *, _String&) const ;
+    virtual  void           GetBranchVarValue           (node<long> *, _String&, long) const ;
+    virtual _String const*        GetNodeModel                (node<long> *) const;
     
     void            InitializeTreeFrequencies   (_Matrix *, bool = false);
 
-    _Parameter      ReleafTreeAndCheck          (_DataSetFilter*, long, bool, long categID = -1);
-    _Parameter      ReleafTreeAndCheckChar4     (_DataSetFilter*, long, bool, long categID = -1);
-
-    _Parameter      ReleafTree                  (_DataSetFilter*,long,long,long,long);
-    _Parameter      ReleafTreeDegenerate        (_DataSetFilter*,long);
-
-    _Parameter      ReleafTreeCache             (_DataSetFilter*,long,long,long,long,long);
-#if USE_SCALING_TO_FIX_UNDERFLOW
-    _Parameter      ThreadReleafTreeCache       (_DataSetFilter*,long,long,long,long,long,long offset = 0,long fixAttempt = 0, _Parameter = 690.);
-    _Parameter      doScaling                   (_DataSetFilter*,long,long,long,long,_Parameter, bool, bool);
-#else
-    _Parameter      ThreadReleafTreeCache       (_DataSetFilter*,long,long,long,long,long,long offset = 0);
-#endif
 
     _Parameter      Process3TaxonNumericFilter  (_DataSetFilterNumeric*, long = 0);
 
 
-    void            ThreadMatrixUpdate          (long, bool);
-    void            SerialMatrixUpdate          (long, bool);
-    void            MatrixCacheUpdate           (void);
 
-    _Parameter      ThreadReleafTreeCharCache   (_DataSetFilter*,long,long,long,long,long,long offset = 0);
-    _Parameter      ReleafTreeCharDegenerate    (_DataSetFilter*,long);
-    _Parameter      ReleafTreeChar4             (_DataSetFilter*,long,long,long,long,long);
-    _Parameter      ReleafTreeChar4Degenerate   (_DataSetFilter*,long);
-
-    _Parameter      ThreadReleafTreeChar4       (_DataSetFilter*,long,long,long,long,long,long offset = 0);
-    _Parameter      ReleafTreeChar4             (_DataSetFilter*,long,long,long,long);
-
-    _Parameter  Probij                          (long, long, _CalcNode*);
-    _Parameter  PruneTree                       (long categID = -1);
-    _Parameter  PruneTreeChar                   (long categID = -1);
-    _Parameter  PruneTreeCharCache              (long categID = -1);
-    _Parameter  PruneTreeChar4                  (long categID = -1);
-    _Parameter  PruneTreeChar4Cache             (long categID = -1);
-
-    _List*      RecoverAncestralSequences       (_DataSetFilter*, _SimpleList&, _List&, _Parameter*, _Parameter*, long, long*, _GrowingVector*, bool = false);
-    void        RecoverNodeSupportStates        (_DataSetFilter*, long, long, _Matrix&);
+    _List*      RecoverAncestralSequences       (_DataSetFilter const*, _SimpleList const&, _List const&, _Parameter *, _Parameter const*, long, long*, _GrowingVector*, bool = false);
+    void        RecoverNodeSupportStates        (_DataSetFilter const*, long, long, _Matrix&);
     void        RecoverNodeSupportStates2       (node<long>*,_Parameter*,_Parameter*,long);
     _List*      SampleAncestors                 (_DataSetFilter*, node<long>*);
     void        PurgeTree                       (void);
 
-    long        ComputeReleafingCost            (_DataSetFilter*, long, long, _SimpleList* = nil, long = 0);
-    long        ComputeReleafingCostChar        (_DataSetFilter*, long, long);
+    long        ComputeReleafingCost            (_DataSetFilter const*, long, long, _SimpleList* = nil, long = 0) const;
+    long        ComputeReleafingCostChar        (_DataSetFilter const*, long, long) const;
     void        DumpingOrder                    (_DataSetFilter*, _SimpleList&);
     void        SetTreeCodeBase                 (long);
-    long        IsLinkedToALF                   (long&);
+    long        IsLinkedToALF                   (long&) const;
 
     bool        HasCache                        (void) {
         return topLevelNodes.lLength>0;
@@ -643,80 +627,79 @@ public:
         return flatNodes.lLength    ;
     }
 
-    void        ScanAndAttachVariables          (void);
-    void        ScanForVariables                (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0);
-    void        ScanForDVariables               (_AVLList& l, _AVLList& l2);
-    void        ScanForGVariables               (_AVLList&, _AVLList&, _AVLListX* tagger = nil, long weight = 0);
-    void        ScanForCVariables               (_AVLList&);
-    void        MolecularClock                  (_String&, _List&);
+    void        ScanAndAttachVariables          (void) const;
+    void        ScanContainerForVariables       (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0) const;
+    void        ScanForDVariables               (_AVLList& l, _AVLList& l2) const;
+    void        ScanForGVariables               (_AVLList&, _AVLList&, _AVLListX* tagger = nil, long weight = 0) const;
+    void        ScanForCVariables               (_AVLList&) const;
+    void        MolecularClock                  (_String const&, _List&) const;
 
     void        SetUp                           (void);
     void        SetUpMatrices                   (long);
     void        CleanUpMatrices                 (void);
-    void        BuildTopLevelCache              (void);
+    //void        BuildTopLevelCache              (void);
     void        KillTopLevelCache               (void);
-    void        SetCompMatrices                 (long);
+    void        SetCompMatrices                 (long) const;
 
     virtual void        ClearConstraints                (void);
 
-    bool        FindScalingVariables            (_SimpleList&);
-    bool        HaveStringBranchLengths         (void);
+    bool        FindScalingVariables            (_SimpleList&) const;
+    bool        HaveStringBranchLengths         (void) const;
     void        AssignLabelsToBranches          (node<nodeCoord>*, _String*, bool);
 
     node<nodeCoord>*
-    AlignedTipsMapping              (bool first = false, bool respectRoot = true);
+    AlignedTipsMapping                          (node<long>*, bool first = false, bool respectRoot = true) const;
 
-    void        AlignNodes                      (node<nodeCoord>*);
+    void        AlignNodes                      (node<nodeCoord>*) const;
 
     node<nodeCoord>*
-    ScaledBranchMapping             (node<nodeCoord>* , _String*, long, long&, char);
+    ScaledBranchMapping             (node<nodeCoord>* , _String*, long, long&, char) const;
 
     node<nodeCoord>*
     RadialBranchMapping             (node<long>* , node<nodeCoord>*, _String*, _Parameter, long&, _Parameter&, char);
 
-    void        ScaledBranchReMapping           (node<nodeCoord>*, _Parameter);
+    void        ScaledBranchReMapping           (node<nodeCoord>*, _Parameter) const;
     char&       RootedFlag                      (void) {
         return rooted;
     }
 
-    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long);
-    void        TreePSRecurse                   (node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long,long,long,_AssociativeList* = nil, char = 0, _Parameter* = nil);
+    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long) const;
+    void        TreePSRecurse                   (node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long,long,long,_AssociativeList* = nil, char = 0, _Parameter* = nil) const;
 
-    bool        AllBranchesHaveModels           (long);
-    void        ScanSubtreeVars                 (_List&, char, _CalcNode*);
+    bool        AllBranchesHaveModels           (long) const;
+    void        ScanSubtreeVars                 (_List&, char, _CalcNode*) const;
     void        BuildINodeDependancies          (void);
     void        AllocateResultsCache            (long);
     long        CountTreeCategories             (void);
     void        CompileListOfModels             (_SimpleList&);
 
-    void        MarkMatches                     (_DataSetFilter*,long,long);
-    long        GetLowerBoundOnCost             (_DataSetFilter*);
-    long        GetLowerBoundOnCostWithOrder    (_DataSetFilter*,_SimpleList*);
+    void        MarkMatches                     (_DataSetFilter*,long,long) const;
+    long        GetLowerBoundOnCost             (_DataSetFilter*, _SimpleList* = nil) const;
     _SimpleList&GetLeftINodes                   (void) {
         return leftiNodes;
     }
-    bool        MatchLeavesToDF                 (_SimpleList&, _DataSetFilter*, bool);
+    bool        MatchLeavesToDF                 (_SimpleList&, _DataSetFilter*, bool) const;
     virtual void
     RemoveModel                     (void);
-    _String*    TreeUserParams                  (void);
+    _String*    TreeUserParams                  (void) const;
 
 
-    _String     CompareSubTrees                 (_TheTree*, node<long>*);
-    _String     FindMaxCommonSubTree            (_TheTree*, long&, _List*);
-    void        WeightedCharacterDifferences    (_Parameter, _Matrix*, _Matrix*, long = -1);
-    void        AddNodeNamesToDS                (_DataSet*, bool, bool, char);
+    const _String&     CompareSubTrees                 (_TheTree*, node<long>*);
+    const _String&     FindMaxCommonSubTree            (_TheTree const*, long&, _List*) const;
+  
+  
+    void        AddNodeNamesToDS                (_DataSet*, bool, bool, char) const;
     // if the
     _Parameter  PSStringWidth                   (_String&);
 
-    _Parameter  DetermineBranchLengthGivenScalingParameter
-    (long, _String&, char);
+    _Parameter  DetermineBranchLengthGivenScalingParameter (long, _String&, char) const;
 
-    _AVLListX*  ConstructNodeToIndexMap         (bool);
+    _AVLListX*  ConstructNodeToIndexMap         (bool) const;
     // 20090206: SLKP
     // makes an AVL of with keys storing memory addresses of node<long> tree nodes
     // and values showing the order in either flatLeaves (bool = false) or flatNodes (bool = true)
 
-    void        MapPostOrderToInOderTraversal   (_SimpleList&, bool = true);
+    void        MapPostOrderToInOderTraversal   (_SimpleList&, bool = true) const;
     // 20090306: SLKP
     // 20100511: SLKP
     // construct a post-order -> in-order traveral map for internal nodes
@@ -743,6 +726,8 @@ public:
        see comments for remapMyCategories in _CalcNode
      */
 
+    const _CalcNode * GetNodeFromFlatIndex (long index) const;
+  
     _Parameter  VerySimpleLikelihoodEvaluator   (_SimpleList&            updateNodes,
             _DataSetFilter*      theFilter,
             _Parameter*          iNodeCache,
@@ -759,18 +744,18 @@ public:
 #endif
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
-    void            SampleAncestorsBySequence       (_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);
+    void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, _Parameter const*, _List&, _SimpleList*, _List&, _Parameter const*, long);
 
-    _Parameter      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
+    _Parameter      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
     long            DetermineNodesForUpdate         (_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true);
     void            ExponentiateMatrices            (_List&, long, long = -1);
-    void            FillInConditionals              (_DataSetFilter*, _Parameter*,  _SimpleList*);
+    void            FillInConditionals              (_DataSetFilter const*, _Parameter*,  _SimpleList*);
 
     void            ComputeBranchCache              ( _SimpleList&,
             long nodeID,
             _Parameter*         cache,
             _Parameter*         iNodeCache,
-            _DataSetFilter*     theFilter,
+            _DataSetFilter const*     theFilter,
             long           *        lNodeFlags,
             _Parameter*         scalingAdjustments,
             long*                   siteCorrectionCounts,
@@ -787,7 +772,7 @@ public:
         _SimpleList&            siteOrdering,
         long                    brID,
         _Parameter*         cache,
-        _DataSetFilter*     theFilter,
+        _DataSetFilter const*     theFilter,
         long                    siteFrom,
         long                    siteTo,
         long                    catID,
@@ -796,7 +781,7 @@ public:
 
     _Parameter          ComputeTwoSequenceLikelihood    (
         _SimpleList&            siteOrdering,
-        _DataSetFilter*     theFilter,
+        _DataSetFilter const*     theFilter,
         long           *        lNodeFlags,
         _GrowingVector*     lNodeResolutions,
         long siteFrom,
@@ -821,16 +806,7 @@ public:
 protected:
 
 
-    bool        IntPopulateLeaves   (_DataSetFilter*, long, long);
-
-    _Parameter  ConditionalBranchLikelihood
-    (node<long>* , node<long>* , _Parameter* , _Parameter* , long, long);
-
-    _Parameter  ConditionalNodeLikelihood
-    (node<long>* , node<long>* , _Parameter* , _Parameter* , long ,long);
-
-    _List*      MapCBaseToCharacters(_DataSetFilter*, bool = true);
-
+    bool        IntPopulateLeaves   (_DataSetFilter const*, long, long);
 
     virtual     void                PreTreeConstructor                  (bool);
     virtual     void                PostTreeConstructor                 (bool);
@@ -849,6 +825,45 @@ protected:
                 nodesToUpdate;
 
 };
+
+#define       _HY_TREE_TRAVERSAL_MASK      0x07 // 111 binary
+#define       _HY_TREE_TRAVERSAL_SKIP_ROOT 0x10 //
+#define       _HY_TREE_TRAVERSAL_LEAVES    0x20
+
+class _TreeIterator {
+private:
+  
+  node_iterator<long> iterator;
+  int                 flags;
+  _SimpleList         history;
+  _TheTree   const    *source_tree;
+  
+  
+public:
+  _TreeIterator (_TheTree const * source, int traversal_type);
+  ~_TreeIterator (void);
+  void                    Reset (void);
+  
+  _CalcNode *             Next (void);
+  _CalcNode *             Current (void) const;
+  long                    Depth (void) const;
+  const _SimpleList&      History (void) const;
+  bool  IsAtLeaf          (void) const;
+  bool  IsAtRoot          (void) const;
+  node <long>* GetNode    (void) const { return iterator.Current(); }
+  
+};
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+template <class data_type> _CalcNode* map_node_to_calcnode (node<data_type>* n) {
+  if (n) {
+    return (_CalcNode*)(variablePtrs.GetItem(n->in_object));
+  }
+  return nil;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
 
 extern char     isDefiningATree;
 extern _String  expectedNumberOfSubs,

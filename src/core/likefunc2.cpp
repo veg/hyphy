@@ -4,9 +4,9 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 
 Copyright (C) 1997-now
 Core Developers:
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
   Art FY Poon    (apoon@cfenet.ubc.ca)
-  Steven Weaver (sweaver@ucsd.edu)
+  Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
@@ -37,12 +37,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "likefunc.h"
-#include <math.h>
-
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
+
+#include "likefunc.h"
+#include "function_templates.h"
+
+#include <math.h>
+
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
 
@@ -118,42 +121,43 @@ void            _LikelihoodFunction::PartitionCatVars     (_SimpleList& storage,
 //_______________________________________________________________________________________
 long            _LikelihoodFunction::TotalRateClassesForAPartition    (long partIndex, char mode)
 {
-    if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength) {
-        _List* myList = (_List*)categoryTraversalTemplate(partIndex);
-        if (myList->lLength)
-            if (mode == 0) {
-                return ((_SimpleList*)((*myList)(1)))->Element(-1);
-            } else {
-                long hmmCats = 1;
-                _SimpleList * catVars = (_SimpleList*)(*myList)(0);
-                for (long id = 0; id < catVars->lLength; id++)
-                    if (mode == 1) {
-                        if (((_CategoryVariable*)catVars->lData[id])->IsHiddenMarkov()) {
-                            hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
-                        }
-                    } else if (mode == 2) {
-                        if (((_CategoryVariable*)catVars->lData[id])->IsConstantOnPartition()) {
-                            hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
-                        }
-                    }
-                return hmmCats;
-
+  if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength) {
+    _List* myList = (_List*)categoryTraversalTemplate(partIndex);
+    if (myList->lLength) {
+      if (mode == 0) {
+        return ((_SimpleList*)((*myList)(1)))->Element(-1);
+      } else {
+        long hmmCats = 1;
+        _SimpleList * catVars = (_SimpleList*)(*myList)(0);
+        for (long id = 0; id < catVars->lLength; id++)
+          if (mode == 1) {
+            if (((_CategoryVariable*)catVars->lData[id])->IsHiddenMarkov()) {
+              hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
             }
-    } else if (partIndex < 0) {
-        long catCount = 1;
-        if (mode == 0)
-            for (long k = 0; k < indexCat.lLength; k++) {
-                catCount *= ((_CategoryVariable*)LocateVar (indexCat.lData[k]))->GetNumberOfIntervals();
+          } else if (mode == 2) {
+            if (((_CategoryVariable*)catVars->lData[id])->IsConstantOnPartition()) {
+              hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
             }
-        else if (mode == 1) {
-            for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
-                long partHMMCount = TotalRateClassesForAPartition(k,1);
-                catCount = MAX(partHMMCount,catCount);
-            }
-        }
-        return catCount;
+          }
+        return hmmCats;
+        
+      }
     }
-    return 1;
+  } else if (partIndex < 0) {
+    long catCount = 1;
+    if (mode == 0)
+      for (long k = 0; k < indexCat.lLength; k++) {
+        catCount *= ((_CategoryVariable*)LocateVar (indexCat.lData[k]))->GetNumberOfIntervals();
+      }
+    else if (mode == 1) {
+      for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
+        long partHMMCount = TotalRateClassesForAPartition(k,1);
+        catCount = MAX(partHMMCount,catCount);
+      }
+    }
+    return catCount;
+  }
+  return 1;
 }
 
 //_______________________________________________________________________________________
@@ -268,19 +272,19 @@ void    _LikelihoodFunction::RestoreScalingFactors (long index, long branchID, l
 
 /*--------------------------------------------------------------------------------------------------*/
 
-bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList, _String caller)
-{
-    long    partCount = CountObjects(0);
-    partsToDo.Populate (partCount, 0, 1);
+bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList, _String const & caller) const {
+    long    partCount = CountObjects(kLFCountPartitions);
+  
     if (partitionList) {
         partitionList->ConvertToSimpleList (partsToDo);
-        DeleteObject (partitionList);
         partsToDo.Sort();
         partsToDo.FilterRange (-1, partCount);
         if (partsToDo.lLength == 0) {
             WarnError (_String("An invalid partition specification in call to ") & caller);
-            return nil;
+            return false;
         }
+    } else {
+      partsToDo.Populate (partCount, 0, 1);
     }
 
     return true;
@@ -304,8 +308,8 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
 
 */
 {
-    _DataSetFilter *dsf             = (_DataSetFilter*)dataSetFilterList (theDataFilters(doTheseOnes.lData[0]));
-    _TheTree        *firstTree      = (_TheTree*)LocateVar(theTrees(doTheseOnes.lData[0]));
+    _DataSetFilter  const *dsf      = GetIthFilter (doTheseOnes.lData[0]);
+    _TheTree        *firstTree      = GetIthTree   (doTheseOnes.lData[0]);
 
     target.SetTranslationTable      (dsf->GetData());
     target.ConvertRepresentations();
@@ -322,13 +326,13 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
     }
 
     long siteOffset         = 0,
-         patternOffset        = 0,
+         patternOffset      = 0,
          sequenceCount       ;
 
     for (long i = 0; i<doTheseOnes.lLength; i++) {
         long       partIndex    = doTheseOnes.lData[i];
-        _TheTree   *tree        = (_TheTree*)LocateVar(theTrees(partIndex));
-        dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(partIndex));
+        _TheTree   *tree        = GetIthTree (partIndex);
+        dsf = GetIthFilter(partIndex);
 
         long    catCounter = 0;
 
@@ -365,7 +369,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
             thisSet                     = new _List;
             _SimpleList* tcc            = (_SimpleList*)treeTraversalMasks(partIndex);
             if (tcc) {
-                long shifter = dsf->GetDimension()*dsf->NumberDistinctSites()*tree->GetINodeCount();
+                long shifter = dsf->GetDimension()*dsf->GetPatternCount()*tree->GetINodeCount();
                 for (long cc = 0; cc <= catCounter; cc++) {
                     tree->FillInConditionals(dsf, conditionalInternalNodeLikelihoodCaches[partIndex] + cc*shifter, tcc);
                 }
@@ -406,14 +410,14 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
         }
 
 
-        _String * sampledString = (_String*)(*thisSet)(0);
-
+        _String * sampledString = (_String*)thisSet->GetItem(0);
+ 
         for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
             target.AddSite (sampledString->sData[siteIdx]);
         }
 
         for (long seqIdx = 1; seqIdx < sequenceCount; seqIdx++) {
-            sampledString = (_String*)(*thisSet)(seqIdx);
+            sampledString = (_String*)thisSet->GetItem(seqIdx);
             for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
                 target.Write2Site (siteOffset + siteIdx, sampledString->sData[siteIdx]);
             }
@@ -421,7 +425,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
         DeleteObject (thisSet);
         DeleteObject (expandedMap);
         siteOffset    += dsf->GetSiteCount();
-        patternOffset += dsf->GetSiteCount();
+        patternOffset += dsf->GetPatternCount();
     }
 
 
@@ -489,8 +493,8 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                         currentHMMCat         = 1,
                         arrayDim              ;
 
-    bool                isTrivial               = variables->lLength == 0,
-                        switchingHMM         = false;
+    bool                isTrivial               = variables->lLength == 0;
+  //switchingHMM         = false;
 
     _CategoryVariable   *catVariable;
 
@@ -551,7 +555,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                     if (hmmCatCount) {
                         currentHMMCat = currentRateCombo / hmmCatCount;
-                        switchingHMM = (currentRateCombo % hmmCatCount) == 0;
+                      //switchingHMM = (currentRateCombo % hmmCatCount) == 0;
                     }
 
                     if (currentRateCombo && remainder  == 0) {
@@ -788,7 +792,7 @@ void            _LikelihoodFunction::ComputeSiteLikelihoodsForABlock    (long in
 
 //_______________________________________________________________________________________________
 
-_List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Matrix & supportValues, _List& expandedSiteMap, bool doLeaves)
+_List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Matrix & supportValues, _List const& expandedSiteMap, bool doLeaves)
 // index:           which part to process
 // supportValues:   for each internal node and site stores alphabetDimension values for the
 //              :   relative support of each residue at a given site
@@ -801,10 +805,11 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
 {
 
-    _DataSetFilter* dsf             = (_DataSetFilter*)dataSetFilterList (theDataFilters(index));
+    _DataSetFilter const* dsf       = GetIthFilter(index);
+  
     _TheTree        *blockTree      = (_TheTree*)LocateVar(theTrees.lData[index]);
 
-    long            patternCount                    = dsf->NumberDistinctSites  (),
+    long            patternCount                    = dsf->GetPatternCount  (),
                     alphabetDimension                = dsf->GetDimension         (),
                     unitLength                        = dsf->GetUnitLength        (),
                     iNodeCount                        = blockTree->GetINodeCount  (),
@@ -875,12 +880,12 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
     _String      codeBuffer    (unitLength, false);
     _List        *result       = new _List;
 
-    for (long k = 0; k < matrixSize; k++) {
-        result->AppendNewInstance (new _String(siteCount*unitLength,false));
+    for (long k = 0L; k < matrixSize; k++) {
+        (*result) < new _String(siteCount*unitLength,false);
     }
 
-    for (long siteID = 0; siteID < patternCount; siteID++) {
-        _SimpleList*    patternMap = (_SimpleList*) expandedSiteMap (siteID);
+    for (long siteID = 0L; siteID < patternCount; siteID++) {
+        _SimpleList const*    patternMap = (_SimpleList*) expandedSiteMap.GetItem (siteID);
 
         for  (long nodeID = 0; nodeID < matrixSize ; nodeID++) {
             long            mappedNodeID = postToIn.lData[nodeID];
@@ -941,8 +946,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
 //__________________________________________________________________________________
 
-_Parameter          _LikelihoodFunction::SumUpHiddenMarkov (const _Parameter * patternLikelihoods, _Matrix& hmm, _Matrix& hmf, _SimpleList * duplicateMap, const _SimpleList* scalers, long bl)
-{
+_Parameter          _LikelihoodFunction::SumUpHiddenMarkov (const _Parameter * patternLikelihoods, _Matrix& hmm, _Matrix& hmf, _SimpleList const * duplicateMap, const _SimpleList* scalers, long bl) {
     long               ni           = hmm.GetHDim(),
                        mi           = duplicateMap?duplicateMap->lData[duplicateMap->lLength-1]:bl-1,
                        siteScaler    = duplicateMap?scalers->lData[mi]:((_SimpleList*)((_List*)scalers)->lData[0])->lData[mi];
@@ -1026,10 +1030,7 @@ _Parameter          _LikelihoodFunction::SumUpHiddenMarkov (const _Parameter * p
         for (long k=0; k<ni; k++) {
             temp.theData[k] *= max;
         }
-
-        _Parameter* swap = temp.theData;
-        temp.theData     = temp2.theData;
-        temp2.theData    = swap;
+        EXCHANGE(temp.theData, temp2.theData);
     }
 
     _Parameter scrap = 0.0;
@@ -1045,7 +1046,7 @@ _Parameter          _LikelihoodFunction::SumUpHiddenMarkov (const _Parameter * p
 
 void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 const _Parameter * patternLikelihoods,
         _Matrix & hmm,                  _Matrix& hmf,
-        _SimpleList * duplicateMap,       const _SimpleList* scalers,
+        _SimpleList const * duplicateMap,       const _SimpleList* scalers,
         long bl )
 {
     long               ni           = hmm.GetHDim(),
@@ -1225,20 +1226,20 @@ void _LikelihoodFunction::CleanupParameterMapping (void)
 
 //_______________________________________________________________________________________________
 
-_Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Parameter * patternLikelihoods, const _SimpleList& patternScalers)
+_Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Parameter * patternLikelihoods, const _SimpleList& patternScalers) {
 /*
  compute the likelihood of a partition (index), corrected for scaling,
  by summing pattern likelihoods from patternLikelihoods, weighted by pattern frequencies
  and corrected for scaling factors from patternScalers
 */
-{
 
     _Parameter       logL             = 0.;
     _SimpleList      *catVarType      = (_SimpleList*)((*(_List*)categoryTraversalTemplate(index))(4));
     long             cumulativeScaler = 0,
                      categoryType     = catVarType->Element (-1);
 
-    _SimpleList     * patternFrequencies = &((_DataSetFilter*)dataSetFilterList (theDataFilters(index)))->theFrequencies;
+    _DataSetFilter   const * index_filter = GetIthFilter(index);
+    unsigned long    pattern_count = index_filter->GetPatternCount ();
 
     // check to see if we need to handle HMM or COP variables
     if (categoryType & _hyphyCategoryHMM) {
@@ -1246,23 +1247,21 @@ _Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Paramet
         _Matrix          *hmm    = hmmVar->ComputeHiddenMarkov(),
                           *hmf    = hmmVar->ComputeHiddenMarkovFreqs();
 
-        _SimpleList      *dmap   = &((_DataSetFilter*)dataSetFilterList (theDataFilters(index)))->duplicateMap;
+        _SimpleList   const   *dmap   = & GetIthFilter(index)->duplicateMap;
 
         return           SumUpHiddenMarkov (patternLikelihoods,
                                             *hmm,
                                             *hmf,
                                             dmap,
                                             &patternScalers,
-                                            patternFrequencies->lLength
+                                            pattern_count
                                            );
     } else {
         if (categoryType & _hyphyCategoryCOP) {
             WarnError ("Constant-on-partition categories are currently not supported by the evaluation engine");
-        } else // simple sum clause
-
-        {
-            for              (long patternID = 0; patternID < patternFrequencies->lLength; patternID++) {
-                long patternFrequency = patternFrequencies->lData[patternID];
+        } else {
+            for (unsigned long patternID = 0UL; patternID < pattern_count; patternID++) {
+                long patternFrequency = index_filter->GetFrequency(patternID);;
                 if (patternFrequency > 1) {
                     logL             += myLog(patternLikelihoods[patternID])*patternFrequency;
                     cumulativeScaler += patternScalers.lData[patternID]*patternFrequency;
@@ -1294,60 +1293,58 @@ _Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Paramet
 // "Datafilters"
 // "Compute Template"
 
-_AssociativeList* _LikelihoodFunction::CollectLFAttributes (void)
-{
-    _AssociativeList * resList = new _AssociativeList;
+_AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
+    _AssociativeList * result = new _AssociativeList;
 
-    _SimpleList         *vl,
-                        list1;
+  
+    _List               model_list,
+                        filter_list,
+                        frequency_list;
+  
+    _SimpleList         aux_list;
 
-    _List               modelList;
+    InsertVarIDsInList (result, "Categories", GetCategoryVars ());
 
-    InsertVarIDsInList (resList, "Categories", GetCategoryVars ());
+    SplitVariableIDsIntoLocalAndGlobal (GetIndependentVars (), model_list);
+    InsertVarIDsInList (result, "Global Independent", *(_SimpleList*)model_list(0));
+    InsertVarIDsInList (result, "Local Independent",  *(_SimpleList*)model_list(1));
 
-    SplitVariableIDsIntoLocalAndGlobal (GetIndependentVars (), modelList);
-    InsertVarIDsInList (resList, "Global Independent", *(_SimpleList*)modelList(0));
-    InsertVarIDsInList (resList, "Local Independent",   *(_SimpleList*)modelList(1));
+    SplitVariableIDsIntoLocalAndGlobal (GetDependentVars (), model_list);
+    InsertVarIDsInList (result, "Global Constrained", *(_SimpleList*)model_list(0));
+    InsertVarIDsInList (result, "Local Constrained",  *(_SimpleList*)model_list(1));
 
-    SplitVariableIDsIntoLocalAndGlobal (GetDependentVars (), modelList);
-    InsertVarIDsInList (resList, "Global Constrained", *(_SimpleList*)modelList(0));
-    InsertVarIDsInList (resList, "Local Constrained",   *(_SimpleList*)modelList(1));
+    unsigned long partition_count = CountObjects(kLFCountPartitions);
 
+    model_list.Clear();
 
-    list1.Clear();
-    vl = &GetTheTrees ();
-    modelList.Clear();
-
-    for (long n=0; n<vl->lLength; n++) {
-        list1 << vl->lData[n];
-        _SimpleList partModels;
-        ((_TheTree*)FetchVar (vl->lData[n]))->CompileListOfModels(partModels);
-        if (partModels.lLength == 1) {
-            modelList << modelNames (partModels.lData[0]);
+    for (unsigned long component = 0UL; component < partition_count ; component++) {
+        _TheTree * ith_tree = GetIthTree (component);
+        aux_list << ith_tree->GetAVariable();
+        filter_list    < new _String (*GetIthFilterName      (component));
+        frequency_list < new _String (*GetIthFrequenciesName (component));
+      
+        _SimpleList component_models;
+        ith_tree->CompileListOfModels(component_models);
+      
+        if (component_models.lLength == 1UL) {
+            model_list << modelNames (component_models(0));
         } else {
-            modelList.AppendNewInstance(new _String ("__MULTIPLE__"));
+            model_list < new _String ("__MULTIPLE__");
         }
     }
-    InsertVarIDsInList (resList, "Trees", list1);
-
-
-    list1.Clear();
-    vl = &GetTheFilters ();
-    for (long p=0; p<vl->lLength; p++) {
-        list1 << vl->lData[p];
-    }
-
-    InsertStringListIntoAVL (resList, "Datafilters", list1, dataSetFilterNamesList);
-    InsertVarIDsInList (resList, "Base frequencies", GetBaseFreqs());
-    {
-        _SimpleList indexer         (modelList.lLength,0,1);
-        InsertStringListIntoAVL     (resList, "Models", indexer, modelList);
-    }
+    InsertVarIDsInList (result, "Trees", aux_list);
+    InsertStringListIntoAVL     (result, "Models", _SimpleList (model_list.lLength,0,1), model_list);
+  
+    aux_list.Clear();
+    aux_list.Populate (partition_count, 0, 1);
+  
+    InsertStringListIntoAVL (result, "Datafilters", aux_list, filter_list);
+    InsertStringListIntoAVL      (result, "Base frequencies", aux_list, frequency_list);
 
     _Formula        *computeT = HasComputingTemplate();
-    resList->MStore (_String("Compute Template"), new _FString((_String*)(computeT?computeT->toStr():new _String)), false);
+    result->MStore (_String("Compute Template"), new _FString((_String*)(computeT?computeT->toStr():new _String)), false);
 
-    return resList;
+    return result;
 }
 
 //_______________________________________________________________________________________________

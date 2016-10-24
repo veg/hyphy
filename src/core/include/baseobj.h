@@ -66,10 +66,12 @@ typedef char* Ptr;
 #define _hprestrict_
 #endif
 
-#include "stdio.h"
+#include "hy_types.h"
 
-class BaseObj
-{
+#include <stdio.h>
+
+
+class BaseObj {
 
     //base object class
 public:
@@ -78,11 +80,9 @@ public:
 
     virtual ~BaseObj(void) {}
 
-    virtual BaseObj* toStr (void);
-
-    virtual BaseObj* toErrStr (void);
-
-    virtual void     toFileStr (FILE*);
+    virtual BaseObj* toStr     (unsigned long = 0UL);
+    virtual BaseObj* toErrStr  (unsigned long = 0UL);
+    virtual void     toFileStr (FILE*, unsigned long = 0UL);
 
     /*virtual operator const char*(void);*/
 
@@ -92,15 +92,15 @@ public:
         return 0;
     }
 
-    virtual void     Initialize (void) {
-        nInstances=1;
+    virtual void     Initialize (bool = false) {
+        nInstances=1L;
     }
 
     virtual void     Duplicate (BaseObj* ref) {
         nInstances=++ref->nInstances;
     }
 
-    virtual void     AddAReference (void)     {
+    inline virtual void     AddAReference (void)     {
         nInstances ++;
     }
 
@@ -114,6 +114,9 @@ public:
 };
 
 typedef BaseObj*  BaseRef;
+typedef BaseObj const * BaseRefConst;
+
+
 
 extern  void      DeleteObject (BaseRef); // delete a dynamic object
 
@@ -127,13 +130,15 @@ char*   MemReallocate (Ptr, long);
 #endif
 
 bool    GlobalStartup();
+void    InitializeGlobals ();
 bool    GlobalShutdown();
 
 
 extern  FILE*   globalErrorFile;
 extern  FILE*   globalMessageFile;
+
 extern  bool    terminateExecution,
-        skipWarningMessages;
+                skipWarningMessages;
 
 extern long     systemCPUCount;
 

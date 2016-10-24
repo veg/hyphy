@@ -4,9 +4,9 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 
 Copyright (C) 1997-now
 Core Developers:
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Sergei L Kosakovsky Pond (sergeilkp@mac.com)
   Art FY Poon    (apoon@cfenet.ubc.ca)
-  Steven Weaver (sweaver@ucsd.edu)
+  Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
@@ -40,17 +40,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef     __DEFINES__
 #define     __DEFINES__
 
-#define  HY_UNDEFINED       0x00UL
-#define  NUMBER             0x01UL
-#define  MATRIX             0x04UL
-#define  CONTAINER          0x08UL
-#define  TREE_NODE          0x10UL
-#define  TREE               0x20UL
-#define  STRING             0x40UL
-#define  ASSOCIATIVE_LIST   0x80UL
+#define  HY_UNDEFINED       0x000UL
+#define  NUMBER             0x001UL
+#define  MATRIX             0x004UL
+#define  CONTAINER          0x008UL
+#define  TREE_NODE          0x010UL
+#define  TREE               0x020UL
+#define  STRING             0x040UL
+#define  ASSOCIATIVE_LIST   0x080UL
 #define  TOPOLOGY           0x100UL
 #define  POLYNOMIAL         0x200UL
 #define  HY_ANY_OBJECT      0xFFFFUL
+#define  HY_MUTABLE_OBJECT  (NUMBER | STRING | HY_UNDEFINED)
 
 #define  DEFAULTLOWERBOUND  -1e26
 #define  DEFAULTUPPERBOUND  1e26
@@ -63,17 +64,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_VARIABLE_CHANGED    0x02
 #define  HY_DEP_V_COMPUTED      0x04
 #define  HY_DEP_V_INSPECTED     0x08
-#define  HY_DEP_V_INSPECTED_CLR 0xF7
+#define  HY_DEP_V_INSPECTED_CLR 0xFF7
 #define  HY_DEP_V_MODIFIED      0x10
 #define  HY_DEP_V_MODIFIED_CATS 0x20
 #define  HY_VC_NO_CHECK         0x40 // do not check this variable container in 
 // NeedToExponentiate
 #define  HY_VARIABLE_NOTSET     0x80
 #define  HY_VARIABLE_SET        0x7F
+#define  HY_VARIABLE_COMPUTING  0x100
+#define  HY_VARIABLE_COMPUTING_CLR 0x0FF
 
-#define  HY_VC_CLR_NO_CHECK     0xBF
+#define  HY_VC_CLR_NO_CHECK     0xFBF
 
-#define  HY_DEP_CLEAR_MASK      0xC7
+#define  HY_DEP_CLEAR_MASK      0xFC7
 
 #define  HY_NO_MODEL            (-1)
 
@@ -107,9 +110,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_OP_CODE_BRANCHLENGTH    (1+HY_OP_CODE_BRANCHCOUNT) // BranchLength
 #define  HY_OP_CODE_BRANCHNAME      (1+HY_OP_CODE_BRANCHLENGTH) // BranchName
 
+
 #define  HY_OP_CODE_CCHI2           (1+HY_OP_CODE_BRANCHNAME) // CChi2
 #define  HY_OP_CODE_CGAMMADIST      (1+HY_OP_CODE_CCHI2) // CGammaDist
-#define  HY_OP_CODE_COLUMNS         (1+HY_OP_CODE_CGAMMADIST) // Columns
+#define  HY_OP_CODE_CALL            (1+HY_OP_CODE_CGAMMADIST) // Call
+#define  HY_OP_CODE_COLUMNS         (1+HY_OP_CODE_CALL) // Columns
 #define  HY_OP_CODE_COS             (1+HY_OP_CODE_COLUMNS) // Cos
 #define  HY_OP_CODE_DIFF            (1+HY_OP_CODE_COS) // D
 #define  HY_OP_CODE_EIGENSYSTEM     (1+HY_OP_CODE_DIFF) // Eigensystem
@@ -139,7 +144,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_OP_CODE_REROOTTREE      (1+HY_OP_CODE_RANDOM) // RerootTree
 #define  HY_OP_CODE_ROWS            (1+HY_OP_CODE_REROOTTREE) // Rows
 #define  HY_OP_CODE_SIMPLEX         (1+HY_OP_CODE_ROWS) // Simplex
-#define  HY_OP_CODE_SIN             (1+HY_OP_CODE_SIMPLEX) // Sin
+#define  HY_OP_CODE_SIMPLIFY        (1+HY_OP_CODE_SIMPLEX) // Simplify
+#define  HY_OP_CODE_SIN             (1+HY_OP_CODE_SIMPLIFY) // Sin
 #define  HY_OP_CODE_SQRT            (1+HY_OP_CODE_SIN) // Sqrt
 #define  HY_OP_CODE_TEXTREESTRING   (1+HY_OP_CODE_SQRT) // TEXTreeString
 
@@ -179,8 +185,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_CONSTANT_FALSE                              _Constant (0.0)
 #define  HY_CONSTANT_TRUE                               _Constant (1.0)
 
-#define   BL_FUNCTION_ALWAYS_UPDATE     0
-#define   BL_FUNCTION_NORMAL_UPDATE     1
 
 //!  Batch Language 'Object' type codes
 /*!
@@ -279,6 +283,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_SIMULATE_DATA_SET                              563L
 #define   HY_HBL_COMMAND_ASSERT                                         564L
 #define   HY_HBL_COMMAND_REPLICATE_CONSTRAINT                           565L
+#define   HY_HBL_COMMAND_NESTED_LIST                                    566L
 
 
 //!  HyPhy standard directory locations 

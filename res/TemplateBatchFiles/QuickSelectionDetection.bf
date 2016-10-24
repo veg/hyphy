@@ -1126,6 +1126,7 @@ else
                                 CT := saveNucs__[3];
                                 GT := saveNucs__[4];
                                 
+                                
                                 Model 		MG1		=		  ("Exp(MGMatrix1)*mixingP+Exp(MGMatrix2)*(1-mixingP)",codonFrequencies,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
                                 Tree	    siteTree = treeString;
                                 Model       MGFEL   =         (MGMatrix2,codonFrequencies,0);

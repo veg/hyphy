@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -63,8 +63,7 @@ _AVLList::_AVLList (_SimpleList* d)
 
 //______________________________________________________________
 
-long  _AVLList::Find (BaseRef obj)
-{
+long  _AVLList::Find (BaseRefConst obj) const {
     long curNode = root;
 
     while (curNode>=0) {
@@ -84,8 +83,7 @@ long  _AVLList::Find (BaseRef obj)
 
 //______________________________________________________________
 
-long  _AVLList::FindLong (long obj)
-{
+long  _AVLList::FindLong (long obj) const {
     long curNode = root;
 
     while (curNode>=0) {
@@ -105,8 +103,7 @@ long  _AVLList::FindLong (long obj)
 
 //______________________________________________________________
 
-char  _AVLList::FindBest (BaseRef obj, long& lastNode)
-{
+char  _AVLList::FindBest (BaseRefConst obj, long& lastNode) const {
     long curNode  = root,
          comp     = 1;
 
@@ -128,8 +125,7 @@ char  _AVLList::FindBest (BaseRef obj, long& lastNode)
 
 //______________________________________________________________
 
-long  _AVLList::Find (BaseRef obj, _SimpleList& hist)
-{
+long  _AVLList::Find (BaseRefConst obj, _SimpleList& hist) const {
     long curNode = root;
 
     while (curNode>=0) {
@@ -151,8 +147,7 @@ long  _AVLList::Find (BaseRef obj, _SimpleList& hist)
 
 //______________________________________________________________
 
-long  _AVLList::Next (long d, _SimpleList& hist)
-{
+long  _AVLList::Next (long d, _SimpleList& hist) const {
     if (d >= 0) {
         if (rightChild.lData [d] >= 0) {
             hist << d;
@@ -164,10 +159,7 @@ long  _AVLList::Next (long d, _SimpleList& hist)
             return d;
         } else {
             while (hist.countitems()) {
-                long x = hist.lData[hist.lLength-1];
-
-
-                hist.Delete (hist.lLength-1);
+                long x = hist.Pop();
 
                 if (rightChild.lData[x] != d) {
                     return x;
@@ -182,16 +174,16 @@ long  _AVLList::Next (long d, _SimpleList& hist)
 
     d = root;
     while (d >= 0 && leftChild.lData[d] >=0) {
-        d = leftChild.lData[d];
+      hist << d;
+      d = leftChild.lData[d];
     }
-
+    
     return d;
 }
 
 //______________________________________________________________
 
-long  _AVLList::First (void)
-{
+long  _AVLList::First (void) const {
     long   d = root;
     while (d >= 0 && leftChild.lData[d] >=0) {
         d = leftChild.lData[d];
@@ -202,14 +194,62 @@ long  _AVLList::First (void)
 
 //______________________________________________________________
 
-long  _AVLList::Last (void)
-{
+long  _AVLList::Last (void) const {
     long   d = root;
     while (d >= 0 && rightChild.lData[d] >=0) {
         d = rightChild.lData[d];
     }
 
     return d;
+}
+
+//______________________________________________________________
+
+long  _AVLList::Prev (long d, _SimpleList& hist) const {
+  if (d >= 0) {
+    if (leftChild.lData [d] >= 0) {
+      hist << d;
+      d = leftChild.lData [d];
+      while (rightChild.lData[d] >= 0) {
+        hist << d;
+        d = rightChild.lData[d];
+      }
+      return d;
+    } else {
+      while (hist.countitems()) {
+        long x = hist.lData[hist.lLength-1];
+        
+        hist.Delete (hist.lLength-1);
+        
+        if (leftChild.lData[x] != d) {
+          return x;
+        }
+        //TODO:???
+        d = x;
+      }
+      
+      return -1;
+    }
+  }
+  
+  d = root;
+  while (d >= 0 && rightChild.lData[d] >=0) {
+    hist << d;
+    d = rightChild.lData[d];
+  }
+  
+  return d;
+  
+}
+
+
+//______________________________________________________________
+
+bool  _AVLList::IsValidIndex(long index) const {
+  if (index >= 0 && index < dataList->lLength) {
+    return Retrieve(index);
+  }
+  return false;
 }
 
 //______________________________________________________________
@@ -243,51 +283,12 @@ long  _AVLList::GetByIndex (const long theIndex)
 
     return -1;
 }
-//______________________________________________________________
-
-long  _AVLList::Prev (long d, _SimpleList& hist)
-{
-    if (d >= 0) {
-        if (leftChild.lData [d] >= 0) {
-            hist << d;
-            d = leftChild.lData [d];
-            while (rightChild.lData[d] >= 0) {
-                hist << d;
-                d = rightChild.lData[d];
-            }
-            return d;
-        } else {
-            while (hist.countitems()) {
-                long x = hist.lData[hist.lLength-1];
-
-                hist.Delete (hist.lLength-1);
-
-                if (leftChild.lData[x] != d) {
-                    return x;
-                }
-                //TODO:???
-                d = x;
-            }
-
-            return -1;
-        }
-    }
-
-    d = root;
-    while (d >= 0 && rightChild.lData[d] >=0) {
-        d = rightChild.lData[d];
-    }
-
-    return d;
-
-}
 
 //______________________________________________________________
 
-void  _AVLList::ReorderList (_SimpleList *s)
-{
+void  _AVLList::ReorderList (_SimpleList *s) {
     _SimpleList reorderMe ((unsigned long)(dataList->lLength-emptySlots.lLength+1)),
-                nodeStack ((unsigned long)32);
+                nodeStack ((unsigned long)64);
 
     long        curNode = root;
 
@@ -381,8 +382,7 @@ void  _AVLList::ConsistencyCheck (void)
 
 //______________________________________________________________
 
-long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
-{
+long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r) const {
     if  (r >= 0) {
         t = r;
         nodeStack.Clear();
@@ -406,35 +406,61 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
 
 //______________________________________________________________
 
-BaseRef  _AVLList::toStr (void)
-{
+BaseRef  _AVLList::toStr (unsigned long) {
     _String * str = new _String (128L, true);
-    checkPointer (str);
-
+ 
     if (countitems() == 0) {
-        (*str) << "Empty Associative List";
+        (*str) << "()";
     } else {
         _SimpleList  hist;
         long         ls, cn;
 
         cn = Traverser (hist,ls,root);
-
+      
+        bool first = true;
+      
+        (*str) << '(';
+      
         while (cn>=0) {
-            long keyVal = (long)Retrieve (cn);
-            (*str) << _String(keyVal);
-            (*str) << '\n';
+            if (first) {
+              first = false;
+            } else {
+              (*str) << ", ";
+            }
+           (*str) << _String((long)Retrieve (cn));
             cn = Traverser (hist,ls);
         }
+      
+        (*str) << ')';
     }
 
     str->Finalize();
     return str;
 }
 
+  //______________________________________________________________
+
+const _List  _AVLList::Keys (void) const {
+  _List keys;
+   if (countitems() > 0UL) {
+      _SimpleList  hist;
+      long         ls, cn;
+      
+      cn = Traverser (hist,ls,root);
+      
+      bool first = true;
+      while (cn>=0) {
+        keys << Retrieve (cn);
+        cn = Traverser (hist,ls);
+      }
+  }
+  return keys;
+}
+
+
 //______________________________________________________________
 
-BaseRef _AVLList::Retrieve (long idx)
-{
+BaseRef _AVLList::Retrieve (long idx) const {
     return ((BaseRef*)dataList->lData)[idx];
 }
 
@@ -481,15 +507,22 @@ long  _AVLList::InsertData (BaseRef b, long, bool)
 
 //______________________________________________________________
 
-unsigned long _AVLList::countitems (void)
-{
+unsigned long _AVLList::countitems (void) const {
     return dataList->lLength - emptySlots.lLength;
 }
 
 //______________________________________________________________
 
-long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear)
-{
+long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
+/** 
+  Insert a key (and possibly a value) into this _AVLList
+ 
+  @param b the key to insert; this operation will NOT increase reference counts for b
+  @param xtra the payload
+  @param cp if true, the insertion operation will add a reference count to payload
+  @param clear if insertion fails (key already exists), then the _key_ will be deleted
+ 
+ */
     if (dataList->lLength-emptySlots.lLength) {
         long        y = root,
                     z = -1,

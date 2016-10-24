@@ -11,7 +11,7 @@ if (refSeq > 1)
 }
 else
 {
-	
+
 	ChoiceList (refSeq2,"Insert a coordinate reference sequence?",1,SKIP_NONE,predefSeqNames2);
 	if (refSeq2 < 0)
 	{
@@ -58,7 +58,7 @@ seqCount = Rows(UnalignedSeqs) * Columns(UnalignedSeqs);
 for (seqCounter = 0; seqCounter < seqCount; seqCounter = seqCounter+1)
 {
 	aSeq = UnalignedSeqs[seqCounter];
-	
+
 	UnalignedSeqs[seqCounter] = aSeq^{{"[^a-zA-Z]",""}};
 	//UnalignedSeqs[seqCounter] = UnalignedSeqs[seqCounter]^{{"^N+",""}};
 	//UnalignedSeqs[seqCounter] = UnalignedSeqs[seqCounter]^{{"N+$",""}};
@@ -71,7 +71,7 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter = seqCounter+1)
 			refSeqID = seqCounter;
 		}
 	}
-    
+
 }
 
 s1 = UnalignedSeqs[refSeqID];
@@ -127,8 +127,8 @@ fprintf (stdout,"\nPerforming pairwise alignment with reference sequences\n");
 
 //fprintf (TEMP_FILE_NAME, CLEAR_FILE, KEEP_OPEN);
 //checkPointFile = LAST_FILE_PATH;
-	
-	
+
+
 for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
     if (seqCounter == refSeqID) {
         continue;
@@ -137,7 +137,7 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
 	s2 			 = UnalignedSeqs[seqCounter];
 	inStr 		 = {{s1,s2}};
 	AlignSequences(aligned, inStr, alignOptions);
-    
+
 	if (doRC) {
 		s2c = nucleotideReverseComplement (s2);
 		inStr 		 = {{s1,s2c}};
@@ -147,38 +147,38 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
 			aligned = aligned_rc;
 		}
 	}
-	
-	
 
-	
+
+
+
 	//GetString (seqName,unal,seqCounter);
-   // fprintf (checkPointFile, "\n>ref\n", aligned[1], "\n>", seqName, "\n", aligned[2]); 
-    
+   // fprintf (checkPointFile, "\n>ref\n", aligned[1], "\n>", seqName, "\n", aligned[2]);
+
 	if (doCodonAlignment) {
         fixed = _cdn_alignment_cleanup ((aligned[0])[1], (aligned[0])[2],0);
-        
-        assert (Abs (fixed["REF"])%3 == 0);
+
+        //assert (Abs (fixed["REF"])%3 == 0);
         assert (  (((aligned[0])[1] ^ {{"-",""}})&&1) == (((fixed["REF"]) ^ {{"-",""}})&&1), "Internal error correcting codon-based frameshifts:\n\n" + aligned[0] + "\n" + fixed + "\n");
-        
+
         (aligned[0])[1] = fixed["REF"];
         (aligned[0])[2] = fixed["QRY"];
 	}
-	
+
 	aligned = aligned[0];
 	SeqAlignments[seqCounter] = aligned;
-    
-    
+
+
 	aligned = aligned[1];
-	
+
 	myStartingPosition = aligned$"[^-]";
 	myEndingPosition  = Abs (aligned)-1;
-	
-	
+
+
 	while (aligned[myEndingPosition]=="-") {
 		myEndingPosition = myEndingPosition - 1;
 	}
-	
-	
+
+
 	startingPosition [seqCounter][0] = myStartingPosition[1];
 	startingPosition [seqCounter][1] = myEndingPosition;
 
@@ -215,7 +215,7 @@ for (seqCounter=1;seqCounter<refLength;seqCounter+=1) {
 	for (k=0; k<gapCount;k=k+1)
 	{
 		fullRefSeq*("-");
-	}	
+	}
 	fullRefSeq  * (s1[seqCounter]);
 }
 
@@ -236,25 +236,25 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
     if (seqCounter == refSeqID) {
         continue;
     }
-    
+
 	GetString (seqName,unal,seqCounter);
 	aligned = SeqAlignments[seqCounter];
-	
+
 	aligned1 = aligned[1];
 	aligned2 = aligned[2];
-	
+
 	s2 = startingPosition[seqCounter][0];
 	e2 = startingPosition[seqCounter][1];
-	
+
 	gappedSeq = "";
 	gappedSeq * Abs(aligned2);
-    
+
 	k=0;
-	
+
 	/*if (seqName == "D61_1959") {
 	    fprintf (stdout, "\n*** ", seqCounter, " ***\n");
 	}*/
-	
+
 	while (k<refLength)
 	{
 	    /*if (seqCounter == 10) {
@@ -280,7 +280,7 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	if (refSeq2 && seqCounter == seqCount-1) {
 		fscanf (fName, "Raw", soFar);
 		fprintf (fName, CLEAR_FILE,">",seqName,"\n",gappedSeq,"\n",soFar);
-		
+
 	}
 	else {
 		fprintf (fName,"\n>",seqName,"\n",gappedSeq);

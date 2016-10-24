@@ -4,7 +4,7 @@
 	_expectedLL = 			{{-3450.39628591,-3410.18927}};
 	ExecuteAFile 			("../Shared/TestInstrumentation.bf");
 	startTestTimer 			(_testDescription);
-	
+
 /* end test preamble */
 
 VERBOSITY_LEVEL			   = 1;
@@ -13,16 +13,16 @@ OPTIMIZATION_METHOD        = 4;
 
 runTimer = Time (1);
 
-inputOptions = {};
-inputOptions ["00"] = "Universal";
-inputOptions ["01"] = PATH_TO_CURRENT_BF + ".." + DIRECTORY_SEPARATOR + "data" + DIRECTORY_SEPARATOR + "CD2.nex"; 
+inputOptions = {
+"00": "Universal",
+"01": PATH_TO_CURRENT_BF + ".." + DIRECTORY_SEPARATOR + "data" + DIRECTORY_SEPARATOR + "CD2.nex",
 inputOptions ["02"] = "y";
 inputOptions ["03"] = PATH_TO_CURRENT_BF + ".." + DIRECTORY_SEPARATOR + "Results" + DIRECTORY_SEPARATOR + "CD2.bsrel.out";
+};
 
 
-
-//ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "BranchSiteREL.bf", inputOptions);
-ExecuteAFile ("../../../res/TemplateBatchFiles/BranchSiteREL.bf", inputOptions);
+ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "BranchSiteREL.bf", inputOptions);
+//ExecuteAFile ("../../../res/TemplateBatchFiles/BranchSiteREL.bf", inputOptions);
 
 fittedLL = {1,2};
 fittedLL[0] = res_base[1][0];

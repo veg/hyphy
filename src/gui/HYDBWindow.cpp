@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -49,6 +49,7 @@
 #include "HYUtils.h"
 #include "HYDialogs.h"
 #include "HYEventTypes.h"
+#include "function_templates.h"
 
 #include "string.h"
 
@@ -558,7 +559,7 @@ void    _HYDBWindow::ScanTables (bool forceCreate)
                 p1->AddMenuItem (*(_String*)tableList(mi), -1);
             }
 
-            currentTable = tableList.Find (&curTableName);
+            currentTable = tableList.FindObject (&curTableName);
             if (currentTable >= 0) {
                 p1->ChangeSelection (currentTable,false);
             } else {
@@ -1060,7 +1061,7 @@ bool    _HYDBWindow::ProcessEvent (_HYEvent* e)
                     bb2->_UnpushButton();
 
                     if (firstArg.sLength) {
-                        f = menuOptions.Find (&firstArg);
+                        f = menuOptions.FindObject (&firstArg);
                         if (f>=0) {
                             if (k==1) {
                                 _String command (*(_String*)(*((_List*)_HYDBW_Templates(f)))(1));

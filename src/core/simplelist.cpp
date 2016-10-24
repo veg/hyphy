@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -93,24 +93,18 @@ _SimpleList::_SimpleList (unsigned long l)
 }
 
 //Stack copy contructor
-_SimpleList::_SimpleList (_SimpleList& l, long from, long to)
-{
-    if (from == 0 && to == -1) { // copy the whole thing
-        Duplicate (&l);
-    } else {
-        Initialize           ();
-        NormalizeCoordinates (from, to, l.lLength);
-        RequestSpace(to-from);
-        long upto = to-from ; 
-        for (long k = 0; k < upto; k++) {
-            lData[k] = l.lData[from+k];
-        }
-        /*
-        for (long i = from; i < to; i++) {
-            (*this) << l.lData[i];
-        }
-        */
-    }
+_SimpleList::_SimpleList (_SimpleList const & l, long from, long to) {
+  Initialize           (false);
+  if (from == 0 && to == -1) {
+    to = l.lLength;
+  } else {
+    NormalizeCoordinates (from, to, l.lLength);
+  }
+  RequestSpace(to-from);
+  long upto = to-from ; 
+  for (lLength = 0; lLength < upto; lLength++) {
+      lData[lLength] = l.lData[from+lLength];
+  }
 }
 
 // Data constructor (variable number of long constants)
@@ -164,8 +158,7 @@ long& _SimpleList::operator [] (const long i)
     return lData[in];
 }
 //Element location functions (0,llength - 1)
-long _SimpleList::operator () (const unsigned long i)
-{
+long _SimpleList::operator () (const unsigned long i) const {
     //if (lLength == 0) return 0;
     //Is there a reason why this is commented out?
     //if (i>=lLength) i = lLength-1;
@@ -177,7 +170,7 @@ long _SimpleList::operator () (const unsigned long i)
 }
 
 //Assignment operator
-_SimpleList _SimpleList::operator = (_SimpleList l)
+const _SimpleList& _SimpleList::operator = (_SimpleList const &l)
 {
     Clear();
     lLength  = l.lLength;
@@ -213,9 +206,9 @@ _SimpleList _SimpleList::operator & (_SimpleList l)
     return res;
 }
 
-void _SimpleList::operator << (long br)
-{
-    InsertElement ((BaseRef)br, -1, false, false);
+_SimpleList& _SimpleList::operator << (long br) {
+  _SimpleList::InsertElement ((BaseRef)br, -1, false, false);
+  return *this;
 }
 
 bool _SimpleList::operator >> (long br)
@@ -227,9 +220,8 @@ bool _SimpleList::operator >> (long br)
     return false;
 }
 
-void _SimpleList::operator << (_SimpleList& source)
-{
-    for (unsigned long k=0; k<source.lLength; k++) {
+void _SimpleList::operator << (_SimpleList const & source) {
+    for (unsigned long k=0UL; k<source.lLength; k++) {
         (*this) << source.lData[k];
     }
 }
@@ -259,7 +251,7 @@ long _SimpleList::GetElement (const long index)
 }
 
 
-long  _SimpleList::BinaryFind (long s, long startAt)
+long  _SimpleList::BinaryFind (long s, long startAt) const
 {
     long top    =   lLength-1,
          bottom  =   startAt,
@@ -319,16 +311,15 @@ void _SimpleList::ClearFormulasInList(void)
         }
 }
 
-long _SimpleList::Sum (void) {
-    long sum = 0;
-    for (unsigned long k = 0; k < lLength; k++) {
+long _SimpleList::Sum (void) const{
+    long sum = 0L;
+    for (unsigned long k = 0UL; k < lLength; k++) {
        sum += lData[k];
     }
     return sum;
 }
 
-long  _SimpleList::Compare (long i, long j)
-{
+long  _SimpleList::Compare (long i, long j) const {
     long    v1 = ((long*)lData)[i],
             v2 = ((long*)lData)[j];
 
@@ -345,8 +336,7 @@ long  _SimpleList::Compare (long i, long j)
     //return ((long*)lData)[i]-((long*)lData)[j];
 }
 
-long  _SimpleList::Compare (BaseRef i, long j)
-{
+long  _SimpleList::Compare (BaseObj const *i, long j) const {
     long    v1 = (long)i,
             v2 = ((long*)lData)[j];
 
@@ -363,8 +353,7 @@ long  _SimpleList::Compare (BaseRef i, long j)
 }
 
 // Compute the number of shared of two sorted lists
-long    _SimpleList::CountCommonElements (_SimpleList& l1, bool yesNo)
-{
+long    _SimpleList::CountCommonElements (_SimpleList const& l1, bool yesNo) const {
     long  c1    = 0,
           c2    = 0,
           res   = 0;
@@ -406,11 +395,6 @@ long    _SimpleList::CountCommonElements (_SimpleList& l1, bool yesNo)
     return res;
 }
 
-//List length
-unsigned long _SimpleList::countitems(void)
-{
-    return lLength;
-}
 
 
 _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
@@ -420,7 +404,7 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
     }
 
     if (lLength) {
-        if (upperBound < 0) {
+        if (upperBound <= 0) {
             upperBound = Max()+1;
         }
 
@@ -451,14 +435,15 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
 
 void  _SimpleList::Clear (bool completeClear)
 {
-    if (nInstances<=1) {
-        lLength = 0;
+    if (nInstances<=1L) {
+        lLength = 0UL;
         if (completeClear) {
-            laLength = 0;
+            laLength = 0UL;
             if (lData) {
                 free (lData);
+                lData = nil;
             }
-            lData = nil;
+            
         }
     } else {
         nInstances--;
@@ -550,6 +535,44 @@ void  _SimpleList::DeleteList (const _SimpleList& toDelete)
     }
 }
 
+
+long _SimpleList::SkipCorrect (long index) const {
+  for (unsigned long k=0UL; k < lLength; k++)
+    if (index >= lData[k]) {
+      index++;
+    }
+  return index;
+}
+
+long _SimpleList::CorrectForExclusions(long index, long excluded_value) const {
+  long correction = 0L;
+  for (unsigned long k=0UL; k < lLength && index >= lData[k]; k++) {
+    if (index == lData[k]) {
+      return excluded_value;
+    }
+    correction++;
+  }
+  return index - correction;
+}
+
+long _SimpleList::CorrectForExclusions(long * index,  long length) const {
+  long exclusion_index = 0L,
+       mapped = 0UL;
+  
+  for (long k=0UL; k < length; k++) {
+    if (exclusion_index < lLength && index[k] >= lData[exclusion_index]) {
+      if (index[k] > lData[exclusion_index]) {
+        k--;
+      }
+      exclusion_index++;
+      continue;
+    }
+    index[mapped++] = index[k] - exclusion_index;
+  }
+  return mapped;
+}
+
+
 //Shift the range from start to end
 void  _SimpleList::Displace (long start, long end, long delta)
 {
@@ -615,35 +638,32 @@ void _SimpleList::Duplicate(BaseRef theRef)
 
 //Element location functions (0,llength - 1)
 //Negative indices return offsets from the end of the list
-long _SimpleList::Element(long index)
-{
+long _SimpleList::Element(long index) const {
     if (index >= 0 && index < lLength) {
         return lData[index];
     }
 
-    else if(-index <= lLength) {
+    else if(index < 0L && -index <= lLength) {
         return lData[(long)lLength+index];
     }
 
-    return 0;
+    return 0L;
 }
 
-bool _SimpleList::Equal(_SimpleList& l2)
+bool _SimpleList::Equal(_SimpleList const& l2) const
 {
-    if (lLength!=l2.lLength) {
-        return false;
+    if (lLength == l2.lLength) {      
+      for (unsigned long i=0UL; i<lLength; i++)
+          if (lData[i] != l2.lData[i]) {
+              return false;
+          }
+      
+      return true;
     }
-
-    for (long i=0; i<lLength; i++)
-        if (lData[i] != l2.lData[i]) {
-            return false;
-        }
-
-    return true;
+    return false;
 }
 
-long  _SimpleList::Find (long s, long startAt)
-{
+long  _SimpleList::Find (long s, long startAt) const {
     for (unsigned long i = startAt; i<lLength; i++) {
         if ( ((long*)(lData))[i] == s ) {
             return i;
@@ -688,7 +708,7 @@ void _SimpleList::Flip ()
 void _SimpleList::Initialize(bool doMemAlloc)
 {
     BaseObj::Initialize();
-    lLength = 0;
+    lLength = 0UL;
     if (doMemAlloc) {
         laLength = MEMORYSTEP;
         lData = (long*)MemAllocate (laLength * sizeof(Ptr));
@@ -716,18 +736,12 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
         }
 
         if (!lData) {
-            checkPointer (lData);
+            return;
         }
     }
+  
     if (insertAt==-1) {
-        if (store) {
-            ((BaseRef*)lData)[lLength-1]=br->makeDynamic();
-        } else {
-            ((BaseRef*)lData)[lLength-1]=br;
-            if (pointer) {
-                br->nInstances++;
-            }
-        }
+        insertAt = lLength-1;
     } else {
         //insertAt = insertAt>=lLength?lLength:insertAt;
         insertAt = insertAt>=lLength?lLength-1:insertAt;
@@ -740,50 +754,47 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
             memmove (((char**)lData)+(insertAt+1), ((char**)lData)+insertAt, moveThisMany*sizeof(void*));
         }
 
-        if (store) {
-            ((BaseRef*)lData)[insertAt]=br->makeDynamic();
-        } else {
-            ((BaseRef*)lData)[insertAt]=br;
-            if (pointer) {
-                br->nInstances++;
-            }
-        }
+      
+    }
+    if (store) {
+      ((BaseRef*)lData)[insertAt]=br->makeDynamic();
+    } else {
+      ((BaseRef*)lData)[insertAt]=br;
+      if (pointer) {
+        br->nInstances++;
+      }
     }
 
 
 }
 
 //Convert a list into a partition style string
-BaseRef _SimpleList::ListToPartitionString ()
-{
-    _String *result = new _String ((unsigned long)64,true),
-    conv;
-
-    for (long k=0; k<lLength; k++) {
-        long m;
-        for (m=k+1; m<lLength; m++)
+BaseRef _SimpleList::ListToPartitionString () const {
+    _String *result = new _String ((unsigned long)64,true);
+  
+    for (unsigned long k=0UL; k<lLength; k++) {
+        unsigned long m;
+        for (m=k+1UL; m<lLength; m++)
             if (lData[m]-lData[m-1]!=1) {
                 break;
             }
-        if (m>k+2) {
-            conv = lData[k];
-            (*result) << & conv;
-            (*result) << '-';
-            conv = lData[m-1];
-            (*result) << & conv;
+        if (m>k+2UL) {
+            (*result) << _String (lData[k])
+                      << '-'
+                      << _String (lData[m-1UL]);
+
             if (m<lLength) {
                 (*result) << ',';
             }
-            k = m-1;
+            k = m-1UL;
         } else {
-            conv = lData[k];
-            (*result) << &conv;
+            (*result) << _String (lData[k]);
             if (k<lLength-1) {
                 (*result) << ',';
             }
         }
     }
-    (*result).Finalize();
+    result->Finalize();
     return result;
 }
 
@@ -798,8 +809,7 @@ BaseRef _SimpleList::makeDynamic(void)
     return Res;
 }
 
-long _SimpleList::Max(void)
-{
+long _SimpleList::Max(void) const{
     long res = LONG_MIN;
     for  (long e = 0; e < lLength; e++)
         if (lData[e] > res) {
@@ -808,8 +818,7 @@ long _SimpleList::Max(void)
     return res;
 }
 
-long _SimpleList::Min(void)
-{
+long _SimpleList::Min(void) const {
     long res = LONG_MAX;
     for  (long e = 0; e < lLength; e++)
         if (lData[e] < res) {
@@ -1102,10 +1111,9 @@ void _SimpleList::NormalizeCoordinates (long& from, long& to, const unsigned lon
     }
 }
 
-void _SimpleList::Offset (long shift)
-{
+void _SimpleList::Offset (long shift) {
     if (lData) {
-        for (long k=0; k<lLength; k++) {
+        for (unsigned long k=0UL; k<lLength; k++) {
             lData[k] += shift;
         }
     }
@@ -1217,22 +1225,19 @@ void  _SimpleList::PermuteWithReplacement (long blockLength)
 
 long _SimpleList::Pop (void)
 {
-    if (lLength > 0) {
-        lLength --;
-        return lData[lLength];
+    if (lLength > 0L) {
+        return lData[--lLength];
     }
 
-    return 0;
+    return 0L;
 }
 
 //Length constructor and populator
-void _SimpleList::Populate (long l, long start, long step)
-{
+void _SimpleList::Populate (long l, long start, long step) {
     RequestSpace (l);
-    for (long k = 0; k < l; k++, start+=step) {
+    for (long k = 0L; k < l; k++, start+=step) {
         lData[k] = start;
     }
-
     lLength = l;
 }
 
@@ -1394,7 +1399,7 @@ void _SimpleList::Swap (long i, long j)
 }
 
 //Char* conversion
-BaseRef _SimpleList::toStr(void)
+BaseRef _SimpleList::toStr(unsigned long)
 {
     if (lLength) {
         unsigned long ssi = _String::storageIncrement,
@@ -1406,15 +1411,13 @@ BaseRef _SimpleList::toStr(void)
 
         _String * s = new _String (10L, true);
 
-        checkPointer (s);
-
         (*s) << "{";
 
-        for (unsigned long i = 0; i<lLength; i++) {
-            char c[32];
-            snprintf (c, sizeof(c),"%ld",((long*)lData)[i]),
-                    (*s) << c;
-            if (i<lLength-1) {
+        char c[32];
+        for (unsigned long i = 0UL; i<lLength; i++) {
+            snprintf (c, sizeof(c),"%ld",lData[i]);
+            (*s) << c;
+            if (i<lLength-1L) {
                 (*s) << ',';
             }
         }
@@ -1721,7 +1724,7 @@ void    _SimpleList::XOR (_SimpleList& l1, _SimpleList& l2)
     long  c1 = 0,
           c2 = 0;
 
-    while ((c1<l1.lLength)&&(c2<l2.lLength)) {
+    while (c1<l1.lLength && c2<l2.lLength) {
         while (c1<l1.lLength && l1.lData[c1]<l2.lData[c2]) {
             (*this) << l1.lData[c1++];
         }
@@ -1749,3 +1752,6 @@ void    _SimpleList::XOR (_SimpleList& l1, _SimpleList& l2)
     }
 }
 
+long _SimpleList::Map (long index, long map_failed) const {
+  return lData && index >= 0L && index < lLength ? lData[index]: map_failed;
+}
