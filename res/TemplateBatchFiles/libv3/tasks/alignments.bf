@@ -14,13 +14,47 @@ lfunction alignments.ReadCodonDataSet(dataset_name) {
 
 /**
  * Reads dataset from a file path
+ * @name alignments.LoadGeneticCode
+ * @param {String} code name - name of the genetic code to load, or None to prompt
+ * @returns {Dictionary} r - metadata pertaining to the genetic code
+ */
+
+
+lfunction alignments.LoadGeneticCode (code) {
+     if (Type (code) == "String") {
+        ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def",
+            {"0" : code });
+     } else {
+        ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
+     }
+     return {
+        "code" : _Genetic_Code,
+        "stops" : GeneticCodeExclusions
+     };
+}
+/**
+ * Reads dataset from a file path
  * @name alignments.ReadCodonDataSetFromPath
  * @param {String} dataset_name - name of variable you would like to set the dataset to
  * @param {String} path - path to alignment file
  * @returns {Dictionary} r - metadata pertaining to the dataset
  */
+
 lfunction alignments.ReadCodonDataSetFromPath(dataset_name, path) {
-    ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
+     code_info = alignments.LoadGeneticCode (None);
+     return alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code_info["code"], code_info["stops"]);
+}
+
+/**
+ * Reads a codon dataset from a file path given a genetic code
+ * @name alignments.ReadCodonDataSetFromPathGivenCode
+ * @param {String} dataset_name - name of variable you would like to set the dataset to
+ * @param {String} path - path to alignment file
+ * @param {Matrix} code - genetic code
+ * @param {String} stop_codons - the list of stopcodons
+ * @returns {Dictionary} r - metadata pertaining to the dataset
+ */
+lfunction alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code, stop_codons) {
 
     if (Type(path) == "String") {
         DataSet ^ dataset_name = ReadDataFile(path);
@@ -32,12 +66,11 @@ lfunction alignments.ReadCodonDataSetFromPath(dataset_name, path) {
     r = alignments.ReadNucleotideDataSet_aux(dataset_name);
 
     r * {
-        "code": _Genetic_Code,
-        "stop": GeneticCodeExclusions,
+        "code": code,
+        "stop": stop_codons,
         "file": path,
         "sequences": Eval( ^ "`dataset_name`.species")
     };
-
 
     return r;
 }
@@ -80,11 +113,30 @@ lfunction alignments.ReadNucleotideDataSet_aux(dataset_name) {
  * Get sequence names from existing dataset
  * @name alignments.GetSequenceNames
  * @param {String} dataset_name - name of dataset to get sequence names from
- * @returns {Dictionary} list of sequence names
+ * @returns {Matrix} list of sequence names
  */
 lfunction alignments.GetSequenceNames(dataset_name) {
     GetString(result, ^ dataset_name, -1);
     return result;
+}
+
+/**
+ * Get sequence from existing dataset by name
+ * @name alignments.GetSequenceNames
+ * @param {String} dataset_name - name of dataset to get sequence names from
+ * @param {String|None} sequence_name - the name of the sequence to extract or None to set up the initial mapping
+ * @returns {String} the corresponding sequence string
+ */
+
+lfunction alignments.GetSequenceByName (dataset_name, sequence_name) {
+    if (None == sequence_name) {
+        cache = utility.MatrixToDict (alignments.GetSequenceNames (dataset_name));
+        return None;
+    }
+
+    assert (cache/sequence_name, "Invalide sequence name `sequence_name` for data set `dataset_name` in call to alignments.GetSequenceByName");
+    GetDataInfo (seq_string, ^dataset_name, cache[sequence_name]);
+    return seq_string;
 }
 
 /**

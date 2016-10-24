@@ -497,6 +497,17 @@ lfunction io.FileExists  (path) {
 }
 
 /**
+ * Converts a relative path to the absolute path using the current batch file as base
+ * @param {String} relative path
+ * @returns {String} absolute path
+ */
+
+lfunction io.MakeAbsoluteFilePath  (path) {
+    return utility.getGlobalValue ("PATH_TO_CURRENT_BF") + path;
+}
+
+
+/**
  * Checks if there is a cache file; creates if empty
  * @param {String} path  the path to the cache file; will be created if it doesn't exist
  * @returns {Dict} the contents of the file

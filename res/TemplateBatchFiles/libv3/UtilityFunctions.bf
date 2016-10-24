@@ -175,6 +175,21 @@ lfunction utility.ArrayToDict (object) {
 }
 
 /**
+ * Converts a matrix into a lookup dict, of the form value -> index
+ * @name   utility.MatrixToDict
+ * @param  {Matrix} object
+ * @return {Dictionary} lookup table
+ * @example utility.MatrixToDict ({{"a","b","c"}}) => {"a" : 0, "b" : 1, "c" : 2}
+ */
+
+lfunction utility.MatrixToDict (matrix) {
+    result = {};
+    counter = 0;
+    utility.ForEach(matrix, "_value_", "(`&result`)[_value_] = `&counter`; `&counter` += 1;");
+    return result;
+}
+
+/**
  * @name utility.DictToArray
  * @param object
  */
@@ -293,8 +308,6 @@ function utility.Filter (object, lambda_name, condition) {
  * @param {Dictionary|Matrix} object - matrix to convert
  * @param {String} lambda_name - function to discern whether element is filtered.
  * @returns first matched object or none
- * @example
- * _nonnegatives = utility.Filter (_data_vector, "_value_", "_value_ >= 0");
  */
 function utility.First (object, lambda_name, condition) {
 
