@@ -1,6 +1,6 @@
 # OpenMP projects should set the environment variable OMP_NUM_THREADS to a reasonably small value (say, 4). 
 
-sudo : false
+sudo : required
 
 notifications:
     email:
