@@ -130,44 +130,55 @@ RELAX.model_map = {};
 RELAX.model_map [RELAX.reference.model["id"]] = RELAX.reference.model;
 RELAX.model_map [RELAX.test.model["id"]] = RELAX.test.model;
 
-estimators.ApplyExistingEstimates   ("relax.LF",
+RELAX.previous_results = relax.gtr_results;
+
+do {
+
+    estimators.ApplyExistingEstimates   ("relax.LF",
         RELAX.model_map,
-        relax.gtr_results,
+        RELAX.previous_results,
         None);
 
 
 
 
-utility.SetEnvVariable ("VERBOSITY_LEVEL",1);
-// utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
+    utility.SetEnvVariable ("VERBOSITY_LEVEL",1);
+    utility.SetEnvVariable ("USE_LAST_RESULTS",1);
 
-io.ReportProgressMessage ("RELAX", "Fitting the alternative RELAX model");
+    // utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
 
-Optimize (relax.alt.mle, relax.LF);
+    io.ReportProgressMessage ("RELAX", "Fitting the alternative RELAX model");
 
-relax.alt = estimators.ExtractMLEs ("relax.LF", RELAX.model_map);
-relax.add_scores (relax.alt, relax.alt.mle);
+    Optimize (relax.alt.mle, relax.LF);
 
-fprintf (stdout, "\nReference distribution\n");
-relax.print_distribution (relax.getRateDistribution (RELAX.reference.model, 1));
+    relax.alt = estimators.ExtractMLEs ("relax.LF", RELAX.model_map);
+    relax.add_scores (relax.alt, relax.alt.mle);
 
-fprintf (stdout, "\nTest distribution\n");
-relax.print_distribution (relax.getRateDistribution (RELAX.test.model, 1));
+    fprintf (stdout, "\nReference distribution\n");
+    relax.print_distribution (relax.getRateDistribution (RELAX.reference.model, 1));
+
+    fprintf (stdout, "\nTest distribution\n");
+    relax.print_distribution (relax.getRateDistribution (RELAX.test.model, 1));
 
 
-io.ReportProgressMessage ("RELAX", "Alternative RELAX model fit. log(L) = " + relax.alt["LogL"] + ". Relaxation parameter K = " + Eval (RELAX.relaxation_parameter));
-io.ReportProgressMessage ("RELAX", "Fitting the null RELAX model");
-parameters.SetConstraint (RELAX.relaxation_parameter, "1", "");
+    io.ReportProgressMessage ("RELAX", "Alternative RELAX model fit. log(L) = " + relax.alt["LogL"] + ". Relaxation parameter K = " + Eval (RELAX.relaxation_parameter));
+    io.ReportProgressMessage ("RELAX", "Fitting the null RELAX model");
+    parameters.SetConstraint (RELAX.relaxation_parameter, "1", "");
 
-Optimize (relax.null.mle, relax.LF);
-relax.null = estimators.ExtractMLEs ("relax.LF", RELAX.model_map);
-relax.add_scores (relax.null, relax.null.mle);
+    Optimize (relax.null.mle, relax.LF);
+    relax.null = estimators.ExtractMLEs ("relax.LF", RELAX.model_map);
+    relax.add_scores (relax.null, relax.null.mle);
 
-fprintf (stdout, "\nReference (=test) distribution\n");
-relax.print_distribution (relax.getRateDistribution (RELAX.reference.model, 1));
+    fprintf (stdout, "\nReference (=test) distribution\n");
+    relax.print_distribution (relax.getRateDistribution (RELAX.reference.model, 1));
 
-io.ReportProgressMessage ("RELAX", "Null RELAX model fit. log(L) = " + relax.null["LogL"] + ". p-value = " + (relax.runLRT (relax.alt["LogL"], relax.null["LogL"]))["p"]);
+    io.ReportProgressMessage ("RELAX", "Null RELAX model fit. log(L) = " + relax.null["LogL"] + ". p-value = " + (relax.runLRT (relax.alt["LogL"], relax.null["LogL"]))["p"]);
 
+    parameters.RemoveConstraint (RELAX.relaxation_parameter);
+
+    RELAX.previous_results = relax.null;
+
+} while (relax.null["LogL"] > relax.alt["LogL"]);
 
 
 //------------------------------------------------------------------------------

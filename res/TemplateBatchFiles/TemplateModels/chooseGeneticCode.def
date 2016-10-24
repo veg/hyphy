@@ -392,7 +392,7 @@ function mapCodonsToAAGivenMappingAux(codonSeq, aaSequence, mapping, this_many_m
             } else {
                 mismatch_count += (aaSequence[aaPos] != currentAA);
                 if (this_many_mm == 1) {
-                    assert(mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos + " : codon '" + codonSeq[seqPos][seqPos + 2] + "'(" + aaSequence[aaPos] + ") a.a. '`currentAA`'");
+                    assert(mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos + " (codon `seqPos`) : codon '" + codonSeq[seqPos][seqPos + 2] + "'(`currentAA`) a.a. '`aaSequence[aaPos]`'");
                 } else {
                     if (mismatch_count >= this_many_mm) {
                         translString * 0;

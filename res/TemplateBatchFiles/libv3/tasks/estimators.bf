@@ -607,6 +607,8 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
 
     partition_omega = {};
+
+
     if (option["model-type"] == ^ "terms.local" && Type(option["partitioned-omega"]) == "AssociativeList") {
         /**
             Assumes that option["partitioned-omega"] is a dictionary where each partition has
@@ -623,6 +625,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
             and add them to the model parameter set
         */
 
+
         new_globals = {};
         utility.ForEachPair(partition_omega, "_key_", "_value_",
             '`&new_globals` [_key_] = (`&name_space` + ".omega_" + Abs (`&new_globals`)); model.generic.AddGlobal (`&mg_rev`, `&new_globals` [_key_] , (^"terms.omega_ratio") + " for *" + _key_ + "*")');
@@ -636,7 +639,6 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
         alpha = model.generic.GetLocalParameter(mg_rev, ^ "terms.synonymous_rate");
         beta = model.generic.GetLocalParameter(mg_rev, ^ "terms.nonsynonymous_rate");
         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
-
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name && 1]];
 
@@ -658,7 +660,6 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     LikelihoodFunction likelihoodFunction = (lf_components);
 
-
     //fprintf (stdout, option["proportional-branch-length-scaler"], "\n");
 
     if (Type(initial_values) == "AssociativeList") {
@@ -667,7 +668,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
     }
 
     //Export (lfs, likelihoodFunction);
-    //fprintf (stdout, lfs, "\n");
+    //console.log (lfs);
 
     Optimize(mles, likelihoodFunction);
 

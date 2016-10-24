@@ -21,7 +21,7 @@ function parameters.ApplyNameSpace(id, namespace) {
 }
 
 /**
- * @name parameters.UnconstrainParameterSet 
+ * @name parameters.UnconstrainParameterSet
  * @param {LikelihoodFunction} lf - the likelihood function to operate on
  * @param {Matrix} set - set of parameters to unconstrain
  * @returns nothing
@@ -44,7 +44,7 @@ function parameters.UnconstrainParameterSet(lf, set) {
 }
 
 /**
- * @name parameters.DeclareGlobal 
+ * @name parameters.DeclareGlobal
  * @param {String} id
  * @param {Matrix} cache
  * @returns nothing
@@ -81,7 +81,7 @@ function parameters.DeclareGlobal(id, cache) {
 
 /**
  * @name parameters.NormalizeRatio
- * @param {Number} n 
+ * @param {Number} n
  * @param {Number} d
  * @returns n/d
  */
@@ -138,7 +138,7 @@ function parameters.Quote(arg) {
 }
 
 /**
- * @name parameters.AddMultiplicativeTerm 
+ * @name parameters.AddMultiplicativeTerm
  * @param {Matrix} matrix - matrix to scale
  * @param {Number} term - scalar to multiply matrix by
  * @param {Number} do_empties - if element matrix is empty, fill with term
@@ -168,7 +168,7 @@ lfunction parameters.AddMultiplicativeTerm(matrix, term, do_empties) {
 }
 
 /**
- * @name parameters.StringMatrixToFormulas 
+ * @name parameters.StringMatrixToFormulas
  * @param {String} id - matrix to scale
  * @param {Matrix} matrix - if element matrix is empty, fill with term
  * @returns nothing
@@ -190,9 +190,9 @@ function parameters.StringMatrixToFormulas(id, matrix) {
 }
 
 /**
- * @name parameters.GenerateAttributedNames 
- * @param {String} prefix 
- * @param {Dictionary} attributes 
+ * @name parameters.GenerateAttributedNames
+ * @param {String} prefix
+ * @param {Dictionary} attributes
  * @param {String} delimiter
  */
 function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
@@ -207,9 +207,9 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
 }
 
 /**
- * @name parameters.GenerateSequentialNames 
- * @param {String} prefix 
- * @param {Number} count 
+ * @name parameters.GenerateSequentialNames
+ * @param {String} prefix
+ * @param {Number} count
  * @name parameters.GenerateSequentialNames
  * @param {String} prefix
  * @param {Number} count
@@ -228,7 +228,7 @@ function parameters.GenerateSequentialNames(prefix, count, delimiter) {
 }
 
 /**
- * @name parameters.SetRange 
+ * @name parameters.SetRange
  * @param id
  * @param ranges
  * @returns nothing
@@ -303,8 +303,8 @@ function parameters.SetConstraint(id, value, global_tag) {
 /**
  * constraint set of parameters
  * @name parameters.ConstrainSets
- * @param {AssociativeList} set1 - 
- * @param {AssociativeList} set2 - 
+ * @param {AssociativeList} set1 -
+ * @param {AssociativeList} set2 -
  * @returns nothing
  */
 function parameters.ConstrainSets(set1, set2) {
