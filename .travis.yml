@@ -14,7 +14,7 @@ branches:
   only:
     - master
     - v2.3-alpha
-    - v2.3-alpha-working
+    - v2.3-alpha-dev
 
 cache:
   directories:
