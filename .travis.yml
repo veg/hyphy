@@ -13,8 +13,8 @@ notifications:
 branches:
   only:
     - master
-    - v2.3-alpha
-    - v2.3-alpha-dev
+    - v2.3
+    - v2.3-dev
 
 cache:
   directories:
