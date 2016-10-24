@@ -148,28 +148,6 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         endif(${HAVE_AVX_EXTENSIONS})
     endif(NOAVX)
 
-    if(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
-        set(GCC6 true)
-    endif(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
-
-    if(${MACOSX_LION})
-        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null -Wno-dangling-else -Wno-logical-op-parentheses")
-    endif(${MACOSX_LION})
-
-    if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3")
-    else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3")
-    endif(${GCC45})
-
-    if(${GCC46})
-        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
-    endif(${GCC46})
-
-    if(${GCC6})
-      set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -std=gnu++98 -fno-strict-aliasing -fpermissive")
-      set(DEFAULT_WARNING_FLAGS "${DEFAULT_WARNING_FLAGS} -Wno-error=narrowing")
-    endif(${GCC6})
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
