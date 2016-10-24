@@ -1,6 +1,6 @@
 # OpenMP projects should set the environment variable OMP_NUM_THREADS to a reasonably small value (say, 4). 
 
-sudo : false
+sudo : required
 
 notifications:
     email:
@@ -8,12 +8,13 @@ notifications:
             - spond@temple.edu
             - steven@stevenweaver.org
         on_success: change
-        on_failure: always
+        on_failure: change
 
 branches:
   only:
     - master
-    - v2.3-alpha
+    - v2.3
+    - v2.3-dev
 
 cache:
   directories:
@@ -39,12 +40,15 @@ addons:
 before_install:
   - wget http://www.cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz --no-check-certificate
   - tar xvzf cmake-3.3.2-Linux-x86_64.tar.gz -C $HOME
+  - sh ./conf/travis-install-mpi.sh $MPI
+  - export PATH=$HOME/OpenMPI/bin:$PATH
 
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
   - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
   - $HOME/cmake-3.3.2-Linux-x86_64/bin/cmake . 
   - make HYPHYMP
+  - make HYPHYMPI
   - make HYPHYGTEST
 
 script: 

@@ -148,7 +148,10 @@ TEST_F(StringTest,DuplicateErasingTest)
                DuplicateErasing is called
     */
     _String test = _String ("hyphy"),
-            dupe = _String ("old_hyphy");
+            dupe = _String ("old_hyphy"),
+            empty;
+
+    empty.Initialize();
 
     dupe.DuplicateErasing(&test);
 
@@ -162,14 +165,16 @@ TEST_F(StringTest,DuplicateErasingTest)
 
 TEST_F(StringTest,makeDynamicTest)
 {
-    //What is the difference between this and dupicate?
 
     /* 20110825: SLKP code coverage complete
           The idea of make dynamic is to convert a stack object into a heap object, see code below
      */
 
     _String stackString (globalTest1, 5, -1), // this helps test one of the constructors
-            *heapString = (_String*)stackString.makeDynamic();
+            *heapString = (_String*)stackString.makeDynamic(),
+            empty;
+
+    empty.Initialize();
 
     EXPECT_STREQ (stackString.getStr(), heapString->getStr());
     stackString = empty; // overwrite the stack object
@@ -185,7 +190,11 @@ TEST_F(StringTest,getCharTest)
 
     /* 20110825: SLKP code coverage complete */
 
-    _String test (globalTest1);
+    _String test (globalTest1),
+            empty;
+
+    empty.Initialize();
+
     EXPECT_EQ('e', test.getChar(5));
 
     //Default return is 0
@@ -199,7 +208,11 @@ TEST_F(StringTest,getCharTest)
 
 TEST_F(StringTest,setCharTest)
 {
-    _String test (globalTest1);
+    _String test (globalTest1),
+            empty;
+
+    empty.Initialize();
+
     test.setChar(5,'d');
     EXPECT_EQ('d', test.getChar(5));
 

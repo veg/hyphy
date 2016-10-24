@@ -367,7 +367,7 @@ TEST_F(AVLListTest,toStrTest){
     }
 
     _String* return_str = (_String*)al.toStr();
-    EXPECT_STREQ("0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n", return_str->getStr());
+    EXPECT_STREQ("(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", return_str->getStr());
 }
 
 TEST_F(AVLListTest,RetrieveTest) {

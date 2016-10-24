@@ -857,7 +857,7 @@ bool    _HYModelWindow::ProcessEvent (_HYEvent* e)
             _HYButtonBar* bb3 = (_HYButtonBar*)GetCellObject (MODEL_BUTTON_ROW,6);
 
             _String cText (tl->GetText());
-            _Formula f (cText,nil,false);
+            _Formula f (cText,nil,nil);
             if (f.GetList().lLength) {
                 clipboardString = cText;
                 SyncEditBox ();
