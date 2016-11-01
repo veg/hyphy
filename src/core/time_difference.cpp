@@ -69,7 +69,7 @@ double TimeDifference::TimeSinceStart (void) const {
   #elif  defined __UNIX__
     timeval current_time;
     gettimeofday (&current_time,NULL);
-    return (current_time.tv_sec-base_time.tv_sec) + (current_time.tv_usec-base_time.tv_usec)*0.000001
+    return (current_time.tv_sec-base_time.tv_sec) + (current_time.tv_usec-base_time.tv_usec)*0.000001;
   #endif
   
   return 0.0;
