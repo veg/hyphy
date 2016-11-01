@@ -78,10 +78,7 @@ function _cdn_alignment_cleanup (reference, query, offset_nuc) {
 	        }
 	    }
 	}
-	/*for (;_rcidx < _seqL; _rcidx += 1 ) {
-        ref_cleaned * (reference [_rcidx]&&1);
-        qry_cleaned * (query [_rcidx]&&1);
-    }*/
+
 	ref_cleaned * 0; qry_cleaned * 0;
 
 	return {"REF": ref_cleaned, "QRY": qry_cleaned, "TOO_SHORT" : too_short, "TOO_LONG": too_long, "SPAN": span};
@@ -178,6 +175,7 @@ function pSM2cSM(_scorematrix, _letters)
 
     _cdnScoreMatrix  = { 65,65 };
     _mapping      = mapStrings( _hyphyAAOrdering, _letters );
+
     for ( _k = 0; _k < 64; _k += 1 ) {
         _mappedK = _mapping[ _Genetic_Code[ _k ] ];
         if ( _mappedK >= 0) {

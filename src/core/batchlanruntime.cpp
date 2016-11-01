@@ -290,7 +290,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         long                dataDimension   = thisDF->GetDimension(),
                             unitLength      = thisDF->GetUnitLength();
 
-        _TranslationTable*  thisTT = thisDF->GetData()->GetTT();
+        _TranslationTable const*  thisTT = thisDF->GetData()->GetTT();
         
         if (unitLength==1) {
             if (thisTT->IsStandardNucleotide()) {

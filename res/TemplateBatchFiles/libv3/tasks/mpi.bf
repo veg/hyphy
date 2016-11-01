@@ -133,6 +133,7 @@ namespace mpi {
                 }
             }
 
+            //assert (0);
             for (k = 1; k < mpi_node_count; k += 1) {
                 queue [k] = {"job_id" : None, "callback" : None, "arguments": None};
             }
@@ -165,6 +166,7 @@ namespace mpi {
 
 
             complete_function_dump = aux.queue_export_function (job);
+            //console.log (complete_function_dump);
             job_id = get_next_job_id();
             //fprintf (stdout, "Sending to node ", node, "\n");
             queue [node] = {"job_id" : job_id, "callback" : result_callback, "arguments" : arguments};

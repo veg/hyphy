@@ -64,6 +64,8 @@ void            mpiBgmLoop (int, int);
 _SimpleList     mpiNodesThatCantSwitch;
 #endif
 
+extern _List batchLanguageFunctionNames;
+
 
 //_________________________________________________________________________
 
@@ -243,7 +245,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
             mpiOptimizerLoop        (rank,size);
             ReportWarning           ("[MPI] Returned from mpiOptimizer loop");
             hyphyMPIOptimizerMode   = _hyphyLFMPIModeNone;
-            pathNames               && & baseDir;
+            PushFilePath(baseDir, false, false);
         } else if ( theMessage->Equal (&mpiLoopSwitchToBGM) ) {
             ReportWarning       ("[MPI] Received signal to switch to mpiBgmLoop");
             MPISendString       (mpiLoopSwitchToBGM, senderID); // feedback to source to confirm receipt of message
@@ -283,13 +285,13 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     resStr->Finalize();
                 }
             } else {
-                //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
+                // ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 _ExecutionList exL (*theMessage);
+                //ReportWarning (_String ((_String*)batchLanguageFunctionNames.toStr()));
                 _PMathObj res = exL.Execute();
                 resStr = res?(_String*)res->toStr():new _String ("0");
             }
 
-            checkPointer (resStr);
             MPISendString(*resStr,senderID);
 
             _Parameter      keepState = 0.0;
@@ -298,7 +300,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
             if (keepState < 0.5) {
                 PurgeAll (true);
                 InitializeGlobals ();
-                pathNames && & baseDir;
+                PushFilePath(baseDir, false, false);
                 ReportWarning("Reset node state");
             } else {
                 ReportWarning("Preserved node state");

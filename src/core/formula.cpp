@@ -1921,7 +1921,7 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
                   continue;
                 }
               }
-              ReportWarning ("Poneially missed dependence on a function in [][]; arguments are run-time dependent");
+              ReportWarning ("Potentially missed dependence on a function in [][]; arguments are run-time dependent");
             }
           }
         }

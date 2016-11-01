@@ -591,9 +591,8 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
 
                 long    categoryCount = 1;
 
-                if (parameters.lLength > 2)
+                if (parameters.lLength > 2) {
                     // have multiple categories
-                {
                     categoryCount = (long) ProcessNumericArgument((_String*)parameters(2),nil);
                 }
 
@@ -668,7 +667,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
                     }
 
                 }
-                if (errCode) {
+                if (errCode.sLength) {
                     WarnError(errCode);
                     return;
                 }
@@ -716,6 +715,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
             vSpecs = _String("0-")&_String(dataset->NoOfColumns()-1);
         }
         dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
+
     } else {
         const _DataSetFilter * dataset1 = GetDataFilter (dsID);
         dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
@@ -820,9 +820,9 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
                 const _DataSetFilter      * dsf       = anLF->GetIthFilter (pid);
                 anLF->PrepareToCompute();
                 anLF->Compute         ();
-                objectID                        = dsf->GetPatternCount();
+                long patterns                         = dsf->GetPatternCount();
 
-                _Matrix             *condMx     = new _Matrix   (2*objectID*(testTree->GetLeafCount()
+                _Matrix             *condMx     = new _Matrix   (2*patterns*(testTree->GetLeafCount()
                         + testTree->GetINodeCount()) * testTree->categoryCount,
                         testTree->GetCodeBase(),
                         false, true);
@@ -845,14 +845,14 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 
                 _Matrix  *nodeNames = new _Matrix (leafNames);
 
-                for (long siteC = 0L; siteC < objectID; siteC ++) {
-                    testTree->RecoverNodeSupportStates (dsf,siteC,siteC-1,*condMx);
+                for (unsigned long siteC = 0UL; siteC < patterns; siteC ++) {
+                    testTree->RecoverNodeSupportStates (dsf,siteC,*condMx);
                 }
 
                 anLF->DoneComputing   ();
                 _AssociativeList *retMe = new _AssociativeList;
-                retMe->MStore ("Nodes",nodeNames,false);
-                retMe->MStore ("Values",condMx,false);
+                retMe->MStore ("Nodes", nodeNames,false);
+                retMe->MStore ("Values",condMx,   false);
                 ob = retMe;
             }
         }
@@ -1123,7 +1123,12 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                         }
 
                         if (errStr.sLength == 0) {
-                            _String     settingReport (128L,true);
+                            _Parameter  gapOpen       = 15.,
+                            gapOpen2      = 15.,
+                            gapExtend     = 1.,
+                            gapExtend2    = 1.,
+                            gapFrameshift = 50.;
+                           _String     settingReport (128L,true);
 
                             settingReport << "Running sequence alignment with the following options:";
 
@@ -1134,12 +1139,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                             settingReport << "\n\tGap character:";
                             settingReport << gapCharacter;
 
-                            _Parameter  gapOpen       = 15.,
-                                        gapOpen2      = 15.,
-                                        gapExtend     = 1.,
-                                        gapExtend2    = 1.,
-                                        gapFrameshift = 50.;
-
+ 
 
 
 
@@ -1234,12 +1234,11 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                             settingReport << (doLinear?"Yes":"No");
 
                             settingReport.Finalize();
-                            ReportWarning (settingReport);
+                            //ReportWarning (settingReport);
 
                             long stringCount = inStrings->GetHDim() * inStrings->GetVDim();
 
                             _AssociativeList *alignedStrings = new _AssociativeList;
-                            checkPointer (alignedStrings);
 
 
                             for (long s1 = 0; s1 < stringCount; s1++) {

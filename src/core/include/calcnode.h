@@ -604,7 +604,7 @@ public:
 
 
     _List*      RecoverAncestralSequences       (_DataSetFilter const*, _SimpleList const&, _List const&, _Parameter *, _Parameter const*, long, long*, _GrowingVector*, bool = false);
-    void        RecoverNodeSupportStates        (_DataSetFilter const*, long, long, _Matrix&);
+    void        RecoverNodeSupportStates        (_DataSetFilter const*, long, _Matrix&);
     void        RecoverNodeSupportStates2       (node<long>*,_Parameter*,_Parameter*,long);
     _List*      SampleAncestors                 (_DataSetFilter*, node<long>*);
     void        PurgeTree                       (void);
@@ -806,7 +806,7 @@ public:
 protected:
 
 
-    bool        IntPopulateLeaves   (_DataSetFilter const*, long, long);
+    bool        IntPopulateLeaves   (_DataSetFilter const*, long) const;
 
     virtual     void                PreTreeConstructor                  (bool);
     virtual     void                PostTreeConstructor                 (bool);

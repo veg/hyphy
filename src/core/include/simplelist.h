@@ -132,7 +132,7 @@ class _SimpleList:public BaseObj {
         * @param index The index of the elemnt to retrieve 
         * @return the value of the element at the specified index.
         */
-        long GetElement (const long index);
+        long GetElement (const long index) const;
 
         /**
         * Find the position of a search string in the list of strings (ONLY)

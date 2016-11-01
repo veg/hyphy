@@ -6226,7 +6226,7 @@ long     _TheTree::IsLinkedToALF (long& pid) const {
 
 //_______________________________________________________________________________________________
 
-bool     _TheTree::IntPopulateLeaves (_DataSetFilter const* dsf, long site_index, long) {
+bool     _TheTree::IntPopulateLeaves (_DataSetFilter const* dsf, long site_index) const {
 // assign proper values to leaf conditional probability vectors
     bool site_has_all_gaps = true;
   
@@ -6249,7 +6249,7 @@ bool     _TheTree::IntPopulateLeaves (_DataSetFilter const* dsf, long site_index
 
 //_______________________________________________________________________________________________
 
-void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long index, long lastIndex, _Matrix& resultMatrix)
+void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long site_index, _Matrix& resultMatrix)
 // assume current values of all parameters
 // return 2 sets of vectors for each branch
 //   - top-down  conditionals
@@ -6261,33 +6261,34 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long ind
     long      globalShifter        = (flatLeaves.lLength+flatTree.lLength)*cBase,
               catShifer             = dsf->GetPatternCount() * 2 * globalShifter;
 
-    IntPopulateLeaves (dsf, index,lastIndex);
+    IntPopulateLeaves (dsf, site_index);
 
     /* pass 1; populate top-down vectors */
     /* ugly top-bottom algorithm for debuggability and compactness */
 
     for (long catCount   = 0; catCount < categoryCount; catCount ++) {
-        _Parameter* currentStateVector = resultMatrix.theData + 2*globalShifter*index + catShifer*catCount,
-                    *   vecPointer         = currentStateVector;
+        _Parameter* currentStateVector = resultMatrix.theData + 2*globalShifter*site_index + catShifer*catCount,
+                  * vecPointer         = currentStateVector;
 
-        for (long nodeCount = 0; nodeCount<flatCLeaves.lLength; nodeCount++) {
+        for (long nodeCount = 0L; nodeCount<flatCLeaves.lLength; nodeCount++) {
             _Parameter *leafVec     = ((_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]))->theProbs;
 
-            for (long cc = 0; cc < cBase; cc++,vecPointer++) {
-                *vecPointer = leafVec[cc];
+            for (long cc = 0; cc < cBase; cc++) {
+                vecPointer[cc] = leafVec[cc];
             }
+            vecPointer += cBase;
         }
 
-        for (long iNodeCount = 0; iNodeCount < flatTree.lLength; iNodeCount++) {
+        for (long iNodeCount = 0L; iNodeCount < flatTree.lLength - 1; iNodeCount++) {
             node<long>* thisINode       = (node<long>*)flatNodes.lData[iNodeCount];
-
-            for (long cc = 0; cc < cBase; cc++,vecPointer++) {
+          
+            for (long cc = 0; cc < cBase; cc++) {
                 _Parameter      tmp = 1.0;
                 for (long nc = 0; nc < thisINode->nodes.length; nc++) {
                     _Parameter  tmp2 = 0.0;
-                    _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[thisINode->nodes.data[nc]->in_object]);
+                    _CalcNode   * child         = map_node_to_calcnode(thisINode->go_down(nc+1));
                     _Parameter  * childSupport  = currentStateVector + child->nodeIndex*cBase,
-                                  * transMatrix   = child->GetCompExp(categoryCount>1?catCount:(-1))->theData + cc*cBase;
+                                * transMatrix   = child->GetCompExp(categoryCount>1?catCount:(-1))->theData + cc*cBase;
 
                     for (long cc2 = 0; cc2 < cBase; cc2++) {
                         tmp2 += transMatrix[cc2] * childSupport[cc2];
@@ -6295,8 +6296,9 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long ind
 
                     tmp *= tmp2;
                 }
-                *vecPointer = tmp;
+                vecPointer[cc] = tmp;
             }
+            vecPointer += cBase;
         }
         RecoverNodeSupportStates2 (&GetRoot(),currentStateVector+globalShifter,currentStateVector,categoryCount>1?catCount:(-1));
     }
@@ -6308,9 +6310,9 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long ind
 
 //_______________________________________________________________________________________________
 
-void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* resultVector, _Parameter* forwardVector, long catID)
-{
-    _CalcNode   * thisNodeC     = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[thisNode->in_object]);
+void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* resultVector, _Parameter* forwardVector, long catID) {
+  
+    _CalcNode   * thisNodeC     = map_node_to_calcnode (thisNode);
     _Parameter  * vecPointer    = resultVector + thisNodeC->nodeIndex * cBase;
 
     if (thisNode->parent) {
@@ -6319,10 +6321,10 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* 
                 _Parameter tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
                     _Parameter  tmp2            = 0.0;
-                    _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[thisNode->parent->nodes.data[nc]->in_object]);
+                    _CalcNode   * child         = map_node_to_calcnode(thisNode->parent->go_down (nc+1));
                     bool          invert        = (child == thisNodeC);;
                     if (invert) {
-                        child = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[thisNode->parent->in_object]);
+                        child = map_node_to_calcnode (thisNode->parent);
                     }
 
                     _Parameter  * childSupport  = invert?resultVector + cBase*child->nodeIndex

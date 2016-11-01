@@ -503,7 +503,10 @@ lfunction io.FileExists  (path) {
  */
 
 lfunction io.MakeAbsoluteFilePath  (path) {
-    return utility.getGlobalValue ("PATH_TO_CURRENT_BF") + path;
+    if (path [0] != "/") {
+        return utility.getGlobalValue ("PATH_TO_CURRENT_BF") + path;
+    }
+    return path;
 }
 
 
@@ -533,4 +536,27 @@ lfunction io.LoadCacheFromFile  (path) {
  */
 lfunction io.WriteCacheToFile  (path, data) {
     fprintf (path, CLEAR_FILE, data);
+}
+
+/**
+ * Format the time in seconds as (DD:)HH:MM:SS ('DD' is only shown if more than HH > 24 hours
+ * @param {Number} interval  the time interval in seconds
+ * @returns {String} formatted string
+ */
+lfunction io.FormatTimeInterval  (interval) {
+    pieces  = {{interval % 60, interval % 3600 $ 60, interval $ 3600 % 24, interval $ (3600*24)}};
+
+    time_pieces = {};
+
+    for (k = 3; k >= 0; k = k - 1) {
+        if (pieces[k] || k < 3) {
+            if (pieces[k] < 10) {
+                time_pieces + ("0" + pieces[k]);
+            } else {
+                time_pieces + pieces[k];
+            }
+        }
+    }
+
+    return Join (":", time_pieces);
 }

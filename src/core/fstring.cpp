@@ -734,7 +734,7 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
         return GreaterEq(arg0);
       case HY_OP_CODE_DIFF: // Differentiate
         return Differentiate(arg0);
-      case HY_OP_CODE_JOIN: // Inverse
+      case HY_OP_CODE_JOIN: // JOIN
         return Join (arg0);
       case HY_OP_CODE_SIMPLIFY: // Simplify an expression
         return SubstituteAndSimplify (arg0);

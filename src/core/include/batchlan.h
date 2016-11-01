@@ -108,7 +108,8 @@ public:
     void        ResetFormulae               (void);             // decompile formulas (for reference functions)
     void        ResetNameSpace              (void);
     void        SetNameSpace                (_String);
-    _String     GetFileName                 (void);
+    _String const
+                GetFileName                 (void) const;
     _String*    GetNameSpace                (void);
     _String     AddNameSpaceToID            (_String&, _String * = nil);
     _String     TrimNameSpaceFromID         (_String&);
@@ -119,6 +120,7 @@ public:
         }
         return nil;
     }
+  
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
@@ -167,7 +169,8 @@ public:
     _List                           *stdinRedirectAux;
 
     _String                         sourceFile,
-                                    sourceText;
+                                    sourceText,
+                                    enclosingNamespace;
 
     _SimpleList                     callPoints,
                                     lastif;
@@ -674,8 +677,11 @@ void    KillLFRecord                 (long, bool = true);
 void    KillDataSetRecord            (long);
 void    KillModelRecord              (long);
 void    KillExplicitModelFormulae    (void);
-bool    PushFilePath                 (_String&, bool = true);
-void    PopFilePath                  (void);
+bool    PushFilePath                 (_String&, bool = true, bool process = true);
+_String const    PopFilePath         (void);
+_String const *  PeekFilePath        (void);
+_String const    GetPathStack        (const _String spacer = ",");
+
 _Matrix*CheckMatrixArg               (_String const*, bool);
 _AssociativeList *
 CheckAssociativeListArg      (_String const*);

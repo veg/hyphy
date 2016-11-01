@@ -52,6 +52,7 @@
 #include "category.h"
 #include "function_templates.h"
 #include "global_object_lists.h"
+#include "time_difference.h"
 
 using namespace hyphy_global_objects;
 
@@ -312,13 +313,13 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
 #ifdef  _OPENMP
     lf->SetThreadCount (1);
 #endif
-    TimerDifferenceFunction (false);
+    TimeDifference timer;
     lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
     lf->Compute           ();
 
 
 #ifdef _SLKP_LFENGINE_REWRITE_
-    _Parameter            tdiff = TimerDifferenceFunction(true);
+    _Parameter            tdiff = timer.TimeSinceStart();
 #ifdef  _OPENMP
     if (systemCPUCount > 1) {
         _Parameter          minDiff = tdiff;
@@ -326,10 +327,10 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
 
         for (long k = 2; k <= systemCPUCount; k++) {
             lf->SetThreadCount              (k);
-            TimerDifferenceFunction         (false);
+            TimeDifference timer;
             lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex));
             lf->Compute                     ();
-            tdiff = TimerDifferenceFunction (true);
+            tdiff = timer.TimeSinceStart();
             if (tdiff < minDiff) {
                 minDiff = tdiff;
                 bestTC  = k;
@@ -372,9 +373,11 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
     FILE           *outFile = fileName?doFileOpen (fileName->sData,"w"):nil;
     _FString*       t;
 
+    static          TimeDifference timer;
+  
     if (init==0) {
         lCount          = likeFuncEvalCallCount;
-        TimerDifferenceFunction (false);
+        timer.Start();
 #ifndef _MINGW32_MEGA_
         setvbuf           (stdout,nil, _IONBF,1);
 #endif
@@ -387,7 +390,7 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
         userStatusString = t?*t->theString:emptyString;
         elapsed_time     = 0.0;
     } else if (init==1) {
-        double timeDiff = TimerDifferenceFunction (true);
+        double timeDiff = timer.TimeSinceStart();
 
         //printf ("%g %g\n", timeDiff,elapsed_time);
 
@@ -400,7 +403,7 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
             return;
         } else {
             elapsed_time += timeDiff;
-            TimerDifferenceFunction (false);
+            timer.Start();
         }
 
 
@@ -3593,7 +3596,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
                 exponentiationsIn   = matrixExpCount;
 
 
-    TimerDifferenceFunction (false);
+    TimeDifference timer;
 
     _Parameter              hardLimitOnOptimizationValue;
     checkParameter          (optimizationHardLimit, hardLimitOnOptimizationValue, (_Parameter) INFINITY);
@@ -3723,7 +3726,7 @@ DecideOnDivideBy (this);
     }
 
 #if !defined __UNIX__ || defined __HEADLESS__
-    SetStatusBarValue (5,maxSoFar,(likeFuncEvalCallCount-evalsIn)/TimerDifferenceFunction(true));
+    SetStatusBarValue (5,maxSoFar,(likeFuncEvalCallCount-evalsIn)/timer.TimeSinceStart());
 #endif
 
     CheckDependentBounds();
@@ -4154,13 +4157,13 @@ DecideOnDivideBy (this);
                     BufferToConsole (buffer);
                 }
                 
-                if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
+                if (hardLimitOnOptimizationValue < INFINITY && timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
                     ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
                     break;
                 }
 
                 if (convergenceMode > 2) {
-                    if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
+                    if (hardLimitOnOptimizationValue < INFINITY && timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
                         ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
                         break;
                     }
@@ -4191,7 +4194,7 @@ DecideOnDivideBy (this);
             LoggerAddCoordinatewisePhase (divFactor, convergenceMode);
           
             for (jjj=forward?0:indexInd.lLength-1; forward?(jjj<indexInd.lLength):jjj>=0; forward?jjj++:jjj--) {
-                if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
+                if (hardLimitOnOptimizationValue < INFINITY && timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
                     break;
                 }
               
@@ -4482,7 +4485,7 @@ DecideOnDivideBy (this);
                   }
             }
 
-            if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
+            if (hardLimitOnOptimizationValue < INFINITY && timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
                 ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
                 break;
             }
@@ -9294,7 +9297,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
       CreateMatrix (catValues,indexCat.lLength,total_sites,false,true,false);
     }
     
-    TimerDifferenceFunction (false);
+    TimeDifference timer;
     
     
     bool       column_wise  = false;
@@ -9465,14 +9468,14 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
             }
           }
           
-          _Parameter time_elapsed = TimerDifferenceFunction (true);
+          _Parameter time_elapsed = timer.TimeSinceStart();
           
 
           if (time_elapsed > .25) {
 #if !defined __UNIX__ || defined __HEADLESS__
             SetStatusBarValue (100.*(site_offset_raw+good_sites)/total_sites, 1, 0);
 #endif
-            TimerDifferenceFunction (false);
+            timer.Start();
           }
         }
         this_tree->CleanUpMatrices();

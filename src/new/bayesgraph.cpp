@@ -40,6 +40,7 @@
 
 #include "bayesgraph.h"
 #include "function_templates.h"
+#include "time_difference.h"
 
 #ifdef __HYPHYQT__
     #include "hyphymain.h"
@@ -2473,7 +2474,10 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
      */
     VerbosityLevel();
     long howManyTimesUpdated = 0; // how many times has the line been updated; is the same as the # of seconds
-    TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+  
+  
+    TimeDifference timer;
+    // save initial timer; will only update every 1 second
 #ifdef __HEADLESS__
     SetStatusLine (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")));
 #else
@@ -2575,7 +2579,7 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 
 
         /*SLKP 20070926; include progress report updates */
-        if (TimerDifferenceFunction(true)>1.0) { // time to update
+        if (timer.TimeSinceStart()>1.0) { // time to update
             howManyTimesUpdated ++;
             _String statusLine = _HYBgm_STATUS_LINE_MCMC & (do_sampling ? emptyString : _String(" burnin")) & " " & (step+1) & "/" & n_steps
                                  & " steps (" & (1.0+step)/howManyTimesUpdated & "/second)";
@@ -2594,7 +2598,7 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 #endif
 #endif
 
-            TimerDifferenceFunction(false); // reset timer for the next second
+            timer.Start(); // reset timer for the next second
         }
         /* SLKP */
 

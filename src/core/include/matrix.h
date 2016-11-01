@@ -778,6 +778,13 @@ public:
      * @return The sum of all dictionary elements.
      */
     _PMathObj           Sum             (void);
+    /**
+     * Traverse the dictionary, and return { "key" : key, "value" : min / max over the list}
+     * All values that cannot be cast to a float will be IGNORED.
+     * If no valid numbers could be found, "key" will be None, and min/max will be an +/-Inf
+     * @return The minimum or maximum numeric value and corresponding key
+     */
+    _PMathObj           ExtremeValue    (bool do_mimimum) const;
 
     _AVLListXL          avl;
 

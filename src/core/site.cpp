@@ -141,19 +141,17 @@ _TranslationTable::_TranslationTable (void)
 }
 
 //_________________________________________________________
-_TranslationTable::_TranslationTable (unsigned char baseL)
-{
+_TranslationTable::_TranslationTable (unsigned char baseL) {
     baseLength = (baseL==20)?20:4;
     checkTable = NULL;
 }
 
 //_________________________________________________________
-_TranslationTable::_TranslationTable (_TranslationTable& t)
-{
+_TranslationTable::_TranslationTable (_TranslationTable const& t) {
     tokensAdded = t.tokensAdded;
     baseLength = t.baseLength;
     baseSet = t.baseSet;
-    translationsAdded.Duplicate (&t.translationsAdded);
+    translationsAdded << t.translationsAdded;
     checkTable = NULL;
 }
 
@@ -957,7 +955,7 @@ const _String _TranslationTable::ConvertCodeToLetters (long code, unsigned char 
 
 //_________________________________________________________
 
-_TranslationTable*  _TranslationTable::MergeTables (_TranslationTable* table2)
+_TranslationTable*  _TranslationTable::MergeTables (_TranslationTable const* table2) const
 // merge the translation tables if they are compatible, return the result,
 // otherwise return nil
 {
@@ -971,7 +969,6 @@ _TranslationTable*  _TranslationTable::MergeTables (_TranslationTable* table2)
         }
 
         _TranslationTable* result = new _TranslationTable (*this);
-        checkPointer     (result);
         if (table2->tokensAdded.sLength) {
             for (long i=0; i<table2->tokensAdded.sLength; i++) {
                 long f = tokensAdded.Find (table2->tokensAdded[i]);
@@ -979,7 +976,7 @@ _TranslationTable*  _TranslationTable::MergeTables (_TranslationTable* table2)
                     result->tokensAdded       && table2->tokensAdded[i];
                     // SLKP 20071002 added the next line;
                     // was not adding the translation for the new token
-                    result->translationsAdded << table2->translationsAdded[i];
+                    result->translationsAdded << table2->translationsAdded(i);
                 } else if (translationsAdded.lData[f] != table2->translationsAdded.lData[i]) {
                     DeleteObject (result);
                     return nil;
@@ -1432,8 +1429,7 @@ void     _DataSet::CheckMapping (long index)
 
 //_______________________________________________________________________
 
-long     _DataSet::GetCharDimension         (void)  // return the size of the alphabet space
-{
+unsigned long     _DataSet::GetCharDimension         (void) const {  // return the size of the alphabet space
     return theTT->baseLength;
 }
 
@@ -1445,8 +1441,7 @@ long     _DataSet::GetNoTypes (void) const // return the number of unique column
 }
 //_______________________________________________________________________
 
-long     _DataSet::GetFreqType (long index)  // return the frequency of a site
-{
+unsigned long     _DataSet::GetFreqType (long index) const  { // return the frequency of a site
     return theFrequencies(theMap(index));
 }
 //_______________________________________________________________________
@@ -1780,10 +1775,13 @@ void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert
     _String     varName  = isVert ? "siteIndex" : "speciesIndex";
     varName = AppendContainerName(varName, scope);
     _Variable   *v       = CheckReceptacle (&varName, emptyString, false);
+  
+    //fprintf (stderr, "\n_DataSet::MatchIndices %d %s [%s] %s\n", isVert, scope ? scope->sData : "none", varName.sData, ((_String*)f.toStr())->sData);
 
-    for (long i=0; i<limit; i++) {
-        v->SetValue (new _Constant(i), nil);
+    for (long i=0L; i<limit; i++) {
+        v->SetValue (new _Constant((_Parameter)i), nil);
         _PMathObj res = f.Compute();
+        //fprintf (stderr, "%ld %g\n", i, res->Compute()->Value());
         if (res && !CheckEqual(res->Value(),0.0)) {
             receptacle<<i;
         }
@@ -1996,24 +1994,33 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
 // Data Set Filter/Numeric
 //_________________________________________________________
 
-_DataSetFilter::_DataSetFilter (void)
-{
+_DataSetFilter::_DataSetFilter (void) {
     unitLength = 0;
     theData = NULL;
     accessCache = nil;
 }
 //_________________________________________________________
-_DataSetFilter::_DataSetFilter (_DataSet* ds, char, _String&)
-{
+_DataSetFilter::_DataSetFilter (_DataSet* ds, char, _String&) {
     theData     = ds;
     accessCache = nil;
 }
 //_________________________________________________________
-_DataSetFilter::~_DataSetFilter (void)
-{
-    if (accessCache) {
-        DeleteObject (accessCache);
-    }
+_DataSetFilter::~_DataSetFilter (void) {
+    DeleteObject (accessCache);
+}
+
+
+//_________________________________________________________
+_DataSetFilterNumeric::~_DataSetFilterNumeric (void) {
+  const _DataSet* dummy_dataset = GetData();
+    // SLKP TODO 20161028; this is very ugly but needs to be done to remove
+    // dangling data set references
+    long ds_id = dataSetList._SimpleList::Find ((long)dummy_dataset);
+  if (ds_id >= 0) {
+    KillDataSetRecord(ds_id);
+  } else {
+    WarnError ("Internal error in ~_DataSetFilterNumeric");
+  }
 }
 
 //_______________________________________________________________________
@@ -2138,8 +2145,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
 
 //_______________________________________________________________________
 
-void _DataSetFilter::CopyFilter (_DataSetFilter *copyFrom)
-{
+void _DataSetFilter::CopyFilter (_DataSetFilter *copyFrom) {
     memcpy ((char*)this, (char*)copyFrom, sizeof (_DataSetFilter));
 
     theFrequencies.Duplicate        (&copyFrom->theFrequencies);
@@ -2160,10 +2166,8 @@ void _DataSetFilter::CopyFilter (_DataSetFilter *copyFrom)
 
 //_______________________________________________________________________
 
-BaseRef _DataSetFilter::makeDynamic (void)
-{
+BaseRef _DataSetFilter::makeDynamic (void) {
     _DataSetFilter * r = new _DataSetFilter;
-    checkPointer    (r);
     r->CopyFilter   (this);
 
     return r;
@@ -2172,10 +2176,8 @@ BaseRef _DataSetFilter::makeDynamic (void)
 
 //_______________________________________________________________________
 
-BaseRef _DataSetFilterNumeric::makeDynamic (void)
-{
+BaseRef _DataSetFilterNumeric::makeDynamic (void) {
     _DataSetFilterNumeric * r = new _DataSetFilterNumeric();
-    checkPointer            (r);
     r->CopyFilter           (this);
     r->probabilityVectors.Duplicate(&probabilityVectors);
     return r;
@@ -2183,8 +2185,7 @@ BaseRef _DataSetFilterNumeric::makeDynamic (void)
 
 //_______________________________________________________________________
 
-_Parameter * _DataSetFilterNumeric::getProbabilityVector (long spec, long site, long categoryID)
-{
+_Parameter * _DataSetFilterNumeric::getProbabilityVector (long spec, long site, long categoryID) {
     return probabilityVectors.theData + categoryID * categoryShifter + spec * shifter + site * dimension;
 }
 
@@ -2385,8 +2386,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
 
 //_______________________________________________________________________
 
-void    _DataSetFilter::SetFilter (_DataSet* ds, char unit, _SimpleList& horizontalList, _SimpleList& verticalList, bool isFilteredAlready)
-{
+void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _SimpleList& horizontalList, _SimpleList& verticalList, bool isFilteredAlready) {
     // we must step thru the underlying dataset and recompute the frequenices
     // we will store the vertical map in theMap
     // and the horizontal map in theNodeMap
@@ -2414,33 +2414,21 @@ void    _DataSetFilter::SetFilter (_DataSet* ds, char unit, _SimpleList& horizon
     conversionCache.Clear();
     duplicateMap.Clear();
 
-    theData     = ds;
+    theData     = (_DataSet*)ds;
     unitLength  = unit;
 
     long        i,
                 j;
 
-    // security checks
-    if (!horizontalList.lLength||(verticalList.lLength<unit)) {
+     // security checks
+    if (horizontalList.empty() || verticalList.lLength<unit) {
         ReportWarning (_String("Row and/or column partition is emptyString. All the data will be used by default."));
-        if (horizontalList.lLength==0) {
-            if (!isFilteredAlready) {
-                j = ds->NoOfSpecies();
-            } else {
-                j = firstOne->theNodeMap.lLength;
-            }
-
-            horizontalList.Populate (j,0,1);
+        if (horizontalList.empty()) {
+            horizontalList.Populate (isFilteredAlready ? firstOne->theNodeMap.lLength : ds->NoOfSpecies(),0,1);
         }
         if (verticalList.lLength<unit) {
             verticalList.Clear();
-            if (!isFilteredAlready) {
-                j = ds->GetNoTypes();
-            } else {
-                j = firstOne->theOriginalOrder.lLength;
-            }
-
-            verticalList.Populate (j,0,1);
+            verticalList.Populate (isFilteredAlready ? firstOne->GetSiteCount() : ds->GetNoTypes(),0,1);
         }
     }
 
@@ -2448,7 +2436,7 @@ void    _DataSetFilter::SetFilter (_DataSet* ds, char unit, _SimpleList& horizon
         theNodeMap.Clear();
         theNodeMap.Duplicate (&horizontalList);
     } else {
-        for (long k = 0; k<horizontalList.lLength; k++) {
+        for (unsigned long k = 0UL; k<horizontalList.lLength; k++) {
             theNodeMap<<firstOne->theNodeMap.lData[horizontalList.lData[k]];
         }
 
@@ -2909,13 +2897,13 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
         _PMathObj   fV = fmla.Compute();
         if (fV && fV->ObjectClass()==STRING) {
             _String newSpec (128L, true);
-            newSpec << '"';
-            newSpec << ((_FString*)fV)->theString;
-            newSpec << '"';
+            newSpec << '"'
+                    << ((_FString*)fV)->theString
+                    << '"';
             newSpec.Finalize();
             ProcessPartition (newSpec, target, isVertical, additionalFilter, nil, scope);
         } else {
-            _DataSet::MatchIndices (fmla, target, isVertical, totalLength);
+            _DataSet::MatchIndices (fmla, target, isVertical, totalLength, scope);
         }
     } else { // an explicit enumeration or a regular expression
         if (input.getChar(0)=='/' && input.getChar(input.sLength-1)=='/')
@@ -3724,6 +3712,23 @@ _String*        _DataSetFilter::GetSequenceCharacters (long seqID)  const{
     aSequence->Finalize();
     return aSequence;
 }
+
+  //_______________________________________________________________________
+
+_String*        _DataSet::GetSequenceCharacters (long seqID)  const{
+  
+  unsigned long        upTo = NoOfColumns();
+  _String * aSequence = new _String (upTo,true);
+  
+  if (seqID >= 0 && seqID < noOfSpecies) {
+    for (unsigned long k2=0UL; k2<upTo; k2++) {
+      (*aSequence) << GetSite (k2)->getChar (seqID);
+    }
+  }
+  aSequence->Finalize();
+  return aSequence;
+}
+
 
 //_______________________________________________________________________
 long    _DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, _Parameter*store )

@@ -78,8 +78,6 @@ function utility.getGlobalValue (val) {
     return ^val;
 }
 
-
-
 /**
  * @name utility.ToggleEnvVariable
  * @param var
@@ -110,7 +108,7 @@ function utility.GetEnvVariable (var) {
  * @param var
  */
 function utility.SetEnvVariable (var, value) {
-    Eval (var); // this is hack to make sure the variable exists before assigning to it
+    Eval (var); // this is a hack to make sure the variable exists before assigning to it
 	^var = value;
 }
 
@@ -365,7 +363,7 @@ function utility.ForEach (object, lambda_name, transform) {
         utility.ForEach.keys = Rows (object);
         ^(lambda_name) := object [utility.ForEach.keys[utility.ForEach.k]];
         for (utility.ForEach.k = 0; utility.ForEach.k < Abs (object); utility.ForEach.k += 1) {
-            ExecuteCommands (transform);
+            ExecuteCommands (transform, enclosing_namespace);
         }
         return;
     }
@@ -377,7 +375,7 @@ function utility.ForEach (object, lambda_name, transform) {
         ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
         for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
             for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
-                ExecuteCommands (transform);
+                ExecuteCommands (transform, enclosing_namespace);
 
             }
         }
@@ -400,6 +398,41 @@ function utility.KeyExists(dict, key) {
     } else {
         return FALSE;
     }
+}
+
+/**
+ * Given the lookup string (lookup), maps each character in
+ * string to the index of the same character in lookup (>=0)
+ * or -1 if no such character exists
+ * @name utility.MapStrings
+ * @param {String} string - the string to map
+ * @param {String} lookup - mapping lookup string
+ * @returns {Matrix} the mapping
+ * @example utility.MapStrings ("ABCD","DOBAZ") => {
+ *        "0":3,
+ *        "1":2,
+ *        "2":-1,
+ *        "3":0
+ *       }
+ */
+lfunction utility.MapStrings (string,lookup) {
+
+// source ID -> target ID (-1 means no correspondence)
+
+	mapping 	  = {};
+	targetIndexing = {};
+	_d = Abs(lookup);
+
+	for (_i = 0; _i < _d; _i += 1) {
+		targetIndexing [lookup[_i]] = _i + 1;
+	}
+
+	_d = Abs (string);
+	for (_i = 0; _i < _d; _i += 1) {
+		mapping [_i] = targetIndexing[string[_i]] - 1;
+	}
+
+	return mapping;
 }
 
 /**
@@ -519,7 +552,7 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
         ^(key_name) := utility.ForEachPair.keys[utility.ForEachPair.k];
         ^(value_name) := object [utility.ForEachPair.keys[utility.ForEachPair.k]];
         for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {
-            ExecuteCommands (transform);
+            ExecuteCommands (transform, enclosing_namespace);
         }
         return;
     }
@@ -532,7 +565,7 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
 
         for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
             for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
-                ExecuteCommands (transform);
+                ExecuteCommands (transform, enclosing_namespace);
 
             }
         }
@@ -640,7 +673,6 @@ lfunction utility.Has (d, key, type) {
             }
         }
 
-
         if ( Eval ("`current_check`/'`current_key`'") ) {
             if (type == None) {
                 return TRUE;
@@ -651,6 +683,28 @@ lfunction utility.Has (d, key, type) {
     return FALSE;
 }
 
+/**
+ * Extends a dict with keys from another dict
+ * @name utility.Extend
+ * @param {Dictionary} d - the object to extend
+ * @param {Dictionary} n - the object whose key/value pairs will be added to 'd'
+ * @returns d with new keys added
+ */
+lfunction utility.Extend (d, n) {
+
+    if (Type (d) == "AssociativeList" && Type (n) == "AssociativeList") {
+        nkeys = utility.Keys (n);
+        size = Abs (n);
+        for (i = 0; i < size; i+=1) {
+            if (d/nkeys[i] == FALSE) {
+                d[nkeys[i]] = n[nkeys[i]];
+            }
+        }
+    }
+
+    return d;
+}
+
 
 /**
  * Returns the list of modules loaded with `LoadFunctionLibrary`
@@ -659,6 +713,70 @@ lfunction utility.Has (d, key, type) {
 lfunction utility.GetListOfLoadedModules () {
     GetString (res, LIST_OF_LOADED_LIBRARIES, -1);
     return res;
+}
+
+/**
+ * A product function, which takes a list of k variable IDs (dicts)
+ * and returns a dictionary of sets of keys (N1 x N2 x ... Nk)
+ * @param {Dictionary} : a list of variable IDs to scan
+ * @returns {Dictionary} : {"0" : {{"key_11","key_21",...,"key_k1"}}, "1" : {"key_11","key_21",...,"key_k2"}...}
+ * or None if something went wrong
+ */
+lfunction utility.CatersianProduct (arguments) {
+    if (Type (arguments) != "AssociativeList") {
+        return None;
+    }
+
+    arg_count = Abs (arguments);
+
+    if (arg_count == 0) {
+        return None;
+    }
+
+    product = {};
+
+    key_counts = {1,arg_count};
+    arg_keys   = utility.Keys (arguments);
+    key_sets   = {};
+
+    for (k = 0; k < arg_count; k+=1) {
+        this_key = arg_keys[k];
+        if (Type (arguments[this_key]) != "AssociativeList") {
+            return None;
+        }
+        key_sets   [k] = utility.Keys (arguments[this_key]);
+        key_counts [k] = Abs (arguments[this_key]);
+        if (key_counts[k] == 0) {
+            return None;
+        }
+    }
+
+    indices = {1,arg_count};
+    done    = FALSE;
+
+    while (1) {
+        an_item = {};
+        for (k = 0; k < arg_count; k+=1) {
+            an_item + (key_sets[k])[indices[k]];
+        }
+        product + an_item;
+
+        for (k = arg_count - 1; k >= 0; k = k - 1) {
+            indices [k] += 1;
+            if (indices[k] == key_counts[k]) {
+                indices[k] = 0;
+            } else {
+                break;
+            }
+        }
+
+        if (k < 0) {
+            break;
+        }
+
+    }
+
+    return product;
 }
 
 

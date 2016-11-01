@@ -236,9 +236,8 @@ Methods
 //Element location functions (0,llength - 1), negative values return 
 // elements from the end of the list
 
-long _SimpleList::GetElement (const long index)
-{
-    if (index >= 0) {
+long _SimpleList::GetElement (const long index) const {
+    if (index >= 0L) {
         if ((const unsigned long) index < lLength) {
             return lData [index];
         }

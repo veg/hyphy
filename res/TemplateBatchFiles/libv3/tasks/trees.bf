@@ -106,11 +106,11 @@ lfunction trees.GetTreeString._sanitize(string) {
 /**
  * Looks for a newick tree in an alignment file
  * @name trees.GetTreeString
- * @param {String|Bool} look_for_newick_tree - If a string, sanitizes and returns the string. If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file.
+ * @param {String|Bool} look_for_newick_tree - If a string, sanitizes and returns the string.
+ * If TRUE, search the alignment file for a newick tree. If FALSE, the user will be prompted for a nwk tree file.
  * @returns {String} a newick tree string
  */
 lfunction trees.GetTreeString(look_for_newick_tree) {
-
 
     UseModel(USE_NO_MODEL);
 

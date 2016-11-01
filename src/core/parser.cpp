@@ -246,6 +246,23 @@ _String*   FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, co
 }
 
 //__________________________________________________________________________________
+_PMathObj   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objectClass, long command_id, _String *errMsg) {
+  _PMathObj v = f.Compute();
+  if (v) {
+    if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
+      return v;
+    }
+    if (command_id >= 0 || errMsg) {
+      if (command_id >= 0) {
+        WarnError (_String ("'") & _String ((_String*)f.toStr()) & ("' must evaluate to a ") & FetchObjectNameFromType (objectClass) & " in call to "
+                   &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
+      }
+    }
+  }
+  return nil;
+}
+
+//__________________________________________________________________________________
 _PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg)
 {
     if (id) {
@@ -741,12 +758,17 @@ void    SetupOperationLists (void) {
 
     BinOps<<'|'*256+'|';
     opPrecedence<<1;
+    associativeOps << opPrecedence.lLength;
+
     BinOps<<'&'*256+'&';
     opPrecedence<<2;
+    associativeOps << opPrecedence.lLength;
+
     BinOps<<'='*256+'=';
     opPrecedence<<3;
     BinOps<<'!'*256+'=';
     opPrecedence<<3;
+  
     BinOps<<'<';
     opPrecedence<<4;
     BinOps<<'>';
@@ -755,6 +777,7 @@ void    SetupOperationLists (void) {
     opPrecedence<<4;
     BinOps<<'>'*256+'=';
     opPrecedence<<4;
+  
     BinOps<<'+';
     associativeOps << opPrecedence.lLength;
     opPrecedence<<5;
@@ -762,6 +785,7 @@ void    SetupOperationLists (void) {
     opPrecedence<<5;
     BinOps<<'*';
     associativeOps << opPrecedence.lLength;
+  
     opPrecedence<<6;
     BinOps<<'/';
     opPrecedence<<6;
@@ -769,8 +793,10 @@ void    SetupOperationLists (void) {
     opPrecedence<<6;
     BinOps<<'$';
     opPrecedence<<6;
+  
     BinOps<<'^';
     opPrecedence<<7;
+  
     BinOps<<'+'*256+'=';
     opPrecedence<<8;
 

@@ -103,6 +103,7 @@ _Variable*  LocateVar       (long index);
 _Variable*  FetchVar        (long index);
 _PMathObj   FetchObjectFromVariableByType       (_String const*, const unsigned long, long = -1, _String* = nil);
 _PMathObj   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
+_PMathObj   FetchObjectFromFormulaByType         (_Formula&, const unsigned long, long = -1, _String* = nil);
 _String     FetchObjectNameFromType (const unsigned long);
 _String const&    AppendContainerName     (_String const&, _VariableContainer const*);
 _String const&    AppendContainerName     (_String const&, _String const*);

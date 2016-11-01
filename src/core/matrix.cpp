@@ -2982,26 +2982,23 @@ bool        _Matrix::IsAStringMatrix (void)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::FillInList (_List& fillMe, bool doNumeric)
+void        _Matrix::FillInList (_List& fillMe, bool doNumeric) {
 // check if a formula matrix contains strings
-{
-    if (storageType == _FORMULA_TYPE)
-        for (long r=0; r<hDim; r++)
-            for (long c=0; c<vDim; c++) {
-                _Formula * entryFla = GetFormula(r,c);
-                if (entryFla) {
-                    _PMathObj computedValue = entryFla->Compute();
-                    if (computedValue) {
-                          if (computedValue->ObjectClass() == STRING) {
-                              fillMe && ((_FString*)computedValue)->theString;
-                          } else {
-                              fillMe.Clear();
-                              return;
-                          }
-                    }
-                }
-            }
-    else {
+    if (storageType == _FORMULA_TYPE) {
+          for (long r=0; r<hDim; r++)
+              for (long c=0; c<vDim; c++) {
+                  _Formula * entryFla = GetFormula(r,c);
+                  if (entryFla) {
+                      _PMathObj computedValue = FetchObjectFromFormulaByType (*entryFla, STRING);
+                      if (computedValue) {
+                          fillMe && ((_FString*)computedValue)->theString;
+                      } else {
+                        fillMe.Clear();
+                        return;
+                      }
+                  }
+              }
+    } else {
         if (doNumeric && storageType == _NUMERICAL_TYPE) {
             for (long r=0; r<hDim; r++)
                 for (long c=0; c<vDim; c++) {
@@ -4883,7 +4880,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
     return new _Constant (0.0);
   }
   
-  if (hDim <= 0 || vDim <= 0) {
+  if (hDim <= 0L || vDim <= 0L) {
     return new _Constant (0.0);
   }
   
@@ -4907,20 +4904,19 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
           if (nn->hDim > 0 && nn->vDim == 1) { // extract by row
             _SimpleList hL;
             
-            for (long r=0; r<nn->hDim; r++) {
-              long v = (*nn)(r,0);
-              if (v>=0 && v<hDim) {
+            for (unsigned long r=0UL; r<nn->hDim; r++) {
+              long v = floor((*nn)(r,0L));
+              if (v>=0L && v<hDim) {
                 hL<<v;
               }
             }
             
             if (hL.lLength) {
               _Matrix * result = new _Matrix (hL.lLength,vDim,false,true);
-              checkPointer (result);
-              long k = 0;
-              for (long r=0; r<hL.lLength; r++) {
-                long ri = hL.lData[r];
-                for (long c=0; c<vDim; c++,k++) {
+              unsigned long k = 0UL;
+              for (unsigned long r=0UL; r<hL.lLength; r++) {
+                unsigned long ri = hL.lData[r];
+                for (unsigned long c=0UL; c<vDim; c++,k++) {
                   result->theData[k] = (*this)(ri,c);
                 }
               }
@@ -9704,9 +9700,45 @@ void        _AssociativeList::Merge (_PMathObj p)
     }
 }
 
+  //_____________________________________________________________________________________________
+_PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
+  _String const * best_key = nil;
+  _Parameter best_value = do_mimimum ? INFINITY : -INFINITY;
+  
+  _SimpleList  hist;
+  long         ls,
+  cn = avl.Traverser (hist,ls,avl.GetRoot());
+ 
+  while (cn >= 0) {
+    _PMathObj value = (_PMathObj)avl.GetXtra (cn);
+    switch (value->ObjectClass()){
+      case NUMBER:
+        _Parameter number = ((_Constant*)value)->Value();
+        if (do_mimimum) {
+          if (number < best_value) {
+            best_value = number;
+            best_key   = (_String const*)avl.Retrieve (cn);
+          }
+        } else {
+          if (number > best_value) {
+            best_value = number;
+            best_key   = (_String const*)avl.Retrieve (cn);
+          }
+        }
+        break;
+      }
+    cn = avl.Traverser (hist,ls);
+  }
+  
+  _AssociativeList * result = new _AssociativeList;
+  (*result) < _associative_list_key_value {"key", best_key ? new _FString (*best_key, false) : new _MathObject}
+            < _associative_list_key_value {"value", new _Constant (best_value)};
+  return result;
+  
+}
+
 //_____________________________________________________________________________________________
-_PMathObj        _AssociativeList::Sum (void)
-{
+_PMathObj        _AssociativeList::Sum (void) {
     _Parameter sum = 0.;
         
     _SimpleList  hist;
@@ -9749,6 +9781,10 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
   switch (opCode) {
     case HY_OP_CODE_ABS:
       return new _Constant (Length());
+      
+    case HY_OP_CODE_EVAL:
+      return (_PMathObj) makeDynamic();
+      
     case HY_OP_CODE_COLUMNS: {
       // Columns -- get all unique values (as strings)
       _List    unique_values_aux;
@@ -9785,6 +9821,14 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
     case HY_OP_CODE_TYPE: // Type
       return Type();
       
+    case HY_OP_CODE_MAX: // Max
+      return ExtremeValue (false);
+      
+    case HY_OP_CODE_MIN: // Max
+      return ExtremeValue (true);
+     
+
+      
   }
   
   _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
@@ -9815,7 +9859,12 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
       case HY_OP_CODE_DIV:
         
         if (arg0->ObjectClass () == STRING) {
-          if (avl.Find (((_FString*)arg0)->theString) >= 0) {
+          if (avl.Find (((_FString*)arg0)->theString) >= 0L) {
+            return new _Constant (1.0);
+          }
+        } else {
+          _String serialized ((_String*)arg0->toStr());
+          if (avl.Find (&serialized) >= 0L) {
             return new _Constant (1.0);
           }
         }

@@ -48,6 +48,7 @@
 #include "function_templates.h"
 #include "avllistx.h"
 #include "global_object_lists.h"
+#include "time_difference.h"
 
 
 
@@ -657,6 +658,13 @@ _String const ExportBFFunction (long idx, bool recursive) {
   _String bf (8192UL, true);
   if (IsBFFunctionIndexValid(idx)) {
   
+    _String hbf_name = GetBFFunctionNameByIndex (idx);
+    _ExecutionList * body = &GetBFFunctionBody(idx);
+    
+    if (body->enclosingNamespace.sLength) {
+      bf << "namespace " << body->enclosingNamespace << " {\n";
+    }
+
     switch (GetBFFunctionType (idx)) {
       case BL_FUNCTION_SKIP_UPDATE:
         bf << blFFunction;
@@ -668,9 +676,6 @@ _String const ExportBFFunction (long idx, bool recursive) {
         bf << blFunction;
     }
     
-    _String hbf_name = GetBFFunctionNameByIndex (idx);
-    
-    _ExecutionList * body = &GetBFFunctionBody(idx);
     
     bf << hbf_name;
     bf << '(';
@@ -691,7 +696,11 @@ _String const ExportBFFunction (long idx, bool recursive) {
     bf << ") {\n";
     bf << body->sourceText;
     bf << "\n}";
-    
+ 
+    if (body->enclosingNamespace.sLength) {
+      bf << "\n}";
+    }
+
     if (recursive) {
       _List      hbl_functions;
       _AVLListX other_functions (&hbl_functions);
@@ -756,6 +765,8 @@ long    FindBFFunctionName (_String const&s, _VariableContainer const* theP) {
     if (theP) {
         _String prefix = *(theP->GetName());
 
+        //ReportWarning (_String ("Looking for ") & s.Enquote() & " in " & prefix.Enquote());
+
         while (1) {
             _String test_id = prefix & '.' & s;
             long idx = batchLanguageFunctionNames.FindObject (&test_id);
@@ -772,7 +783,8 @@ long    FindBFFunctionName (_String const&s, _VariableContainer const* theP) {
         };
     }
 
-    return batchLanguageFunctionNames.FindObject (&s);
+    //ReportWarning (_String ("Looking for ") & s.Enquote() & " in global context");
+   return batchLanguageFunctionNames.FindObject (&s);
 }
 
 
@@ -1066,8 +1078,7 @@ _ExecutionList::_ExecutionList ()
 } // doesn't do much
 
 //____________________________________________________________________________________
-_ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copySource, bool* successFlag)
-{
+_ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copySource, bool* successFlag) {
     currentCommand = 0;
     result         = nil;
     cli            = nil;
@@ -1125,7 +1136,7 @@ _ExecutionList::~_ExecutionList (void)
 
 BaseRef     _ExecutionList::makeDynamic (void)
 {
-    _ExecutionList * Res = (_ExecutionList*)checkPointer(new _ExecutionList);
+    _ExecutionList * Res = new _ExecutionList;
 
     memcpy ((char*)Res, (char*)this, sizeof (_ExecutionList));
 
@@ -1146,8 +1157,7 @@ BaseRef     _ExecutionList::makeDynamic (void)
 
 //____________________________________________________________________________________
 
-void        _ExecutionList::Duplicate   (BaseRef source)
-{
+void        _ExecutionList::Duplicate   (BaseRef source) {
     _List::Duplicate    (source);
 
     _ExecutionList* s = (_ExecutionList*)source;
@@ -1208,12 +1218,13 @@ _String*    _ExecutionList::FetchFromStdinRedirect (void)
 
 //____________________________________________________________________________________
 
-_String       _ExecutionList::GetFileName     (void)  {
+_String  const     _ExecutionList::GetFileName     (void)  const {
     if (sourceFile.sLength) {
         return sourceFile;
     } else {
-        if (pathNames.lLength)
-            return *(_String*)pathNames.GetElement (-1);
+        _String const *top_path = PeekFilePath();
+        if (top_path)
+          return *top_path;
     }
     return emptyString;
 }
@@ -1244,8 +1255,8 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
       parent = nil;
     }
  
-    _FString            cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):emptyString),
-                        * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
+    _FString            cfp (PeekFilePath() ? *PeekFilePath () :emptyString),
+                      * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
 
     if (stashed) {
         stashed = (_FString*)stashed->makeDynamic();
@@ -1265,9 +1276,9 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
             long        instCounter = currentCommand;
             _Parameter  timeDiff    = 0.0;
 
-            TimerDifferenceFunction (false);
+            TimeDifference timer;
             (((_ElementaryCommand**)lData)[currentCommand])->Execute(*this);
-            timeDiff   = TimerDifferenceFunction(true);
+            timeDiff   = timer.TimeSinceStart();
           
 
           if (profileCounter) {
@@ -1555,8 +1566,7 @@ void     _ExecutionList::SetNameSpace (_String nID) {
 
 //____________________________________________________________________________________
 
-_String*     _ExecutionList::GetNameSpace ()
-{
+_String*     _ExecutionList::GetNameSpace () {
     if (nameSpacePrefix) {
         return nameSpacePrefix->GetName();
     }
@@ -2820,9 +2830,8 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
 
                 df = doFileOpen (fName.getStr(),"rb");
                 if (df==nil) {
-                    _String errMsg ("Could not find source dataset file:");
-                    errMsg = errMsg & *(_String*)parameters(1) & " Path stack: " & _String((_String*)pathNames.toStr());
-                    WarnError (errMsg);
+                     WarnError (_String ("Could not find source dataset file ") & ((_String*)parameters(1))->Enquote('"')
+                                & " (resolved to '" & fName & "')\nPath stack:\n\t" & GetPathStack ("\n\t"));
                     return;
                 }
             }
@@ -3184,196 +3193,200 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
 //____________________________________________________________________________________
 
 
-void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
-{
+void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
     chain.currentCommand++;
 
     _String *commands,
             theCommand,
             *namespc = nil;
-
-    if (code == 39) {
-        commands = ProcessCommandArgument((_String*)parameters(0));
-    } else {
-        _String filePath = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix),
-                originalPath = filePath;
-      
-
-        FILE * commandSource = nil;
-        
-        _Parameter reload = 0.;
-        checkParameter(alwaysReloadLibraries, reload, 0.);
-
-        if (code == 66) {
-            bool hasExtension    = filePath.FindBackwards (".",0,-1) > 0;
-
-            for (unsigned long p = 0; !commandSource && p < standardLibraryPaths.lLength; p++) {
-                for (unsigned long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
-                    _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
-
-                    // printf ("%s\n", tryPath.sData);
-
-                    tryPath.ProcessFileName (false, false, (Ptr)chain.nameSpacePrefix);
-                  
-                    if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
-                        ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
-                        return;
-                    }
-                    if ((commandSource = doFileOpen (tryPath.getStr(), "rb"))) {
-                        filePath = tryPath;
-                        break;
-                    }
-                    if (hasExtension) {
-                        break;
-                    }
-                }
-            }
-
-        }
-      
-
-        if (commandSource == nil) {
-            filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
- 
-            if (code == 66 && loadedLibraryPaths.Find(&filePath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
-                ReportWarning (_String("Already loaded '") & originalPath & "' from " & filePath);
-                return;
-            }
-            
-            if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil) {
-                WarnError (_String("Could not read command file in ExecuteAFile.\nOriginal path: '") &
-                                    originalPath & "'.\nExpanded path: '" & filePath & "'");
-                return;
-            }
-        }
-
-        if (code == 66 && commandSource) {
-            ReportWarning (_String("Loaded '") & originalPath & "' from " & filePath);
-            loadedLibraryPaths.Insert (filePath.makeDynamic(),0,false,true);
-        }
-
-        commands = new _String (commandSource);
-        if (fclose       (commandSource) ) { // failed to fclose
-            DeleteObject (commands);
-            WarnError (_String("Internal error: failed in a call to fclose ") & filePath);
-        }
-        PushFilePath (filePath);
-    }
-
-    if (!commands) {
-        return;
-    }
-
-    if (code == 39) {
-        theCommand = ProcessLiteralArgument (commands,chain.nameSpacePrefix);
-    } else {
-        theCommand = commands;
-    }
-
-    if (theCommand.sLength == 0) {
-        WarnError (_String("Invalid string argument '") & *commands & "' in call to ExecuteCommands/ExecuteAFile.");
-        return ;
-    }
-
-    if (code == 39 && ((_String*)parameters(1))->sLength) {
-        pathNames << (_String*)parameters(1);
-    }
-
+  
     _AVLListXL * inArg    = nil;
     _List      * inArgAux = nil;
 
-    if (parameters.lLength >= 3)
-        // stdin redirect (and/or name space prefix)
-    {
-
-       _PMathObj inAVL = ProcessDictionaryArgument ((_String*)parameters(2),chain.nameSpacePrefix);
-
-        if (!inAVL) {
-            if (parameters.lLength == 3) {
-                WarnError (_String("Not a valid associative array index passed as input redirect argument to ExecuteCommands/ExecuteAFile: )") & *(_String*)parameters(2));
-                return;
-            }
-        } else {
-            _AssociativeList * stdinRedirect = (_AssociativeList*)inAVL;
-
-            checkPointer (inArgAux = new _List);
-            checkPointer (inArg    = new _AVLListXL (inArgAux));
-
-            _List        *stdKeys = stdinRedirect->GetKeys();
-
-            for (long kid = 0; kid < stdKeys->lLength; kid++) {
-                _String  * aKey         = (_String*)(*stdKeys) (kid);
-                if (aKey) {
-                    _FString * aString      = (_FString*)stdinRedirect->GetByKey (*aKey, STRING);
-                    if (!aString) {
-                        WarnError    (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
-                        DeleteObject (inAVL);
-                        return;
-                    }
-                    inArg -> Insert (aKey->makeDynamic(),(long)new _String (*aString->theString),false);
-                }
-            }
-        }
-
-        DeleteObject (inAVL);
-
-        if (parameters.lLength > 3) {
-            _String nameSpaceID = ProcessLiteralArgument((_String*)parameters(3),chain.nameSpacePrefix);
-            if (!nameSpaceID.IsValidIdentifier(true)) {
-                WarnError (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & *(_String*)parameters(3));
-                return;
-            }
-            namespc = new _String (nameSpaceID);
-        }
-    }
-
-    if (parameters.lLength <4 && chain.nameSpacePrefix) {
-        namespc = new _String (*chain.nameSpacePrefix->GetName());
-    }
-
-    if (theCommand.beginswith ("#NEXUS")) {
-        ReadDataSetFile (nil,1,&theCommand,nil,namespc);
-    } else {
-        bool result = false;
-        _ExecutionList exc (theCommand,namespc, false, &result);
+    bool    pop_path = false;
+  
+    try {
+      if (code == 39) {
+          commands = ProcessCommandArgument((_String*)parameters(0));
+      } else {
+          _String filePath = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix),
+                  originalPath = filePath;
         
-        if (!result) {
-            chain.ReportAnExecutionError("Encountered an error while parsing HBL", false, true);
-        } else {
 
-            exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
-            exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
+          FILE * commandSource = nil;
+          
+          _Parameter reload = 0.;
+          checkParameter(alwaysReloadLibraries, reload, 0.);
 
-            if (simpleParameters.lLength && exc.TryToMakeSimple()) {
-                ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)exc.toStr()) );
-                exc.ExecuteSimple ();
-            } else {
-                exc.Execute();
-            }
+          if (code == 66) {
+              bool hasExtension    = filePath.FindBackwards (".",0,-1) > 0;
 
-            exc.stdinRedirectAux = nil;
-            exc.stdinRedirect    = nil;
-            if (exc.result) {
-                DeleteObject (chain.result);
-                chain.result = exc.result;
-                exc.result = nil;
-            }
-        }
+              for (unsigned long p = 0; !commandSource && p < standardLibraryPaths.lLength; p++) {
+                  for (unsigned long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
+                      _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
+
+                      // printf ("%s\n", tryPath.sData);
+
+                      tryPath.ProcessFileName (false, false, (Ptr)chain.nameSpacePrefix);
+                    
+                      if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
+                          ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
+                          return;
+                      }
+                      if ((commandSource = doFileOpen (tryPath.getStr(), "rb"))) {
+                          filePath = tryPath;
+                          break;
+                      }
+                      if (hasExtension) {
+                          break;
+                      }
+                  }
+              }
+
+          }
+        
+
+          if (commandSource == nil) {
+              filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
+   
+              if (code == 66 && loadedLibraryPaths.Find(&filePath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
+                  ReportWarning (_String("Already loaded '") & originalPath & "' from " & filePath);
+                  return;
+              }
+              
+              if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil) {
+                  WarnError (_String("Could not read command file in ExecuteAFile.\nOriginal path: '") &
+                                      originalPath & "'.\nExpanded path: '" & filePath & "'");
+                  return;
+              }
+          }
+
+          if (code == 66 && commandSource) {
+              ReportWarning (_String("Loaded '") & originalPath & "' from " & filePath);
+              loadedLibraryPaths.Insert (filePath.makeDynamic(),0,false,true);
+          }
+
+          commands = new _String (commandSource);
+          if (fclose       (commandSource) ) { // failed to fclose
+              DeleteObject (commands);
+              WarnError (_String("Internal error: failed in a call to fclose ") & filePath);
+          }
+          pop_path = true;
+          PushFilePath (filePath);
+      }
+
+      if (!commands) {
+          throw (1);
+      }
+
+      if (code == 39) {
+          theCommand = ProcessLiteralArgument (commands,chain.nameSpacePrefix);
+      } else {
+          theCommand = commands;
+      }
+
+      if (theCommand.sLength == 0) {
+          WarnError (_String("Invalid string argument '") & *commands & "' in call to ExecuteCommands/ExecuteAFile.");
+          throw (1);
+      }
+
+      if (code == 39 && ((_String*)parameters(1))->sLength) {
+        pop_path = true;
+        PushFilePath (*(_String*)parameters(1), false, false);
+      }
+
+
+      if (parameters.lLength >= 3)
+          // stdin redirect (and/or name space prefix)
+      {
+
+         _PMathObj inAVL = ProcessDictionaryArgument ((_String*)parameters(2),chain.nameSpacePrefix);
+
+          if (!inAVL) {
+              if (parameters.lLength == 3) {
+                  WarnError (_String("Not a valid associative array index passed as input redirect argument to ExecuteCommands/ExecuteAFile: )") & *(_String*)parameters(2));
+                  throw (1);
+              }
+          } else {
+              _AssociativeList * stdinRedirect = (_AssociativeList*)inAVL;
+
+              inArgAux = new _List;
+              inArg    = new _AVLListXL (inArgAux);
+
+              _List        *stdKeys = stdinRedirect->GetKeys();
+
+              for (long kid = 0; kid < stdKeys->lLength; kid++) {
+                  _String  * aKey         = (_String*)(*stdKeys) (kid);
+                  if (aKey) {
+                      _FString * aString      = (_FString*)stdinRedirect->GetByKey (*aKey, STRING);
+                      if (!aString) {
+                          WarnError    (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
+                          DeleteObject (inAVL);
+                          throw (1);
+                      }
+                      inArg -> Insert (aKey->makeDynamic(),(long)new _String (*aString->theString),false);
+                  }
+              }
+          }
+
+          DeleteObject (inAVL);
+
+          if (parameters.lLength > 3) {
+              _String nameSpaceID = ProcessLiteralArgument((_String*)parameters(3),chain.nameSpacePrefix);
+              if (!nameSpaceID.IsValidIdentifier(true)) {
+                  WarnError (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & *(_String*)parameters(3));
+                  throw (1);
+              }
+              namespc = new _String (nameSpaceID);
+          }
+      }
+
+      if (parameters.lLength <4 && chain.nameSpacePrefix) {
+          namespc = new _String (*chain.nameSpacePrefix->GetName());
+      }
+
+      if (theCommand.beginswith ("#NEXUS")) {
+          ReadDataSetFile (nil,1,&theCommand,nil,namespc);
+      } else {
+          bool result = false;
+          _ExecutionList exc (theCommand,namespc, false, &result);
+          
+          if (!result) {
+              chain.ReportAnExecutionError("Encountered an error while parsing HBL", false, true);
+          } else {
+
+              exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
+              exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
+
+              if (simpleParameters.lLength && exc.TryToMakeSimple()) {
+                  ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)exc.toStr()) );
+                  exc.ExecuteSimple ();
+              } else {
+                  exc.Execute();
+              }
+
+              exc.stdinRedirectAux = nil;
+              exc.stdinRedirect    = nil;
+              if (exc.result) {
+                  DeleteObject (chain.result);
+                  chain.result = exc.result;
+                  exc.result = nil;
+              }
+          }
+      }
+    }  catch (int e) {
+      
     }
+  
 
-    if (inArg) {
-        DeleteObject            (inArg);
-        DeleteObject            (inArgAux);
+    DeleteObject            (inArg);
+    DeleteObject            (inArgAux);
+    DeleteObject            (namespc);
+
+    if (pop_path) {
+      PopFilePath();
     }
-
-    DeleteObject (namespc);
-
-    if (code == 62) {
-        PopFilePath ();
-    } else if (((_String*)parameters(1))->sLength) {
-        pathNames.Delete (pathNames.lLength-1);
-    }
-}
+ }
 
 void      _ElementaryCommand::ExecuteCase40 (_ExecutionList& chain)
 {
@@ -3922,7 +3935,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
             }
             inputBuffer = doFileOpen (currentParameter.getStr(), "rb");
             if (!inputBuffer) {
-                WarnError         (currentParameter& " could not be opened for reading by fscanf. Path stack: " & _String((_String*)pathNames.toStr()));
+                WarnError         (currentParameter& " could not be opened for reading by fscanf. Path stack:\n\t" & GetPathStack("\n\t"));
                 return;
             }
 
@@ -5127,151 +5140,206 @@ void      _ElementaryCommand::ExecuteCase45 (_ExecutionList& chain)
 //____________________________________________________________________________________
 
 void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
-    chain.currentCommand++;
-
-    _String *arg1 = (_String*)parameters(1),
-            *arg2 = (_String*)parameters(0),
-            errMsg;
-
-    const _String filter_name = AppendContainerName(*arg1,chain.nameSpacePrefix);
+  chain.currentCommand++;
   
-    _DataSetFilter const * dsf = GetDataFilter    (filter_name);
-
-    if (dsf == nil) {
-        errMsg = filter_name.Enquote('\'') & " is not a defined data set filter ID ";
-    } else {
-        _Variable *      stVar = CheckReceptacle(&AppendContainerName(*arg2,chain.nameSpacePrefix),"GetDataInfo");
-
-        if (stVar) {
-            if (parameters.lLength == 2) {
-                 stVar->SetValue (new _Matrix (dsf->duplicateMap),false);
-            } else {
-                if (parameters.lLength == 3) {
-                    _String checker = ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix);
-                    if (checker == _String ("CHARACTERS")) {
-                        _List   characters;
-                        unsigned long character_count = dsf->GetDimension(true);
-                        long fd = dsf->GetUnitLength();
-                        for (long idx = 0; idx < character_count; idx++) {
-                            characters < new _String (dsf->ConvertCodeToLetters (dsf->CorrectCode(idx), fd));
-                        }
-
-                        stVar->SetValue (new _Matrix (characters), false);
-                    } else if (checker == _String ("PARAMETERS")) {
-                        _AssociativeList * parameterInfo = new _AssociativeList;
-                      
-                        (*parameterInfo) < (_associative_list_key_value){"ATOM_SIZE", new _Constant (dsf->GetUnitLength())}
-                                         < (_associative_list_key_value){"EXCLUSIONS", new _FString  (dsf->GetExclusions())}
-                                         < (_associative_list_key_value){"SITES_STRING", new _FString  ((_String*)dsf->theOriginalOrder.ListToPartitionString())}
-                                         < (_associative_list_key_value){"SEQUENCES_STRING", new _FString  ((_String*)dsf->theNodeMap.ListToPartitionString())};
-                      
-                      
-                         stVar->SetValue (parameterInfo,false);
-
-                    } else if (checker == _String ("CONSENSUS")) {
-                        stVar->SetValue (new _FString (new _String(dsf->GenerateConsensusString())), false);
-                    } else {
-                        long seqID = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix);
-                        if (seqID>=0 && seqID < dsf->NumberSpecies()) {
-                            stVar->SetValue (new _FString (dsf->GetSequenceCharacters(seqID)),false);
-                        } else {
-                            // 20110916 SLKP : the option for filtering duplicate sequences
-                            if (seqID >= -4 && seqID <= -1) {
-                                _SimpleList indices, map, counts;
-                                long uniqueSequences = dsf->FindUniqueSequences(indices, map, counts, -seqID - 1);
-                                _AssociativeList * parameterInfo = new _AssociativeList;
-                                parameterInfo->MStore ("UNIQUE_SEQUENCES",             new _Constant (uniqueSequences), false);
-                                parameterInfo->MStore ("UNIQUE_INDICES",            new _Matrix (indices), false);
-                                parameterInfo->MStore ("SEQUENCE_MAP",          new _Matrix (map), false);
-                                parameterInfo->MStore ("UNIQUE_COUNTS",      new _Matrix  (counts), false);
-                                stVar->SetValue (parameterInfo,false);
-                            }
-                        }
-                    }
-                } else {
-                    long seq  = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix),
-                         site = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix);
-
-                    if (parameters.lLength == 4) {
-                        if (site >=0 && site<dsf->GetPatternCount()) {
-                          if ( seq>=0 && seq<dsf->NumberSpecies()) {
-                            _Matrix             * res = new _Matrix (dsf->GetDimension (true), 1, false, true);
-                            
-                            _Parameter          onlyTheIndex = 0.0;
-                            checkParameter      (getDataInfoReturnsOnlyTheIndex,onlyTheIndex,0.0);
-                            
-                            
-                            _String             character (dsf->RetrieveState(site, seq));
-                            long                theValue = dsf->Translate2Frequencies (character, res->theData,  true);
-                            
-                            if (onlyTheIndex > 0.5) {
-                              stVar->SetValue (new _Constant (theValue),false);
-                              DeleteObject     (res);
-                            } else {
-                              stVar->SetValue (res,false);
-                            }
-                          } else {
-                            _Parameter          count_gaps = 0.0;
-                            checkParameter      (hfCountGap,count_gaps,1.0);
-                            
-                            
-                            _Matrix * accumulator = new _Matrix (dsf->GetDimension (true), 1, false, true),
-                                    * storage     = new _Matrix (dsf->GetDimension (true), 1, false, true);
-                            
-                            
-                            
-                            _String *buffer = dsf->MakeSiteBuffer();
-                            
-                            for (long species_index = dsf->NumberSpecies()-1; species_index >= 0; species_index --) {
-                              dsf->RetrieveState(site,species_index,*buffer, false);
-                              dsf->Translate2Frequencies (*buffer, storage->theData,  count_gaps >= 0.5);
-                              *accumulator += *storage;
-                            }
-                            DeleteObject (storage);
-                            stVar -> SetValue (accumulator, false);
-                            
-                            DeleteObject (buffer);
-                            
-                          }
-                        } else {
-                          errMsg =  _String (site) & " is an invalid site index";
-                        }
-                    } else {
-                        if ((seq>=0)&&(site>=0)&&(seq<dsf->NumberSpecies())&&(site<dsf->NumberSpecies())) {
-                            _String* resFlag = (_String*)parameters(4);
-                            _Matrix * res;
-
-                            if (pcAmbiguitiesAverage.Equal (resFlag)) {
-                                res = dsf->ComputePairwiseDifferences (seq,site,kAmbiguityHandlingAverageFrequencyAware);
-                            } else if (pcAmbiguitiesResolve.Equal (resFlag)) {
-                                res = dsf->ComputePairwiseDifferences (seq,site,kAmbiguityHandlingResolve);
-                            } else if (pcAmbiguitiesSkip.Equal (resFlag)) {
-                                res = dsf->ComputePairwiseDifferences (seq,site,kAmbiguityHandlingSkip);
-                            } else {
-                                res = dsf->ComputePairwiseDifferences (seq,site,kAmbiguityHandlingResolveFrequencyAware);
-                            }
-
-                            stVar->SetValue (res,false);
-                        } else {
-                            errMsg = _String (seq) & "," & _String (site) & " is an invalid sequence pair specification.";
-                        }
-
-                    }
-                }
-            }
+  _String *arg1 = (_String*)parameters(1),
+          *arg2 = (_String*)parameters(0),
+          errMsg;
+  
+  const _String source_name = AppendContainerName(*arg1,chain.nameSpacePrefix);
+  
+  long            object_type = HY_BL_DATASET|HY_BL_DATASET_FILTER;
+  BaseRefConst    source_object = _HYRetrieveBLObjectByName (source_name, object_type,nil,false);
+  
+    //_DataSetFilter const * dsf = GetDataFilter    (filter_name);
+    //_DataSet       const * ds  =
+  
+  if (source_object == nil) {
+    errMsg = source_name.Enquote('\'') & " is not a defined data set / filter ID ";
+  } else {
+    
+    const _String receptacle_name = AppendContainerName(*arg2,chain.nameSpacePrefix);
+    _Variable *      stVar = CheckReceptacle(&receptacle_name,"GetDataInfo");
+    
+    if (stVar) {
+      
+      _DataSetFilter const * filter_source = object_type == HY_BL_DATASET_FILTER ? (_DataSetFilter const *)source_object : nil;
+      _DataSet const * dataset_source = object_type == HY_BL_DATASET ? (_DataSet const *)source_object : nil;
+      
+      switch (parameters.lLength) {
+        case 2UL: { // get site->pattern map
+          if (filter_source) {
+            stVar->SetValue (new _Matrix (filter_source->duplicateMap),false);
+          } else {
+            stVar->SetValue (new _Matrix (dataset_source->DuplicateMap()),false);
+          }
         }
+          break;
+          
+        case 3UL: { // data parameters, or sequence string
+          _String argument = ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix);
+          if (argument == _String("CHARACTERS")) {
+            _List characters;
+            if (filter_source) {
+              
+              unsigned long character_count = filter_source->GetDimension(true),
+              fd = filter_source->GetUnitLength();
+              
+              for (unsigned long idx = 0UL; idx < character_count; idx++) {
+                characters < new _String (filter_source->ConvertCodeToLetters (filter_source->CorrectCode(idx), fd));
+              }
+            } else {
+              _String alphabet_string = dataset_source->GetTT () ? dataset_source->GetTT ()->GetAlphabetString() : emptyString;
+              for (unsigned long idx = 0UL; idx < alphabet_string.sLength; idx++) {
+                characters < new _String (alphabet_string (idx));
+              }
+            }
+            stVar->SetValue (new _Matrix (characters), false);
+          } else if (argument == _String ("PARAMETERS")) { // argument == _String("CHARACTERS")
+            if (filter_source) {
+              _AssociativeList * parameterInfo = new _AssociativeList;
+              
+              (*parameterInfo) < (_associative_list_key_value){"ATOM_SIZE", new _Constant (filter_source->GetUnitLength())}
+                               < (_associative_list_key_value){"EXCLUSIONS", new _FString  (filter_source->GetExclusions())}
+                               < (_associative_list_key_value){"SITES_STRING", new _FString  ((_String*)filter_source->theOriginalOrder.ListToPartitionString())}
+                               < (_associative_list_key_value){"SEQUENCES_STRING", new _FString  ((_String*)filter_source->theNodeMap.ListToPartitionString())};
+              
+              stVar->SetValue (parameterInfo,false);
+              
+            } else {
+              errMsg = argument.Enquote('\'') & " is a supported argument for the dataset source";
+            }
+          } else if (argument == _String ("CONSENSUS")) { // argument == _String("PARAMETERS")
+            if (filter_source) {
+              stVar->SetValue (new _FString (new _String(filter_source->GenerateConsensusString())), false);
+            } else {
+              _DataSetFilter temp;
+              _SimpleList l1, l2;
+              temp.SetFilter (dataset_source, 1, l1, l2, false);
+              stVar->SetValue (new _FString (new _String(temp.GenerateConsensusString())), false);
+            }
+          } else { // argument == _String("CONSENSUS")
+            long seqID = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix);
+            
+            if (filter_source) {
+              if (seqID>=0 && seqID < filter_source->NumberSpecies()) {
+                stVar->SetValue (new _FString (filter_source->GetSequenceCharacters(seqID)),false);
+              } else  if (seqID >= -4 && seqID <= -1) {
+                _SimpleList indices, map, counts;
+                long uniqueSequences = filter_source->FindUniqueSequences(indices, map, counts, -seqID - 1);
+                _AssociativeList * parameterInfo = new _AssociativeList;
+                parameterInfo->MStore ("UNIQUE_SEQUENCES",             new _Constant (uniqueSequences), false);
+                parameterInfo->MStore ("UNIQUE_INDICES",            new _Matrix (indices), false);
+                parameterInfo->MStore ("SEQUENCE_MAP",          new _Matrix (map), false);
+                parameterInfo->MStore ("UNIQUE_COUNTS",      new _Matrix  (counts), false);
+                stVar->SetValue (parameterInfo,false);
+              }
+            } else { // filter_source
+              if (seqID>=0 && seqID < dataset_source->NoOfSpecies()) {
+                stVar->SetValue (new _FString (dataset_source->GetSequenceCharacters(seqID)),false);
+              }
+            }
+          } // else numeric cases
+        }
+          break;
+          
+        case 4UL : {
+          if (filter_source) {
+            long seq  = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix),
+            site = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix);
+            
+            if (site >=0 && site<filter_source->GetPatternCount()) {
+              if ( seq>=0 && seq<filter_source->NumberSpecies()) {
+                _Matrix             * res = new _Matrix (filter_source->GetDimension (true), 1, false, true);
+                
+                _Parameter          onlyTheIndex = 0.0;
+                checkParameter      (getDataInfoReturnsOnlyTheIndex,onlyTheIndex,0.0);
+                
+                
+                _String             character (filter_source->RetrieveState(site, seq));
+                long                theValue = filter_source->Translate2Frequencies (character, res->theData,  true);
+                
+                if (onlyTheIndex > 0.5) {
+                  stVar->SetValue (new _Constant (theValue),false);
+                  DeleteObject     (res);
+                } else {
+                  stVar->SetValue (res,false);
+                }
+              } else {
+                _Parameter          count_gaps = 0.0;
+                checkParameter      (hfCountGap,count_gaps,1.0);
+                
+                
+                _Matrix * accumulator = new _Matrix (filter_source->GetDimension (true), 1, false, true),
+                * storage     = new _Matrix (filter_source->GetDimension (true), 1, false, true);
+                
+                
+                
+                _String *buffer = filter_source->MakeSiteBuffer();
+                
+                for (long species_index = filter_source->NumberSpecies()-1; species_index >= 0; species_index --) {
+                  filter_source->RetrieveState(site,species_index,*buffer, false);
+                  filter_source->Translate2Frequencies (*buffer, storage->theData,  count_gaps >= 0.5);
+                  *accumulator += *storage;
+                }
+                DeleteObject (storage);
+                stVar -> SetValue (accumulator, false);
+                
+                DeleteObject (buffer);
+                
+              }
+            } else {
+              errMsg =  _String (site) & " is an invalid site index";
+            }
+          } else {
+            errMsg = "This set of options is not supported for DataSet arguments";
+          }
+        }
+          break;
+          
+        case 5UL: {
+          if (filter_source) {
+            long seq1  = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix),
+            seq2  = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix);
+            if ( seq1>=0 && seq2 >=0 && seq1< filter_source->NumberSpecies() && seq2 <filter_source->NumberSpecies()) {
+              _String* resFlag = (_String*)parameters(4);
+              _Matrix * res;
+              
+              if (pcAmbiguitiesAverage.Equal (resFlag)) {
+                res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingAverageFrequencyAware);
+              } else if (pcAmbiguitiesResolve.Equal (resFlag)) {
+                res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingResolve);
+              } else if (pcAmbiguitiesSkip.Equal (resFlag)) {
+                res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingSkip);
+              } else {
+                res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingResolveFrequencyAware);
+              }
+              
+              stVar->SetValue (res,false);
+            } else {
+              errMsg = _String (seq1).Enquote() & "," & _String (seq2).Enquote() & " is an invalid sequence pair specification.";
+            }
+          } else {
+            errMsg = "This set of options is not supported for DataSet arguments";
+          }
+        }
+        break;
+      } // switch
+    } else {
+      errMsg = receptacle_name.Enquote() & " is not a valid receptacle identifier";
     }
-
-    if (errMsg.sLength) {
-        errMsg = errMsg & " in call to GetDataInfo ";
-        WarnError (errMsg);
-    }
+          
+          
+  }
+  if (errMsg.sLength) {
+    errMsg = errMsg & " in call to GetDataInfo ";
+    WarnError (errMsg);
+  }
 }
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
-{
+void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain) {
     chain.currentCommand++;
 
     _String *arg1 = (_String*)parameters(0),
@@ -5280,7 +5348,7 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
 
     long    k = FindLikeFuncName(AppendContainerName(*arg1, chain.nameSpacePrefix));
 
-    if (k<0) {
+    if (k<0L) {
         _String  litArg = ProcessLiteralArgument (arg1,chain.nameSpacePrefix);
         k = FindLikeFuncName (litArg);
         if (k<0) {
@@ -5288,7 +5356,7 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
         }
     }
 
-    if (errMsg.sLength == 0) {
+    if (errMsg.sLength == 0UL) {
         _LikelihoodFunction * lf   = (_LikelihoodFunction *) likeFuncList (k);
         _String         callBack   = ProcessLiteralArgument (arg2,chain.nameSpacePrefix);
         k = FindBFFunctionName (callBack);
@@ -5829,9 +5897,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         // xlc mod 03/08/2005
         _String  * resultName = new _String (chain.AddNameSpaceToID(*(_String*)parameters(0)));
 
-        if (StoreADataSet (mergeResult, resultName) && simpleParameters(0)<0)
+        if (StoreADataSet (mergeResult, resultName) && simpleParameters(0)<0) {
             // purge all the datasets except the resulting one
-        {
             long newSetID = FindDataSetName (*resultName);
             for (long di=0; di<dsIndex.lLength; di++)
                 if (dsIndex.lData[di] != newSetID) {
@@ -7299,8 +7366,7 @@ bool    _ElementaryCommand::ConstructCategoryMatrix (_String&source, _ExecutionL
 
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _ExecutionList&target)
-{
+bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _ExecutionList&target) {
 
     _List pieces;
 
@@ -7332,8 +7398,8 @@ bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _Execution
 
     exc->parameters<<pieces(0);
 
-    if (pathNames.lLength) {
-        exc->parameters && pathNames (pathNames.lLength-1);
+    if (PeekFilePath()) {
+        exc->parameters && *PeekFilePath();
     } else {
         exc->parameters && & emptyString;
     }
@@ -7342,10 +7408,15 @@ bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _Execution
         if (*(_String*)pieces(1) == _String("compiled")) {
             exc->simpleParameters << 1;
         } else {
+          if (*(_String*)pieces(1) == _String("enclosing_namespace")) {
+            exc->parameters.Delete(1);
+            exc->parameters && & emptyString;
+          } else {
             exc->parameters << pieces(1);
             if (pieces.lLength > 2) {
                 exc->parameters << pieces(2);
             }
+          }
         }
     }
 
@@ -7556,7 +7627,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       if (isLFunction)
           extraNamespace = _HYGenerateANameSpace();
       
-      for (long k = 0; k < arguments.lLength; k++) {
+      for (long k = 0UL; k < arguments.lLength; k++) {
         
           _String*   namespaced = new _String(chain.AddNameSpaceToID (*(_String*)arguments(k), & extraNamespace));
           if (namespaced->getChar(namespaced->sLength - 1L) == '&') {
@@ -7571,16 +7642,20 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
       _String          sfunctionBody (source, upto+1,source.Length()-2);
       _ExecutionList * functionBody;
-          if (isLFunction) {
-              _String * existing_namespace = chain.GetNameSpace();
-              if (existing_namespace) {
-                  extraNamespace = *existing_namespace & '.' & extraNamespace;
-              }
-              functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
+      
+      if (isLFunction) {
+          _String * existing_namespace = chain.GetNameSpace();
+          if (existing_namespace) {
+              extraNamespace = *existing_namespace & '.' & extraNamespace;
           }
-          else {
-              functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+          functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
+          if (existing_namespace) {
+            functionBody->enclosingNamespace = *existing_namespace;
           }
+      }
+      else {
+          functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+      }
       
 
       //  take care of all the return statements
@@ -7611,6 +7686,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       }
       _String          namespace_text (source, mark2+1,source.Length()-2);
       bool             success = false;
+      
       
       _ExecutionList   * namespace_payload = new _ExecutionList (namespace_text, funcID, false, &success);
       
@@ -7683,7 +7759,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target)
     FILE            *f = doFileOpen (fName.getStr(), "rb");
     SetStatusLine   ("Parsing File");
     if (!f) {
-        WarnError (_String("Could not read batch file '") & fName & "'.\nPath stack: " & (_String*)pathNames.toStr());
+        WarnError (_String("Could not read batch file '") & fName & "'.\nPath stack:\n\t" & GetPathStack("\n\t"));
     } else {
         _String beavis (f);
 

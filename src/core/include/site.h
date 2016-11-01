@@ -73,7 +73,7 @@ public:
               DNA/RNA/Protein or Binary
 
      */
-    _TranslationTable                       (_TranslationTable&);
+    _TranslationTable                       (_TranslationTable const&);
     virtual ~_TranslationTable              (void) {
         if (checkTable) {
             free (checkTable);
@@ -156,7 +156,7 @@ public:
     */
   
     _TranslationTable*
-    MergeTables                     (_TranslationTable*);
+    MergeTables                     (_TranslationTable const*) const;
   
     static const _String&                   GetDefaultTable (long tableType);
 
@@ -297,10 +297,10 @@ public:
     long        GetNoTypes              (void) const;
     // return the number of unique sites
 
-    long        GetCharDimension        (void);
+    unsigned long        GetCharDimension        (void) const;
     // return the size of the alphabet space
 
-    long        GetFreqType             (long);
+    unsigned long        GetFreqType             (long) const;
     // return the frequency of a site
 
     _Site*      GetSite                 (long index) const {
@@ -362,7 +362,9 @@ public:
     void  ClearNames (void) {
         theNames.Clear();
     }
-    
+  
+    _String*        GetSequenceCharacters (long seqID)  const;
+  
     bool   SetSequenceName (long index, _String * new_name) {
       if (index >= 0L && index < theNames.lLength) {
         theNames.Replace (index, new_name, false);
@@ -376,10 +378,15 @@ public:
     }
     
   
-    _SimpleList&
+    _SimpleList &
     GetTheMap               (void) {
         return theMap;
     }
+  
+    _SimpleList const&   DuplicateMap (void) const {
+        return theMap;
+    }
+  
     void        FindAllSitesLikeThisOne (long, _SimpleList&);
 
     friend      class       _DataSetFilter;
@@ -397,8 +404,8 @@ public:
   
     void         SetTranslationTable    (_DataSet *  newTT );
     void         SetTranslationTable    (_TranslationTable *  newTT );
-    _TranslationTable*
-    GetTT                   (void) {
+    _TranslationTable const*
+    GetTT                   (void) const {
         return theTT;
     }
     _Parameter   CheckAlphabetConsistency
@@ -457,7 +464,7 @@ public:
     }
 
     void     CopyFilter         (_DataSetFilter*);
-    void     SetFilter          (_DataSet*, char, _SimpleList&, _SimpleList&, bool isFilteredAlready = false);
+    void     SetFilter          (_DataSet const*, unsigned char, _SimpleList&, _SimpleList&, bool isFilteredAlready = false);
     void     SetExclusions      (_String*, bool = true);
 
     _String* GetExclusions      (void) const;
@@ -490,7 +497,7 @@ public:
         return theFrequencies.Element(i);
     }
 
-    long     GetUnitLength  (void) const{
+    unsigned long     GetUnitLength  (void) const{
         return unitLength;
     }
 
@@ -679,9 +686,9 @@ class _DataSetFilterNumeric:public _DataSetFilter
 
 public:
 
-    _DataSetFilterNumeric                       (void) {
-    }
+    _DataSetFilterNumeric                       (void) {}
     _DataSetFilterNumeric                       (_Matrix*, _List&,_DataSet*,long);
+    virtual ~_DataSetFilterNumeric              (void);
 
     virtual  bool                                       IsNormalFilter          (void)  const {
         return false;

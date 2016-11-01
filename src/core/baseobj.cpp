@@ -37,7 +37,6 @@
  
  */
 
-//#define __HYPHY_MPI_MESSAGE_LOGGING__
 
 #include "baseobj.h"
 #include "errorfns.h"
@@ -59,7 +58,7 @@ extern int _hy_mpi_node_rank;
 #endif
 
 #if defined   __UNIX__ || defined __HYPHY_GTK__
-#include <sys/time.h>
+
 #include <unistd.h>
 #endif
 
@@ -75,13 +74,8 @@ extern int _hy_mpi_node_rank;
     #include <Windows.h>
 #endif
 
-#if defined(__APPLE__) && defined(__MACH__)
-  #include <mach/mach.h>
-  #include <mach/mach_time.h>
-  mach_timebase_info_data_t    sTimebaseInfo;
-#endif
 
-#define     __HYPHY_MPI_MESSAGE_LOGGING__
+  //#define     __HYPHY_MPI_MESSAGE_LOGGING__
 
 bool        terminateExecution  = false;
 
@@ -121,6 +115,11 @@ BaseObj::BaseObj()
 //____________________________________________________________________________________
 BaseRef   BaseObj::toStr (unsigned long padding) {
   return new _String ("null");
+}
+
+//____________________________________________________________________________________
+void   BaseObj::ConsoleLog (void) {
+  fprintf (stderr, "\n[%x]\n%s\n", this, (const char*)_String ((_String*)toStr()));
 }
 
 //____________________________________________________________________________________
@@ -500,99 +499,6 @@ void        yieldCPUTime(void)
 
 #endif 
 
-//____________________________________________________________________________________
-
-// time differencing function
-
-double      TimerDifferenceFunction (bool doRetrieve)
-{
-    double timeDiff = 0.0;
-  
-  
-#ifdef __MAC__
-    static UnsignedWide microsecsIn;
-    UnsignedWide microsecsOut;
-
-    if (doRetrieve) {
-        Microseconds      (&microsecsOut);
-        timeDiff = 0.000001*((microsecsOut.hi-microsecsIn.hi)*(_Parameter)0xffffffff
-                             + (microsecsOut.lo-microsecsIn.lo));
-    } else {
-        Microseconds      (&microsecsIn);
-    }
-
-#endif
-
-#ifdef  __WINDOZE__
-    static          char            canRunTimer    = 0;
-    static          _Parameter      winTimerScaler = 0.0;
-    static          LARGE_INTEGER   tIn;
-
-    LARGE_INTEGER   tOut;
-
-    if (canRunTimer == 0) {
-        if (QueryPerformanceFrequency(&tIn) && tIn.QuadPart) {
-            winTimerScaler = 1./tIn.QuadPart;
-            canRunTimer    = 1;
-        } else {
-            canRunTimer = -1;
-        }
-
-    }
-
-    if (canRunTimer == 1)
-        if (doRetrieve) {
-            QueryPerformanceCounter (&tOut);
-            timeDiff   = (tOut.QuadPart-tIn.QuadPart) * winTimerScaler;
-          
-        } else {
-            QueryPerformanceCounter (&tIn);
-        }
-#endif
-
-#if !defined __WINDOZE__ && !defined __MAC__
-    /*static    clock_t         clockIn;
-            clock_t         clockOut;
-
-    if (doRetrieve)
-    {
-        clockOut = clock();
-        timeDiff   = (clockOut-clockIn) * 1.0 / CLOCKS_PER_SEC;
-    }
-    else
-        clockIn  = clock();*/
-  
-#if defined(__APPLE__) && defined(__MACH__)
-  static uint64_t        clockIn, clockOut;
-  
-  if (doRetrieve) {
-    clockOut = mach_absolute_time();
-    uint64_t diff = clockOut - clockIn;
-    if ( sTimebaseInfo.denom == 0 ) {
-      (void) mach_timebase_info(&sTimebaseInfo);
-    }
-    
-    return diff * 1e-9 * sTimebaseInfo.numer / sTimebaseInfo.denom;
-  
-  } else {
-    clockIn = mach_absolute_time();
-  }
-#else
-    static timeval clockIn, clockOut;
-    if (doRetrieve) {
-        gettimeofday (&clockOut,nil);
-        timeDiff = (clockOut.tv_sec-clockIn.tv_sec) + (clockOut.tv_usec-clockIn.tv_usec)*0.000001;
-      
-    } else {
-        gettimeofday (&clockIn,nil);
-    }
-#endif
-
-#endif
-
-
-    return timeDiff;
-}
 
 
 //____________________________________________________________________________________
