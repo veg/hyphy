@@ -54,7 +54,7 @@ void TimeDifference::Start (void) {
 #if defined(__APPLE__) && defined(__MACH__)
   base_time = mach_absolute_time();
 #elif defined   __UNIX__
-  gettimeofday (&base_time,nil)
+  gettimeofday (&base_time,NULL);
 #endif
 }
 
@@ -68,6 +68,7 @@ double TimeDifference::TimeSinceStart (void) const {
     return diff * 1e-9 * sTimebaseInfo.numer / sTimebaseInfo.denom;
   #elif  defined __UNIX__
     timeval current_time;
+    gettimeofday (&current_time,NULL);
     return (current_time.tv_sec-base_time.tv_sec) + (current_time.tv_usec-base_time.tv_usec)*0.000001
   #endif
   
