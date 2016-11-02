@@ -346,6 +346,7 @@ lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
 
 lfunction alignments.MapAlignmentToReferenceCoordinates (reference, aligned_reference, aligned_qry, offset) {
 
+
     realigned         = {};
     mapping           = {};
     coordinates       = {1,Abs(reference)};
@@ -361,13 +362,20 @@ lfunction alignments.MapAlignmentToReferenceCoordinates (reference, aligned_refe
 
     reference_coordinate = 0;
 
-    for (reference_coordinate = 0; reference_coordinate < offset; reference_coordinate += 1) {
-        realigned[0] * (reference[reference_coordinate]);
-        realigned[1] * "-";
-        realigned[2] * "-";
-        coordinates[reference_coordinate] = -1;
-        reduced_alignment[reference_coordinate] = FALSE;
+    if (offset) {
+         for (letter_offset = 0; letter_offset < offset;) {
+            realigned[0] * (reference[reference_coordinate]);
+            if (reference[reference_coordinate] != '-') {
+                letter_offset += 1;
+            }
+            realigned[1] * "-";
+            realigned[2] * "-";
+            coordinates[reference_coordinate] = -1;
+            reduced_alignment[reference_coordinate] = FALSE;
+            reference_coordinate += 1;
+        }
     }
+
 
     alignment_coordinate = 0;
 
