@@ -1,7 +1,6 @@
 RequireVersion ("2.31");
 
 
-VERBOSITY_LEVEL				= 0;
 //LF_SMOOTHING_SCALER         = 0.1;
 
 LoadFunctionLibrary("GrabBag");
@@ -108,7 +107,7 @@ relax.filter_names = utility.Map (relax.filter_specification, "_partition_", '_p
 
 relax.tree = relax.trees[0];
 
-utility.SetEnvVariable ("VERBOSITY_LEVEL", 1);
+utility.SetEnvVariable ("VERBOSITY_LEVEL", 0);
 
 relax.selected_branches = relax.io.defineBranchSets (relax.tree);
 
@@ -128,7 +127,7 @@ ChoiceList  (RELAX.runModel,"Analysis type",1,NO_SKIP,
             );
 
 if (RELAX.runModel < 0) {
-    return;
+    return None;
 }
 
 relax.taskTimerStart (1);
@@ -400,6 +399,8 @@ relax.taskTimerStop  (0);
 (RELAX.json ["timers"])["Partitioned Descriptive"]  = RELAX.timers[5];
 
 relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
+
+return RELAX.json;
 
 //------------------------------------------------------------------------------
 // HELPER FUNCTIONS FROM THIS POINT ON
