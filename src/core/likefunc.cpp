@@ -549,7 +549,11 @@ _LikelihoodFunction::_LikelihoodFunction (_String& s, _VariableContainer* p)
 //_______________________________________________________________________________________
 
 _TheTree * _LikelihoodFunction::GetIthTree (long f) const {
-  return (_TheTree*)LocateVar (theTrees.lData[f]);
+  _Variable *tree_var = LocateVar (theTrees.lData[f]);
+  if (tree_var && tree_var->ObjectClass() == TREE) {
+    return (_TheTree*)tree_var;
+  }
+  return nil;
 }
 
   //_______________________________________________________________________________________
@@ -574,8 +578,7 @@ _DataSetFilter * _LikelihoodFunction::GetIthFilterMutable (long f) const {
 //_______________________________________________________________________________________
 
 _Matrix * _LikelihoodFunction::GetIthFrequencies (long f) const {
-  _Variable *freq_variable = LocateVar(theProbabilities.Element(f));
-  return freq_variable ? (_Matrix*) freq_variable->GetValue() : NULL;
+    return (_Matrix *)FetchObjectFromVariableByTypeIndex(theProbabilities.Element(f), MATRIX);
 }
 
 //_______________________________________________________________________________________

@@ -136,8 +136,7 @@ _Parameter twoOverSqrtPi = 2./sqrtPi;
 void            DeleteTreeVariable      (long, _SimpleList &, bool);
 
 //__________________________________________________________________________________
-_Variable * LocateVar (long index)
-{
+_Variable * LocateVar (long index) {
     return (_Variable *)(((BaseRef*)variablePtrs.lData)[index]);
 }
 

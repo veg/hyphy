@@ -73,12 +73,6 @@ io.DisplayAnalysisBanner ({"info" : "RELAX (a random effects test of selection r
                            "requirements" : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"
                           } );
 
-
-
-
-
-
-
 relax.codon_data_info     = alignments.PromptForGeneticCodeAndAlignment ("RELAX.codon_data", "RELAX.codon_filter");
 relax.sample_size         = relax.codon_data_info["sites"] * relax.codon_data_info["sequences"];
 
