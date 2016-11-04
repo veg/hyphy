@@ -165,7 +165,7 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
         __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
                 sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), c3);
   
-        _mm256_store_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
+        _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
   
 
 

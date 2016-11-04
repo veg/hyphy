@@ -1234,7 +1234,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                             settingReport << (doLinear?"Yes":"No");
 
                             settingReport.Finalize();
-                            //ReportWarning (settingReport);
+                            ReportWarning (settingReport);
 
                             long stringCount = inStrings->GetHDim() * inStrings->GetVDim();
 

@@ -3864,8 +3864,7 @@ void      _ElementaryCommand::ExecuteCase41 (_ExecutionList& chain)
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
-{
+void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf) {
     chain.currentCommand++;
     // first of all obtain the string to be parsed
     // either read the file into a string or get a string from standard input
