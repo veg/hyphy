@@ -560,3 +560,52 @@ lfunction io.FormatTimeInterval  (interval) {
 
     return Join (":", time_pieces);
 }
+
+/**
+ * Read a delimiter separated file
+ * @param {String}  path  path to file; if None, user will be prompted for file
+ * @param {String}  separator the separator to use to segment a line into fields
+ * @param {Boolean} has_header treat the first line as header
+ * @returns {Dict}
+
+  {
+      "rows": {
+          "0": {
+              "0": "KC618402",
+              "1": "Human"
+          },
+          "1": {
+              "0": "KC618403",
+              "1": "Human"
+          },
+          "2": {
+              "0": "AB248520",
+              "1": "Human"
+          },
+          ...
+      }
+      "header": {
+          "0": "accession",
+          "1": "Host"
+      }
+  }
+
+ */
+lfunction io.ReadDelimitedFile  (path, separator, has_header) {
+   if (Type (path) == "String") {
+        fscanf (path, REWIND, "Lines", data);
+   } else {
+        fscanf (PROMPT_FOR_FILE, REWIND, "Lines", data);
+   }
+   result = {"rows" : {}};
+   index = 0;
+   row_count = utility.Array1D (data);
+   if (has_header) {
+        result["header"] = regexp.Split (data[0], separator);
+        index = 1;
+   }
+   for (k = index; k < row_count; k+=1) {
+        result ["rows"] + regexp.Split (data[k], separator);
+   }
+   return result;
+}

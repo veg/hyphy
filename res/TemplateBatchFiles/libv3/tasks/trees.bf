@@ -236,7 +236,6 @@ lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
 
     io.CheckAssertion("Abs (mapping) == Abs (reverse)", "The mapping between original and normalized tree sequence names must be one to one");
     utility.ToggleEnvVariable("TREE_NODE_NAME_MAPPING", reverse);
-
     result = trees.ExtractTreeInfo(trees.GetTreeString(look_for_newick_tree));
     utility.ToggleEnvVariable("TREE_NODE_NAME_MAPPING", None);
     return result;
