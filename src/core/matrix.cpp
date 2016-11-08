@@ -9705,29 +9705,32 @@ _PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
   _String const * best_key = nil;
   _Parameter best_value = do_mimimum ? INFINITY : -INFINITY;
   
-  _SimpleList  hist;
-  long         ls,
-  cn = avl.Traverser (hist,ls,avl.GetRoot());
- 
-  while (cn >= 0) {
-    _PMathObj value = (_PMathObj)avl.GetXtra (cn);
-    switch (value->ObjectClass()){
-      case NUMBER:
-        _Parameter number = ((_Constant*)value)->Value();
-        if (do_mimimum) {
-          if (number < best_value) {
-            best_value = number;
-            best_key   = (_String const*)avl.Retrieve (cn);
+  if (avl.countitems()) {
+  
+    _SimpleList  hist;
+    long         ls = -1L,
+    cn = avl.Traverser (hist,ls,avl.GetRoot());
+   
+    while (cn >= 0) {
+      _PMathObj value = (_PMathObj)avl.GetXtra (cn);
+      switch (value->ObjectClass()){
+        case NUMBER:
+          _Parameter number = ((_Constant*)value)->Value();
+          if (do_mimimum) {
+            if (number < best_value) {
+              best_value = number;
+              best_key   = (_String const*)avl.Retrieve (cn);
+            }
+          } else {
+            if (number > best_value) {
+              best_value = number;
+              best_key   = (_String const*)avl.Retrieve (cn);
+            }
           }
-        } else {
-          if (number > best_value) {
-            best_value = number;
-            best_key   = (_String const*)avl.Retrieve (cn);
-          }
+          break;
         }
-        break;
-      }
-    cn = avl.Traverser (hist,ls);
+      cn = avl.Traverser (hist,ls);
+    }
   }
   
   _AssociativeList * result = new _AssociativeList;
