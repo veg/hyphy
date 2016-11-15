@@ -23,7 +23,7 @@
 "","Tools for manipulating sequence files.","!Data File Tools";
 "ALN","Align coding sequences to reference (assuming star topology) using protein translations. The analysis will try to detect appropriare reading frames and fix some frameshifts. Designed with within-patient HIV sequences in mind.","SeqAlignment.bf";
 "CALN","Align coding sequences to reference (assuming star topology) using a codon-based dynamic programming algorithm (good for fixing multiple frameshifts). Designed with within-patient HIV sequences in mind.","SeqAlignmentCodon.bf";
-"PALN","Align anino-acid sequences to reference (assuming star topology).","SeqAlignmentProt.bf";
+"PALN","Align amino-acid sequences to reference (assuming star topology).","SeqAlignmentProt.bf";
 "NALN","Align nucleotide sequences to reference (assuming star topology). Designed with whole-genome HIV sequences in mind.","SeqAlignmentNuc.bf";
 "CLG","Remove 'gappy' sites from alignments based on a user-specified gap threshold.","CleanGaps.bf";
 "CLN","Convert sequence names to HyPhy valid identifiers if needed and replace stop codons with gaps in codon data if any are present.","CleanStopCodons.bf";
