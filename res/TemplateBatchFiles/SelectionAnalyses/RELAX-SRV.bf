@@ -1,8 +1,6 @@
 RequireVersion ("2.31");
 
 
-//LF_SMOOTHING_SCALER         = 0.1;
-
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("CF3x4");
 LoadFunctionLibrary("TreeTools");
@@ -263,8 +261,6 @@ estimators.ApplyExistingEstimates ("relax.LF",  RELAX.model_assignment, relax.mg
 utility.SetEnvVariable ("USE_LAST_RESULTS", 1);
 
 if (RELAX.runModel == "All") {
-
-    utility.SetEnvVariable ("VERBOSITY_LEVEL", 1);
 
     io.ReportProgressMessageMD ("RELAX", "GDM", "## Two-stage fit of the general descriptive model (separate relaxation parameter for each branch)");
 

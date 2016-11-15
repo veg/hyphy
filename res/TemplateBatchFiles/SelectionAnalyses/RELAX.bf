@@ -90,12 +90,19 @@ io.ReportProgressMessage ("RELAX", "Loaded an MSA with " + relax.codon_data_info
 
 relax.codon_lists = models.codon.MapCode (relax.codon_data_info["code"]);
 
+_Genetic_Code = relax.codon_data_info["code"];
+    /*
+
+     hack to make PopulateModelMatrix work
+
+    */
+
 relax.codon_frequencies     = frequencies._aux.CF3x4(frequencies._aux.empirical.collect_data ("RELAX.codon_filter",3,1,1),
 models.DNA.alphabet, relax.codon_lists["sense"], relax.codon_lists["stop"]);
  ("RELAX.codon_filter");
 
 
-relax.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relax.codon_data_info[utility.getGlobalValue("terms.json.partitions")], name_mapping);
+relax.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relax.codon_data_info[utility.getGlobalValue("terms.json.partitions")], relax.name_mapping);
 
 
 io.CheckAssertion("utility.Array1D (relax.partitions_and_trees) == 1", "RELAX only works on a single partition dataset");
@@ -693,12 +700,10 @@ function relax.io.defineBranchSets (relax.tree) {
                 if (k != bgSet && k != fgSet) {
                     branch_set [relax.handle.unlabeled(selectTheseForTesting[k][0])] = RELAX.unclassified;
                     return_set [RELAX.unclassified] = {};
-                    break;
                 }
             }
         }
         else {
-
             bgSet = 1-fgSet;
         }
         branch_set [relax.handle.unlabeled(selectTheseForTesting[bgSet][0])] = RELAX.reference;
