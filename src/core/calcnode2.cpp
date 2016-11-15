@@ -145,19 +145,17 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
               c0     = _mm256_sub_pd(_mm256_set1_pd(childVector[0]),c3),
               c1     = _mm256_sub_pd(_mm256_set1_pd(childVector[1]),c3),
               c2     = _mm256_sub_pd(_mm256_set1_pd(childVector[2]),c3),
-              t0,t1,t2,t3;
+              t0,t1,t2;
   
           if (transposed_mx) {
              t0    = ((__m256d*)transposed_mx)[0];
              t1    = ((__m256d*)transposed_mx)[1];
              t2    = ((__m256d*)transposed_mx)[2];
-             t3    = ((__m256d*)transposed_mx)[3];
             
           } else {
-              t0     = (__m256d) {tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]},
-              t1     = (__m256d) {tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]},
-              t2     = (__m256d) {tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]},
-              t3     = (__m256d) {tMatrix[3],tMatrix[7],tMatrix[11],tMatrix[15]};
+            t0     = (__m256d) {tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]};
+            t1     = (__m256d) {tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]};
+            t2     = (__m256d) {tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]};
           }
   
         // load transition matrix by column

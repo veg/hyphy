@@ -1,6 +1,7 @@
 LoadFunctionLibrary("../models/model_functions.bf");
 LoadFunctionLibrary("../models/terms.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
+LoadFunctionLibrary("../convenience/regexp.bf");
 
 /**
  * @name estimators.GetGlobalMLE
@@ -14,6 +15,28 @@ lfunction estimators.GetGlobalMLE(results, tag) {
         return estimate[ ^ "terms.MLE"];
     }
     return None;
+}
+
+/**
+ * Extract global scope parameter estimates that match a regular expression
+ * @name estimators.GetGlobalMLE_RegExp
+ * @param {Dictionary} results
+ * @param {String} regular expression to match
+ * @returns {Dict} parameter description : value (could be empty)
+ */
+lfunction estimators.GetGlobalMLE_RegExp(results, re) {
+
+    names = utility.Filter (utility.Keys (results[ ^ "terms.global"]),
+                            "_parameter_description_",
+                            "None != regexp.Find (_parameter_description_, `&re`)");
+
+    result = {};
+    count  = utility.Array1D (names);
+    for (k = 0; k < count; k += 1) {
+        result [names[k]] = (results[ ^ "terms.global"])[names[k]];
+    }
+
+    return result;
 }
 
 /**

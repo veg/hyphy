@@ -4345,10 +4345,12 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 fixedLength = ProcessNumericArgument((_String*)parameters(2),chain.nameSpacePrefix);
 
 
-    _String     saveTheArg;
+    _String     saveTheArg,
+                dialog_title (ProcessLiteralArgument((_String*)parameters(1),chain.nameSpacePrefix));
     _SimpleList sel,
                 exclusions;
 
+  
     _Variable* holder;
 
     if (fixedLength<0) {
@@ -4527,7 +4529,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                         }
                     }
                     if (choice == theChoices->lLength) {
-                        WarnError (_String("Not a valid option: '") & buffer & "' passed to Choice List '" & ((_String*)parameters(1))->sData & "' using redirected stdin input");
+                        WarnError (_String("Not a valid option: '") & buffer & "' passed to Choice List '" & dialog_title & "' using redirected stdin input");
                         return;
                     }
                 } else {
@@ -4560,7 +4562,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                                 if (choice<theChoices->lLength && sel.Find(choice)==-1) {
                                     sel<<choice;
                                 } else {
-                                    WarnError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to ChoiceList (with multiple selections) '" & ((_String*)parameters(1))->sData & "' using redirected stdin input");
+                                    WarnError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to ChoiceList (with multiple selections) '" & dialog_title & "' using redirected stdin input");
                                     return;
                                 }
                             } else {
@@ -4573,32 +4575,15 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 WarnError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
                 return;
 #else
-#if defined __HYPHYQT__ || defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
-                SetStatusLine ("Waiting for user selection.");
-                _String* param = (_String*)parameters(1);
+                 printf ("\n\n\t\t\t+");
 
-                _SimpleList std(2,0,1),
-                            all(theChoices->lLength,0,1);
-
-                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength,
-                
-                #ifdef __HYPHYQT__
-                (Ptr)_hyPrimaryConsoleWindow
-                #else
-                (Ptr)hyphyConsoleWindow
-                #endif
-                );
-#else
-                _String* param = (_String*)parameters(1);
-                printf ("\n\n\t\t\t+");
-
-                for (f = 1; f<param->sLength+1; f++) {
+                for (f = 1; f<dialog_title.sLength+1; f++) {
                     printf ("-");
                 }
 
-                printf ("+\n\t\t\t|%s|\n\t\t\t+",param->getStr());
+                printf ("+\n\t\t\t|%s|\n\t\t\t+",(const char*)dialog_title);
 
-                for (f = 1; f<param->sLength+1; f++) {
+                for (f = 1; f<dialog_title.sLength+1; f++) {
                     printf ("-");
                 }
 
@@ -4686,7 +4671,6 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                             }
                         }
                 }
-#endif
 #endif
             }
 
@@ -6947,7 +6931,7 @@ bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&t
     _ElementaryCommand *cv = new _ElementaryCommand (32);
 
     cv->parameters<<args(0);
-    ((_String*)args.lData[1])->StripQuotes();
+    //((_String*)args.lData[1])->StripQuotes();
     cv->parameters<<args(1)
                   <<args(2)
                   <<args(3);

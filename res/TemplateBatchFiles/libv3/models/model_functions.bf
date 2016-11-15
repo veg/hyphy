@@ -16,7 +16,8 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 
 	if (Type (rules) == "AssociativeList") {
 	    // this has the form
-	    // model id : list of branches to apply the model (as a string matrix)
+	    // model id : list of branches to apply the model (as a string COLUMN matrix with branch names,
+	    // or a dictionary where keys are the branch names)
 	    // OR
 	    // DEFAULT : model id
 

@@ -75,7 +75,7 @@ io.DisplayAnalysisBanner ({"info" : "RELAX (a random effects test of selection r
 relax.codon_data_info     = alignments.PromptForGeneticCodeAndAlignment ("RELAX.codon_data", "RELAX.codon_filter");
 relax.sample_size         = relax.codon_data_info["sites"] * relax.codon_data_info["sequences"];
 
-relax.name_mapping = codon_data_info[utility.getGlobalValue("terms.json.name_mapping")];
+relax.name_mapping = relax.codon_data_info[utility.getGlobalValue("terms.json.name_mapping")];
     /**
         will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
     */
@@ -162,8 +162,8 @@ relax.mg_results  = estimators.FitMGREV     (relax.filter_names, relax.trees, re
 relax.taskTimerStop (1);
 
 relax.mg_results_rate =
-                     {"Reference"   : {{relax.extract_global_MLE (relax.mg_results, RELAX.reference),1}},
-                      "Test"        : {{relax.extract_global_MLE (relax.mg_results, RELAX.test),1}}};
+                     {"Reference"   : {{estimators.GetGlobalMLE (relax.mg_results, RELAX.reference),1}},
+                      "Test"        : {{estimators.GetGlobalMLE (relax.mg_results, RELAX.test),1}}};
 
 
 
@@ -186,11 +186,11 @@ relax.taskTimerStart (2);
 RELAX.model_assignment             = {};
 RELAX.model_specification          = {};
 
-RELAX.reference.model      = relax.io.define_a_bsrel_model (RELAX.reference, relax.codon_frequencies, relax.extract_global_MLE (relax.mg_results, RELAX.reference) ,1);
+RELAX.reference.model      = relax.io.define_a_bsrel_model (RELAX.reference, relax.codon_frequencies, estimators.GetGlobalMLE (relax.mg_results, RELAX.reference) ,1);
 RELAX.model_assignment[RELAX.reference] = RELAX.reference.model["id"];
 RELAX.model_specification[RELAX.reference.model["id"]] = RELAX.reference.model;
 
-RELAX.test.model           = relax.io.define_a_bsrel_model (RELAX.test, relax.codon_frequencies, relax.extract_global_MLE (relax.mg_results, RELAX.test) ,1);
+RELAX.test.model           = relax.io.define_a_bsrel_model (RELAX.test, relax.codon_frequencies, estimators.GetGlobalMLE (relax.mg_results, RELAX.test) ,1);
 RELAX.model_assignment[RELAX.test] = RELAX.test.model["id"];
 RELAX.model_specification[RELAX.test.model["id"]] = RELAX.test.model;
 
@@ -198,7 +198,7 @@ parameters.ConstrainSets (RELAX.reference.model ["omegas"], RELAX.test.model ["o
 parameters.ConstrainSets (RELAX.reference.model ["f"], RELAX.test.model ["f"]);
 
 if (RELAX.has_unclassified) {
-    RELAX.unclassified.model = relax.io.define_a_bsrel_model (RELAX.unclassified, relax.codon_frequencies, relax.extract_global_MLE (relax.mg_results, RELAX.test) ,1);
+    RELAX.unclassified.model = relax.io.define_a_bsrel_model (RELAX.unclassified, relax.codon_frequencies, estimators.GetGlobalMLE (relax.mg_results, RELAX.test) ,1);
     RELAX.model_assignment[RELAX.unclassified] = RELAX.unclassified.model["id"];
     RELAX.model_specification[RELAX.unclassified.model["id"]] = RELAX.unclassified.model;
 
@@ -406,9 +406,6 @@ return RELAX.json;
 // HELPER FUNCTIONS FROM THIS POINT ON
 //------------------------------------------------------------------------------
 
-function relax.extract_global_MLE (fit, id) {
-    return ((fit["global"])[id])["MLE"];
-}
 
 function relax.branch.length (branch_info) {
     return branch_info["MLE"];

@@ -6027,7 +6027,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
     }
   
     _Parameter normalizeSeqNames = 1.;
-    checkParameter (normalizeSequenceNames, normalizeSeqNames, 0.0);
+    checkParameter (normalizeSequenceNames, normalizeSeqNames, 1.0);
   
     CheckReceptacleAndStore (*setName&".mapping",emptyString,false, new _MathObject, false);
     if (normalizeSeqNames > 0.1) {

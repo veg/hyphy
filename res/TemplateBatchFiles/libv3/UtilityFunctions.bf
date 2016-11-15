@@ -312,8 +312,7 @@ function utility.First (object, lambda_name, condition) {
 
     Eval ("`lambda_name` = None");
 
-    utility.Filter.return_object = {};
-    if (Type (object) == "AssociativeList") {
+     if (Type (object) == "AssociativeList") {
         utility.Filter.keys = Rows (object);
         ^(lambda_name) := object [utility.Filter.keys[utility.Filter.k]];
         for (utility.Filter.k = 0; utility.Filter.k < Abs (object); utility.Filter.k += 1) {
@@ -371,12 +370,14 @@ function utility.ForEach (object, lambda_name, transform) {
     if (Type (object) == "Matrix") {
         utility.ForEach.rows = Rows (object);
         utility.ForEach.columns = Columns (object);
-        utility.ForEach.return_object = {utility.ForEach.rows,  utility.ForEach.columns};
-        ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
-        for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
-            for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
-                ExecuteCommands (transform, enclosing_namespace);
 
+        if (utility.ForEach.rows && utility.ForEach.columns)  {
+             ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
+            for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
+                for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
+                    ExecuteCommands (transform, enclosing_namespace);
+
+                }
             }
         }
     }
@@ -559,14 +560,17 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
     if (Type (object) == "Matrix") {
         utility.ForEachPair.rows = Rows (object);
         utility.ForEachPair.columns = Columns (object);
-        utility.ForEachPair.return_object = {utility.ForEachPair.rows,  utility.ForEachPair.columns};
-        ^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
-        ^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
 
-        for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
-            for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
-                ExecuteCommands (transform, enclosing_namespace);
+        if (utility.ForEachPair.rows && utility.ForEachPair.columns) {
 
+            ^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
+            ^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
+
+            for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
+                for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
+                    ExecuteCommands (transform, enclosing_namespace);
+
+                }
             }
         }
     }

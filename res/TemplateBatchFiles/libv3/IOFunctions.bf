@@ -609,3 +609,32 @@ lfunction io.ReadDelimitedFile  (path, separator, has_header) {
    }
    return result;
 }
+
+/**
+ * Present a selection dialog and return an option
+ * @param {Dict/Matrix} options key : value or {{key, value}...}, using the matrix version ensures ordering
+ * @param {String} description dialog caption
+ * @returns {String/None} selected key or None if selection canceled
+ */
+
+lfunction io.SelectAnOption  (options, description) {
+    option_set = {utility.Array1D (options),2};
+    selection = None;
+    if (Rows (option_set) > 0) {
+        if (Type (options) == "Matrix") {
+            option_set = options;
+        } else {
+            keys = utility.Keys (options);
+            for (k = 0; k < Rows (option_set); k+=1) {
+                option_set [k][0] = keys[k];
+                option_set [k][1] = options[keys[k]];
+            }
+        }
+        ChoiceList  (selection,description,1,NO_SKIP,option_set);
+        if (selection >= 0) {
+            return option_set[selection][0];
+        }
+   }
+    assert (None != selection, "Selection canceled");
+    return None;
+}
