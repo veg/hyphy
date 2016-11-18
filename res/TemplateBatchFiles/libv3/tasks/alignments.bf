@@ -61,6 +61,7 @@ lfunction alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code
     if (Type(path) == "String") {
         DataSet ^ dataset_name = ReadDataFile(path);
     } else {
+        SetDialogPrompt ("Select a coding sequence alignment file");
         DataSet ^ dataset_name = ReadDataFile(PROMPT_FOR_FILE);
         path = ^ "LAST_FILE_PATH";
     }
@@ -167,6 +168,7 @@ lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
     if (Type(file_name) == "String") {
         DataSet ^dataset_name = ReadDataFile(file_name);
     } else {
+        SetDialogPrompt ("Select a sequence alignment file");
         DataSet ^dataset_name = ReadDataFile(PROMPT_FOR_FILE);
         file_name = LAST_FILE_PATH;
     }

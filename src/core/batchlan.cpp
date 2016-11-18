@@ -3333,11 +3333,13 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
 
           if (parameters.lLength > 3) {
               _String nameSpaceID = ProcessLiteralArgument((_String*)parameters(3),chain.nameSpacePrefix);
-              if (!nameSpaceID.IsValidIdentifier(true)) {
-                  WarnError (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & *(_String*)parameters(3));
-                  throw (1);
+              if (nameSpaceID.sLength > 0UL) {
+                if (!nameSpaceID.IsValidIdentifier(true)) {
+                    WarnError (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & *(_String*)parameters(3));
+                    throw (1);
+                }
+                namespc = new _String (nameSpaceID);
               }
-              namespc = new _String (nameSpaceID);
           }
       }
 

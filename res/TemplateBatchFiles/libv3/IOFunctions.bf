@@ -12,7 +12,7 @@ function io.CheckAssertion(statement, error_msg) {
 
 /**
  * @name io.PromptUser
- * @param statement
+ * @param prompt
  * @param default
  * @param lower_bound
  * @param upper_bound
@@ -43,6 +43,21 @@ lfunction io.PromptUser(prompt,
         }
     }
     return value;
+}
+
+/**
+ * @name io.PromptUserString
+ * @param prompt
+ */
+lfunction io.PromptUserForString(prompt) {
+
+    str_val = "";
+
+    while (Abs (str_val) == 0) {
+        fprintf(stdout, prompt, " : ");
+        fscanf(stdin, "String", str_val);
+    }
+    return str_val;
 }
 
 /**

@@ -716,3 +716,31 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     return results;
 }
+
+/**
+ * @name estimators.FitMGREV
+ * @description compute the asymptotic (chi^2) p-value for the LRT
+ * @param {Number} alternative log likelihood for the alternative (more general model)
+ * @param {Number} null log likelihood for the null
+ * @param {Number} df degrees of freedom
+ * @returns p-value
+ */
+lfunction estimators.LRT (alternative, null, df) {
+    if (alternative > null) {
+        return 1-CChi2 (2*(alternative-null), df);
+    }
+    return 1;
+}
+
+/**
+ * @name estimators.ComputeLF
+ * @description compute the current value of the log likelihood function
+ * @param {String} lfid name of the function
+ * @returns log likelihood
+ */
+lfunction estimators.ComputeLF (id) {
+	LFCompute (^id,LF_START_COMPUTE);
+	LFCompute (^id,logl);
+	LFCompute (^id,LF_DONE_COMPUTE);
+	return logl;
+}
