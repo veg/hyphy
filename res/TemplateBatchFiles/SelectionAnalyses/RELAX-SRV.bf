@@ -318,8 +318,6 @@ RELAX.null = relax.define.null ("RELAX.tree", RELAX.model_assignment[RELAX.refer
 if (!RELAX.debug.reload) {
 
     utility.SetEnvVariable ("VERBOSITY_LEVEL", 1);
-    Export (lfe, relax.LF);
-    fprintf (stdout, lfe, "\n\n");
 
     Optimize (relax.MLE.null, relax.LF);
     io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.null[1][0]);

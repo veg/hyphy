@@ -262,8 +262,7 @@ _PMathObj   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objec
 }
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg)
-{
+_PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg) {
     if (id) {
         _Variable * v = FetchVar (LocateVarByName (*id));
         if (v && (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass)) {
@@ -283,8 +282,7 @@ _PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned lon
 
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg)
-{
+_PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg) {
     _Variable * v = FetchVar (idx);
     if (v) {
         if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
@@ -308,9 +306,8 @@ long LocateVarByName (_String const& name) {
 }
 
 //__________________________________________________________________________________
-_Variable* FetchVar (long index)
-{
-    return index>=0?(_Variable *)variablePtrs(variableNames.GetXtra(index)):nil;
+_Variable* FetchVar (long index) {
+    return index>=0?(_Variable *)variablePtrs.GetItemRangeCheck(variableNames.GetXtra(index)):nil;
 }
 
 //__________________________________________________________________________________
