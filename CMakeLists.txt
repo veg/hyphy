@@ -111,6 +111,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
     set(GCC45 false)
     set(GCC50 false)
+    set(GCC60 false)
 
     if(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
         set(GCC45 true)
@@ -120,8 +121,15 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(GCC50 true)
     endif(${GCC_VERSION} VERSION_GREATER 5.0 OR ${GCC_VERSION} VERSION_EQUAL 5.0)
 
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+    if(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
+        set(GCC60 true)
+    endif(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
 
+    if(${GCC_VERSION} VERSION_LESS 6.0)
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
+    else(${GCC_VERSION} VERSION_LESS 6.0)
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=c++14")
+    endif(${GCC_VERSION} VERSION_LESS 6.0)
 
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
@@ -269,11 +277,12 @@ set_property(
     PROPERTY COMPILE_FLAGS "-fstrict-aliasing -funroll-loops"
 )
 
-set_property(
-    SOURCE ${SRC_CORE}
-    PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast -std=c++14"
 
-)
+  set_property(
+      SOURCE ${SRC_CORE}
+      PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
+  )
+
 
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
