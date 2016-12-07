@@ -93,6 +93,22 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
 endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
+#-------------------------------------------------------------------------------
+# setup the files we'll be using
+#-------------------------------------------------------------------------------
+file(GLOB SRC_CORE src/core/*.cpp)
+file(GLOB SRC_GTESTS tests/gtests/*.cpp)
+file(GLOB SRC_NEW src/new/*.cpp)
+
+set(SRC_LINK src/lib/link/THyPhy.cpp)
+set(SRC_PREFS src/gui/preferences.cpp)
+set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
+set(SRC_UNIXMAIN src/mains/unix.cpp)
+set(SRC_UTILS src/utils/hyphyunixutils.cpp)
+
+
+
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 
 
 
@@ -173,6 +189,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
         endif(${HAVE_SSE3_EXTENSIONS})
     endif (${HAVE_AVX_EXTENSIONS})
+
+    set_property(
+     SOURCE ${SRC_CORE}
+     APPEND_STRING PROPERTY  COMPILE_FLAGS " -std=c++14 "
+    )
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}")
@@ -240,22 +261,6 @@ add_custom_target(uninstall
 )
 
 
-#-------------------------------------------------------------------------------
-# setup the files we'll be using
-#-------------------------------------------------------------------------------
-file(GLOB SRC_CORE src/core/*.cpp)
-file(GLOB SRC_GTESTS tests/gtests/*.cpp)
-file(GLOB SRC_NEW src/new/*.cpp)
-
-set(SRC_LINK src/lib/link/THyPhy.cpp)
-set(SRC_PREFS src/gui/preferences.cpp)
-set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
-set(SRC_UNIXMAIN src/mains/unix.cpp)
-set(SRC_UTILS src/utils/hyphyunixutils.cpp)
-
-
-
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 
 
 #-------------------------------------------------------------------------------
@@ -263,24 +268,24 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 #-------------------------------------------------------------------------------
 set_property(
     SOURCE ${SRC_CORE}
-    PROPERTY COMPILE_FLAGS "${DEFAULT_WARNING_FLAGS}"
+    APPEND_STRING PROPERTY  COMPILE_FLAGS "${DEFAULT_WARNING_FLAGS}"
 )
 
 set_property(
     SOURCE ${SRC_SQLITE3}
-    PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast -std=c99"
+    APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast -std=c99"
 )
 
 
 set_property(
     SOURCE src/core/calcnode2.cpp
-    PROPERTY COMPILE_FLAGS "-fstrict-aliasing -funroll-loops"
+    APPEND_STRING PROPERTY COMPILE_FLAGS " -fstrict-aliasing -funroll-loops"
 )
 
 
   set_property(
       SOURCE ${SRC_CORE}
-      PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
+      APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
   )
 
 
