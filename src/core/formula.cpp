@@ -455,6 +455,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
           } else { // 0-? => -?
               startNode->go_down(1)->delete_tree(true);
               startNode->kill_node(1);
+              op->SetTerms(1);
              //startNode->kill_node(1);
           }
       }
@@ -1612,7 +1613,7 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
         return true;
     }
 
-    long locDepth = 0;
+    long locDepth = 0L;
 
     for (int i=0; i<theFormula.lLength; i++) {
         _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
@@ -1655,8 +1656,8 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
         }
         if (locDepth>stackDepth) {
             stackDepth = locDepth;
-        } else if (locDepth==0) {
-            _String errStr = _String("Invalid formula passed to _Formula::AmISimple") & _String ((_String*)toStr());
+        } else if (locDepth==0L) {
+            _String errStr = _String("Invalid formula (no return value) passed to _Formula::AmISimple") & _String ((_String*)toStr());
             WarnError (errStr);
             return false;
         }
