@@ -9437,13 +9437,13 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
               //add this site to the simulated dataset
             
             _String simulated_unit (this_filter->ConvertCodeToLetters(this_filter->CorrectCode(leaf_values(0)), sites_per_unit));
-            
+
             for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
               target.AddSite (simulated_unit (character_index));
               leaf_count ++;
             }
 
-            for (unsigned long sequence_index; sequence_index < species_count; sequence_index++) {
+            for (unsigned long sequence_index = 0UL; sequence_index < species_count; sequence_index++) {
               simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(leaf_values(sequence_index)), sites_per_unit);
               for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
                 target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
@@ -9634,6 +9634,8 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
         if (!leafCount) {
             for (k = 0; k<vecSize; k++) {
                 _String letterValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(curVector[k]), baseLength);
+                //StringToConsole(letterValue);
+                //NLToConsole();
                 for (m = 0; m<letterValue.sLength; m++) {
                     target.AddSite (letterValue.sData[m]);
                 }
@@ -9642,6 +9644,8 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
         } else {
             for (k = 0; k<vecSize; k++) {
                 _String letterValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(curVector[k]), baseLength);
+                //StringToConsole(letterValue);
+                //NLToConsole();
                 for (m = 0; m<letterValue.sLength; m++) {
                     target.Write2Site (siteCount++, letterValue.sData[m]);
                 }

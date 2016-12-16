@@ -3094,10 +3094,13 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
         _Variable*   catValVar  = nil,
                      *   catNameVar = nil;
 
-        if (parameters.lLength>3)
+        
+
+      
+        if (parameters.lLength>3) {
             // a matrix to store simulated category values
-        {
             _String  matrixName (chain.AddNameSpaceToID(*(_String*)parameters(3)));
+          
             if (!(catValVar = CheckReceptacle(&matrixName,blSimulateDataSet,true))) {
                 return;
             } else {
@@ -3105,9 +3108,8 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
             }
         }
 
-        if (parameters.lLength>4)
+        if (parameters.lLength>4) {
             // a matrix to store simulated category values
-        {
             _String  matrixName (chain.AddNameSpaceToID(*(_String*)parameters(4)));
             if (!(catNameVar = CheckReceptacle(&matrixName,blSimulateDataSet,true))) {
                 return;
