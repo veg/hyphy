@@ -72,28 +72,6 @@ set(CMAKE_MODULE_PATH cmake)
 set(HYPHY_VERSION 2.1)
 
 #-------------------------------------------------------------------------------
-# figure out some system-stuff for compile-time workarounds
-#-------------------------------------------------------------------------------
-set(MACOSX_LION false)
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-        set(MACOSX_LION true)
-    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-
-    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
-        set(MACOSX_LION false)
-    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
-
-endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-
-set(MACOSX_GT_LION false)
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-        set(MACOSX_GT_LION true)
-    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-
-#-------------------------------------------------------------------------------
 # setup the files we'll be using
 #-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
@@ -213,10 +191,9 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 find_package(OpenMP)
 
-if(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
+if(NOT ${OPENMP_FOUND})
     set(OpenMP_CXX_FLAGS "")
-endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
-
+endif(NOT ${OPENMP_FOUND})
 
 #-------------------------------------------------------------------------------
 # default installation prefix
