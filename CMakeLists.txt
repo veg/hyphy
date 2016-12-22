@@ -101,15 +101,11 @@ file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 
 set(SRC_LINK src/lib/link/THyPhy.cpp)
-set(SRC_PREFS src/gui/preferences.cpp)
 set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-
-
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
-
 
 
 #-------------------------------------------------------------------------------
@@ -302,9 +298,6 @@ include_directories(
     src/core/include
     src/lib/Link src/new/include
     contrib/SQLite-3.8.2 # SQLite
-    src/gui/include
-    src/gui/include/Components
-    src/gui/include/WindowClasses
     contrib/gtest-1.7.0/include
     tests/gtests
 )
@@ -315,14 +308,13 @@ include_directories(
 #-------------------------------------------------------------------------------
 install(DIRECTORY res/ DESTINATION lib/hyphy)
 
-
 #-------------------------------------------------------------------------------
 # hyphy library target
 #-------------------------------------------------------------------------------
 add_library(
   hyphy_mp SHARED
   EXCLUDE_FROM_ALL
-  ${SRC_COMMON} ${SRC_LINK} ${SRC_PREFS}
+  ${SRC_COMMON} ${SRC_LINK}
 )
 target_link_libraries(hyphy_mp ${DEFAULT_LIBRARIES})
 
