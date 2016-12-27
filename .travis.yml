@@ -36,7 +36,7 @@ matrix:
     - env: CC="clang" CXX="clang++" MPI="openmpi"
       os: linux
       compiler: clang
-    - env: CC="gcc" CXX="g++"
+    - env: CC="gcc" CXX="g++" MPI="openmpi"
       os: linux
       compiler: gcc
     - env: CC="gcc-5" CXX="g++-5" MPI="openmpi"
