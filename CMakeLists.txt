@@ -72,28 +72,6 @@ set(CMAKE_MODULE_PATH cmake)
 set(HYPHY_VERSION 2.1)
 
 #-------------------------------------------------------------------------------
-# figure out some system-stuff for compile-time workarounds
-#-------------------------------------------------------------------------------
-set(MACOSX_LION false)
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-        set(MACOSX_LION true)
-    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-
-    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
-        set(MACOSX_LION false)
-    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
-
-endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-
-set(MACOSX_GT_LION false)
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-        set(MACOSX_GT_LION true)
-    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-
-#-------------------------------------------------------------------------------
 # setup the files we'll be using
 #-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
@@ -101,15 +79,11 @@ file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 
 set(SRC_LINK src/lib/link/THyPhy.cpp)
-set(SRC_PREFS src/gui/preferences.cpp)
 set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-
-
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
-
 
 
 #-------------------------------------------------------------------------------
@@ -124,22 +98,6 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
         OUTPUT_VARIABLE GCC_VERSION
     )
-
-    set(GCC45 false)
-    set(GCC50 false)
-    set(GCC60 false)
-
-    if(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
-        set(GCC45 true)
-    endif(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
-
-    if(${GCC_VERSION} VERSION_GREATER 5.0 OR ${GCC_VERSION} VERSION_EQUAL 5.0)
-        set(GCC50 true)
-    endif(${GCC_VERSION} VERSION_GREATER 5.0 OR ${GCC_VERSION} VERSION_EQUAL 5.0)
-
-    if(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
-        set(GCC60 true)
-    endif(${GCC_VERSION} VERSION_GREATER 6.0 OR ${GCC_VERSION} VERSION_EQUAL 6.0)
 
     if(${GCC_VERSION} VERSION_LESS 6.0)
       set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
@@ -217,10 +175,9 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 find_package(OpenMP)
 
-if(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
+if(NOT ${OPENMP_FOUND})
     set(OpenMP_CXX_FLAGS "")
-endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
-
+endif(NOT ${OPENMP_FOUND})
 
 #-------------------------------------------------------------------------------
 # default installation prefix
@@ -276,18 +233,15 @@ set_property(
     APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast -std=c99"
 )
 
-
 set_property(
     SOURCE src/core/calcnode2.cpp
     APPEND_STRING PROPERTY COMPILE_FLAGS " -fstrict-aliasing -funroll-loops"
 )
 
-
-  set_property(
-      SOURCE ${SRC_CORE}
-      APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
-  )
-
+set_property(
+  SOURCE ${SRC_CORE}
+  APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-int-to-pointer-cast"
+)
 
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
@@ -302,9 +256,6 @@ include_directories(
     src/core/include
     src/lib/Link src/new/include
     contrib/SQLite-3.8.2 # SQLite
-    src/gui/include
-    src/gui/include/Components
-    src/gui/include/WindowClasses
     contrib/gtest-1.7.0/include
     tests/gtests
 )
@@ -315,33 +266,8 @@ include_directories(
 #-------------------------------------------------------------------------------
 install(DIRECTORY res/ DESTINATION lib/hyphy)
 
-
 #-------------------------------------------------------------------------------
-# hyphy library target
-#-------------------------------------------------------------------------------
-add_library(
-  hyphy_mp SHARED
-  EXCLUDE_FROM_ALL
-  ${SRC_COMMON} ${SRC_LINK} ${SRC_PREFS}
-)
-target_link_libraries(hyphy_mp ${DEFAULT_LIBRARIES})
-
-install(
-  TARGETS hyphy_mp
-  LIBRARY DESTINATION lib
-  OPTIONAL
-)
-
-add_custom_target(LIB DEPENDS hyphy_mp)
-
-set_property(
-    TARGET hyphy_mp
-    APPEND PROPERTY COMPILE_DEFINITIONS __HEADLESS__
-)
-
-
-#-------------------------------------------------------------------------------
-# hyphy mp2 target
+# HYPHYMP target
 #-------------------------------------------------------------------------------
 add_executable(
     HYPHYMP
@@ -351,14 +277,13 @@ add_executable(
 
 target_link_libraries(HYPHYMP ${DEFAULT_LIBRARIES})
 
+add_custom_target(MP DEPENDS HYPHYMP)
+
 install(
     TARGETS HYPHYMP
     RUNTIME DESTINATION bin
     OPTIONAL
 )
-
-add_custom_target(MP2 DEPENDS HYPHYMP)
-
 
 #-------------------------------------------------------------------------------
 # hyphy OpenCL target
@@ -498,18 +423,18 @@ set_target_properties(
 
 if(UNIX)
     set_property(
-        TARGET HYPHYMP hyphy_mp HYPHYGTEST HYPHYDEBUG
+        TARGET HYPHYMP HYPHYGTEST HYPHYDEBUG
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
 endif(UNIX)
 
 set_property(
-    TARGET hyphy_mp HYPHYMP
+    TARGET HYPHYMP
     APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__
 )
 
 set_property(
-    TARGET hyphy_mp HYPHYMP HYPHYGTEST HYPHYDEBUG
+    TARGET HYPHYMP HYPHYGTEST HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
 
@@ -519,7 +444,7 @@ set_property(
 )
 
 set_target_properties(
-    hyphy_mp HYPHYMP
+    HYPHYMP
     PROPERTIES
     COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${OpenMP_CXX_FLAGS}"
     LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
