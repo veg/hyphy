@@ -34,9 +34,15 @@ function models.protein.empirical.ModelDescription(type) {
     };
 }
 
+
+
+
+//==================================================================================================================//
+
 function models.protein.WAG._GenerateRate (from,to,namespace,modelType) {
     return models.protein.empirical._GenerateRate (models.protein.WAG.empirical_Q, from,to,namespace,modelType);
 }
+
 
 function models.protein.WAG.ModelDescription(type) {
     models.protein.WAG.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
@@ -45,6 +51,16 @@ function models.protein.WAG.ModelDescription(type) {
     models.protein.WAG.ModelDescription.model_definition ["q_ij"] = "models.protein.WAG._GenerateRate";
     return models.protein.WAG.ModelDescription.model_definition;
 }
+
+function models.protein.WAGF.ModelDescription(type) {
+    models.protein.WAGF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.WAGF.ModelDescription.model_definition ["empirical-rates"] = models.protein.WAG.empirical_Q;
+    models.protein.WAGF.ModelDescription.model_definition ["frequency-estimator"] = "frequencies.empirical.protein";
+    models.protein.WAGF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.WAGF.ModelDescription.model_definition ["q_ij"] = "models.protein.WAG._GenerateRate";
+    return models.protein.WAGF.ModelDescription.model_definition;
+}
+
 
 function models.protein.WAG.frequencies (model, namespace, datafilter) {
     model[terms.efv_estimate] =
@@ -305,6 +321,779 @@ models.protein.WAG.empirical_Q = {
    "Y":7.8969
   }
 };
+
+
+
+//==================================================================================================================//
+//===================================== SJS added LG, JC, and JTT below =================================================//
+
+function models.protein.LG._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (models.protein.LG.empirical_Q, from,to,namespace,modelType);
+}
+
+function models.protein.LG.ModelDescription(type) {
+    models.protein.LG.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.LG.ModelDescription.model_definition ["empirical-rates"] = models.protein.LG.empirical_Q;
+    models.protein.LG.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.LG.frequencies";
+    models.protein.LG.ModelDescription.model_definition ["q_ij"] = "models.protein.LG._GenerateRate";
+    return models.protein.LG.ModelDescription.model_definition;
+}
+
+function models.protein.LG.frequencies (model, namespace, datafilter) {
+    model[terms.efv_estimate] =
+ 
+          {{     0.07906500000000008}
+           {     0.012937}
+           {     0.053052}
+           {     0.071586}
+           {     0.042302}
+           {     0.057337}
+           {     0.022355}
+           {     0.062157}
+           {     0.0646}
+           {     0.099081}
+           {     0.022951}
+           {     0.041977}
+           {     0.04404}
+           {     0.040767}
+           {     0.055941}
+           {     0.061197}
+           {     0.053287}
+           {     0.069147}
+           {     0.012066}
+           {     0.034155}
+          };
+    model[terms.efv_estimate_name] = terms.freqs.predefined;
+    (model["parameters"])["empirical"] = 0;
+    return model;
+}
+
+models.protein.LG.empirical_Q = {
+    "A":
+        {"C":7.90863,
+        "D":1.255501,
+        "E":3.299796,
+        "F":0.806091,
+        "G":6.564482,
+        "H":1.140209,
+        "I":0.476059,
+        "K":1.704692,
+        "L":1.256114,
+        "M":3.571425,
+        "N":0.879541,
+        "P":3.741781,
+        "Q":3.081669,
+        "R":1.350659,
+        "S":15.019796,
+        "T":6.797891,
+        "V":8.095413000000001,
+        "W":0.574197,
+        "Y":0.695704},
+    "C":
+        {"D":0.198761,
+        "E":0.011117,
+        "F":3.511742,
+        "G":1.80874,
+        "H":2.035214,
+        "I":1.018736,
+        "K":0.04215,
+        "L":1.887354,
+        "M":2.839512,
+        "N":1.680068,
+        "P":0.239513,
+        "Q":0.269463,
+        "R":1.698443,
+        "S":8.847193000000001,
+        "T":3.633208,
+        "V":6.225305,
+        "W":2.129215,
+        "Y":3.703275},
+    "D":
+        {"E":16.661482,
+        "F":0.055336,
+        "G":2.684605,
+        "H":2.945743,
+        "I":0.033966,
+        "K":0.899053,
+        "L":0.047901,
+        "M":0.081174,
+        "N":16.128578,
+        "P":1.253315,
+        "Q":1.662968,
+        "R":0.393842,
+        "S":3.940757,
+        "T":1.353096,
+        "V":0.120634,
+        "W":0.09497,
+        "Y":0.429279},
+    "E":
+        {"F":0.059769,
+        "G":1.1084,
+        "H":1.346808,
+        "I":0.140644,
+        "K":5.74199,
+        "L":0.221374,
+        "M":0.552013,
+        "N":1.721195,
+        "P":1.332599,
+        "Q":13.117878,
+        "R":1.156451,
+        "S":1.944437,
+        "T":1.920836,
+        "V":0.7785530000000001,
+        "W":0.247361,
+        "Y":0.381397},
+    "F":
+        {"G":0.284644,
+        "H":2.167378,
+        "I":3.535496,
+        "K":0.07599499999999999,
+        "L":8.237826999999999,
+        "M":5.715542,
+        "N":0.28445,
+        "P":0.300143,
+        "Q":0.113923,
+        "R":0.167515,
+        "S":1.149617,
+        "T":0.524262,
+        "V":2.080141,
+        "W":7.807073,
+        "Y":24.795538},
+    "G":
+        {"H":0.989686,
+        "I":0.027659,
+        "K":0.942509,
+        "L":0.140632,
+        "M":0.443358,
+        "N":4.567866,
+        "P":0.6258089999999999,
+        "Q":0.851393,
+        "R":1.239767,
+        "S":5.528515,
+        "T":0.412531,
+        "V":0.243704,
+        "W":0.853083,
+        "Y":0.173733},
+    "H":
+        {"I":0.345954,
+        "K":2.215435,
+        "L":1.163908,
+        "M":1.405878,
+        "N":14.327317,
+        "P":1.616785,
+        "Q":15.294073,
+        "R":7.710101,
+        "S":3.14559,
+        "T":1.856391,
+        "V":0.378143,
+        "W":1.897035,
+        "Y":16.861539},
+    "I":
+        {"K":0.505414,
+        "L":13.170227,
+        "M":13.578641,
+        "N":0.608467,
+        "P":0.248724,
+        "Q":0.231481,
+        "R":0.403492,
+        "S":0.203682,
+        "T":3.284525,
+        "V":2.062424,
+        "W":0.35478,
+        "Y":0.738801},
+    "K":
+        {"L":0.436882,
+        "M":2.086245,
+        "N":6.815611,
+        "P":1.24018,
+        "Q":10.276405,
+        "R":20.099975,
+        "S":2.37881,
+        "T":3.612184,
+        "V":0.5884470000000001,
+        "W":0.158568,
+        "Y":0.419191},
+    "L":
+        {"M":20.056417,
+        "N":0.217415,
+        "P":0.791345,
+        "Q":1.850656,
+        "R":0.9590689999999999,
+        "S":0.5791849999999999,
+        "T":0.962526,
+        "V":5.410175,
+        "W":1.968773,
+        "Y":0.952079},
+    "M":
+        {"N":1.178801,
+        "P":0.317253,
+        "Q":5.314296,
+        "R":1.538248,
+        "S":1.102405,
+        "T":6.419361,
+        "V":6.032845,
+        "W":2.211975,
+        "Y":1.529266},
+    "N":
+        {"P":0.51405,
+        "Q":5.387956,
+        "R":2.388961,
+        "S":12.735858,
+        "T":6.356809,
+        "V":0.265904,
+        "W":0.144174,
+        "Y":1.944603},
+    "P":
+        {"Q":1.983585,
+        "R":1.056566,
+        "S":4.251681,
+        "T":1.81574,
+        "V":0.94208,
+        "W":0.302262,
+        "Y":0.28473},
+    "Q":
+        {"R":8.921638,
+        "S":3.8885,
+        "T":3.431944,
+        "V":0.668293,
+        "W":0.750481,
+        "Y":0.81764},
+    "R":
+        {"S":2.726625,
+        "T":1.83963,
+        "V":0.542964,
+        "W":1.886083,
+        "Y":0.999078},
+    "S":
+        {"T":20.564538,
+        "V":0.31255,
+        "W":0.790716,
+        "Y":1.272668},
+    "T":
+        {"V":6.95249,
+        "W":0.447447,
+        "Y":0.781117},
+    "V":
+        {"W":0.602135,
+        "Y":0.792149},
+    "W":
+        {"Y":10.014342}
+};
+//==================================================================================================================//
+
+function models.protein.JTT._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (models.protein.JTT.empirical_Q, from,to,namespace,modelType);
+}
+
+function models.protein.JTT.ModelDescription(type) {
+    models.protein.JTT.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.JTT.ModelDescription.model_definition ["empirical-rates"] = models.protein.JTT.empirical_Q;
+    models.protein.JTT.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.JTT.frequencies";
+    models.protein.JTT.ModelDescription.model_definition ["q_ij"] = "models.protein.JTT._GenerateRate";
+    return models.protein.JTT.ModelDescription.model_definition;
+}
+
+function models.protein.JTT.frequencies (model, namespace, datafilter) {
+    model[terms.efv_estimate] =
+      {{	0.07686099999999986}
+        {	0.020279}
+        {	0.051269}
+        {	0.06182}
+        {	0.04053}
+        {	0.074714}
+        {	0.022983}
+        {	0.052569}
+        {	0.059498}
+        {	0.091111}
+        {	0.023414}
+        {	0.042546}
+        {	0.050532}
+        {	0.041061}
+        {	0.051057}
+        {	0.068225}
+        {	0.058518}
+        {	0.066374}
+        {	0.014336}
+        {   0.032303}
+    };
+    model[terms.efv_estimate_name] = terms.freqs.predefined;
+    (model["parameters"])["empirical"] = 0;
+    return model;
+}
+
+models.protein.JTT.empirical_Q = {
+    "A":
+        {"C":1.825304,
+        "D":2.629062,
+        "E":3.389193,
+        "F":0.439402,
+        "G":5.529052,
+        "H":0.698916,
+        "I":1.149188,
+        "K":1.173822,
+        "L":0.984993,
+        "M":1.491421,
+        "N":1.772843,
+        "P":6.226284,
+        "Q":1.768897,
+        "R":1.689314,
+        "S":12.350566,
+        "T":14.560301,
+        "V":9.291012,
+        "W":0.267941,
+        "Y":0.443212},
+    "C":
+        {"D":0.335605,
+        "E":0.17128,
+        "F":2.155291,
+        "G":1.736056,
+        "H":2.303555,
+        "I":0.478375,
+        "K":0.155718,
+        "L":0.522966,
+        "M":1.300168,
+        "N":0.995491,
+        "P":0.392886,
+        "Q":0.290103,
+        "R":3.240373,
+        "S":6.848188,
+        "T":1.492781,
+        "V":1.974145,
+        "W":3.508343,
+        "Y":6.719573},
+    "D":
+        {"E":24.67688,
+        "F":0.103333,
+        "G":4.042937,
+        "H":3.280087,
+        "I":0.368468,
+        "K":0.897486,
+        "L":0.195361,
+        "M":0.603695,
+        "N":17.632664,
+        "P":0.404041,
+        "Q":1.657439,
+        "R":0.492165,
+        "S":1.872296,
+        "T":1.350869,
+        "V":1.001687,
+        "W":0.182588,
+        "Y":1.442353},
+    "E":
+        {"F":0.139259,
+        "G":3.544726,
+        "H":0.7745300000000001,
+        "I":0.355139,
+        "K":5.502124,
+        "L":0.309742,
+        "M":0.556299,
+        "N":1.83686,
+        "P":0.610027,
+        "Q":10.859165,
+        "R":1.011924,
+        "S":0.992752,
+        "T":1.05355,
+        "V":1.478317,
+        "W":0.363426,
+        "Y":0.201608},
+    "F":
+        {"G":0.15954,
+        "H":1.440688,
+        "I":2.469068,
+        "K":0.07791099999999999,
+        "L":7.944248,
+        "M":1.385889,
+        "N":0.233473,
+        "P":0.471779,
+        "Q":0.14515,
+        "R":0.207524,
+        "S":2.999303,
+        "T":0.441343,
+        "V":1.885673,
+        "W":1.709153,
+        "Y":17.425203},
+    "G":
+        {"H":0.640854,
+        "I":0.170842,
+        "K":0.85737,
+        "L":0.220799,
+        "M":0.414257,
+        "N":2.457067,
+        "P":0.661141,
+        "Q":0.734896,
+        "R":4.320057,
+        "S":5.955249,
+        "T":1.006774,
+        "V":1.493788,
+        "W":1.729037,
+        "Y":0.16681},
+    "H":
+        {"I":0.5776,
+        "K":1.668401,
+        "L":1.71757,
+        "M":1.047437,
+        "N":12.791207,
+        "P":3.628382,
+        "Q":18.060173,
+        "R":10.201347,
+        "S":2.362208,
+        "T":1.516712,
+        "V":0.387084,
+        "W":0.407311,
+        "Y":18.582271},
+    "I":
+        {"K":0.643605,
+        "L":7.419497,
+        "M":15.351776,
+        "N":1.560076,
+        "P":0.313221,
+        "Q":0.248689,
+        "R":0.76,
+        "S":1.287195,
+        "T":8.114273000000001,
+        "V":30.292441,
+        "W":0.427382,
+        "Y":0.964144},
+    "K":
+        {"L":0.465418,
+        "M":1.984497,
+        "N":8.037099,
+        "P":0.687399,
+        "Q":9.426273,
+        "R":20.745569,
+        "S":1.507571,
+        "T":3.068156,
+        "V":0.394198,
+        "W":0.283208,
+        "Y":0.2793},
+    "L":
+        {"M":12.254646,
+        "N":0.436212,
+        "P":3.369566,
+        "Q":2.252737,
+        "R":1.182794,
+        "S":1.8826,
+        "T":0.865866,
+        "V":5.596665,
+        "W":1.685012,
+        "Y":0.766034},
+    "M":
+        {"N":1.050805,
+        "P":0.521765,
+        "Q":1.451723,
+        "R":1.36957,
+        "S":0.90733,
+        "T":6.719179,
+        "V":9.654408999999999,
+        "W":0.6397040000000001,
+        "Y":0.603279},
+    "N":
+        {"P":0.387011,
+        "Q":2.442836,
+        "R":1.433276,
+        "S":16.070798,
+        "T":7.470881,
+        "V":0.522749,
+        "W":0.08801200000000001,
+        "Y":2.22633},
+    "P":
+        {"Q":5.10954,
+        "R":2.257455,
+        "S":8.859674,
+        "T":3.739588,
+        "V":0.672198,
+        "W":0.222302,
+        "Y":0.361739},
+    "Q":
+        {"R":9.601862000000001,
+        "S":1.743739,
+        "T":1.664363,
+        "V":0.571191,
+        "W":0.5471549999999999,
+        "Y":0.809408},
+    "R":
+        {"S":3.182254,
+        "T":2.066158,
+        "V":0.546484,
+        "W":3.996952,
+        "Y":0.7485810000000001},
+    "S":
+        {"T":15.18014,
+        "V":1.298039,
+        "W":0.987916,
+        "Y":1.997292},
+    "T":
+        {"V":3.634797,
+        "W":0.255953,
+        "Y":0.638941},
+    "V":
+        {"W":0.761595,
+        "Y":0.525762},
+    "W":
+        {"Y":2.376287}
+};
+
+//==================================================================================================================//
+
+function models.protein.JC._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (models.protein.JC.empirical_Q, from,to,namespace,modelType);
+}
+
+function models.protein.JC.ModelDescription(type) {
+    models.protein.JC.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.JC.ModelDescription.model_definition ["empirical-rates"] = models.protein.JC.empirical_Q;
+    models.protein.JC.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.JC.frequencies";
+    models.protein.JC.ModelDescription.model_definition ["q_ij"] = "models.protein.JC._GenerateRate";
+    return models.protein.JC.ModelDescription.model_definition;
+}
+
+function models.protein.JC.frequencies (model, namespace, datafilter) {
+    model[terms.efv_estimate] =
+      {{	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {	0.05}
+        {   0.05}
+    };
+    model[terms.efv_estimate_name] = terms.freqs.predefined;
+    (model["parameters"])["empirical"] = 0;
+    return model;
+}
+
+models.protein.JC.empirical_Q = {
+    "A":
+        {"C":1.,
+        "D":1.,
+        "E":1.,
+        "F":1.,
+        "G":1.,
+        "H":1.,
+        "I":1.,
+        "K":1.,
+        "L":1.,
+        "M":1.,
+        "N":1.,
+        "P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":11.,
+        "T":11.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "C":
+        {"D":1.,
+        "E":1.,
+        "F":1.,
+        "G":1.,
+        "H":1.,
+        "I":1.,
+        "K":1.,
+        "L":1.,
+        "M":1.,
+        "N":1.,
+        "P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "D":
+        {"E":21.,
+        "F":1.,
+        "G":1.,
+        "H":1.,
+        "I":1.,
+        "K":1.,
+        "L":1.,
+        "M":1.,
+        "N":11.,
+        "P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "E":
+        {"F":1.,
+        "G":1.,
+        "H":1.,
+        "I":1.,
+        "K":1.,
+        "L":1.,
+        "M":1.,
+        "N":1.,
+        "P":1.,
+        "Q":11.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "F":
+        {"G":1.,
+        "H":1.,
+        "I":1.,
+        "K":1.,
+        "L":1.,
+        "M":1.,
+        "N":1.,
+        "P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":11.},
+    "G":
+        {"H":1.,
+        "I":1.,
+        "K":1.,
+        "L":1.,
+        "M":1.,
+        "N":1.,
+        "P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "H":
+        {"I":1.,
+        "K":1.,
+        "L":1.,
+        "M":1.,
+        "N":11.,
+        "P":1.,
+        "Q":11.,
+        "R":11.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":11.},
+    "I":
+        {"K":1.,
+        "L":1.,
+        "M":11.,
+        "N":1.,
+        "P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":31.,
+        "W":1.,
+        "Y":1.},
+    "K":
+        {"L":1.,
+        "M":1.,
+        "N":1.,
+        "P":1.,
+        "Q":1.,
+        "R":21.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "L":
+        {"M":11.,
+        "N":1.,
+        "P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "M":
+        {"N":1.,
+        "P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "N":
+        {"P":1.,
+        "Q":1.,
+        "R":1.,
+        "S":11.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "P":
+        {"Q":1.,
+        "R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "Q":
+        {"R":1.,
+        "S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "R":
+        {"S":1.,
+        "T":1.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "S":
+        {"T":11.,
+        "V":1.,
+        "W":1.,
+        "Y":1.},
+    "T":
+        {"V":1.,
+        "W":1.,
+        "Y":1.},
+    "V":
+        {"W":1.,
+        "Y":1.},
+    "W":
+        {"Y":1.}
+};
+
+
+
+//==================================================================================================================//
+//==================================================================================================================//
+
+
+
 
 /**
  * @name models.protein.Empirical._GenerateRate
