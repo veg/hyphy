@@ -2,14 +2,16 @@ LoadFunctionLibrary("../protein.bf");
 LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
+LoadFunctionLibrary("../terms.bf");
 
 /** @module models.protein.empirical */
 
 /**
  * @name models.protein.empirical.ModelDescription
  * @param {String} type
+ * @returns {Dictionary} model description
+ * @description Create the baseline schema (dictionary) for empirical protein model definitions
  */
-
 function models.protein.empirical.ModelDescription(type) {
     return {
         "alphabet": models.protein.alphabet,
@@ -35,15 +37,25 @@ function models.protein.empirical.ModelDescription(type) {
 }
 
 
-
-
-//==================================================================================================================//
-
+/**
+ * @name models.protein.WAG._GenerateRate
+ * @private
+ * @description Generate rate matrix for the WAG model of protein evolution (http://mbe.oxfordjournals.org/content/18/5/691)
+ * @param {String} from - source amino acid
+ * @param {String} to   - target amino acid
+ * @param {String} namespace
+ * @param {String} modelType
+ */
 function models.protein.WAG._GenerateRate (from,to,namespace,modelType) {
     return models.protein.empirical._GenerateRate (models.protein.WAG.empirical_Q, from,to,namespace,modelType);
 }
 
-
+/**
+ * @name models.protein.WAG.ModelDescription
+ * @description Create the baseline schema (dictionary) for the WAG model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
 function models.protein.WAG.ModelDescription(type) {
     models.protein.WAG.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
     models.protein.WAG.ModelDescription.model_definition ["empirical-rates"] = models.protein.WAG.empirical_Q;
@@ -52,6 +64,12 @@ function models.protein.WAG.ModelDescription(type) {
     return models.protein.WAG.ModelDescription.model_definition;
 }
 
+/**
+ * @name models.protein.WAGF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the WAG+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
 function models.protein.WAGF.ModelDescription(type) {
     models.protein.WAGF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
     models.protein.WAGF.ModelDescription.model_definition ["empirical-rates"] = models.protein.WAG.empirical_Q;
@@ -61,8 +79,13 @@ function models.protein.WAGF.ModelDescription(type) {
     return models.protein.WAGF.ModelDescription.model_definition;
 }
 
-
-function models.protein.WAG.frequencies (model, namespace, datafilter) {
+/**
+ * @name models.protein.WAG.frequencies
+ * @param {Dictionary} Baseline WAG model
+ * @returns {Dictionary} Updated WAG model with empirical frequencies
+ * @description Define the empirical amino acid frequencies associated with the WAG model of protein evolution
+ */
+function models.protein.WAG.frequencies (model) { // , namespace, datafilter
     model[terms.efv_estimate] =
         {{     0.0866279}
         {     0.0193078}
@@ -91,6 +114,8 @@ function models.protein.WAG.frequencies (model, namespace, datafilter) {
     return model;
 }
 
+
+/* Define a dictionary of amino-acid exchangeability rates for the WAG model of protein evolution. */ 
 models.protein.WAG.empirical_Q = {
  "A":{
    "C":3.26324,
@@ -324,14 +349,27 @@ models.protein.WAG.empirical_Q = {
 
 
 
-//==================================================================================================================//
-//===================================== SJS added LG, JC, and JTT below =================================================//
 
+/**
+ * @name models.protein.LG._GenerateRate
+ * @private
+ * @description Generate rate matrix for the LG model of protein evolution (doi: 10.1093/molbev/msn067)
+ * @param {String} from - source amino acid
+ * @param {String} to   - target amino acid
+ * @param {String} namespace
+ * @param {String} modelType
+ */
 function models.protein.LG._GenerateRate (from,to,namespace,modelType) {
     return models.protein.empirical._GenerateRate (models.protein.LG.empirical_Q, from,to,namespace,modelType);
 }
 
-function models.protein.LG.ModelDescription(type) {
+/**
+ * @name models.protein.LG.ModelDescription
+ * @description Create the baseline schema (dictionary) for the LG model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+ function models.protein.LG.ModelDescription(type) {
     models.protein.LG.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
     models.protein.LG.ModelDescription.model_definition ["empirical-rates"] = models.protein.LG.empirical_Q;
     models.protein.LG.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.LG.frequencies";
@@ -339,6 +377,28 @@ function models.protein.LG.ModelDescription(type) {
     return models.protein.LG.ModelDescription.model_definition;
 }
 
+/**
+ * @name models.protein.LGF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the LG+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.LGF.ModelDescription(type) {
+    models.protein.LGF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.LGF.ModelDescription.model_definition ["empirical-rates"] = models.protein.LG.empirical_Q;
+    models.protein.LGF.ModelDescription.model_definition ["frequency-estimator"] = "frequencies.empirical.protein";
+    models.protein.LGF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.LGF.ModelDescription.model_definition ["q_ij"] = "models.protein.LG._GenerateRate";
+    return models.protein.LGF.ModelDescription.model_definition;
+}
+
+
+/**
+ * @name models.protein.LG.frequencies
+ * @param {Dictionary} Baseline LG model
+ * @returns {Dictionary} Updated LG model with empirical frequencies
+ * @description Define the empirical amino acid frequencies associated with the LG model of protein evolution
+ */
 function models.protein.LG.frequencies (model, namespace, datafilter) {
     model[terms.efv_estimate] =
  
@@ -368,6 +428,7 @@ function models.protein.LG.frequencies (model, namespace, datafilter) {
     return model;
 }
 
+/* Define a dictionary of amino-acid exchangeability rates for the LG model of protein evolution. */ 
 models.protein.LG.empirical_Q = {
     "A":
         {"C":7.90863,
@@ -581,11 +642,28 @@ models.protein.LG.empirical_Q = {
 };
 //==================================================================================================================//
 
+
+
+/**
+ * @name models.protein.JTT._GenerateRate
+ * @private
+ * @description Generate rate matrix for the JTT model of protein evolution (doi: 10.1093/bioinformatics/8.3.275)
+ * @param {String} from - source amino acid
+ * @param {String} to   - target amino acid
+ * @param {String} namespace
+ * @param {String} modelType
+ */
 function models.protein.JTT._GenerateRate (from,to,namespace,modelType) {
     return models.protein.empirical._GenerateRate (models.protein.JTT.empirical_Q, from,to,namespace,modelType);
 }
 
-function models.protein.JTT.ModelDescription(type) {
+/**
+ * @name models.protein.JTT.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JTT model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+ function models.protein.JTT.ModelDescription(type) {
     models.protein.JTT.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
     models.protein.JTT.ModelDescription.model_definition ["empirical-rates"] = models.protein.JTT.empirical_Q;
     models.protein.JTT.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.JTT.frequencies";
@@ -593,6 +671,28 @@ function models.protein.JTT.ModelDescription(type) {
     return models.protein.JTT.ModelDescription.model_definition;
 }
 
+/**
+ * @name models.protein.JTTF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JTT+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JTTF.ModelDescription(type) {
+    models.protein.JTTF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.JTTF.ModelDescription.model_definition ["empirical-rates"] = models.protein.JTT.empirical_Q;
+    models.protein.JTTF.ModelDescription.model_definition ["frequency-estimator"] = "frequencies.empirical.protein";
+    models.protein.JTTF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.JTTF.ModelDescription.model_definition ["q_ij"] = "models.protein.JTT._GenerateRate";
+    return models.protein.JTTF.ModelDescription.model_definition;
+}
+
+
+/**
+ * @name models.protein.JTT.frequencies
+ * @param {Dictionary} Baseline JTT model
+ * @returns {Dictionary} Updated JTT model with empirical frequencies
+ * @description Define the empirical amino acid frequencies associated with the JTT model of protein evolution
+ */
 function models.protein.JTT.frequencies (model, namespace, datafilter) {
     model[terms.efv_estimate] =
       {{	0.07686099999999986}
@@ -621,6 +721,7 @@ function models.protein.JTT.frequencies (model, namespace, datafilter) {
     return model;
 }
 
+ /* Define a dictionary of amino-acid exchangeability rates for the JTT model of protein evolution. */ 
 models.protein.JTT.empirical_Q = {
     "A":
         {"C":1.825304,
@@ -835,10 +936,26 @@ models.protein.JTT.empirical_Q = {
 
 //==================================================================================================================//
 
+
+/**
+ * @name models.protein.JC._GenerateRate
+ * @private
+ * @description Generate rate matrix for the JC69 (equal rates) model of protein evolution
+ * @param {String} from - source amino acid
+ * @param {String} to   - target amino acid
+ * @param {String} namespace
+ * @param {String} modelType
+ */
 function models.protein.JC._GenerateRate (from,to,namespace,modelType) {
     return models.protein.empirical._GenerateRate (models.protein.JC.empirical_Q, from,to,namespace,modelType);
 }
 
+ /**
+ * @name models.protein.JC.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JC69 (equal rates) model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
 function models.protein.JC.ModelDescription(type) {
     models.protein.JC.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
     models.protein.JC.ModelDescription.model_definition ["empirical-rates"] = models.protein.JC.empirical_Q;
@@ -847,6 +964,28 @@ function models.protein.JC.ModelDescription(type) {
     return models.protein.JC.ModelDescription.model_definition;
 }
 
+/**
+ * @name models.protein.JCF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JC69+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JCF.ModelDescription(type) {
+    models.protein.JCF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.JCF.ModelDescription.model_definition ["empirical-rates"] = models.protein.JC.empirical_Q;
+    models.protein.JCF.ModelDescription.model_definition ["frequency-estimator"] = "frequencies.empirical.protein";
+    models.protein.JCF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.JCF.ModelDescription.model_definition ["q_ij"] = "models.protein.JC._GenerateRate";
+    return models.protein.JCF.ModelDescription.model_definition;
+}
+
+
+/**
+ * @name models.protein.JC.frequencies
+ * @param {Dictionary} Baseline JC69 model
+ * @returns {Dictionary} Updated JC69 model with empirical frequencies
+ * @description Define the empirical amino acid frequencies associated with the JC69 model of protein evolution
+ */
 function models.protein.JC.frequencies (model, namespace, datafilter) {
     model[terms.efv_estimate] =
       {{	0.05}
@@ -875,6 +1014,7 @@ function models.protein.JC.frequencies (model, namespace, datafilter) {
     return model;
 }
 
+/* Define a dictionary of equal amino-acid exchangeability rates for the JC69 model of protein evolution. */ 
 models.protein.JC.empirical_Q = {
     "A":
         {"C":1.,
@@ -1089,16 +1229,9 @@ models.protein.JC.empirical_Q = {
 
 
 
-//==================================================================================================================//
-//==================================================================================================================//
-
-
-
-
 /**
  * @name models.protein.Empirical._GenerateRate
- * return the r_ij component of
- * q_ij := r_ij * time * freq_j
+ * @description Generates the r_ij component of q_ij := r_ij * time * freq_j
  * @param {Dict} rateDict
  * @param {Number} fromChar
  * @param {Number} toChar
@@ -1106,8 +1239,6 @@ models.protein.JC.empirical_Q = {
  * @param {String} model_type
  * @return list of parameters
  */
-
-
 function models.protein.empirical._GenerateRate(rateDict, fromChar, toChar, namespace, model_type) {
 
     models.protein.empirical._GenerateRate.p = {};
