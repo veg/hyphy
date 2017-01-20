@@ -247,6 +247,7 @@ fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.parti
                                     "Neg. p = " + Format(fel.report.row[4],6,4)}};
 
 function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row) {
+
     fel.print_row = None;
     if (fel.report.row [4] < fel.pvalue) {
         if (fel.report.row[0] < fel.report.row[1]) {
@@ -269,6 +270,7 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
 
             fprintf (stdout,
                 io.FormatTableRow (fel.print_row,fel.table_output_options));
+
         }
 
 }
@@ -315,10 +317,10 @@ lfunction fel.store_results (node, result, arguments) {
 
     utility.EnsureKey (^"fel.site_results", partition_index);
 
-    utility.ForEach (pattern_info["sites"], "_value_",
+    utility.ForEach (pattern_info["sites"], "_fel_result_",
         '
-            (fel.site_results[`&partition_index`])[_value_] = `&result_row`;
-            fel.report.echo (_value_, `&partition_index`, `&result_row`);
+            (fel.site_results[`&partition_index`])[_fel_result_] = `&result_row`;
+            fel.report.echo (_fel_result_, `&partition_index`, `&result_row`);
         '
     );
 
