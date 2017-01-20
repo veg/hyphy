@@ -166,6 +166,60 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	return model.generic.DefineModel.model;
 }
 
+
+/**
+ * @name model.generic.DefineMixtureModel
+ * @param model_spec
+ * @param id
+ * @param arguments
+ * @param data_filter
+ * @param estimator_type
+ */
+function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filter, estimator_type) {
+
+	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
+	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
+
+	model.generic.DefineModel.model = Call (model.generic.DefineModel.model ["defineQ"], model.generic.DefineModel.model, id);
+	    // for mixture models this will define the mixture components as well
+
+	if (estimator_type != None) {
+		model.generic.DefineModel.model ["frequency-estimator"] = estimator_type;
+	}
+
+
+ 	Call (model.generic.DefineModel.model ["frequency-estimator"], model.generic.DefineModel.model,
+													    id,
+													    data_filter); // this sets the EFV field
+
+	model.generic.DefineModel.model ["matrix-id"] = {};
+
+	model.generic.mixture_expr = {};
+
+    utility.ForEachPair (model.generic.DefineModel.model[terms.mixture], "model.generic.key", "model.generic.value",
+        '
+            (model.generic.DefineModel.model ["matrix-id"])[model.generic.key] = "`id`_" + terms.rate_matrix + "_"+ model.generic.key;
+            model.generic.mixture_expr + ("Exp(" + (model.generic.DefineModel.model ["matrix-id"])[model.generic.key] + ")*(" +  model.generic.value + ")");
+	        parameters.StringMatrixToFormulas ((model.generic.DefineModel.model ["matrix-id"])[model.generic.key],(model.generic.DefineModel.model[terms.rate_matrix])[model.generic.key]);
+        '
+    );
+
+    model.generic.DefineModel.model [terms.mixture]= Join ("+",model.generic.mixture_expr);
+
+	model.generic.DefineModel.model ["efv-id"] = "`id`_" + terms.efv_matrix;
+	model.generic.DefineModel.model ["id"] = id;
+
+	utility.SetEnvVariable (model.generic.DefineModel.model ["efv-id"], model.generic.DefineModel.model[terms.efv_estimate]);
+
+	model.define_from_components (id, 	parameters.Quote (model.generic.DefineModel.model [terms.mixture]), model.generic.DefineModel.model ["efv-id"], model.generic.DefineModel.model ["canonical"]);
+
+    if (Type (model.generic.DefineModel.model["post-definition"]) == "String") {
+        Call (model.generic.DefineModel.model["post-definition"], model.generic.DefineModel.model);
+    }
+
+	return model.generic.DefineModel.model;
+}
+
 /**
  * @name model.generic.GetLocalParameter
  * @param {Model} model

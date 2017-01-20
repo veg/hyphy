@@ -3,110 +3,108 @@ LoadFunctionLibrary("../DNA.bf");
 LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
+LoadFunctionLibrary("MG_REV.bf");
+LoadFunctionLibrary("../../convenience/math.bf");
 
-/** @module models.codon.MG_REV */
+/** @module models.codon.BS_REL
+
+    Define libv3 style branch-site REL models with N mixture components
+
+*/
 
 /**
- * @name models.codon.MG_REV.ModelDescription
+ * @name models.codon.BS_REL.ModelDescription
  * @param {String} type
  * @param {String} code
+ * @param {Number} components (>=2)
  */
-lfunction models.codon.MG_REV.ModelDescription(type, code) {
+lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
+
+    components = math.Int (components);
+
+    io.CheckAssertion ("`&components` >= 2 && `&components` <= 10", "must have between 2 and 10 components in call to models.codon.BS_REL.ModelDescription");
 
     codons = models.codon.MapCode(code);
 
     return {
         "alphabet": codons["sense"],
         "bases": ^ "models.DNA.alphabet",
+        "components" : components,
         "stop": codons["stop"],
         "type": type,
         "translation-table": codons["translation-table"],
-        "description": "The Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution",
-        "canonical": 0, // is NOT of the r_ij \times \pi_j form
-        "reversible": 1,
+        "description": "The branch-site mixture of N Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution",
+        "canonical": "EXPLICIT_FORM_MATRIX_EXPONENTIAL", // is NOT of the r_ij \times \pi_j form
+        "reversible": TRUE,
         ^ "terms.efv_estimate_name": ^ "terms.freqs.CF3x4",
         "parameters": {
             "global": {},
-            "local": {}
+            "local":  {}
         },
-        "get-branch-length": "",
-        "set-branch-length": "models.codon.MG_REV.set_branch_length",
-        "constrain-branch-length": "models.generic.constrain_branch_length",
+        "get-branch-length": "models.codon.BS_REL.get_branch_length",
+        "set-branch-length": "models.codon.BS_REL.set_branch_length",
+        "constrain-branch-length": "models.codon.BS_REL.constrain_branch_length",
         "frequency-estimator": "frequencies.empirical.corrected.CF3x4",
-        "q_ij": "models.codon.MG_REV._GenerateRate",
+        "q_ij": "", // set for individual components in models.codon.BS_REL._DefineQ
         "time": "models.DNA.generic.Time",
-        "defineQ": "models.codon.MG_REV._DefineQ",
+        "defineQ": "models.codon.BS_REL._DefineQ",
         "post-definition": "models.generic.post.definition"
     };
 }
 
-
-lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, _tt) {
-    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, "alpha", ^"terms.synonymous_rate", "beta", ^"terms.nonsynonymous_rate", "omega", ^"terms.omega_ratio");
-}
-
 /**
- * @name models.codon.MG_REV._GenerateRate_generic
- * @param {Number} fromChar
- * @param {Number} toChar
+ * @name models.codon.BS_REL._DefineQ
+ * @param {Dict} mg_rev
  * @param {String} namespace
- * @param {String} model_type
- * @param {Matrix} _tt - translation table
+ * @returns {Dict} updated model
  */
 
+lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
 
-lfunction models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, omega, omega_term) {
+    rate_matrices = {};
 
-    _GenerateRate.p = {};
-    _GenerateRate.diff = models.codon.diff(fromChar, toChar);
 
-    if (None != _GenerateRate.diff) {
-        _GenerateRate.p[model_type] = {};
-        _GenerateRate.p[^"terms.global"] = {};
+    bs_rel ["q_ij"] = &rate_generator;
+    bs_rel [^'terms.mixture'] = {};
 
-        if (_GenerateRate.diff["from"] > _GenerateRate.diff["to"]) {
-            nuc_rate = "theta_" + _GenerateRate.diff["to"] + _GenerateRate.diff["from"];
-        } else {
-            nuc_rate = "theta_" + _GenerateRate.diff["from"] + _GenerateRate.diff["to"];
+    _aux = parameters.GenerateSequentialNames (namespace + "_mixture_aux", bs_rel["components"] - 1, "_");
+    parameters.DeclareGlobal (_aux, None);
+    _wts = parameters.helper.stick_breaking (_aux, None);
+    mixture = {};
+
+
+    for (component = 1; component <= bs_rel["components"]; component += 1) {
+       key = "component_" + component;
+       ExecuteCommands ("
+        function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
+            return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt,
+                'alpha', ^'terms.synonymous_rate',
+                'beta_`component`', terms.AddCategory (^'terms.nonsynonymous_rate', component),
+                'omega`component`', terms.AddCategory (^'terms.omega_ratio', component));
+        }"
+       );
+       models.codon.generic.DefineQMatrix(bs_rel, namespace);
+       rate_matrices [key] = bs_rel[^"terms.rate_matrix"];
+       (bs_rel [^'terms.mixture'])[key] = _wts [component-1];
+
+       if ( component < bs_rel["components"]) {
+            model.generic.AddGlobal ( bs_rel, _aux[component-1], terms.AddCategory ("Stick-breaking proportion", component ));
+            parameters.SetRange (_aux[component-1], ^"terms.range_almost_01");
         }
+         mixture [key] = namespace + "_mixture_weight_" + component;
+        model.generic.AddGlobal ( bs_rel, mixture [key], terms.AddCategory ("Mixture weight", component));
+        parameters.SetConstraint (mixture [key], _wts[component-1], "global ");
 
-        nuc_rate = parameters.ApplyNameSpace(nuc_rate, namespace);
-        (_GenerateRate.p[^"terms.global"])[terms.nucleotideRate(_GenerateRate.diff["from"], _GenerateRate.diff["to"])] = nuc_rate;
-
-        if (_tt[fromChar] != _tt[toChar]) {
-            if (model_type == ^"terms.global") {
-                aa_rate = parameters.ApplyNameSpace(omega, namespace);
-                (_GenerateRate.p[model_type])[omega_term] = aa_rate;
-            } else {
-                aa_rate = beta;
-                (_GenerateRate.p[model_type])[beta_term] = aa_rate;
-            }
-            _GenerateRate.p[^"terms.rate_entry"] = nuc_rate + "*" + aa_rate;
-        } else {
-            if (model_type == ^"terms.local") {
-                (_GenerateRate.p[model_type])[alpha_term] = alpha;
-                _GenerateRate.p[^"terms.rate_entry"] = nuc_rate + "*" + alpha;
-            } else {
-                _GenerateRate.p[^"terms.rate_entry"] = nuc_rate;
-            }
-        }
     }
 
+    bs_rel[^"terms.rate_matrix"] = rate_matrices;
+    bs_rel[^"terms.mixture"] = mixture;
 
-    return _GenerateRate.p;
+
+    parameters.SetConstraint(((bs_rel["parameters"])[^'terms.global'])[terms.nucleotideRate("A", "G")], "1", "");
+    return bs_rel;
 }
 
-/**
- * @name models.codon.MG_REV._DefineQ
- * @param {Model} mg_rev
- * @param {String} namespace
- * @returns {Model} updated model
- */
-function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
-    models.codon.generic.DefineQMatrix(mg_rev, namespace);
-    parameters.SetConstraint(((mg_rev["parameters"])[terms.global])[terms.nucleotideRate("A", "G")], "1", "");
-    return mg_rev;
-}
 
 /**
  * @name models.codon.MG_REV.set_branch_length
@@ -115,7 +113,7 @@ function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
  * @param {String} parameter
  * @returns {Number} 0
  */
-function models.codon.MG_REV.set_branch_length(model, value, parameter) {
+function models.codon.BS_REL.set_branch_length(model, value, parameter) {
     if (model["type"] == terms.global) {
         return models.generic.SetBranchLength(model, value, parameter);
     }

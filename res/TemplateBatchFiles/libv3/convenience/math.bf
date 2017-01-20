@@ -3,6 +3,15 @@ LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 /** @module math */
 
 /**
+* Converts a float to integer by rounding
+* @name math.Int
+* @param float
+*/
+lfunction math.Int (float) {
+  return (float + 0.5)$1;
+}
+
+/**
 * Computes small-sample AIC
 * @name math.GetIC
 * @param logl

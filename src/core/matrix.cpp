@@ -9647,18 +9647,39 @@ _List* _AssociativeList::GetKeys (void)  {
 }
 
 //_____________________________________________________________________________________________
-void        _AssociativeList::FillInList (_List& fillMe)
-{
-    _SimpleList  hist;
-    long         ls,
-                 cn = avl.Traverser (hist,ls,avl.GetRoot());
-
-    while (cn >= 0) {
-        _String* aKey = ((_String**)avl.dataList->lData)[cn];
-        if (aKey) {
-            fillMe.AppendNewInstance(avl.GetXtra (cn)->toStr());
+void        _AssociativeList::FillInList (_List& fill_me) {
+  
+    unsigned long ll = fill_me.countitems();
+    try {
+        // checkpoint the length of the list
+      unsigned long  my_length = avl.countitems();
+      
+      for (long index = 0; index < my_length; index++) {
+        _String key (index);
+        if (_PMathObj value = GetByKey (key)) {
+          fill_me.AppendNewInstance(value->toStr());
+        } else {
+          throw (1);
         }
-        cn = avl.Traverser (hist,ls);
+      }
+    }
+  
+    catch (int e) {
+        while (fill_me.countitems () > ll) {
+          fill_me.Delete(fill_me.countitems ()-1);
+        }
+      
+        _SimpleList  hist;
+        long         ls,
+        cn = avl.Traverser (hist,ls,avl.GetRoot());
+        
+        while (cn >= 0) {
+          _String* aKey = ((_String**)avl.dataList->lData)[cn];
+          if (aKey) {
+            fill_me.AppendNewInstance(avl.GetXtra (cn)->toStr());
+          }
+          cn = avl.Traverser (hist,ls);
+        }
     }
 }
 

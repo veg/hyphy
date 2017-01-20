@@ -4195,14 +4195,15 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
   
     if (doExpressionBased) {
         _String matrixExpression (ProcessLiteralArgument((_String*)parameters.lData[1],chain.nameSpacePrefix)),
-                defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment.") & ':' & matrixExpression;
+                defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment") & ':' & matrixExpression;
         // try to parse the expression, confirm that it is a square  matrix,
         // and that it is a valid transition matrix
-        isExpressionBased = (_Formula*)checkPointer(new _Formula);
+        isExpressionBased = new _Formula;
         _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+        matrixExpression =  _ElementaryCommand::FindNextCommand (matrixExpression);
         long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
         if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
-            WarnError (defErrMsg );
+            WarnError (defErrMsg & " parse code = " & parseCode & " " & (parseCode == HY_FORMULA_EXPRESSION ? (_String(", object type code ") & _String((long) isExpressionBased->ObjectClass())) : emptyString ));
             return;
         }
         
@@ -7125,7 +7126,6 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
     }
 
     _ElementaryCommand * model = new _ElementaryCommand(31);
-    checkPointer (model);
     model->parameters&&(&modelID);
     model->addAndClean (target,&pieces,0);
     return true;

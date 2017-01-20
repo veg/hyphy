@@ -360,7 +360,9 @@ function utility.ForEach (object, lambda_name, transform) {
 
     if (Type (object) == "AssociativeList") {
         utility.ForEach.keys = Rows (object);
+
         ^(lambda_name) := object [utility.ForEach.keys[utility.ForEach.k]];
+
         for (utility.ForEach.k = 0; utility.ForEach.k < Abs (object); utility.ForEach.k += 1) {
             ExecuteCommands (transform, enclosing_namespace);
         }
@@ -707,6 +709,21 @@ lfunction utility.Extend (d, n) {
     }
 
     return d;
+}
+
+
+/**
+ * Returns the list of currently defined variables whose names match a regex
+ * @param selector {String} : reg exp selector; show all if None
+ * @return {MATRIX} : all the selected variables
+ */
+lfunction utility.DefinedVariablesMatchingRegex (selector) {
+    if (Type (selector) == "String") {
+        ExecuteCommands ('GetInformation (`&res`, "`selector`")');
+    } else {
+        GetInformation (res, ".");
+    }
+    return res;
 }
 
 

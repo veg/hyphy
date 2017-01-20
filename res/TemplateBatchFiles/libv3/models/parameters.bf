@@ -216,15 +216,15 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
-function parameters.GenerateSequentialNames(prefix, count, delimiter) {
+lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
     if (delimiter == None) {
         delimiter = "_";
     }
-    parameters.generate_names.holder = {};
-    for (parameters.generate_names.k = 0; parameters.generate_names.k < count; parameters.generate_names.k += 1) {
-        parameters.generate_names.holder + (prefix + delimiter + parameters.generate_names.k);
+    holder = {};
+    for (k = 0; k < count; k += 1) {
+        holder + (prefix + delimiter + k);
     }
-    return parameters.generate_names.holder;
+    return holder;
 }
 
 /**
