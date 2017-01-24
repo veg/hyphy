@@ -4934,15 +4934,20 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
           _DataSetFilter const * daFilter = GetDataFilter (f);
           result = daFilter->GetFilterCharacters();
         } else {
-          // it's a tree node with a rate matrix assigned
+          // it could be a model
           f = FindModelName (objectNameID);
-          if (f>=0)
+          if (f>=0) {
             // for models, return the list of variables in the model
-          {
             _SimpleList modelParms;
             _AVLList    modelParmsA (&modelParms);
             
-            LocateVar (modelMatrixIndices.lData[f])->ScanForVariables(modelParmsA,false);
+            
+              if (IsModelOfExplicitForm (f)) {
+                  ((_Formula*)modelMatrixIndices.lData[f])->ScanFForVariables(modelParmsA,false);
+              } else {
+                  LocateVar (modelMatrixIndices.lData[f])->ScanForVariables(modelParmsA,false);
+            
+              }
             _List       modelPNames;
             
             for (unsigned long vi=0; vi<modelParms.lLength; vi++) {
