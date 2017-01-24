@@ -521,17 +521,19 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
             }
             last0++;
         } else {
-            _Variable* mmo = LocateVar(((_Operation*)f->theFormula(0))->GetAVariable());
-
-            if (mmo) {
-              if (mmo->ObjectClass () == MATRIX) {
+            
+            _Operation * lValue = f->GetIthTerm(0L);
+  
+            if (lValue && lValue->IsAVariable(false)) {
+             _Variable* mmo = LocateVar(lValue->GetAVariable());
+             if (mmo->ObjectClass () == MATRIX) {
                 mmx = (_Matrix*)(mmo->GetValue());
-                ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                lValue->SetAVariable(-lValue->GetAVariable()-3);
               } else {
                 
                 if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
                   mma = (_AssociativeList*)(mmo->GetValue());
-                  ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                  lValue->SetAVariable(-lValue->GetAVariable()-3);
                 }
               }
             }
