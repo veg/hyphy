@@ -286,7 +286,7 @@ _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long ob
     _Variable * v = FetchVar (idx);
     if (v) {
         if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
-            return v->GetValue();
+            return v->Compute ();
         }
         if (command_id >= 0 || errMsg) {
             if (command_id >= 0) {
