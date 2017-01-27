@@ -1,1 +1,1 @@
-LoadFunctionLibrary ("SelectionAnalyses/MEME.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "Internal", "3": "0.1"});
+LoadFunctionLibrary ("SelectionAnalyses/MEME.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "Leaves", "3": "0.1"});

@@ -7280,10 +7280,9 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
         checkPointer (mstCache = new MSTCache);
     }
 
-    if (theTrees.lLength==optimalOrders.lLength)
+    if (theTrees.lLength==optimalOrders.lLength) {
         //check to see if we need to recompute the
         // optimal summation order
-    {
         checkParameter (keepOptimalOrder,kp,0.0);
         if (kp) {
             for (unsigned long i=0; i<theTrees.lLength; i++) {
@@ -7310,7 +7309,15 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
     leafSkips.Clear();
 
     treeTraversalMasks.Clear();
-    canUseReversibleSpeedups.Clear();
+    
+    if (!check_reversibility) {
+        if (canUseReversibleSpeedups.countitems() != theTrees.lLength) {
+            check_reversibility = true;
+            canUseReversibleSpeedups.Clear();
+        }
+    } else {
+        canUseReversibleSpeedups.Clear();
+    }
     _SimpleList alreadyDoneModelsL;
     _AVLListX   alreadyDoneModels (&alreadyDoneModelsL);
 

@@ -155,8 +155,7 @@ void _Variable::toFileStr(FILE* f, unsigned long padding)
 }
 //__________________________________________________________________________________
 
-_Variable::_Variable (_String const&s, bool isG)
-{
+_Variable::_Variable (_String const&s, bool isG) {
     theName         = new _String(s);
     varFlags        = HY_VARIABLE_NOTSET|(isG?HY_VARIABLE_GLOBAL:0);
     varValue        = nil;
@@ -322,9 +321,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 {
     //hasBeenChanged = true;
     if (varFlags & HY_VARIABLE_COMPUTING) {
-      if (varFlags & HY_VARIABLE_COMPUTING) {
         FlagError (_String ("A recursive dependency error in _Variable::SetValue; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
-      }
     }
   
     varFlags &= HY_VARIABLE_SET;

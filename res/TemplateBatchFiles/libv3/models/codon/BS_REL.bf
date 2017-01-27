@@ -48,8 +48,20 @@ lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
         "q_ij": "", // set for individual components in models.codon.BS_REL._DefineQ
         "time": "models.DNA.generic.Time",
         "defineQ": "models.codon.BS_REL._DefineQ",
-        "post-definition": "models.generic.post.definition"
+        "post-definition": "models.codon.BS_REL.post_definition"
     };
+}
+
+/**
+ * @name models.codon.BS_REL_Per_Branch_Mixing.ModelDescription
+ * @param {String} type
+ * @param {String} code
+ * @param {Number} components (>=2)
+ */
+lfunction models.codon.BS_REL_Per_Branch_Mixing.ModelDescription(type, code, components) {
+	template = models.codon.BS_REL.ModelDescription(type, code, components);
+	template ["defineQ"] = "models.codon.BS_REL_Per_Branch_Mixing._DefineQ";
+	return template;
 }
 
 /**
@@ -59,16 +71,14 @@ lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
  * @returns {Dict} updated model
  */
 
-lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
+lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
 
     rate_matrices = {};
 
-
     bs_rel ["q_ij"] = &rate_generator;
-    bs_rel [^'terms.mixture'] = {};
+    bs_rel [^'terms.mixture_components'] = {};
 
-    _aux = parameters.GenerateSequentialNames (namespace + "_mixture_aux", bs_rel["components"] - 1, "_");
-    parameters.DeclareGlobal (_aux, None);
+    _aux = parameters.GenerateSequentialNames ("bsrel_mixture_aux", bs_rel["components"] - 1, "_");
     _wts = parameters.helper.stick_breaking (_aux, None);
     mixture = {};
 
@@ -85,100 +95,61 @@ lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
        );
        models.codon.generic.DefineQMatrix(bs_rel, namespace);
        rate_matrices [key] = bs_rel[^"terms.rate_matrix"];
-       (bs_rel [^'terms.mixture'])[key] = _wts [component-1];
+       (bs_rel [^'terms.mixture_components'])[key] = _wts [component-1];
 
        if ( component < bs_rel["components"]) {
-            model.generic.AddGlobal ( bs_rel, _aux[component-1], terms.AddCategory ("Stick-breaking proportion", component ));
+            model.generic.AddLocal ( bs_rel, _aux[component-1], terms.AddCategory (^'terms.mixture_aux_weight', component ));
             parameters.SetRange (_aux[component-1], ^"terms.range_almost_01");
         }
-         mixture [key] = namespace + "_mixture_weight_" + component;
-        model.generic.AddGlobal ( bs_rel, mixture [key], terms.AddCategory ("Mixture weight", component));
-        parameters.SetConstraint (mixture [key], _wts[component-1], "global ");
+    	//mixture [key] = "mixture_weight_" + component;
+        //model.generic.AddLocal ( bs_rel, mixture [key], terms.AddCategory (^'terms.mixture_weight', component));
+        //parameters.SetConstraint (mixture [key], _wts[component-1], "");
 
     }
 
     bs_rel[^"terms.rate_matrix"] = rate_matrices;
-    bs_rel[^"terms.mixture"] = mixture;
-
-
+    //bs_rel[^"terms.mixture_components"] = mixture;
+    
     parameters.SetConstraint(((bs_rel["parameters"])[^'terms.global'])[terms.nucleotideRate("A", "G")], "1", "");
     return bs_rel;
 }
 
 
 /**
- * @name models.codon.MG_REV.set_branch_length
+ * @name models.codon.BS_REL.set_branch_length
  * @param {Model} model
  * @param {AssociativeList|Number} value
  * @param {String} parameter
  * @returns {Number} 0
  */
+ 
 function models.codon.BS_REL.set_branch_length(model, value, parameter) {
-    if (model["type"] == terms.global) {
-        return models.generic.SetBranchLength(model, value, parameter);
-    }
-
-
-    models.codon.MG_REV.set_branch_length.beta = model.generic.GetLocalParameter(model, terms.nonsynonymous_rate);
-    models.codon.MG_REV.set_branch_length.alpha = model.generic.GetLocalParameter(model, terms.synonymous_rate);
-
-    models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
-    models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
-
-
-
-    if (Type(value) == "AssociativeList") {
-        if (value[terms.branch_length_scaler] == terms.branch_length_constrain) {
-            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
-                if (Abs(model[terms.synonymous_rate]) == 0) {
-                    bl_string = model["branch-length-string"];
-
-                    models.codon.MG_REV.set_branch_length.sub = {};
-                    models.codon.MG_REV.set_branch_length.sub[models.codon.MG_REV.set_branch_length.alpha] = 1;
-                    models.codon.MG_REV.set_branch_length.sub[models.codon.MG_REV.set_branch_length.beta] = 0;
-                    model[terms.synonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
-
-                    models.codon.MG_REV.set_branch_length.sub[models.codon.MG_REV.set_branch_length.alpha] = 0;
-                    models.codon.MG_REV.set_branch_length.sub[models.codon.MG_REV.set_branch_length.beta] = 1;
-                    model[terms.nonsynonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
-                }
-
-                //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
-
-                parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.synonymous_rate] + "))/(" + model[terms.nonsynonymous_rate] + ")", "");
-                return 1;
-
-            } else {
-                assert(0, "TBA in models.codon.MG_REV.set_branch_length");
-            }
-        } else {
-
-            models.codon.MG_REV.set_branch_length.lp = 0;
-            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
-                Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
-                models.codon.MG_REV.set_branch_length.lp += 1;
-            }
-            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
-                Eval(models.codon.MG_REV.set_branch_length.beta.p + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
-                models.codon.MG_REV.set_branch_length.lp += 1;
-            }
-            return models.codon.MG_REV.set_branch_length.lp;
-        }
-    } else {
-        if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
-            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
-                models.codon.MG_REV.set_branch_length.lp = parameters.NormalizeRatio(Eval(models.codon.MG_REV.set_branch_length.beta), Eval(models.codon.MG_REV.set_branch_length.alpha));
-                parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
-                ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model["branch-length-string"] + ")-" + value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
-                parameters.RemoveConstraint(models.codon.MG_REV.set_branch_length.beta);
-                Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
-                Eval("`models.codon.MG_REV.set_branch_length.beta.p` =" + Eval(models.codon.MG_REV.set_branch_length.beta.p));
-            } else {
-                ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model["branch-length-string"] + ")-" + value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
-                Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
-            }
-        }
-    }
-
+    assert (FALSE, "models.codon.BS_REL.set_branch_length is not yet implemented");
     return 0;
 }
+
+/**
+ * @name models.codon.BS_REL.post_definition 
+ * @param {Dict} model
+*/
+
+function models.codon.BS_REL.post_definition(model) {
+    model ["branch-length-string"] = model.BranchLengthExpression (model);
+    return model;
+}
+
+/**
+ * @name models.codon.BS_REL.set_branch_length
+ * @param {Model} model
+ * @param {AssociativeList|Number} value
+ * @param {String} parameter
+ * @returns {Number} 0
+ */
+ 
+function models.codon.BS_REL.get_branch_length(model, tree, node) {	
+	parameters.SetLocalModelParameters (model, tree, node);
+	bl = Eval (model ["branch-length-string"]);
+	//console.log ("Branch length = " + bl);
+	return bl;
+}
+

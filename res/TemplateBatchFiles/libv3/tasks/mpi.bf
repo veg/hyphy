@@ -75,7 +75,7 @@ namespace mpi {
                     if (utility.Has (nodesetup, "Variables", None)) {
                         utility.ForEach (nodesetup["Variables"], "_value_",
                             '
-                                `&send_to_nodes` * ("\n" + _value_ + " = " +  ("" + ^_value_) + ";\n") ;
+                                `&send_to_nodes` * ("\n" + _value_ + " = " +  (parameters.Quote(^_value_)) + ";\n") ;
                             '
                         );
                     }
@@ -125,6 +125,8 @@ namespace mpi {
             }
 
             if (Abs (send_to_nodes)) {
+            	
+            	
                 for (k = 1; k < mpi_node_count; k += 1) {
                    MPISend (k, send_to_nodes);
                 }
@@ -170,7 +172,7 @@ namespace mpi {
             job_id = get_next_job_id();
             //fprintf (stdout, "Sending to node ", node, "\n");
             queue [node] = {"job_id" : job_id, "callback" : result_callback, "arguments" : arguments};
-            MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');
+             MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');
 
         } else {
             Call (result_callback, 0, Eval (job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')'), arguments);

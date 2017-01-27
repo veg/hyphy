@@ -53,6 +53,11 @@ terms.transition = "transision rate";
 terms.transversion = "transversion rate";
 
 terms.mixture      = "mixture";
+terms.mixture_components      = "mixture components";
+
+terms.mixture_weight = "Mixture weight";
+terms.mixture_aux_weight = "Mixture auxiliary weight";
+
 
 function terms.nucleotideRate(fromC, toC) {
     return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;

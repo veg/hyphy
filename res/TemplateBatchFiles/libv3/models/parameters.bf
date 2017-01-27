@@ -475,3 +475,23 @@ lfunction parameters.ExportParameterDefinition (id) {
     GetString (parameter_definition, ^id, -3);
     return parameter_definition;
 }
+
+/**
+ * Copy local parameters from a node to 'template' variables
+ * @name parameters.SetLocalModelParameters
+ * @param {Dict} model - model description
+ * @param {String} tree id
+ * @param {String} node id
+ 
+ * e.g. 
+ * 		set alpha = Tree.Node.alpha
+ * 		set beta  = Tree.Node.beta
+ */
+
+lfunction parameters.SetLocalModelParameters (model, tree, node) {
+	node_name = tree + "." + node + ".";
+    utility.ForEach ((model["parameters"])[^'terms.local'], "_parameter_", '
+    	^_parameter_ = ^(`&node_name` + _parameter_);
+    ');
+    
+}

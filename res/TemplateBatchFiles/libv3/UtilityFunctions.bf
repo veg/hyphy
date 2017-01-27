@@ -352,7 +352,17 @@ function utility.First (object, lambda_name, condition) {
 function utility.ForEach (object, lambda_name, transform) {
 
     if (Type (object) == "Tree" || Type (object) == "Topology") {
-        utility.ForEach (BranchName (object, -1), lambda_name, transform);
+    	// strip out the root node
+    	utility.ForEach._aux2 = BranchName (object, -1);
+    	utility.ForEach.rows = utility.Array1D (utility.ForEach._aux2) - 1;
+    	utility.ForEach._aux = {utility.ForEach.rows, 1};
+    	for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
+    		utility.ForEach._aux [utility.ForEach.r ] = utility.ForEach._aux2 [utility.ForEach.r ];
+    	}
+    	
+        DeleteObject (utility.ForEach._aux2);
+        utility.ForEach (utility.ForEach._aux, lambda_name, transform);
+        DeleteObject (utility.ForEach._aux);
         return;
     }
 

@@ -32,8 +32,8 @@ lfunction math.GetIC(logl,params,samples) {
 lfunction math.DoLRT (lognull,logalt,df) {
   lrt = 2 * (logalt - lognull);
   return {
-           "LRT"     : lrt,
-           "p-value" : 1-CChi2 (lrt, df)
+           "LRT"     : lrt__,
+           "p-value" : 1-CChi2 (lrt__, df__)
          }
 }
 

@@ -199,21 +199,21 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
     if (isVar) { // creating a variable
         long f;
         _String theS (stuff);
-        if (theParent/*&&(!isG)*/) { // 20070620: SLKP the commenting may break default behavior!
+        if (theParent) {
             f = LocateVarByName(theS);
 
-            if (f>=0 && !FetchVar(f)->IsGlobal()) {
-                f = -1;
+            if (f>=0L && !FetchVar(f)->IsGlobal()) {
+                f = -1L;
             }
 
-            if (f<0) {
+            if (f<0L) {
                 theS = (*theParent->theName)&"."&theS;
             }
         }
 
         f = LocateVarByName(theS);
 
-        if (f<0) {
+        if (f<0L) {
             _Variable v (theS, isG);
             f = v.theIndex;
         } else {
@@ -225,14 +225,14 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
         numberOfTerms = take_a_reference?(1):0;
         
     } else {
-        numberOfTerms = 0;
+        numberOfTerms = 0L;
         if (stuff.Equal (&noneToken))
             theNumber = new _MathObject;            
         else
             theNumber = new _Constant (stuff);
-        theData = -1;
+        theData = -1L;
     }
-    opCode = -1;
+    opCode = -1L;
 
 }
 
