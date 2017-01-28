@@ -1,0 +1,5 @@
+LoadFunctionLibrary("SelectionAnalyses/rate4site.bf", {
+    "0": PATH_TO_CURRENT_BF + "data/CD2.prot",
+    "1": "y"
+});
+
