@@ -1,4 +1,4 @@
-## Site-wise rate estimator for protein multiple sequence alignments
+## Site-wise relative rate estimator for protein multiple sequence alignments
 
 _Written by Sergei L Kosakovsky Pond [spond@temple.edu] and Stephanie J Spielman_
 
