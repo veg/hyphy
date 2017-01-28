@@ -1,0 +1,2 @@
+../../../../tests/hbltests/libv3/data/protgtr_fitter_alignments/prot1.dat
+../../../../tests/hbltests/libv3/data/protgtr_fitter_alignments/prot2.dat

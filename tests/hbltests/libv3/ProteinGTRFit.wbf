@@ -1,0 +1,6 @@
+fprintf(stdout, "ERROR: This test is not yet functioning.");
+
+/*LoadFunctionLibrary("SelectionAnalyses/ProtGTR_Fitter/ProteinGTRFit.bf", {
+    "0": PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines.txt"
+});
+*/
