@@ -61,7 +61,7 @@ then run `make` with one of the following build targets:
 +   MAC - build a Mac Carbon application
 +   HYPHYGTK - HYPHY with GTK
 +   SP - build a HyPhy executable (HYPHYSP) without multiprocessing
-+   MP2 - build a HyPhy executable (HYPHYMP) using pthreads to do multiprocessing
++   MP - build a HyPhy executable (HYPHYMP) using pthreads to do multiprocessing
 +   MPI - build a HyPhy executable (HYPHYMPI) using MPI to do multiprocessing
 +   HYPHYMPI - build a HyPhy executable (HYPHYMPI) using openMPI 
 +   LIB - build a HyPhy library (libhyphy_mp) using pthreads to do multiprocessing
