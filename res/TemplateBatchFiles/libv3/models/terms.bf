@@ -52,6 +52,13 @@ terms.transition_transversion_ratio = "Transitition/transversion ratio";
 terms.transition = "transision rate";
 terms.transversion = "transversion rate";
 
+terms.mixture      = "mixture";
+terms.mixture_components      = "mixture components";
+
+terms.mixture_weight = "Mixture weight";
+terms.mixture_aux_weight = "Mixture auxiliary weight";
+
+
 function terms.nucleotideRate(fromC, toC) {
     return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
 }
@@ -62,4 +69,8 @@ function terms.aminoacidRate(fromA, toA) {
 
 function terms.timeParameter() {
     return "Evolutionary time parameter";
+}
+
+function terms.AddCategory (term, categoryID) {
+    return term + " for category " + categoryID;
 }

@@ -254,8 +254,7 @@ _CalcNode::_CalcNode    (_CalcNode* sourceNode, _VariableContainer* theP):_Varia
 }
 
 //_______________________________________________________________________________________________
-void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* theP, _AVLListXL* aCache)
-{
+void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* theP, _AVLListXL* aCache) {
     if (theIndex < 0) return;
     
     cBase         = 0;
@@ -3634,7 +3633,7 @@ const _String&  _TheTree::CompareSubTrees (_TheTree* compareTo, node<long>* topN
             iterator = ni.Next ();
             while (iterator != theRoot) {
                 if (tCount==0) {
-                    rerootAt = _String("Matched at the ") & *LocateVar (iterator->in_object)->GetName() & '.';
+                    rerootAt = _String("Matched at the ") & *map_node_to_calcnode (iterator)->GetName() & '.';
                     break;
                 } else {
                     tCount --;
@@ -7333,7 +7332,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
     char compRes;
     
     if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo, true))>0) {
-      rerootAt = "Equal w/o rerooting.";
+      rerootAt = eqWithoutReroot;
     } else {
       long   tCount = 0;
       
@@ -7361,7 +7360,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
         iterator = ni.Next();
         while (iterator!=theRoot) {
           if (tCount==1) {
-            rerootAt = _String("Equal with reroot at ") & *LocateVar (iterator->in_object)->GetName() & '.';
+            rerootAt = eqWithReroot & map_node_to_calcnode (iterator)->GetName() & '.';
             break;
           } else {
             tCount --;

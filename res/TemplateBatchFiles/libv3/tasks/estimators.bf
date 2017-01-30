@@ -253,6 +253,7 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
 
         for (estimators.ExtractMLEs.b = 0; estimators.ExtractMLEs.b < Abs(estimators.ExtractMLEs.map); estimators.ExtractMLEs.b += 1) {
             _branch_name = estimators.ExtractMLEs.branch_names[estimators.ExtractMLEs.b];
+            
             ((estimators.ExtractMLEs.results[terms.json.attribute.branch_length])[estimators.ExtractMLEs.i])[_branch_name] =
             estimators.ExtractBranchInformation(_tree_name, _branch_name, model_descriptions[estimators.ExtractMLEs.map[_branch_name]]);
         }
@@ -314,9 +315,11 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                 if (Type(_existing_estimate) == "AssociativeList") {
                     _set_branch_length_to = (((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])["MLE"];
 
+
                     if (None != branch_length_conditions) {
                         if (Abs(branch_length_conditions)) {
                             _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
+   							 
                             if (Type(_application_type) == "String") {
                                 _set_branch_length_to = {};
                                 _set_branch_length_to[terms.branch_length] = _existing_estimate["MLE"];
@@ -476,7 +479,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
                 name_space: user_model
             }, initial_values, run_options["proportional-branch-length-scaler"]);
 
-
+	
     }
 
     Optimize(mles, likelihoodFunction);
@@ -663,7 +666,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
         beta = model.generic.GetLocalParameter(mg_rev, ^ "terms.nonsynonymous_rate");
         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
-        apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name && 1]];
+        apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];
 
         for (i = 0; i < components; i += 1) {
             component_tree = lf_components[2 * i + 1];

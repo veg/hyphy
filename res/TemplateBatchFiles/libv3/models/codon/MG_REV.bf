@@ -40,56 +40,64 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
     };
 }
 
+
+lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, _tt) {
+    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, "alpha", ^"terms.synonymous_rate", "beta", ^"terms.nonsynonymous_rate", "omega", ^"terms.omega_ratio");
+}
+
 /**
- * @name models.codon.MG_REV._GenerateRate 
+ * @name models.codon.MG_REV._GenerateRate_generic
  * @param {Number} fromChar
  * @param {Number} toChar
  * @param {String} namespace
  * @param {String} model_type
- * @param {Matrix} _tt - transition table
+ * @param {Matrix} _tt - translation table
  */
-function models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, _tt) {
 
-    models.codon.MG_REV._GenerateRate.p = {};
-    models.codon.MG_REV._GenerateRate.diff = models.codon.diff(fromChar, toChar);
 
-    if (None != models.codon.MG_REV._GenerateRate.diff) {
-        models.codon.MG_REV._GenerateRate.p[model_type] = {};
-        models.codon.MG_REV._GenerateRate.p[terms.global] = {};
+lfunction models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, omega, omega_term) {
 
-        if (models.codon.MG_REV._GenerateRate.diff["from"] > models.codon.MG_REV._GenerateRate.diff["to"]) {
-            models.codon.MG_REV.nuc_rate = "theta_" + models.codon.MG_REV._GenerateRate.diff["to"] + models.codon.MG_REV._GenerateRate.diff["from"];
+    _GenerateRate.p = {};
+    _GenerateRate.diff = models.codon.diff(fromChar, toChar);
+
+    if (None != _GenerateRate.diff) {
+        _GenerateRate.p[model_type] = {};
+        _GenerateRate.p[^"terms.global"] = {};
+
+        if (_GenerateRate.diff["from"] > _GenerateRate.diff["to"]) {
+            nuc_rate = "theta_" + _GenerateRate.diff["to"] + _GenerateRate.diff["from"];
         } else {
-            models.codon.MG_REV.nuc_rate = "theta_" + models.codon.MG_REV._GenerateRate.diff["from"] + models.codon.MG_REV._GenerateRate.diff["to"];
+            nuc_rate = "theta_" + _GenerateRate.diff["from"] + _GenerateRate.diff["to"];
         }
 
-        models.codon.MG_REV.nuc_rate = parameters.ApplyNameSpace(models.codon.MG_REV.nuc_rate, namespace);
-        (models.codon.MG_REV._GenerateRate.p[terms.global])[terms.nucleotideRate(models.codon.MG_REV._GenerateRate.diff["from"], models.codon.MG_REV._GenerateRate.diff["to"])] = models.codon.MG_REV.nuc_rate;
+        nuc_rate = parameters.ApplyNameSpace(nuc_rate, namespace);
+        (_GenerateRate.p[^"terms.global"])[terms.nucleotideRate(_GenerateRate.diff["from"], _GenerateRate.diff["to"])] = nuc_rate;
 
         if (_tt[fromChar] != _tt[toChar]) {
-            if (model_type == terms.global) {
-                models.codon.MG_REV.aa_rate = parameters.ApplyNameSpace("omega", namespace);
-                (models.codon.MG_REV._GenerateRate.p[model_type])[terms.omega_ratio] = models.codon.MG_REV.aa_rate;
+            if (model_type == ^"terms.global") {
+                aa_rate = parameters.ApplyNameSpace(omega, namespace);
+                (_GenerateRate.p[model_type])[omega_term] = aa_rate;
             } else {
-                models.codon.MG_REV.aa_rate = "beta";
-                (models.codon.MG_REV._GenerateRate.p[model_type])[terms.nonsynonymous_rate] = models.codon.MG_REV.aa_rate;
+                aa_rate = beta;
+                (_GenerateRate.p[model_type])[beta_term] = aa_rate;
             }
-            models.codon.MG_REV._GenerateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate + "*" + models.codon.MG_REV.aa_rate;
+            _GenerateRate.p[^"terms.rate_entry"] = nuc_rate + "*" + aa_rate;
         } else {
-            if (model_type == terms.local) {
-                (models.codon.MG_REV._GenerateRate.p[model_type])[terms.synonymous_rate] = "alpha";
-                models.codon.MG_REV._GenerateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate + "*alpha";
+            if (model_type == ^"terms.local") {
+                (_GenerateRate.p[model_type])[alpha_term] = alpha;
+                _GenerateRate.p[^"terms.rate_entry"] = nuc_rate + "*" + alpha;
             } else {
-                models.codon.MG_REV._GenerateRate.p[terms.rate_entry] = models.codon.MG_REV.nuc_rate;
+                _GenerateRate.p[^"terms.rate_entry"] = nuc_rate;
             }
         }
     }
 
-    return models.codon.MG_REV._GenerateRate.p;
+
+    return _GenerateRate.p;
 }
 
 /**
- * @name models.codon.MG_REV._DefineQ 
+ * @name models.codon.MG_REV._DefineQ
  * @param {Model} mg_rev
  * @param {String} namespace
  * @returns {Model} updated model
@@ -101,7 +109,7 @@ function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
 }
 
 /**
- * @name models.codon.MG_REV.set_branch_length 
+ * @name models.codon.MG_REV.set_branch_length
  * @param {Model} model
  * @param {AssociativeList|Number} value
  * @param {String} parameter
