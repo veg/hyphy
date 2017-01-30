@@ -46,8 +46,11 @@ io.DisplayAnalysisBanner({
 // TO DO: Add option for user to select baseline model for initial branch length fit.
 // TO DO: Incorporate rate heterogeneity for branch length fits.
 
+
+
 SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
 fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
+
 
 // To store a prior run, and load as needed
 protein_gtr.cache_file = utility.getGlobalValue("LAST_FILE_PATH") + ".cache";
@@ -83,14 +86,9 @@ for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) 
 
         mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitWAGtoFile", {"0" : protein_gtr.file_list[file_index]},
                                                             "protein_gtr.handle_wag_callback");
-        
-        // QUESTION: HOW DOES ABOVE ESTIMATE MAKE IT INTO the protein_gtr.analysis_results dictionary ?
     }
 }
 mpi.QueueComplete (protein_gtr.queue);
-
-fprintf(stdout, protein_gtr.analysis_results["Trees"]);
-return 0;
 
 
 // Sum of the logL from fitted WAG model across each data set
@@ -130,8 +128,6 @@ return 0;
 
 
 /* Now that the initial GTR fit has been performed, we toggle between a GTR fit and a branch length fit under the estimated GTR parameters */
-
-
 protein_gtr.shared_EFV = (utility.Values (protein_gtr.current_gtr_fit [terms.efv_estimate]))[0];
 if (Type (protein_gtr.shared_EFV) == "String") {
     protein_gtr.shared_EFV = Eval (protein_gtr.shared_EFV);
