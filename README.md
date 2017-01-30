@@ -17,7 +17,7 @@ On Ubuntu these are libcurl-dev, libcrypto++-dev and libssl-dev.
 You can download a specific release from this repository or if you prefer the master branch simply 
 clone the repo with
 
-`git clone git@github.com:veg/hyphy.git`
+`git clone https://github.com/veg/hyphy.git`
 
 Change your directory to the newly cloned directory
 
