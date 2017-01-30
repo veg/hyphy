@@ -85,7 +85,7 @@ function models.protein.WAGF.ModelDescription(type) {
  * @returns {Dictionary} Updated WAG model with empirical frequencies
  * @description Define the empirical amino acid frequencies associated with the WAG model of protein evolution
  */
-function models.protein.WAG.frequencies (model) { // , namespace, datafilter
+function models.protein.WAG.frequencies (model, namespace, datafilter) {
     model[terms.efv_estimate] =
         {{     0.0866279}
         {     0.0193078}
