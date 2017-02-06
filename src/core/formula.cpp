@@ -1835,11 +1835,10 @@ _PMathObj _Formula::ConstructPolynomial (void) // compute the value of the formu
     return theStack.Pop(false);
 }
 //__________________________________________________________________________________
-bool _Formula::HasChanged (bool ingoreCats)
-{
+bool _Formula::HasChanged (bool ingoreCats) {
     _Operation *thisOp;
-    long dataID;
-    for (int i = 0; i<theFormula.lLength; i++) {
+    for (unsigned long  i = 0UL; i<theFormula.lLength; i++) {
+        long dataID;
         thisOp = (_Operation*)((BaseRef**)theFormula.lData)[i];
         if (thisOp->IsAVariable()) {
             dataID = thisOp->GetAVariable();
@@ -1854,7 +1853,7 @@ bool _Formula::HasChanged (bool ingoreCats)
             // time, random or branch length
         {
             return true;
-        } else if (thisOp->numberOfTerms<0) {
+        } else if (thisOp->numberOfTerms<0L) {
             dataID = -thisOp->numberOfTerms-2;
             if (IsBFFunctionIndexValid (dataID)) {
                 if (GetBFFunctionType (dataID) == BL_FUNCTION_SKIP_UPDATE) {

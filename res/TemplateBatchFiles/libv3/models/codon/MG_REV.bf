@@ -13,6 +13,7 @@ LoadFunctionLibrary("../../UtilityFunctions.bf");
  */
 lfunction models.codon.MG_REV.ModelDescription(type, code) {
 
+	
     codons = models.codon.MapCode(code);
 
     return {

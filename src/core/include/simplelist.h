@@ -529,8 +529,8 @@ class _SimpleList:public BaseObj {
         * the new_order->old_order mapping is returned in the array pointed to
         *
         */
+    
         _SimpleList* CountingSort(long, _SimpleList* = nil);
-
 
         void BubbleSort(void);
         void QuickSort(long, long);

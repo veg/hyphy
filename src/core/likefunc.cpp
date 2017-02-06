@@ -151,11 +151,7 @@ long      likeFuncEvalCallCount = 0,
           systemCPUCount        = 1,
           lockedLFID         = -1;
 
-#ifndef  __HYALTIVEC__
 #define  STD_GRAD_STEP 1.0e-6
-#else
-#define  STD_GRAD_STEP 5.0e-6
-#endif
 
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
@@ -1745,7 +1741,7 @@ bool    _LikelihoodFunction::PreCompute         (void)
 
     useGlobalUpdateFlag = true;
     // mod 20060125 to only update large globals once
-    unsigned long i = 0;
+    unsigned long i = 0UL;
 
     _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
 
@@ -1759,7 +1755,7 @@ bool    _LikelihoodFunction::PreCompute         (void)
     useGlobalUpdateFlag = false;
     // mod 20060125 to only update large globals once
 
-    for (unsigned long j=0; j<arrayToCheck->lLength; j++) {
+    for (unsigned long j=0UL; j<arrayToCheck->lLength; j++) {
         _Variable* cornholio = LocateVar(arrayToCheck->lData[j]);
         if (cornholio->varFlags&HY_DEP_V_COMPUTED) {
             cornholio->varFlags -= HY_DEP_V_COMPUTED;
@@ -1772,25 +1768,19 @@ bool    _LikelihoodFunction::PreCompute         (void)
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::PostCompute        (void)
-{
+void    _LikelihoodFunction::PostCompute        (void) {
     _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
 
     //useGlobalUpdateFlag = true;
-    for (unsigned long i=0; i<arrayToCheck->lLength; i++)
-        //LocateVar (indexDep.lData[i])->PostMarkChanged();
-    {
+    for (unsigned long i=0; i<arrayToCheck->lLength; i++) {
         LocateVar (arrayToCheck->lData[i])->Compute();
     }
     //useGlobalUpdateFlag = false;
     // mod 20060125 comment out the compute loop; seems redundant
-    {
-        for (unsigned long i=0UL; i<indexInd.lLength; i++) {
-            _Variable * this_p = GetIthIndependentVar(i);
-            if (this_p->varFlags & HY_VARIABLE_CHANGED) {
-              this_p->varFlags -= HY_VARIABLE_CHANGED;
-            }
-            //LocateVar (indexInd.lData[i])->MarkDone();
+    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+        _Variable * this_p = GetIthIndependentVar(i);
+        if (this_p->varFlags & HY_VARIABLE_CHANGED) {
+          this_p->varFlags -= HY_VARIABLE_CHANGED;
         }
     }
 }
@@ -2152,7 +2142,7 @@ long        _LikelihoodFunction::BlockLength(long index) const {
 //_______________________________________________________________________________________
 
 bool        _LikelihoodFunction::HasBlockChanged(long index) const {
-    return ((_TheTree*)LocateVar(theTrees(index)))->HasChanged2();
+    return GetIthTree (index)->HasChanged2();
 }
 
 //_______________________________________________________________________________________
@@ -2428,10 +2418,12 @@ void        _LikelihoodFunction::CheckFibonacci (_Parameter shrinkFactor)
 }
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::CheckDependentBounds (void)
-// this function makes sure that a constrained optimization starts within the domain
-// of allowed parameter values
-{
+void    _LikelihoodFunction::CheckDependentBounds (void) {
+/* 
+   this function makes sure that a constrained optimization starts within the domain
+   of allowed parameter values
+*/
+    
     if  (!indexDep.lLength) { // nothing to do here
         return;
     }
@@ -7132,8 +7124,7 @@ void    _LikelihoodFunction::ScanAllVariablesOnPartition (_SimpleList& pidx, _Si
 }
 
 //_______________________________________________________________________________________
-void    _LikelihoodFunction::UpdateIndependent (long index, bool purgeResults, _SimpleList* whichList, _SimpleList* secondList)
-{
+void    _LikelihoodFunction::UpdateIndependent (long index, bool purgeResults, _SimpleList* whichList, _SimpleList* secondList) {
     _SimpleList * theList = &indexInd;
     if (whichList) {
         theList = whichList;
@@ -7174,10 +7165,9 @@ void    _LikelihoodFunction::UpdateIndependent (long index, bool purgeResults, _
 }
 
 //_______________________________________________________________________________________
-void    _LikelihoodFunction::UpdateDependent (long index)
-{
+void    _LikelihoodFunction::UpdateDependent (long index) {
     long f = indexDep.Find (index);
-    if (f!=-1) {
+    if (f >= 0L) {
         indexDep.Delete(f);
         indexInd<<index;
         for (unsigned long k = 0; k<depVarsByPartition.lLength; k++) {
@@ -7371,18 +7361,14 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
 
 //_______________________________________________________________________________________
 
-bool    _LikelihoodFunction::HasPartitionChanged (long index)
-{
-    //return ((_TheTree*)LocateVar(theTrees.lData[index]))->HasChanged();
+bool    _LikelihoodFunction::HasPartitionChanged (long index) {
 
-    _SimpleList * idepList = (_SimpleList*)indVarsByPartition(index);
-
-    for (long i = 0; i < idepList->lLength; i++)
-        if (LocateVar(idepList->lData[i])->HasChanged()) {
-            return true;
-        }
-
-    return false;
+    return ListAny (*(_SimpleList*)indVarsByPartition(index),
+                    [] (const long value, const unsigned long index) -> bool {
+                        return LocateVar(value)->HasChanged();
+                       }
+                    );
+ 
 }
 
 //#define _HY_GPU_EXAMPLE_CALCULATOR
@@ -10102,24 +10088,20 @@ unsigned long    _LikelihoodFunction::SiteCount (void) const {
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::PrepareToCompute (bool disableClear)
-{
-    if (hasBeenSetUp == 0) {
-        long categCount = 1;
+void    _LikelihoodFunction::PrepareToCompute (bool disableClear) {
+    if (hasBeenSetUp == 0L) {
+        long categCount = 1L;
 
 
-        for (long i=0; i<theTrees.lLength; i++) {
-            _TheTree            * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-
+        for (unsigned long i=0UL; i<theTrees.lLength; i++) {
+            _TheTree  * cT = GetIthTree(i);
             long locCC = cT->CountTreeCategories();
-            if   (locCC >categCount) {
-                categCount = locCC;
-            }
+            StoreIfGreater( categCount, locCC );
             cT->SetUpMatrices (locCC);
         }
 
-        for (long i2=0; i2<theProbabilities.lLength; i2++) {
-            ((_Matrix*)LocateVar(theProbabilities.lData[i2])->GetValue())->MakeMeSimple();
+        for (unsigned long i=0UL; i<theProbabilities.lLength; i++) {
+            ((_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue())->MakeMeSimple();
         }
 
         SetupCategoryCaches   ();
@@ -10143,15 +10125,14 @@ void    _LikelihoodFunction::PrepareToCompute (bool disableClear)
 void    _LikelihoodFunction::DoneComputing (bool force)
 {
     if (hasBeenSetUp == 1 || (hasBeenSetUp > 0 && force)) {
-        for (unsigned long i=0; i<theTrees.lLength; i++) {
-            _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-            cT->CleanUpMatrices();
+        for (unsigned long i=0UL; i<theTrees.lLength; i++) {
+            GetIthTree(i)->CleanUpMatrices();
         }
         if (mstCache) {
             mstCache->resultCache.Clear();
             mstCache->statesCache.Clear();
         }
-        for (unsigned long i=0; i<theProbabilities.lLength; i++) {
+        for (unsigned long i=0UL; i<theProbabilities.lLength; i++) {
             ((_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue())->MakeMeGeneral();
         }
 

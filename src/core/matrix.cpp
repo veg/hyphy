@@ -87,16 +87,9 @@ int _Matrix::storageIncrement = 16;
 //  percent of total size (reasonable values divide 100)
 int _Matrix::switchThreshold = 40;
 
-#ifndef     __HYALTIVEC__
 _Parameter  _Matrix::truncPrecision = 1e-13;
 #define     MatrixMemAllocate(X) MemAllocate(X)
 #define     MatrixMemFree(X)     free(X)
-#else
-#define     MatrixMemAllocate(X) VecMemAllocate(X)
-#define     MatrixMemFree(X)     vec_free(X)
-extern      vector float VECTOR_ZERO;
-_Parameter  _Matrix::truncPrecision = 1e-8;
-#endif
 
 _Parameter  analMatrixTolerance = 1e-6,
             zero = 0,

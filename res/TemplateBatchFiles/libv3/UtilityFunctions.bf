@@ -747,6 +747,15 @@ lfunction utility.GetListOfLoadedModules () {
 }
 
 /**
+ * Execute some commands in the global namespace
+ * @param commands {String} : the commands to execture
+ * @returns None
+ */
+function utility.ExecuteInGlobalNamespace (commands) {
+    ExecuteCommands (commands);
+}
+
+/**
  * A product function, which takes a list of k variable IDs (dicts)
  * and returns a dictionary of sets of keys (N1 x N2 x ... Nk)
  * @param {Dictionary} : a list of variable IDs to scan

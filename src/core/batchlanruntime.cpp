@@ -248,11 +248,8 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& currentPr
             WarnError (_String("Please call LFCompute (lf_id, ")&lfStartCompute&") before evaluating the likelihood function");
             return false;
         } else {
-            _Variable* rec = CheckReceptacleCommandID (&AppendContainerName(*arg2,currentProgram.nameSpacePrefix), HY_HBL_COMMAND_LFCOMPUTE,true);
-             if (!rec) {
-                return false;
-            }
-            rec->SetValue(new _Constant (lf->Compute()),false);
+            return CheckReceptacleCommandIDAndStore(&AppendContainerName(*arg2,currentProgram.nameSpacePrefix), HY_HBL_COMMAND_LFCOMPUTE, HY_HBL_COMMAND_LFCOMPUTE, new _Constant (lf->Compute()), false);
+                                             
         }
     }
 

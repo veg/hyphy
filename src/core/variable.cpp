@@ -46,6 +46,8 @@
 #include "polynoml.h"
 #include "batchlan.h"
 
+#include "function_templates.h"
+
 
 extern _SimpleList freeSlots;
 extern _SimpleList deferIsConstant;
@@ -258,8 +260,10 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
         }
 
         varValue =  new _Constant(theValue);
+        
+        //printf ("Recomputing value of %s => %g\n", theName->sData, varValue->Value());
+
     } else {
-        //printf ("Recomputing value of %s (%ld)\n", theName->sData, call_count);
         if (useGlobalUpdateFlag) {
             if ((varFlags & HY_DEP_V_COMPUTED) && varValue) {
                 varFlags &= HY_VARIABLE_COMPUTING_CLR;
@@ -268,6 +272,7 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
                 _PMathObj new_value = (_PMathObj)varFormula->Compute()->makeDynamic();
                 DeleteObject (varValue);
                 varValue = new_value;
+                //printf ("Recomputing value of %s => %g\n", theName->sData, varValue->Value());
             }
             varFlags |= HY_DEP_V_COMPUTED;
           
@@ -275,9 +280,6 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
               /* if varFormula depends on *this* variable, doing delete-set
                  would cause the expression to reference deleted memory.
                */
-            /*if (call_count == 2467288) {
-              printf ("Here we go...\n");
-            }*/
             _PMathObj new_value = (_PMathObj)varFormula->Compute()->makeDynamic();
             DeleteObject (varValue);
             varValue = new_value;
@@ -530,27 +532,25 @@ bool _Variable::IsConstant (void)
 
 //__________________________________________________________________________________
 
-void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a formula
-{
+void  _Variable::SetFormula (_Formula& theF) {
+//  bind the variable to an expression
     if (varFlags & HY_VARIABLE_COMPUTING) {
-      FlagError (_String ("A recursive dependency error in _Variable::SetFormula; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+      FlagError (_String ("A recursive dependency error in _Variable::SetFormula; this is an HBL implementation bug; offending variable name is '") & *GetName() & "'");
     }
 
     bool changeMe    = false,
          isAConstant = theF.IsAConstant();
 
-    /*bool     doPrint = (*theName) == _String("_value_");
-    if (doPrint) {
-      wp_count++;
-      printf ("Constraining %s to %s\n", theName->sData, _String((_String*)theF.toStr()).sData);
-    }*/
+    //if (doPrint) {
+    //printf ("Constraining %s to %s\n", theName->sData, _String((_String*)theF.toStr()).sData);
+    //}
 
-    _Formula* myF = &theF;
+    _Formula* right_hand_side = &theF;
 
     if (isAConstant) {
         _PMathObj theP = theF.Compute();
         if (theP) {
-            myF = new _Formula ((_PMathObj)theP->makeDynamic(),false);
+            right_hand_side = new _Formula ((_PMathObj)theP->makeDynamic(),false);
         } else {
             return;
         }
@@ -563,8 +563,8 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
 
     if (vars.BinaryFind(theIndex)>=0) {
         WarnError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr())&" because it would create a circular dependance."));
-        if (&theF!=myF) {
-            delete myF;
+        if (&theF!=right_hand_side) {
+            delete right_hand_side;
         }
         return;
     }
@@ -575,7 +575,10 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
         varFlags -= HY_VARIABLE_CHANGED;
     }
 
-
+    if (varFlags & HY_DEP_V_COMPUTED) {
+        varFlags -= HY_DEP_V_COMPUTED;
+    }
+    
     if (varFormula) {
         delete (varFormula);
         varFormula = nil;
@@ -584,19 +587,18 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
     }
 
     if (varValue) {
-        DeleteObject (varValue);
-        varValue=nil;
+        DeleteAndZeroObject (varValue);
     }
 
     //_Formula::Duplicate ((BaseRef)myF);
     varFormula = new _Formula;
-    varFormula->Duplicate ((BaseRef)myF);
+    varFormula->Duplicate ((BaseRef)right_hand_side);
 
     // mod 20060125 added a call to simplify constants
     varFormula->SimplifyConstants ();
 
     // also update the fact that this variable is no longer independent in all declared
-    // variable containers which contain references to this variable
+    // variable containers which hold references to this variable
     if (changeMe) {
           if (deferSetFormula) {
               *deferSetFormula << theIndex;
@@ -619,7 +621,7 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
                   }
               }
               {
-                  for (long i = 0; i<likeFuncList.lLength; i++)
+                  for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
                       if (((_String*)likeFuncNamesList(i))->sLength) {
                           ((_LikelihoodFunction*)likeFuncList(i))->UpdateIndependent(theIndex,isAConstant);
                       }
@@ -627,8 +629,8 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
           }
     }
 
-    if (&theF!=myF) {
-        delete myF;
+    if (&theF!=right_hand_side) {
+        delete right_hand_side;
     }
 }
 
@@ -650,28 +652,28 @@ void  _Variable::PreMarkChanged (void)
 }
 
 //__________________________________________________________________________________
-void  _Variable::PostMarkChanged (void)
-{
+void  _Variable::PostMarkChanged (void) {
     varFlags &= HY_DEP_CLEAR_MASK;
 }
 
 
 //__________________________________________________________________________________
-bool  _Variable::HasChanged (bool ignoreCats) // does this variable need recomputing
-{
+bool  _Variable::HasChanged (bool ignoreCats) {
+    // does this variable need recomputing 
     if (varFormula) {
         if (useGlobalUpdateFlag && (varFlags&HY_DEP_V_COMPUTED)) {
             return false;
         }
 
-        if (varFlags&HY_DEP_V_INSPECTED) {
+        /*if (varFlags&HY_DEP_V_INSPECTED) {
             return ignoreCats?(varFlags&HY_DEP_V_MODIFIED_CATS):(varFlags&HY_DEP_V_MODIFIED);
-        }
+        }*/
+        // SLKP 20170202: seems to be unused
 
-        return  varFormula->HasChanged(ignoreCats);
+       return  !varValue || varFormula->HasChanged(ignoreCats) ;
 
     } else {
-        if (varValue&&(varValue->IsVariable())) {
+        if (varValue && varValue->IsVariable()) {
             return varValue->HasChanged();
         }
         if (ignoreCats && IsCategory()) {

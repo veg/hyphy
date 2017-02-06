@@ -445,14 +445,16 @@ void    PurgeAll (bool all) {
 }
 
 //____________________________________________________________________________________
-void    DeleteObject (BaseRef theObject) {
+bool    DeleteObject (BaseRef theObject) {
     if (theObject) {
         if (theObject->nInstances<=1) {
             delete (theObject);
+            return true;
         } else {
-            theObject->nInstances--;
+            theObject->RemoveAReference();
         }
     }
+    return false;
 }
 
 

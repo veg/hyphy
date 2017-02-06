@@ -126,7 +126,6 @@ namespace mpi {
 
             if (Abs (send_to_nodes)) {
             	
-            	
                 for (k = 1; k < mpi_node_count; k += 1) {
                    MPISend (k, send_to_nodes);
                 }

@@ -419,7 +419,7 @@ fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
                                terms.json.content : fel.site_results };
 
 
-io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites under positive and _" + fel.report.counts[1] + "_ sites under negative selection at p <= " + fel.pvalue + "**");
+io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites under pervasive positive diversifying and _" + fel.report.counts[1] + "_ sites under negative selection at p <= " + fel.pvalue + "**");
 
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");

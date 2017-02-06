@@ -20,6 +20,8 @@ LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
+LoadFunctionLibrary("modules/selection_lib.ibf");
+
 
 
 /*------------------------------------------------------------------------------ Display analysis information
@@ -89,6 +91,7 @@ meme.table_headers = {{"&alpha;", "Synonymous substitution rate at a site"}
                      {"p<sup>+</sup>", "Mixture distribution weight allocated to &beta;<sup>+</sup>; loosely -- the proportion of the tree evolving neutrally or under positive selection"}
                      {"LRT", "Likelihood ratio test statistic for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
                      {"p-value", "Asymptotic p-value for for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
+                     {"#branches under selection", "The (very approximate and rough) estimate of how many branches may have been under selection at this site, i.e., had an empirical Bayes factor of 100 or more for the &beta;<sup>+</sup> rate"}
                      {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
 /**
     This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
@@ -98,8 +101,8 @@ meme.table_headers = {{"&alpha;", "Synonymous substitution rate at a site"}
 
 
 
-meme.table_screen_output  = {{"Codon", "Partition", "alpha", "beta+", "p+", "LRT", "Selection detected?"}};
-meme.table_output_options = {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
+meme.table_screen_output  = {{"Codon", "Partition", "alpha", "beta+", "p+", "LRT", "Episodic selection detected?", "# branches"}};
+meme.table_output_options = {"header" : TRUE, "min-column-width" : 12, "align" : "center"};
 
 namespace meme {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
@@ -117,8 +120,10 @@ io.ReportProgressMessageMD('MEME',  'selector', 'Branches to include in the MEME
 
 utility.ForEachPair (meme.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.json.attribute.test');
-     io.ReportProgressMessageMD('MEME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the MEME analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
+     io.ReportProgressMessageMD('MEME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the MEME analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");			  
 
+
+meme.pairwise_counts   = genetic_code.ComputePairwiseDifferencesAndExpectedSites(meme.codon_data_info["code"], None);
 
 selection.io.startTimer (meme.json [terms.json.timers], "Model fitting",1);
 
@@ -230,15 +235,16 @@ parameters.SetRange ("meme.site_mixture_weight", terms.range01);
 
 meme.report.count       = {{0}};
 
-meme.table_screen_output  = {{"Codon", "Partition", "alpha", "beta+", "p+", "LRT", "Selection detected?"}};
-
 meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.partition])["coverage"])[meme.report.site]),
                                     meme.report.partition + 1,
-                                    Format(meme.report.row[0],10,3),
-                                    Format(meme.report.row[3],10,3),
-                                    Format(meme.report.row[4],10,3),
-                                    Format(meme.report.row[5],10,3),
-                                    "Yes, p = " + Format(meme.report.row[6],7,4)}};
+                                    Format(meme.report.row[0],7,3),
+                                    Format(meme.report.row[3],7,3),
+                                    Format(meme.report.row[4],7,3),
+                                    Format(meme.report.row[5],7,3),
+                                    "Yes, p = " + Format(meme.report.row[6],7,4),
+                                    Format(meme.report.row[7],0,0)
+}};
+
 
 
 
@@ -302,8 +308,9 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
 
     meme.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"meme.site_likelihood","meme.site_likelihood_bsrel"}},
                                    "Models" : {{"meme.site.background_fel","meme.site.bsrel"}},
-                                   "Headers" : {{"libv3/terms-json.bf"}},
-                                   "Variables" : {{"meme.selected_branches"}}
+                                   "Headers" : utility.GetListOfLoadedModules (),
+                                   "Variables" : {{"meme.selected_branches","meme.branch_mixture"}},
+                                   "Functions" : {{"meme.compute_branch_EBF"}}
                                  });
 
     /* run the main loop over all unique site pattern combinations */
@@ -352,7 +359,7 @@ meme.json [terms.json.MLE ] = {terms.json.headers   : meme.table_headers,
                                terms.json.content : meme.site_results };
 
 
-io.ReportProgressMessageMD ("MEME", "results", "** Found _" + meme.report.count[0] + "_ sites under positive at p <= " + meme.pvalue + "**");
+io.ReportProgressMessageMD ("MEME", "results", "** Found _" + meme.report.count[0] + "_ sites under episodic diversifying positive selection at p <= " + meme.pvalue + "**");
 
 selection.io.stopTimer (meme.json [terms.json.timers], "Total time");
 selection.io.stopTimer (meme.json [terms.json.timers], "MEME analysis");
@@ -398,23 +405,24 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 
 	parameter_name = "`tree_name`.`branch_name`." + ^"meme.branch_mixture";
 	^parameter_name = 1;
+	
 	LFCompute (^lf_id,LOGL0);
-				
-	ExecuteCommands (parameter_name + ":= meme.site_mixture_weight", enclosing_namespace);
-
+					
+	utility.ExecuteInGlobalNamespace (parameter_name + ":= meme.site_mixture_weight");
+	
 	if (^"meme.site_mixture_weight" != 1 && ^"meme.site_mixture_weight" != 0) {
 		_priorOdds = (1-^"meme.site_mixture_weight")/^"meme.site_mixture_weight";
 	} else {
 		_priorOdds = 0;
 	}
         
-	MaxL     = -Max (LOGL0,baseline);
+	normalizer  = -Max (LOGL0,baseline);
 	
-	baseline += MaxL;
-	LOGL0 = Exp(MaxL+LOGL0);
-	LOGL1 = (Exp(baseline) - ^"meme.site_mixture_weight" * LOGL0) / (1-^"meme.site_mixture_weight");
 	
-	_posteriorProb = {{LOGL0 * ^"meme.site_mixture_weight", LOGL1 * (1-^"meme.site_mixture_weight")}};
+	p1 = Exp(LOGL0+normalizer) * ^"meme.site_mixture_weight";
+	p2 = (Exp(baseline+normalizer) - p1);
+			
+	_posteriorProb = {{p1,p2}};
 	
 	_posteriorProb = _posteriorProb * (1/(+_posteriorProb));
 	if ( _priorOdds != 0) {
@@ -422,7 +430,6 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 	} else {
 		eBF = 1;
 	}
-
 	return {"BF" : eBF__, "posterior" : _posteriorProb__[1]};
 }
 
@@ -460,18 +467,30 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 	Optimize (results, ^lf_bsrel);
     alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
     alternative [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
-
 	
+
+	ancestral_info = ancestral.build (lf_bsrel,0,FALSE);
+
+	branch_attributes = selection.substituton_mapper (ancestral_info ["MATRIX"], 
+													  ancestral_info ["TREE_AVL"], 
+													  ancestral_info ["AMBIGS"], 
+													  ^"meme.pairwise_counts",
+													  ancestral_info ["MAPPING"], 
+													  (^"meme.codon_data_info")["code"]);
+
+	DeleteObject (ancestral_info);
+
 	branch_ebf       = {};
 	branch_posterior = {};
+	if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" > 0) {
 
-	if (^"meme.site_beta_plus" > ^"meme.terms.site_alpha" && ^"meme.site_mixture_weight" > 0) {
 		LFCompute (^lf_bsrel,LF_START_COMPUTE);
+		LFCompute (^lf_bsrel,baseline);
 
 		utility.ForEach (^bsrel_tree_id, "_node_name_",
 		'
 			if ((meme.selected_branches [^"`&partition_index`"])[_node_name_]  == "test") {
-				_node_name_res_ = meme.compute_branch_EBF (^"`&lf_bsrel`", ^"`&bsrel_tree_id`", _node_name_, (^"`&alternative`") [utility.getGlobalValue("terms.json.log_likelihood")]);
+				_node_name_res_ = meme.compute_branch_EBF (^"`&lf_bsrel`", ^"`&bsrel_tree_id`", _node_name_, ^"`&baseline`");
 				(^"`&branch_ebf`")[_node_name_] = _node_name_res_["BF"];
 				(^"`&branch_posterior`")[_node_name_] = _node_name_res_["posterior"];
 			} else {
@@ -481,7 +500,7 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 		'
 		);
 
-		LFCompute (^lf_bsrel,LF_DONE_COMPUTE);
+		LFCompute (^lf_bsrel,LF_DONE_COMPUTE); 
 
 		^"meme.site_beta_plus" := ^"meme.site_alpha";
 		Optimize (results, ^lf_bsrel);
@@ -506,12 +525,11 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 		);
 	}
     
-    console.log (branch_ebf);
-    console.log (branch_posterior);
-        
-
     return {"fel" : fel,
     		"alternative" : alternative, 
+    		"posterior" : branch_posterior,
+    		"ebf" : branch_ebf, 
+    		"branch_attributes" : branch_attributes,
     		"null": null};
 }
 
@@ -554,8 +572,11 @@ lfunction meme.store_results (node, result, arguments) {
                           0, // weight +
                           0, // LRT
                           1, // p-value,
+                          0, // branch count
                           0  // total branch length of tested branches
                       } };
+
+	//console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_mixture_weight"));
 
     if (None != result) { // not a constant site
     
@@ -569,9 +590,8 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [4] = 1-result_row [2];
         result_row [5] = lrt ["LRT"];
         result_row [6] = lrt ["p-value"];
+        result_row [7] = utility.Array1D(utility.Filter (result["ebf"], "_value_", "_value_>=100"));
         
-        //console.log ((result["alternative"])[utility.getGlobalValue("terms.json.log_likelihood")]);
-
         sum = 0;
         alternative_lengths = ((result["alternative"])[^"terms.json.attribute.branch_length"])[0];
 
@@ -582,7 +602,7 @@ lfunction meme.store_results (node, result, arguments) {
                  }
             ');
 
-        result_row [7] = sum;
+        result_row [8] = sum;
 	}
 
     utility.EnsureKey (^"meme.site_results", partition_index);
