@@ -185,26 +185,24 @@ lfunction genetic_code.DefineIntegerToAAMapping (code, only_sense) {
     return codon_code_map;
 }
 
-/*----------------------------------------------------------------------------------------------------------*/
+/**
+Given a genetic code (`genCode`), computes a number of per-codon (or per pair of codons)
+quantities that relate to numbers of synonymous and non-synonymous sites or
+substitutions.
 
+`options` can be null, or have any of the following keys:
+
+    `weighting-matrix` is expected to be a set of 3 4x4 matrices showing relative frequencies of
+    various nucleotide->nucleotide substitutions stratified by codon position; by default they
+    are all equal
+
+    `count-stop-codons` treat mutations to stop codons as non-synonymous changes for counting purposes
+    (by the default they are not counted at all)
+
+Also see inline comments
+
+*/
 lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, options) {
-        /*
-            given a genetic code (`genCode`), computes a number of per-codon (or per pair of codons)
-            quantities that relate to numbers of synonymous and non-synonymous sites or
-            substitutions.
-
-            `options` can be null, or have any of the following keys:
-
-                `weighting-matrix` is expected to be a set of 3 4x4 matrices showing relative frequencies of
-                various nucleotide->nucleotide substitutions stratified by codon position; by default they
-                are all equal
-
-                `count-stop-codons` treat mutations to stop codons as non-synonymous changes for counting purposes
-                (by the default they are not counted at all)
-
-            Also see inline comments
-
-        */
 
         SS = {
             64, 1

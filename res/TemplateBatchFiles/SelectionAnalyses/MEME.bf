@@ -114,7 +114,7 @@ utility.ForEachPair (meme.selected_branches, "_partition_", "_selection_",
      io.ReportProgressMessageMD('MEME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the MEME analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");			  
 
 
-meme.pairwise_counts   = genetic_code.ComputePairwiseDifferencesAndExpectedSites(meme.codon_data_info["code"], None);
+meme.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(meme.codon_data_info["code"], None);
 
 selection.io.startTimer (meme.json [terms.json.timers], "Model fitting",1);
 
