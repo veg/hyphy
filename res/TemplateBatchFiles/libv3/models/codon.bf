@@ -1,4 +1,4 @@
-LoadFunctionLibrary ("chooseGeneticCode", {"0" : "Universal"});
+LoadFunctionLibrary ("../tasks/genetic_code.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
 
 /** @module models.codon */
@@ -10,9 +10,9 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
  */
 function models.codon.MapCode (genetic_code) {
 
-	return {"sense" : utility.Values (ComputeCodonCodeToStringMap (genetic_code)),
-	        "stop"  : utility.Values (ComputeCodonCodeToStringMapStop (genetic_code)),
-	        "translation-table" : defineCodonToAAGivenCode (genetic_code) };
+	return {"sense" : utility.Values (genetic_code.ComputeCodonCodeToStringMap (genetic_code)),
+	        "stop"  : utility.Values (genetic_code.ComputeCodonCodeToStringMapStop (genetic_code)),
+	        "translation-table" : genetic_code.DefineCodonToAAGivenCode (genetic_code) };
 }
 
 /**

@@ -5868,7 +5868,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           if (outputFormat == 4) { // labels
             write_here << "\n\t'"
             << GetSequenceName(i)
-            << '"'
+            << '\''
             << _String (" ", taxaNamesPadding (i));
             
             

@@ -216,15 +216,15 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
-function parameters.GenerateSequentialNames(prefix, count, delimiter) {
+lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
     if (delimiter == None) {
         delimiter = "_";
     }
-    parameters.generate_names.holder = {};
-    for (parameters.generate_names.k = 0; parameters.generate_names.k < count; parameters.generate_names.k += 1) {
-        parameters.generate_names.holder + (prefix + delimiter + parameters.generate_names.k);
+    holder = {};
+    for (k = 0; k < count; k += 1) {
+        holder + (prefix + delimiter + k);
     }
-    return parameters.generate_names.holder;
+    return holder;
 }
 
 /**
@@ -474,4 +474,24 @@ function parameters.GetProfileCI(id, lf, level) {
 lfunction parameters.ExportParameterDefinition (id) {
     GetString (parameter_definition, ^id, -3);
     return parameter_definition;
+}
+
+/**
+ * Copy local parameters from a node to 'template' variables
+ * @name parameters.SetLocalModelParameters
+ * @param {Dict} model - model description
+ * @param {String} tree id
+ * @param {String} node id
+ 
+ * e.g. 
+ * 		set alpha = Tree.Node.alpha
+ * 		set beta  = Tree.Node.beta
+ */
+
+lfunction parameters.SetLocalModelParameters (model, tree, node) {
+	node_name = tree + "." + node + ".";
+    utility.ForEach ((model["parameters"])[^'terms.local'], "_parameter_", '
+    	^_parameter_ = ^(`&node_name` + _parameter_);
+    ');
+    
 }

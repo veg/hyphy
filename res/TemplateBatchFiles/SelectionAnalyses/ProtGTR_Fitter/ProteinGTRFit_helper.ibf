@@ -1,0 +1,351 @@
+/*************** Functions used in ProteinGTRFit_SJS.bf ******************/
+
+
+// Function fits a WAG to file. We use a function b/c MPI needs.
+function protein_gtr.fitWAGtoFile (filename) {
+    // first argument is the dataset name to save, 2nd is the file name GASP
+    protein_gtr.file_info = alignments.ReadNucleotideDataSet ("protein_gtr.msa",
+                                                              filename);
+
+    /*
+        protein_gtr.file_info =>
+
+        {
+             "sequences":20,
+             "sites":190,
+             "name-mapping":null,
+             "partitions":{
+              {"default", ""}
+              },
+             "file":"/Users/sergei/Dropbox/Work/Collaborations/REV-fitter/ModelFitter_libv3/simulation/hyphy_input/simulated_wag1.dat"
+       }
+
+
+    */
+
+    protein_gtr.file_info["json"] = protein_gtr.file_info["file"] + ".json";
+    protein_gtr.name_mapping = protein_gtr.file_info[utility.getGlobalValue("terms.json.name_mapping")];
+        /**
+            will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
+        */
+
+    if (None == protein_gtr.name_mapping) { /** create a 1-1 mapping if nothing was done */
+        protein_gtr.name_mapping = {};
+        utility.ForEach (alignments.GetSequenceNames ("protein_gtr.msa"), "_value_", "`&protein_gtr.name_mapping`[_value_] = _value_");
+    }
+
+    utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", "/dev/null");
+
+    ExecuteCommands ('protein_gtr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (protein_gtr.file_info [utility.getGlobalValue("terms.json.partitions")], protein_gtr.name_mapping)',
+                     {"0" : "Y"});
+
+    utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", None);
+
+    // trees
+
+    protein_gtr.filter_specification = alignments.DefineFiltersForPartitions (protein_gtr.partitions_and_trees,
+                                                                            "protein_gtr.msa" ,
+                                                                            "protein_gtr.filter.",
+                                                                            protein_gtr.file_info);
+    /*
+    {
+     "0":{
+       "name":"protein_gtr.filter.default",
+       "coverage":{
+        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11...
+        }
+      }
+    }
+    */
+
+
+    protein_gtr.wag.mle = estimators.FitSingleModel_Ext (utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']"), utility.Map (protein_gtr.partitions_and_trees, "_value_", "_value_['tree']"),
+                                   "models.protein.WAG.ModelDescription",
+                                   None,
+                                   None);
+
+    return protein_gtr.wag.mle;
+}
+
+
+
+
+//================================================================================================//
+
+function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, final) {
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", phase,
+                                "Fitting the REV model using constrained branch lengths proportions (" + phase + ")");
+
+    file_list = utility.Keys (current_results);
+    file_count = utility.Array1D (file_list);
+
+    partition_info = {};
+    filter_info    = {};
+    trees = {};
+    initial_values = {"global" : {}, ^"terms.json.attribute.branch_length" : {}};
+    proportional_scalers = {};
+    index_to_file_name   = {};
+
+
+
+    for (file_index = 0; file_index < file_count; file_index += 1) {
+        file_path = file_list [file_index];
+        index_to_file_name [file_path] = file_index;
+        dataset_name = "protein_gtr.msa." + file_index;
+        partition_info [file_path] = alignments.ReadNucleotideDataSet (dataset_name, file_path);
+        partition_specification = { "0" : {"name" : "all", "filter-string" : "", "tree" : ((current_results[file_path])["Trees"])[0]}};
+
+        filter_info [file_index] = (alignments.DefineFiltersForPartitions (partition_specification,
+                                                                            dataset_name ,
+                                                                            dataset_name,
+                                                                            partition_info [file_path]))[0];
+        trees [file_index] = {"string" :  ((current_results[file_path])["Trees"])[0]};
+
+        if (!final) {
+            (initial_values[^"terms.json.attribute.branch_length"])[file_index] = ((current_results[file_path])[^"terms.json.attribute.branch_length"])[0];
+            scaler = "protein_gtr.gtr_scaler_" + file_index;
+
+            rescaler = utility.First ((initial_values[^"terms.json.attribute.branch_length"])[file_index], "_value_", "_value_[terms.MLE]>0");
+
+            parameters.DeclareGlobal (scaler, None);
+            if (None != rescaler) {
+                rescaler = rescaler [^"terms.MLE"] / (rescaler [terms.timeParameter()]) [^"terms.MLE"];
+                parameters.SetValue (scaler, 1/rescaler);
+            } else {
+                parameters.SetValue (scaler, 1);
+            }
+            proportional_scalers[file_index] = scaler;
+        }
+    }
+
+    // Initialize REV rates TO WAG
+    utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
+    utility.ToggleEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1);
+    utility.ToggleEnvVariable ("OPTIMIZATION_METHOD", 0);
+
+    if (! final) {
+    // NOT THE FINAL RUN: STILL A PHASE
+        // previous_values exist from a previous GTR fit
+        if (utility.Has (previous_values, "global", "AssociativeList")) {
+            initial_values["global"] = previous_values["global"];
+
+        } 
+        // previous_values don't exist so we must decide on initial values.
+        else {
+            
+            /*
+            // This will initialize to a given value, e.g. 1 or a random number
+            for (l1 = 0; l1 < 20; l1 += 1) {
+                for (l2 = l1 + 1; l2 < 20; l2 += 1) {
+                    (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : 1};
+                    //(initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : Random (0.5,2)};
+                }
+            }
+            */
+            
+            // This will initialize to WAG
+             for (l1 = 0; l1 < 20; l1 += 1) {
+                for (l2 = l1 + 1; l2 < 20; l2 += 1) {
+                    (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : (models.protein.WAG.empirical_Q[models.protein.alphabet[l1]])[models.protein.alphabet[l2]]};
+                }
+            }
+
+        }
+        // fit the model
+        protein_gtr.rev.mle = estimators.FitSingleModel_Ext (
+                                            utility.Map (filter_info, "_value_", "_value_['name']"),
+                                            trees,
+                                            "models.protein.REV.ModelDescription",
+                                            initial_values,
+                                            // INITIAL VALUE DICT
+                                            {"proportional-branch-length-scaler" : proportional_scalers}
+                                            // BRANCH LENGTH HANDLING OPTIONS
+                                       );
+
+        // save the model fit to be associated with its filename index
+        protein_gtr.rev.mle ["filename-to-index"] = index_to_file_name;
+    } else {
+    // FINAL TUNING FIT
+        protein_gtr.rev.mle = estimators.FitSingleModel_Ext (
+                                        utility.Map (filter_info, "_value_", "_value_['name']"),
+                                        trees,
+                                        "models.protein.REV.ModelDescription",
+                                        previous_values,
+                                        // INITIAL VALUE DICT
+                                        None
+                                        //{"proportional-branch-length-scaler" : proportional_scalers}
+                                        // BRANCH LENGTH HANDLING OPTIONS
+                                   );
+
+    }
+
+
+
+    // Save the rev.mle into the analysis_results, and cache it.
+    (^"protein_gtr.analysis_results")[phase] = protein_gtr.rev.mle;
+    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
+
+    utility.ToggleEnvVariable ("VERBOSITY_LEVEL", None);
+    utility.ToggleEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", None);
+    utility.ToggleEnvVariable ("OPTIMIZATION_METHOD", None);
+
+
+    return protein_gtr.rev.mle;
+
+
+}
+
+
+//================================================================================================//
+
+function protein_gtr.run_gtr_iteration_branch_lengths () {
+    protein_gtr.fit_phase += 1;
+
+    protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules () ,
+                                            "Functions" :
+                                            {
+                                                {"protein_gtr.REV.ModelDescription",
+                                                 "protein_gtr.REV.ModelDescription.freqs"
+                                                }
+                                            },
+                                            "Variables" : {{
+                                                "protein_gtr.shared_EFV"
+                                            }}
+                                         });
+
+    protein_gtr.phase_key = "Rev-local-Phase" + protein_gtr.fit_phase;
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key, "Retuning branch lengths (" + protein_gtr.phase_key + ")");
+
+    for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) {
+
+       if (utility.Has (protein_gtr.analysis_results, {{ protein_gtr.file_list[file_index],  protein_gtr.phase_key}}, None)) {
+            logL = ((protein_gtr.analysis_results[protein_gtr.file_list[file_index]])[protein_gtr.phase_key])["LogL"];
+
+            io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
+                                        "Loaded cached results for '" + protein_gtr.file_list[file_index] + "' " + (file_index+1) + "/" + protein_gtr.file_list_count + ". Log(L) = " + logL);
+
+        } else {
+            io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
+                                        "Dispatching file '" + protein_gtr.file_list[file_index] + "' " + (file_index+1) + "/" + protein_gtr.file_list_count);
+
+            mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitGTRtoFile", {"0" : protein_gtr.file_list[file_index],
+                                                                          "1" : protein_gtr.current_gtr_fit["global"],
+                                                                          "2" : (protein_gtr.current_gtr_fit[terms.json.attribute.branch_length])[(protein_gtr.current_gtr_fit["filename-to-index"])[protein_gtr.file_list[file_index]]]},
+                                                                "protein_gtr.handle_gtr_callback");
+        }
+    }
+    mpi.QueueComplete (protein_gtr.queue);
+
+    protein_gtr.run_gtr_iteration_branch_lengths.logL = math.Sum (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_key"), "_value_", "(_value_[protein_gtr.phase_key])['LogL']"));
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
+                            "Overall Log(L) = " + protein_gtr.run_gtr_iteration_branch_lengths.logL);
+
+    return { "LogL" : protein_gtr.run_gtr_iteration_branch_lengths.logL , "phase" : protein_gtr.phase_key};
+
+}
+
+//================================================================================================//
+
+function protein_gtr.handle_wag_callback (node, result, arguments) {
+    utility.EnsureKey (^"protein_gtr.analysis_results", arguments[0]);
+
+    ((^"protein_gtr.analysis_results")[arguments[0]])[utility.getGlobalValue("protein_gtr.phase_key")] = result;
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", "Initial branch length fit",
+                                "Received file '" + arguments[0] + "' from node " + node + ". LogL = " + result["LogL"]);
+
+    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
+
+}
+
+//================================================================================================//
+
+function protein_gtr.handle_gtr_callback (node, result, arguments) {
+    utility.EnsureKey (^"protein_gtr.analysis_results", arguments[0]);
+
+    ((^"protein_gtr.analysis_results")[arguments[0]])[utility.getGlobalValue("protein_gtr.phase_key")] = result;
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", "* Rev-local-Phase" + ^"protein_gtr.fit_phase",
+                                "Received file '" + arguments[0] + "' from node " + node + ". LogL = " + result["LogL"]);
+
+    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
+
+}
+
+
+
+
+
+//================================================================================================//
+
+function protein_gtr.REV.ModelDescription (type) {
+    result = models.protein.REV.ModelDescription(type);
+    result ["frequency-estimator"] = "protein_gtr.REV.ModelDescription.freqs";
+    return result;
+}
+
+//================================================================================================//
+
+function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
+    model[terms.efv_estimate] =
+        protein_gtr.shared_EFV;
+
+    model[terms.efv_estimate_name] = terms.freqs.predefined;
+    (model["parameters"])["empirical"] = 0;
+    return model;
+}
+
+
+//================================================================================================//
+
+function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
+
+    protein_gtr.file_info = alignments.ReadNucleotideDataSet ("protein_gtr.msa",
+                                                              filename);
+
+    utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", "/dev/null");
+
+    ExecuteCommands ('protein_gtr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (protein_gtr.file_info [utility.getGlobalValue("terms.json.partitions")], protein_gtr.name_mapping)',
+                     {"0" : "Y"});
+
+    utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", None);
+    protein_gtr.filter_specification = alignments.DefineFiltersForPartitions (protein_gtr.partitions_and_trees,
+                                                                            "protein_gtr.msa" ,
+                                                                            "protein_gtr.filter.",
+                                                                            protein_gtr.file_info);
+
+    protein_gtr.rev_file_mle = {"global" : {}};
+
+    for (l1 = 0; l1 < 20; l1 += 1) {
+        for (l2 = l1 + 1; l2 < 20; l2 += 1) {
+            rate_term = terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2]);
+            (protein_gtr.rev_file_mle["global"]) [rate_term] =
+                {terms.MLE : (rates[rate_term])[terms.MLE] , "fix-me" : TRUE};
+        }
+    }
+
+
+    protein_gtr.rev_file_mle [terms.json.attribute.branch_length] = { "0" : branch_lengths };
+
+    //utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
+
+
+
+    protein_gtr.rev_file_mle = estimators.FitSingleModel_Ext (
+                                        utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']"), // value => value['name']
+                                        utility.Map (protein_gtr.partitions_and_trees, "_value_", "_value_['tree']"), // value => value['tree']
+                                        "protein_gtr.REV.ModelDescription",
+                                        protein_gtr.rev_file_mle,
+                                        // INITIAL VALUE DICT
+                                        None
+                                        // BRANCH LENGTH HANDLING OPTIONS
+                                   );
+
+    protein_gtr.rev_file_mle - "global"; // delete redundant keys
+
+    return protein_gtr.rev_file_mle;
+
+}

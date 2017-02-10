@@ -104,7 +104,7 @@ public:
         nInstances ++;
     }
 
-    virtual void     RemoveAReference (void)     {
+    virtual inline void     RemoveAReference (void)     {
         nInstances --;
     }
   
@@ -119,8 +119,7 @@ typedef BaseObj*  BaseRef;
 typedef BaseObj const * BaseRefConst;
 
 
-
-extern  void      DeleteObject (BaseRef); // delete a dynamic object
+bool      DeleteObject (BaseRef); // delete / decrease counter for a dynamic object
 
 
 #ifdef  __HYPHYDMALLOC__

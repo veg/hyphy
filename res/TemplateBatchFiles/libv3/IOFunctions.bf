@@ -61,11 +61,10 @@ lfunction io.PromptUserForString(prompt) {
 }
 
 /**
- * @name io.SpoolLF
- * @param lf_id
- * @param trunk_path
- * @param tag
- * @returns nothing
+ * @name io._reportMessageHelper
+ * @param analysis
+ * @param text
+ * @returns formatted message
  */
 lfunction io._reportMessageHelper(analysis, text) {
     if (Abs(analysis)) {

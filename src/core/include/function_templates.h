@@ -109,6 +109,16 @@ bool      ArrayAny (ARG_TYPE const* array, unsigned long dimension, LAMBDA&& con
   return false;
 }
 
+template <typename LAMBDA>
+bool      ListAny (_SimpleList& list, LAMBDA&& condition) {
+    for (unsigned long i = 0UL; i < list.lLength; i++) {
+        if (condition (list.lData[i],i)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 template <typename ARG_TYPE, typename LAMBDA>
 void      ArrayForEach (ARG_TYPE* array, unsigned long dimension, LAMBDA&& transform) {
   for (unsigned long i = 0UL; i < dimension; i++) {
@@ -169,6 +179,18 @@ const ARG_TYPE CombineDigits (ARG_TYPE const* digits, unsigned long places, unsi
 }
 
 template <typename ARG_TYPE>
+void DeleteAndZeroObject (ARG_TYPE& object) {
+    /**
+        Delete (or decrease ref count) of an object pointer
+        If the object was deleted, set the pointer to NULL
+    */
+    
+    DeleteObject (object);
+    object = NULL;
+    
+}
+
+template <typename ARG_TYPE>
 unsigned long DrawFromDiscrete (ARG_TYPE const * cdf, unsigned long dimension) {
   /** 
     assuming that cdf is an array of probabilities summing to 1,
@@ -186,3 +208,4 @@ unsigned long DrawFromDiscrete (ARG_TYPE const * cdf, unsigned long dimension) {
   
   return index;
 }
+

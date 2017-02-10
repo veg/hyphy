@@ -293,7 +293,7 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
  */
 lfunction alignments.serialize_site_filter (data_filter, site_index) {
     GetDataInfo (fi, ^data_filter, "PARAMETERS");
-    utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 9);
+    utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 6);
     utility.ToggleEnvVariable ("IS_TREE_PRESENT_IN_DATA", FALSE);
     DataSetFilter temp = CreateFilter (^data_filter,fi["ATOM_SIZE"],'' + site_index*fi["ATOM_SIZE"] + '-' + ((site_index+1)*fi["ATOM_SIZE"]-1),'',fi["EXCLUSIONS"]);
     Export (filter_string, temp);
