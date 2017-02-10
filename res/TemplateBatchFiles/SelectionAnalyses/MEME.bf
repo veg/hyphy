@@ -68,18 +68,14 @@ meme.terms.site_beta_plus = "Site relative non-synonymous rate (tested branches)
 meme.terms.site_mixture_weight = "Beta- category weight";
 meme.terms.site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
 
+// default cutoff for printing to screen
 meme.pvalue = 0.1;
-    /**
-        default cutoff for printing to screen
-    */
 
+// The dictionary of results to be written to JSON at the end of the run
 meme.json = {
     terms.json.fits: {},
     terms.json.timers: {},
 };
-    /**
-        The dictionary of results to be written to JSON at the end of the run
-    */
 
 selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
 meme.scaler_prefix = "MEME.scaler";
@@ -90,29 +86,24 @@ meme.table_headers = {{"&alpha;", "Synonymous substitution rate at a site"}
                      {"&beta;<sup>+</sup>", "Non-synonymous substitution rate at a site for the positive/neutral evolution component"}
                      {"p<sup>+</sup>", "Mixture distribution weight allocated to &beta;<sup>+</sup>; loosely -- the proportion of the tree evolving neutrally or under positive selection"}
                      {"LRT", "Likelihood ratio test statistic for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
-                     {"p-value", "Asymptotic p-value for for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
-                     {"#branches under selection", "The (very approximate and rough) estimate of how many branches may have been under selection at this site, i.e., had an empirical Bayes factor of 100 or more for the &beta;<sup>+</sup> rate"}
+                     {"p-value", "Asymptotic p-value for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
+                     {"# branches under selection", "The (very approximate and rough) estimate of how many branches may have been under selection at this site, i.e., had an empirical Bayes factor of 100 or more for the &beta;<sup>+</sup> rate"}
                      {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
+
+
 /**
-    This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
-    is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
-    the next set of variables.
+This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
+is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
+the next set of variables.
 */
-
-
-
 meme.table_screen_output  = {{"Codon", "Partition", "alpha", "beta+", "p+", "LRT", "Episodic selection detected?", "# branches"}};
 meme.table_output_options = {"header" : TRUE, "min-column-width" : 12, "align" : "center"};
+
 
 namespace meme {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("meme");
 }
-
-/**
-    TODO: Need to document what variables are available after call to load_file
-*/
-
 
 meme.partition_count = Abs (meme.filter_specification);
 meme.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",meme.pvalue,0,1,FALSE);

@@ -1,3 +1,27 @@
+/**
+ * Loads file information into a namespace specified by prefix
+ * Sets the following variables:
+ * * <prefix>.codon_data.mapping
+ * * <prefix>.codon_data.sites
+ * * <prefix>.codon_data.species
+ * * <prefix>.codon_data.unique_sites
+ * * <prefix>.codon_data_info
+ * * <prefix>.codon_filter.sequence_map
+ * * <prefix>.codon_filter.site_freqs
+ * * <prefix>.codon_filter.site_map
+ * * <prefix>.codon_filter.sites
+ * * <prefix>.codon_filter.species
+ * * <prefix>.filter_names
+ * * <prefix>.filter_specification
+ * * <prefix>.name_mapping
+ * * <prefix>.partition_count
+ * * <prefix>.partitions_and_trees
+ * * <prefix>.prefix
+ * * <prefix>.sample_size
+ * * <prefix>.selected_branches
+ * @param prefix {String} : The namespace to prefix all file information variables with
+ * @return nothing, the function sets variables within a namespace
+ */
 function load_file (prefix) {
 
     codon_data_info = alignments.PromptForGeneticCodeAndAlignment(prefix+".codon_data", prefix+".codon_filter");
