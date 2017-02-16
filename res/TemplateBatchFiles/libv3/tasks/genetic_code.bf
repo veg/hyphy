@@ -1,6 +1,8 @@
 LoadFunctionLibrary("libv3/convenience/matrix.bf");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
+/** @module genetic_code */
+
 genetic_code.hyphyAAOrdering        = "FLIMVSPTAYXHQNKDECWRG";
 genetic_code.alphabeticalAAOrdering = "ACDEFGHIKLMNPQRSTVWY";
 
@@ -31,8 +33,12 @@ genetic_code.singleAALetterToFullName = {
 genetic_code.stop_code = 10;
 
 
-/*----------------------------------------------------------------------------------------------------------*/
-
+/**
+ * genetic_code.DefineCodonToAAGivenCode
+ * @name genetic_code.DefineCodonToAAGivenCode
+ * @param {AssociativeList} code - the nucleotide to codon mapping
+ * @returns the amino acid map
+ */
 lfunction genetic_code.DefineCodonToAAGivenCode(code) {
 
     codonToAAMap = {};
@@ -134,8 +140,12 @@ lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
 
 }
 
-/*----------------------------------------------------------------------------------------------------------*/
-
+/**
+ * genetic_code.DefineCodonToAAMapping
+ * @name genetic_code.DefineCodonToAAMapping
+ * @param {AssociativeList} code - the nucleotide to codon mapping
+ * @returns returns ordered codon to amino acid map
+ */
 lfunction genetic_code.DefineCodonToAAMapping (code) {
     codonToAAMap = {};
     nucChars = "ACGT";
@@ -147,25 +157,30 @@ lfunction genetic_code.DefineCodonToAAMapping (code) {
     return codonToAAMap;
 }
 
-/*----------------------------------------------------------------------------------------------------------*/
 
-lfunction genetic_code.IsStop(codon, code)
-
-/*
-	given:
-		 codon (a number between 0 and 63 in AAA...TTT encoding)
-		 code (the genetic code)
-
-	returns
-		 whether or not the codon is a stop codon
-*/
-
-{
+/**
+ * genetic_code.IsStop
+ * @name genetic_code.IsStop
+ * @param {Number} codon (a number between 0 and 63 in AAA...TTT encoding) 
+ * @param {Number} code - the genetic code
+ * @returns whether or not the codon is a stop codon
+ */
+lfunction genetic_code.IsStop(codon, code) {
     return code[codon] == ^ "genetic_code.stop_code";
 }
 
-/*----------------------------------------------------------------------------------------------------------*/
-
+/**
+ * genetic_code.DefineIntegerToAAMapping
+ * @name genetic_code.DefineCodonToAAMapping
+ * @param {AssociativeList} code - the nucleotide to codon mapping
+ * @param {Boolean} only_sense - if true, do not include stop codons in mapping
+ * @returns returns an integer to AA map
+ * {
+ *   "0" : "K"
+ *   ..
+ *   "60" : "F"
+ * }
+ */
 lfunction genetic_code.DefineIntegerToAAMapping (code, only_sense) {
     codon_code_map = {};
 
@@ -187,21 +202,22 @@ lfunction genetic_code.DefineIntegerToAAMapping (code, only_sense) {
 
 /**
 * @name genetic_code.ComputePairwiseDifferencesAndExpectedSites
-Given a genetic code (`genCode`), computes a number of per-codon (or per pair of codons)
-quantities that relate to numbers of synonymous and non-synonymous sites or
-substitutions.
-
-`options` can be null, or have any of the following keys:
-
-    `weighting-matrix` is expected to be a set of 3 4x4 matrices showing relative frequencies of
-    various nucleotide->nucleotide substitutions stratified by codon position; by default they
-    are all equal
-
-    `count-stop-codons` treat mutations to stop codons as non-synonymous changes for counting purposes
-    (by the default they are not counted at all)
-
-Also see inline comments
-
+*
+* Given a genetic code (`genCode`), computes a number of per-codon (or per pair of codons)
+* quantities that relate to numbers of synonymous and non-synonymous sites or
+* substitutions.
+*
+* `options` can be null, or have any of the following keys:
+*
+*    `weighting-matrix` is expected to be a set of 3 4x4 matrices showing relative frequencies of
+*    various nucleotide->nucleotide substitutions stratified by codon position; by default they
+*    are all equal
+*
+*    `count-stop-codons` treat mutations to stop codons as non-synonymous changes for counting purposes
+*    (by the default they are not counted at all)
+*
+* Also see inline comments
+*
 */
 lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, options) {
 

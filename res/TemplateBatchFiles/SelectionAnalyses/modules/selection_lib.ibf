@@ -1,33 +1,37 @@
 /*------------------------------------------------------------------------------------*/
 
+/**
+ * creates branch substitution attributes and metrics
+ * @name selection.substitution_mapper
+ * @param {Matrix} matrix
+ * @param {AssociativeList} tree
+ * @param {AssociativeList} ambig_lookup
+ * @param {AssociativeList} pairwise_counts
+ * @param {AssociativeList} genetic_code
+ * @returns a dictionary with the following entries
+ *    "codon" : {
+ *        "each branch name" : {
+ *            "codon" :          { an array of strings; codon per site }
+ *         }
+ *     },
+ *    "amino-acid" : {
+ *        "each branch name" : {
+ *            { an array of strings; amino-acid per site }
+ *         }
+ *     },
+ *    "synonymous substitution count" : {
+ *        "each branch name" : {
+ *            { an array of floats: for each site, # of synonymous substitutions at this branch/site; by convention set to 0 at the root node }
+ *         }
+ *     },
+ *    "non-synonymous substitution count" : {
+ *        "each branch name" : {
+ *            { an array of floats: for each site, # of non-synonymous substitutions at this branch/site; by convention set to 0 at the root node }
+ *         }
+ *     }
+ *
+ */
 lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_counts, code_to_codon, genetic_code) {
-
-    /*
-        Return a dictionary with the following entries
-
-
-            "codon" : {
-                "each branch name" : {
-                    "codon" :          { an array of strings; codon per site }
-                 }
-             },
-            "amino-acid" : {
-                "each branch name" : {
-                    { an array of strings; amino-acid per site }
-                 }
-             },
-            "synonymous substitution count" : {
-                "each branch name" : {
-                    { an array of floats: for each site, # of synonymous substitutions at this branch/site; by convention set to 0 at the root node }
-                 }
-             },
-            "non-synonymous substitution count" : {
-                "each branch name" : {
-                    { an array of floats: for each site, # of non-synonymous substitutions at this branch/site; by convention set to 0 at the root node }
-                 }
-             }
-
-    */
 
     site_count   = Columns (matrix);
     branch_count = Rows (matrix);

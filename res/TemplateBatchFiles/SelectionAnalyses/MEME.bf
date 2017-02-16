@@ -474,6 +474,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
 	branch_ebf       = {};
 	branch_posterior = {};
+
 	if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" > 0) {
 
 		LFCompute (^lf_bsrel,LF_START_COMPUTE);
