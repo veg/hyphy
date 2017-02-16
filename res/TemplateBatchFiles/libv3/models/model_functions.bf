@@ -202,17 +202,17 @@ function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filte
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
 	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
 
+    // for mixture models this will define the mixture components as well
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model ["defineQ"], model.generic.DefineModel.model, id);
-	    // for mixture models this will define the mixture components as well
 
 	if (estimator_type != None) {
 		model.generic.DefineModel.model ["frequency-estimator"] = estimator_type;
 	}
 
-
+    // this sets the EFV field
  	Call (model.generic.DefineModel.model ["frequency-estimator"], model.generic.DefineModel.model,
 													    id,
-													    data_filter); // this sets the EFV field
+													    data_filter); 
 
 	model.generic.DefineModel.model ["matrix-id"] = {};
 

@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------------*/
 
-lfunction selection.substituton_mapper (matrix, tree, ambig_lookup, pairwise_counts, code_to_codon, genetic_code) {
+lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_counts, code_to_codon, genetic_code) {
 
     /*
         Return a dictionary with the following entries

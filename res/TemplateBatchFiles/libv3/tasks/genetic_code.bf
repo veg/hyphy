@@ -186,6 +186,7 @@ lfunction genetic_code.DefineIntegerToAAMapping (code, only_sense) {
 }
 
 /**
+* @name genetic_code.ComputePairwiseDifferencesAndExpectedSites
 Given a genetic code (`genCode`), computes a number of per-codon (or per pair of codons)
 quantities that relate to numbers of synonymous and non-synonymous sites or
 substitutions.

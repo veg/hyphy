@@ -1,4 +1,5 @@
 RequireVersion("2.3");
+OPTIMIZATION_TIME_HARD_LIMIT=1;
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -125,6 +126,7 @@ namespace meme {
 
 estimators.fixSubsetOfEstimates(meme.gtr_results, meme.gtr_results["global"]);
 
+// Step 1 - Fit to MG94xREV
 namespace meme {
     doPartitionedMG ("meme", FALSE);
 }
@@ -184,8 +186,6 @@ meme.site.bsrel =  model.generic.DefineMixtureModel("models.codon.BS_REL_Per_Bra
         meme.filter_names,
         None);
         
-
-
 meme.beta1  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.nonsynonymous_rate,1));
 meme.beta2  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.nonsynonymous_rate,2));
 meme.branch_mixture = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.mixture_aux_weight,1));
@@ -201,12 +201,17 @@ meme.site_model_mapping = {
 selection.io.startTimer (meme.json [terms.json.timers], "MEME analysis", 2);
 
 
+// TODO : Why aren't these initially set when the model is first declared?
+
+// FEL parameter declarations
 model.generic.AddGlobal (meme.site.background_fel, "meme.site_alpha", meme.terms.site_alpha);
 parameters.DeclareGlobal ("meme.site_alpha", {});
 
 model.generic.AddGlobal (meme.site.background_fel, "meme.site_beta_nuisance", meme.terms.site_beta_nuisance);
 parameters.DeclareGlobal ("meme.site_beta_nuisance", {});
 
+
+// BSREL mixture model parameter declarations
 model.generic.AddGlobal (meme.site.bsrel, "meme.site_alpha", meme.terms.site_alpha);
 model.generic.AddGlobal (meme.site.bsrel, "meme.site_omega_minus", meme.terms.site_omega_minus);
 parameters.DeclareGlobal ("meme.site_omega_minus", {});
@@ -223,8 +228,7 @@ model.generic.AddGlobal  (meme.site.bsrel, "meme.site_mixture_weight", meme.term
 parameters.DeclareGlobal ("meme.site_mixture_weight", {});
 parameters.SetRange ("meme.site_mixture_weight", terms.range01);
 
-
-meme.report.count       = {{0}};
+meme.report.count = {{0}};
 
 meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.partition])["coverage"])[meme.report.site]),
                                     meme.report.partition + 1,
@@ -235,9 +239,6 @@ meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.pa
                                     "Yes, p = " + Format(meme.report.row[6],7,4),
                                     Format(meme.report.row[7],0,0)
 }};
-
-
-
 
 meme.site_results = {};
 
@@ -425,7 +426,7 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 }
 
 //----------------------------------------------------------------------------------------
- lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
+lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
 
     GetString   (lfInfo, ^lf_fel,-1);
     
@@ -456,13 +457,13 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
  	}
     
 	Optimize (results, ^lf_bsrel);
+
     alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
     alternative [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
 	
-
 	ancestral_info = ancestral.build (lf_bsrel,0,FALSE);
 
-	branch_attributes = selection.substituton_mapper (ancestral_info ["MATRIX"], 
+	branch_attributes = selection.substitution_mapper (ancestral_info ["MATRIX"], 
 													  ancestral_info ["TREE_AVL"], 
 													  ancestral_info ["AMBIGS"], 
 													  ^"meme.pairwise_counts",

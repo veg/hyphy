@@ -151,7 +151,6 @@ selection.io.stopTimer (fel.json [terms.json.timers], "Model fitting");
 
 // define the site-level likelihood function
 
-
 fel.site.mg_rev = model.generic.DefineModel("models.codon.MG_REV.ModelDescription",
         "fel_mg", {
             "0": parameters.Quote(terms.local),
@@ -221,7 +220,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     /*
     Export (lfs, ^lf);
     fprintf (MESSAGE_LOG, lfs);
-
     assert (0);
     */
 

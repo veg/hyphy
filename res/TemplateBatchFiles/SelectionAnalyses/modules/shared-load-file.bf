@@ -19,6 +19,7 @@
  * * <prefix>.prefix
  * * <prefix>.sample_size
  * * <prefix>.selected_branches
+ * * <prefix>.trees
  * @param prefix {String} : The namespace to prefix all file information variables with
  * @return nothing, the function sets variables within a namespace
  */
@@ -179,18 +180,23 @@ function doGTR (prefix) {
 
 }
 
+/**
+ * @name doPartitionMG
+ * Can only be used after including shared-load-file
+ * @return
+ */
 function doPartitionedMG (prefix, keep_lf) {
     io.ReportProgressMessageMD ("`prefix`", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
 
 
-    scaler_variables = utility.PopulateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
-
-    utility.ForEach (scaler_variables, "_value_", "parameters.DeclareGlobal(_value_, None);parameters.SetValue(_value_, 3);");
-    /** the previous two lines declare per-partition branch length scalers
+    /** 
+        Declare per-partition branch length scalers
         slac.scaler_prefix_0
         slac.scaler_prefix_1
         etc
     */
+    scaler_variables = utility.PopulateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
+    utility.ForEach (scaler_variables, "_value_", "parameters.DeclareGlobal(_value_, None);parameters.SetValue(_value_, 3);");
 
 
     partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info ["code"], {
