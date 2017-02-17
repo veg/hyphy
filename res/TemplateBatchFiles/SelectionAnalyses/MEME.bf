@@ -1,5 +1,4 @@
 RequireVersion("2.3");
-OPTIMIZATION_TIME_HARD_LIMIT=1;
 
 /*------------------------------------------------------------------------------
     Load library files
