@@ -89,9 +89,9 @@ lfunction rate_variation_define_gdd(options, namespace) {
 
 	parameters.DeclareGlobalWithRanges (weights, 1/categories, 0, 1);
 	parameters.DeclareGlobal (rates, {});
-	console.log (rates);
-	utility.ForEach ({1,categories}["_MATRIX_ELEMENT_COLUMN_"], "_index_", '^(`&rates`[_index_])=_index_+1');
-	console.log (rates);
+	//console.log (rates);
+	//utility.ForEach ({1,categories}["_MATRIX_ELEMENT_COLUMN_"], "_index_", '^(`&rates`[_index_])=_index_+1');
+	//console.log (rates);
 	if (utility.Has (options, ^"terms.initial_values", "String")) {
 		if (options[^"terms.initial_values"] == "Randomize") {
 			utility.ForEachPair (rates, "_key_", "_value_", '^_key_ = Random (0,1)');
