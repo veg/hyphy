@@ -47,6 +47,12 @@ lfunction genetic_code.DefineCodonToAAGivenCode(code) {
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+function genetic_code.CountSense(code) {
+    return + code["_MATRIX_ELEMENT_VALUE_!=genetic_code.stop_code"];
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 lfunction genetic_code.ComputeCodonCodeToStringMap(genCode) {
     _codonMap = {};
     _nucLetters = "ACGT";

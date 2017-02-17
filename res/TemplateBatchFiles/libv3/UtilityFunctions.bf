@@ -71,7 +71,7 @@ function utility.IsFunction (id) {
 			return Type (__funcInfo["ID"]) == "String" && Type (__funcInfo["Arguments"]) == "Matrix" && Type (__funcInfo["Body"]) == "String";
 		}
 	}
-	return 0;
+	return FALSE;
 }
 
 function utility.getGlobalValue (val) {

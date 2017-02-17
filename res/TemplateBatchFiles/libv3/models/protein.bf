@@ -33,7 +33,18 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 	__rate_matrix = {20,20};
 	__rate_matrix [0][0] = "";
 
+	__rate_variation = model.generic.get_rate_variation (modelSpec);
+
 	__global_cache = {};
+
+	if (None != __rate_variation) {
+
+		__rp = Call (__rate_variation["distribution"], __rate_variation["options"], namespace);
+		__rate_variation ["id"] = (__rp[terms.category])["id"];
+				
+		parameters.DeclareCategory   (__rp[terms.category]);
+        parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+	} 
 
 	for (_rowChar = 0; _rowChar < 20; _rowChar +=1 ){
 		for (_colChar = _rowChar + 1; _colChar < 20; _colChar += 1) {
@@ -42,6 +53,15 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 															 namespace,
 															__modelType);
 
+
+		 	if (None != __rate_variation) {
+				__rp = Call (__rate_variation["rate_modifier"], 
+							 __rp,
+							 __alphabet[_rowChar],
+							 __alphabet[_colChar],
+							 namespace,
+							 __rate_variation ["id"]);
+ 			}
 
             if (Abs (__rp[terms.rate_entry])) {
                 parameters.DeclareGlobal (__rp[terms.global], __global_cache);

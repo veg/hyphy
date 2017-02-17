@@ -1,5 +1,7 @@
 terms.local = "local";
 terms.global = "global";
+terms.category = "category";
+
 terms.rate_entry = "rate-entry";
 terms.default_time = "t";
 
@@ -39,6 +41,7 @@ terms.synonymous_rate = "synonymous rate";
 terms.nonsynonymous_rate = "non-synonymous rate";
 terms.omega_ratio = "non-synonymous/synonymous rate ratio";
 
+terms.rate_variation = "Rate variation";
 terms.rate_variation.bins = "Rate variation bins";
 terms.rate_variation.gamma_alpha = "Shape parameter for the gamma distribution (alpha)";
 terms.rate_variation.gamma_beta = "Shape parameter for the gamma distribution (beta)";
@@ -57,6 +60,8 @@ terms.mixture_components      = "mixture components";
 
 terms.mixture_weight = "Mixture weight";
 terms.mixture_aux_weight = "Mixture auxiliary weight";
+
+terms.initial_values = "Initial values";
 
 
 function terms.nucleotideRate(fromC, toC) {
