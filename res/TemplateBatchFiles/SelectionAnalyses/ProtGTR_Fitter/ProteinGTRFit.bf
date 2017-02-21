@@ -1,32 +1,21 @@
 RequireVersion("2.31");
 
-// namespace 'utility' for convenience functions
-LoadFunctionLibrary("libv3/UtilityFunctions.bf");
-
-// namespace 'alignments' for alignment-related functions
-LoadFunctionLibrary("libv3/tasks/alignments.bf");
-
-// namespace 'trees' for trees-related functions
-LoadFunctionLibrary("libv3/tasks/trees.bf");
-
-// namespace 'io' for interactive/datamonkey i/o functions
-LoadFunctionLibrary("libv3/IOFunctions.bf");
-
-// namespace 'estimators' for various estimator related functions
-LoadFunctionLibrary("libv3/tasks/estimators.bf");
-
-// namespace 'ancestral' for ancestral reconstruction functions
-LoadFunctionLibrary("libv3/tasks/ancestral.bf");
-
-// namespace 'stats' for various descriptive stats functions
-LoadFunctionLibrary("libv3/stats.bf");
-
-LoadFunctionLibrary("libv3/models/protein/empirical.bf");
-LoadFunctionLibrary("libv3/models/protein/REV.bf");
-
+LoadFunctionLibrary("libv3/UtilityFunctions.bf"); // namespace 'utility' for convenience functions
+LoadFunctionLibrary("libv3/tasks/alignments.bf"); // namespace 'alignments' for alignment-related functions
+LoadFunctionLibrary("libv3/tasks/trees.bf"); // namespace 'trees' for trees-related functions
+LoadFunctionLibrary("libv3/IOFunctions.bf"); // namespace 'io' for interactive/datamonkey i/o functions
+LoadFunctionLibrary("libv3/tasks/estimators.bf"); // namespace 'estimators' for various estimator related functions
+LoadFunctionLibrary("libv3/tasks/ancestral.bf"); // namespace 'ancestral' for ancestral reconstruction functions
+LoadFunctionLibrary("libv3/stats.bf"); // namespace 'stats' for various descriptive stats functions
 LoadFunctionLibrary("libv3/terms-json.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
+
+LoadFunctionLibrary("libv3/models/rate_variation.bf"); // rate variation
+
+// Protein models
+LoadFunctionLibrary("libv3/models/protein/empirical.bf");
+LoadFunctionLibrary("libv3/models/protein/REV.bf");
 
 LoadFunctionLibrary("ProteinGTRFit_helper.ibf"); // Moved all functions from this file into loaded file, for clarity.
 /*------------------------------------------------------------------------------*/
@@ -47,14 +36,14 @@ io.DisplayAnalysisBanner({
 // TO DO: Incorporate rate heterogeneity for branch length fits.
 
 
-
+// TO DO: Prompt users if they would like to load the cache file or not
 SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
 fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
 
 
 // To store a prior run, and load as needed
 protein_gtr.cache_file = utility.getGlobalValue("LAST_FILE_PATH") + ".cache";
-protein_gtr.analysis_results = io.LoadCacheFromFile (protein_gtr.cache_file); // either loaded or an empty dictionary
+protein_gtr.analysis_results = {};//io.LoadCacheFromFile (protein_gtr.cache_file); // either loaded or an empty dictionary
 protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
 protein_gtr.file_list_count = Abs (protein_gtr.file_list);
 
@@ -67,7 +56,7 @@ protein_gtr.scores = {};
 protein_gtr.phase_key = "WAG-Phase0";
 
 /*************************** STEP ONE ***************************
-Perform an initial fit of WAG to the data (or load cached fit.) 
+Perform an initial fit of WAG+4G to the data (or load cached fit.) 
 *****************************************************************/
 for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) {
 
@@ -83,13 +72,19 @@ for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) 
     } else {
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                                     "Dispatching file '" + cached_file);
-
+        // Constant
+        /*
         mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitWAGtoFile", {"0" : protein_gtr.file_list[file_index]},
                                                             "protein_gtr.handle_wag_callback");
+        */
+        
+        // Four category Gamma
+         mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitWAGwithGammatoFile", {"0" : protein_gtr.file_list[file_index]},
+                                                            "protein_gtr.handle_wag_callback");
+       
     }
 }
 mpi.QueueComplete (protein_gtr.queue);
-
 
 // Sum of the logL from fitted WAG model across each data set
 protein_gtr.run_gtr_iteration_branch_lengths.logL = math.Sum (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_key"), "_value_", "(_value_[protein_gtr.phase_key])['LogL']"));
