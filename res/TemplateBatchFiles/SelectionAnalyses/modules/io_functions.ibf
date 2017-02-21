@@ -64,7 +64,13 @@ lfunction selection.io.defineBranchSets(partition_info) {
                 }
             }
 
-            utility.ForEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_&&1] = ^'terms.json.attribute.background';}");
+            utility.ForEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "
+            	if (`&tag` == _value_ || `&tag` == None) {
+            		`&tree_configuration`[_key_] = ^'terms.json.attribute.test';} 
+            	else {
+            		`&tree_configuration`[_key_] = ^'terms.json.attribute.background';
+            	}
+            ");
 
         } else {
             tag = SELECTION_STRINGS;

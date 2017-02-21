@@ -108,13 +108,8 @@ long_max = (_Parameter)LONG_MAX;
  
 //Used in formula, and constant
 
-#ifndef  __HYALTIVEC__
 _Parameter  machineEps = 2.*DBL_EPSILON,
-tolerance  = DBL_EPSILON;
-#else
-_Parameter  machineEps = 1e-7,
-tolerance  = FLT_EPSILON;
-#endif
+            tolerance  = DBL_EPSILON;
 
 //Used in formula
 _String         intPrecFact ("INTEGRATION_PRECISION_FACTOR"),
@@ -286,7 +281,7 @@ _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long ob
     _Variable * v = FetchVar (idx);
     if (v) {
         if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
-            return v->GetValue();
+            return v->Compute ();
         }
         if (command_id >= 0 || errMsg) {
             if (command_id >= 0) {

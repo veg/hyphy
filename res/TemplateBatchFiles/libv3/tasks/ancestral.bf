@@ -218,6 +218,8 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     };
 }
 
+
+
 /**
  * Prepare a substitution matrix for use by BGM
  * @name ancestral.ComputeSubstitutionCounts
@@ -246,6 +248,8 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         S = number of sites passing filter
 
  */
+ 
+ 
 
 /*******************************************/
 

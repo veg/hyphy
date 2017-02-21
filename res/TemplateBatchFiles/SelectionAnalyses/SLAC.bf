@@ -18,6 +18,7 @@ LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
+LoadFunctionLibrary("modules/selection_lib.ibf");
 
 /*------------------------------------------------------------------------------
     Display analysis information
@@ -244,7 +245,7 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
         }
     }
 
-    slac.branch_attributes = slac.substituton_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
+    slac.branch_attributes = selection.substituton_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
 
     selection.io.json_store_branch_attribute(slac.json, "original name", terms.json.attribute.node_label, 0,
                                              slac.i,
@@ -436,101 +437,7 @@ function slac._extract_vector (to, from, key, row, column) {
     return to ["(((from[_MATRIX_ELEMENT_ROW_])[\"by-site\"])[key])[row][column]"]%0;
 }
 
-/*------------------------------------------------------------------------------------*/
 
-lfunction slac.substituton_mapper (matrix, tree, ambig_lookup, pairwise_counts, code_to_codon, genetic_code) {
-
-    /*
-        Return a dictionary with the following entries
-
-
-            "codon" : {
-                "each branch name" : {
-                    "codon" :          { an array of strings; codon per site }
-                 }
-             },
-            "amino-acid" : {
-                "each branch name" : {
-                    { an array of strings; amino-acid per site }
-                 }
-             },
-            "synonymous substitution count" : {
-                "each branch name" : {
-                    { an array of floats: for each site, # of synonymous substitutions at this branch/site; by convention set to 0 at the root node }
-                 }
-             },
-            "non-synonymous substitution count" : {
-                "each branch name" : {
-                    { an array of floats: for each site, # of non-synonymous substitutions at this branch/site; by convention set to 0 at the root node }
-                 }
-             }
-
-    */
-
-    site_count   = Columns (matrix);
-    branch_count = Rows (matrix);
-    aa_mapping   = genetic_code.DefineCodonToAAMapping (genetic_code);
-    integer_mapping = genetic_code.DefineIntegerToAAMapping (genetic_code, TRUE);
-
-    result      = {"codon" : {},
-                   "amino-acid" : {},
-                   "synonymous substitution count" : {},
-                   "non-synonymous substitution count" : {}};
-
-    code_lookup = {"-1" : "-"};
-
-    for (b = 0; b < branch_count; b += 1) {
-
-        bname  = (tree[b+1])["Name"];
-        parent = (tree[b+1])["Parent"] - 1;
-
-        branch_info = {"codon" : {1, site_count},
-                       "amino-acid" : {1, site_count},
-                       "synonymous substitution count" : {1, site_count},
-                       "non-synonymous substitution count" : {1, site_count}};
-
-
-        for (s = 0; s < site_count; s += 1) {
-            code        = matrix[b][s];
-            parent_code = matrix[parent][s];
-
-            (branch_info["codon"])[s] = code_to_codon[code];
-
-            if (Type(code_lookup [code]) != "String") {
-                if (code >= 0) {
-                    code_lookup [code] = aa_mapping [code_to_codon[code]];
-
-                } else {
-                    collect_residues = {};
-                    utility.ForEach ( ambig_lookup[-code-2], "_for_each_", "`&collect_residues`[`&integer_mapping`[_for_each_]] = 1");
-                    code_lookup [code] = Join ("", utility.Keys (collect_residues));
-                }
-            }
-
-            if (code >= 0) {
-                (branch_info["synonymous substitution count"]) [s]     = (pairwise_counts["OPS"])[parent_code][code];
-                (branch_info["non-synonymous substitution count"]) [s] = (pairwise_counts["OPN"])[parent_code][code];
-            } else {
-                if (code != -1) {
-                    resolution = (ambig_lookup[-code-2])$(ambig_lookup[-code-2])["_MATRIX_ELEMENT_ROW_"];
-                    resolution = resolution[resolution];
-                    (branch_info["synonymous substitution count"]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPS\"])[`&parent_code`][_mapper_]");
-                    (branch_info["non-synonymous substitution count"]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPN\"])[`&parent_code`][_mapper_]");
-                }
-
-            }
-
-            (branch_info["amino-acid"])[s] = code_lookup[code];
-        }
-
-        utility.ForEach (utility.Keys (branch_info), "slac.substituton_mapper.key",
-                         "(`&result`[slac.substituton_mapper.key])[`&bname`] = `&branch_info`[slac.substituton_mapper.key]");
-
-     }
-
-    return result;
-
-}
 
 /*------------------------------------------------------------------------------------*/
 

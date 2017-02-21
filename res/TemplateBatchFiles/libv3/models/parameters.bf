@@ -80,6 +80,71 @@ function parameters.DeclareGlobal(id, cache) {
 }
 
 /**
+ * @name parameters.DeclareGlobalWithRanges
+ * @param {String} id variable id
+ * @param {Number} init initial value (could be None)
+ * @param {Number} lb lower bound (could be None)
+ * @param {Number} ub upper bound (could be None)
+ * @returns nothing
+ */
+function parameters.DeclareGlobalWithRanges(id, init, lb, ub) {
+	if (Type (id) == "String") {
+		if (None != init) {
+    		ExecuteCommands("global `id` = " + init);
+    	} else {
+    		ExecuteCommands("global `id`; ");    	
+    	}
+    	
+    	if (None != lb) {
+    		ExecuteCommands ("`id` :> " + lb);
+    	}	
+    	if (None != ub) {
+    		ExecuteCommands ("`id` :< " + ub);
+    	}	
+    } else {
+        if (Type(id) == "AssociativeList") {
+            parameters.DeclareGlobalWithRanges.var_count = Abs(id);
+            parameters.DeclareGlobalWithRanges.names = Columns(id);
+            for (parameters.DeclareGlobalWithRanges.k = 0; parameters.DeclareGlobalWithRanges.k < parameters.DeclareGlobalWithRanges.var_count; parameters.DeclareGlobalWithRanges.k += 1) {
+                parameters.DeclareGlobalWithRanges(parameters.DeclareGlobalWithRanges.names[parameters.DeclareGlobalWithRanges.k], init, lb, ub);
+            }
+        } else {
+            if (Type(id) == "Matrix") {
+                parameters.DeclareGlobalWithRanges.var_count = Columns(id) * Rows(id);
+                for (parameters.DeclareGlobalWithRanges.k = 0; parameters.DeclareGlobalWithRanges.k < parameters.DeclareGlobalWithRanges.var_count; parameters.DeclareGlobalWithRanges.k += 1) {
+                    parameters.DeclareGlobalWithRanges(id[parameters.DeclareGlobalWithRanges.k], init, lb, ub);
+                }
+            }
+        }
+    }
+}
+
+function parameters.DeclareCategory.helper (dict, key, default) {
+	if (dict / key) {
+		return dict[key];
+	}
+	return default;
+}
+
+/**
+ * @name parameters.DeclareCategory
+ * @param {Dict} def category definition components
+ */
+function parameters.DeclareCategory (def) {
+	 
+	 
+	 
+	 ExecuteCommands ("category " + def['id'] + "= (" + 
+	 			  Join (",", 
+	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"}, 
+	 			  						  "_value_",
+	 			  						  'parameters.DeclareCategory.helper(def["category parameters"], _value_, "")')
+	 			  		) + ");");
+	 
+}
+
+
+/**
  * @name parameters.NormalizeRatio
  * @param {Number} n
  * @param {Number} d
@@ -216,15 +281,15 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
-function parameters.GenerateSequentialNames(prefix, count, delimiter) {
+lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
     if (delimiter == None) {
         delimiter = "_";
     }
-    parameters.generate_names.holder = {};
-    for (parameters.generate_names.k = 0; parameters.generate_names.k < count; parameters.generate_names.k += 1) {
-        parameters.generate_names.holder + (prefix + delimiter + parameters.generate_names.k);
+    holder = {};
+    for (k = 0; k < count; k += 1) {
+        holder + (prefix + delimiter + k);
     }
-    return parameters.generate_names.holder;
+    return holder;
 }
 
 /**
@@ -363,6 +428,11 @@ function parameters.helper.copy_definitions(target, source) {
             target[parameters.helper.copy_definitions.key] * source[parameters.helper.copy_definitions.key];
         }
     }
+    
+    if (utility.Has (source, terms.category, "AssociativeList")) {
+    	utility.EnsureKey (target, terms.category);
+    	(target[terms.category])[(source[terms.category])["id"]] = (source[terms.category])["description"];
+    }
 }
 
 /**
@@ -475,3 +545,24 @@ lfunction parameters.ExportParameterDefinition (id) {
     GetString (parameter_definition, ^id, -3);
     return parameter_definition;
 }
+
+/**
+ * Copy local parameters from a node to 'template' variables
+ * @name parameters.SetLocalModelParameters
+ * @param {Dict} model - model description
+ * @param {String} tree id
+ * @param {String} node id
+ 
+ * e.g. 
+ * 		set alpha = Tree.Node.alpha
+ * 		set beta  = Tree.Node.beta
+ */
+
+lfunction parameters.SetLocalModelParameters (model, tree, node) {
+	node_name = tree + "." + node + ".";
+    utility.ForEach ((model["parameters"])[^'terms.local'], "_parameter_", '
+    	^_parameter_ = ^(`&node_name` + _parameter_);
+    ');
+    
+}
+

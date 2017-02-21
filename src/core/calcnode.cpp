@@ -50,8 +50,6 @@
 #include "likefunc.h"
 #include "float.h"
 
-//#ifndef     __ALTIVEC__
-//#define     ALMOST_ZERO  1e-305
 
 //#define _UBER_VERBOSE_MX_UPDATE_DUMP
 #define _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL 1
@@ -227,8 +225,7 @@ _String const&  getINodePrefix (void) {
 
 //_______________________________________________________________________________________________
 
-_CalcNode::_CalcNode    ()
-{
+_CalcNode::_CalcNode    () {
     theProbs = nil;    // default constructor, doesn't do much
     compExp = nil;
     matrixCache = nil;
@@ -254,8 +251,7 @@ _CalcNode::_CalcNode    (_CalcNode* sourceNode, _VariableContainer* theP):_Varia
 }
 
 //_______________________________________________________________________________________________
-void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* theP, _AVLListXL* aCache)
-{
+void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* theP, _AVLListXL* aCache) {
     if (theIndex < 0) return;
     
     cBase         = 0;
@@ -382,8 +378,7 @@ void    _CalcNode::SetModel (long modelID, _AVLListXL* varCache)
 
 //_______________________________________________________________________________________________
 
-long      _CalcNode::SetDependance (long varIndex)
-{
+long      _CalcNode::SetDependance (long varIndex) {
     varIndex = _VariableContainer::SetDependance (varIndex);
     if (varIndex >= 0) {
         _SimpleList checkVars;
@@ -394,7 +389,14 @@ long      _CalcNode::SetDependance (long varIndex)
             if (LocateVar(checkVars.lData[k])->IsCategory() &&(categoryVariables >> checkVars.lData[k])) {
                 categoryIndexVars<<-1;
             }
-
+        
+        // also clear out category variables
+        if (compExp) {
+            DeleteAndZeroObject(compExp);
+        } else {
+            if (matrixCache) {
+            }
+        }
     }
     return varIndex;
 }
@@ -405,17 +407,10 @@ void    _CalcNode::SetCodeBase (int codeBase)
 {
     if (codeBase>0) {
         if ((codeBase != cBase)||!theProbs) {
-#ifndef __HYALTIVEC__
             if (theProbs) {
                 delete theProbs;
             }
             theProbs = new _Parameter [codeBase];
-#else
-            if (theProbs) {
-                vec_free(theProbs);
-            }
-            theProbs = (_Parameter*)VecMemAllocate(codeBase*sizeof(_Parameter));
-#endif
             cBase = codeBase;
             theProbs[0]=1.0;
         } else {
@@ -468,12 +463,11 @@ void _CalcNode::RemoveModel (void)
 {
   
     if (compExp && referenceNode < 0) {
-        DeleteObject (compExp);
+        DeleteAndZeroObject(compExp);
         compExp = nil;
     }
   
     if (matrixCache) {
-      
     }
 
     categoryVariables.Clear();
@@ -651,10 +645,11 @@ bool        _CalcNode::HasChanged(bool)
     if (_VariableContainer::HasChanged()) {
         return true;
     }
-    for (long i = 0; i<categoryVariables.lLength; i++)
+    for (unsigned long i = 0UL; i<categoryVariables.lLength; i++) {
         if (LocateVar (categoryVariables.lData[i])->HasChanged()) {
             return true;
         }
+    }
     return false;
 }
 
@@ -991,16 +986,17 @@ _Matrix*    _CalcNode::GetCompExp       (long catID, bool doClear) const
     if (catID==-1) {
         return compExp;
     } else {
+        
         if (remapMyCategories.lLength) {
             catID = remapMyCategories.lData[catID * (categoryVariables.lLength+1)];
         }
-      //if (matrixCache)
-      //    printf ("%d %d %d\n", remapMyCategories[0*catID * (categoryVariables.lLength+1)], remapMyCategories[catID * (categoryVariables.lLength+1)], remapMyCategories[2*catID * (categoryVariables.lLength+1)]);
+        
         _Matrix* ret = matrixCache?matrixCache[catID]:compExp;
-      if (doClear && matrixCache) {
-        matrixCache[catID] = nil;
-      }
-      return ret;
+
+        if (doClear && matrixCache) {
+            matrixCache[catID] = nil;
+        }
+        return ret;
     }
 }
 
@@ -3634,7 +3630,7 @@ const _String&  _TheTree::CompareSubTrees (_TheTree* compareTo, node<long>* topN
             iterator = ni.Next ();
             while (iterator != theRoot) {
                 if (tCount==0) {
-                    rerootAt = _String("Matched at the ") & *LocateVar (iterator->in_object)->GetName() & '.';
+                    rerootAt = _String("Matched at the ") & *map_node_to_calcnode (iterator)->GetName() & '.';
                     break;
                 } else {
                     tCount --;
@@ -5944,7 +5940,7 @@ void _TheTree::SetUpMatrices (long categCount) {
         if (categoryCount==1L) {
             iterator->matrixCache = nil;
         } else {
-            iterator->matrixCache = (_Matrix**)MemAllocate (categoryCount*sizeof(_Matrix*));
+            iterator->matrixCache = new _Matrix* [categoryCount];
             InitializeArray (iterator->matrixCache, categCount, (_Matrix*)nil);
         }
     }
@@ -5991,7 +5987,7 @@ void _TheTree::CleanUpMatrices (void) {
                     DeleteObject(iterator->matrixCache[i]);
                 }
 
-            free (iterator->matrixCache);
+            delete [] iterator->matrixCache;
             iterator->matrixCache = nil;
             iterator->compExp = nil;
             iterator->varFlags &= HY_VC_CLR_NO_CHECK;
@@ -7333,7 +7329,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
     char compRes;
     
     if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo, true))>0) {
-      rerootAt = "Equal w/o rerooting.";
+      rerootAt = eqWithoutReroot;
     } else {
       long   tCount = 0;
       
@@ -7361,7 +7357,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
         iterator = ni.Next();
         while (iterator!=theRoot) {
           if (tCount==1) {
-            rerootAt = _String("Equal with reroot at ") & *LocateVar (iterator->in_object)->GetName() & '.';
+            rerootAt = eqWithReroot & map_node_to_calcnode (iterator)->GetName() & '.';
             break;
           } else {
             tCount --;

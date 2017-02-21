@@ -1,0 +1,5 @@
+tests/hbltests/libv3/data/protgtr_fitter_alignments/prot1.dat
+tests/hbltests/libv3/data/protgtr_fitter_alignments/prot2.dat
+tests/hbltests/libv3/data/protgtr_fitter_alignments/prot3.dat
+tests/hbltests/libv3/data/protgtr_fitter_alignments/prot4.dat
+tests/hbltests/libv3/data/protgtr_fitter_alignments/prot5.dat

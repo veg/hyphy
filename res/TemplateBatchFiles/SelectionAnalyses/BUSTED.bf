@@ -21,6 +21,8 @@ LoadFunctionLibrary("libv3/models/codon.bf");
 
 LoadFunctionLibrary("libv3/tasks/trees.bf");
 
+LoadFunctionLibrary("libv3/tasks/genetic_code.bf");
+
 
 io.DisplayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistical test of episodic diversification)
                             uses a random effects branch-site model fitted jointly to all or a subset of tree branches
@@ -45,6 +47,8 @@ io.DisplayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistica
 ------------------------------------------------------------------------------*/
 
 
+skipCodeSelectionStep = TRUE;
+LoadFunctionLibrary ("chooseGeneticCode"); 
 
 LoadFunctionLibrary("BranchSiteTemplate");
 
@@ -76,6 +80,7 @@ io.ReportProgressMessageMD ("BUSTED", "Data", "Loaded an MSA with " + codon_data
 codon_lists = models.codon.MapCode (codon_data_info["code"]);
 
 _Genetic_Code = codon_data_info["code"];
+
 
 
 codon_frequencies     = frequencies._aux.CF3x4(frequencies._aux.empirical.collect_data ("codon_filter",3,1,1),

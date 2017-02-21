@@ -1,4 +1,4 @@
-LoadFunctionLibrary ("chooseGeneticCode", {"0" : "Universal"});
+LoadFunctionLibrary ("../tasks/genetic_code.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
 
 /** @module models.codon */
@@ -10,9 +10,9 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
  */
 function models.codon.MapCode (genetic_code) {
 
-	return {"sense" : utility.Values (ComputeCodonCodeToStringMap (genetic_code)),
-	        "stop"  : utility.Values (ComputeCodonCodeToStringMapStop (genetic_code)),
-	        "translation-table" : defineCodonToAAGivenCode (genetic_code) };
+	return {"sense" : utility.Values (genetic_code.ComputeCodonCodeToStringMap (genetic_code)),
+	        "stop"  : utility.Values (genetic_code.ComputeCodonCodeToStringMapStop (genetic_code)),
+	        "translation-table" : genetic_code.DefineCodonToAAGivenCode (genetic_code) };
 }
 
 /**
@@ -37,7 +37,7 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 	__modelType = modelSpec["type"];
 	if (Type (__modelType) == "None" || Type (__modelType) == "Number") {
-		__modelType = "global";
+		__modelType = terms.global;
 	}
 	modelSpec["type"] = __modelType;
 	assert (__modelType == terms.local || __modelType == terms.global, "Unsupported or missing model type '" + __modelType + "'");
@@ -50,7 +50,19 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 	__rate_matrix = {__dimension,__dimension};
 	__rate_matrix [0][0] = "";
+
+	__rate_variation = model.generic.get_rate_variation (modelSpec);
+
 	__global_cache = {};
+
+	if (None != __rate_variation) {
+
+		__rp = Call (__rate_variation["distribution"], __rate_variation["options"], namespace);
+		__rate_variation ["id"] = (__rp[terms.category])["id"];
+				
+		parameters.DeclareCategory   (__rp[terms.category]);
+        parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+	} 
 
 
 	for (_rowChar = 0; _rowChar < __dimension; _rowChar +=1 ){
@@ -67,6 +79,14 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
                                           __table);
 
 
+		 	if (None != __rate_variation) {
+				__rp = Call (__rate_variation["rate_modifier"], 
+							 __rp,
+							 __alphabet[_rowChar],
+							 __alphabet[_colChar],
+							 namespace,
+							 __rate_variation ["id"]);
+ 			}
 
             if (Abs (__rp[terms.rate_entry])) {
                 parameters.DeclareGlobal (__rp[terms.global], __global_cache);
@@ -77,12 +97,12 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 		}
 	}
 
-	if (__modelType == "global") {
+	if (__modelType == terms.global) {
 	    __rp = Call (__time_function, __modelType);
 
         if (Abs (__rp)) {
             ((modelSpec["parameters"])[terms.local])[terms.synonymous_rate] = __rp;
-            modelSpec [terms.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, 0);
+            modelSpec [terms.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, FALSE);
         } else {
             modelSpec [terms.rate_matrix] = __rate_matrix;
         }
