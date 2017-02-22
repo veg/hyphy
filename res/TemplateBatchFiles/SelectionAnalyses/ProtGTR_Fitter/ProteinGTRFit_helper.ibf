@@ -284,7 +284,7 @@ function protein_gtr.run_gtr_iteration_branch_lengths () {
     protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules () ,
                                             "Functions" :
                                             {
-                                                {"protein_gtr.REV.ModelDescription",
+                                                {"protein_gtr.REV.ModelDescription.withGamma",
                                                  "protein_gtr.REV.ModelDescription.freqs"
                                                 }
                                             },
@@ -359,6 +359,15 @@ function protein_gtr.handle_gtr_callback (node, result, arguments) {
 
 
 //================================================================================================//
+
+
+function protein_gtr.REV.ModelDescription.withGamma (type) {
+    result = models.protein.REV.ModelDescription.withGamma(type);
+    result ["frequency-estimator"] = "protein_gtr.REV.ModelDescription.freqs";
+    return result;
+}
+
+
 
 function protein_gtr.REV.ModelDescription (type) {
     result = models.protein.REV.ModelDescription(type);
