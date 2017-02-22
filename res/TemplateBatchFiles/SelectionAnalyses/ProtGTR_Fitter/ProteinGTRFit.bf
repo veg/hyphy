@@ -33,15 +33,64 @@ io.DisplayAnalysisBanner({
 });
 
 
+
+OPTIMIZATION_PRECISION = 0.1; // for testing purposes.
+protein_gtr.tolerance=0.01; // should be different if logL or RMSE
+
+// Load file containing paths to alignments for fitting and assess whether to start from scratch or resume a cached analysis
+SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
+fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
+protein_gtr.cache_file = utility.getGlobalValue("LAST_FILE_PATH") + ".cache";
+protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
+protein_gtr.file_list_count = Abs (protein_gtr.file_list);
+
+protein_gtr.analysis_results = {}; //Overwrite with cache below as needed.
+if (protein_gtr.cache_file) { 
+    protein_gtr.use_cache = io.SelectAnOption ({{"YES", "Resume analysis using the detected cache file."}, {"NO", "Launch a new analysis and *overwrite* the detected cache file."}}, "A cache file of a prior analysis on this list of files was detected. Would you like to use it?");
+    if (protein_gtr.use_cache == "YES"){
+        protein_gtr.analysis_results = io.LoadCacheFromFile (protein_gtr.cache_file);
+     }
+        
+}
+console.log(protein_gtr.analysis_results);
+
+return 0;
+//protein_gtr.use_cache = io.SelectAnOption ({{"YES", "Resume analysis using the detected cache file."}, {"NO", "Launch a new analysis and *overwrite* the detected cache file."}}, "A cache file of a prior analysis on this list of files was detected. Would you like to use it?");
+/*
+
+
+if (protein_gtr.cache == "YES"){
+    
+    SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
+    fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
+    protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
+    protein_gtr.file_list_count = Abs (protein_gtr.file_list);
+    protein_gtr.analysis_results = {};
+
+
+else{
+
+    SetDialogPrompt ("Supply the full path to your cached analysis.");
+    fscanf (PROMPT_FOR_FILE, "String", protein_gtr.cache_file);
+    protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
+    protein_gtr.file_list_count = Abs (protein_gtr.file_list);
+    protein_gtr.analysis_results = io.LoadCacheFromFile (protein_gtr.cache_file);
+
+
+
+protein_gtr.analysis_results = io.LoadCacheFromFile (protein_gtr.cache_file); // either loaded or an empty dictionary
+
+*/
+
 // TO DO: Add option for user to select baseline model for initial branch length fit. This may need to reference a new dictionary of models that will be created in protein.bf.
 // TO DO: Related to above TO DO, WAG is currently hardcoded in various places throughout this and the helper batchfile, in particular as the Phase name. Bad news. Either have a generic name ("empirical" or something) or populate it with the chosen model string (JTT, WAG, LG, etc.)
 // TO DO: Add option for user to select convergence criterion.
 // TO DO: Prompt users if they would like to load the cache file or not
 
-/*
+
 protein_gtr.baseline_model  = io.SelectAnOption (models.protein.empirical_options,
                                                  "Select an empirical protein model to use for optimizing the provided branch lengths:");
-
+/*
 if (protein_gtr.baseline_model == "WAG"){
     
 }
@@ -49,26 +98,38 @@ if (protein_gtr.baseline_model == "WAG"){
 console.log(protein_gtr.baseline_model);
 protein_gtr.convergence_type  = io.SelectAnOption (models.protein.empirical_options,
                                                  "Select an empirical protein model to use for optimizing the provided branch lengths:");
-
-protein_gtr.load_cache  = io.SelectAnOption (models.protein.empirical_options,
-                                                 "Select an empirical protein model to use for optimizing the provided branch lengths:");
-
-return 0;
 */
 
 
-OPTIMIZATION_PRECISION = 0.1; // for testing purposes.
-TOLERANCE=0.01; 
 
-SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
-fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
+
+// To store a prior run, and load as needed
+
+
+
+
+
+
+
+
+
+
+
+
+
+return 0;
+
+
+
+OPTIMIZATION_PRECISION = 0.1; // for testing purposes.
+protein_gtr.tolerance=0.01; 
+
 
 
 // To store a prior run, and load as needed
 protein_gtr.cache_file = utility.getGlobalValue("LAST_FILE_PATH") + ".cache";
 protein_gtr.analysis_results = io.LoadCacheFromFile (protein_gtr.cache_file); // either loaded or an empty dictionary
-protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
-protein_gtr.file_list_count = Abs (protein_gtr.file_list);
+
 
 protein_gtr.queue = mpi.CreateQueue ({"Headers" : utility.GetListOfLoadedModules ()});
 
@@ -189,7 +250,7 @@ for (;;) {
     // Here, convergence is assessed via logL.
     //-------------------------------------------------------------------------------------------------------------------------------------------------------//
     // TODO: IS THIS A BUG? SHOULD BE -1, -3 (not -1, -2)
-    if (protein_gtr.scores[Abs(protein_gtr.scores)-1] - protein_gtr.scores[Abs(protein_gtr.scores)-2] < TOLERANCE) {
+    if (protein_gtr.scores[Abs(protein_gtr.scores)-1] - protein_gtr.scores[Abs(protein_gtr.scores)-2] < protein_gtr.tolerance) {
         break;
     } 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------//
@@ -215,7 +276,7 @@ for (;;) {
          }
     }
     rmse = Sqrt( rmse/N );
-    if (rmse < TOLERANCE) {
+    if (rmse < protein_gtr.tolerance) {
         break;
     }
     //-------------------------------------------------------------------------------------------------------------------------------------------------------//
