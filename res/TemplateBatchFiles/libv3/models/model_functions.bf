@@ -146,6 +146,29 @@ lfunction model.generic.get_a_parameter (model_spec, tag, type) {
     return None;
 }
 
+/**
+ * @name  model.generic.get_rate_variation
+ * @param model_spec
+ * @param tag
+ * @param type
+ */
+ 
+lfunction model.generic.get_rate_variation (model_spec) {
+	
+	__rate_variation = model_spec[^"terms.rate_variation"];
+
+	if (Type (__rate_variation) == "AssociativeList") {
+		assert (utility.Has (__rate_variation, "distribution", "String"), "Missing required key `distribution' in the rate variation component definition");
+		assert (utility.Has (__rate_variation, "rate_modifier", "String"), "Missing required key `rate_modifier' in the rate variation component definition");
+		assert (utility.IsFunction (__rate_variation["distribution"]), "'" + parameters.Quote (__rate_variation["distribution"]) + " must be a function ID");
+		assert (utility.IsFunction (__rate_variation["rate_modifier"]), "'" + parameters.Quote (__rate_variation["rate_modifier"]) + " must be a function ID");	
+		return __rate_variation;
+	}
+
+	
+	return None;
+}
+
 
 
 /**
@@ -261,7 +284,7 @@ function models.generic.post.definition  (model) {
  * @param {Model} model
  * @param {AssociativeList} or {Number} value
  * @param {String} parameter
- * @returns 0
+ * @returns the number of constraints generated (0 or 1)
  */
 function models.generic.SetBranchLength (model, value, parameter) {
 
@@ -269,7 +292,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
         if (Type (model ["branch-length-string"]) == "String") {
             models.generic.SetBranchLength.bl = (Columns ((model["parameters"])["local"]))[0];
             models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
-            if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p)) {
+             if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p)) {
                 if (Type (value) == "AssociativeList") {
                 	if (Abs (model ["branch-length-string"])) {
                     	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
