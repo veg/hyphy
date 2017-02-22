@@ -3,14 +3,28 @@ LoadFunctionLibrary ("frequencies.bf");
 
 /** @module models.protein */
 
+
+
+/* Alphabet of amino acids */
 models.protein.alphabet = {{"A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"}};
+
+
+/* Dictionary of available empirical models */
+models.protein.empirical_options = {{"WAG","Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
+                                     {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
+                                     {"LG", "Empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067 "},
+                                     {"JC", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."}};
+
+
+
+
+
 
 /**
  * @name models.protein.generic.DefineQMatrix
  * @param {Dictionary} modelSpec
  * @param {String} namespace
  */
-
 function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 
 	__alphabet = modelSpec ["alphabet"];
@@ -33,7 +47,18 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 	__rate_matrix = {20,20};
 	__rate_matrix [0][0] = "";
 
+	__rate_variation = model.generic.get_rate_variation (modelSpec);
+
 	__global_cache = {};
+
+	if (None != __rate_variation) {
+
+		__rp = Call (__rate_variation["distribution"], __rate_variation["options"], namespace);
+		__rate_variation ["id"] = (__rp[terms.category])["id"];
+				
+		parameters.DeclareCategory   (__rp[terms.category]);
+        parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+	} 
 
 	for (_rowChar = 0; _rowChar < 20; _rowChar +=1 ){
 		for (_colChar = _rowChar + 1; _colChar < 20; _colChar += 1) {
@@ -42,6 +67,15 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 															 namespace,
 															__modelType);
 
+
+		 	if (None != __rate_variation) {
+				__rp = Call (__rate_variation["rate_modifier"], 
+							 __rp,
+							 __alphabet[_rowChar],
+							 __alphabet[_colChar],
+							 namespace,
+							 __rate_variation ["id"]);
+ 			}
 
             if (Abs (__rp[terms.rate_entry])) {
                 parameters.DeclareGlobal (__rp[terms.global], __global_cache);

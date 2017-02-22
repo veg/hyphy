@@ -80,6 +80,71 @@ function parameters.DeclareGlobal(id, cache) {
 }
 
 /**
+ * @name parameters.DeclareGlobalWithRanges
+ * @param {String} id variable id
+ * @param {Number} init initial value (could be None)
+ * @param {Number} lb lower bound (could be None)
+ * @param {Number} ub upper bound (could be None)
+ * @returns nothing
+ */
+function parameters.DeclareGlobalWithRanges(id, init, lb, ub) {
+	if (Type (id) == "String") {
+		if (None != init) {
+    		ExecuteCommands("global `id` = " + init);
+    	} else {
+    		ExecuteCommands("global `id`; ");    	
+    	}
+    	
+    	if (None != lb) {
+    		ExecuteCommands ("`id` :> " + lb);
+    	}	
+    	if (None != ub) {
+    		ExecuteCommands ("`id` :< " + ub);
+    	}	
+    } else {
+        if (Type(id) == "AssociativeList") {
+            parameters.DeclareGlobalWithRanges.var_count = Abs(id);
+            parameters.DeclareGlobalWithRanges.names = Columns(id);
+            for (parameters.DeclareGlobalWithRanges.k = 0; parameters.DeclareGlobalWithRanges.k < parameters.DeclareGlobalWithRanges.var_count; parameters.DeclareGlobalWithRanges.k += 1) {
+                parameters.DeclareGlobalWithRanges(parameters.DeclareGlobalWithRanges.names[parameters.DeclareGlobalWithRanges.k], init, lb, ub);
+            }
+        } else {
+            if (Type(id) == "Matrix") {
+                parameters.DeclareGlobalWithRanges.var_count = Columns(id) * Rows(id);
+                for (parameters.DeclareGlobalWithRanges.k = 0; parameters.DeclareGlobalWithRanges.k < parameters.DeclareGlobalWithRanges.var_count; parameters.DeclareGlobalWithRanges.k += 1) {
+                    parameters.DeclareGlobalWithRanges(id[parameters.DeclareGlobalWithRanges.k], init, lb, ub);
+                }
+            }
+        }
+    }
+}
+
+function parameters.DeclareCategory.helper (dict, key, default) {
+	if (dict / key) {
+		return dict[key];
+	}
+	return default;
+}
+
+/**
+ * @name parameters.DeclareCategory
+ * @param {Dict} def category definition components
+ */
+function parameters.DeclareCategory (def) {
+	 
+	 
+	 
+	 ExecuteCommands ("category " + def['id'] + "= (" + 
+	 			  Join (",", 
+	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"}, 
+	 			  						  "_value_",
+	 			  						  'parameters.DeclareCategory.helper(def["category parameters"], _value_, "")')
+	 			  		) + ");");
+	 
+}
+
+
+/**
  * @name parameters.NormalizeRatio
  * @param {Number} n
  * @param {Number} d
@@ -363,6 +428,11 @@ function parameters.helper.copy_definitions(target, source) {
             target[parameters.helper.copy_definitions.key] * source[parameters.helper.copy_definitions.key];
         }
     }
+    
+    if (utility.Has (source, terms.category, "AssociativeList")) {
+    	utility.EnsureKey (target, terms.category);
+    	(target[terms.category])[(source[terms.category])["id"]] = (source[terms.category])["description"];
+    }
 }
 
 /**
@@ -495,3 +565,4 @@ lfunction parameters.SetLocalModelParameters (model, tree, node) {
     ');
     
 }
+

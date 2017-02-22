@@ -1,4 +1,4 @@
-LoadFunctionLibrary("SelectionAnalyses/relative_prot_rates.wbf.bf", {
+LoadFunctionLibrary("SelectionAnalyses/relative_prot_rates.bf", {
     "0": PATH_TO_CURRENT_BF + "data/CD2.prot",
     "1": "y"
 });
