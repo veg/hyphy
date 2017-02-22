@@ -3,14 +3,28 @@ LoadFunctionLibrary ("frequencies.bf");
 
 /** @module models.protein */
 
+
+
+/* Alphabet of amino acids */
 models.protein.alphabet = {{"A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"}};
+
+
+/* Dictionary of available empirical models */
+models.protein.empirical_options = {{"WAG","This is the WAG model"},
+                                     {"JTT", "This is the JTT model"},
+                                     {"LG", "This is the LG model"},
+                                     {"JC", "This is the JC model"}};
+
+
+
+
+
 
 /**
  * @name models.protein.generic.DefineQMatrix
  * @param {Dictionary} modelSpec
  * @param {String} namespace
  */
-
 function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 
 	__alphabet = modelSpec ["alphabet"];

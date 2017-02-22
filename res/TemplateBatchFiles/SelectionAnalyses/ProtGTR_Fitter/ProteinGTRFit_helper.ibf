@@ -1,6 +1,85 @@
 /*************** Functions used in ProteinGTRFit_SJS.bf ******************/
 
 
+
+
+/* Functions for adding in rate variation to the models */
+//------------------------------------------------------------------------------------------------------------------------
+lfunction models.protein.WAG.ModelDescription.withGamma (options) {
+	def = models.protein.WAG.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+lfunction models.protein.JTT.ModelDescription.withGamma (options) {
+	def = models.protein.JTT.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+lfunction models.protein.LG.ModelDescription.withGamma (options) {
+	def = models.protein.LG.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+lfunction models.protein.REV.ModelDescription.withGamma (options) {
+	def = models.protein.REV.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+//------------------------------------------------------------------------------------------------------------------------
+
+
+// Function fits a WAG+4G to file. We use a function b/c MPI needs.
+function protein_gtr.fitWAGwithGammatoFile (filename) {
+    // first argument is the dataset name to save, 2nd is the file name GASP
+    protein_gtr.file_info = alignments.ReadNucleotideDataSet ("protein_gtr.msa",
+                                                              filename);
+    protein_gtr.file_info["json"] = protein_gtr.file_info["file"] + ".json";
+    protein_gtr.name_mapping = protein_gtr.file_info[utility.getGlobalValue("terms.json.name_mapping")];
+    if (None == protein_gtr.name_mapping) { /** create a 1-1 mapping if nothing was done */
+        protein_gtr.name_mapping = {};
+        utility.ForEach (alignments.GetSequenceNames ("protein_gtr.msa"), "_value_", "`&protein_gtr.name_mapping`[_value_] = _value_");
+    }
+
+    utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", "/dev/null");
+
+    ExecuteCommands ('protein_gtr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (protein_gtr.file_info [utility.getGlobalValue("terms.json.partitions")], protein_gtr.name_mapping)',
+                     {"0" : "Y"});
+
+    utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", None);
+
+    // trees
+    protein_gtr.filter_specification = alignments.DefineFiltersForPartitions (protein_gtr.partitions_and_trees,
+                                                                            "protein_gtr.msa" ,
+                                                                            "protein_gtr.filter.",
+                                                                            protein_gtr.file_info);
+    trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_["tree"]');
+    data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']");
+
+
+
+    /*
+    protein_gtr.wag.mle = estimators.FitSingleModel_Ext (utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']"), utility.Map (protein_gtr.partitions_and_trees, "_value_", "_value_['tree']"),
+                                   "models.protein.WAG.ModelDescription.withGamma",
+                                   None,
+                                   None);
+*/
+
+    protein_gtr.wag.mle = estimators.FitSingleModel_Ext(data_filter,
+                                                        trees,
+                                                        "models.protein.WAG.ModelDescription.withGamma",
+                                                        None,
+                                                        None);
+
+    
+    
+    return protein_gtr.wag.mle;
+}
+
+
+
+
+
+
 // Function fits a WAG to file. We use a function b/c MPI needs.
 function protein_gtr.fitWAGtoFile (filename) {
     // first argument is the dataset name to save, 2nd is the file name GASP
@@ -205,7 +284,7 @@ function protein_gtr.run_gtr_iteration_branch_lengths () {
     protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules () ,
                                             "Functions" :
                                             {
-                                                {"protein_gtr.REV.ModelDescription",
+                                                {"protein_gtr.REV.ModelDescription.withGamma",
                                                  "protein_gtr.REV.ModelDescription.freqs"
                                                 }
                                             },
@@ -230,7 +309,7 @@ function protein_gtr.run_gtr_iteration_branch_lengths () {
             io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
                                         "Dispatching file '" + protein_gtr.file_list[file_index] + "' " + (file_index+1) + "/" + protein_gtr.file_list_count);
 
-            mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitGTRtoFile", {"0" : protein_gtr.file_list[file_index],
+            mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitGTRwithGammatoFile", {"0" : protein_gtr.file_list[file_index],
                                                                           "1" : protein_gtr.current_gtr_fit["global"],
                                                                           "2" : (protein_gtr.current_gtr_fit[terms.json.attribute.branch_length])[(protein_gtr.current_gtr_fit["filename-to-index"])[protein_gtr.file_list[file_index]]]},
                                                                 "protein_gtr.handle_gtr_callback");
@@ -280,6 +359,15 @@ function protein_gtr.handle_gtr_callback (node, result, arguments) {
 
 
 //================================================================================================//
+
+
+function protein_gtr.REV.ModelDescription.withGamma (type) {
+    result = models.protein.REV.ModelDescription.withGamma(type);
+    result ["frequency-estimator"] = "protein_gtr.REV.ModelDescription.freqs";
+    return result;
+}
+
+
 
 function protein_gtr.REV.ModelDescription (type) {
     result = models.protein.REV.ModelDescription(type);
@@ -342,6 +430,60 @@ function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
                                         // INITIAL VALUE DICT
                                         None
                                         // BRANCH LENGTH HANDLING OPTIONS
+                                   );
+
+    protein_gtr.rev_file_mle - "global"; // delete redundant keys
+
+    return protein_gtr.rev_file_mle;
+
+}
+
+
+
+
+
+
+//================================================================================================//
+
+function protein_gtr.fitGTRwithGammatoFile (filename, rates, branch_lengths) {
+
+    protein_gtr.file_info = alignments.ReadNucleotideDataSet ("protein_gtr.msa",
+                                                              filename);
+
+    utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", "/dev/null");
+
+    ExecuteCommands ('protein_gtr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (protein_gtr.file_info [utility.getGlobalValue("terms.json.partitions")], protein_gtr.name_mapping)',
+                     {"0" : "Y"});
+
+    utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", None);
+    protein_gtr.filter_specification = alignments.DefineFiltersForPartitions (protein_gtr.partitions_and_trees,
+                                                                            "protein_gtr.msa" ,
+                                                                            "protein_gtr.filter.",
+                                                                            protein_gtr.file_info);
+
+    protein_gtr.rev_file_mle = {"global" : {}};
+
+    for (l1 = 0; l1 < 20; l1 += 1) {
+        for (l2 = l1 + 1; l2 < 20; l2 += 1) {
+            rate_term = terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2]);
+            (protein_gtr.rev_file_mle["global"]) [rate_term] =
+                {terms.MLE : (rates[rate_term])[terms.MLE] , "fix-me" : TRUE};
+        }
+    }
+
+
+    protein_gtr.rev_file_mle [terms.json.attribute.branch_length] = { "0" : branch_lengths };
+
+    //utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
+
+
+
+    protein_gtr.rev_file_mle = estimators.FitSingleModel_Ext (
+                                        utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']"), // value => value['name']
+                                        utility.Map (protein_gtr.partitions_and_trees, "_value_", "_value_['tree']"), // value => value['tree']
+                                        "protein_gtr.REV.ModelDescription.withGamma",
+                                        protein_gtr.rev_file_mle,
+                                        None
                                    );
 
     protein_gtr.rev_file_mle - "global"; // delete redundant keys
