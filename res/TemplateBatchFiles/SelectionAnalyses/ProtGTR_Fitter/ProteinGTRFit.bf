@@ -40,21 +40,24 @@ protein_gtr.tolerance=0.01; // should be different if logL or RMSE
 // Load file containing paths to alignments for fitting and assess whether to start from scratch or resume a cached analysis
 SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
 fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
+
 protein_gtr.cache_file = utility.getGlobalValue("LAST_FILE_PATH") + ".cache";
 protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
 protein_gtr.file_list_count = Abs (protein_gtr.file_list);
 
 protein_gtr.analysis_results = {}; //Overwrite with cache below as needed.
-if (protein_gtr.cache_file) { 
+
+cache_file_exists = ExecuteCommands("!`&protein_gtr.cache_file`");
+
+if (cache_file_exists) { 
     protein_gtr.use_cache = io.SelectAnOption ({{"YES", "Resume analysis using the detected cache file."}, {"NO", "Launch a new analysis and *overwrite* the detected cache file."}}, "A cache file of a prior analysis on this list of files was detected. Would you like to use it?");
     if (protein_gtr.use_cache == "YES"){
         protein_gtr.analysis_results = io.LoadCacheFromFile (protein_gtr.cache_file);
      }
-        
 }
-console.log(protein_gtr.analysis_results);
 
 return 0;
+
 //protein_gtr.use_cache = io.SelectAnOption ({{"YES", "Resume analysis using the detected cache file."}, {"NO", "Launch a new analysis and *overwrite* the detected cache file."}}, "A cache file of a prior analysis on this list of files was detected. Would you like to use it?");
 /*
 

@@ -68,18 +68,14 @@ meme.terms.site_beta_plus = "Site relative non-synonymous rate (tested branches)
 meme.terms.site_mixture_weight = "Beta- category weight";
 meme.terms.site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
 
+// default cutoff for printing to screen
 meme.pvalue = 0.1;
-    /**
-        default cutoff for printing to screen
-    */
 
+// The dictionary of results to be written to JSON at the end of the run
 meme.json = {
     terms.json.fits: {},
     terms.json.timers: {},
 };
-    /**
-        The dictionary of results to be written to JSON at the end of the run
-    */
 
 selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
 meme.scaler_prefix = "MEME.scaler";
@@ -90,29 +86,24 @@ meme.table_headers = {{"&alpha;", "Synonymous substitution rate at a site"}
                      {"&beta;<sup>+</sup>", "Non-synonymous substitution rate at a site for the positive/neutral evolution component"}
                      {"p<sup>+</sup>", "Mixture distribution weight allocated to &beta;<sup>+</sup>; loosely -- the proportion of the tree evolving neutrally or under positive selection"}
                      {"LRT", "Likelihood ratio test statistic for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
-                     {"p-value", "Asymptotic p-value for for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
-                     {"#branches under selection", "The (very approximate and rough) estimate of how many branches may have been under selection at this site, i.e., had an empirical Bayes factor of 100 or more for the &beta;<sup>+</sup> rate"}
+                     {"p-value", "Asymptotic p-value for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
+                     {"# branches under selection", "The (very approximate and rough) estimate of how many branches may have been under selection at this site, i.e., had an empirical Bayes factor of 100 or more for the &beta;<sup>+</sup> rate"}
                      {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
+
+
 /**
-    This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
-    is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
-    the next set of variables.
+This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
+is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
+the next set of variables.
 */
-
-
-
 meme.table_screen_output  = {{"Codon", "Partition", "alpha", "beta+", "p+", "LRT", "Episodic selection detected?", "# branches"}};
 meme.table_output_options = {"header" : TRUE, "min-column-width" : 12, "align" : "center"};
+
 
 namespace meme {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("meme");
 }
-
-/**
-    TODO: Need to document what variables are available after call to load_file
-*/
-
 
 meme.partition_count = Abs (meme.filter_specification);
 meme.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",meme.pvalue,0,1,FALSE);
@@ -123,7 +114,7 @@ utility.ForEachPair (meme.selected_branches, "_partition_", "_selection_",
      io.ReportProgressMessageMD('MEME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the MEME analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");			  
 
 
-meme.pairwise_counts   = genetic_code.ComputePairwiseDifferencesAndExpectedSites(meme.codon_data_info["code"], None);
+meme.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(meme.codon_data_info["code"], None);
 
 selection.io.startTimer (meme.json [terms.json.timers], "Model fitting",1);
 
@@ -134,6 +125,7 @@ namespace meme {
 
 estimators.fixSubsetOfEstimates(meme.gtr_results, meme.gtr_results["global"]);
 
+// Step 1 - Fit to MG94xREV
 namespace meme {
     doPartitionedMG ("meme", FALSE);
 }
@@ -193,8 +185,6 @@ meme.site.bsrel =  model.generic.DefineMixtureModel("models.codon.BS_REL_Per_Bra
         meme.filter_names,
         None);
         
-
-
 meme.beta1  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.nonsynonymous_rate,1));
 meme.beta2  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.nonsynonymous_rate,2));
 meme.branch_mixture = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.mixture_aux_weight,1));
@@ -210,12 +200,17 @@ meme.site_model_mapping = {
 selection.io.startTimer (meme.json [terms.json.timers], "MEME analysis", 2);
 
 
+// TODO : Why aren't these initially set when the model is first declared?
+
+// FEL parameter declarations
 model.generic.AddGlobal (meme.site.background_fel, "meme.site_alpha", meme.terms.site_alpha);
 parameters.DeclareGlobal ("meme.site_alpha", {});
 
 model.generic.AddGlobal (meme.site.background_fel, "meme.site_beta_nuisance", meme.terms.site_beta_nuisance);
 parameters.DeclareGlobal ("meme.site_beta_nuisance", {});
 
+
+// BSREL mixture model parameter declarations
 model.generic.AddGlobal (meme.site.bsrel, "meme.site_alpha", meme.terms.site_alpha);
 model.generic.AddGlobal (meme.site.bsrel, "meme.site_omega_minus", meme.terms.site_omega_minus);
 parameters.DeclareGlobal ("meme.site_omega_minus", {});
@@ -232,8 +227,7 @@ model.generic.AddGlobal  (meme.site.bsrel, "meme.site_mixture_weight", meme.term
 parameters.DeclareGlobal ("meme.site_mixture_weight", {});
 parameters.SetRange ("meme.site_mixture_weight", terms.range01);
 
-
-meme.report.count       = {{0}};
+meme.report.count = {{0}};
 
 meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.partition])["coverage"])[meme.report.site]),
                                     meme.report.partition + 1,
@@ -244,9 +238,6 @@ meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.pa
                                     "Yes, p = " + Format(meme.report.row[6],7,4),
                                     Format(meme.report.row[7],0,0)
 }};
-
-
-
 
 meme.site_results = {};
 
@@ -434,7 +425,7 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 }
 
 //----------------------------------------------------------------------------------------
- lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
+lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
 
     GetString   (lfInfo, ^lf_fel,-1);
     
@@ -465,13 +456,13 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
  	}
     
 	Optimize (results, ^lf_bsrel);
+
     alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
     alternative [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
 	
-
 	ancestral_info = ancestral.build (lf_bsrel,0,FALSE);
 
-	branch_attributes = selection.substituton_mapper (ancestral_info ["MATRIX"], 
+	branch_attributes = selection.substitution_mapper (ancestral_info ["MATRIX"], 
 													  ancestral_info ["TREE_AVL"], 
 													  ancestral_info ["AMBIGS"], 
 													  ^"meme.pairwise_counts",
@@ -482,6 +473,7 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 
 	branch_ebf       = {};
 	branch_posterior = {};
+
 	if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" > 0) {
 
 		LFCompute (^lf_bsrel,LF_START_COMPUTE);

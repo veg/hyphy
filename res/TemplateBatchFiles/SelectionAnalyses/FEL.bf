@@ -62,18 +62,14 @@ fel.site_alpha = "Site relative synonymous rate";
 fel.site_beta = "Site relative non-synonymous rate (tested branches)";
 fel.site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
 
+// default cutoff for printing to screen
 fel.pvalue = 0.1;
-    /**
-        default cutoff for printing to screen
-    */
 
+// The dictionary of results to be written to JSON at the end of the run
 fel.json = {
     terms.json.fits: {},
     terms.json.timers: {},
 };
-    /**
-        The dictionary of results to be written to JSON at the end of the run
-    */
 
 selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
 fel.scaler_prefix = "FEL.scaler";
@@ -85,6 +81,12 @@ fel.table_headers = {{"alpha", "Synonymous substitution rate at a site"}
                      {"p-value", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
                      {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
 
+
+/**
+This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
+is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
+the next set of variables.
+*/
 fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
 fel.table_output_options = {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
 
@@ -148,7 +150,6 @@ utility.ForEachPair (fel.filter_specification, "_key_", "_value_",
 selection.io.stopTimer (fel.json [terms.json.timers], "Model fitting");
 
 // define the site-level likelihood function
-
 
 fel.site.mg_rev = model.generic.DefineModel("models.codon.MG_REV.ModelDescription",
         "fel_mg", {
@@ -219,7 +220,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     /*
     Export (lfs, ^lf);
     fprintf (MESSAGE_LOG, lfs);
-
     assert (0);
     */
 
