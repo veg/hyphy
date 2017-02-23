@@ -394,7 +394,8 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         }
         reference = dereferenced;
     }
-    
+ 
+
     if (code == HY_FORMULA_EXPRESSION || code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT || code == HY_FORMULA_REFERENCE_VALUE_ASSIGNMENT) {
         _PMathObj  formulaValue = (code == HY_FORMULA_REFERENCE_VALUE_ASSIGNMENT)?f2->Compute(0, nameSpace):f->Compute(0,nameSpace);
         if (!formulaValue) {
@@ -495,12 +496,12 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
             newF.theFormula.AppendNewInstance(new _Operation((_PMathObj)f2->Compute(0, nameSpace)->makeDynamic()));
         }
 
-        long stackD = -1,
-             last0  = 0;
+        long stackD = -1L,
+             last0  = 0L;
 
         for (long opID = 0; opID < f->theFormula.lLength - 1; opID ++) {
             ((_Operation*)f->theFormula(opID)) -> StackDepth (stackD);
-            if (stackD == 0) {
+            if (stackD == 0L) {
                 last0 = opID;
             }
         }
@@ -1007,8 +1008,9 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             _String  errMsg;
 
             bool check               = !parsingContext.inAssignment(),
-                 is_array_assignment = f->IsArrayAccess();
-                 
+                 is_array_assignment = f->IsArrayAccess() && levelOps->lLength == 0UL;
+            
+            
             char deref = 0; 
             
             _Variable *lhs_variable = nil;
@@ -1024,6 +1026,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 errMsg = "Can't assign within another assignment";
             }
             
+  
             if (!check) {
                 return HandleFormulaParsingError (errMsg, parsingContext.errMsg(), s, i);
             }
