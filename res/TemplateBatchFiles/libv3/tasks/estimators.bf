@@ -178,7 +178,7 @@ function estimators.ExtractBranchInformation(tree, node, model) {
  * @param {String} model
  * @param {String} length
  */
-function estimators.applyBranchLength(tree, node, model, length) {	
+function estimators.applyBranchLength(tree, node, model, length) {
     return Call(model["set-branch-length"], model, length, tree + "." + node);
 }
 
@@ -268,7 +268,7 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
 
         for (estimators.ExtractMLEs.b = 0; estimators.ExtractMLEs.b < Abs(estimators.ExtractMLEs.map); estimators.ExtractMLEs.b += 1) {
             _branch_name = estimators.ExtractMLEs.branch_names[estimators.ExtractMLEs.b];
-            
+
             ((estimators.ExtractMLEs.results[terms.json.attribute.branch_length])[estimators.ExtractMLEs.i])[_branch_name] =
             estimators.ExtractBranchInformation(_tree_name, _branch_name, model_descriptions[estimators.ExtractMLEs.map[_branch_name]]);
         }
@@ -292,7 +292,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
     //fprintf (stdout, model_descriptions, "\n", initial_values, "\n");
 
 	/* set all category variable values to one */
-	
+
     GetString(estimators.ApplyExistingEstimates.lfInfo, ^ likelihood_function_id, -1);
     estimators.ApplyExistingEstimates.results = {};
     estimators.ApplyExistingEstimates.partitions = utility.Array1D(estimators.ApplyExistingEstimates.lfInfo["Trees"]);
@@ -304,9 +304,9 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
     estimators.ApplyExistingEstimates.results["global"] = {};
     model_descriptions["estimators.SetCategory"][""];
     // the above line traverses all model descriptions and sets
-    // the _value_ of category variables to 1, so that we can 
+    // the _value_ of category variables to 1, so that we can
     // compute branch lengths
-    
+
     model_descriptions["estimators.SetGlobals"][""];
 
 
@@ -333,14 +333,14 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                 _branch_name = estimators.ApplyExistingEstimates.branch_names[estimators.ApplyExistingEstimates.b];
                 _existing_estimate = ((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name];
 
-                if (Type(_existing_estimate) == "AssociativeList") {
-                    _set_branch_length_to = (((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])["MLE"];
+               if (Type(_existing_estimate) == "AssociativeList") {
+                   _set_branch_length_to = (((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])["MLE"];
 
-	
+
                     if (None != branch_length_conditions) {
                         if (Abs(branch_length_conditions)) {
                             _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
-   							 
+
                             if (Type(_application_type) == "String") {
                                 _set_branch_length_to = {};
                                 _set_branch_length_to[terms.branch_length] = _existing_estimate["MLE"];
@@ -349,6 +349,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                             }
                         }
                     }
+
 
                     estimators.ApplyExistingEstimates.df_correction += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
                 }
@@ -500,12 +501,12 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
                 name_space: user_model
             }, initial_values, run_options["proportional-branch-length-scaler"]);
 
-	
+
     }
 
+   	 Optimize(mles, likelihoodFunction);
      //Export (lfe, likelihoodFunction);
      //console.log (lfe);
-   	 Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
@@ -518,7 +519,8 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
 
     results["LogL"] = mles[1][0];
     results["parameters"] = mles[1][1] + 3 + df;
-    
+
+
     if (run_options["retain-lf-object"]) {
         results["LF"] = & likelihoodFunction;
     } else {
