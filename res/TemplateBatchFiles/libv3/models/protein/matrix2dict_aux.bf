@@ -1,3 +1,7 @@
+/*
+    Utility functions/data for creating the model information found in `empirical.bf`.
+*/
+
 LoadFunctionLibrary ("../protein.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
 

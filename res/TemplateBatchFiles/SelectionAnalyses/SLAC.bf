@@ -245,7 +245,7 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
         }
     }
 
-    slac.branch_attributes = selection.substituton_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
+    slac.branch_attributes = selection.substitution_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
 
     selection.io.json_store_branch_attribute(slac.json, "original name", terms.json.attribute.node_label, 0,
                                              slac.i,

@@ -2,40 +2,119 @@ RequireVersion("2.26");
 
 LoadFunctionLibrary("../UtilityFunctions.bf");
 
+/** @module ancestral */
+
 ancestral._ancestralRecoveryCache = {};
 
 /*******************************************
-	call _buildAncestralCache function with the likelihood function ID
-	and a 0-based partition index to produce an
-	internal structure storing internal states at
-	nodes;
 
-	returns an integer index to reference
-	the opaque structure for subsequent operations
+Example Structure
+
+{
+ "DIMENSIONS":{
+   "SITES":1,
+   "SEQUENCES":10,
+   "BRANCHES":17,
+   "CHARS":61
+  },
+ "CHARS":{
+  {"AAA", "AAC", "AAG", "AAT", "ACA", "ACC", "ACG", "ACT", "AGA", "AGC", "AGG", "AGT", "ATA", "ATC", "ATG", "ATT", "CAA", "CAC", "CAG", "CAT", "CCA", "CCC", "CCG", "CCT", "CGA", "CGC", "CGG", "CGT", "CTA", "CTC", "CTG", "CTT", "GAA", "GAC", "GAG", "GAT", "GCA", "GCC", "GCG", "GCT", "GGA", "GGC", "GGG", "GGT", "GTA", "GTC", "GTG", "GTT", "TAC", "TAT", "TCA", "TCC", "TCG", "TCT", "TGC", "TGG", "TGT", "TTA", "TTC", "TTG", "TTT"}
+  },
+ "MATRIX":{
+  {-1}
+  {-1}
+  {-1}
+  {-1}
+  {-1}
+  {-1}
+  {0}
+  {0}
+  {0}
+  {0}
+  {32}
+  {0}
+  {0}
+  {0}
+  {-1}
+  {-1}
+  {0}
+  },
+ "TREE_AVL":{
+   "1":{
+     "Name":"PIG",
+     "Length":-1,
+     "Depth":4,
+     "Parent":3
+    },
+   "2":{
+     "Name":"COW",
+     "Length":-1,
+     "Depth":4,
+     "Parent":3
+    },
+    .
+    .
+    .
+   "17":{
+     "Name":"Node0",
+     "Length":-1,
+     "Depth":0,
+     "Children":{
+       "0":14,
+       "1":15,
+       "2":16
+      }
+    },
+   "0":{
+     "Name":"meme.site_tree_bsrel",
+     "Root":17
+    }
+  },
+ "AMBIGS":{
+  },
+ "MAPPING":{
+   "-1":"---",
+   "0":"AAA",
+   "32":"GAA"
+  }
+}
+
 
 *******************************************/
 
 
 ancestral._bacCacheInstanceCounter = 0;
 
-/*******************************************
-	main function
-*******************************************/
-
-function ancestral.build(_lfID, _lfComponentID, options) {
+/**
+ * Builds ancestral states
+ * @name ancestral.build
+ * @param {Number} _lfID - the likelihood function ID
+ * @param {Number} _lfComponentID - 
+ * @param {options} options - 
+ * @returns an integer index to reference
+ * the opaque structure for subsequent operations
+ * @example
+ */
+function ancestral.build (_lfID, _lfComponentID, options) {
     return ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, options["sample"]);
 }
 
 
-/*******************************************
-	internal function to do the work
-*******************************************/
-
+/**
+ * internal function to do the work of ancestral.build
+ * @name ancestral._buildAncestralCacheInternal
+ * @private
+ * @param {Number} _lfID - the likelihood function ID
+ * @param {Number} _lfComponentID - 
+ * @param {options} options - 
+ * @returns an integer index to reference
+ * the opaque structure for subsequent operations
+ */
 lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample) {
 
     /* 1; grab the information AVL from the likelihood function */
 
-    GetString(_bac_lfInfo, ^ _lfID, -1);
+    GetString(_bac_lfInfo, ^_lfID, -1);
     if (Columns(_bac_lfInfo["Trees"]) <= _lfComponentID) {
         return None;
     }

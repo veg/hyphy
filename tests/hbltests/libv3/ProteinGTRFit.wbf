@@ -29,7 +29,10 @@ fprintf(list_path_final, CLEAR_FILE, "");
 utility.ForEach(file_list2, "_value_", "writeNewPath(_value_)");
 
 LoadFunctionLibrary("SelectionAnalyses/ProtGTR_Fitter/ProteinGTRFit.bf", {
-    "0":  PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines.txt"
+    "0":  PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines.txt",
+    "1": "LogL", // use logL convergence
+    "2": "WAG", // use WAG for baseline
+    "3": "YES", // use a gamma for rate variation
 });
 
 

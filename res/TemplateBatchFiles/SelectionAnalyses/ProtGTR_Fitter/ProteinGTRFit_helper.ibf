@@ -1,34 +1,115 @@
-/*************** Functions used in ProteinGTRFit_SJS.bf ******************/
+/*************** Functions used in ProteinGTRFit.bf ******************/
 
 
-// Function fits a WAG to file. We use a function b/c MPI needs.
-function protein_gtr.fitWAGtoFile (filename) {
-    // first argument is the dataset name to save, 2nd is the file name GASP
+function protein_gtr.load_cached_options() {
+    protein_gtr.convergence_type = (protein_gtr.analysis_results["options"])["convergence_type"];
+    protein_gtr.tolerance = (protein_gtr.analysis_results["options"])["tolerance"];
+    protein_gtr.final_baseline_model = (protein_gtr.analysis_results["options"])["final_baseline_model"];
+    return 0;
+}
+
+function protein_gtr.save_options() {
+    protein_gtr.analysis_results["options"] = {"convergence_type": protein_gtr.convergence_type,
+                                               "tolerance": protein_gtr.tolerance,
+                                               "final_baseline_model": protein_gtr.final_baseline_model};
+    return 0;
+}
+
+
+/* Model definitions, in particular for models with rate variation */
+//------------------------------------------------------------------------------------------------------------------------
+/**
+ * @name protein_gtr.REV.ModelDescription.withGamma
+ * @description Define a REV model with Gamma rate variation
+ */
+function protein_gtr.REV.ModelDescription.withGamma (type) {
+    result = models.protein.REV.ModelDescription.withGamma(type);
+    result ["frequency-estimator"] = "protein_gtr.REV.ModelDescription.freqs";
+    return result;
+}
+/**
+ * @name protein_gtr.REV.ModelDescription
+ * @description Define a REV model with constant site rates
+ */
+function protein_gtr.REV.ModelDescription (type) {
+    result = models.protein.REV.ModelDescription(type);
+    result ["frequency-estimator"] = "protein_gtr.REV.ModelDescription.freqs";
+    return result;
+}
+/**
+ * @name protein_gtr.REV.ModelDescription.freqs
+ * @description Define REV model frequencies as empirical
+ */
+function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
+    model[terms.efv_estimate] = protein_gtr.shared_EFV;
+    model[terms.efv_estimate_name] = terms.freqs.predefined;
+    (model["parameters"])["empirical"] = 0;
+    return model;
+}
+
+/***************************************************************************
+TO DO: These models should eventually be moved, in a more elegant way, to libv3/models/protein/.
+****************************************************************************/
+/**
+ * @name models.protein.WAG.ModelDescription.withGamma
+ * @description Define WAG model with four-category gamma rate variation
+ */
+lfunction models.protein.WAG.ModelDescription.withGamma (options) {
+	def = models.protein.WAG.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+/**
+ * @name models.protein.JTT.ModelDescription.withGamma
+ * @description Define JTT model with four-category gamma rate variation
+ */
+lfunction models.protein.JTT.ModelDescription.withGamma (options) {
+	def = models.protein.JTT.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+/**
+ * @name models.protein.LG.ModelDescription.withGamma
+ * @description Define LG model with four-category gamma rate variation
+ */
+lfunction models.protein.LG.ModelDescription.withGamma (options) {
+	def = models.protein.LG.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+/**
+ * @name models.protein.JC.ModelDescription.withGamma
+ * @description Define JC model with four-category gamma rate variation
+ */
+lfunction models.protein.JC.ModelDescription.withGamma (options) {
+	def = models.protein.JC.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+/**
+ * @name models.protein.REV.ModelDescription.withGamma
+ * @description Define REV model with four-category gamma rate variation
+ */
+lfunction models.protein.REV.ModelDescription.withGamma (options) {
+	def = models.protein.REV.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+
+//------------------------------------------------------------------------------------------------------------------------
+
+
+/**
+ * @name protein_gtr.fitBaselineToFile
+ * @description Fits an empirical amino acid model to dataset for branch length optimization
+ * @param {String} filename - The name of the file containing the dataset to which the amino acid model will be fitted
+ * @return the fitted MLE
+ */
+function protein_gtr.fitBaselineToFile (filename) {
     protein_gtr.file_info = alignments.ReadNucleotideDataSet ("protein_gtr.msa",
                                                               filename);
-
-    /*
-        protein_gtr.file_info =>
-
-        {
-             "sequences":20,
-             "sites":190,
-             "name-mapping":null,
-             "partitions":{
-              {"default", ""}
-              },
-             "file":"/Users/sergei/Dropbox/Work/Collaborations/REV-fitter/ModelFitter_libv3/simulation/hyphy_input/simulated_wag1.dat"
-       }
-
-
-    */
-
     protein_gtr.file_info["json"] = protein_gtr.file_info["file"] + ".json";
     protein_gtr.name_mapping = protein_gtr.file_info[utility.getGlobalValue("terms.json.name_mapping")];
-        /**
-            will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
-        */
-
     if (None == protein_gtr.name_mapping) { /** create a 1-1 mapping if nothing was done */
         protein_gtr.name_mapping = {};
         utility.ForEach (alignments.GetSequenceNames ("protein_gtr.msa"), "_value_", "`&protein_gtr.name_mapping`[_value_] = _value_");
@@ -42,36 +123,34 @@ function protein_gtr.fitWAGtoFile (filename) {
     utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", None);
 
     // trees
-
     protein_gtr.filter_specification = alignments.DefineFiltersForPartitions (protein_gtr.partitions_and_trees,
                                                                             "protein_gtr.msa" ,
                                                                             "protein_gtr.filter.",
                                                                             protein_gtr.file_info);
-    /*
-    {
-     "0":{
-       "name":"protein_gtr.filter.default",
-       "coverage":{
-        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11...
-        }
-      }
-    }
-    */
+    trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_["tree"]');
+    data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']");
 
 
-    protein_gtr.wag.mle = estimators.FitSingleModel_Ext (utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']"), utility.Map (protein_gtr.partitions_and_trees, "_value_", "_value_['tree']"),
-                                   "models.protein.WAG.ModelDescription",
-                                   None,
-                                   None);
 
-    return protein_gtr.wag.mle;
+    protein_gtr.baseline.mle = estimators.FitSingleModel_Ext(data_filter,
+                                                        trees,
+                                                        protein_gtr.final_baseline_model,
+                                                        None,
+                                                        None);
+    return protein_gtr.baseline.mle;
 }
 
 
 
-
-//================================================================================================//
-
+/**
+ * @name protein_gtr.fitGTRtoFileList
+ * @description Fits an average GTR amino acid model to a set of datasets 
+ * @param {Dict} current_results - the current analysis results, used for accurate file indexing
+ * @param {Dict} previous_values - the fitted REV model from previous fit iteration, to use as initial values for this fit if they exist. If this is the first fit, then this is simply 0.
+ * @param {String} phase - the key for this fit iteration
+ * @param {Bool} final - True if this is the final tuning after convergence achieved, False if another fit iteration. 
+ * @return the fitted MLE
+ */
 function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, final) {
 
     io.ReportProgressMessageMD ("Protein GTR Fitter", phase,
@@ -119,22 +198,19 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
         }
     }
 
-    // Initialize REV rates TO WAG
     utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
     utility.ToggleEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1);
     utility.ToggleEnvVariable ("OPTIMIZATION_METHOD", 0);
 
     if (! final) {
-    // NOT THE FINAL RUN: STILL A PHASE
-        // previous_values exist from a previous GTR fit
+        // Set initial values to the previous fit
         if (utility.Has (previous_values, "global", "AssociativeList")) {
             initial_values["global"] = previous_values["global"];
 
         } 
-        // previous_values don't exist so we must decide on initial values.
+        // Set initial values to JC
         else {
             
-            /*
             // This will initialize to a given value, e.g. 1 or a random number
             for (l1 = 0; l1 < 20; l1 += 1) {
                 for (l2 = l1 + 1; l2 < 20; l2 += 1) {
@@ -142,14 +218,13 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
                     //(initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : Random (0.5,2)};
                 }
             }
-            */
-            
-            // This will initialize to WAG
+            /*
+            // This will initialize to the selected baseline model.
              for (l1 = 0; l1 < 20; l1 += 1) {
                 for (l2 = l1 + 1; l2 < 20; l2 += 1) {
                     (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : (models.protein.WAG.empirical_Q[models.protein.alphabet[l1]])[models.protein.alphabet[l2]]};
                 }
-            }
+            }*/
 
         }
         // fit the model
@@ -158,24 +233,20 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
                                             trees,
                                             "models.protein.REV.ModelDescription",
                                             initial_values,
-                                            // INITIAL VALUE DICT
                                             {"proportional-branch-length-scaler" : proportional_scalers}
-                                            // BRANCH LENGTH HANDLING OPTIONS
                                        );
 
         // save the model fit to be associated with its filename index
         protein_gtr.rev.mle ["filename-to-index"] = index_to_file_name;
-    } else {
-    // FINAL TUNING FIT
+    } 
+    // FINAL TUNING
+    else {
         protein_gtr.rev.mle = estimators.FitSingleModel_Ext (
                                         utility.Map (filter_info, "_value_", "_value_['name']"),
                                         trees,
                                         "models.protein.REV.ModelDescription",
                                         previous_values,
-                                        // INITIAL VALUE DICT
                                         None
-                                        //{"proportional-branch-length-scaler" : proportional_scalers}
-                                        // BRANCH LENGTH HANDLING OPTIONS
                                    );
 
     }
@@ -193,119 +264,22 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
 
     return protein_gtr.rev.mle;
 
-
 }
 
 
-//================================================================================================//
-
-function protein_gtr.run_gtr_iteration_branch_lengths () {
-    protein_gtr.fit_phase += 1;
-
-    protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules () ,
-                                            "Functions" :
-                                            {
-                                                {"protein_gtr.REV.ModelDescription",
-                                                 "protein_gtr.REV.ModelDescription.freqs"
-                                                }
-                                            },
-                                            "Variables" : {{
-                                                "protein_gtr.shared_EFV"
-                                            }}
-                                         });
-
-    protein_gtr.phase_key = "Rev-local-Phase" + protein_gtr.fit_phase;
-
-    io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key, "Retuning branch lengths (" + protein_gtr.phase_key + ")");
-
-    for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) {
-
-       if (utility.Has (protein_gtr.analysis_results, {{ protein_gtr.file_list[file_index],  protein_gtr.phase_key}}, None)) {
-            logL = ((protein_gtr.analysis_results[protein_gtr.file_list[file_index]])[protein_gtr.phase_key])["LogL"];
-
-            io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
-                                        "Loaded cached results for '" + protein_gtr.file_list[file_index] + "' " + (file_index+1) + "/" + protein_gtr.file_list_count + ". Log(L) = " + logL);
-
-        } else {
-            io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
-                                        "Dispatching file '" + protein_gtr.file_list[file_index] + "' " + (file_index+1) + "/" + protein_gtr.file_list_count);
-
-            mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitGTRtoFile", {"0" : protein_gtr.file_list[file_index],
-                                                                          "1" : protein_gtr.current_gtr_fit["global"],
-                                                                          "2" : (protein_gtr.current_gtr_fit[terms.json.attribute.branch_length])[(protein_gtr.current_gtr_fit["filename-to-index"])[protein_gtr.file_list[file_index]]]},
-                                                                "protein_gtr.handle_gtr_callback");
-        }
-    }
-    mpi.QueueComplete (protein_gtr.queue);
-
-    protein_gtr.run_gtr_iteration_branch_lengths.logL = math.Sum (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_key"), "_value_", "(_value_[protein_gtr.phase_key])['LogL']"));
-
-    io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
-                            "Overall Log(L) = " + protein_gtr.run_gtr_iteration_branch_lengths.logL);
-
-    return { "LogL" : protein_gtr.run_gtr_iteration_branch_lengths.logL , "phase" : protein_gtr.phase_key};
-
-}
-
-//================================================================================================//
-
-function protein_gtr.handle_wag_callback (node, result, arguments) {
-    utility.EnsureKey (^"protein_gtr.analysis_results", arguments[0]);
-
-    ((^"protein_gtr.analysis_results")[arguments[0]])[utility.getGlobalValue("protein_gtr.phase_key")] = result;
-
-    io.ReportProgressMessageMD ("Protein GTR Fitter", "Initial branch length fit",
-                                "Received file '" + arguments[0] + "' from node " + node + ". LogL = " + result["LogL"]);
-
-    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
-
-}
-
-//================================================================================================//
-
-function protein_gtr.handle_gtr_callback (node, result, arguments) {
-    utility.EnsureKey (^"protein_gtr.analysis_results", arguments[0]);
-
-    ((^"protein_gtr.analysis_results")[arguments[0]])[utility.getGlobalValue("protein_gtr.phase_key")] = result;
-
-    io.ReportProgressMessageMD ("Protein GTR Fitter", "* Rev-local-Phase" + ^"protein_gtr.fit_phase",
-                                "Received file '" + arguments[0] + "' from node " + node + ". LogL = " + result["LogL"]);
-
-    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
-
-}
-
-
-
-
-
-//================================================================================================//
-
-function protein_gtr.REV.ModelDescription (type) {
-    result = models.protein.REV.ModelDescription(type);
-    result ["frequency-estimator"] = "protein_gtr.REV.ModelDescription.freqs";
-    return result;
-}
-
-//================================================================================================//
-
-function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
-    model[terms.efv_estimate] =
-        protein_gtr.shared_EFV;
-
-    model[terms.efv_estimate_name] = terms.freqs.predefined;
-    (model["parameters"])["empirical"] = 0;
-    return model;
-}
-
-
-//================================================================================================//
-
+/**
+ * @name protein_gtr.fitGTRtoFile
+ * @description Use a previously-fitted average REV amino acid model to a file, specifically for branch length optimization under this model
+ * @param {String} filename - the filename of the dataset to be fitted
+ * @param {Dict} rates - the rates for the GTR model used in fitting
+ * @param {Dict} branch_lengths - the current branch length values for this dataset
+ * @return the fitted MLE
+ */
 function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
 
     protein_gtr.file_info = alignments.ReadNucleotideDataSet ("protein_gtr.msa",
                                                               filename);
-
+                                                              
     utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", "/dev/null");
 
     ExecuteCommands ('protein_gtr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (protein_gtr.file_info [utility.getGlobalValue("terms.json.partitions")], protein_gtr.name_mapping)',
@@ -327,25 +301,116 @@ function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
         }
     }
 
-
     protein_gtr.rev_file_mle [terms.json.attribute.branch_length] = { "0" : branch_lengths };
 
-    //utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
-
-
-
+    utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
     protein_gtr.rev_file_mle = estimators.FitSingleModel_Ext (
                                         utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']"), // value => value['name']
                                         utility.Map (protein_gtr.partitions_and_trees, "_value_", "_value_['tree']"), // value => value['tree']
-                                        "protein_gtr.REV.ModelDescription",
+                                        protein_gtr.rev_model_branch_lengths, // pre-defined with or without gamma.
                                         protein_gtr.rev_file_mle,
-                                        // INITIAL VALUE DICT
                                         None
-                                        // BRANCH LENGTH HANDLING OPTIONS
                                    );
 
     protein_gtr.rev_file_mle - "global"; // delete redundant keys
 
     return protein_gtr.rev_file_mle;
+
+}
+
+
+
+
+
+/**
+ * @name protein_gtr.run_gtr_iteration_branch_lengths
+ * @description Optimizes branch lengths for all datasets using the REV model fitted in the current iteration
+ * @return Dictionary containing summed LogL values from branch length optimizations and the phase index for this iteration
+ */
+function protein_gtr.run_gtr_iteration_branch_lengths () {
+    protein_gtr.fit_phase += 1;
+
+    protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules () ,
+                                            "Functions" :
+                                            {
+                                                {"protein_gtr.REV.ModelDescription",
+                                                 "protein_gtr.REV.ModelDescription.withGamma",
+                                                 "protein_gtr.REV.ModelDescription.freqs"
+                                                }
+                                            },
+                                            "Variables" : {{
+                                                "protein_gtr.shared_EFV"
+                                            }}
+                                         });
+
+    protein_gtr.phase_key = "Rev-local-Phase-" + protein_gtr.fit_phase;
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key, "Retuning branch lengths (" + protein_gtr.phase_key + ")");
+
+    for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) {
+
+       if (utility.Has (protein_gtr.analysis_results, {{ protein_gtr.file_list[file_index],  protein_gtr.phase_key}}, None)) {
+            logL = ((protein_gtr.analysis_results[protein_gtr.file_list[file_index]])[protein_gtr.phase_key])["LogL"];
+
+            io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
+                                        "Loaded cached results for '" + protein_gtr.file_list[file_index] + "' " + (file_index+1) + "/" + protein_gtr.file_list_count + ". Log(L) = " + logL);
+
+        } else {
+            io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
+                                        "Dispatching file '" + protein_gtr.file_list[file_index] + "' " + (file_index+1) + "/" + protein_gtr.file_list_count);           
+            
+            mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitGTRtoFile", {"0" : protein_gtr.file_list[file_index],
+                                                                          "1" : protein_gtr.current_gtr_fit["global"],
+                                                                          "2" : (protein_gtr.current_gtr_fit[terms.json.attribute.branch_length])[(protein_gtr.current_gtr_fit["filename-to-index"])[protein_gtr.file_list[file_index]]]},
+                                                                "protein_gtr.handle_gtr_callback");
+        }
+    }
+    mpi.QueueComplete (protein_gtr.queue);
+
+    protein_gtr.run_gtr_iteration_branch_lengths.logL = math.Sum (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_key"), "_value_", "(_value_[protein_gtr.phase_key])['LogL']"));
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key,
+                            "Overall Log(L) = " + protein_gtr.run_gtr_iteration_branch_lengths.logL);
+
+    return { "LogL" : protein_gtr.run_gtr_iteration_branch_lengths.logL , "phase" : protein_gtr.phase_key};
+
+}
+
+/**
+ * @name protein_gtr.handle_gtr_callback
+ * @description Handle MPI callback after fitting a REV model and save fit information to cache file
+ */
+function protein_gtr.handle_gtr_callback (node, result, arguments) {
+    
+    utility.EnsureKey (^"protein_gtr.analysis_results", arguments[0]);
+
+    ((^"protein_gtr.analysis_results")[arguments[0]])[utility.getGlobalValue("protein_gtr.phase_key")] = result;
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", "* Rev-local-Phase-" + ^"protein_gtr.fit_phase",
+                                "Received file '" + arguments[0] + "' from node " + node + ". LogL = " + result["LogL"]);
+
+    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
+
+}
+
+
+/**
+ * @name protein_gtr.handle_baseline_callback
+ * @param node - node name which processed the given data
+ * @param {Dict} result - Dictionary of fitted information for given data
+ * @param {Dict} arguments - Dictionary with single key:value :: 0:datafile name
+ * @description Handle MPI callback after fitting a baseline amino acid model (for initial branch length optimization) and save fit information to cache file
+ */
+function protein_gtr.handle_baseline_callback (node, result, arguments) {
+    
+    utility.EnsureKey (^"protein_gtr.analysis_results", arguments[0]);
+
+    ((^"protein_gtr.analysis_results")[arguments[0]])[utility.getGlobalValue("protein_gtr.phase_key")] = result;
+
+    io.ReportProgressMessageMD ("Protein GTR Fitter", "Initial branch length fit",
+                                "Received file '" + arguments[0] + "' from node " + node + ". LogL = " + result["LogL"]);
+
+
+    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
 
 }
