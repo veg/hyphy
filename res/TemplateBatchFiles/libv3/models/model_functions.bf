@@ -152,20 +152,20 @@ lfunction model.generic.get_a_parameter (model_spec, tag, type) {
  * @param tag
  * @param type
  */
- 
+
 lfunction model.generic.get_rate_variation (model_spec) {
-	
+
 	__rate_variation = model_spec[^"terms.rate_variation"];
 
 	if (Type (__rate_variation) == "AssociativeList") {
 		assert (utility.Has (__rate_variation, "distribution", "String"), "Missing required key `distribution' in the rate variation component definition");
 		assert (utility.Has (__rate_variation, "rate_modifier", "String"), "Missing required key `rate_modifier' in the rate variation component definition");
 		assert (utility.IsFunction (__rate_variation["distribution"]), "'" + parameters.Quote (__rate_variation["distribution"]) + " must be a function ID");
-		assert (utility.IsFunction (__rate_variation["rate_modifier"]), "'" + parameters.Quote (__rate_variation["rate_modifier"]) + " must be a function ID");	
+		assert (utility.IsFunction (__rate_variation["rate_modifier"]), "'" + parameters.Quote (__rate_variation["rate_modifier"]) + " must be a function ID");
 		return __rate_variation;
 	}
 
-	
+
 	return None;
 }
 
@@ -235,12 +235,12 @@ function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filte
     // this sets the EFV field
  	Call (model.generic.DefineModel.model ["frequency-estimator"], model.generic.DefineModel.model,
 													    id,
-													    data_filter); 
+													    data_filter);
 
 	model.generic.DefineModel.model ["matrix-id"] = {};
 
 	model.generic.mixture_expr = {};
-	
+
     utility.ForEachPair (model.generic.DefineModel.model[terms.mixture_components], "model.generic.key", "model.generic.value",
         '
             (model.generic.DefineModel.model ["matrix-id"])[model.generic.key] = "`id`_" + terms.rate_matrix + "_"+ model.generic.key;
@@ -275,7 +275,7 @@ function models.generic.post.definition  (model) {
     if (Type (model ["id"]) == "String") {
         ExecuteCommands ("GetString (models.generic.post.definition.bl,"+model ["id"]+",-1)");
         model ["branch-length-string"] = models.generic.post.definition.bl;
-    } 
+    }
     return model;
 }
 
@@ -288,17 +288,20 @@ function models.generic.post.definition  (model) {
  */
 function models.generic.SetBranchLength (model, value, parameter) {
 
-    if (Abs((model["parameters"])["local"]) == 1) {
+     if (Abs((model["parameters"])["local"]) == 1) {
         if (Type (model ["branch-length-string"]) == "String") {
             models.generic.SetBranchLength.bl = (Columns ((model["parameters"])["local"]))[0];
             models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
              if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p)) {
                 if (Type (value) == "AssociativeList") {
-                	if (Abs (model ["branch-length-string"])) {
+                 	if (Abs (model ["branch-length-string"])) {
                     	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
                     	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+					    warning.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+
 					} else {
                     	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
+                    	warning.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					}
 
                     return 1;
@@ -306,7 +309,8 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 } else {
                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
                     Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
-               }
+                    warning.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
+              }
             } else {
                 warning.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");
             }
@@ -401,7 +405,7 @@ lfunction model.MatchAlphabets (a1, a2) {
  * @sa model.BranchLengthExpressionFromMatrix
  * @returns {String} the branch length expression string
  */
- 
+
 lfunction model.BranchLengthExpression (model) {
 	if (Type (model[^'terms.rate_matrix']) == "Matrix") {
 		expr = model.BranchLengthExpressionFromMatrix (model[^'terms.rate_matrix'], model[^'terms.efv_estimate'], model['canonical']);
@@ -415,17 +419,17 @@ lfunction model.BranchLengthExpression (model) {
 		}
 		expr = Join ("+", components);
 	}
-	
+
 	return "(" + expr + ")/3";
 }
 
 lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
-	
+
 	by_expr = {};
 	dim = Rows (q);
 	can_alias = Type (freqs[0]) == "Number";
-	
-	if (can_alias) {	
+
+	if (can_alias) {
 		for (i = 0; i < dim; i+=1) {
 			for (j = 0; j < dim; j+=1) {
 				if (i != j) {
@@ -441,7 +445,7 @@ lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
 			}
 		}
 		expr = {};
-		utility.ForEachPair (by_expr, "_expr_", "_wt_", 
+		utility.ForEachPair (by_expr, "_expr_", "_wt_",
 		'
 			`&expr` + ("(" + _expr_ + ")*" + _wt_)
 		');
@@ -461,9 +465,9 @@ lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
 				}
 			}
 		}
-		
+
 	}
-	
+
 	expr = Join ("+", expr);
 	return expr;
 }
