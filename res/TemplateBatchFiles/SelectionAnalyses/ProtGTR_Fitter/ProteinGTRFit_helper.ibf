@@ -21,6 +21,15 @@ function protein_gtr.save_options() {
 /* Model definitions, in particular for models with rate variation */
 //------------------------------------------------------------------------------------------------------------------------
 /**
+ * @name models.protein.REV.ModelDescription.withGamma
+ * @description Define REV model with four-category gamma rate variation
+ */
+lfunction models.protein.REV.ModelDescription.withGamma (options) {
+	def = models.protein.REV.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
+/**
  * @name protein_gtr.REV.ModelDescription.withGamma
  * @description Define a REV model with Gamma rate variation
  */
@@ -53,56 +62,23 @@ function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
     return model;
 }
 
-/***************************************************************************
-TO DO: These models should eventually be moved, in a more elegant way, to libv3/models/protein/.
-****************************************************************************/
-/**
- * @name models.protein.WAG.ModelDescription.withGamma
- * @description Define WAG model with four-category gamma rate variation
- */
-lfunction models.protein.WAG.ModelDescription.withGamma (options) {
-	def = models.protein.WAG.ModelDescription (options);
+function protein_gtr.plusF.ModelDescription(type) {
+    models.protein.plusF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.plusF.ModelDescription.model_definition ["empirical-rates"] = protein_gtr.normalized_qij;
+    models.protein.plusF.ModelDescription.model_definition ["frequency-estimator"] = "protein_gtr.plusF.frequencies";
+    models.protein.plusF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.plusF.ModelDescription.model_definition ["q_ij"] = "protein_gtr.plusF._GenerateRate";
+    return models.protein.plusF.ModelDescription.model_definition;
+}
+lfunction protein_gtr.plusF.ModelDescription.withGamma (options) {
+	def = protein_gtr.plusF.ModelDescription (options);
 	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
 	return def;
 };
-/**
- * @name models.protein.JTT.ModelDescription.withGamma
- * @description Define JTT model with four-category gamma rate variation
- */
-lfunction models.protein.JTT.ModelDescription.withGamma (options) {
-	def = models.protein.JTT.ModelDescription (options);
-	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
-	return def;
-};
-/**
- * @name models.protein.LG.ModelDescription.withGamma
- * @description Define LG model with four-category gamma rate variation
- */
-lfunction models.protein.LG.ModelDescription.withGamma (options) {
-	def = models.protein.LG.ModelDescription (options);
-	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
-	return def;
-};
-/**
- * @name models.protein.JC.ModelDescription.withGamma
- * @description Define JC model with four-category gamma rate variation
- */
-lfunction models.protein.JC.ModelDescription.withGamma (options) {
-	def = models.protein.JC.ModelDescription (options);
-	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
-	return def;
-};
-/**
- * @name models.protein.REV.ModelDescription.withGamma
- * @description Define REV model with four-category gamma rate variation
- */
-lfunction models.protein.REV.ModelDescription.withGamma (options) {
-	def = models.protein.REV.ModelDescription (options);
-	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
-	return def;
-};
-
 //------------------------------------------------------------------------------------------------------------------------
+
+
+
 
 
 /**
@@ -136,6 +112,11 @@ function protein_gtr.fitBaselineToFile (filename) {
     trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_["tree"]');
     data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']");
 
+
+
+    /******************** NORMALIZE MATRIX WITH DATA FREQUENCIES HERE *************************/
+    protein_gtr.empirical_frequencies = protein_gtr.GetFrequenciesHack(data_filter, trees); 
+    protein_gtr.normalized_qij = protein_gtr.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.final_baseline_model_Rij, models.protein.alphabet);
 
 
     protein_gtr.baseline.mle = estimators.FitSingleModel_Ext(data_filter,
@@ -413,3 +394,93 @@ function protein_gtr.handle_baseline_callback (node, result, arguments) {
     io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
 
 }
+
+
+/******************** FUNCTIONS USED FOR +F W/ NORMALIZATION ***************************/
+
+lfunction protein_gtr.plusF._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (protein_gtr.normalized_qij , from,to,namespace,modelType);
+}
+
+function protein_gtr.plusF.frequencies (model, namespace, datafilter) {
+
+    model[terms.efv_estimate] = protein_gtr.empirical_frequencies;
+    model[terms.efv_estimate_name] = terms.freqs.predefined;
+    (model["parameters"])["empirical"] = 0;
+}
+
+lfunction protein_gtr.IntermediatePlusF.ModelDescription(type) {
+    models.protein.plusF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.plusF.ModelDescription.model_definition ["empirical-rates"] = models.protein.WAG.empirical_Q;
+    models.protein.plusF.ModelDescription.model_definition ["frequency-estimator"] = "frequencies.empirical.protein";
+    models.protein.plusF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.plusF.ModelDescription.model_definition ["q_ij"] = "models.protein.WAG._GenerateRate";
+    return models.protein.plusF.ModelDescription.model_definition;
+}
+
+
+lfunction protein_gtr.GetFrequenciesHack (data_filter, tree) {
+
+    model_template = "protein_gtr.IntermediatePlusF.ModelDescription";
+    
+    components = utility.Array1D(data_filter);
+    filters = utility.Map({
+        components,
+        1
+    }["_MATRIX_ELEMENT_ROW_"], "_value_", "''+ '`&nuc_data`_' + _value_");
+    for (i = 0; i < components; i += 1) {
+        DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
+    }
+    name_space = & user;
+    user_model = model.generic.DefineModel(model_template, name_space, {
+            "0": "terms.global"
+        }, filters, None);
+    return user_model["EFV"];
+}
+
+// This code is elegant and I will hear nothing to the contrary. 
+lfunction protein_gtr.BuildCustomNormalizedQ(EFV, rij, alphabet){
+    dim  = utility.Array1D (alphabet);
+    
+    
+    // Create Q from R, EFV
+    Q = {dim,dim};
+    rowSums = {dim,1};
+    
+    for (i = 0; i < dim; i +=1 ){
+        rowSum = 0;
+        for ( j = 0; j < dim; j += 1){            
+            Q[i][j] = rij[i][j] * EFV[j];
+            rowSum += rij[i][j] * EFV[j];
+        }
+        rowSums[i] = -1 * rowSum;    
+    }
+
+    // Fill in diagonal
+    for (i = 0; i < dim; i += 1){
+        Q[i][i] = rowSums[i];
+    }
+
+    // normalize that mother
+    scalar = 0;
+    for (i = 0; i < dim; i +=1 ){
+        scalar += Q[i][i] * EFV[i];
+    }
+    scalar = -1*scalar;
+    for (i = 0; i < dim; i +=1 ){
+        for ( j = 0; j < dim; j += 1){
+            Q[i][j] = Q[i][j] / scalar;
+        }
+    }
+    // Now convert it BACK TO hyphy dictionary.
+    finalQ  = {};
+    for (l1 = 0; l1 < dim - 1; l1 += 1) {
+        finalQ[alphabet[l1]] = {};
+        for (l2 = l1 + 1; l2 < dim; l2 += 1) {
+            (finalQ[alphabet[l1]])[alphabet[l2]] = Q [l1][l2];
+        }
+    }
+    return finalQ;
+}
+
+

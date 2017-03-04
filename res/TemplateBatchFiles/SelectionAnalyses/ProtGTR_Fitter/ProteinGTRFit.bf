@@ -78,30 +78,24 @@ else {
     // Prompt for rate variation
     protein_gtr.use_rate_variation = io.SelectAnOption ({{"YES", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"NO", "Do not consider rate variation when optimizing branch lengths."}},
                                                         "Would you like to optimize branch lengths with rate variation?");
-
-    // Set up dictionary of baseline models, depending on specified baseline and rate variation
-    if (protein_gtr.use_rate_variation == "YES"){
-        protein_gtr.baseline_model_functions = {"WAG": "models.protein.WAG.ModelDescription.withGamma",
-                                                "LG": "models.protein.LG.ModelDescription.withGamma",
-                                                "JTT": "models.protein.JTT.ModelDescription.withGamma",
-                                                "JC": "models.protein.JC.ModelDescription.withGamma"};
-    } else{
-        protein_gtr.baseline_model_functions = {"WAG": "models.protein.WAG.ModelDescription",
-                                                "LG": "models.protein.LG.ModelDescription",
-                                                "JTT": "models.protein.JTT.ModelDescription",
-                                                "JC": "models.protein.JC.ModelDescription"};
-    }
-    protein_gtr.final_baseline_model = protein_gtr.baseline_model_functions[protein_gtr.baseline_model];
+    
     // Save these options to cache
     protein_gtr.save_options();
 
 }
 
-/** set GTR definitions regardless of whether or not this is a cached run **/
-
+/** set model definitions **/
+protein_gtr.baseline_model_Rij = {"WAG": models.protein.empirical.WAG.empirical_R,
+                                  "LG":  models.protein.empirical.LG.empirical_R,
+                                  "JTT": models.protein.empirical.JTT.empirical_R,
+                                  "JC": models.protein.empirical.JC.empirical_R};
+                                  
+protein_gtr.final_baseline_model_Rij = protein_gtr.baseline_model_Rij[protein_gtr.baseline_model];
 if (protein_gtr.use_rate_variation == "YES"){
+    protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription.withGamma";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription.withGamma";
 } else{
+    protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription";
 }
 
@@ -143,9 +137,9 @@ for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) 
 
     if (utility.Has (protein_gtr.analysis_results, {{ protein_gtr.file_list[file_index], protein_gtr.phase_key}}, None)) {
 
-
+        thisKey = (protein_gtr.analysis_results[protein_gtr.file_list[file_index]])["Baseline-Phase"];
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
-                                    "Loaded cached results for '" + cached_file + ". Log(L) = " + logL);
+                                    "Loaded cached results for '" + cached_file + ". Log(L) = " + thisKey["LogL"]);
 
     } else {
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
@@ -165,6 +159,8 @@ protein_gtr.baseline_fit_logL = math.Sum (utility.Map (utility.Filter (protein_g
 
 io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                             "Overall Log(L) = " + protein_gtr.baseline_fit_logL);
+
+
 
 /*************************** STEP TWO ***************************
           Perform an initial GTR fit on the data
@@ -251,6 +247,8 @@ for (;;) {
             break;
         }
     }
+    
+    // UNCLEAR IF TO DO: Before going to next iteration which begins w/ a branch length fit, we need to perform normalization. HyPhy might already do this.
 
 }
 
