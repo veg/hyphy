@@ -63,13 +63,11 @@ else {
     // Prompt for convergence assessment type
     protein_gtr.convergence_type = io.SelectAnOption ({{"LogL", "Assess REV fit convergence by comparing log likelihood scores"}, {"RMSE", "[Recommended] Assess REV fit convergence by comparing RMSE between fitted matrices"}}, "Select a convergence criterion.");
     if (protein_gtr.convergence_type == "LogL"){
-        protein_gtr.tolerance = 0.1;
+        protein_gtr.tolerance = io.PromptUser ("\n>Provide a tolerance level for convergence assessment (Default 0.01)",0.01,0,1,FALSE); // default, lower, upper, is_integer
     }
     else {
-        protein_gtr.tolerance = 0.001; // RMSE
+        protein_gtr.tolerance = io.PromptUser ("\n>Provide a tolerance level for convergence assessment (Default 0.001)",0.01,0,1,FALSE); // default, lower, upper, is_integer
     }
-
-
 
     // Prompt for baseline AA model
     protein_gtr.baseline_model  = io.SelectAnOption (models.protein.empirical_options,
