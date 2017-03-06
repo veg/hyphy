@@ -202,24 +202,15 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
         if (utility.Has (previous_values, "global", "AssociativeList")) {
             initial_values["global"] = previous_values["global"];
         }
-        // Set initial values to JC
+        // Set initial values to the specified baseline model ****r_ij****
         else {
-
-            // This will initialize to a given value, e.g. 1 or a random number
             for (l1 = 0; l1 < 20; l1 += 1) {
                 for (l2 = l1 + 1; l2 < 20; l2 += 1) {
-                    (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : 1};
-                    //(initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : Random (0.5,2)};
+                    //(initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : 1}; // set all to 1
+                    //(initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : Random (0.5,2)}; // set all to random number
+                    (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : protein_gtr.baseline_Rij[l1][l2]};
                 }
             }
-            /*
-            // This will initialize to the selected baseline model.
-             for (l1 = 0; l1 < 20; l1 += 1) {
-                for (l2 = l1 + 1; l2 < 20; l2 += 1) {
-                    (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : (models.protein.WAG.empirical_Q[models.protein.alphabet[l1]])[models.protein.alphabet[l2]]};
-                }
-            }*/
-
         }
         // fit the model
         protein_gtr.rev.mle = estimators.FitSingleModel_Ext (
