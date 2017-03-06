@@ -9,14 +9,11 @@ LoadFunctionLibrary ("frequencies.bf");
 models.protein.alphabet = {{"A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"}};
 
 
-/* Dictionary of available empirical models */
-models.protein.empirical_options = {{"WAG","Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
-                                     {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
-                                     {"LG", "Empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067 "},
-                                     {"JC", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."}};
-
-
-
+/* Array of available empirical models */
+models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067"},
+                                   {"WAG", "Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
+                                   {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
+                                   {"JC", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."}};
 
 
 

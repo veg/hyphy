@@ -1,17 +1,5 @@
 RequireVersion("2.31");
-
-LoadFunctionLibrary("libv3/UtilityFunctions.bf"); // namespace 'utility' for convenience functions
-LoadFunctionLibrary("libv3/tasks/alignments.bf"); // namespace 'alignments' for alignment-related functions
-LoadFunctionLibrary("libv3/tasks/trees.bf"); // namespace 'trees' for trees-related functions
-LoadFunctionLibrary("libv3/IOFunctions.bf"); // namespace 'io' for interactive/datamonkey i/o functions
-LoadFunctionLibrary("libv3/tasks/estimators.bf"); // namespace 'estimators' for various estimator related functions
-LoadFunctionLibrary("libv3/tasks/ancestral.bf"); // namespace 'ancestral' for ancestral reconstruction functions
-LoadFunctionLibrary("libv3/stats.bf"); // namespace 'stats' for various descriptive stats functions
-LoadFunctionLibrary("libv3/terms-json.bf");
-LoadFunctionLibrary("libv3/tasks/mpi.bf");
-LoadFunctionLibrary("libv3/convenience/math.bf");
-
-LoadFunctionLibrary("libv3/models/rate_variation.bf"); // rate variation
+LoadFunctionLibrary("libv3/function-loader.bf");
 
 // Protein models
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
@@ -50,7 +38,7 @@ if (io.FileExists(protein_gtr.cache_file)) {
 }
 
 // Load all information from cache
-if (protein_gtr.use_cache == "YES"){
+if (protein_gtr.use_cache == "YES" || protein_gtr.use_cache == 1){
     protein_gtr.analysis_results = io.LoadCacheFromFile (protein_gtr.cache_file);
     protein_gtr.load_cached_options();  // Load previously selected options into namespace
 
@@ -61,7 +49,8 @@ else {
     protein_gtr.analysis_results = {};
 
     // Prompt for convergence assessment type
-    protein_gtr.convergence_type = io.SelectAnOption ({{"LogL", "Assess REV fit convergence by comparing log likelihood scores"}, {"RMSE", "[Recommended] Assess REV fit convergence by comparing RMSE between fitted matrices"}}, "Select a convergence criterion.");
+    protein_gtr.convergence_type = io.SelectAnOption( protein_gtr.convergence_options, "Select a convergence criterion.");
+    
     if (protein_gtr.convergence_type == "LogL"){
         protein_gtr.tolerance = io.PromptUser ("\n>Provide a tolerance level for convergence assessment (Default 0.01)",0.01,0,1,FALSE); // default, lower, upper, is_integer
     }
@@ -70,34 +59,26 @@ else {
     }
 
     // Prompt for baseline AA model
-    protein_gtr.baseline_model  = io.SelectAnOption (models.protein.empirical_options,
+    protein_gtr.baseline_model  = io.SelectAnOption (models.protein.empirical_models,
                                                      "Select an empirical protein model to use for optimizing the provided branch lengths (we recommend LG):");
 
-    // Prompt for rate variation
-    protein_gtr.use_rate_variation = io.SelectAnOption ({{"YES", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"NO", "Do not consider rate variation when optimizing branch lengths."}},
-                                                        "Would you like to optimize branch lengths with rate variation?");
+    // Prompt for rate variation    
+    protein_gtr.use_rate_variation = io.SelectAnOption( protein_gtr.rate_variation_options, "Would you like to optimize branch lengths with rate variation?");
     
-    // Save these options to cache
     protein_gtr.save_options();
 
 }
 
-/** set model definitions **/
-protein_gtr.baseline_model_Rij = {"WAG": models.protein.empirical.WAG.empirical_R,
-                                  "LG":  models.protein.empirical.LG.empirical_R,
-                                  "JTT": models.protein.empirical.JTT.empirical_R,
-                                  "JC": models.protein.empirical.JC.empirical_R};
-                                  
-protein_gtr.final_baseline_model_Rij = protein_gtr.baseline_model_Rij[protein_gtr.baseline_model];
-if (protein_gtr.use_rate_variation == "YES"){
+
+
+protein_gtr.baseline_Rij = protein_gtr.baseline_Rij_options[protein_gtr.baseline_model]; // Defined in helper
+if (protein_gtr.use_rate_variation == "Yes"){
     protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription.withGamma";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription.withGamma";
 } else{
     protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription";
 }
-
-
 /********************************************************************************************************************/
 
 

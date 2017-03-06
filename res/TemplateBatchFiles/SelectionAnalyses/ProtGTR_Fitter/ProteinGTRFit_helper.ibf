@@ -1,19 +1,37 @@
 /*************** Functions used in ProteinGTRFit.bf ******************/
-
+/** set model definitions **/
+protein_gtr.baseline_Rij_options = {"LG":  models.protein.empirical.LG.empirical_R,
+                                    "WAG": models.protein.empirical.WAG.empirical_R,
+                                    "JTT": models.protein.empirical.JTT.empirical_R,
+                                    "JC":  models.protein.empirical.JC.empirical_R};
+protein_gtr.convergence_options = {{"LogL", "Assess REV fit convergence by comparing log likelihood scores"}, {"RMSE", "[Recommended] Assess REV fit convergence by comparing RMSE between fitted matrices."}};
+protein_gtr.rate_variation_options = {{"Yes", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"No", "Do not consider rate variation when optimizing branch lengths."}};                    
 
 function protein_gtr.load_cached_options() {
     protein_gtr.convergence_type = (protein_gtr.analysis_results["options"])["convergence_type"];
     protein_gtr.tolerance = (protein_gtr.analysis_results["options"])["tolerance"];
-    protein_gtr.final_baseline_model = (protein_gtr.analysis_results["options"])["final_baseline_model"];
-    protein_gtr.protein_gtr.use_rate_variation = (protein_gtr.analysis_results["options"])["rate_variation"];
+    protein_gtr.baseline_model = (protein_gtr.analysis_results["options"])["baseline_model"];
+    protein_gtr.use_rate_variation = (protein_gtr.analysis_results["options"])["rate_variation"];
+    
+    /*** Cache options can in theory be saved as numbers if options piped in, although not typically. Remap to strings. ****/
+    if (Type(protein_gtr.convergence_type) == "Number"){
+        protein_gtr.convergence_type = utility.SwapKeysAndValues(utility.MatrixToDict(protein_gtr.convergence_options))[protein_gtr.convergence_type*2];
+    } 
+    if (Type(protein_gtr.baseline_model) == "Number"){
+        protein_gtr.baseline_model = utility.SwapKeysAndValues(utility.MatrixToDict(models.protein.empirical_models))[protein_gtr.baseline_model*2];
+   }
+    if (Type(protein_gtr.protein_gtr.use_rate_variation) == "Number"){
+        protein_gtr.use_rate_variation = utility.SwapKeysAndValues(utility.MatrixToDict(protein_gtr.rate_variation_options))[protein_gtr.use_rate_variation*2];
+    }
     return 0;
 }
 
 function protein_gtr.save_options() {
     protein_gtr.analysis_results["options"] = {"convergence_type": protein_gtr.convergence_type,
                                                "tolerance": protein_gtr.tolerance,
-                                               "final_baseline_model": protein_gtr.final_baseline_model,
-                                               "rate_variation" : protein_gtr.protein_gtr.use_rate_variation};
+                                               "baseline_model": protein_gtr.baseline_model,
+                                               "rate_variation" : protein_gtr.use_rate_variation};
+    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
     return 0;
 }
 
@@ -116,7 +134,7 @@ function protein_gtr.fitBaselineToFile (filename) {
 
     /******************** NORMALIZE MATRIX WITH DATA FREQUENCIES HERE *************************/
     protein_gtr.empirical_frequencies = protein_gtr.GetFrequenciesHack(data_filter, trees); 
-    protein_gtr.normalized_qij = protein_gtr.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.final_baseline_model_Rij, models.protein.alphabet);
+    protein_gtr.normalized_qij = protein_gtr.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.baseline_Rij, models.protein.alphabet);
 
 
     protein_gtr.baseline.mle = estimators.FitSingleModel_Ext(data_filter,
