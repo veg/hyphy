@@ -3,6 +3,7 @@
 sudo : false
 
 notifications:
+    slack: veg-igem:vds64dtEO5py4gL1TLVnPXcS
     email:
         recipients:
             - steven@stevenweaver.org
