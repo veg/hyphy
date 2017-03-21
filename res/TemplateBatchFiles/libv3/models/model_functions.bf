@@ -297,11 +297,11 @@ function models.generic.SetBranchLength (model, value, parameter) {
                  	if (Abs (model ["branch-length-string"])) {
                     	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
                     	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
-					    warning.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+					    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 
 					} else {
                     	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
-                    	warning.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+                    	messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					}
 
                     return 1;
@@ -309,12 +309,16 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 } else {
                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
                     Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
-                    warning.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
+                    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
               }
             } else {
-                warning.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");
+                messages.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");
             }
+        } else {
+	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");		        
         }
+    } else {
+        messages.log ("models.generic.SetBranchLength: more than one local model parameter");
     }
     return 0;
 }
