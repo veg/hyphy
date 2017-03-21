@@ -178,10 +178,7 @@ if (utility.Has (protein_gtr.analysis_results, result_key, None)) {
                                 "Loaded cached results for '" + result_key + "'. Log(L) = " + (protein_gtr.analysis_results[result_key])["LogL"] );
     protein_gtr.current_gtr_fit = protein_gtr.analysis_results [result_key];
 } else {
-
-    current_results = utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/'" + protein_gtr.phase_key + "'"), "_value_", "_value_['" + protein_gtr.phase_key + "']");
-
-    protein_gtr.current_gtr_fit = protein_gtr.fitGTRtoFileList (current_results, protein_gtr.current_gtr_fit, result_key, FALSE);
+    protein_gtr.current_gtr_fit = protein_gtr.fitGTRtoFileList (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/'" + protein_gtr.phase_key + "'"), "_value_", "_value_['" + protein_gtr.phase_key + "']"), protein_gtr.current_gtr_fit, result_key, FALSE);
 }
 
 // Record logL
