@@ -848,8 +848,7 @@ _PMathObj   _FString::CharAccess (_PMathObj p,_PMathObj p2)
     return new _FString (res);
 }
 //__________________________________________________________________________________
-_PMathObj   _FString::FileExists (void)
-{
+_PMathObj   _FString::FileExists (void) {
     _Constant  * retValue = new _Constant (0.0);
     if (theString) {
         _String cpy (*theString);

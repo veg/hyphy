@@ -317,6 +317,15 @@ void    WarnErrorWhileParsing (_String const&st, _String& context) {
 extern _List batchLanguageFunctions;
 
 //_______________________________________________________________________
+void WarnOrStoreError (_String * store, _String const & st) {
+    if (store) {
+        *store = st;
+    } else {
+        WarnError (st);
+    }
+}
+
+//_______________________________________________________________________
 void WarnError (_String const & st)
 {
     if (currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {

@@ -167,7 +167,7 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
     partition_info = {};
     filter_info    = {};
     trees = {};
-    initial_values = {"global" : {}, ^"terms.json.attribute.branch_length" : previous_values [^"terms.json.attribute.branch_length"] };
+    initial_values = {"global" : {}, ^"terms.json.attribute.branch_length" : {}};
     proportional_scalers = {};
     index_to_file_name   = {};
 
@@ -185,7 +185,7 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
                                                                             dataset_name,
                                                                             partition_info [file_path]))[0];
         trees [file_index] = {"string" :  ((current_results[file_path])["Trees"])[0]};
-
+        (initial_values[^"terms.json.attribute.branch_length"])[file_index] = ((current_results[file_path])[^"terms.json.attribute.branch_length"])[0];
         if (!final) {
             scaler = "protein_gtr.gtr_scaler_" + file_index;
             parameters.DeclareGlobalWithRanges (scaler, 1, 0, 1000);

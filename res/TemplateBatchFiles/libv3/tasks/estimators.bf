@@ -97,7 +97,7 @@ function estimators.SetGlobals2(key, value) {
                 //fprintf (stdout, "Setting `value` to " + __init_value["MLE"] + "\n", parameters.IsIndependent (value), "\n");
                 ExecuteCommands("`value` = " + __init_value["MLE"]);
             } else {
-                warning.log (value + " was already constrained in estimators.SetGlobals2");
+                messages.log (value + " was already constrained in estimators.SetGlobals2");
             }
         }
     }
@@ -352,9 +352,18 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
 
                     estimators.ApplyExistingEstimates.df_correction += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
-                }
+                } else {
+                	if (Type(_existing_estimate) != "Unknown") {
+                		warning.log ("Incorrect type for the initial values object of for branch '" + _branch_name + "' : " + _existing_estimate);
+                	}
+               }
             }
 
+        } else {
+        	if (Type((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i]) != "Unknown") {
+        		warning.log ("Incorrect type for the initial values object for partition " + estimators.ApplyExistingEstimates.i 
+        					+ ". " + (initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i]);
+        	}
         }
     }
 
