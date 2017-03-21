@@ -1027,6 +1027,7 @@ void    ReportWarning               (_String const &);
 void    FlagError                   (_String const &);
 void    WarnErrorWhileParsing       (_String const&, _String&);
 void    WarnError                   (_String const&);
+void    WarnOrStoreError            (_String* store, _String const&);
 _String GetVersionString            (void);
 _String GetTimeStamp                (bool = false);
 
