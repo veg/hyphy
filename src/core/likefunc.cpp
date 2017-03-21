@@ -714,9 +714,10 @@ void     _LikelihoodFunction::Rebuild (void) {
   computationalResults.Clear();
   hasBeenSetUp     = 0;
   hasBeenOptimized = false;
+  _String ignored_error;
   try {
     for (unsigned long k = 0UL; k < theDataFilters.lLength; k++) {
-      if (! (GetIthFilter (k) && GetIthTree (k) && GetIthFrequencies(k) && CheckIthPartition(k, nil))) {
+      if (! (GetIthFilter (k) && GetIthTree (k) && GetIthFrequencies(k) && CheckIthPartition(k, &ignored_error))) {
         throw (k);
       }
     }
@@ -896,9 +897,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
             theProbabilities<<variableNames.GetXtra(objectID);
         }
     
-      _String errorString;
-      if (!CheckIthPartition (theTrees.lLength-1L, &errorString, (_String*)triplets.GetItem(i), (_String*)triplets.GetItem(i+1), (_String*)triplets.GetItem(i+2))) {
-        WarnError (errorString);
+      if (!CheckIthPartition (theTrees.lLength-1L, nil, (_String*)triplets.GetItem(i), (_String*)triplets.GetItem(i+1), (_String*)triplets.GetItem(i+2))) {
         return false;
       }
  
