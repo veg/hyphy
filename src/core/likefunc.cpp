@@ -585,7 +585,7 @@ _String const * _LikelihoodFunction::GetIthFrequenciesName (long f) const {
 
 //_______________________________________________________________________________________
 
-bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from triplets
+bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, bool leafScan) // from triplets
 {
     _TheTree*       t = GetIthTree(f);
   
@@ -601,13 +601,13 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
             tips.AppendNewInstance (new _String (iterator->ContextFreeName ()));
         }
         if (iterator->GetModelIndex () == HY_NO_MODEL) {
-            WarnError (_String ("Model is not associated with the node:") & iterator->ContextFreeName());
+            WarnOrStoreError (errorMessage, _String ("Model is not associated with the node:") & iterator->ContextFreeName());
             return false;
         } else if (iterator->GetModelDimension() != dfDim) {
             _String warnMsg ("The dimension of the transition matrix at node ");
             warnMsg = warnMsg & iterator->ContextFreeName ()
                       &" is not equal to the state count in the data filter associated with the tree.";
-            WarnError (warnMsg);
+            WarnOrStoreError (errorMessage, warnMsg);
             return false;
         }
     }
@@ -615,7 +615,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
     // now that "tips" contains all the names of tree tips we can
     // scan thru the names in the datafilter and check whether there is a 1-1 match
     if ((t->IsDegenerate()?2:tips.lLength)!=df->NumberSpecies()) {
-        WarnError (_String("The number of tree tips in ")&*t->GetName()& " (" & _String((long)tips.lLength)
+        WarnOrStoreError (errorMessage,_String("The number of tree tips in ")&*t->GetName()& " (" & _String((long)tips.lLength)
                    & ") is not equal to the number of species in the data filter associated with the tree " &
                    '(' & _String((long)df->NumberSpecies()) & ")." );
         return false;
@@ -677,7 +677,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
                 for (unsigned long lfID = 0UL; lfID < likeFuncList.lLength; lfID++) {
                     _LikelihoodFunction* lfp = (_LikelihoodFunction*)likeFuncList(lfID);
                     if (lfp && lfp != this && lfp->DependOnDF (theDataFilters.lData[f])) {
-                        WarnError (_String ("Cannot reuse the filter '") & *GetObjectNameByType (HY_BL_DATASET_FILTER, theDataFilters.lData[f], false) &
+                        WarnOrStoreError (errorMessage, _String ("Cannot reuse the filter '") & *GetObjectNameByType (HY_BL_DATASET_FILTER, theDataFilters.lData[f], false) &
                                    "' because it is already being used by likelihood function '" &
                                    *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID, false) & "', and the two likelihood functions impose different leaf-to-sequence mapping. " &
                                    "Create a copy the filter and pass it to the second likelihood function to resolve this issue.");
@@ -714,15 +714,16 @@ void     _LikelihoodFunction::Rebuild (void) {
   computationalResults.Clear();
   hasBeenSetUp     = 0;
   hasBeenOptimized = false;
+  _String ignored_error;
   try {
     for (unsigned long k = 0UL; k < theDataFilters.lLength; k++) {
-      if (! (GetIthFilter (k) && GetIthTree (k) && GetIthFrequencies(k) && CheckIthPartition(k))) {
+      if (! (GetIthFilter (k) && GetIthTree (k) && GetIthFrequencies(k) && CheckIthPartition(k, &ignored_error))) {
         throw (k);
       }
     }
   }
   catch (unsigned long code) {
-    ReportWarning (_String ("Likelihood function cleared because partition ") & (long) code & " points to invalid components");
+    ReportWarning (_String ("Likelihood function cleared because partition index '") & (long) code & "' points to invalid components");
     Clear();
     return;
   }
@@ -810,38 +811,33 @@ void     _LikelihoodFunction::AllocateTemplateCaches (void) {
 }
 //_______________________________________________________________________________________
 
-bool     _LikelihoodFunction::CheckIthPartition(unsigned long partition, _String const * df, _String const * tree, _String const * efv) {
+bool     _LikelihoodFunction::CheckIthPartition(unsigned long partition, _String * errorString, _String const * df, _String const * tree, _String const * efv) {
   _DataSetFilter const*     filter = GetIthFilter (partition);
   
   long filter_dimension          = filter->GetDimension(true),
        freq_dimension           = GetIthFrequencies(partition)->GetHDim ();
   
   if (freq_dimension  != filter_dimension) {
+   
     if (df && efv) {
-      WarnError (_String("The dimension of the equilibrium frequencies vector ") &
+      WarnOrStoreError(errorString,_String("The dimension of the equilibrium frequencies vector ") &
                efv->Enquote() & " (" & freq_dimension & ") doesn't match the number of states in the dataset filter (" & filter_dimension & ") " & df->Enquote());
     }
     else {
-      WarnError (_String ("Incompatible dimensions between the filter (") & filter_dimension & ") and the frequencies matrix (" & freq_dimension & ")");
+      WarnOrStoreError (errorString, _String ("Incompatible dimensions between the filter (") & filter_dimension & ") and the frequencies matrix (" & freq_dimension & ")");
     }
     return false;
   }
   
-  if (filter->IsNormalFilter() == false)
-    // do checks for the numeric filter
-  {
-    if (filter->NumberSpecies() != 3 || filter_dimension != 4) {
-      WarnError (_String ("Datafilters with numerical probability vectors must contain exactly three sequences and contain nucleotide data. Had ") & (long) filter->NumberSpecies() & " sequences on alphabet of dimension " & (long) filter_dimension & '.');
-      
+  if (filter->IsNormalFilter() == false) { // do checks for the numeric filter
+    if (filter->NumberSpecies() != 3UL || filter_dimension != 4L) {
+          WarnOrStoreError(errorString,_String ("Datafilters with numerical probability vectors must contain exactly three sequences and contain nucleotide data. Had ") & (long) filter->NumberSpecies() & " sequences on alphabet of dimension " & (long) filter_dimension & '.');
       return false;
     }
   }
-  // first - produce the list of tip node names
-  if (!MapTreeTipsToData (partition)) {
-    return false;
-  }
 
-  return true;
+  return MapTreeTipsToData (partition, errorString);
+
 }
 
 //_______________________________________________________________________________________
@@ -900,7 +896,8 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
         } else {
             theProbabilities<<variableNames.GetXtra(objectID);
         }
-      if (!CheckIthPartition (theTrees.lLength-1L, (_String*)triplets.GetItem(i), (_String*)triplets.GetItem(i+1), (_String*)triplets.GetItem(i+2))) {
+    
+      if (!CheckIthPartition (theTrees.lLength-1L, nil, (_String*)triplets.GetItem(i), (_String*)triplets.GetItem(i+1), (_String*)triplets.GetItem(i+2))) {
         return false;
       }
  

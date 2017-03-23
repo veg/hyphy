@@ -500,6 +500,15 @@ lfunction messages.log (arg) {
     fprintf (MESSAGE_LOG, arg, "\n");
 }
 
+
+/**
+ * I am tired of typing fprintf (stdout,  ...)
+ * @returns nothing
+ */
+lfunction warning.log (arg) {
+    fprintf (stdout, "[**WARNING**] ", arg, "\n");
+}
+
 /**
  * Checks if there is a file exists
  * @param {String} path the path to check
