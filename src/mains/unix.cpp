@@ -653,7 +653,9 @@ int main (int argc, char* argv[])
     }
 #endif
 
-    for (long i=1; i<argc; i++) {
+    _List positional_arguments;
+    
+    for (unsigned long i=1UL; i<argc; i++) {
         _String thisArg (argv[i]);
         if (thisArg.sData[0]=='-') {
             ProcessConfigStr (thisArg);
@@ -694,25 +696,15 @@ int main (int argc, char* argv[])
                 pthread_setconcurrency ((int)systemCPUCount+1);
             } else
 #endif
-                argFile = thisArg;
+        //argFile = thisArg;
+        positional_arguments && &thisArg;
     }
 
     GlobalStartup();
-  
-  /*_String exp2 ("1+x*t+y*t"),
-          exp1 ("y*t");
-  
-  _Formula f1 (exp1),
-           f2 (exp2);
-  
-  _MathObject *pl = ((_Polynomial*)f1.ConstructPolynomial ())->Add (f2.ConstructPolynomial());
-  
-  fprintf (stdout, "%s\n", _String ((_String*)pl->toStr()).getStr());*/
-  
-    /*_SimpleList exclusions = _SimpleList () << 48 << 50 << 56;
-    long        codes[7] = {10,48,50,51,56,57,63};
-    exclusions.CorrectForExclusions(codes, 7);
-     */
+    
+    if (positional_arguments.Count()) {
+        argFile = *(_String*) positional_arguments.GetItem(0UL);
+    }
   
     _ExecutionList ex;
   
@@ -808,6 +800,16 @@ int main (int argc, char* argv[])
             ReadBatchFile (argFile,ex);
         }
 
+        if (positional_arguments.Count () > 1) {
+            ex.stdinRedirectAux = new _List;
+            ex.stdinRedirect = new _AVLListXL (ex.stdinRedirectAux);
+            for (unsigned long i = 1UL; i < positional_arguments.Count (); i++) {
+                char buf[256];
+                snprintf(buf, 255, "%012ld", i);
+                ex.stdinRedirect->Insert (new _String(buf), (long)positional_arguments.GetItem (i), true);
+            }
+        }
+        
         ex.Execute();
 
         if (usePostProcessors && (!updateMode)) {
