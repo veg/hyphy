@@ -2226,7 +2226,7 @@ _String const _String::PathComposition (_String const relPath) const {
 
         }
 
-        return result&relPath;
+        return result&relative_path;
     }
 
     else {
