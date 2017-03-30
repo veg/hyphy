@@ -734,6 +734,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     //Export (lfs, likelihoodFunction);
     //console.log (lfs);
+	utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", 1);
     Optimize(mles, likelihoodFunction);
 	utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", None);
 
