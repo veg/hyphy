@@ -516,7 +516,9 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
 
     }
 
+  	 utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", 1);
    	 Optimize(mles, likelihoodFunction);
+     utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", None);
      //Export (lfe, likelihoodFunction);
      //console.log (lfe);
 
@@ -732,7 +734,6 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     //Export (lfs, likelihoodFunction);
     //console.log (lfs);
-	utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", 1);
     Optimize(mles, likelihoodFunction);
 	utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", None);
 
