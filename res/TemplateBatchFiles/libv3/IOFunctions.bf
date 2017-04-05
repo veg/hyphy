@@ -219,12 +219,24 @@ lfunction io.ReportProgressBar(analysis, text) {
 lfunction io.validate_a_list_of_files(list) {
     result = {};
     dim = utility.Array1D (list);
+	base_dir = utility.GetEnvVariable ("HYPHY_BASE_DIRECTORY");
+
 
     for (i = 0; i < dim; i += 1) {
         if (Abs(list[i])) {
             fn = list[i];
-            io.CheckAssertion("!`&fn`", "HyPhy cannot open '" + fn + "' for reading");
-            result + fn;
+            if (io.FileExists (fn)) {
+            	result + fn;
+            	continue;
+            } else {
+            	fn = base_dir + fn;
+            	if (io.FileExists (fn)) {
+            		result + fn;
+            		continue;
+				}
+            }
+            io.CheckAssertion("io.FileExists(`&fn`)", "HyPhy cannot open '" + fn + "' for reading");
+            
         }
     }
     return result;
