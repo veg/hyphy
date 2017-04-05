@@ -3151,20 +3151,17 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
                     totalNodeCount     = slaveNodes + 1;
 
-                    if (overFlow) {
-                        overFlow = slaveNodes/overFlow;
-                    }
 
                     ReportWarning    (_String ("InitMPIOptimizer (autoLF) with:") & (long)optimalOrder->lLength & " site patterns on " & (long)slaveNodes
-                                      & " MPI computational nodes. " & sitesPerNode & " site patterns per node (+1 every "
-                                      & overFlow & "-th node)");
+                                      & " MPI computational nodes. " & sitesPerNode & " site patterns per node (+1 for "
+                                      & overFlow & " nodes)");
 
                     MPISwitchNodesToMPIMode (slaveNodes);
                     for (long i = 1; i<=slaveNodes; i++) {
                         toPart = sitesPerNode;
-                        if (overFlow && i%overFlow == 0)
+                        if (overFlow) {
                             // add an extra site when needed
-                        {
+                            overFlow--;
                             toPart++;
                         }
 
@@ -3205,29 +3202,31 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                 // no autoParallelize
                 else {
                     long     perNode        =  (hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto)?1:theDataFilters.lLength / slaveNodes,
-                             overFlow     =  (hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto)?0:theDataFilters.lLength % slaveNodes;
+                             overFlow       =  (hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto)?0:theDataFilters.lLength % slaveNodes;
 
-                    if (perNode == 0) {
+                    if (perNode == 0L) { // more nodes than filters
                         slaveNodes         = theDataFilters.lLength;
                         totalNodeCount     = slaveNodes + 1;
-                        perNode            = 1;
-                        overFlow           = 0;
+                        perNode            = 1L;
+                        overFlow           = 0L;
                     }
 
-                    if (overFlow) {
+                    /*if (overFlow) {
                         overFlow = slaveNodes/overFlow;
-                    }
+                    }*/
 
                     ReportWarning    (_String ("InitMPIOptimizer with:") & (long)theDataFilters.lLength & " partitions on " & (long)slaveNodes
-                                      & " MPI computational nodes. " & perNode & " partitions per node (+1 every "
-                                      & overFlow & "-th node)");
+                                      & " MPI computational nodes. " & perNode & " partitions per node (+1 for "
+                                      & overFlow & " nodes)");
 
 
                     MPISwitchNodesToMPIMode (slaveNodes);
-                    for (long i = 1; i<totalNodeCount; i++) {
+                    for (long i = 1L; i<totalNodeCount; i++) {
                         toPart = perNode;
-                        if (overFlow && i%overFlow == 0) {
+                        
+                        if (overFlow) {
                             toPart++;
+                            overFlow--;
                         }
 
                         if (fromPart+toPart > theDataFilters.lLength || i == slaveNodes) {
@@ -5686,6 +5685,10 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
       if (!CheckEqual(check_value, maxSoFar)) {
         ReportWarning (_String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]");
         if (check_value - 0.01 > maxSoFar) {
+         
+         if (optimizatonHistory) {
+             ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
+         }
           WarnError ("Optimization routine error");
           return;
         }

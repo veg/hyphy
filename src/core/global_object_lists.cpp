@@ -103,17 +103,28 @@ namespace hyphy_global_objects {
   void    _NotifyDataFilterListeners (const long index, kNotificationType event_type) {
     _List * listeners = (_List*)_data_filter_listeners.GetDataByKey( (BaseRef) index);
     if (listeners) {
+      
+     _List buffered_updates;
+        
       for (unsigned long k = 0UL; k < listeners->lLength; k++) {
         BaseRef this_listener = listeners->GetItem(k);
         
         if (_LikelihoodFunction* lf = dynamic_cast<_LikelihoodFunction*> (this_listener)) {
+            //StringToConsole(_String("_NotifyDataFilterListeners ") & index & " " & (long)lf & "\n");
+       
           if (event_type == kNotificationTypeChange) {
-            lf->Rebuild();
+            buffered_updates << lf;
+            //lf->Rebuild();
+               /* 20170328 SLKP: this COULD MODIFY the 'listeners' object, hence the buffering */
           } else if (event_type == kNotificationTypeDelete) {
             WarnError ("Attempted to delete a data set filter which is still being referenced by a likelihood function");
           }
         }
       }
+        
+        for (unsigned long k = 0UL; k < buffered_updates.lLength; k++) {
+            ((_LikelihoodFunction*)buffered_updates.GetItem (k)) -> Rebuild();
+        }
     }
   }
   
@@ -223,6 +234,7 @@ namespace hyphy_global_objects {
         if (current_listeners) {
           long listener_index = current_listeners->_SimpleList::Find((long)listener);
           if (listener_index >= 0) {
+            //StringToConsole(_String("UnregisterChangeListenerForDataFilter ") & index & " " & (long)listener & "\n");
             current_listeners->Delete (listener_index);
             return true;
           }
@@ -236,6 +248,9 @@ namespace hyphy_global_objects {
   
   
   bool    RegisterChangeListenerForDataFilter (long const index, BaseRef listener) {
+      
+    //StringToConsole(_String("RegisterChangeListenerForDataFilter ") & index & " " & (long)listener & "\n");
+      
     if (_data_filters.IsValidIndex (index)) {
       
       if (dynamic_cast <_LikelihoodFunction*> (listener)) {
@@ -268,7 +283,7 @@ namespace hyphy_global_objects {
   }
   
   bool    UnregisterChangeListenerForDataFilter (_String const& name, BaseRef listener) {
-    return RegisterChangeListenerForDataFilter(FindDataFilter (name), listener);
+    return UnregisterChangeListenerForDataFilter(FindDataFilter (name), listener);
   }
   
   long    FindDataFilter (_String const& name) {

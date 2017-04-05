@@ -776,7 +776,7 @@ public:
     * @param relPath The relative path to change to
     * @return New File Path, Example would return "/home/sergei/datamonkey"
     */
-    _String PathComposition (_String);
+    _String const PathComposition (_String const) const;
 
     /**
     * Subtracts the string from the string passed.
@@ -784,7 +784,7 @@ public:
     * @param s String that will be subtracted
     * @return Example would return "hyphy"
     */
-    _String PathSubtraction (_String&, char);
+    _String const PathSubtraction (_String const, char) const;
 
     /**
     * Strips quotes from around the string if present (in place)
