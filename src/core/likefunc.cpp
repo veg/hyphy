@@ -58,6 +58,20 @@ using namespace hyphy_global_objects;
 
   //#define _UBER_VERBOSE_LF_DEBUG 1
 
+//#define    _COMPARATIVE_LF_DEBUG_DUMP
+//#define    _COMPARATIVE_LF_DEBUG_CHECK
+
+#if defined _COMPARATIVE_LF_DEBUG_CHECK
+#include <signal.h>
+    unsigned long  _comparative_lf_index = 0UL;
+    extern _Matrix* _comparative_lf_debug_matrix;
+#endif
+
+#if defined _COMPARATIVE_LF_DEBUG_DUMP
+    unsigned long  _comparative_lf_index = 0UL;
+    extern _GrowingVector* _comparative_lf_debug_matrix;
+#endif
+
 
 #ifdef __WINDOZE__
 #include     "windows.h"
@@ -147,9 +161,9 @@ extern  _Parameter  machineEps;
 
 #define   PERTURBATION_OF_ZERO    0.0
 
-long      likeFuncEvalCallCount = 0,
-          systemCPUCount        = 1,
-          lockedLFID         = -1;
+long      likeFuncEvalCallCount = 0L,
+          systemCPUCount        = 1L,
+          lockedLFID         = -1L;
 
 #define  STD_GRAD_STEP 1.0e-6
 
@@ -1351,6 +1365,9 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
         if (doSomething) {
             if (partMode) {
                 siteLL = Compute();
+                /*if (_hy_mpi_node_rank == 1) {
+                    printf ("\033\015 Node %ld, value %g", siteLL);
+                }*/
             } else {
 
                 if (PreCompute()) {
@@ -1702,13 +1719,16 @@ bool      _LikelihoodFunction::SendOffToMPI       (long)
 {
     return false;
 #else
-bool      _LikelihoodFunction::SendOffToMPI       (long index)
+bool      _LikelihoodFunction::SendOffToMPI       (long index) {
 // dispatch an MPI task to node 'index+1'
-{
+    
+/* 20170404 SLKP Need to check if the decision to recompute a partition is made correctly.
+ In particular, need to confirm that changes to category variables are handled correctly (e.g. HaveParametersChanged, vs has changed */
+ 
     bool                sendToSlave = (computationalResults.GetSize() < parallelOptimizerTasks.lLength);
     _SimpleList     *   slaveParams = (_SimpleList*)parallelOptimizerTasks(index);
 
-    for (long varID = 0; varID < slaveParams->lLength; varID++) {
+    for (unsigned long varID = 0UL; varID < slaveParams->lLength; varID++) {
         _Variable * aVar = LocateVar (slaveParams->lData[varID]);
         if (aVar->IsIndependent()) {
             varTransferMatrix.theData[varID] = aVar->Value();
@@ -2099,6 +2119,9 @@ _Parameter  _LikelihoodFunction::Compute        (void)
                     //printf ("Got %g from block %d \n", blockRes, status.MPI_SOURCE-1);
 
                     result            += blockRes;
+                    /*if (status.MPI_SOURCE == 1 && computationalResults.GetUsed()) {
+                        printf ("\033\015 COMPUTED / CACHED %g / %g             ", blockRes, computationalResults[0]);
+                    }*/
                     UpdateBlockResult (status.MPI_SOURCE-1, blockRes);
                     totalSent--;
                 }
@@ -2110,6 +2133,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
     }
 
     if (done) {
+        
         likeFuncEvalCallCount ++;
         evalsSinceLastSetup   ++;
         PostCompute ();
@@ -2122,8 +2146,9 @@ _Parameter  _LikelihoodFunction::Compute        (void)
         }
         
         ComputeParameterPenalty ();
-
-        return result - smoothingPenalty;
+        
+        _Parameter regularized_value = result - smoothingPenalty;
+        return regularized_value;
     }
 
     WarnError ("Sorry; this likelihood feature has not yet been ported to the v2.0 LF engine in HyPhy");
@@ -3425,6 +3450,29 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
   
 void        _LikelihoodFunction::LoggerLogL (_Parameter logL) {
   if (optimizatonHistory) {
+      
+    #ifdef  _COMPARATIVE_LF_DEBUG_CHECK
+          if (_comparative_lf_debug_matrix && fabs ((*_comparative_lf_debug_matrix)[_comparative_lf_index] - logL) > 0.001) {
+              char buffer [512];
+              snprintf (buffer, 511, "[Divergent results obtained at EVAL %d] [logged] %15.12g vs [computed] %15.12g\n", _comparative_lf_index, (*_comparative_lf_debug_matrix)[_comparative_lf_index], logL);
+              StringToConsole (buffer);
+              for (unsigned long var_id = 0UL; var_id < indexInd.lLength; var_id++) {
+                  StringToConsole (*GetIthIndependentName(var_id));
+                  StringToConsole (_String (" = ") & GetIthIndependent(var_id));
+                  NLToConsole();
+              }
+              
+              raise(SIGTRAP);
+          }
+          _comparative_lf_index++;
+    #endif
+    #ifdef  _COMPARATIVE_LF_DEBUG_DUMP
+          if (_comparative_lf_debug_matrix) {
+              (*_comparative_lf_debug_matrix) << logL;
+          }
+    #endif
+      
+      
     *((_GrowingVector*) this->optimizatonHistory->GetByKey("LogL")) << logL
     << ((_AssociativeList*)this->optimizatonHistory->GetByKey("Phases"))->Length();
   }
@@ -3495,6 +3543,7 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
                 < (_associative_list_key_value){"brent precision", new _Constant (brent_precision)}
                 < (_associative_list_key_value){"bracket width", new _Constant (bracket_width)}
                 < (_associative_list_key_value){"bracket evals", new _Constant (bracket_evals)}
+                < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)}
                 < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)};
     
     *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
@@ -6187,6 +6236,12 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
                brentPrec        = bracketSetting>0.?bracketSetting:gPrecision;
 
     DetermineLocalUpdatePolicy           ();
+    
+    /*if (optimizatonHistory && ((_AssociativeList*)this->optimizatonHistory->GetByKey("Phases"))->Length() == 2171) {
+        verbosityLevel = 1000;
+    } else {
+        verbosityLevel = 1;
+    }*/
 
     unsigned long        inCount = likeFuncEvalCallCount;
     int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp);
@@ -6217,7 +6272,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
               break;
             }
           
-            _Parameter tol1 = fabs (X) * Minimum (brentPrec, 1e-4) + machineEps,
+            _Parameter tol1 = fabs (X) * Minimum (brentPrec, 1e-7) + machineEps,
                        tol2 = 2.*tol1;
 
           
@@ -6257,11 +6312,17 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
             
             if (verbosityLevel > 50) {
                 char buf [256];
-                snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO TRY: param %g, log L %g]", index, U, FU);
+                snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO TRY: param %20.16g, log L %20.16g]", index, U, -FU);
                 BufferToConsole (buf);
             }
             
-            if (FU<=FX) {
+            if (FU<=FX) { // value at U is the new minimum
+                if (verbosityLevel > 50) {
+                    char buf [256];
+                    snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (eval %ld) ACCEPT new try, confirm value %20.16g (delta = %20.16g)", likeFuncEvalCallCount,  GetIthIndependent(index), FU-FX);
+                    BufferToConsole (buf);
+                }
+
                 if (U>=X) {
                     left = X;
                 } else {
@@ -6273,19 +6334,25 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
                 FW = FX;
                 X = U;
                 FX = FU;
-            } else {
+            } else { // value at X remains the minimum
+                if (verbosityLevel > 50) {
+                    char buf [256];
+                    snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (eval %ld) REJECT new try (delta = %20.16g)", likeFuncEvalCallCount, X, FU-FX);
+                    BufferToConsole (buf);
+                }
+
                 if (U < X) {
                     left = U;
                 } else {
                     right = U;
                 }
-                if ((FU<=FW)||(W==X)) {
+                if (FU<=FW || W==X) {
                     V = W;
                     FV = FW;
                     W = U;
                     FW = FU;
                 } else {
-                    if ((FU<=FV)||(V==X)||(V==W)) {
+                    if (FU<=FV || V==X || V==W) {
                         V = U;
                         FV = FU;
                     }
@@ -6297,7 +6364,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
         
         if (verbosityLevel > 50) {
             char buf [256];
-            snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %g/%g ]\n\n", index, brentPrec, bestVal, X, -FX, maxSoFar);
+            snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %15.12g/%15.12g ]\n\n", index, brentPrec, bestVal, X, -FX, maxSoFar);
             BufferToConsole (buf);
         }
         middleValue = -FX;
@@ -6312,7 +6379,18 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
            SetIthIndependent(index,bestVal);
         } else {
             if (!CheckEqual(GetIthIndependent(index),middle)) {
+                if (verbosityLevel > 50) {
+                    char buf [256];
+                    snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) moving parameter value (should trigger LL update) %15.12g to %15.12g ]\n\n", index, GetIthIndependent(index), middle);
+                    BufferToConsole (buf);
+                }
                 SetIthIndependent (index,middle);
+            } else {
+                if (verbosityLevel > 50) {
+                    char buf [256];
+                    snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) KEEPS parameter value (no LL update) %15.12g == %15.12g ]\n\n", index, GetIthIndependent(index), middle);
+                    BufferToConsole (buf);
+                }
             }
             maxSoFar = middleValue;
         }

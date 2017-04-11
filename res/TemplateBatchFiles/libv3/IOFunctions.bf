@@ -81,7 +81,7 @@ lfunction io._reportMessageHelper(analysis, text) {
  */
 lfunction io.SpoolJSON(json, file) {
     utility.ToggleEnvVariable("USE_JSON_FOR_MATRIX", 1);
-    if (Type(file) == "String") {
+    if (Type(file) == "String" && Abs (file) > 0) {
         fprintf(file, CLEAR_FILE, json);
     } else {
         fprintf(stdout, "\n", json, "\n");

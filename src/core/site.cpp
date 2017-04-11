@@ -5007,7 +5007,7 @@ void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds)
 
 
 //_________________________________________________________
-_DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, _String* namespaceID, _TranslationTable* dT)
+_DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, _String* namespaceID, _TranslationTable* dT, _ExecutionList* ex)
 {
 
     bool     doAlphaConsistencyCheck = true;
@@ -5386,10 +5386,15 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             lastNexusDataMatrix = result;
 
             long            bfl = GetBFFunctionCount ();
-
-            _ExecutionList nexusBF (nexusBFBody,namespaceID);
+            
+            _ExecutionList * nexusBF = ex ? ex :  new _ExecutionList;
+            if (namespaceID) {
+                nexusBF->SetNameSpace(namespaceID);
+            }
+            nexusBF->BuildList(nexusBFBody, nil, false, true);
+            //_ExecutionList nexusBF (nexusBFBody,namespaceID);
             if (bfName) {
-                nexusBF.sourceFile = *bfName;
+                nexusBF->sourceFile = *bfName;
             }
 
 #ifndef __UNIX__
@@ -5399,7 +5404,12 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                 ApplyPreferences();
 #endif
 
-            nexusBF.ExecuteAndClean(bfl);
+            nexusBF->ExecuteAndClean(bfl);
+            if (nexusBF != ex) {
+                DeleteObject (nexusBF);
+            } else {
+                ex->Clear();
+            }
             nexusBFBody         = emptyString;
         } else if (execBF == 0) {
             nexusBFBody         = emptyString;

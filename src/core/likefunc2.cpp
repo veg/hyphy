@@ -188,65 +188,74 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
                               hmmCatCount      = 1L,
                               catVarFlags      = 0L,
                               varIndex;
+            
+            try {
 
-            for ( varIndex = 0; varIndex < myCats.lLength; varIndex++) {
-                _CategoryVariable * aCV = (_CategoryVariable *)LocateVar (myCats.lData[varIndex]);
-                (*catVarReferences) << aCV;
-                long                intervalCount = aCV->GetNumberOfIntervals();
-                (*catVarCounts)     << intervalCount;
+                for ( varIndex = 0; varIndex < myCats.lLength; varIndex++) {
+                    _CategoryVariable * aCV = (_CategoryVariable *)LocateVar (myCats.lData[varIndex]);
+                    (*catVarReferences) << aCV;
+                    long                intervalCount = aCV->GetNumberOfIntervals();
+                    (*catVarCounts)     << intervalCount;
 
-                if (aCV->IsHiddenMarkov() || aCV->IsConstantOnPartition()) {
-                    if (aCV->IsConstantOnPartition()) {
-                        if (catVarFlags & (_hyphyCategoryCOP|_hyphyCategoryHMM)) {
-                            break;
+                    if (aCV->IsHiddenMarkov() || aCV->IsConstantOnPartition()) {
+                        if (aCV->IsConstantOnPartition()) {
+                            if (catVarFlags & (_hyphyCategoryCOP|_hyphyCategoryHMM)) {
+                                break;
+                            }
+                            varType->lData[varIndex] = _hyphyCategoryCOP;
+                        } else {
+                            if (catVarFlags & (_hyphyCategoryCOP|_hyphyCategoryHMM)) {
+                                break;
+                            }
+                            varType->lData[varIndex] = _hyphyCategoryHMM;
                         }
-                        varType->lData[varIndex] = _hyphyCategoryCOP;
+
+                        (*hmmAndCOP) << intervalCount;
+                        hmmCatCount *= intervalCount;
                     } else {
-                        if (catVarFlags & (_hyphyCategoryCOP|_hyphyCategoryHMM)) {
-                            break;
-                        }
-                        varType->lData[varIndex] = _hyphyCategoryHMM;
+                        varType->lData[varIndex] = _hyphyCategoryNormal;
                     }
 
-                    (*hmmAndCOP) << intervalCount;
-                    hmmCatCount *= intervalCount;
-                } else {
-                    varType->lData[varIndex] = _hyphyCategoryNormal;
+                    catVarFlags |= varType->lData[varIndex];
+                    totalCatCount       *= intervalCount;
                 }
 
-                catVarFlags |= varType->lData[varIndex];
-                totalCatCount       *= intervalCount;
-            }
+                if (varIndex <  myCats.lLength) {
+                    throw ("Currently, HyPhy can support at most one HMM or Constant on Partition variable per partition");
+                    
+                }
 
-            if (varIndex <  myCats.lLength) {
-                WarnError ("Currently, HyPhy can support at most one HMM or Constant on Partition variable per partition");
+                (*catVarCounts) << totalCatCount;
+                (*varType)      << catVarFlags;
+
+                for (long varIndex = myCats.lLength-2; varIndex >= 0; varIndex--) {
+                    catVarOffsets->lData[varIndex] = catVarOffsets->lData[varIndex+1]*catVarCounts->lData[varIndex+1];
+                }
+
+                for (long varIndex = hmmAndCOP->lLength-2; varIndex >= 0; varIndex--) {
+                    hmmAndCOP->lData[varIndex] *= hmmAndCOP->lData[varIndex+1];
+                }
+
+                if (hmmAndCOP->lLength) {
+                    (*hmmAndCOP) << hmmCatCount;
+                }
+
+                container->AppendNewInstance (catVarReferences);
+                container->AppendNewInstance (catVarCounts);
+                container->AppendNewInstance (catVarOffsets);
+                container->AppendNewInstance (hmmAndCOP);
+                container->AppendNewInstance (varType);
+
+                ((_TheTree*)LocateVar(theTrees(partIndex)))->SetupCategoryMapsForNodes(*catVarReferences,*catVarCounts,*catVarOffsets);
+
+                categoryTraversalTemplate.AppendNewInstance(container);
+            }
+            catch (const _String error) {
+                BatchDelete (catVarReferences,catVarCounts,catVarOffsets,hmmAndCOP,varType,container);
+                WarnError (error);
                 return;
+                
             }
-
-            (*catVarCounts) << totalCatCount;
-            (*varType)      << catVarFlags;
-
-            for (long varIndex = myCats.lLength-2; varIndex >= 0; varIndex--) {
-                catVarOffsets->lData[varIndex] = catVarOffsets->lData[varIndex+1]*catVarCounts->lData[varIndex+1];
-            }
-
-            for (long varIndex = hmmAndCOP->lLength-2; varIndex >= 0; varIndex--) {
-                hmmAndCOP->lData[varIndex] *= hmmAndCOP->lData[varIndex+1];
-            }
-
-            if (hmmAndCOP->lLength) {
-                (*hmmAndCOP) << hmmCatCount;
-            }
-
-            container->AppendNewInstance (catVarReferences);
-            container->AppendNewInstance (catVarCounts);
-            container->AppendNewInstance (catVarOffsets);
-            container->AppendNewInstance (hmmAndCOP);
-            container->AppendNewInstance (varType);
-
-            ((_TheTree*)LocateVar(theTrees(partIndex)))->SetupCategoryMapsForNodes(*catVarReferences,*catVarCounts,*catVarOffsets);
-
-            categoryTraversalTemplate.AppendNewInstance(container);
         }
 
     if (indexCat.lLength) {
