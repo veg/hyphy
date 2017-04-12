@@ -2041,8 +2041,7 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
     // parse HBL settings
     checkParameter (_HYBgm_MCMC_PROBSWAP, prob_swap, 0.1);
     if (prob_swap < 0 || prob_swap > 1.) {
-        _String oops ("BGM_MCMC_PROBSWAP must be assigned a value between 0 and 1.  Exiting.\n");
-        WarnError (oops);
+        WarnError ("BGM_MCMC_PROBSWAP must be assigned a value between 0 and 1.  Exiting.\n");
         return;
     }
 
@@ -2083,7 +2082,7 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
 	
 	// randomize the initial graph
 	RandomizeGraph (proposed_graph, proposed_order, prob_swap, num_nodes*num_nodes, max_fails, fixed_order);
-	ReportWarning (_String ("seeding with randomized graph:\n") & (_String *) proposed_graph->toStr());
+	ReportWarning (_String ("seeding with randomized graph:\n") & _String ((_String *) proposed_graph->toStr()));
 
     // status line
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__

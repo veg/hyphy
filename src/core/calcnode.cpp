@@ -1400,7 +1400,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames, _A
 
     node<long>* currentNode = theRoot = nil,
               * newNode     = nil,
-              * parentNode  = nil;
+              * parentNode;
 
     isDefiningATree         = 1;
 
@@ -1444,7 +1444,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames, _A
         case ',':
         case ')': { // creating a new node on the same level and finishes updating the list of parameters
             lastNode = nodeStack.lLength-1;
-            if (lastNode<0) {
+            if (lastNode<0L) {
                 return _MainTreeConstructor_error (_String ("Unexpected '") & parms[i] & "'", parms, i);
             }
             parentNode = (node<long>*)nodeStack(lastNode);

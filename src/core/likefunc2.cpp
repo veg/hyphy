@@ -1358,13 +1358,12 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
 
 //_______________________________________________________________________________________________
 
-void _LikelihoodFunction::UpdateBlockResult (long index, _Parameter new_value)
-{
-    if (computationalResults.GetUsed()>index) {
-        computationalResults.theData[index] = new_value;
-    } else {
-        computationalResults.Store(new_value);
+void _LikelihoodFunction::UpdateBlockResult (long index, _Parameter new_value) {
+    while (computationalResults.GetUsed() <= index) {
+        computationalResults.Store (0.0);
     }
+    
+    computationalResults.theData[index] = new_value;
 }
 
 

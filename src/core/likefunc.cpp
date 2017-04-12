@@ -5731,18 +5731,18 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
                 currentPrecision = localOnly?precision:.01;
   
     if (check_value != A_LARGE_NUMBER) {
-      if (!CheckEqual(check_value, maxSoFar)) {
-        ReportWarning (_String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]");
-        if (check_value - 0.01 > maxSoFar) {
-         
-         if (optimizatonHistory) {
-             ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
-         }
-          WarnError ("Optimization routine error");
-          return;
+        if (!CheckEqual(check_value, maxSoFar)) {
+            _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]";
+            ReportWarning (errorStr);
+            if (check_value - 0.01 > maxSoFar) {
+                if (optimizatonHistory) {
+                    ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
+                }
+                WarnError (errorStr);
+                return;
+            }
+            //return;
         }
-        //return;
-      }
     }
     
 
@@ -5947,7 +5947,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
                 maxSoFar = temp;
                 bestVal += delta;
                 //see which variable changed the least
-                temp = A_LARGE_NUMBER;
+                temp = INFINITY;
                 long  suspect,f;
                 for (long i = 0; i<indexInd.lLength; i++) {
                     if (fabs(delta(i,0))<temp) {
@@ -6400,7 +6400,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
       LoggerSingleVariable (index, maxSoFar, bp, brentPrec, outcome != -1 ? right-left : -1., bracketCount, likeFuncEvalCallCount-inCount-bracketCount);
     }
   
-    oneDFCount += likeFuncEvalCallCount-inCount;
+    oneDFCount += likeFuncEvalCallCount-inCount-bracketCount;
     oneDCount ++;
     FlushLocalUpdatePolicy            ();
 }
