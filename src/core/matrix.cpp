@@ -7421,12 +7421,10 @@ BaseRef _Matrix::toStr(unsigned long padding) {
       closeBracket = doJSON ? ']' : '}';
       
       //(*result) << padder;
-      (*result) << openBracket;
-      (*result) << '\n';
+      (*result) << openBracket << '\n';
     
       for (long i = 0L; i<hDim; i++) {
-         (*result)<<padder;
-         (*result)<<openBracket;
+         (*result)<<padder <<openBracket;
         
   
          for (long j = 0L; j<vDim; j++) {
@@ -7459,19 +7457,19 @@ BaseRef _Matrix::toStr(unsigned long padding) {
           (*result)<<'\n';
         }
       }
-      (*result)<<'\n';
-      (*result)<<padder;
-      (*result)<<closeBracket;
+      (*result) <<'\n'
+                <<padder
+                <<closeBracket;
  
     } else if (storageType == 0) {
       checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
       if (!ANALYTIC_COMPUTATION_FLAG) {
+        result->Finalize(); DeleteObject (result);
         return Compute()->toStr(padding);
       }
       
       for (long i = 0; i<hDim; i++) {
-        (*result)<<'\n';
-        (*result)<<'[';
+        (*result)<<'\n' <<'[';
         for (long j = 0; j<vDim; j++) {
           long p = Hash (i,j);
           if (GetMatrixObject(p)) {
@@ -7488,8 +7486,7 @@ BaseRef _Matrix::toStr(unsigned long padding) {
         }
         (*result)<<']';
       }
-      (*result)<<'\n';
-      (*result)<<'\n';
+      (*result)<<'\n' << '\n';
     } else {
       result->Finalize(); DeleteObject (result);
       return ComputeNumeric()->toStr(padding);

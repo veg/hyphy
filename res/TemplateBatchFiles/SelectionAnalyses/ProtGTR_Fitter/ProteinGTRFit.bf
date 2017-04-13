@@ -22,6 +22,7 @@ LoadFunctionLibrary("ProteinGTRFit_helper.ibf"); // Moved all functions from thi
 
 utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.1); // for testing purposes.
+utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", 1); // for testing purposes
 
 io.DisplayAnalysisBanner({
     "info": "Fit a general time reversible model to a collection

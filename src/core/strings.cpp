@@ -2204,19 +2204,19 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
 }
 
 //Compose two UNIX paths (abs+rel)
-_String _String::PathComposition (_String relPath)
-{
+_String const _String::PathComposition (_String const relPath) const {
     if (relPath.sData[0]!='/') { // relative path
-        long f = -1, k = 0;
+        long f = -1L, k = 0;
         f = sLength-2;
-        _String result = *this;
+        _String result = *this,
+        relative_path = relPath;
 
-        while (relPath.beginswith("../")) {
+        while (relative_path.beginswith("../")) {
 
             //Cut Trim relPath
             f = FindBackwards('/',0,f)-1;
 
-            relPath = relPath.Chop(0,2);
+            relative_path = relative_path.Chop(0,2);
             result.Trim(0,f+1);
 
             if (f==-1) {
@@ -2226,7 +2226,7 @@ _String _String::PathComposition (_String relPath)
 
         }
 
-        return result&relPath;
+        return result&relative_path;
     }
 
     else {
@@ -2236,8 +2236,7 @@ _String _String::PathComposition (_String relPath)
 }
 
 //Mac only so far
-_String _String::PathSubtraction (_String& p2, char)
-{
+_String const _String::PathSubtraction (_String const p2, char) const {
     _String result;
     char separator = GetPlatformDirectoryChar();
 
@@ -2383,9 +2382,6 @@ bool    _String::IsValidRefIdentifier (void) const
 void _String::ConvertToAnIdent (bool strict)
 {
     _String * result = new _String ((unsigned long)sLength+1,true);
-    if (!result) {
-        checkPointer (result);
-    }
 
     if (sLength) {
         if (strict) {

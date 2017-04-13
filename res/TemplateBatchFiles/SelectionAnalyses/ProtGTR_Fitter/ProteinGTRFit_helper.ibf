@@ -194,7 +194,7 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
         }
     }
 
-    utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
+    utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 0);
     utility.ToggleEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1);
     utility.ToggleEnvVariable ("OPTIMIZATION_METHOD", 0);
 
