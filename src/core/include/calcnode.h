@@ -684,8 +684,8 @@ public:
     _String*    TreeUserParams                  (void) const;
 
 
-    const _String&     CompareSubTrees                 (_TheTree*, node<long>*);
-    const _String&     FindMaxCommonSubTree            (_TheTree const*, long&, _List*) const;
+    const _String     CompareSubTrees                 (_TheTree*, node<long>*);
+    const _String     FindMaxCommonSubTree            (_TheTree const*, long&, _List*) const;
   
   
     void        AddNodeNamesToDS                (_DataSet*, bool, bool, char) const;

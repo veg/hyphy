@@ -648,8 +648,10 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
             }
         
           
+          _String * sequence_name = new _String(ProcessLiteralArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix));
           
-          if (! ds->SetSequenceName (sequence_index, new _String(ProcessLiteralArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix)))) {
+          if (! ds->SetSequenceName (sequence_index, sequence_name)) {
+            delete sequence_name;
             currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " (=" & sequence_index & ") is not a valid sequence index");
             return false;
            

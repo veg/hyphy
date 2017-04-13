@@ -2597,7 +2597,7 @@ _Parameter _Polynomial::ComputePolynomial (void)
     }
     _Parameter result = ComputeP (varValues, theTerms->GetCoeff(),n,compList1.countitems(),
                                   compList1.quickArrayAccess(), compList2.quickArrayAccess());
-    delete varValues;
+    delete [] varValues;
     return result;
 }
 //__________________________________________________________________________________

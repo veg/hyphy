@@ -80,6 +80,7 @@ class   _ExecutionList: public _List // a sequence of commands to be executed
 public:
     _ExecutionList (); // doesn't do much
     _ExecutionList (_String&, _String* = nil, bool = false, bool* = nil);
+    void Init (_String* = nil);
 
     virtual
     ~_ExecutionList (void);

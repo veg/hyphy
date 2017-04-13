@@ -1056,8 +1056,26 @@ void KillModelRecord (long mdID)
 
 //____________________________________________________________________________________
 //____________________________________________________________________________________
-_ExecutionList::_ExecutionList ()
-{
+_ExecutionList::_ExecutionList () {
+    Init();
+} // doesn't do much
+
+//____________________________________________________________________________________
+_ExecutionList::_ExecutionList (_String& source, _String* namespaceID , bool copySource, bool* successFlag) {
+    Init (namespaceID);
+    
+    if (copySource) {
+        sourceText.Duplicate (&source);
+    }
+
+    bool result = BuildList (source, nil, false, true);
+    if (successFlag) {
+        *successFlag = result;
+    }
+}
+
+//____________________________________________________________________________________
+void _ExecutionList::Init (_String* namespaceID) {
     result              = nil;
     currentCommand      = 0;
     cli                 = nil;
@@ -1075,38 +1093,13 @@ _ExecutionList::_ExecutionList ()
         errorState = false;
     }
 
-} // doesn't do much
-
-//____________________________________________________________________________________
-_ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copySource, bool* successFlag) {
-    currentCommand = 0;
-    result         = nil;
-    cli            = nil;
-    profileCounter = nil;
-    doProfile      = 0;
-    stdinRedirect  = nil;
-    stdinRedirectAux = nil;
-    nameSpacePrefix = nil;
-    
     if (namespaceID) {
         SetNameSpace (*namespaceID);
     }
-    if (copySource) {
-        sourceText.Duplicate (&source);
-    }
-    if (currentExecutionList) {
-        errorHandlingMode  = currentExecutionList->errorHandlingMode;
-        errorState         = currentExecutionList->errorState;
-    } else {
-        errorHandlingMode = HY_BL_ERROR_HANDLING_DEFAULT;
-        errorState = false;
-    }
 
-    bool result = BuildList (source, nil, false, true);
-    if (successFlag) {
-        *successFlag = result;
-    }
 }
+
+
 
 //____________________________________________________________________________________
 
@@ -5156,8 +5149,8 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
     
     if (stVar) {
       
-      _DataSetFilter const * filter_source = object_type == HY_BL_DATASET_FILTER ? (_DataSetFilter const *)source_object : nil;
-      _DataSet const * dataset_source = object_type == HY_BL_DATASET ? (_DataSet const *)source_object : nil;
+      _DataSetFilter const * filter_source  = object_type == HY_BL_DATASET_FILTER ? (_DataSetFilter const *)source_object : nil;
+      _DataSet       const * dataset_source = filter_source ? nil : (_DataSet const *)source_object;
       
       switch (parameters.lLength) {
         case 2UL: { // get site->pattern map
@@ -7756,7 +7749,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target)
         _String beavis (f);
 
         if (beavis.beginswith("#NEXUS",false)) {
-            ReadDataSetFile (f,1,nil,&fName);
+            ReadDataSetFile (f,1,nil,&fName, nil, &defaultTranslationTable, &target);
         } else {
             target.BuildList (beavis);
             target.sourceFile = fName;

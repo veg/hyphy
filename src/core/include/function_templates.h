@@ -109,6 +109,16 @@ bool      ArrayAny (ARG_TYPE const* array, unsigned long dimension, LAMBDA&& con
   return false;
 }
 
+template <typename ARG_TYPE, typename LAMBDA>
+bool      ArrayAll (ARG_TYPE const* array, unsigned long dimension, LAMBDA&& condition) {
+    for (unsigned long i = 0UL; i < dimension; i++) {
+        if (!condition (array[i],i)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 template <typename LAMBDA>
 bool      ListAny (_SimpleList& list, LAMBDA&& condition) {
     for (unsigned long i = 0UL; i < list.lLength; i++) {
@@ -207,5 +217,16 @@ unsigned long DrawFromDiscrete (ARG_TYPE const * cdf, unsigned long dimension) {
   }
   
   return index;
+}
+
+template <typename ARG_TYPE>
+void BatchDelete (ARG_TYPE first) {
+    delete first;
+}
+
+template <typename ARG_TYPE, typename... Args>
+void BatchDelete (ARG_TYPE first, const Args&... args) {
+    delete first;
+    BatchDelete (args...);
 }
 
