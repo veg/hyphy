@@ -955,8 +955,7 @@ void      _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain)
-{
+void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
     chain.currentCommand++;
 
     SetStatusLine (_String("Constructing Topology ")&*(_String*)parameters(0));

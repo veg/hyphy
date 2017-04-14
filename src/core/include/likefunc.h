@@ -229,7 +229,7 @@ public:
     bool        DependOnDF              (long ID) const{
         return theDataFilters.Find(ID)>=0;
     }
-    bool        MapTreeTipsToData       (long, bool leafScan = false);
+    bool        MapTreeTipsToData       (long, _String * errorString, bool leafScan = false);
     void        VoidOldResults          (void) {
         computationalResults.ZeroUsed();
     }
@@ -318,7 +318,7 @@ protected:
   
   
     void            AllocateTemplateCaches  (void);
-    bool            CheckIthPartition       (unsigned long index, _String const* = nil, _String const * = nil, _String const * = nil);
+    bool            CheckIthPartition       (unsigned long index, _String* errorString, _String const* = nil, _String const * = nil, _String const * = nil);
 
     _Matrix*        PairwiseDistances       (long index);
     void            CheckDependentBounds    (void);
