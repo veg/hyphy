@@ -2382,9 +2382,6 @@ bool    _String::IsValidRefIdentifier (void) const
 void _String::ConvertToAnIdent (bool strict)
 {
     _String * result = new _String ((unsigned long)sLength+1,true);
-    if (!result) {
-        checkPointer (result);
-    }
 
     if (sLength) {
         if (strict) {

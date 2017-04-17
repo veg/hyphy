@@ -1808,7 +1808,7 @@ _TranslationTable*      _DataSet::CheckCompatibility (_SimpleList const & ref, c
     _DataSet* currentSet = (_DataSet*)dataSetList(ref.Element (0));
 
     _TranslationTable* theEnd = new _TranslationTable (*(currentSet->theTT));
-    checkPointer(theEnd);
+
     long    refNo     =  concatOrCombine?currentSet->NoOfSpecies():currentSet->NoOfColumns();
     char    emptyStringChar = theEnd->GetSkipChar();
 
@@ -1830,12 +1830,16 @@ _TranslationTable*      _DataSet::CheckCompatibility (_SimpleList const & ref, c
                 }
             }
         }
-        _String warningMessage ("The data set:");
-        warningMessage = warningMessage & *((_String*)dataSetNamesList(ref.Element (k))) & _String (" was found incompatible with one of the following data sets:");
+        _String warningMessage ("The data set ");
+        warningMessage = warningMessage & ((_String*)dataSetNamesList(ref.Element (k)))->Enquote() & _String (" was found incompatible with one of the following data sets ");
         for (long i=0; i<k; i++) {
-            warningMessage = warningMessage & *((_String*)dataSetNamesList(ref.Element (k))) & _String (",");
+            if (k) {
+                warningMessage = warningMessage & ", ";
+            }
+            warningMessage = warningMessage & ((_String*)dataSetNamesList(ref.Element (k)))->Enquote();
         }
         WarnError (warningMessage);
+        DeleteObject (tryMe);
         DeleteObject (theEnd);
         return nil;
     }
@@ -5007,7 +5011,7 @@ void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds)
 
 
 //_________________________________________________________
-_DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, _String* namespaceID, _TranslationTable* dT)
+_DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, _String* namespaceID, _TranslationTable* dT, _ExecutionList* ex)
 {
 
     bool     doAlphaConsistencyCheck = true;
@@ -5386,10 +5390,15 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             lastNexusDataMatrix = result;
 
             long            bfl = GetBFFunctionCount ();
-
-            _ExecutionList nexusBF (nexusBFBody,namespaceID);
+            
+            _ExecutionList * nexusBF = ex ? ex :  new _ExecutionList;
+            if (namespaceID) {
+                nexusBF->SetNameSpace(namespaceID);
+            }
+            nexusBF->BuildList(nexusBFBody, nil, false, true);
+            //_ExecutionList nexusBF (nexusBFBody,namespaceID);
             if (bfName) {
-                nexusBF.sourceFile = *bfName;
+                nexusBF->sourceFile = *bfName;
             }
 
 #ifndef __UNIX__
@@ -5399,7 +5408,12 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                 ApplyPreferences();
 #endif
 
-            nexusBF.ExecuteAndClean(bfl);
+            nexusBF->ExecuteAndClean(bfl);
+            if (nexusBF != ex) {
+                DeleteObject (nexusBF);
+            } else {
+                ex->Clear();
+            }
             nexusBFBody         = emptyString;
         } else if (execBF == 0) {
             nexusBFBody         = emptyString;

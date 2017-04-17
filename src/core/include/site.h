@@ -390,7 +390,7 @@ public:
     void        FindAllSitesLikeThisOne (long, _SimpleList&);
 
     friend      class       _DataSetFilter;
-    friend      _DataSet*    ReadDataSetFile        (FILE*,char,_String*,_String*, _String*,_TranslationTable*);
+    friend      _DataSet*    ReadDataSetFile        (FILE*,char,_String*,_String*, _String*,_TranslationTable*, _ExecutionList*);
     friend      long         ProcessLine            (_String&s , FileState *fs, _DataSet& ds);
 
     static      _DataSet*    Concatenate            (const _SimpleList&);
@@ -719,7 +719,7 @@ public:
 extern          _TranslationTable       defaultTranslationTable;
 
 void            ReadNextLine            (FILE* fp, _String *s, FileState* fs, bool append = false, bool upCase = true);
-_DataSet*       ReadDataSetFile         (FILE*, char = 0, _String* = nil, _String* = nil, _String* = nil,_TranslationTable* = &defaultTranslationTable);
+_DataSet*       ReadDataSetFile         (FILE*, char = 0, _String* = nil, _String* = nil, _String* = nil,_TranslationTable* = &defaultTranslationTable, _ExecutionList* target = nil);
 void            fillDefaultCharTable    (void);
 void            printFileResults        (_DataSet*);
 void            printDSFilter           (_DataSetFilter* d);

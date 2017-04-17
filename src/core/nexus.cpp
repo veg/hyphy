@@ -141,20 +141,19 @@ void    NexusParseEqualStatement (_String& source)
 }
 //_________________________________________________________
 
-bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _String& blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes)
-{
+bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _String& blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes) {
     bool done          = false,
          insideLiteral = false,
          startedReading = false;
 
-    long newPos = pos>0?pos+1:pos;
-    char c;
+    long newPos = pos>0?pos+1L:pos;
+    char c = '\0';
 
     while (1) {
         while (newPos<CurrentLine.sLength) {
             c = CurrentLine.sData[newPos];
             if (isspace(c)) {
-                if (stopOnSpace && startedReading && (!insideLiteral) && (!NLonly || (NLonly && (c==10 || c==13)))) {
+                if (stopOnSpace && startedReading && (!insideLiteral) && (!NLonly || (NLonly && (c=='\r' || c=='\n')))) {
                     done = true;
                     break;
                 } else {

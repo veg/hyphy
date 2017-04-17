@@ -42,6 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "scfg.h"
 #include <math.h>
 #include <float.h>
+#include "function_templates.h"
 
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
@@ -1087,13 +1088,13 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                 break;
             }
           
-            _Parameter term,
+            _Parameter term = log(accumulator),
                        temp_sum;
+            
+            long       site_frequency = theFilter->theFrequencies (siteOrdering.lData[siteID]);
           
-            if (theFilter->theFrequencies (siteOrdering.lData[siteID]) > 1) {
-                term = log(accumulator) * theFilter->theFrequencies (siteOrdering.lData[siteID]);
-            } else {
-                term = log(accumulator);
+            if (site_frequency > 1L) {
+                term *= site_frequency;
             }
           // Kahan sum
             term     -= correction;
@@ -1546,17 +1547,22 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
 )
 {
   auto bookkeeping =  [&siteOrdering, &storageVec, &theFilter] (const long siteID, const _Parameter accumulator, _Parameter& correction, _Parameter& result) ->  void {
+     
+    long direct_index = siteOrdering.lData[siteID];
+      
     if (storageVec) {
-      storageVec [siteOrdering.lData[siteID]] = accumulator;
+      storageVec [direct_index] = accumulator;
     } else {
       if (accumulator <= 0.0) {
-        throw (1L+siteOrdering.lData[siteID]);
+        throw (1L+direct_index);
       }
+        
       _Parameter term;
-      if (theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) > 1) {
-        term = log(accumulator) * theFilter->theFrequencies.Get (siteOrdering.lData[siteID]) - correction;
+      long       site_frequency = theFilter->theFrequencies.Get(direct_index);
+      if ( site_frequency > 1L) {
+        term =  log(accumulator) * site_frequency - correction;
       } else {
-        term = log(accumulator) - correction;
+          term = log(accumulator) - correction;
       }
       _Parameter temp_sum = result + term;
       correction = (temp_sum - result) - term;
@@ -2077,18 +2083,18 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
 // catAssignments:              a vector assigning a (partition specific) rate category to each site
 // catCount:                    the number of rate classes
 // alsoDoLeaves:                if true, also return ML reconstruction of observed (or partially observed) sequences
-
 {
-    long            patternCount                    = dsf->GetPatternCount  (),
+    long            patternCount                     = dsf->GetPatternCount  (),
                     alphabetDimension                = dsf->GetDimension         (),
-                    unitLength                        = dsf->GetUnitLength        (),
-                    iNodeCount                        = GetINodeCount             (),
-                    leafCount                     = GetLeafCount              (),
+                    unitLength                       = dsf->GetUnitLength        (),
+                    iNodeCount                       = GetINodeCount             (),
+                    leafCount                        = GetLeafCount              (),
                     siteCount                        = dsf->GetSiteCountInUnits    (),
-                    allNodeCount                    = 0,
-                    stateCacheDim                    = (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount)),
-                    *stateCache                        = new long [patternCount*(iNodeCount-1)*alphabetDimension],
-    *leafBuffer                     = new long [(alsoDoLeaves?leafCount*patternCount:1)*alphabetDimension];
+                    allNodeCount                     = 0,
+                    stateCacheDim                    = (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount));
+    
+    long            *stateCache                     = new long [patternCount*(iNodeCount-1)*alphabetDimension],
+                    *leafBuffer                     = new long [(alsoDoLeaves?leafCount*patternCount:1)*alphabetDimension];
 
     // a Patterns x Int-Nodes x CharStates integer table
     // with the best character assignment for node i given that its parent state is j for a given site
@@ -2119,16 +2125,10 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
 
         _Parameter * parentConditionals = iNodeCache + parentCode * alphabetDimension * patternCount;
 
-        if (taggedInternals.lData[parentCode] == 0)
+        if (taggedInternals.lData[parentCode] == 0L) {
             // mark the parent for update and clear its conditionals if needed
-        {
-            taggedInternals.lData[parentCode]     = 1;
-            long k3     = 0;
-            for (long k = 0; k < patternCount; k++) {
-                for (long k2 = 0; k2 < alphabetDimension; k2++, k3++) {
-                    parentConditionals [k3] = 1.;
-                }
-            }
+            taggedInternals.lData[parentCode]     = 1L;
+            InitializeArray(parentConditionals, patternCount*alphabetDimension, 1.);
         }
 
         _CalcNode *          currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):((_CalcNode*) flatTree    (nodeCode));
@@ -2148,25 +2148,19 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
             _Parameter  const *tMatrix = transitionMatrix;
             if (isLeaf) {
                 long siteState = lNodeFlags[nodeCode*patternCount + siteOrdering.lData[siteID]] ;
-                if (siteState >= 0)
-                    // a fully resolved leaf
-                {
+                if (siteState >= 0L) { // a fully resolved leaf
                     tMatrix  +=  siteState;
                     for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension) {
                         parentConditionals[k] *= *tMatrix;
                     }
                     if (alsoDoLeaves) {
-                        for (long k = 0; k < alphabetDimension; k++) {
-                            leafBuffer[k] = siteState;
-                        }
+                        InitializeArray (leafBuffer, alphabetDimension, (const long)siteState);
                         leafBuffer += alphabetDimension;
                     }
 
                     continue;
-                } else
-                    // an ambiguous leaf
-                {
-                    childVector = lNodeResolutions->theData + (-siteState-1) * alphabetDimension;
+                } else {// an ambiguous leaf
+                    childVector = lNodeResolutions->theData + (-siteState-1L) * alphabetDimension;
                 }
 
             }
@@ -2185,22 +2179,17 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
             long       *stateBuffer                   = isLeaf?leafBuffer:stateCache;
 
             // check for degeneracy
+            
+            bool completely_unresolved = ArrayAll (childVector, alphabetDimension, [] (_Parameter x, unsigned long) {return x == 1.;});
 
-            long howManyOnes = 0;
-            for (long k = 0; k < alphabetDimension; k++) {
-                howManyOnes += childVector[k]==1.;
-            }
-
-            if (howManyOnes == alphabetDimension) {
-                for (long k = 0; k < alphabetDimension; k++) {
-                    stateBuffer[k] = -1;
-                }
+            if (completely_unresolved) {
+                InitializeArray(stateBuffer, alphabetDimension, -1L);
             } else {
-                for (long p = 0; p < alphabetDimension; p++) {
+                for (long p = 0L; p < alphabetDimension; p++) {
                     _Parameter max_lik = 0.;
-                    long       max_idx = 0;
+                    long       max_idx = 0L;
 
-                    for (long c = 0; c < alphabetDimension; c++) {
+                    for (long c = 0L; c < alphabetDimension; c++) {
                         _Parameter thisV = tMatrix[c] * childVector[c];
                         if (thisV > max_lik) {
                             max_lik = thisV;
@@ -2219,19 +2208,18 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
                 }
 
                 if (overallMax > 0.0 && overallMax < _lfScalingFactorThreshold) {
-                    for (long k = 0; k < alphabetDimension; k++) {
+                    for (long k = 0L; k < alphabetDimension; k++) {
                         buffer[k] *= _lfScalerUpwards;
                     }
                 }
 
                 // buffer[p] now contains the maximum likelihood of the tree
                 // from this point forward given that parent state is p
-                // and stateBuffer[p] stores the maximimizing assignment
+                // and stateBuffer[p] stores the maximizing assignment
                 // for this node
 
                 for (long k = 0; k < alphabetDimension; k++) {
-                    long stateValue = stateBuffer[k];
-                    if (stateValue >= 0) {
+                    if (stateBuffer[k] >= 0L) {
                         parentConditionals[k] *= buffer[k];
                     }
                 }

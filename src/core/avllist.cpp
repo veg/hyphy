@@ -444,7 +444,7 @@ const _List  _AVLList::Keys (void) const {
   _List keys;
    if (countitems() > 0UL) {
       _SimpleList  hist;
-      long         ls, cn;
+      long         ls = -1L, cn;
       
       cn = Traverser (hist,ls,root);
       

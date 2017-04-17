@@ -95,15 +95,17 @@ _SimpleList::_SimpleList (unsigned long l)
 //Stack copy contructor
 _SimpleList::_SimpleList (_SimpleList const & l, long from, long to) {
   Initialize           (false);
-  if (from == 0 && to == -1) {
+  if (from == 0L && to == -1L) {
     to = l.lLength;
   } else {
     NormalizeCoordinates (from, to, l.lLength);
   }
-  RequestSpace(to-from);
-  long upto = to-from ; 
-  for (lLength = 0; lLength < upto; lLength++) {
-      lData[lLength] = l.lData[from+lLength];
+  if (to > from) {
+      long upto = to-from ;
+      RequestSpace(upto);
+      for (lLength = 0; lLength < upto; lLength++) {
+          lData[lLength] = l.lData[from+lLength];
+      }
   }
 }
 
@@ -735,6 +737,7 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
         }
 
         if (!lData) {
+            laLength = 0UL; // error condition
             return;
         }
     }
