@@ -568,12 +568,12 @@ lfunction meme.store_results (node, result, arguments) {
                           0  // total branch length of tested branches
                       } };
 
-	//console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_mixture_weight"));
+	  //console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_mixture_weight"));
 
     if (None != result) { // not a constant site
-    
-    	lrt = {"LRT" : 2*((result["alternative"])[utility.getGlobalValue("terms.json.log_likelihood")]-(result["null"])[utility.getGlobalValue("terms.json.log_likelihood")])};
-    	lrt ["p-value"] = 2/3-2/3*(0.45*CChi2(lrt["LRT"],1)+0.55*CChi2(lrt["LRT"],2));
+
+        lrt = {"LRT" : 2*((result["alternative"])[utility.getGlobalValue("terms.json.log_likelihood")]-(result["null"])[utility.getGlobalValue("terms.json.log_likelihood")])};
+        lrt ["p-value"] = 2/3-2/3*(0.45*CChi2(lrt["LRT"],1)+0.55*CChi2(lrt["LRT"],2));
     	
         result_row [0] = estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_alpha");
         result_row [1] = estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_omega_minus") * result_row[0];
@@ -582,7 +582,24 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [4] = 1-result_row [2];
         result_row [5] = lrt ["LRT"];
         result_row [6] = lrt ["p-value"];
-        result_row [7] = utility.Array1D(utility.Filter (result["ebf"], "_value_", "_value_>=100"));
+
+        // SW 20170505 Removing use of utility.Filter until we can lock the stack
+        //filtered_ebf = utility.Filter (ebf, "_value_", "_value_>=100");
+
+        filtered_ebf = {};
+        ebf_keys = Rows(ebf);
+
+        for(i=0; i<Abs(ebf);i=i+1) {
+            if(ebf[i] >= 100) {
+                filtered_ebf[ebf_keys[i]] = ebf[ebf_keys[i]];
+            }
+        }
+
+        if(None != filtered_ebf) {
+            result_row [7] = utility.Array1D(filtered_ebf);
+        } else {
+            result_row [7] = 0;
+        }
         
         sum = 0;
         alternative_lengths = ((result["alternative"])[^"terms.json.attribute.branch_length"])[0];
