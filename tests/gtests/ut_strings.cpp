@@ -1181,7 +1181,7 @@ TEST_F(StringTest,RegExpMatchAllTest)
     _SimpleList matched_pairs;
     int errNo = 0;
 
-    Ptr regex = PrepRegExp (pattern, errNo, false);
+    hy_pointer regex = PrepRegExp (pattern, errNo, false);
     initial.RegExpMatchAll(regex, matched_pairs);
 
     EXPECT_EQ(2,matched_pairs.lData[0]);

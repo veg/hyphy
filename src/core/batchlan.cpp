@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,78 +37,26 @@
  
  */
 
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+
+
 #include "likefunc.h"
 #include "batchlan.h"
-#include "string.h"
-#include "ctype.h"
 #include "polynoml.h"
-#include "time.h"
 #include "scfg.h"
 #include "bayesgraph.h"
 #include "function_templates.h"
 #include "avllistx.h"
 #include "global_object_lists.h"
+#include "global_things.h"
 #include "time_difference.h"
+#include "global_things.h"
 
 
 
-
-//#include "profiler.h"
-#ifndef __HEADLESS__
-#ifdef __HYPHY_GTK__
-#include "HYConsoleWindow.h"
-#include "HYDialogs.h"
-#include "HYUtils.h"
-#include "HYTreePanel.h"
-#include "HYDataPanel.h"
-#include "HYChartWindow.h"
-#include "HYDBWindow.h"
-#endif
-
-#ifdef __MAC__
-#include <Aliases.h>
-//#include <StandardFile.h>
-#include <Files.h>
-#include "HYDataPanel.h"
-#include "HYDialogs.h"
-#include "HYTreePanel.h"
-#include "HYDataPanel.h"
-#include "HYUtils.h"
-#include "HYChartWindow.h"
-#include "HYDBWindow.h"
-#include "timer.h"
-void    GetFullPathName (FSSpec& theReply, _String& feedback);
-_String MacSimpleFileOpen (void);
-_String MacSimpleFileSave (void);
-#endif
-
-#ifdef __WINDOZE__
-#include "HYDataPanel.h"
-#include "HYDialogs.h"
-#include "HYTreePanel.h"
-#include "HYDataPanel.h"
-#include "HYUtils.h"
-#include "HYChartWindow.h"
-extern  long    lastFileTypeSelection;
-#include "HYUtils.h"
-#include "HYDBWindow.h"
-#endif
-
-#ifndef __UNIX__
-#include "HYEventTypes.h"
-#endif
-#endif
-
-#if defined __HYPHYQT__
-#include "HYSharedMain.h"
-#include "hyphy_qt_helpers.h"
-#endif
-
-
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
-
+using namespace hy_global;
 using namespace hyphy_global_objects;
 
 
@@ -130,8 +78,6 @@ batchLanguageFunctionParameterTypes,
 compiledFormulaeParameters,
 modelNames,
 executionStack,
-standardLibraryPaths,
-standardLibraryExtensions,
 loadedLibraryPathsBackend;
 
 
@@ -163,7 +109,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 explicitFormMExp                ("EXPLICIT_FORM_MATRIX_EXPONENTIAL"),
                                 multByFrequencies               ("MULTIPLY_BY_FREQUENCIES"),
                                 getDString                      ("PROMPT_FOR_STRING"),
-                                useLastFString                  ("LAST_FILE_PATH"),
                                 getFString                      ("PROMPT_FOR_FILE"),
                                 tempFString                     ("TEMP_FILE_NAME"),
                                 defFileString                   ("DEFAULT_FILE_SAVE_NAME"),
@@ -174,7 +119,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 keepFileOpen                    ("KEEP_OPEN"),
                                 closeFile                       ("CLOSE_FILE"),
                                 useLastDefinedMatrix            ("USE_LAST_DEFINED_MATRIX"),
-                                MessageLogging                  ("MESSAGE_LOGGING"),
                                 selectionStrings                ("SELECTION_STRINGS"),
                                 useNoModel                      ("USE_NO_MODEL"),
                                 stdoutDestination               ("stdout"),
@@ -205,9 +149,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 prefixDF                        ("Partition_"),
                                 prefixLF                        ("LF_"),
                                 replaceTreeStructure            ("REPLACE_TREE_STRUCTURE"),
-                                hyphyBaseDirectory              ("HYPHY_BASE_DIRECTORY"),
-                                hyphyLibDirectory               ("HYPHY_LIB_DIRECTORY"),
-                                platformDirectorySeparator      ("DIRECTORY_SEPARATOR"),
                                 covarianceParameterList         ("COVARIANCE_PARAMETER"),
                                 matrixEvalCount                 ("MATRIX_EXPONENTIATION_COUNTS"),
                                 scfgCorpus                      ("SCFG_STRING_CORPUS"),
@@ -222,11 +163,8 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 bgmConstraintMx                 ("BGM_CONSTRAINT_MATRIX"),
                                 bgmParameters                   ("BGM_NETWORK_PARAMETERS"),
 
-                                pathToCurrentBF                 ("PATH_TO_CURRENT_BF"),
                                 hfCountGap                      ("COUNT_GAPS_IN_FREQUENCIES"),
                                 gdiDFAtomSize                   ("ATOM_SIZE"),
-                                statusBarProgressValue          ("STATUS_BAR_PROGRESS_VALUE"),
-                                statusBarUpdateString           ("STATUS_BAR_STATUS_STRING"),
                                 marginalAncestors               ("MARGINAL"),
                                 doLeavesAncestors               ("DOLEAVES"),
                                 blScanfRewind                   ("REWIND"),
@@ -235,10 +173,8 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 getDataInfoReturnsOnlyTheIndex  ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
                                 alwaysReloadLibraries           ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
                                 dialogPrompt,
-                                baseDirectory,
                                 lastModelUsed,
-                                libDirectory,
-                                scanfLastFilePath,
+                                hy_scanf_last_file_path,
                                 defFileNameValue;
 
 
@@ -278,13 +214,11 @@ blClearConstraints         ("ClearConstraints("),
 blSetDialogPrompt      ("SetDialogPrompt("),
 blModel                    ("Model "),
 blChoiceList               ("ChoiceList("),
-blOpenDataPanel            ("OpenDataPanel("),
 blGetInformation           ("GetInformation("),
 blExecuteCommands      ("ExecuteCommands("),
 blExecuteAFile         ("ExecuteAFile("),
 blLoadFunctionLibrary      ("LoadFunctionLibrary("),
 blOpenWindow               ("OpenWindow("),
-blSpawnLF                  ("SpawnLikelihoodFunction("),
 blDifferentiate            ("Differentiate("),
 blFindRoot             ("FindRoot("),
 blMPIReceive               ("MPIReceive("),
@@ -310,17 +244,13 @@ _Trie    _HY_HBL_KeywordsPreserveSpaces  ;
 
 #ifdef      __HYPHYMPI__
 
-_String     mpiNodeID                       ("MPI_NODE_ID"),
-            mpiNodeCount                    ("MPI_NODE_COUNT"),
-            mpiLastSentMsg                  ("MPI_LAST_SENT_MSG");
-
 void        ReportMPIError                  (int, bool);
 
 #endif
 
 _hy_nested_check  isInFunction = _HY_NO_FUNCTION;
 
-_Parameter  explicitFormMatrixExponential = 0.0,
+hy_float  explicitFormMatrixExponential = 0.0,
             messageLogFlag                = 1.0;
 
 long        scanfLastReadPosition         = 0;
@@ -356,7 +286,7 @@ void    ReportMPIError      (int code, bool send)
         }
 
         errMsg = errMsg & _String(" code:") & (long)code;
-        FlagError (errMsg);
+        HandleApplicationError (errMsg);
     }
 }
 
@@ -364,7 +294,7 @@ void    ReportMPIError      (int code, bool send)
 
 //____________________________________________________________________________________
 
-void    MPISendString       (_String& theMessage, long destID, bool isError)
+void    MPISendString       (_String const& theMessage, long destID, bool isError)
 {
 
     long    messageLength = theMessage.sLength,
@@ -397,7 +327,7 @@ void    MPISendString       (_String& theMessage, long destID, bool isError)
 
     _FString*    sentVal = new _FString;
     sentVal->theString = (_String*)theMessage.makeDynamic();
-    _Variable *   mpiMsgVar = CheckReceptacle (&mpiLastSentMsg, emptyString, false);
+    _Variable *   mpiMsgVar = CheckReceptacle (&hy_env::mpi_last_sent_message, kEmptyString, false);
     mpiMsgVar->SetValue (sentVal, false);
     //setParameter (mpiLastSentMsg, &sentVal);
 
@@ -441,7 +371,7 @@ _String*    MPIRecvString       (long senderT, long& senderID)
             ReportMPIError(MPI_Recv(theMessage->sData+transferCount, MPI_SEND_CHUNK, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
             MPI_Get_count (&status,MPI_CHAR,&actualReceived);
             if (actualReceived!=MPI_SEND_CHUNK) {
-                WarnError ("Failed in MPIRecvString - some data was not properly received\n");
+                HandleApplicationError ("Failed in MPIRecvString - some data was not properly received\n");
             }
             //return    nil;
             transferCount += MPI_SEND_CHUNK;
@@ -451,14 +381,14 @@ _String*    MPIRecvString       (long senderT, long& senderID)
             ReportMPIError(MPI_Recv(theMessage->sData+transferCount, messageLength-transferCount, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
             MPI_Get_count (&status,MPI_CHAR,&actualReceived);
             if (actualReceived!=messageLength-transferCount) {
-                WarnError ("Failed in MPIRecvString - some data was not properly received\n");
+                HandleApplicationError ("Failed in MPIRecvString - some data was not properly received\n");
             }
             //return    nil;
         }
         //ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD,&status),false);
 
         if (isError) {
-            FlagError (theMessage);
+            HandleApplicationError (theMessage);
         }
     }
     return theMessage;
@@ -491,7 +421,7 @@ _String*    ProcessCommandArgument (_String* data)
             return theVar->theString;
         }
 
-        WarnError (_String("Reference argument \"")&*data &"\" is not a valid string variable.");
+        HandleApplicationError (_String("Reference argument \"")&*data &"\" is not a valid string variable.");
         return nil;
     }
     return (_String*)data;
@@ -501,7 +431,7 @@ _String*    ProcessCommandArgument (_String* data)
 
 bool    numericalParameterSuccessFlag = true;
 
-_Parameter  ProcessNumericArgument (_String* data, _VariableContainer const* theP, _ExecutionList* currentProgram) {
+hy_float  ProcessNumericArgument (_String* data, _VariableContainer const* theP, _ExecutionList* currentProgram) {
     _String   errMsg;
     _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
      
@@ -522,7 +452,7 @@ _Parameter  ProcessNumericArgument (_String* data, _VariableContainer const* the
     if (currentProgram) {
         currentProgram->ReportAnExecutionError (errMsg);
     } else {
-        WarnError(errMsg);
+        HandleApplicationError(errMsg);
     }
     
     numericalParameterSuccessFlag = false;
@@ -565,7 +495,7 @@ const _String ProcessLiteralArgument (_String const* data, _VariableContainer co
       return result;
     }
     
-    return emptyString;
+    return kEmptyString;
 }
 
 //____________________________________________________________________________________
@@ -798,7 +728,7 @@ long    FindBgmName (_String const&s) {
 //__________________________________________________________
 long  AddDataSetToList (_String& theName,_DataSet* theDS) {
     theName = GenerateUniqueObjectIDByType(theName, HY_BL_DATASET);
-    long k = dataSetNamesList.FindObject (&emptyString);
+    long k = dataSetNamesList.FindObject (&kEmptyString);
     if (k==-1) {
         dataSetList.AppendNewInstance (theDS);
         dataSetNamesList&& & theName;
@@ -897,7 +827,7 @@ void KillLFRecord (long lfID, bool completeKill) {
         if (lfID<likeFuncList.lLength-1) {
             DeleteObject(likeFuncList(lfID));
             likeFuncList.lData[lfID] = 0L;
-            likeFuncNamesList.Replace(lfID,&emptyString,true);
+            likeFuncNamesList.Replace(lfID,new _String,false);
         } else {
             likeFuncList.Delete(lfID);
             likeFuncNamesList.Delete(lfID);
@@ -949,7 +879,7 @@ void KillDataSetRecord (long dsID)
     if (dsID<dataSetList.lLength-1) {
         DeleteObject(dataSetList(dsID));
         dataSetList.lData[dsID] = 0;
-        dataSetNamesList.Replace(dsID,&emptyString,true);
+        dataSetNamesList.Replace(dsID,new _String,false);
     } else {
         dataSetList.Delete(dsID);
         dataSetNamesList.Delete(dsID);
@@ -1034,7 +964,7 @@ void KillModelRecord (long mdID)
         modelMatrixIndices.lData[mdID] = -1;
         modelTypeList.lData[mdID] = 0;
         modelFrequenciesIndices.lData[mdID] = -1;
-        modelNames.Replace(mdID,&emptyString,true);
+        modelNames.Replace(mdID,new _String,false);
     } else {
         modelNames.Delete(mdID);
         modelMatrixIndices.Delete (modelMatrixIndices.lLength-1);
@@ -1127,13 +1057,12 @@ _ExecutionList::~_ExecutionList (void)
 
 //____________________________________________________________________________________
 
-BaseRef     _ExecutionList::makeDynamic (void)
-{
+BaseRef     _ExecutionList::makeDynamic (void) const {
     _ExecutionList * Res = new _ExecutionList;
 
-    memcpy ((char*)Res, (char*)this, sizeof (_ExecutionList));
+    //memcpy ((char*)Res, (char*)this, sizeof (_ExecutionList));
 
-    Res->nInstances         = 1;
+    Res->_List::Duplicate (this);
     Res->Duplicate          (this);
     Res->cli                = nil;
     Res->profileCounter     = nil;
@@ -1150,13 +1079,13 @@ BaseRef     _ExecutionList::makeDynamic (void)
 
 //____________________________________________________________________________________
 
-void        _ExecutionList::Duplicate   (BaseRef source) {
+void        _ExecutionList::Duplicate   (BaseRefConst source) {
     _List::Duplicate    (source);
 
-    _ExecutionList* s = (_ExecutionList*)source;
+    _ExecutionList const* s = (_ExecutionList const*)source;
 
     if (s->result) {
-        s->result=(_PMathObj)result->makeDynamic();
+        result=(_PMathObj)s->result->makeDynamic();
     }
 
     errorHandlingMode  = s->errorHandlingMode;
@@ -1185,7 +1114,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
             
             break;
         default: 
-            WarnError (errMsg);
+            HandleApplicationError (errMsg);
     }
 }
 
@@ -1195,16 +1124,16 @@ _String*    _ExecutionList::FetchFromStdinRedirect (void)
 // complain if nothing is left
 {
     if (!stdinRedirect) {
-        WarnError ("No input buffer was given for a redirected standard input read.");
+        HandleApplicationError ("No input buffer was given for a redirected standard input read.");
         return new _String;
     }
     long d = stdinRedirect->First();
     if (d<0) {
-        WarnError ("Ran out of input in buffer during a redirected standard input read.");
+        HandleApplicationError ("Ran out of input in buffer during a redirected standard input read.");
         return new _String;
     }
     _String *sendBack = (_String*)stdinRedirect->GetXtra (d);
-    sendBack->nInstances++;
+    sendBack->AddAReference();
     stdinRedirect->Delete ((*(_List*)stdinRedirect->dataList)(d),true);
     return sendBack;
 }
@@ -1219,7 +1148,7 @@ _String  const     _ExecutionList::GetFileName     (void)  const {
         if (top_path)
           return *top_path;
     }
-    return emptyString;
+    return kEmptyString;
 }
 
 //____________________________________________________________________________________
@@ -1248,26 +1177,26 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
       parent = nil;
     }
  
-    _FString            cfp (PeekFilePath() ? *PeekFilePath () :emptyString),
-                      * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
+    _FString            cfp (PeekFilePath() ? *PeekFilePath () :kEmptyString),
+                        *stashed = (_FString*)hy_env::EnvVariableGet(hy_env::path_to_current_bf, STRING);
 
     if (stashed) {
         stashed = (_FString*)stashed->makeDynamic();
     }
-    setParameter        (pathToCurrentBF,&cfp);
-
+    
+    hy_env::EnvVariableSet(hy_env::path_to_current_bf, &cfp, true);
+ 
     DeleteObject        (result);
     result               = nil;
     currentExecutionList = this;
     currentCommand       = 0;
 
-    terminateExecution  = false;
-    skipWarningMessages = false;
+    terminate_execution  = false;
 
     while (currentCommand<lLength) {
         if (doProfile == 1 && profileCounter) {
             long        instCounter = currentCommand;
-            _Parameter  timeDiff    = 0.0;
+            hy_float  timeDiff    = 0.0;
 
             TimeDifference timer;
             (((_ElementaryCommand**)lData)[currentCommand])->Execute(*this);
@@ -1283,7 +1212,7 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
             (((_ElementaryCommand**)lData)[currentCommand])->Execute(*this);
         }
 
-        if (terminateExecution) {
+        if (terminate_execution) {
             break;
         }
     }
@@ -1292,7 +1221,7 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     currentExecutionList = stashCEL;
 
     if (stashed) {
-        setParameter        (pathToCurrentBF,stashed,nil, false);
+        hy_env::EnvVariableSet(hy_env::path_to_current_bf, stashed, false);
     }
 
     executionStack.Delete (executionStack.lLength-1);
@@ -1315,12 +1244,11 @@ long        _ExecutionList::ExecuteAndClean     (long g, _String* fName)        
     long    f = -1;
     Execute ();
 
-    if (fName && !terminateExecution) {
+    if (fName && !terminate_execution) {
         f = batchLanguageFunctionNames.FindObject (fName);
     }
 
-    terminateExecution      = false;
-    skipWarningMessages     = false;
+    terminate_execution      = false;
 
     ClearBFFunctionLists    (g);
   
@@ -1347,9 +1275,8 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
             if (formulaString->sData[formulaString->sLength-1]!='}') {
                 _Formula *f  = new _Formula,
-                *f2 = new _Formula;
+                         *f2 = new _Formula;
 
-                checkPointer ((BaseRef)(f&&f2));
 
                 _FormulaParsingContext fpc (nil, nameSpacePrefix);
 
@@ -1448,9 +1375,8 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
     if (status) {
         cli = new _CELInternals;
-        checkPointer (cli);
-        checkPointer (cli->values = new _SimpleFormulaDatum[varList.lLength+1]);
-        checkPointer (cli->stack  = new _SimpleFormulaDatum[stackDepth+1]);
+        cli->values = new _SimpleFormulaDatum[varList.lLength+1];
+        cli->stack  = new _SimpleFormulaDatum[stackDepth+1];
 
         _SimpleList  avlData;
         _AVLListX    avlList (&avlData);
@@ -1617,7 +1543,7 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
 */
 bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed, bool empty_is_success)
 {
-    if (terminateExecution) {
+    if (terminate_execution) {
         return false;
     }
 
@@ -1665,7 +1591,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                             if (currentExecutionList) {
                                 currentExecutionList->ReportAnExecutionError(parseFail, false, true);
                             } else {
-                                acknError (parseFail);
+                                HandleApplicationError(parseFail);
                             }
                             DeleteObject (pieces);
                             return false;  
@@ -1695,7 +1621,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                     AppendNewInstance(new _ElementaryCommand);
                     (*bc) << ((prefixTreeCode == HY_HBL_COMMAND_BREAK) ? (countitems()-1) : (-(long)countitems()+1));
                 } else {
-                    WarnError (currentLine & " only makes sense in the context of a loop.");
+                    HandleApplicationError (currentLine & " only makes sense in the context of a loop.");
                     return false;
                 }
                 handled = true;
@@ -1764,7 +1690,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                     BuildList (currentLine,bc,true);
 
                     if (lif<0 || lif>=lLength) {
-                        WarnError ("'else' w/o an if to latch on to...");
+                        HandleApplicationError ("'else' w/o an if to latch on to...");
                         return false;
                     }
 
@@ -1775,7 +1701,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                         lastif.Delete(lastif.countitems()-1);
                     }
                 } else {
-                    WarnError ("'else' w/o an if to latch on to...");
+                    HandleApplicationError ("'else' w/o an if to latch on to...");
                     return false;
                 }
 
@@ -1805,8 +1731,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 _ElementaryCommand::ConstructModel (currentLine, *this);
             } else if (currentLine.startswith (blChoiceList)) { // choice list
                 _ElementaryCommand::ConstructChoiceList (currentLine, *this);
-            } else if (currentLine.startswith (blOpenDataPanel)) { // open data panel window
-                _ElementaryCommand::ConstructOpenDataPanel (currentLine, *this);
             } else if (currentLine.startswith (blGetInformation)) { // get information
                 _ElementaryCommand::ConstructGetInformation (currentLine, *this);
             } else if (currentLine.startswith (blExecuteCommands) || currentLine.startswith (blExecuteAFile) || currentLine.startswith (blLoadFunctionLibrary))
@@ -1815,8 +1739,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 _ElementaryCommand::ConstructExecuteCommands (currentLine, *this);
             } else if (currentLine.startswith (blOpenWindow)) { // execute commands
                 _ElementaryCommand::ConstructOpenWindow (currentLine, *this);
-            } else if (currentLine.startswith (blSpawnLF)) { // execute commands
-                _ElementaryCommand::ConstructSpawnLF (currentLine, *this);
             } else if (currentLine.startswith (blFindRoot)||currentLine.startswith (blIntegrate))
                 // find a root of an expression in an interval
                 // or an integral
@@ -1871,7 +1793,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         }
     }
     s.sData = savePointer;
-    s.DuplicateErasing (&emptyString);
+    s = kEmptyString;
     return empty_is_success || countitems();
 }
 
@@ -1895,9 +1817,8 @@ _ElementaryCommand::_ElementaryCommand (_String& s) {
 }
 
 //____________________________________________________________________________________
-_ElementaryCommand::~_ElementaryCommand (void)
-{
-    if (nInstances==1) {
+_ElementaryCommand::~_ElementaryCommand (void) {
+    if (CanFreeMe()) {
         if (code==4) {
             if (simpleParameters.lLength>2) {
                 _Formula* f = (_Formula*)simpleParameters(2);
@@ -1905,9 +1826,6 @@ _ElementaryCommand::~_ElementaryCommand (void)
             }
         } else if (code==0) {
             if (simpleParameters.lLength) {
-                //long k = listOfCompiledFormulae.Find ((long)this);
-                //listOfCompiledFormulae.Delete (k);
-                //compiledFormulaeParameters.Delete (k);
 
                 _Formula* f = (_Formula*)simpleParameters(2);
                 delete (f);
@@ -1926,7 +1844,7 @@ _ElementaryCommand::~_ElementaryCommand (void)
 }
 
 //____________________________________________________________________________________
-BaseRef   _ElementaryCommand::makeDynamic (void)
+BaseRef   _ElementaryCommand::makeDynamic (void) const
 {
     _ElementaryCommand * nec = new _ElementaryCommand;
     if (!nec) {
@@ -1938,14 +1856,13 @@ BaseRef   _ElementaryCommand::makeDynamic (void)
     //if (code == 4 || code==6 || code==9 || code==0)
     //nInstances++;
 
-    nec->nInstances = 1;
     nec->Duplicate (this);
     return nec;
 }
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::Duplicate (BaseRef source)
+void      _ElementaryCommand::Duplicate (BaseRefConst source)
 {
     _ElementaryCommand* sec = (_ElementaryCommand*)source;
 
@@ -2129,7 +2046,6 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long)
         result = _String("Function ")&(*converted);
         DeleteObject(converted);
         converted = new _String (simpleParameters(0));
-        checkPointer(converted);
         result = result& _String(" of ")&(*converted)&_String(" parameters:{");
         DeleteObject (converted);
         converted = (_String*)parameters(simpleParameters(0)-1)->toStr();
@@ -2141,7 +2057,6 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long)
     case 14: // return statement
         result = _String("A return statement with:");
         converted = new _String (simpleParameters(0));
-        checkPointer(converted);
         result = result& *converted;
 
         break;
@@ -2170,7 +2085,6 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long)
         result = _String("Export ")&(*converted);
         DeleteObject(converted);
         converted = (_String*)parameters(0)->toStr();
-        checkPointer(converted);
         result = result& _String(" to ")& *converted;
         break;
 
@@ -2379,20 +2293,6 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long)
         break;
     }
 
-    case 41: { // spawn LF
-        converted = (_String*)parameters(0)->toStr();
-        result = _String("Spawn Likelihood Function ")&(*converted);
-        DeleteObject(converted);
-        converted = (_String*)parameters(1)->toStr();
-        result = result& _String(" with tree ")&(*converted);
-        DeleteObject(converted);
-        converted = (_String*)parameters(2)->toStr();
-        result = result& _String(" from ")&(*converted);
-        DeleteObject(converted);
-        converted = (_String*)parameters(3)->toStr();
-        result = result& _String(" using sequences ids in ")&(*converted);
-        break;
-    }
 
     case HY_HBL_COMMAND_DIFFERENTIATE: { // Differentiate
         converted = (_String*)parameters(1)->toStr();
@@ -2612,7 +2512,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
     try {
 
       if (chain.cli) {
-          _Parameter result = ((_Formula*)simpleParameters.lData[1])->ComputeSimple (chain.cli->stack, chain.cli->values);
+          hy_float result = ((_Formula*)simpleParameters.lData[1])->ComputeSimple (chain.cli->stack, chain.cli->values);
           long sti = chain.cli->storeResults.lData[chain.currentCommand-1];
           if (sti>=0) {
             //printf ("%ld, %g\n", sti, result);
@@ -2642,7 +2542,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
                 
               } else {
                   ExecuteFormula(&f,&f2,parseCode,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
-                  if (terminateExecution) {
+                  if (terminate_execution) {
                     errMsg = new _String ("Error computing the compiled statement: ");
                     throw 0;
                   }
@@ -2656,14 +2556,14 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 
       ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix, simpleParameters.lData[4]);
       
-      if (terminateExecution) {
+      if (terminate_execution) {
         errMsg = new _String ("Error computing the interpreted statement: ");
         throw 0;
       }
       
     } catch (int e) {
       if (errMsg) {
-        WarnError (_String(errMsg) & *this);
+        HandleApplicationError (_String(errMsg) & *this);
       }
     }
 }
@@ -2723,7 +2623,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 
               // printf ("\n*** %s\n", ((_String*)result->toStr())->sData);
 
-            if (terminateExecution && !result) {
+            if (terminate_execution && !result) {
                   subNumericValues = 2;
                   _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr();
                   subNumericValues = 0;
@@ -2761,7 +2661,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
       chain.currentCommand = simpleParameters.lData[0];
 
       if (chain.currentCommand == -1) {
-          terminateExecution   = true;
+          terminate_execution   = true;
           chain.currentCommand = chain.lLength;
       }
     }
@@ -2771,9 +2671,9 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
       }
       if (errMsg) {
         if (e == 0) {
-          WarnError (_String ("'") & *(_String*)parameters(0) & "'" & errMsg);
+          HandleApplicationError (_String ("'") & *(_String*)parameters(0) & "'" & errMsg);
         } else {
-          WarnError    (errMsg);
+          HandleApplicationError    (errMsg);
         }
         // note that errMsg will be deleted by _String (*_String) constructors
       }
@@ -2795,8 +2695,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
     } else {
         if (fName.Equal (&useNexusFileData)) {
             if (!lastNexusDataMatrix) {
-                _String errMsg = useNexusFileData & " was used in ReadDataFile, and no NEXUS data matrix was available.";
-                acknError (errMsg);
+                HandleApplicationError (useNexusFileData & " was used in ReadDataFile, and no NEXUS data matrix was available.");
                 return;
             }
             ds = lastNexusDataMatrix;
@@ -2805,8 +2704,8 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
             lastFileTypeSelection = 1;
 #endif
 
-            fName.ProcessFileName(false,false,(Ptr)chain.nameSpacePrefix);
-            if (terminateExecution) {
+            fName.ProcessFileName(false,false,(hy_pointer)chain.nameSpacePrefix);
+            if (terminate_execution) {
                 return;
             }
             SetStatusLine ("Loading Data");
@@ -2815,16 +2714,16 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
             if (df==nil) {
                 // try reading this file as a string formula
                 fName = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
-                fName.ProcessFileName(false,false,(Ptr)chain.nameSpacePrefix);
+                fName.ProcessFileName(false,false,(hy_pointer)chain.nameSpacePrefix);
 
-                if (terminateExecution) {
+                if (terminate_execution) {
                     return;
                 }
 
                 df = doFileOpen (fName.getStr(),"rb");
                 if (df==nil) {
-                     WarnError (_String ("Could not find source dataset file ") & ((_String*)parameters(1))->Enquote('"')
-                                & " (resolved to '" & fName & "')\nPath stack:\n\t" & GetPathStack ("\n\t"));
+                     HandleApplicationError ((_String ("Could not find source dataset file ") & ((_String*)parameters(1))->Enquote('"')
+                                & " (resolved to '" & fName & "')\nPath stack:\n\t" & GetPathStack ("\n\t")));
                     return;
                 }
             }
@@ -2834,7 +2733,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
     }
 
 
-    // 20110802: need to check that this data set is not emptyString
+    // 20110802: need to check that this data set is not kEmptyString
 
     if (ds->NoOfSpecies() && ds->NoOfColumns()) {
         _String  * dsID = new _String (chain.AddNameSpaceToID(*(_String*)parameters(0)));
@@ -2842,7 +2741,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
         DeleteObject  (dsID);
     } else {
         DeleteObject (ds);
-        WarnError    ("The format of the sequence file has not been recognized and may be invalid");
+        HandleApplicationError    ("The format of the sequence file has not been recognized and may be invalid");
     }
 
     //StoreADataSet (ds, (_String*)parameters(0));
@@ -2886,7 +2785,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
             DeleteObject (matrixOfStrings);
         }
         if (likelihoodFunctionSpec == nil) {
-            WarnError (_String("Not a valid string matrix object passed to a _LikelihoodFunction constructor: ") & *(_String*)parameters(1));
+            HandleApplicationError (_String("Not a valid string matrix object passed to a _LikelihoodFunction constructor: ") & *(_String*)parameters(1));
             return;
         }
     }
@@ -2969,7 +2868,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 
         if (errMsg.sLength) {
             DeleteObject (likelihoodFunctionSpec);
-            WarnError    (errMsg);
+            HandleApplicationError    (errMsg);
             return;
         }
     }
@@ -2993,7 +2892,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
         {
             DeleteObject (lkf);
         } else {
-            likeFuncObjectID = likeFuncNamesList.FindObject(&emptyString);
+            likeFuncObjectID = likeFuncNamesList.FindObject(&kEmptyString);
             // see if there are any vacated spots in the list
 
             if (likeFuncObjectID < 0) {
@@ -3035,13 +2934,12 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
          s2 = FindSCFGName     (likefID);
 
     if (f==-1 && s2==-1) {
-        WarnError (_String("Likelihood Function (or SCFG)")&likefID& " has not been initialized" );
+        HandleApplicationError (_String("Likelihood Function (or SCFG)")&likefID& " has not been initialized" );
         return ;
     }
 
     if (f>=0) {
         _DataSet  * ds = new _DataSet;
-        checkPointer (ds);
 
         _List     theExclusions;
 
@@ -3097,7 +2995,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
             if (!(catValVar = CheckReceptacle(&matrixName,blSimulateDataSet,true))) {
                 return;
             } else {
-                checkPointer (catValues = new _Matrix (1,1,false,true));
+                catValues = new _Matrix (1,1,false,true);
             }
         }
 
@@ -3107,7 +3005,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
             if (!(catNameVar = CheckReceptacle(&matrixName,blSimulateDataSet,true))) {
                 return;
             } else {
-                checkPointer (catNames = new _Matrix (1,1,false,true));
+                catNames = new _Matrix (1,1,false,true);
             }
         }
 
@@ -3116,7 +3014,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
         if (!resultingDSName->IsValidIdentifier(true)) {
             errMsg = *resultingDSName & " is not a valid receptacle identifier in call to " & blSimulateDataSet;
             DeleteObject (resultingDSName);
-            WarnError (errMsg);
+            HandleApplicationError (errMsg);
             return;
         }
 
@@ -3155,7 +3053,7 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
     _String name2lookup = AppendContainerName(*likef,chain.nameSpacePrefix);
     long    objectID    = FindLikeFuncName (name2lookup);
     if (objectID >= 0) {
-        _DataSet     * ds               = (_DataSet*) checkPointer(new _DataSet);
+        _DataSet     * ds               = new _DataSet;
         _String      * dsName           = new _String (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix));
         _LikelihoodFunction *lf         = ((_LikelihoodFunction*)likeFuncList(objectID));
 
@@ -3178,8 +3076,7 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
         {
             CheckReceptacleAndStore (&AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix)," ReconstructAncestors (SCFG)", true, new _FString( ((Scfg*)scfgList (objectID))->BestParseTree() ), false);
         } else {
-            errMsg =  (((_String)("Likelihood Function/SCFG")&*likef&_String(" has not been initialized")));
-            WarnError (errMsg);
+            HandleApplicationError (_String("Likelihood Function/SCFG") & *likef & _String(" has not been initialized"));
             return ;
         }
     }
@@ -3210,19 +3107,19 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
 
           FILE * commandSource = nil;
           
-          _Parameter reload = 0.;
+          hy_float reload = 0.;
           checkParameter(alwaysReloadLibraries, reload, 0.);
 
           if (code == 66) {
               bool hasExtension    = filePath.FindBackwards (".",0,-1) > 0;
 
-              for (unsigned long p = 0; !commandSource && p < standardLibraryPaths.lLength; p++) {
-                  for (unsigned long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
-                      _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
+              for (unsigned long p = 0; !commandSource && p < _hy_standard_library_paths.lLength; p++) {
+                  for (unsigned long e = 0; !commandSource && e < _hy_standard_library_extensions.lLength; e++) {
+                      _String tryPath = *((_String*)_hy_standard_library_paths(p)) & filePath & *((_String*)_hy_standard_library_extensions(e));
 
                       // printf ("%s\n", tryPath.sData);
 
-                      tryPath.ProcessFileName (false, false, (Ptr)chain.nameSpacePrefix);
+                      tryPath.ProcessFileName (false, false, (hy_pointer)chain.nameSpacePrefix);
                     
                       if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
                           ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
@@ -3242,7 +3139,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
         
 
           if (commandSource == nil) {
-              filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
+              filePath.ProcessFileName (false,false,(hy_pointer)chain.nameSpacePrefix);
    
               if (code == 66 && loadedLibraryPaths.Find(&filePath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
                   ReportWarning (_String("Already loaded '") & originalPath & "' from " & filePath);
@@ -3250,7 +3147,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
               }
               
               if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil) {
-                  WarnError (_String("Could not read command file in ExecuteAFile.\nOriginal path: '") &
+                  HandleApplicationError (_String("Could not read command file in ExecuteAFile.\nOriginal path: '") &
                                       originalPath & "'.\nExpanded path: '" & filePath & "'");
                   return;
               }
@@ -3264,7 +3161,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
           commands = new _String (commandSource);
           if (fclose       (commandSource) ) { // failed to fclose
               DeleteObject (commands);
-              WarnError (_String("Internal error: failed in a call to fclose ") & filePath);
+              HandleApplicationError (_String("Internal error: failed in a call to fclose ") & filePath);
           }
           pop_path = true;
           PushFilePath (filePath);
@@ -3281,7 +3178,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
       }
 
       if (theCommand.sLength == 0) {
-          WarnError (_String("Invalid string argument '") & *commands & "' in call to ExecuteCommands/ExecuteAFile.");
+          HandleApplicationError (_String("Invalid string argument '") & *commands & "' in call to ExecuteCommands/ExecuteAFile.");
           throw (1);
       }
 
@@ -3299,7 +3196,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
 
           if (!inAVL) {
               if (parameters.lLength == 3) {
-                  WarnError (_String("Not a valid associative array index passed as input redirect argument to ExecuteCommands/ExecuteAFile: )") & *(_String*)parameters(2));
+                  HandleApplicationError (_String("Not a valid associative array index passed as input redirect argument to ExecuteCommands/ExecuteAFile: )") & *(_String*)parameters(2));
                   throw (1);
               }
           } else {
@@ -3315,7 +3212,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
                   if (aKey) {
                       _FString * aString      = (_FString*)stdinRedirect->GetByKey (*aKey, STRING);
                       if (!aString) {
-                          WarnError    (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
+                          HandleApplicationError    (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
                           DeleteObject (inAVL);
                           throw (1);
                       }
@@ -3330,7 +3227,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
               _String nameSpaceID = ProcessLiteralArgument((_String*)parameters(3),chain.nameSpacePrefix);
               if (nameSpaceID.sLength > 0UL) {
                 if (!nameSpaceID.IsValidIdentifier(true)) {
-                    WarnError (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & *(_String*)parameters(3));
+                    HandleApplicationError (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & *(_String*)parameters(3));
                     throw (1);
                 }
                 namespc = new _String (nameSpaceID);
@@ -3385,478 +3282,6 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
     }
  }
 
-void      _ElementaryCommand::ExecuteCase40 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    _String errMsg;
-
-#if !defined __UNIX__ && !defined __HEADLESS__
-
-    bool    done = false;
-
-    _String *windowType     = ((_String*)parameters(0)),
-             *positionString = nil;
-
-    _HYWindow*
-    resultWindow = nil;
-
-    long    positionSpec[] = {-1,-1,-1,-1};
-
-    if (parameters.lLength==3) {
-        positionString = ((_String*)parameters(2));
-        _List * positionList = positionString->Tokenize(";");
-
-        if ((positionList->lLength>=2)&&(positionList->lLength<=4)) {
-            _HYRect      screenDim = GetScreenDimensions();
-            setParameter (screenWidthVar , screenDim.right );
-            setParameter (screenHeightVar, screenDim.bottom);
-
-            for (long i = 0; i<positionList->lLength; i++) {
-                _String* thisSpec = (_String*)(*positionList)(i);
-                if (thisSpec->sLength) {
-                    _Formula  fla    (*thisSpec,nil,false);
-                    _PMathObj flav = fla.Compute();
-                    if (flav&&(flav->ObjectClass()==NUMBER)) {
-                        positionSpec[i] = flav->Value();
-                    }
-                }
-            }
-        }
-        DeleteObject (positionList);
-    }
-
-    if (windowType->Equal (&windowTypeClose)) {
-        _String     wName   = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
-        long        wID     = FindWindowByName (wName);
-        if (wID >= 0) {
-            postWindowCloseEvent (((_HYWindow*)windowObjectRefs (wID))->GetID());
-        }
-        done = true;
-    } else if (windowType->Equal (&windowTypeTree)||windowType->Equal (&windowTypeTable)||windowType->Equal (&windowTypeDistribTable)||windowType->Equal (&windowTypeDatabase)) {
-        _String  * windowOptions = ((_String*)parameters(1));
-        _Matrix  * theOptions = (_Matrix*)FetchObjectFromVariableByType(&AppendContainerName(*windowOptions,chain.nameSpacePrefix),MATRIX);
-        if (!theOptions) {
-            if ((windowOptions->sLength>3)&&(windowOptions->sData[0]=='{')
-                    &&(windowOptions->sData[windowOptions->sLength-1]=='}')) {
-                theOptions = new _Matrix (*windowOptions);
-            } else {
-                WarnError (*windowOptions & " is not a valid inline matrix specification/variable reference in call to OpenWindow.");
-                return;
-            }
-        } else {
-            theOptions->nInstances++;
-        }
-
-        if (theOptions->MatrixType()!=2||theOptions->GetVDim()>1||theOptions->GetHDim()<1) {
-            DeleteObject (theOptions);
-            WarnError (*windowOptions & " is not a valid options matrix in call to OpenWindow.");
-            return;
-        }
-
-        if (windowType->Equal (&windowTypeTree)) {
-            // row 1: a tree var reference
-            _PMathObj arg = theOptions->GetFormula(0,0)->Compute();
-            if (!(arg&&(arg->ObjectClass () == STRING))) {
-                DeleteObject (theOptions);
-                errMsg = "The first entry in the specification matrix must be a tree variable ID string in call to OpenWindow.";
-                WarnError (errMsg);
-                return;
-            }
-
-            windowOptions = ((_FString*)arg)->theString;
-
-            long f = LocateVarByName (AppendContainerName(*windowOptions,chain.nameSpacePrefix));
-            if (f>=0) {
-                _Variable* treeVar = FetchVar (f);
-                if (treeVar->ObjectClass()==TREE) {
-                    _String windowName = _String ("Tree ")&*treeVar->GetName();
-                    long fw = FindWindowByName (windowName);
-                    _HYTreePanel * myTP;
-                    if (fw>=0) {
-                        myTP = (_HYTreePanel*)windowObjectRefs (fw);
-                        myTP->SetVariableReference   (*treeVar->GetName());
-                        myTP->BuildTree (true);
-                    } else {
-                        myTP = new _HYTreePanel (*treeVar->GetName(), *treeVar->GetName());
-                        checkPointer (myTP);
-                    }
-                    resultWindow = myTP;
-                    for (long k=1; k<theOptions->GetHDim(); k++) {
-                        _PMathObj arg = theOptions->GetFormula(k,0)->Compute();
-                        if (!(arg&&(arg->ObjectClass () == STRING))) {
-                            DeleteObject (theOptions);
-                            errMsg = "All entries in the specification matrix must be strings in call to OpenWindow.";
-                            WarnError (errMsg);
-                            return;
-                        }
-                        windowOptions = ((_FString*)arg)->theString;
-                        if (windowOptions->sLength) {
-                            switch (k) {
-                            case 1: { // view options
-                                unsigned int treeFlags = windowOptions->toNum();
-                                if ((treeFlags&HY_TREEPANEL_SCALE_TO_WINDOW)!=(myTP->GetFlags()&HY_TREEPANEL_SCALE_TO_WINDOW)) {
-                                    myTP->ToggleScaleOption ();
-                                }
-                                myTP->SetFlags (treeFlags);
-                                break;
-                            }
-                            case 2: { // window position spec
-                                PositionWindow (myTP,windowOptions);
-                                break;
-                            }
-                            case 3: { // scale variable
-                                myTP->SetScaleVariable (*windowOptions);
-                                break;
-                            }
-                            case 4: { // select branches
-                                _List * nodes2Select = windowOptions->Tokenize(",");
-                                if (nodes2Select->lLength) {
-                                    myTP->SelectRangeAndScroll (*nodes2Select);
-                                }
-                                DeleteObject (nodes2Select);
-                                break;
-                            }
-                            }
-                        }
-                    }
-                } else {
-                    f = -1;
-                }
-            }
-            if (f<0) {
-                errMsg = *windowOptions & " is not the ID of an existing tree in call to OpenWindow.";
-                WarnError (errMsg);
-            }
-
-            DeleteObject (theOptions);
-            done = true;
-        } else if (windowType->Equal (&windowTypeDatabase)) {
-            _PMathObj arg = theOptions->GetFormula(0,0)->Compute();
-            if (!(arg&&(arg->ObjectClass () == STRING))) {
-                DeleteObject (theOptions);
-                errMsg = "The first entry in the specification matrix must be a file name string in call to OpenWindow.";
-                WarnError (errMsg);
-                return;
-            }
-
-            windowOptions = ((_FString*)arg)->theString;
-
-            _String windowName = _String ("SQLite DB: ")&*windowOptions;
-            long fw = FindWindowByName (windowName);
-            _HYDBWindow * myDW;
-            if (fw>=0) {
-                myDW = (_HYDBWindow*)windowObjectRefs (fw);
-                myDW->SetDB  (windowOptions);
-            } else {
-                myDW = new _HYDBWindow (windowName, windowOptions);
-                checkPointer (myDW);
-            }
-            resultWindow = myDW;
-
-            DeleteObject (theOptions);
-            done = true;
-        } else {
-            bool  isD = windowType->Equal (&windowTypeDistribTable);
-
-            if (theOptions->GetHDim()<3) {
-                DeleteObject (theOptions);
-
-                errMsg = "The matrix specification for a chart window must have at least 3 entries in call to OpenWindow.";
-                WarnError (errMsg);
-                return;
-
-            }
-            _PMathObj arg  = theOptions->GetFormula(1,0)->Compute(),
-                      arg2 = theOptions->GetFormula(2,0)->Compute(),
-                      arg3 = theOptions->GetFormula(0,0)->Compute();
-
-            if (!(arg&&(arg->ObjectClass () == STRING)&&arg2&&(arg2->ObjectClass () == STRING)&&arg3&&(arg3->ObjectClass () == STRING))) {
-                DeleteObject (theOptions);
-
-                errMsg = "The first two entries in the specification matrix must be strings with matrix ID (e.g. \"matrixID\") in call to OpenWindow.";
-                WarnError (errMsg);
-                return;
-            }
-
-            windowOptions = ((_FString*)arg)->theString;
-
-            _String      *options2 = ((_FString*)arg2)->theString;
-            long f = LocateVarByName            (AppendContainerName(*windowOptions,chain.nameSpacePrefix)),
-                 f2 = LocateVarByName   (AppendContainerName(*options2,chain.nameSpacePrefix));
-
-            if ((f>=0)&&(f2>=0)) {
-                _Variable* labelMatrix = FetchVar (f),
-                           * dataMatrix  = FetchVar (f2);
-
-                if ((labelMatrix->ObjectClass()==MATRIX)&&(dataMatrix->ObjectClass()==MATRIX)) {
-                    _Matrix*lMatrix = (_Matrix*)labelMatrix->GetValue(),
-                            *dMatrix = (_Matrix*)dataMatrix->GetValue();
-
-                    _String windowName = *((_FString*)arg3)->theString;
-                    long fw = FindWindowByName (windowName);
-                    _List   columnHeaders;
-
-                    for (f2=0; f2<lMatrix->GetVDim(); f2++) {
-                        _Formula  *fff= lMatrix->GetFormula(0,f2);
-                        if (fff) {
-                            _PMathObj arg = fff->Compute();
-                            if (arg->ObjectClass()==STRING) {
-                                columnHeaders && ((_FString*)arg)->theString;
-                                continue;
-                            }
-                        }
-                        columnHeaders && & emptyString;
-
-                    }
-
-                    if ((dMatrix->GetVDim()!=columnHeaders.lLength)&&(dMatrix->GetVDim()!=columnHeaders.lLength-1)) {
-                        errMsg = "The number of columns in the data matrix must match the dimension of the header matrix in call to OpenWindow (CHART_WINDOW).";
-                        WarnError (errMsg);
-                        return;
-                    }
-
-                    if ((dMatrix->GetHDim()==0)||(lMatrix->GetVDim()==0)) {
-                        errMsg = "Empty data matrix (or label matrix) in call to OpenWindow (CHART_WINDOW).";
-                        WarnError (errMsg);
-                        return;
-                    }
-
-                    _String      mL[14];
-
-                    for (long k=3; k<theOptions->GetHDim(); k++) {
-                        _PMathObj arg = theOptions->GetFormula(k,0)->Compute();
-                        if (!(arg&&(arg->ObjectClass () == STRING))) {
-                            DeleteObject (theOptions);
-                            errMsg = "All entries in the specification matrix must be strings in call to OpenWindow.";
-                            WarnError (errMsg);
-                            return;
-                        }
-                        windowOptions = ((_FString*)arg)->theString;
-                        mL [k-3] = *windowOptions;
-
-                        if (k==16) {
-                            break;
-                        }
-                    }
-
-                    _HYChartWindow * myTP;
-
-                    if (isD) {
-                        _List   *varInfo = mL[13].Tokenize (";"),
-                                 cInfo,
-                                 dInfo;
-
-
-                        bool      firstDerived = false;
-                        _String   errMsg;
-
-                        for (long k=0; k < varInfo->lLength; k++) {
-                            _List *item = ((_String*)(*varInfo)(k))->Tokenize (":");
-                            if (item->lLength == 1) {
-                                if (cInfo.lLength) {
-                                    dInfo << (*item)(0);
-                                } else {
-                                    errMsg = "Derived variables appear before the atom variables";
-                                }
-                                firstDerived = true;
-                            } else {
-                                if (firstDerived) {
-                                    errMsg = "Some atom variables appear after derived variables";
-                                } else if ((item->lLength>=3) && (item->lLength % 2 == 1)) {
-                                    _String * vName = (_String*)(*item)(0);
-                                    if (vName->IsValidIdentifier()) {
-                                        long      catCount = (item->lLength - 1)/2;
-
-                                        _Matrix   wts (1,catCount,false,true),
-                                                  prb (1,catCount,false,true);
-
-                                        for (long k2 = 0, k3 = catCount+1; k2 < catCount; k2++, k3++) {
-                                            wts.theData[k2] = ((_String*)(*item)(k2+1))->toNum();
-                                            prb.theData[k2] = ((_String*)(*item)(k3))->toNum();
-                                        }
-
-                                        _List anItem;
-                                        anItem << vName;
-                                        anItem && & wts;
-                                        anItem && & prb;
-                                        cInfo && & anItem;
-                                    } else {
-                                        errMsg = *vName & " is an invalid atom variable identifier";
-                                    }
-                                } else {
-                                    errMsg = "Invalid item count in atom variable specification";
-                                }
-                            }
-
-                            if (errMsg.sLength) {
-                                DeleteObject (item);
-                                DeleteObject (varInfo);
-                                errMsg = errMsg  & " in call to OpenWindow";
-                                ProblemReport (errMsg);
-                                return;
-                            }
-                        }
-
-                        DeleteObject (varInfo);
-
-                        if (fw>=0) {
-                            myTP = (_HYChartWindow*)windowObjectRefs (fw);
-                            myTP->SetTable   (columnHeaders,*dMatrix);
-                            ((_HYDistributionChartWindow*)myTP)->SetAtoms (*dMatrix,cInfo);
-                        } else {
-                            myTP = new _HYDistributionChartWindow (windowName,columnHeaders, *dMatrix, cInfo, nil);
-                            checkPointer (myTP);
-                        }
-
-                        for (long dc = 0; dc < dInfo.lLength; dc++) {
-                            ((_HYDistributionChartWindow*)myTP)->AddVariable ((_String*)dInfo(dc));
-                        }
-                    } else {
-                        if (fw>=0) {
-                            myTP = (_HYChartWindow*)windowObjectRefs (fw);
-                            myTP->SetTable   (columnHeaders,*dMatrix);
-                        } else {
-                            myTP = new _HYChartWindow (windowName,columnHeaders,*dMatrix,nil);
-                            checkPointer (myTP);
-                        }
-                    }
-
-                    resultWindow = myTP;
-
-                    myTP->SetChartType (mL[0],mL[1],mL[2],false);
-                    myTP->ToggleSuspend (true);
-
-                    long  kk;
-
-                    _Parameter  uMin = 0.0,
-                                uMax = uMin;
-
-                    _List * ubounds = mL[12].Tokenize(",");
-                    if (ubounds->lLength == 3) {
-                        mL[12] = *(_String*)(*ubounds)(0);
-                        uMin = ((_String*)(*ubounds)(1))->toNum();
-                        uMax = ((_String*)(*ubounds)(2))->toNum();
-                    }
-                    DeleteObject (ubounds);
-
-                    if ((kk = mL[8].Find(';'))>0) {
-                        myTP->SetLabels    (mL[3],mL[4],mL[5],mL[6].toNum(),mL[7],mL[8].Cut (0,kk-1).toNum()-1,mL[8].Cut (kk+1,-1).toNum()-1,mL[12].toNum(),uMin,uMax);
-                    } else {
-                        myTP->SetLabels    (mL[3],mL[4],mL[5],mL[6].toNum(),mL[7],-1,-1,mL[12].toNum(),uMin,uMax);
-                    }
-
-                    _List * optList = mL[9].Tokenize (";");
-
-                    if (optList->lLength == 3) {
-                        myTP->SetProjection (((_String*)(*optList)(0))->toNum(),((_String*)(*optList)(1))->toNum(),((_String*)(*optList)(2))->toNum());
-                    }
-
-                    DeleteObject (optList);
-
-                    optList = mL[10].Tokenize (";");
-                    myTP->SetFonts (optList);
-                    DeleteObject (optList);
-
-                    optList = mL[11].Tokenize (";");
-                    myTP->SetColors (optList);
-                    DeleteObject (optList);
-
-                    myTP->ToggleSuspend (false);
-                    myTP->DrawChart     ();
-                } else {
-                    f = -1;
-                }
-            }
-
-            if (f<0 || f2<0) {
-                errMsg = *windowOptions & " and " & *options2 & " must both refer to existing matrices in call to OpenWindow.";
-                WarnError (errMsg);
-            }
-
-            DeleteObject (theOptions);
-            done = true;
-        }
-    }
-
-    if (resultWindow) {
-        if ((positionSpec[0]>-1)&&(positionSpec[1]>-1)) {
-            resultWindow->SetWindowRectangle (0,0,positionSpec[1],positionSpec[0]);
-        }
-        if ((positionSpec[2]>-1)&&(positionSpec[3]>-1)) {
-            resultWindow->SetPosition (positionSpec[2],positionSpec[3]);
-        }
-
-        resultWindow->BringToFront ();
-        handleGUI(true);
-    }
-
-    if (!done) {
-        errMsg =  *windowType& " is not a valid window type in call to OpenWindow.";
-        WarnError (errMsg);
-    }
-#endif
-}
-
-void      _ElementaryCommand::ExecuteCase41 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-#if !defined    __UNIX__ && ! defined __HEADLESS__
-    _String     lfID,
-                dsWindow,
-                errMsg;
-
-    long        treeID = -1;
-
-    _SimpleList subsetSpec;
-
-    lfID = ProcessLiteralArgument ((_String*)parameters(0),chain.nameSpacePrefix);
-
-    if (!lfID.IsValidIdentifier()) {
-        errMsg = lfID & " is not a valid likelihood function identifier.";
-        WarnError (errMsg);
-        return;
-    }
-
-    dsWindow = ProcessLiteralArgument ((_String*)parameters(1),chain.nameSpacePrefix);
-
-    treeID =  LocateVarByName(dsWindow);
-
-    if (treeID<0 || FetchVar(treeID)->ObjectClass()!=TREE) {
-        errMsg = dsWindow & " is not the name of an existing tree.";
-        WarnError (errMsg);
-        return;
-    } else {
-        treeID = variableNames.GetXtra (treeID);
-    }
-
-    dsWindow = ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix);
-    long     k = FindWindowByName (dsWindow);
-
-    if ((k<0)||(((_HYWindow*)windowObjectRefs (k))->WindowKind () != HY_WINDOW_KIND_DATAPANEL)) {
-        errMsg = dsWindow & " is not the name of an open data panel window.";
-        WarnError (errMsg);
-        return;
-    }
-
-    _HYDataPanel * theDP  = (_HYDataPanel*)windowObjectRefs (k);
-    _Matrix * theMatrix = (_Matrix*)FetchObjectFromVariableByType(&AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix),MATRIX);
-
-    if (theMatrix) {
-        for (long i1 = 0; i1< theMatrix->GetHDim(); i1++)
-            for (long i2 = 0; i2 < theMatrix->GetVDim (); i2++) {
-                subsetSpec << (*theMatrix)(i1,i2);
-            }
-
-        theDP->BuildLikelihoodFunction (&lfID,& subsetSpec, treeID);
-        return;
-    }
-
-    errMsg = (*(_String*)parameters(3)) & " is not the name of an existing matrix.";
-    WarnError (errMsg);
-
-#endif
-}
 
 
 //____________________________________________________________________________________
@@ -3878,7 +3303,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
 
     bool        skipDataDelete = false;
   
-    _Variable*  iseof          = CheckReceptacle (&hasEndBeenReached,emptyString,false);
+    _Variable*  iseof          = CheckReceptacle (&hasEndBeenReached,kEmptyString,false);
   
 
     if (currentParameter==_String("stdin")) { //
@@ -3891,29 +3316,29 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
             }
           
         } else {
-            if (!CheckEqual(iseof->Compute()->Value(),0) && currentParameter.Equal (&scanfLastFilePath)) {
-                WarnError ("Ran out of standard input\n");
+            if (!CheckEqual(iseof->Compute()->Value(),0) && currentParameter.Equal (&hy_scanf_last_file_path)) {
+                HandleApplicationError ("Ran out of standard input\n");
                 return;
             }
-            checkPointer ((Ptr)(data = new _String (StringFromConsole())));
+            data = new _String (StringFromConsole());
         }
     } else {
         if (issscanf) {
             currentParameter = chain.AddNameSpaceToID(currentParameter);
             _FString * sscanfData = (_FString*)FetchObjectFromVariableByType(&currentParameter,STRING);
             if (!sscanfData) {
-                WarnError         (currentParameter& " does not refer to a string variable in call to sscanf");
+                HandleApplicationError         (currentParameter& " does not refer to a string variable in call to sscanf");
                 return;
             }
             data = sscanfData->theString;
             skipDataDelete = true;
 
             if (iseof->Compute()->Value() > 0.) {
-                scanfLastFilePath = emptyString;
+                hy_scanf_last_file_path = kEmptyString;
             }
 
-            if (!currentParameter.Equal (&scanfLastFilePath) || shifter) {
-                scanfLastFilePath     = currentParameter;
+            if (!currentParameter.Equal (&hy_scanf_last_file_path) || shifter) {
+                hy_scanf_last_file_path     = currentParameter;
                 p = scanfLastReadPosition = 0;
             } else {
                 p = p2 = scanfLastReadPosition;
@@ -3925,22 +3350,22 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
         } else {
             FILE*   inputBuffer;
             currentParameter = GetStringFromFormula (&currentParameter,chain.nameSpacePrefix);
-            currentParameter.ProcessFileName(false,false,(Ptr)chain.nameSpacePrefix);
-            if (terminateExecution) {
+            currentParameter.ProcessFileName(false,false,(hy_pointer)chain.nameSpacePrefix);
+            if (terminate_execution) {
                 return;
             }
             inputBuffer = doFileOpen (currentParameter.getStr(), "rb");
             if (!inputBuffer) {
-                WarnError         (currentParameter& " could not be opened for reading by fscanf. Path stack:\n\t" & GetPathStack("\n\t"));
+                HandleApplicationError         (currentParameter& " could not be opened for reading by fscanf. Path stack:\n\t" & GetPathStack("\n\t"));
                 return;
             }
 
             if (iseof->Compute()->Value()>0) {
-                scanfLastFilePath = emptyString;
+                hy_scanf_last_file_path = kEmptyString;
             }
 
-            if (!currentParameter.Equal (&scanfLastFilePath) || shifter) {
-                scanfLastFilePath = currentParameter;
+            if (!currentParameter.Equal (&hy_scanf_last_file_path) || shifter) {
+                hy_scanf_last_file_path = currentParameter;
                 scanfLastReadPosition = 0;
             }
 
@@ -3954,7 +3379,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
                 return;
             }
 
-            data = (_String*)checkPointer(new _String ((unsigned long)p));
+            data = new _String ((unsigned long)p);
             rewind (inputBuffer);
             fseek  (inputBuffer, scanfLastReadPosition, SEEK_SET);
             fread  (data->sData, 1, p, inputBuffer);
@@ -3975,7 +3400,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
             return;
         }
         if (!currentParameter->IsValidIdentifier()) {
-            WarnError (_String ('\\') & *currentParameter & "\" is not a valid identifier in call to fscanf.");
+            HandleApplicationError (_String ('\\') & *currentParameter & "\" is not a valid identifier in call to fscanf.");
             DeleteObject (data);
             return;
         }
@@ -3984,7 +3409,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
         v = LocateVarByName (namespacedParameter);
         if (v<0) {
             if (simpleParameters.lData[r]!=2) {
-                v = CheckReceptacle(&namespacedParameter,emptyString,false)->GetAVariable();
+                v = CheckReceptacle(&namespacedParameter,kEmptyString,false)->GetAVariable();
             }
         } else {
             if (simpleParameters.lData[r]==2)
@@ -4056,7 +3481,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
                             if (lastP<loopP) {
                                 lines.AppendNewInstance (new _String (inData,lastP, loopP-1));
                             } else {
-                                lines && & emptyString;
+                                lines.AppendNewInstance (new _String);
                             }
 
                             lastP = loopP+1;
@@ -4072,7 +3497,7 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
                     if (lastP < inData.sLength && lastP<loopP) {
                         lines.AppendNewInstance (new _String (inData,lastP, loopP-1));
                     } else if (lines.lLength == 0) {
-                        lines && & emptyString;
+                        lines.AppendNewInstance(new _String);
                     }
 
                     theReceptacle->SetValue (new _Matrix (lines), false);
@@ -4102,7 +3527,6 @@ void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscan
                     if ((simpleParameters.lData[r]==1)||(simpleParameters.lData[r]==4)) { // matrix
                         _String localData (*data,p,q-1);
                         _Matrix *newMatrixValue = new _Matrix (localData,simpleParameters.lData[r]==4);
-                        checkPointer (newMatrixValue);
                         theReceptacle->SetValue (newMatrixValue, false);
                     } else {
                         long  varID = LocateVarByName (namespacedParameter);
@@ -4176,8 +3600,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 
     if (parameterName->Equal (&useLastDefinedMatrix)) {
         if (lastMatrixDeclared<0) {
-            errMsg = "First Call to Model. USE_LAST_DEFINED_MATRIX is meaningless.";
-            acknError (errMsg);
+            HandleApplicationError ("First Call to Model. USE_LAST_DEFINED_MATRIX is meaningless.");
             return;
         }
         f3 = lastMatrixDeclared;
@@ -4196,7 +3619,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
         matrixExpression =  _ElementaryCommand::FindNextCommand (matrixExpression);
         long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
         if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
-            WarnError (defErrMsg & " parse code = " & parseCode & " " & (parseCode == HY_FORMULA_EXPRESSION ? (_String(", object type code ") & _String((long) isExpressionBased->ObjectClass())) : emptyString ));
+            HandleApplicationError (defErrMsg & " parse code = " & parseCode & " " & (parseCode == HY_FORMULA_EXPRESSION ? (_String(", object type code ") & _String((long) isExpressionBased->ObjectClass())) : kEmptyString ));
             return;
         }
         
@@ -4212,13 +3635,13 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
         f = LocateVarByName (augName);
 
         if (f<0) {
-            WarnError (*parameterName & " has not been defined prior to the call to Model = ...");
+            HandleApplicationError (*parameterName & " has not been defined prior to the call to Model = ...");
             return;
         }
 
         _Variable* checkVar = usingLastDefMatrix?LocateVar(f):FetchVar (f);
         if (checkVar->ObjectClass()!=MATRIX) {
-            WarnError (*parameterName & " must refer to a matrix in the call to Model = ...");
+            HandleApplicationError (*parameterName & " must refer to a matrix in the call to Model = ...");
             return;
         }
         checkMatrix = (_Matrix*)checkVar->GetValue();
@@ -4229,7 +3652,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
     // so far so good
     matrixDim = checkMatrix->GetHDim();
     if ( matrixDim!=checkMatrix->GetVDim() || matrixDim<2 ) {
-      WarnError (*parameterName & " must be a square matrix of dimension>=2 in the call to Model = ...");
+      HandleApplicationError (*parameterName & " must be a square matrix of dimension>=2 in the call to Model = ...");
       return;
     }
 
@@ -4238,12 +3661,12 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 
     f2 = LocateVarByName (freqNameTag);
     if (f2<0) {
-        WarnError(*parameterName & " has not been defined prior to the call to Model = ...");
+        HandleApplicationError(*parameterName & " has not been defined prior to the call to Model = ...");
         return;
     }
     _Variable * checkVar = FetchVar (f2);
     if (checkVar->ObjectClass()!=MATRIX) {
-        WarnError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
+        HandleApplicationError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
         return;
     }
   
@@ -4251,19 +3674,19 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
   
    if (checkMatrix->GetVDim()==1UL) {
         if (checkMatrix->GetHDim()!=matrixDim) {
-            WarnError (*parameterName & " must be a column vector of the same dimension as the model matrix in the call to Model = ...");
+            HandleApplicationError (*parameterName & " must be a column vector of the same dimension as the model matrix in the call to Model = ...");
             return;
         }
     } else if (checkMatrix->GetHDim()==1UL) {
         if (checkMatrix->GetVDim()!=matrixDim) {
-            WarnError ( *parameterName & " must be a row vector of the same dimension as the model matrix in the call to Model = ...");
+            HandleApplicationError ( *parameterName & " must be a row vector of the same dimension as the model matrix in the call to Model = ...");
             return;
         }
         errMsg = *parameterName & " has been transposed to the default column vector setting ";
         checkMatrix->Transpose();
         ReportWarning (errMsg);
     } else {
-        WarnError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
+        HandleApplicationError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
         return;
     }
 
@@ -4278,7 +3701,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
     long existingIndex = modelNames.FindObject(&arg0);
 
     if (existingIndex == -1) { // name not found
-        lastMatrixDeclared = modelNames.FindObject (&emptyString);
+        lastMatrixDeclared = modelNames.FindObject (&kEmptyString);
 
         if (lastMatrixDeclared>=0) {
             modelNames.Replace (lastMatrixDeclared,&arg0,true);
@@ -4515,8 +3938,8 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
         long choice = -1;
         _List* theChoices = (_List*)parameters(4);
         if (fixedLength>theChoices->lLength) {
-            _String e = "List of selections is too short in ChoiceList";
-            acknError (e);
+            HandleApplicationError ("List of selections is too short in ChoiceList");
+            return;
         } else {
             if (chain.stdinRedirect) {
                 if (fixedLength == 1) {
@@ -4527,7 +3950,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                         }
                     }
                     if (choice == theChoices->lLength) {
-                        WarnError (_String("Not a valid option: '") & buffer & "' passed to Choice List '" & dialog_title & "' using redirected stdin input");
+                        HandleApplicationError (_String("Not a valid option: '") & buffer & "' passed to Choice List '" & dialog_title & "' using redirected stdin input");
                         return;
                     }
                 } else {
@@ -4545,7 +3968,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                             }
                         }
                         if (sel.lLength<fixedLength) {
-                            WarnError ("Failed to make the required number of choices in ChoiceList using redirected stdin input.");
+                            HandleApplicationError ("Failed to make the required number of choices in ChoiceList using redirected stdin input.");
                             return;
                         }
                     } else
@@ -4560,7 +3983,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                                 if (choice<theChoices->lLength && sel.Find(choice)==-1) {
                                     sel<<choice;
                                 } else {
-                                    WarnError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to ChoiceList (with multiple selections) '" & dialog_title & "' using redirected stdin input");
+                                    HandleApplicationError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to ChoiceList (with multiple selections) '" & dialog_title & "' using redirected stdin input");
                                     return;
                                 }
                             } else {
@@ -4570,7 +3993,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 }
             } else {
 #ifdef  __HEADLESS__
-                WarnError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
+                HandleApplicationError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
                 return;
 #else
                  printf ("\n\n\t\t\t+");
@@ -4606,7 +4029,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                         if (choice<1 || choice>theChoices->lLength) {
                             choice = -1;
                             if (loopits++ > 10) {
-                                FlagError ("Failed to make a valid selection in ChoiceList after 10 tries");
+                                HandleApplicationError ("Failed to make a valid selection in ChoiceList after 10 tries");
                                 return;
                             }
                         } else {
@@ -4634,7 +4057,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                                 }
                             } else {
                                 if (loopits++ > 10) {
-                                    FlagError ("Failed to make a valid selection in ChoiceList after 10 tries");
+                                    HandleApplicationError ("Failed to make a valid selection in ChoiceList after 10 tries");
                                     return;
                                 }
                             }
@@ -4663,7 +4086,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                                 }
                             } else {
                                 if (loopits++ > 10) {
-                                    FlagError ("Failed to make a valid selection in ChoiceList after 10 tries");
+                                    HandleApplicationError ("Failed to make a valid selection in ChoiceList after 10 tries");
                                     return;
                                 }
                             }
@@ -4672,7 +4095,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 #endif
             }
 
-            _Variable* sStrV = CheckReceptacle(&selectionStrings,emptyString,false);
+            _Variable* sStrV = CheckReceptacle(&hy_env::selection_strings,kEmptyString,false);
 
             if (fixedLength == 1) {
                 if (choice>=0) {
@@ -4722,11 +4145,11 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
             }
 
             if (choice<0) {
-                terminateExecution = true;
+                terminate_execution = true;
             }
         }
     } else {
-        WarnError  ("List of selections is invalid in ChoiceList");
+        HandleApplicationError  ("List of selections is invalid in ChoiceList");
     }
 
     if (simpleParameters.lData[0]) {
@@ -4780,7 +4203,7 @@ void      _ElementaryCommand::ExecuteCase36 (_ExecutionList& chain)
 
 #if !defined __UNIX__ && !defined __HEADLESS__
 
-    _HYDataPanel*  newDP = new _HYDataPanel (emptyString,emptyString);
+    _HYDataPanel*  newDP = new _HYDataPanel (kEmptyString,kEmptyString);
     if (speciesList.lLength) {
         newDP->SetDataSetReference (*(_String*)dataSetNamesList(f),&speciesList);
     } else {
@@ -4816,12 +4239,12 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
   
   _Matrix *result = nil;
   
-  // object is a non-emptyString string
+  // object is a non-kEmptyString string
   if (objectName->sLength > 2 && objectName->sData[0] == '"' && objectName->sData[objectName->sLength-1] == '"') {
     // regular expression
     _String regExp = GetStringFromFormula (objectName,chain.nameSpacePrefix);
     int errNo = 0;
-    Ptr regex = PrepRegExp (&regExp, errNo, true);
+    hy_pointer regex = PrepRegExp (&regExp, errNo, true);
     if (regex) {
       _List       matches;
       
@@ -4847,7 +4270,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
       
       FlushRegExp (regex);
     } else {
-      WarnError (GetRegExpError (errNo));
+      HandleApplicationError (GetRegExpError (errNo));
     }
   } else {    // object is not a string, is some kind of variable
     _String objectNameID = AppendContainerName(*objectName,chain.nameSpacePrefix);
@@ -4877,7 +4300,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
           if (theObject->ObjectClass()==TREE_NODE) {
             _CalcNode* theNode = (_CalcNode*)theObject;
             if (theNode->GetModelIndex() != HY_NO_MODEL) {
-              checkPointer(result = new _Matrix);
+              result = new _Matrix;
               theNode->RecomputeMatrix (0,1,result);
             }
           } else {
@@ -4896,7 +4319,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
           }
           
           if ((!result)&& theObject->ObjectClass()==NUMBER) {
-            checkPointer(result = new _Matrix (1,3,false,true));
+            result = new _Matrix (1,3,false,true);
             result->theData[0]=theObject->Compute()->Value();
             result->theData[1]=theObject->GetLowerBound();
             result->theData[2]=theObject->GetUpperBound();
@@ -4919,7 +4342,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
           catVars && & varName;
         }
         
-        result = (_Matrix*) checkPointer(new _Matrix (catVars));
+        result = new _Matrix (catVars);
       } else {
         if ((f = FindDataFilter(objectNameID))>=0)
           // return a vector of strings - each with actual characters of the corresponding sequence
@@ -4958,7 +4381,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain) {
     result = new _Matrix (0,0,false,false);
   }
   
-  CheckReceptacleAndStore (&matrixName, emptyString, true, result, false);
+  CheckReceptacleAndStore (&matrixName, kEmptyString, true, result, false);
   
 }
 
@@ -4986,7 +4409,7 @@ void      _ElementaryCommand::ExecuteCase43 (_ExecutionList& chain)
             return;
         }
 
-        if (terminateExecution) {
+        if (terminate_execution) {
             return;
         }
       
@@ -4994,7 +4417,7 @@ void      _ElementaryCommand::ExecuteCase43 (_ExecutionList& chain)
         _Formula * dF = (code==43)?theExpression.Differentiate (*(_String*)parameters(2),false):nil;
 
 
-        _Parameter    lb = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix),
+        hy_float    lb = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix),
                       ub = ProcessNumericArgument ((_String*)parameters(4),chain.nameSpacePrefix);
 
         if (ub<=lb && code==48) {
@@ -5032,37 +4455,36 @@ void      _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
 
 
     long      nodeCount;
-    checkParameter (mpiNodeCount,nodeCount,1L);
+    checkParameter (hy_env::mpi_node_count,nodeCount,1L);
 
     long            destID = ProcessNumericArgument (arg1,chain.nameSpacePrefix),
                     g;
 
     if (!numericalParameterSuccessFlag || destID<0 || destID>=nodeCount) {
-        WarnError (*arg1 & " is not a valid MPI node ID in call to MPISend.");
+        HandleApplicationError (*arg1 & " is not a valid MPI node ID in call to MPISend.");
         return;
     }
 
     if (arg3) {
         _AssociativeList * ar = (_AssociativeList *)FetchObjectFromVariableByType (&AppendContainerName(*arg3,chain.nameSpacePrefix), ASSOCIATIVE_LIST);
         if (!ar) {
-            WarnError (*arg3 & " is not a valid associative array for input options in call to MPISend.");
+            HandleApplicationError (*arg3 & " is not a valid associative array for input options in call to MPISend.");
             return;
         }
         theMessage = new _String (256L, true);
-        checkPointer (theMessage);
         _String arrayID ("_HYPHY_MPI_INPUT_ARRAY_");
         (*theMessage) << arrayID;
         (*theMessage) << '=';
         theMessage->AppendNewInstance(ar->Serialize(0UL));
         (*theMessage) << ';';
         arrayID = *arg2;
-        arrayID.ProcessFileName(false,true,(Ptr)chain.nameSpacePrefix);
+        arrayID.ProcessFileName(false,true,(hy_pointer)chain.nameSpacePrefix);
         (*theMessage) << "\nExecuteAFile (\"";
         (*theMessage) << arrayID;
         (*theMessage) << "\",_HYPHY_MPI_INPUT_ARRAY_);";
         theMessage->Finalize();
     } else if ((g=FindLikeFuncName(AppendContainerName(*arg2,chain.nameSpacePrefix)))>=0) {
-        checkPointer (theMessage = new _String(1024L,true));
+        theMessage = new _String(1024L,true);
         ((_LikelihoodFunction*)likeFuncList(g))->SerializeLF(*theMessage,_hyphyLFSerializeModeOptimize);
         theMessage->Finalize();
     } else {
@@ -5070,7 +4492,7 @@ void      _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
     }
 
     if (theMessage == nil || theMessage->sLength==0) {
-        WarnError (*arg2 & " is not a valid (or is an emptyString) string (LF ID) in call to MPISend.");
+        HandleApplicationError (*arg2 & " is not a valid (or is an kEmptyString) string (LF ID) in call to MPISend.");
     } else {
         MPISendString (*theMessage, destID);
     }
@@ -5078,7 +4500,7 @@ void      _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
     DeleteObject (theMessage);
 
 #else
-    WarnError ("MPISend can't be used by non-MPI versions of HyPhy.");
+    HandleApplicationError ("MPISend can't be used by non-MPI versions of HyPhy.");
 #endif
 
 }
@@ -5095,14 +4517,14 @@ void      _ElementaryCommand::ExecuteCase45 (_ExecutionList& chain)
               *arg3 = (_String*)parameters(2);
 
     long      nodeCount;
-    checkParameter (mpiNodeCount,nodeCount,1L);
+    checkParameter (hy_env::mpi_node_count,nodeCount,1L);
 
     long            srcT = ProcessNumericArgument (arg1,chain.nameSpacePrefix),
                     srcID,
                     g;
 
     if ((!numericalParameterSuccessFlag)||(srcT<-1)||(srcT>=nodeCount)) {
-        WarnError (*arg1 & " is not a valid MPI node ID in call to MPIReceive.");
+        HandleApplicationError (*arg1 & " is not a valid MPI node ID in call to MPIReceive.");
         return;
     }
 
@@ -5114,11 +4536,10 @@ void      _ElementaryCommand::ExecuteCase45 (_ExecutionList& chain)
     }
 
     _FString* theMV = new _FString (MPIRecvString (srcT,srcID));
-    checkPointer (theMV);
     idVar->SetValue (new _Constant (srcID),false);
     mVar->SetValue (theMV, false);
 #else
-    WarnError ("MPIReceive can't be used by non-MPI versions of HyPhy.");
+    HandleApplicationError ("MPIReceive can't be used by non-MPI versions of HyPhy.");
 #endif
 
 }
@@ -5175,7 +4596,7 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
                 characters < new _String (filter_source->ConvertCodeToLetters (filter_source->CorrectCode(idx), fd));
               }
             } else {
-              _String alphabet_string = dataset_source->GetTT () ? dataset_source->GetTT ()->GetAlphabetString() : emptyString;
+              _String alphabet_string = dataset_source->GetTT () ? dataset_source->GetTT ()->GetAlphabetString() : kEmptyString;
               for (unsigned long idx = 0UL; idx < alphabet_string.sLength; idx++) {
                 characters < new _String (alphabet_string (idx));
               }
@@ -5238,7 +4659,7 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
               if ( seq>=0 && seq<filter_source->NumberSpecies()) {
                 _Matrix             * res = new _Matrix (filter_source->GetDimension (true), 1, false, true);
                 
-                _Parameter          onlyTheIndex = 0.0;
+                hy_float          onlyTheIndex = 0.0;
                 checkParameter      (getDataInfoReturnsOnlyTheIndex,onlyTheIndex,0.0);
                 
                 
@@ -5252,7 +4673,7 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
                   stVar->SetValue (res,false);
                 }
               } else {
-                _Parameter          count_gaps = 0.0;
+                hy_float          count_gaps = 0.0;
                 checkParameter      (hfCountGap,count_gaps,1.0);
                 
                 
@@ -5318,8 +4739,7 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain) {
           
   }
   if (errMsg.sLength) {
-    errMsg = errMsg & " in call to GetDataInfo ";
-    WarnError (errMsg);
+    HandleApplicationError (errMsg & " in call to GetDataInfo ");
   }
 }
 
@@ -5359,8 +4779,7 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain) {
     }
 
     if (errMsg.sLength) {
-        errMsg = errMsg & " in call to StateCounter.";
-        WarnError (errMsg);
+        HandleApplicationError (errMsg & " in call to StateCounter.");
     }
 }
 
@@ -5385,8 +4804,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
     }
 
     if (siteCount < 1) {
-        errMsg = *(_String*)parameters (4) & " must either evaluate to a positive integer or be a non-emptyString string of root states";
-        WarnError (errMsg);
+        HandleApplicationError (*(_String*)parameters (4) & " must either evaluate to a positive integer or be a non-kEmptyString string of root states");
         return;
     }
 
@@ -5425,7 +4843,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
                     if (unitSize >= 1) {
                         _Formula* exclusionFormula = alphabetMatrix->GetFormula(1,1);
-                        _String* theExclusions = &emptyString;
+                        _String const* theExclusions = &kEmptyString;
                         
                         if (exclusionFormula)
                             theExclusions = ((_FString*)exclusionFormula->Compute())->theString;
@@ -5447,7 +4865,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                     }
                                     if (errMsg.sLength == 0) {
                                         _TranslationTable newTT (baseSet);
-                                        _DataSet * ds = (_DataSet*)checkPointer(new _DataSet);
+                                        _DataSet * ds = new _DataSet;
 
                                         if (! newTT.IsStandardNucleotide() ) {
                                             ds->SetTranslationTable (&newTT);    // mod 20060113 to properly deal with non-standard alphabets
@@ -5500,9 +4918,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                         _Matrix*   rootStates = nil;
                                         if (givenState.sLength>=unitSize) {
                                             rootStates                  = new _Matrix (1,siteCount,false,true);
-                                            checkPointer                (rootStates);
-                                            _Parameter*  holder         = new _Parameter [newFilter->GetDimension(false)];
-                                            checkPointer                (holder);
+                                            hy_float*  holder         = new hy_float [newFilter->GetDimension(false)];
 
                                             for (long cc = 0; cc < siteCount; cc++) {
                                                 _String aState (givenState.Cut(cc*unitSize,(cc+1)*unitSize-1));
@@ -5528,7 +4944,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                           
                                             _LikelihoodFunction lf (filter_specification, nil);
 
-                                            if (terminateExecution) {
+                                            if (terminate_execution) {
                                                 return;
                                             }
 
@@ -5543,7 +4959,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
                                             FILE*   mainFile = nil;
 
-                                            errMsg = emptyString;
+                                            errMsg = kEmptyString;
 
                                             if (parameters.lLength > 6) {
                                                 spoolFile = ProcessLiteralArgument ((_String*)parameters (6),chain.nameSpacePrefix);
@@ -5566,8 +4982,6 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                                     simDataSet = new _DataSet (siteCount);
                                                 }
 
-                                                checkPointer (simDataSet);
-
                                                 _List exclusions;
 
                                                 _String *simName = new _String(AppendContainerName(*(_String*)parameters (0),chain.nameSpacePrefix));
@@ -5575,7 +4989,6 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                                 setParameter (mxName, 0.0);
                                                 _Variable *catValVar        = FetchVar (LocateVarByName (mxName));
                                                 _Matrix*   catValues        = new _Matrix (1,1,false,true);
-                                                checkPointer    (catValues);
 
                                                 mxName = *simName & ".rateVars";
                                                 setParameter (mxName, 0.0);
@@ -5583,7 +4996,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                                 _Matrix* catNames       = new _Matrix (1,1,false,true);
 
                                                 SetStatusLine ("Simulating Data");
-                                                lf.Simulate (*simDataSet, exclusions, catValues, catNames, rootStates, doInternals?(mainFile?&spoolFile:&emptyString):nil);
+                                                lf.Simulate (*simDataSet, exclusions, catValues, catNames, rootStates, doInternals?(mainFile?&spoolFile:&kEmptyString):nil);
                                                 SetStatusLine ("Idle");
 
                                                 catValVar->SetValue(catValues, false);
@@ -5592,7 +5005,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                                                 StoreADataSet (simDataSet, simName);
                                                 DeleteObject (simName);
                                                 DeleteDataFilter (filterID);
-                                                errMsg = emptyString;
+                                                errMsg = kEmptyString;
                                             }
                                         }
                                         DeleteObject   (ds);
@@ -5641,8 +5054,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
     }
 
     if (errMsg.sLength) {
-        errMsg = errMsg & " in Simulate.";
-        WarnError (errMsg);
+        HandleApplicationError(errMsg & " in Simulate.");
     }
 
 }
@@ -5686,7 +5098,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         SetStatusLine (_String("Constructing Tree ")&treeIdent);
         long  varID = LocateVarByName (treeIdent);
 
-        _Parameter rtv = 0.0; // mod 11/19/2003
+        hy_float rtv = 0.0; // mod 11/19/2003
         checkParameter (replaceTreeStructure, rtv, 0.0); // mod 11/19/2003
 
         _SimpleList   leftOverVars; // mod 02/03/2003
@@ -5725,7 +5137,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         }
 
         if (!tr) {
-            WarnError ("Illegal right hand side in call to Tree id = ...; it must be a string, a Newick tree spec or a topology");
+            HandleApplicationError("Illegal right hand side in call to Tree id = ...; it must be a string, a Newick tree spec or a topology");
             return false;
         }
       
@@ -5851,7 +5263,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
           if (expression)
             delete expression;
           if (errMsg)
-            WarnError (errMsg);
+            HandleApplicationError (errMsg);
           return false;
         }
       }
@@ -5872,7 +5284,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             _String  dsname = chain.AddNameSpaceToID(*(_String*)parameters(di));
             long f = FindDataSetName (dsname);
             if (f==-1) {
-                WarnError (((_String)("Identifier ")&dsname&_String(" doesn't correspond to a valid dataset.")));
+                HandleApplicationError (((_String)("Identifier ")&dsname&_String(" doesn't correspond to a valid dataset.")));
                 return false;
             } else {
                 dsIndex<<f;
@@ -5908,12 +5320,12 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         chain.currentCommand++;
         _String  fName (*(_String*)parameters(1));
         fName.ProcessFileName();
-        if (terminateExecution) {
+        if (terminate_execution) {
             return false;
         }
         FILE*   theDump = doFileOpen (fName.getStr(),"rb");
         if (!theDump) {
-            WarnError (((_String)("File ")&fName&_String(" couldn't be open for reading.")));
+            HandleApplicationError (((_String)("File ")&fName&_String(" couldn't be open for reading.")));
             return false;
         }
 
@@ -5924,7 +5336,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             result->SetValue(storage,false);
             lastMatrixDeclared = result->GetAVariable();
             if (!storage->ImportMatrixExp(theDump)) {
-                WarnError ("Matrix import failed - the file has an invalid format.");
+                HandleApplicationError("Matrix import failed - the file has an invalid format.");
                 importResult = false;
                 DeleteObject(storage);
             }
@@ -6015,13 +5427,6 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         ExecuteCase39 (chain);
         break;
 
-    case 40:
-        ExecuteCase40 (chain);
-        break;
-
-    case 41:
-        ExecuteCase41 (chain);
-        break;
 
     case HY_HBL_COMMAND_DIFFERENTIATE:
         return HandleDifferentiate (chain);
@@ -6132,7 +5537,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
     long    index     = input.Length();
   
     if (index == 0L) {
-      return emptyString;
+      return kEmptyString;
     }
     
     bool    isStringDouble  = false,
@@ -6293,9 +5698,9 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
         if (c==')') {
             parenIn--;
             if (parenIn < 0) {
-                WarnError (_String("Too many closing ')' near '") & input.Cut (MAX(0,index-32),index) & "'.");
-                input = emptyString;
-                return emptyString;
+                HandleApplicationError (_String("Too many closing ')' near '") & input.Cut (MAX(0,index-32),index) & "'.");
+                input = kEmptyString;
+                return kEmptyString;
             }
             lastChar = 0;
             continue;
@@ -6361,14 +5766,14 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
 
     if (scopeIn||isStringDouble||isStringSingle||isComment == 1||parenIn||matrixScope) {
         if (result!='}') {
-            WarnError (_String("Expression appears to be incomplete/syntax error. Scope: ") &scopeIn & ", paretheses depth: "
-                       & parenIn & ", matrix scope: " & matrixScope & '.' & (isStringDouble?" In a \"\" literal. ":emptyString)
-                       & (isStringSingle?" In a '' literal. ":emptyString) &
-                       (isComment == 1? " In a comment ":emptyString) & '\n' & input);
-            input = emptyString;
-            return emptyString;
+            HandleApplicationError (_String("Expression appears to be incomplete/syntax error. Scope: ") &scopeIn & ", paretheses depth: "
+                       & parenIn & ", matrix scope: " & matrixScope & '.' & (isStringDouble?" In a \"\" literal. ":kEmptyString)
+                       & (isStringSingle?" In a '' literal. ":kEmptyString) &
+                       (isComment == 1? " In a comment ":kEmptyString) & '\n' & input);
+            input = kEmptyString;
+            return kEmptyString;
         } else {
-            result = emptyString;
+            result = kEmptyString;
         }
     }
 
@@ -6386,7 +5791,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
 
         if (result.sLength-index2-1 <lastChar) {
             ReportWarning ((_String)("Expression appears to be incomplete/syntax error and will be ignored:")&input);
-            result.DuplicateErasing (&emptyString);
+            result = kEmptyString;
         } else {
             result.Trim(lastChar,result.sLength-1-lastChar);
         }
@@ -6397,7 +5802,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
     } else if (useSoftTrim) {
         input.sLength = 0;
     } else {
-        input.DuplicateErasing (&emptyString);
+        input = kEmptyString;
     }
   
 
@@ -6448,7 +5853,7 @@ long _ElementaryCommand::ExtractConditions (_String& source, long startwith, _Li
                 continue;
             }
 
-            _String *term = (_String*)checkPointer(new _String (source,lastsemi,index-1));
+            _String *term = new _String (source,lastsemi,index-1);
             receptacle.AppendNewInstance (term);
             lastsemi = index+1;
             continue;
@@ -6523,7 +5928,6 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
         } else {
             if (p2) {
                 _ElementaryCommand* loopback = new _ElementaryCommand ;
-                checkPointer (loopback);
                 success*=loopback->MakeJumpCommand (p2,forreturn,target.lLength+1,target);
                 target.AppendNewInstance(loopback);
             }
@@ -6596,7 +6000,7 @@ bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&targ
 
     {
         if (pieces.lLength!=1) {
-            WarnError ("'if' header makes no sense");
+            HandleApplicationError ("'if' header makes no sense");
         }
 
         source.Trim (upto,-1);
@@ -6637,7 +6041,7 @@ bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionL
             _List pieces;
             ExtractConditions (clipped,blWhile.sLength,pieces);
             if (pieces.lLength != 1) {
-                WarnError ("Malformed while clause in a do-while loop");
+                HandleApplicationError ("Malformed while clause in a do-while loop");
                 return false;
             }
 
@@ -6648,7 +6052,7 @@ bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionL
             return true;
         }
     }
-    WarnError ("Could not find a matching 'while' in the definition of a do-while loop");
+    HandleApplicationError ("Could not find a matching 'while' in the definition of a do-while loop");
 
     return false;
 }
@@ -6661,12 +6065,12 @@ bool    _ElementaryCommand::ProcessInclude      (_String&source, _ExecutionList&
     _String         fileName (source,blInclude.sLength,source.sLength-2);
     fileName = ProcessLiteralArgument (&fileName,target.nameSpacePrefix);
     if (fileName.sLength == 0) {
-        WarnError (_String("#include missing a meaningful filename. Check that there is a ';' at the end of the statement. Had ")& source.Cut(8,source.sLength-2));
+        HandleApplicationError (_String("#include missing a meaningful filename. Check that there is a ';' at the end of the statement. Had ")& source.Cut(8,source.sLength-2).Enquote());
         return false;
     }
 
-    fileName.ProcessFileName(false,false,(Ptr)target.nameSpacePrefix);
-    if (terminateExecution) {
+    fileName.ProcessFileName(false,false,(hy_pointer)target.nameSpacePrefix);
+    if (terminate_execution) {
         return false;
     }
 
@@ -6679,11 +6083,8 @@ bool    _ElementaryCommand::ProcessInclude      (_String&source, _ExecutionList&
 
 //____________________________________________________________________________________
 
-_ElementaryCommand* makeNewCommand (long ccode)
-{
-    _ElementaryCommand * newC = new _ElementaryCommand (ccode);
-    checkPointer        (newC);
-    return               newC;
+_ElementaryCommand* makeNewCommand (long ccode) {
+    return               new _ElementaryCommand (ccode);
 }
 
 //____________________________________________________________________________________
@@ -6731,7 +6132,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
 
  
     if (mark1==-1 || mark2==-1 || mark2 - 1 <= mark1 ) {
-        WarnErrorWhileParsing ("DataSet declaration missing a valid identifier", source);
+        HandleErrorWhileParsing ("DataSet declaration missing a valid identifier", source);
         return false;
     }
 
@@ -6747,7 +6148,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
         _List pieces;
         ExtractConditions (source,mark1+1,pieces,',');
         if (pieces.lLength!=1UL) {
-            WarnErrorWhileParsing ("DataSet declaration missing a valid filename", source);
+            HandleErrorWhileParsing ("DataSet declaration missing a valid filename", source);
             return false;
         }
 
@@ -6766,7 +6167,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
         _List pieces;
         ExtractConditions (source,mark1+1,pieces,',');
         if ( pieces.lLength>4UL || pieces.lLength==0UL ) {
-            WarnErrorWhileParsing (blSimulateDataSet & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).",
+            HandleErrorWhileParsing (blSimulateDataSet & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).",
                                    source);
             return false;
         }
@@ -6784,7 +6185,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
         _List pieces;
         ExtractConditions (source,mark1+1,pieces,',');
         if (pieces.lLength==0UL) {
-            WarnErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
+            HandleErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
             return false;
         }
 
@@ -6807,7 +6208,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
         }
 
         if (dsc.parameters.lLength<=1) {
-            WarnErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
+            HandleErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
             return false;
         }
 
@@ -6819,7 +6220,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
             _List pieces;
             ExtractConditions (source,mark1+1,pieces,',');
             if (pieces.lLength>3UL || pieces.lLength==0UL) {
-                WarnErrorWhileParsing("ReconstructAncestors and SampleAncestors expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.",
+                HandleErrorWhileParsing("ReconstructAncestors and SampleAncestors expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.",
                                       source);
                 return false;
             }
@@ -6842,7 +6243,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
             _List pieces;
             ExtractConditions (source,mark1+1,pieces,',');
             if ((pieces.lLength>7)||(pieces.lLength<4UL)) {
-                WarnErrorWhileParsing ("Simulate expects 4-6 parameters: tree with attached models, equilibrium frequencies, character map, number of sites|root sequence, <save internal node sequences>, <file name for direct storage>",
+                HandleErrorWhileParsing ("Simulate expects 4-6 parameters: tree with attached models, equilibrium frequencies, character map, number of sites|root sequence, <save internal node sequences>, <file name for direct storage>",
                                        source);
                 return false;
             }
@@ -6857,7 +6258,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
             target&&(&dsc);
             return true;
         } else {
-            WarnErrorWhileParsing ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);",
+            HandleErrorWhileParsing ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);",
                                    source);
         }
     }
@@ -6876,8 +6277,7 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
     _String catID (source,mark1+1,mark2-1);
 
     if (mark1==-1 || mark2==-1 || catID.Length()==0 ) {
-        _String errMsg ("Category variable declaration missing a valid identifier");
-        WarnError (errMsg);
+        HandleApplicationError("Category variable declaration missing a valid identifier");
         return false;
     }
 
@@ -6899,8 +6299,7 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
             }
         }
     }
-    _String errMsg ("Expected: category <id> = (number of intervals, weights, method for representation, density, cumulative, left bound, right bound,<optional mean cumulative function>,<optional hidden markov matrix>);");
-    WarnError (errMsg);
+    HandleApplicationError ("Expected: category <id> = (number of intervals, weights, method for representation, density, cumulative, left bound, right bound,<optional mean cumulative function>,<optional hidden markov matrix>);");
     return false;
 }
 
@@ -6912,11 +6311,10 @@ bool    _ElementaryCommand::ConstructStateCounter (_String&source, _ExecutionLis
     _List args;
     ExtractConditions (source,blStateCounter.sLength,args,',');
     if (args.lLength!=2) {
-        WarnError ("Expected: StateCounter(likefuncID, callback function ID)");
+        HandleApplicationError ("Expected: StateCounter(likefuncID, callback function ID)");
         return false;
     }
-    _ElementaryCommand * sc = new _ElementaryCommand(47);
-    sc->addAndClean (target,&args,0);
+    (new _ElementaryCommand(47))->addAndClean (target,&args,0);
     return true;
 }
 
@@ -6928,7 +6326,7 @@ bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&t
   
     ExtractConditions (source,blChoiceList.sLength,args,',');
     if (args.lLength<5UL) {
-        WarnError  ("ChoiceList needs at least 5 arguments");
+        HandleApplicationError  ("ChoiceList needs at least 5 arguments");
         return false;
     }
     _ElementaryCommand *cv = new _ElementaryCommand (32);
@@ -6971,15 +6369,11 @@ bool    _ElementaryCommand::ConstructReplicateConstraint (_String&source, _Execu
   
     ExtractConditions (source,blReplicate.sLength,args,',');
     if (args.lLength<2) {
-        _String errMsg ("Expected: ReplicateConstraint (\"constraint to be replicated in terms of this1,...,thisn and wildcard *\", list of n variables to put in place of this1, this2, ... thisn);");
-        acknError (errMsg);
+        HandleApplicationError ("Expected: ReplicateConstraint (\"constraint to be replicated in terms of this1,...,thisn and wildcard *\", list of n variables to put in place of this1, this2, ... thisn);");
         return false;
     }
   
-    _ElementaryCommand cv;
-    cv.code = 26;
-    cv.parameters << args;
-    target&& &cv;
+    (new _ElementaryCommand(47))->addAndClean (target,&args,0);
     return true;
 }
 
@@ -6998,7 +6392,7 @@ bool    _ElementaryCommand::ConstructTree (_String&source, _ExecutionList&target
     long    mark3 = mark2;
 
     if ( mark1 < 0 || mark2 < 0 || mark2 - mark1 < 1) {
-        acknError ("Tree declaration missing a valid identifier");
+        HandleApplicationError ("Tree declaration missing a valid identifier");
         return false;
     }
 
@@ -7046,7 +6440,7 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionLi
             command;
 
     if ( mark1==-1 || mark2==-1 || dsID.Length()==0) {
-        acknError ("DataSetFilter declaration missing a valid identifier");
+        HandleApplicationError ("DataSetFilter declaration missing a valid identifier");
         return false;
     }
   
@@ -7066,16 +6460,14 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionLi
     } else if (command == _String("Bootstrap")) {
         dsf = new _ElementaryCommand(28);
     } else {
-        _String errMsg ("Expected: DataSetFilter	  dataSetFilterid = CreateFilter (datasetid,unit,vertical partition,horizontal partition,alphabet exclusions); or Permute/Bootstrap (dataset/filter,<atom>,<column partition>)");
-        acknError (errMsg);
+        HandleApplicationError ("Expected: DataSetFilter	  dataSetFilterid = CreateFilter (datasetid,unit,vertical partition,horizontal partition,alphabet exclusions); or Permute/Bootstrap (dataset/filter,<atom>,<column partition>)");
         return false;
     }
 
 
     ExtractConditions (source,mark1+1,pieces,',');
     if (!(pieces.lLength>=2UL || (pieces.lLength == 1UL && dsf->code == 6))) {
-        _String errMsg ("Parameter(s) missing in DataSetFilter definition.");
-        acknError (errMsg);
+        HandleApplicationError ("Parameter(s) missing in DataSetFilter definition.");
         return false;
     }
 
@@ -7101,8 +6493,7 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
     _String modelID (source,mark1+1,mark2-1);
 
     if (mark1==-1 || mark2==-1 || !modelID.IsValidIdentifier()) {
-        _String errMsg ("Model declaration missing a valid identifier.");
-        acknError (errMsg);
+        HandleApplicationError ("Model declaration missing a valid identifier.");
         return false;
     }
 
@@ -7112,13 +6503,11 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
     ExtractConditions (source,mark1+1,pieces,',');
 
     if (pieces.lLength<2) {
-        _String errMsg ("Parameter(s) missing in Model definition. Must have a matrix and a compatible eqiulibrium frequencies vector.");
-        acknError (errMsg);
+        HandleApplicationError ("Parameter(s) missing in Model definition. Must have a matrix and a compatible eqiulibrium frequencies vector.");
         return false;
     } else {
         if (pieces.lLength>3) {
-            _String errMsg ("Too many parameters (3 max) in Model definition");
-            acknError (errMsg);
+            HandleApplicationError ("Too many parameters (3 max) in Model definition");
             return false;
         }
     }
@@ -7194,7 +6583,7 @@ bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&targ
 
     ExtractConditions   (source,7,arguments,',');
     if (arguments.lLength<3) {
-        WarnError (_String("Too few arguments in call to fscanf or sscanf"));
+        HandleApplicationError ("Too few arguments in call to fscanf or sscanf");
         DeleteObject (fscan);
         return false;
     }
@@ -7212,7 +6601,7 @@ bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&targ
     for (f = 0; f<argDesc.lLength; f++) {
         p = allowedFormats.FindObject(argDesc(f));
         if (p==-1) {
-            WarnError ( *((_String*)argDesc(f))&" is not a valid type descriptor for fscanf. Allowed ones are:"& _String((_String*)allowedFormats.toStr()));
+            HandleApplicationError ( *((_String*)argDesc(f))&" is not a valid type descriptor for fscanf. Allowed ones are:"& _String((_String*)allowedFormats.toStr()));
             DeleteObject (fscan);
             return false;
         } else {
@@ -7221,7 +6610,7 @@ bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&targ
     }
 
     if (arguments.lLength!=fscan->simpleParameters.lLength+2) {
-        WarnError (_String("fscanf passed ")&_String((long)(fscan->simpleParameters.lLength-shifter))&" parameter type descriptors and "
+        HandleApplicationError (_String("fscanf passed ")&_String((long)(fscan->simpleParameters.lLength-shifter))&" parameter type descriptors and "
                    &_String((long)(arguments.lLength-2-shifter))& " actual arguments");
         DeleteObject (fscan);
         return false;
@@ -7232,7 +6621,7 @@ bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&targ
         if (thisArg->IsValidIdentifier()) {
             fscan->parameters<< thisArg;
         } else {
-            WarnError (_String("fscanf passed an invalid variable identifier: ")&*thisArg);
+            HandleApplicationError (_String("fscanf passed an invalid variable identifier: ")&*thisArg);
             DeleteObject (fscan);
             return false;
         }
@@ -7260,7 +6649,7 @@ bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long bra
 
     if (branch1==-1) {
         if (simpleParameters.lLength == 0) {
-            WarnError ("An if-then-else scoping error. Check opening and closing brackets and double else's.");
+            HandleApplicationError("An if-then-else scoping error. Check opening and closing brackets and double else's.");
             return false;
         }
         branch1 = simpleParameters[0];
@@ -7293,7 +6682,7 @@ bool    _ElementaryCommand::ConstructFindRoot (_String&source, _ExecutionList&ta
     _String oper (source,0,mark1);
     source.Trim(ExtractConditions (source,mark1+1,pieces,','),-1);
     if (pieces.lLength!=5) {
-        WarnError ("Expected: FindRoot|Integrate (receptacle, expression, variable, left bound, right bound).");
+        HandleApplicationError ("Expected: FindRoot|Integrate (receptacle, expression, variable, left bound, right bound).");
         return false;
     }
     _ElementaryCommand * fri = new _ElementaryCommand(oper.Equal (&blFindRoot)?43:48);
@@ -7309,7 +6698,7 @@ bool    _ElementaryCommand::ConstructMPISend (_String&source, _ExecutionList&tar
     _List pieces;
     ExtractConditions (source, blMPISend.sLength ,pieces,',');
     if (pieces.lLength!=2 && pieces.lLength!=3) {
-        WarnError ("Expected: MPISend (numeric node ID, string with HBL code <or> a LF ID).");
+        HandleApplicationError ("Expected: MPISend (numeric node ID, string with HBL code <or> a LF ID).");
         return false;
     }
     _ElementaryCommand * mpiSend = makeNewCommand (44);
@@ -7324,7 +6713,7 @@ bool    _ElementaryCommand::ConstructMPIReceive (_String&source, _ExecutionList&
     _List pieces;
     ExtractConditions (source, blMPIReceive.sLength ,pieces,',');
     if (pieces.lLength !=3 ) {
-        WarnError ("Expected: MPIReceive (can receive from node, received from node, receptacle for the string result).");
+        HandleApplicationError ("Expected: MPIReceive (can receive from node, received from node, receptacle for the string result).");
         return false;
     }
 
@@ -7340,7 +6729,7 @@ bool    _ElementaryCommand::ConstructCategoryMatrix (_String&source, _ExecutionL
     _List pieces;
     ExtractConditions (source,blConstructCM.sLength,pieces,',');
     if (pieces.lLength<2) {
-        WarnError ("Expected: ConstructCategoryMatrix (receptacle, likelihood function,COMPLETE/SHORT/WEIGHTS [optional; default is COMPLETE], [optional matrix argument with partitions to include; default is to include all]");
+        HandleApplicationError ("Expected: ConstructCategoryMatrix (receptacle, likelihood function,COMPLETE/SHORT/WEIGHTS [optional; default is COMPLETE], [optional matrix argument with partitions to include; default is to include all]");
         return false;
     }
 
@@ -7375,18 +6764,18 @@ bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _Execution
     }
 
     if (pieces.lLength < 1 || pieces.lLength > 3) {
-        WarnError ("Expected: ExecuteCommands (identifier, <compiled|(input redirect<,string prefix>)>) or ExecuteAFile (path name, <compiled|(input redirect<,string prefix>)> or LoadFunctionLibrary (path name, <compiled|(input redirect<,string prefix>)>)");
+        HandleApplicationError ("Expected: ExecuteCommands (identifier, <compiled|(input redirect<,string prefix>)>) or ExecuteAFile (path name, <compiled|(input redirect<,string prefix>)> or LoadFunctionLibrary (path name, <compiled|(input redirect<,string prefix>)>)");
         return false;
     }
 
-    _ElementaryCommand * exc = (_ElementaryCommand *)checkPointer(new _ElementaryCommand (code));
+    _ElementaryCommand * exc = new _ElementaryCommand (code);
 
     exc->parameters<<pieces(0);
 
     if (PeekFilePath()) {
         exc->parameters && *PeekFilePath();
     } else {
-        exc->parameters && & emptyString;
+        exc->parameters.AppendNewInstance(new _String);
     }
 
     if (pieces.lLength >1) {
@@ -7395,7 +6784,7 @@ bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _Execution
         } else {
           if (*(_String*)pieces(1) == _String("enclosing_namespace")) {
             exc->parameters.Delete(1);
-            exc->parameters && & emptyString;
+            exc->parameters < new _String;
           } else {
             exc->parameters << pieces(1);
             if (pieces.lLength > 2) {
@@ -7416,7 +6805,7 @@ bool    _ElementaryCommand::ConstructOpenWindow (_String&source, _ExecutionList&
     _List pieces;
     ExtractConditions (source,blOpenWindow.sLength,pieces,',');
     if (pieces.lLength<2 || pieces.lLength>3) {
-        WarnError ("Expected: OpenWindow (window type,parameter matrix,<position string>)");
+        HandleApplicationError("Expected: OpenWindow (window type,parameter matrix,<position string>)");
         return false;
     }
 
@@ -7430,21 +6819,6 @@ bool    _ElementaryCommand::ConstructOpenWindow (_String&source, _ExecutionList&
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructSpawnLF (_String&source, _ExecutionList&target)
-{
-    _List pieces;
-    ExtractConditions (source,blSpawnLF.sLength,pieces,',');
-    if (pieces.lLength!=4) {
-        _String errMsg ("Expected: SpawnLikelihoodFunction (likeFuncID, treeID, window ID, subset matrix)");
-        acknError (errMsg);
-        return false;
-    }
-
-    _ElementaryCommand * exc = new _ElementaryCommand (41);
-    exc->addAndClean(target,&pieces,0);
-    return true;
-}
 
 
 //____________________________________________________________________________________
@@ -7454,27 +6828,11 @@ bool    _ElementaryCommand::ConstructGetDataInfo (_String&source, _ExecutionList
     _List pieces;
     ExtractConditions (source,blGetDataInfo.sLength,pieces,',');
     if (pieces.lLength<2 ||pieces.lLength>5) {
-        WarnError ("Expected: syntax: GetDataInfo(matrix ID, dataFilterID,<sequence ref, site ref | sequence 1 , sequence 2, DISTANCES>)");
+        HandleApplicationError ("Expected: syntax: GetDataInfo(matrix ID, dataFilterID,<sequence ref, site ref | sequence 1 , sequence 2, DISTANCES>)");
         return false;
     }
     _ElementaryCommand * gdi = new _ElementaryCommand(46);
     gdi->addAndClean(target,&pieces,0);
-    return true;
-}
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructOpenDataPanel (_String&source, _ExecutionList&target)
-// syntax: OpenDataPanel(dataSetID,"species order","display settings","partition settings")
-{
-    _List pieces;
-    ExtractConditions (source,blOpenDataPanel.sLength,pieces,',');
-    if (pieces.lLength!=4 && pieces.lLength!=5) {
-        ReportWarning("Expected: syntax: OpenDataPanel(dataSetID,\"species order\",\"display settings\",\"partition settings\"),[likefunc ID]");
-        return false;
-    }
-
-    _ElementaryCommand * sp = new _ElementaryCommand (36);
-    sp->addAndClean(target,&pieces,0);
     return true;
 }
 
@@ -7487,8 +6845,7 @@ bool    _ElementaryCommand::ConstructGetInformation (_String&source, _ExecutionL
     ExtractConditions (source,blGetInformation.sLength,pieces,',');
 
     if (pieces.lLength < 2) {
-        _String errMsg ("Expected at least 2 arguments: GetInformation(object,receptacle,...);");
-        WarnError (errMsg);
+        HandleApplicationError ("Expected at least 2 arguments: GetInformation(object,receptacle,...);");
         return false;
     }
 
@@ -7516,7 +6873,7 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
             mark2 = mark1 > 0 ? source.FindTerminator (mark1 + 1, "=") : 0;
 
     if ( mark1==-1 || mark2==-1 || mark1+1 > mark2  ) {
-        acknError ("Likelihood function declaration missing a valid identifier");
+        HandleApplicationError ("Likelihood function declaration missing a valid identifier");
         return false;
     }
 
@@ -7528,7 +6885,7 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
     mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', true, true);
 
     if ( mark1==-1 || mark2==-1 || mark1<mark2 ) {
-        WarnError ("Expected: Likelihood Function ident = (tree1, datasetfilter1,...)");
+        HandleApplicationError ("Expected: Likelihood Function ident = (tree1, datasetfilter1,...)");
         return false;
     }
 
@@ -7558,7 +6915,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
   
     if (!isNameSpace) {
       if (isInFunction == _HY_FUNCTION) {
-        WarnError ("Nested function declarations are not allowed");
+        HandleApplicationError ("Nested function declarations are not allowed");
         return false;
       }
       
@@ -7571,15 +6928,15 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
 
     if ( mark1==-1 || mark2==-1 || mark1>mark2-1) {
-        WarnError      (_String("Function declaration missing a valid function identifier or parameter list.\n-----------\n") & source & "\n-----------\n");
-      isInFunction = _HY_NO_FUNCTION;
-      return false;
+        HandleApplicationError      (_String("Function declaration missing a valid function identifier or parameter list.\n-----------\n") & source & "\n-----------\n");
+        isInFunction = _HY_NO_FUNCTION;
+        return false;
     }
 
     _String*    funcID  = new _String(source.Cut (mark1,mark2-1));
 
     if (!funcID->IsValidIdentifier(true)) {
-      WarnError      (_String("Not a valid function/namespace identifier '") & *funcID & "'");
+      HandleApplicationError      (_String("Not a valid function/namespace identifier '") & *funcID & "'");
       isInFunction = _HY_NO_FUNCTION;
       return false;
     }
@@ -7603,7 +6960,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
 
       if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}') {
-          WarnError (_String("Function declaration is missing a valid function body."));
+          HandleApplicationError (_String("Function declaration is missing a valid function body."));
           isInFunction= _HY_NO_FUNCTION;
           return false;
       }
@@ -7665,7 +7022,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       }
     } else {
       if (mark2 == source.sLength || source[mark2]!='{' || source[source.sLength-1]!='}') {
-        WarnError (_String("Namespace declaration is missing a body."));
+        HandleApplicationError (_String("Namespace declaration is missing a body."));
         isInFunction= _HY_NO_FUNCTION;
         return false;
       }
@@ -7725,14 +7082,13 @@ bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&targ
 
 //____________________________________________________________________________________
 
-void    ReadBatchFile (_String& fName, _ExecutionList& target)
+void    ReadBatchFile (_String& fName, _ExecutionList& target) {
 // read/parse a file into an execution list
 // THE function!!!
-{
 
     fName.ProcessFileName(target.nameSpacePrefix);
 
-    if (terminateExecution) {
+    if (terminate_execution) {
         return;
     }
     /*#else
@@ -7744,14 +7100,14 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target)
     FILE            *f = doFileOpen (fName.getStr(), "rb");
     SetStatusLine   ("Parsing File");
     if (!f) {
-        WarnError (_String("Could not read batch file '") & fName & "'.\nPath stack:\n\t" & GetPathStack("\n\t"));
+        HandleApplicationError (_String("Could not read batch file '") & fName & "'.\nPath stack:\n\t" & GetPathStack("\n\t"));
     } else {
-        _String beavis (f);
+        _String source_file (f);
 
-        if (beavis.beginswith("#NEXUS",false)) {
+        if (source_file.beginswith("#NEXUS",false)) {
             ReadDataSetFile (f,1,nil,&fName, nil, &defaultTranslationTable, &target);
         } else {
-            target.BuildList (beavis);
+            target.BuildList (source_file);
             target.sourceFile = fName;
         }
         fclose (f);

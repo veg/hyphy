@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,21 +37,23 @@
  
  */
 
+#include <math.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+
 #include "site.h"
-#include "string.h"
-#include "ctype.h"
-#include "stdlib.h"
 #include "list.h"
 #include "batchlan.h"
 #include "hbl_env.h"
 #include "global_object_lists.h"
+#include "global_things.h"
 
+
+using namespace hy_global;
 using namespace hyphy_global_objects;
 
-#include "math.h"
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+
 //_________________________________________________________
 
 _DataSet* lastNexusDataMatrix = nil;
@@ -116,8 +118,7 @@ bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _String& CurrentL
                     ReadNextLine(file,&CurrentLine,&fState,false);
                 }
             } else {
-                _String errMsg ("Found END w/o a trailing semicolon. Assuming end of block and skipping the rest of the line.");
-                ReportWarning (errMsg);
+                ReportWarning ("Found END w/o a trailing semicolon. Assuming end of block and skipping the rest of the line.");
                 ReadNextLine(file,&CurrentLine,&fState,false);
             }
             return true;
@@ -465,9 +466,9 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                     hpSpec << (_String)(kk);
                                                 }
 
-                                                numberOne   = emptyString;
-                                                numberTwo   = emptyString;
-                                                numberThree = emptyString;
+                                                numberOne   = kEmptyString;
+                                                numberTwo   = kEmptyString;
+                                                numberThree = kEmptyString;
                                             } else {
                                                 errMsg = _String("Invalid from-to\\step specification: ") & blank.Cut (0,k) & " <=? " & blank.Cut (k+1,-1);
                                                 ReportWarning (errMsg);
@@ -489,7 +490,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                 hpSpec << '-';
                                                 numberTwo = numberTwo.toNum()-1;
                                                 hpSpec << numberTwo;
-                                                numberTwo = emptyString;
+                                                numberTwo = kEmptyString;
                                                 firstFlag = false;
 
                                             } else {
@@ -500,7 +501,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                     }
                                                     hpSpec << numberOne;
                                                 }
-                                                numberOne = emptyString;
+                                                numberOne = kEmptyString;
                                                 firstFlag = false;
                                             }
                                         }
@@ -565,19 +566,19 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
     if (charSetIDs.lLength) {
         _String defineCharsets (128L, true);
 
-        defineCharsets << dataFilePartitionMatrix;
+        defineCharsets << hy_env::data_file_partition_matrix;
         defineCharsets << "={2,";
         defineCharsets << _String ((long)charSetIDs.lLength);
         defineCharsets << "};\n";
 
         for (long id = 0; id < charSetIDs.lLength; id++) {
-            defineCharsets << dataFilePartitionMatrix;
+            defineCharsets << hy_env::data_file_partition_matrix;
             defineCharsets << "[0][";
             defineCharsets << _String (id);
             defineCharsets << "]:=\"";
             defineCharsets << (_String*)charSetIDs(id);
             defineCharsets << "\";\n";
-            defineCharsets << dataFilePartitionMatrix;
+            defineCharsets << hy_env::data_file_partition_matrix;
             defineCharsets << "[1][";
             defineCharsets << _String (id);
             defineCharsets << "]:=\"";
@@ -587,7 +588,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
         defineCharsets.Finalize();
         _ExecutionList defMx (defineCharsets);
         defMx.Execute();
-        terminateExecution = false;
+        terminate_execution = false;
     }
 
     SkipUntilNexusBlockEnd (fState, f,CurrentLine, pos);
@@ -805,38 +806,38 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
     }
 
     if (treeSelected < treeStrings.lLength) {
-        setParameter (dataFileTree,1.0,fState.theNamespace);
-        setParameter (dataFileTreeString, new _FString((*(_String*)treeStrings.lData[treeSelected])),fState.theNamespace, false);
-    }
+        hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree, new HY_CONSTANT_TRUE,fState.theNamespace, false);
+        hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree_string, new _FString(*(_String*)treeStrings.lData[treeSelected], false),fState.theNamespace, false);
+     }
 
     if (treeStrings.lLength) {
         _String initTreeMatrix (1024L, true);
 
-        initTreeMatrix << nexusFileTreeMatrix;
-        initTreeMatrix << "={";
-        initTreeMatrix << _String ((long)treeStrings.lLength);
-        initTreeMatrix << ",2};\n";
+        initTreeMatrix   << hy_env::nexus_file_tree_matrix
+                         << "={"
+                         << _String ((long)treeStrings.lLength)
+                         << ",2};\n";
 
 
         for (long id = 0; id < treeStrings.lLength; id++) {
-            initTreeMatrix << nexusFileTreeMatrix;
-            initTreeMatrix << '[';
-            initTreeMatrix << _String (id);
-            initTreeMatrix << "][0]=\"";
-            initTreeMatrix << (_String*)treeIdents(id);
-            initTreeMatrix << "\";\n";
-            initTreeMatrix << nexusFileTreeMatrix;
-            initTreeMatrix << '[';
-            initTreeMatrix << _String (id);
-            initTreeMatrix << "][1]=\"";
-            initTreeMatrix << (_String*)treeStrings(id);
-            initTreeMatrix << "\";\n";
+            initTreeMatrix   << hy_env::nexus_file_tree_matrix
+                             << '['
+                             << _String (id)
+                             << "][0]=\""
+                             << (_String*)treeIdents(id)
+                             << "\";\n"
+                             << hy_env::nexus_file_tree_matrix
+                             << '['
+                             << _String (id)
+                             << "][1]=\""
+                             << (_String*)treeStrings(id)
+                             << "\";\n";
         }
         initTreeMatrix.Finalize();
 
         _ExecutionList el (initTreeMatrix);
         el.Execute();
-        terminateExecution = false;
+        terminate_execution = false;
     }
     SkipUntilNexusBlockEnd (fState, f,CurrentLine, pos);
 }
@@ -976,7 +977,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                         if ((blank==_String("DNA"))||(blank==_String("RNA"))||(blank==_String("NUCLEOTIDE"))) {
                             if (newAlph.sLength) {
                                 errMsg = _String("DNA|RNA|NUCLEOTIDE datatype directive will over-ride the custom symbols definition: ") & newAlph;
-                                newAlph = emptyString;
+                                newAlph = kEmptyString;
                                 ReportWarning (errMsg);
                             }
                             if (done) {
@@ -988,7 +989,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                             charState = 1+(blank==_String("BINARY"));
                             if (newAlph.sLength) {
                                 errMsg = _String("PROTEIN|BINARY datatype directive will override the custom symbols definition: ") & newAlph;
-                                newAlph = emptyString;
+                                newAlph = kEmptyString;
                                 ReportWarning (errMsg);
                             }
                             if (done) {
@@ -1099,7 +1100,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                         translations&& &meaning;
                     }
                     charSwitcher = 0;
-                    blank = emptyString;
+                    blank = kEmptyString;
                 }
 
                 offSet = 0;

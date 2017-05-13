@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -85,11 +85,11 @@ public:
     _String (long);
 
     /**
-    * A constructor that converts a _Parameter(double) to string.
+    * A constructor that converts a hy_float(double) to string.
     * @param sL         The floating number to convert to string
     * @param format     The C-style format string to use for the conversion
     */
-    _String (_Parameter, const char * = nil);
+    _String (hy_float, const char * = nil);
 
     /**
     * A constructor that duplicates from another string.
@@ -141,7 +141,7 @@ public:
     * \n Usage: stringInstance.makeDynamic();
     * @return BaseRef
     */
-    virtual     BaseRef makeDynamic (void);
+    virtual     BaseRef makeDynamic (void) const;
 
     /**
     * Initializes _String object to 0 length and 0 sData
@@ -155,7 +155,7 @@ public:
     * @sa DuplicateErasing()
     * @sa CopyDynamicString()
     */
-    virtual     void    Duplicate (BaseRef);
+    virtual     void    Duplicate (BaseRefConst);
 
     /**
     * Erases old data and duplicates a string
@@ -763,7 +763,7 @@ public:
     /**
     * TODO: With batchlan
     */
-    bool    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil);
+    bool    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, hy_pointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil);
 
     /**
     * TODO: With batchlan
@@ -876,12 +876,12 @@ public:
 
     /**
     * A regular expression match
-    * @param pattern A string(A Ptr is a char*) that holds the regex pattern
+    * @param pattern A string(A hy_pointer is a char*) that holds the regex pattern
     * @param matchedPairs A list that holds the start and end indexes of matches
     * @sa RegExpMatchAll()
     * @sa RegExpMatchOnce()
     */
-    void    RegExpMatch      (Ptr, _SimpleList&);
+    void    RegExpMatch      (hy_pointer, _SimpleList&);
 
     /**
     * A regular expression match
@@ -890,7 +890,7 @@ public:
     * @sa RegExpMatch()
     * @sa RegExpMatchOnce()
     */
-    void    RegExpMatchAll   (Ptr, _SimpleList&);
+    void    RegExpMatchAll   (hy_pointer, _SimpleList&);
 
     /**
     * A regular expression match that only matches once
@@ -932,7 +932,7 @@ public:
     * \n If it is not of correct form, it will return 1e-10
     * @sa toNum()
     */
-    _Parameter
+    hy_float
     ProcessTreeBranchLength ();
 
 
@@ -943,7 +943,7 @@ public:
     * @sa ProcessTreeBranchLength()
     */
 
-    _Parameter      toNum (void) const;
+    hy_float      toNum (void) const;
 
     /**
      * Converts a into a long
@@ -994,8 +994,9 @@ public:
 
 
     // Data Fields
-    unsigned long sLength;
-    Ptr           sData;
+    unsigned long sLength,
+                  buffer_allocation;
+    char*         sData;
 };
 
 
@@ -1003,7 +1004,7 @@ public:
 
 
 
-extern _String emptyString,
+extern _String 
        emptyAssociativeList,
        hyphyCiteString;
 
@@ -1011,7 +1012,7 @@ extern _String emptyString,
 extern _String volumeName;
 #endif
 
-void    SetStatusBarValue           (long,_Parameter,_Parameter);
+void    SetStatusBarValue           (long,hy_float,hy_float);
 void    SetStatusLine               (_String);
 void    SetStatusLine               (_String, _String, _String, long l);
 void    SetStatusLine               (_String, _String, _String);
@@ -1020,14 +1021,9 @@ void    SetStatusLine               (_String, _String, _String, long, char);
 void    SetStatusLineUser           (_String const);
 
 
-Ptr     PrepRegExp                  (_String*, int&, bool);
-void    FlushRegExp                 (Ptr);
+hy_pointer     PrepRegExp                  (_String*, int&, bool);
+void    FlushRegExp                 (hy_pointer);
 _String GetRegExpError              (int);
-void    ReportWarning               (_String const &);
-void    FlagError                   (_String const &);
-void    WarnErrorWhileParsing       (_String const&, _String&);
-void    WarnError                   (_String const&);
-void    WarnOrStoreError            (_String* store, _String const&);
 _String GetVersionString            (void);
 _String GetTimeStamp                (bool = false);
 

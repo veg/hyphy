@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -44,6 +44,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "parser.h"
 #include "site.h"
 #include "trie.h"
+#include "global_things.h"
+
 #include <stdio.h>
 
 
@@ -86,13 +88,13 @@ public:
     ~_ExecutionList (void);
 
     virtual
-    BaseRef     makeDynamic (void);
+    BaseRef     makeDynamic (void) const;
 
     virtual
     BaseRef     toStr (unsigned long = 0UL);
 
     virtual
-    void        Duplicate                   (BaseRef);
+    void        Duplicate                   (BaseRefConst);
     bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
 
     _PMathObj   Execute                     (_ExecutionList* parent = nil);
@@ -197,8 +199,8 @@ public:
     // starting at a given position
     virtual                  ~_ElementaryCommand (void);
 
-    virtual   BaseRef        makeDynamic (void);
-    virtual   void           Duplicate (BaseRef);
+    virtual   BaseRef        makeDynamic (void) const;
+    virtual   void           Duplicate (BaseRefConst);
     virtual   BaseRef        toStr (unsigned long = 0UL);
 
     bool      Execute        (_ExecutionList&); // perform this command in a given list
@@ -218,8 +220,6 @@ public:
     void      ExecuteCase37  (_ExecutionList&); // GetInformation
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
     void      ExecuteCase39  (_ExecutionList&); // Execute Commands
-    void      ExecuteCase40  (_ExecutionList&); // Open Window
-    void      ExecuteCase41  (_ExecutionList&); // Spawn LF
     void      ExecuteCase43  (_ExecutionList&); // FindRoot
     void      ExecuteCase44  (_ExecutionList&); // MPISend
     void      ExecuteCase45  (_ExecutionList&); // MPIReceive
@@ -348,12 +348,7 @@ public:
     static  bool      ConstructCategoryMatrix (_String&, _ExecutionList&);
     // construct a category matrix for the optimized like func
 
-    static  bool      ConstructOpenDataPanel (_String&, _ExecutionList&);
-    // open data panel with given settings
-
     static  bool      ConstructOpenWindow   (_String&, _ExecutionList&);
-
-    static  bool      ConstructSpawnLF      (_String&, _ExecutionList&);
 
     static  bool      ConstructFindRoot     (_String&, _ExecutionList&);
 
@@ -446,8 +441,6 @@ _ElementaryCommand               * makeNewCommand       (long);
 #ifdef __HYPHYMPI__
 #include <mpi.h>
 
-extern   _String                mpiNodeID,
-         mpiNodeCount;
 
 #define  HYPHY_MPI_SIZE_TAG     111
 #define  HYPHY_MPI_STRING_TAG   112
@@ -459,7 +452,7 @@ extern   _String                mpiNodeID,
 
 
 void     ReportMPIError         (int, bool);
-void     MPISendString          (_String&,long,bool=false);
+void     MPISendString          (_String const&,long,bool=false);
 _String* MPIRecvString          (long,long&);
 
 #endif
@@ -500,14 +493,9 @@ extern  _String
 getDString,
 getFString,
 tempFString,
-baseDirectory,
-libDirectory,
 useLastFString,
 mpiMLELFValue,
 lf2SendBack,
-hyphyBaseDirectory,
-hyphyLibDirectory,
-platformDirectorySeparator,
 defFileNameValue,
 defFileString,
 blConstructCM,
@@ -574,8 +562,6 @@ scfgCorpus                      ,
 bgmData                         ,
 bgmWeights                      ,
 pathToCurrentBF                 ,
-statusBarUpdateString           ,
-statusBarProgressValue          ,
 errorReportFormatExpression     ,
 errorReportFormatExpressionStr  ,
 errorReportFormatExpressionStack,
@@ -600,11 +586,6 @@ blLF3                           ,
 blTree                          ,
 blTopology                      ,
 blSCFG                          ,
-#ifdef      __HYPHYMPI__
-mpiNodeID                       ,
-mpiNodeCount                    ,
-mpiLastSentMsg                  ,
-#endif
 hfCountGap                      ;
 
 extern  _ExecutionList              *currentExecutionList;
@@ -618,8 +599,7 @@ extern  _Trie                       _HY_ValidHBLExpressions,
                                     _HY_HBL_Namespaces,
                                     _HY_HBL_KeywordsPreserveSpaces;
 
-extern  long                        globalRandSeed,
-                                    matrixExpCount;
+extern  long                        matrixExpCount;
  
 
 long      FindDataSetName                 (_String const&);
@@ -661,7 +641,7 @@ _String ReturnDialogInput            (bool dispPath = false);
 _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
-_Parameter
+hy_float
 ProcessNumericArgument               (_String*,_VariableContainer const*, _ExecutionList* = nil);
 const _String ProcessLiteralArgument (_String const*,_VariableContainer const*, _ExecutionList* = nil);
 _AssociativeList*
@@ -702,43 +682,42 @@ ProcessAnArgumentByType      (_String const*, _VariableContainer const*, long, _
 
 void    _HBL_Init_Const_Arrays       (void);
 
-void    ReturnCurrentCallStack       (_List&, _List&);
-
-/**
-    An accessor function which attempts to retrieve a reference to a HyPhy Batch Language Object
-    by name. A list of acceptable object classes can be specified in the type parameter. Note that
-    types will be searched in the following order:
-
-        HY_BL_DATASET,HY_BL_DATASET_FILTER,HY_BL_LIKELIHOOD_FUNCTION,HY_BL_SCFG,HY_BL_BGM,HY_BL_MODEL,HY_BL_HBL_FUNCTION
-
-    i.e. if there is a dataset named 'foo' and a likelihood function named 'foo', then the dataset
-    will be returned.
 
 
-
-    @param   name provides a string with the name of the object to be retrieved.
-    @param   type [in] which types of objects will be searched.
-                 [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
-    @param   index (if not nil) will receive the index of the found object in the corresponding array
-    @param   errMsg if set to True, will cause the function to report an error if no object of corresponding type could be found
-    @param   tryLiteralLookup if set to True, will cause the function to, upon a failed lookup, to also try interpreting name as a string variable ID
-    @return  pointer to the retrieved object or nil if not found
-    @author  SLKP
-    @version 20120324
-*/
 
 BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+/**
+ An accessor function which attempts to retrieve a reference to a HyPhy Batch Language Object
+ by name. A list of acceptable object classes can be specified in the type parameter. Note that
+ types will be searched in the following order:
+ 
+ HY_BL_DATASET,HY_BL_DATASET_FILTER,HY_BL_LIKELIHOOD_FUNCTION,HY_BL_SCFG,HY_BL_BGM,HY_BL_MODEL,HY_BL_HBL_FUNCTION
+ 
+ i.e. if there is a dataset named 'foo' and a likelihood function named 'foo', then the dataset
+ will be returned.
+ 
+ 
+ 
+ @param   name provides a string with the name of the object to be retrieved.
+ @param   type [in] which types of objects will be searched.
+ [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
+ @param   index (if not nil) will receive the index of the found object in the corresponding array
+ @param   errMsg if set to True, will cause the function to report an error if no object of corresponding type could be found
+ @param   tryLiteralLookup if set to True, will cause the function to, upon a failed lookup, to also try interpreting name as a string variable ID
+ @return  pointer to the retrieved object or nil if not found
+ @author  SLKP
+ @version 20120324
+ */
 
 BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 
 _String _HYHBLTypeToText                (long type);
-_String _HYStandardDirectory            (const unsigned long);
 
-_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = emptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = hy_global::kEmptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 
 
 extern  bool                        numericalParameterSuccessFlag;
-extern  _Parameter                  messageLogFlag;
+extern  hy_float                  messageLogFlag;
 
 extern enum       _hy_nested_check {
   _HY_NO_FUNCTION,

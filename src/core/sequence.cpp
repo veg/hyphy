@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,13 +37,14 @@
  
  */
 
+#include <stdio.h>
+#include <string.h>
+
 #include "sequence.h"
-#include "errorfns.h"
-#include "stdio.h"
-#include "string.h"
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include "global_things.h"
+
+using namespace hy_global;
+
 
 _String   NuclAlphabet          = "ACGT-?",
           CodonAlphabet       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ*?-.",
@@ -118,18 +119,12 @@ _CString::_CString (unsigned long sL, bool flag)
         sData = (char*)MemAllocate (sL*sizeof (char));
         allocatedSpace = sL;
         if (!sData) {
-            warnError( -108);
+            HandleApplicationError ( kErrorStringMemoryFail );
         }
     } else {
         allocatedSpace = 0;
         sLength = sL;
-        sData = (char*)MemAllocate (sL+1);
-        if (sData) {
-            memset (sData,0,sL+1);
-        } else {
-            sLength = 0;
-            isError(0);
-        }
+        sData = (char*)MemAllocate (sL+1, true);
     }
     compressionType = NOCOMPRESSION;
 }
@@ -142,7 +137,7 @@ _CString::~_CString(void)
 long    _CString::FreeUpMemory(long)
 {
     if (!IsCompressed()) {
-        _Parameter comprratio = BestCompress (NUCLEOTIDEALPHABET);
+        hy_float comprratio = BestCompress (NUCLEOTIDEALPHABET);
         if (comprratio == 1) {
             comprratio = BestCompress (CODONALPHABET);
         }
@@ -157,10 +152,10 @@ long    _CString::FreeUpMemory(long)
 void _CString::Finalize (void)
 {
   
-    sData = MemReallocate (sData,sLength+1);
+    sData = (char*)MemReallocate (sData,sLength+1);
 
     if (!sData) {
-        warnError(-108);
+        HandleApplicationError ( kErrorStringMemoryFail );
     } else {
       sData[sLength]=0;
       allocatedSpace = 0;
@@ -177,11 +172,7 @@ void _CString::operator << (char c)
         allocatedSpace+=incBy;
         sData = (char*)MemReallocate((char*)sData, allocatedSpace*sizeof(char));
 
-        if (!sData) {
-            checkPointer (sData);
-            return;
-        }
-    }
+     }
 
     sData[sLength++]=c;
 }
@@ -192,7 +183,7 @@ void _CString::operator << (_String* s)
 {
     if ( s && s->sLength) {
         if (allocatedSpace < sLength + s->sLength) {
-            unsigned long incBy = sLength + s->sLength - nInstances;
+            unsigned long incBy = sLength + s->sLength - allocatedSpace;
 
             if (incBy < storageIncrement) {
                 incBy = storageIncrement;
@@ -206,9 +197,6 @@ void _CString::operator << (_String* s)
 
             sData = (char*)MemReallocate((char*)sData, allocatedSpace*sizeof(char));
 
-            if (!sData) {
-                checkPointer (sData);
-            }
         }
 
         memcpy(sData+sLength,s->sData,s->sLength);
@@ -218,23 +206,18 @@ void _CString::operator << (_String* s)
 
 //_________________________________________________________
 
-BaseRef   _CString::makeDynamic (void)
-{
+BaseRef   _CString::makeDynamic (void) const {
+    
     _CString* res = (_CString*)new _CString;
-    checkPointer(res);
-
-    _String::Duplicate (res);
-
+    res->_String::Duplicate (this);
     res->compressionType = compressionType;
-
     return  res;
 
 }
 
 //_________________________________________________________
 
-void      _CString::Duplicate (BaseRef res)
-{
+void      _CString::Duplicate (BaseRefConst res) {
     _String::Duplicate (res);
 
     ((_CString*)res)->compressionType = compressionType;
@@ -313,7 +296,7 @@ _String* _CString::SelectAlpha (unsigned char alpha)
 
 //_________________________________________________________
 
-_Parameter      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
+hy_float      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
 {
 
     _String* theAlphabet = SelectAlpha (theAlpha);
@@ -456,7 +439,7 @@ _Parameter      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
     }
 
     // yahoo! we are done - store compression flag and replace the string with compressed string
-    _Parameter factor = result.sLength/(_Parameter)sLength;
+    hy_float factor = result.sLength/(hy_float)sLength;
     if (factor<1) { // compression took place
         DuplicateErasing(&result);
         SetFlag( FREQCOMPRESSION);
@@ -477,11 +460,6 @@ _String*    _CString::DecompressFrequency(void)
         return nil;    // wrong compression type nothing to do
     }
     unsigned char *codeMaps = new unsigned char [(*theAlphabet).sLength];
-
-    if (!codeMaps) {
-        warnError( -108);    // no memory
-    }
-
     unsigned int i,j,k,l,t; // temporary vars
 
 
@@ -574,7 +552,7 @@ inline unsigned long     ToLZWCode (long l)
 
 //_________________________________________________________
 
-_Parameter      _CString::LZWCompress (unsigned char theAlpha)
+hy_float      _CString::LZWCompress (unsigned char theAlpha)
 {
     _List       theTable;
     _SimpleList theCodes;
@@ -652,7 +630,7 @@ _Parameter      _CString::LZWCompress (unsigned char theAlpha)
         }*/
     // end debugging
     output.SetLength(k+1);
-    _Parameter factor = k/_Parameter(sLength);
+    hy_float factor = k/hy_float(sLength);
     if (factor<1) {
         DuplicateErasing(&output);
         SetFlag( LZWCOMPRESSION);
@@ -732,10 +710,10 @@ _String*        _CString::DecompressLZW (void)
 
 //_________________________________________________________
 
-_Parameter _CString::BestCompress(unsigned char theAlpha, long triggerSize)
+hy_float _CString::BestCompress(unsigned char theAlpha, long triggerSize)
 {
     countCompress++;
-    _Parameter freqcomp = FrequencyCompress(theAlpha, false), lzwcomp = 1;
+    hy_float freqcomp = FrequencyCompress(theAlpha, false), lzwcomp = 1;
     _CString test(*this);
     if ((triggerSize>=sLength)||(triggerSize==-1)) {
         lzwcomp  = test.LZWCompress (theAlpha);

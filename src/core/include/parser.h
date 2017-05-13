@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -44,7 +44,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "list.h"
 #include "avllistx.h"
 #include "hy_strings.h"
-#include "errorfns.h"
 #include "stdio.h"
 #include "classes.h"
 
@@ -59,6 +58,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "variable.h"
 #include "variablecontainer.h"
 #include "trie.h"
+#include "hbl_env.h"
 
 //End parser specific includes
 
@@ -117,8 +117,8 @@ void        DeleteTreeVariable
 
 
 
-void        stashParameter  (_String const& name, _Parameter  newVal, bool);
-void        setParameter    (_String const& name, _Parameter def, _String* = nil);
+void        stashParameter  (_String const& name, hy_float  newVal, bool);
+void        setParameter    (_String const& name, hy_float def, _String* = nil);
 void        setParameter    (_String const& name, _PMathObj  def, _String* = nil, bool = true);
 
 long        VerbosityLevel (void);
@@ -157,7 +157,7 @@ void        ExportCatVariables
 
 void        SplitVariablesIntoClasses
 (_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);
-bool        CheckEqual      (_Parameter,_Parameter);
+bool        CheckEqual      (hy_float,hy_float);
 
 extern      _AVLListX       _hyApplicationGlobals;
 
@@ -171,33 +171,33 @@ extern      _AVLListX       _hyApplicationGlobals;
 */
 void        SplitVariableIDsIntoLocalAndGlobal (const _SimpleList& inList, _List& outList);
 
-_Parameter  AddNumbers  (_Parameter, _Parameter);
-_Parameter  SubNumbers  (_Parameter, _Parameter);
-_Parameter  MultNumbers (_Parameter, _Parameter);
-_Parameter  AndNumbers  (_Parameter, _Parameter);
-_Parameter  DivNumbers  (_Parameter, _Parameter);
-_Parameter  EqualNumbers(_Parameter, _Parameter);
-_Parameter  LessThan    (_Parameter, _Parameter);
-_Parameter  GreaterThan (_Parameter, _Parameter);
-_Parameter  LessThanE   (_Parameter, _Parameter);
-_Parameter  GreaterThanE(_Parameter, _Parameter);
-_Parameter  Power       (_Parameter, _Parameter);
-_Parameter  RandomNumber(_Parameter, _Parameter);
-_Parameter  ExpNumbers  (_Parameter);
-_Parameter  LogNumbers  (_Parameter);
-_Parameter  AbsNumber   (_Parameter);
-_Parameter  MinusNumber (_Parameter);
-_Parameter  MaxNumbers  (_Parameter, _Parameter);
-_Parameter  MinNumbers  (_Parameter, _Parameter);
-_Parameter  FastMxAccess(Ptr, _Parameter);
-void        FastMxWrite (Ptr, _Parameter, _Parameter);
+hy_float  AddNumbers  (hy_float, hy_float);
+hy_float  SubNumbers  (hy_float, hy_float);
+hy_float  MultNumbers (hy_float, hy_float);
+hy_float  AndNumbers  (hy_float, hy_float);
+hy_float  DivNumbers  (hy_float, hy_float);
+hy_float  EqualNumbers(hy_float, hy_float);
+hy_float  LessThan    (hy_float, hy_float);
+hy_float  GreaterThan (hy_float, hy_float);
+hy_float  LessThanE   (hy_float, hy_float);
+hy_float  GreaterThanE(hy_float, hy_float);
+hy_float  Power       (hy_float, hy_float);
+hy_float  RandomNumber(hy_float, hy_float);
+hy_float  ExpNumbers  (hy_float);
+hy_float  LogNumbers  (hy_float);
+hy_float  AbsNumber   (hy_float);
+hy_float  MinusNumber (hy_float);
+hy_float  MaxNumbers  (hy_float, hy_float);
+hy_float  MinNumbers  (hy_float, hy_float);
+hy_float  FastMxAccess(hy_pointer, hy_float);
+void        FastMxWrite (hy_pointer, hy_float, hy_float);
 
-BaseRef parameterToString       (_Parameter);
-void    parameterToCharBuffer   (_Parameter, char*, long, bool json = false);
+BaseRef parameterToString       (hy_float);
+void    parameterToCharBuffer   (hy_float, char*, long, bool json = false);
 
-_Parameter  InterpolateValue        (_Parameter*, _Parameter*, long, _Parameter*, _Parameter*, _Parameter, _Parameter&);
-_Parameter  TrapezoidLevelK         (_Formula&, _Variable*, _Parameter, _Parameter, long);
-_Parameter  TrapezoidLevelKSimple   (_Formula&, _Variable*, _Parameter, _Parameter, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
+hy_float  InterpolateValue        (hy_float*, hy_float*, long, hy_float*, hy_float*, hy_float, hy_float&);
+hy_float  TrapezoidLevelK         (_Formula&, _Variable*, hy_float, hy_float, long);
+hy_float  TrapezoidLevelKSimple   (_Formula&, _Variable*, hy_float, hy_float, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
 
 
 void        PopulateArraysForASimpleFormula
@@ -206,7 +206,7 @@ void        PopulateArraysForASimpleFormula
 void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
 void        WarnWrongNumberOfArguments (_PMathObj, long, _hyExecutionContext*, _List *);
   
-extern      _Parameter  pi_const;
+extern      hy_float  pi_const;
 extern      bool        useGlobalUpdateFlag;
 extern      _String     noneToken;
 

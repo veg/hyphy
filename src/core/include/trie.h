@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -99,13 +99,13 @@ class _Trie: public _List
          * @return An dictionary representation of the trie, i.e. {"key1":"value1", "key2":"value2", ...} pairs
          */
         
-        virtual BaseRef makeDynamic(void);
+        virtual BaseRef makeDynamic(void) const;
         /**
          * Return a dynamic representation of this object
          * @return A _Trie reference created on the heap which is 'deep-copied' (i.e. all dynamic objects have a reference count of 1)
          */
        
-        virtual void    Duplicate(BaseRef storage);
+        virtual void    Duplicate(BaseRefConst storage);
         /**
          * Perform a deep copy of this object into storage (an allocated empty trie)
          * @param storage -- the _Trie object to copy this one into

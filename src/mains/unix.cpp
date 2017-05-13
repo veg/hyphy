@@ -29,9 +29,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+
+#include "global_things.h"
+
+using namespace hy_global;
+
 #include "batchlan.h"
 #include "calcnode.h"
-#include <unistd.h>
 #include "polynoml.h"
 
 #if defined __MINGW32__
@@ -57,9 +62,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ut_strings.h"
 #endif
 
-#if defined   __MP2__ || defined __MP__
-#include <pthread.h>
-#endif
 #include "likefunc.h"
 
 #ifndef __HYPHY_NO_CURL__
@@ -68,10 +70,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifdef  __HYPHYCURL__
 #include <curl/curl.h>
-#endif
-
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
 #endif
 
 #ifdef _OPENMP
@@ -107,14 +105,8 @@ long    DisplayListOfPostChoices    (void);
 _String getLibraryPath              (void);
 
 
-extern  long
-systemCPUCount;
 
 extern  _String         VerbosityLevelString,
-        errorFileName,
-        messageFileName,
-        baseDirectory,
-        libDirectory,
         shortMPIReturn,
         dialogPrompt;
 
@@ -124,14 +116,10 @@ bool    usePostProcessors = false,
         calculatorMode    = false,
         updateMode       = false,
         pipeMode         = false,
-        dropIntoDebugMode = false,
-        logInputMode   = false,
-        needExtraNL    = false;
-
+        logInputMode   = false;
 char    prefFileName[] = ".hyphyinit";
 
 #ifdef  __HYPHYMPI__
-extern int          _hy_mpi_node_rank;
 
 void            mpiNormalLoop    (int, int, _String &);
 void            mpiOptimizerLoop (int, int);
@@ -148,7 +136,7 @@ void            mpiOptimizerLoop (int, int);
            
        hyphy_sigterm_in_progress = 1;
      
-       WarnError (_String("HyPhy killed by signal ") & (long)sig);
+       HandleApplicationError (_String("HyPhy killed by signal ") & (long)sig);
        
        signal (sig, SIG_DFL);
        raise  (sig);
@@ -156,7 +144,7 @@ void            mpiOptimizerLoop (int, int);
      
 #endif  
 
-//bool  terminateExecution = false;
+//bool  terminate_execution = false;
 
 //____________________________________________________________________________________
 
@@ -164,7 +152,7 @@ void            mpiOptimizerLoop (int, int);
 #define _HYPHY_MAX_PATH_LENGTH 8192L
 
 _String getLibraryPath() {
-  char    dirSlash = GetPlatformDirectoryChar();
+  char    dirSlash = get_platform_directory_char();
 
 #ifdef __MINGW32__
   TCHAR buffer[_HYPHY_MAX_PATH_LENGTH];
@@ -222,12 +210,12 @@ void   _helper_clear_screen (void) {
 //__________________________________________________________________________________
 void    ReadInTemplateFiles(void)
 {
-    _String dir_sep (GetPlatformDirectoryChar()),
-            fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles" & dir_sep & "files.lst";
+    _String dir_sep (get_platform_directory_char()),
+            fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & "files.lst";
   
     FILE* modelList = fopen (fileIndex.getStr(),"r");
     if (!modelList) {
-        fileIndex = baseArgDir&"TemplateBatchFiles" & dir_sep & "files.lst";
+        fileIndex = baseArgDir& hy_standard_library_directory & dir_sep & "files.lst";
         modelList = fopen (fileIndex.getStr(),"r");
         if (!modelList) {
             return;
@@ -265,9 +253,9 @@ void    ReadInPostFiles(void)
     //if (!likeFuncList.lLength)
     //  return;
  
-    _String dir_sep (GetPlatformDirectoryChar());
+    _String dir_sep (get_platform_directory_char());
   
-    _String fileIndex = libArgDir & "TemplateBatchFiles" & dir_sep & "postprocessors.lst";
+    _String fileIndex = libArgDir & hy_standard_library_directory & dir_sep & "postprocessors.lst";
     FILE*  modelList = fopen (fileIndex.getStr(),"r");
     
     if (!modelList) {
@@ -293,11 +281,11 @@ void    ReadInPostFiles(void)
                 ((_String*)thisFile(j))->StripQuotes();
             }
             if (*(_String*)thisFile(0)!=_String("SEPARATOR")) {
-                fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles" & dir_sep & *(_String*)thisFile(1);
+                fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & *(_String*)thisFile(1);
                 //printf ("%s\n", fileIndex.sData);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
-                    fileIndex =libArgDir&"TemplateBatchFiles"& dir_sep & *(_String*)thisFile(1);
+                    fileIndex =libArgDir& hy_standard_library_directory & dir_sep & *(_String*)thisFile(1);
                     dummyFile = fopen (fileIndex,"r");
                 }
                 if (dummyFile) {
@@ -503,7 +491,7 @@ void    ProcessConfigStr (_String& conf)
         }
         case 'd':
         case 'D': {
-            dropIntoDebugMode = true;
+            hy_drop_into_debug_mode = true;
             break;
         }
         case 'u':
@@ -536,12 +524,12 @@ void    ProcessConfigStr (_String& conf)
 
 void hyphyBreak (int signo)
 {
-    //terminateExecution = false;
+    //terminate_execution = false;
     printf ("\nInterrupt received %d. HYPHY will break into calculator mode at the earliest possibility...\n", signo);
 }
 
 //__________________________________________________________________________________
-void    SetStatusBarValue           (long,_Parameter,_Parameter){
+void    SetStatusBarValue           (long,hy_float,hy_float){
 
 }
 //__________________________________________________________________________________
@@ -567,7 +555,7 @@ void    SetStatusLineUser   (_String const s)
     setvbuf(stderr, NULL, _IONBF, 0);
     BufferToConsole("\33[2K\r", stderr);
     StringToConsole(s, stderr);
-    needExtraNL = true;
+    hy_need_extra_nl = true;
 }
 
 //__________________________________________________________________________________
@@ -589,9 +577,11 @@ int main (int argc, char* argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    setParameter  (mpiNodeID,    (_Parameter)rank);
-    setParameter    (mpiNodeCount, (_Parameter)size);
-    _hy_mpi_node_rank = rank;
+    hy_env :: EnvVariableSet (hy_env::mpi_node_id, new _Constant (rank), false);
+    hy_env :: EnvVariableSet (hy_env::mpi_node_count, new _Constant (size), false);
+    
+    hy_mpi_node_rank  = rank;
+    hy_mpi_node_count = size;
 
     if (rank == 0) {
         mpiNodesThatCantSwitch.Populate (size,1,0);
@@ -618,7 +608,7 @@ int main (int argc, char* argv[])
 #endif
   
     char    curWd[4096],
-            dirSlash = GetPlatformDirectoryChar();
+            dirSlash = get_platform_directory_char();
     getcwd (curWd,4096);
   
     _String baseDir (curWd);
@@ -639,13 +629,13 @@ int main (int argc, char* argv[])
     _String argFile;
   
 
-    libDirectory  = libDir;
-    libArgDir     = libDirectory;
-    baseDirectory = baseDir;
-    baseArgDir    = baseDirectory;
+    hy_lib_directory  = libDir;
+    libArgDir     = hy_lib_directory;
+    hy_base_directory = baseDir;
+    baseArgDir    = hy_base_directory;
     
 #ifdef _OPENMP
-    systemCPUCount = omp_get_max_threads();
+    system_CPU_count = omp_get_max_threads();
 #endif
 
 #ifdef _MINGW32_MEGA_
@@ -683,9 +673,9 @@ int main (int argc, char* argv[])
                 if (baseArgDir.sData[baseArgDir.sLength-1]!=dirSlash) {
                     baseArgDir = baseArgDir&dirSlash;
                 }
-                baseDirectory = baseArgDir;
+                hy_base_directory = baseArgDir;
                 pathNames.Delete    (0);
-                pathNames&&         &baseDirectory;
+                pathNames&&         &hy_base_directory;
            }
         } else if (thisArg.beginswith ("LIBPATH=")) {
             libArgDir = thisArg.Cut(8,-1);
@@ -693,27 +683,17 @@ int main (int argc, char* argv[])
                 if (libArgDir.sData[libArgDir.sLength-1] != dirSlash) {
                     libArgDir = libArgDir & dirSlash;
                 }
-                libDirectory = libArgDir;
+                hy_lib_directory = libArgDir;
                 pathNames.Delete    (0);
-                pathNames&&         &libDirectory;
+                pathNames&&         &hy_lib_directory;
            }
         } else if (thisArg.beginswith ("USEPATH=")) {
-            baseDir             = thisArg.Cut(8,-1);
-            errorFileName       = baseDir & errorFileName;
-            messageFileName     = baseDir & messageFileName;
+            baseDir                      = thisArg.Cut(8,-1);
+            hy_error_log_name            = baseDir & hy_error_log_name;
+            hy_messages_log_name         = baseDir & hy_messages_log_name;
             pathNames.Delete    (0);
             pathNames&&         &baseDir;
         } else
-#ifdef __MP__
-            if (thisArg.beginswith ("CPU=")) {
-                _String cpus = thisArg.Cut(4,-1);
-                systemCPUCount = cpus.toLong();
-                if (systemCPUCount<1) {
-                    systemCPUCount = 1;
-                }
-                pthread_setconcurrency ((int)systemCPUCount+1);
-            } else
-#endif
         //argFile = thisArg;
         positional_arguments && &thisArg;
     }
@@ -794,9 +774,9 @@ int main (int argc, char* argv[])
                 _String templ;
 
                 if (selection >= 0) {
-                    templ = baseArgDir &"TemplateBatchFiles" & dirSlash;
+                    templ = baseArgDir & hy_standard_library_directory & dirSlash;
                 } else {
-                    templ = baseArgDir & "TemplateBatchFiles" & dirSlash & "WebUpdate.bf";
+                    templ = baseArgDir & hy_standard_library_directory & dirSlash & "WebUpdate.bf";
                 }
 
                 if (selection >= 0) {
@@ -821,11 +801,11 @@ int main (int argc, char* argv[])
             
 #ifndef __MINGW32__
             if (argFile.sData[0] != '/') {
-                argFile       = baseDirectory & argFile;
+                argFile       = hy_base_directory & argFile;
             }
 #else
             if (argFile.sData[1] != ':') { // not an absolute path
-                argFile       = baseDirectory & argFile;
+                argFile       = hy_base_directory & argFile;
             }
 #endif
             PushFilePath  (argFile);
@@ -893,6 +873,7 @@ int main (int argc, char* argv[])
     
     PurgeAll                    (true);
     GlobalShutdown              ();
+
 
 #ifdef __MINGW32__
   fflush (stdout);

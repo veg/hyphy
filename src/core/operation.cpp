@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -45,6 +45,10 @@
 #include "polynoml.h"
 #include "batchlan.h"
 #include "parser.h"
+#include "global_things.h"
+
+using namespace hy_global;
+
 
 extern _SimpleList BinOps,
        opPrecedence,
@@ -53,13 +57,9 @@ extern _SimpleList BinOps,
 
 //__________________________________________________________________________________
 
-_Operation::_Operation  (void)
-{
-    numberOfTerms = 0;
-    theData = -1;
-    theNumber = nil;
-    opCode = -1;
-}
+_Operation::_Operation  (void) {
+    Initialize();
+ }
 
 //__________________________________________________________________________________
 void    _Operation::Initialize(bool)
@@ -71,18 +71,28 @@ void    _Operation::Initialize(bool)
 }
 
 //__________________________________________________________________________________
-BaseRef _Operation::makeDynamic (void)
-{
+BaseRef _Operation::makeDynamic (void) const {
     _Operation * res = new _Operation;
-    //memcpy ((char*)res, (char*)this, sizeof (_Operation));
     res->Duplicate(this);
     return res;
 }
 
 //__________________________________________________________________________________
-void    _Operation::Duplicate(BaseRef r)
-{
-    _Operation * o = (_Operation*)r;
+
+_Operation::_Operation (_Operation const& rhs) {
+    numberOfTerms  = rhs.numberOfTerms;
+    theData        = rhs.theData;
+    theNumber      = rhs.theNumber;
+    opCode         = rhs.opCode;
+    if (theNumber) {
+        theNumber->AddAReference();
+    }
+}
+
+
+//__________________________________________________________________________________
+void    _Operation::Duplicate(BaseRefConst r) {
+    _Operation const * o = (_Operation const*)r;
     numberOfTerms  = o->numberOfTerms;
     theData        = o->theData;
     theNumber      = o->theNumber;
@@ -136,8 +146,8 @@ _Operation::_Operation  (_String const& opc, const long opNo = 2) {
         opCode = -opNo-1;
     }
 
-    if (opCode<0) {
-        WarnError(_String ("Operation: '") & opc &"' is not defined." );
+    if (opCode<0L) {
+        HandleApplicationError (_String ("Operation: ") & opc.Enquote() &" is not defined." );
         opCode = 0;
     }
 
@@ -328,7 +338,7 @@ bool        _Operation::ReportOperationExecutionError(_String text, _String * er
     if (errMsg) {
         *errMsg = theError;
     } else {
-        WarnError (theError);
+        HandleApplicationError (theError);
     }
     
     return false;
@@ -419,7 +429,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
           }
         }
         
-        _Variable* argument_var = CheckReceptacle (argument_k, emptyString, false, false);
+        _Variable* argument_var = CheckReceptacle (argument_k, kEmptyString, false, false);
         
         if (!isRefVar) {
           if (argument_var->IsIndependent()) {
@@ -456,7 +466,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             *refArgName = AppendContainerName (*refArgName, nameSpace);
           }
           
-          _Variable* reference_var = CheckReceptacle (refArgName, emptyString, false, false);
+          _Variable* reference_var = CheckReceptacle (refArgName, kEmptyString, false, false);
           
           variableNames.SetXtra (new_index, reference_var->GetAVariable());
           
@@ -480,7 +490,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
       function_body -> stdinRedirect    = nil;
       function_body -> stdinRedirectAux = nil;
       
-      if (terminateExecution) {
+      if (terminate_execution) {
         theScrap.Push (new _Constant (0.0));
         return true;
       }
@@ -575,11 +585,11 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
 
     _Polynomial*p = nil;
     if (theNumber) {
-        p= (_Polynomial*)checkPointer(new _Polynomial(theNumber->Value()));
+        p= new _Polynomial(theNumber->Value());
     }
 
     if (theData>-1) {
-        p= (_Polynomial*)checkPointer(new _Polynomial(*LocateVar(theData>-1?theData:-theData-2)));
+        p=  new _Polynomial(*LocateVar(theData>-1?theData:-theData-2));
     }
 
     if (p) {

@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
@@ -37,8 +37,34 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __DEFINES__
-#define     __DEFINES__
+
+#ifndef     __HY_DEFINES__
+#define     __HY_DEFINES__
+
+#include    <math.h>
+
+#ifndef FALSE
+    #define FALSE 0
+#endif
+
+#ifndef TRUE
+    #define TRUE  1
+#endif
+
+#ifndef nil
+#define nil   NULL
+#endif
+
+#ifdef __GNUC__
+#define _hprestrict_ __restrict
+#else
+#define _hprestrict_
+#endif
+
+#define  HY_WIDTH_OF_LONG          ((long)(sizeof(long)*8))
+
+#define  PRINTF_FORMAT_STRING    "%.16g"
+
 
 #define  HY_UNDEFINED       0x000UL
 #define  NUMBER             0x001UL
@@ -300,5 +326,16 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define   HY_HBL_GET_STRING_BGM_SCORE                                   0L
 #define   HY_HBL_GET_STRING_BGM_SERIALIZE                               1L
+
+
+//TODO 20170413: not sure where to put the conditional includes below
+
+#ifdef _SLKP_USE_SSE_INTRINSICS
+#include <pmmintrin.h>
+#endif
+
+#ifdef _SLKP_USE_AVX_INTRINSICS
+#include <immintrin.h>
+#endif
 
 #endif

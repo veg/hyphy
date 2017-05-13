@@ -4,7 +4,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -35,11 +35,13 @@
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
  */
 
+#include      <ctype.h>
+
 #include      "alignment.h"
+#include      "global_things.h"
 #include      "trie.h"
 #include      "likefunc.h"
 #include      "scfg.h"
-#include      <ctype.h>
 #include      "function_templates.h"
 #include      "global_object_lists.h"
 
@@ -49,15 +51,9 @@
 #include "sqlite3.h"
 #endif
 
-#if !defined __HEADLESS__ && !defined __UNIX__
-#include      "HYUtils.h"
-#endif
-
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
 
 using namespace hyphy_global_objects;
+using namespace hy_global;
 
 //____________________________________________________________________________________
 // global variables
@@ -477,7 +473,7 @@ bool    _ElementaryCommand::ConstructDoSQL (_String&source, _ExecutionList&targe
     _List pieces;
     ExtractConditions (source,blDoSQL.sLength,pieces,',');
     if (pieces.lLength!=3) {
-        WarnError (_String ("Expected syntax:")& blDoSQL &"(dbID|" & sqlOpen & '|' & sqlClose & ",transaction string|file name,callback ID for an SQL transaction|where to store DB numeric ID)");
+        HandleApplicationError (_String ("Expected syntax:")& blDoSQL &"(dbID|" & sqlOpen & '|' & sqlClose & ",transaction string|file name,callback ID for an SQL transaction|where to store DB numeric ID)");
         return false;
     }
 
@@ -495,7 +491,7 @@ bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _Executio
     _List pieces;
     ExtractConditions (source,blHBLProfile.sLength+1,pieces,';');
     if (pieces.lLength!=2) {
-        WarnError (_String ("Expected syntax:")& blHBLProfile &" START|PAUSE|RESUME|where to store)");
+        HandleApplicationError (_String ("Expected syntax:")& blHBLProfile &" START|PAUSE|RESUME|where to store)");
         return false;
     }
 
@@ -511,7 +507,7 @@ int  _HYSQLCallBack (void* exL,int cc, char** rd, char** cn)
 {
     _ExecutionList * exList = (_ExecutionList *)exL;
 
-    if (!terminateExecution)
+    if (!terminate_execution)
         if (exList && cc && exList->lLength) {
             _List     rowData,
                       columnNames;
@@ -532,12 +528,9 @@ int  _HYSQLCallBack (void* exL,int cc, char** rd, char** cn)
 
 
             _Matrix * rowDataM     = new _Matrix (rowData),
-            * columnNamesM = new _Matrix (columnNames);
+                    * columnNamesM = new _Matrix (columnNames);
 
-            if (!(rowDataM && columnNamesM)) {
-                checkPointer (nil);
-            }
-
+            
             _Variable* rdv = CheckReceptacle (&sqlRowData, blDoSQL,false),
                        * cnv = CheckReceptacle (&sqlColNames, blDoSQL,false);
 
@@ -668,13 +661,12 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
 
                 }
                 if (errCode.sLength) {
-                    WarnError(errCode);
+                    HandleApplicationError(errCode);
                     return;
                 }
 
             }
-            _String errMsg = (((_String)("DataSet(Filter)/Associative Array ")&dataObjectID&_String(" has not been properly initialized")));
-            WarnError (errMsg);
+            HandleApplicationError (((_String)("DataSet(Filter)/Associative Array ")&dataObjectID&_String(" has not been properly initialized")));
             return;
         }
         isFilter = true;
@@ -697,7 +689,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     if (parameters.lLength>4) {
         hSpecs = *(_String*)parameters(4);
     } else {
-        hSpecs = emptyString;
+        hSpecs = kEmptyString;
     }
 
     _DataSet            *dataset;
@@ -861,7 +853,7 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
     if (ob) {
         CheckReceptacleAndStore (&resultID, blConstructCM, true, ob, false);
     } else {
-        WarnError (objectName & " must be either a likelihood function or a tree variable tied to a likelihood function.");
+        HandleApplicationError (objectName & " must be either a likelihood function or a tree variable tied to a likelihood function.");
     }
 
 }
@@ -888,19 +880,15 @@ void      _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
 
         if (dbVar) {
             _String arg2 (*(_String*)parameters(1));
-            arg2.ProcessFileName(true,true,(Ptr)chain.nameSpacePrefix);
+            arg2.ProcessFileName(true,true,(hy_pointer)chain.nameSpacePrefix);
             int errCode  = SQLITE_OK;
             sqlite3 *aDB = nil;
-#ifdef __HYPHYXCODE__
-            errCode = sqlite3_open (DoMacToPOSIX(arg2).getStr(),&aDB);
-#else
             errCode = sqlite3_open (arg2.sData,&aDB);
-#endif
             if (errCode == SQLITE_OK) {
                 errCode = sqlite3_exec(aDB, "SELECT COUNT(*) FROM sqlite_master", _HYSQLCallBack, nil, nil);
             }
             if (errCode != SQLITE_OK) {
-                WarnError (sqlite3_errmsg(aDB));
+                HandleApplicationError (sqlite3_errmsg(aDB));
                 sqlite3_close(aDB);
                 return;
             } else {
@@ -932,11 +920,11 @@ void      _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
                 _String arg3 (ProcessLiteralArgument((_String*)parameters(2),chain.nameSpacePrefix));
 
                 _ExecutionList sqlProcessor (arg3,chain.nameSpacePrefix?(chain.nameSpacePrefix->GetName()):nil);
-                if (!terminateExecution) {
+                if (!terminate_execution) {
                     _String arg2 (ProcessLiteralArgument ((_String*)parameters(1),chain.nameSpacePrefix));
 
-                    if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbIdx], arg2.sData, _HYSQLCallBack, (Ptr)&sqlProcessor, &errMsg) != SQLITE_OK) {
-                        WarnError (sqlite3_errmsg((sqlite3*)sqlDatabases.lData[dbIdx]));
+                    if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbIdx], arg2.sData, _HYSQLCallBack, (hy_pointer)&sqlProcessor, &errMsg) != SQLITE_OK) {
+                        HandleApplicationError (sqlite3_errmsg((sqlite3*)sqlDatabases.lData[dbIdx]));
                         return;
                     }
                 }
@@ -946,8 +934,7 @@ void      _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
     }
 
     if (errStr.sLength) {
-        errStr = errStr & " in call to DoSQL";
-        WarnError (errStr);
+         HandleApplicationError (errStr & " in call to DoSQL");
     }
 
 #endif
@@ -986,7 +973,7 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
     }
 
     if (!tr) {
-        WarnError ("Illegal right hand side in call to Topology id = ...; it must be a string, a Newick tree spec or a topology");
+        HandleApplicationError ("Illegal right hand side in call to Topology id = ...; it must be a string, a Newick tree spec or a topology");
     }
 }
 
@@ -999,7 +986,7 @@ bool    _ElementaryCommand::ConstructAlignSequences (_String&source, _ExecutionL
     _List pieces;
     ExtractConditions (source,blAlignSequences.sLength,pieces,',');
     if (pieces.lLength!=3) {
-        WarnError ("Expected syntax: AlignSequences(result, input string matrix, options list);");
+        HandleApplicationError ("Expected syntax: AlignSequences(result, input string matrix, options list);");
         return false;
     }
 
@@ -1016,7 +1003,7 @@ bool    _ElementaryCommand::ConstructGetNeutralNull (_String&source, _ExecutionL
     _List pieces;
     ExtractConditions (source,blGetNeutralNull.sLength,pieces,',');
     if (pieces.lLength!=5) {
-        WarnError ("Expected syntax: GetNeutralNull (result, likelihood function, syn sub count matrix, non-syn sub count matrix, iterations per root state);");
+        HandleApplicationError ("Expected syntax: GetNeutralNull (result, likelihood function, syn sub count matrix, non-syn sub count matrix, iterations per root state);");
         return false;
     }
 
@@ -1122,7 +1109,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                         }
 
                         if (errStr.sLength == 0) {
-                            _Parameter  gapOpen       = 15.,
+                            hy_float  gapOpen       = 15.,
                             gapOpen2      = 15.,
                             gapExtend     = 1.,
                             gapExtend2    = 1.,
@@ -1253,9 +1240,8 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                         break;
                                     }
                                     _AssociativeList * pairwiseComp = new _AssociativeList;
-                                    checkPointer (pairwiseComp);
 
-                                    _Parameter    score = 0.0;
+                                    hy_float    score = 0.0;
 
                                     if (doLinear == false) {
                                         char * str1r = NULL,
@@ -1266,8 +1252,9 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                                               charCount, codon3x5->theData, codon3x4->theData, codon3x2->theData, codon3x1->theData, doFullLocal);
 
                                         if ( str1r && str2r ) {
-                                            _String * r_res = ( _String * ) checkPointer( new _String( str1r ) ),
-                                                    * q_res = ( _String * ) checkPointer( new _String( str2r ) );
+                                            _String * r_res =  new _String( str1r ) ,
+                                                    * q_res =  new _String( str2r ) ;
+                                            
                                             delete [] str1r;
                                             delete [] str2r;
                                             r_res->Finalize();
@@ -1275,7 +1262,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                             store.AppendNewInstance( r_res );
                                             store.AppendNewInstance( q_res );
                                         } else
-                                            WarnError( "Internal Error in AlignStrings" );
+                                            HandleApplicationError( "Internal Error in AlignStrings" );
 
                                         store.bumpNInst();
 
@@ -1401,7 +1388,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                     long gap1c = 0,
                                          gap2c = 0;
 
-                                     _Parameter scoreCheck = 0.;
+                                     hy_float scoreCheck = 0.;
 
                                      for (long sp = 0; sp<result1->sLength; sp++)
                                      {
@@ -1492,8 +1479,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
     }
 
     if (errStr.sLength) {
-        errStr = errStr & " in call to " & blAlignSequences;
-        WarnError (errStr);
+        HandleApplicationError (errStr & " in call to " & blAlignSequences);
     }
 }
 
@@ -1626,9 +1612,8 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
     }
 
     if (!good) {
-        _String errMsg (*(LocateVar(firstNode->get_data())->GetName())& " is incompatible with "&
-                        (*LocateVar(((node<long>*)theNodes(index-1))->get_data())->GetName()) & " in call to ReplicateConstraint");
-        WarnError (errMsg);
+        HandleApplicationError (*(LocateVar(firstNode->get_data())->GetName())& " is incompatible with "&
+                                (*LocateVar(((node<long>*)theNodes(index-1))->get_data())->GetName()) & " in call to ReplicateConstraint");
         return false;
     }
 
@@ -1665,7 +1650,7 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
                     ind4;
 
     if (ind1<0) {
-        WarnError (*(_String*)parameters(0)&" has no 'this' references in call to ReplicateConstraint!");
+        HandleApplicationError (*(_String*)parameters(0)&" has no 'this' references in call to ReplicateConstraint!");
         return ;
     }
 
@@ -1692,7 +1677,7 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
         thisIndex<<ind3; // sequence of references to this
 
         if (ind3<0 || ind3 >= thisHits.lLength) {
-            WarnError (_String("Invalid reference to ") & thisS & " in the constraint specification");
+            HandleApplicationError (_String("Invalid reference to ") & thisS & " in the constraint specification");
             return ;
         }
         thisHits.lData[ind3] = 1;
@@ -1714,15 +1699,14 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
 
     for (ind1 = 1; ind1<parameters.lLength; ind1++) {
         if (thisHits.lData[ind1-1] == 0) {
-            WarnError (_String("Unused ") & ind1 & "-th reference variable: " & *(_String*)parameters(ind1));
+            HandleApplicationError (_String("Unused ") & ind1 & "-th reference variable: " & *(_String*)parameters(ind1));
             return ;
         }
 
         _String namespaced = chain.AddNameSpaceToID(*(_String*)parameters(ind1));
         ind2 = LocateVarByName (namespaced);
         if (ind2<0) {
-            _String newS = namespaced & " is undefined in call to ReplicateConstraint.";
-            acknError (newS);
+            HandleApplicationError(namespaced & " is undefined in call to ReplicateConstraint.");
             return  ;
         }
 
@@ -1732,7 +1716,7 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
         } else if (thisNode->ObjectClass()==TREE) {
             thisArgs<< (long)&((_TheTree*)thisNode)->GetRoot();
         } else {
-            WarnError (*(_String*)parameters(ind1) & " is neither a tree nor a tree node in call to ReplicateConstraint.");
+            HandleApplicationError (*(_String*)parameters(ind1) & " is neither a tree nor a tree node in call to ReplicateConstraint.");
             return ;
         }
     }
@@ -1741,14 +1725,13 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
     if (RecurseDownTheTree(thisArgs, parameters, theConstraints, parts, thisIndex)) {
         if (theConstraints.lLength) {
             ReportWarning  (_String("\nReplicateConstraint generated the following contsraints:"));
-            _Parameter      doDeferSet;
+            hy_float      doDeferSet;
             checkParameter (deferConstrainAssignment,doDeferSet,0.0);
             bool            applyNow = CheckEqual(doDeferSet,0.0);
-            _String         *constraintAccumulator = (_String*)checkPointer(new _String(128L,true));
+            _String         *constraintAccumulator = new _String(128L,true);
 
             if (applyNow) {
                 deferSetFormula = new _SimpleList;
-                checkPointer (deferSetFormula);
             }
 
             for (ind1 = 0; ind1 < theConstraints.lLength; ind1++) {
@@ -1787,7 +1770,7 @@ void      _ElementaryCommand::ExecuteCase57 (_ExecutionList& chain)
                 *   sv            = FetchVar(LocateVarByName (AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix))),
                     *  nsv           = FetchVar(LocateVarByName (AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix)));
 
-    _Parameter itCountV       = ProcessNumericArgument ((_String*)parameters(4),chain.nameSpacePrefix);
+    hy_float itCountV       = ProcessNumericArgument ((_String*)parameters(4),chain.nameSpacePrefix);
 
     _String   * lfName        = (_String*)parameters(1);
 
@@ -1834,8 +1817,7 @@ void      _ElementaryCommand::ExecuteCase57 (_ExecutionList& chain)
     }
 
     if (errStr.sLength) {
-        errStr = errStr & " in call to " & blGetNeutralNull;
-        WarnError (errStr);
+        HandleApplicationError (errStr & " in call to " & blGetNeutralNull);
     }
 }
 
@@ -1913,7 +1895,7 @@ void      _ElementaryCommand::ExecuteCase61 (_ExecutionList& chain)
                         start   = parameters.lLength>3?FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix),NUMBER):nil;
 
     if (! (avl1 && avl2)) {
-        WarnError (_String ("Both arguments (") & *(_String*)parameters(1) & " and " & *(_String*)parameters(2) & " in a call to SCFG = ... must be evaluate to associative arrays");
+        HandleApplicationError (_String ("Both arguments (") & *(_String*)parameters(1) & " and " & *(_String*)parameters(2) & " in a call to SCFG = ... must be evaluate to associative arrays");
     } else {
         Scfg    * scfg      = new Scfg ((_AssociativeList*)avl1,(_AssociativeList*)avl2,start?start->Value():0);
         _String scfgName    = AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix);
@@ -1998,7 +1980,7 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
     _PMathObj   avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 
     if (! (avl1)) {
-        WarnError (_String ("Argument (") & *(_String*)parameters(1) & " in call to BGM = ... must evaluate to associative array");
+        HandleApplicationError (_String ("Argument (") & *(_String*)parameters(1) & " in call to BGM = ... must evaluate to associative array");
     } else {
         _BayesianGraphicalModel * bgm   = new _BayesianGraphicalModel ((_AssociativeList *) avl1);
 
@@ -2104,7 +2086,7 @@ bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target
 
  
     if ( mark1==-1 || mark2==-1 || mark1+1 > mark2  ) {
-        WarnError ("SCFG declaration missing a valid identifier");
+        HandleApplicationError ("SCFG declaration missing a valid identifier");
         return false;
     }
 
@@ -2117,7 +2099,7 @@ bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target
     ExtractConditions (source,mark2+1,pieces,',');
  
     if ( mark1==-1 || mark2==-1 || mark1<mark2 || (pieces.lLength != 2 && pieces.lLength != 3)) {
-        WarnError ("Expected: SCFG ident = (Rules1, Rules2 <,start>)");
+        HandleApplicationError ("Expected: SCFG ident = (Rules1, Rules2 <,start>)");
         return false;
     }
 
@@ -2140,7 +2122,7 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
     // assign ident to _String variable
 
     if ( mark1==-1 || mark2==-1 || mark1+1 > mark2  ) {
-        WarnError ("BGM declaration missing a valid identifier");
+        HandleApplicationError ("BGM declaration missing a valid identifier");
         return false;
     }
 
@@ -2153,7 +2135,7 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
     ExtractConditions (source,mark2+1,pieces,',');
 
     if ( mark1==-1 || mark2==-1 || mark1<mark2 || (pieces.lLength != 1)) {
-        WarnError ("Expected: BGM ident = (<nodes>)");
+        HandleApplicationError ("Expected: BGM ident = (<nodes>)");
         return false;
     }
 
@@ -2373,7 +2355,7 @@ BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long
     }
 
     if (errMsg) {
-        WarnError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
+        HandleApplicationError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
     }
     type = HY_BL_NOT_DEFINED;
     return nil;
@@ -2474,7 +2456,7 @@ BaseRef _HYRetrieveBLObjectByNameMutable    (_String const& name, long& type, lo
   }
   
   if (errMsg) {
-    WarnError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
+    HandleApplicationError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
   }
   type = HY_BL_NOT_DEFINED;
   return nil;

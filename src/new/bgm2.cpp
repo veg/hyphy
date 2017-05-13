@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -46,12 +46,12 @@
 // this old method is WAY too slow, constantly allocating and freeing _Constant objects
 
 /*
-inline _Parameter Bgm::LnGamma(_Constant * calculator, _Parameter x)
+inline hy_float Bgm::LnGamma(_Constant * calculator, hy_float x)
 {
     // wrapper function for _Constant member function
     calculator->SetValue (x);
     calculator = (_Constant *) calculator->LnGamma();
-    _Parameter rv = calculator->Value();
+    hy_float rv = calculator->Value();
     DeleteObject(calculator);
     return rv;
 }
@@ -66,27 +66,6 @@ extern _String      mcemMaxSteps,   // modify string constant name to avoid conf
 
 _String     _HYBgm_NThreads ("BGM_NTHREADS");
 
-
-#ifdef __MP__
-#include <pthread.h>
-
-struct  ThreadCacheTask {
-    Bgm     * b;
-
-    long    startNode,
-            nextNode,   // one past the last node
-            numNodes;
-
-    _List   *       nodeScores;
-
-    _SimpleList     maxParents,     // pass member variables to global scope
-                    isDiscrete;
-};
-
-pthread_t *         BgmThreads  = nil;
-ThreadCacheTask *   BgmTasks    = nil;
-void *              CacheNodeScoreThread (void *);
-#endif
 
 
 //___________________________________________________________________________________________
@@ -196,7 +175,7 @@ void * CacheNodeScoreThread (void * arg)
 
         // handle case of no parents
         _SimpleList parents;
-        _Parameter  score = is_discrete.lData[node_id] ? theTask->b->ComputeDiscreteScore (node_id, parents) : theTask->b->ComputeContinuousScore (node_id);
+        hy_float  score = is_discrete.lData[node_id] ? theTask->b->ComputeDiscreteScore (node_id, parents) : theTask->b->ComputeContinuousScore (node_id);
         _Constant   orphan_score (score);
 
         (*this_list) && (&orphan_score);        // _List Append() specific to objects in BaseObj hierarchy
@@ -286,7 +265,7 @@ void * CacheNodeScoreThread (void * arg)
 
 
 //___________________________________________________________________________________________
-_Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
+hy_float  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 {
     char            buf [256];
 
@@ -302,7 +281,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
                 r_i                   = num_levels.lData[node_id],
                 mcem_interval;
 
-    _Parameter  log_score   = 0,
+    hy_float  log_score   = 0,
                 mcem_max_steps,
                 mcem_burnin,
                 mcem_sample_size;
@@ -412,14 +391,14 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
             n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
         } else {
             // store family in impute, always in the order (child, parent0, parent1, ...)
-            impute.Store ( (_Parameter) child_state);
-            is_missing.Store ( (_Parameter) ((child_state < 0) ? 1 : 0) );
+            impute.Store ( (hy_float) child_state);
+            is_missing.Store ( (hy_float) ((child_state < 0) ? 1 : 0) );
 
             for (long par = 0; par < parents.lLength; par++) {
                 long    parent_state    = (long) ((*obsData) (obs, parents.lData[par]));
 
-                impute.Store ( (_Parameter) parent_state);
-                is_missing.Store ( (_Parameter) ((parent_state < 0) ? 1 : 0) );
+                impute.Store ( (hy_float) parent_state);
+                is_missing.Store ( (hy_float) ((parent_state < 0) ? 1 : 0) );
             }
         }
     }
@@ -460,7 +439,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
         }
 
         for (long obs_state = 0; obs_state < family_nlevels.lData[i]; obs_state++) {
-            observed_freqs.Store (i, obs_state, (_Parameter) (observed_freqs (i, obs_state) / obs_total));
+            observed_freqs.Store (i, obs_state, (hy_float) (observed_freqs (i, obs_state) / obs_total));
         }
     }
 
@@ -492,7 +471,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
             for (long lev = 0; lev < family_nlevels.lData[member]; lev++) {
                 if (urn < observed_freqs (member, lev)) {
-                    impute._Matrix::Store (0, i, (_Parameter)lev);
+                    impute._Matrix::Store (0, i, (hy_float)lev);
                     break;
                 } else {
                     urn -= observed_freqs (member, lev);    // rescale random float
@@ -559,7 +538,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
     // add Jeffrey's invariance constant (0.5) to every cell n_ijk to avoid zero counts?
 
-    _Parameter  log_prior_impute        = 0.0;
+    hy_float  log_prior_impute        = 0.0;
 
     for (long j = 0; j < num_parent_combos; j++) {
 
@@ -583,7 +562,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
     // Calculate posterior probability for initial imputation
-    _Parameter  last_score          = log_prior_impute,
+    hy_float  last_score          = log_prior_impute,
                 last_prior_impute    = log_prior_impute;
 
 
@@ -610,7 +589,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
     // Run MCMC over imputations, use as proposal function a single case reassignment (guaranteed to modify m_ijk's)
     //      Take into account case being reassigned so that we don't have to re-sum m_ijk every time
     //      use burn-in and thinning of the sample when calculating the expectation for family posterior probability
-    _Parameter  lk_ratio,
+    hy_float  lk_ratio,
                 expect_log_score = 0.;
 
     _Matrix     last_impute ((_Matrix &) impute),       // duplicate matrix constructors
@@ -670,7 +649,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
             continue;   // drop this step from the chain
         } else if (family_nlevels.lData[imp_var] == 2) {
             // by convention, levels are zero-indexed; if not, this won't work
-            impute._Matrix::Store (0, imp, (_Parameter) (last_state ? 0 : 1));
+            impute._Matrix::Store (0, imp, (hy_float) (last_state ? 0 : 1));
         } else {    // randomly assign a state (other than the current one) with uniform probability
             pick = genrand_int32() % (family_nlevels.lData[imp_var]-1);
 
@@ -678,7 +657,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
                 pick++;     // skip current state
             }
 
-            impute._Matrix::Store (0, imp_var, (_Parameter)pick);
+            impute._Matrix::Store (0, imp_var, (hy_float)pick);
         }
 
 
@@ -899,7 +878,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 //___________________________________________________________________________________________
-_Parameter Bgm::ComputeContinuousScore (long node_id)
+hy_float Bgm::ComputeContinuousScore (long node_id)
 {
     _SimpleList parents,
                 continuous_parents;
@@ -919,7 +898,7 @@ _Parameter Bgm::ComputeContinuousScore (long node_id)
 }
 
 
-_Parameter Bgm::ComputeContinuousScore (long node_id, _Matrix *g)
+hy_float Bgm::ComputeContinuousScore (long node_id, _Matrix *g)
 {
     _SimpleList     dparents,
                     cparents;
@@ -940,7 +919,7 @@ _Parameter Bgm::ComputeContinuousScore (long node_id, _Matrix *g)
 
 //___________________________________________________________________________________________
 
-_Parameter Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _SimpleList & continuous_parents)
+hy_float Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _SimpleList & continuous_parents)
 {
     /* WARNING, untested function! */
     /* --------------------------- */
@@ -949,7 +928,7 @@ _Parameter Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _Si
     // phi = scale parameter of inverse gamma prior for variance, uninformative at low values
     //                      (Kohn, Smith, and Chan, 2001 Stat Comput 11: 313-322)
 
-    _Parameter  log_score = 0.;
+    hy_float  log_score = 0.;
 
     long        num_parent_combos = 1,  // i.e. 'q'
                 k = continuous_parents.lLength;     // current number of continuous parents
@@ -979,7 +958,7 @@ _Parameter Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _Si
     }
 
     // set prior degrees of freedom (for inverse gamma / scaled inverse chi-square)
-    _Parameter      rho = prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0;
+    hy_float      rho = prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0;
 
 
     // set precision hyperparameter for Gaussian prior
@@ -1019,7 +998,7 @@ _Parameter Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _Si
 
     // for every parent combination, calculate contribution to score
     for (long pa = 0; pa < num_parent_combos; pa++) {
-        _Parameter  pa_log_score = 0.;
+        hy_float  pa_log_score = 0.;
 
         _Matrix     zbpa (n_ij(pa, 0), continuous_parents.lLength + 1, false, true),
                     yb (n_ij(pa, 0), 1, false, true),
@@ -1056,24 +1035,24 @@ _Parameter Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _Si
         scale *= zbpa;
         zbpa.Transpose();
         for (long row = 0; row < scale.GetHDim(); row++) {  // add identity matrix
-            scale.Store (row, row, scale(row, row)+(_Parameter)1.);
+            scale.Store (row, row, scale(row, row)+(hy_float)1.);
         }
-        scale *= (_Parameter) (prior_precision (node_id, 0) / rho);
+        scale *= (hy_float) (prior_precision (node_id, 0) / rho);
 
 
         // calculate the determinant of scale parameter matrix
         _Matrix         temp_mat (scale);
-        _Parameter      pi_const = 3.141592653589793;
+        hy_float      pi_const = 3.141592653589793;
 
-        temp_mat *= (_Parameter) (pi_const * rho);
+        temp_mat *= (hy_float) (pi_const * rho);
 
         _AssociativeList *  eigen       = (_AssociativeList *) temp_mat.Eigensystem();
         _Matrix *           eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
-        _Parameter          det         = 1.;
+        hy_float          det         = 1.;
 
         // determinant is product of eigenvalues (should be > 0 for positive definite matrices)
         for (long i = 0; i < eigenvalues->GetHDim(); i++) {
-            det *= (_Parameter)(*eigenvalues) (i,0);
+            det *= (hy_float)(*eigenvalues) (i,0);
         }
 
 
@@ -1091,7 +1070,7 @@ _Parameter Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _Si
         next_mat *= * (_Matrix *) scale.Inverse();
         temp_mat.Transpose();
         next_mat *= temp_mat;
-        next_mat *= (_Parameter) (1./prior_precision (node_id, 0)); // should be a 1-element matrix
+        next_mat *= (hy_float) (1./prior_precision (node_id, 0)); // should be a 1-element matrix
 
         pa_log_score += -(rho + n_ij(pa,0))/2. * (next_mat(0,0) + 1.);
         log_score += pa_log_score;
@@ -1134,9 +1113,9 @@ _DynamicBgm::_DynamicBgm (_AssociativeList * dnodes, _AssociativeList * cnodes) 
 
 //___________________________________________________________________________________________
 #ifdef __NEVER_DEFINED__
-_Parameter  _DynamicBgm::Compute (_SimpleList * node_order, _List * results)
+hy_float  _DynamicBgm::Compute (_SimpleList * node_order, _List * results)
 {
-    _Parameter          log_likel   = 0.;
+    hy_float          log_likel   = 0.;
     _GrowingVector      *gv1, *gv2;
 
     for (long i = 0; i < num_nodes * num_nodes; i++) {
@@ -1171,7 +1150,7 @@ _Parameter  _DynamicBgm::Compute (_SimpleList * node_order, _List * results)
         if (maxp > 1) {
             _SimpleList         parents,
                                 eligible_parents;
-            _Parameter          tuple_score;
+            hy_float          tuple_score;
             _NTupleStorage *    family_scores;
 
             for (long parIndex = nodeIndex + 3; parIndex < node_order->lLength; parIndex = parIndex + 2) {
@@ -1336,7 +1315,7 @@ void    _DynamicBgm::CacheNodeScores (void)
 
 
     _SimpleList     parents, empty_list;
-    _Parameter      score;
+    hy_float      score;
     long            dbn_nodes   = num_nodes / 2;
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {
@@ -1464,7 +1443,7 @@ void    _DynamicBgm::CollapseDynamicGraph (void)
 
 //#define   __DEBUG_GADS__
 //#define __DEBUG_GADS2__
-_Parameter  Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & parents)
+hy_float  Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & parents)
 {
     //char          buf [255];
     ReportWarning (_String("Imputing missing values for node ") & node_id & " with parents " & (_String *) parents.toStr());
@@ -1487,7 +1466,7 @@ _Parameter  Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & pare
 
     _GrowingVector  * vector_of_scores  = new _GrowingVector();     // for storing scores sampled during re-assignment of missing values
 
-    _Parameter      log_score           = 0,
+    hy_float      log_score           = 0,
                     max_iterations,
                     parent_state, child_state,
                     denom,
@@ -1593,7 +1572,7 @@ _Parameter  Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & pare
     if (family_size > 1) {
         for (long row = 0; row < data_deep_copy.GetHDim(); row++) {
             if (!is_complete.lData[row]) {  // this row contains a missing value
-                _Parameter  denominator = 0.;
+                hy_float  denominator = 0.;
                 _SimpleList keep_pa_indices;
 
                 // determine which parental state combinations (indexed by j) are possible
@@ -1826,9 +1805,9 @@ _Parameter  Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & pare
 
 
 //___________________________________________________________________________________________
-_Parameter Bgm::K2Score (long r_i, _Matrix & n_ij, _Matrix & n_ijk)
+hy_float Bgm::K2Score (long r_i, _Matrix & n_ij, _Matrix & n_ijk)
 {
-    _Parameter log_score = 0.;
+    hy_float log_score = 0.;
 
     for (long j = 0; j < n_ij.GetHDim(); j++) {
         log_score += LnGamma(r_i);  // (r-1)!
@@ -1846,9 +1825,9 @@ _Parameter Bgm::K2Score (long r_i, _Matrix & n_ij, _Matrix & n_ijk)
 //___________________________________________________________________________________________
 //  Later we'll need to expand this function to take arbitrary alpha_ijk values.
 /*
-_Parameter Bgm::BDeScore (long r_i, _Matrix & n_ij, _Matrix & n_ijk)
+hy_float Bgm::BDeScore (long r_i, _Matrix & n_ij, _Matrix & n_ijk)
 {
-    _Parameter  n_prior_ij      = prior_sample_size (node_id, 0) / num_parent_combos,
+    hy_float  n_prior_ij      = prior_sample_size (node_id, 0) / num_parent_combos,
                 n_prior_ijk     = n_prior_ij / num_levels.lData[node_id],
                 log_score       = 0.;
 

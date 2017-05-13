@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -80,7 +80,7 @@ public:
 
     virtual void Finalize (void);
 
-    virtual     BaseRef makeDynamic (void);
+    virtual     BaseRef makeDynamic (void) const;
     // create a dynamic copy of this object
 
     virtual     long    FreeUpMemory (long);
@@ -93,9 +93,9 @@ public:
     }
     static      _String*    SelectAlpha (unsigned char);
 
-    _Parameter      LZWCompress (unsigned char theAlpha); // returns compression ratio
-    _Parameter      FrequencyCompress(unsigned char theAlpha, bool  doit = true);
-    _Parameter      BestCompress(unsigned char theAlpha, long triggerSize = 25);
+    hy_float      LZWCompress (unsigned char theAlpha); // returns compression ratio
+    hy_float      FrequencyCompress(unsigned char theAlpha, bool  doit = true);
+    hy_float      BestCompress(unsigned char theAlpha, long triggerSize = 25);
 
     _String*        Decompress (void);
 
@@ -107,7 +107,7 @@ public:
         compressionType&=0xf0;
     }
 
-    virtual     void    Duplicate (BaseRef ref);
+    virtual     void    Duplicate (BaseRefConst ref);
 
 
     _String*        DecompressFrequency (void);

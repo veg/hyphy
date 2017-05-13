@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -40,38 +40,34 @@
 #include <math.h>
 #include <float.h>
 #include <limits.h>
+#include "stdlib.h"
+#include "string.h"
+#include <stdio.h>
+#include <time.h>
+#include <ctype.h>
 
 #include "likefunc.h"
 #include "parser.h"
 #include "matrix.h"
-#include "stdlib.h"
-#include "string.h"
-
-#include <stdio.h>
-#include "time.h"
-
-#include "ctype.h"
 #include "polynoml.h"
 #include "batchlan.h"
+#include "global_things.h"
+
+using namespace hy_global;
 
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+
 
 extern
 _SimpleList     simpleOperationCodes,
                 simpleOperationFunctions;
 
-_List           globalNamesSupportList,
-                hyReservedWords,
+_List           hyReservedWords,
                 varNamesSupportList,
                 variablePtrs;   // stores all the variables declared so far
 
 _AVLList        *lookAside = nil;
-
-_AVLListX       variableNames (&varNamesSupportList),
-                _hyApplicationGlobals (&globalNamesSupportList);
+_AVLListX       variableNames (&varNamesSupportList);
 
 long            printDigits;
 
@@ -99,8 +95,8 @@ _SimpleList opPrecedence,
             BinOps,
             associativeOps;
 
-_Parameter pi_const = 3.141592653589793,
-long_max = (_Parameter)LONG_MAX;
+hy_float pi_const = 3.141592653589793,
+long_max = (hy_float)LONG_MAX;
 
 /**********************************/
 /* Defining Globals here for now */
@@ -108,7 +104,7 @@ long_max = (_Parameter)LONG_MAX;
  
 //Used in formula, and constant
 
-_Parameter  machineEps = 2.*DBL_EPSILON,
+hy_float  machineEps = 2.*DBL_EPSILON,
             tolerance  = DBL_EPSILON;
 
 //Used in formula
@@ -117,8 +113,8 @@ _String         intPrecFact ("INTEGRATION_PRECISION_FACTOR"),
 
 
 //Used in parser2 and formula
-_Parameter sqrtPi = 1.77245385090551603;
-_Parameter twoOverSqrtPi = 2./sqrtPi;
+hy_float sqrtPi = 1.77245385090551603;
+hy_float twoOverSqrtPi = 2./sqrtPi;
 
 /*********************************/
 /*          End Globals         */
@@ -136,7 +132,7 @@ _Variable * LocateVar (long index) {
 }
 
 //__________________________________________________________________________________
-void     parameterToCharBuffer (_Parameter value, char* dump, long length, bool json)
+void     parameterToCharBuffer (hy_float value, char* dump, long length, bool json)
 {
     if (json) {
       if (isnan (value)) {
@@ -169,7 +165,7 @@ void     parameterToCharBuffer (_Parameter value, char* dump, long length, bool 
 
 
 //__________________________________________________________________________________
-BaseRef     parameterToString (_Parameter value)
+BaseRef     parameterToString (hy_float value)
 {
     char dump [256];
     parameterToCharBuffer (value, dump, 256);
@@ -214,7 +210,7 @@ _String FetchObjectNameFromType (const unsigned long objectClass) {
             return "Any HyPhy object";
     }
     
-    return emptyString;
+    return kEmptyString;
 }
 
 //__________________________________________________________________________________
@@ -248,7 +244,7 @@ _PMathObj   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objec
     }
     if (command_id >= 0 || errMsg) {
       if (command_id >= 0) {
-        WarnError (_String ("'") & _String ((_String*)f.toStr()) & ("' must evaluate to a ") & FetchObjectNameFromType (objectClass) & " in call to "
+        HandleApplicationError (_String ((_String*)f.toStr()).Enquote() & (" must evaluate to a ") & FetchObjectNameFromType (objectClass) & " in call to "
                    &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
       }
     }
@@ -265,10 +261,10 @@ _PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned lon
         }
         if (command_id >= 0 || errMsg) {
             if (command_id >= 0) {
-                WarnError (_String ("'") & *id & ("' must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to " 
+                HandleApplicationError (id->Enquote() & (" must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to "
                                          &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
             } else {
-                WarnError (errMsg->Replace ("_VAR_NAME_ID_", *id, true));
+                HandleApplicationError (errMsg->Replace ("_VAR_NAME_ID_", *id, true));
             }
         }
     }
@@ -285,10 +281,10 @@ _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long ob
         }
         if (command_id >= 0 || errMsg) {
             if (command_id >= 0) {
-                WarnError (_String ("'") & *v->GetName() & ("' must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to " 
+                HandleApplicationError (v->GetName()->Enquote() & (" must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to "
                                          &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
             } else {
-                WarnError (errMsg->Replace ("_VAR_NAME_ID_", *v->GetName(), true));
+                HandleApplicationError (errMsg->Replace ("_VAR_NAME_ID_", *v->GetName(), true));
             }
         }
     }
@@ -323,7 +319,7 @@ void       UpdateChangingFlas (long vN)
           
 
             if (!toDelete) {
-                checkPointer(toDelete = new _SimpleList);
+                toDelete = new _SimpleList;
             }
 
             *toDelete << k;
@@ -351,7 +347,7 @@ void       UpdateChangingFlas (_SimpleList & involvedVariables)
             ((_ElementaryCommand*)listOfCompiledFormulae.lData[k])->DecompileFormulae();
 
             if (!toDelete) {
-                checkPointer(toDelete = new _SimpleList);
+                toDelete = new _SimpleList;
             }
 
             *toDelete << k;
@@ -394,7 +390,7 @@ void DeleteVariable (long dv, bool deleteself)
 
                 if (thisVar->CheckFForDependence (vidx,false)) {
                     _PMathObj curValue = thisVar->Compute();
-                    curValue->nInstances++; // this could be a leak 01/05/2004.
+                    curValue->AddAReference(); // TODO this could be a leak 01/05/2004.
                     thisVar->SetValue (curValue);
                     DeleteObject (curValue);
                 }
@@ -462,7 +458,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
 
                 if (thisVar->CheckFForDependence (vidx,false)) {
                     _PMathObj curValue = thisVar->Compute();
-                    curValue->nInstances++;
+                    curValue->AddAReference();
                     thisVar->SetValue (curValue);
                     DeleteObject (curValue);
                 }
@@ -489,7 +485,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
                         _Variable * checkDep = FetchVar (nextVar);
                         if (!checkDep->IsIndependent()) {
                             _PMathObj curValue = checkDep->Compute();
-                            curValue->nInstances++;
+                            curValue->AddAReference();
                             checkDep->SetValue (curValue);
                             DeleteObject (curValue);
                         }
@@ -525,8 +521,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 _Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
-        _String errMsg = *name & " is not a valid variable identifier in call to " & fID;
-        WarnError (errMsg);
+        HandleApplicationError(name->Enquote() & " is not a valid variable identifier in call to " & fID);
         return nil;
     }
 
@@ -548,7 +543,7 @@ _Variable* CheckReceptacleCommandID (_String const* name, const long id, bool ch
         if (context) {
             context->ReportAnExecutionError(errMsg);
         } else {
-            WarnError (errMsg);
+            HandleApplicationError (errMsg);
         }
         return nil;
     }
@@ -601,7 +596,7 @@ void  InsertVar (_Variable* theV)
 {
     long pos = variableNames.Insert (theV->theName);
 
-    if (pos < 0 && isDefiningATree > 1)
+    if (pos < 0 && isDefiningATree == kTreeNodeBeingCreated)
         // automatically fix duplicate autogenerated tree node name
     {
         long trySuffix  = 1;
@@ -616,15 +611,15 @@ void  InsertVar (_Variable* theV)
     }
 
     if (pos < 0) {
-        if (isDefiningATree == 1) {
-            WarnError(_String("Error while creating a tree: duplicate node name '") & *theV->GetName() & "'");
+        if (isDefiningATree == kTreeIsBeingParsed) {
+            HandleApplicationError(_String("Error while creating a tree: duplicate node name ") & *theV->GetName()->Enquote());
             return;
         }
 
         theV->theIndex = variableNames.GetXtra(-pos-1);
         return;
     } else {
-        theV->theName->nInstances++;
+        theV->theName->AddAReference();
     }
 
     if (freeSlots.lLength) {
@@ -647,7 +642,7 @@ _String const&  AppendContainerName (_String const& inString, _VariableContainer
 _String const&  AppendContainerName (_String const& inString, _String const* namescp) {
     static _String returnMe;
 
-    if (_hyApplicationGlobals.Find (&inString) >= 0) {
+    if (_hy_application_globals.Find (&inString) >= 0) {
         return inString;
     }
     
@@ -694,7 +689,7 @@ void  RenameVariable (_String* oldName, _String* newName)
 
         variableNames.Delete (toRename (k), true);
         variableNames.Insert (thisVar->GetName(),xtras.lData[k]);
-        thisVar->GetName()->nInstances++;
+        thisVar->GetName()->AddAReference();
     }
 }
 

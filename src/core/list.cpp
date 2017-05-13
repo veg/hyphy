@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,10 +37,6 @@
  
  */
 
-#include "list.h"
-#include "hy_strings.h"
-#include "errorfns.h"
-#include "parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -49,9 +45,11 @@
 #include <limits.h>
 #include <stdarg.h>
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include "list.h"
+#include "hy_strings.h"
+#include "parser.h"
+
+using namespace hy_global;
 
 
 /*
@@ -61,8 +59,7 @@ Constructors
 */
 
 // Does nothing
-_List::_List ()
-{
+_List::_List () {
 }
 
 // Length constructor
@@ -109,23 +106,24 @@ _List::_List (BaseRef ss, char sep)
 _List::_List (BaseRef br) {
     lLength = 1;
     laLength = MEMORYSTEP;
-    lData = (long*)MemAllocate (laLength * sizeof(Ptr));
+    lData = (long*)MemAllocate (laLength * sizeof(hy_pointer));
     BaseRef   object_copy = br->makeDynamic();
     ((BaseRef*)lData)[0]= object_copy;
 }
 
 
 //Destructor
-_List::~_List(void)
-{
-    if (nInstances<=1) {
-        for (unsigned long i = 0; i<lLength; i++) {
-            BaseRef t = ((BaseRef*)lData)[i];
-            if (t) {
-                if (t->nInstances<=1) {
-                    DeleteObject(t);
+_List::~_List(void) {
+    if (CanFreeMe()) {
+        BaseRef * references =(BaseRef*)lData;
+    
+        for (unsigned long i = 0UL; i<lLength; i++) {
+            BaseRef an_object = references[i];
+            if (an_object) {
+                if (an_object->CanFreeMe()) {
+                    DeleteObject(an_object);
                 } else {
-                    t->nInstances--;
+                    an_object->RemoveAReference();
                 }
             }
         }
@@ -141,13 +139,13 @@ Operator Overloads
 */
 
 // Element location functions (0,llength - 1)
-BaseRef& _List::operator [] (long i)
-{
-    BaseRef t = BaseRef(_SimpleList::operator[] (i));
-    if (t)
-        if (t->nInstances>1) {
-            t->nInstances--;
-            ((BaseRef*)(lData))[i]=t->makeDynamic();
+BaseRef& _List::operator [] (long i) {
+    // TODO 20170426: SLKP, maybe deprecate
+    BaseRef ith_object = GetItem(i);
+    if (ith_object)
+        if (!ith_object->CanFreeMe()) {
+            ith_object->RemoveAReference();
+            ((BaseRef*)(lData))[i]=ith_object->makeDynamic();
         }
 
     return ((BaseRef*)(lData))[i];
@@ -265,9 +263,9 @@ _List& _List::operator < (BaseRef br) {
     laLength+=incBy;
     
     if (lData) {
-      checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
+      lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*));
     } else {
-      checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
+      lData = (long*)MemAllocate(laLength*sizeof(void*));
     }
   }
   
@@ -310,7 +308,7 @@ void _List::AppendNewInstance (BaseRef br) {
         (*this)<<br;
         br->RemoveAReference();
     } else {
-        checkPointer (br);
+        HandleApplicationError(_String ("Passed a null reference to ") & __PRETTY_FUNCTION__);
     }
 }
 
@@ -376,23 +374,21 @@ long  _List::BinaryInsert (BaseRef s)
 
 }
 
-void    _List::bumpNInst (void)
-{
-    for (unsigned long i = 0; i<lLength; i++) {
-        ((BaseRef*)lData)[i]->nInstances++;
+void    _List::bumpNInst (void) {
+    for (unsigned long i = 0UL; i<lLength; i++) {
+        ((BaseRef*)lData)[i]->AddAReference();
     }
 }
 
-void  _List::Clear (bool completeClear)
-{
-    if (nInstances<=1) {
+void  _List::Clear (bool completeClear) {
+    if (CanFreeMe()) {
         for (unsigned long i = 0UL; i<lLength; i++) {
             DeleteObject (((BaseRef*)lData)[i]);
         }
         _SimpleList::Clear(completeClear);
 
     } else {
-        nInstances--;
+        RemoveAReference();
     }
 }
 
@@ -427,12 +423,12 @@ void  _List::Delete (long index, bool delete_object)
             for (unsigned long i = index; i < lLength; i++) {
                 lData[i] = lData[i+1];
             }
-        //memcpy ((Ptr)lData+sizeof(BaseRef)*(index),(Ptr)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
+        //memcpy ((hy_pointer)lData+sizeof(BaseRef)*(index),(hy_pointer)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
     }
     if (laLength-lLength>MEMORYSTEP) {
         laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
         if (laLength > 0)
-          lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+          lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hy_pointer));
         else {
           free (lData); lData = nil;
         }
@@ -458,7 +454,7 @@ void  _List::DeleteList (const _SimpleList& toDelete)
         if (laLength-lLength>MEMORYSTEP) {
             laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
             if (laLength > 0)
-              lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+              lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hy_pointer));
             else {
               free (lData); lData = nil;
             }
@@ -466,15 +462,15 @@ void  _List::DeleteList (const _SimpleList& toDelete)
     }
 }
 
-void    _List::Duplicate (const BaseRef theRef)
-{
+void    _List::Duplicate (BaseRefConst theRef) {
     _SimpleList::Duplicate (theRef);
-    if (lData)
-        for (unsigned long i = 0; i<lLength; i++) {
+    if (lData) {
+        for (unsigned long i = 0UL; i<lLength; i++) {
             if (((BaseRef*)lData)[i]) {
-                (((BaseRef*)lData)[i])->nInstances++;
+                (((BaseRef*)lData)[i])->AddAReference();
             }
         }
+    }
 }
 
 bool _List::Equal(_List const & l2) const
@@ -532,18 +528,6 @@ long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
     return -1;
 }
 
-long  _List::FreeUpMemory (long requestedBytes)
-{
-    long freed = 0;
-    for (unsigned long i = 0; i<lLength; i++) {
-        BaseRef t = ((BaseRef*)lData)[i];
-        freed+=t->FreeUpMemory(requestedBytes-freed);
-        if (freed>=requestedBytes) {
-            return freed;
-        }
-    }
-    return freed;
-}
 
 // Append & store operator
 void _List::InsertElement (BaseRef br, long insertAt, bool store, bool pointer) {
@@ -615,22 +599,17 @@ void _List::Place (BaseRef br)
     if (lLength>laLength) {
         laLength+=MEMORYSTEP;
         if (lData) {
-            checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
+           lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*));
         } else {
-            checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
+           lData = (long*)MemAllocate(laLength*sizeof(void*));
         }
     }
     ((BaseRef*)lData)[lLength-1]=br;
 }
 
 //TODO: makeDynamic should be MakeDynamic to follow convention.
-BaseRef _List::makeDynamic(void)
-{
+BaseRef _List::makeDynamic(void) const {
     _List * Res = new _List;
-    checkPointer(Res);
-    //lData = nil;
-    memcpy ((char*)Res, (char*)this, sizeof (_List));
-    Res->nInstances = 1;
     Res->lData = nil;
     Res->Duplicate (this);
     return Res;

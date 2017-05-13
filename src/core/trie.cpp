@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "trie.h"
+#include "global_things.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -106,18 +107,18 @@ void _Trie::SetAlphabet (const _String* alphabet, bool doClear)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-BaseRef _Trie::makeDynamic (void) {
+BaseRef _Trie::makeDynamic (void) const {
     _Trie *newTrie = new _Trie ();
-    newTrie->Duplicate (newTrie);
+    newTrie->Duplicate (this);
     return newTrie;
           
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void _Trie::Duplicate (BaseRef storage) {
+void _Trie::Duplicate (BaseRefConst storage) {
     _Trie* newTrie = (_Trie*)storage;
-    _String myAlphabet = Alphabet();
+    _String myAlphabet = newTrie->Alphabet();
     newTrie->SetAlphabet (&myAlphabet, true);
     newTrie->_List::Duplicate ((_List*)this);
     newTrie->charMap.Duplicate (&charMap);
@@ -464,7 +465,7 @@ _String  _Trie::RetrieveKeyByPayload (const long key){
         return _String(RetrieveStringFromPath(traversal_history, &alph));
         
     }
-    return emptyString;
+    return hy_global::kEmptyString;
 }
 
 

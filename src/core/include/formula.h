@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -52,8 +52,8 @@ class _VariableContainer;
 
 
 union       _SimpleFormulaDatum {
-    _Parameter value;
-    Ptr        reference;
+    hy_float value;
+    hy_pointer        reference;
 };
 
 
@@ -131,9 +131,9 @@ public:
     _MathObject*ConstructPolynomial (void);
 
     virtual void        Initialize          (void);
-    virtual void        Duplicate           (BaseRef);
-    void        DuplicateReference  (const _Formula*);
-    virtual BaseRef     makeDynamic         (void);
+    virtual void        Duplicate           (_Formula const *);
+    void        DuplicateReference          (const _Formula*);
+    virtual BaseRef     makeDynamic         (void) const;
     virtual BaseRef     toStr               (_List* matchNames = nil, bool = false);
 
     virtual long        ObjectClass         (void);
@@ -193,17 +193,17 @@ public:
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
-    _Parameter  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
+    hy_float  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
 
-    _Parameter  Newton              (_Formula&, _Variable*,  _Parameter, _Parameter, _Parameter);
-    _Parameter  Newton              (_Formula&, _Parameter, _Parameter, _Parameter, _Variable*);
-    _Parameter  Newton              (_Variable*,  _Parameter, _Parameter, _Parameter, _Parameter);
-    _Parameter  Newton              (_Variable*,_Parameter, _Parameter, _Parameter);
+    hy_float  Newton              (_Formula&, _Variable*,  hy_float, hy_float, hy_float);
+    hy_float  Newton              (_Formula&, hy_float, hy_float, hy_float, _Variable*);
+    hy_float  Newton              (_Variable*,  hy_float, hy_float, hy_float, hy_float);
+    hy_float  Newton              (_Variable*,hy_float, hy_float, hy_float);
 
-    _Parameter  Brent               (_Variable*, _Parameter, _Parameter, _Parameter = 1.e-7, _List* = nil, _Parameter = 0.);
+    hy_float  Brent               (_Variable*, hy_float, hy_float, hy_float = 1.e-7, _List* = nil, hy_float = 0.);
 
-    _Parameter  Integral            (_Variable*,_Parameter, _Parameter, bool inifinite = false);
-    _Parameter  MeanIntegral        (_Variable*,_Parameter, _Parameter, bool inifinite = false);
+    hy_float  Integral            (_Variable*,hy_float, hy_float, bool inifinite = false);
+    hy_float  MeanIntegral        (_Variable*,hy_float, hy_float, bool inifinite = false);
     _Formula*   Differentiate       (_String, bool = true, bool convert_from_tree = true);
     node<long>* InternalDifferentiate
     (node<long>*, long,_SimpleList&, _SimpleList&, _Formula&);

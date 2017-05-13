@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -66,18 +66,18 @@ double AlignStrings( char * r_str
                    , const bool do_true_local = false
                    );
 
-_Parameter LinearSpaceAlign( _String * s1           // first string
+hy_float LinearSpaceAlign( _String * s1           // first string
                            , _String * s2           // second string
                            , _SimpleList & cmap     // char -> position in scoring matrix mapper
                            , _Matrix * ccost        // NxN matrix of edit distances on characters
-                           , _Parameter gopen       // the cost of opening a gap in sequence 1
-                           , _Parameter gextend     // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
-                           , _Parameter gopen2      // the cost of opening a gap in sequence 2
-                           , _Parameter gextend2    // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
+                           , hy_float gopen       // the cost of opening a gap in sequence 1
+                           , hy_float gextend     // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
+                           , hy_float gopen2      // the cost of opening a gap in sequence 2
+                           , hy_float gextend2    // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
                            , bool doLocal           // ignore prefix and suffix gaps
                            , bool doAffine          // use affine gap penalties
                            , _SimpleList & ops      // edit operations for the optimal alignment
-                           , _Parameter scoreCheck  // check the score of the alignment
+                           , hy_float scoreCheck  // check the score of the alignment
                            , long from1
                            , long to1
                            , long from2

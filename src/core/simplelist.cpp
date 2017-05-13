@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,11 +37,6 @@
  
 */
 
-#include "hy_strings.h"
-#include "errorfns.h" 
-#include "list.h"
-#include "simplelist.h"
-#include "parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -50,9 +45,14 @@
 #include <limits.h>
 #include <stdarg.h>
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include "global_things.h"
+#include "hy_strings.h"
+#include "list.h"
+#include "simplelist.h"
+#include "parser.h"
+#include "mersenne_twister.h"
+
+using namespace hy_global;
 
 
 /*
@@ -62,17 +62,15 @@ Constructors
 */
 
 // Does nothing
-_SimpleList::_SimpleList ()
-{
+_SimpleList::_SimpleList () {
     Initialize(false);
 }
 
 //Data constructor (1 member list)
-_SimpleList::_SimpleList (long br)
-{
+_SimpleList::_SimpleList (long br) {
     lLength = 1;
     laLength = MEMORYSTEP;
-    lData = (long*)MemAllocate (laLength * sizeof(Ptr));
+    lData = (long*)MemAllocate (laLength * sizeof(hy_pointer));
     ((long*)lData)[0]= br;
 }
 
@@ -88,8 +86,8 @@ _SimpleList::_SimpleList (unsigned long l)
 {
     lLength = 0;
     laLength = (l/MEMORYSTEP + 1)*MEMORYSTEP;
-    lData = (long*)MemAllocate (laLength * sizeof(Ptr));
-    memset (lData,0,laLength * sizeof(Ptr));
+    lData = (long*)MemAllocate (laLength * sizeof(hy_pointer));
+    memset (lData,0,laLength * sizeof(hy_pointer));
 }
 
 //Stack copy contructor
@@ -128,12 +126,12 @@ _SimpleList::_SimpleList (const long value1, const unsigned long number, ...)
 //Destructor
 _SimpleList::~_SimpleList(void)
 {
-    if (nInstances<=1) {
+    if (CanFreeMe()) {
         if (lData) {
             free (lData);
         }
     } else {
-        nInstances--;
+        RemoveAReference();
     }
 
 
@@ -167,7 +165,7 @@ long _SimpleList::operator () (const unsigned long i) const {
     if(i < lLength) {
         return lData[i];
     }
-    warnError("List index out of range");
+    HandleApplicationError ("List index out of range");
     return -1;
 }
 
@@ -178,9 +176,9 @@ const _SimpleList& _SimpleList::operator = (_SimpleList const &l)
     lLength  = l.lLength;
     laLength = l.laLength;
     if (laLength) {
-        checkPointer (lData = (long*)MemAllocate (laLength*sizeof (Ptr)));
+        lData = (long*)MemAllocate (laLength*sizeof (hy_pointer));
         if (lLength) {
-            memcpy (lData,l.lData,lLength*sizeof (Ptr));
+            memcpy (lData,l.lData,lLength*sizeof (hy_pointer));
         }
     }
 
@@ -247,7 +245,7 @@ long _SimpleList::GetElement (const long index) const {
     if ((const unsigned long) (-index) <= lLength) {
         return lData[lLength + index];
     }
-    warnError(_String("List index '") & (long)((const unsigned long) (-index)) & "' out of range in _SimpleList::GetElement on list of length " & long (lLength));    
+    HandleApplicationError (_String("List index '") & (long)((const unsigned long) (-index)) & "' out of range in _SimpleList::GetElement on list of length " & long (lLength));
     return 0;
 }
 
@@ -436,7 +434,7 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
 
 void  _SimpleList::Clear (bool completeClear)
 {
-    if (nInstances<=1L) {
+    if (CanFreeMe()) {
         lLength = 0UL;
         if (completeClear) {
             laLength = 0UL;
@@ -447,7 +445,7 @@ void  _SimpleList::Clear (bool completeClear)
             
         }
     } else {
-        nInstances--;
+        RemoveAReference();
     }
 }
 
@@ -467,18 +465,20 @@ void _SimpleList::DebugVarList(void)
 }
 
 //Delete item at index (>=0)
-void  _SimpleList::Delete (long index, bool compact)
-{
+void  _SimpleList::Delete (long index, bool compact) {
     if (index>=0 && index<lLength) {
         lLength--;
         if (lLength-index) {
-            memmove ((Ptr)lData+sizeof(BaseRef)*(index),(Ptr)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
+            for (unsigned long k = index; k < lLength; k++) {
+                lData[k] = lData[k+1];
+            }
+            //memmove ((hy_pointer)lData+sizeof(BaseRef)*(index),(hy_pointer)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
         }
     }
     if (compact && laLength-lLength>MEMORYSTEP) {
         laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
         if (laLength) {
-            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hy_pointer));
         } else {
             free (lData);
             lData = nil;
@@ -528,7 +528,7 @@ void  _SimpleList::DeleteList (const _SimpleList& toDelete)
     if (laLength-lLength>MEMORYSTEP) {
         laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
         if (laLength) {
-            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hy_pointer));
         } else {
             free (lData);
             lData = nil;
@@ -625,15 +625,15 @@ void  _SimpleList::Displace (long start, long end, long delta)
     }
 }
 
-void _SimpleList::Duplicate(BaseRef theRef)
+void _SimpleList::Duplicate(BaseRefConst theRef)
 {
-    _SimpleList* l  = (_SimpleList*)theRef;
+    _SimpleList const* l  = (_SimpleList const*)theRef;
     lLength         = l->lLength;
     laLength        = l->laLength;
     lData           = l->lData;
     if (lData) {
-        checkPointer (lData = (long*)MemAllocate (laLength*sizeof (Ptr)));
-        memcpy ((char*)lData, (char*)l->lData, lLength*sizeof (Ptr));
+        lData = (long*)MemAllocate (laLength*sizeof (hy_pointer));
+        memcpy ((char*)lData, (char*)l->lData, lLength*sizeof (hy_pointer));
     }
 }
 
@@ -712,7 +712,7 @@ void _SimpleList::Initialize(bool doMemAlloc)
     lLength = 0UL;
     if (doMemAlloc) {
         laLength = MEMORYSTEP;
-        lData = (long*)MemAllocate (laLength * sizeof(Ptr));
+        lData = (long*)MemAllocate (laLength * sizeof(hy_pointer));
     } else {
         laLength = 0;
         lData    = nil;
@@ -728,7 +728,7 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
 
         laLength+=incBy;
 
-        //memAlloc += sizeof(Ptr)*incBy;
+        //memAlloc += sizeof(hy_pointer)*incBy;
 
         if (lData) {
             lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*));
@@ -763,7 +763,7 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
     } else {
       ((BaseRef*)lData)[insertAt]=br;
       if (pointer) {
-        br->nInstances++;
+        br->AddAReference();
       }
     }
 
@@ -800,12 +800,8 @@ BaseRef _SimpleList::ListToPartitionString () const {
     return result;
 }
 
-BaseRef _SimpleList::makeDynamic(void)
-{
+BaseRef _SimpleList::makeDynamic(void) const {
     _SimpleList * Res = new _SimpleList;
-    checkPointer(Res);
-    memcpy ((char*)Res, (char*)this, sizeof (_SimpleList));
-    Res->nInstances = 1;
     Res->lData = nil;
     Res->Duplicate (this);
     return Res;
@@ -813,7 +809,7 @@ BaseRef _SimpleList::makeDynamic(void)
 
 long _SimpleList::Max(void) const{
     long res = LONG_MIN;
-    for  (long e = 0; e < lLength; e++)
+    for  (long e = 0L; e < lLength; e++)
         if (lData[e] > res) {
             res = lData[e];
         }
@@ -1146,8 +1142,7 @@ _SimpleList* _SimpleList::Subset (unsigned long size, bool replacement)
 }
 
 // Create a permutation of the list's elements
-void  _SimpleList::Permute (long blockLength)
-{
+void  _SimpleList::Permute (long blockLength) {
     unsigned long blockCount = lLength/blockLength;
 
     if (blockLength>1) {
@@ -1347,9 +1342,9 @@ void _SimpleList::RequestSpace (long slots)
     if (slots>laLength) {
         laLength=(slots/MEMORYSTEP+1)*MEMORYSTEP;
         if (lData) {
-            checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
+            lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*));
         } else {
-            checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
+            lData = (long*)MemAllocate(laLength*sizeof(void*));
         }
     }
 }
@@ -1401,8 +1396,7 @@ void _SimpleList::Swap (long i, long j)
 }
 
 //Char* conversion
-BaseRef _SimpleList::toStr(unsigned long)
-{
+BaseRef _SimpleList::toStr(unsigned long) {
     if (lLength) {
         unsigned long ssi = _String::storageIncrement,
                       ma  = lLength*(1+log10((double)lLength));
@@ -1416,15 +1410,12 @@ BaseRef _SimpleList::toStr(unsigned long)
         (*s) << "{";
 
         char c[32];
-        for (unsigned long i = 0UL; i<lLength; i++) {
+        for (unsigned long i = 0UL; i<lLength-1L; i++) {
             snprintf (c, sizeof(c),"%ld",lData[i]);
-            (*s) << c;
-            if (i<lLength-1L) {
-                (*s) << ',';
-            }
+            (*s) << c << ',';
         }
-
-        (*s) << '}';
+        snprintf (c, sizeof(c),"%ld",lData[lLength-1L]);
+        (*s) << c << '}';
 
         s->Finalize();
         _String::storageIncrement = ssi;
@@ -1442,12 +1433,9 @@ void  _SimpleList::TrimMemory (void)
         laLength = lLength;
         if (laLength) {
             if (lData) {
-                lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+                lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hy_pointer));
             } else {
-                lData = (long*)MemAllocate (laLength*sizeof(Ptr));
-            }
-            if (!lData) {
-                checkPointer (lData);
+                lData = (long*)MemAllocate (laLength*sizeof(hy_pointer));
             }
         } else {
             if (lData) {

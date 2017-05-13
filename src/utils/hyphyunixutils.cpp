@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@temple.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -40,22 +40,18 @@
 #include <stdio.h>
 #include "likefunc.h"
 #include "function_templates.h"
+#include "global_things.h"
 
-
-
-#ifndef __HYPHY_NO_CURL__
-//#define __HYPHYCURL__
-#endif
+using    namespace hy_global;
 
 #ifdef  __HYPHYCURL__
-#include <curl/curl.h>
+    #include <curl/curl.h>
 #endif
 
 #ifdef          __HYPHYMPI__
 _String         preserveSlaveNodeState ("PRESERVE_SLAVE_NODE_STATE"),
                 MPI_NEXUS_FILE_RETURN  ("MPI_NEXUS_FILE_RETURN");
 
-int             _hy_mpi_node_rank;
 
 void            mpiNormalLoop    (int, int, _String &);
 void            mpiOptimizerLoop (int, int);
@@ -128,7 +124,7 @@ bool    Get_a_URL (_String& urls, _String* fileName)
         curl_easy_setopt (curl, CURLOPT_USERAGENT, ver.sData);
         //curl_easy_setopt (curl, CURLOPT_VERBOSE, 1);
         curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, (void*)(f?url2File:url2String));
-        _Parameter vbl = 0.0;
+        hy_float vbl = 0.0;
         checkParameter (VerbosityLevelString,vbl,0.0);
         if (vbl<0.5) {
             curl_easy_setopt (curl,CURLOPT_NOPROGRESS,1);
@@ -170,7 +166,7 @@ _String*    StringFromConsole   (bool)
     int       readAChar;
     while    ((readAChar = getc(stdin)) != '\n') {
         if (readAChar == EOF) {
-            CheckReceptacleAndStore (&hasEndBeenReached,emptyString,false,new _Constant (1.), false);
+            CheckReceptacleAndStore (&hasEndBeenReached,kEmptyString,false,new _Constant (1.), false);
             break;
         }
         *returnme << (char)readAChar;
@@ -194,7 +190,7 @@ void    StringToConsole (_String const s,  void * extra) {
 
 void    BufferToConsole (const char* s, void * extra) {
 #ifdef __HYPHYMPI__
-    if (_hy_mpi_node_rank == 0)
+    if (hy_mpi_node_rank == 0)
 #endif
 #ifdef __HEADLESS__
         if (globalInterfaceInstance) {
@@ -231,9 +227,9 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
              * resStr        = nil;
 
     while (theMessage->sLength) {
-        setParameter    (mpiNodeID,    (_Parameter)rank);
-        setParameter    (mpiNodeCount, (_Parameter)size);
-
+        hy_env :: EnvVariableSet (hy_env ::mpi_node_id, new _Constant (rank), false);
+        hy_env :: EnvVariableSet (hy_env ::mpi_node_count, new _Constant (size), false);
+ 
         //ReportWarning (*theMessage);
         DeleteObject (resStr);
         resStr       = nil;
@@ -266,7 +262,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     _FString        *lfID = (_FString*)FetchObjectFromVariableByType (&lf2SendBack, STRING);
 
                     if (!lfID) {
-                        FlagError (_String("[MPI] Malformed MPI likelihood function optimization request - did not specify the LF name to return in variable ") & lf2SendBack & ".\n\n\n" );
+                        HandleApplicationError (_String("[MPI] Malformed MPI likelihood function optimization request - did not specify the LF name to return in variable ") & lf2SendBack & ".\n\n\n" );
                         break;
                     }
 
@@ -275,12 +271,12 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     _LikelihoodFunction *lf = (_LikelihoodFunction *)_HYRetrieveBLObjectByName    (*lfID->theString, type, &index, false, false);
 
                     if (lf == nil) {
-                        FlagError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & *lfID->theString &"' did not refer to a well-defined likelihood function.\n\n\n");
+                        HandleApplicationError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & *lfID->theString &"' did not refer to a well-defined likelihood function.\n\n\n");
                         break;
                     }
-                    _Parameter      pv;
+                    hy_float      pv;
                     checkParameter (shortMPIReturn, pv ,0.);
-                    resStr       = (_String*)checkPointer(new _String (1024L,true));
+                    resStr       = new _String (1024L,true);
                     lf->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                     resStr->Finalize();
                 }
@@ -294,7 +290,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
             MPISendString(*resStr,senderID);
 
-            _Parameter      keepState = 0.0;
+            hy_float      keepState = 0.0;
             checkParameter  (preserveSlaveNodeState, keepState, 0.0);
 
             if (keepState < 0.5) {
@@ -332,7 +328,7 @@ void mpiOptimizerLoop (int rank, int size)
             //ReportWarning (*theMessage);
             ReadDataSetFile (nil,true,theMessage);
             if (likeFuncNamesList.lLength!=1) {
-                FlagError ("[MPI] Malformed MPI likelihood function paraller optimizer startup command. Exactly ONE valid LF must be defined.n\n\n");
+                HandleApplicationError ("[MPI] Malformed MPI likelihood function paraller optimizer startup command. Exactly ONE valid LF must be defined.n\n\n");
                 break;
             }
 
@@ -340,7 +336,7 @@ void mpiOptimizerLoop (int rank, int size)
 
             _LikelihoodFunction * theLF = (_LikelihoodFunction*)likeFuncList (0);
             if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL && theLF->CountObjects (kLFCountCategoryVariables)) {
-                FlagError (_String("[MPI] Likelihood functions spawned off to slave MPI nodes can't have category variables.n\n\n"));
+                HandleApplicationError (_String("[MPI] Likelihood functions spawned off to slave MPI nodes can't have category variables.n\n\n"));
                 break;
             }
 
@@ -394,8 +390,7 @@ void mpiBgmLoop (int rank, int size)
         ReportWarning (_String ("MPI Node: ") & (long)rank & " executed HBL with result:\n" & resStr);
 
         if (bgmNamesList.lLength < 1) {
-            _String errMsg ("Malformed HBL. No valid BGM has been defined.\n");
-            FlagError (errMsg);
+            HandleApplicationError ("Malformed HBL. No valid BGM has been defined.\n");
             break;
         }
     }

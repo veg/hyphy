@@ -75,6 +75,7 @@ set(HYPHY_VERSION 2.1)
 # setup the files we'll be using
 #-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
+file(GLOB SRC_CONTRIB src/contrib/*.cpp src/contrib/*.c)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 
@@ -83,7 +84,7 @@ set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
+set(SRC_COMMON ${SRC_CORE} ${SRC_CONTRIB} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 
 
 #-------------------------------------------------------------------------------
@@ -91,7 +92,7 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 #-------------------------------------------------------------------------------
 
 set(DEFAULT_WARNING_FLAGS "-w")
-set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
+set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare ")
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     execute_process(
@@ -234,6 +235,11 @@ set_property(
 )
 
 set_property(
+    SOURCE src/contrib/regex.cpp
+    APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-char-subscripts"
+)
+
+set_property(
     SOURCE src/core/calcnode2.cpp
     APPEND_STRING PROPERTY COMPILE_FLAGS " -fstrict-aliasing -funroll-loops"
 )
@@ -254,7 +260,9 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 include_directories(
     src/core/include
-    src/lib/Link src/new/include
+    src/contrib
+    src/lib/Link 
+    src/new/include
     contrib/SQLite-3.8.2 # SQLite
     contrib/gtest-1.7.0/include
     tests/gtests

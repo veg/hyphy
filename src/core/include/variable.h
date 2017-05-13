@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -62,8 +62,8 @@ public:
     virtual ~_Variable (void);
 
     virtual   void          Initialize (bool = false);
-    virtual   void          Duplicate (BaseRef);
-    virtual   BaseRef       makeDynamic(void);
+    virtual   void          Duplicate (BaseRefConst);
+    virtual   BaseRef       makeDynamic(void) const;
     virtual   BaseRef       toStr (unsigned long = 0UL);
     virtual    void         toFileStr (FILE*, unsigned long = 0UL);
 
@@ -80,9 +80,9 @@ public:
     }
     virtual     bool        IsConstant (void);
     void        SetValue (_PMathObj, bool = true); // set the value of the variable
-    void        SetValue (_Parameter); // set the value of the variable
-    void        SetNumericValue (_Parameter);
-    void        CheckAndSet (_Parameter, bool = false);
+    void        SetValue (hy_float); // set the value of the variable
+    void        SetNumericValue (hy_float);
+    void        CheckAndSet (hy_float, bool = false);
     // set the value of the variable
     // bool flag is used to indicate that out of bounds values should be rejected
 
@@ -117,15 +117,15 @@ public:
         return false;
     }
 
-    void        SetBounds (_Parameter lb, _Parameter ub);
+    void        SetBounds (hy_float lb, hy_float ub);
     void        EnsureTheValueIsInBounds (void);
-    bool        IsValueInBounds (_Parameter v)
+    bool        IsValueInBounds (hy_float v)
                            { return v >= lowerBound && v <= upperBound; }
 
-    _Parameter  GetLowerBound (void) {
+    hy_float  GetLowerBound (void) {
         return lowerBound;
     }
-    _Parameter  GetUpperBound (void) {
+    hy_float  GetUpperBound (void) {
         return upperBound;
     }
 
@@ -163,7 +163,7 @@ public:
     // the class of this variable - i.e global, local, category or random
     int       varFlags;
 
-    _Parameter lowerBound,
+    hy_float lowerBound,
                upperBound;
     // dynamic lower and upper bounds here
 

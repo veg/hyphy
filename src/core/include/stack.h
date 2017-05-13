@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -61,7 +61,7 @@ public:
     void      Reset (void);         // clear the stack
 
     virtual   void    Initialize (void);
-    virtual   void    Duplicate (BaseRef);
+    virtual   void    Duplicate (BaseRefConst);
 
 protected:
 

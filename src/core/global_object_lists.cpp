@@ -4,7 +4,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -42,6 +42,8 @@
 #include "variable.h"
 #include "batchlan.h"
 #include "likefunc.h"
+#include "global_things.h"
+
 
 
 /** Legacy declarations */
@@ -78,9 +80,7 @@ namespace hyphy_global_objects {
     setParameter (WrapInNamespace ("species", &name), filter.NumberSpecies());
     setParameter (WrapInNamespace ("sites", &name), filter.GetSiteCountInUnits());
     
-    _Parameter size_cutoff;
-    checkParameter  (defaultLargeFileCutoff,size_cutoff, 100000.);
-    
+    hy_float size_cutoff = hy_env::EnvVariableGetDefaultNumber(hy_env::dataset_save_memory_size);
     if (filter.GetSiteCount() < size_cutoff) {
       setParameter(WrapInNamespace("site_map", &name), new _Matrix (filter.theOriginalOrder), nil, false);
       setParameter(WrapInNamespace("site_freqs", &name), new _Matrix (filter.theFrequencies), nil, false);
@@ -117,7 +117,7 @@ namespace hyphy_global_objects {
             //lf->Rebuild();
                /* 20170328 SLKP: this COULD MODIFY the 'listeners' object, hence the buffering */
           } else if (event_type == kNotificationTypeDelete) {
-            WarnError ("Attempted to delete a data set filter which is still being referenced by a likelihood function");
+            hy_global::HandleApplicationError ("Attempted to delete a data set filter which is still being referenced by a likelihood function");
           }
         }
       }
@@ -240,7 +240,7 @@ namespace hyphy_global_objects {
           }
         }
       }
-      WarnError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));
+       hy_global::HandleApplicationError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));
     }
     
     return false;
@@ -269,7 +269,7 @@ namespace hyphy_global_objects {
       }
       
       
-      WarnError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));
+       hy_global::HandleApplicationError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));
       
       
     }
@@ -307,7 +307,7 @@ namespace hyphy_global_objects {
       if (exists_already >= 0L) {
         if (_IsObjectLocked(exists_already, HY_BL_DATASET_FILTER)) {
           if (handle_errors) {
-            WarnError (_String ("DataSetFilter ") & name.Enquote() & " could not be created because an existing filter of the same name is locked");
+             hy_global::HandleApplicationError (_String ("DataSetFilter ") & name.Enquote() & " could not be created because an existing filter of the same name is locked");
           }
           return -1;
         }
@@ -326,7 +326,7 @@ namespace hyphy_global_objects {
       return exists_already;
     } else {
       if (handle_errors) {
-        WarnError (_String ("The name ") & name.Enquote() & " is not a valid HyPhy id in call to " & __PRETTY_FUNCTION__);
+         hy_global::HandleApplicationError (_String ("The name ") & name.Enquote() & " is not a valid HyPhy id in call to " & __PRETTY_FUNCTION__);
       }
     }
     return -1;
@@ -406,7 +406,7 @@ namespace hyphy_global_objects {
         return AVLListXLIterator (&_data_filters);
         break;
     }
-    WarnError (_String("Called ") & __PRETTY_FUNCTION__ & " with an unsupported type");
+    hy_global::HandleApplicationError (_String("Called ") & __PRETTY_FUNCTION__ & " with an unsupported type");
     return AVLListXLIterator (nil);
   }
   
@@ -416,7 +416,7 @@ namespace hyphy_global_objects {
         return _data_filters.countitems();
         break;
     }
-    WarnError (_String("Called ") & __PRETTY_FUNCTION__ & " with an unsupported type");
+    hy_global::HandleApplicationError (_String("Called ") & __PRETTY_FUNCTION__ & " with an unsupported type");
     return 0UL;
   }
   

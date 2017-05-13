@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -46,14 +46,16 @@
 #include "parser.h"
 #include "batchlan.h"
 #include "function_templates.h"
+#include "global_things.h"
+
+using namespace hy_global;
 
 //Constants
-extern _Parameter twoOverSqrtPi;
+extern hy_float twoOverSqrtPi;
 
-extern  _Variable*  _x_, *_n_;
 
-extern _Parameter machineEps;
-extern _Parameter tolerance;
+extern hy_float machineEps;
+extern hy_float tolerance;
 
 extern _String intPrecFact;
 extern _String intMaxIter;
@@ -61,8 +63,7 @@ extern _String intMaxIter;
 #define         maxRombergSteps  8L
 #define         integrationPrecisionFactor  1.e-5
 
-_Formula::_Formula (void)
-{
+_Formula::_Formula (void) {
     theTree     = nil;
     resultCache = nil;
     call_count = 0UL;
@@ -88,10 +89,8 @@ _Formula::_Formula (_PMathObj p, bool isAVar)
 void _Formula::Initialize (void) {}
 
 //__________________________________________________________________________________
-void _Formula::Duplicate  (BaseRef f)
-{
-    _Formula * f_cast = (_Formula*) f;
-
+void _Formula::Duplicate  (_Formula const * f_cast) {
+ 
     theFormula.Duplicate       (& f_cast->theFormula);
     theStack.theStack.Duplicate(& f_cast->theStack.theStack);
     call_count = f_cast->call_count;
@@ -127,17 +126,14 @@ void _Formula::DuplicateReference  (const _Formula* f)
 }
 
 //__________________________________________________________________________________
-BaseRef _Formula::makeDynamic (void)
-{
+BaseRef _Formula::makeDynamic (void) const {
     _Formula * res = new _Formula;
-    res->Duplicate((BaseRef)this);
+    res->Duplicate(this);
     return (BaseRef)res;
 }
 //__________________________________________________________________________________
 
-_Formula::~_Formula (void)
-{
-  
+_Formula::~_Formula (void){
     Clear();
 }
 
@@ -197,7 +193,6 @@ BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
 node<long>* _Formula::DuplicateFormula (node<long>* src, _Formula& tgt)
 {
     node<long>* resNode = new node<long>;
-    checkPointer (resNode);
 
     tgt.theFormula && (_Operation*) theFormula (src->in_object);
 
@@ -261,7 +256,7 @@ _Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from
         }
 
         if (bail) {
-            WarnError    (_String ("Differentiation of ") & _String((_String*)toStr()) & " failed.");
+            HandleApplicationError (_String ("Differentiation of ") & _String((_String*)toStr()) & " failed.");
             res->Clear();
             return       res;
         } else {
@@ -323,7 +318,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
   
     long        prune_this_child = -1;
 
-    _Parameter  theVal      = 0.0;
+    hy_float  theVal      = 0.0;
     _PMathObj   newVal      = nil;
 
 
@@ -479,8 +474,8 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
         if (subNumericValues) {
             if (subNumericValues == 2) {
                 _Variable* theV = LocateVar(thisNodeOperation->GetAVariable());
-                if  (_x_&&(theV->GetAVariable()==_x_->GetAVariable())) {
-                    result << _x_->GetName();
+                if  (hy_x_variable&&(theV->GetAVariable()==hy_x_variable->GetAVariable())) {
+                    result << hy_x_variable->GetName();
                     return;
                 }
             }
@@ -647,12 +642,12 @@ bool     _Formula::IsEmpty(void) const {
 }
 
 //__________________________________________________________________________________
-_Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Parameter targetValue, _Parameter left, _Parameter right)
+hy_float   _Formula::Newton(_Formula& derivative, _Variable* unknown, hy_float targetValue, hy_float left, hy_float right)
 // find a root of the formulaic expression, using Newton's method, given the derivative and a bracketed root.
 // will alternate between bisections and Newton iterations based on what is fatser
 {
   // check that there is indeed a sign change on the interval
-  _Parameter    func_left, func_right, // keeps track of function values in the current interval, [left,right]
+  hy_float    func_left, func_right, // keeps track of function values in the current interval, [left,right]
   root_guess, func_root_guess,
   lastCorrection = 100.,
   newCorrection;
@@ -687,7 +682,7 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramet
         return root_guess;
       }
       // get the correction term from the derivative
-      _Parameter df_dx = derivative.Compute()->Value(),
+      hy_float df_dx = derivative.Compute()->Value(),
       adjusted_root_guess;
       
       useNewton = true;
@@ -736,12 +731,12 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramet
 
 
 //__________________________________________________________________________________
-_Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Parameter tol, _List* storeEvals, _Parameter rhs)
+hy_float   _Formula::Brent(_Variable* unknown, hy_float a, hy_float b, hy_float tol, _List* storeEvals, hy_float rhs)
 // find a root of the formulaic expression, using Brent's method and a bracketed root.
 {
     // check that there is indeed a sign change on the interval
 
-    _Parameter  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
+    hy_float  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
                 c = b;
 
     min1 = unknown->GetLowerBound();
@@ -977,14 +972,14 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     return    b;
 }
 //__________________________________________________________________________________
-_Parameter   _Formula::Newton(_Formula& derivative, _Parameter targetValue, _Parameter left, _Parameter max_right, _Variable* unknown)
+hy_float   _Formula::Newton(_Formula& derivative, hy_float targetValue, hy_float left, hy_float max_right, _Variable* unknown)
 // given a monotone function and a left bracket bound, found the right bracket bound and solve
 {
     // check that there is indeed a sign change on the interval
     _Constant   dummy;
     dummy.SetValue (left);
     unknown->SetValue(&dummy);
-    _Parameter  t1 = Compute()->Value(), right = left, t2, step = 1.0;
+    hy_float  t1 = Compute()->Value(), right = left, t2, step = 1.0;
 
     if (max_right-left < step * 100) {
         step = (max_right-left)/100;
@@ -1017,11 +1012,11 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Parameter targetValue, _Par
 }
 
 //__________________________________________________________________________________
-_Parameter   _Formula::Newton(_Variable* unknown, _Parameter targetValue, _Parameter x_min, _Parameter left, _Parameter right)
+hy_float   _Formula::Newton(_Variable* unknown, hy_float targetValue, hy_float x_min, hy_float left, hy_float right)
 {
     // check that there is indeed a sign change on the interval
     _Constant   dummy;
-    _Parameter  t1,t2,t3,t4,t5,lastCorrection = 100, newCorrection;
+    hy_float  t1,t2,t3,t4,t5,lastCorrection = 100, newCorrection;
     _String     msg;
     t1 =Integral(unknown, x_min, left)-targetValue;
     if (t1==0.0) {
@@ -1095,11 +1090,11 @@ _Parameter   _Formula::Newton(_Variable* unknown, _Parameter targetValue, _Param
 }
 
 //__________________________________________________________________________________
-_Parameter   _Formula::Newton( _Variable* unknown, _Parameter targetValue,_Parameter x_min, _Parameter left)
+hy_float   _Formula::Newton( _Variable* unknown, hy_float targetValue,hy_float x_min, hy_float left)
 // given a monotone function and a left bracket bound, found the right bracket bound and solve
 {
     // check that there is indeed a sign change on the interval
-    _Parameter  t1 = Integral(unknown, x_min, left), right = left, t2, step = 1.0;
+    hy_float  t1 = Integral(unknown, x_min, left), right = left, t2, step = 1.0;
     do {
         right += step;
         t2 = Integral(unknown, right-step, right);
@@ -1108,8 +1103,7 @@ _Parameter   _Formula::Newton( _Variable* unknown, _Parameter targetValue,_Param
             subNumericValues = 2;
             _String *s = (_String*)toStr();
             subNumericValues = 0;
-            _String msg = *s&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)";
-            WarnError (msg);
+            HandleApplicationError (*s&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
             DeleteObject (s);
             return    0.0;
         }
@@ -1118,11 +1112,11 @@ _Parameter   _Formula::Newton( _Variable* unknown, _Parameter targetValue,_Param
 
 }
 
-_Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right, bool infinite)
+hy_float   _Formula::Integral(_Variable* dx, hy_float left, hy_float right, bool infinite)
 // uses Romberg's intergation method
 {
     if (infinite) { // tweak "right" here
-        _Parameter value = 1.0, step = 1.0, right1=-1;
+        hy_float value = 1.0, step = 1.0, right1=-1;
         right = left;
         while (value>machineEps) {
             right+=step;
@@ -1135,9 +1129,9 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
             step *= 2;
             if (step>100000) { // integrand decreasing too slowly
                 _String msg, *s = (_String*)toStr();
-                msg = *s & " decreases too slowly to be integrated over an infinite interval";
+                msg = s->Enquote() & " decreases too slowly to be integrated over an infinite interval";
                 DeleteObject(s);
-                WarnError (msg);
+                HandleApplicationError (msg);
                 return 0.0;
             }
         }
@@ -1148,19 +1142,19 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
         }
     }
   
-    _Parameter       localPrecisionFactor;
+    hy_float       localPrecisionFactor;
     long             localIntegrationLoops;
   
     checkParameter (intPrecFact,localPrecisionFactor,integrationPrecisionFactor);
     checkParameter (intMaxIter, localIntegrationLoops,maxRombergSteps);
 
-    _Parameter ss,
+    hy_float ss,
                dss,
                *s,
                *h;
 
-    s = new _Parameter [(long)maxRombergSteps];
-    h = new _Parameter [(long)(maxRombergSteps+1)];
+    s = new hy_float [(long)maxRombergSteps];
+    h = new hy_float [(long)(maxRombergSteps+1)];
 
     h[0]=1.0;
 
@@ -1171,15 +1165,13 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
                  changingVars,
                  idxMap;
 
-    _Parameter   * ic = new _Parameter[interpolateSteps],
-    * id = new _Parameter[interpolateSteps];
+    hy_float   * ic = new hy_float[interpolateSteps],
+    * id = new hy_float[interpolateSteps];
 
     _SimpleFormulaDatum
     * stack = nil,
       * vvals = nil;
 
-    checkPointer (ic);
-    checkPointer (id);
 
     if (AmISimple (stackDepth,fvidx)) {
         stack = new _SimpleFormulaDatum [stackDepth];
@@ -1243,15 +1235,10 @@ _Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right
 }
 
 //__________________________________________________________________________________
-_Parameter   _Formula::MeanIntegral(_Variable* dx, _Parameter left, _Parameter right, bool infinite)
-{
+hy_float   _Formula::MeanIntegral(_Variable* dx, hy_float left, hy_float right, bool infinite) {
     _Formula newF;
-    _String tim ("*");
-    _Operation times (tim,2);
-    _Operation term (true, *(dx->GetName()));
-    newF.Duplicate((BaseRef)this);
-    newF.theFormula&& (&term);
-    newF.theFormula&& (& times);
+    newF.Duplicate(this);
+    newF.theFormula < new _Operation (true, *(dx->GetName())) < new _Operation ("*", 2);
     return newF.Integral (dx,left,right, infinite);
 }
 
@@ -1460,7 +1447,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                 *errMsg = *errMsg & errorText;
             }
             else {
-                WarnError (errorText);
+                HandleApplicationError (errorText);
             }
             scrap_here->Reset();
             scrap_here->Push (new _Constant (0.0), false);
@@ -1657,8 +1644,7 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
         if (locDepth>stackDepth) {
             stackDepth = locDepth;
         } else if (locDepth==0L) {
-            _String errStr = _String("Invalid formula (no return value) passed to _Formula::AmISimple") & _String ((_String*)toStr());
-            WarnError (errStr);
+             HandleApplicationError (_String("Invalid formula (no return value) passed to _Formula::AmISimple") & _String ((_String*)toStr()).Enquote());
             return false;
         }
     }
@@ -1734,7 +1720,7 @@ void _Formula::ConvertFromSimple (_SimpleList& variableIndex)
 }
 
 //__________________________________________________________________________________
-_Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues)
+hy_float _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues)
 {
     if (!theFormula.lLength) {
         return 0.0;
@@ -1753,30 +1739,30 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
             } else {
                 stackTop--;
                 if (thisOp->numberOfTerms==2) {
-                    _Parameter  (*theFunc) (_Parameter, _Parameter);
-                    theFunc = (_Parameter(*)(_Parameter,_Parameter))thisOp->opCode;
+                    hy_float  (*theFunc) (hy_float, hy_float);
+                    theFunc = (hy_float(*)(hy_float,hy_float))thisOp->opCode;
                     if (stackTop<1L) {
-                        WarnError ("Internal error in _Formula::ComputeSimple - stack underflow.)");
+                        HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow.)", true);
                         return 0.0;
                     }
                     stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].value,stack[stackTop].value);
                 } else {
                   switch (thisOp->numberOfTerms) {
                     case -2 : {
-                        _Parameter  (*theFunc) (Ptr,_Parameter);
-                        theFunc = (_Parameter(*)(Ptr,_Parameter))thisOp->opCode;
+                        hy_float  (*theFunc) (hy_pointer,hy_float);
+                        theFunc = (hy_float(*)(hy_pointer,hy_float))thisOp->opCode;
                         if (stackTop<1L) {
-                            WarnError ("Internal error in _Formula::ComputeSimple - stack underflow.)");
+                            HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow.)", true);
                             return 0.0;
                         }
                         stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].reference,stack[stackTop].value);
                         break;
                       }
                     case -3 : {
-                      void  (*theFunc) (Ptr,_Parameter,_Parameter);
-                      theFunc = (void(*)(Ptr,_Parameter,_Parameter))thisOp->opCode;
+                      void  (*theFunc) (hy_pointer,hy_float,hy_float);
+                      theFunc = (void(*)(hy_pointer,hy_float,hy_float))thisOp->opCode;
                       if (stackTop != 2 || i != theFormula.lLength - 1) {
-                        WarnError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)");
+                        HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)", true);
                         
                         return 0.0;
                       }
@@ -1786,8 +1772,8 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
                       break;
                     }
                     default: {
-                        _Parameter  (*theFunc) (_Parameter);
-                        theFunc = (_Parameter(*)(_Parameter))thisOp->opCode;
+                        hy_float  (*theFunc) (hy_float);
+                        theFunc = (hy_float(*)(hy_float))thisOp->opCode;
                         stack[stackTop].value = (*theFunc)(stack[stackTop].value);
                         ++stackTop;
                     }
@@ -2219,7 +2205,7 @@ void    _Formula::ConvertToTree (bool err_msg) {
 
                 if (nTerms>nodeStack.lLength) {
                     if (err_msg) {
-                        WarnError (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()));
+                        HandleApplicationError (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()));
                     }
                     theTree = nil;
                     return;
@@ -2235,7 +2221,7 @@ void    _Formula::ConvertToTree (bool err_msg) {
         }
         if (nodeStack.lLength!=1) {
             if (err_msg) {
-                WarnError ((_String)"The expression '" & _String ((_String*)toStr()) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
+                HandleApplicationError ((_String)"The expression '" & _String ((_String*)toStr()) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
             }
             theTree = nil;
         } else {
@@ -2292,54 +2278,49 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         return   src.DuplicateFormula (src.theTree, tgt);
     }
 
-    node<long>* newNode = (node<long>*)checkPointer (new node<long>);
+    node<long>* newNode = new node<long>;
 
 
     switch (op->opCode) {
     case HY_OP_CODE_MUL: {
+        
+        /**
+            d (X*Y) = X*dY + Y*dX
+         */
       
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
-                  * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
+        node<long>* dX = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
+                  * dY = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
 
-        if (!b1 || !b2) {
+        if (! (dX && dY)) {
             newNode->delete_tree(true);
-            if (b1) {
-                b1->delete_tree (true);
+            if (dX) {
+                dX->delete_tree (true);
             }
-            if (b2) {
-                b2->delete_tree (true);
+            if (dY) {
+                dY->delete_tree (true);
             }
             return nil;
         }
+        
 
-        _String           opC  ('*'),
-                          opC2 ('+');
-
-        _Operation*       newOp  = new _Operation (opC2,2),
-        *         newOp2 = new _Operation (opC ,2),
-        *         newOp3 = new _Operation (opC ,2);
-
+        _Operation*       plus_op  = new _Operation ("+",2),
+                *         mult_op  = new _Operation ("*" ,2);
       
-      
-      
-        node<long>*       newNode2 = (node<long>*)checkPointer(new node<long>);
-        node<long>*       newNode3 = (node<long>*)checkPointer(new node<long>);
+        node<long>*       XtimesDY = new node<long>;
+        node<long>*       YtimesDX = new node<long>;
 
-        newNode2->add_node (*b1);
-        newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
+        YtimesDX->add_node (*dX,*DuplicateFormula (currentSubExpression->go_down(2),tgt));
+        XtimesDY->add_node (*dY,*DuplicateFormula (currentSubExpression->go_down(1),tgt));
+        
+        newNode->add_node  (*YtimesDX,*XtimesDY);
 
-        newNode3->add_node (*b2);
-        newNode3->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode->add_node  (*newNode2);
-        newNode->add_node  (*newNode3);
-
-        newNode3->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance (newOp3);
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula. AppendNewInstance (newOp2);
+        
+        YtimesDX->in_object = tgt.theFormula.lLength;
+        tgt.theFormula.AppendNewInstance (mult_op);
+        XtimesDY->in_object = tgt.theFormula.lLength;
+        tgt.theFormula. AppendNewInstance (new _Operation (*mult_op));
         newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance (newOp);
+        tgt.theFormula.AppendNewInstance (plus_op);
 
         return          newNode;
     }
@@ -2347,6 +2328,9 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
     case HY_OP_CODE_ADD: // +
     case HY_OP_CODE_SUB: { // -
+        
+        // TODO SLKP 20170426: clean up the rest of the function
+        
         node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
                     * b2 = nil;
 
@@ -2367,9 +2351,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         }
 
 
-        _Operation*   newOp = new _Operation ();
-        checkPointer  (newOp);
-        newOp->Duplicate (op);
+        _Operation*   newOp = new _Operation (*op);
         newNode->add_node (*b1);
         if (!isUnary) {
             newNode->add_node (*b2);
@@ -2415,20 +2397,12 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         node<long>*       newNode5 = new node<long>;
         node<long>*       newNode6 = new node<long>;
 
-        newNode6->add_node (*b1);
-        newNode6->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
+        newNode6->add_node (*b1,*DuplicateFormula (currentSubExpression->go_down(2),tgt));
+        newNode5->add_node (*b2,*DuplicateFormula (currentSubExpression->go_down(1),tgt));
+        newNode4->add_node  (*newNode6,*newNode5);
 
-        newNode5->add_node (*b2);
-        newNode5->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode4->add_node  (*newNode6);
-        newNode4->add_node  (*newNode5);
-
-        newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node  (*newNode4);
-        newNode->add_node  (*newNode2);
+        newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt),*newNode3);
+        newNode->add_node  (*newNode4,*newNode2);
 
         newNode6->in_object = tgt.theFormula.lLength;
       
@@ -2468,29 +2442,16 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         *         newOp4 = new _Operation (opC3 ,2),
         *         newOp5 = new _Operation (new _Constant (2.0));
 
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-        checkPointer      (newOp4);
 
         node<long>*       newNode2 = new node<long>;
         node<long>*       newNode3 = new node<long>;
         node<long>*       newNode4 = new node<long>;
         node<long>*       newNode5 = new node<long>;
 
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
-        checkPointer      (newNode5);
 
-        newNode4->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-        newNode4->add_node (*newNode5);
-
-        newNode2->add_node (*newNode3);
-        newNode2->add_node (*newNode4);
-
-        newNode->add_node (*b1);
-        newNode->add_node (*newNode2);
+        newNode4->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt),*newNode5);
+        newNode2->add_node (*newNode3,*newNode4);
+        newNode->add_node (*b1,*newNode2);
 
         newNode5->in_object = tgt.theFormula.lLength;
         tgt.theFormula.AppendNewInstance(newOp5);
@@ -2523,22 +2484,12 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         *         newOp2 = new _Operation (opC2 ,1),
         *         newOp3 = new _Operation (opC3 ,1);
 
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-
         node<long>*       newNode2 = new node<long>;
         node<long>*       newNode3 = new node<long>;
 
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
+        newNode3->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt),*newNode3);
 
-        newNode3->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node  (*newNode2);
-        newNode->add_node  (*b1);
+        newNode->add_node  (*newNode2,*b1);
 
         newNode3->in_object = tgt.theFormula.lLength;
         tgt.theFormula << newOp3;
@@ -2546,10 +2497,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         tgt.theFormula << newOp2;
         newNode->in_object = tgt.theFormula.lLength;
         tgt.theFormula << newOp;
-
-        DeleteObject    (newOp);
-        DeleteObject    (newOp2);
-        DeleteObject    (newOp3);
+        
+        BatchDelete(newOp,newOp2,newOp3);
 
         return          newNode;
     }
@@ -2577,13 +2526,6 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         *         newOp6 = new _Operation (opC5 ,2),
         *         newOp7 = new _Operation (new _Constant (2.0));
 
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-        checkPointer      (newOp4);
-        checkPointer      (newOp5);
-        checkPointer      (newOp6);
-        checkPointer      (newOp7);
 
         node<long>*       newNode2 = new node<long>;
         node<long>*       newNode3 = new node<long>;
@@ -2592,23 +2534,14 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         node<long>*       newNode6 = new node<long>;
         node<long>*       newNode7 = new node<long>;
 
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
-        checkPointer      (newNode5);
-        checkPointer      (newNode6);
-        checkPointer      (newNode7);
 
-        newNode6->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-        newNode6->add_node (*newNode7);
+        newNode6->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt),*newNode7);
 
         newNode5->add_node (*newNode6);
         newNode4->add_node (*newNode5);
-        newNode2->add_node (*newNode4);
-        newNode2->add_node (*newNode3);
+        newNode2->add_node (*newNode4,*newNode3);
 
-        newNode->add_node  (*b1);
-        newNode->add_node  (*newNode2);
+        newNode->add_node  (*b1,*newNode2);
 
         newNode7->in_object = tgt.theFormula.lLength;
         tgt.theFormula.AppendNewInstance(newOp7);
@@ -2650,12 +2583,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         _Operation*       newOp  = new _Operation (opC  ,2),
         *         newOp2 = new _Operation (opC2 ,1);
 
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-
+ 
         node<long>*       newNode2 = new node<long>;
-
-        checkPointer      (newNode2);
 
         newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
 
@@ -2682,10 +2611,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
         _Operation*       newOp  = new _Operation (opC  ,2);
 
-        checkPointer      (newOp);
-
-        newNode->add_node  (*b1);
-        newNode->add_node  (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
+        newNode->add_node  (*b1,*DuplicateFormula (currentSubExpression->go_down(1),tgt));
 
         newNode->in_object = tgt.theFormula.lLength;
         tgt.theFormula.AppendNewInstance(newOp);
@@ -2711,26 +2637,14 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         *         newOp3 = new _Operation (opC3 ,1),
         *         newOp4 = new _Operation (new _Constant (2.0));
 
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-        checkPointer      (newOp4);
-
         node<long>*       newNode2 = new node<long>;
         node<long>*       newNode3 = new node<long>;
         node<long>*       newNode4 = new node<long>;
 
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
-
         newNode3->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
 
-        newNode2->add_node (*newNode4);
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node  (*b1);
-        newNode->add_node  (*newNode2);
+        newNode2->add_node (*newNode4,*newNode3);
+        newNode->add_node  (*b1,*newNode2);
 
         newNode4->in_object = tgt.theFormula.lLength;
         tgt.theFormula.AppendNewInstance(newOp4);
@@ -2762,25 +2676,15 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         *         newOp3 = new _Operation (new _Constant (2.0)),
         *         newOp4 = new _Operation (opC3,1);
 
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
 
         node<long>*       newNode2 = new node<long>;
         node<long>*       newNode3 = new node<long>;
         node<long>*       newNode4 = new node<long>;
 
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
 
         newNode4->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode2->add_node (*newNode4);
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node (*b1);
-        newNode->add_node (*newNode2);
+        newNode2->add_node (*newNode4,*newNode3);
+        newNode->add_node (*b1,*newNode2);
 
         newNode4->in_object = tgt.theFormula.lLength;
         tgt.theFormula.AppendNewInstance(newOp4);
@@ -2819,24 +2723,13 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         }
 
         newNodes[6]->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
+        newNodes[5]->add_node (*b2,*newNodes[6]);
+        newNodes[4]->add_node (*b1,*DuplicateFormula (currentSubExpression->go_down(2),tgt));
+        newNodes[3]->add_node (*newNodes[4],*DuplicateFormula (currentSubExpression->go_down(1),tgt));
+        newNodes[2]->add_node (*newNodes[5],*newNodes[3]);
+        newNodes[1]->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt),*DuplicateFormula (currentSubExpression->go_down(2),tgt));
 
-        newNodes[5]->add_node (*b2);
-        newNodes[5]->add_node (*newNodes[6]);
-
-        newNodes[4]->add_node (*b1);
-        newNodes[4]->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
-
-        newNodes[3]->add_node (*newNodes[4]);
-        newNodes[3]->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNodes[2]->add_node (*newNodes[5]);
-        newNodes[2]->add_node (*newNodes[3]);
-
-        newNodes[1]->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-        newNodes[1]->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
-
-        newNode->add_node  (*newNodes[1]);
-        newNode->add_node  (*newNodes[2]);
+        newNode->add_node  (*newNodes[1],*newNodes[2]);
         
         for (long k = 6; k >=0 ; k--) {
             newNodes[k]->in_object = tgt.theFormula.lLength;

@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,14 +37,11 @@
  
  */
 
-#include "hy_strings.h"
-
-#ifndef __HYPHYXCODE__
-#include "gnuregex.h"
-#else
-#include "regex.h"
-#include <unistd.h>
-#endif
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <time.h>
 
 #ifdef   __UNIX__
 #if !defined __MINGW32__
@@ -53,23 +50,20 @@
 #include <unistd.h>
 #endif
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
-
+#include "hy_strings.h"
+#include "gnuregex.h"
 #include "batchlan.h"
+#include "global_things.h"
+#include "mersenne_twister.h"
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <time.h>
+using namespace hy_global;
+
 
 
 #define MOD_ADLER 65521
 
 _String   compileDate = __DATE__,
-          __HYPHY__VERSION__ = _String ("2.31alpha") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+          __HYPHY__VERSION__ = _String ("2.32alpha") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
                                                                                                   Replace("Mar", "03", true).
                                                                                                   Replace("Apr", "04", true).
@@ -84,14 +78,13 @@ _String   compileDate = __DATE__,
                                                                                                   & compileDate.Cut (4,5).Replace (" ", "0", true) & "beta";
 
  
-_String     emptyString (""),
-            emptyAssociativeList ("{}"),
+_String     emptyAssociativeList ("{}"),
             hyphyCiteString ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n");
 
 char        defaultReturn = 0;
 unsigned    long _String::storageIncrement = 32;
 
-/*extern int _hy_mpi_node_rank;
+/*extern int hy_mpi_node_rank;
 long  loopCount      = 3;
 char* addrBreak      = 0x583088;*/
 
@@ -129,9 +122,9 @@ Constructors
 */
 
 //Does nothing
-_String::_String (void)
-{
-    sLength = 0;
+_String::_String (void) {
+    sLength = 0UL;
+    buffer_allocation = 0UL;
     sData = nil;
 }
 
@@ -140,17 +133,17 @@ _String::_String (unsigned long sL, bool is_buffer) {
 
     if (is_buffer) {
         sLength = 0;
-        nInstances = sL>storageIncrement?sL:storageIncrement;
-        sData = (char*)MemAllocate (nInstances*sizeof (char));
+        buffer_allocation = sL>storageIncrement?sL:storageIncrement;
+        sData = (char*)MemAllocate (buffer_allocation*sizeof (char),true);
         //sData = (char*)MemAllocate (storageIncrement*sizeof (char));
         if (!sData) {
-            nInstances = 1;
-            warnError(-108);
+            buffer_allocation = 0UL;
+            HandleApplicationError ( kErrorStringMemoryFail, true );
         }
     } else {
         sLength = sL;
         sData = (char*)MemAllocate (sL+1);
-        /* if (sData == addrBreak && _hy_mpi_node_rank == 1)
+        /* if (sData == addrBreak && hy_mpi_node_rank == 1)
          {
              printf ("Here %d %d\n", sLength, getpid());
              sleep (10);
@@ -162,19 +155,17 @@ _String::_String (unsigned long sL, bool is_buffer) {
             memset (sData,0,sL+1);
         } else {
             sLength = 0;
-            warnError (-108);
+            HandleApplicationError ( kErrorStringMemoryFail, true );
         }
     }
 }
 
 //Length constructor
-_String::_String (long sL)
-{
-
-    char s [32];
+_String::_String (long sL){
+    char s [64];
     snprintf (s, sizeof(s),"%ld", sL);
     for(sLength=0; s[sLength]; sLength++) ;
-    checkPointer (sData = (char*)MemAllocate(sLength+1));
+    sData = (char*)MemAllocate(sLength+1);
     memcpy       (sData, s, sLength+1);
 }
 
@@ -193,7 +184,7 @@ _String::_String (const _String& source, long from, long to)
             sLength = to-from+1;
             sData = (char*)MemAllocate (sLength+1);
             if (!sData) {
-                warnError( -108);
+                HandleApplicationError ( kErrorStringMemoryFail, true );
                 return;
             }
 
@@ -215,22 +206,19 @@ _String::_String (const _String& source, long from, long to)
 }
 
 //Stack copy contructor
-_String::_String (const _String& s)
-{
+_String::_String (const _String& s) {
     Duplicate ((BaseRef)&s);
 }
 
-_String::_String (_String* s)
-{
+_String::_String (_String* s) {
     CopyDynamicString (s, false);
 }
 
 //Data constructor
-_String::_String (const char* s)
-{
+_String::_String (const char* s) {
     // room for the null terminator
     sLength = strlen( s );
-    checkPointer (sData = (char*)MemAllocate (sLength+1));
+    sData = (char*)MemAllocate (sLength+1UL);
     memcpy (sData, s, sLength+1);
 }
 
@@ -238,7 +226,7 @@ _String::_String (const char* s)
 _String::_String (const char s)
 {
     sLength = 1;
-    checkPointer (sData = (char*)MemAllocate (sLength+1));
+    sData = (char*)MemAllocate (sLength+1);
     sData[0]=s;
     sData[1]=0;
 }
@@ -246,7 +234,7 @@ _String::_String (const char s)
 //Data constructor
 _String::_String (const _String& s, unsigned long copies) {
   sLength = copies * s.sLength;
-  checkPointer (sData = (char*)MemAllocate (sLength+1));
+  sData = (char*)MemAllocate (sLength+1);
   unsigned long index = 0UL;
   for (unsigned long i = 0UL; i < copies; i++) {
     for (unsigned long j = 0UL; j < s.sLength; j++, index++) {
@@ -257,11 +245,11 @@ _String::_String (const _String& s, unsigned long copies) {
 }
 
 //Data constructor
-_String::_String (_Parameter val, const char * format)
+_String::_String (hy_float val, const char * format)
 {
     char s_val[256];
     sLength = snprintf (s_val,256, format?format:"%g",val);
-    checkPointer (sData = (char*)MemAllocate (sLength+1));
+    sData = (char*)MemAllocate (sLength+1);
     for (unsigned long k=0; k<=sLength; k++) {
         sData[k] = s_val[k];
     }
@@ -285,14 +273,14 @@ _String::_String (FILE* F)
 //Destructor
 _String::~_String(void)
 {
-    if (nInstances<=1) {
+    if (CanFreeMe()) {
         if (sData) {
             free (sData);
             sData = nil;
         }
         sLength = 0;
     } else {
-        nInstances--;
+        RemoveAReference();
     }
 }
 
@@ -340,7 +328,7 @@ bool _String::operator == (_String const& s) const {
 //Append operator
 const _String _String::operator & (const _String& s) const {
     if (sLength+s.sLength == 0UL) {
-        return emptyString;
+        return kEmptyString;
     }
 
     _String res (sLength+s.sLength,false);
@@ -360,8 +348,8 @@ const _String _String::operator & (const _String& s) const {
 // append operator
 _String& _String::operator << (const _String* s) {
   if ( s && s->sLength) {
-    if (nInstances < sLength + s->sLength) {
-      unsigned long incBy = sLength + s->sLength - nInstances;
+    if (buffer_allocation < sLength + s->sLength) {
+      unsigned long incBy = sLength + s->sLength - buffer_allocation;
       
       if (incBy < storageIncrement) {
         incBy = storageIncrement;
@@ -371,9 +359,9 @@ _String& _String::operator << (const _String* s) {
         incBy = sLength >> 3;
       }
       
-      nInstances+=incBy;
+      buffer_allocation+=incBy;
       
-      if (! (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)))) {
+      if (! (sData = (char*)MemReallocate((char*)sData, buffer_allocation*sizeof(char)))) {
         return *this;
       }
       
@@ -403,9 +391,9 @@ _String& _String::operator << (const char* str) {
 
 //Append operator
 _String& _String::operator << (const char c) {
-  if (nInstances <= sLength) {
-      nInstances  += ((storageIncrement*8 > sLength)? storageIncrement: (sLength/8+1));
-      checkPointer (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)));
+  if (buffer_allocation <= sLength) {
+      buffer_allocation  += ((storageIncrement*8 > sLength)? storageIncrement: (sLength/8+1));
+      sData = (char*)MemReallocate((char*)sData, buffer_allocation*sizeof(char));
   }
 
   sData[sLength++]=c;
@@ -555,7 +543,7 @@ void _String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
 const _String _String::Chop(long from, long to) const
 {
     if (sLength == 0UL) {
-        return emptyString;
+        return kEmptyString;
     }
     if (from == -1) {
         from = 0L;
@@ -564,7 +552,7 @@ const _String _String::Chop(long from, long to) const
         to = sLength-1UL;
     }
     if (to<from) {
-        return emptyString;
+        return kEmptyString;
     }
   
     _String res (sLength+from-to+1, false);
@@ -601,24 +589,23 @@ bool _String::ContainsSubstring(_String& s)
     return false;
 }
 
-void _String::CopyDynamicString (_String *s, bool flushMe)
-{
+void _String::CopyDynamicString (_String *s, bool flushMe) {
     if (flushMe && sData) {
         free (sData);
     }
     sLength     = s->sLength;
-    if (s->nInstances == 1) {
+    if (s->CanFreeMe ()) {
         sData       = s->sData;
         s->sData    = nil;
         DeleteObject (s);
     } else {
-        checkPointer (sData = (char*)MemAllocate (sLength+1));
+        sData = (char*)MemAllocate (sLength+1);
         if (s->sData) {
             memcpy (sData, s->sData, sLength+1);
         } else {
             sData[0] = 0;
         }
-        s->nInstances --;
+        s->RemoveAReference();
     }
 }
 
@@ -643,7 +630,7 @@ const _String _String::Cut(long from, long to) const
         return res;
       }
     }
-    return emptyString;
+    return kEmptyString;
 }
 
 //Delete range char operator
@@ -661,32 +648,29 @@ void _String::Delete (long from, long to)
         memmove (sData+from, sData+to+1, sLength-to-1);
     }
     sLength -= to-from+1;
-    sData = MemReallocate (sData,sizeof(char)*(sLength+1));
+    sData = (char*)MemReallocate (sData,sizeof(char)*(sLength+1));
     sData[sLength]=0;
 }
 
-void    _String::Duplicate (BaseRef ref)
-{
-    _String * s = (_String*)ref;
+void    _String::Duplicate (BaseRefConst ref) {
+    _String const * s = (_String const*)ref;
 
     sLength = s->sLength;
     sData   = s->sData;
+    buffer_allocation = s->buffer_allocation;
 
     if (sData) {
-        checkPointer (sData = (char*)MemAllocate (sLength+1));
+        sData = (char*)MemAllocate (sLength+1);
         memcpy (sData, s->sData, sLength+1);
     }
 
 }
 
-void    _String::DuplicateErasing (BaseRef ref)
-{
+void    _String::DuplicateErasing (BaseRef ref) {
     if (sData) {
         free (sData);
     }
-
     Duplicate(ref);
-
 }
 
 //Append operator
@@ -820,12 +804,12 @@ void _String::FormatTimeString(long time_diff)
 //Finalize buffer string
 void _String::Finalize (void)
 {
-    if (!(sData = MemReallocate (sData, sLength+1))) {
+    if (!(sData = (char*)MemReallocate (sData, sLength+1))) {
       return;
     }
 
     sData[sLength]  = 0;
-    nInstances      = 1L;
+    buffer_allocation      = 0UL;
 
 }
 
@@ -1214,7 +1198,7 @@ void _String::Insert (char c, long pos)
         pos = sLength;
     }
 
-    sData = MemReallocate (sData,sizeof(char)*(sLength+2));
+    sData = (char*)MemReallocate (sData,sizeof(char)*(sLength+2));
 
     if (pos<sLength) {
         memmove(sData+pos+1,sData+pos, sLength-pos);
@@ -1284,12 +1268,9 @@ unsigned long _String::Length(void) const {
 }
 
 //Make dynamic copy
-BaseRef _String::makeDynamic (void)
-{
+BaseRef _String::makeDynamic (void) const {
     _String * r = new _String;
-    if (!r) {
-        checkPointer(r);
-    }
+    
     //memcpy ((char*)r, (char*)this, sizeof (_String));
     //r->nInstances = 1;
     r->Duplicate(this);
@@ -1300,7 +1281,7 @@ BaseRef _String::makeDynamic (void)
 const _String _String::Replace(const _String s, const _String d, bool flag) const
 {
     if (!sLength) {
-        return emptyString;
+        return kEmptyString;
     }
     if (sLength<s.sLength) {
         return *this;
@@ -1422,7 +1403,6 @@ _String* _String::Sort (_SimpleList* index)
             charList.Sort();
         }
         _String * sorted = new _String (sLength);
-        checkPointer (sorted);
         for (unsigned long i=0; i<sLength; i++) {
             sorted->sData[i] = charList.lData[i];
         }
@@ -1467,7 +1447,7 @@ const _List _String::Tokenize (_String const& s) const {
     return pieces;
 }
 
-_Parameter _String::toNum (void) const {
+hy_float _String::toNum (void) const {
     if (sLength == 0UL) {
         return 0.;
     }
@@ -1485,13 +1465,13 @@ long _String::toLong (void) const {
 
 //Return good ole char*
 BaseRef _String::toStr (unsigned long) {
-    nInstances++;
+    AddAReference();
     return this;
 }
 
-_Parameter  _String::ProcessTreeBranchLength (void)
+hy_float  _String::ProcessTreeBranchLength (void)
 {
-    _Parameter res = -1.; 
+    hy_float res = -1.; 
 
     if (sLength) {
         if (sData[0]==':') {
@@ -1664,11 +1644,11 @@ void _String::Trim(long from, long to, bool softTrim)
         }
 
         sLength = to-from+1;
-        sData = MemReallocate (sData, to-from+2);
+        sData = (char*)MemReallocate (sData, to-from+2);
         sData[to-from+1]=0;
     } else {
         sLength = 0;
-        sData = MemReallocate (sData, 1);
+        sData = (char*)MemReallocate (sData, 1);
         sData [0] = 0;
     }
 }
@@ -1957,7 +1937,7 @@ void    _String::ProcessParameter(void)
 //Filename and Platform Methods
 //==============================================================
 
-bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP, bool assume_platform_specific, _ExecutionList * caller)
+bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, hy_pointer theP, bool assume_platform_specific, _ExecutionList * caller)
 {
     _String errMsg;
     
@@ -1976,7 +1956,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
                         throw ("Failed to create a temporary file name");
                     }
                     *this = tmpFileName;
-                    CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
+                    CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (*this, false), false);
                     close (fileDescriptor);
                     return true;
                 #else
@@ -1997,7 +1977,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             #endif
             ,caller);
             
-            CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
+            CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (*this, false), false);
             return true;
         }
 
@@ -2012,7 +1992,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
         }
 
         if (!sLength) {
-           CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
+           CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (*this, false), false);
            return true;
         }
     }
@@ -2021,7 +2001,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
         if (caller) {
             caller->ReportAnExecutionError(errMsg);
         } else {
-            WarnError(errMsg);
+            HandleApplicationError (errMsg);
         }
         return false;
     }
@@ -2195,11 +2175,11 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             }
             *this = lastPath->Cut(0,f+1)& Cut(k,-1);
         } else {
-            *this = emptyString;
+            *this = kEmptyString;
         }
     }
 #endif
-    CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
+    CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (*this, false), false);
     return true;
 }
 
@@ -2220,7 +2200,7 @@ _String const _String::PathComposition (_String const relPath) const {
             result.Trim(0,f+1);
 
             if (f==-1) {
-                return emptyString;
+                return kEmptyString;
             }
             k++;
 
@@ -2232,13 +2212,13 @@ _String const _String::PathComposition (_String const relPath) const {
     else {
         return relPath;
     }
-    return emptyString;
+    return kEmptyString;
 }
 
 //Mac only so far
 _String const _String::PathSubtraction (_String const p2, char) const {
     _String result;
-    char separator = GetPlatformDirectoryChar();
+    char separator = get_platform_directory_char();
 
     //if (pStyle == 0)
     //    separator = ':';
@@ -2265,21 +2245,11 @@ _String const _String::PathSubtraction (_String const p2, char) const {
             return result;
         }
     }
-    return emptyString;
+    return kEmptyString;
 }
 
 //TODO: These are global methods. Should they even be here?
-char GetPlatformDirectoryChar (void)
-{
-    char c = '/';
-#ifdef __MAC__
-    c = ':';
-#elif defined __WINDOZE__ || defined __MINGW32__
-    c = '\\';
-#endif
 
-    return c;
-}
 
 _String GetVersionString (void)
 {
@@ -2293,12 +2263,8 @@ _String GetVersionString (void)
     theMessage = theMessage & " for ";
 #ifdef __MAC__
     theMessage = theMessage & "MacOS";
-#ifdef __HYPHYXCODE__
-    theMessage = theMessage & "(Universal Binary)";
-#else
 #ifdef TARGET_API_MAC_CARBON
     theMessage = theMessage & "(Carbon)";
-#endif
 #endif
 #endif
 #ifdef __WINDOZE__
@@ -2449,28 +2415,27 @@ _String GetRegExpError(int error)
     return _String("Regular Expression error:")&buffer;
 }
 
-void FlushRegExp(Ptr regExpP)
+void FlushRegExp(hy_pointer regExpP)
 {
     regex_t*        regEx = (regex_t*)regExpP;
     regfree        (regEx);
     delete          regEx;
 }
 
-Ptr PrepRegExp(_String* source, int& errCode, bool caseSensitive)
+hy_pointer PrepRegExp(_String* source, int& errCode, bool caseSensitive)
 {
     regex_t  * res = new regex_t;
-    checkPointer (res);
 
     errCode = regcomp (res, source->sData, REG_EXTENDED|(caseSensitive?0:REG_ICASE));
 
     if (errCode) {
-        FlushRegExp ((Ptr)res);
+        FlushRegExp ((hy_pointer)res);
         return nil;
     }
-    return (Ptr)res;
+    return (hy_pointer)res;
 }
 
-void _String::RegExpMatch(Ptr pattern, _SimpleList& matchedPairs)
+void _String::RegExpMatch(hy_pointer pattern, _SimpleList& matchedPairs)
 {
     if (sLength) {
         regex_t*        regEx = (regex_t*)pattern;
@@ -2487,7 +2452,7 @@ void _String::RegExpMatch(Ptr pattern, _SimpleList& matchedPairs)
     }
 }
 
-void _String::RegExpMatchAll(Ptr pattern, _SimpleList& matchedPairs)
+void _String::RegExpMatchAll(hy_pointer pattern, _SimpleList& matchedPairs)
 {
     if (sLength) {
         regex_t*        regEx = (regex_t*)pattern;
@@ -2515,12 +2480,12 @@ void _String::RegExpMatchOnce(_String* pattern, _SimpleList& matchedPairs, bool 
 {
     if (sLength) {
         int errNo = 0;
-        Ptr regex = PrepRegExp (pattern, errNo, caseSensitive);
+        hy_pointer regex = PrepRegExp (pattern, errNo, caseSensitive);
         if (regex) {
             RegExpMatch (regex, matchedPairs);
             FlushRegExp (regex);
         } else if (handleErrors) {
-            WarnError (GetRegExpError (errNo));
+            HandleApplicationError (GetRegExpError (errNo));
         }
     }
 }
@@ -2557,7 +2522,7 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
          
     if (first_char == '*' || first_char == '^') {
         if (is_func_ref) {
-            referenced_object = emptyString;
+            referenced_object = kEmptyString;
             return HY_STRING_INVALID_REFERENCE;
         }
         bool is_global_ref = first_char == '^';
@@ -2612,6 +2577,6 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
         }
     }
     
-    referenced_object = emptyString;
+    referenced_object = kEmptyString;
     return HY_STRING_INVALID_REFERENCE;
 }

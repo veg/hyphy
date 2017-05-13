@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -39,17 +39,14 @@
 
 #include "avllistx.h"
 #include "hy_strings.h"
-#include "errorfns.h"
 #include "parser.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
 
 //______________________________________________________________
 
@@ -81,10 +78,8 @@ void _AVLListX::Clear (bool cL)
 
 //______________________________________________________________
 
-BaseRef _AVLListX::toStr (unsigned long)
-{
+BaseRef _AVLListX::toStr (unsigned long) {
     _String * str = new _String (128L, true);
-    checkPointer (str);
 
     if (countitems() == 0) {
         (*str) << "Empty Associative List";

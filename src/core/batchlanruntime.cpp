@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -44,24 +44,14 @@
 #include      "bayesgraph.h"
 #include      "scfg.h"
 #include      "function_templates.h"
+#include      "global_object_lists.h"
+#include      "mersenne_twister.h"
+#include      "global_things.h"
 
-#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
-    #include "HYConsoleWindow.h"
-    #include "HYDialogs.h"
-
-#endif
-
-#if defined __HYPHYQT__
-#include "HYSharedMain.h"
-#include "hyphy_qt_helpers.h"
-#endif
-
-#include "global_object_lists.h"
-
+using namespace hy_global;
 using namespace hyphy_global_objects;
 
 _List       openFileHandlesBackend;
-
 _AVLListX   openFileHandles     (&openFileHandlesBackend);
 
 //____________________________________________________________________________________
@@ -90,7 +80,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
     
     _Matrix*            receptacle = nil;
     
-    _Parameter          cghf = 1.0;
+    hy_float          cghf = 1.0;
     checkParameter      (hfCountGap,cghf,1.0, currentProgram.nameSpacePrefix);
     
     if (objectType == HY_BL_DATASET) { // harvest directly from a DataSet
@@ -118,7 +108,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
         }
     }
     
-    SetStatusLine           (emptyString);
+    SetStatusLine           (kEmptyString);
     
     if (errMsg.sLength || receptacle == nil) {
         DeleteObject (receptacle);
@@ -153,7 +143,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
     _LikelihoodFunction    *lkf = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (lfNameID, objectType,nil,doOptimize==false);
     
     if (lkf == nil) { // will only happen if the object is a custom function 
-        lkf = (_LikelihoodFunction*)checkPointer(new _CustomFunction (&lfNameID));
+        lkf = new _CustomFunction (&lfNameID);
     }
     
     if (!doOptimize) { 
@@ -171,7 +161,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                 if (restrictVariable->ObjectClass () == ASSOCIATIVE_LIST)
                     // a list of variables stored as keys in an associative array
                 {
-                    checkPointer (restrictor = new _SimpleList);
+                    restrictor = new _SimpleList;
                     _List*  restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
                     for (unsigned long iid = 0; iid < restrictedVariables->lLength; iid++) {
                         _String varID = currentProgram.AddNameSpaceToID(*(_String*)(*restrictedVariables)(iid));
@@ -184,7 +174,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                     variableIDs << LocateVarByName (varID);
                 }
                 if (variableIDs.lLength > 0) {
-                    checkPointer(restrictor = new _SimpleList ());
+                    restrictor = new _SimpleList ();
                     for (unsigned long var_index = 0; var_index < variableIDs.lLength; var_index++) {
                         long vID = lkf->GetIndependentVars().Find(variableIDs.lData[var_index]);
                         if (vID >= 0) (*restrictor) << vID;
@@ -245,7 +235,7 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& currentPr
             lf->DoneComputing (true);
     } else {
         if (!lf->HasBeenSetup()) {
-            WarnError (_String("Please call LFCompute (lf_id, ")&lfStartCompute&") before evaluating the likelihood function");
+            hy_global::HandleApplicationError (_String("Please call LFCompute (lf_id, ")&lfStartCompute&") before evaluating the likelihood function");
             return false;
         } else {
             return CheckReceptacleCommandIDAndStore(&AppendContainerName(*arg2,currentProgram.nameSpacePrefix), HY_HBL_COMMAND_LFCOMPUTE, HY_HBL_COMMAND_LFCOMPUTE, new _Constant (lf->Compute()), false);
@@ -274,7 +264,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         if (lastModelUsed.sLength) {
             PushFilePath (lastModelUsed);
         } else {
-            WarnError (_String("First call to SelectTemplateModel. ") & useLastModel &" is meaningless.");
+            hy_global::HandleApplicationError (_String("First call to SelectTemplateModel. ") & useLastModel &" is meaningless.");
             return false;
         }
     } else {
@@ -307,7 +297,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         }
 
         if (!dataType.sLength) {
-            WarnError (_String("DataSetFilter '")&filterName&"' contains non-standard data and SelectTemplateModel is not applicable.");
+            hy_global::HandleApplicationError (_String("DataSetFilter '")&filterName&"' contains non-standard data and SelectTemplateModel is not applicable.");
             return false;
         }
 
@@ -325,7 +315,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         }
 
         if (!matchingModels.lLength) {
-            WarnError ((_String)("DataSetFilter '")&filterName&"' could not be matched with any template models.");
+            hy_global::HandleApplicationError ((_String)("DataSetFilter '")&filterName&"' could not be matched with any template models.");
             return false;
         }
         unsigned long model_id = HY_MAX_LONG_VALUE;
@@ -338,12 +328,12 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                 }
 
             if (model_id >= matchingModels.lLength) {
-                WarnError (errMsg & " is not a valid model (with input redirect) in call to SelectTemplateModel");
+                hy_global::HandleApplicationError (errMsg & " is not a valid model (with input redirect) in call to SelectTemplateModel");
                 return false;
             }
         } else {
 #ifdef __HEADLESS__
-            WarnError ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
+            hy_global::HandleApplicationError ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
             return false;
 #else
 #if defined __UNIX__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
@@ -370,16 +360,16 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
             }
 #endif
 #if !defined __UNIX__ ||  defined __HYPHYQT__ ||  defined __HYPHY_GTK__
-            _SimpleList choiceDummy (2,0,1), selDummy;
+            _SimpleList choiceDummy (2,0,1), sGetelDummy;
             model_id = HandleListSelection (templateModelList, choiceDummy, matchingModels, "Choose one of the standard substitution models",selDummy,1,nil);
             if (model_id==-1) {
-                terminateExecution = true;
+                terminate_execution = true;
                 return false;
             }
 #endif
 #endif
         }
-        modelFile = _HYStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) &*((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(4));
+        modelFile = GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) &*((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(4));
         PushFilePath (modelFile, false);
     }
 
@@ -411,7 +401,7 @@ bool      _ElementaryCommand::HandleUseModel (_ExecutionList& currentProgram) {
     long mID = FindModelName(namedspacedMM);
 
     if (mID<0 && !useNoModel.Equal((_String*)parameters(0))) {
-        WarnError(*(_String*)parameters(0) & " does not refer to a valid defined substitution model in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_USE_MODEL));
+        hy_global::HandleApplicationError(*(_String*)parameters(0) & " does not refer to a valid defined substitution model in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_USE_MODEL));
         return false;
     } else {
         lastMatrixDeclared = mID;
@@ -433,24 +423,17 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
              errMsg,
              result;
 
-    if (currentArgument->Equal (&randomSeed)) {
-        globalRandSeed = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
-        init_genrand (globalRandSeed);
-        setParameter (randomSeed, ((long)globalRandSeed));
+    if (currentArgument->Equal (&hy_env::random_seed)) {
+        hy_random_seed = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
+        hy_env::EnvVariableSet(hy_env::random_seed, new _Constant (hy_random_seed), false);
         return true;
     }
 
-    if (currentArgument->Equal (&randomSeed)) {
-        globalRandSeed = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
-        init_genrand (globalRandSeed);
-        setParameter (randomSeed, ((long)globalRandSeed));
-        return true;
-    }
-    
+
     if (currentArgument->Equal (&deferConstrainAssignment)) {
         bool on = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
         if (on) {
-            deferSetFormula = (_SimpleList*)checkPointer(new _SimpleList);
+            deferSetFormula = new _SimpleList;
         } else if (deferSetFormula) {
             FinishDeferredSF ();
         }
@@ -462,29 +445,11 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         return true;
     }
 
-    if (currentArgument->Equal (&statusBarProgressValue)) {
-#if !defined __UNIX__
-        SetStatusLine     (empty,empty, empty,  ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix), HY_SL_PERCENT);
-#endif
-        return true;
-    }
-
-    if (currentArgument->Equal (&statusBarUpdateString)) {
+    if (currentArgument->Equal (&hy_env::status_bar_update_string)) {
         _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
-
-#if defined __UNIX__ 
-        #if not defined __HYPHY_GTK__ && not defined __HEADLESS__
-            SetStatusLineUser     (sbar_value);
-        #else
-            SetStatusLine (sbar_value);
-        #endif 
-#else
-        SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
-#endif
+         SetStatusLine (sbar_value);
         return true;
     }
-
-
     long objectIndex,
          typeFlag    = HY_BL_ANY;
     
@@ -714,7 +679,7 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& currentProgram) {
         _PMathObj assertionResult = rhs.Compute();
         if (assertionResult && assertionResult->ObjectClass () == NUMBER) {
             if (CheckEqual(assertionResult->Value(),0.0)) {
-                _Parameter whatToDo;
+                hy_float whatToDo;
                 checkParameter (assertionBehavior, whatToDo, 0.0);
 
                 _String errMsg;
@@ -796,7 +761,7 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
     _Variable* theObject = FetchVar (LocateVarByName(theBaseNode));
     
     if (!theObject || (theObject->ObjectClass()!=TREE && theObject->ObjectClass()!=TREE_NODE)) {
-        WarnError (_String("Not a defined tree/tree node object '") & theBaseNode & "' in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
+        hy_global::HandleApplicationError (_String("Not a defined tree/tree node object '") & theBaseNode & "' in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
         return false;
     }
     
@@ -804,7 +769,7 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
     if (theObject->ObjectClass() == TREE_NODE) {
         theTree     = (_TheTree*)((_VariableContainer*)theObject)->GetTheParent();
         if (!theTree) {
-            WarnError (_String("Internal error - orphaned tree node '") & theBaseNode & "' in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
+            hy_global::HandleApplicationError (_String("Internal error - orphaned tree node '") & theBaseNode & "' in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
             return false;
             
         }
@@ -813,7 +778,7 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
     } else {
         treeName    = *theObject->GetName();
         theTree     = (_TheTree*)theObject;
-        theBaseNode = emptyString;
+        theBaseNode = kEmptyString;
     }
     
     theTree->MolecularClock(theBaseNode,parameters);
@@ -845,7 +810,7 @@ bool      _ElementaryCommand::HandleGetURL(_ExecutionList& currentProgram){
     } else {
         if (act->Equal(&getURLFileFlag)) {
             _String fileName (ProcessLiteralArgument(arg1,currentProgram.nameSpacePrefix));
-            fileName.ProcessFileName (true,false,(Ptr)currentProgram.nameSpacePrefix);
+            fileName.ProcessFileName (true,false,(hy_pointer)currentProgram.nameSpacePrefix);
             if (!Get_a_URL(url, &fileName)) {
                 errMsg = _String ("Could not fetch '") & url & "'";
             }
@@ -1073,7 +1038,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                     break;
                 }
                 case HY_BL_HBL_FUNCTION: {
-                    _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
+                    _AssociativeList * resAVL = new _AssociativeList;
                     resAVL->MStore ("ID", new _FString (*GetObjectNameByType (HY_BL_HBL_FUNCTION, index, false)), false);
                     resAVL->MStore ("Arguments", new _Matrix(GetBFFunctionArgumentList(index)), false);
                     resAVL->MStore ("Body", new _FString (GetBFFunctionBody(index).sourceText,false),false);
@@ -1120,7 +1085,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                         _AVLList    vAVL (&vL);
                         theVar->ScanForVariables (vAVL, true);
                         vAVL.ReorderList();
-                        _AssociativeList   * resL = (_AssociativeList *) checkPointer (new _AssociativeList);
+                        _AssociativeList   * resL = new _AssociativeList;
                         _List splitVars;
                         SplitVariableIDsIntoLocalAndGlobal (vL, splitVars);
                         InsertVarIDsInList (resL, "Global", *(_SimpleList*)splitVars(0));
@@ -1342,7 +1307,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
         if (!print_to_stdout) {
             fnm = *targetName;
             if (fnm.Equal(&messageLogDestination)) {
-                if ((dest = globalMessageFile) == nil) {
+                if ((dest = hy_message_log_file) == nil) {
                     return true; // requested print to MESSAGE_LOG, but it does not exist
                                  // (e.g. remote MPI nodes, or running from a read only location
                 }
@@ -1351,7 +1316,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                     fnm = GetStringFromFormula (&fnm,currentProgram.nameSpacePrefix);
                 }
                 
-                if (!fnm.ProcessFileName(true,false,(Ptr)currentProgram.nameSpacePrefix, false, &currentProgram)) {
+                if (!fnm.ProcessFileName(true,false,(hy_pointer)currentProgram.nameSpacePrefix, false, &currentProgram)) {
                     return false;
                 }
                 
@@ -1458,7 +1423,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
         yieldCPUTime();
     }
 #endif
-    if (dest && dest!=globalMessageFile && doClose) {
+    if (dest && dest!=hy_message_log_file && doClose) {
         fclose (dest);
     }
     

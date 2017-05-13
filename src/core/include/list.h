@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -240,7 +240,7 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual void Duplicate(const BaseRef);
+        virtual void Duplicate(BaseRefConst);
 
         /**
         * Delete the item at a given poisiton
@@ -288,10 +288,7 @@ class _List:public _SimpleList
         */
         virtual long FindString(BaseRef,long startat=0,bool caseSensitive=true,long upTo=-1);
 
-        /**
-        */
-        virtual long FreeUpMemory(long);
-
+ 
 
         /**
         * Populate a Simple List with integers incrementally.
@@ -341,7 +338,7 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual BaseRef makeDynamic(void);
+        virtual BaseRef makeDynamic(void) const;
 
         /**
         * Replace an item

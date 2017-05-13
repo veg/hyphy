@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -73,7 +73,7 @@ struct      _CompiledMatrixData {
     _SimpleFormulaDatum * theStack,
                         * varValues;
 
-    _Parameter         * formulaValues;
+    hy_float         * formulaValues;
 
     long      * formulaRefs;
     bool        has_volatile_entries;
@@ -121,7 +121,7 @@ public:
 
     _Matrix ( _List const &);                         //make string matrix from a list
 
-    _Matrix (_Parameter *, unsigned long, unsigned long);
+    _Matrix (hy_float *, unsigned long, unsigned long);
     /*
         20110616 SLKP
             added a simple constructor from a list of floating point values
@@ -214,7 +214,7 @@ public:
 
     _Matrix     operator * (_Matrix&);          // multiplication operation on matrices
 
-    _Matrix     operator * (_Parameter);        // multiplication of a matrix by a number
+    _Matrix     operator * (hy_float);        // multiplication of a matrix by a number
 
     void        operator += (_Matrix&);         // add/store operation on matrices
 
@@ -222,11 +222,11 @@ public:
 
     void        operator *= (_Matrix&);         // multiply/store operation on matrices
 
-    void        operator *= (_Parameter);       // multiply by a #/store operation on matrices
+    void        operator *= (hy_float);       // multiply by a #/store operation on matrices
 
-    void        AplusBx  (_Matrix&, _Parameter); // A = A + B*x (scalar)
+    void        AplusBx  (_Matrix&, hy_float); // A = A + B*x (scalar)
 
-    void        Sqr         (_Parameter* _hprestrict_);
+    void        Sqr         (hy_float* _hprestrict_);
     // square the matrix; takes a scratch vector
     // of at least lDim doubles
 
@@ -240,7 +240,7 @@ public:
     _Matrix*    NeighborJoin                    (bool);
     _Matrix*    MakeTreeFromParent              (long);
     _Matrix*    ExtractElementsByEnumeration    (_SimpleList*,_SimpleList*,bool=false);
-    _Matrix*    SimplexSolve                    (_Parameter = 1.e-6);
+    _Matrix*    SimplexSolve                    (hy_float = 1.e-6);
 
 
 //  void        SqrStrassen (void);
@@ -260,17 +260,17 @@ public:
     // if it is a vector - returns the Euclidean length
     // otherwise returns the largest element
 
-    _Parameter  AbsValue                        (void);
+    hy_float  AbsValue                        (void);
     virtual     _PMathObj Log                   (void);
     // return the matrix of logs of every matrix element
     
     void        SwapRows (const long, const long);
     long        CompareRows (const long, const long);
 
-    _Parameter  operator () (long, long);       // read access to an element in a matrix
-    _Parameter& operator [] (long);             // read/write access to an element in a matrix
+    hy_float  operator () (long, long);       // read access to an element in a matrix
+    hy_float& operator [] (long);             // read/write access to an element in a matrix
 
-    void        Store               (long, long, _Parameter);                       // write access to an element in a matrix
+    void        Store               (long, long, hy_float);                       // write access to an element in a matrix
     void        StoreObject         (long, long, _MathObject*, bool dup = false);
     void        StoreObject         (long,  _MathObject*,bool dup = false);
     void        StoreFormula        (long, long, _Formula&, bool = true, bool = true);
@@ -285,36 +285,36 @@ public:
     // matrix of given dimensions and storage class (normal/sparse)
     // and storage type (pointer/array)
 
-    friend      void                DuplicateMatrix (_Matrix*,  _Matrix*);
+    friend      void                DuplicateMatrix (_Matrix*,  _Matrix const*);
     // an auxiliary function which duplicates a matrix
 
 
-    _Parameter          MaxElement      (char doSum = 0, long * = nil);
+    hy_float          MaxElement      (char doSum = 0, long * = nil);
     // SLKP 20101022: added an option to return the sum of all elements as an option (doSum = 1) or
     // the sum of all absolute values (doSum == 2)
     // returns the largest element's abs value for given matrix
     // SLKP 20110523: added an option (doSum == 3) to return the largest element (no abs value)
     // for run modes 0 and 3, if the 2nd argument is non-nil, the index of the winning element will be stored
 
-    _Parameter          MinElement      (char doAbs = 1, long * = nil);
+    hy_float          MinElement      (char doAbs = 1, long * = nil);
 
     // SLKP 20110620: added the 2nd argument to optionally store the index of the smallest element
     //              : added the option to NOT do absolute values
     // returns the smallest, non-zero element value for given matrix
 
-    bool                IsMaxElement    (_Parameter);
+    bool                IsMaxElement    (hy_float);
     // true if there is an elem abs val of which is greater than the arg
     // false otherwise
 
 
-    _Parameter              MaxRelError(_Matrix&);
+    hy_float              MaxRelError(_Matrix&);
 
 //  friend      _Matrix     IterateStrassen (_Matrix&, _Matrix&);
     // used in Strassen Squaring
 
-    virtual     BaseRef     makeDynamic (void); // duplicate this object into a dynamic copy
+    virtual     BaseRef     makeDynamic (void) const; // duplicate this object into a dynamic copy
 
-    virtual     void        Duplicate   (BaseRef obj); // duplicate this object into a dynamic copy
+    virtual     void        Duplicate   (BaseRefConst obj); // duplicate this object into a dynamic copy
 
     virtual     BaseRef     toStr       (unsigned long = 0UL);       // convert this matrix to a string
 
@@ -322,7 +322,7 @@ public:
 
     bool        AmISparse               (void);
 
-    _Parameter  ExpNumberOfSubs         (_Matrix*,bool);
+    hy_float  ExpNumberOfSubs         (_Matrix*,bool);
 
     virtual     bool        IsVariable  (void) {
         return storageType != _NUMERICAL_TYPE;
@@ -340,7 +340,7 @@ public:
     void        ExportMatrixExp         (_Matrix*, FILE*);
     bool        ImportMatrixExp         (FILE*);
 
-    _Parameter  FisherExact             (_Parameter, _Parameter, _Parameter);
+    hy_float  FisherExact             (hy_float, hy_float, hy_float);
 
     virtual     bool        HasChanged  (bool = false);
     // have any variables which are referenced by the elements changed?
@@ -356,10 +356,10 @@ public:
         return lDim;
     }
     long        GetMySize                   (void) {
-        return sizeof(_Matrix)+lDim*(storageType==_NUMERICAL_TYPE?sizeof(_Parameter):sizeof(Ptr));
+        return sizeof(_Matrix)+lDim*(storageType==_NUMERICAL_TYPE?sizeof(hy_float):sizeof(hy_pointer));
     }
 
-    void        PopulateConstantMatrix      (const _Parameter);
+    void        PopulateConstantMatrix      (const hy_float);
     /* SLKP 20090818
             fill out a numeric matrix with a fixed value
             if the matrix is sparse, only will out the non-void entries
@@ -406,7 +406,7 @@ public:
     void        MakeMeSimple                (void);
     void        MakeMeGeneral               (void);
     void        ConvertToSimpleList         (_SimpleList&);
-    void        CompressSparseMatrix        (bool, _Parameter*);
+    void        CompressSparseMatrix        (bool, hy_float*);
     //prepare the transition probs matrix for exponentiation
 
     long        Hash (long, long);                  // hashing function, which finds matrix
@@ -416,10 +416,10 @@ public:
     // if element was not found, the number returned
     // indicates the first available slot
 
-    _Parameter*       fastIndex(void)  const {
-        return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(_Parameter*)theData:nil;
+    hy_float*       fastIndex(void)  const {
+        return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(hy_float*)theData:nil;
     }
-    inline            _Parameter&         directIndex(long k)   {
+    inline            hy_float&         directIndex(long k)   {
         return theData[k];
     }
     long              MatrixType (void) {
@@ -459,7 +459,7 @@ public:
      */
     /*---------------------------------------------------*/
 
-    _Parameter   *theData;                            // matrix elements
+    hy_float   *theData;                            // matrix elements
 
 
 protected:
@@ -473,8 +473,8 @@ protected:
 
 private:
 
-    _Parameter  computePFDR         (_Parameter, _Parameter);
-    void        InitMxVar           (_SimpleList&   , _Parameter);
+    hy_float  computePFDR         (hy_float, hy_float);
+    void        InitMxVar           (_SimpleList&   , hy_float);
     bool        ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);
 
     _PMathObj   PathLogLikelihood   (_PMathObj);
@@ -495,19 +495,19 @@ private:
     //bool      IsAStringMatrix     (void);
     void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
     // aux arithmetic rountines
-    bool        AddWithThreshold    (_Matrix&, _Parameter);
-    void        RowAndColumnMax     (_Parameter&, _Parameter&, _Parameter* = nil);
+    bool        AddWithThreshold    (_Matrix&, hy_float);
+    void        RowAndColumnMax     (hy_float&, hy_float&, hy_float* = nil);
     void        Subtract            (_Matrix&, _Matrix&);
-    void        Multiply            (_Matrix&, _Parameter);
+    void        Multiply            (_Matrix&, hy_float);
     void        Multiply            (_Matrix&, _Matrix&);
-    bool        IsNonEmpty          (long);
+    bool        IsNonEmpty          (long) const;
     // checks to see if the i-th position in the storage is non-empty
-    bool        CheckDimensions     (_Matrix&);
+    bool        CheckDimensions     (_Matrix&) const;
     // compare dims of 2 matrices to see if they can be multiplied
     long        HashBack            (long);
     // hashing function, which finds matrix
     // physical element given local storage
-    void        MultbyS             (_Matrix&,bool,_Matrix* = nil, _Parameter* = nil);
+    void        MultbyS             (_Matrix&,bool,_Matrix* = nil, hy_float* = nil);
     // internal function used in exponentiating sparse matrices
 
     void        Balance             (void);  // perform matrix balancing; i.e. a norm reduction which preserves the eigenvalues
@@ -538,16 +538,16 @@ private:
     void        ClearObjects            (void);             // internal reuseable purger
     inline
     _MathObject*&
-    GetMatrixObject         (long ind) {
+    GetMatrixObject         (long ind) const {
         return ((_MathObject**)theData)[ind];
     }
     inline
-    bool        CheckObject             (long ind) {
+    bool        CheckObject             (long ind) const{
         return ((_MathObject**)theData)[ind]!=nil;
     }
 
-    void        SimplexHelper1          (long, _SimpleList&, long, bool, long&, _Parameter&);
-    void        SimplexHelper2          (long&, long, _Parameter);
+    void        SimplexHelper1          (long, _SimpleList&, long, bool, long&, hy_float&);
+    void        SimplexHelper2          (long&, long, hy_float);
     void        SimplexHelper3          (long,long,long,long);
     //  helper functions for SimplexSolver
 
@@ -561,7 +561,7 @@ private:
                 switchThreshold;                 // maximum percentage of non-zero elements
     // to keep the matrix sparse
 
-    static      _Parameter truncPrecision;
+    static      hy_float truncPrecision;
 
     // matrix exp truncation precision
 
@@ -589,8 +589,8 @@ public:
     _GrowingVector  (bool = true);
     virtual     ~_GrowingVector (void) {};
 
-    virtual     BaseRef     makeDynamic (void); // duplicate this object into a dynamic copy
-    virtual     void        Duplicate   (BaseRef); // duplicate an object from reference
+    virtual     BaseRef     makeDynamic (void) const; // duplicate this object into a dynamic copy
+    virtual     void        Duplicate   (BaseRefConst); // duplicate an object from reference
 
     virtual     void        Clear (void);
 
@@ -609,7 +609,7 @@ public:
   
     void   Trim             (void);
   
-    long   Store            (_Parameter);
+    long   Store            (hy_float);
     long   GetUsed          (void) const {
         return used;
     }
@@ -618,7 +618,7 @@ public:
     }
 
     void    operator <<     (const _SimpleList&);
-    _GrowingVector&    operator <<     (_Parameter p) {
+    _GrowingVector&    operator <<     (hy_float p) {
         Store (p);
         return *this;
     }
@@ -650,7 +650,7 @@ public:
 
     virtual     ~_NTupleStorage (void) {};
 
-    virtual     BaseRef     makeDynamic (void);
+    virtual     BaseRef     makeDynamic (void) const;
     // create a copy of the object dynamic copy
 
     // getters for N and K
@@ -668,13 +668,13 @@ public:
     unsigned long   Index           (_SimpleList&);
     // return an index into the linear array pointed to by the K-tuple in the argument (ASSUMED to be valid here!)
 
-    _Parameter      DirectIndex     (unsigned long);
+    hy_float      DirectIndex     (unsigned long);
     // retrieve a value using a direct index for the K-tuple (computed by Index)
 
-    unsigned long   Store           (_Parameter, _SimpleList&);
+    unsigned long   Store           (hy_float, _SimpleList&);
     // associate a value with the K-tuple; returns the direct index for the value
 
-    _Parameter      Retrieve        (_SimpleList&);
+    hy_float      Retrieve        (_SimpleList&);
     // return the value associated with the K-tuple
 
     void            IndexToTuple    (unsigned long, _SimpleList&);
@@ -719,7 +719,7 @@ public:
     virtual BaseRef     toStr           (unsigned long = 0UL);
     virtual _PMathObj   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     // execute this operation with the list of Args
-    virtual BaseRef     makeDynamic     (void);
+    virtual BaseRef     makeDynamic     (void) const;
     virtual _PMathObj   Compute         (void);
     void                Clear           (void);
     virtual void        Merge           (_PMathObj);
@@ -732,7 +732,7 @@ public:
 
      */
 
-    virtual void        Duplicate       (BaseRef);
+    virtual void        Duplicate       (BaseRefConst);
     _PMathObj           MAccess         (_PMathObj);
 
     _PMathObj           MIterator       (_PMathObj, _PMathObj);

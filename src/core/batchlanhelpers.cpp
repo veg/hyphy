@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -40,14 +40,9 @@
 #include      "batchlan.h"
 #include      "defines.h"
 #include      "global_object_lists.h"
+#include      "global_things.h"
 
-#ifdef __HYPHYQT__
-#include "hyphy_qt_helpers.h"
-#endif
-
-#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
-#include "HYUtils.h"
-#endif
+using namespace hy_global;
 
 _Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
@@ -68,19 +63,6 @@ _String    _HYGenerateANameSpace () {
     return nmsp;
 }
 
-//____________________________________________________________________________________
-
-_String    _HYStandardDirectory (const unsigned long which_one) {
-    _String dirSpacer (GetPlatformDirectoryChar());
-
-    switch (which_one) {
-
-        case HY_HBL_DIRECTORY_TEMPLATE_MODELS:
-            return libDirectory & "TemplateBatchFiles" & dirSpacer & "TemplateModels" & dirSpacer;
-    }
-
-    return emptyString;
-}
 
 //____________________________________________________________________________________
 
@@ -89,7 +71,7 @@ void    ReadModelList(void)
 {
     if (templateModelList.lLength > 0) return; 
     
-    _String     modelListFile (_HYStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & "models.lst");
+    _String     modelListFile (GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & "models.lst");
     
     FILE* modelList = doFileOpen (modelListFile.getStr(),"rb");
     if (!modelList) {
@@ -145,7 +127,7 @@ bool ExpressionCalculator (_String data)
         if (retCode == HY_FORMULA_EXPRESSION) {
             _PMathObj formRes = lhs.Compute(0,nil,nil,&errMsg);
             if (errMsg.sLength) {
-                WarnError(errMsg);
+                HandleApplicationError (errMsg);
             } else {
                 _String * objValue = (_String*)formRes->toStr();
                 StringToConsole(*objValue);
@@ -155,7 +137,7 @@ bool ExpressionCalculator (_String data)
             BufferToConsole ("NO RETURN VALUE");
         }
     } else {
-        WarnError(errMsg);
+        HandleApplicationError (errMsg);
     }
     return true;
 }
@@ -168,7 +150,7 @@ bool    ExpressionCalculator (void)
     _String data (StringFromConsole(false));
 
 #ifndef __UNIX__
-    if (terminateExecution) {
+    if (terminate_execution) {
         return false;
     }
     BufferToConsole (">");
@@ -190,7 +172,7 @@ bool    ExpressionCalculator (void)
     _FormulaParsingContext fpc;
     long retCode = Parse(&lhs, data, fpc, nil);
 
-    if (!terminateExecution) {
+    if (!terminate_execution) {
         if (retCode == HY_FORMULA_EXPRESSION) {
             _PMathObj formRes = lhs.Compute();
             if (!formRes) {
@@ -206,7 +188,7 @@ bool    ExpressionCalculator (void)
         }
     }
     NLToConsole();
-    terminateExecution = false;
+    terminate_execution = false;
     return true;
 }
 
@@ -220,7 +202,7 @@ bool    PushFilePath (_String& pName, bool trim, bool process) {
     long f;
   
     if (process) {
-      _String dir_sep (GetPlatformDirectoryChar());
+      _String dir_sep (get_platform_directory_char());
       pName.ProcessFileName();
       f = pName.FindBackwards(dir_sep,0,-1);
     } else {
@@ -237,7 +219,7 @@ bool    PushFilePath (_String& pName, bool trim, bool process) {
     } else if (pathNames.lLength) {
         pathNames && pathNames(pathNames.lLength-1);
     } else {
-        pathNames && & emptyString;
+        pathNames.AppendNewInstance (new _String(kEmptyString));
     }
 
     return false;
@@ -248,7 +230,7 @@ bool    PushFilePath (_String& pName, bool trim, bool process) {
 
 const _String   PopFilePath (void) {
     if (pathNames.empty()) {
-      return emptyString;
+      return kEmptyString;
     }
     _String top = *(_String*)pathNames.GetElement (-1L);
     pathNames.Delete (pathNames.lLength-1);
@@ -284,9 +266,9 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
         ex.SetNameSpace(*theP->GetName());
     }
     ex.BuildList   (BLCommand);
-    terminateExecution = false;
+    terminate_execution = false;
     ex.Execute      ();
-    terminateExecution = false;
+    terminate_execution = false;
 }
 
 //____________________________________________________________________________________
@@ -301,7 +283,7 @@ _String ReturnDialogInput(bool dispPath)
       if (PeekFilePath()) {
             StringToConsole(*PeekFilePath());
         } else {
-            StringToConsole (baseDirectory);
+            StringToConsole (hy_base_directory);
         }
       BufferToConsole ("`)");
     }
@@ -352,7 +334,7 @@ _String ReturnFileDialogInput(void)
 
     
     if (resolvedFilePath.sLength == 0) {
-        terminateExecution = true;
+        terminate_execution = true;
     }
     
     return resolvedFilePath;
@@ -370,7 +352,7 @@ _String ProcessStringArgument (_String* data) {
             }
         }
     }
-    return emptyString;
+    return kEmptyString;
 }
 
 //____________________________________________________________________________________
@@ -414,9 +396,9 @@ _String WriteFileDialogInput(void) {
 #endif
     
     if (resolvedFilePath.sLength == 0) {
-        terminateExecution = true;
+        terminate_execution = true;
     }
-    defFileNameValue = emptyString;
+    defFileNameValue = kEmptyString;
     return resolvedFilePath;
 
 }

@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -57,8 +57,8 @@ public:
     virtual  ~_FString ();
 //  ~_Constant (void);
 
-    virtual BaseRef   makeDynamic       (void);
-    virtual void      Duplicate         (BaseRef);
+    virtual BaseRef   makeDynamic       (void) const;
+    virtual void      Duplicate         (BaseRefConst);
     virtual _PMathObj Add               (_PMathObj);
     virtual long      AddOn             (_PMathObj);
     virtual _PMathObj AreEqual          (_PMathObj);
@@ -101,6 +101,8 @@ public:
     virtual bool      HasChanged        (bool = false) {
         return true;
     }
+    
+    _String const&    get_str           (void) const {return *theString;}
 
     virtual bool      IsEmpty           (void) {
         return !theString || theString->sLength == 0;

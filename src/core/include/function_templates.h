@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -37,6 +37,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include "mersenne_twister.h"
 
 template <typename ARG_TYPE>
 void        checkParameter  (_String const& name, ARG_TYPE& dest, const ARG_TYPE def, const _VariableContainer* theP = nil) {
@@ -218,6 +219,7 @@ unsigned long DrawFromDiscrete (ARG_TYPE const * cdf, unsigned long dimension) {
   
   return index;
 }
+
 
 template <typename ARG_TYPE>
 void BatchDelete (ARG_TYPE first) {

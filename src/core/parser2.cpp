@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,26 +37,26 @@
  
  */
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <float.h>
+#include <time.h>
+
+
 #include "parser.h"
 #include "matrix.h"
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
-#include "stdio.h"
-#include "ctype.h"
 #include "calcnode.h"
-#include "time.h"
 #include "likefunc.h"
 #include "polynoml.h"
-#include "float.h"
 #include "batchlan.h"
 #include "category.h"
 #include "function_templates.h"
+#include "global_things.h"
 
-
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+using namespace hy_global;
 
 
 #define  GOLDEN_RATIO 1.618034
@@ -73,7 +73,7 @@ extern    _List         FunctionNameList;
 
 extern    _AVLListX     _HY_GetStringGlobalTypes;
 
-extern    _Parameter    tolerance,
+extern    hy_float    tolerance,
           sqrtPi,
           maxRombergSteps,
           integrationPrecisionFactor,
@@ -84,7 +84,7 @@ extern    _String       intPrecFact ,
 
 long      verbosityLevel = 0L;
 
-extern _Parameter twoOverSqrtPi;
+extern hy_float twoOverSqrtPi;
 
 _SimpleList simpleOperationCodes,
             simpleOperationFunctions;
@@ -93,43 +93,43 @@ _SimpleList simpleOperationCodes,
 long        subNumericValues = 0;
 
 //__________________________________________________________________________________
-_Parameter  AddNumbers  (_Parameter x, _Parameter y)
+hy_float  AddNumbers  (hy_float x, hy_float y)
 {
     return x+y;
 }
-_Parameter  SubNumbers  (_Parameter x, _Parameter y)
+hy_float  SubNumbers  (hy_float x, hy_float y)
 {
     return x-y;
 }
-_Parameter  MinusNumber (_Parameter x)
+hy_float  MinusNumber (hy_float x)
 {
     return -x;
 }
-_Parameter  MultNumbers (_Parameter x, _Parameter y)
+hy_float  MultNumbers (hy_float x, hy_float y)
 {
     return x*y;
 }
-_Parameter  DivNumbers  (_Parameter x, _Parameter y)
+hy_float  DivNumbers  (hy_float x, hy_float y)
 {
     return x/y;
 }
-_Parameter  LessThan    (_Parameter x, _Parameter y)
+hy_float  LessThan    (hy_float x, hy_float y)
 {
     return x<y;
 }
-_Parameter  GreaterThan (_Parameter x, _Parameter y)
+hy_float  GreaterThan (hy_float x, hy_float y)
 {
     return x>y;
 }
-_Parameter  LessThanE   (_Parameter x, _Parameter y)
+hy_float  LessThanE   (hy_float x, hy_float y)
 {
     return x<=y;
 }
-_Parameter  GreaterThanE(_Parameter x, _Parameter y)
+hy_float  GreaterThanE(hy_float x, hy_float y)
 {
     return x>=y;
 }
-_Parameter  Power       (_Parameter x, _Parameter y)
+hy_float  Power       (hy_float x, hy_float y)
 { 
     if (x==0.0) {
       if (y > 0.0) {
@@ -140,49 +140,47 @@ _Parameter  Power       (_Parameter x, _Parameter y)
     }
     return pow(x,y);
 }
-_Parameter  MaxNumbers  (_Parameter x, _Parameter y)
+hy_float  MaxNumbers  (hy_float x, hy_float y)
 {
     return x<y?y:x;
 }
-_Parameter  MinNumbers  (_Parameter x, _Parameter y)
+hy_float  MinNumbers  (hy_float x, hy_float y)
 {
     return x<y?x:y;
 }
-_Parameter  ExpNumbers  (_Parameter x)
+hy_float  ExpNumbers  (hy_float x)
 {
     return exp(x);
 }
-_Parameter  LogNumbers  (_Parameter x)
+hy_float  LogNumbers  (hy_float x)
 {
     return log(x);
 }
-_Parameter  FastMxAccess(Ptr m, _Parameter index)
+hy_float  FastMxAccess(hy_pointer m, hy_float index)
 {
-    return ((_Parameter*)m)[(unsigned long)index];
+    return ((hy_float*)m)[(unsigned long)index];
 }
 
-void  FastMxWrite(Ptr m, _Parameter index, _Parameter value) {
-  ((_Parameter*)m)[(unsigned long)index] = value;
+void  FastMxWrite(hy_pointer m, hy_float index, hy_float value) {
+  ((hy_float*)m)[(unsigned long)index] = value;
 }
 
-_Parameter  AndNumbers  (_Parameter x, _Parameter y)
+hy_float  AndNumbers  (hy_float x, hy_float y)
 {
     return x != 0.0 && y != 0.0;
 }
-_Parameter  AbsNumber  (_Parameter x)
+hy_float  AbsNumber  (hy_float x)
 {
     return fabs (x);
 }
 
 //__________________________________________________________________________________
 
-_Parameter  RandomNumber(_Parameter l, _Parameter u)
+hy_float  RandomNumber(hy_float l, hy_float u)
 {
-    _Parameter r = l;
+    hy_float r = l;
     if (u>l) {
-        r=genrand_int32();
-        r/=RAND_MAX_32;
-        r =l+(u-l)*r;
+        r =l+(u-l)*genrand_real1();
     }
     return r;
 }
@@ -190,7 +188,7 @@ _Parameter  RandomNumber(_Parameter l, _Parameter u)
 
 
 //_______________________________________________________________________________________
-_Parameter  EqualNumbers(_Parameter a, _Parameter b)
+hy_float  EqualNumbers(hy_float a, hy_float b)
 {
     if (a!=0.0) {
         a = (a>b)?(a-b)/a:(b-a)/a;
@@ -208,9 +206,9 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
             values[k2].value = varValue->Value();
         } else {
             if (varValue->ObjectClass() == MATRIX) {
-              values[k2].reference = (Ptr)((_Matrix*)varValue)->theData;
+              values[k2].reference = (hy_pointer)((_Matrix*)varValue)->theData;
             } else {
-              WarnError ("Internal error in PopulateArraysForASimpleFormula");
+              HandleApplicationError ("Internal error in PopulateArraysForASimpleFormula", true);
             }
         }
     }
@@ -235,9 +233,9 @@ void        WarnWrongNumberOfArguments (_PMathObj p, long opCode, _hyExecutionCo
 
 
 //__________________________________________________________________________________
-_Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Parameter *c , _Parameter *d, _Parameter x, _Parameter& err) {
+hy_float  InterpolateValue (hy_float* theX, hy_float* theY, long n, hy_float *c , hy_float *d, hy_float x, hy_float& err) {
   // Neville's algoruthm for polynomial interpolation (Numerical Recipes' rawinterp)
-    _Parameter y,
+    hy_float y,
                den,
                dif = 1e10,
                dift,
@@ -275,15 +273,15 @@ _Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Param
 }
 
 //__________________________________________________________________________________
-_Parameter  TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, _Parameter left, _Parameter right, long k, _SimpleFormulaDatum * stack, _SimpleFormulaDatum* values, _SimpleList& changingVars, _SimpleList& varToStack)
+hy_float  TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, hy_float left, hy_float right, long k, _SimpleFormulaDatum * stack, _SimpleFormulaDatum* values, _SimpleList& changingVars, _SimpleList& varToStack)
 {
-    _Parameter x,
+    hy_float x,
                tnm,
                sum,
                del,
                ddel;
 
-    static _Parameter s;
+    static hy_float s;
 
     //_Constant dummy;
 
@@ -339,15 +337,15 @@ _Parameter  TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, _Parameter left,
 }
 
 //__________________________________________________________________________________
-_Parameter  TrapezoidLevelK (_Formula&f, _Variable* xvar, _Parameter left, _Parameter right, long k)
+hy_float  TrapezoidLevelK (_Formula&f, _Variable* xvar, hy_float left, hy_float right, long k)
 {
-    _Parameter x,
+    hy_float x,
                tnm,
                sum,
                del,
                ddel;
 
-    static _Parameter s;
+    static hy_float s;
 
     _Constant dummy;
 
@@ -389,7 +387,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
     if (assignment_type != HY_STRING_DIRECT_REFERENCE && reference >= 0) {
         long dereferenced = DereferenceVariable(reference, nameSpace, assignment_type);
         if (dereferenced < 0) {
-            WarnError (_String ("Failed to dereference '") & *FetchVar(reference)->GetName() & "' in the " & ((assignment_type == HY_STRING_GLOBAL_DEREFERENCE) ? "global" : "local") & " context");
+            HandleApplicationError (_String ("Failed to dereference '") & *FetchVar(reference)->GetName() & "' in the " & ((assignment_type == HY_STRING_GLOBAL_DEREFERENCE) ? "global" : "local") & " context");
             return 0;
         }
         reference = dereferenced;
@@ -444,13 +442,13 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
     if (code == HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT || code == HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT || 
         code == HY_FORMULA_REFERENCE_UPPER_BOUND_ASSIGNMENT || code == HY_FORMULA_REFERENCE_LOWER_BOUND_ASSIGNMENT ) {
         if (f2->IsEmpty()) {
-            WarnError ("Empty RHS in a constraint assignment.");
+            HandleApplicationError ("Empty RHS in a constraint assignment.");
             return 0;
         }
 
         _PMathObj varObj = f2->Compute(0, nameSpace);
         if (varObj->ObjectClass()!=NUMBER) {
-            WarnError ("Not a numeric RHS in a constraint assignment.");
+            HandleApplicationError ("Not a numeric RHS in a constraint assignment.");
             return 0;
         }
 
@@ -486,7 +484,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         _Formula newF;
 
         if (f2->IsEmpty()) {
-            WarnError ("Empty RHS in an assignment.");
+            HandleApplicationError ("Empty RHS in an assignment.");
             return 0;
         }
 
@@ -546,15 +544,15 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
             coordMx = f->Compute(last0);
             if (!coordMx || coordMx->ObjectClass() != expectedType) {
                 if (mmx) {
-                    WarnError (_String("Matrix expected but not supplied."));
+                    HandleApplicationError ("Matrix expected but not supplied.");
                 } else {
-                    WarnError (_String("String key expected but not supplied."));
+                    HandleApplicationError ("String key expected but not supplied.");
                 }
 
                 return 0;
             }
         } else {
-            WarnError ("Matrix/List LHS expected but not supplied.");
+            HandleApplicationError ("Matrix/List LHS expected but not supplied.");
             return 0;
         }
 
@@ -571,7 +569,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
                 } else {
                     _PMathObj newP = newF.ConstructPolynomial();
                     if (!newP) {
-                        warnError (_String("Can't assign non-polynomial entries to polynomial matrices."));
+                        HandleApplicationError ("Can't assign non-polynomial entries to polynomial matrices.");
                     } else {
                         mmx->MStore (hC,vC, newP);
                     }
@@ -621,7 +619,7 @@ long        HandleFormulaParsingError (_String errMsg, _String* saveError, _Stri
     if (saveError) {
         *saveError = errMsg;
     } else {
-        WarnError(errMsg);
+        HandleApplicationError (errMsg);
     }
     return HY_FORMULA_FAILED;
 }
@@ -779,7 +777,7 @@ void        _parse_new_level (long & level, _List & operations, _List& operands,
   
   functionCallTags << function_tag;
   
-  curOp = emptyString;
+  curOp = kEmptyString;
 }
 
 
@@ -988,10 +986,9 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         previousMaccess->SetTerms(3);
                         mergeMAccess.Delete (mergeMAccess.lLength-1,false);
                         mergeMAccessLevel.Delete (mergeMAccessLevel.lLength-1,false);
-                        previousMaccess->nInstances++;
+                        previousMaccess->AddAReference();
                         f->theFormula.Delete (mergeIndex);
-                        f->theFormula << previousMaccess;
-                        previousMaccess->nInstances--;
+                        f->theFormula.AppendNewInstance(previousMaccess);
                     }
                 } else {
                     f->theFormula.AppendNewInstance(new _Operation (curOp ,2));
@@ -1061,7 +1058,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                       }
                       newF.theFormula.AppendNewInstance (new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
                     }
-                    f->Duplicate((BaseRef)&newF);
+                    f->Duplicate((_Formula const*)&newF);
                 }
               
                 parsingContext.assignmentRefID()   = lhs_variable->GetAVariable();
@@ -1159,7 +1156,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         return HY_FORMULA_EXPRESSION;
                     } else {
                         bool isSimple = (s.getChar(i-1) != ':');
-                        f2->Duplicate   ((BaseRef)&newF);
+                        f2->Duplicate   (&newF);
                         if (last0 == 0) {
                             ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
                         }
@@ -1177,7 +1174,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                             }
                             newF.theFormula.AppendNewInstance (new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
                         }
-                        f2->Duplicate   ((BaseRef)&newF);
+                        f2->Duplicate   (&newF);
                         parsingContext.assignmentRefType() = deref;
                         return isSimple?HY_FORMULA_REFERENCE_VALUE_ASSIGNMENT:HY_FORMULA_REFERENCE_FORMULA_ASSIGNMENT;
                    
@@ -1220,7 +1217,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         return HY_FORMULA_FAILED;
                     } 
                 } else { // BOUND ASSIGNMENTS
-                    f2->Duplicate   ((BaseRef)&newF);
+                    f2->Duplicate   (&newF);
 
                     parsingContext.assignmentRefID()   = lhs->GetAVariable();
                     parsingContext.assignmentRefType() = deref;
@@ -1233,7 +1230,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         return HY_FORMULA_FAILED;
                     } 
                 } else { // BOUND ASSIGNMENTS
-                    f2->Duplicate   ((BaseRef)&newF);
+                    f2->Duplicate   (&newF);
                     parsingContext.assignmentRefType() = deref;
                     return (s.getChar(i)=='>')?HY_FORMULA_REFERENCE_UPPER_BOUND_ASSIGNMENT:HY_FORMULA_REFERENCE_LOWER_BOUND_ASSIGNMENT;
                 }
@@ -1538,7 +1535,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     if (noneObject)
                         levelData->AppendNewInstance (new _Operation (false, curOp));
                     else
-                        if (parsingContext.formulaScope() && _hyApplicationGlobals.Find(&curOp) >= 0) {
+                        if (parsingContext.formulaScope() && _hy_application_globals.Find(&curOp) >= 0) {
                             levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, nil, takeVarReference));
                         } else {
                             levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, parsingContext.formulaScope(), takeVarReference));
@@ -1642,7 +1639,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
             if (!levelOps->countitems()) {
                 levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
-                if (terminateExecution) {
+                if (terminate_execution) {
                     return HY_FORMULA_FAILED;
                 }
                 continue;
@@ -1664,7 +1661,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
            if (g>h && h!=-1) { // store the op, don't do it yet!
                 levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
-                if (terminateExecution) {
+                if (terminate_execution) {
                     return HY_FORMULA_FAILED;
                 }
                 continue;
@@ -1688,7 +1685,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 levelOps->Delete(levelOps->lLength-1);
             }
             levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
-            if (terminateExecution) {
+            if (terminate_execution) {
                 return HY_FORMULA_FAILED;
             }
             continue;
@@ -1725,9 +1722,9 @@ long     VerbosityLevel (void)
 
 
 //__________________________________________________________________________________
-void  stashParameter (_String const& name, _Parameter v, bool set)
+void  stashParameter (_String const& name, hy_float v, bool set)
 {
-    static  _Parameter stash = 0.0;
+    static  hy_float stash = 0.0;
 
     long f = LocateVarByName (name);
     if (f>=0) {
@@ -1748,7 +1745,7 @@ void  stashParameter (_String const& name, _Parameter v, bool set)
 
 
 //__________________________________________________________________________________
-void  setParameter (_String const & name, _Parameter def, _String* namespc)
+void  setParameter (_String const & name, hy_float def, _String* namespc)
 {
     if (namespc) {
         _String namespcd = AppendContainerName(name,namespc);
