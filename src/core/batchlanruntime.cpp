@@ -447,7 +447,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
 
     if (currentArgument->Equal (&hy_env::status_bar_update_string)) {
         _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
-         SetStatusLine (sbar_value);
+         SetStatusLineUser (sbar_value);
         return true;
     }
     long objectIndex,
