@@ -58,16 +58,27 @@ busted.taskTimerStart (2);
 
 
 
-_BUSTED_json    = {"fits" : {},
-                  "timers" : {},
-                  "profiles" : {},
-                  "evidence ratios": {}
+_BUSTED_json    = {"input": {},
+                   "fits" : {},
+                   "timers" : {},
+                   "siteLogL" : {}, 
+                   "evidence ratios": {}
                   };
 
 
 codon_data_info = alignments.PromptForGeneticCodeAndAlignment ("codon_data", "codon_filter");
 codon_data_info["json"] = codon_data_info["file"] + ".BUSTED.json";
 name_mapping = codon_data_info [utility.getGlobalValue("terms.json.name_mapping")];
+
+/*
+Add input information to the JSON
+*/
+(_BUSTED_json["input"])["filename"] = codon_data_info["file"];
+(_BUSTED_json["input"])["sequences"] = codon_data_info["sequences"];
+(_BUSTED_json["input"])["sites"] = codon_data_info["sites"];
+
+
+
 
 if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
     name_mapping = {};
@@ -93,9 +104,29 @@ io.CheckAssertion("utility.Array1D (`&partitions_and_trees`) == 1", "BUSTED only
 
 tree_definition   = utility.Map (partitions_and_trees, "_partition_", '_partition_["tree"]');
 
+/* 
+Add input tree to the JSON
+*/
+(_BUSTED_json["input"])["tree string"] = (tree_definition[0])["string_with_lengths"];
+
 
 busted.selected_branches = busted.io.selectBranchesToTest (tree_definition[0]);
-_BUSTED_json ["test set"] = Join (",",Rows(busted.selected_branches));
+
+/*
+ Instead of JSON key test set (see next comment line), we now have JSON key called `partition` (for consistency w/ other methods) that contains a dictionary of BG or FG indications
+former: _BUSTED_json ["test set"] = Join (",",Rows(busted.selected_branches));
+*/
+all_nodes = utility.Keys((tree_definition[0])["partitioned"]);
+busted.partition_map = {0:"BG", 1: "FG"};
+busted.partitions_fg_bg = {};
+for (i = 0; i < Abs(all_nodes); i += 1){
+     found = utility.KeyExists(busted.selected_branches, all_nodes[i]);
+     busted.partitions_fg_bg[all_nodes[i]] = busted.partition_map[found];
+
+}
+_BUSTED_json["partition"] = busted.partitions_fg_bg; // Improved
+
+
 
 io.ReportProgressMessageMD ("BUSTED", "Data", "Selected " + Abs (busted.selected_branches) + " branches as the test (foreground) set: " + Join (",", Rows (busted.selected_branches)));
 
@@ -162,8 +193,8 @@ busted.json_store_lf                (_BUSTED_json, "Unconstrained model",
         );
 
 
-busted.profiles = {};
-(_BUSTED_json ["profiles"])["unconstrained"] = busted.computeSiteLikelihoods ("busted.LF");
+busted.siteLogL = {};
+(_BUSTED_json ["siteLogL"])["unconstrained"] = busted.computeSiteLikelihoods ("busted.LF");
 
 
 if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8) {
@@ -174,10 +205,10 @@ if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8
 
     io.ReportProgressMessageMD ("BUSTED",  "BUSTED-null", "Fitting the branch-site model that disallows omega > 1 among foreground branches");
     busted.constrainTheModel (busted.model_definitions);
-    (_BUSTED_json ["profiles"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
+    (_BUSTED_json ["siteLogL"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
     Optimize (busted.MLE_H0, busted.LF);
     io.SpoolLF ("busted.LF", codon_data_info["file"], "null");
-    (_BUSTED_json ["profiles"])["optimized null"] = busted.computeSiteLikelihoods ("busted.LF");;
+    (_BUSTED_json ["siteLogL"])["optimized null"] = busted.computeSiteLikelihoods ("busted.LF");;
     io.ReportProgressMessageMD ("BUSTED", "BUSTED-null", "Log(L) = " + busted.MLE_H0[1][0]);
     busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);
 
@@ -203,8 +234,8 @@ if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8
                                         _BUSTED_json["background"]
                                        );
 
-    (_BUSTED_json ["evidence ratios"])["constrained"] = busted.evidenceRatios ( (_BUSTED_json ["profiles"])["unconstrained"],  (_BUSTED_json ["profiles"])["constrained"]);
-    (_BUSTED_json ["evidence ratios"])["optimized null"] = busted.evidenceRatios ( (_BUSTED_json ["profiles"])["unconstrained"],  (_BUSTED_json ["profiles"])["optimized null"]);
+    (_BUSTED_json ["evidence ratios"])["constrained"] = busted.evidenceRatios ( (_BUSTED_json ["siteLogL"])["unconstrained"],  (_BUSTED_json ["siteLogL"])["constrained"]);
+    (_BUSTED_json ["evidence ratios"])["optimized null"] = busted.evidenceRatios ( (_BUSTED_json ["siteLogL"])["unconstrained"],  (_BUSTED_json ["siteLogL"])["optimized null"]);
 }
 
 busted.taskTimerStop (2);
