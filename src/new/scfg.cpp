@@ -150,7 +150,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         // add    the literal to the parse tree
                         // handle the first character separately
 
-                        unsigned char        currentCharacter = literal->theString->getChar(0);
+                        unsigned char        currentCharacter = literal->theString->get_char(0);
                         node<long>* currentTreeNode  = parseTree[currentCharacter];
 
                         bool        addedRootStub    = false;
@@ -165,7 +165,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         long charP = 1;
 
                         for  (; charP < literal->theString->sLength; charP++) {
-                            currentCharacter        = literal->theString->getChar(charP);
+                            currentCharacter        = literal->theString->get_char(charP);
 
                             long   availableNodes   = currentTreeNode->get_num_nodes (),
                                    nodeCounter      = (availableNodes>0);
@@ -830,7 +830,7 @@ _String*    Scfg::TokenizeString    (_String& inString, _SimpleList& outTokens)
     long        stringIndex     = 0;
 
     for (; stringIndex < inString.sLength; stringIndex++) {
-        unsigned char currentChar  = inString.getChar (stringIndex);
+        unsigned char currentChar  = inString.get_char (stringIndex);
         if (currentTreeNode == nil) { // root of the tree
             if   (!(currentTreeNode = parseTree[currentChar])) {
                 break;

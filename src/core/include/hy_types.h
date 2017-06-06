@@ -68,6 +68,12 @@ enum _HY_TREE_DEFINITION_PHASE {
   kTreeNodeBeingCreated
 };
 
+enum _HY_COMPARISON_TYPE {
+    kCompareLess,
+    kCompareEqual,
+    kCompareGreater
+};
+
 
 
 #endif

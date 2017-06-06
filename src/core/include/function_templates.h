@@ -146,6 +146,20 @@ void InitializeArray (ARG_TYPE* array, unsigned long dimension, ARG_TYPE&& value
 }
 
 template <typename ARG_TYPE>
+void CopyArray (ARG_TYPE* to, ARG_TYPE const* from, unsigned long dimension) {
+    for (unsigned long i = 0UL; i < dimension; i++) {
+        to[i] = from[i];
+    }
+}
+
+template <typename ARG_TYPE>
+void CopyArrayWithOffset (ARG_TYPE* to, ARG_TYPE const* from, unsigned long dimension, long offset) {
+    for (unsigned long i = 0UL; i < dimension; i++) {
+        to[i] = from[i+offset];
+    }
+}
+
+template <typename ARG_TYPE>
 const _SimpleList SplitIntoDigits (ARG_TYPE composition, unsigned long places, unsigned long radix) {
   /**
    Deconstruct a number into 'places' digits according to the supplied radix

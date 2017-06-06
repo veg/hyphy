@@ -283,7 +283,7 @@ const _String&   _TranslationTable::ExpandToken            (char token) const {
 long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* receptacle, bool gapToOnes) const {
 
   if (tokens.sLength == 1UL) {
-    return TokenResolutions (tokens.getChar(0UL), receptacle, gapToOnes);
+    return TokenResolutions (tokens.get_char(0UL), receptacle, gapToOnes);
   } else {
   
     long * large_store,
@@ -2881,7 +2881,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
             _DataSet::MatchIndices (fmla, target, isVertical, totalLength, scope);
         }
     } else { // an explicit enumeration or a regular expression
-        if (input.getChar(0)=='/' && input.getChar(input.sLength-1)=='/')
+        if (input.get_char(0)=='/' && input.get_char(input.sLength-1)=='/')
             // a regular expression
         {
             input.Trim(1,input.sLength-2);
@@ -2903,11 +2903,11 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
 
                     if (otherDimension)
                         for (long seqSlider = 0L; seqSlider < otherDimension->lLength; seqSlider ++) {
-                            pattern.sData[seqSlider] =  GetSite(otherDimension->Element(seqSlider))->getChar (seqPos);
+                            pattern.sData[seqSlider] =  GetSite(otherDimension->Element(seqSlider))->get_char (seqPos);
                         }
                     else
                         for (long seqSlider = 0L; seqSlider < theMap.lLength; seqSlider ++) {
-                            pattern.sData[seqSlider] =  GetSite(seqSlider)->getChar(seqPos);
+                            pattern.sData[seqSlider] =  GetSite(seqSlider)->get_char(seqPos);
                         }
 
                     matches.Clear();
@@ -3686,7 +3686,7 @@ _String*        _DataSet::GetSequenceCharacters (long seqID)  const{
   
   if (seqID >= 0 && seqID < noOfSpecies) {
     for (unsigned long k2=0UL; k2<upTo; k2++) {
-      (*aSequence) << GetSite (k2)->getChar (seqID);
+      (*aSequence) << GetSite (k2)->get_char (seqID);
     }
   }
   aSequence->Finalize();
@@ -4597,7 +4597,7 @@ void    processCommand (_String*s, FileState*fs)
             break;
 
         case 3: // REPEAT CHAR
-            fs->repeat = s->getChar(0);
+            fs->repeat = s->get_char(0);
             break;
 
         case 2: // RAWLINE template e.g 1,-1 skips one word at the beginning and one word at the end
@@ -4722,10 +4722,10 @@ long    ProcessLine (_String&s , FileState *fs, _DataSet& ds)
                         return sitesAttached;
                     }
 
-                    c = ((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->getChar(0);
+                    c = ((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->get_char(0);
                     if (c==0)
                         c = ((_Site*)(ds._List::operator ()
-                                      (((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->GetRefNo())))->getChar(0);
+                                      (((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->GetRefNo())))->get_char(0);
                 }
 
                 if (fs->curSite+sitesAttached+1>fs->totalSitesRead) {
@@ -4956,7 +4956,7 @@ void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds)
          space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
     
     // hack for PAML support
-    if (space2 > fNS && isspace(CurrentLine.getChar (space2+1))) {
+    if (space2 > fNS && isspace(CurrentLine.get_char (space2+1))) {
         _String     sequence_name (CurrentLine,fNS, space2);
         CurrentLine.Trim(space2+2,-1); // chop out the name
         ds.AddName(sequence_name);        
@@ -5784,10 +5784,10 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           
           write_here << "\t\tSYMBOLS = \"";
           for (unsigned long bc = 0UL; bc < alphabet_length-1; bc++) {
-            write_here << theData->theTT->baseSet.getChar (bc)
+            write_here << theData->theTT->baseSet.get_char (bc)
             << ' ';
           }
-          write_here << theData->theTT->baseSet.getChar (alphabet_length-1)
+          write_here << theData->theTT->baseSet.get_char (alphabet_length-1)
           << "\"\n";
           
           if (theData->theTT->tokensAdded.sLength)
@@ -6093,7 +6093,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
                 // build atomic probabilities
               
                 for (unsigned long m = 0; m<atom; m++ ) {
-                  unit_for_counting.setChar(m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
+                  unit_for_counting.set_char(m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
                 }
               
                 long resolution_count = theTT->MultiTokenResolutions(unit_for_counting, static_store, countGaps);

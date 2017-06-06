@@ -37,276 +37,473 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef _HSTRINGS_
-#define _HSTRINGS_
-//#pragma once
+#ifndef _HY_STRINGS_
+#define _HY_STRINGS_
+
 #include "baseobj.h"
-#include "simplelist.h"
-#include "list.h"
+#include "wchar.h"
+#include "regex.h"
+#include "hy_types.h"
 
-class _ExecutionList; // forward declaration
-
-#define HY_STRING_INVALID_REFERENCE     0x00    
-#define HY_STRING_DIRECT_REFERENCE      0x01    
-#define HY_STRING_LOCAL_DEREFERENCE     0x02
-#define HY_STRING_GLOBAL_DEREFERENCE    0x03
+#define kStringInvalidReference                 0x00
+#define kStringDirectReference                  0x01
+#define kStringLocalDeference                   0x02
+#define kStringGlobalDeference                  0x03
 
 
-#define kAppendAnAssignmentToBufferFree       0x01
-#define kAppendAnAssignmentToBufferQuote      0x02
-#define kAppendAnAssignmentToBufferAssignment 0x04
-#define kAppendAnAssignmentToBufferGlobal     0x08
+#define kAppendAnAssignmentToBufferFree         0x01
+#define kAppendAnAssignmentToBufferQuote        0x02
+#define kAppendAnAssignmentToBufferAssignment   0x04
+#define kAppendAnAssignmentToBufferGlobal       0x08
+
+class _SimpleList;
+class _List;
+class _ExecutionList;
 
 
 class _String:public BaseObj {
 
-    // contructor/destructor methods
-private:
-    int* kmpTable;
 public:
 
+    
+/*
+ ==============================================================
+ Constructors/Destructors/Copiers
+ ==============================================================
+ */
+    
+    
     /**
-    * A constructor.
-    * A simple constructor that does nothing
-    */
-    _String (void);
-
-    /**
-    * Length constructor.
-    * @param sL Length of the string
-    * @param flag Allocates differently based on the flag
-    */
-    _String (unsigned long sL, bool flag = false);
-
-    /**
-    * A constructor that converts a long to string.
-    * @param sL The number to convert to string
-    */
-    _String (long);
-
-    /**
-    * A constructor that converts a hy_float(double) to string.
-    * @param sL         The floating number to convert to string
-    * @param format     The C-style format string to use for the conversion
-    */
-    _String (hy_float, const char * = nil);
-
-    /**
-    * A constructor that duplicates from another string.
-    */
-    _String (const _String&);
-
-    /**
-    * A constructor that duplicates from another string.
-    */
-    _String (_String*);
-
-    /**
-    * A constructor that duplicates from another string range.
-    * \n Cut a range of the original string
-    * @param from The starting position of the string to copy
-    * @param to The ending position of the string to copy
-    */
-    _String (const _String&, long, long);
-
-    /**
-    * A constructor that copies from a standard string.
-    */
-    _String (const char*);
-
-    /**
-    * A constructor that copies from a single char.
-    */
-    _String (const char);
-
-    /**
-     * A constructor that maked N copies of the same char
+     * The default constuctor
+     * which creates an empty string
+     
+     * Revision history
+     - SLKP 20170517 porting from v3 branch
      */
-    _String (const _String&, unsigned long);
+    _String (void); // v3;
 
     /**
-    * A constructor that reads from an open file.
-    * @param F open file stream buffer to copy from
-    */
-    _String (FILE*);
+     * Standard initalization to 0 length and empty data
+     * which creates an empty string
+     
+     * Revision history
+     - SLKP 20170517 porting from v3 branch
+     */
+    virtual void Initialize(bool = false); // v3; Last reviewed SLKP 20170517
+
+ 
+    /**
+     * Construct a string representation of a long interger
+     * @param number: the number to convert to a string
+     
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    _String (long const number);
 
     /**
-    * A destructor.
-    */
+     * Construct a string long enough to hold the specified # of chars
+     * Contents will be initialized to 0
+     * @param lengths: the number of chars to store
+     
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    _String(const unsigned long sL);
 
+    /**
+     * Construct a string representation of a hy_float(double) to string,
+     * using a format string (default is to use PRINTF_FORMAT_STRING formatting)
+     * @param number : The floating number to convert to string
+     * @param format : The C-style format string to use for the conversion
+     
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    _String (const hy_float number , const char * format = nil);
+
+    /**
+     * A RHS copy constructor
+     * @param str : the string to copy from
+     
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+     _String (const _String& str);
+
+    /**
+     * The purpose of this constructor is a "move" contents from a dynamically
+     * allocated string to a new string variable; it does so without allocating
+     * memory (this is a hack for C++ move semantics)
+     * After a call to this dynamic_string will be DELETED, so it CANNOT be used
+     * again
+     * @param dynamic_string: the source string to move data from
+     
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    _String (_String * dynamic_string);
+
+    /**
+     * Copy a part of another string into this string
+     *
+     
+     * @param str   : The source string
+     * @param start : Start of the range to copy
+     * @param end   : End of the range to copy
+     * @sa NormalizeRange for a discussion on ranges
+     
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    _String (const _String& str, long start, long end);
+
+    /**
+     * Create a string with the contents of a C-style (0-terminated)
+     * char array (they are copied)
+     
+     * @param c_string   : The source C char array
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+     _String (const char* c_string); // v3
+
+    /**
+     * Create a string with the contents of a C-style (0-terminated)
+     * wide-char array (they are copied); only single byte characters
+     * are copied
+     
+     * @param wc_string   : The source C wchar_t char array
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    
+    _String (const wchar_t * wc_string);
+    /**
+     * Create a string with the from a single charcater
+     * @param c   : The source character
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    _String (const char c);
+
+    /**
+     * Create a string with several consecutive copies of the source string
+     * @param str    : the source string
+     * @param copies : the number of copies
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    _String (const _String& str, unsigned long copies);
+
+    /**
+     * Create a string with the contents of an open file
+     * the file will be rewound and is assumed to be open for reading
+     
+     * @param file    : the source file handle
+     * Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    _String (FILE* file);
+
+
+    /**
+     *  A desctructor which respects reference counts
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
     virtual     ~_String(void);
-
+    
     /**
-    * Returns a dynamic string of the current instance.
-    * \n Usage: stringInstance.makeDynamic();
-    * @return BaseRef
-    */
+     * Create a dynamically allocated (shallow) copy of this object
+     * @return a shallow copy of this object (for strings, shallow == deep copy)
+     
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
     virtual     BaseRef makeDynamic (void) const;
 
-    /**
-    * Initializes _String object to 0 length and 0 sData
-    */
-    virtual     void    Initialize (bool = false);
 
-    /**
-    * Duplicates a string
-    * \n Usage: string.Duplicate(&existing_string)
-    * @param ref A pointer to the string to be duplicated
-    * @sa DuplicateErasing()
-    * @sa CopyDynamicString()
-    */
-    virtual     void    Duplicate (BaseRefConst);
-
-    /**
-    * Erases old data and duplicates a string
-    * \n Usage: string.DuplicateErasing(&existing_string)
-    * @param ref A pointer to the string to be duplicated
-    * @sa Duplicate()
-    * @sa CopyDynamicString()
-    */
-    virtual     void    DuplicateErasing (BaseRef);
-
-    /**
-    * Returns the character at a specified index
-    * \n Usage: char c = string.getChar(5);
-    * @param index The int location of the char in the string
-    * @return char located at specified location
-    */
-    const       char    getChar          (long) const;
-
-    /**
-     * Returns the character at a specified index as unsigned (suiable for indexing)
-     * \n Usage: unsigned char c = string.getUChar(5);
-     * @param index The int location of the char in the string
-     * @return char located at specified location case to (unsigned char)
+    /** Create a shallow copy of the argument (assumed castable to _String*)
+     in this object; this will be cleared out prior to this operation
+     
+     
+     @param source: the string to duplicate
+     
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     [CHANGE-NOTE SLKP, this behavior may not be consistently enforced in old code]
+     
      */
-    inline const       unsigned char    getUChar          (long i) const {
-      return (unsigned char)sData[i];
+    virtual     void    Duplicate (BaseRefConst source);
+    
+    /** Create a shallow copy of the argument
+     
+     @param rhs : the right hand side of the assignment
+     
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     [CHANGE-NOTE SLKP, changed parameter type from _String to _String const&]
+     
+     */
+    void operator = (_String const & rhs);
+
+
+/*
+ ==============================================================
+ Getters and setters
+ ==============================================================
+ */
+    
+    /**
+     * Retrieve a writable element at index x.
+     * Internal error results if [] is called on an invalid index
+     
+     * @param index : the index (0-based) of a character to retrieve
+     * @return      : reference to the character at the specified index
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     [CHANGE-NOTE SLKP 20170517, used to ignore errored indices]
+     */
+    virtual     char& operator [] (long index);
+
+    
+    /**
+     * Retrieve a read-only element at index x. If the index is invalid,
+     return default_return (\0)
+     
+     * @param index : the index (0-based) of a character to retrieve
+     * @return      : the character at the specified index or default_return
+     * @sa get_char
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     [CHANGE-NOTE SLKP 20170517, used to have unsigned long argument]
+     
+     
+     */
+    char operator  () (long index);
+    
+    
+     const       char    get_char          (long) const;
+        /**
+         * Retrieve a read-only element at index x. 
+         * same as s(i), but with this function you don't have to write (*s)(i) for pointers
+         
+         * @param index : the index (0-based) of a character to retrieve
+         * @return      : the character at the specified index or default_return
+         * @sa operator ()
+         *  Revision history
+           - SLKP 20170517 reviewed while porting from v3 branch
+         */
+
+    /** The sole purpose of this function is to allow warning-free compilation of
+     calls like array [string.getUChar (i)], otherwise you'd get warnings about
+     atypical indexing types
+     
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+     inline const       unsigned char    get_uchar          (long i) const {
+      return (unsigned char)s_data[i];
+    }
+    
+    /** Get the length of this string 
+     
+     @return the length of the string
+
+     *  Revision history
+        - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    
+    inline unsigned long length (void) const {
+        return s_length;
     }
 
-    /**
-    * Sets the character of the string instance at a specified index
-    * \n Usage: string->setChar(5, 'e');
-    * @param index The int location of the char to be replaced
-    * @param c The character to set the location with
-    * @return Nothing. Changes string instance
-    */
-    void    setChar          (long,char);
 
-    /**
-    * Copies a string dynamically and deletes the original string
-    * @param s A pointer to the string to be duplicated
-    * @param flushMe If true, free existing data before copying
-    * @sa Duplicate()
-    * @sa DuplicateErasing()
-    */
-    void    CopyDynamicString (_String*, bool = true);
+    /** Store the supplied character in a given index; functionally almost the same as
+     str[index] = date, but neater to write than (*str)[index] = data, and this also
+     ignores invalid indices
+     
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     [CHANGE-NOTE SLKP 20170517, used to have 'long' argument]
+     */
+    void    set_char          (unsigned long index , char const data );
 
-    /**
-    * Element location function
-    * @see getChar()
-    */
-    virtual     char& operator [] (long);
+     /*
+     ==============================================================
+     Comparisons
+     ==============================================================
+     */
+ 
+    /** Perform a lexicographic comparison of two strings
+     @param rhs right hand side of the comparison
+     @returns less, equal, greater
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     [CHANGE-NOTE SLKP 20170517,
+     return type from char to _HY_COMPARISON_TYPE
+     argument from _String const* to _String const & ]
+     
+     */
+    _HY_COMPARISON_TYPE Compare (_String const& rhs) const;
 
+    /** Perform a lexicographic comparison of two strings ignoring case.
+     Same as casting both strings to lower case and running Compare
+     
+     @param rhs right hand side of the comparison
+     
+     @returns less, equal, greater
+     *  Revision history
+     - SLKP 20170517 initial implementation
+     
+     */
+    _HY_COMPARISON_TYPE CompareIgnoringCase (_String const& rhs) const;
 
-    /**
-    * Element location function
-    * @see getChar()
-    */
-    char operator  () (unsigned long);
+    /** Obvious lexicographic comparisons, mostly making calls to Compare
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+    bool operator==(const _String&) const;
+    bool operator> (const _String&) const;
+    bool operator< (const _String&) const;
+    bool operator>=(const _String&) const;
+    bool operator<=(const _String&) const ;
+    bool operator!=(const _String&) const;
+    bool Equal     (const _String&) const;
+    bool EqualIgnoringCase     (const _String&) const;
+    bool Equal     (const char) const;
 
-    /**
-    * Sets string
-    * \n\n \b Example: \code _String str = _String("hyphy"); \endcode
-    * @see Duplicate()
-    */
-    void operator = (_String);
+    bool EqualWithWildChar (_String const& pattern, char const wildchar = '*', unsigned long start_this = 0UL, unsigned long start_pattern = 0UL) const;
+    
+    /** match this string to a shell style pattern where the wildchar specifies "match zero or more of anything"
+     
+        @param pattern : the pattern to match
+        @param wildchar : the charcter to treat as a wild char
+        @param start_this : start matching at this position in "this"
+        @param start_pattern : start matching at this position in *pattern*
+    
+        @return did the string match the pattern
 
-    /**
-    * Returns the length of the string
-    * \n\n \b Example: \code long l = string.Length(); \endcode
-    * @return Length of string
-    */
-    unsigned long Length(void) const;
+         *  Revision history
+            - SLKP 20170517 reviewed while porting from v3 branch
+            [CHANGE-NOTE SLKP 20170517 change pattern type to _String const& from _String const *]
 
+     */
+    
+    /*
+     ==============================================================
+     Content-modification and extraction methods
+     ==============================================================
+     */
+ 
     /**
-    * Append operator
+    * String concatenation operator, returns "thisrhs"
     * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
+    * @param  rhs : the suffix to concatenate to this
     * @return "AB"
     * @sa EscapeAndAppend()
+
+     *  Revision history
+        - SLKP 20170519 reviewed while porting from v3 branch
     */
-    const _String operator & (const _String &) const;
+    const _String operator & (const _String & rhs) const;
 
     /**
-    * Append operator
-    * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
-    * @return "AB"
-    * @sa EscapteAndAppend()
-    */
-    _String & operator << (const _String*);
-
-    /**
-    * Append operator
-    */
-    _String & operator << (const _String&);
-
-    /**
-    * Append operator
-    * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
-    * @return "AB"
-    * @sa EscapteAndAppend()
-    */
-    void    AppendNewInstance (_String*);
-
-    /**
-     * Append multiple copies of the same string to the buffer
-     * @param value the string to copy
-     * @param copies how many copies to make
+     * Removes part of string that is between the two specified indices
+     * \n\n \b Example: \code _String new_string = _String("AAABBBCCC").Chop(3,5) \endcode
+     * @param start The starting index to chop from
+     * @param end The ending index to chop from
+     * @return "AAACCC"
+     * @sa Cut()
+     * @sa Trim()
+     *  Revision history
+        - SLKP 20170519 reviewed while porting from v3 branch
      */
-    void    AppendNCopies   (_String const& value, unsigned long copies);
+    const _String Chop(long start, long end) const;
+
+    
+    /**
+     * Cuts part of string that is between the two specified indices (0-bases, inclusive)
+     * \n\n \b Example: \code _String new_string = _String("AAABBBCCC").Cut(3,5) \endcode
+     * @param start The starting index to cut from
+     * @param end The ending index to cut from
+     * @return "BBB"
+     * @sa Chop()
+     * @sa Trim()
+     *  Revision history
+        - SLKP 20170519 reviewed while porting from v3 branch
+     */
+    const _String Cut (long, long) const;
 
     /**
-    * Append operator
-    * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
-    * @return "AB"
-    * @sa AppendNewInstance()
-    */
-    _String& operator << (const char);
+     * Delete a range of chars from the string (0-based, inclusive indices)
+     * \n\n \b Example: \code _String("AAABBBCCC").Delete(3,5) \endcode
+     * @param start The starting index to delete from
+     * @param end   The ending index to delete to
+     * @return Transforms String to "AAACCC"
+     * @sa Chop()
+     *  Revision history
+        - SLKP 20170519 reviewed while porting from v3 branch
+     */
+    void    Delete (long, long);
 
     /**
-    * Escape all characters in a string and append to this string
-    * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
-    * \n Above code will transform string to "AB&lt;"
-    * @param c The character to escape and append
-    * @param mode What sort of escaping
-    * \n mode = 0 : normal "text" escaping
-    * \n mode = 1: PostScript escaping
-    * \n mode = 2: SQLite escaping
-    * \n mode = 3: SQLite escaping
-    * \n mode = 4: HTML escaping
-    * \n mode = 5: Regexp escaping
-    */
-    virtual void EscapeAndAppend (const char, char);
+     *
+     * In-place reversed string
+     * \n s[0]...s[sLength-1] => s[sLength-1]...s[0]
+     * \n\n \b Example: \code _String("ABC").Flip() \endcode
+     * @return nothing
+     * @sa Reverse
+     *  Revision history
+        - SLKP 20170519 reviewed while porting from v3 branch
+     */
+    void    Flip(void);
 
     /**
-    * Escape all characters in a string and append to this string
-    * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
-    * \n Above code will transform string to "AB&lt;"
-    * @param s The string to escape and append
-    * @param mode What sort of escaping
-    * @see EscapeAndAppend(const char, char)
+     *
+     * Return a reversed string, leaving the original unchanged
+     * \n s[0]...s[sLength-1] => s[sLength-1]...s[0]
+     * \n\n \b Example: \code _String("ABC").Reverse() \endcode
+     * @return "CBA"
+     *  Revision history
+      - SLKP 20170519 reviewed ; (was missing in v3)
+     */
+    const _String    Reverse(void) const;
+    
+    /**
+     * Insert a char at a given position
+     * \n\n \b Example: \code _String("AA").insert('C',0) \endcode
+     * @param c Character to insert
+     * @param where The position (0-based) to insert the character into,
+     values less than 0 append to the string
+     * @return "CAA"
+     *  Revision history
+       - SLKP 20170519 reviewed while porting from v3 branch
     */
-    virtual void EscapeAndAppend (const _String &, char mode = 0);
+    
+    void    Insert (char, long);
 
     /**
-    * Append into operator
-    */
-    _String& operator << (const char*);
+     * Trim the string in place to retain characters beween the two indices (0-bases, inclusive)
+     * \n\n \b Example: \code _String("AAABBBCCC").Trim(3,5) \endcode
+     * @param start The starting index to cut from
+     * @param end  The ending index to cut from
+     * @return Transforms string to "BBB"
+     * @sa Cut()
+     * @sa Chop()
+     *  Revision history
+        - SLKP 20170519 reviewed while porting from v3 branch
+        [CHANGE-NOTE SLKP 20170519 remove the bool argument for memory handling]
+     */
+    
+    void    Trim(long, long);
 
-    /**
-    * Finalizes a string by putting a 0 at the end of the string.
-    */
-    virtual void Finalize (void);
+    /*
+     ==============================================================
+     Search functions
+     ==============================================================
+     */
 
     /**
     * Checks if the string contains the substring
@@ -334,80 +531,13 @@ public:
     */
     const char*    getStr(void) const;
 
-    /**
-    * Removes part of string that is between the two specified indices
-    * \n\n \b Example: \code _String new_string = _String("AAABBBCCC").Chop(3,5) \endcode
-    * @param from The starting index to chop from
-    * @param to The ending index to chop from
-    * @return "AAACCC"
-    * @sa Cut()
-    * @sa Trim()
-    */
-    const _String Chop(long, long) const;
-
-    /**
-    * Cuts part of string that is between the two specified indices
-    * \n\n \b Example: \code _String new_string = _String("AAABBBCCC").Cut(3,5) \endcode
-    * @param from The starting index to cut from
-    * @param to The ending index to cut from
-    * @return "BBB"
-    * @sa Chop()
-    * @sa Trim()
-    */
-    const _String Cut (long, long) const;
-
-    /**
-    *
-    * In-place flip string
-    * \n s[0]...s[sLength-1] => s[sLength-1]...s[0]
-    * \n\n \b Example: \code _String("ABC").Flip() \endcode
-    * @return Transforms string to "CBA"
-    */
-    const _String    Flip(void);
-
-    /**
-     *
-     * Return a reversed string
-     * \n s[0]...s[sLength-1] => s[sLength-1]...s[0]
-     * \n\n \b Example: \code _String("ABC").Reverse() \endcode
-     * @return "CBA"
-     */
-    const _String    Reverse(void) const;
-
-    /**
-    * Trim the string between from and to
-    * \n Cut string from, to (-1 for any means from beginning/to end)
-    * \n\n \b Example: \code _String("AAABBBCCC").Trim(3,5) \endcode
-    * @param from The starting index to cut from
-    * @param to The ending index to cut from
-    * @param softTrim If set to true, does not reallocate memory
-    * @return Transforms string to "BBB"
-    * @sa Cut()
-    * @sa Chop()
-    */
-
-    void    Trim(long, long, bool = false);
+ 
 
 
-    /**
-    * Insert a char at a given position (-1 - append)
-    * \n\n \b Example: \code _String("AA").insert('C',0) \endcode
-    * @param c Character to insert
-    * @param pos The position to insert the character into
-    * @return "CAA"
-    */
 
-    void    Insert (char, long);
 
-    /**
-    * Delete a range of chars from the string
-    * \n\n \b Example: \code _String("AAABBBCCC").Delete(3,5) \endcode
-    * @param from The starting index to delete from
-    * @param to The ending index to delete to
-    * @return Transforms String to "AAACCC"
-    * @sa Chop()
-    */
-    void    Delete (long, long);
+
+
 
     /**
     * Replace string 1 with string 2, all occurences true/false
@@ -552,20 +682,6 @@ public:
 
     void    FormatTimeString (long);
 
-    /**
-    * Checks if string is lexicographically equal
-    * @see Equal()
-    */
-    bool    operator == (_String const&) const;
-
-    /**
-    * Lexicographic comparison
-    * \n Checks if Strings are equal lexicographic
-    * @param s Second string to compare
-    * @return true if strings are equal
-    * @sa Compare()
-    */
-    bool Equal   (_String const*) const;
 
     /**
     * Case Insensitive Lexicographic comparison
@@ -576,81 +692,11 @@ public:
     */
     bool iEqual   (_String*);
 
-    /**
-    * Lexicographic comparison
-    * \n Checks if a string is equal to one character 
-    * @param c the character to compare to 
-    * @return true if the string is equal to the character
-    * @sa Compare()
-    */
-    bool Equal   (const char c);
 
-    /**
-    * TODO: Lexicographic comparison
-    * \n Checks if Strings are equal lexicographic
-    * @param s Second string to compare
-    * @return 1 if strings are equal, -1 if strings are not
-    * @sa Equal()
-    */
-    char Compare (_String const*) const;
 
-    /**
-    * Lexicographic comparison with a wild character
-    * \n Checks if Strings are equal lexicographically
-    * @param pattrern Second string to compare
-    * @param wildchar The wildcharacter
-    * @return true if strings are equal
-    * @sa Equal()
-    */
-    bool EqualWithWildChar (_String const* s, char const wildChar = '*', unsigned long start_this = 0UL, unsigned long start_pattern = 0UL) const;
+ 
 
-    /**
-    * Checks if String is lexicographically greater
-    * @see Greater()
-    */
-    bool operator > (_String const&) const;
-
-    /**
-    * Checks if String is lexicographically less
-    * @see Less()
-    */
-    bool operator < (_String const&) const;
-
-    /**
-    * Checks if String is lexicographically greater
-    * \n Lexicographical essentially means alphabetical order in this context.
-    * \n\n \b Example: \code _String ("House").Greater("Household")\endcode
-    * \n @return House > Household would be false. The example returns false.
-    */
-    bool Greater (_String const*) const;
-
-    /**
-    * Checks if String is lexicographically greater
-    * \n Lexicographical essentially means alphabetical order in this context.
-    * \n\n \b Example: \code _String ("House").Lesser("Household")\endcode
-    * \n House < Household would be true. The example would return true.
-    */
-    bool Less (_String const*) const;
-
-    /**
-    * Checks if String is lexicographically greater or equal
-    * @see Greater()
-    */
-    bool operator >= (_String const&) const;
-
-    /**
-    * Checks if String is lexicographically less or equal
-    * @see Less()
-    */
-    bool operator <= (_String const&) const;
-
-    /**
-    * Checks if string is not lexicographically equal
-    * @see Equal()
-    */
-    bool operator != (_String const&) const;
-
-    /**
+     /**
     * Checks to see if string contains substring
     * \n\n \b Example: \code _String("hyphy").contains("h")\endcode
     * @return Returns true if string contains substring. Example returns true
@@ -723,34 +769,7 @@ public:
     */
     void    LoCase (void);
 
-    /**
-    * SLKP 20090817: A utility function to append a statement of the form
-    * \n\n \b Example: _String("hyphy").AppendAnAssignmentToBuffer("12","12",false,false,false) makes "hyphy12=12"
-    * @param id = value; to the current string assumed to be in the buffer form
-    * @param flags: a bitwise combination of flags; set kAppendAnAssignmentToBufferFree to free 'value'; \\
-      set kAppendAnAssignmentToBufferQuote to put quotes around the value \\
-      set kAppendAnAssignmentToBufferAssignment to use ':=' instead of '=' \\
-      default is to use kAppendAnAssignmentToBufferFree
-    * @sa AppendNewInstance()
-    * @sa AppendVariableValueAVL()
-    */
-
-    void    AppendAnAssignmentToBuffer (_String*, _String*, unsigned long = kAppendAnAssignmentToBufferFree);
-
-    /**
-    * SLKP 20090817:
-    * A utility function to append a statement of the form
-    * id["varname"] = varvalue; for each variable in the SimpleList arguments
-    * for String valued variables, their values are properly quoted
-    * @param id = value; to the current string assumed to be in the buffer form
-    * @param doFree free the 2nd string argument when done
-    * @param doQuotes put quotes around the value
-    * @param doBind use := instead of =
-    * @sa AppendNewInstance()
-    * @sa AppendAnAssignmentToBuffer()
-    */
-
-    void    AppendVariableValueAVL (_String*, _SimpleList&);
+ 
 
     /**
     * Returns a list from a string split by a substr
@@ -872,7 +891,6 @@ public:
     unsigned char  ProcessVariableReferenceCases (_String& referenced_object, _String const * context = nil) const;
 
     
-    static  unsigned long     storageIncrement;
 
     /**
     * A regular expression match
@@ -956,7 +974,7 @@ public:
     * Sets Length
     */
     void    SetLength (unsigned long nl) {
-        sLength=nl;
+        s_length=nl;
     }
 
     /**
@@ -992,12 +1010,47 @@ public:
 
     long    FindTerminator          (long, _String const&) const;
 
+    
+protected:
+    unsigned long s_length;
+    char*         s_data;
+    
+private:
+    
+    const static  char   default_return = '\0';
+        /** this value is returned for "failed" 
+            access operations that don't throw errors, e.g. getChar */
+    
+    inline void AllocateAndCopyString (const char * source_string, unsigned long length);
+        /** this is a utility function which allocates length+1 chars for s_data, copies
+            the data from source_string, and sets the terminating 0 
+         
+         * Revision history
+            - SLKP 20170517 factoring repeated functionality
+         
+         */
+         
+    long NormalizeRange (long & start, long & end) const;
+    
+    /** given coordinates start and end, converts then to valid string indices
+        if called on an empty string, returns 0 and does not change start and end
+        if start < 0 it is reset to 0
+        if end < 0 or >= string length it is reset to (string length) - 1
+     
+        @param start: start of the range (0-based)
+        @param end  : end of the range
+        @return     : the length of the range 
 
-    // Data Fields
-    unsigned long sLength,
-                  buffer_allocation;
-    char*         sData;
+     * Revision history
+        - SLKP 20170517 porting from v3 branch
+     */
+
 };
+
+/** DEPRECATED
+ - virtual     void    DuplicateErasing (BaseRef);
+ SLKP 20170517 ::Duplicate now clears *this always
+*/
 
 
 // _______________________________________________________________________
@@ -1008,9 +1061,6 @@ extern _String
        emptyAssociativeList,
        hyphyCiteString;
 
-#ifdef  __MAC__
-extern _String volumeName;
-#endif
 
 void    SetStatusBarValue           (long,hy_float,hy_float);
 void    SetStatusLine               (_String);
@@ -1045,4 +1095,115 @@ extern  _String                     __HYPHY__VERSION__;
 typedef bool (*_hyStringValidatorType) (_String*);
 bool    hyIDValidator (_String*);
 
+
+/** REMOVED
+ - virtual     void    DuplicateErasing (BaseRef);
+        SLKP 20170517 ::Duplicate now clears *this always
+ - void    CopyDynamicString (_String* s, bool = true);
+    SLKP 20170517 the same can be accomplished by 'x = s' and constructor elision
+ - bool    iEqual 
+    SLKP 20170517 replace with a more general CompareIgnoringCase
+ 
+
+ */
+
+/**
+ * Append operator
+ * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
+ * @return "AB"
+ * @sa EscapteAndAppend()
+ */
+// _String & operator << (const _String*); // MOVE TO STRING BUFFER
+
+/**
+ * Append operator
+ */
+//_String & operator << (const _String&); // MOVE TO STRING BUFFER
+
+/**
+ * Append operator
+ * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
+ * @return "AB"
+ * @sa EscapteAndAppend()
+ */
+//void    AppendNewInstance (_String*); // MOVE TO STRING BUFFER
+
+/**
+ * Append multiple copies of the same string to the buffer
+ * @param value the string to copy
+ * @param copies how many copies to make
+ */
+//void    AppendNCopies   (_String const& value, unsigned long copies); // MOVE TO STRING BUFFER
+
+/**
+ * Append operator
+ * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
+ * @return "AB"
+ * @sa AppendNewInstance()
+ */
+//_String& operator << (const char); // MOVE TO STRING BUFFER
+
+/**
+ * Escape all characters in a string and append to this string
+ * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
+ * \n Above code will transform string to "AB&lt;"
+ * @param c The character to escape and append
+ * @param mode What sort of escaping
+ * \n mode = 0 : normal "text" escaping
+ * \n mode = 1: PostScript escaping
+ * \n mode = 2: SQLite escaping
+ * \n mode = 3: SQLite escaping
+ * \n mode = 4: HTML escaping
+ * \n mode = 5: Regexp escaping
+ */
+//virtual void EscapeAndAppend (const char, char); // MOVE TO STRING BUFFER
+
+/**
+ * Escape all characters in a string and append to this string
+ * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
+ * \n Above code will transform string to "AB&lt;"
+ * @param s The string to escape and append
+ * @param mode What sort of escaping
+ * @see EscapeAndAppend(const char, char)
+ */
+//virtual void EscapeAndAppend (const _String &, char mode = 0); // MOVE TO STRING BUFFER
+
+/**
+ * Append into operator
+ */
+//_String& operator << (const char*); // MOVE TO STRING BUFFER
+
+/**
+ * Finalizes a string by putting a 0 at the end of the string.
+ */
+//virtual void Finalize (void); // MOVE TO STRING BUFFER
+
+/**
+ * SLKP 20090817: A utility function to append a statement of the form
+ * \n\n \b Example: _String("hyphy").AppendAnAssignmentToBuffer("12","12",false,false,false) makes "hyphy12=12"
+ * @param id = value; to the current string assumed to be in the buffer form
+ * @param flags: a bitwise combination of flags; set kAppendAnAssignmentToBufferFree to free 'value'; \\
+ set kAppendAnAssignmentToBufferQuote to put quotes around the value \\
+ set kAppendAnAssignmentToBufferAssignment to use ':=' instead of '=' \\
+ default is to use kAppendAnAssignmentToBufferFree
+ * @sa AppendNewInstance()
+ * @sa AppendVariableValueAVL()
+ */
+
+// void    AppendAnAssignmentToBuffer (_String*, _String*, unsigned long = kAppendAnAssignmentToBufferFree); // MOVE TO STRING BUFFER
+
+/**
+ * SLKP 20090817:
+ * A utility function to append a statement of the form
+ * id["varname"] = varvalue; for each variable in the SimpleList arguments
+ * for String valued variables, their values are properly quoted
+ * @param id = value; to the current string assumed to be in the buffer form
+ * @param doFree free the 2nd string argument when done
+ * @param doQuotes put quotes around the value
+ * @param doBind use := instead of =
+ * @sa AppendNewInstance()
+ * @sa AppendAnAssignmentToBuffer()
+ */
+
+//void    AppendVariableValueAVL (_String*, _SimpleList&);// MOVE TO STRING BUFFER
 #endif

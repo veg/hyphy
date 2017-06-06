@@ -1129,7 +1129,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                     }
                     switch (charSwitcher) {
                     case 1:
-                        missing = blank.getChar(0);
+                        missing = blank.get_char(0);
                         if (gap == missing) {
                             gap = 0;
                         }
@@ -1139,7 +1139,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
 
                         break;
                     case 2:
-                        gap = blank.getChar(0);
+                        gap = blank.get_char(0);
                         if (missing == gap) {
                             missing = 0;
                         }
@@ -1149,7 +1149,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
 
                         break;
                     case 3:
-                        repeat = blank.getChar(0);
+                        repeat = blank.get_char(0);
                         if (missing == repeat) {
                             missing = 0;
                         }
@@ -1351,7 +1351,7 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
                 if (g!=-1) {
                     blockName = CurrentLine.Cut (f,g-1);
                     // dispatch to block readers
-                    if (blockName.iEqual(&data)) {
+                    if (blockName.EqualIgnoringCase(data)) {
                         blockName = blockName &" block is now deprecated in NEXUS and should not be used.";
                         ReportWarning (blockName);
 
@@ -1364,25 +1364,25 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
                             blockName = "Only one data set per NEXUS file is read by ReadDataSet - the 1st valid one.";
                             ReportWarning (blockName);
                         }
-                    } else if (blockName.iEqual(&taxa)) {
+                    } else if (blockName.EqualIgnoringCase(taxa)) {
                         if (!dataRead) {
                             ProcessNexusTaxa (fState, g+1, file, CurrentLine, result);
                         } else {
                             blockName = "The TAXA block was encountered after CHARACTER had been read and will be ignored.";
                             ReportWarning (blockName);
                         }
-                    } else if (blockName.iEqual(&trees)) {
+                    } else if (blockName.EqualIgnoringCase(trees)) {
                         ProcessNexusTrees (fState, g+1, file, CurrentLine, result);
-                    } else if (blockName.iEqual(&chars)) {
+                    } else if (blockName.EqualIgnoringCase(chars)) {
                         if (!dataRead) {
                             dataRead = ProcessNexusData (fState, g+1, file, CurrentLine, result);
                         } else {
                             blockName = "Only one data set per NEXUS file is read by ReadDataSet - the 1st valid one.";
                             ReportWarning (blockName);
                         }
-                    } else if (blockName.iEqual(&assumptions)||blockName.iEqual(&sets)) {
+                    } else if (blockName.EqualIgnoringCase(assumptions)||blockName.EqualIgnoringCase(sets)) {
                         ProcessNexusAssumptions (fState, g+1, file, CurrentLine, result);
-                    } else if (blockName.iEqual(&hyphy)) {
+                    } else if (blockName.EqualIgnoringCase(hyphy)) {
                         ProcessNexusHYPHY (fState, g+1, file, CurrentLine, result);
                     } else {
                         blockName = _String("NEXUS blocks ")&blockName&(" are not used by HYPHY.");

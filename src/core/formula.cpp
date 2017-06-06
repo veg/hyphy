@@ -2749,7 +2749,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 //__________________________________________________________________________________
 _FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer const* scope) {
     assignment_ref_id   = -1;
-    assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
+    assignment_ref_type = kStringDirectReference;
     is_volatile = false;
     in_assignment = false;
     build_complex_objects = true;

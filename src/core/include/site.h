@@ -129,13 +129,13 @@ public:
     const _String ConvertCodeToLetters            (long, unsigned char) const;
     long    LengthOfAlphabet                (void) const;
     bool    IsStandardBinary                (void) const {
-        return baseLength==2 && baseSet.sLength==0;
+        return baseLength==2 && baseSet.length () ==0;
     }
     bool    IsStandardNucleotide            (void) const {
-        return baseLength==4 && baseSet.sLength==0;
+        return baseLength==4 && baseSet.length () ==0;
     }
     bool    IsStandardAA                    (void) const {
-        return baseLength==20&& baseSet.sLength==0;
+        return baseLength==20&& baseSet.length ()==0;
     }
   
     const _String&   ExpandToken            (char token) const;
@@ -656,7 +656,7 @@ public:
     duplicateMap;
 
     char const*    GetColumn (long index) const {
-        return ((_Site*)(((BaseRef*)theData->lData)[theData->theMap.lData[theMap.lData[index]]]))->sData;
+        return (const char*)(*(_Site*)(((BaseRef*)theData->lData)[theData->theMap.lData[theMap.lData[index]]]));
     }
 
     _SimpleList     conversionCache;

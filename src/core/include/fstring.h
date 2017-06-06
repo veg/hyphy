@@ -105,7 +105,7 @@ public:
     _String const&    get_str           (void) const {return *theString;}
 
     virtual bool      IsEmpty           (void) {
-        return !theString || theString->sLength == 0;
+        return !theString || theString->length() == 0;
     }
     // SLKP 20100907: a simple utility function to check if the object is an empty string
 

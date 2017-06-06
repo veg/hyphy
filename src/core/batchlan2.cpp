@@ -1037,12 +1037,12 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 
                 if (charVector) {
                     for (long cc = 0; cc < charVector->theString->sLength; cc++)
-                        if (ccount.lData[charVector->theString->getUChar(cc)]>=0) {
+                        if (ccount.lData[charVector->theString->get_uchar(cc)]>=0) {
                             charCount = 0; // this is an error condition for
                             // duplicate characters in the string
                             break;
                         } else {
-                            ccount.lData[charVector->theString->getUChar(cc)] = cc;
+                            ccount.lData[charVector->theString->get_uchar(cc)] = cc;
                             charCount ++;
                         }
                 }
@@ -1538,7 +1538,7 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
         while ((firstVar=firstCNode->GetIthIndependent(ind))) {
             for (index = 0; index<partIndex.lLength; index++) {
                 if (partIndex.lData[index]==0) {
-                    if (!firstVar->GetName()->EqualWithWildChar((_String*)theParts.lData[index],'?')) {
+                    if (!firstVar->GetName()->EqualWithWildChar(*(_String*)theParts.lData[index],'?')) {
                         break;
                     }
                 }
@@ -1569,7 +1569,7 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
 
                 for (; j<avVars.lLength; j++) {
                     firstVar = firstCNode->GetIthParameter(avVars.lData[j]);
-                    if (firstVar->GetName()->EqualWithWildChar((_String*)theParts.lData[k],'?')) {
+                    if (firstVar->GetName()->EqualWithWildChar(*(_String*)theParts.lData[k],'?')) {
                         (*(_SimpleList*)(otherGoodVars(i-1))) << avVars.lData[j];
                         avVars.Delete (j);
                         found1 = true;

@@ -4198,7 +4198,7 @@ void            _TheTree::GetBranchLength (node<long> * n, _String& r, bool getB
         
 
         if (mm && fv && mm->ObjectClass() == MATRIX && fv->ObjectClass() == MATRIX) {
-            r.CopyDynamicString(((_Matrix*)mm->GetValue())->BranchLengthExpression((_Matrix*)fv->GetValue(),mbf), true);
+            r = ((_Matrix*)mm->GetValue())->BranchLengthExpression((_Matrix*)fv->GetValue(),mbf);
         } else {
             r = kEmptyString;
         }
@@ -4676,7 +4676,7 @@ hy_float _TheTree::PSStringWidth (_String& s)
 {
     hy_float nnWidth = 0.;
     for (long cc = 0; cc < s.sLength; cc++) {
-        nnWidth += _timesCharWidths[(int)s.getChar(cc)];
+        nnWidth += _timesCharWidths[(int)s.get_char(cc)];
     }
     return nnWidth;
 }

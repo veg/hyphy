@@ -1554,7 +1554,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
     while (s.Length()) { // repeat while there is stuff left in the buffer
         _String currentLine (_ElementaryCommand::FindNextCommand (s,true));
 
-        if (currentLine.getChar(0)=='}') {
+        if (currentLine.get_char(0)=='}') {
             currentLine.Trim(1,-1);
         }
 
@@ -1786,7 +1786,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 }
             }
             
-            /*if (currentLine.sLength > 1 || currentLine.sLength == 1 && currentLine.getChar(0) != ';'){
+            /*if (currentLine.sLength > 1 || currentLine.sLength == 1 && currentLine.get_char(0) != ';'){
                 WarnError (_String ("Missing semicolon before ") & currentLine);
                 return false;
             }*/
@@ -5115,7 +5115,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 
         _TheTree * tr = nil;
 
-        if (treeString.getChar(0)!='(') {
+        if (treeString.get_char(0)!='(') {
             _Formula  nameForm (treeString,chain.nameSpacePrefix);
             _PMathObj formRes = nameForm.Compute();
             if (formRes) {
@@ -5589,7 +5589,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
             continue;
         } else {
             if (!(isStringDouble || isStringSingle) && c=='/') {
-                switch (input.getChar(index+1)) {
+                switch (input.get_char(index+1)) {
                 case '*':
                     isComment = 1;
                     break;
@@ -5617,13 +5617,13 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
           // need to maintain spaces for this to work appropriately
           
           
-            /*if (index >= 6 && input.getChar(index-1) == 'n'
-                    && input.getChar(index-2) == 'r'
-                    && input.getChar(index-3) == 'u'
-                    && input.getChar(index-4) == 't'
-                    && input.getChar(index-5) == 'e'
-                    && input.getChar(index-6) == 'r') {
-                if (index == 6 || (index > 6 && !(isalnum(input.getChar(index-7)) || input.getChar(index-7) == '_'))) {
+            /*if (index >= 6 && input.get_char(index-1) == 'n'
+                    && input.get_char(index-2) == 'r'
+                    && input.get_char(index-3) == 'u'
+                    && input.get_char(index-4) == 't'
+                    && input.get_char(index-5) == 'e'
+                    && input.get_char(index-6) == 'r') {
+                if (index == 6 || (index > 6 && !(isalnum(input.get_char(index-7)) || input.get_char(index-7) == '_'))) {
                     result<<' ';
                 }
             }*/
@@ -5633,7 +5633,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
               long trie_match = _HY_HBL_KeywordsPreserveSpaces.FindKey(lookback.Flip(), nil, true);
               if (trie_match != HY_TRIE_NOTFOUND) {
                 long matched_length = _HY_HBL_KeywordsPreserveSpaces.GetValue(trie_match);
-                if (matched_length == index || !(isalnum(input.getChar(index-matched_length-1)) || input.getChar(index-matched_length-1) == '_')) {
+                if (matched_length == index || !(isalnum(input.get_char(index-matched_length-1)) || input.get_char(index-matched_length-1) == '_')) {
                   result << ' ';
                 }
               }
@@ -5655,7 +5655,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
         result<<c;
 
         if ((isStringDouble || isStringSingle) && c == '\\') {
-            result<< input.getChar(++index);
+            result<< input.get_char(++index);
             continue;
         }
 
@@ -5729,7 +5729,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
                 if (index>=2) {
                     long t = input.FirstNonSpaceIndex (0, index-1, -1);
                     if (t>=1) {
-                        if (input.getChar(t)=='o' && input.getChar(t-1)=='d') {
+                        if (input.get_char(t)=='o' && input.get_char(t-1)=='d') {
                             isDoWhileLoop << scopeIn-1;
                             //printf ("%d\n%s\n\n", isDoWhileLoop, input.Cut (t,-1).sData);
                         }
@@ -5778,7 +5778,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSo
     }
 
     lastChar=0;
-    while (result.getChar(lastChar)=='{') {
+    while (result.get_char(lastChar)=='{') {
         lastChar++;
     }
 
@@ -5901,7 +5901,7 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
                 target&&(&condition);
             }
 
-        if (source.getChar(0)=='{') {
+        if (source.get_char(0)=='{') {
             source.Trim(1,-1);
         }
 
@@ -6853,7 +6853,7 @@ bool    _ElementaryCommand::ConstructGetInformation (_String&source, _ExecutionL
         _String *s0 = (_String*)pieces(0),
                  *s1 = (_String*)pieces(1);
 
-        if (!(s0->IsValidIdentifier()&&((s1->sLength>2&&s1->getChar(0)=='"'&s1->getChar(s1->sLength-1)=='"') || s1->IsValidIdentifier()))) {
+        if (!(s0->IsValidIdentifier()&&((s1->sLength>2&&s1->get_char(0)=='"'&s1->get_char(s1->sLength-1)=='"') || s1->IsValidIdentifier()))) {
             WarnError (_String ("Both ") & *s0 & " and " & *s1 & " must be valid identifiers in call to GetInformation.");
             return     false;
         }
@@ -6972,7 +6972,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       for (long k = 0UL; k < arguments.lLength; k++) {
         
           _String*   namespaced = new _String(chain.AddNameSpaceToID (*(_String*)arguments(k), & extraNamespace));
-          if (namespaced->getChar(namespaced->sLength - 1L) == '&') {
+          if (namespaced->get_char(namespaced->sLength - 1L) == '&') {
             namespaced->Trim(0,namespaced->sLength-2);
             argument_types << BL_FUNCTION_ARGUMENT_REFERENCE;
           } else {

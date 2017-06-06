@@ -462,7 +462,6 @@ BaseRef _MathObject::makeDynamic (void) const {
 //__________________________________________________________________________________
 
 void _MathObject::Duplicate (BaseRefConst) {
-    return new _MathObject;
 }
 //__________________________________________________________________________________
 

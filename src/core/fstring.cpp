@@ -237,11 +237,11 @@ _PMathObj _FString::EqualAmb (_PMathObj p)
 {
     if (p->ObjectClass()==STRING) {
         _FString* theStr = (_FString*)p;
-        bool     equal = theString->EqualWithWildChar(theStr->theString);
+        bool     equal = theString->EqualWithWildChar(*theStr->theString);
         return new _Constant ((hy_float)equal);
     } else {
         _String  convStr      ((_String*)p->toStr());
-        return   new _Constant(theString->EqualWithWildChar(&convStr));
+        return   new _Constant(theString->EqualWithWildChar(convStr));
     }
 }
 
@@ -812,7 +812,7 @@ _PMathObj   _FString::MapStringToVector (_PMathObj p)
 
             _SimpleList mapped;
             for (long s = 0; s < theString->sLength; s++) {
-                mapped << mapper[theString->getUChar(s)];
+                mapped << mapper[theString->get_uchar(s)];
             }
 
             return new _Matrix (mapped);

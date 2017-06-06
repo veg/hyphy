@@ -195,11 +195,11 @@ TEST_F(StringTest,getCharTest)
 
     empty.Initialize();
 
-    EXPECT_EQ('e', test.getChar(5));
+    EXPECT_EQ('e', test.get_char(5));
 
     //Default return is 0
     _String test2 = empty;
-    EXPECT_EQ(0, test2.getChar(5));
+    EXPECT_EQ(0, test2.get_char(5));
 
 }
 
@@ -213,13 +213,13 @@ TEST_F(StringTest,setCharTest)
 
     empty.Initialize();
 
-    test.setChar(5,'d');
-    EXPECT_EQ('d', test.getChar(5));
+    test.set_char(5,'d');
+    EXPECT_EQ('d', test.get_char(5));
 
     //Should be 0
     _String test2 = empty;
-    test2.setChar(5,'d');
-    EXPECT_EQ('\0', test2.getChar(5));
+    test2.set_char(5,'d');
+    EXPECT_EQ('\0', test2.get_char(5));
 }
 
 /******************************************/

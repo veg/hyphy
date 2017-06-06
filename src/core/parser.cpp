@@ -649,7 +649,7 @@ _String const&  AppendContainerName (_String const& inString, _String const* nam
     unsigned char reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && namescp -> sLength? namescp : nil);
     
 
-    if (reference_type != HY_STRING_INVALID_REFERENCE) {
+    if (reference_type != kStringInvalidReference) {
         return returnMe;
     }
     return inString;

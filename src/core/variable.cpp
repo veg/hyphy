@@ -729,7 +729,7 @@ long    DereferenceString (_PMathObj v, _MathObject const * context, char refere
     if (v && v->ObjectClass () == STRING) {
         _FString * value = (_FString*)v;
         _String referencedVariable = *value->theString;
-        if (reference_type == HY_STRING_LOCAL_DEREFERENCE && context) {
+        if (reference_type == kStringLocalDeference && context) {
             referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer*)context);
         }
         return LocateVarByName(referencedVariable);
@@ -739,7 +739,7 @@ long    DereferenceString (_PMathObj v, _MathObject const * context, char refere
 
 //__________________________________________________________________________________
 long    DereferenceVariable (long index, _MathObject const * context, char reference_type){
-    if (reference_type == HY_STRING_DIRECT_REFERENCE) {
+    if (reference_type == kStringDirectReference) {
         return index;
     }
     

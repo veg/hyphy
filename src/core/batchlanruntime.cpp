@@ -347,7 +347,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                             ((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(1))->getStr());
                 }
                 printf ("\n\n Please type in the abbreviation for the model you want to use:");
-                dataType.CopyDynamicString(StringFromConsole());
+                dataType = StringFromConsole();
                 dataType.UpCase();
                 for (model_id = 0; model_id<matchingModels.lLength; model_id++) {
                     if (dataType.Equal((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))) {

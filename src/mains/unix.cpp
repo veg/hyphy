@@ -166,14 +166,14 @@ _String getLibraryPath() {
     _String baseDir (curWd);
 #endif
 
-    if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
+    if (baseDir.get_char (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
     }
 
 #if defined _HYPHY_LIBDIRECTORY_
     _String libDir (_HYPHY_LIBDIRECTORY_);
 
-    if (libDir.getChar (libDir.sLength-1) != dirSlash) {
+    if (libDir.get_char (libDir.sLength-1) != dirSlash) {
         libDir=libDir & dirSlash;
     }
 
@@ -614,7 +614,7 @@ int main (int argc, char* argv[])
     _String baseDir (curWd);
   
 
-    if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
+    if (baseDir.get_char (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
     }
   
@@ -826,7 +826,7 @@ int main (int argc, char* argv[])
                 loggedUserInputs && & c_str;
             }
 
-            if (c_str.getChar(0) !='n' && c_str.getChar(0)!='N' ) {
+            if (c_str.get_char(0) !='n' && c_str.get_char(0)!='N' ) {
                 long choice = DisplayListOfPostChoices();
                 while (choice != -1) {
                     _ExecutionList postEx;
@@ -842,7 +842,7 @@ int main (int argc, char* argv[])
                         loggedUserInputs && & c_str;
                     }
 
-                    if (c_str.getChar(0)=='n' || c_str.getChar(0)=='N' ) {
+                    if (c_str.get_char(0)=='n' || c_str.get_char(0)=='N' ) {
                         break;
                     }
 

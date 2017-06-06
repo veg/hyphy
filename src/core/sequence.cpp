@@ -236,7 +236,7 @@ void    WriteBitsToString (_String&s, long& bitAt, char lengthToWrite)
 {
     long leftOver = 8-bitAt%8, curPos = bitAt/8;
     if (leftOver >= lengthToWrite) { // will fit in current byte
-        unsigned char value = s.getUChar(curPos);
+        unsigned char value = s.get_uchar(curPos);
         value += powersOf2[leftOver-1]-powersOf2[leftOver-lengthToWrite];
         s[curPos]=value;
     } else {
@@ -316,12 +316,12 @@ hy_float      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
 
 
     for (j=0; j<sLength; j++) {
-        freqs[getUChar(j)]++;
+        freqs[get_uchar(j)]++;
     }
 
     t = 0;
     for (j=0; j<theAlphabet->sLength; j++) {
-        freqs[NuclAlphabet.getUChar(j)]*=-1;
+        freqs[NuclAlphabet.get_uchar(j)]*=-1;
     }
 
     //make sure that the alphabet is "large" enough for the nucleotide case
@@ -348,12 +348,12 @@ hy_float      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
 
     for (j=0; j<(*theAlphabet).sLength; j++) {
         for (long k = 0; k<(*theAlphabet).sLength; k++)
-            if (freqs[theAlphabet->getUChar(j)]>=maxOccurences[k]) {
+            if (freqs[theAlphabet->get_uchar(j)]>=maxOccurences[k]) {
                 for (long l=(*theAlphabet).sLength-1; l>=k+1; l--) {
                     maxOccurences[l]=maxOccurences[l-1];
                     locationsOfMaxSymbols[l]=locationsOfMaxSymbols[l-1];
                 }
-                maxOccurences[k]=freqs[theAlphabet->getUChar(j)];
+                maxOccurences[k]=freqs[theAlphabet->get_uchar(j)];
                 locationsOfMaxSymbols[k]=(*theAlphabet)[j];
                 break;
             }
@@ -372,7 +372,7 @@ hy_float      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
         long l;
         for (l=0; l<(*theAlphabet).sLength; l++)
             if ((*theAlphabet)[k]==locationsOfMaxSymbols[l]) {
-                j+=(l+1)*freqs[theAlphabet->getUChar(k)];
+                j+=(l+1)*freqs[theAlphabet->get_uchar(k)];
                 codeLength [locationsOfMaxSymbols[l]] = l+1;
                 break;
             }
@@ -398,21 +398,21 @@ hy_float      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
             unsigned char value = result[t];
             switch (leftover) {
             case 5:
-                value+=codeLength[theAlphabet->getUChar(j)];
+                value+=codeLength[theAlphabet->get_uchar(j)];
                 break;
             case 6:
-                value+=codeLength[theAlphabet->getUChar(j)]*2;
+                value+=codeLength[theAlphabet->get_uchar(j)]*2;
                 break;
             case 7:
-                value+=codeLength[theAlphabet->getUChar(j)]*4;
+                value+=codeLength[theAlphabet->get_uchar(j)]*4;
                 break;
             default:
-                value+=codeLength[theAlphabet->getUChar(j)]*8;
+                value+=codeLength[theAlphabet->get_uchar(j)]*8;
             }
             result[t]=value;
         } else {
-            result[t]+=codeLength[theAlphabet->getUChar(j)]/realPowersOf2[5-leftover];
-            result[++t]=(codeLength[theAlphabet->getUChar(j)]%realPowersOf2[5-leftover])*realPowersOf2[3+leftover];
+            result[t]+=codeLength[theAlphabet->get_uchar(j)]/realPowersOf2[5-leftover];
+            result[++t]=(codeLength[theAlphabet->get_uchar(j)]%realPowersOf2[5-leftover])*realPowersOf2[3+leftover];
         }
     }
 
@@ -529,7 +529,7 @@ _String*    _CString::DecompressFrequency(void)
             break;
         }
         l++;
-        _String addOn (theAlphabet->getChar(codeMaps[l-j-1]));
+        _String addOn (theAlphabet->get_char(codeMaps[l-j-1]));
         result<<&addOn;
         if ((t=l/8)>=sLength) {
             break;
@@ -689,7 +689,7 @@ _String*        _CString::DecompressLZW (void)
             oldCode = codeMax;
         } else {
             testString =  *(_String*)theTable(oldCode);
-            testString = testString&testString.getChar(0);
+            testString = testString&testString.get_char(0);
             theTable&&(&testString);
             output << &testString;
 //          output = output & testString;
