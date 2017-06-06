@@ -314,7 +314,7 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
             
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
             _String * prefix [2] = {&hy_error_log_name, &hy_messages_log_name};
-            FILE * handle [2] = {hy_error_log_file, hy_message_log_file};
+            FILE ** handle [2] = {&hy_error_log_file, &hy_message_log_file};
             
             for (long file_index = 0; file_index < 2; file_index++) {
                 long                    p   = 1L;
@@ -328,8 +328,8 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
                 _String file_name = *prefix[file_index] & ".mpinode" & (long)hy_mpi_node_rank;
     #endif
                 
-                handle[file_index] = doFileOpen (file_name.sData,"w+");
-                while (handle[file_index] == nil && p<10) {
+                *handle[file_index] = doFileOpen (file_name.sData,"w+");
+                while (*handle[file_index] == nil && p<10) {
                     #ifndef __HYPHYMPI__
                          file_name = *prefix[file_index] & '.' & p;
                     #if defined  __MINGW32__
@@ -531,7 +531,7 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
     void    ReportWarning (_String const message) {
         
         bool do_logging = EnvVariableTrue(message_logging);
-        
+            
 #ifdef  __HEADLESS__
         if (globalInterfaceInstance && do_logging >= 0.1) {
             globalInterfaceInstance->PushWarning (&message);

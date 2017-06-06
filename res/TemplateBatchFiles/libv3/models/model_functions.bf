@@ -315,7 +315,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 messages.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");
             }
         } else {
-	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");		        
+	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");
         }
     } else {
         messages.log ("models.generic.SetBranchLength: more than one local model parameter");

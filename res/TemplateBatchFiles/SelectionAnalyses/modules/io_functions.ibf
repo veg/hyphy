@@ -66,7 +66,7 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
             utility.ForEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "
             	if (`&tag` == _value_ || `&tag` == None) {
-            		`&tree_configuration`[_key_] = ^'terms.json.attribute.test';} 
+            		`&tree_configuration`[_key_] = ^'terms.json.attribute.test';}
             	else {
             		`&tree_configuration`[_key_] = ^'terms.json.attribute.background';
             	}
