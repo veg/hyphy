@@ -121,7 +121,7 @@ relax.selected_branches = relax.io.defineBranchSets (relax.tree);
 RELAX.has_unclassified = relax.selected_branches / RELAX.unclassified;
 
 RELAX.branch_to_partiton = {};
-utility.ForEachPair (relax.selected_branches, "_key_", "_value_", "utility.ForEach (utility.Keys(_value_), '_branch_', 'RELAX.branch_to_partiton[_branch_&&1] = _key_')");
+utility.ForEachPair (relax.selected_branches, "_key_", "_value_", "utility.ForEach (utility.Keys(_value_), '_branch_', 'RELAX.branch_to_partiton[_branch_] = _key_')");
 
 RELAX.json ["partition"] = relax.selected_branches;
 RELAX.json ["tree"] = relax.tree ["string"];
@@ -753,6 +753,16 @@ function relax.json_spool (json, file) {
     USE_JSON_FOR_MATRIX = 0;
 
 }
+
+//------------------------------------------------------------------------------------------------------------------------
+
+// SHIM to the old global namespace for CountSenseCodons
+
+lfunction CountSenseCodons (code) {
+    return genetic_code.CountSense (code);
+}
+
+
 
 //------------------------------------------------------------------------------------------------------------------------
 
