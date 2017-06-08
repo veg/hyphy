@@ -2080,6 +2080,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
         }
         if (f==-1) {
             if (!sameScore) {
+                sameScore = new _SimpleList;
                 if (siteIndices.Insert  (testS.makeDynamic(),(long)sameScore,false) < 0) {
                     HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__, true);
                 }
