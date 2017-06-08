@@ -291,6 +291,7 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
 function estimators.ApplyExistingEstimates(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions) {
     //fprintf (stdout, model_descriptions, "\n", initial_values, "\n");
 
+
 	/* set all category variable values to one */
 
     GetString(estimators.ApplyExistingEstimates.lfInfo, ^ likelihood_function_id, -1);
@@ -333,6 +334,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                 _branch_name = estimators.ApplyExistingEstimates.branch_names[estimators.ApplyExistingEstimates.b];
                 _existing_estimate = ((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name];
 
+
                if (Type(_existing_estimate) == "AssociativeList") {
                    _set_branch_length_to = (((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])["MLE"];
 
@@ -340,6 +342,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                     if (None != branch_length_conditions) {
                         if (Abs(branch_length_conditions)) {
                             _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
+
 
                             if (Type(_application_type) == "String") {
                                 _set_branch_length_to = {};
@@ -361,7 +364,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
         } else {
         	if (Type((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i]) != "Unknown") {
-        		warning.log ("Incorrect type for the initial values object for partition " + estimators.ApplyExistingEstimates.i 
+        		warning.log ("Incorrect type for the initial values object for partition " + estimators.ApplyExistingEstimates.i
         					+ ". " + (initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i]);
         	}
         }
@@ -502,9 +505,9 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     }
 
     LikelihoodFunction likelihoodFunction = (lf_components);
-    
+
     //io.SpoolLF (&likelihoodFunction, "/Users/sergei/Desktop/lf", "FitSingleModel_Ext");
-    
+
 
     df = 0;
     if (Type(initial_values) == "AssociativeList") {
@@ -723,7 +726,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     LikelihoodFunction likelihoodFunction = (lf_components);
 
-    //fprintf (stdout, option["proportional-branch-length-scaler"], "\n");
+    // fprintf (stdout, option["proportional-branch-length-scaler"], "\n");
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);

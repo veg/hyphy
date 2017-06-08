@@ -68,7 +68,7 @@ BaseRef BaseObj::toErrStr(void) { return toStr(); }
 void BaseObj::toFileStr(FILE *dest, unsigned long padding) {
     _String *s = (_String *)toStr(padding);
     fwrite(s->getStr(), 1, s->length(), dest);
-    delete s;
+    DeleteObject (s);
 }
 
 

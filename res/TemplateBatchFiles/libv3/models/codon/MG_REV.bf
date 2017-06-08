@@ -13,7 +13,7 @@ LoadFunctionLibrary("../../UtilityFunctions.bf");
  */
 lfunction models.codon.MG_REV.ModelDescription(type, code) {
 
-	
+
     codons = models.codon.MapCode(code);
 
     return {
@@ -128,8 +128,6 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
     models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
 
-
-
     if (Type(value) == "AssociativeList") {
         if (value[terms.branch_length_scaler] == terms.branch_length_constrain) {
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
@@ -146,7 +144,6 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                     model[terms.nonsynonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
                 }
 
-                //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
 
                 parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.synonymous_rate] + "))/(" + model[terms.nonsynonymous_rate] + ")", "");
                 return 1;

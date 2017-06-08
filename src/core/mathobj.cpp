@@ -463,6 +463,7 @@ BaseRef _MathObject::makeDynamic (void) const {
 
 void _MathObject::Duplicate (BaseRefConst) {
 }
+
 //__________________________________________________________________________________
 
 //SW: Why do we need a string for the type?

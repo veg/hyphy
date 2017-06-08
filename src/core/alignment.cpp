@@ -198,6 +198,7 @@ long CodonAlignStringsStep( double * const score_matrix
 
         if ( r_codon < 0 ) {
             r_codon = cost_stride - 1;
+            printf ("*** NIL CODON *** %ld %ld %ld %ld\n", reference[ rpos - 3 ], reference[ rpos - 2], reference[ rpos - 1], r_codon);
         }
     }
 
