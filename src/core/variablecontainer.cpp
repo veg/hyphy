@@ -386,7 +386,7 @@ void _VariableContainer::ScanAndAttachVariables (void)
     for (f = variableNames.Next (f, travcache); f>=0; f = variableNames.Next (f, travcache)) {
         curVar = FetchVar (f);
 
-        if (curVar->theName->startswith(theNameAndADot)) {
+        if (curVar->theName->BeginsWith(theNameAndADot)) {
             //printf ("[ScanAndAttachVariables %s]\n", curVar->GetName()->getStr());
             if (!curVar->IsContainer()) {
                 long   vix = variableNames.GetXtra (f);
@@ -968,7 +968,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             if (!indOnly) {
                 if (dVariables) {
                     for (j=0; j<dVariables->lLength; j+=2)
-                        if (LocateVar(dVariables->lData[j])->GetName()->endswith (*(_String*)suffixes.lData[i])) {
+                        if (LocateVar(dVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
                             break;
                         }
 
@@ -979,7 +979,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             }
             if (iVariables) {
                 for (j=0; j<iVariables->lLength; j+=2) {
-                    if (LocateVar(iVariables->lData[j])->GetName()->endswith (*(_String*)suffixes.lData[i])) {
+                    if (LocateVar(iVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
                         break;
                     }
                 }
@@ -996,7 +996,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             if (dVariables) {
                 for (j=0; j<dVariables->lLength; j+=2) {
                     if (dVariables->lData[j+1]<0) {
-                        if (LocateVar(dVariables->lData[j])->GetName()->endswith (*(_String*)suffixes.lData[i])) {
+                        if (LocateVar(dVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
                             break;
                         }
                     }

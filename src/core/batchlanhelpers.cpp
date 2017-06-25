@@ -57,7 +57,7 @@ _String    _HYGenerateANameSpace () {
     do {
         nmsp = _String::Random (8, &capLetters);
       
-    } while (_HY_HBL_Namespaces.FindKey (nmsp) != HY_TRIE_NOTFOUND);
+    } while (_HY_HBL_Namespaces.FindKey (nmsp) != kNotFound);
     
     _HY_HBL_Namespaces.Insert (nmsp, 0);
     return nmsp;

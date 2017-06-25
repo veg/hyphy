@@ -408,7 +408,7 @@ public:
     GetTT                   (void) const {
         return theTT;
     }
-    hy_float   CheckAlphabetConsistency
+    hyFloat   CheckAlphabetConsistency
     (void);
 
     void         SetNoSpecies           (unsigned long n) {
@@ -547,13 +547,13 @@ public:
     virtual  char      GetChar(unsigned long site, unsigned long pos);
     long       SiteFrequency  (unsigned long site);
     bool       HasDeletions   (unsigned long site, _AVLList* = nil);
-    long       HasExclusions  (unsigned long site, _SimpleList* theExc, hy_float *buffer);
+    long       HasExclusions  (unsigned long site, _SimpleList* theExc, hyFloat *buffer);
     bool       IsConstant     (unsigned long site,  bool relaxedDeletions = true);
 
-    long     Translate2Frequencies (_String const&, hy_float*, bool) const;
+    long     Translate2Frequencies (_String const&, hyFloat*, bool) const;
     long     MapStringToCharIndex  (_String&) const;
-    //long   Translate2Frequencies (char*,    hy_float*, bool = true);
-    long     Translate2Frequencies (char,     hy_float*, bool) const;
+    //long   Translate2Frequencies (char*,    hyFloat*, bool = true);
+    long     Translate2Frequencies (char,     hyFloat*, bool) const;
 
     _Matrix* HarvestFrequencies (char unit, char atom, bool posSpec, bool = true) const;
 
@@ -618,12 +618,12 @@ public:
     long                            FindSpeciesName             (_List&, _SimpleList&) const;
     _DataSetFilter*                 PairFilter                  (long, long, _DataSetFilter*);
     void                            SetDimensions               ();
-    long                            LookupConversion            (char c, hy_float* receptacle) const;
+    long                            LookupConversion            (char c, hyFloat* receptacle) const;
     void                            SetupConversion             (void);
     bool                            ConfirmConversionCache      (void) const;
     void                            FilterDeletions             (_SimpleList* theExc = nil);
     _Matrix*                        GetFilterCharacters         (bool = false) const;
-    _SimpleList*                    CountAndResolve             (long, hy_float* = nil, bool = false);
+    _SimpleList*                    CountAndResolve             (long, hyFloat* = nil, bool = false);
     _Matrix*                        PairwiseCompare             (_SimpleList*, _SimpleList*, _List* = nil);
 
     _List*                          ComputePatternToSiteMap     (void) const;
@@ -638,9 +638,9 @@ public:
         20090325: SLKP
         a function that takes per pattern values (source, argument 1)
         and maps them onto sites into target (argument 2)
-        the third argument is 0 to treat the pointers as hy_float*
+        the third argument is 0 to treat the pointers as hyFloat*
         1 to treat them as long*
-        2 and to treat them as hy_float* and long*, respetively
+        2 and to treat them as hyFloat* and long*, respetively
         20090929: SLKP
         the fourth argument is used to speficy a padding-size,
             all values from the filter size up to that value are set to 1 (for mode 0) and 0 (for mode 1)
@@ -701,7 +701,7 @@ public:
         return dimension;
     }
 
-    hy_float*                 getProbabilityVector    (long,long,long = 0);
+    hyFloat*                 getProbabilityVector    (long,long,long = 0);
     virtual  bool               CompareTwoSites         (unsigned long, unsigned long,unsigned long) const;
 
     long                    shifter,

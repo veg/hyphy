@@ -137,7 +137,7 @@ _CString::~_CString(void)
 long    _CString::FreeUpMemory(long)
 {
     if (!IsCompressed()) {
-        hy_float comprratio = BestCompress (NUCLEOTIDEALPHABET);
+        hyFloat comprratio = BestCompress (NUCLEOTIDEALPHABET);
         if (comprratio == 1) {
             comprratio = BestCompress (CODONALPHABET);
         }
@@ -296,7 +296,7 @@ _String* _CString::SelectAlpha (unsigned char alpha)
 
 //_________________________________________________________
 
-hy_float      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
+hyFloat      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
 {
 
     _String* theAlphabet = SelectAlpha (theAlpha);
@@ -439,7 +439,7 @@ hy_float      _CString::FrequencyCompress(unsigned char theAlpha,bool doit)
     }
 
     // yahoo! we are done - store compression flag and replace the string with compressed string
-    hy_float factor = result.sLength/(hy_float)sLength;
+    hyFloat factor = result.sLength/(hyFloat)sLength;
     if (factor<1) { // compression took place
         DuplicateErasing(&result);
         SetFlag( FREQCOMPRESSION);
@@ -552,7 +552,7 @@ inline unsigned long     ToLZWCode (long l)
 
 //_________________________________________________________
 
-hy_float      _CString::LZWCompress (unsigned char theAlpha)
+hyFloat      _CString::LZWCompress (unsigned char theAlpha)
 {
     _List       theTable;
     _SimpleList theCodes;
@@ -630,7 +630,7 @@ hy_float      _CString::LZWCompress (unsigned char theAlpha)
         }*/
     // end debugging
     output.SetLength(k+1);
-    hy_float factor = k/hy_float(sLength);
+    hyFloat factor = k/hyFloat(sLength);
     if (factor<1) {
         DuplicateErasing(&output);
         SetFlag( LZWCOMPRESSION);
@@ -710,10 +710,10 @@ _String*        _CString::DecompressLZW (void)
 
 //_________________________________________________________
 
-hy_float _CString::BestCompress(unsigned char theAlpha, long triggerSize)
+hyFloat _CString::BestCompress(unsigned char theAlpha, long triggerSize)
 {
     countCompress++;
-    hy_float freqcomp = FrequencyCompress(theAlpha, false), lzwcomp = 1;
+    hyFloat freqcomp = FrequencyCompress(theAlpha, false), lzwcomp = 1;
     _CString test(*this);
     if ((triggerSize>=sLength)||(triggerSize==-1)) {
         lzwcomp  = test.LZWCompress (theAlpha);

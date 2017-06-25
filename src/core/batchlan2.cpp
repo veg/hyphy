@@ -880,7 +880,7 @@ void      _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
 
         if (dbVar) {
             _String arg2 (*(_String*)parameters(1));
-            arg2.ProcessFileName(true,true,(hy_pointer)chain.nameSpacePrefix);
+            arg2.ProcessFileName(true,true,(hyPointer)chain.nameSpacePrefix);
             int errCode  = SQLITE_OK;
             sqlite3 *aDB = nil;
             errCode = sqlite3_open (arg2.sData,&aDB);
@@ -923,7 +923,7 @@ void      _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
                 if (!terminate_execution) {
                     _String arg2 (ProcessLiteralArgument ((_String*)parameters(1),chain.nameSpacePrefix));
 
-                    if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbIdx], arg2.sData, _HYSQLCallBack, (hy_pointer)&sqlProcessor, &errMsg) != SQLITE_OK) {
+                    if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbIdx], arg2.sData, _HYSQLCallBack, (hyPointer)&sqlProcessor, &errMsg) != SQLITE_OK) {
                         HandleApplicationError (sqlite3_errmsg((sqlite3*)sqlDatabases.lData[dbIdx]));
                         return;
                     }
@@ -948,7 +948,6 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
     SetStatusLine (_String("Constructing Topology ")&*(_String*)parameters(0));
 
     _String  *treeSpec = ((_String*)parameters(1));
-    treeSpec->ProcessParameter();
     _TreeTopology * tr = nil;
   
     _AssociativeList* mapping = (_AssociativeList*)FetchObjectFromVariableByType(&treeNodeNameMapping, ASSOCIATIVE_LIST);
@@ -1109,7 +1108,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                         }
 
                         if (errStr.sLength == 0) {
-                            hy_float  gapOpen       = 15.,
+                            hyFloat  gapOpen       = 15.,
                             gapOpen2      = 15.,
                             gapExtend     = 1.,
                             gapExtend2    = 1.,
@@ -1241,7 +1240,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                     }
                                     _AssociativeList * pairwiseComp = new _AssociativeList;
 
-                                    hy_float    score = 0.0;
+                                    hyFloat    score = 0.0;
 
                                     if (doLinear == false) {
                                         char * str1r = NULL,
@@ -1388,7 +1387,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                     long gap1c = 0,
                                          gap2c = 0;
 
-                                     hy_float scoreCheck = 0.;
+                                     hyFloat scoreCheck = 0.;
 
                                      for (long sp = 0; sp<result1->sLength; sp++)
                                      {
@@ -1725,7 +1724,7 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
     if (RecurseDownTheTree(thisArgs, parameters, theConstraints, parts, thisIndex)) {
         if (theConstraints.lLength) {
             ReportWarning  (_String("\nReplicateConstraint generated the following contsraints:"));
-            hy_float      doDeferSet;
+            hyFloat      doDeferSet;
             checkParameter (deferConstrainAssignment,doDeferSet,0.0);
             bool            applyNow = CheckEqual(doDeferSet,0.0);
             _String         *constraintAccumulator = new _String(128L,true);
@@ -1770,7 +1769,7 @@ void      _ElementaryCommand::ExecuteCase57 (_ExecutionList& chain)
                 *   sv            = FetchVar(LocateVarByName (AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix))),
                     *  nsv           = FetchVar(LocateVarByName (AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix)));
 
-    hy_float itCountV       = ProcessNumericArgument ((_String*)parameters(4),chain.nameSpacePrefix);
+    hyFloat itCountV       = ProcessNumericArgument ((_String*)parameters(4),chain.nameSpacePrefix);
 
     _String   * lfName        = (_String*)parameters(1);
 
@@ -2094,7 +2093,7 @@ bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target
  
     _List pieces;
     mark2 ++;
-    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', true, true);
+    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
 
     ExtractConditions (source,mark2+1,pieces,',');
  
@@ -2130,7 +2129,7 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 
     _List pieces;
     mark2 ++;
-    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', true, true);
+    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
     
     ExtractConditions (source,mark2+1,pieces,',');
 

@@ -326,7 +326,7 @@ long     _Operation::BinOpCode           (_String const & op_token, long index) 
   if (index >= 0)
     return BinOps.Find (op_token.get_char(index-1L) * 256L + op_token.get_char (index));
   
-  return BinOps.Find (op_token.sLength == 2 ? op_token.get_char(0) * 256L + op_token.get_char (1) : op_token.get_char (0));
+  return BinOps.Find (op_token.length () == 2 ? op_token.get_char(0) * 256L + op_token.get_char (1) : op_token.get_char (0));
 }
 
 
@@ -406,7 +406,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
       //printf ("***** Calling %s\n", GetBFFunctionNameByIndex (opCode).sData);
     
       for (long k = arguments-1L; k >= 0; k--) {
-        bool            isRefVar = (funcVarTypes->Element (k) == BL_FUNCTION_ARGUMENT_REFERENCE);
+        bool            isRefVar = (funcVarTypes->Element (k) == kBLFunctionArgumentReference);
         
         _String         *argument_k = (_String*)funcVarList->Element(k);
         _PMathObj       nthterm = theScrap.Pop();

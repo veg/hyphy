@@ -192,12 +192,12 @@ _PMathObj _FString::AreEqual (_PMathObj p)
     if (p->ObjectClass()==STRING) {
         _FString* theStr = (_FString*)p;
         bool     equal = theString->Equal(theStr->theString);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     } else {
         /*_String* convStr = (_String*)p->toStr();
          bool     equal = theString->Equal(convStr);
          DeleteObject (convStr);
-         return new _Constant ((hy_float)equal);*/
+         return new _Constant ((hyFloat)equal);*/
          return new HY_CONSTANT_FALSE;
     }
 }
@@ -212,7 +212,7 @@ _PMathObj _FString::AreEqualCIS (_PMathObj p)
         t1.UpCase();
         t2.UpCase();
         bool     equal = t1.Equal(&t2);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     } else {
         return AreEqual (p);
     }
@@ -238,7 +238,7 @@ _PMathObj _FString::EqualAmb (_PMathObj p)
     if (p->ObjectClass()==STRING) {
         _FString* theStr = (_FString*)p;
         bool     equal = theString->EqualWithWildChar(*theStr->theString);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     } else {
         _String  convStr      ((_String*)p->toStr());
         return   new _Constant(theString->EqualWithWildChar(convStr));
@@ -250,22 +250,8 @@ _PMathObj _FString::EqualAmb (_PMathObj p)
 _PMathObj _FString::EqualRegExp (_PMathObj p, bool matchAll)
 {
     if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        _SimpleList matches;
-
-        if (matchAll) {
-            int errNo = 0;
-            hy_pointer regex = PrepRegExp (theStr->theString, errNo, true);
-            if (regex) {
-                theString->RegExpMatchAll(regex, matches);
-                FlushRegExp (regex);
-            } else {
-                HandleApplicationError (GetRegExpError (errNo));
-            }
-        } else {
-            theString->RegExpMatchOnce(theStr->theString, matches, true, true);
-        }
-
+       _SimpleList matches (matchAll ? theString->RegExpAllMatches(*((_FString*)p)->theString, true, true));
+      
         if (matches.lLength == 0) {
             matches << -1;
             matches << -1;
@@ -290,17 +276,10 @@ _PMathObj _FString::ReplaceReqExp (_PMathObj p)
                 _FString* theStr  = (_FString*)m->GetFormula(0,0)->Compute(),
                           * repWith = (_FString*)m->GetFormula(1,-1)->Compute();
 
-                _SimpleList matches;
+                ;
 
-                int errNo = 0;
-                hy_pointer regex = PrepRegExp (theStr->theString, errNo, true);
-
-                if (!regex) {
-                    HandleApplicationError (GetRegExpError (errNo));
-                    return new _FString (kEmptyString);
-                }
-
-                theString->RegExpMatchAll(regex, matches);
+                _SimpleList matches = theString->RegExpAllMatches(*theStr->theString, true, true);
+              
                 _FString * res;
                 if (matches.lLength) {
                     _String * newString = new _String (theString->sLength+1,true);
@@ -327,7 +306,6 @@ _PMathObj _FString::ReplaceReqExp (_PMathObj p)
                     res = new _FString (*theString,false);
                 }
 
-                FlushRegExp (regex);
                 return res;
             }
         }
@@ -343,12 +321,12 @@ _PMathObj _FString::NotEqual (_PMathObj p)
     if (p->ObjectClass()==STRING) {
         _FString* theStr = (_FString*)p;
         bool     equal = theString->Equal(theStr->theString);
-        return new _Constant ((hy_float)!equal);
+        return new _Constant ((hyFloat)!equal);
     } else {
         //_String* convStr = (_String*)p->toStr();
         //bool     equal = theString->Equal(convStr);
         //DeleteObject (convStr);
-        //return new _Constant ((hy_float)!equal);
+        //return new _Constant ((hyFloat)!equal);
         return new HY_CONSTANT_TRUE;
     }
 }
@@ -359,12 +337,12 @@ _PMathObj _FString::Less (_PMathObj p)
     if (p->ObjectClass()==STRING) {
         _FString* theStr = (_FString*)p;
         bool     equal = theString->Less(theStr->theString);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     } else {
         _String* convStr = (_String*)p->toStr();
         bool     equal = theString->Less(convStr);
         DeleteObject (convStr);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     }
 }
 
@@ -374,12 +352,12 @@ _PMathObj _FString::LessEq (_PMathObj p)
     if (p->ObjectClass()==STRING) {
         _FString* theStr = (_FString*)p;
         bool     equal = theString->Less(theStr->theString)||theString->Equal(theStr->theString);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     } else {
         _String* convStr = (_String*)p->toStr();
         bool     equal = theString->Less(convStr)||theString->Equal(convStr);
         DeleteObject (convStr);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     }
 }
 
@@ -424,12 +402,12 @@ _PMathObj _FString::GreaterEq (_PMathObj p)
     if (p->ObjectClass()==STRING) {
         _FString* theStr = (_FString*)p;
         bool     equal = theString->Greater(theStr->theString)||theString->Equal(theStr->theString);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     } else {
         _String* convStr = (_String*)p->toStr();
         bool     equal = theString->Greater(convStr)||theString->Equal(convStr);
         DeleteObject (convStr);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     }
 }
 
@@ -439,12 +417,12 @@ _PMathObj _FString::Greater (_PMathObj p)
     if (p->ObjectClass()==STRING) {
         _FString* theStr = (_FString*)p;
         bool     equal = theString->Greater(theStr->theString);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     } else {
         _String* convStr = (_String*)p->toStr();
         bool     equal = theString->Greater(convStr);
         DeleteObject (convStr);
-        return new _Constant ((hy_float)equal);
+        return new _Constant ((hyFloat)equal);
     }
 }
 
@@ -484,7 +462,7 @@ _PMathObj _FString::RerootTree (_PMathObj) {
     long        maxMin         = 0L,
                 totalNodeCount = counted_descendants->in_object + 1L;
   
-    hy_float  bRatio  = 0.0;
+    hyFloat  bRatio  = 0.0;
   
     node_iterator<long> ni (counted_descendants, _HY_TREE_TRAVERSAL_POSTORDER);
     _TreeIterator ti (&rTree, _HY_TREE_TRAVERSAL_POSTORDER);
@@ -492,7 +470,7 @@ _PMathObj _FString::RerootTree (_PMathObj) {
     while       (_CalcNode * iterator = ti.Next()) {
         node<long>* counter_tree = ni.Next();
         long      nodeMin    = totalNodeCount-counter_tree->in_object-1L;
-        hy_float thisRatio = nodeMin/(1L+counter_tree->in_object);
+        hyFloat thisRatio = nodeMin/(1L+counter_tree->in_object);
 
         if (thisRatio>1.0) {
             thisRatio = 1.0/thisRatio;
@@ -684,7 +662,7 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
       case HY_OP_CODE_MOD: // % equal case insenstive
         return AreEqualCIS(arg0);
       case HY_OP_CODE_AND: { // && upcase or lowercase
-        hy_float pVal = 0.0;
+        hyFloat pVal = 0.0;
         if (arg0->ObjectClass () == NUMBER) {
           pVal = arg0->Value();
         }
@@ -887,7 +865,7 @@ _PMathObj   _FString::Call (_List* arguments, _hyExecutionContext* context) {
 //__________________________________________________________________________________
 _PMathObj   _FString::CountGlobalObjects (void)
 {
-    hy_float res = 0.0;
+    hyFloat res = 0.0;
 
     long      standardType = _HY_GetStringGlobalTypes.Find(theString);
     if (standardType >=0 ) {

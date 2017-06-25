@@ -170,19 +170,19 @@ public:
     // 4 - category variables
 
 
-    hy_float  GetIthIndependent           (long) const;     // get the value of i-th independent variable
+    hyFloat  GetIthIndependent           (long) const;     // get the value of i-th independent variable
     const _String*  GetIthIndependentName           (long) const;     // get the name of i-th independent variable
-    hy_float  GetIthDependent             (long) const;     // get the value of i-th dependent variable
+    hyFloat  GetIthDependent             (long) const;     // get the value of i-th dependent variable
     void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix
     _Variable*  GetIthIndependentVar        (long) const;     // get the variable object of i-th independent variable
     _Variable*  GetIthDependentVar          (long) const;     // get the variable object of i-th dependent variable
     _CategoryVariable*  GetIthCategoryVar           (long) const;     // get the variable object of i-th category variable
-    hy_float  GetIthIndependentBound      (long, bool isLower = true) const;
+    hyFloat  GetIthIndependentBound      (long, bool isLower = true) const;
     // get the lower / upper bound for the i-th indepdendent variable
 
-    void        SetIthIndependent (long, hy_float);           // set the value of i-th independent variable
-    bool        CheckAndSetIthIndependent (long, hy_float);   // set the value of i-th independent variable
-    void        SetIthDependent           (long, hy_float);   // set the value of i-th dependent variable
+    void        SetIthIndependent (long, hyFloat);           // set the value of i-th independent variable
+    bool        CheckAndSetIthIndependent (long, hyFloat);   // set the value of i-th independent variable
+    void        SetIthDependent           (long, hyFloat);   // set the value of i-th dependent variable
     bool        IsIthParameterGlobal      (long) const;
 
     long        SetAllIndependent         (_Matrix*);
@@ -196,7 +196,7 @@ public:
     bool        PreCompute      (void);
     void        PostCompute     (void);
     virtual
-    hy_float  Compute         (void);
+    hyFloat  Compute         (void);
 
     void        PrepareToCompute (bool = false);
     void        DoneComputing    (bool = false);
@@ -204,8 +204,8 @@ public:
     _Matrix*    Optimize ();
     _Matrix*    ConstructCategoryMatrix     (const _SimpleList&, char, bool = true, _String* = nil);
 
-    hy_float  SimplexMethod               (hy_float& precision);
-    void        Anneal                      (hy_float& precision);
+    hyFloat  SimplexMethod               (hyFloat& precision);
+    void        Anneal                      (hyFloat& precision);
 
     void        Simulate                    (_DataSet &,_List&, _Matrix* = nil, _Matrix* = nil, _Matrix* = nil, _String const* = nil) const;
 
@@ -327,8 +327,8 @@ protected:
     // 20090211: A utility function to reset site results.
     void            GetInitialValues        (void) const;
     bool            checkPermissibility     (_Matrix&m, long row);
-    hy_float      computeAtAPoint         (_Matrix&m, long row = 0);
-    hy_float      replaceAPoint           (_Matrix&m, long row, _Matrix&p, hy_float& nV, _Matrix& fv);
+    hyFloat      computeAtAPoint         (_Matrix&m, long row = 0);
+    hyFloat      replaceAPoint           (_Matrix&m, long row, _Matrix&p, hyFloat& nV, _Matrix& fv);
 
     void            ScanAllVariablesOnPartition
     (_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&, bool = false);
@@ -343,7 +343,7 @@ protected:
     void            OptimalOrder            (long, _SimpleList&);
     // determine the optimal order of compuation for a block
 
-    hy_float      ComputeBlock            (long, hy_float* siteResults = nil, long currentRateClass = -1, long = -1, _SimpleList* = nil);
+    hyFloat      ComputeBlock            (long, hyFloat* siteResults = nil, long currentRateClass = -1, long = -1, _SimpleList* = nil);
     // 20090224: SLKP
     // added the option to pass an interior branch (referenced by the 3rd argument in the same order as flatTree)
     // and a set of values for each site pattern (indexed left to right) in the 4th argument
@@ -362,24 +362,24 @@ protected:
     void            Clear                   (void);
 
 
-    long            Bracket                 (long , hy_float& , hy_float& , hy_float& ,
-            hy_float& , hy_float& , hy_float& , hy_float&, _Matrix* = nil);
-    //long          GradientBracketOneVar (_Matrix&, _Matrix& , _Matrix& , _Matrix&,  hy_float& ,
-    //                                      hy_float&, hy_float&, hy_float&, bool retry = false);
-    void            LocateTheBump         (long,hy_float , hy_float& , hy_float&, hy_float = -1.);
-    void            GradientLocateTheBump (hy_float, hy_float&, _Matrix&, _Matrix&);
-    void            GradientDescent       (hy_float& , _Matrix& );
+    long            Bracket                 (long , hyFloat& , hyFloat& , hyFloat& ,
+            hyFloat& , hyFloat& , hyFloat& , hyFloat&, _Matrix* = nil);
+    //long          GradientBracketOneVar (_Matrix&, _Matrix& , _Matrix& , _Matrix&,  hyFloat& ,
+    //                                      hyFloat&, hyFloat&, hyFloat&, bool retry = false);
+    void            LocateTheBump         (long,hyFloat , hyFloat& , hyFloat&, hyFloat = -1.);
+    void            GradientLocateTheBump (hyFloat, hyFloat&, _Matrix&, _Matrix&);
+    void            GradientDescent       (hyFloat& , _Matrix& );
     void            ConjugateGradientDescent
-    (hy_float , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hy_float check_lf = A_LARGE_NUMBER);
+    (hyFloat , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hyFloat check_lf = A_LARGE_NUMBER);
 
-    hy_float      SetParametersAndCompute
-    (long, hy_float, _Matrix* = nil, _Matrix* = nil);
+    hyFloat      SetParametersAndCompute
+    (long, hyFloat, _Matrix* = nil, _Matrix* = nil);
 
     long            CostOfPath            (_DataSetFilter const*, _TheTree const* , _SimpleList&, _SimpleList* = nil) const;
 
     void            BuildLeafProbs        (node<long>& , unsigned long*, unsigned long, _DataSet&, _TheTree*, unsigned long&, bool, long, _DataSetFilter const*, long, _DataSet* = nil) const;
     bool            SingleBuildLeafProbs  (node<long>&, long, _SimpleList&, _SimpleList&, _TheTree*, bool,_DataSetFilter const*, _SimpleList* = nil) const;
-    void            CodonNeutralSimulate  (node<long>&, long, bool,_Matrix*,_Matrix*, hy_float&, hy_float&);
+    void            CodonNeutralSimulate  (node<long>&, long, bool,_Matrix*,_Matrix*, hyFloat&, hyFloat&);
 
     bool            HasBlockChanged       (long) const;
     long            BlockLength           (long) const;
@@ -389,7 +389,7 @@ protected:
 
 
     static  void            RandomizeList               (_SimpleList&, long);
-    static  void            CheckFibonacci              (hy_float);
+    static  void            CheckFibonacci              (hyFloat);
 
 
 
@@ -421,19 +421,19 @@ protected:
     bool            SendOffToMPI                (long);
     void            InitMPIOptimizer            (void);
     void            CleanupMPIOptimizer         (void);
-    void            ComputeBlockInt1            (long,hy_float&,_TheTree*,_DataSetFilter*, char);
-    void            CheckStep                   (hy_float&, _Matrix, _Matrix* selection = nil);
-    void            GetGradientStepBound        (_Matrix&, hy_float &, hy_float &, long* = nil);
-    void            ComputeGradient             (_Matrix&, _Matrix&,  hy_float&, _Matrix&, _SimpleList&,
+    void            ComputeBlockInt1            (long,hyFloat&,_TheTree*,_DataSetFilter*, char);
+    void            CheckStep                   (hyFloat&, _Matrix, _Matrix* selection = nil);
+    void            GetGradientStepBound        (_Matrix&, hyFloat &, hyFloat &, long* = nil);
+    void            ComputeGradient             (_Matrix&, _Matrix&,  hyFloat&, _Matrix&, _SimpleList&,
             long, bool normalize = true);
-    bool            SniffAround                 (_Matrix& , hy_float& , hy_float&);
-    void            RecurseCategory             (long,long,long,long,hy_float
+    bool            SniffAround                 (_Matrix& , hyFloat& , hyFloat&);
+    void            RecurseCategory             (long,long,long,long,hyFloat
 #ifdef _SLKP_LFENGINE_REWRITE_
-            ,_SimpleList* = nil, char = 0, hy_float* = nil,
+            ,_SimpleList* = nil, char = 0, hyFloat* = nil,
             long = -1, _SimpleList* = nil
 #endif
                                                 );
-    void            RecurseConstantOnPartition  (long, long, long, long, hy_float, _Matrix&);
+    void            RecurseConstantOnPartition  (long, long, long, long, hyFloat, _Matrix&);
 
 
 
@@ -451,12 +451,12 @@ protected:
     */
     void            CleanUpOptimize             (void);
     void            ComputeBlockForTemplate     (long, bool = false);
-    void            ComputeBlockForTemplate2    (long, hy_float*, hy_float*, long);
+    void            ComputeBlockForTemplate2    (long, hyFloat*, hyFloat*, long);
     void            DeleteCaches                (bool = true);
     void            PopulateConditionalProbabilities
-    (long index, char runMode, hy_float* buffer, _SimpleList& scalers, long = -1, _SimpleList* = nil);
+    (long index, char runMode, hyFloat* buffer, _SimpleList& scalers, long = -1, _SimpleList* = nil);
     void            ComputeSiteLikelihoodsForABlock
-    (long, hy_float*, _SimpleList&, long = -1, _SimpleList* = nil,  char = 0);
+    (long, hyFloat*, _SimpleList&, long = -1, _SimpleList* = nil,  char = 0);
 
     // this function computes a list of site probabilities for the i-th block (1st parameter)
     // stores them in pattern (left to right) order (2nd argument)
@@ -465,7 +465,7 @@ protected:
     // allows the calculation of the probability vector while setting a specific interior branch
     // to a given sequence
 
-    hy_float          SumUpHiddenMarkov (const hy_float *, _Matrix&, _Matrix&, _SimpleList const *, const _SimpleList*, long);
+    hyFloat          SumUpHiddenMarkov (const hyFloat *, _Matrix&, _Matrix&, _SimpleList const *, const _SimpleList*, long);
     /*
         SLKP 20090420
 
@@ -481,11 +481,11 @@ protected:
         compute the log likelihood of the partition using the forward HMM algorithm with scaling
      */
 
-    void                    RunViterbi (_Matrix & , const hy_float * , _Matrix& , _Matrix& , _SimpleList const * ,  const _SimpleList* , long );
+    void                    RunViterbi (_Matrix & , const hyFloat * , _Matrix& , _Matrix& , _SimpleList const * ,  const _SimpleList* , long );
     /* Viterbi decoding for HMM; parameter meanings as in SumUpHiddenMarkov,
        except the first, which will store the optimal path to be returned */
 
-    hy_float              SumUpSiteLikelihoods        (long, const hy_float*, const _SimpleList&);
+    hyFloat              SumUpSiteLikelihoods        (long, const hyFloat*, const _SimpleList&);
     /*
      SLKP 20090318
 
@@ -499,14 +499,14 @@ protected:
   
      /** optimization logger functions **/
   
-    void LoggerLogL               (hy_float logL);
-    void LoggerAddGradientPhase   (hy_float precision);
-    void LoggerAddCoordinatewisePhase (hy_float shrinkage, char convergence_mode);
+    void LoggerLogL               (hyFloat logL);
+    void LoggerAddGradientPhase   (hyFloat precision);
+    void LoggerAddCoordinatewisePhase (hyFloat shrinkage, char convergence_mode);
     void LoggerAllVariables          ();
-    void LoggerSingleVariable        (unsigned long index, hy_float logL, hy_float bracket_precision, hy_float brent_precision, hy_float bracket_width, unsigned long bracket_evals, unsigned long brent_evals);
+    void LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, unsigned long bracket_evals, unsigned long brent_evals);
 
 
-    void            UpdateBlockResult           (long, hy_float);
+    void            UpdateBlockResult           (long, hyFloat);
     /*
         SLKP 20090318
 
@@ -622,7 +622,7 @@ protected:
     _Formula*       computingTemplate;
     MSTCache*       mstCache;
     
-    hy_float      smoothingTerm,
+    hyFloat      smoothingTerm,
                     smoothingReduction,
                     smoothingPenalty;
 
@@ -653,7 +653,7 @@ protected:
             and read off filterCharDimension characters from there
     */
 
-    hy_float**        conditionalInternalNodeLikelihoodCaches,
+    hyFloat**        conditionalInternalNodeLikelihoodCaches,
                **     siteScalingFactors,
                **     branchCaches;
 
@@ -707,7 +707,7 @@ public:
 
     _CustomFunction         (_String*);
 
-    virtual     hy_float  Compute                 (void);
+    virtual     hyFloat  Compute                 (void);
     virtual     void        RescanAllVariables      (void) {}
 
 
@@ -774,7 +774,7 @@ reduceLFSmoothing              ;
 
 
 
-bool    CheckEqual                  (hy_float, hy_float);
+bool    CheckEqual                  (hyFloat, hyFloat);
 void    StateCounterResultHandler   (_Formula&, _SimpleList*,long&,long&,long,_Matrix&,_Matrix&);
 
 _LikelihoodFunction*
@@ -782,16 +782,16 @@ FindLikeFuncByName           (_String&);
 
 extern  bool                usedCachedResults;
 
-extern hy_float           _lfScalerUpwards,
+extern hyFloat           _lfScalerUpwards,
        _lfScalingFactorThreshold,
        _logLFScaler;
 
 extern  _GrowingVector      _scalerMultipliers,
         _scalerDividers;
 
-hy_float                  acquireScalerMultiplier (long);
-hy_float                  myLog                   (hy_float);
-hy_float                  mapParameterToInverval  (hy_float, char, bool);
+hyFloat                  acquireScalerMultiplier (long);
+hyFloat                  myLog                   (hyFloat);
+hyFloat                  mapParameterToInverval  (hyFloat, char, bool);
 
 #ifdef  __HYPHYMPI__
 extern                  _Matrix     resTransferMatrix;

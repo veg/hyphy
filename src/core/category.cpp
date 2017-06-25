@@ -66,7 +66,7 @@ extern     _List        modelNames;
 extern     _SimpleList  modelMatrixIndices,
            modelFrequenciesIndices;
 
-bool       CheckEqual           (hy_float, hy_float);
+bool       CheckEqual           (hyFloat, hyFloat);
 
 //___________________________________________________________________________________________
 
@@ -85,7 +85,7 @@ bool _CategoryVariable::checkWeightMatrix(_Matrix& w, long row)
 {
     bool    check = true;
     _Constant iterate;
-    hy_float sumCheck = 0;
+    hyFloat sumCheck = 0;
     if (row>=0) {
         long shift = w.GetVDim()*row;
         for (long i=0; i<intervals; i++) {
@@ -262,7 +262,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                     if(scannedVarsList.lLength==1) {
                         if (scannedVarsList[0]==hy_n_variable->GetAVariable()) {
                               for (unsigned long i=0UL; i<intervals; i++) {
-                                hy_n_variable->SetValue(new _Constant ((hy_float)i), false);
+                                hy_n_variable->SetValue(new _Constant ((hyFloat)i), false);
                                 (*weights)[i]= probabilities.Compute()->Value();
                             }
                             check = checkWeightMatrix (*weights);
@@ -388,7 +388,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                 errorMsg = errorMsg & _String("Since density ")&*(_String*)parameters(3)& " contains no " & kXVariableName.Enquote() &", the distribution was set to uniform over ["&_String(x_min)&","&_String(x_max)&"]";
                 ReportWarning (errorMsg);
                 density.Clear();
-                hy_float dns = 1.0/(x_max-x_min);
+                hyFloat dns = 1.0/(x_max-x_min);
                 errorMsg = _String(dns);
                 _FormulaParsingContext fpc;
                 Parse(&density, errorMsg,fpc, nil);
@@ -734,9 +734,9 @@ BaseRef _CategoryVariable::toStr (unsigned long)
 }
 
 //___________________________________________________________________________________________
-hy_float  _CategoryVariable::SetIntervalValue (long ival, bool recalc)
+hyFloat  _CategoryVariable::SetIntervalValue (long ival, bool recalc)
 {
-    hy_float newIntervalValue;
+    hyFloat newIntervalValue;
     if (recalc) {
         newIntervalValue  = GetValues()->theData[ival];
     } else {
@@ -747,7 +747,7 @@ hy_float  _CategoryVariable::SetIntervalValue (long ival, bool recalc)
 }
 
 //___________________________________________________________________________________________
-hy_float  _CategoryVariable::GetIntervalValue (long ival)
+hyFloat  _CategoryVariable::GetIntervalValue (long ival)
 {
     if (values) {
         return GetValues()->theData[ival];
@@ -757,7 +757,7 @@ hy_float  _CategoryVariable::GetIntervalValue (long ival)
 }
 
 //___________________________________________________________________________________________
-hy_float  _CategoryVariable::GetIntervalWeight (long ival)
+hyFloat  _CategoryVariable::GetIntervalWeight (long ival)
 {
     if (weights) {
         if (covariant >= 0 || intervalSplitter >= 0) {
@@ -786,7 +786,7 @@ _Matrix*    _CategoryVariable::GetValues (void)
 long        _CategoryVariable::GetCurrentState (void)
 {
     _Matrix         *v  = GetValues();
-    hy_float      cv  = Compute()->Value();
+    hyFloat      cv  = Compute()->Value();
 
     for (long res = 0; res < intervals; res ++)
         if (CheckEqual (cv, v->theData[res])) {
@@ -805,7 +805,7 @@ _Matrix*    _CategoryVariable::GetWeights (bool covAll)
     if (intervalSplitter>=0) {
         _CategoryVariable * iSplitter = (_CategoryVariable*)LocateVar (intervalSplitter);
         cw = iSplitter->GetValues();
-        hy_float      minusMe = 0.0;
+        hyFloat      minusMe = 0.0;
         for (long k=0; k<intervals-1; k++) {
             weights->theData[k] = cw->theData[k] - minusMe;
             minusMe = cw->theData[k];
@@ -836,7 +836,7 @@ _Matrix*    _CategoryVariable::GetWeights (bool covAll)
             _Matrix * cw2 = cv->GetWeights ();
 
             for (long k=0; k<intervals; k++) {
-                hy_float sum = 0.0;
+                hyFloat sum = 0.0;
                 for (long j=0; j<iv2; j++) {
                     sum += cw2->theData[j]* (*cw)(j,k);
                 }
@@ -982,9 +982,9 @@ void      _CategoryVariable::ScanForGVariables (_AVLList& l)
 }
 
 //___________________________________________________________________________________________
-hy_float      _CategoryVariable::Mean (void)
+hyFloat      _CategoryVariable::Mean (void)
 {
-    hy_float mean = 0.;
+    hyFloat mean = 0.;
     _Matrix * wts = GetWeights(),
               * val = GetValues();
 
@@ -1028,11 +1028,11 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
             HandleApplicationError (_String("Matrix of category weights invalid at runtime: ") & _String((_String*)ew->toStr()));
         }
 
-        hy_float currentBase = 0.0,
+        hyFloat currentBase = 0.0,
                    currentLeft = x_min;
 
         for (i = 0; i<intervals-1; i++) {
-            hy_float    currentProb  = (*ew)[i];
+            hyFloat    currentProb  = (*ew)[i];
             currentBase+=currentProb;
 
             if (!cumulative.IsEmpty()) {
@@ -1080,7 +1080,7 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
         }
         // finally do something special for the last interval, since it may be over (a,infinity)
 
-        hy_float    lastProb  = (*ew)[i];
+        hyFloat    lastProb  = (*ew)[i];
         if (lastProb) {
             if (representation == MEAN) { // compute the MEAN
                 // need to perform integration here of p(x) dx
@@ -1119,7 +1119,7 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
 
         if (representation == SCALED_MEDIAN) {
 
-            hy_float distMean,discMean = 0;
+            hyFloat distMean,discMean = 0;
 
             if (meanC.IsEmpty()) {
                 distMean = density.MeanIntegral (hy_x_variable,x_min,x_max, true);

@@ -117,8 +117,8 @@ void        DeleteTreeVariable
 
 
 
-void        stashParameter  (_String const& name, hy_float  newVal, bool);
-void        setParameter    (_String const& name, hy_float def, _String* = nil);
+void        stashParameter  (_String const& name, hyFloat  newVal, bool);
+void        setParameter    (_String const& name, hyFloat def, _String* = nil);
 void        setParameter    (_String const& name, _PMathObj  def, _String* = nil, bool = true);
 
 long        VerbosityLevel (void);
@@ -157,7 +157,7 @@ void        ExportCatVariables
 
 void        SplitVariablesIntoClasses
 (_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);
-bool        CheckEqual      (hy_float,hy_float);
+bool        CheckEqual      (hyFloat,hyFloat);
 
 extern      _AVLListX       _hyApplicationGlobals;
 
@@ -171,33 +171,33 @@ extern      _AVLListX       _hyApplicationGlobals;
 */
 void        SplitVariableIDsIntoLocalAndGlobal (const _SimpleList& inList, _List& outList);
 
-hy_float  AddNumbers  (hy_float, hy_float);
-hy_float  SubNumbers  (hy_float, hy_float);
-hy_float  MultNumbers (hy_float, hy_float);
-hy_float  AndNumbers  (hy_float, hy_float);
-hy_float  DivNumbers  (hy_float, hy_float);
-hy_float  EqualNumbers(hy_float, hy_float);
-hy_float  LessThan    (hy_float, hy_float);
-hy_float  GreaterThan (hy_float, hy_float);
-hy_float  LessThanE   (hy_float, hy_float);
-hy_float  GreaterThanE(hy_float, hy_float);
-hy_float  Power       (hy_float, hy_float);
-hy_float  RandomNumber(hy_float, hy_float);
-hy_float  ExpNumbers  (hy_float);
-hy_float  LogNumbers  (hy_float);
-hy_float  AbsNumber   (hy_float);
-hy_float  MinusNumber (hy_float);
-hy_float  MaxNumbers  (hy_float, hy_float);
-hy_float  MinNumbers  (hy_float, hy_float);
-hy_float  FastMxAccess(hy_pointer, hy_float);
-void        FastMxWrite (hy_pointer, hy_float, hy_float);
+hyFloat  AddNumbers  (hyFloat, hyFloat);
+hyFloat  SubNumbers  (hyFloat, hyFloat);
+hyFloat  MultNumbers (hyFloat, hyFloat);
+hyFloat  AndNumbers  (hyFloat, hyFloat);
+hyFloat  DivNumbers  (hyFloat, hyFloat);
+hyFloat  EqualNumbers(hyFloat, hyFloat);
+hyFloat  LessThan    (hyFloat, hyFloat);
+hyFloat  GreaterThan (hyFloat, hyFloat);
+hyFloat  LessThanE   (hyFloat, hyFloat);
+hyFloat  GreaterThanE(hyFloat, hyFloat);
+hyFloat  Power       (hyFloat, hyFloat);
+hyFloat  RandomNumber(hyFloat, hyFloat);
+hyFloat  ExpNumbers  (hyFloat);
+hyFloat  LogNumbers  (hyFloat);
+hyFloat  AbsNumber   (hyFloat);
+hyFloat  MinusNumber (hyFloat);
+hyFloat  MaxNumbers  (hyFloat, hyFloat);
+hyFloat  MinNumbers  (hyFloat, hyFloat);
+hyFloat  FastMxAccess(hyPointer, hyFloat);
+void        FastMxWrite (hyPointer, hyFloat, hyFloat);
 
-BaseRef parameterToString       (hy_float);
-void    parameterToCharBuffer   (hy_float, char*, long, bool json = false);
+BaseRef parameterToString       (hyFloat);
+void    parameterToCharBuffer   (hyFloat, char*, long, bool json = false);
 
-hy_float  InterpolateValue        (hy_float*, hy_float*, long, hy_float*, hy_float*, hy_float, hy_float&);
-hy_float  TrapezoidLevelK         (_Formula&, _Variable*, hy_float, hy_float, long);
-hy_float  TrapezoidLevelKSimple   (_Formula&, _Variable*, hy_float, hy_float, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
+hyFloat  InterpolateValue        (hyFloat*, hyFloat*, long, hyFloat*, hyFloat*, hyFloat, hyFloat&);
+hyFloat  TrapezoidLevelK         (_Formula&, _Variable*, hyFloat, hyFloat, long);
+hyFloat  TrapezoidLevelKSimple   (_Formula&, _Variable*, hyFloat, hyFloat, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
 
 
 void        PopulateArraysForASimpleFormula
@@ -206,7 +206,7 @@ void        PopulateArraysForASimpleFormula
 void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
 void        WarnWrongNumberOfArguments (_PMathObj, long, _hyExecutionContext*, _List *);
   
-extern      hy_float  pi_const;
+extern      hyFloat  pi_const;
 extern      bool        useGlobalUpdateFlag;
 extern      _String     noneToken;
 

@@ -69,7 +69,7 @@ _TranslationTable      defaultTranslationTable;
 
 //_________________________________________________________
 
-extern hy_float dFPrintFormat,
+extern hyFloat dFPrintFormat,
        dFDefaultWidth;
 
 //_________________________________________________________
@@ -1627,7 +1627,7 @@ long _DataSet::ComputeSize(void)
 }
 
 //_________________________________________________________
-hy_float _DataSet::CheckAlphabetConsistency(void)
+hyFloat _DataSet::CheckAlphabetConsistency(void)
 {
     long        charsIn = 0,
                 gaps    = 0,
@@ -1674,7 +1674,7 @@ hy_float _DataSet::CheckAlphabetConsistency(void)
         total += w*thisColumn->sLength;
     }
 
-    return (hy_float)charsIn/(total-gaps+1.);
+    return (hyFloat)charsIn/(total-gaps+1.);
 
 }
 
@@ -1748,7 +1748,7 @@ void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert
     //fprintf (stderr, "\n_DataSet::MatchIndices %d %s [%s] %s\n", isVert, scope ? scope->sData : "none", varName.sData, ((_String*)f.toStr())->sData);
 
     for (long i=0L; i<limit; i++) {
-        v->SetValue (new _Constant((hy_float)i), nil);
+        v->SetValue (new _Constant((hyFloat)i), nil);
         _PMathObj res = f.Compute();
         //fprintf (stderr, "%ld %g\n", i, res->Compute()->Value());
         if (res && !CheckEqual(res->Value(),0.0)) {
@@ -2019,7 +2019,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
 
     /*CreateMatrix (&probabilityVectors, theNodeMap.lLength, shifter,false,true, false);
 
-    hy_float   *storeHere = probabilityVectors.theData;
+    hyFloat   *storeHere = probabilityVectors.theData;
     for (long spec = 0; spec < theNodeMap.lLength; spec++)
     {
         _Matrix * specMatrix = (_Matrix*)values(spec);
@@ -2039,7 +2039,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
     char buffer[255];
 
     for (long site =0; site <baseFreqs.lLength; site++) {
-        hy_float      testV = 0.0;
+        hyFloat      testV = 0.0;
 
         for (long k=0; k<theNodeMap.lLength; k++) // sweep down the columns
             for (long state = 0; state < dimension; state++) {
@@ -2099,7 +2099,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
     categoryShifter = shifter*theNodeMap.lLength;
 
     CreateMatrix (&probabilityVectors, theNodeMap.lLength, shifter*categoryCount,false,true, false);
-    hy_float   *storeHere    = probabilityVectors.theData;
+    hyFloat   *storeHere    = probabilityVectors.theData;
 
     long      refShifter = 0;
     for (long cc = 0; cc < categoryCount; cc++, refShifter += theOriginalOrder.lLength * dimension) {
@@ -2162,7 +2162,7 @@ BaseRef _DataSetFilterNumeric::makeDynamic (void)  const{
 
 //_______________________________________________________________________
 
-hy_float * _DataSetFilterNumeric::getProbabilityVector (long spec, long site, long categoryID) {
+hyFloat * _DataSetFilterNumeric::getProbabilityVector (long spec, long site, long categoryID) {
     return probabilityVectors.theData + categoryID * categoryShifter + spec * shifter + site * dimension;
 }
 
@@ -2250,8 +2250,8 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
     else{
         long             vd  = GetDimension(true);
         
-        hy_float      *translatedVector = new hy_float [vd],
-        *translatedVector2= new hy_float [vd];
+        hyFloat      *translatedVector = new hyFloat [vd],
+        *translatedVector2= new hyFloat [vd];
         
         _String         state1 (unit,false),
         state2 (unit,false);
@@ -2374,7 +2374,7 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
 
     _DataSetFilter* firstOne = nil;
     if (isFilteredAlready) {
-        if ((hy_pointer)this == (hy_pointer)ds) {
+        if ((hyPointer)this == (hyPointer)ds) {
             firstOne = (_DataSetFilter*)makeDynamic();
             copiedSelf = true;
         } else {
@@ -2586,7 +2586,7 @@ extern _String skipOmissions;
 
 void    _DataSetFilter::FilterDeletions(_SimpleList *theExc)
 {
-    hy_float      skipo;
+    hyFloat      skipo;
     checkParameter (skipOmissions,skipo,0.0);
 
     if (skipo>.5 || theExc ) { // delete omissions
@@ -2598,7 +2598,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc)
                     sitesWithDeletions<<i;
                 }
         } else {
-            hy_float   *store_vec = new hy_float [GetDimension(false)];
+            hyFloat   *store_vec = new hyFloat [GetDimension(false)];
 
             for (long i=0; i<theFrequencies.lLength; i++) {
                 long pos = HasExclusions(i,theExc,store_vec);
@@ -2726,7 +2726,7 @@ void    _DataSetFilter::MatchStartNEnd (_SimpleList& order, _SimpleList& positio
 
     long p0 = order.lData[0];
 
-    hy_float uth = hy_env::EnvVariableGetDefaultNumber (hy_env::use_traversal_heuristic);
+    hyFloat uth = hy_env::EnvVariableGetDefaultNumber (hy_env::use_traversal_heuristic);
 
     if (uth>.5) {
         if (parent)
@@ -2887,9 +2887,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
         {
             input.Trim(1,input.sLength-2);
             int   errCode;
-            hy_pointer   regex = PrepRegExp (&input, errCode, true);
+            regex_t*   regex = PrepRegExp (input, errCode, true);
             if (errCode) {
-                HandleApplicationError(GetRegExpError(errCode));
+                HandleApplicationError(_String::GetRegExpError(errCode));
                 return;
             }
             // now set do the matching
@@ -2911,8 +2911,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                             pattern.sData[seqSlider] =  GetSite(seqSlider)->get_char(seqPos);
                         }
 
-                    matches.Clear();
-                    pattern.RegExpMatch (regex, matches);
+                    matches = pattern.RegExpMatch (regex);
                     if (matches.lLength) {
                         target << specCount;
                     }
@@ -2947,9 +2946,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                             for (long tc = 0; tc < otherDimension->lLength; tc++) {
                                 tempString->sData[tc] = aSite->sData[otherDimension->lData[tc]];
                             }
-                            tempString->RegExpMatch (regex, matches);
+                            matches = tempString->RegExpMatch (regex);
                         } else {
-                            ((_Site**)lData)[siteCounter]->RegExpMatch (regex, matches);
+                            matches = ((_Site**)lData)[siteCounter]->RegExpMatch (regex);
                         }
                         if (matches.lLength == 0) {
                             eligibleMarks[siteCounter] = false;
@@ -2971,9 +2970,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                 }
                 delete eligibleMarks;
             }
-            FlushRegExp (regex);
+            _String::FlushRegExp (regex);
         } else {
-            input.KillSpaces (input);
+            input = input.KillSpaces ();
             // now process the string
             long count = 0,anchor,k;
 
@@ -3256,7 +3255,7 @@ void _DataSetFilter::GrabSite (unsigned long site, unsigned long pos, char * s)
 
 //_______________________________________________________________________
 
-_SimpleList* _DataSetFilter::CountAndResolve (long pattern, hy_float * storage, bool randomly)
+_SimpleList* _DataSetFilter::CountAndResolve (long pattern, hyFloat * storage, bool randomly)
 // last cell in the list contains the count of distinct characters in the column
 {
     _SimpleList* resList = new _SimpleList (theNodeMap.lLength+1,0,0),
@@ -3265,10 +3264,10 @@ _SimpleList* _DataSetFilter::CountAndResolve (long pattern, hy_float * storage, 
     _List        ambStates;
     _String      aState  (unitLength, false);
 
-    hy_float*  freqStorage = storage;
+    hyFloat*  freqStorage = storage;
 
     if (!freqStorage) {
-        freqStorage = new hy_float [undimension];
+        freqStorage = new hyFloat [undimension];
     }
 
     long    normalizingSum = 0,
@@ -3546,7 +3545,7 @@ long    _DataSetFilter::SiteFrequency (unsigned long site)
 bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
 {
     long        loopDim  = GetDimension();
-    hy_float* store    = new hy_float [loopDim];
+    hyFloat* store    = new hyFloat [loopDim];
 
     long j,
          upTo = theNodeMap.lLength?theNodeMap.lLength:theData->NoOfSpecies();
@@ -3585,8 +3584,8 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
 //_______________________________________________________________________
 bool    _DataSetFilter::IsConstant (unsigned long site,bool relaxedDeletions)
 {
-    hy_float *store = new hy_float [GetDimension()],
-               *store2 = new hy_float [GetDimension()];
+    hyFloat *store = new hyFloat [GetDimension()],
+               *store2 = new hyFloat [GetDimension()];
 
     unsigned long j,
          upTo = theNodeMap.lLength?theNodeMap.lLength:theData->NoOfSpecies(),
@@ -3696,7 +3695,7 @@ _String*        _DataSet::GetSequenceCharacters (long seqID)  const{
 
 
 //_______________________________________________________________________
-long    _DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, hy_float*store )
+long    _DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, hyFloat*store )
 {
     long   filterDim = GetDimension(false);
 
@@ -3755,8 +3754,8 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
     
     _Matrix     *res   = new _Matrix  (mxDim,mxDim,false,true);
     
-    hy_float  *sm1   = new hy_float[mxDim],
-    *sm2   = new hy_float[mxDim];
+    hyFloat  *sm1   = new hyFloat[mxDim],
+    *sm2   = new hyFloat[mxDim];
     
     
     
@@ -3885,7 +3884,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
             
             if (freqsAtSite) {
               if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
-                hy_float totalW = 0.0;
+                hyFloat totalW = 0.0;
                 
                 for  (long m=0; m<mxDim; m++)
                   if (sm1[m]>0.0) {
@@ -3902,12 +3901,12 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 }
                 
               } else {
-                hy_float maxW   = 0.0;
+                hyFloat maxW   = 0.0;
                 long       maxIdx = -1;
                 
                 for  (long m=0; m<mxDim; m++) {
                   if (sm1[m]>0.0) {
-                    hy_float myWeight = freqsAtSite->theData[m];
+                    hyFloat myWeight = freqsAtSite->theData[m];
                     if (myWeight > maxW) {
                       maxW = myWeight;
                       maxIdx = m;
@@ -3937,7 +3936,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 
                 s1 *= mxDim;
                 
-                hy_float addFac = theFrequencies.lData[site_pattern]/(hy_float)ambCount;
+                hyFloat addFac = theFrequencies.lData[site_pattern]/(hyFloat)ambCount;
                 
                 for  (long m=0; m<mxDim; m++,s1++)
                   if (sm1[m]>0.0) {
@@ -3957,7 +3956,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
               
               if (freqsAtSite) {
                 if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
-                  hy_float totalW = 0.0;
+                  hyFloat totalW = 0.0;
                   
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0.0) {
@@ -3972,12 +3971,12 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                   }
                   
                 } else {
-                  hy_float maxW   = 0.0;
+                  hyFloat maxW   = 0.0;
                   long       maxIdx = -1;
                   
                   for  (long m=0; m<mxDim; m++) {
                     if (sm1[m]>0.0) {
-                      hy_float myWeight = freqsAtSite->theData[m];
+                      hyFloat myWeight = freqsAtSite->theData[m];
                       if (myWeight > maxW) {
                         maxW = myWeight;
                         maxIdx = m;
@@ -3999,7 +3998,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                       ambCount ++;
                     }
                   
-                  hy_float addFac = theFrequencies.lData[site_pattern]/(hy_float)ambCount;
+                  hyFloat addFac = theFrequencies.lData[site_pattern]/(hyFloat)ambCount;
                   {
                     for  (long m=0; m<mxDim; m++,s2+=mxDim)
                       if (sm1[m]>0.0) {
@@ -4021,7 +4020,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
               
               if (freqsAtSite) {
                 if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
-                  hy_float totalW = 0.0;
+                  hyFloat totalW = 0.0;
                   
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0)
@@ -4040,7 +4039,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                   }
                   
                 } else {
-                  hy_float maxW   = 0.0;
+                  hyFloat maxW   = 0.0;
                   long       maxIdx  = -1,
                   maxIdx2 = -1;
                   
@@ -4048,7 +4047,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                     if (sm1[m]>0)
                       for  (long m2=0; m2<mxDim; m2++)
                         if (sm2[m2]>0) {
-                          hy_float myWeight = freqsAtSite->theData[m]*freqsAtSite->theData[m2];
+                          hyFloat myWeight = freqsAtSite->theData[m]*freqsAtSite->theData[m2];
                           if (myWeight > maxW) {
                             maxW = myWeight;
                             maxIdx  = m;
@@ -4078,7 +4077,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 }
                 
                 if (m==mxDim) {
-                  hy_float addFac = theFrequencies.lData[site_pattern]/(hy_float)(ambCount*ambCount2);
+                  hyFloat addFac = theFrequencies.lData[site_pattern]/(hyFloat)(ambCount*ambCount2);
                   
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0)
@@ -4210,7 +4209,7 @@ long    _DataSetFilter::GetVectorCode(long site,long seq)
 void    _DataSetFilter::ProduceSymbolVector(bool smear)
 {
     // compute the size of the vector cells
-    hy_float cellSize=log((hy_float)theData->theTT->LengthOfAlphabet())*hy_float(unitLength)/log(128.0);
+    hyFloat cellSize=log((hyFloat)theData->theTT->LengthOfAlphabet())*hyFloat(unitLength)/log(128.0);
     if (cellSize>2.0)
     {
         _String errMsg ("DataSetFilter has more than 32767 states, which is currently unsupported");
@@ -4303,7 +4302,7 @@ long    _DataSetFilter::CorrectCode (long code) const {
 
 
 //_______________________________________________________________________
-long    _DataSetFilter::Translate2Frequencies (_String const& str, hy_float* parvect, bool smear) const {
+long    _DataSetFilter::Translate2Frequencies (_String const& str, hyFloat* parvect, bool smear) const {
     long  store      [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
           resolution_count  = -1L;
 
@@ -4359,7 +4358,7 @@ long    _DataSetFilter::MapStringToCharIndex (_String& str) const {
 
 
 //_______________________________________________________________________
-long    _DataSetFilter::Translate2Frequencies (char s, hy_float* parvect, bool smear) const {
+long    _DataSetFilter::Translate2Frequencies (char s, hyFloat* parvect, bool smear) const {
   long  store      [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
   resolution_count  = theData->theTT->TokenResolutions (s,store,smear);
   
@@ -4382,7 +4381,7 @@ long    _DataSetFilter::Translate2Frequencies (char s, hy_float* parvect, bool s
 }
 
 //_______________________________________________________________________
-long    _DataSetFilter::LookupConversion (char s, hy_float* parvect) const
+long    _DataSetFilter::LookupConversion (char s, hyFloat* parvect) const
 {
     if (undimension==4) {
         long* cCache = conversionCache.lData+(s-40)*5;
@@ -4412,7 +4411,7 @@ void    _DataSetFilter::SetupConversion (void)
 
     if ( unitLength==1 ) { // do stuff
         char c = 40;
-        hy_float *temp    = new hy_float [undimension+1UL];
+        hyFloat *temp    = new hyFloat [undimension+1UL];
 
         while(c<127) {
             //InitializeArray(temp, undimension + 1UL, 0.0);
@@ -5399,8 +5398,8 @@ void    _DataSetFilter::PatternToSiteMapper (void* source, void* target, char mo
   
   switch (mode) {
     case 0: {
-      hy_float * target_array = (hy_float*) target,
-                 * source_array = (hy_float*) source;
+      hyFloat * target_array = (hyFloat*) target,
+                 * source_array = (hyFloat*) source;
       
       for (unsigned site = 0UL; site < site_count; site++ ) {
         target_array [site] = source_array [duplicateMap.lData[site]];
@@ -5426,7 +5425,7 @@ void    _DataSetFilter::PatternToSiteMapper (void* source, void* target, char mo
     }
     case 2: {
       long * target_array = (long*) target;
-      hy_float       * source_array = (hy_float*) source;
+      hyFloat       * source_array = (hyFloat*) source;
       
       for (unsigned site = 0UL; site < site_count; site++ ) {
         target_array [site] = source_array [duplicateMap.lData[site]];
@@ -5470,7 +5469,7 @@ _String const &_DataSetFilter::GenerateConsensusString (_SimpleList* majority) c
     long        char_states         = GetDimension(false),
                 *translation_buffer = new long [char_states];
  
-    hy_float* count_buffer = new hy_float [char_states];
+    hyFloat* count_buffer = new hyFloat [char_states];
   
      for (unsigned long site_pattern = 0UL; site_pattern<theFrequencies.lLength; site_pattern ++) {
         long    index_in_dataset = theMap.lData[site_pattern];
@@ -5482,7 +5481,7 @@ _String const &_DataSetFilter::GenerateConsensusString (_SimpleList* majority) c
           
           
             if (resolution_count>1L) {
-                hy_float equal_weight = 1./resolution_count;
+                hyFloat equal_weight = 1./resolution_count;
                 for (long resolution_index = 0L; resolution_index < resolution_count; resolution_index++) {
                   count_buffer [translation_buffer[resolution_index]] += equal_weight;
                 }
@@ -5495,7 +5494,7 @@ _String const &_DataSetFilter::GenerateConsensusString (_SimpleList* majority) c
 
         // find the residue with the highest frequency
        
-        hy_float       max_weight      = -1.;
+        hyFloat       max_weight      = -1.;
         InitializeArray (translation_buffer, char_states, 0L);
        long             max_char_count  = 0L;
        
@@ -5582,7 +5581,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
   // write out the file with this dataset filter
   checkParameter (dataFilePrintFormat,dFPrintFormat,6.0);
   checkParameter (dataFileDefaultWidth,dFDefaultWidth,50.0);
-  hy_float  gW;
+  hyFloat  gW;
   
   long outputFormat = dFPrintFormat,
   printWidth   = dFDefaultWidth,
@@ -5950,7 +5949,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
 //_________________________________________________________
 
 bool    StoreADataSet (_DataSet* ds, _String* setName) {
-    if (!setName->IsValidIdentifier (true)) {
+    if (!setName->IsValidIdentifier (fIDAllowCompound)) {
         HandleApplicationError (setName->Enquote() & " is not a valid identifier while constructing a DataSet");
         return false;
     }
@@ -5993,7 +5992,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
         dataSetList.Replace(pos,ds,false);
     }
   
-    hy_float normalizeSeqNames = hy_env::EnvVariableGetDefaultNumber(hy_env::normalize_sequence_names);
+    hyFloat normalizeSeqNames = hy_env::EnvVariableGetDefaultNumber(hy_env::normalize_sequence_names);
     CheckReceptacleAndStore (*setName&".mapping",kEmptyString,false, new _MathObject, false);
     if (normalizeSeqNames > 0.1) {
       _List _id_mapping;
@@ -6002,8 +6001,8 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
       
       for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
         _String * old_name = new _String (*ds->GetSequenceName (i));
-        if (! old_name->IsValidIdentifier(false) ) {
-          ds->GetSequenceName (i)->ConvertToAnIdent(false);
+        if (! old_name->IsValidIdentifier(fIDAllowFirstNumeric) ) {
+          *ds->GetSequenceName (i) = old_name->ConvertToAnIdent(fIDAllowFirstNumeric);
           did_something = true;
         }
         if (id_mapping.Find (ds->GetSequenceName (i)) >= 0) {
@@ -6101,7 +6100,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
               
                 if (resolution_count > 0UL) {
           
-                  hy_float    normalized = 1./resolution_count;
+                  hyFloat    normalized = 1./resolution_count;
 
                   for (long resolution_index = 0UL; resolution_index < resolution_count; resolution_index ++) {
                     out->theData[posSpec? static_store[resolution_index]*positions+index_in_pattern: static_store[resolution_index]] += normalized;
@@ -6117,7 +6116,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
                   column_count = out->GetVDim();
   
     for (unsigned long column =0UL; column < column_count; column++) { // normalize each _column_ to sum to 1.
-        hy_float sum = 0.0;
+        hyFloat sum = 0.0;
 
         for (unsigned long row = 0UL; row < row_count; row++) {
           sum += out->theData [row*column_count + column];

@@ -120,16 +120,16 @@ public:
         return representation;
     }
 
-    hy_float  SetIntervalValue (long, bool recacl = true);
+    hyFloat  SetIntervalValue (long, bool recacl = true);
     // set interval value is returned
 
-    hy_float  Mean (void);
+    hyFloat  Mean (void);
 
-    hy_float  GetIntervalValue (long);
+    hyFloat  GetIntervalValue (long);
 
-    hy_float  GetIntervalWeight(long);
+    hyFloat  GetIntervalWeight(long);
 
-    hy_float* GetIntervalWeights(void) {
+    hyFloat* GetIntervalWeights(void) {
         return weights->fastIndex();
     }
 
@@ -157,10 +157,10 @@ public:
         return UpdateIntervalsAndValues(force);
     }
 
-    hy_float  GetMinX (void)  {
+    hyFloat  GetMinX (void)  {
         return x_min;
     }
-    hy_float  GetMaxX (void)  {
+    hyFloat  GetMaxX (void)  {
         return x_max;
     }
     bool        IsHiddenMarkov
@@ -214,7 +214,7 @@ private:
                 *weights,
                 *conditionalWeights;
 
-    hy_float  x_min,
+    hyFloat  x_min,
                 x_max;      // distribution range
 
     _SimpleList parameterList;

@@ -39,7 +39,7 @@
 
 #include "string_file_wrapper.h"
 
-StringFileWrapper::StringFileWrapper (_String *string, FILE *file) {
+StringFileWrapper::StringFileWrapper (_StringBuffer *string, FILE *file) {
   string_buffer = string;
   file_buffer = file;
 }

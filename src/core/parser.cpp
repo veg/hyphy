@@ -95,8 +95,8 @@ _SimpleList opPrecedence,
             BinOps,
             associativeOps;
 
-hy_float pi_const = 3.141592653589793,
-long_max = (hy_float)LONG_MAX;
+hyFloat pi_const = 3.141592653589793,
+long_max = (hyFloat)LONG_MAX;
 
 /**********************************/
 /* Defining Globals here for now */
@@ -104,7 +104,7 @@ long_max = (hy_float)LONG_MAX;
  
 //Used in formula, and constant
 
-hy_float  machineEps = 2.*DBL_EPSILON,
+hyFloat  machineEps = 2.*DBL_EPSILON,
             tolerance  = DBL_EPSILON;
 
 //Used in formula
@@ -113,8 +113,8 @@ _String         intPrecFact ("INTEGRATION_PRECISION_FACTOR"),
 
 
 //Used in parser2 and formula
-hy_float sqrtPi = 1.77245385090551603;
-hy_float twoOverSqrtPi = 2./sqrtPi;
+hyFloat sqrtPi = 1.77245385090551603;
+hyFloat twoOverSqrtPi = 2./sqrtPi;
 
 /*********************************/
 /*          End Globals         */
@@ -132,7 +132,7 @@ _Variable * LocateVar (long index) {
 }
 
 //__________________________________________________________________________________
-void     parameterToCharBuffer (hy_float value, char* dump, long length, bool json)
+void     parameterToCharBuffer (hyFloat value, char* dump, long length, bool json)
 {
     if (json) {
       if (isnan (value)) {
@@ -165,7 +165,7 @@ void     parameterToCharBuffer (hy_float value, char* dump, long length, bool js
 
 
 //__________________________________________________________________________________
-BaseRef     parameterToString (hy_float value)
+BaseRef     parameterToString (hyFloat value)
 {
     char dump [256];
     parameterToCharBuffer (value, dump, 256);
@@ -416,7 +416,7 @@ void DeleteVariable (long dv, bool deleteself)
 
         for (; nextVar>=0; nextVar = variableNames.Next (nextVar, recCache)) {
             _String dependent = *(_String*)variableNames.Retrieve (nextVar);
-            if (dependent.startswith(myName)) {
+            if (dependent.BeginsWith(myName)) {
                 toDelete && & dependent;
             } else {
                 break;
@@ -480,7 +480,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
             long nextVar = variableNames.Find (&nextVarID,recCache);
             for (; nextVar>=0; nextVar = variableNames.Next (nextVar, recCache)) {
                 _String dependent = *(_String*)variableNames.Retrieve (nextVar);
-                if (dependent.startswith(myName)) {
+                if (dependent.BeginsWith(myName)) {
                     if (dependent.Find ('.', myName.sLength+1, -1)>=0) {
                         _Variable * checkDep = FetchVar (nextVar);
                         if (!checkDep->IsIndependent()) {
@@ -520,7 +520,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 //__________________________________________________________________________________
 _Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal)
 {
-    if (checkValid && (!name->IsValidIdentifier())) {
+    if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
         HandleApplicationError(name->Enquote() & " is not a valid variable identifier in call to " & fID);
         return nil;
     }
@@ -538,7 +538,7 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
 //__________________________________________________________________________________
 _Variable* CheckReceptacleCommandID (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
 {
-    if (checkValid && (!name->IsValidIdentifier())) {
+    if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
         _String errMsg = _String ("'") & *name & "' is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.';
         if (context) {
             context->ReportAnExecutionError(errMsg);
@@ -646,7 +646,7 @@ _String const&  AppendContainerName (_String const& inString, _String const* nam
         return inString;
     }
     
-    unsigned char reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && namescp -> sLength? namescp : nil);
+    hy_reference_type reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && !namescp -> empty() ? namescp : nil);
     
 
     if (reference_type != kStringInvalidReference) {
@@ -672,7 +672,7 @@ void  RenameVariable (_String* oldName, _String* newName)
         xtras    << variableNames.GetXtra (f);
         f = variableNames.Next (f, traverser);
 
-        for  (; f>=0 && ((_String*)variableNames.Retrieve (f))->startswith (oldNamePrefix); f = variableNames.Next (f, traverser)) {
+        for  (; f>=0 && ((_String*)variableNames.Retrieve (f))->BeginsWith (oldNamePrefix); f = variableNames.Next (f, traverser)) {
             toRename << variableNames.Retrieve (f);
             xtras << variableNames.GetXtra (f);
         }

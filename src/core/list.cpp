@@ -47,6 +47,7 @@
 
 #include "list.h"
 #include "hy_strings.h"
+#include "hy_string_buffer.h"
 #include "parser.h"
 
 using namespace hy_global;
@@ -87,7 +88,7 @@ _List::_List (const _List& l, long from, long to)
 _List::_List (BaseRef ss, char sep)
 {
     _String* s = (_String*)ss;
-    if (s->Length()!=0) {
+    if (s->empty() == false) {
         long cp=0,cpp;
         while ((cpp = s->Find(sep,cp,-1))!=-1) {
             if (cpp>cp) {
@@ -106,7 +107,7 @@ _List::_List (BaseRef ss, char sep)
 _List::_List (BaseRef br) {
     lLength = 1;
     laLength = MEMORYSTEP;
-    lData = (long*)MemAllocate (laLength * sizeof(hy_pointer));
+    lData = (long*)MemAllocate (laLength * sizeof(hyPointer));
     BaseRef   object_copy = br->makeDynamic();
     ((BaseRef*)lData)[0]= object_copy;
 }
@@ -329,12 +330,12 @@ long  _List::BinaryFindObject (BaseObj const * s, long startAt) const {
         middle = (top+bottom)/2;
         _String* stp = (_String*)(((BaseRef*)lData)[middle]->toStr());
 
-        int      cres = st->Compare (stp);
+        hyComparisonType      cres = st->Compare (stp);
         DeleteObject (stp);
 
-        if (cres < 0) {
+        if (cres == kCompareLess) {
             top = middle==top?top-1:middle;
-        } else if (cres == 0) {
+        } else if (cres == kCompareEqual) {
             return middle;
         } else {
             bottom = middle==bottom?bottom+1:middle;
@@ -392,18 +393,18 @@ void  _List::Clear (bool completeClear) {
     }
 }
 
-long  _List::Compare (long i, long j) const {
+hyComparisonType  _List::Compare (long i, long j) const {
     _String             *si = (_String*)lData[i],
                          *sj = (_String*)lData[j];
 
-    return  si->Compare(sj);
+    return  si->Compare(*sj);
 }
 
-long  _List::Compare (BaseObj const * i, long j) const {
+hyComparisonType  _List::Compare (BaseObj const * i, long j) const {
     _String const       *sj = (_String const*)lData[j],
                         *si = (_String const*)i;
 
-    return  si->Compare(sj);
+    return  si->Compare(*sj);
 }
 
 unsigned long _List::Count()
@@ -423,12 +424,12 @@ void  _List::Delete (long index, bool delete_object)
             for (unsigned long i = index; i < lLength; i++) {
                 lData[i] = lData[i+1];
             }
-        //memcpy ((hy_pointer)lData+sizeof(BaseRef)*(index),(hy_pointer)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
+        //memcpy ((hyPointer)lData+sizeof(BaseRef)*(index),(hyPointer)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
     }
     if (laLength-lLength>MEMORYSTEP) {
         laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
         if (laLength > 0)
-          lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hy_pointer));
+          lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hyPointer));
         else {
           free (lData); lData = nil;
         }
@@ -454,7 +455,7 @@ void  _List::DeleteList (const _SimpleList& toDelete)
         if (laLength-lLength>MEMORYSTEP) {
             laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
             if (laLength > 0)
-              lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hy_pointer));
+              lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hyPointer));
             else {
               free (lData); lData = nil;
             }
@@ -501,33 +502,6 @@ long  _List::FindObject (BaseRefConst s, long startat) const {
     return -1;
 }
 
-long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
-{
-    char * s1, *s2;
-    long t = ((_String*)s)->sLength;
-
-    if (upTo < 0 || upTo >= lLength) {
-        upTo = lLength-1;
-    }
-
-    for (long i = startat; i<= upTo; i++) {
-        s1 = ((_String*)s)->sData;
-        if (((_String*)(((BaseRef*)lData)[i]))->sLength==t) {
-            s2 = ((_String*)(((BaseRef*)lData)[i]))->sData;
-            long j = 0;
-            if (caseSensitive)
-                for (j=0; (*s1==*s2)&&(j<t); j++,s1++,s2++) ;
-            else
-                for (j=0; (toupper(*s1)==toupper(*s2))&&(j<t); j++,s1++,s2++) ;
-
-            if (j==t) {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
-
 
 // Append & store operator
 void _List::InsertElement (BaseRef br, long insertAt, bool store, bool pointer) {
@@ -546,7 +520,7 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
           c2 = 0;
 
     while (c1<l1.lLength && c2<l2.lLength) {
-        while (c1<l1.lLength && ((_String*)l1(c1))->Compare((_String*)l2(c2))<0) {
+        while (c1<l1.lLength && ((_String*)l1(c1))->Compare((_String*)l2(c2)) == kCompareLess) {
             c1++;
         }
         if (c1==l1.lLength) {
@@ -567,14 +541,14 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
         if (c1==l1.lLength || c2==l2.lLength) {
             break;
         }
-        while (c2<l2.lLength && ((_String*)l2(c2))->Compare((_String*)l1(c1))<0) {
+        while (c2<l2.lLength && ((_String*)l2(c2))->Compare((_String*)l1(c1)) == kCompareLess) {
             c2++;
         }
     }
 }
 
 BaseRef  _List::Join (BaseRefConst spacer, long startAt, long endAt) {
-    _String *joined = new _String (256L,true);
+    _StringBuffer *joined = new _StringBuffer (256L);
     if (endAt < 0) { 
         endAt = lLength; 
     } else if (endAt > lLength) {
@@ -588,7 +562,6 @@ BaseRef  _List::Join (BaseRefConst spacer, long startAt, long endAt) {
         joined->AppendNewInstance((_String*) ((BaseRef*)lData)[k]->toStr());
     }
 
-    joined->Finalize();
     return joined;
 }
 
@@ -642,7 +615,7 @@ void _List::toFileStr(FILE* dest, unsigned long)
 // Char* conversion
 //TODO: toFileStr should be ToStr to follow convention.
 BaseRef _List::toStr(unsigned long) {
-    _String * s = new _String((unsigned long)20*(lLength+1),true);
+    _StringBuffer * s = new _StringBuffer((unsigned long)20*(lLength+1));
 
     (*s)<<'{';
   
@@ -655,7 +628,6 @@ BaseRef _List::toStr(unsigned long) {
     }
   
     (*s)<<'}';
-    s->Finalize();
     return s;
 }
 

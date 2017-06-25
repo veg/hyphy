@@ -51,8 +51,7 @@ class _String;
 
 //_____________________________________________________________________________
 
-class _List:public _SimpleList
-{
+class _List:public _SimpleList {
 
     public:
 
@@ -68,6 +67,16 @@ class _List:public _SimpleList
         * @param sL Length of the string
         */
         _List(unsigned long);
+
+  
+        /**
+          variadic initializer
+         
+         */
+        template <typename... Args>
+        _List (const Args&... args) {
+          AppendObjectsToList (args...);
+        };
 
 
         /**
@@ -175,6 +184,19 @@ class _List:public _SimpleList
         * @sa Equal()
         */
         bool operator == (_List const&) const;
+  
+  
+        template <typename ARG_TYPE, typename... Args>
+        void AppendObjectsToList (ARG_TYPE first, const Args&... args) {
+          AppendNewInstance ((BaseRef)first);
+          AppendObjectsToList (args...);
+        }
+  
+        template <typename ARG_TYPE, typename... Args>
+        void AppendObjectsToList (ARG_TYPE first) {
+          AppendNewInstance ((BaseRef)first);
+        }
+
 
         /**
         * Append reference to *this
@@ -217,11 +239,11 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual long Compare(long,long) const;
+        virtual hyComparisonType Compare(long,long) const;
 
         /**
         */
-        virtual long Compare(BaseObj const *,long) const;
+        virtual hyComparisonType Compare(BaseObj const *,long) const;
 
         /**
         * Return number of elements 
@@ -274,20 +296,7 @@ class _List:public _SimpleList
 
         }
 
-        /**
-        * Find the position of a search string in the list of strings (ONLY)
-        * \n Faster than the Find(), since it assumes string entries
-        * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
-        * @param s The substring to find
-        * @param startat The index to start searching from
-        * @param caseSensitive Pass true for a case sensitive search 
-        * @param upTo Upper limit for search index. 
-        * @return -1 if not found, the index if it is found.
-        * @sa Find()
-        * @sa BinaryFind()
-        */
-        virtual long FindString(BaseRef,long startat=0,bool caseSensitive=true,long upTo=-1);
-
+ 
  
 
         /**

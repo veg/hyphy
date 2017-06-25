@@ -84,16 +84,16 @@ public:
 
 
     /* computation */
-    virtual hy_float      Compute (void);	// compute likelihood of current network structure
-    hy_float      Compute (_Matrix &),	// compute likelihood of given network structure
+    virtual hyFloat      Compute (void);	// compute likelihood of current network structure
+    hyFloat      Compute (_Matrix &),	// compute likelihood of given network structure
                     Compute (_SimpleList &, _List *);	// compute likelihood of given node order
                     									//	return edge marginal probabilities at pointer
                     									
     virtual _Matrix *       Optimize ();	// generic wrapper from HBL to different optimization methods
     										// e.g., K2, structural MCMC, order MCMC (see next functions)
 	
-    void            GraphMetropolis (bool, long, long, long, hy_float, _Matrix *),
-                    OrderMetropolis (bool, long, long, hy_float, _Matrix *),
+    void            GraphMetropolis (bool, long, long, long, hyFloat, _Matrix *),
+                    OrderMetropolis (bool, long, long, hyFloat, _Matrix *),
                     K2Search (bool, long, long, _Matrix *);
 
 
@@ -101,7 +101,7 @@ public:
     void            MPIReceiveScores (_Matrix *, bool, long);
     void            ReleaseCache (void);
 
-    hy_float      ComputeDiscreteScore (long node_id),
+    hyFloat      ComputeDiscreteScore (long node_id),
                     ComputeDiscreteScore (long, _Matrix &),
                     ComputeDiscreteScore (long, _SimpleList &),
 
@@ -110,7 +110,7 @@ public:
                     ComputeContinuousScore (long, _SimpleList &);
 
 
-    hy_float      ImputeDiscreteNodeScore (long, _SimpleList &),	// use Gibbs sampling to compute expectation over missing data
+    hyFloat      ImputeDiscreteNodeScore (long, _SimpleList &),	// use Gibbs sampling to compute expectation over missing data
     				ImputeCGNodeScore (long, _SimpleList &);		// arguments: node ID, parent ID's
 
     void            ComputeParameters (void),	// UNDER DEVELOPMENT - and I think I ended up using HBL instead
@@ -132,15 +132,15 @@ public:
 
     void            SerializeBGMtoMPI (_String &);	// pass network object to compute node as HBL
 
-    void            RandomizeGraph (_Matrix *, _SimpleList *, hy_float, long, long, bool);
+    void            RandomizeGraph (_Matrix *, _SimpleList *, hyFloat, long, long, bool);
     _SimpleList *   GetOrderFromGraph (_Matrix &);
     bool            GraphObeysOrder (_Matrix &, _SimpleList &);
 
     void            UpdateDirichletHyperparameters (long , _SimpleList &, _Matrix * , _Matrix * );
 
-    hy_float      K2Score (long, _Matrix &, _Matrix &),
+    hyFloat      K2Score (long, _Matrix &, _Matrix &),
                     BDeScore (long, _Matrix &, _Matrix &),
-                    BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, hy_float, hy_float, long);
+                    BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, hyFloat, hyFloat, long);
 
     long            GetNumNodes (void)  {
         return num_nodes;
@@ -177,7 +177,7 @@ protected:
                     prior_precision,
                     prior_scale;
 
-    hy_float      continuous_missing_value;       // some arbitrary value set in HBL to indicate just that
+    hyFloat      continuous_missing_value;       // some arbitrary value set in HBL to indicate just that
 
     /* ------------------------------------------- */
 

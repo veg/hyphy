@@ -87,7 +87,7 @@ public:
 
     virtual ~Bgm (void);        // destructor
 
-    virtual hy_float      Compute (void);         // function polymorphism, no argument returns likelihood of network
+    virtual hyFloat      Compute (void);         // function polymorphism, no argument returns likelihood of network
     // specified by _Matrix object dag
 
 
@@ -118,7 +118,7 @@ public:
     void            ImportNodeScores (_Matrix *);
 
 
-    hy_float      ComputeDiscreteScore (long node_id),    // compute K2 or BDeu scoring metric for a discrete node in network
+    hyFloat      ComputeDiscreteScore (long node_id),    // compute K2 or BDeu scoring metric for a discrete node in network
                     // with discrete-valued parents, given data and prior
                     // use BDeu if prior_sample_size > 0.
                     ComputeDiscreteScore (long, _Matrix *),
@@ -129,9 +129,9 @@ public:
                     ComputeContinuousScore (long, _Matrix *),
                     ComputeContinuousScore (long, _SimpleList &, _SimpleList &);
 
-    virtual hy_float      ImputeDiscreteScore (long, _SimpleList &);
+    virtual hyFloat      ImputeDiscreteScore (long, _SimpleList &);
 
-    hy_float      GibbsApproximateDiscreteScore (long, _SimpleList &),
+    hyFloat      GibbsApproximateDiscreteScore (long, _SimpleList &),
                     K2Score (long, _Matrix &, _Matrix &),
                     BDeScore (long, _Matrix &, _Matrix &);
 
@@ -146,7 +146,7 @@ public:
     }
 
 protected:
-    hy_float      Compute (_SimpleList*, _List*),         // return likelihood of node ordering, model averaging over all
+    hyFloat      Compute (_SimpleList*, _List*),         // return likelihood of node ordering, model averaging over all
                     // possible networks that are consistent with the order.
                     Compute (_Matrix *),
                     ComputeDynamic (_SimpleList *, _List *),    // compute for DBNs
@@ -166,15 +166,15 @@ protected:
 
 
 
-    hy_float      LnGamma (hy_float),
+    hyFloat      LnGamma (hyFloat),
                     LogSumExpo (_GrowingVector *);
 
     _Matrix *       RunColdChain (_SimpleList *, long, long);
-    void            RunHotChain (_SimpleList *, long, long, hy_float);
+    void            RunHotChain (_SimpleList *, long, long, hyFloat);
 
     _Matrix *       GraphMCMC (bool);
 
-    hy_float      TryEdge (long, long, long, hy_float);     // DEPRECATE
+    hyFloat      TryEdge (long, long, long, hyFloat);     // DEPRECATE
 
     void            RandomizeDag (long),
                     RandomizeGraph (_Matrix *, _SimpleList *, long, bool),

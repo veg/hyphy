@@ -343,7 +343,7 @@ public:
     // to reference either a string or a matrix of strings (it calls the second)
     // the second one does the work; lexing the input strings and converting
 
-    virtual hy_float          Compute                 (void);
+    virtual hyFloat          Compute                 (void);
     // compute the derivation probability of the current corpus
     virtual _Matrix*            Optimize                ();
     // train the grammar using current corpus
@@ -673,13 +673,13 @@ protected:
     // initialize compute structures for a new corpus
     // by populating appropriate data structures with empties
 
-    hy_float  ComputeInsideProb     (long, long, long, long, bool);
+    hyFloat  ComputeInsideProb     (long, long, long, long, bool);
     // compute the inside probability for substring from s (arg1) to t (arg2) - both zero based -
     // in corpus string j (arg3) derived from non-terminal i (arg4). The bool flag shows whether or
     // not this is the first call into a given corpus and that computeFlagsI should be consulted
     // during computation
 
-    hy_float  ComputeOutsideProb    (long, long, long, long, bool, bool);
+    hyFloat  ComputeOutsideProb    (long, long, long, long, bool, bool);
     // compute the outside probability for substring from s (arg1) to t (arg2) - both zero based -
     // in corpus string j (arg3) derived from non-terminal i (arg4). The FIRST bool flag shows whether or
     // not this is the first call for outside probabilities into a given corpus and that computeFlagsO
@@ -689,7 +689,7 @@ protected:
     long        indexNT_T             (long, long);
     // index (nt, term) pairs into ntToTerminalMap
 
-    hy_float  LookUpRuleProbability (long index) {
+    hyFloat  LookUpRuleProbability (long index) {
         return ((_Matrix*)probabilities.RetrieveNumeric())->theData[index];
     }
 

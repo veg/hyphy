@@ -93,9 +93,9 @@ public:
     }
     static      _String*    SelectAlpha (unsigned char);
 
-    hy_float      LZWCompress (unsigned char theAlpha); // returns compression ratio
-    hy_float      FrequencyCompress(unsigned char theAlpha, bool  doit = true);
-    hy_float      BestCompress(unsigned char theAlpha, long triggerSize = 25);
+    hyFloat      LZWCompress (unsigned char theAlpha); // returns compression ratio
+    hyFloat      FrequencyCompress(unsigned char theAlpha, bool  doit = true);
+    hyFloat      BestCompress(unsigned char theAlpha, long triggerSize = 25);
 
     _String*        Decompress (void);
 

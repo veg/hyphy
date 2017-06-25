@@ -46,7 +46,7 @@ class _Constant : public _MathObject {
 
 public:
 
-    _Constant (hy_float);
+    _Constant (hyFloat);
     _Constant (_String&);
     _Constant (void);
     ~_Constant (void) {}
@@ -94,7 +94,7 @@ public:
     virtual _PMathObj LOr           (_PMathObj);
     virtual _PMathObj LNot          ();
     virtual _PMathObj Random        (_PMathObj);
-    virtual hy_float
+    virtual hyFloat
     Value       (void);
     virtual _PMathObj FormatNumberString
     (_PMathObj,_PMathObj);
@@ -109,12 +109,12 @@ public:
     virtual   unsigned long    ObjectClass           (void) {
         return NUMBER;
     }
-    virtual   void    SetValue              (hy_float pl) {
+    virtual   void    SetValue              (hyFloat pl) {
         theValue = pl;
     }
 
 public:
-    hy_float theValue;
+    hyFloat theValue;
 };
 
 #endif

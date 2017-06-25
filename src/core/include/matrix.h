@@ -73,7 +73,7 @@ struct      _CompiledMatrixData {
     _SimpleFormulaDatum * theStack,
                         * varValues;
 
-    hy_float         * formulaValues;
+    hyFloat         * formulaValues;
 
     long      * formulaRefs;
     bool        has_volatile_entries;
@@ -121,7 +121,7 @@ public:
 
     _Matrix ( _List const &);                         //make string matrix from a list
 
-    _Matrix (hy_float *, unsigned long, unsigned long);
+    _Matrix (hyFloat *, unsigned long, unsigned long);
     /*
         20110616 SLKP
             added a simple constructor from a list of floating point values
@@ -214,7 +214,7 @@ public:
 
     _Matrix     operator * (_Matrix&);          // multiplication operation on matrices
 
-    _Matrix     operator * (hy_float);        // multiplication of a matrix by a number
+    _Matrix     operator * (hyFloat);        // multiplication of a matrix by a number
 
     void        operator += (_Matrix&);         // add/store operation on matrices
 
@@ -222,11 +222,11 @@ public:
 
     void        operator *= (_Matrix&);         // multiply/store operation on matrices
 
-    void        operator *= (hy_float);       // multiply by a #/store operation on matrices
+    void        operator *= (hyFloat);       // multiply by a #/store operation on matrices
 
-    void        AplusBx  (_Matrix&, hy_float); // A = A + B*x (scalar)
+    void        AplusBx  (_Matrix&, hyFloat); // A = A + B*x (scalar)
 
-    void        Sqr         (hy_float* _hprestrict_);
+    void        Sqr         (hyFloat* _hprestrict_);
     // square the matrix; takes a scratch vector
     // of at least lDim doubles
 
@@ -240,7 +240,7 @@ public:
     _Matrix*    NeighborJoin                    (bool);
     _Matrix*    MakeTreeFromParent              (long);
     _Matrix*    ExtractElementsByEnumeration    (_SimpleList*,_SimpleList*,bool=false);
-    _Matrix*    SimplexSolve                    (hy_float = 1.e-6);
+    _Matrix*    SimplexSolve                    (hyFloat = 1.e-6);
 
 
 //  void        SqrStrassen (void);
@@ -260,17 +260,17 @@ public:
     // if it is a vector - returns the Euclidean length
     // otherwise returns the largest element
 
-    hy_float  AbsValue                        (void);
+    hyFloat  AbsValue                        (void);
     virtual     _PMathObj Log                   (void);
     // return the matrix of logs of every matrix element
     
     void        SwapRows (const long, const long);
     long        CompareRows (const long, const long);
 
-    hy_float  operator () (long, long);       // read access to an element in a matrix
-    hy_float& operator [] (long);             // read/write access to an element in a matrix
+    hyFloat  operator () (long, long);       // read access to an element in a matrix
+    hyFloat& operator [] (long);             // read/write access to an element in a matrix
 
-    void        Store               (long, long, hy_float);                       // write access to an element in a matrix
+    void        Store               (long, long, hyFloat);                       // write access to an element in a matrix
     void        StoreObject         (long, long, _MathObject*, bool dup = false);
     void        StoreObject         (long,  _MathObject*,bool dup = false);
     void        StoreFormula        (long, long, _Formula&, bool = true, bool = true);
@@ -289,25 +289,25 @@ public:
     // an auxiliary function which duplicates a matrix
 
 
-    hy_float          MaxElement      (char doSum = 0, long * = nil);
+    hyFloat          MaxElement      (char doSum = 0, long * = nil);
     // SLKP 20101022: added an option to return the sum of all elements as an option (doSum = 1) or
     // the sum of all absolute values (doSum == 2)
     // returns the largest element's abs value for given matrix
     // SLKP 20110523: added an option (doSum == 3) to return the largest element (no abs value)
     // for run modes 0 and 3, if the 2nd argument is non-nil, the index of the winning element will be stored
 
-    hy_float          MinElement      (char doAbs = 1, long * = nil);
+    hyFloat          MinElement      (char doAbs = 1, long * = nil);
 
     // SLKP 20110620: added the 2nd argument to optionally store the index of the smallest element
     //              : added the option to NOT do absolute values
     // returns the smallest, non-zero element value for given matrix
 
-    bool                IsMaxElement    (hy_float);
+    bool                IsMaxElement    (hyFloat);
     // true if there is an elem abs val of which is greater than the arg
     // false otherwise
 
 
-    hy_float              MaxRelError(_Matrix&);
+    hyFloat              MaxRelError(_Matrix&);
 
 //  friend      _Matrix     IterateStrassen (_Matrix&, _Matrix&);
     // used in Strassen Squaring
@@ -322,7 +322,7 @@ public:
 
     bool        AmISparse               (void);
 
-    hy_float  ExpNumberOfSubs         (_Matrix*,bool);
+    hyFloat  ExpNumberOfSubs         (_Matrix*,bool);
 
     virtual     bool        IsVariable  (void) {
         return storageType != _NUMERICAL_TYPE;
@@ -340,7 +340,7 @@ public:
     void        ExportMatrixExp         (_Matrix*, FILE*);
     bool        ImportMatrixExp         (FILE*);
 
-    hy_float  FisherExact             (hy_float, hy_float, hy_float);
+    hyFloat  FisherExact             (hyFloat, hyFloat, hyFloat);
 
     virtual     bool        HasChanged  (bool = false);
     // have any variables which are referenced by the elements changed?
@@ -356,10 +356,10 @@ public:
         return lDim;
     }
     long        GetMySize                   (void) {
-        return sizeof(_Matrix)+lDim*(storageType==_NUMERICAL_TYPE?sizeof(hy_float):sizeof(hy_pointer));
+        return sizeof(_Matrix)+lDim*(storageType==_NUMERICAL_TYPE?sizeof(hyFloat):sizeof(hyPointer));
     }
 
-    void        PopulateConstantMatrix      (const hy_float);
+    void        PopulateConstantMatrix      (const hyFloat);
     /* SLKP 20090818
             fill out a numeric matrix with a fixed value
             if the matrix is sparse, only will out the non-void entries
@@ -406,7 +406,7 @@ public:
     void        MakeMeSimple                (void);
     void        MakeMeGeneral               (void);
     void        ConvertToSimpleList         (_SimpleList&);
-    void        CompressSparseMatrix        (bool, hy_float*);
+    void        CompressSparseMatrix        (bool, hyFloat*);
     //prepare the transition probs matrix for exponentiation
 
     long        Hash (long, long);                  // hashing function, which finds matrix
@@ -416,10 +416,10 @@ public:
     // if element was not found, the number returned
     // indicates the first available slot
 
-    hy_float*       fastIndex(void)  const {
-        return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(hy_float*)theData:nil;
+    hyFloat*       fastIndex(void)  const {
+        return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(hyFloat*)theData:nil;
     }
-    inline            hy_float&         directIndex(long k)   {
+    inline            hyFloat&         directIndex(long k)   {
         return theData[k];
     }
     long              MatrixType (void) {
@@ -459,7 +459,7 @@ public:
      */
     /*---------------------------------------------------*/
 
-    hy_float   *theData;                            // matrix elements
+    hyFloat   *theData;                            // matrix elements
 
 
 protected:
@@ -473,8 +473,8 @@ protected:
 
 private:
 
-    hy_float  computePFDR         (hy_float, hy_float);
-    void        InitMxVar           (_SimpleList&   , hy_float);
+    hyFloat  computePFDR         (hyFloat, hyFloat);
+    void        InitMxVar           (_SimpleList&   , hyFloat);
     bool        ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);
 
     _PMathObj   PathLogLikelihood   (_PMathObj);
@@ -495,10 +495,10 @@ private:
     //bool      IsAStringMatrix     (void);
     void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
     // aux arithmetic rountines
-    bool        AddWithThreshold    (_Matrix&, hy_float);
-    void        RowAndColumnMax     (hy_float&, hy_float&, hy_float* = nil);
+    bool        AddWithThreshold    (_Matrix&, hyFloat);
+    void        RowAndColumnMax     (hyFloat&, hyFloat&, hyFloat* = nil);
     void        Subtract            (_Matrix&, _Matrix&);
-    void        Multiply            (_Matrix&, hy_float);
+    void        Multiply            (_Matrix&, hyFloat);
     void        Multiply            (_Matrix&, _Matrix&);
     bool        IsNonEmpty          (long) const;
     // checks to see if the i-th position in the storage is non-empty
@@ -507,7 +507,7 @@ private:
     long        HashBack            (long);
     // hashing function, which finds matrix
     // physical element given local storage
-    void        MultbyS             (_Matrix&,bool,_Matrix* = nil, hy_float* = nil);
+    void        MultbyS             (_Matrix&,bool,_Matrix* = nil, hyFloat* = nil);
     // internal function used in exponentiating sparse matrices
 
     void        Balance             (void);  // perform matrix balancing; i.e. a norm reduction which preserves the eigenvalues
@@ -546,8 +546,8 @@ private:
         return ((_MathObject**)theData)[ind]!=nil;
     }
 
-    void        SimplexHelper1          (long, _SimpleList&, long, bool, long&, hy_float&);
-    void        SimplexHelper2          (long&, long, hy_float);
+    void        SimplexHelper1          (long, _SimpleList&, long, bool, long&, hyFloat&);
+    void        SimplexHelper2          (long&, long, hyFloat);
     void        SimplexHelper3          (long,long,long,long);
     //  helper functions for SimplexSolver
 
@@ -561,7 +561,7 @@ private:
                 switchThreshold;                 // maximum percentage of non-zero elements
     // to keep the matrix sparse
 
-    static      hy_float truncPrecision;
+    static      hyFloat truncPrecision;
 
     // matrix exp truncation precision
 
@@ -609,7 +609,7 @@ public:
   
     void   Trim             (void);
   
-    long   Store            (hy_float);
+    long   Store            (hyFloat);
     long   GetUsed          (void) const {
         return used;
     }
@@ -618,7 +618,7 @@ public:
     }
 
     void    operator <<     (const _SimpleList&);
-    _GrowingVector&    operator <<     (hy_float p) {
+    _GrowingVector&    operator <<     (hyFloat p) {
         Store (p);
         return *this;
     }
@@ -668,13 +668,13 @@ public:
     unsigned long   Index           (_SimpleList&);
     // return an index into the linear array pointed to by the K-tuple in the argument (ASSUMED to be valid here!)
 
-    hy_float      DirectIndex     (unsigned long);
+    hyFloat      DirectIndex     (unsigned long);
     // retrieve a value using a direct index for the K-tuple (computed by Index)
 
-    unsigned long   Store           (hy_float, _SimpleList&);
+    unsigned long   Store           (hyFloat, _SimpleList&);
     // associate a value with the K-tuple; returns the direct index for the value
 
-    hy_float      Retrieve        (_SimpleList&);
+    hyFloat      Retrieve        (_SimpleList&);
     // return the value associated with the K-tuple
 
     void            IndexToTuple    (unsigned long, _SimpleList&);

@@ -80,7 +80,7 @@ namespace hyphy_global_objects {
     setParameter (WrapInNamespace ("species", &name), filter.NumberSpecies());
     setParameter (WrapInNamespace ("sites", &name), filter.GetSiteCountInUnits());
     
-    hy_float size_cutoff = hy_env::EnvVariableGetDefaultNumber(hy_env::dataset_save_memory_size);
+    hyFloat size_cutoff = hy_env::EnvVariableGetDefaultNumber(hy_env::dataset_save_memory_size);
     if (filter.GetSiteCount() < size_cutoff) {
       setParameter(WrapInNamespace("site_map", &name), new _Matrix (filter.theOriginalOrder), nil, false);
       setParameter(WrapInNamespace("site_freqs", &name), new _Matrix (filter.theFrequencies), nil, false);
@@ -292,7 +292,7 @@ namespace hyphy_global_objects {
   
   long    StoreDataFilter (_String const& name, _DataSetFilter* object, bool handle_errors) {
     
-    if (name.IsValidIdentifier(true)) {
+    if (name.IsValidIdentifier(fIDAllowCompound)) {
       long exists_already = FindDataFilter(name);
       
       /*printf ("[StoreDataFilter] %s %d\n", name.sData, exists_already);
@@ -463,7 +463,7 @@ namespace hyphy_global_objects {
       long counter = 0;
       for (unsigned long name_index = 0; name_index < theList->lLength; name_index++) {
         _String *thisName = (_String*)theList->GetItem(name_index);
-        if (thisName && thisName->sLength) {
+        if (thisName && !thisName->empty()) {
           if (name_index - counter == index) {
             return thisName;
           }

@@ -42,6 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "hy_strings.h"
+#include "hy_string_buffer.h"
 
 enum StringFileWrapperConstants {
     kStringFileWrapperNewLine,
@@ -56,7 +57,7 @@ class StringFileWrapper {
    */
 public:
   
-  StringFileWrapper (_String * string, FILE * file);
+  StringFileWrapper (_StringBuffer * string, FILE * file);
   /** Create a wrapper around around a string / file pair 
       If both arguments are null, the wrapper will simply "eat" the 
       bufferring operations (/dev/null equivalent). If both arguments
@@ -106,7 +107,7 @@ public:
    */
   
 private:
-  _String * string_buffer;
+  _StringBuffer * string_buffer;
   FILE*     file_buffer;
   
 };

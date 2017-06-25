@@ -61,7 +61,7 @@ namespace hy_env {
     }
 
     /*********************************************************************************/
-    hy_float       EnvVariableGetDefaultNumber (_String const& name) {
+    hyFloat       EnvVariableGetDefaultNumber (_String const& name) {
         _PMathObj default_value = (_PMathObj)EnvVariableGetDefault (name, NUMBER);
         if (default_value) {
             return default_value->Value();
@@ -144,6 +144,8 @@ _String const
     
     false_const                                     ("FALSE"),
         // the FALSE (0.0) constant
+    kGetStringFromUser                              ("PROMPT_FOR_STRING"),
+        // [LEGACY] placeholder for prompting the user for a string value
     last_file_path                                  ("LAST_FILE_PATH"),
         // is set by various file read/write commands (fscanf, fprintf, dialog prompts)
         // to contain the **absolute** path to the last file interacted with

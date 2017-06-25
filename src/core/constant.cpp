@@ -59,15 +59,15 @@ _Formula *chi2 = nil,
 
 long randomCount = 0;
 
-extern hy_float machineEps;
-extern hy_float tolerance;
+extern hyFloat machineEps;
+extern hyFloat tolerance;
 
 long            lastMatrixDeclared = -1,
                 dummyVariable1,
                 dummyVariable2,
                 expressionsParsed = 0;
 
-hy_float gammaCoeff [7] = {
+hyFloat gammaCoeff [7] = {
     2.50662827463100050,
     190.9551718944012,
     -216.8366818451899,
@@ -77,7 +77,7 @@ hy_float gammaCoeff [7] = {
     -0.00001345152485367085
 };
 
-hy_float lngammaCoeff [6] = {
+hyFloat lngammaCoeff [6] = {
     76.18009172947146,
     -86.50532032941677,
     24.01409824083091,
@@ -87,7 +87,7 @@ hy_float lngammaCoeff [6] = {
 };
 
 //__________________________________________________________________________________
-_Constant::_Constant (hy_float value) {
+_Constant::_Constant (hyFloat value) {
     theValue = value;
 }
 //__________________________________________________________________________________
@@ -114,7 +114,7 @@ BaseRef _Constant::makeDynamic (void) const{
 //__________________________________________________________________________________
 
 _Constant::_Constant (_String& s) {
-    theValue = atof (s.sData);
+    theValue = s.to_float();
 }
 
 //__________________________________________________________________________________
@@ -126,7 +126,7 @@ _Constant::_Constant (void) : theValue(0.0) {
 //}
 
 //__________________________________________________________________________________
-hy_float    _Constant::Value (void) {
+hyFloat    _Constant::Value (void) {
     return theValue;
 }
 //__________________________________________________________________________________
@@ -137,16 +137,16 @@ BaseRef _Constant::toStr(unsigned long) {
 //__________________________________________________________________________________
 _PMathObj _Constant::Add (_PMathObj theObj) {
     if (theObj->ObjectClass() == STRING) {
-        return new _Constant ((theValue+((_FString*)theObj)->theString->toNum()));
+        return new _Constant (theValue+((_FString*)theObj)->theString->to_float());
     } else {
-        return new _Constant ((theValue+((_Constant*)theObj)->theValue));
+        return new _Constant (theValue+((_Constant*)theObj)->theValue);
     }
 }
 
 //__________________________________________________________________________________
 _PMathObj _Constant::Sub (_PMathObj theObj) {
     //if (theObj) return nil;
-    return new _Constant ((theValue-((_Constant*)theObj)->theValue));
+    return new _Constant (theValue-((_Constant*)theObj)->theValue);
     //else
     //  return  nil;
     //return       (_PMathObj)result.makeDynamic();
@@ -203,7 +203,7 @@ _PMathObj _Constant::Raise (_PMathObj theObj) {
     return nil;
   }
   
-  hy_float    base  = Value(),
+  hyFloat    base  = Value(),
   expon = theObj->Value();
   
   if (base>0.0) {
@@ -231,7 +231,7 @@ _PMathObj _Constant::Random (_PMathObj upperB)
         randomCount++;
     }
     
-    hy_float l = theValue,
+    hyFloat l = theValue,
              u = ((_Constant*)upperB)->theValue,
              r = l;
     
@@ -345,7 +345,7 @@ _PMathObj _Constant::Arctan (void)
 //__________________________________________________________________________________
 _PMathObj _Constant::Gamma (void)
 {
-    hy_float theV = theValue>=1.0?theValue:2-theValue, result = gammaCoeff[0], temp = theV;
+    hyFloat theV = theValue>=1.0?theValue:2-theValue, result = gammaCoeff[0], temp = theV;
 
     for (long i=1; i<7; i++, temp+=1.0) {
         result+=gammaCoeff[i]/temp;
@@ -370,7 +370,7 @@ _PMathObj _Constant::Gamma (void)
 _PMathObj _Constant::LnGamma (void)
 {
     // obtained from Numerical Recipes in C, p. 214 by afyp, February 7, 2007
-    hy_float  x, y, tmp, ser;
+    hyFloat  x, y, tmp, ser;
 
     y = x = theValue;
     tmp = x + 5.5;
@@ -440,7 +440,7 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
         _Constant    *ac = (_Constant*)arg1,
                      *bc = (_Constant*)arg2;
 
-        hy_float  a = ac->Value(),
+        hyFloat  a = ac->Value(),
                     b = bc->Value(),
                     x = theValue,
                     aa,
@@ -536,7 +536,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
         HandleApplicationError ("A non-numerical argument passed to IGamma(a,x)");
         return new _Constant (0.0);
     }
-    hy_float x = ((_Constant*)arg)->theValue, sum=0.0;
+    hyFloat x = ((_Constant*)arg)->theValue, sum=0.0;
     if (x>1e25) {
         x=1e25;
     } else if (x<0) {
@@ -550,7 +550,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
     if (x<=theValue+1) // use the series representation
         // IGamma (a,x)=exp(-x) x^a \sum_{n=0}^{\infty} \frac{\Gamma((a)}{\Gamma(a+1+n)} x^n
     {
-        hy_float term = 1.0/theValue, den = theValue+1;
+        hyFloat term = 1.0/theValue, den = theValue+1;
         long count = 0;
         while ((fabs(term)>=fabs(sum)*machineEps)&&(count<500)) {
             sum+=term;
@@ -561,7 +561,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
     } else // use the continue fraction representation
         // IGamma (a,x)=exp(-x) x^a 1/x+/1-a/1+/1/x+/2-a/1+/2/x+...
     {
-        hy_float lastTerm = 0, a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
+        hyFloat lastTerm = 0, a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
         for (long count = 1; count<500; count++) {
             an = count;
             ana = an - theValue;
@@ -592,7 +592,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
 //__________________________________________________________________________________
 _PMathObj _Constant::Erf (void)
 {
-    hy_float lV = theValue;
+    hyFloat lV = theValue;
     _Constant  half (.5), sq = (lV*lV);
     _PMathObj  IG = half.IGamma(&sq);
     lV = ((_Constant*)IG)->theValue;
@@ -606,7 +606,7 @@ _PMathObj _Constant::Erf (void)
 //__________________________________________________________________________________
 _PMathObj _Constant::ZCDF (void)
 {
-    hy_float lV = theValue;
+    hyFloat lV = theValue;
 
     _Constant  half (.5),
                sq (lV*lV/2);
@@ -627,10 +627,10 @@ _PMathObj _Constant::Time (void)
 {
     _Constant result;
     if (theValue<1.0) {
-        result.theValue = ((hy_float)clock()/CLOCKS_PER_SEC);
+        result.theValue = ((hyFloat)clock()/CLOCKS_PER_SEC);
     } else {
         time_t tt;
-        result.theValue = ((hy_float)time(&tt));
+        result.theValue = ((hyFloat)time(&tt));
     }
     return     (_PMathObj)result.makeDynamic();
 }
@@ -658,7 +658,7 @@ _PMathObj _Constant::Greater (_PMathObj theObj)
 //__________________________________________________________________________________
 _PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
 {
-    hy_float x = theValue, a = ((_Constant*)alpha)->theValue,
+    hyFloat x = theValue, a = ((_Constant*)alpha)->theValue,
                b = ((_Constant*)beta)->theValue, gd = exp(a * log(b) -b*x +(a-1)*log(x));
     _Constant * c = (_Constant*)alpha->Gamma();
     gd/=c->theValue;
@@ -669,7 +669,7 @@ _PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
 //__________________________________________________________________________________
 _PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta)
 {
-    hy_float     arg = theValue*((_Constant*)beta)->theValue;
+    hyFloat     arg = theValue*((_Constant*)beta)->theValue;
     /*if (arg==0)
     {
         _Constant zer (0);
@@ -737,7 +737,7 @@ _PMathObj _Constant::AreEqual (_PMathObj theObj)
         return nil;
     }
 
-    hy_float a = theValue,
+    hyFloat a = theValue,
                b = ((_Constant*)theObj)->theValue;
 
     if (a==0.0) {
@@ -752,7 +752,7 @@ _PMathObj _Constant::NotEqual (_PMathObj theObj)
     if (!theObj) {
         return nil;
     }
-    hy_float   a = theValue,
+    hyFloat   a = theValue,
                  b = ((_Constant*)theObj)->theValue;
 
     if (a==0.0) {

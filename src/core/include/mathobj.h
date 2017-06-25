@@ -114,7 +114,7 @@ public:
     virtual _MathObject* Type                          (void);
     virtual _MathObject* PlainTreeString(_MathObject*,_MathObject*) ;
     virtual _MathObject* FormatNumberString (_MathObject*,_MathObject*) ;
-    virtual hy_float   Value (void)              ;
+    virtual hyFloat   Value (void)              ;
     
     virtual _MathObject* Compute (void)            {
         return this;

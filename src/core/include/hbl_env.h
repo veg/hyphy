@@ -56,7 +56,7 @@ namespace hy_env {
      */
 
     
-    hy_float       EnvVariableGetDefaultNumber (_String const& name);
+    hyFloat       EnvVariableGetDefaultNumber (_String const& name);
     /**
      Look up the default value _numeric_ for a given env variable,
      
@@ -153,9 +153,10 @@ namespace hy_env {
           error_report_format_expression_string,
           error_report_format_expression_stack,
           error_report_format_expression_stdin,
-          status_bar_update_string
+          status_bar_update_string,
+          kGetStringFromUser;
 
     ;
-    
+  
     
 };

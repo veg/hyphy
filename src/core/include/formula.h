@@ -52,8 +52,8 @@ class _VariableContainer;
 
 
 union       _SimpleFormulaDatum {
-    hy_float value;
-    hy_pointer        reference;
+    hyFloat value;
+    hyPointer        reference;
 };
 
 
@@ -193,17 +193,17 @@ public:
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
-    hy_float  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
+    hyFloat  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
 
-    hy_float  Newton              (_Formula&, _Variable*,  hy_float, hy_float, hy_float);
-    hy_float  Newton              (_Formula&, hy_float, hy_float, hy_float, _Variable*);
-    hy_float  Newton              (_Variable*,  hy_float, hy_float, hy_float, hy_float);
-    hy_float  Newton              (_Variable*,hy_float, hy_float, hy_float);
+    hyFloat  Newton              (_Formula&, _Variable*,  hyFloat, hyFloat, hyFloat);
+    hyFloat  Newton              (_Formula&, hyFloat, hyFloat, hyFloat, _Variable*);
+    hyFloat  Newton              (_Variable*,  hyFloat, hyFloat, hyFloat, hyFloat);
+    hyFloat  Newton              (_Variable*,hyFloat, hyFloat, hyFloat);
 
-    hy_float  Brent               (_Variable*, hy_float, hy_float, hy_float = 1.e-7, _List* = nil, hy_float = 0.);
+    hyFloat  Brent               (_Variable*, hyFloat, hyFloat, hyFloat = 1.e-7, _List* = nil, hyFloat = 0.);
 
-    hy_float  Integral            (_Variable*,hy_float, hy_float, bool inifinite = false);
-    hy_float  MeanIntegral        (_Variable*,hy_float, hy_float, bool inifinite = false);
+    hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool inifinite = false);
+    hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool inifinite = false);
     _Formula*   Differentiate       (_String, bool = true, bool convert_from_tree = true);
     node<long>* InternalDifferentiate
     (node<long>*, long,_SimpleList&, _SimpleList&, _Formula&);

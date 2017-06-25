@@ -160,8 +160,8 @@ class _SimpleList:public BaseObj {
         * @param j The second index to compare
         * @return -1 if i<j, 0 if i==j, or 1 if i>j 
         */
-        virtual long Compare(long,long) const;
-        virtual long Compare(BaseObj const*,long) const;
+        virtual hyComparisonType Compare(long,long) const;
+        virtual hyComparisonType Compare(BaseObj const*,long) const;
 
         long CountCommonElements(_SimpleList const&, bool=false) const;
 

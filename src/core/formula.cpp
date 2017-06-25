@@ -51,11 +51,11 @@
 using namespace hy_global;
 
 //Constants
-extern hy_float twoOverSqrtPi;
+extern hyFloat twoOverSqrtPi;
 
 
-extern hy_float machineEps;
-extern hy_float tolerance;
+extern hyFloat machineEps;
+extern hyFloat tolerance;
 
 extern _String intPrecFact;
 extern _String intMaxIter;
@@ -318,7 +318,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
   
     long        prune_this_child = -1;
 
-    hy_float  theVal      = 0.0;
+    hyFloat  theVal      = 0.0;
     _PMathObj   newVal      = nil;
 
 
@@ -642,12 +642,12 @@ bool     _Formula::IsEmpty(void) const {
 }
 
 //__________________________________________________________________________________
-hy_float   _Formula::Newton(_Formula& derivative, _Variable* unknown, hy_float targetValue, hy_float left, hy_float right)
+hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat targetValue, hyFloat left, hyFloat right)
 // find a root of the formulaic expression, using Newton's method, given the derivative and a bracketed root.
 // will alternate between bisections and Newton iterations based on what is fatser
 {
   // check that there is indeed a sign change on the interval
-  hy_float    func_left, func_right, // keeps track of function values in the current interval, [left,right]
+  hyFloat    func_left, func_right, // keeps track of function values in the current interval, [left,right]
   root_guess, func_root_guess,
   lastCorrection = 100.,
   newCorrection;
@@ -682,7 +682,7 @@ hy_float   _Formula::Newton(_Formula& derivative, _Variable* unknown, hy_float t
         return root_guess;
       }
       // get the correction term from the derivative
-      hy_float df_dx = derivative.Compute()->Value(),
+      hyFloat df_dx = derivative.Compute()->Value(),
       adjusted_root_guess;
       
       useNewton = true;
@@ -731,12 +731,12 @@ hy_float   _Formula::Newton(_Formula& derivative, _Variable* unknown, hy_float t
 
 
 //__________________________________________________________________________________
-hy_float   _Formula::Brent(_Variable* unknown, hy_float a, hy_float b, hy_float tol, _List* storeEvals, hy_float rhs)
+hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol, _List* storeEvals, hyFloat rhs)
 // find a root of the formulaic expression, using Brent's method and a bracketed root.
 {
     // check that there is indeed a sign change on the interval
 
-    hy_float  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
+    hyFloat  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
                 c = b;
 
     min1 = unknown->GetLowerBound();
@@ -972,14 +972,14 @@ hy_float   _Formula::Brent(_Variable* unknown, hy_float a, hy_float b, hy_float 
     return    b;
 }
 //__________________________________________________________________________________
-hy_float   _Formula::Newton(_Formula& derivative, hy_float targetValue, hy_float left, hy_float max_right, _Variable* unknown)
+hyFloat   _Formula::Newton(_Formula& derivative, hyFloat targetValue, hyFloat left, hyFloat max_right, _Variable* unknown)
 // given a monotone function and a left bracket bound, found the right bracket bound and solve
 {
     // check that there is indeed a sign change on the interval
     _Constant   dummy;
     dummy.SetValue (left);
     unknown->SetValue(&dummy);
-    hy_float  t1 = Compute()->Value(), right = left, t2, step = 1.0;
+    hyFloat  t1 = Compute()->Value(), right = left, t2, step = 1.0;
 
     if (max_right-left < step * 100) {
         step = (max_right-left)/100;
@@ -1012,11 +1012,11 @@ hy_float   _Formula::Newton(_Formula& derivative, hy_float targetValue, hy_float
 }
 
 //__________________________________________________________________________________
-hy_float   _Formula::Newton(_Variable* unknown, hy_float targetValue, hy_float x_min, hy_float left, hy_float right)
+hyFloat   _Formula::Newton(_Variable* unknown, hyFloat targetValue, hyFloat x_min, hyFloat left, hyFloat right)
 {
     // check that there is indeed a sign change on the interval
     _Constant   dummy;
-    hy_float  t1,t2,t3,t4,t5,lastCorrection = 100, newCorrection;
+    hyFloat  t1,t2,t3,t4,t5,lastCorrection = 100, newCorrection;
     _String     msg;
     t1 =Integral(unknown, x_min, left)-targetValue;
     if (t1==0.0) {
@@ -1090,11 +1090,11 @@ hy_float   _Formula::Newton(_Variable* unknown, hy_float targetValue, hy_float x
 }
 
 //__________________________________________________________________________________
-hy_float   _Formula::Newton( _Variable* unknown, hy_float targetValue,hy_float x_min, hy_float left)
+hyFloat   _Formula::Newton( _Variable* unknown, hyFloat targetValue,hyFloat x_min, hyFloat left)
 // given a monotone function and a left bracket bound, found the right bracket bound and solve
 {
     // check that there is indeed a sign change on the interval
-    hy_float  t1 = Integral(unknown, x_min, left), right = left, t2, step = 1.0;
+    hyFloat  t1 = Integral(unknown, x_min, left), right = left, t2, step = 1.0;
     do {
         right += step;
         t2 = Integral(unknown, right-step, right);
@@ -1112,11 +1112,11 @@ hy_float   _Formula::Newton( _Variable* unknown, hy_float targetValue,hy_float x
 
 }
 
-hy_float   _Formula::Integral(_Variable* dx, hy_float left, hy_float right, bool infinite)
+hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool infinite)
 // uses Romberg's intergation method
 {
     if (infinite) { // tweak "right" here
-        hy_float value = 1.0, step = 1.0, right1=-1;
+        hyFloat value = 1.0, step = 1.0, right1=-1;
         right = left;
         while (value>machineEps) {
             right+=step;
@@ -1142,19 +1142,19 @@ hy_float   _Formula::Integral(_Variable* dx, hy_float left, hy_float right, bool
         }
     }
   
-    hy_float       localPrecisionFactor;
+    hyFloat       localPrecisionFactor;
     long             localIntegrationLoops;
   
     checkParameter (intPrecFact,localPrecisionFactor,integrationPrecisionFactor);
     checkParameter (intMaxIter, localIntegrationLoops,maxRombergSteps);
 
-    hy_float ss,
+    hyFloat ss,
                dss,
                *s,
                *h;
 
-    s = new hy_float [(long)maxRombergSteps];
-    h = new hy_float [(long)(maxRombergSteps+1)];
+    s = new hyFloat [(long)maxRombergSteps];
+    h = new hyFloat [(long)(maxRombergSteps+1)];
 
     h[0]=1.0;
 
@@ -1165,8 +1165,8 @@ hy_float   _Formula::Integral(_Variable* dx, hy_float left, hy_float right, bool
                  changingVars,
                  idxMap;
 
-    hy_float   * ic = new hy_float[interpolateSteps],
-    * id = new hy_float[interpolateSteps];
+    hyFloat   * ic = new hyFloat[interpolateSteps],
+    * id = new hyFloat[interpolateSteps];
 
     _SimpleFormulaDatum
     * stack = nil,
@@ -1235,7 +1235,7 @@ hy_float   _Formula::Integral(_Variable* dx, hy_float left, hy_float right, bool
 }
 
 //__________________________________________________________________________________
-hy_float   _Formula::MeanIntegral(_Variable* dx, hy_float left, hy_float right, bool infinite) {
+hyFloat   _Formula::MeanIntegral(_Variable* dx, hyFloat left, hyFloat right, bool infinite) {
     _Formula newF;
     newF.Duplicate(this);
     newF.theFormula < new _Operation (true, *(dx->GetName())) < new _Operation ("*", 2);
@@ -1720,7 +1720,7 @@ void _Formula::ConvertFromSimple (_SimpleList& variableIndex)
 }
 
 //__________________________________________________________________________________
-hy_float _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues)
+hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues)
 {
     if (!theFormula.lLength) {
         return 0.0;
@@ -1739,8 +1739,8 @@ hy_float _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatu
             } else {
                 stackTop--;
                 if (thisOp->numberOfTerms==2) {
-                    hy_float  (*theFunc) (hy_float, hy_float);
-                    theFunc = (hy_float(*)(hy_float,hy_float))thisOp->opCode;
+                    hyFloat  (*theFunc) (hyFloat, hyFloat);
+                    theFunc = (hyFloat(*)(hyFloat,hyFloat))thisOp->opCode;
                     if (stackTop<1L) {
                         HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow.)", true);
                         return 0.0;
@@ -1749,8 +1749,8 @@ hy_float _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatu
                 } else {
                   switch (thisOp->numberOfTerms) {
                     case -2 : {
-                        hy_float  (*theFunc) (hy_pointer,hy_float);
-                        theFunc = (hy_float(*)(hy_pointer,hy_float))thisOp->opCode;
+                        hyFloat  (*theFunc) (hyPointer,hyFloat);
+                        theFunc = (hyFloat(*)(hyPointer,hyFloat))thisOp->opCode;
                         if (stackTop<1L) {
                             HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow.)", true);
                             return 0.0;
@@ -1759,8 +1759,8 @@ hy_float _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatu
                         break;
                       }
                     case -3 : {
-                      void  (*theFunc) (hy_pointer,hy_float,hy_float);
-                      theFunc = (void(*)(hy_pointer,hy_float,hy_float))thisOp->opCode;
+                      void  (*theFunc) (hyPointer,hyFloat,hyFloat);
+                      theFunc = (void(*)(hyPointer,hyFloat,hyFloat))thisOp->opCode;
                       if (stackTop != 2 || i != theFormula.lLength - 1) {
                         HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)", true);
                         
@@ -1772,8 +1772,8 @@ hy_float _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatu
                       break;
                     }
                     default: {
-                        hy_float  (*theFunc) (hy_float);
-                        theFunc = (hy_float(*)(hy_float))thisOp->opCode;
+                        hyFloat  (*theFunc) (hyFloat);
+                        theFunc = (hyFloat(*)(hyFloat))thisOp->opCode;
                         stack[stackTop].value = (*theFunc)(stack[stackTop].value);
                         ++stackTop;
                     }
@@ -1842,7 +1842,7 @@ bool _Formula::HasChanged (bool ingoreCats) {
         } else if (thisOp->numberOfTerms<0L) {
             dataID = -thisOp->numberOfTerms-2;
             if (IsBFFunctionIndexValid (dataID)) {
-                if (GetBFFunctionType (dataID) == BL_FUNCTION_SKIP_UPDATE) {
+                if (GetBFFunctionType (dataID) == kBLFunctionSkipUpdate) {
                     continue;
                 }
             }

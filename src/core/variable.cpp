@@ -309,7 +309,7 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
 }
 
 //__________________________________________________________________________________
-void  _Variable::SetValue (hy_float new_value) {
+void  _Variable::SetValue (hyFloat new_value) {
 // set the value of the var
   this->SetValue (new _Constant (new_value), false);
 }
@@ -354,7 +354,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
                 }
             }
             for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
-                if (((_String*)likeFuncNamesList(i))->sLength) {
+                if (((_String*)likeFuncNamesList(i))->nonempty()) {
                     ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(theIndex);
                 }
 
@@ -408,7 +408,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 }
 
 //__________________________________________________________________________________
-void  _Variable::SetNumericValue (hy_float v) // set the value of the var to a number
+void  _Variable::SetNumericValue (hyFloat v) // set the value of the var to a number
 {
     //hasBeenChanged = true;
     if (varFlags & HY_VARIABLE_COMPUTING) {
@@ -431,12 +431,12 @@ void  _Variable::SetNumericValue (hy_float v) // set the value of the var to a n
 
 //__________________________________________________________________________________
 
-void  _Variable::CheckAndSet (hy_float c, bool oob) // set the value of the var
+void  _Variable::CheckAndSet (hyFloat c, bool oob) // set the value of the var
 {
     //hasBeenChanged = true;
     varFlags &= HY_VARIABLE_SET;
     varFlags |= HY_VARIABLE_CHANGED;
-    hy_float l = lowerBound+1.0e-30,
+    hyFloat l = lowerBound+1.0e-30,
                u = upperBound-1.0e-30;
     if (c<l || c>u ) {
         if (oob) {
@@ -460,7 +460,7 @@ void  _Variable::CheckAndSet (hy_float c, bool oob) // set the value of the var
 }
 
 //__________________________________________________________________________________
-void    _Variable::SetBounds (hy_float lb, hy_float ub)
+void    _Variable::SetBounds (hyFloat lb, hyFloat ub)
 {
     lowerBound = lb;
     upperBound = ub;
@@ -621,7 +621,7 @@ void  _Variable::SetFormula (_Formula& theF) {
               }
               {
                   for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
-                      if (((_String*)likeFuncNamesList(i))->sLength) {
+                      if (((_String*)likeFuncNamesList(i))->nonempty()) {
                           ((_LikelihoodFunction*)likeFuncList(i))->UpdateIndependent(theIndex,isAConstant);
                       }
               }

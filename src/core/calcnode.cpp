@@ -77,7 +77,7 @@ using namespace hy_global;
 #define     DEGREES_PER_RADIAN          57.29577951308232286465
 
 
-extern      hy_float   explicitFormMatrixExponential;
+extern      hyFloat   explicitFormMatrixExponential;
 extern      _String      VerbosityLevelString,
             BRANCH_LENGTH_STENCIL;
 
@@ -87,14 +87,14 @@ long*       nonZeroNodes = nil,
 extern      long    likeFuncEvalCallCount;
 
 
-_HY_TREE_DEFINITION_PHASE           isDefiningATree = kTreeNotBeingDefined;
+hyTreeDefinitionPhase           isDefiningATree = kTreeNotBeingDefined;
 
 char        takeBranchLengths       = 0,
             autoSolveBranchLengths  = 0;
 
-hy_float  ignoringInternalNames   = 0.0;
+hyFloat  ignoringInternalNames   = 0.0;
 
-hy_float  treeLayoutVert,
+hyFloat  treeLayoutVert,
             scalingLogConstant    = log (1.e300);
 
 _SimpleList convertedMatrixExpressionsL;
@@ -153,7 +153,7 @@ _String     expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
             eqWithoutReroot       = "Equal without rerooting",
             iNodePrefix;
 
-hy_float  _timesCharWidths[256]= { // Hardcoded relative widths of all 255 characters in the Times font, for the use of PSTreeString
+hyFloat  _timesCharWidths[256]= { // Hardcoded relative widths of all 255 characters in the Times font, for the use of PSTreeString
     0,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0,0.25098,0.721569,0.721569,0.721569,0,0.721569,0.721569,
     0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0,0.721569,0.721569,
     0.25098,0.333333,0.407843,0.501961,0.501961,0.831373,0.776471,0.180392,0.333333,0.333333,0.501961,0.564706,0.25098,0.333333,0.25098,0.278431,
@@ -186,9 +186,9 @@ _maxTimesCharWidth = 0.980392;
 
 //__________________________________________________________________________________
 
-hy_float  computeChordLength (hy_float l, hy_float angle, hy_float* maxCoord = nil)
+hyFloat  computeChordLength (hyFloat l, hyFloat angle, hyFloat* maxCoord = nil)
 {
-  hy_float sinV        = sin(angle),
+  hyFloat sinV        = sin(angle),
   cosV         = cos(angle);
   
   if (maxCoord) {
@@ -399,7 +399,7 @@ void    _CalcNode::SetCodeBase (int codeBase)
             if (theProbs) {
                 delete theProbs;
             }
-            theProbs = new hy_float [codeBase];
+            theProbs = new hyFloat [codeBase];
             cBase = codeBase;
             theProbs[0]=1.0;
         } else {
@@ -412,6 +412,27 @@ void    _CalcNode::SetCodeBase (int codeBase)
 void    _CalcNode::SetCompMatrix (long categID)
 {
     compExp = GetCompExp (categID);
+}
+
+//_______________________________________________________________________________________________
+
+hyFloat  _CalcNode::ProcessTreeBranchLength (_String const& branch_length) {
+  hyFloat res = -1.;
+  
+  if (!branch_length.empty()) {
+    if (branch_length.char_at(0UL)==':') {
+      res = branch_length.Cut(1L,-1L).to_float();
+    } else {
+      res = branch_length.to_float ();
+    }
+    
+    res = MAX (res, 1e-10);
+    if (res < 1e-10) {
+      res = 1e-10;
+    }
+  }
+  
+  return res;
 }
 
 //_______________________________________________________________________________________________
@@ -489,7 +510,7 @@ bool    _CalcNode::MatchSubtree (_CalcNode* mNode)
 
 //_______________________________________________________________________________________________
 
-hy_float  _CalcNode::ComputeBranchLength (void)
+hyFloat  _CalcNode::ComputeBranchLength (void)
 {
 
     if (theModel < 0) {
@@ -527,7 +548,7 @@ hy_float  _CalcNode::ComputeBranchLength (void)
         return Value();
     }
 
-    hy_float              weight = 1.0,
+    hyFloat              weight = 1.0,
                             result = 0.0;
 
     long                    categoryCounter,
@@ -560,9 +581,9 @@ hy_float  _CalcNode::ComputeBranchLength (void)
         }
 
         _Matrix*    theMx   = ComputeModelMatrix();
-        hy_float  expSubs = theMx->ExpNumberOfSubs (freqMx, mbf);
+        hyFloat  expSubs = theMx->ExpNumberOfSubs (freqMx, mbf);
 
-        hy_float divisor;
+        hyFloat divisor;
         checkParameter (largeMatrixBranchLengthDimension, divisor, 20.);
 
         if (theMx->GetHDim()>divisor) {
@@ -580,7 +601,7 @@ hy_float  _CalcNode::ComputeBranchLength (void)
 
 //_______________________________________________________________________________________________
 
-hy_float& _CalcNode::operator[] (unsigned long i)
+hyFloat& _CalcNode::operator[] (unsigned long i)
 {
     return theProbs [i];
 }
@@ -999,8 +1020,8 @@ BaseRef     _CalcNode::makeDynamic(void) const
     res->theValue = theValue;
     res->cBase = cBase;
     if (cBase) {
-        res->theProbs = new hy_float [cBase];
-        memcpy (res->theProbs, theProbs, sizeof(hy_float)*cBase);
+        res->theProbs = new hyFloat [cBase];
+        memcpy (res->theProbs, theProbs, sizeof(hyFloat)*cBase);
     } else {
         res->theProbs = nil;
     }
@@ -1118,7 +1139,7 @@ void    _TreeTopology::PreTreeConstructor (bool) {
 
 void    _TheTree::PostTreeConstructor (bool dupMe)
 {
-    hy_float acceptRTs = 0.0;
+    hyFloat acceptRTs = 0.0;
     checkParameter (acceptRootedTrees,acceptRTs, 0.0);
 
     DeleteObject (aCache->dataList);
@@ -1249,13 +1270,13 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
         node_iterator<long>  tree_iterator (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
       
         while (node<long>*topTraverser = tree_iterator.Next()) {
-            hy_float   nodeVal = top->compExp->theData[topTraverser->in_object];
+            hyFloat   nodeVal = top->compExp->theData[topTraverser->in_object];
             _String      nodeVS,
                          nodeName       (*(_String*)top->flatTree(topTraverser->in_object)),
                          nodeParams     (*(_String*)top->flatCLeaves(topTraverser->in_object));
 
-            if (!nodeName.IsValidIdentifier(false)) {
-                nodeName.ConvertToAnIdent (false);
+            if (!nodeName.IsValidIdentifier(fIDAllowFirstNumeric)) {
+              nodeName  = nodeName.ConvertToAnIdent (fIDAllowFirstNumeric);
             }
 
             if (nodeVal != 0.0) {
@@ -1267,7 +1288,7 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
         isDefiningATree         = kTreeNotBeingDefined;
         PostTreeConstructor      (false);
     } else {
-        HandleApplicationError ("Can't create an kEmptyString tree");
+        HandleApplicationError ("Can't create an empty tree");
         return;
     }
 }
@@ -1362,7 +1383,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames, _A
          nodeCount=0,
          lastNode;
     
-    hy_float      checkABL;
+    hyFloat      checkABL;
 
     checkParameter  (acceptBranchLengths, checkABL, 1.0);
     takeBranchLengths = !CheckEqual (checkABL, 0.0);
@@ -1604,10 +1625,10 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
         nodeName = iNodePrefix & number;
     } else {
         
-        if (!nodeName.IsValidIdentifier(false)) {
-            _String oldName (nodeName);
-            nodeName.ConvertToAnIdent();
-            ReportWarning (_String ("Automatically renamed ") & oldName & " to " & nodeName & " in order to create a valid HyPhy identifier");
+        if (!nodeName.IsValidIdentifier(fIDAllowFirstNumeric)) {
+            _String new_name = nodeName.ConvertToAnIdent(fIDAllowFirstNumeric);
+            ReportWarning (_String ("Automatically renamed ") & nodeName & " to " & new_name & " in order to create a valid HyPhy identifier");
+            nodeName = new_name;
         }
     }
     
@@ -1629,14 +1650,14 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
 
     }
 
-    _HY_TREE_DEFINITION_PHASE saveIDT = isDefiningATree;
+    hyTreeDefinitionPhase saveIDT = isDefiningATree;
     isDefiningATree = kTreeNodeBeingCreated;
     _CalcNode cNt (nodeName,node_parameters, 4, this, aCache);
     isDefiningATree = saveIDT;
     nodie->init (cNt.theIndex);
 
 
-    _Constant val (nodeValue.ProcessTreeBranchLength());
+    _Constant val (ProcessTreeBranchLength(nodeValue));
     
     if (nodeValue.Length() && takeBranchLengths) {
         if (cNt.iVariables && cNt.iVariables->lLength == 2) { // can assign default values
@@ -1666,7 +1687,7 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
 
                     if (expressionToSolveFor != nil) {
                         _Variable * solveForMe = LocateVar (cNt.iVariables->lData[1]);
-                        hy_float modelP = expressionToSolveFor->Brent (solveForMe,solveForMe->GetLowerBound(), solveForMe->GetUpperBound(), 1e-6, nil, val.Value());
+                        hyFloat modelP = expressionToSolveFor->Brent (solveForMe,solveForMe->GetLowerBound(), solveForMe->GetUpperBound(), 1e-6, nil, val.Value());
                         ReportWarning (_String("Branch parameter of ") & nodeName&" set to " & modelP);
                         LocateVar (cNt.iVariables->lData[0])->SetValue(new _Constant (modelP), false);
                         setDef = false;
@@ -1726,7 +1747,7 @@ bool    _TreeTopology::FinalizeNode (node<long>* nodie, long number , _String no
     flatTree          && & nodeName;
     flatCLeaves       && & node_parameters;
 
-    ((_GrowingVector*)compExp)->Store (nodeValue.ProcessTreeBranchLength());
+    ((_GrowingVector*)compExp)->Store (ProcessTreeBranchLength(nodeValue));
 
     nodeName        = kEmptyString;
     node_parameters = kEmptyString;
@@ -2150,7 +2171,7 @@ BaseRef     _TreeTopology::toStr (unsigned long) {
   _String     * res = new _String((unsigned long)128,true),
   num;
   
-  hy_float    skipILabels,
+  hyFloat    skipILabels,
   includeMSP;
   
   checkParameter (noInternalLabels, skipILabels, 0.0);
@@ -2300,7 +2321,7 @@ void _TheTree::SetUp (void) {
 
 
     if (cBase>0) {
-        marginalLikelihoodCache = (hy_float*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (hy_float)*cBase*system_CPU_count);
+        marginalLikelihoodCache = (hyFloat*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (hyFloat)*cBase*system_CPU_count);
     }
     nodeStates                  = (long*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (long)*system_CPU_count);
     nodeMarkers                 = (char*)MemAllocate (flatNodes.lLength*sizeof (char)*system_CPU_count);
@@ -2592,7 +2613,7 @@ const _List     _TreeTopology::RetrieveNodeNames (bool doTips, bool doInternals,
 
 //__________________________________________________________________________________
 
-void _TreeTopology::FindCOTHelper (node<long>* aNode, long parentIndex, _Matrix& distances, _Matrix& rootDistances, _Matrix& branchLengths, _List& childLists, _AVLListX& addressToIndexMap2, hy_float d)
+void _TreeTopology::FindCOTHelper (node<long>* aNode, long parentIndex, _Matrix& distances, _Matrix& rootDistances, _Matrix& branchLengths, _List& childLists, _AVLListX& addressToIndexMap2, hyFloat d)
 {
     long          myIndex     = addressToIndexMap2.GetXtra(addressToIndexMap2.Find((BaseRef)aNode)),
                   leafCount   = distances.GetVDim();
@@ -2608,7 +2629,7 @@ void _TreeTopology::FindCOTHelper (node<long>* aNode, long parentIndex, _Matrix&
 
     long ci2 = 0;
 
-    hy_float myLength = branchLengths.theData [myIndex];
+    hyFloat myLength = branchLengths.theData [myIndex];
 
     for (long ci = 0; ci < leafCount; ci++) {
         if (ci == childLeaves->lData[ci2]) {
@@ -2628,10 +2649,10 @@ void _TreeTopology::FindCOTHelper (node<long>* aNode, long parentIndex, _Matrix&
 
 //__________________________________________________________________________________
 
-void _TreeTopology::FindCOTHelper2 (node<long>* aNode, _Matrix& branchSpans, _Matrix& branchLengths, _AVLListX& addressToIndexMap2, node<long>* referrer, hy_float d)
+void _TreeTopology::FindCOTHelper2 (node<long>* aNode, _Matrix& branchSpans, _Matrix& branchLengths, _AVLListX& addressToIndexMap2, node<long>* referrer, hyFloat d)
 {
     long          myIndex     = aNode->parent?addressToIndexMap2.GetXtra(addressToIndexMap2.Find((BaseRef)aNode)):-1;
-    hy_float    myLength    = myIndex>=0?branchLengths.theData [myIndex]:0.0;
+    hyFloat    myLength    = myIndex>=0?branchLengths.theData [myIndex]:0.0;
 
     for (long ci = aNode->get_num_nodes(); ci; ci--) {
         node <long>* daChild = aNode->go_down (ci);
@@ -2659,7 +2680,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
     // Find the Center of the Tree (COT) location
     // using an L_p metric (L_2 works well)
   
-    hy_float         power           = p->Compute()->Value(),
+    hyFloat         power           = p->Compute()->Value(),
                        totalTreeLength = 0.0;
 
     _AssociativeList * resList = new _AssociativeList;
@@ -2714,7 +2735,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
       if (iterator->is_root()) {
         break;
       }
-      hy_float          myLength = GetBranchLength     (iterator);
+      hyFloat          myLength = GetBranchLength     (iterator);
       lengthToIndexMap.Insert (new _String(totalTreeLength), tIndex, false, true);
       totalTreeLength      += myLength;
 
@@ -2759,7 +2780,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
     for (long ci = theRoot->get_num_nodes(); ci; ci--) {
         long          childIndex = addressToIndexMap2.GetXtra(addressToIndexMap2.Find((BaseRef)theRoot->go_down (ci)));
         _SimpleList * childLeaves = (_SimpleList*)childLists(childIndex);
-        hy_float       myLength = branchLengths.theData[childIndex];
+        hyFloat       myLength = branchLengths.theData[childIndex];
         for (long ci2 = 0; ci2 < childLeaves->lLength; ci2++) {
             tIndex = childLeaves->lData[ci2];
             rootDistances.Store (0, tIndex, distances (childIndex, tIndex) + myLength);
@@ -2783,17 +2804,17 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
 
     tIndex                         = 0;         // stores the index of current min
 
-    hy_float  currentMin         = 1e100,
+    hyFloat  currentMin         = 1e100,
                 currentBranchSplit = 0;
 
 
     for (long ci = distances.GetHDim()-1; ci>=0; ci--) {
-        hy_float    T           = branchLengths.theData[ci];
+        hyFloat    T           = branchLengths.theData[ci];
         _SimpleList * childLeaves = (_SimpleList*)childLists(ci);
         long          ci2         = 0;
 
         if (CheckEqual (power,2.0)) {
-            hy_float    sumbT  = 0.,
+            hyFloat    sumbT  = 0.,
                           sumbT2 = 0.,
                           suma   = 0.,
                           suma2  = 0.;
@@ -2801,7 +2822,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
 
 
             for (long ci3 = 0; ci3 < leafCount; ci3++) {
-                hy_float tt = distances(ci,ci3);
+                hyFloat tt = distances(ci,ci3);
 
                 /*
                 printf ("%s->%s = %g\n", ttt2.sData, ((_String*)leafNames(ci3))->sData, tt);
@@ -2821,7 +2842,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
             }
 
 
-            hy_float tt = (sumbT-suma)/leafCount;/*(sumbT-suma)/leafCount*/;
+            hyFloat tt = (sumbT-suma)/leafCount;/*(sumbT-suma)/leafCount*/;
             if (tt < 0.0) {
                 tt = 0.;
             } else if (tt > T) {
@@ -2836,16 +2857,16 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
                 currentMin         = sumbT;
             }
         } else {
-            hy_float  step        = T>0.0?T*0.0001:0.1,
+            hyFloat  step        = T>0.0?T*0.0001:0.1,
                         currentT    = 0.;
 
             while (currentT<T) {
-                hy_float dTT = 0.0;
+                hyFloat dTT = 0.0;
 
                 ci2 = 0;
 
                 for (long ci3 = 0; ci3 < leafCount; ci3++) {
-                    hy_float tt = distances(ci,ci3);
+                    hyFloat tt = distances(ci,ci3);
                     if (ci3 == childLeaves->lData[ci2]) {
                         if (ci2 < childLeaves->lLength-1) {
                             ci2++;
@@ -2878,7 +2899,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
 
     FindCOTHelper2  (cotBranch, branchSpans, branchLengths, addressToIndexMap2, nil, currentBranchSplit-branchLengths.theData [tIndex]);
     if (cotBranch->parent) {
-        hy_float adjuster = branchLengths.theData [tIndex]-currentBranchSplit;
+        hyFloat adjuster = branchLengths.theData [tIndex]-currentBranchSplit;
         branchSpans.Store (branchCount+leafCount,1,adjuster);
         node <long>* cotParent = cotBranch->parent;
         if (cotParent->parent) {
@@ -2918,7 +2939,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
 
 
     for (long mxc=0; mxc <= branchCount+leafCount; mxc++) {
-        hy_float T0 =  branchSpans(mxc,0),
+        hyFloat T0 =  branchSpans(mxc,0),
                    T1 =  branchSpans(mxc,1);
 
         if (mxc<branchCount+leafCount) {
@@ -2934,7 +2955,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
                    k           = timeSplitsAVL.Next (startingPos,tcache);
 
         for (long pc = timeSplitsAVL.GetXtra (k); k>=0; k = timeSplitsAVL.Next (k,tcache), pc++) {
-            hy_float ub = ((_String*)(*((_List*)timeSplitsAVL.dataList))(k))->toNum();
+            hyFloat ub = ((_String*)(*((_List*)timeSplitsAVL.dataList))(k))->toNum();
             if (ub < T1 || CheckEqual (T1, ub)) {
                 cotCDFPoints.Store (pc,1,cotCDFPoints(pc,1)+1);
             } else {
@@ -2955,7 +2976,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
 
     //  sample  random branch placement
     if (totalTreeLength > 0.0) {
-        hy_float     sampler;
+        hyFloat     sampler;
         checkParameter (cotSamples, sampler, 0.0);
 
         tIndex = sampler;
@@ -2963,22 +2984,22 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
             _Matrix sampledDs  (tIndex, 1, false, true);
 
             for (long its = 0; its < tIndex; its ++) {
-                hy_float tSample = (genrand_real2 () * totalTreeLength);
+                hyFloat tSample = (genrand_real2 () * totalTreeLength);
                 _String nn = tSample;
                 long branchIndex = 0;
                 if (lengthToIndexMap.FindBest (&nn,branchIndex)<=0) {
                     branchIndex --;
                 }
 
-                hy_float    T         = branchLengths.theData[branchIndex];
+                hyFloat    T         = branchLengths.theData[branchIndex];
                 _SimpleList * childLeaves = (_SimpleList*)childLists(branchIndex);
 
-                hy_float dTT = 0.0;
+                hyFloat dTT = 0.0;
                 tSample -= ((_String*)(*(_List*)lengthToIndexMap.dataList)(branchIndex))->toNum();
 
                 long          ci2 = 0;
                 for (long ci3 = 0; ci3 < leafCount; ci3++) {
-                    hy_float tt = distances(branchIndex,ci3);
+                    hyFloat tt = distances(branchIndex,ci3);
                     if (ci3 == childLeaves->lData[ci2]) {
                         if (ci2 < childLeaves->lLength-1) {
                             ci2++;
@@ -3010,9 +3031,9 @@ _FString*    _TreeTopology::Compare (_PMathObj p)
 
     if (objClass==TREE || objClass==TOPOLOGY) {
         _String cmp = CompareTrees ((_TreeTopology*)p);
-        if (cmp.startswith (eqWithReroot)) {
+        if (cmp.BeginsWith (eqWithReroot)) {
             (*res->theString) = cmp.Cut(eqWithReroot.sLength + ((_TreeTopology*)p)->GetName()->sLength + 1, cmp.sLength-2);
-        } else if (cmp.startswith(eqWithoutReroot)) {
+        } else if (cmp.BeginsWith(eqWithoutReroot)) {
             (*res->theString) = _String (' ');
         }
     }
@@ -3778,7 +3799,7 @@ _PMathObj _TreeTopology::TipName (_PMathObj p) {
 
 //__________________________________________________________________________________
 _PMathObj _TreeTopology::BranchLength (_PMathObj p) {
-  hy_float resValue = HY_INVALID_RETURN_VALUE;
+  hyFloat resValue = HY_INVALID_RETURN_VALUE;
   
   if (p) {
     node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
@@ -4066,7 +4087,7 @@ void _TreeTopology::SubTreeString (node<long>* root, _String&res, bool allNames,
     }
     
     if (!iterator->is_root()) {
-      if (allNames || (!node_name.startswith (iNodePrefix))) {
+      if (allNames || (!node_name.BeginsWith (iNodePrefix))) {
         res << node_name;
       }
       PasteBranchLength (iterator,res,branchLengths);
@@ -4103,7 +4124,7 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
             res<<')';
             if (!firstTime) {
               _String node_name = GetNodeName (iterator);
-              if (!node_name.startswith(iNodePrefix)) {
+              if (!node_name.BeginsWith(iNodePrefix)) {
                 res<<node_name;
               }
             }
@@ -4150,7 +4171,7 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
 
 
 //__________________________________________________________________________________
-void            _TreeTopology::PasteBranchLength (node<long>* iterator, _String& res, long branchLengths, hy_float factor) const {
+void            _TreeTopology::PasteBranchLength (node<long>* iterator, _String& res, long branchLengths, hyFloat factor) const {
     if (branchLengths!=-1) {
         _String t;
         if (branchLengths==-2) {
@@ -4180,7 +4201,7 @@ void            _TreeTopology::GetBranchLength (node<long> * n, _String& r, bool
 }
 
 //__________________________________________________________________________________
-hy_float            _TreeTopology::GetBranchLength (node<long> * n) const {
+hyFloat            _TreeTopology::GetBranchLength (node<long> * n) const {
     return compExp->theData[n->in_object];
 }
 
@@ -4209,7 +4230,7 @@ void            _TheTree::GetBranchLength (node<long> * n, _String& r, bool getB
 }
 
 //__________________________________________________________________________________
-hy_float            _TheTree::GetBranchLength (node<long> * n) const {
+hyFloat            _TheTree::GetBranchLength (node<long> * n) const {
     return ((_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]))->ComputeBranchLength();
 }
 
@@ -4221,7 +4242,7 @@ void            _TreeTopology::GetBranchValue (node<long> *, _String& r) const{
 //__________________________________________________________________________________
 void            _TheTree::GetBranchValue (node<long> * n, _String& r) const
 {
-    hy_float t = ((_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]))->Value();
+    hyFloat t = ((_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]))->Value();
     if (t != -1.) {
         r = t;
     } else {
@@ -4295,7 +4316,7 @@ void            _TheTree::GetBranchVarValue (node<long> * n, _String& r, long id
         _String query = _String('.') & *LocateVar(idx)->GetName();
         for (long k = 0; k<travNode->iVariables->lLength; k+=2) {
             _Variable *localVar = LocateVar(travNode->iVariables->lData[k]);
-            if (localVar->GetName()->endswith (query)) {
+            if (localVar->GetName()->EndsWith (query)) {
                 r = _String(localVar->Value());
                 return;
             }
@@ -4349,7 +4370,7 @@ void    _TheTree::AlignNodes (node<nodeCoord>* theNode) const {
         theNode->in_object.v = (theNode->go_down(1)->in_object.v+theNode->go_down(k)->in_object.v)/2.0;
         theNode->in_object.h = 0;
         for (; k; k--) {
-            hy_float t = theNode->go_down(k)->in_object.h;
+            hyFloat t = theNode->go_down(k)->in_object.h;
             if (t<theNode->in_object.h) {
                 theNode->in_object.h = t;
             }
@@ -4416,7 +4437,7 @@ node<nodeCoord>* _TheTree::AlignedTipsMapping (node<long>* iterator, bool first,
 
 //__________________________________________________________________________________
 
-void _TheTree::ScaledBranchReMapping (node<nodeCoord>* theNode, hy_float tw) const
+void _TheTree::ScaledBranchReMapping (node<nodeCoord>* theNode, hyFloat tw) const
 {
     theNode->in_object.h -= tw;
     for (long k=1; k<=theNode->get_num_nodes(); k++) {
@@ -4443,7 +4464,7 @@ _String      _TreeTopology::DetermineBranchLengthMappingMode (_String* param, ch
 }
 //__________________________________________________________________________________
 
-hy_float       _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef, _String& matchString, char mapMode) const
+hyFloat       _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef, _String& matchString, char mapMode) const
 {
     if (mapMode == 3) {
         return 1.;
@@ -4451,7 +4472,7 @@ hy_float       _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef
 
     _CalcNode * travNode = (_CalcNode*)LocateVar(varRef);
 
-    hy_float branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
+    hyFloat branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
 
     if (mapMode==1) {
         return travNode->ComputeBranchLength();
@@ -4465,7 +4486,7 @@ hy_float       _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef
         if (travNode->iVariables)
             for (j=0; j<travNode->iVariables->lLength; j+=2) {
                 _Variable* curVar  = LocateVar (travNode->iVariables->lData[j]);
-                if (curVar->GetName()->endswith (matchString)) {
+                if (curVar->GetName()->EndsWith (matchString)) {
                     branchLength = curVar->Compute()->Value();
                     if (branchLength<=0.0) {
                         branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
@@ -4478,7 +4499,7 @@ hy_float       _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef
         if (((!travNode->iVariables) || j == travNode->iVariables->lLength) && travNode->dVariables)
             for (j=0; j<travNode->dVariables->lLength; j+=2) {
                 _Variable* curVar = LocateVar (travNode->dVariables->lData[j]);
-                if (curVar->GetName()->endswith (matchString)) {
+                if (curVar->GetName()->EndsWith (matchString)) {
                     branchLength = curVar->Compute()->Value();
                     if (branchLength<=0.0) {
                         branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
@@ -4499,7 +4520,7 @@ node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _Str
     // run a pass of aligned tip mapping then perform one more pass from the root to the children
     // pre-order to remap the length of branches.
 
-    static  hy_float treeWidth;
+    static  hyFloat treeWidth;
     bool     wasRoot = !theParent;
 
     if (!theParent) {
@@ -4514,7 +4535,7 @@ node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _Str
          j,
          b           = -1;
 
-    hy_float  branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
+    hyFloat  branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
 
     for  (; k<=descendants; k++) {
         currentN = theParent->go_down(k);
@@ -4565,7 +4586,7 @@ node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _Str
 
 //__________________________________________________________________________________
 
-node<nodeCoord>* _TheTree::RadialBranchMapping (node<long>* referenceNode, node<nodeCoord>* parentNode, _String* scalingParameter, hy_float anglePerTip, long& currentTipID, hy_float& maxRadius, char mapMode)
+node<nodeCoord>* _TheTree::RadialBranchMapping (node<long>* referenceNode, node<nodeCoord>* parentNode, _String* scalingParameter, hyFloat anglePerTip, long& currentTipID, hyFloat& maxRadius, char mapMode)
 {
     // label 1 stores current radial distance from the root
     // label 2 stores the angle of the line to this node
@@ -4573,7 +4594,7 @@ node<nodeCoord>* _TheTree::RadialBranchMapping (node<long>* referenceNode, node<
 
     node <nodeCoord>* current_node = new node <nodeCoord>;
 
-    hy_float          branchL     = 0.,
+    hyFloat          branchL     = 0.,
                         referenceL   = 0.;
 
     if  (parentNode == nil) {
@@ -4591,7 +4612,7 @@ node<nodeCoord>* _TheTree::RadialBranchMapping (node<long>* referenceNode, node<
         current_node->in_object.label2 = anglePerTip * currentTipID++;
         //printf ("%d %g\n",currentTipID, current_node->in_object.label2);
     } else {
-        hy_float angleSum = 0.;
+        hyFloat angleSum = 0.;
         for (long n = 1; n <= children; n++) {
             node<nodeCoord>* newChild = RadialBranchMapping (referenceNode->go_down(n), current_node, scalingParameter, anglePerTip, currentTipID, maxRadius, mapMode);
             current_node->add_node(*newChild);
@@ -4621,7 +4642,7 @@ void _TheTree::AssignLabelsToBranches (node<nodeCoord>* theParent, _String* scal
     node<nodeCoord>* currentN;
     long descendants = theParent->get_num_nodes(),k=1,j,b=-1;
 
-    hy_float  branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
+    hyFloat  branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
 
     char        mapMode;
     _String     matchString = DetermineBranchLengthMappingMode(scalingParameter, mapMode);
@@ -4672,9 +4693,9 @@ void _TheTree::AssignLabelsToBranches (node<nodeCoord>* theParent, _String* scal
 
 //__________________________________________________________________________________
 
-hy_float _TheTree::PSStringWidth (_String& s)
+hyFloat _TheTree::PSStringWidth (_String& s)
 {
-    hy_float nnWidth = 0.;
+    hyFloat nnWidth = 0.;
     for (long cc = 0; cc < s.sLength; cc++) {
         nnWidth += _timesCharWidths[(int)s.get_char(cc)];
     }
@@ -4744,7 +4765,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
             _Matrix*        dimMatrix           = ((_Matrix*)p2->Compute());
 
 
-            hy_float      hScale              = 1.0,
+            hyFloat      hScale              = 1.0,
                             vScale                = 1.0,
                             labelWidth          = 0.,
 
@@ -4922,7 +4943,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 
             currentNd = NodeTraverser (newRoot);
 
-            hy_float  plotBounds[4];
+            hyFloat  plotBounds[4];
 
             if (treeLayout == 1) {
                 plotBounds [0] = plotBounds[1] = plotBounds [2] = plotBounds[3] = 0.;
@@ -4942,7 +4963,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
                     _PMathObj nodeLabel     = nodeOptions?nodeOptions->GetByKey (treeOutputLabel,STRING):nil,
                               nodeTLabel = nodeOptions?nodeOptions->GetByKey (treeOutputTLabel,STRING):nil;
 
-                    hy_float      nnWidth = 0.0;
+                    hyFloat      nnWidth = 0.0;
 
                     if (nodeLabel) {
                         nnWidth = 0.0;
@@ -4958,7 +4979,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 
                     if (treeLayout == 1) {
                         currentNd->in_object.label2 += treeRotation;
-                        hy_float chordLength =  computeChordLength (treeRadius, currentNd->in_object.label2,plotBounds),
+                        hyFloat chordLength =  computeChordLength (treeRadius, currentNd->in_object.label2,plotBounds),
                                    overflow    =  MAX(0., treeRadius +
                                                       (nnWidth - chordLength) *
                                                       hScale / MAX(HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS,currentNd->in_object.label1));
@@ -5277,16 +5298,16 @@ void    _TheTree::AllocateResultsCache (long size)
     //topLevelNodes.Clear();
     size *= categoryCount;
     if (topLevelNodes.lLength) {
-        rootIChildrenCache = (hy_float*) MemAllocate (size*cBase*(topLevelNodes.lLength-1)*sizeof (hy_float));
+        rootIChildrenCache = (hyFloat*) MemAllocate (size*cBase*(topLevelNodes.lLength-1)*sizeof (hyFloat));
     }
 }
 
 
 //__________________________________________________________________________________
 
-nodeCoord   _TheTree::TreeTEXRecurse (node<nodeCoord>* iterator, _String&res, hy_float hScale, hy_float vScale, long hSize, long vSize) const {
+nodeCoord   _TheTree::TreeTEXRecurse (node<nodeCoord>* iterator, _String&res, hyFloat hScale, hyFloat vScale, long hSize, long vSize) const {
 
-    hy_float h, v;
+    hyFloat h, v;
   
     if (iterator->is_leaf()) { // terminal node
         v = vSize - iterator->in_object.v*vScale;
@@ -5299,7 +5320,7 @@ nodeCoord   _TheTree::TreeTEXRecurse (node<nodeCoord>* iterator, _String&res, hy
         v = vSize-iterator->in_object.v*vScale;
         h = hSize + iterator->in_object.h*hScale;
       
-        hy_float leftmost_leaf_v, rightmost_leaf_v;
+        hyFloat leftmost_leaf_v, rightmost_leaf_v;
       
         for (long k = 1UL; k<=iterator->get_num_nodes(); k++) {
             node<nodeCoord>* child_node = iterator->go_down(k);
@@ -5339,15 +5360,15 @@ nodeCoord   _TheTree::TreeTEXRecurse (node<nodeCoord>* iterator, _String&res, hy
 
 //__________________________________________________________________________________
 
-void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_float hScale, hy_float vScale,
+void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hyFloat hScale, hyFloat vScale,
                                  long hSize, long vSize, long halfFontSize, long shift, _AssociativeList* outOptions,
-                                 char layout, hy_float * xtra) const
+                                 char layout, hyFloat * xtra) const
 {
     unsigned long               descendants = iterator->get_num_nodes();
     bool                        is_leaf     = descendants == 0UL;
     //lineW    = halfFontSize/3+1;
 
-    hy_float         vc,
+    hyFloat         vc,
                        hc,
                        vcl,
                        hcl,
@@ -5391,7 +5412,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_floa
         // terminal node or default label
     {
         t = kEmptyString;
-        hy_float myAngle = layout==1?iterator->in_object.label2*DEGREES_PER_RADIAN:0.0;
+        hyFloat myAngle = layout==1?iterator->in_object.label2*DEGREES_PER_RADIAN:0.0;
         if (layout == 1) {
             res << (_String(myAngle) & " rotate\n");
             vc = 0;
@@ -5418,7 +5439,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_floa
                 // generate the default label
             {
                 if (layout == 1 && myAngle > 90. && myAngle < 270.) {
-                    hy_float xt = hc-halfFontSize/2,
+                    hyFloat xt = hc-halfFontSize/2,
                                yt = vc-2*halfFontSize/3;
                     t = _String (xt) & _String (" 0 translate 180 rotate 0 ") & _String (yt) & _String ('(') & varName & ") righttext 180 rotate -" & xt & " 0 translate\n";
                 } else {
@@ -5474,7 +5495,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_floa
 
             _AssociativeList * childOptions = nil;
 
-            hy_float         splitBranch = -1.,
+            hyFloat         splitBranch = -1.,
                                lineWP = 0.0;
 
             _String            childColor,
@@ -5587,19 +5608,19 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_floa
                 t = _String(-child->in_object.bL*hScale) & " 0 rlineto\n";
             } else {
 
-                hy_float lineWidthInset = 0.0;
+                hyFloat lineWidthInset = 0.0;
 
                 //if (lineWP > 0.0)
                 //  lineWidthInset = (lineWP-lineW)*.5;
 
                 if (multiColor) {
-                    hy_float span        = child->in_object.h - hc + 2*lineWidthInset,
+                    hyFloat span        = child->in_object.h - hc + 2*lineWidthInset,
                                currentX    = hc - lineWidthInset;
 
                     res <<  (_String(currentX) & ' ' & _String (child->in_object.v) & " moveto\n");
                     for (long seg = 0; seg < multiColor->GetHDim(); seg++) {
                         res << (_String((*multiColor)(seg,0)) & " " & _String((*multiColor)(seg,1)) & " " & _String((*multiColor)(seg,2)) & " setrgbcolor\n");
-                        hy_float mySpan = span*(*multiColor)(seg,3);
+                        hyFloat mySpan = span*(*multiColor)(seg,3);
                         res << (_String(mySpan) & " 0 rlineto\n");
                         if (seg < multiColor->GetHDim()-1) {
                             currentX += mySpan;
@@ -5630,7 +5651,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_floa
 
             if (splitBranch >= 0.0 && splitBranch <= 1.0) {
                 res << "newpath\n";
-                hy_float x,
+                hyFloat x,
                            y;
 
                 if (layout == 1) {
@@ -5649,10 +5670,10 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_floa
                 notches->CheckIfSparseEnough(true);
                 res << notchColor;
                 for (long l = 0; l < notches->GetSize(); l++) {
-                    hy_float aNotch = (*notches)[l];
+                    hyFloat aNotch = (*notches)[l];
                     if (aNotch >= 0. && aNotch <= 1.) {
                         res << "newpath\n";
-                        hy_float x,
+                        hyFloat x,
                                    y;
 
                         if (layout == 1) {
@@ -5688,7 +5709,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_floa
             if (nodeOptions) {
                 _PMathObj keyVal = nodeOptions->GetByKey (treeOutputThickness,NUMBER);
                 if (keyVal) {
-                    hy_float lineWP = keyVal->Compute()->Value();
+                    hyFloat lineWP = keyVal->Compute()->Value();
                     linewidth1 = _String("currentlinewidth ") & lineWP & " setlinewidth\n";
                     linewidth2 = "setlinewidth\n";
                 }
@@ -5736,7 +5757,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, hy_floa
     if (nodeTLabel) {
         t = *((_FString*)nodeTLabel->Compute())->theString;
         if (t.sLength) {
-            hy_float    scF     = 2.*halfFontSize;
+            hyFloat    scF     = 2.*halfFontSize;
 
             if (layout == 1) {
                 res << (_String(iterator->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
@@ -5803,7 +5824,7 @@ _PMathObj _TheTree::TEXTreeString (_PMathObj p) const {
 
         node<nodeCoord>*    currentNd;
 
-        hy_float          hScale = 1.0,
+        hyFloat          hScale = 1.0,
                             vScale = 1.0,
                             treeHeight = 0.0,
                             treeWidth;
@@ -6164,7 +6185,7 @@ void     _TheTree::SetTreeCodeBase (long b) {
   }
   if (cBase>0)
     marginalLikelihoodCache =
-    (hy_float*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (hy_float)*cBase*system_CPU_count);
+    (hyFloat*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (hyFloat)*cBase*system_CPU_count);
   
   _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
   while   (_CalcNode* iterator = ti.Next()) {
@@ -6198,7 +6219,7 @@ bool     _TheTree::IntPopulateLeaves (_DataSetFilter const* dsf, long site_index
         dsf->RetrieveState(site_index, leaf_index, *buffer, false);
       
       site_has_all_gaps &= ((iterator->lastState = dsf->Translate2Frequencies (*buffer, iterator->theProbs, true))<0); // ambig
-      site_has_all_gaps &= (!ArrayAny (iterator->theProbs, cBase, [](hy_float x, unsigned long) {return x == 0.0; })); //completely unresolved
+      site_has_all_gaps &= (!ArrayAny (iterator->theProbs, cBase, [](hyFloat x, unsigned long) {return x == 0.0; })); //completely unresolved
       map_node_to_calcnode (((node <long>*)flatLeaves.GetElement(leaf_index))->parent)->cBase = -1;
     }
 
@@ -6227,11 +6248,11 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
     /* ugly top-bottom algorithm for debuggability and compactness */
 
     for (long catCount   = 0; catCount < categoryCount; catCount ++) {
-        hy_float* currentStateVector = resultMatrix.theData + 2*globalShifter*site_index + catShifer*catCount,
+        hyFloat* currentStateVector = resultMatrix.theData + 2*globalShifter*site_index + catShifer*catCount,
                   * vecPointer         = currentStateVector;
 
         for (long nodeCount = 0L; nodeCount<flatCLeaves.lLength; nodeCount++) {
-            hy_float *leafVec     = ((_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]))->theProbs;
+            hyFloat *leafVec     = ((_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]))->theProbs;
 
             for (long cc = 0; cc < cBase; cc++) {
                 vecPointer[cc] = leafVec[cc];
@@ -6243,11 +6264,11 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
             node<long>* thisINode       = (node<long>*)flatNodes.lData[iNodeCount];
           
             for (long cc = 0; cc < cBase; cc++) {
-                hy_float      tmp = 1.0;
+                hyFloat      tmp = 1.0;
                 for (long nc = 0; nc < thisINode->nodes.length; nc++) {
-                    hy_float  tmp2 = 0.0;
+                    hyFloat  tmp2 = 0.0;
                     _CalcNode   * child         = map_node_to_calcnode(thisINode->go_down(nc+1));
-                    hy_float  * childSupport  = currentStateVector + child->nodeIndex*cBase,
+                    hyFloat  * childSupport  = currentStateVector + child->nodeIndex*cBase,
                                 * transMatrix   = child->GetCompExp(categoryCount>1?catCount:(-1))->theData + cc*cBase;
 
                     for (long cc2 = 0; cc2 < cBase; cc2++) {
@@ -6270,24 +6291,24 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
 
 //_______________________________________________________________________________________________
 
-void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hy_float* resultVector, hy_float* forwardVector, long catID) {
+void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat* resultVector, hyFloat* forwardVector, long catID) {
   
     _CalcNode   * thisNodeC     = map_node_to_calcnode (thisNode);
-    hy_float  * vecPointer    = resultVector + thisNodeC->nodeIndex * cBase;
+    hyFloat  * vecPointer    = resultVector + thisNodeC->nodeIndex * cBase;
 
     if (thisNode->parent) {
         if (thisNode->parent->parent) {
             for (long cc = 0; cc < cBase; cc++,vecPointer++) {
-                hy_float tmp = 1.0;
+                hyFloat tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
-                    hy_float  tmp2            = 0.0;
+                    hyFloat  tmp2            = 0.0;
                     _CalcNode   * child         = map_node_to_calcnode(thisNode->parent->go_down (nc+1));
                     bool          invert        = (child == thisNodeC);;
                     if (invert) {
                         child = map_node_to_calcnode (thisNode->parent);
                     }
 
-                    hy_float  * childSupport  = invert?resultVector + cBase*child->nodeIndex
+                    hyFloat  * childSupport  = invert?resultVector + cBase*child->nodeIndex
                                                   :forwardVector + child->nodeIndex*cBase,
                                                   * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
 
@@ -6301,12 +6322,12 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hy_float* re
             }
         } else {
             for (long cc = 0; cc < cBase; cc++,vecPointer++) {
-                hy_float tmp = 1.0;
+                hyFloat tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
-                    hy_float  tmp2            = 0.0;
+                    hyFloat  tmp2            = 0.0;
                     _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[thisNode->parent->nodes.data[nc]->in_object]);
                     if (child != thisNodeC) {
-                        hy_float  * childSupport  = forwardVector + child->nodeIndex*cBase,
+                        hyFloat  * childSupport  = forwardVector + child->nodeIndex*cBase,
                                       * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
 
                         for (long cc2 = 0; cc2 < cBase; cc2++) {

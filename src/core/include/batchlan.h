@@ -490,9 +490,6 @@ listOfCompiledFormulae;
 
 extern  _String
 
-getDString,
-getFString,
-tempFString,
 useLastFString,
 mpiMLELFValue,
 lf2SendBack,
@@ -616,7 +613,7 @@ const _String&  GetBFFunctionNameByIndex        (long);
 long      GetBFFunctionArgumentCount  (long);
 _List&    GetBFFunctionArgumentList   (long);
 _SimpleList&    GetBFFunctionArgumentTypes   (long);
-_HY_BL_FUNCTION_TYPE
+hyBLFunctionType
          GetBFFunctionType            (long);
 _ExecutionList&
           GetBFFunctionBody           (long);
@@ -641,7 +638,7 @@ _String ReturnDialogInput            (bool dispPath = false);
 _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
-hy_float
+hyFloat
 ProcessNumericArgument               (_String*,_VariableContainer const*, _ExecutionList* = nil);
 const _String ProcessLiteralArgument (_String const*,_VariableContainer const*, _ExecutionList* = nil);
 _AssociativeList*
@@ -717,7 +714,7 @@ _HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _
 
 
 extern  bool                        numericalParameterSuccessFlag;
-extern  hy_float                  messageLogFlag;
+extern  hyFloat                  messageLogFlag;
 
 extern enum       _hy_nested_check {
   _HY_NO_FUNCTION,

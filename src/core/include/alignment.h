@@ -66,18 +66,18 @@ double AlignStrings( char * r_str
                    , const bool do_true_local = false
                    );
 
-hy_float LinearSpaceAlign( _String * s1           // first string
+hyFloat LinearSpaceAlign( _String * s1           // first string
                            , _String * s2           // second string
                            , _SimpleList & cmap     // char -> position in scoring matrix mapper
                            , _Matrix * ccost        // NxN matrix of edit distances on characters
-                           , hy_float gopen       // the cost of opening a gap in sequence 1
-                           , hy_float gextend     // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
-                           , hy_float gopen2      // the cost of opening a gap in sequence 2
-                           , hy_float gextend2    // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
+                           , hyFloat gopen       // the cost of opening a gap in sequence 1
+                           , hyFloat gextend     // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
+                           , hyFloat gopen2      // the cost of opening a gap in sequence 2
+                           , hyFloat gextend2    // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
                            , bool doLocal           // ignore prefix and suffix gaps
                            , bool doAffine          // use affine gap penalties
                            , _SimpleList & ops      // edit operations for the optimal alignment
-                           , hy_float scoreCheck  // check the score of the alignment
+                           , hyFloat scoreCheck  // check the score of the alignment
                            , long from1
                            , long to1
                            , long from2

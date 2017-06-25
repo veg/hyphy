@@ -80,7 +80,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
     
     _Matrix*            receptacle = nil;
     
-    hy_float          cghf = 1.0;
+    hyFloat          cghf = 1.0;
     checkParameter      (hfCountGap,cghf,1.0, currentProgram.nameSpacePrefix);
     
     if (objectType == HY_BL_DATASET) { // harvest directly from a DataSet
@@ -679,7 +679,7 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& currentProgram) {
         _PMathObj assertionResult = rhs.Compute();
         if (assertionResult && assertionResult->ObjectClass () == NUMBER) {
             if (CheckEqual(assertionResult->Value(),0.0)) {
-                hy_float whatToDo;
+                hyFloat whatToDo;
                 checkParameter (assertionBehavior, whatToDo, 0.0);
 
                 _String errMsg;
@@ -713,7 +713,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgra
     currentProgram.currentCommand++;
     _String theVersion = ProcessLiteralArgument ((_String*)parameters (0),currentProgram.nameSpacePrefix);
 
-    if (__HYPHY__VERSION__.toNum() < theVersion.toNum()) {
+    if (kHyPhyVersion.toNum() < theVersion.toNum()) {
         currentProgram.ReportAnExecutionError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
         return false;
     }
@@ -810,7 +810,7 @@ bool      _ElementaryCommand::HandleGetURL(_ExecutionList& currentProgram){
     } else {
         if (act->Equal(&getURLFileFlag)) {
             _String fileName (ProcessLiteralArgument(arg1,currentProgram.nameSpacePrefix));
-            fileName.ProcessFileName (true,false,(hy_pointer)currentProgram.nameSpacePrefix);
+            fileName.ProcessFileName (true,false,(hyPointer)currentProgram.nameSpacePrefix);
             if (!Get_a_URL(url, &fileName)) {
                 errMsg = _String ("Could not fetch '") & url & "'";
             }
@@ -1051,22 +1051,22 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
             if (currentArgument->Equal(&versionString)) {
                 if (sID > 1.5)
 #ifdef __HEADLESS__
-                    result = new _String(_String ("Library version ") & __HYPHY__VERSION__);
+                    result = new _String(_String ("Library version ") & kHyPhyVersion);
 #else
 #ifdef __MAC__
-                    result = new _String(_String("Macintosh ") & __HYPHY__VERSION__);
+                    result = new _String(_String("Macintosh ") & kHyPhyVersion);
 #else
 #ifdef __WINDOZE__
-                    result = new _String(_String("Windows ") & __HYPHY__VERSION__);
+                    result = new _String(_String("Windows ") & kHyPhyVersion);
 #else
-                    result = new _String(_String("Source ") & __HYPHY__VERSION__);
+                    result = new _String(_String("Source ") & kHyPhyVersion);
 #endif
 #endif
 #endif
                     else if (sID > 0.5) {
                         result = new _String(GetVersionString());
                     } else {
-                        result = new _String(__HYPHY__VERSION__);
+                        result = new _String(kHyPhyVersion);
                     }
                 } else if (currentArgument->Equal(&timeStamp)) {
                     result = new _String(GetTimeStamp(sID < 0.5));
@@ -1316,7 +1316,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                     fnm = GetStringFromFormula (&fnm,currentProgram.nameSpacePrefix);
                 }
                 
-                if (!fnm.ProcessFileName(true,false,(hy_pointer)currentProgram.nameSpacePrefix, false, &currentProgram)) {
+                if (!fnm.ProcessFileName(true,false,(hyPointer)currentProgram.nameSpacePrefix, false, &currentProgram)) {
                     return false;
                 }
                 
@@ -1369,7 +1369,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                 
                 if (temp.sLength > 0) {
                     nmspace = AppendContainerName(temp,currentProgram.nameSpacePrefix);
-                    if (nmspace.IsValidIdentifier()) {
+                    if (nmspace.IsValidIdentifier(fIDAllowCompound)) {
                         thePrintObject = FetchObjectFromVariableByType (&nmspace,HY_ANY_OBJECT);
                     }
                 } else {

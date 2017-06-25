@@ -38,6 +38,7 @@
  */
 
 #include "hy_strings.h"
+#include "hy_string_buffer.h"
 #include "parser.h"
 
 #include <stdlib.h>
@@ -82,7 +83,7 @@ void    _AVLListXL::SetXtra (long i, BaseRef d, bool dup) {
 
 BaseRef _AVLListXL::toStr (unsigned long)
 {
-    _String * str = new _String (128L, true);
+    _StringBuffer * str = new _StringBuffer (128L);
 
     if (countitems() == 0) {
         (*str) << "Empty Associative List";
@@ -102,7 +103,6 @@ BaseRef _AVLListXL::toStr (unsigned long)
         }
     }
 
-    str->Finalize();
     return str;
 }
 //______________________________________________________________

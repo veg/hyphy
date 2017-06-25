@@ -38,15 +38,18 @@
  */
 
 #include <stdio.h>
-#include "likefunc.h"
-#include "function_templates.h"
-#include "global_things.h"
 
-using    namespace hy_global;
 
 #ifdef  __HYPHYCURL__
     #include <curl/curl.h>
 #endif
+
+#include "likefunc.h"
+#include "hy_string_buffer.h"
+#include "hbl_env.h"
+
+using    namespace hy_global;
+
 
 #ifdef          __HYPHYMPI__
 _String         preserveSlaveNodeState ("PRESERVE_SLAVE_NODE_STATE"),
@@ -65,19 +68,17 @@ extern _List batchLanguageFunctionNames;
 
 //_________________________________________________________________________
 
-size_t url2File   (void *ptr, size_t size, size_t nmemb, void *stream)
-{
+size_t url2File   (void *ptr, size_t size, size_t nmemb, void *stream) {
     return fwrite (ptr, size, nmemb, (FILE*)stream);
 }
 
 //_________________________________________________________________________
 
-size_t url2String (void *ptr, size_t size, size_t nmemb, void *stream)
-{
-    _String * s = (_String*)stream;
+size_t url2String (void *ptr, size_t size, size_t nmemb, void *stream) {
+    _StringBuffer * s = (_StringBuffer*)stream;
     char    * p = (char*)ptr;
 
-    for (unsigned long k=0; k<size*nmemb; k++) {
+    for (unsigned long k=0UL; k<size*nmemb; k++) {
         (*s) << p[k];
     }
 
@@ -86,28 +87,26 @@ size_t url2String (void *ptr, size_t size, size_t nmemb, void *stream)
 
 //_________________________________________________________________________
 
-bool    Get_a_URL (_String& urls, _String* fileName)
-{
+bool    Get_a_URL (_String& urls, _String* fileName) {
 #ifdef __HYPHYCURL__
     CURL *curl;
     CURLcode res ;
     curl = curl_easy_init ();
     FILE   * f = nil;
-    _String* s = nil;
+    _StringBuffer * s = nil;
     char cErr [CURL_ERROR_SIZE+1];
     if(curl) {
         if (fileName) {
-            f = fopen (fileName->sData,"wb");
+            f = fopen (fileName->get_str(),"wb");
             if (!f) {
                 urls = _String ("Failed to open ") & *fileName & " for writing";
                 return false;
             }
         } else {
-            s = new _String (8192, true);
-            checkPointer (s);
+            s = new _StringBuffer (8192UL);
         }
 
-        curl_easy_setopt (curl, CURLOPT_URL, urls.sData );
+        curl_easy_setopt (curl, CURLOPT_URL, urls.get_str() );
         curl_easy_setopt (curl, CURLOPT_ERRORBUFFER, cErr);
 
         //Do not check peer certificate, since we only ever get urls
@@ -121,12 +120,11 @@ bool    Get_a_URL (_String& urls, _String* fileName)
         }
 
         _String ver (GetVersionString());
-        curl_easy_setopt (curl, CURLOPT_USERAGENT, ver.sData);
+        curl_easy_setopt (curl, CURLOPT_USERAGENT, ver.get_str());
         //curl_easy_setopt (curl, CURLOPT_VERBOSE, 1);
         curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, (void*)(f?url2File:url2String));
-        hy_float vbl = 0.0;
-        checkParameter (VerbosityLevelString,vbl,0.0);
-        if (vbl<0.5) {
+      
+        if (hy_env::EnvVariableTrue (VerbosityLevelString)) {
             curl_easy_setopt (curl,CURLOPT_NOPROGRESS,1);
         }
         res = curl_easy_perform (curl);
@@ -135,7 +133,6 @@ bool    Get_a_URL (_String& urls, _String* fileName)
         if (f) {
             fclose (f);
         } else {
-            s->Finalize();
             urls = *s;
             DeleteObject (s);
         }
@@ -158,10 +155,9 @@ bool    Get_a_URL (_String& urls, _String* fileName)
 
 //____________________________________________________________________________________
 
-_String*    StringFromConsole   (bool)
-{
+_String *    StringFromConsole   () {
     fflush(stdout);
-    _String * returnme = new _String (32L, true);
+    _StringBuffer * returnme = new _StringBuffer (32UL);
 #if not defined __HEADLESS__ && not defined _MINGW32_MEGA_
     int       readAChar;
     while    ((readAChar = getc(stdin)) != '\n') {
@@ -175,14 +171,13 @@ _String*    StringFromConsole   (bool)
     WarnError ("Unhandled standard input interaction in StringFromConsole for headless HyPhy");
     return NULL;
 #endif
-    returnme->Finalize ();
     return returnme;
 }
 
 //__________________________________________________________________________________
 
 void    StringToConsole (_String const s,  void * extra) {
-    BufferToConsole ((const char*)s.sData, extra);
+    BufferToConsole ((const char*)*s, extra);
 }
 
 
@@ -226,15 +221,14 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
     _String* theMessage     = MPIRecvString (-1,senderID),  // listen for messages from any node
              * resStr        = nil;
 
-    while (theMessage->sLength) {
+    while (theMessage->nonempty()) {
         hy_env :: EnvVariableSet (hy_env ::mpi_node_id, new _Constant (rank), false);
         hy_env :: EnvVariableSet (hy_env ::mpi_node_count, new _Constant (size), false);
  
-        //ReportWarning (*theMessage);
         DeleteObject (resStr);
         resStr       = nil;
-        if (theMessage->startswith (mpiLoopSwitchToOptimize) ) {
-            hyphyMPIOptimizerMode   = theMessage->Cut(mpiLoopSwitchToOptimize.sLength,-1).toNum();
+        if (theMessage->BeginsWith (mpiLoopSwitchToOptimize) ) {
+            hyphyMPIOptimizerMode   = theMessage->Cut(mpiLoopSwitchToOptimize.length(),kStringEnd).to_long();
 
             ReportWarning           (_String("[MPI] Switched to mpiOptimizer loop with mode ") & hyphyMPIOptimizerMode);
             MPISendString           (mpiLoopSwitchToOptimize,senderID);
@@ -248,7 +242,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
             mpiBgmLoop          (rank, size);
             ReportWarning       ("[MPI] Returned from mpiBgmLoop");
         } else {
-            if (theMessage->beginswith ("#NEXUS")) {
+            if (theMessage->BeginsWith ("#NEXUS")) {
                 _String             msgCopy (*theMessage);
                 ReportWarning       ("[MPI] Received a likelihood function");
                 //ReportWarning       (msgCopy);
@@ -274,11 +268,9 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                         HandleApplicationError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & *lfID->theString &"' did not refer to a well-defined likelihood function.\n\n\n");
                         break;
                     }
-                    hy_float      pv;
-                    checkParameter (shortMPIReturn, pv ,0.);
-                    resStr       = new _String (1024L,true);
-                    lf->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
-                    resStr->Finalize();
+                  
+                    resStr       = new _StringBuffer (1024UL);
+                    lf->SerializeLF(*resStr,hy_env::EnvVariableTrue (shortMPIReturn) ? _hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                 }
             } else {
                 // ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
@@ -290,10 +282,8 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
             MPISendString(*resStr,senderID);
 
-            hy_float      keepState = 0.0;
-            checkParameter  (preserveSlaveNodeState, keepState, 0.0);
 
-            if (keepState < 0.5) {
+            if (hy_env::EnvVariableTrue (preserveSlaveNodeState) == false) {
                 PurgeAll (true);
                 InitializeGlobals ();
                 PushFilePath(baseDir, false, false);
@@ -323,8 +313,8 @@ void mpiOptimizerLoop (int rank, int size)
 
     //printf ("Node %d waiting for a string\n", rank);
     _String* theMessage = MPIRecvString (-1,senderID);
-    while (theMessage->sLength) {
-        if (theMessage->beginswith ("#NEXUS")) {
+    while (theMessage->nonempty()) {
+        if (theMessage->BeginsWith ("#NEXUS")) {
             //ReportWarning (*theMessage);
             ReadDataSetFile (nil,true,theMessage);
             if (likeFuncNamesList.lLength!=1) {
@@ -343,7 +333,7 @@ void mpiOptimizerLoop (int rank, int size)
             _SimpleList const * ivl = & theLF->GetIndependentVars();
   
           
-            _String      variableSpec (128L, true);
+            _StringBuffer      variableSpec (128UL);
 
 
             (variableSpec) << LocateVar(ivl->lData[0])->GetName();
@@ -353,7 +343,6 @@ void mpiOptimizerLoop (int rank, int size)
               (variableSpec) << LocateVar(ivl->lData[kk])->GetName();
             }
           
-            variableSpec.Finalize();
             ReportWarning         (_String("[MPI] Sending back the following variable list\n") & variableSpec);
             MPISendString         (variableSpec,senderID);
             theLF->PrepareToCompute();
@@ -382,7 +371,7 @@ void mpiBgmLoop (int rank, int size)
     // receive serialized Bgm
     _String* theMessage = MPIRecvString (-1, senderID);
 
-    while (theMessage->sLength) {
+    while (theMessage->nonempty()) {
         _ExecutionList  exL (*theMessage);
         _PMathObj       res = exL.Execute();    // should send this process into CacheNodeScores()
 

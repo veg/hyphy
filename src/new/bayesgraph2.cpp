@@ -48,7 +48,7 @@ extern _String      _HYBgm_IMPUTE_MAXSTEPS,
        _HYBgm_IMPUTE_BURNIN,
        _HYBgm_IMPUTE_SAMPLES;
 
-extern hy_float   lnGamma (hy_float),
+extern hyFloat   lnGamma (hyFloat),
        gaussDeviate (void),
        LogSumExpo (_GrowingVector *);
 
@@ -154,7 +154,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
                 _SimpleList     multipliers ((long)1),
                                 n_ij, pa_indexing;
 
-                hy_float      rho_prior   = prior_sample_size (node, 0) > 0 ? (prior_sample_size (node, 0) / num_parent_combos) : 1.0,
+                hyFloat      rho_prior   = prior_sample_size (node, 0) > 0 ? (prior_sample_size (node, 0) / num_parent_combos) : 1.0,
                                 phi_prior = prior_scale (node, 0);
 
                 _Matrix         mu_prior (k+1, 1, false, true),
@@ -255,7 +255,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 
 					DeleteObject (tauinv);
 					
-                    hy_float  rho = rho_prior + n_ij.lData[pa],
+                    hyFloat  rho = rho_prior + n_ij.lData[pa],
                                 phi = phi_prior;
 
                     temp = zbpa;
@@ -410,7 +410,7 @@ bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
 
 //___________________________________________________________________________________________
 // #define _DEBUG_CCS_
-hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id)
+hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id)
 {
     _SimpleList parents;
 
@@ -425,7 +425,7 @@ hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id)
 }
 
 
-hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Matrix &dag)
+hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Matrix &dag)
 {
     _SimpleList     parents;
 
@@ -441,7 +441,7 @@ hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Matrix 
 
 //___________________________________________________________________________________________
 
-hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleList & parents)
+hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleList & parents)
 {
     /* ---------------------------------------------------------------------------
         ComputeContinuousScore()
@@ -454,7 +454,7 @@ hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleL
 
 
     long            k;
-    hy_float      log_score = 0.;
+    hyFloat      log_score = 0.;
     _SimpleList     c_parents, d_parents;
 
 
@@ -464,10 +464,10 @@ hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleL
 
         if (parents.lLength == 0) {
             _Constant *     orphan_score = (_Constant *) scores->lData[0];
-            return (hy_float) orphan_score->Value();
+            return (hyFloat) orphan_score->Value();
         } else if (parents.lLength == 1) {
             _Matrix *   single_parent_scores = (_Matrix *) scores->lData[1];
-            return (hy_float) (*single_parent_scores) (parents.lData[0], 0);
+            return (hyFloat) (*single_parent_scores) (parents.lData[0], 0);
         } else {
             _NTupleStorage *    family_scores   = (_NTupleStorage *) scores->lData[parents.lLength];
             _SimpleList         nktuple;
@@ -479,7 +479,7 @@ hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleL
                 }
                 nktuple << par;
             }
-            return (hy_float) family_scores->Retrieve (nktuple);  // using nk-tuple
+            return (hyFloat) family_scores->Retrieve (nktuple);  // using nk-tuple
         }
     }
 
@@ -554,7 +554,7 @@ hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleL
 	_Matrix     tau (k+1, k+1, false, true),
 				mu (k+1, 1, false, true);
 
-	hy_float  rho     = prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0,
+	hyFloat  rho     = prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0,
 				phi      = prior_scale (node_id, 0);
 
 	for (long row = 0; row < k+1; row++) {
@@ -615,7 +615,7 @@ hy_float _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleL
 
 //___________________________________________________________________________________________________
 
-hy_float  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _Matrix & tau, _Matrix & mu, hy_float rho, hy_float phi, long batch_size)
+hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _Matrix & tau, _Matrix & mu, hyFloat rho, hyFloat phi, long batch_size)
 {
     /* -------------------------------------------------------------------------------
      Compute the conditional Gaussian network score of node [c] according to
@@ -681,7 +681,7 @@ hy_float  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, 
     //ReportWarning (_String("... %*% zbpa^T = ") & (_String *) temp_mat.toStr());
 
     for (long row = 0; row < temp_mat.GetHDim(); row++) {
-        temp_mat.Store (row, row, temp_mat(row,row)+(hy_float)1.);    // add identity matrix
+        temp_mat.Store (row, row, temp_mat(row,row)+(hyFloat)1.);    // add identity matrix
     }
 
     //ReportWarning (_String("... + I = ") & (_String *) temp_mat.toStr());
@@ -692,10 +692,10 @@ hy_float  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, 
     //ReportWarning (_String("scale = ") & (_String *) scale.toStr());
 
     // calculate the determinant of scale parameter matrix
-    hy_float      pi_const = 3.141592653589793;
+    hyFloat      pi_const = 3.141592653589793;
 
     temp_mat = scale;
-    temp_mat *= (hy_float) (pi_const * rho);
+    temp_mat *= (hyFloat) (pi_const * rho);
 	
 	//ReportWarning (_String("BottcherScore() calling Eigensystem on matrix ") & (_String *) temp_mat.toStr() );
 	
@@ -708,7 +708,7 @@ hy_float  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, 
 	}
 	
     _Matrix *           eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
-    hy_float          log_det         = 0.;   // compute determinant on log scale to avoid overflow
+    hyFloat          log_det         = 0.;   // compute determinant on log scale to avoid overflow
 
     // determinant is product of eigenvalues (should be > 0 for positive definite matrices)
     for (long i = 0; i < eigenvalues->GetHDim(); i++) {
@@ -720,7 +720,7 @@ hy_float  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, 
     //ReportWarning (_String("log(det) = ") & log_det);
 
     // calculate first term of score
-    hy_float  pa_log_score = 0.;
+    hyFloat  pa_log_score = 0.;
 
     pa_log_score += lnGamma((rho + batch_size)/2.);
     pa_log_score -= lnGamma(rho/2.) + 0.5 * log_det;
@@ -744,9 +744,9 @@ hy_float  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, 
 	
     next_mat.Transpose();
     temp_mat *= next_mat;
-    temp_mat *= (hy_float) 1./rho;
+    temp_mat *= (hyFloat) 1./rho;
 
-    //ReportWarning (_String ("2nd term = ") & (hy_float) temp_mat(0,0));
+    //ReportWarning (_String ("2nd term = ") & (hyFloat) temp_mat(0,0));
 
     pa_log_score += -(rho + batch_size)/2. * log(1. + temp_mat(0,0));
 
@@ -759,7 +759,7 @@ hy_float  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, 
 
 
 //___________________________________________________________________________________________________
-hy_float _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleList & parents)
+hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleList & parents)
 {
     /* ---------------------------------------------------------------------------------------
 	 ImputeDiscreteNodeScore
@@ -791,7 +791,7 @@ hy_float _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _Simple
 					* reassign_probs    = new _GrowingVector();
     
 	
-	hy_float      log_score           = 0,
+	hyFloat      log_score           = 0,
   denom, this_prob;
   
 	long				impute_maxsteps, impute_burnin, impute_samples; // HBL settings
@@ -897,7 +897,7 @@ hy_float _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _Simple
 		} else {
 			// normalize counts to get empirical distribution
 			for (long lev = 0; lev < family_nlevels.lData[findex]; lev++) {
-				observed_values.Store (findex, lev, observed_values(findex, lev) / (hy_float) obs_total);
+				observed_values.Store (findex, lev, observed_values(findex, lev) / (hyFloat) obs_total);
 			}
 		}
     }
@@ -914,7 +914,7 @@ hy_float _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _Simple
 		
 		for (long level = 0; level < family_nlevels.lData[col]; level++) {
 			if (urn < observed_values (col, level)) {
-				data_deep_copy.Store (row, col, (hy_float) level);
+				data_deep_copy.Store (row, col, (hyFloat) level);
 				break;
 			} else {
 				urn -= observed_values (col, level);
@@ -1072,7 +1072,7 @@ hy_float _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _Simple
 
 
 //___________________________________________________________________________________________________
-hy_float _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & parents)
+hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & parents)
 {
     /* ---------------------------------------------------------------------------------------
         ImputeNodeScore ()
@@ -1116,7 +1116,7 @@ hy_float _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList &
     _GrowingVector  * vector_of_scores  = new _GrowingVector(),     // store scores sampled during imputation
 					* reassign_probs    = new _GrowingVector();
 
-    hy_float      log_score           = 0,
+    hyFloat      log_score           = 0,
 
  
                     parent_state, child_state = 0.0,
@@ -1139,7 +1139,7 @@ hy_float _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList &
 	phi_mx.Store(0, 0, phi);
 	
 	_Matrix * iw_ptr;
-	hy_float iw_deviate;
+	hyFloat iw_deviate;
 	
 
     // set Gibbs sampler parameters from batch language definitions
@@ -1212,7 +1212,7 @@ hy_float _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList &
         // findex = family-wise index
         for (long fnode, findex = 0; findex < family_size; findex++) {
             fnode = (findex == 0) ? node_id : parents.lData[findex-1];  // parent node, get network-wide index
-            hy_float fstate = theData (row, fnode);
+            hyFloat fstate = theData (row, fnode);
             data_deep_copy.Store (row, findex, fstate);
 
             if (node_type.lData[fnode] == 0) {  // discrete node
@@ -1275,7 +1275,7 @@ hy_float _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList &
             } else {
 				// normalize counts to get empirical distribution
                 for (long lev = 0; lev < family_nlevels.lData[findex]; lev++) {
-                    observed_values.Store (findex, lev, observed_values(findex, lev) / (hy_float) obs_total);
+                    observed_values.Store (findex, lev, observed_values(findex, lev) / (hyFloat) obs_total);
                 }
             }
         } else {
@@ -1323,7 +1323,7 @@ hy_float _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList &
 
             for (long level = 0; level < family_nlevels.lData[col]; level++) {
                 if (urn < observed_values (col, level)) {
-                    data_deep_copy.Store (row, col, (hy_float) level);
+                    data_deep_copy.Store (row, col, (hyFloat) level);
                     break;
                 } else {
                     urn -= observed_values (col, level);
@@ -1340,7 +1340,7 @@ hy_float _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList &
 	long            k           = cparents.lLength,
 					pa_index;
 
-	hy_float      lk_ratio,
+	hyFloat      lk_ratio,
 					next_log_score;     // log-likelihood of the proposed step
 
 	_Matrix         log_scores_by_pa (num_parent_combos, 1, false, true),   // track separately to make updating easier
@@ -1725,7 +1725,7 @@ void _BayesianGraphicalModel::ComputeParameters(_Matrix * structure)
         if (parents.lLength == 0) {
             if (node_type.lData[node] == 0) {   /* discrete node */
                 long            a_ijk   = (prior_sample_size(node,0) == 0) ? 1 : prior_sample_size(node,0);
-                hy_float      n_i     = 0;
+                hyFloat      n_i     = 0;
 
 
                 // tally Dirichlet hyperparameters

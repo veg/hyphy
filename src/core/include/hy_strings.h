@@ -45,16 +45,33 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "regex.h"
 #include "hy_types.h"
 
-#define kStringInvalidReference                 0x00
-#define kStringDirectReference                  0x01
-#define kStringLocalDeference                   0x02
-#define kStringGlobalDeference                  0x03
 
 
-#define kAppendAnAssignmentToBufferFree         0x01
-#define kAppendAnAssignmentToBufferQuote        0x02
-#define kAppendAnAssignmentToBufferAssignment   0x04
-#define kAppendAnAssignmentToBufferGlobal       0x08
+#define fExtractRespectQuote 0x01
+#define fExtractRespectEscape 0x02
+
+
+#define fIDAllowFirstNumeric 0x01
+#define fIDAllowCompound      0x02
+
+#define kStringEnd          (-1L)
+
+enum hy_reference_type {
+  kStringInvalidReference = 0x00,
+  kStringDirectReference  = 0x01,
+  kStringLocalDeference   = 0x02,
+  kStringGlobalDeference  = 0x03
+};
+
+enum hy_string_case {
+  kStringUpperCase,
+  kStringLowerCase
+};
+
+enum hy_string_search_direction {
+  kStringDirectionForward,
+  kStringDirectionBackward
+};
 
 class _SimpleList;
 class _List;
@@ -89,9 +106,17 @@ public:
      * Revision history
      - SLKP 20170517 porting from v3 branch
      */
-    virtual void Initialize(bool = false); // v3; Last reviewed SLKP 20170517
+    virtual void Initialize(bool = false);
 
- 
+    /**
+     * Clear the string (delete allocated memory)
+     * which creates an empty string
+     
+     * Revision history
+     - SLKP 20170612 iniital implementation
+     */
+    virtual void Clear (void);
+  
     /**
      * Construct a string representation of a long interger
      * @param number: the number to convert to a string
@@ -112,7 +137,7 @@ public:
     _String(const unsigned long sL);
 
     /**
-     * Construct a string representation of a hy_float(double) to string,
+     * Construct a string representation of a hyFloat(double) to string,
      * using a format string (default is to use PRINTF_FORMAT_STRING formatting)
      * @param number : The floating number to convert to string
      * @param format : The C-style format string to use for the conversion
@@ -120,7 +145,7 @@ public:
      * Revision history
      - SLKP 20170517 reviewed while porting from v3 branch
      */
-    _String (const hy_float number , const char * format = nil);
+    _String (const hyFloat number , const char * format = nil);
 
     /**
      * A RHS copy constructor
@@ -201,10 +226,16 @@ public:
      * the file will be rewound and is assumed to be open for reading
      
      * @param file    : the source file handle
+     * @param read_this_many: if -1, then rewind the file and read all of its contents,
+              otherwise read 'read_this_many' characters from current position
      * Revision history
      - SLKP 20170517 reviewed while porting from v3 branch
+     - SLKP 20170623 added the option to read a specified number of chars
+                     from the current position of an open file (to handle fscanf
+                     specifically); also added a check that the # of chars read
+                     was the same as the one requested.
      */
-    _String (FILE* file);
+    _String (FILE* file, long read_this_many = -1L);
 
 
     /**
@@ -273,28 +304,45 @@ public:
      return default_return (\0)
      
      * @param index : the index (0-based) of a character to retrieve
+                      if index < 0, return a character this far from the end;
+                      e.g. -1 returns  the last character (for non-empty strings)
+                      -2 : the second to the last character (for strings with 2 or more chars), etc
      * @return      : the character at the specified index or default_return
      * @sa get_char
      *  Revision history
      - SLKP 20170517 reviewed while porting from v3 branch
      [CHANGE-NOTE SLKP 20170517, used to have unsigned long argument]
-     
+     - SLKP 20170623 handling negative indices; SEMANTICS CHANGE
      
      */
-    char operator  () (long index);
+     char operator  () (long index) const;
     
     
-     const       char    get_char          (long) const;
-        /**
-         * Retrieve a read-only element at index x. 
-         * same as s(i), but with this function you don't have to write (*s)(i) for pointers
-         
-         * @param index : the index (0-based) of a character to retrieve
-         * @return      : the character at the specified index or default_return
-         * @sa operator ()
-         *  Revision history
-           - SLKP 20170517 reviewed while porting from v3 branch
-         */
+    /**
+     * Retrieve a read-only element at index x.
+     * same as s(i), but with this function you don't have to write (*s)(i) for pointers
+     
+     * @param index : the index (0-based) of a character to retrieve
+     * @return      : the character at the specified index or default_return
+     * @sa operator ()
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     */
+     inline const       char    get_char          (long) const;
+
+    /**
+     * Retrieve a read-only element at index x.
+     * WITHOUT ANY RANGE CHECKING
+     * @param index : the index (0-based) of a character to retrieve
+     * @return      : the character at the specified index or default_return
+     * @sa operator ()
+     * @sa get_char
+     *  Revision history
+     - SLKP 20170616 initial implementation
+     */
+     inline const       char    char_at          (unsigned long idx) const {
+       return s_data [idx];
+     }
 
     /** The sole purpose of this function is to allow warning-free compilation of
      calls like array [string.getUChar (i)], otherwise you'd get warnings about
@@ -305,12 +353,10 @@ public:
      */
      inline const       unsigned char    get_uchar          (long i) const {
       return (unsigned char)s_data[i];
-    }
+     }
     
     /** Get the length of this string 
-     
      @return the length of the string
-
      *  Revision history
         - SLKP 20170517 reviewed while porting from v3 branch
      */
@@ -319,6 +365,23 @@ public:
         return s_length;
     }
 
+    /** Check if the string is emtpy
+     *  Revision history
+        - SLKP 20170615 initial implementation
+     */
+    
+    inline bool empty (void) const {
+      return s_length == 0UL || s_data == nil;
+    }
+
+    /** Check if the string is non-emtpy
+     *  Revision history
+     - SLKP 20170621 initial implementation
+     */
+    
+    inline bool nonempty (void) const {
+      return !empty();
+    }
 
     /** Store the supplied character in a given index; functionally almost the same as
      str[index] = date, but neater to write than (*str)[index] = data, and this also
@@ -330,10 +393,84 @@ public:
      */
     void    set_char          (unsigned long index , char const data );
 
+
+    /** Retrieve the read-only char * for the string contents
+     A convenience function to avoid writing (const char*) (*this)
+     
+     @return string data (could be null!, no checks performed)
+     @sa operator char *
+     
+     *  Revision history
+     - SLKP 20170608 reviewed while porting from v3 branch
+     */
+    const char * get_str       (void) const;
+
+    /*
+     ==============================================================
+     Type conversions
+     ==============================================================
+     */
+  
+    /** Retrieve the read-only char * for the string contents
+     
+     @return string data (could be null!, no checks performed)
+     @sa get_str
+     
+     *  Revision history
+     - SLKP 20170608 reviewed while porting from v3 branch
+     */
+    operator  const char *         (void) const;
+
+    /**
+     * Converts a string of form "[\d\.]\+" into a floating point number
+     * via a call to strtod
+     * \n\n \b Example: "3.14" becomes 3.14
+     
+     *  Revision history
+     - SLKP 20170608 reviewed while porting from v3 branch
+     */
+  
+    hyFloat      to_float (void) const;
+
+    /**
+     * Converts a string into an integer number
+     * via a call to strtol
+     * \n\n \b Example: "3.14" becomes 3
+     
+     *  Revision history
+     - SLKP 20170608 reviewed; was not in v3 branch
+     */
+    
+    long      to_long (void) const;
+  
+    /**
+     * Obtain a string representation of this string 
+     * Add a reference counter and return 'this'
+       @return this string with an extra reference counter
+     *  Revision history
+     - SLKP 20170608 reviewed while porting from v3 branch
+    */
+    virtual     BaseRef toStr (unsigned long = 0UL);
+
+    /**
+     * Turns seconds into a time string in the form "hh:mm:ss"
+     * \n\n \b Example:
+     * \code
+     * long time_diff = 459132;
+     * _String("").FormatTimeString(time_diff);
+     * \endcode
+     * @param time_diff Seconds of time
+     * @return duration string to "127:32:12" in the example.
+     *  Revision history
+     - SLKP 20170616; reviewed while porting from the v3 branch
+     */
+    
+    static const _String  FormatTimeString (long const);
+
      /*
-     ==============================================================
-     Comparisons
-     ==============================================================
+      ==============================================================
+      Comparisons
+      ==============================================================
      */
  
     /** Perform a lexicographic comparison of two strings
@@ -342,11 +479,11 @@ public:
      *  Revision history
      - SLKP 20170517 reviewed while porting from v3 branch
      [CHANGE-NOTE SLKP 20170517,
-     return type from char to _HY_COMPARISON_TYPE
+     return type from char to hyComparisonType
      argument from _String const* to _String const & ]
      
      */
-    _HY_COMPARISON_TYPE Compare (_String const& rhs) const;
+    hyComparisonType Compare (_String const& rhs) const;
 
     /** Perform a lexicographic comparison of two strings ignoring case.
      Same as casting both strings to lower case and running Compare
@@ -358,7 +495,7 @@ public:
      - SLKP 20170517 initial implementation
      
      */
-    _HY_COMPARISON_TYPE CompareIgnoringCase (_String const& rhs) const;
+    hyComparisonType CompareIgnoringCase (_String const& rhs) const;
 
     /** Obvious lexicographic comparisons, mostly making calls to Compare
      *  Revision history
@@ -374,23 +511,23 @@ public:
     bool EqualIgnoringCase     (const _String&) const;
     bool Equal     (const char) const;
 
-    bool EqualWithWildChar (_String const& pattern, char const wildchar = '*', unsigned long start_this = 0UL, unsigned long start_pattern = 0UL) const;
-    
     /** match this string to a shell style pattern where the wildchar specifies "match zero or more of anything"
      
-        @param pattern : the pattern to match
-        @param wildchar : the charcter to treat as a wild char
-        @param start_this : start matching at this position in "this"
-        @param start_pattern : start matching at this position in *pattern*
-    
-        @return did the string match the pattern
-
-         *  Revision history
-            - SLKP 20170517 reviewed while porting from v3 branch
-            [CHANGE-NOTE SLKP 20170517 change pattern type to _String const& from _String const *]
-
+     @param pattern : the pattern to match
+     @param wildchar : the charcter to treat as a wild char
+     @param start_this : start matching at this position in "this"
+     @param start_pattern : start matching at this position in *pattern*
+     
+     @return did the string match the pattern
+     
+     *  Revision history
+     - SLKP 20170517 reviewed while porting from v3 branch
+     [CHANGE-NOTE SLKP 20170517 change pattern type to _String const& from _String const *]
+     
      */
+    bool EqualWithWildChar (_String const& pattern, char const wildchar = '*', unsigned long start_this = 0UL, unsigned long start_pattern = 0UL) const;
     
+  
     /*
      ==============================================================
      Content-modification and extraction methods
@@ -499,570 +636,626 @@ public:
     
     void    Trim(long, long);
 
-    /*
+    /**
+     * Converts string to a particular case
+     @param conversion_type: which case ? kStringUpperCase or kStringLowerCase
+     
+     *  Revision history
+        -SLKP 20170614 reviewed while porting from v3 branch
+          
+        [CHANGE-NOTE SLKP 20170614 consolidated LoCase and UpCase;
+         changed behavior from in-place to returning a modified string
+        ]
+     */
+    const _String    ChangeCase (hy_string_case conversion_type) const;
+    
+    /**
+     * Returns a list from a string split by a substr
+     * \n\n \b Example: _String("hyphy, gattaca, protease").Tokenize(",") will create a list {"hyphy","gattaca","protease"}
+     * @param splitter The substring to split the string by
+     * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
+     *  Revision history
+      -SLKP 20170615 reviewed while porting from v3 branch; previous impelementation would 
+       not handle empty string splitter;
+       ]
+     */
+    const _List  Tokenize (_String const& splitter) const;
+  
+
+    /**
+     * Decorates the string with quotes
+     
+     * @param quote_char which character to use as a "quote"
+     * @return quote_char + *this + quote_char
+     *  Revision history
+        -SLKP 20170616 reviewed while porting from v2.3 branch
+     */
+    const    _String Enquote (char quote_char = '\'') const;
+
+    /**
+     * Returns a copy of the string with all spaces removed
+     * \n\n \b Example: \code _String("   h  y p    h  y").KillSpaces \endcode
+     * @param result The string that will have stripped spaces.
+     * @sa CompressSpaces()
+     * @return The example would return "hyphy"
+     *  Revision history
+        -SLKP 20170616 reviewed while porting from v3 branch; changed from in place 
+                       to return by value
+     */
+    const _String    KillSpaces       (void) const;
+
+    /**
+     * Replaces all runs of white spaces with a single ' ' character
+     * \n\n \b Example: \code _String("   h  y p    h  y").CompressSpaces() \endcode
+     * @return Example would return the string to " h y p h y"
+     * @sa KillSpaces()
+     *  Revision history
+        -SLKP 20170616 reviewed while porting from v3 branch; changed from in place
+                       to return by value
+     */
+      const _String    CompressSpaces  (void) const;
+
+     /*
      ==============================================================
      Search functions
      ==============================================================
      */
+  
+  
+    /**
+     * Find first occurence of the string between "start" and "end" (inclusive)
+     * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
+     * @param pattern The substring to find
+     * @param start The 0-based index to start searching from
+     * @param end   The 0-based index to search to (inclusive); -1 : end of string
+     * @return Returns the index of the first instance of the pattern, kNotFound (<0) if not found. 2 in the example
+       @sa FindBackwards
+     *  Revision history
+     - SLKP 20170608 reviewed while porting from v3 branch
+     */
+    long    Find(const _String& pattern, long start = 0L, long end = kStringEnd) const;
 
     /**
-    * Checks if the string contains the substring
-    * \n\n \b Example: \code bool contains = _String("AABBCC").ContainsSubstring("BB")); \endcode
-    * @param s The substring to check
-    * @return Returns true if string contains substring
-    */
-    bool ContainsSubstring (_String&);
-
-    /**
-    * Converts a good ole char*
-    * \n\n \b Example: \code string.toStr(); \endcode
-    */
-    virtual     BaseRef toStr (unsigned long = 0UL);
-
-    /**
-    * Return good ole char*
-    */
-    virtual     operator const char* (void) const;
-
-    /**
-    * Returns a good ole char*
-    * \n\n \b Example: \code char * new_str = string.getStr(); \endcode
-    * @return Returns a good ole char*
-    */
-    const char*    getStr(void) const;
-
+     * Find first occurence of the string between "start" and "end" (inclusive)
+     * looking backwards (i.e. last occurrence reported)
+     * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
+     * @param pattern The substring to find
+     * @param start The 0-based index to start searching from
+     * @param end   The 0-based index to search to (inclusive); -1 : end of string
+     * @return Returns the index of the first instance of the pattern, kNotFound (<0) if not found. 3 in the example
+     @sa Find
+     *  Revision history
+     - SLKP 20170608 reviewed while porting from v3 branch
+     */
  
+     long    FindBackwards (const _String& pattern, long start = 0L, long end = kStringEnd) const;
+     /**
+     * Find first occurence of the character between "start" and "end" (inclusive)
+     * Uses a sentinel linear search
+     * \n\n \b Example: \code _String ("AABBCC").Find('B')\endcode
+     * @param p The character to find
+     * @param start The 0-based index to start searching from
+     * @param end   The 0-based index to search to (inclusive); -1 : end of string
+     * @return Returns the index of the first instance of the pattern, kNotFound (<0) if not found. 2 in the example
+     
+     *  Revision history
+     - SLKP 20170608 reviewed while porting from v3 branch
+     */
+    long    Find(const char p, long start = 0L, long to = kStringEnd) const ;
 
-
-
-
-
-
-
+  
+     /**
+     * Find first occurence of the string between "start" and "end" (inclusive)
+     * @see Find() for parameter explanation
+     *  Revision history
+      - SLKP 20170612; reviewed and modifed to be the same as Find with case normalization
+                       while porting from the v3 branch
+     */
+    
+    long    FindAnyCase (_String const& pattern , long start = 0L, long to = kStringEnd) const;
+ 
+  
     /**
-    * Replace string 1 with string 2, all occurences true/false
-    * \n\n \b Example: \code _String("AAABBBCCC").Replace("BBB","ZZZ") \endcode
-    * @param s The substring to replace
-    * @param d The substring to replace the value with
-    * @param flag If true, replace all.
-    * @return "AAAZZZCCC"
-    */
+     * Replace string `pattern` with string `replace`, all occurences true/false
+     * \n\n \b Example: \code _String("AAABBBCCCBBB").Replace("BBB","ZZ",true) \endcode
+     * @param pattern The substring to replace
+     * @param replace The substring to replace the value with
+     * @param flag If true, replace all.
+     * @return "AAAZZCCCZZ"
 
-    const _String Replace(const _String, const _String, bool) const;
-
-
+     *  Revision history
+       - SLKP 20170614; reviewed while porting from the v3 branch
+     */
+  
+    const _String Replace(const _String& pattern, const _String replace, bool replace_all) const;
+ 
+  
     /**
-    * Locate the first non-space character of the string
-    * \n\n \b Example: \code _String ("    hyphy").FirstNonSpaceIndex()\endcode
-    * @param start Beginning of string search
-    * @param end End of string search
-    * @param direction Choose between backwards and forwards
-    * @return The char of the first non-space, in the example, 'h'.
-    * @see FirstNonSpaceIndex()
-    */
-    char    FirstNonSpace(long start = 0, long end = -1, char direction = 1);
+     * Locate the first non-space character of the string
+     * \n\n \b Example: \code _String ("    hyphy").FirstNonSpaceIndex()\endcode
+     * @param start Beginning of string search
+     * @param end End of string search
+     * @param direction Choose between kStringDirectionForward and kStringDirectionBackwards
+     * @return The char of the first non-space, in the example, 'h'.
+     * @see FirstNonSpaceIndex()
 
+     *  Revision history
+     - SLKP 20170614; reviewed while porting from the v3 branch
+       [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondtion]
+
+     */
+  
+    char    FirstNonSpace(long start = 0, long end = kStringEnd, hy_string_search_direction direction = kStringDirectionForward) const;
+    
     /**
-    * Locate the first non-space character of the string
-    * \n\n \b Example: \code _String ("    hyphy").FirstNonSpaceIndex()\endcode
-    * @param start Beginning of string search
-    * @param end End of string search
-    * @param direction Choose between backwards and forwards
-    * @return The index of the first non-space, in the example, 4.
-    * @see FirstNonSpaceIndex()
-    */
-    long    FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1) const;
+     * Locate the first non-space character of the string
+     * \n\n \b Example: \code _String ("    hyphy").FirstNonSpaceIndex()\endcode
+     * @param start Beginning of string search
+     * @param end End of string search
+     * @param direction Choose between kStringDirectionForward and kStringDirectionBackwards
+     * @return The index of the first non-space, in the example, 4.
+     * @see FirstNonSpaceIndex()
 
+     *  Revision history
+     - SLKP 20170614; reviewed while porting from the v3 branch
 
+     */
+    long    FirstNonSpaceIndex(long start = 0, long end = kStringEnd, hy_string_search_direction direction = kStringDirectionForward) const;
+    
+    
     /**
-    * Locate the first space character of the string
-    * \n Returns index of first space character
-    * \n\n \b Example: \code _String ("h yphy").FirstSpaceIndex()\endcode
-    * @param start starting index
-    * @param end ending index to search
-    * @param direction If the direction is less than 0, then go backwards
-    * @return Returns the index of the first non-space. 1 in the example.
-    * @sa FirstSpaceIndex()
-    */
-    long    FirstSpaceIndex(long start = 0, long end = -1, char direction = 1) const;
-
+     * Locate the first space character of the string
+     * \n Returns index of first space character
+     * \n\n \b Example: \code _String ("h yphy").FirstSpaceIndex()\endcode
+     * @param start starting index
+     * @param end ending index to search
+     * @param direction Choose between kStringDirectionForward and kStringDirectionBackwards
+     * @return Returns the index of the first non-space. 1 in the example.
+     * @sa FirstSpaceIndex()
+     
+     *  Revision history
+      - SLKP 20170614; reviewed while porting from the v3 branch
+        [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondtion]
+     */
+    long    FirstSpaceIndex(long start = 0, long end = kStringEnd, hy_string_search_direction direction = kStringDirectionForward) const;
+    
     /**
      * Locate the first non-space character of the string following one or more spaces
      * \n Returns index of first space character
      * \n\n \b Example: \code _String ("h yphy").FirstSpaceIndex()\endcode
      * @param start starting index
      * @param end ending index to search
-     * @param direction If the direction is less than 0, then go backwards
+     * @param direction Choose between kStringDirectionForward and kStringDirectionBackwards
      * @return Returns the index of the first non-space. 1 in the example.
      * @sa FirstSpaceIndex()
+     *  Revision history
+     - SLKP 20170614; reviewed while porting from the v3 branch
+     [CHANGE-NOTE SLKP 20170614 seems that the search in reverse direction was not implemented correctly]
+    */
+  
+    long    FirstNonSpaceFollowingSpace(long start = 0, long end = kStringEnd, hy_string_search_direction direction = kStringDirectionForward) const;
+ 
+  
+    /**
+     * Checks to see if String begins with substring
+     * \n\n \b Example: \code _String("hyphy").beginswith("h")\endcode
+     * @param pattern Substring
+     * @param case_sensitive If true, it will be case sensitive. Default is case sensitive.
+     * @param from: start matching *this at this position
+     * @return true if string begins with substring. Example returns true
+     * @sa EndsWith()
+     *  Revision history
+     - SLKP 20170615; reviewed while porting from the v3 branch, renamed to camel case (not cheap)
+                      added the third argument to check for match from a given position in this
+    */
+    bool BeginsWith (_String const& pattern, bool case_sensitive = true, unsigned long from = 0UL) const;
+ 
+    /**
+     * Checks to see if String ends with substring
+     * \n\n \b Example: \code _String("hyphy").endswith("hy")\endcode
+     * @param pattern Substring
+     * @param case_sensitive If true, it will be case sensitive. Default is case sensitive.
+     * @return true if string ends with substring. Example returns true
+     * @sa BeginsWith()
+     *  Revision history
+        - SLKP 20170616; reviewed while porting from the v3 branch, renamed to camel case (not cheap)
      */
-    long    FirstNonSpaceFollowingSpace(long start = 0, long end = -1, char direction = 1) const;
+    bool EndsWith (_String const& pattern, bool case_sensitive = true) const;
 
     /**
-    * Finds end of an ID. An ID is made up of alphanumerics, periods, or '_'
-    * \n\n \b Example: \code _String ("AA$AAA").FindEndOfIdent()\endcode
-    * @param start Where to start looking
-    * @param end Where to end looking, -1 is the end of the string
-    * @param wild Wild character to skip as well
-    * @return Position after the end of the identifier. 3 in the example
+     * Checks to see if String starts with substring and it can't be extended to make a valid ident
+     * by checking the next character only
+     * \n\n \b Example: \code _String("return;").StarsWithAndIsNotAnIdent("return"); _String("return_me").StarsWithAndIsNotAnIdent("return")\endcode
+     * @param pattern the prefix pattern
+     * @return true if string starts with substring and can't be extended to a identifier. 
+               Example 1 would return true, and example 2 would return false
+     *  Revision history
+        - SLKP 20170616; reviewed while porting from the v2.3 branch, renamed to camel case (not cheap)
+     * @sa BeginsWith()
+     */
+    bool BeginsWithAndIsNotAnIdent (_String const&) const;
+    /*
+     ==============================================================
+     Parser-related functions
+     TODO: possible deprecate when the move to the grammar is effected
+     ==============================================================
+     */
+    
+    /**
+     * Finds end of an ID. An ID is made up of alphanumerics, periods, or '_'
+     * \n\n \b Example: \code _String ("AA$AAA").FindEndOfIdent()\endcode
+     * @param start Where to start looking
+     * @param end Where to end looking, -1 is the end of the string
+     * @param wild Wild character to skip as well
+     * @return Position after the end of the identifier. 2 in the example
+     *  Revision history
+     - SLKP 20170614; reviewed while porting from the v2.3 branch
+     TODO : this is only used in ReplicateConstraint, consider moving or deprecating
+     */
+    
+    long    FindEndOfIdent(long start = 0L, long end = kStringEnd, char wild = '*') const;
+ 
+    /**
+     * Starting at index [argument 1],
+     * find a span that encloses an expression (nested) delimited by char[argument 2]
+     * and char[argument 3] (e.g. {}, ()) respecting quotes (argument 4), and allowing
+     * escaped characters (argument 5)
+     * \n SLKP 20090803
+     *
+     * @param &from The starting position of the segment will be stored here
+     * @param open The first character to look for. For example, and open bracket '[' or open paranthesis '('
+     * @param close The first character to look for. For example, and open bracket ']' or open paranthesis ')'
+     * @param options: a bitmask of options, if fExtractRespectQuote is mixed in then
+      do not look withing enquoted parts of the string if set if fExtractRespectEscape is mixed in 
+      do not consider \char as matches to char when searching
+     *
+     * @return Ending position is returned
+     *   kNotFound is returned if the starting character could not be found or the expression did not terminate before the end of the string
+     *
+     *  Revision history
+       - SLKP 20170614; reviewed while porting from the v2.3 branch; convered the two bool flags to a bit-mask so that the calls can be more explict
+       - SLKP 20170615; included support for singly quoted literals
     */
-    long    FindEndOfIdent(long start = 0, long end = -1, char wild = '*');
+  
+    long    ExtractEnclosedExpression (long&, char, char, int) const;
+  
+  
+    /**
+     * Starting at a 0-based index [argument 1],
+     * find a span that terminates in one of the characters in [argument 2], while
+     * respecting (), [], {}, "" and escapes
+     * \n SLKP 20090805
+     * @param start the index to start the search from
+     * @param terminator The terminator to find
+     * @return kNotFound is returned if the starting character could not be found or the expression did not terminate before the end of the string
+     * @sa IsALiteralArgument()
+     *  Revision history
+        - SLKP 20170615   reviewed while porting from the v2.3 branch;
+                          for the string; included support for singly quoted literals;
+                          cleaned up the logic, and fixed broken logic for terminator > 1 char long
+     */
+    
+    long    FindTerminator          (long start, _String const& terminator) const;
+ 
+  
+    /**
+     * Strips quotes from around the string if present (in place)
+     * \n\n \b Example: \code _String("\"hyphy\"").StripQuotes("")\endcode
+     * @param open_char : the opening quote char
+     * @param close_char : the closing quote char 
+     
+     *  Revision history
+        - SLKP 20170616   reviewed while porting from the v3 branch
+     
+     */
+    void    StripQuotes(char open_char = '"', char close_char = '"');
 
     /**
-    * Find first occurence of the string between from and to
-    * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
-    * @param s The substring to find
-    * @param from The index to start searching from
-    * @param to The index to search to
-    * @return Returns the index of the first instance of the substr, -1 if not found. 2 in the example
-    * @sa FindKMP()
-    */
-    long    Find(const _String s, long from = 0, long to = -1) const;
+     * Checks if String is valid ident
+     * \n A valid ident is any alphanumeric or '_'
+     * \n\n \b Example: '$hyphy' is not legal.  'hy_phy' is legal.
+     * @param options if fIDAllowCompound is set, treat 'x.y.z' as a valid identifier,
+                      if fIDAllowFirstNumeric is set, consider '2x' a valid identifier
+     * @sa ConvertToAnIdent();
+     *  Revision history
+        - SLKP 20170616   reviewed while porting from the v3 branch
+                          changed the argument to bitmask, added fIDAllowFirstNumeric
+     
+     */
+    bool    IsValidIdentifier( int options = fIDAllowCompound ) const;
 
     /**
-    *  @see Find()
-    */
-    long    Find(char s, long from = 0, long to = -1) const ;
+     * Converts a string to a valid ident
+     * \n A valid ident is any alphanumeric or '_'
+     * \n\n \b Example: \code _String("$hyphy") \endcode
+     * @param strict If strict, only alphabetic, no numerals.
+     * @param options if fIDAllowCompound is set, treat 'x.y.z' as a valid identifier,
+                      if fIDAllowFirstNumeric is set, consider '2x' a valid identifier
+     * @sa IsValidIdentifier();
+     * @return the example would return "_hyphy"
+
+     *  Revision history
+     - SLKP 20170616   new implementation based on _IsValidIdentifierAux
+                       changed the argument to bitmask, added fIDAllowFirstNumeric
+                       changed from in-place modification to returning a modified string
+                       this function actually respects fIDAllowCompound now
+     */
+     const _String    ConvertToAnIdent ( int options = fIDAllowCompound) const;
 
     /**
-    * Find first occurence of the string between from and to
-    * @param s The substring to find
-    * @param from The index to start searching from
-    * @param to The index to search to
-    * @return Returns the index of the first instance of the substr, -1 if not found
-    * @sa Find()
-    * @sa buildKmpTable()
-    */
-    long    FindKMP(_String s, long from = 0, long to = -1);
+     * If it is enclosed in quotes, then it is a literal argument
+     * \n \n \b Example: "\"hyphy \"quote\"\"" is a literal argument; 
+     * @param strip_quotes if set to TRUE and the expression is a literal, trim the quotes
+     *  Revision history
+     - SLKP 20170616   reviewed while porting from the v3 branch
+                       added support for single quotes in addition to double quotes
+     */
+  
+    bool    IsALiteralArgument  (bool strip_quotes = false);
 
     /**
-    * Builds a KMP table for use with FindKMP
+     * Examine the string argument contained in this object, decide what it is, and process accordingly
+     * \n\n \bExample: \code 'hyphy'.ProcessVariableReferenceCases (object) \endcode is a direct reference to object hyphy
+     * \n\n \bExample: \code '\"hy\"+\"phy\"'.ProcessVariableReferenceCases (object) \endcode is a direct reference to object hyphy
+     * \n\n \bExample: \code '*hyphy'.ProcessVariableReferenceCases (object) \endcode is a reference to the object whose name is stored in the string variable hyphy
+     * \n\n \bExample: \code '**hyphy'.ProcessVariableReferenceCases (object) \endcode is a reference to the object whose name is stored in the string variable hyphy in the global context
+     * @param referenced_object will store the handled variable ID
+     * @param context is the namespace of the referenced object; could be nil
+     * @return one of HY_STRING_INVALID_REFERENCE    HY_STRING_DIRECT_REFERENCE   HY_STRING_LOCAL_DEREFERENCE    HY_STRING_GLOBAL_DEREFERENCE
+     * @see IsValidIdentifier()
+     - SLKP 20170616   reviewed while porting from the v2.3 branch
+     */
+  
+    hy_reference_type             ProcessVariableReferenceCases (_String& referenced_object, _String const * context = nil) const;
+ 
+    /*
+    ==============================================================
+    METHODS
+    ==============================================================
     */
-    void    buildKmpTable(_String s);
 
-    /**
-    * Case insensitive Find
-    * @see Find()
-    */
-
-    long    FindAnyCase (_String, long from = 0, long to = -1);
-
-    /**
-    * Backwards Find
-    * @see Find()
-    */
-    long    FindBackwards(_String const&, long, long) const;
-
-    /**
-    * Binary searches for a char inside of a string
-    * \n\n \b Example: \code _String ("AABBCC").FindBinary('B')\endcode
-    * @param s The char to look for inside of the string
-    * @return The location of the char, -1 if doesn't exist. 3 in the example.
-    */
-    long    FindBinary(char);
 
     /**
     * Compute Adler-32 CRC for a string
     * \n\n \b Example: \code _String result = new _String ("Wikipedia"); \endcode
     * \n Implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
     * @return the Adler32 checksum. 300286872 returns in the Example
+
+     *  Revision history
+     - SLKP 20170614; reviewed while porting from the v3 branch
     */
-    long    Adler32 (void);
-
-    /**
-    * Turns seconds into a time string in the form "hh:mm:ss"
-    * \n\n \b Example:
-    * \code
-    * long time_diff = 459132;
-    * _String("").FormatTimeString(time_diff);
-    * \endcode
-    * @param time_diff Seconds of time
-    * @return Transforms string to "127:32:12" in the example.
-    */
-
-    void    FormatTimeString (long);
+    long    Adler32 (void) const;
 
 
     /**
-    * Case Insensitive Lexicographic comparison
-    * \n Checks if Strings are equal lexicographic
-    * @param s Second string to compare
-    * @return true if strings are equal
-    * @sa Compare()
-    */
-    bool iEqual   (_String*);
-
-
-
- 
-
-     /**
-    * Checks to see if string contains substring
-    * \n\n \b Example: \code _String("hyphy").contains("h")\endcode
-    * @return Returns true if string contains substring. Example returns true
-    * @see Find()
-    */
-    bool contains (_String);
-
-    /**
-    * Checks to see if string contains character
-    * @return Returns true if string contains character
-    * @see contains()
-    */
-    bool contains (char);
-
-    /**
-    * Checks to see if String begins with substring
-    * \n\n \b Example: \code _String("hyphy").beginswith("h")\endcode
-    * @param s Substring
-    * @param caseSensitive If true, it will be case sensitive. Default is case sensitive.
-    * @return true if string begins with substring. Example returns true
-    * @sa contains()
-    * @sa startswith()
-    * @sa endswith()
-    */
-    bool beginswith (_String const, bool = true) const;
-
-    /**
-    * Checks to see if String starts with substring
-    * \n\n \b Example: \code _String("hyphy").startswith("h")\endcode
-    * @param s Substring
-    * @return true if string starts with substring. Example would return true
-    * @sa contains()
-    * @sa beginswith()
-    * @sa endswith()
-    */
-    bool startswith (_String const&) const;
-
-    /**
-     * Checks to see if String starts with substring and it can't be extended to make a valid ident
-     * \n\n \b Example: \code _String("return;").startswith("return"); _String("return_me").startswith("return")\endcode
-     * @param s Substring
-     * @return true if string starts with substring. Example 1 would return true, and example 2 would return false
-     * @sa contains()
-     * @sa beginswith()
-     * @sa endswith()
-     */
-    bool startswith_noident (_String const&) const;
-
-    /**
-    * Checks to see if String ends with substring
-    * \n\n \b Example: \code _String("hyphy").endswith("y")\endcode
-    * @param s Substring
-    * @param caseSensitive If true, it will be case sensitive. Default is case sensitive.
-    * @return true if string ends with substring. Example would return true.
-    * @sa contains()
-    * @sa beginswith()
-    * @sa startswith()
-    */
-    bool endswith (_String, bool = true);
-
-    /**
-    * Converts string to upper case
-    * @sa LoCase()
-    */
-    void    UpCase (void);
-
-    /**
-    * Converts string to lower case
-    * @sa UpCase()
-    */
-    void    LoCase (void);
-
- 
-
-    /**
-    * Returns a list from a string split by a substr
-    * \n\n \b Example: _String("hyphy, gattaca, protease").Tokenize(",") will create a list {"hyphy","gattaca","protease"}
-    * @param s The substring to split the string by
-    * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
-    */
-    const _List  Tokenize (_String const&) const;
-
-    /**
-    * TODO: With batchlan
-    */
-    bool    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, hy_pointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil);
-
-    /**
-    * TODO: With batchlan
-    */
-    void    ProcessParameter (void);
-
-    /**
-    * Compose two UNIX paths (abs+rel)
-    * \n\n \b Example: \code _String("/home/sergei/hyphy").PathComposition("../datamonkey")\endcode
-    * @param relPath The relative path to change to
-    * @return New File Path, Example would return "/home/sergei/datamonkey"
-    */
-    _String const PathComposition (_String const) const;
-
-    /**
-    * Subtracts the string from the string passed.
-    * \n\n \b Example: \code _String("/home/sergei/hyphy").PathSubtraction("/home/sergei/")\endcode
-    * @param s String that will be subtracted
-    * @return Example would return "hyphy"
-    */
-    _String const PathSubtraction (_String const, char) const;
-
-    /**
-    * Strips quotes from around the string if present (in place)
-    * \n\n \b Example: \code _String("\"hyphy\"").StripQuotes("")\endcode
-    */
-    void    StripQuotes(void);
-
-    /**
-     * Decorates the string with quotes
-
-     * @param quote_char which character to use as a "quote"
-     * @return quote_char + *this + quote_char
-     */
-    const    _String Enquote (char quote_char = '\'') const;
-
-    /**
-    * Checks if String is valid ident
-    * \n A valid ident is any alphanumeric or '_'
-    * \n\n \b Example: '$hyphy' is not legal.  'hy_phy' is legal.
-    * @param strict If strict, only alphabetic, no numerals.
-    * @sa ConvertToAnIdent();
-    */
-    bool    IsValidIdentifier(bool = true) const;
-
-    /**
-    * Same as IsValidIdentifier, but must end with a '&'
-    * \n\n \bExample: 'hyphy&' is a valid ref identifier
-    * @see IsValidIdentifier()
-    */
-    bool    IsValidRefIdentifier(void) const;
-
-    /**
-    * If it is enclosed in quotes, then it is a literal argument
-    * \n \n \b Example: "\"hyphy\"" is a literal argument
-    */
-    bool    IsALiteralArgument  (bool stripQuotes = FALSE);
-
-    /**
-    * Converts a string to a valid ident
-    * \n A valid ident is any alphanumeric or '_'
-    * \n\n \b Example: \code _String("$hyphy") \endcode
-    * @param strict If strict, only alphabetic, no numerals.
-    * @sa IsValidIdentifier();
-    * @return the example would return "_hyphy"
-    */
-    void    ConvertToAnIdent (bool = true);
-
-    /**
-    * Removes all spaces in a string
-    * \n\n \b Example: \code _String("   h  y p    h  y").KillSpaces \endcode
-    * @param result A reference to the string that will have stripped spaces. The original string will not be changed.
-    * @sa CompressSpaces()
-    * @return The example would return "hyphy"
-    */
-    void    KillSpaces       (_String&);
-
-    /**
-    * Removes all spaces in a string
-    * \n\n \b Example: \code _String("   h  y p    h  y").CompressSpaces() \endcode
-    * @return Example would transform the string to "h y p h y"
-    * @sa KillSpaces()
-    */
-    void    CompressSpaces   (void);
-
-    /**
-    * Shorten the var id by removing the matching beginning portion of the passed in String separated by a "."
-    * \n\n \b Example: _String("house.room")._String("house")
-    * @param containerID
-    * @return _String("house.room")._String("house.") will return "room". However, _String("houseroom") will return "houseroom"
-    */
-    _String ShortenVarID     (_String&);
-
-    /**
-    * Examine the string argument contained in this object, decide what it is, and process accordingly
-    * \n\n \bExample: \code 'hyphy'.ProcessVariableReferenceCases (object) \endcode is a direct reference to object hyphy
-    * \n\n \bExample: \code '\"hy\"+\"phy\"'.ProcessVariableReferenceCases (object) \endcode is a direct reference to object hyphy
-    * \n\n \bExample: \code '*hyphy'.ProcessVariableReferenceCases (object) \endcode is a reference to the object whose name is stored in the string variable hyphy 
-    * \n\n \bExample: \code '**hyphy'.ProcessVariableReferenceCases (object) \endcode is a reference to the object whose name is stored in the string variable hyphy in the global context
-    * @param referenced_object will store the handled variable ID
-    * @param context is the namespace of the referenced object; could be nil
-    * @return one of HY_STRING_INVALID_REFERENCE    HY_STRING_DIRECT_REFERENCE   HY_STRING_LOCAL_DEREFERENCE    HY_STRING_GLOBAL_DEREFERENCE 
-    * @see IsValidIdentifier()
-    */
-
-    unsigned char  ProcessVariableReferenceCases (_String& referenced_object, _String const * context = nil) const;
-
-    
-
-    /**
-    * A regular expression match
-    * @param pattern A string(A hy_pointer is a char*) that holds the regex pattern
-    * @param matchedPairs A list that holds the start and end indexes of matches
-    * @sa RegExpMatchAll()
-    * @sa RegExpMatchOnce()
-    */
-    void    RegExpMatch      (hy_pointer, _SimpleList&);
-
-    /**
-    * A regular expression match
-    * @param pattern A string that holds the regex pattern
-    * @param matchedPairs A list that holds the start and end indexes of matches
-    * @sa RegExpMatch()
-    * @sa RegExpMatchOnce()
-    */
-    void    RegExpMatchAll   (hy_pointer, _SimpleList&);
-
-    /**
-    * A regular expression match that only matches once
-    * @param pattern A string that holds the regex pattern
-    * @param matchedPairs A list that holds the start and end indexes of matches
-    * @sa RegExpMatch()
-    * @sa RegExpMatchAll()
-    */
-    void    RegExpMatchOnce  (_String*, _SimpleList&, bool, bool);
-
-    /**
-    * Lexicographically sorts the string
-    * @param index Needs a list to act as an index
-    * @return sorted string
-    */
-    _String*Sort             (_SimpleList* = nil);
-
-    /**
-     * Generate a random string on 
+     * Generate a random string on
      * @param len (>0) The desired length of the string
-     * @param alphabet Which alphabet do the random charcters come from; in nil, then this will be generated from 1-128 ASCII codes 
+     * @param alphabet Which alphabet do the random charcters come from; in nil, then this will be generated from 1-128 ASCII codes
      * @return the random string
+     *  Revision history
+      - SLKP 20170616; reviewed while porting from the v2.3 branch
      */
-    static _String Random             (const unsigned long len, const _String * alphabet = nil);
+    static _String const Random             (const unsigned long len, const _String * alphabet = nil);
+
 
     /**
-    * Computes Lempel-Ziv complexity of the string.
-    * \n The Lempel-Ziv complexity computes the number of separate substrings in a given string
-    * \n Example: 1001111011000010 = 6 because subset of all strings = {1, 0, 01, 1110, 1100, 0010 }
+     * Computes Lempel-Ziv complexity of the string, i.e. roughly the size of the substring table 
+     * that would have been computed using the LZW algorithm
+     * @param rec if provided, will store the indices of substrings mapped to unique codes
+     * @return string complexity (less compressible == higher complexity)
+     * \n Example: 1001111011000010 = 6 because subset the input could be reduced to ~6 codes
+     * The contents of 'rec' would be 0,1,3,7,11,15, implying that the encoded substrings would be
+       [0:0] = 1
+       [1:1] = 0
+       [2:3] = 01
+       [4:7] = 1110
+       [8:11] = 1100
+       [12:15] = 0010
+      *  Revision history
+      - SLKP 20170616; reviewed while porting from the v2.3 branch, not sure
     */
-    long    LempelZivProductionHistory
-    (_SimpleList* = nil);
+    unsigned long    LempelZivProductionHistory    (_SimpleList* rec = nil) const;
 
-    /**
-    * Converts a string of form ":[\d\.]\+" into a double
-    * \n SLKP 20100831: a utility function to handle the
-    * conversion of branch length strings to parameters
-    * \n\n \b Example: string = ":3.14" returns 3.14
-    * \n If it is not of correct form, it will return 1e-10
-    * @sa toNum()
-    */
-    hy_float
-    ProcessTreeBranchLength ();
-
-
-
-    /**
-    * Converts a string of form "[\d\.]\+" into a double
-    * \n\n \b Example: "3.14" becomes 3.14
-    * @sa ProcessTreeBranchLength()
-    */
-
-    hy_float      toNum (void) const;
-
-    /**
-     * Converts a into a long
-     * \n\n \b Example: "3.14" becomes 3
+    /*
+     ==============================================================
+     Regular Expression Methods
+     ==============================================================
      */
-    
-    long      toLong (void) const;
-
-  /**
-    * Sets Length
-    */
-    void    SetLength (unsigned long nl) {
-        s_length=nl;
-    }
-
     /**
-    * Starting at index [argument 1],
-    * find a span that encloses an expression (nested) delimited by char[argument 2]
-    * and char[argument 3] (e.g. {}, ()) respecting quotes (argument 4), and allowing
-    * escaped characters (argument 5)
-    * \n SLKP 20090803
-    *
-    * @param &from The starting position of the segment will be stored here
-    * @param open The first character to look for. For example, and open bracket '[' or open paranthesis '('
-    * @param close The first character to look for. For example, and open bracket ']' or open paranthesis ')'
-    * @param respectQuote
-    * @param respectEscape
-    *
-    * @return Ending position is returned
-    *-1 is returned if the starting character could not be found or the expression did not terminate before the end of the string
-    *
-    */
-
-    long    ExtractEnclosedExpression (long&, char, char, bool, bool);
-
+     * Compile a regular expression represented by a _String object.
+     * @param pattern the regular expression to compile
+     * @param error_code will receive compilation error codes if any
+     * @param case_sensitive controls whether or not the RE is case sensitive
+     * @return the resulting (opaque) RE datastructure, or NULL if
+               compilation failed
+     
+     * @sa FlushRegExp
+     * @sa GetRegExpError
+     *  Revision history
+     - SLKP 20170616; reviewed while porting from the v3 branch
+                      maded static member of the class, changed argument 1 to 
+                      const &
+     */
+     static regex_t*           PrepRegExp                  (_String const& pattern, int& error_code, bool case_sensitive);
+  
     /**
-    * Starting at index [argument 1],
-    * find a span that terminates in one of the characters in [argument 2], while
-    * respecting (), [], {}, "" and escapes
-    * \n SLKP 20090805
-    * @param s The terminator to find
-    * @return -1 is returned if the starting character could not be found or the expression did not terminate before the end of the string
-    * @sa IsALiteralArgument()
-    *
-    */
-
-    long    FindTerminator          (long, _String const&) const;
-
+     * Free a reg_exp datastructure previously returned by PrepRegExp
+     * @param re the (opaque) data structure for the regular expression
+     *  Revision history
+     * @sa PrepRegExp
+     * @sa GetRegExpError
+     - SLKP 20170616; reviewed while porting from the v3 branch
+                      maded static member of the class
+     */
+     static void               FlushRegExp                 (regex_t* re);
+  
+    /**
+     * Convert internal regexp code into a string message
+     * @param code error code
+     * @return the string with the decoded error message
+     * @sa PrepRegExp
+     * @sa FlushRegExp
+     *  Revision history
+      - SLKP 20170616; reviewed while porting from the v3 branch
+                       maded static member of the class
+      */
+     static const _String      GetRegExpError              (int code);
     
+    
+    /**
+     * Search this string for the first match to regular expression and subexpressions
+       return a list of hits (possibly empty) as pairs of ranges; for example
+       "hyphy".RegExpMatch("([^y]+).") -> 0,1,0,0, meaning that the entire expression
+       matches to [0:1] and the first subexpression matches to [0:0]
+     * @param re the regular expression previously compiled by PrepRegExp
+     * @param start start matching the string at this position
+     * @return the coordinates of matches for the entire expression (first pair), and 
+               all subexpressions (left to right); empty if no match
+     
+     *  Revision history
+            - SLKP 20170616; reviewed while porting from the v3 branch
+                             return by value vs writing to argument
+            - SLKP 20170623; added the option to search from a given start position
+     
+     * @sa RegExpAllMatches()
+     */
+  
+     _SimpleList const    RegExpMatch      (regex_t const* re, unsigned long start = 0) const;
+    
+    /**
+     * Search this string for the ALL matches to a regular expression (ignoring subexpressions)
+     return a list of hits (possibly empty) as pairs of ranges; for example
+     "hyphy".RegExpMatch("([^y]+).") -> 0,1,2,4, meaning that [0:1] (hy) and [2:4] (phy) match the pattern
+     * @param re the regular expression previously compiled by PrepRegExp
+     * @return the coordinates of all matches for the entire expression left to right; empty if no match
+     
+     *  Revision history
+     - SLKP 20170616; reviewed while porting from the v3 branch
+          return by value vs writing to argument
+     
+     * @sa RegExpMatch
+      */
+
+     _SimpleList const    RegExpAllMatches   (regex_t const* re ) const;
+  
+     /**
+        Convenience wrappers for RegExpMatch and RegExpAllMatches taking in regex_t arguments
+        where the regular expression is compiled and disposed of internally
+        @param pattern the regular expression to match
+        @param case_sensitive whether to compile the RE as case sensitive or not
+        @param handle_errors if set, call application wide error handlers on errors, otherwise
+               ignore errors and treat them as a missing match
+      
+       * @sa RegExpMatch
+       * @sa RegExpAllMatches
+       * Revision history
+          - SLKP 20170616;  initial implementation
+       *
+     */
+    _SimpleList const     RegExpMatch  (_String const& pattern, bool case_sensitive , bool handle_errors) const;
+    _SimpleList const     RegExpAllMatches  (_String const& pattern, bool case_sensitive , bool handle_errors) const;
+
+
+ 
+
+  
 protected:
     unsigned long s_length;
     char*         s_data;
     
 private:
-    
-    const static  char   default_return = '\0';
-        /** this value is returned for "failed" 
-            access operations that don't throw errors, e.g. getChar */
-    
-    inline void AllocateAndCopyString (const char * source_string, unsigned long length);
-        /** this is a utility function which allocates length+1 chars for s_data, copies
-            the data from source_string, and sets the terminating 0 
-         
-         * Revision history
-            - SLKP 20170517 factoring repeated functionality
-         
-         */
-         
-    long NormalizeRange (long & start, long & end) const;
-    
-    /** given coordinates start and end, converts then to valid string indices
-        if called on an empty string, returns 0 and does not change start and end
-        if start < 0 it is reset to 0
-        if end < 0 or >= string length it is reset to (string length) - 1
+
+  /** Find the length of the maximum prefix that forms a valid ID
+   
+   @param allow_compounds : treat '.' as a valid identifier character (e.g. x.y.z)
+   @param allow_first_numeric : allow idents that start with a digit (e.g. 2x)
+   @param wildcard : treat this character as a valid identifier character (e.g. this1.?.x)
+   
+   @return the 0-based index of the end of the valid ID prefix (-1 if the prefix is empty)
+   
+   * Revision history
+   - SLKP 20170616 reviewed while porting from the v3 branch
+   */
+
+   long    _IsValidIdentifierAux (bool allow_compounds, bool allow_first_numeric, char wildcard = '\0') const;
+
+   /** Find the first character in a range that meets a particular condition
      
-        @param start: start of the range (0-based)
-        @param end  : end of the range
-        @return     : the length of the range 
-
+      @param start : start of the range to search (0-based)
+      @param end : end of the range to search (0-based)
+      @direction : forwards or backwards search 
+      @comparison_function: a function that takes a single argument (char) and returns true if it "passes"
+    
      * Revision history
-        - SLKP 20170517 porting from v3 branch
+     - SLKP 20170614 factored out common functions for conditional index finding
+   */
+
+   template <class CF> long      _FindFirstIndexCondtion (long start, long end, hy_string_search_direction direction, CF comparison_function) const {
+      long requested_range = NormalizeRange(start, end);
+      
+      if (requested_range > 0L) {
+        if (direction == kStringDirectionForward) {
+          for (; start <= end; start++) {
+            if (comparison_function(s_data[start])) {
+              return start;
+            }
+          }
+        } else {
+          for (; end>=start; end--) {
+            if (comparison_function (s_data[end])) {
+              return end;
+            }
+          }
+        }
+      }
+      
+      return kNotFound;
+      
+    }
+  
+    /** this value is returned for "failed"
+     access operations that don't throw errors, e.g. getChar */
+    const static  char   default_return = '\0';
+  
+     /** this is a utility function which allocates length+1 chars for s_data, copies
+     the data from source_string, and sets the terminating 0
+     
+     * Revision history
+     - SLKP 20170517 factoring repeated functionality
+     
      */
-
+    inline void AllocateAndCopyString (const char * source_string, unsigned long length);
+  
+    /** given coordinates start and end, converts then to valid string indices
+     if called on an empty string, returns 0 and does not change start and end
+     if start < 0 it is reset to 0
+     if end < 0 or >= string length it is reset to (string length) - 1
+     
+     @param start: start of the range (0-based)
+     @param end  : end of the range
+     @return     : the length of the range
+     
+     * Revision history
+     - SLKP 20170517 porting from v3 branch
+     */
+    long NormalizeRange (long & start, long & end) const;
+  
+    /** Factored out core of RegExpMatch and RegExpAllMatches
+     * Revision history
+      - SLKP 20170616; initial implementation
+     */
+    const _SimpleList _IntRegExpMatch (const _String & pattern,
+                                       bool case_sensitive, bool handle_errors, bool match_all) const;
 };
-
-/** DEPRECATED
- - virtual     void    DuplicateErasing (BaseRef);
- SLKP 20170517 ::Duplicate now clears *this always
-*/
 
 
 // _______________________________________________________________________
 
 
 
-extern _String 
-       emptyAssociativeList,
-       hyphyCiteString;
 
 
-void    SetStatusBarValue           (long,hy_float,hy_float);
+void    SetStatusBarValue           (long,hyFloat,hyFloat);
 void    SetStatusLine               (_String);
 void    SetStatusLine               (_String, _String, _String, long l);
 void    SetStatusLine               (_String, _String, _String);
@@ -1071,139 +1264,62 @@ void    SetStatusLine               (_String, _String, _String, long, char);
 void    SetStatusLineUser           (_String const);
 
 
-hy_pointer     PrepRegExp                  (_String*, int&, bool);
-void    FlushRegExp                 (hy_pointer);
-_String GetRegExpError              (int);
-_String GetVersionString            (void);
-_String GetTimeStamp                (bool = false);
+
 
 void    StringToConsole             (_String const, void * extra = nil);
 void    BufferToConsole             (const char*, void * extra = nil);
 void    NLToConsole                 (void * extra = nil);
 
-_String*StringFromConsole           (bool=true);
-
-char    GetPlatformDirectoryChar    (void);
+_String*StringFromConsole           (void);
 
 
-extern  _String                     __HYPHY__VERSION__;
 
-#ifdef __UNIX__
-	extern bool	needExtraNL;
-#endif
-
-typedef bool (*_hyStringValidatorType) (_String*);
-bool    hyIDValidator (_String*);
+/** DEPRECATED
+ - virtual     void    DuplicateErasing (BaseRef);
+ SLKP 20170517 ::Duplicate now clears *this always
+ */
 
 
-/** REMOVED
+
+/** REMOVED or MOVED
  - virtual     void    DuplicateErasing (BaseRef);
         SLKP 20170517 ::Duplicate now clears *this always
  - void    CopyDynamicString (_String* s, bool = true);
     SLKP 20170517 the same can be accomplished by 'x = s' and constructor elision
  - bool    iEqual 
     SLKP 20170517 replace with a more general CompareIgnoringCase
- 
+ - bool ContainsSubstring (_String&);
+    SLKP 20170612: Never used in the code
+ - void    buildKmpTable(_String s);
+    SLKP 20170612: never used 
+ - long    FindKMP 
+    SLKP 20170612: never used
+ -  bool iEqual   (_String*);
+    SLKP 20170612: never used
+ -  bool contains ({_String, char})
+    SLKP 20170616: never used
+ -  bool startswith (_String const&) const;
+    SLKP 20170616: replace with calls to BeginsWith
+ -  void SetLength (unsigned long nl)
+    SLKP 20170616: removed because the calling class (CString) has been removed
+ -   void    ProcessParameter (void)
+    SLKP 201706016: removed, because the underlying logic has been deprecated 
+        (e.g. Tree T = PROMPT_FOR_STRING)
+ -  bool IsValidRefIdentifier 
+    SLKP 20170616: never used
+ -  const _String ShortenVarID     (_String const &) const;
+    SLKP 20170616: never used
+ -  _String const PathComposition (_String const) const;
+    SLKP 20170616: never used
+ -  _String const PathSubtraction (_String const) const;
+    SLKP 20170616: never used
+ -  Sort()
+    SLKP 20170616: never used
+ -  ProcessTreeBranchLength ()
+    SLKP 20170616: moved to CalcNode as static
+ -    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, hyPointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil);  
+    SLKP 20170616: moved to hy_global
 
  */
 
-/**
- * Append operator
- * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
- * @return "AB"
- * @sa EscapteAndAppend()
- */
-// _String & operator << (const _String*); // MOVE TO STRING BUFFER
-
-/**
- * Append operator
- */
-//_String & operator << (const _String&); // MOVE TO STRING BUFFER
-
-/**
- * Append operator
- * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
- * @return "AB"
- * @sa EscapteAndAppend()
- */
-//void    AppendNewInstance (_String*); // MOVE TO STRING BUFFER
-
-/**
- * Append multiple copies of the same string to the buffer
- * @param value the string to copy
- * @param copies how many copies to make
- */
-//void    AppendNCopies   (_String const& value, unsigned long copies); // MOVE TO STRING BUFFER
-
-/**
- * Append operator
- * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
- * @return "AB"
- * @sa AppendNewInstance()
- */
-//_String& operator << (const char); // MOVE TO STRING BUFFER
-
-/**
- * Escape all characters in a string and append to this string
- * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
- * \n Above code will transform string to "AB&lt;"
- * @param c The character to escape and append
- * @param mode What sort of escaping
- * \n mode = 0 : normal "text" escaping
- * \n mode = 1: PostScript escaping
- * \n mode = 2: SQLite escaping
- * \n mode = 3: SQLite escaping
- * \n mode = 4: HTML escaping
- * \n mode = 5: Regexp escaping
- */
-//virtual void EscapeAndAppend (const char, char); // MOVE TO STRING BUFFER
-
-/**
- * Escape all characters in a string and append to this string
- * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
- * \n Above code will transform string to "AB&lt;"
- * @param s The string to escape and append
- * @param mode What sort of escaping
- * @see EscapeAndAppend(const char, char)
- */
-//virtual void EscapeAndAppend (const _String &, char mode = 0); // MOVE TO STRING BUFFER
-
-/**
- * Append into operator
- */
-//_String& operator << (const char*); // MOVE TO STRING BUFFER
-
-/**
- * Finalizes a string by putting a 0 at the end of the string.
- */
-//virtual void Finalize (void); // MOVE TO STRING BUFFER
-
-/**
- * SLKP 20090817: A utility function to append a statement of the form
- * \n\n \b Example: _String("hyphy").AppendAnAssignmentToBuffer("12","12",false,false,false) makes "hyphy12=12"
- * @param id = value; to the current string assumed to be in the buffer form
- * @param flags: a bitwise combination of flags; set kAppendAnAssignmentToBufferFree to free 'value'; \\
- set kAppendAnAssignmentToBufferQuote to put quotes around the value \\
- set kAppendAnAssignmentToBufferAssignment to use ':=' instead of '=' \\
- default is to use kAppendAnAssignmentToBufferFree
- * @sa AppendNewInstance()
- * @sa AppendVariableValueAVL()
- */
-
-// void    AppendAnAssignmentToBuffer (_String*, _String*, unsigned long = kAppendAnAssignmentToBufferFree); // MOVE TO STRING BUFFER
-
-/**
- * SLKP 20090817:
- * A utility function to append a statement of the form
- * id["varname"] = varvalue; for each variable in the SimpleList arguments
- * for String valued variables, their values are properly quoted
- * @param id = value; to the current string assumed to be in the buffer form
- * @param doFree free the 2nd string argument when done
- * @param doQuotes put quotes around the value
- * @param doBind use := instead of =
- * @sa AppendNewInstance()
- * @sa AppendAnAssignmentToBuffer()
- */
-
-//void    AppendVariableValueAVL (_String*, _SimpleList&);// MOVE TO STRING BUFFER
 #endif

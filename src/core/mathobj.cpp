@@ -264,7 +264,7 @@ _MathObject* _MathObject:: FormatNumberString (_MathObject*,_MathObject*) {
     HandleApplicationError (kErrorStringNullOperand);
     return this;
 }
-hy_float _MathObject::   Value (void)              {
+hyFloat _MathObject::   Value (void)              {
     HandleApplicationError (kErrorStringNullOperand);
     return 0.0;
 }

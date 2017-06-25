@@ -39,6 +39,7 @@
 
 #include "global_things.h"
 #include "hy_strings.h"
+#include "hy_string_buffer.h"
 #include "hbl_env.h"
 #include "batchlan.h"
 #include "mersenne_twister.h"
@@ -46,6 +47,9 @@
 
 #if defined   __UNIX__ 
     #include <unistd.h>
+    #if !defined __MINGW32__
+    #include <sys/utsname.h>
+    #endif
 #endif
 
 #include <time.h>
@@ -53,7 +57,7 @@
 using     namespace hy_env;
 
 extern _SimpleList freeSlots;
-extern  _HY_TREE_DEFINITION_PHASE       isDefiningATree;
+extern  hyTreeDefinitionPhase       isDefiningATree;
 extern  _String                         hy_scanf_last_file_path;
 
 
@@ -86,7 +90,13 @@ namespace hy_global {
                     *hy_message_log_file;
     
     _String const    kEmptyString,
-                     kXVariableName ("hy_x_variable"),
+                     kPromptForFilePlaceholder        ("PROMPT_FOR_FILE"),
+                     kTemporaryFilePlaceholder        ("TEMP_FILE_NAME"),
+                     kEmptyAssociateList ("{}"),
+                     kHyPhyCiteString ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using\
+ phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at\
+ http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n"),
+                     kXVariableName ("_x_"),
                      kNVariableName ("_n_"),
                      kErrorStringIncompatibleOperands ("Incompatible operands"),
                      kErrorStringBadMatrixDefinition  ("Invalid matrix definition"),
@@ -94,8 +104,21 @@ namespace hy_global {
                      kErrorStringMemoryFail           ("Out of memory"),
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
-                     kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition");
-    
+                     kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
+                      kHyPhyVersion  = _String ("2.4") & _String(__DATE__).Cut (7,10) & _String(__DATE__).Cut (0,2).Replace("Jan", "01", true).
+                                      Replace("Feb", "02", true).
+                                      Replace("Mar", "03", true).
+                                      Replace("Apr", "04", true).
+                                      Replace("May", "05", true).
+                                      Replace("Jun", "06", true).
+                                      Replace("Jul", "07", true).
+                                      Replace("Aug", "08", true).
+                                      Replace("Sep", "09", true).
+                                      Replace("Oct", "10", true).
+                                      Replace("Nov", "11", true).
+                                      Replace("Dec", "12", true)
+                                        & _String(__DATE__).Cut (4,5).Replace (" ", "0", true) & "alpha";
+  
     _String
                      hy_base_directory,
                      hy_lib_directory,
@@ -103,31 +126,37 @@ namespace hy_global {
                      hy_standard_model_directory   ("TemplateModels"),
                      hy_error_log_name             ("errors.log"),
                      hy_messages_log_name          ("messages.log");
-    
-    
+  
+  
     _List            _hy_application_globals_aux,
                      _hy_standard_library_paths,
                      _hy_standard_library_extensions;
-    
+  
     _AVLList         _hy_application_globals (&_hy_application_globals_aux);
-    
+  
     _Variable*       hy_x_variable = nil,
              *       hy_n_variable = nil;
-    
+  
     int              hy_mpi_node_rank,
         // [MPI only] the MPI rank of the current node (0 = master, 1... = slaves)
                      hy_mpi_node_count;
         // [MPI only]  MPI node count on the system
-    
+  
     long             system_CPU_count = 1L;
         /** the number of CPUs for OpenMP */
-    
+  
+  
+    namespace {
+      int _reg_exp_err_code = 0;
+      regex_t * hy_float_regex = _String::PrepRegExp ("[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?", _reg_exp_err_code, true);
+    }
+  
 
     //____________________________________________________________________________________
-    
-    hy_pointer MemAllocate (long bytes, bool zero) {
+  
+    hyPointer MemAllocate (long bytes, bool zero) {
         
-        hy_pointer result = (hy_pointer) zero ? calloc (bytes, 1) : malloc (bytes);
+        hyPointer result = (hyPointer) zero ? calloc (bytes, 1) : malloc (bytes);
         
         if (result == nil) {
             HandleApplicationError (_String ("Failed to allocate '")  & bytes & "' bytes'", true);
@@ -137,9 +166,9 @@ namespace hy_global {
     
     
     //____________________________________________________________________________________
-hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
-    {
-        hy_pointer result  = (hy_pointer) realloc (old_pointer, new_size);
+  
+    hyPointer MemReallocate (hyPointer old_pointer, long new_size) {
+        hyPointer result  = (hyPointer) realloc (old_pointer, new_size);
         
         if (!result) {
             HandleApplicationError (_String ("Failed to resize memory to '")  & new_size & "' bytes'", true);
@@ -328,7 +357,7 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
                 _String file_name = *prefix[file_index] & ".mpinode" & (long)hy_mpi_node_rank;
     #endif
                 
-                *handle[file_index] = doFileOpen (file_name.sData,"w+");
+                *handle[file_index] = doFileOpen (file_name.get_str(),"w+");
                 while (*handle[file_index] == nil && p<10) {
                     #ifndef __HYPHYMPI__
                          file_name = *prefix[file_index] & '.' & p;
@@ -416,13 +445,13 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
                 fseek(handle[file_index],0,SEEK_END);
                 unsigned long fileSize = ftell(handle[file_index]);
                 if (fileSize) {
-                    fprintf (stderr, messages[file_index], prefix[file_index]->getStr());
+                    fprintf (stderr, messages[file_index], prefix[file_index]->get_str());
                     if (file_index == 0) { no_errors = false; }
                     fclose (handle[file_index]);
                     
                 } else {
                     fclose (handle[file_index]);
-                    remove (prefix[file_index]->getStr());
+                    remove (prefix[file_index]->get_str());
                 }
             }
         }
@@ -461,7 +490,7 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
     _String* ConstructAnErrorMessage         (_String const& theMessage) {
     /** Prepare the error message using the current formatting specification **/
      
-        _String* error_message = new _String (128L,true);
+        _StringBuffer* error_message = new _StringBuffer (128UL);
         
         _List    calls,
                  stdins;
@@ -492,15 +521,14 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
         }
         
         if (doDefault) {
-            (*error_message) << "Error:\n"
-                      << theMessage;
+            (*error_message) << "Error:\n" << theMessage;
             
             if (calls.lLength) {
                 (*error_message) << "\n\nFunction call stack\n";
                 for (unsigned long k = 0UL; k < calls.lLength; k++) {
                     (*error_message) << (_String((long)k+1) & " : " & (*(_String*)calls(k)) & '\n');
                     _String* redir = (_String*)stdins (k);
-                    if (redir->sLength) {
+                    if (!redir->empty()) {
                         (*error_message) << "\tStandard input redirect:\n\t\t"
                                   << redir->Replace ("\n","\n\t\t",true);
                     }
@@ -510,7 +538,6 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
             }
         }
         
-        error_message->Finalize();
         return error_message;
     }
     
@@ -543,7 +570,7 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
         
         char   str[] = "\n";
         fwrite (str, 1, 1, hy_message_log_file);
-        fwrite (message.getStr(), 1, message.Length(), hy_message_log_file);
+      fwrite (message.get_str(), 1, message.length(), hy_message_log_file);
         fflush (hy_message_log_file);
 #endif
     }
@@ -581,12 +608,12 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
         
         if (hy_error_log_file) {
             fwrite (str, 1, 7, hy_error_log_file);
-            fwrite (message.getStr(), 1, message.Length(), hy_error_log_file);
+            fwrite (message.get_str(), 1, message.length(), hy_error_log_file);
             fflush (hy_error_log_file);
         }
             
         if (hy_error_log_file) {
-            fprintf (hy_error_log_file, "\n%s", message.sData);
+            fprintf (hy_error_log_file, "\n%s", (const char*)message);
         }
             
         _String errMsg;
@@ -595,7 +622,7 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
         
         if (hy_mpi_node_rank > 0) {
             errMsg = ConstructAnErrorMessage (message);
-            fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.sData);
+            fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.get_str());
             MPI_Abort (MPI_COMM_WORLD,1);
             abort   ();
         } else {
@@ -626,4 +653,197 @@ hy_pointer MemReallocate (hy_pointer old_pointer, long new_size)
             exit(1);
 #endif
     }
+  
+  
+  //____________________________________________________________________________________
+  const _String GetVersionString (void) {
+    _StringBuffer theMessage = _String("HYPHY ")& kHyPhyVersion;
+    #ifdef __MP__
+      theMessage << "(MP)";
+    #endif
+    #ifdef __HYPHYMPI__
+      theMessage <<  "(MPI)";
+    #endif
+     theMessage << " for ";
+    #ifdef __UNIX__
+      #if !defined __HEADLESS_WIN32__ && ! defined __MINGW32__
+      struct      utsname      name;
+      uname       (&name);
+      theMessage << name.sysname << " on " << name.machine;
+      #endif
+      #if defined __MINGW32__
+      theMessage <<  "MinGW ";// " & __MINGW32_VERSION;
+      #endif
+    #endif
+    return theMessage;
+  }
+  
+  //____________________________________________________________________________________
+  const _String GetTimeStamp (bool do_gmt) {
+    time_t c_time;
+    time (&c_time);
+    
+    if (do_gmt) {
+      tm* gmt = gmtime (&c_time);
+      
+      return _StringBuffer (_String((long)1900+gmt->tm_year)) << '/' << _String (1+(long)gmt->tm_mon) << '/'
+             << _String ((long)gmt->tm_mday) << ' ' << _String ((long)gmt->tm_hour) << ':' & _String ((long)gmt->tm_min);
+    }
+    
+    tm*     local_time = localtime (&c_time);
+    
+    return  asctime (local_time);
+    
+  }
+  
+  //____________________________________________________________________________________
+  bool    ProcessFileName (_String & path_name, bool isWrite, bool acceptStringVars, hyPointer theP, bool assume_platform_specific, _ExecutionList * caller) {
+    _String errMsg;
+    
+    try {
+      if (path_name == kPromptForFilePlaceholder || path_name == kEmptyAssociativeList) {
+        // prompt user for file
+        if (path_name == kEmptyAssociativeList) {
+#if not defined __MINGW32__ && not defined __WINDOZE__
+          char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
+          int fileDescriptor = mkstemp(tmpFileName);
+          if (fileDescriptor == -1){
+            throw ("Failed to create a temporary file name");
+          }
+          path_name = tmpFileName;
+          CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (path_name, false), false);
+          close (fileDescriptor);
+          return true;
+#else
+          throw (tempFString & " is not implemented for this platform");
+#endif
+        } else {
+          if (!isWrite) {
+            path_name = ReturnFileDialogInput();
+          } else {
+            path_name = WriteFileDialogInput ();
+          }
+        }
+        ProcessFileName(path_name, false,false,theP,false,caller);
+        CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (path_name, false), false);
+        return true;
+      }
+      
+      if (acceptStringVars) {
+        path_name = ProcessLiteralArgument (&path_name,(_VariableContainer*)theP, caller);
+        if (caller && caller->IsErrorState()) {
+          return false;
+        }
+        
+      } else {
+        path_name.StripQuotes();
+      }
+      
+      if (path_name.empty()) {
+        CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (path_name, false), false);
+        return true;
+      }
+    }
+    
+    catch (_String errmsg) {
+      if (caller) {
+        caller->ReportAnExecutionError(errMsg);
+      } else {
+        HandleApplicationError (errMsg);
+      }
+      return false;
+    }
+    
+    
+#if defined __UNIX__ && !defined __MINGW32__
+    //UNIX LINES HERE
+    if (path_name.Find('\\') != kNotFound) { // DOS (ASSUME RELATIVE) PATH
+      path_name = path_name.Replace ("\\","/",true);
+    } else if (path_name.Find(':') != kNotFound) { // Mac (Assume Relative) PATH
+      path_name = path_name.Replace ("::",":../", true);
+      if (path_name.get_char(0)==':') {
+        path_name.Trim(1,-1);
+      }
+      path_name = path_name.Replace (':','/',true);
+    }
+    
+    if (path_name.get_char(0) != '/') { // relative path
+      if (pathNames.lLength) {
+        _String*    lastPath = (_String*)pathNames(pathNames.lLength-1);
+        long        f = (long)lastPath->length ()-2L,
+                    k = 0L;
+        
+        // check the last stored absolute path and reprocess this relative path into an absolute.
+        while (path_name.BeginsWith ("../")) {
+          if ( (f = lastPath->FindBackwards('/',0,f)-1) == kNotFound) {
+            return true;
+          }
+          path_name.Trim(3,-1);
+          k++;
+        }
+        if (k==0L) {
+          path_name = *lastPath & path_name;
+        } else {
+          path_name = lastPath->Cut(0,f+1) & path_name;
+        }
+      }
+    }
+#endif
+    
+  #if defined __MINGW32__ // WIN/DOS code'
+    
+    if (path_name.Find('/')!=-1) { // UNIX PATH
+      if (path_name.get_char(0)=='/') {
+        path_name.Trim(1,-1);
+      }
+      path_name = path_name.Replace ("/","\\",true);
+    } else {
+      if (path_name.Find('\\')==kNotFound) {
+        // check to see if this is a relative path
+        path_name = path_name.Replace ("::",":..\\", true);
+        if ((path_name.get_char (0) ==':')) {
+          path_name.Trim(1,-1);
+        }
+        path_name = path_name.Replace (':','\\',true);
+      }
+    }
+    
+    if (path_name.Find(':') == kNotFound && path_name.Find("\\\\",0,1) == kNotFound) { // relative path
+      
+      if (pathNames.lLength) {
+        _String* lastPath = (_String*)pathNames(pathNames.lLength-1);
+        long f = (long)lastPath->length() - 2L, k = 0L;
+        // check the last stored absolute path and reprocess this relative path into an absolute.
+        while (path_name.BeginsWith("..\\")) {
+          f = lastPath->FindBackwards('\\',0,f)-1;
+          if (f == kNotFound ) {
+            return false;
+          }
+          path_name.Trim(3,-1);
+          k++;
+        }
+        if (k==0) {
+          if (lastPath->get_char (lastPath->length()-1L)!='\\') {
+            path_name = *lastPath&'\\'& path_name;
+          } else {
+            path_name = *lastPath& path_name;
+          }
+        } else {
+          path_name = lastPath->Cut(0,f+1)& path_name;
+        }
+      }
+      
+    }
+    
+    
+    _StringBuffer escapedString (path_name.length());
+    escapedString.SanitizeAndAppend(path_name);
+    path_name = escapedString;
+    
+  #endif
+    
+    CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (path_name, false), false);
+    return true;
+  }
+
 } // namespace close

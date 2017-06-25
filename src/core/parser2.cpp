@@ -73,7 +73,7 @@ extern    _List         FunctionNameList;
 
 extern    _AVLListX     _HY_GetStringGlobalTypes;
 
-extern    hy_float    tolerance,
+extern    hyFloat    tolerance,
           sqrtPi,
           maxRombergSteps,
           integrationPrecisionFactor,
@@ -84,7 +84,7 @@ extern    _String       intPrecFact ,
 
 long      verbosityLevel = 0L;
 
-extern hy_float twoOverSqrtPi;
+extern hyFloat twoOverSqrtPi;
 
 _SimpleList simpleOperationCodes,
             simpleOperationFunctions;
@@ -93,43 +93,43 @@ _SimpleList simpleOperationCodes,
 long        subNumericValues = 0;
 
 //__________________________________________________________________________________
-hy_float  AddNumbers  (hy_float x, hy_float y)
+hyFloat  AddNumbers  (hyFloat x, hyFloat y)
 {
     return x+y;
 }
-hy_float  SubNumbers  (hy_float x, hy_float y)
+hyFloat  SubNumbers  (hyFloat x, hyFloat y)
 {
     return x-y;
 }
-hy_float  MinusNumber (hy_float x)
+hyFloat  MinusNumber (hyFloat x)
 {
     return -x;
 }
-hy_float  MultNumbers (hy_float x, hy_float y)
+hyFloat  MultNumbers (hyFloat x, hyFloat y)
 {
     return x*y;
 }
-hy_float  DivNumbers  (hy_float x, hy_float y)
+hyFloat  DivNumbers  (hyFloat x, hyFloat y)
 {
     return x/y;
 }
-hy_float  LessThan    (hy_float x, hy_float y)
+hyFloat  LessThan    (hyFloat x, hyFloat y)
 {
     return x<y;
 }
-hy_float  GreaterThan (hy_float x, hy_float y)
+hyFloat  GreaterThan (hyFloat x, hyFloat y)
 {
     return x>y;
 }
-hy_float  LessThanE   (hy_float x, hy_float y)
+hyFloat  LessThanE   (hyFloat x, hyFloat y)
 {
     return x<=y;
 }
-hy_float  GreaterThanE(hy_float x, hy_float y)
+hyFloat  GreaterThanE(hyFloat x, hyFloat y)
 {
     return x>=y;
 }
-hy_float  Power       (hy_float x, hy_float y)
+hyFloat  Power       (hyFloat x, hyFloat y)
 { 
     if (x==0.0) {
       if (y > 0.0) {
@@ -140,45 +140,45 @@ hy_float  Power       (hy_float x, hy_float y)
     }
     return pow(x,y);
 }
-hy_float  MaxNumbers  (hy_float x, hy_float y)
+hyFloat  MaxNumbers  (hyFloat x, hyFloat y)
 {
     return x<y?y:x;
 }
-hy_float  MinNumbers  (hy_float x, hy_float y)
+hyFloat  MinNumbers  (hyFloat x, hyFloat y)
 {
     return x<y?x:y;
 }
-hy_float  ExpNumbers  (hy_float x)
+hyFloat  ExpNumbers  (hyFloat x)
 {
     return exp(x);
 }
-hy_float  LogNumbers  (hy_float x)
+hyFloat  LogNumbers  (hyFloat x)
 {
     return log(x);
 }
-hy_float  FastMxAccess(hy_pointer m, hy_float index)
+hyFloat  FastMxAccess(hyPointer m, hyFloat index)
 {
-    return ((hy_float*)m)[(unsigned long)index];
+    return ((hyFloat*)m)[(unsigned long)index];
 }
 
-void  FastMxWrite(hy_pointer m, hy_float index, hy_float value) {
-  ((hy_float*)m)[(unsigned long)index] = value;
+void  FastMxWrite(hyPointer m, hyFloat index, hyFloat value) {
+  ((hyFloat*)m)[(unsigned long)index] = value;
 }
 
-hy_float  AndNumbers  (hy_float x, hy_float y)
+hyFloat  AndNumbers  (hyFloat x, hyFloat y)
 {
     return x != 0.0 && y != 0.0;
 }
-hy_float  AbsNumber  (hy_float x)
+hyFloat  AbsNumber  (hyFloat x)
 {
     return fabs (x);
 }
 
 //__________________________________________________________________________________
 
-hy_float  RandomNumber(hy_float l, hy_float u)
+hyFloat  RandomNumber(hyFloat l, hyFloat u)
 {
-    hy_float r = l;
+    hyFloat r = l;
     if (u>l) {
         r =l+(u-l)*genrand_real1();
     }
@@ -188,7 +188,7 @@ hy_float  RandomNumber(hy_float l, hy_float u)
 
 
 //_______________________________________________________________________________________
-hy_float  EqualNumbers(hy_float a, hy_float b)
+hyFloat  EqualNumbers(hyFloat a, hyFloat b)
 {
     if (a!=0.0) {
         a = (a>b)?(a-b)/a:(b-a)/a;
@@ -206,7 +206,7 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
             values[k2].value = varValue->Value();
         } else {
             if (varValue->ObjectClass() == MATRIX) {
-              values[k2].reference = (hy_pointer)((_Matrix*)varValue)->theData;
+              values[k2].reference = (hyPointer)((_Matrix*)varValue)->theData;
             } else {
               HandleApplicationError ("Internal error in PopulateArraysForASimpleFormula", true);
             }
@@ -233,9 +233,9 @@ void        WarnWrongNumberOfArguments (_PMathObj p, long opCode, _hyExecutionCo
 
 
 //__________________________________________________________________________________
-hy_float  InterpolateValue (hy_float* theX, hy_float* theY, long n, hy_float *c , hy_float *d, hy_float x, hy_float& err) {
+hyFloat  InterpolateValue (hyFloat* theX, hyFloat* theY, long n, hyFloat *c , hyFloat *d, hyFloat x, hyFloat& err) {
   // Neville's algoruthm for polynomial interpolation (Numerical Recipes' rawinterp)
-    hy_float y,
+    hyFloat y,
                den,
                dif = 1e10,
                dift,
@@ -273,15 +273,15 @@ hy_float  InterpolateValue (hy_float* theX, hy_float* theY, long n, hy_float *c 
 }
 
 //__________________________________________________________________________________
-hy_float  TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, hy_float left, hy_float right, long k, _SimpleFormulaDatum * stack, _SimpleFormulaDatum* values, _SimpleList& changingVars, _SimpleList& varToStack)
+hyFloat  TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, hyFloat left, hyFloat right, long k, _SimpleFormulaDatum * stack, _SimpleFormulaDatum* values, _SimpleList& changingVars, _SimpleList& varToStack)
 {
-    hy_float x,
+    hyFloat x,
                tnm,
                sum,
                del,
                ddel;
 
-    static hy_float s;
+    static hyFloat s;
 
     //_Constant dummy;
 
@@ -337,15 +337,15 @@ hy_float  TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, hy_float left, hy_
 }
 
 //__________________________________________________________________________________
-hy_float  TrapezoidLevelK (_Formula&f, _Variable* xvar, hy_float left, hy_float right, long k)
+hyFloat  TrapezoidLevelK (_Formula&f, _Variable* xvar, hyFloat left, hyFloat right, long k)
 {
-    hy_float x,
+    hyFloat x,
                tnm,
                sum,
                del,
                ddel;
 
-    static hy_float s;
+    static hyFloat s;
 
     _Constant dummy;
 
@@ -1249,7 +1249,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
         
             parsingContext.isVolatile() = true;
             
-            int     j       = s.ExtractEnclosedExpression (i,'{','}',true,true);
+            int     j       = s.ExtractEnclosedExpression (i,'{','}',fExtractRespectQuote | fExtractRespectEscape);
 
             if (j<0) {
                 return HandleFormulaParsingError ("Poorly formed matrix/associative array construct ", parsingContext.errMsg(), s, i);
@@ -1722,9 +1722,9 @@ long     VerbosityLevel (void)
 
 
 //__________________________________________________________________________________
-void  stashParameter (_String const& name, hy_float v, bool set)
+void  stashParameter (_String const& name, hyFloat v, bool set)
 {
-    static  hy_float stash = 0.0;
+    static  hyFloat stash = 0.0;
 
     long f = LocateVarByName (name);
     if (f>=0) {
@@ -1745,7 +1745,7 @@ void  stashParameter (_String const& name, hy_float v, bool set)
 
 
 //__________________________________________________________________________________
-void  setParameter (_String const & name, hy_float def, _String* namespc)
+void  setParameter (_String const & name, hyFloat def, _String* namespc)
 {
     if (namespc) {
         _String namespcd = AppendContainerName(name,namespc);

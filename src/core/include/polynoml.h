@@ -58,17 +58,17 @@ public:
     _PolynomialData (void);
     _PolynomialData (long);
     _PolynomialData (_PolynomialData&);
-    _PolynomialData (long,long, hy_float*);
+    _PolynomialData (long,long, hyFloat*);
 
     virtual ~_PolynomialData ();
 
     virtual BaseObj*    makeDynamic(void) const;
     virtual void        Duplicate  (BaseRefConst);
 
-    inline  hy_float*         GetCoeff (void) {
+    inline  hyFloat*         GetCoeff (void) {
         return theCoeff;
     }
-    inline  hy_float&         GetCoeff (long index) {
+    inline  hyFloat&         GetCoeff (long index) {
         return theCoeff[index];
     }
 
@@ -76,9 +76,9 @@ public:
     long                GetNoTerms (void) {
         return actTerms;
     }
-    void                AddTerm (long*, hy_float);
-    void                AddTerm (long*, hy_float, long*, long);
-    void                AddTerm (hy_float);
+    void                AddTerm (long*, hyFloat);
+    void                AddTerm (long*, hyFloat, long*, long);
+    void                AddTerm (hyFloat);
     void                WriteTerm (long*,long);
     void                DeleteTerm (long);
     bool                IsFirstANumber (void);
@@ -86,7 +86,7 @@ public:
         return actTerms;
     }
     long                SumOfPowers (long);
-    long                WeightedSumOfPowers (long,hy_float*);
+    long                WeightedSumOfPowers (long,hyFloat*);
 
     // temp!
 
@@ -96,7 +96,7 @@ public:
 
     void                MultiplyTerms (long*, long*, long*);
     void                RaiseTerm     (long*, long);
-    static  hy_float  BinaryRaise   (hy_float, long);
+    static  hyFloat  BinaryRaise   (hyFloat, long);
     static  void        RearrangeTerm (long*, long*, long*,long);
     char                CompareTerms  (long*, long*);
     char                CompareTerms  (long*, long*, long*, long);
@@ -104,12 +104,12 @@ public:
     long                FindTerm      (long*, long*, long start = 0);
     void                ResortTerms   (long*);
     void                ChopTerms     (void);
-    bool                checkTerm     (hy_float, long);
+    bool                checkTerm     (hyFloat, long);
 
 
 protected:
 
-    hy_float*     theCoeff;
+    hyFloat*     theCoeff;
     long*           thePowers;
     long            numberVars, actTerms, allocTerms;
 
@@ -125,7 +125,7 @@ public:
     _Polynomial             (void);
     _Polynomial             (_SimpleList&);
     _Polynomial             (_Polynomial&);
-    _Polynomial             (hy_float);
+    _Polynomial             (hyFloat);
     _Polynomial             (_Variable&);
     virtual                 ~_Polynomial ();
     virtual                 _MathObject* ExecuteSingleOp (long opCode, _List *arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);   // execute this operation with the list of Args
@@ -141,16 +141,16 @@ public:
     virtual _MathObject*    Mult                (_MathObject*);
     virtual _MathObject*    Compute             (void);
     virtual bool            Equal               (_MathObject*);
-    hy_float              ComputePolynomial   (void);
+    hyFloat              ComputePolynomial   (void);
 
-    hy_float              ComputeP            (hy_float* , hy_float* , long , long, long*, long*);
+    hyFloat              ComputeP            (hyFloat* , hyFloat* , long , long, long*, long*);
     _MathObject*            IsANumber           (bool = false);
     virtual  bool           IsObjectEmpty       (void);
 
     virtual unsigned long            ObjectClass (void) {
         return POLYNOMIAL;
     }
-    virtual hy_float      Value (void) {
+    virtual hyFloat      Value (void) {
         return ComputePolynomial();
     }
 
@@ -179,7 +179,7 @@ public:
     long                    ComputationalSize (void) {
         return compList1.countitems();
     }
-    bool                    IsMaxElement    (hy_float);
+    bool                    IsMaxElement    (hyFloat);
     void                    Convert2ComputationForm
     (_SimpleList *c1 = nil, _SimpleList *c2 = nil, _SimpleList* termsToInclude = nil);
     void                    RankTerms       (_SimpleList*);
@@ -197,7 +197,7 @@ protected:
 
 };
 
-extern hy_float dropPrecision, topPolyCap, dropTerms, enforcePolyCap,
+extern hyFloat dropPrecision, topPolyCap, dropTerms, enforcePolyCap,
        maximumPolyTermsPerVariable, maxPolynomialExpIterates,polynomialExpPrecision;
 void    SetPolyTermCap (long);
 #endif

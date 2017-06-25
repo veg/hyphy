@@ -65,6 +65,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define  PRINTF_FORMAT_STRING    "%.16g"
 
+#define  fNone              0L      // default 0 bit flags
+
+#define  kNotFound          (-1L)
+
+
 
 #define  HY_UNDEFINED       0x000UL
 #define  NUMBER             0x001UL

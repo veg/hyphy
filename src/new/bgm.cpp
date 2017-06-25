@@ -99,11 +99,11 @@ _String     _HYBgm_BAN_PARENT_KEY   ("BanParent"),
 
 #ifdef      __UNIX__
 
-void        ConsoleBGMStatus (_String, hy_float, _String * fileName);
+void        ConsoleBGMStatus (_String, hyFloat, _String * fileName);
 
 //__________________________________________________________________________________
 
-void        ConsoleBGMStatus (_String statusLine, hy_float percentDone, _String * fileName = nil)
+void        ConsoleBGMStatus (_String statusLine, hyFloat percentDone, _String * fileName = nil)
 {
     FILE           *outFile = fileName?doFileOpen (fileName->sData,"w"):nil;
 
@@ -140,7 +140,7 @@ void        ConsoleBGMStatus (_String statusLine, hy_float percentDone, _String 
 //___________________________________________________________________________________________
 //  afyp Oct. 15, 2008, replaced wrapper function for _Constant member function
 //  with this local function.
-hy_float Bgm::LnGamma(hy_float theValue)
+hyFloat Bgm::LnGamma(hyFloat theValue)
 {
     if (theValue <= 0) {
 
@@ -151,7 +151,7 @@ hy_float Bgm::LnGamma(hy_float theValue)
         return 0;
     }
 
-    static hy_float lngammaCoeff [6] = {   76.18009172947146,
+    static hyFloat lngammaCoeff [6] = {   76.18009172947146,
                                          -86.50532032941677,
                                          24.01409824083091,
                                          - 1.231739572450155,
@@ -159,7 +159,7 @@ hy_float Bgm::LnGamma(hy_float theValue)
                                          - 0.5395239384953e-5
                                          };
 
-    static hy_float lookUpTable [20] = {  0., 0., 0.6931472, 1.7917595, 3.1780538,
+    static hyFloat lookUpTable [20] = {  0., 0., 0.6931472, 1.7917595, 3.1780538,
                                             4.7874917, 6.5792512, 8.5251614, 10.6046029, 12.8018275,
                                             15.1044126, 17.5023078, 19.9872145, 22.5521639, 25.1912212,
                                             27.8992714, 30.6718601, 33.5050735, 36.3954452, 39.3398842
@@ -172,7 +172,7 @@ hy_float Bgm::LnGamma(hy_float theValue)
 
 
     // else do it the hard way
-    hy_float  x, y, tmp, ser;
+    hyFloat  x, y, tmp, ser;
 
     y = x = theValue;
     tmp = x + 5.5;
@@ -221,7 +221,7 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
     CreateMatrix (&dag, num_nodes, num_nodes, false, true, false);      // allocate space for matrices
     CreateMatrix (&banned_edges, num_nodes, num_nodes, false, true, false);
     CreateMatrix (&enforced_edges, num_nodes, num_nodes, false, true, false);
-    CreateMatrix (&prior_sample_size, num_nodes, 1, false, true, false);    // for storing floats as hy_float objects
+    CreateMatrix (&prior_sample_size, num_nodes, 1, false, true, false);    // for storing floats as hyFloat objects
     CreateMatrix (&prior_mean, num_nodes, 1, false, true, false);
     CreateMatrix (&prior_precision, num_nodes, 1, false, true, false);
 
@@ -292,9 +292,9 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
                     max_max_parents = (long) mp->Value();
                 }
 
-                prior_sample_size.Store (node_index, 0, (hy_float) size->Value());
-                prior_mean.Store (node_index, 0, (hy_float) mean->Value());
-                prior_precision.Store (node_index, 0, (hy_float) precision->Value());
+                prior_sample_size.Store (node_index, 0, (hyFloat) size->Value());
+                prior_mean.Store (node_index, 0, (hyFloat) mean->Value());
+                prior_precision.Store (node_index, 0, (hyFloat) precision->Value());
 
             } else {
                 errorMessage = _String ("Missing key (NodeID, MaxParents, PriorSize, PriorMean, PriorVar)")
@@ -1006,7 +1006,7 @@ void    Bgm::RandomizeDag (long num_steps)
 
 //___________________________________________________________________________________________
 //  Wrappers to retain original functionality.
-hy_float  Bgm::ComputeDiscreteScore (long node_id)
+hyFloat  Bgm::ComputeDiscreteScore (long node_id)
 {
     _SimpleList     parents;
 
@@ -1019,7 +1019,7 @@ hy_float  Bgm::ComputeDiscreteScore (long node_id)
     return ComputeDiscreteScore (node_id, parents);
 }
 
-hy_float  Bgm::ComputeDiscreteScore (long node_id, _Matrix * g)
+hyFloat  Bgm::ComputeDiscreteScore (long node_id, _Matrix * g)
 {
     _SimpleList     parents;
 
@@ -1035,7 +1035,7 @@ hy_float  Bgm::ComputeDiscreteScore (long node_id, _Matrix * g)
 
 //___________________________________________________________________________________________
 //#define BGM_DEBUG_CDS
-hy_float  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
+hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 {
     //char          buf [255];
 
@@ -1045,10 +1045,10 @@ hy_float  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
         if (parents.lLength == 0) {
             _Constant *     orphan_score = (_Constant *) scores->lData[0];
-            return (hy_float) orphan_score->Value();
+            return (hyFloat) orphan_score->Value();
         } else if (parents.lLength == 1) {
             _Matrix *   single_parent_scores = (_Matrix *) scores->lData[1];
-            return (hy_float) (*single_parent_scores) (parents.lData[0], 0);
+            return (hyFloat) (*single_parent_scores) (parents.lData[0], 0);
         } else {
             _NTupleStorage *    family_scores   = (_NTupleStorage *) scores->lData[parents.lLength];
             _SimpleList         nktuple;
@@ -1060,7 +1060,7 @@ hy_float  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
                 }
                 nktuple << par;
             }
-            return (hy_float) family_scores->Retrieve (nktuple);  // using nk-tuple
+            return (hyFloat) family_scores->Retrieve (nktuple);  // using nk-tuple
         }
     }
 
@@ -1103,7 +1103,7 @@ hy_float  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
     long        num_parent_combos   = 1,                    // i.e. 'q'
                 r_i                   = num_levels.lData[node_id];
 
-    hy_float  n_prior_ijk = 0,
+    hyFloat  n_prior_ijk = 0,
                 n_prior_ij  = 0,
                 log_score  = 0;
 
@@ -1329,7 +1329,7 @@ void Bgm::CacheNodeScores (void)
 
 
 #if defined __HYPHYMPI_ND__
-    hy_float  use_mpi_caching;
+    hyFloat  use_mpi_caching;
     checkParameter (useMPIcaching, use_mpi_caching, 0);
 
     if (use_mpi_caching) {
@@ -1347,7 +1347,7 @@ void Bgm::CacheNodeScores (void)
                     aux_list,
                     nk_tuple;
 
-        hy_float  score;
+        hyFloat  score;
 
         char        mpi_message [256];
 
@@ -1411,7 +1411,7 @@ void Bgm::CacheNodeScores (void)
                 this_list   = (_List *) node_scores.lData[node_id];
 
                 // [_SimpleList parents] should always be empty here
-                hy_float  score       = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
+                hyFloat  score       = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
                 _Constant   orphan_score (score);
 
 
@@ -1578,7 +1578,7 @@ void Bgm::CacheNodeScores (void)
 #else
     SetStatusLine     (_HYBgm_STATUS_LINE_CACHE);
 #endif
-    hy_float  seconds_accumulator = .0,
+    hyFloat  seconds_accumulator = .0,
                 temp;
 #endif
 
@@ -1590,7 +1590,7 @@ void Bgm::CacheNodeScores (void)
 
         // prepare some containers
         _SimpleList parents;
-        hy_float  score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
+        hyFloat  score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
         _Constant   orphan_score (score);
 
         (*this_list) && (&orphan_score);
@@ -1726,7 +1726,7 @@ void    Bgm::MPIReceiveScores (_Matrix * mpi_node_status, bool sendNextJob, long
                     aux_list,
                     nk_tuple;
 
-    hy_float      score;
+    hyFloat      score;
 
     // parse nk-tuple results
     for (long np = 2; np <= maxp; np++) {
@@ -1820,7 +1820,7 @@ void        Bgm::DumpComputeLists (_List * compute_list)
 
 
 //___________________________________________________________________________________________
-hy_float  Bgm::Compute (_SimpleList * node_order, _List * results)
+hyFloat  Bgm::Compute (_SimpleList * node_order, _List * results)
 {
     /*  Calculate equation (8) from Friedman and Koller (2003), i.e. joint probability
         of data by summing all families at i-th node that are consistent with node order,
@@ -1832,7 +1832,7 @@ hy_float  Bgm::Compute (_SimpleList * node_order, _List * results)
 
 
 
-    hy_float          log_likel   = 0.;
+    hyFloat          log_likel   = 0.;
     _GrowingVector      *gv1, *gv2;
 
 
@@ -1900,7 +1900,7 @@ hy_float  Bgm::Compute (_SimpleList * node_order, _List * results)
 
 
                     if (indices.NChooseKInit (auxil, subset, nparents, false)) {
-                        hy_float      tuple_score;
+                        hyFloat      tuple_score;
                         _SimpleList     parents;
 
                         parents.Populate (nparents, 0, 0);  // allocate memory
@@ -1948,12 +1948,12 @@ hy_float  Bgm::Compute (_SimpleList * node_order, _List * results)
 
 
 //___________________________________________________________________________________________
-hy_float Bgm::Compute (void)
+hyFloat Bgm::Compute (void)
 {
     //CacheNodeScores();
 
     // return posterior probability of a given network defined by 'dag' matrix
-    hy_float  log_score = 0.;
+    hyFloat  log_score = 0.;
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {
         log_score += is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id) : ComputeContinuousScore (node_id);
@@ -1965,12 +1965,12 @@ hy_float Bgm::Compute (void)
 
 
 //___________________________________________________________________________________________
-hy_float Bgm::Compute (_Matrix * g)
+hyFloat Bgm::Compute (_Matrix * g)
 {
     //CacheNodeScores();
 
     // return posterior probability of a given network defined by 'dag' matrix
-    hy_float  log_score = 0.;
+    hyFloat  log_score = 0.;
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {
         log_score += is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, g) : ComputeContinuousScore (node_id, g);
@@ -1994,7 +1994,7 @@ _Matrix *   Bgm::Optimize (void)
     }
 
 
-    hy_float  num_restarts,           // HBL settings
+    hyFloat  num_restarts,           // HBL settings
                 num_randomize;
 
     checkParameter (maxNumRestart, num_restarts, 1.);
@@ -2004,7 +2004,7 @@ _Matrix *   Bgm::Optimize (void)
 
 
     // char     bug [255];
-    hy_float      optMethod;  /* 0 = K2 fixed order; 1 = K2 shuffle order with restarts */
+    hyFloat      optMethod;  /* 0 = K2 fixed order; 1 = K2 shuffle order with restarts */
     /* 2 = MCMC fixed order; 3 = MCMC over networks and orders */
     checkParameter (bgmOptimizationMethod, optMethod, 0.);
 
@@ -2014,7 +2014,7 @@ _Matrix *   Bgm::Optimize (void)
 
 
 
-    hy_float  this_score, best_score, next_score;
+    hyFloat  this_score, best_score, next_score;
 
     _Matrix     orderMx (num_nodes, num_nodes, false, true),
                 best_dag (num_nodes, num_nodes, false, true);
@@ -2139,7 +2139,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
     _Matrix         current_graph (num_nodes, num_nodes, false, true),
                     best_graph (num_nodes, num_nodes, false, true);
 
-    hy_float      mcmc_steps, mcmc_burnin, mcmc_samples,
+    hyFloat      mcmc_steps, mcmc_burnin, mcmc_samples,
                     current_score, proposed_score, best_score,
                     num_randomize,
                     lk_ratio;
@@ -2425,10 +2425,10 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
 
 //___________________________________________________________________________________________
 //  DEPRECATED
-hy_float  Bgm::TryEdge (long child, long parent, long operation, hy_float old_score)
+hyFloat  Bgm::TryEdge (long child, long parent, long operation, hyFloat old_score)
 {
 #ifdef _NEVER_DEFINED_
-    hy_float  log_score,
+    hyFloat  log_score,
                 last_state1 = dag (child, parent),
                 last_state2 = dag (parent, child);
 
@@ -2507,10 +2507,10 @@ hy_float  Bgm::TryEdge (long child, long parent, long operation, hy_float old_sc
 //  where x_i are very small numbers stored as log(x_i)'s but taking the exponential of
 //  the log values can result in numerical underflow.
 
-hy_float      Bgm::LogSumExpo (_GrowingVector * log_values)
+hyFloat      Bgm::LogSumExpo (_GrowingVector * log_values)
 {
     long        size            = log_values->GetUsed();
-    hy_float  sum_exponents   = 0.;
+    hyFloat  sum_exponents   = 0.;
 
 
     // handle some trivial cases
@@ -2522,7 +2522,7 @@ hy_float      Bgm::LogSumExpo (_GrowingVector * log_values)
 
 
     // find the largest (least negative) log-value
-    hy_float      max_log  = (*log_values) (0, 0),
+    hyFloat      max_log  = (*log_values) (0, 0),
                     this_log;
 
     for (long val = 1; val < size; val++) {
@@ -2552,7 +2552,7 @@ _PMathObj Bgm::CovarianceMatrix (_SimpleList * unused)
     //char  bug [255];
 
 
-    hy_float      mcmc_steps,
+    hyFloat      mcmc_steps,
                     mcmc_burnin,
                     mcmc_samples,
                     mcmc_nchains,
@@ -2644,7 +2644,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
 
 
-    hy_float  lk_ratio,
+    hyFloat  lk_ratio,
                 prob_current_order  = Compute (current_order, clist),
                 prob_proposed_order = 0.,
                 best_prob = prob_current_order;
@@ -2742,7 +2742,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
             if (step % sample_lag == 0 && step > 0) {   // AFYP 2011/3/2 added this second conditional because the zero-th step was getting recorded
                 _GrowingVector *    gv;
-                hy_float          denom;
+                hyFloat          denom;
 
                 row = (long int) (step / sample_lag) - 1;   // AFYP 2011/3/2 need to shift over other info to maintain 0-index
 
@@ -2855,8 +2855,8 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
     // export node ordering info
     for (long node = 0; node < num_nodes; node++) {
-        mcmc_output->Store (node, 2, (hy_float) (best_node_order.lData[node]));
-        mcmc_output->Store (node, 3, (hy_float) (current_order->lData[node]));
+        mcmc_output->Store (node, 2, (hyFloat) (best_node_order.lData[node]));
+        mcmc_output->Store (node, 3, (hyFloat) (current_order->lData[node]));
     }
 
     last_node_order = (_SimpleList &) (*current_order);
@@ -2882,7 +2882,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
 //___________________________________________________________________________________________
 #ifdef __NEVER_DEFINED__
-void    Bgm::RunHotChain (_SimpleList * current_order, long nsteps, long sample_lag, hy_float temper)
+void    Bgm::RunHotChain (_SimpleList * current_order, long nsteps, long sample_lag, hyFloat temper)
 {
     /*  Execute Metropolis sampler using a swap of two nodes in an ordered sequence
      as a proposal function.  The posterior probabilities of edges in the network are
@@ -2892,7 +2892,7 @@ void    Bgm::RunHotChain (_SimpleList * current_order, long nsteps, long sample_
 
     _List   *   clist;
 
-    hy_float  prob_current_order = Compute (current_order, clist),
+    hyFloat  prob_current_order = Compute (current_order, clist),
                 prob_proposed_order = 0.;
 
     static long step_counter = 0;
@@ -2935,7 +2935,7 @@ void    Bgm::RunHotChain (_SimpleList * current_order, long nsteps, long sample_
         prob_proposed_order = Compute (&proposed_order, FALSE);
 
 
-        hy_float  lk_ratio    = exp(prob_proposed_order - prob_current_order);
+        hyFloat  lk_ratio    = exp(prob_proposed_order - prob_current_order);
 
         accept_step = FALSE;
 
@@ -3069,7 +3069,7 @@ void        Bgm::CacheNetworkParameters (void)
 
         // compute expected network conditional probabilities (Cooper and Herskovits 1992 eq.16)
         for (long j = 0; j < num_parent_combos; j++) {
-            hy_float  denom = n_ijk(j,r_i+1) + r_i;
+            hyFloat  denom = n_ijk(j,r_i+1) + r_i;
 
             for (long k = 0; k < r_i; k++) {
                 theta_ijk.Store (j, k, (n_ijk(j,k)+1.) / denom);
@@ -3146,7 +3146,7 @@ void    Bgm::SerializeBgm (_String & rec)
                 banStr,
                 banName ("ban_matrix");
 
-    hy_float  mcem_max_steps, mcem_burnin, mcem_sample_size;
+    hyFloat  mcem_max_steps, mcem_burnin, mcem_sample_size;
 
     checkParameter (mcemMaxSteps, mcem_max_steps, 10000);
     checkParameter (mcemBurnin, mcem_burnin, 1000);

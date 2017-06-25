@@ -46,7 +46,7 @@
 
 using namespace hy_global;
 
-extern  hy_float  lnGamma (hy_float);
+extern  hyFloat  lnGamma (hyFloat);
 
 
 _String     _HYBgm_NODE_INDEX   ("NodeID"),
@@ -90,10 +90,10 @@ _String     _HYBgm_NODE_INDEX   ("NodeID"),
 //__________________________________________________________________________________________________________
 #ifdef      __UNIX__
 
-void        ConsoleBGMStatus (_String, hy_float, _String * fileName = nil);
+void        ConsoleBGMStatus (_String, hyFloat, _String * fileName = nil);
 
 
-void        ConsoleBGMStatus (_String statusLine, hy_float percentDone, _String * fileName)
+void        ConsoleBGMStatus (_String statusLine, hyFloat percentDone, _String * fileName)
 {
     FILE           *outFile = fileName?doFileOpen (fileName->sData,"w"):nil;
     _String        reportLine (statusLine);
@@ -130,13 +130,13 @@ void        ConsoleBGMStatus (_String statusLine, hy_float percentDone, _String 
 
 
 //__________________________________________________________________________________________________________
-hy_float      LogSumExpo (_GrowingVector * log_values)
+hyFloat      LogSumExpo (_GrowingVector * log_values)
 {
     //  Computes the sum of a vector whose values are stored as log-transforms,
     //  such that exponentiating the vector entries would result in numerical underflow.
 
     long        size            = log_values->GetUsed();
-    hy_float  sum_exponents   = 0.;
+    hyFloat  sum_exponents   = 0.;
 
 
     // handle some trivial cases
@@ -148,7 +148,7 @@ hy_float      LogSumExpo (_GrowingVector * log_values)
 
 
     // find the largest (least negative) log-value
-    hy_float      max_log  = (*log_values) (0, 0),
+    hyFloat      max_log  = (*log_values) (0, 0),
                     this_log;
 
     for (long val = 1; val < size; val++) {
@@ -296,7 +296,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
         // prior sample size
         if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SIZE, NUMBER)))) {
-            prior_sample_size.Store (node, 0, (hy_float) (avl_val->Value()));
+            prior_sample_size.Store (node, 0, (hyFloat) (avl_val->Value()));
 
             if (prior_sample_size(node,0) < 0) {
                 errorMessage = _String ("PriorSampleSize must be at least zero, received ") & prior_sample_size(node,0) & " for node " & node;
@@ -310,7 +310,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
         // prior mean (Gaussian)
         if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_MEAN, NUMBER)))) {
-            prior_mean.Store (node, 0, (hy_float) (avl_val->Value()));
+            prior_mean.Store (node, 0, (hyFloat) (avl_val->Value()));
         } else if (!avl_val && node_type.lData[node] == 1) {
             errorMessage = _String ("Missing PriorMean in associative array for node ") & node;
             break;
@@ -319,7 +319,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
         // prior precision (Gaussian)
         if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_PRECISION, NUMBER)))) {
-            prior_precision.Store (node, 0, (hy_float) (avl_val->Value()));
+            prior_precision.Store (node, 0, (hyFloat) (avl_val->Value()));
 
             if (avl_val <= 0) {
                 errorMessage = _String ("PriorPrecision must be greater than zero, received ") & prior_precision(node,0) & " for node " & node;
@@ -334,7 +334,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
         // prior scale (Gaussian)
         if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SCALE, NUMBER)))) {
-            prior_scale.Store (node, 0, (hy_float) (avl_val->Value()));
+            prior_scale.Store (node, 0, (hyFloat) (avl_val->Value()));
 
             if (avl_val <= 0) {
                 errorMessage = _String ("PriorScale must be greater than zero, received ") & prior_scale(node,0) & " for node " & node;
@@ -607,7 +607,7 @@ void _BayesianGraphicalModel::GetNodeOrder (_Matrix * receptacle)
 
 
 //__________________________________________________________________________________________________________
-hy_float _BayesianGraphicalModel::Compute (void)
+hyFloat _BayesianGraphicalModel::Compute (void)
 {
     /* --------------------------------------------------------------
         Compute()   [POLYMORPHIC]
@@ -615,7 +615,7 @@ hy_float _BayesianGraphicalModel::Compute (void)
             structure.
        -------------------------------------------------------------- */
 
-    hy_float  log_score = 0.;
+    hyFloat  log_score = 0.;
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {
         log_score += node_type.lData[node_id] ? ComputeContinuousScore (node_id) : ComputeDiscreteScore (node_id);
@@ -627,7 +627,7 @@ hy_float _BayesianGraphicalModel::Compute (void)
 
 
 //__________________________________________________________________________________________________________
-hy_float _BayesianGraphicalModel::Compute (_Matrix & g)
+hyFloat _BayesianGraphicalModel::Compute (_Matrix & g)
 {
     /* --------------------------------------------------------------
         Compute()   [POLYMORPHIC]
@@ -635,7 +635,7 @@ hy_float _BayesianGraphicalModel::Compute (_Matrix & g)
             structure argument.
        -------------------------------------------------------------- */
 
-    hy_float  log_score = 0.;
+    hyFloat  log_score = 0.;
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {    // discrete nodes are 0 (FALSE)
         log_score += node_type.lData[node_id] ? ComputeContinuousScore (node_id, g) : ComputeDiscreteScore (node_id, g);
@@ -647,7 +647,7 @@ hy_float _BayesianGraphicalModel::Compute (_Matrix & g)
 
 
 //__________________________________________________________________________________________________________
-hy_float  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * marginals)
+hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * marginals)
 {
     /* --------------------------------------------------------------
         Compute()   [POLYMORPHIC]
@@ -656,7 +656,7 @@ hy_float  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * ma
             Also return marginal posterior probabilities for edges.
        -------------------------------------------------------------- */
 
-    hy_float          log_likel   = 0.;
+    hyFloat          log_likel   = 0.;
     _GrowingVector      *gv1, *gv2;
 
 
@@ -724,7 +724,7 @@ hy_float  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * ma
 
 
                     if (indices.NChooseKInit (auxil, subset, nparents, false)) {
-                        hy_float      tuple_score;
+                        hyFloat      tuple_score;
                         _SimpleList     parents;
 
                         parents.Populate (nparents, 0, 0);  // allocate memory
@@ -773,7 +773,7 @@ hy_float  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * ma
 
 
 //__________________________________________________________________________________________________________
-hy_float  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id)
+hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id)
 {
     _SimpleList     parents;
 
@@ -788,7 +788,7 @@ hy_float  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id)
 
 
 //__________________________________________________________________________________________________________
-hy_float  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _Matrix & g)
+hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _Matrix & g)
 {
     _SimpleList     parents;
 
@@ -803,7 +803,7 @@ hy_float  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _Matrix &
 
 
 //__________________________________________________________________________________________________________
-hy_float  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleList & parents)
+hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 {
     /* --------------------------------------------------------------------
         ComputeDiscreteScore()
@@ -819,10 +819,10 @@ hy_float  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleLi
 
         if (parents.lLength == 0) {
             _Constant *     orphan_score = (_Constant *) scores->lData[0];
-            return (hy_float) orphan_score->Value();
+            return (hyFloat) orphan_score->Value();
         } else if (parents.lLength == 1) {
             _Matrix *   single_parent_scores = (_Matrix *) scores->lData[1];
-            return (hy_float) (*single_parent_scores) (parents.lData[0], 0);
+            return (hyFloat) (*single_parent_scores) (parents.lData[0], 0);
         } else {
             _NTupleStorage *    family_scores   = (_NTupleStorage *) scores->lData[parents.lLength];
             _SimpleList         nktuple;
@@ -834,7 +834,7 @@ hy_float  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleLi
                 }
                 nktuple << par;
             }
-            return (hy_float) family_scores->Retrieve (nktuple);  // using nk-tuple
+            return (hyFloat) family_scores->Retrieve (nktuple);  // using nk-tuple
         }
     }
 
@@ -958,9 +958,9 @@ void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Si
 
 
 //___________________________________________________________________________________________
-hy_float _BayesianGraphicalModel::K2Score (long node_id, _Matrix & n_ij, _Matrix & n_ijk)
+hyFloat _BayesianGraphicalModel::K2Score (long node_id, _Matrix & n_ij, _Matrix & n_ijk)
 {
-    hy_float  log_score   = 0.;
+    hyFloat  log_score   = 0.;
     long        r_i         = num_levels.lData[node_id];
 
     for (long j = 0; j < n_ij.GetHDim(); j++) {
@@ -978,10 +978,10 @@ hy_float _BayesianGraphicalModel::K2Score (long node_id, _Matrix & n_ij, _Matrix
 
 
 //___________________________________________________________________________________________
-hy_float _BayesianGraphicalModel::BDeScore (long node_id, _Matrix & n_ij, _Matrix & n_ijk)
+hyFloat _BayesianGraphicalModel::BDeScore (long node_id, _Matrix & n_ij, _Matrix & n_ijk)
 {
     // note that n_ij and n_ijk already contain prior counts, updated by data
-    hy_float  n_prior_ij      = prior_sample_size (node_id, 0) / n_ij.GetHDim(),
+    hyFloat  n_prior_ij      = prior_sample_size (node_id, 0) / n_ij.GetHDim(),
                 n_prior_ijk     = n_prior_ij / num_levels.lData[node_id],
                 log_score        = 0.;
 
@@ -1073,7 +1073,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
                         aux_list,
                         nk_tuple;
 
-        hy_float      score;
+        hyFloat      score;
         _Matrix         single_parent_scores (num_nodes, 1, false, true);
 
         MPI_Status      status; // contains source, tag, and error code
@@ -1123,7 +1123,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
                 long        maxp            = max_parents.lData[node_id];
                 _String     mxString,
                             mxName;
-                hy_float  score;
+                hyFloat  score;
 
 
                 this_list   = (_List *) node_score_cache.lData[node_id];
@@ -1328,7 +1328,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
 #else
     SetStatusLine     (_HYBgm_STATUS_LINE_CACHE);
 #endif
-    hy_float  seconds_accumulator = .0,
+    hyFloat  seconds_accumulator = .0,
                 temp;
 #endif
 
@@ -1340,7 +1340,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
 
         // prepare some containers
         _SimpleList parents;
-        hy_float  score;
+        hyFloat  score;
 
         if (node_type.lData[node_id] == 0) {    // child node is discrete (multinomial)
             score = ComputeDiscreteScore (node_id, parents);
@@ -1506,7 +1506,7 @@ void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool 
                     aux_list,
                     nk_tuple;
 
-    hy_float      score;
+    hyFloat      score;
 
     // parse nk-tuple results
     for (long np = 2; np <= maxp; np++) {
@@ -1667,7 +1667,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
     }
 
 
-    hy_float      optMethod;      // 0 = K2 fixed order
+    hyFloat      optMethod;      // 0 = K2 fixed order
     // 1 = K2 shuffle order with restarts
     // 2 = structural MCMC, fixed order
     // 3 = structural MCMC
@@ -1749,7 +1749,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
                 WarnError (oops);
             }
 
-            hy_float  chain_T = 1. / (1. + mcmc_dtemp*rank);
+            hyFloat  chain_T = 1. / (1. + mcmc_dtemp*rank);
 
 
             /* note that GraphMetropolis already returns structure and last posterior prob as matrix entries */
@@ -1814,7 +1814,7 @@ void _BayesianGraphicalModel::K2Search (bool do_permute_order, long n_restart, l
 {
     //  THIS NEEDS UPDATING
 #ifdef __NEVER_DEFINED__
-    hy_float  this_score, best_score, next_score;
+    hyFloat  this_score, best_score, next_score;
 
     _Matrix     order_matrix (num_nodes, num_nodes, false, true),
                 best_dag (num_nodes, num_nodes, false, true);
@@ -1989,7 +1989,7 @@ _SimpleList *   _BayesianGraphicalModel::GetOrderFromGraph (_Matrix & graph)
 
 //_______________________________________________________________________________________________________________________
 void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burnin, long mcmc_steps, long mcmc_samples,
-        hy_float chain_t, _Matrix * result)
+        hyFloat chain_t, _Matrix * result)
 {
     /* --------------------------------------------------------------------------------------------------------
         GraphMetropolis()
@@ -2009,7 +2009,7 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
     _Matrix         current_graph (num_nodes, num_nodes, false, true),
                     best_graph (num_nodes, num_nodes, false, true);
 
-    hy_float      current_score, proposed_score, best_score,
+    hyFloat      current_score, proposed_score, best_score,
                     lk_ratio,
                     prob_swap;
   
@@ -2165,8 +2165,8 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
     for (long row = 0; row < num_nodes; row++) {
         for (long offset=row*num_nodes, col = 0; col < num_nodes; col++) {
             result->Store (offset+col, 1, (*result)(offset+col,1)/mcmc_samples);
-            result->Store (offset+col, 2, (hy_float) best_graph(row, col));
-            result->Store (offset+col, 3, (hy_float) current_graph(row,col));
+            result->Store (offset+col, 2, (hyFloat) best_graph(row, col));
+            result->Store (offset+col, 3, (hyFloat) current_graph(row,col));
         }
     }
 
@@ -2183,7 +2183,7 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
 
 
 //_____________________________________________________________________________________________________________
-void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * order, hy_float prob_swap, long num_steps, long max_fails, bool fixed_order)
+void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * order, hyFloat prob_swap, long num_steps, long max_fails, bool fixed_order)
 {
     //  Modify a graph by adding, removing, or reversing an edge, so long as that modification
     //  complies with the constraint matrix and (when fixed_order=TRUE) node order.
@@ -2419,7 +2419,7 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
 
 
 //_______________________________________________________________________________________________________________________
-void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps, long sample_size, hy_float chain_t,
+void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps, long sample_size, hyFloat chain_t,
         _Matrix * result)
 {
     /* ----------------------------------------------------------------------------------------
@@ -2434,7 +2434,7 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
     long            first_node, second_node,
                     sample_lag = n_steps / sample_size;
 
-    hy_float      lk_ratio,
+    hyFloat      lk_ratio,
                     prob_current_order, prob_proposed_order, best_prob,
                     denom;
 
@@ -2595,8 +2595,8 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 
     // export node ordering info
     for (long node = 0; node < num_nodes; node++) {
-        result->Store (node, 2, (hy_float) (best_node_order.lData[node]));
-        result->Store (node, 3, (hy_float) (current_order.lData[node]));
+        result->Store (node, 2, (hyFloat) (best_node_order.lData[node]));
+        result->Store (node, 3, (hyFloat) (current_order.lData[node]));
     }
 
 

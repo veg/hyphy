@@ -80,9 +80,9 @@ public:
     }
     virtual     bool        IsConstant (void);
     void        SetValue (_PMathObj, bool = true); // set the value of the variable
-    void        SetValue (hy_float); // set the value of the variable
-    void        SetNumericValue (hy_float);
-    void        CheckAndSet (hy_float, bool = false);
+    void        SetValue (hyFloat); // set the value of the variable
+    void        SetNumericValue (hyFloat);
+    void        CheckAndSet (hyFloat, bool = false);
     // set the value of the variable
     // bool flag is used to indicate that out of bounds values should be rejected
 
@@ -117,15 +117,15 @@ public:
         return false;
     }
 
-    void        SetBounds (hy_float lb, hy_float ub);
+    void        SetBounds (hyFloat lb, hyFloat ub);
     void        EnsureTheValueIsInBounds (void);
-    bool        IsValueInBounds (hy_float v)
+    bool        IsValueInBounds (hyFloat v)
                            { return v >= lowerBound && v <= upperBound; }
 
-    hy_float  GetLowerBound (void) {
+    hyFloat  GetLowerBound (void) {
         return lowerBound;
     }
-    hy_float  GetUpperBound (void) {
+    hyFloat  GetUpperBound (void) {
         return upperBound;
     }
 
@@ -163,7 +163,7 @@ public:
     // the class of this variable - i.e global, local, category or random
     int       varFlags;
 
-    hy_float lowerBound,
+    hyFloat lowerBound,
                upperBound;
     // dynamic lower and upper bounds here
 

@@ -44,34 +44,34 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     Put application-wide typedefs and enums here
 */
 
-typedef     void*        hy_pointer;
+typedef     void*        hyPointer;
     // generic pointer
-typedef     double       hy_float;
+typedef     double       hyFloat;
     // standard floating type
 
 
 
-enum _HY_BL_FUNCTION_TYPE  {
-  BL_FUNCTION_ALWAYS_UPDATE,
-  BL_FUNCTION_SKIP_UPDATE,
-  BL_FUNCTION_LOCAL
+enum hyBLFunctionType  {
+  kBLFunctionAlwaysUpdate,
+  kBLFunctionSkipUpdate,
+  kBLFunctionLocal
 };
 
-enum _HY_BL_FUNCTION_ARGUMENT_TYPE {
-  BL_FUNCTION_ARGUMENT_NORMAL,
-  BL_FUNCTION_ARGUMENT_REFERENCE
+enum hyBLFunctionArgumentType {
+  kBLFunctionArgumentNormal,
+  kBLFunctionArgumentReference
 };
 
-enum _HY_TREE_DEFINITION_PHASE {
+enum hyTreeDefinitionPhase {
   kTreeNotBeingDefined,
   kTreeIsBeingParsed,
   kTreeNodeBeingCreated
 };
 
-enum _HY_COMPARISON_TYPE {
-    kCompareLess,
-    kCompareEqual,
-    kCompareGreater
+enum hyComparisonType {
+    kCompareLess = -1,
+    kCompareEqual = 0,
+    kCompareGreater = 1
 };
 
 

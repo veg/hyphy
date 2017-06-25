@@ -47,6 +47,7 @@
 
 #include "avllist.h"
 #include "hy_strings.h"
+#include "hy_string_buffer.h"
 #include "parser.h"
 
 #include "global_things.h"
@@ -423,7 +424,7 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r) const {
 //______________________________________________________________
 
 BaseRef  _AVLList::toStr (unsigned long) {
-    _String * str = new _String (128L, true);
+    _StringBuffer * str = new _StringBuffer (128L);
  
     if (countitems() == 0) {
         (*str) << "()";
@@ -450,7 +451,6 @@ BaseRef  _AVLList::toStr (unsigned long) {
         (*str) << ')';
     }
 
-    str->Finalize();
     return str;
 }
 

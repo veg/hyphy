@@ -39,6 +39,7 @@
 
 #include "avllistx.h"
 #include "hy_strings.h"
+#include "hy_string_buffer.h"
 #include "parser.h"
 
 #include <stdlib.h>
@@ -79,7 +80,7 @@ void _AVLListX::Clear (bool cL)
 //______________________________________________________________
 
 BaseRef _AVLListX::toStr (unsigned long) {
-    _String * str = new _String (128L, true);
+    _StringBuffer * str = new _StringBuffer (128L);
 
     if (countitems() == 0) {
         (*str) << "Empty Associative List";
@@ -91,15 +92,15 @@ BaseRef _AVLListX::toStr (unsigned long) {
 
         while (cn>=0) {
             _String * keyVal = (_String*)Retrieve (cn);
-            (*str) << keyVal;
-            (*str) << " : ";
-            (*str) << _String(GetXtra (cn));
-            (*str) << '\n';
+            (*str)  << keyVal
+                    << " : "
+                    << _String(GetXtra (cn))
+                    << '\n';
+          
             cn = Traverser (hist,ls);
         }
     }
 
-    str->Finalize();
     return str;
 }
 
