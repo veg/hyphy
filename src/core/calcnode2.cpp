@@ -2138,7 +2138,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
           _Matrix * cexp = currentTreeNode->GetCompExp();
           if (!cexp) {
             FlagError (_String ("Internal error in _TheTree::RecoverAncestralSequences: transition matrix is not initialized for node ") & *currentTreeNode->GetName());
-            return;
+            return new _List;
           }
           transitionMatrix = cexp->theData;
         }
