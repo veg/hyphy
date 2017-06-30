@@ -143,6 +143,10 @@ if (_runAsFunctionLibrary != 1)
 		ExecuteCommands (
 		"DataSet				ds_" +fileID + " = ReadDataFile (PROMPT_FOR_FILE);");
 
+        if (fileID == 1) {
+                _base_file_path = LAST_FILE_PATH;
+        }
+
 		if (fileCount == 1)
 		{
 			_pCount = Rows(NEXUS_FILE_TREE_MATRIX);
