@@ -189,7 +189,7 @@ function doPartitionedMG (prefix, keep_lf) {
     io.ReportProgressMessageMD ("`prefix`", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
 
 
-    /** 
+    /**
         Declare per-partition branch length scalers
         slac.scaler_prefix_0
         slac.scaler_prefix_1

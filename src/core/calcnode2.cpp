@@ -2132,7 +2132,16 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         }
 
         _CalcNode *          currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):((_CalcNode*) flatTree    (nodeCode));
-        _Parameter  const*        transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
+      
+        _Parameter  const*        transitionMatrix = nil;
+        if (!catAssignments) {
+          _Matrix * cexp = currentTreeNode->GetCompExp();
+          if (!cexp) {
+            FlagError (_String ("Internal error in _TheTree::RecoverAncestralSequences: transition matrix is not initialized for node ") & *currentTreeNode->GetName());
+            return;
+          }
+          transitionMatrix = cexp->theData;
+        }
         // this will need to be toggled on a per site basis
         _Parameter  *       childVector;
 
