@@ -5,18 +5,18 @@ protein_gtr.baseline_Rij_options = {"LG":  models.protein.empirical.LG.empirical
                                     "JTT": models.protein.empirical.JTT.empirical_R,
                                     "JC":  models.protein.empirical.JC.empirical_R};
 protein_gtr.convergence_options = {{"LogL", "Assess REV fit convergence by comparing log likelihood scores"}, {"RMSE", "[Recommended] Assess REV fit convergence by comparing RMSE between fitted matrices."}};
-protein_gtr.rate_variation_options = {{"Yes", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"No", "Do not consider rate variation when optimizing branch lengths."}};                    
+protein_gtr.rate_variation_options = {{"Yes", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"No", "Do not consider rate variation when optimizing branch lengths."}};
 
 function protein_gtr.load_cached_options() {
     protein_gtr.convergence_type = (protein_gtr.analysis_results["options"])["convergence_type"];
     protein_gtr.tolerance = (protein_gtr.analysis_results["options"])["tolerance"];
     protein_gtr.baseline_model = (protein_gtr.analysis_results["options"])["baseline_model"];
     protein_gtr.use_rate_variation = (protein_gtr.analysis_results["options"])["rate_variation"];
-    
+
     /*** Cache options can in theory be saved as numbers if options piped in, although not typically. Remap to strings. ****/
     if (Type(protein_gtr.convergence_type) == "Number"){
         protein_gtr.convergence_type = utility.SwapKeysAndValues(utility.MatrixToDict(protein_gtr.convergence_options))[protein_gtr.convergence_type*2];
-    } 
+    }
     if (Type(protein_gtr.baseline_model) == "Number"){
         protein_gtr.baseline_model = utility.SwapKeysAndValues(utility.MatrixToDict(models.protein.empirical_models))[protein_gtr.baseline_model*2];
    }
@@ -133,7 +133,7 @@ function protein_gtr.fitBaselineToFile (filename) {
 
 
     /******************** NORMALIZE MATRIX WITH DATA FREQUENCIES HERE *************************/
-    protein_gtr.empirical_frequencies = protein_gtr.GetFrequenciesHack(data_filter, trees); 
+    protein_gtr.empirical_frequencies = protein_gtr.GetFrequenciesHack(data_filter, trees);
     protein_gtr.normalized_qij = protein_gtr.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.baseline_Rij, models.protein.alphabet);
 
 
@@ -327,8 +327,8 @@ function protein_gtr.run_gtr_iteration_branch_lengths () {
                                             "Variables" : {{
                                                 "protein_gtr.shared_EFV",
                                                 "protein_gtr.final_baseline_model",
-                                                "protein_gtr.rev_model_branch_lengths"
-
+                                                "protein_gtr.rev_model_branch_lengths",
+                                                "protein_gtr.baseline_Rij"
                                             }}
                                          });
 
@@ -431,7 +431,7 @@ lfunction protein_gtr.IntermediatePlusF.ModelDescription(type) {
 lfunction protein_gtr.GetFrequenciesHack (data_filter, tree) {
 
     model_template = "protein_gtr.IntermediatePlusF.ModelDescription";
-    
+
     components = utility.Array1D(data_filter);
     filters = utility.Map({
         components,
@@ -447,22 +447,21 @@ lfunction protein_gtr.GetFrequenciesHack (data_filter, tree) {
     return user_model["EFV"];
 }
 
-// This code is elegant and I will hear nothing to the contrary. 
+// This code is elegant and I will hear nothing to the contrary.
 lfunction protein_gtr.BuildCustomNormalizedQ(EFV, rij, alphabet){
     dim  = utility.Array1D (alphabet);
-    
-    
+
     // Create Q from R, EFV
     Q = {dim,dim};
     rowSums = {dim,1};
-    
+
     for (i = 0; i < dim; i +=1 ){
         rowSum = 0;
-        for ( j = 0; j < dim; j += 1){            
+        for ( j = 0; j < dim; j += 1){
             Q[i][j] = rij[i][j] * EFV[j];
             rowSum += rij[i][j] * EFV[j];
         }
-        rowSums[i] = -1 * rowSum;    
+        rowSums[i] = -1 * rowSum;
     }
 
     // Fill in diagonal
