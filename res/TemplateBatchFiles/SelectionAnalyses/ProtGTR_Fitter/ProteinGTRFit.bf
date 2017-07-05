@@ -51,7 +51,7 @@ else {
 
     // Prompt for convergence assessment type
     protein_gtr.convergence_type = io.SelectAnOption( protein_gtr.convergence_options, "Select a convergence criterion.");
-    
+
     if (protein_gtr.convergence_type == "LogL"){
         protein_gtr.tolerance = io.PromptUser ("\n>Provide a tolerance level for convergence assessment (Default 0.01)",0.01,0,1,FALSE); // default, lower, upper, is_integer
     }
@@ -63,9 +63,9 @@ else {
     protein_gtr.baseline_model  = io.SelectAnOption (models.protein.empirical_models,
                                                      "Select an empirical protein model to use for optimizing the provided branch lengths (we recommend LG):");
 
-    // Prompt for rate variation    
+    // Prompt for rate variation
     protein_gtr.use_rate_variation = io.SelectAnOption( protein_gtr.rate_variation_options, "Would you like to optimize branch lengths with rate variation?");
-    
+
     protein_gtr.save_options();
 
 }
@@ -94,7 +94,8 @@ protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedMod
                                         "Variables" : {{
                                             "protein_gtr.shared_EFV",
                                             "protein_gtr.final_baseline_model",
-                                            "protein_gtr.rev_model_branch_lengths"
+                                            "protein_gtr.rev_model_branch_lengths",
+                                            "protein_gtr.baseline_Rij"
 
                                         }}
                                      });
@@ -104,6 +105,7 @@ io.ReportProgressMessageMD ("Protein GTR Fitter", "Initial branch length fit", "
 protein_gtr.fit_phase = 0;
 protein_gtr.scores = {};
 protein_gtr.phase_key = "Baseline-Phase";
+
 
 
 /*************************** STEP ONE ***************************
@@ -224,7 +226,7 @@ for (;;) {
             break;
         }
     }
-    
+
     // UNCLEAR IF TO DO: Before going to next iteration which begins w/ a branch length fit, we need to perform normalization. HyPhy might already do this.
 
 }
