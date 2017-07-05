@@ -2788,6 +2788,8 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
     FILE*    df;
     _String  fName = *(_String*)parameters(1);
     _DataSet*ds;
+  
+  
 
     if (simpleParameters.lLength == 1) {
         fName = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
@@ -2804,8 +2806,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
 #if defined  __WINDOZE__ && ! defined __HEADLESS__
             lastFileTypeSelection = 1;
 #endif
-
-            fName.ProcessFileName(false,false,(Ptr)chain.nameSpacePrefix);
+            fName.ProcessFileName(false,true,(Ptr)chain.nameSpacePrefix);
             if (terminateExecution) {
                 return;
             }
