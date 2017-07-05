@@ -36,6 +36,13 @@ LoadFunctionLibrary("BranchSiteTemplate");
 
 ------------------------------------------------------------------------------*/
 
+// More sensible for users to see test results first. Can easily update this.
+RELAX.display_orders = { "Null": 0,
+                         "Alternative": 1,
+                         "Partitioned MG94xREV": 2,
+                         "General Descriptive": 3,
+                         "Partitioned Descriptive": 4};
+
 RELAX.settings = {"GTR" : 1,
                   "LocalMG" : 1,
                   "Estimate GTR" : 1};
@@ -45,10 +52,11 @@ RELAX.timers  = {6,1};
 
 relax.taskTimerStart (0);
 
-RELAX.json    = {"fits" : {},
+RELAX.json    = { "input": {},
+                  "fits" : {},
                   "timers" : {},
-                  "relaxation-test" : None
-                  };
+                  "test results" : None
+                };
 
 RELAX.test            = "RELAX.test";
 RELAX.reference       = "RELAX.reference";
@@ -123,8 +131,6 @@ RELAX.has_unclassified = relax.selected_branches / RELAX.unclassified;
 RELAX.branch_to_partiton = {};
 utility.ForEachPair (relax.selected_branches, "_key_", "_value_", "utility.ForEach (utility.Keys(_value_), '_branch_', 'RELAX.branch_to_partiton[_branch_] = _key_')");
 
-RELAX.json ["partition"] = relax.selected_branches;
-RELAX.json ["tree"] = relax.tree ["string"];
 
 io.ReportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches[RELAX.test]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches[RELAX.test])));
 
@@ -139,6 +145,21 @@ if (RELAX.runModel < 0) {
 
 relax.taskTimerStart (1);
 
+/*
+Add input information to the JSON
+*/
+(RELAX.json["input"])["filename"] = relax.codon_data_info["file"];
+(RELAX.json["input"])["sequences"] = relax.codon_data_info["sequences"];
+(RELAX.json["input"])["sites"] = relax.codon_data_info["sites"];
+(RELAX.json["input"])["tree string"] = relax.tree ["string_with_lengths"];   //RELAX.json ["tree"] = relax.tree ["string"];
+
+/* 
+partition field should be lists rather than the current situation. For consistency, it is also now named partitions (plural!).
+    former code: RELAX.json ["partition"] = relax.selected_branches;
+*/
+RELAX.json["partitions"] = {"Test": utility.Keys(relax.selected_branches["RELAX.test"]), 
+                            "Reference": utility.Keys(relax.selected_branches["RELAX.reference"])};
+
 
 if (RELAX.settings["GTR"]) {
     io.ReportProgressMessage ("RELAX", "Obtaining branch lengths under the GTR model");
@@ -148,6 +169,7 @@ if (RELAX.settings["GTR"]) {
 } else {
     relax.gtr_results = None;
 }
+
 
 
 if (RELAX.settings["LocalMG"] && RELAX.runModel == 0) {
@@ -177,6 +199,52 @@ relax.mg_results_rate =
 io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.mg_results["LogL"]);
 
 
+
+/********************/
+// tree length
+// tree string
+
+/****** Grab out branch lengths *****/
+
+/* In general, this will work. */
+//bl_values = utility.Values(relax.tree["branch length"]);
+//tl = 0;
+//for (i = 0; i < Abs(bl_values); i+=1){
+//    tl += Eval(bl_values[i]);
+//}
+
+
+relax.all_nodes = utility.Keys(relax.tree["branch length"]);
+tl = 0;
+//fitted_bl = utility.Array1D(relax.mg_results["branch length"]);
+//console.log(fitted_bl);
+
+for (i = 0; i < Abs(relax.all_nodes); i+=1){
+    //subd = fitted_bl[Eval()];
+    //console.log(subd);
+    //exit();
+}   
+exit();
+
+console.log(tl);
+console.log(relax.mg_results["Trees"]);
+console.log(relax.mg_results["branch length"]);
+console.log(utility.Keys(relax.mg_results));
+
+
+
+exit();
+
+
+
+
+console.log((relax.mg_results["branch length"])[0]);
+exit();
+console.log(relax._aux.extract_branch_info ((relax.mg_results["branch lengths"])[0], "relax.branch.length"));
+exit();
+
+
+
 relax.json_store_lf (RELAX.json, "Partitioned MG94xREV",
                      relax.mg_results["LogL"], relax.mg_results["parameters"] + 5,
                      RELAX.timers[1],
@@ -184,8 +252,9 @@ relax.json_store_lf (RELAX.json, "Partitioned MG94xREV",
                      relax._aux.extract_branch_info ((relax.mg_results["branch lengths"])[0], "relax.branch.omega"),
                      relax.mg_results_rate,
                      None,
-                     "&omega;"
-                    );
+                     "&omega;",
+                    RELAX.display_orders["Partitioned MG94xREV"]);
+                    
 relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
 
 relax.taskTimerStart (2);
@@ -258,8 +327,8 @@ if (RELAX.runModel == 0) {
                          relax._aux.extract_branch_info ((relax.general_descriptive["branch lengths"])[0], "relax.branch.local_k"),
                          {"All" : relax.getRateDistribution (RELAX.reference.model, 1)},
                          None,
-                         "k"
-                        );
+                         "k",
+                         RELAX.display_orders["General Descriptive"]);
     relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
 
 } else {
@@ -300,7 +369,6 @@ if (RELAX.has_unclassified) {
     relax.omega_distributions ["Unclassified"] = relax.getRateDistribution (RELAX.unclassified.model, 1);
 }
 
-//io.SpoolLF ("relax.LF", "/Volumes/home-raid/Desktop/null", None);
 
 relax.json_store_lf (RELAX.json, "Null",
                      relax.null["LogL"], relax.null["parameters"],
@@ -309,8 +377,8 @@ relax.json_store_lf (RELAX.json, "Null",
                      relax._aux.extract_branch_info ((relax.null["branch lengths"])[0], "relax.branch.local_k"),
                      relax.omega_distributions,
                      1,
-                     "k"
-                    );
+                     "k",
+                    RELAX.display_orders["Null"]);
 
 relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
 
@@ -329,9 +397,9 @@ LIKELIHOOD_FUNCTION_OUTPUT = 2;
 relax.alt = estimators.ExtractMLEs ("relax.LF", RELAX.model_specification);
 relax.add_scores (relax.alt, relax.MLE.alt);
 
-RELAX.json ["relaxation-test"] = relax.runLRT (relax.alt["LogL"], relax.null["LogL"]);
+RELAX.json ["test results"] = relax.runLRT (relax.alt["LogL"], relax.null["LogL"]);
 
-io.ReportProgressMessage ("RELAX", "Likelihood ratio test for relaxation on Test branches, p = " + (RELAX.json ["relaxation-test"])["p"]);
+io.ReportProgressMessage ("RELAX", "Likelihood ratio test for relaxation on Test branches, p = " + (RELAX.json ["test results"])["p"]);
 
 relax.taskTimerStop  (4);
 
@@ -350,8 +418,8 @@ relax.json_store_lf (RELAX.json, "Alternative",
                      relax._aux.extract_branch_info ((relax.alt["branch lengths"])[0], "relax.branch.local_k"),
                      relax.omega_distributions,
                      Eval (RELAX.relaxation_parameter),
-                     "k"
-                    );
+                     "k",
+                    RELAX.display_orders["Alternative"]);
 
 
 if (RELAX.runModel == 0) {
@@ -383,21 +451,21 @@ if (RELAX.runModel == 0) {
     relax.add_scores (relax.part.expl, relax.MLE.part.expl);
 
     relax.taskTimerStop  (5);
-    relax.json_store_lf (RELAX.json, "Partitioned Exploratory",
+    relax.json_store_lf (RELAX.json, "Partitioned Descriptive",
                          relax.part.expl["LogL"], relax.part.expl["parameters"],
                          RELAX.timers[5],
                          relax._aux.extract_branch_info ((relax.part.expl["branch lengths"])[0], "relax.branch.length"),
                          None,
                          relax.omega_distributions,
                          None,
-                         ""
-                        );
+                         "",
+                        RELAX.display_orders["Partitioned Descriptive"]);
 }
 
 
 relax.taskTimerStop  (0);
 
-
+// WOW IS THIS REAL THIS IS ASKING FOR HELL
 (RELAX.json ["timers"])["Overall"]                  = RELAX.timers[0];
 (RELAX.json ["timers"])["Preliminaries"]            = RELAX.timers[1];
 (RELAX.json ["timers"])["General Descriptive"]      = RELAX.timers[2];
@@ -766,7 +834,7 @@ lfunction CountSenseCodons (code) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-function relax.json_store_lf (json, name, ll, df, time, branch_length, branch_annotation, omega_distribution, K, annotation_tag) {
+function relax.json_store_lf (json, name, ll, df, time, branch_length, branch_annotation, omega_distribution, K, annotation_tag, display_order) {
 
     (json["fits"])[name] = {"log-likelihood"     : ll,
                             "parameters"         : df,
@@ -777,6 +845,6 @@ function relax.json_store_lf (json, name, ll, df, time, branch_length, branch_an
                             "rate-distributions" : omega_distribution,
                             "K" : K,
                             "annotation-tag" : annotation_tag,
-                            "display-order" : Abs (json["fits"])};
+                            "display-order" : display_order};
 
  }
