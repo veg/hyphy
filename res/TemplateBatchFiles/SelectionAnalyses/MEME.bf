@@ -111,7 +111,7 @@ io.ReportProgressMessageMD('MEME',  'selector', 'Branches to include in the MEME
 
 utility.ForEachPair (meme.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.json.attribute.test');
-     io.ReportProgressMessageMD('MEME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the MEME analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");			  
+     io.ReportProgressMessageMD('MEME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the MEME analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 
 meme.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(meme.codon_data_info["code"], None);
@@ -184,7 +184,7 @@ meme.site.bsrel =  model.generic.DefineMixtureModel("models.codon.BS_REL_Per_Bra
         },
         meme.filter_names,
         None);
-        
+
 meme.beta1  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.nonsynonymous_rate,1));
 meme.beta2  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.nonsynonymous_rate,2));
 meme.branch_mixture = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.mixture_aux_weight,1));
@@ -244,11 +244,11 @@ meme.site_results = {};
 for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme.partition_index += 1) {
     meme.report.header_done = FALSE;
     meme.table_output_options["header"] = TRUE;
-    
+
     meme.model_to_branch_bsrel = { "meme.bsrel" : utility.Filter (meme.selected_branches[meme.partition_index], '_value_', '_value_ == terms.json.attribute.test'),
 					         "meme.background_fel" : utility.Filter (meme.selected_branches[meme.partition_index], '_value_', '_value_ != terms.json.attribute.test')};
 
- 			
+
     model.ApplyModelToTree( "meme.site_tree_fel", meme.trees[meme.partition_index], {"default" : meme.site.background_fel}, None);
     model.ApplyModelToTree( "meme.site_tree_bsrel", meme.trees[meme.partition_index], None, meme.model_to_branch_bsrel);
 
@@ -258,21 +258,21 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
             '_node_class_ = (meme.selected_branches[meme.partition_index])[_node_];
              if (_node_class_ != "test") {
                 _beta_scaler = "meme.site_beta_nuisance";
-				meme.apply_proportional_site_constraint.fel ("meme.site_tree_bsrel", _node_, 
+				meme.apply_proportional_site_constraint.fel ("meme.site_tree_bsrel", _node_,
 					meme.alpha, meme.beta, "meme.site_alpha", _beta_scaler, (( meme.final_partitioned_mg_results[terms.json.attribute.branch_length])[meme.partition_index])[_node_]);
             } else {
                 _beta_scaler = "meme.site_beta_plus";
-				meme.apply_proportional_site_constraint.bsrel ("meme.site_tree_bsrel", _node_, 
-					meme.alpha,  meme.beta1, meme.beta2, meme.branch_mixture, "meme.site_alpha", "meme.site_omega_minus", 
+				meme.apply_proportional_site_constraint.bsrel ("meme.site_tree_bsrel", _node_,
+					meme.alpha,  meme.beta1, meme.beta2, meme.branch_mixture, "meme.site_alpha", "meme.site_omega_minus",
 					_beta_scaler, "meme.site_mixture_weight", (( meme.final_partitioned_mg_results[terms.json.attribute.branch_length])[meme.partition_index])[_node_]);
              }
-             meme.apply_proportional_site_constraint.fel ("meme.site_tree_fel", _node_, 
+             meme.apply_proportional_site_constraint.fel ("meme.site_tree_fel", _node_,
              	meme.alpha, meme.beta, "meme.site_alpha", _beta_scaler, (( meme.final_partitioned_mg_results[terms.json.attribute.branch_length])[meme.partition_index])[_node_]);
         ');
 
 
 
-	
+
     // create the likelihood function for this site
 
     ExecuteCommands (alignments.serialize_site_filter
@@ -281,7 +281,7 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                      ));
 
     __make_filter ("meme.site_filter");
-    
+
     LikelihoodFunction meme.site_likelihood = (meme.site_filter, meme.site_tree_fel);
 
     __make_filter ("meme.site_filter_bsrel");
@@ -292,7 +292,7 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
 
 
     LikelihoodFunction meme.site_likelihood_bsrel = (meme.site_filter_bsrel, meme.site_tree_bsrel);
-    
+
 
     estimators.ApplyExistingEstimates ("meme.site_likelihood_bsrel", meme.site_model_mapping, meme.final_partitioned_mg_results,
                                         "globals only");
@@ -396,25 +396,25 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 
 	parameter_name = "`tree_name`.`branch_name`." + ^"meme.branch_mixture";
 	^parameter_name = 1;
-	
+
 	LFCompute (^lf_id,LOGL0);
-					
+
 	utility.ExecuteInGlobalNamespace (parameter_name + ":= meme.site_mixture_weight");
-	
+
 	if (^"meme.site_mixture_weight" != 1 && ^"meme.site_mixture_weight" != 0) {
 		_priorOdds = (1-^"meme.site_mixture_weight")/^"meme.site_mixture_weight";
 	} else {
 		_priorOdds = 0;
 	}
-        
+
 	normalizer  = -Max (LOGL0,baseline);
-	
-	
+
+
 	p1 = Exp(LOGL0+normalizer) * ^"meme.site_mixture_weight";
 	p2 = (Exp(baseline+normalizer) - p1);
-			
+
 	_posteriorProb = {{p1,p2}};
-	
+
 	_posteriorProb = _posteriorProb * (1/(+_posteriorProb));
 	if ( _priorOdds != 0) {
 		eBF = _posteriorProb[1] / (1 - _posteriorProb[1]) / _priorOdds;
@@ -428,15 +428,15 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
 
     GetString   (lfInfo, ^lf_fel,-1);
-    
+
     ExecuteCommands (filter_data);
     __make_filter ((lfInfo["Datafilters"])[0]);
 
     GetString (lfInfo, ^lf_bsrel,-1);
     __make_filter ((lfInfo["Datafilters"])[0]);
-    
+
 	bsrel_tree_id = (lfInfo["Trees"])[0];
-	
+
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
 
     ^"meme.site_alpha" = 1;
@@ -452,21 +452,22 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
  	if (^"meme.site_alpha" > 0) {
  		^"meme.site_omega_minus" = 1;
  	} else {
- 		^"meme.site_omega_minus" = ^"meme.site_beta_plus" / ^"meme.site_alpha";
+ 		^"meme.site_omega_minus" = ^"meme.site_beta_plus" / Max (^"meme.site_alpha", 1e-6);
+ 		/* avoid 0/0 by making the denominator non-zero*/
  	}
-    
+
 	Optimize (results, ^lf_bsrel);
 
     alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
     alternative [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
-	
+
 	ancestral_info = ancestral.build (lf_bsrel,0,FALSE);
 
-	branch_attributes = selection.substitution_mapper (ancestral_info ["MATRIX"], 
-													  ancestral_info ["TREE_AVL"], 
-													  ancestral_info ["AMBIGS"], 
+	branch_attributes = selection.substitution_mapper (ancestral_info ["MATRIX"],
+													  ancestral_info ["TREE_AVL"],
+													  ancestral_info ["AMBIGS"],
 													  ^"meme.pairwise_counts",
-													  ancestral_info ["MAPPING"], 
+													  ancestral_info ["MAPPING"],
 													  (^"meme.codon_data_info")["code"]);
 
 	DeleteObject (ancestral_info);
@@ -486,22 +487,22 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 				(^"`&branch_ebf`")[_node_name_] = _node_name_res_["BF"];
 				(^"`&branch_posterior`")[_node_name_] = _node_name_res_["posterior"];
 			} else {
-				(^"`&branch_ebf`")[_node_name_] = None;			
-				(^"`&branch_posterior`")[_node_name_] = None;			
+				(^"`&branch_ebf`")[_node_name_] = None;
+				(^"`&branch_posterior`")[_node_name_] = None;
 			}
 		'
 		);
 
-		LFCompute (^lf_bsrel,LF_DONE_COMPUTE); 
+		LFCompute (^lf_bsrel,LF_DONE_COMPUTE);
 
 		^"meme.site_beta_plus" := ^"meme.site_alpha";
 		Optimize (results, ^lf_bsrel);
 
 		null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
 		null [utility.getGlobalValue("terms.json.log_likelihood")] = results[1][0];
-		
 
-		
+
+
 	} else {
 		null = alternative;
 		utility.ForEach (^bsrel_tree_id, "_node_name_",
@@ -516,11 +517,11 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 		'
 		);
 	}
-    
+
     return {"fel" : fel,
-    		"alternative" : alternative, 
+    		"alternative" : alternative,
     		"posterior" : branch_posterior,
-    		"ebf" : branch_ebf, 
+    		"ebf" : branch_ebf,
     		"branch_attributes" : branch_attributes,
     		"null": null};
 }
@@ -568,13 +569,13 @@ lfunction meme.store_results (node, result, arguments) {
                           0  // total branch length of tested branches
                       } };
 
-	//console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_mixture_weight"));
+	  //console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_mixture_weight"));
 
     if (None != result) { // not a constant site
-    
-    	lrt = {"LRT" : 2*((result["alternative"])[utility.getGlobalValue("terms.json.log_likelihood")]-(result["null"])[utility.getGlobalValue("terms.json.log_likelihood")])};
-    	lrt ["p-value"] = 2/3-2/3*(0.45*CChi2(lrt["LRT"],1)+0.55*CChi2(lrt["LRT"],2));
-    	
+
+        lrt = {"LRT" : 2*((result["alternative"])[utility.getGlobalValue("terms.json.log_likelihood")]-(result["null"])[utility.getGlobalValue("terms.json.log_likelihood")])};
+        lrt ["p-value"] = 2/3-2/3*(0.45*CChi2(lrt["LRT"],1)+0.55*CChi2(lrt["LRT"],2));
+
         result_row [0] = estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_alpha");
         result_row [1] = estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_omega_minus") * result_row[0];
         result_row [2] = estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_mixture_weight");
@@ -582,8 +583,25 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [4] = 1-result_row [2];
         result_row [5] = lrt ["LRT"];
         result_row [6] = lrt ["p-value"];
-        result_row [7] = utility.Array1D(utility.Filter (result["ebf"], "_value_", "_value_>=100"));
-        
+
+        // SW 20170505 Removing use of utility.Filter until we can lock the stack
+        //filtered_ebf = utility.Filter (ebf, "_value_", "_value_>=100");
+
+        filtered_ebf = {};
+        ebf_keys = Rows(ebf);
+
+        for(i=0; i<Abs(ebf);i=i+1) {
+            if(ebf[i] >= 100) {
+                filtered_ebf[ebf_keys[i]] = ebf[ebf_keys[i]];
+            }
+        }
+
+        if(None != filtered_ebf) {
+            result_row [7] = utility.Array1D(filtered_ebf);
+        } else {
+            result_row [7] = 0;
+        }
+
         sum = 0;
         alternative_lengths = ((result["alternative"])[^"terms.json.attribute.branch_length"])[0];
 
