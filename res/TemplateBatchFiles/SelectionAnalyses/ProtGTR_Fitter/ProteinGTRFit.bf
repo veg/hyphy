@@ -1,17 +1,5 @@
 RequireVersion("2.31");
-
-LoadFunctionLibrary("libv3/UtilityFunctions.bf"); // namespace 'utility' for convenience functions
-LoadFunctionLibrary("libv3/tasks/alignments.bf"); // namespace 'alignments' for alignment-related functions
-LoadFunctionLibrary("libv3/tasks/trees.bf"); // namespace 'trees' for trees-related functions
-LoadFunctionLibrary("libv3/IOFunctions.bf"); // namespace 'io' for interactive/datamonkey i/o functions
-LoadFunctionLibrary("libv3/tasks/estimators.bf"); // namespace 'estimators' for various estimator related functions
-LoadFunctionLibrary("libv3/tasks/ancestral.bf"); // namespace 'ancestral' for ancestral reconstruction functions
-LoadFunctionLibrary("libv3/stats.bf"); // namespace 'stats' for various descriptive stats functions
-LoadFunctionLibrary("libv3/terms-json.bf");
-LoadFunctionLibrary("libv3/tasks/mpi.bf");
-LoadFunctionLibrary("libv3/convenience/math.bf");
-
-LoadFunctionLibrary("libv3/models/rate_variation.bf"); // rate variation
+LoadFunctionLibrary("libv3/function-loader.bf");
 
 // Protein models
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
@@ -51,7 +39,7 @@ if (io.FileExists(protein_gtr.cache_file)) {
 }
 
 // Load all information from cache
-if (protein_gtr.use_cache == "YES"){
+if (protein_gtr.use_cache == "YES" || protein_gtr.use_cache == 1){
     protein_gtr.analysis_results = io.LoadCacheFromFile (protein_gtr.cache_file);
     protein_gtr.load_cached_options();  // Load previously selected options into namespace
 
@@ -62,51 +50,36 @@ else {
     protein_gtr.analysis_results = {};
 
     // Prompt for convergence assessment type
-    protein_gtr.convergence_type = io.SelectAnOption ({{"LogL", "Assess REV fit convergence by comparing log likelihood scores"}, {"RMSE", "[Recommended] Assess REV fit convergence by comparing RMSE between fitted matrices"}}, "Select a convergence criterion.");
+    protein_gtr.convergence_type = io.SelectAnOption( protein_gtr.convergence_options, "Select a convergence criterion.");
+
     if (protein_gtr.convergence_type == "LogL"){
-        protein_gtr.tolerance = 0.1;
+        protein_gtr.tolerance = io.PromptUser ("\n>Provide a tolerance level for convergence assessment (Default 0.01)",0.01,0,1,FALSE); // default, lower, upper, is_integer
     }
     else {
-        protein_gtr.tolerance = 0.001; // RMSE
+        protein_gtr.tolerance = io.PromptUser ("\n>Provide a tolerance level for convergence assessment (Default 0.001)",0.01,0,1,FALSE); // default, lower, upper, is_integer
     }
 
-
-
     // Prompt for baseline AA model
-    protein_gtr.baseline_model  = io.SelectAnOption (models.protein.empirical_options,
+    protein_gtr.baseline_model  = io.SelectAnOption (models.protein.empirical_models,
                                                      "Select an empirical protein model to use for optimizing the provided branch lengths (we recommend LG):");
 
     // Prompt for rate variation
-    protein_gtr.use_rate_variation = io.SelectAnOption ({{"YES", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"NO", "Do not consider rate variation when optimizing branch lengths."}},
-                                                        "Would you like to optimize branch lengths with rate variation?");
+    protein_gtr.use_rate_variation = io.SelectAnOption( protein_gtr.rate_variation_options, "Would you like to optimize branch lengths with rate variation?");
 
-    // Set up dictionary of baseline models, depending on specified baseline and rate variation
-    if (protein_gtr.use_rate_variation == "YES"){
-        protein_gtr.baseline_model_functions = {"WAG": "models.protein.WAG.ModelDescription.withGamma",
-                                                "LG": "models.protein.LG.ModelDescription.withGamma",
-                                                "JTT": "models.protein.JTT.ModelDescription.withGamma",
-                                                "JC": "models.protein.JC.ModelDescription.withGamma"};
-    } else{
-        protein_gtr.baseline_model_functions = {"WAG": "models.protein.WAG.ModelDescription",
-                                                "LG": "models.protein.LG.ModelDescription",
-                                                "JTT": "models.protein.JTT.ModelDescription",
-                                                "JC": "models.protein.JC.ModelDescription"};
-    }
-    protein_gtr.final_baseline_model = protein_gtr.baseline_model_functions[protein_gtr.baseline_model];
-    // Save these options to cache
     protein_gtr.save_options();
 
 }
 
-/** set GTR definitions regardless of whether or not this is a cached run **/
 
-if (protein_gtr.use_rate_variation == "YES"){
+
+protein_gtr.baseline_Rij = protein_gtr.baseline_Rij_options[protein_gtr.baseline_model]; // Defined in helper
+if (protein_gtr.use_rate_variation == "Yes"){
+    protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription.withGamma";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription.withGamma";
 } else{
+    protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription";
 }
-
-
 /********************************************************************************************************************/
 
 
@@ -121,7 +94,8 @@ protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedMod
                                         "Variables" : {{
                                             "protein_gtr.shared_EFV",
                                             "protein_gtr.final_baseline_model",
-                                            "protein_gtr.rev_model_branch_lengths"
+                                            "protein_gtr.rev_model_branch_lengths",
+                                            "protein_gtr.baseline_Rij"
 
                                         }}
                                      });
@@ -131,6 +105,7 @@ io.ReportProgressMessageMD ("Protein GTR Fitter", "Initial branch length fit", "
 protein_gtr.fit_phase = 0;
 protein_gtr.scores = {};
 protein_gtr.phase_key = "Baseline-Phase";
+
 
 
 /*************************** STEP ONE ***************************
@@ -144,9 +119,9 @@ for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) 
 
     if (utility.Has (protein_gtr.analysis_results, {{ protein_gtr.file_list[file_index], protein_gtr.phase_key}}, None)) {
 
-
+        thisKey = (protein_gtr.analysis_results[protein_gtr.file_list[file_index]])["Baseline-Phase"];
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
-                                    "Loaded cached results for '" + cached_file + ". Log(L) = " + logL);
+                                    "Loaded cached results for '" + cached_file + ". Log(L) = " + thisKey["LogL"]);
 
     } else {
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
@@ -166,6 +141,8 @@ protein_gtr.baseline_fit_logL = math.Sum (utility.Map (utility.Filter (protein_g
 
 io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                             "Overall Log(L) = " + protein_gtr.baseline_fit_logL);
+
+
 
 /*************************** STEP TWO ***************************
           Perform an initial GTR fit on the data
@@ -249,6 +226,8 @@ for (;;) {
             break;
         }
     }
+
+    // UNCLEAR IF TO DO: Before going to next iteration which begins w/ a branch length fit, we need to perform normalization. HyPhy might already do this.
 
 }
 
