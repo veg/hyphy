@@ -6,6 +6,8 @@ LoadFunctionLibrary("libv3/models/protein/empirical.bf");
 LoadFunctionLibrary("libv3/models/protein/REV.bf");
 
 LoadFunctionLibrary("ProteinGTRFit_helper.ibf"); // Moved all functions from this file into loaded file, for clarity.
+LoadFunctionLibrary("plusF_helper.ibf");
+
 /*------------------------------------------------------------------------------*/
 
 utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
@@ -72,7 +74,7 @@ else {
 
 
 
-protein_gtr.baseline_Rij = protein_gtr.baseline_Rij_options[protein_gtr.baseline_model]; // Defined in helper
+protein_gtr.baseline_Rij = plusF_helper.Rij_options[protein_gtr.baseline_model]; // Defined in helper
 if (protein_gtr.use_rate_variation == "Yes"){
     protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription.withGamma";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription.withGamma";

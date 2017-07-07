@@ -1,9 +1,5 @@
 /*************** Functions used in ProteinGTRFit.bf ******************/
 /** set model definitions **/
-protein_gtr.baseline_Rij_options = {"LG":  models.protein.empirical.LG.empirical_R,
-                                    "WAG": models.protein.empirical.WAG.empirical_R,
-                                    "JTT": models.protein.empirical.JTT.empirical_R,
-                                    "JC":  models.protein.empirical.JC.empirical_R};
 protein_gtr.convergence_options = {{"LogL", "Assess REV fit convergence by comparing log likelihood scores"}, {"RMSE", "[Recommended] Assess REV fit convergence by comparing RMSE between fitted matrices."}};
 protein_gtr.rate_variation_options = {{"Yes", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"No", "Do not consider rate variation when optimizing branch lengths."}};
 
@@ -127,18 +123,18 @@ function protein_gtr.fitBaselineToFile (filename) {
                                                                             "protein_gtr.msa" ,
                                                                             "protein_gtr.filter.",
                                                                             protein_gtr.file_info);
-    trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_["tree"]');
-    data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']");
+    protein_gtr.full_trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_["tree"]');
+    protein_gtr.full_data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']");
 
 
 
     /******************** NORMALIZE MATRIX WITH DATA FREQUENCIES HERE *************************/
-    protein_gtr.empirical_frequencies = protein_gtr.GetFrequenciesHack(data_filter, trees);
-    protein_gtr.normalized_qij = protein_gtr.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.baseline_Rij, models.protein.alphabet);
+    
+    protein_gtr.empirical_frequencies = plusF_helper.GetFrequenciesHack(protein_gtr.full_data_filter, protein_gtr.full_trees);   
+    protein_gtr.normalized_qij = plusF_helper.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.baseline_Rij, models.protein.alphabet);
 
-
-    protein_gtr.baseline.mle = estimators.FitSingleModel_Ext(data_filter,
-                                                        trees,
+    protein_gtr.baseline.mle = estimators.FitSingleModel_Ext(protein_gtr.full_data_filter,
+                                                        protein_gtr.full_trees,
                                                         protein_gtr.final_baseline_model,
                                                         None,
                                                         None);
@@ -418,6 +414,9 @@ function protein_gtr.plusF.frequencies (model, namespace, datafilter) {
     (model["parameters"])["empirical"] = 0;
 }
 
+
+
+/*
 lfunction protein_gtr.IntermediatePlusF.ModelDescription(type) {
     models.protein.plusF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
     models.protein.plusF.ModelDescription.model_definition ["empirical-rates"] = models.protein.WAG.empirical_Q;
@@ -490,5 +489,5 @@ lfunction protein_gtr.BuildCustomNormalizedQ(EFV, rij, alphabet){
     }
     return finalQ;
 }
-
+*/
 

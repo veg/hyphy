@@ -17,6 +17,7 @@ models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution
 
 
 
+
 /**
  * @name models.protein.generic.DefineQMatrix
  * @param {Dictionary} modelSpec
