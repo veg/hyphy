@@ -96,6 +96,11 @@ namespace fel {
 }
 
 
+/* Prompt for one-rate or two-rate analysis */
+fel.tworate = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS = 1 at each site)."}},
+                                  "Use rate variation? Strongly recommended YES for selection inference.");
+
+
 fel.partition_count = Abs (fel.filter_specification);
 fel.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",0.1,0,1,FALSE);
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to include in the FEL analysis');
@@ -200,8 +205,13 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
 
-    ^"fel.alpha_scaler" = 1;
-    ^"fel.beta_scaler_test"  = 1;
+    if (^"fel.tworate" == "Yes"){
+        ^"fel.alpha_scaler" = 1;
+    } else
+    {
+        ^"fel.alpha_scaler" := 1;
+    }
+    ^"fel.beta_scaler_test"  = 1;    
     ^"fel.beta_scaler_nuisance"  = 1;
 
     Optimize (results, ^lf);
