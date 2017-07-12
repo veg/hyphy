@@ -305,7 +305,7 @@ lfunction fel.store_results (node, result, arguments) {
         alternative_lengths = ((result["alternative"])[^"terms.json.attribute.branch_length"])[0];
 
         utility.ForEach (^"fel.case_respecting_node_names", "_node_",
-                '_node_class_ = ((^"fel.selected_branches")[`&partition_index`])[_node_ && 1];
+                '_node_class_ = ((^"fel.selected_branches")[`&partition_index`])[_node_];
                  if (_node_class_ == "test") {
                     `&sum` += ((`&alternative_lengths`)[_node_])[^"terms.json.MLE"];
                  }
@@ -345,7 +345,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     // beta  = beta_scaler_test * branch_length or beta_nuisance_test * branch_length
 
     utility.ForEach (fel.case_respecting_node_names, "_node_",
-            '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_ && 1];
+            '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
              if (_node_class_ == "test") {
                 _beta_scaler = fel.scalers[1];
              } else {
