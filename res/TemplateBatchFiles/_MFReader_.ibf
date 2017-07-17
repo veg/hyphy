@@ -162,11 +162,11 @@ if (_runAsFunctionLibrary != 1)
 
 					if (_doAAcids == 0)
 					{
-						codonComponent = "DataSetFilter filteredData_" + fileID + " = CreateFilter (ds_"+fileID +",3,\"\",\"\",GeneticCodeExclusions);totalCharCount=totalCharCount+filteredData_"+fileID+".sites*filteredData_"+fileID+".species;totalCodonCount=totalCodonCount+filteredData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+filteredData_"+fileID+".unique_sites;";
+						codonComponent = "DataSetFilter filteredData_" + fileID + " = CreateFilter (ds_"+fileID +",3,\"\",\"\",GeneticCodeExclusions);totalCharCount=totalCharCount+filteredData_"+fileID+".sites*filteredData_"+fileID+".species;totalCodonCount=totalCodonCount+filteredData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+Columns(filteredData_"+fileID+".site_freqs);";
 					}
 					else
 					{
-						codonComponent = "totalCharCount=totalCharCount+nucData_"+fileID+".sites*nucData_"+fileID+".species;totalCodonCount=totalCodonCount+nucData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+nucData_"+fileID+".unique_sites;";
+						codonComponent = "totalCharCount=totalCharCount+nucData_"+fileID+".sites*nucData_"+fileID+".species;totalCodonCount=totalCodonCount+nucData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+Columns(nucData_"+fileID+".site_freqs);";
 					}
 					ExecuteCommands (
 									"DataSet				ds_" +fileID + " = ReadFromString (baseFPath);"+

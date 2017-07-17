@@ -458,7 +458,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
     tip_count = 0;
 
     for (i = 1; i < Abs (tree); i+=1) {
-        if (selected_branches [(tree[i])["Name"]&&1]) {
+        if (selected_branches [(tree[i])["Name"]]) {
             selected_branches_in_avl[k]   = i-1;
             selected_branches_lengths[k] = (tree[i])["Length"];
             selected_branches_parents[k] = (tree[i])["Parent"] - 1;
