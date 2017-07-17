@@ -196,6 +196,7 @@ model.generic.AddGlobal (fel.site.mg_rev, "fel.beta_scaler_nuisance", fel.site_b
 parameters.DeclareGlobal (fel.scalers, {});
 
 
+
 //----------------------------------------------------------------------------------------
 lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping) {
 
@@ -205,12 +206,15 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
 
+/*
     if (^"fel.tworate" == "Yes"){
         ^"fel.alpha_scaler" = 1;
     } else
     {
         ^"fel.alpha_scaler" := 1;
     }
+*/
+    ^"fel.alpha_scaler" = 1;
     ^"fel.beta_scaler_test"  = 1;    
     ^"fel.beta_scaler_nuisance"  = 1;
 
@@ -382,7 +386,8 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
 
     fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                    "Models" : {{"fel.site.mg_rev"}},
-                                   "Headers" : {{"libv3/terms-json.bf"}}
+                                   "Headers" : {{"libv3/terms-json.bf"}},
+                                   "Variables" : {{"fel.tworate"}}
                                  });
 
     /* run the main loop over all unique site pattern combinations */
