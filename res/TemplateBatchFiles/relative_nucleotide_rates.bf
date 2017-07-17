@@ -40,7 +40,19 @@ io.ReportProgressMessageMD ("relative_nuc_rates", "Data", "Loaded **" +
 
 relative_nuc_rates.filter_specification = alignments.DefineFiltersForPartitions (relative_nuc_rates.partitions_and_trees, "relative_nuc_rates.dataset" , "relative_nuc_rates.filter.", relative_nuc_rates.alignment_info);
 
-relative_nuc_rates.model_generator = "models.DNA.GTR.ModelDescription";
+
+
+/********* Select model *********/
+
+
+relative_nuc_rates.model_name  = io.SelectAnOption (models.DNA.models,
+                                                    "Select a nucleotide model:");
+
+// TODO: Add more nucleotide models, once more are added to the models/DNA/...
+relative_nuc_rates.model_generators = {"GTR": "models.DNA.GTR.ModelDescription",
+                                       "HKY85": "models.DNA.HKY85.ModelDescription"};
+
+relative_nuc_rates.model_generator = relative_nuc_rates.model_generators[relative_nuc_rates.model_name];
 
 
 
