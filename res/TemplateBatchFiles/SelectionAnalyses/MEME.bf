@@ -300,7 +300,7 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
     meme.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"meme.site_likelihood","meme.site_likelihood_bsrel"}},
                                    "Models" : {{"meme.site.background_fel","meme.site.bsrel"}},
                                    "Headers" : utility.GetListOfLoadedModules (),
-                                   "Variables" : {{"meme.selected_branches","meme.branch_mixture"}},
+                                   "Variables" : {{"meme.selected_branches","meme.branch_mixture","meme.pairwise_counts","meme.codon_data_info"}},
                                    "Functions" : {{"meme.compute_branch_EBF"}}
                                  });
 
