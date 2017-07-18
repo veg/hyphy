@@ -1,4 +1,4 @@
-/***** Convenience batchfile for loading function libraries. *******/
+/***** SJS Convenience batchfile for loading function libraries. *******/
 
 RequireVersion("2.31"); // Should also be in the calling batchfile, but repeated here for additional sanity
 

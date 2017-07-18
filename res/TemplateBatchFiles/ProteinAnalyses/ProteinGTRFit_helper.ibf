@@ -1,25 +1,48 @@
 /*************** Functions used in ProteinGTRFit.bf ******************/
-
+/** set model definitions **/
+protein_gtr.convergence_options = {{"LogL", "Assess REV fit convergence by comparing log likelihood scores"}, {"RMSE", "[Recommended] Assess REV fit convergence by comparing RMSE between fitted matrices."}};
+protein_gtr.rate_variation_options = {{"Yes", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"No", "Do not consider rate variation when optimizing branch lengths."}};
 
 function protein_gtr.load_cached_options() {
     protein_gtr.convergence_type = (protein_gtr.analysis_results["options"])["convergence_type"];
     protein_gtr.tolerance = (protein_gtr.analysis_results["options"])["tolerance"];
-    protein_gtr.final_baseline_model = (protein_gtr.analysis_results["options"])["final_baseline_model"];
-    protein_gtr.protein_gtr.use_rate_variation = (protein_gtr.analysis_results["options"])["rate_variation"];
+    protein_gtr.baseline_model = (protein_gtr.analysis_results["options"])["baseline_model"];
+    protein_gtr.use_rate_variation = (protein_gtr.analysis_results["options"])["rate_variation"];
+
+    /*** Cache options can in theory be saved as numbers if options piped in, although not typically. Remap to strings. ****/
+    if (Type(protein_gtr.convergence_type) == "Number"){
+        protein_gtr.convergence_type = utility.SwapKeysAndValues(utility.MatrixToDict(protein_gtr.convergence_options))[protein_gtr.convergence_type*2];
+    }
+    if (Type(protein_gtr.baseline_model) == "Number"){
+        protein_gtr.baseline_model = utility.SwapKeysAndValues(utility.MatrixToDict(models.protein.empirical_models))[protein_gtr.baseline_model*2];
+   }
+    if (Type(protein_gtr.protein_gtr.use_rate_variation) == "Number"){
+        protein_gtr.use_rate_variation = utility.SwapKeysAndValues(utility.MatrixToDict(protein_gtr.rate_variation_options))[protein_gtr.use_rate_variation*2];
+    }
     return 0;
 }
 
 function protein_gtr.save_options() {
     protein_gtr.analysis_results["options"] = {"convergence_type": protein_gtr.convergence_type,
                                                "tolerance": protein_gtr.tolerance,
-                                               "final_baseline_model": protein_gtr.final_baseline_model,
-                                               "rate_variation" : protein_gtr.protein_gtr.use_rate_variation};
+                                               "baseline_model": protein_gtr.baseline_model,
+                                               "rate_variation" : protein_gtr.use_rate_variation};
+    io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
     return 0;
 }
 
 
 /* Model definitions, in particular for models with rate variation */
 //------------------------------------------------------------------------------------------------------------------------
+/**
+ * @name models.protein.REV.ModelDescription.withGamma
+ * @description Define REV model with four-category gamma rate variation
+ */
+lfunction models.protein.REV.ModelDescription.withGamma (options) {
+	def = models.protein.REV.ModelDescription (options);
+	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
+	return def;
+};
 /**
  * @name protein_gtr.REV.ModelDescription.withGamma
  * @description Define a REV model with Gamma rate variation
@@ -53,56 +76,23 @@ function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
     return model;
 }
 
-/***************************************************************************
-TO DO: These models should eventually be moved, in a more elegant way, to libv3/models/protein/.
-****************************************************************************/
-/**
- * @name models.protein.WAG.ModelDescription.withGamma
- * @description Define WAG model with four-category gamma rate variation
- */
-lfunction models.protein.WAG.ModelDescription.withGamma (options) {
-	def = models.protein.WAG.ModelDescription (options);
+function protein_gtr.plusF.ModelDescription(type) {
+    models.protein.plusF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.plusF.ModelDescription.model_definition ["empirical-rates"] = protein_gtr.normalized_qij;
+    models.protein.plusF.ModelDescription.model_definition ["frequency-estimator"] = "protein_gtr.plusF.frequencies";
+    models.protein.plusF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.plusF.ModelDescription.model_definition ["q_ij"] = "protein_gtr.plusF._GenerateRate";
+    return models.protein.plusF.ModelDescription.model_definition;
+}
+lfunction protein_gtr.plusF.ModelDescription.withGamma (options) {
+	def = protein_gtr.plusF.ModelDescription (options);
 	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
 	return def;
 };
-/**
- * @name models.protein.JTT.ModelDescription.withGamma
- * @description Define JTT model with four-category gamma rate variation
- */
-lfunction models.protein.JTT.ModelDescription.withGamma (options) {
-	def = models.protein.JTT.ModelDescription (options);
-	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
-	return def;
-};
-/**
- * @name models.protein.LG.ModelDescription.withGamma
- * @description Define LG model with four-category gamma rate variation
- */
-lfunction models.protein.LG.ModelDescription.withGamma (options) {
-	def = models.protein.LG.ModelDescription (options);
-	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
-	return def;
-};
-/**
- * @name models.protein.JC.ModelDescription.withGamma
- * @description Define JC model with four-category gamma rate variation
- */
-lfunction models.protein.JC.ModelDescription.withGamma (options) {
-	def = models.protein.JC.ModelDescription (options);
-	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
-	return def;
-};
-/**
- * @name models.protein.REV.ModelDescription.withGamma
- * @description Define REV model with four-category gamma rate variation
- */
-lfunction models.protein.REV.ModelDescription.withGamma (options) {
-	def = models.protein.REV.ModelDescription (options);
-	def [^"terms.rate_variation"] = rate_variation.types.Gamma.factory ({^"terms.rate_variation.bins" : 4});
-	return def;
-};
-
 //------------------------------------------------------------------------------------------------------------------------
+
+
+
 
 
 /**
@@ -133,13 +123,18 @@ function protein_gtr.fitBaselineToFile (filename) {
                                                                             "protein_gtr.msa" ,
                                                                             "protein_gtr.filter.",
                                                                             protein_gtr.file_info);
-    trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_["tree"]');
-    data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']");
+    protein_gtr.full_trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_["tree"]');
+    protein_gtr.full_data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_['name']");
 
 
 
-    protein_gtr.baseline.mle = estimators.FitSingleModel_Ext(data_filter,
-                                                        trees,
+    /******************** NORMALIZE MATRIX WITH DATA FREQUENCIES HERE *************************/
+    
+    protein_gtr.empirical_frequencies = plusF_helper.GetFrequenciesHack(protein_gtr.full_data_filter, protein_gtr.full_trees);   
+    protein_gtr.normalized_qij = plusF_helper.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.baseline_Rij, models.protein.alphabet);
+
+    protein_gtr.baseline.mle = estimators.FitSingleModel_Ext(protein_gtr.full_data_filter,
+                                                        protein_gtr.full_trees,
                                                         protein_gtr.final_baseline_model,
                                                         None,
                                                         None);
@@ -203,24 +198,15 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
         if (utility.Has (previous_values, "global", "AssociativeList")) {
             initial_values["global"] = previous_values["global"];
         }
-        // Set initial values to JC
+        // Set initial values to the specified baseline model ****r_ij****
         else {
-
-            // This will initialize to a given value, e.g. 1 or a random number
             for (l1 = 0; l1 < 20; l1 += 1) {
                 for (l2 = l1 + 1; l2 < 20; l2 += 1) {
-                    (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : 1};
-                    //(initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : Random (0.5,2)};
+                    //(initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : 1}; // set all to 1
+                    //(initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : Random (0.5,2)}; // set all to random number
+                    (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : protein_gtr.baseline_Rij[l1][l2]};
                 }
             }
-            /*
-            // This will initialize to the selected baseline model.
-             for (l1 = 0; l1 < 20; l1 += 1) {
-                for (l2 = l1 + 1; l2 < 20; l2 += 1) {
-                    (initial_values["global"]) [terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2])] = {terms.MLE : (models.protein.WAG.empirical_Q[models.protein.alphabet[l1]])[models.protein.alphabet[l2]]};
-                }
-            }*/
-
         }
         // fit the model
         protein_gtr.rev.mle = estimators.FitSingleModel_Ext (
@@ -337,8 +323,8 @@ function protein_gtr.run_gtr_iteration_branch_lengths () {
                                             "Variables" : {{
                                                 "protein_gtr.shared_EFV",
                                                 "protein_gtr.final_baseline_model",
-                                                "protein_gtr.rev_model_branch_lengths"
-
+                                                "protein_gtr.rev_model_branch_lengths",
+                                                "protein_gtr.baseline_Rij"
                                             }}
                                          });
 
@@ -413,3 +399,95 @@ function protein_gtr.handle_baseline_callback (node, result, arguments) {
     io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
 
 }
+
+
+/******************** FUNCTIONS USED FOR +F W/ NORMALIZATION ***************************/
+
+lfunction protein_gtr.plusF._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (protein_gtr.normalized_qij , from,to,namespace,modelType);
+}
+
+function protein_gtr.plusF.frequencies (model, namespace, datafilter) {
+
+    model[terms.efv_estimate] = protein_gtr.empirical_frequencies;
+    model[terms.efv_estimate_name] = terms.freqs.predefined;
+    (model["parameters"])["empirical"] = 0;
+}
+
+
+
+/*
+lfunction protein_gtr.IntermediatePlusF.ModelDescription(type) {
+    models.protein.plusF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.plusF.ModelDescription.model_definition ["empirical-rates"] = models.protein.WAG.empirical_Q;
+    models.protein.plusF.ModelDescription.model_definition ["frequency-estimator"] = "frequencies.empirical.protein";
+    models.protein.plusF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.plusF.ModelDescription.model_definition ["q_ij"] = "models.protein.WAG._GenerateRate";
+    return models.protein.plusF.ModelDescription.model_definition;
+}
+
+
+lfunction protein_gtr.GetFrequenciesHack (data_filter, tree) {
+
+    model_template = "protein_gtr.IntermediatePlusF.ModelDescription";
+
+    components = utility.Array1D(data_filter);
+    filters = utility.Map({
+        components,
+        1
+    }["_MATRIX_ELEMENT_ROW_"], "_value_", "''+ '`&nuc_data`_' + _value_");
+    for (i = 0; i < components; i += 1) {
+        DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
+    }
+    name_space = & user;
+    user_model = model.generic.DefineModel(model_template, name_space, {
+            "0": "terms.global"
+        }, filters, None);
+    return user_model["EFV"];
+}
+
+// This code is elegant and I will hear nothing to the contrary.
+lfunction protein_gtr.BuildCustomNormalizedQ(EFV, rij, alphabet){
+    dim  = utility.Array1D (alphabet);
+
+    // Create Q from R, EFV
+    Q = {dim,dim};
+    rowSums = {dim,1};
+
+    for (i = 0; i < dim; i +=1 ){
+        rowSum = 0;
+        for ( j = 0; j < dim; j += 1){
+            Q[i][j] = rij[i][j] * EFV[j];
+            rowSum += rij[i][j] * EFV[j];
+        }
+        rowSums[i] = -1 * rowSum;
+    }
+
+    // Fill in diagonal
+    for (i = 0; i < dim; i += 1){
+        Q[i][i] = rowSums[i];
+    }
+
+    // normalize that mother
+    scalar = 0;
+    for (i = 0; i < dim; i +=1 ){
+        scalar += Q[i][i] * EFV[i];
+    }
+    scalar = -1*scalar;
+    for (i = 0; i < dim; i +=1 ){
+        for ( j = 0; j < dim; j += 1){
+            Q[i][j] = Q[i][j] / scalar;
+        }
+    }
+    // Now convert it BACK TO hyphy dictionary.
+    finalQ  = {};
+    for (l1 = 0; l1 < dim - 1; l1 += 1) {
+        finalQ[alphabet[l1]] = {};
+        for (l2 = l1 + 1; l2 < dim; l2 += 1) {
+            (finalQ[alphabet[l1]])[alphabet[l2]] = Q [l1][l2];
+        }
+    }
+    return finalQ;
+}
+*/
+

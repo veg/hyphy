@@ -1174,11 +1174,17 @@ void    _LikelihoodFunction::GetGlobalVars (_SimpleList& rec) const {
 
 //_______________________________________________________________________________________
 _Parameter  _LikelihoodFunction::GetIthIndependent (long index) const {
+    _Parameter return_value;
+  
     if (parameterValuesAndRanges) {
-        return (*parameterValuesAndRanges)(index,1);
+        return_value = (*parameterValuesAndRanges)(index,1);
+    } else {
+      return_value = ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
     }
-
-    return ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
+    if (isnan(return_value)) {
+      FlagError (*GetIthIndependentName (index) & " evaluated to a NaN; this can cause all kinds of odd behavior downstream, therefore it is safer to quit now");
+    }
+    return return_value;
 }
 
   //_______________________________________________________________________________________
@@ -3783,6 +3789,7 @@ DecideOnDivideBy (this);
                     &"\n\nInitial parameter values\n");
     
     for (unsigned long i = 0UL; i < indexInd.lLength; i++) {
+      
         ReportWarning (_String(LocateVar (indexInd.lData[i])->GetName()->sData) & " = " & GetIthIndependent (i));
     }
 
