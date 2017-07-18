@@ -1,0 +1,6 @@
+LoadFunctionLibrary("relative_nucleotide_rates.bf", {
+    "0": PATH_TO_CURRENT_BF + "data/dat.nuc",
+    "1": "Y",
+    "2": "GTR"
+});
+

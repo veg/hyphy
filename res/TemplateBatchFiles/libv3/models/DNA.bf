@@ -3,6 +3,9 @@ LoadFunctionLibrary ("frequencies.bf");
 
 /** @module models.DNA */
 
+models.DNA.models = {{"GTR", "General time reversible model"}, 
+                     {"HKY85", "Hasegawa Kishino Yano 85 (HKY85) model"}};
+
 models.DNA.alphabet = {{"A","C","G","T"}};
 
 /**

@@ -1,18 +1,10 @@
 RequireVersion("2.31");
+LoadFunctionLibrary("libv3/function-loader.bf");
 
-// namespace 'utility' for convenience functions
-LoadFunctionLibrary("libv3/UtilityFunctions.bf");
-
-// namespace 'alignments' for alignment-related functions
-LoadFunctionLibrary("libv3/tasks/alignments.bf");
-LoadFunctionLibrary("libv3/tasks/trees.bf");
-LoadFunctionLibrary("libv3/IOFunctions.bf");
-LoadFunctionLibrary("libv3/tasks/estimators.bf");
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
 LoadFunctionLibrary("libv3/models/protein/REV.bf");
-LoadFunctionLibrary("libv3/tasks/mpi.bf");
-LoadFunctionLibrary("libv3/convenience/math.bf");
 
+LoadFunctionLibrary("plusF_helper.ibf");
 
 /*------------------------------------------------------------------------------*/
 
@@ -29,6 +21,9 @@ relative_prot_rates.analysis_description = {
 
 io.DisplayAnalysisBanner(relative_prot_rates.analysis_description);
 
+
+
+/***************************************** LOAD DATASET **********************************************************/
 SetDialogPrompt ("Specify a protein multiple sequence alignment file");
 
 
@@ -45,9 +40,64 @@ io.ReportProgressMessageMD ("relative_prot_rates", "Data", "Loaded **" +
                             relative_prot_rates.alignment_info ["sites"] + "** sites, and **" + relative_prot_rates.partition_count + "** partitions from \`" + relative_prot_rates.alignment_info ["file"] + "\`");
 
 relative_prot_rates.filter_specification = alignments.DefineFiltersForPartitions (relative_prot_rates.partitions_and_trees, "relative_prot_rates.dataset" , "relative_prot_rates.filter.", relative_prot_rates.alignment_info);
+/**********************************************************************************************************************************************/
 
-relative_prot_rates.model_generator    = "models.protein.WAG.ModelDescription";
-// TODO : this needs to be user selectable at run time from the list of available models 
+
+
+
+/***************************************** SELECT MODEL, +F **********************************************************/
+/** NOTE: there is no rate variation option here ever. This must be discouraged. **/
+
+// "WAG", "LG", "JTT", "JC"
+relative_prot_rates.model_name  = io.SelectAnOption (models.protein.empirical_models,
+                                                     "Select an empirical protein model for fitting rates (we recommend JC to avoid matrix-induced biases in inferred rates):");
+
+// "Yes", "No"
+relative_prot_rates.plusF       = io.SelectAnOption ({{"Yes", "Use empirical (+F) amino-acid frequencies ."}, {"No", "Use default amino-acid frequencies."}},
+                                                     "Use a +F model for initial bl optimization? (recommended no for a simple JC model)");
+
+
+function relative_prot_rates.plusF.ModelDescription(type) {
+    models.protein.plusF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.plusF.ModelDescription.model_definition ["empirical-rates"] = relative_prot_rates.normalized_qij;
+    models.protein.plusF.ModelDescription.model_definition ["frequency-estimator"] = "relative_prot_rates.plusF.frequencies";
+    models.protein.plusF.ModelDescription.model_definition ["parameters"] = {"global": {}, "local": {}, "empirical": 19};
+    models.protein.plusF.ModelDescription.model_definition ["q_ij"] = "relative_prot_rates.plusF._GenerateRate";
+    return models.protein.plusF.ModelDescription.model_definition;
+}
+
+lfunction relative_prot_rates.plusF._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (relative_prot_rates.normalized_qij , from,to,namespace,modelType);
+}
+
+function relative_prot_rates.plusF.frequencies (model, namespace, datafilter) {
+    model[terms.efv_estimate] = relative_prot_rates.empirical_frequencies;
+    model[terms.efv_estimate_name] = terms.freqs.predefined;
+    (model["parameters"])["empirical"] = 0;
+}
+
+
+if (relative_prot_rates.plusF == "Yes"){
+
+    relative_prot_rates.baseline_Rij = plusF_helper.Rij_options[relative_prot_rates.model_name];
+    data_filter = utility.Map (relative_prot_rates.filter_specification, "_value_", "_value_['name']");
+    tree = utility.Map (relative_prot_rates.partitions_and_trees, "_value_", '_value_["tree"]');
+    
+    relative_prot_rates.empirical_frequencies = plusF_helper.GetFrequenciesHack(data_filter, tree);
+    relative_prot_rates.normalized_qij = plusF_helper.BuildCustomNormalizedQ(relative_prot_rates.empirical_frequencies, relative_prot_rates.baseline_Rij, models.protein.alphabet);
+  
+    relative_prot_rates.model_generator = "relative_prot_rates.plusF.ModelDescription";
+    
+    relative_prot_rates.full_model_name = relative_prot_rates.model_name + "+F";
+} else {
+
+    relative_prot_rates.model_generator = plusF_helper.empirical_model_generators[relative_prot_rates.model_name];
+    relative_prot_rates.full_model_name = relative_prot_rates.model_name;
+}
+/*********************************************************************************************************************************************/
+
+
+
 
 io.ReportProgressMessageMD ("relative_prot_rates", "overall", "Obtaining alignment-wide branch-length estimates");
 
@@ -61,7 +111,6 @@ relative_prot_rates.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           None);
                                                           
 estimators.fixSubsetOfEstimates(relative_prot_rates.alignment_wide_MLES, relative_prot_rates.alignment_wide_MLES[terms.global]);
-
 
 io.ReportProgressMessageMD ("relative_prot_rates", "overall", ">Fitted an alignment-wide model. **Log-L = " + relative_prot_rates.alignment_wide_MLES ['LogL'] + "**.");
 
@@ -192,13 +241,22 @@ io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* [Std.Dev] "  + re
 io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* [95% Range] "  + relative_prot_rates.stats["2.5%"] + ":" + relative_prot_rates.stats["97.5%"]);
 */
 
-							
-io.SpoolJSON ({
-				'Relative site rate estimates' : relative_prot_rates.rate_estimates, 
-				'alignment' : relative_prot_rates.alignment_info["file"],
-				'analysis' : relative_prot_rates.analysis_description
-				}
-				, relative_prot_rates.alignment_info["file"] + ".site-rates.json");
+
+
+tree_definition   = utility.Map (relative_prot_rates.partitions_and_trees, "_partition_", '_partition_["tree"]');
+io.SpoolJSON ({ "input" : {"filename": relative_prot_rates.alignment_info["file"],
+                          "sequences": relative_prot_rates.alignment_info["sequences"],
+                          "sites":     relative_prot_rates.alignment_info["sites"],
+                          "tree string": (tree_definition[0])["string_with_lengths"]},
+                "analysis" : relative_prot_rates.analysis_description,       
+				"Relative site rate estimates" : relative_prot_rates.rate_estimates, 
+				"Global fit": {"model": relative_prot_rates.full_model_name,
+				          //     "branch lengths": relative_prot_rates.alignment_wide_MLES["branch length"],
+				               "tree string": (relative_prot_rates.alignment_wide_MLES["Trees"])[0],
+				               "logL": relative_prot_rates.alignment_wide_MLES["LogL"]}
+				},
+				relative_prot_rates.alignment_info["file"] + ".site-rates.json");
+
 
 //----------------------------------------------------------------------------------------
 // HANDLERS
