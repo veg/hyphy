@@ -1,5 +1,8 @@
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("convenience/regexp.bf");
+LoadFunctionLibrary("libv3/terms-json.bf");
+
+
 
 /**
  * @name io.CheckAssertion
@@ -393,25 +396,25 @@ lfunction io.DisplayAnalysisBanner(analysis_info) {
         io.PrintAndUnderline("Analysis Description", "-");
         fprintf(stdout, io.FormatLongStringToWidth(analysis_info["info"], 72), "\n");
     }
-    if (io.HasStringKey("requirements", analysis_info)) {
+    if (io.HasStringKey(terms.io.requirements, analysis_info)) {
         fprintf(stdout, "\n- __Requirements__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["requirements"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[terms.io.requirements], 72), "\n");
     }
-    if (io.HasStringKey("reference", analysis_info)) {
+    if (io.HasStringKey(terms.io.reference, analysis_info)) {
         fprintf(stdout, "\n- __Citation__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["reference"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[terms.io.reference], 72), "\n");
     }
-    if (io.HasStringKey("authors", analysis_info)) {
+    if (io.HasStringKey(terms.io.authors, analysis_info)) {
         fprintf(stdout, "\n- __Written by__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["authors"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[terms.io.authors], 72), "\n");
     }
-    if (io.HasStringKey("contact", analysis_info)) {
+    if (io.HasStringKey(terms.io.contact, analysis_info)) {
         fprintf(stdout, "\n- __Contact Information__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["contact"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[terms.io.contact], 72), "\n");
     }
-    if (io.HasStringKey("version", analysis_info)) {
+    if (io.HasStringKey(terms.io.version, analysis_info)) {
         fprintf(stdout, "\n- __Analysis Version__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["version"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[terms.io.version], 72), "\n");
     }
     fprintf(stdout, "\n");
 

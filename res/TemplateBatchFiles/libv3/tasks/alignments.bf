@@ -70,7 +70,7 @@ lfunction alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code
 
     r * {
         "code": code,
-        "stop": stop_codons,
+        "stop": stop_codons, // TODO: stop or stops?
         "file": path,
         "sequences": Eval( ^ "`dataset_name`.species")
     };

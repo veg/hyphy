@@ -37,3 +37,34 @@ terms.trees.branch_lengths = "branch length";
 terms.trees.model_map = "model_map";
 terms.trees.partitioned = "partitioned";
 terms.trees.model_list = "model_list";
+
+
+
+// SJS additions
+terms.json.test_results = "test results";
+terms.json.p_value = "p";
+terms.json.input = "input"; // All analyses
+terms.json.input.filename = "filename";
+terms.json.input.sequences = "sequences";
+terms.json.input.sites = "sites";
+terms.json.tree_string = "tree string"; // Possibly redundant w/ terms.trees.newick_with_lengths ?
+terms.json.tree_length = "tree length";
+
+terms.json.site_log_likelihood = "site log likelihood";
+terms.json.evidence_ratios = "evidence ratios";
+
+
+terms.json.runtime = "runtime";
+terms.json.version = "version";
+terms.json.convergence_failures = "convergence failures";
+terms.json.branch_annotations = "branch annotations";
+terms.json.branch_lengths = "branch lengths";
+terms.json.annotation_tag = "annotation tag";
+
+// SJS IO terms
+terms.io.info = "info";
+terms.io.requirements = "requirements";
+terms.io.authors = "authors";
+terms.io.contact = "contact";
+terms.io.version = "version";
+

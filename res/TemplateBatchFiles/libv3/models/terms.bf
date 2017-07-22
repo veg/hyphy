@@ -64,6 +64,41 @@ terms.mixture_aux_weight = "Mixture auxiliary weight";
 terms.initial_values = "Initial values";
 
 
+
+/*---- SJS -------*/
+terms.sites = "sites";
+terms.sequences = "sequences";
+terms.file = "file";
+terms.genetic_code = "code";
+terms.sense_codons = "sense";
+terms.stop_codons = "stop";
+terms.log_likelihood = "LogL";
+//terms.global = "global"; // Already defined a top
+terms.empirical = "empirical";
+terms.parameters = "parameters";
+terms.json_ = "json";
+terms.MLE = "MLE";
+terms.p_value = "p";
+terms.LR = "LR";
+terms.constraint = "constraint";
+terms.fix = "fix-me";
+terms.trees_ = "Trees";
+terms.filters = "Filters";
+terms.likelihood_function = "LF";
+terms.model = "model";
+terms.length = "length";
+terms.length_parameter = "length parameter";
+terms.bases = "bases";
+terms.codons = "codons";
+terms.id = "id";
+terms.omegas = "omegas";
+terms.weights = "weights";
+terms.omega = "omega";
+terms.weight = "weight";
+terms.f = "f";
+/*----------------*/
+
+
 function terms.nucleotideRate(fromC, toC) {
     return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
 }
