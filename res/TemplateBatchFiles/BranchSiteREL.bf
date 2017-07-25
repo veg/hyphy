@@ -82,7 +82,7 @@ codon3x4					= BuildCodonFrequencies (nucCF);
 
 tree_info = trees.LoadAnnotatedTopology (1);
 
-fprintf (stdout, tree_info, "\n");
+// fprintf (stdout, tree_info, "\n");
 
 Model	  MGL				= (MGMatrixLocal, codon3x4, 0);
 
