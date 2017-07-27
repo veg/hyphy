@@ -4,6 +4,7 @@ LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/convenience/regexp.bf");
 
+LoadFunctionLibrary("libv3/all-terms.bf");
 
 //------------------------------------------------------------------------------
 lfunction selection.io.defineBranchSets(partition_info) {
@@ -13,9 +14,11 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
     tree_for_analysis = None;
 
+
+
     if (Abs (partition_info) == 1) { // allow more refined selections if there is only one tree
-        tree_for_analysis = (partition_info[0])["tree"];
-        utility.ForEach (tree_for_analysis["model_map"], "_value_", "`&available_models`[_value_] += 1");
+        tree_for_analysis = (partition_info[0])[^"terms.trees.tree"];
+        utility.ForEach (tree_for_analysis[^"terms.trees.model_map"], "_value_", "`&available_models`[_value_] += 1");
         list_models   = utility.Keys   (available_models); // get keys
         branch_counts = utility.Values (available_models);
         option_count  = Abs (available_models);
@@ -52,19 +55,18 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
     for (k = 0; k < Abs (partition_info); k+=1) {
         tree_configuration = {};
-        tree_for_analysis = (partition_info[k])["tree"];
+        tree_for_analysis = (partition_info[k])[^"terms.trees.tree"];
         if (testSet < 3) {
             if (testSet == 0) {
                 tag = None;
             } else {
                 if (testSet == 1) {
-                    tag = "internal";
+                    tag = ^"terms.trees.internal";
                 } else {
-                    tag = "leaf";
+                    tag = ^"terms.tree.leaf";
                 }
             }
-
-            utility.ForEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "
+            utility.ForEachPair (tree_for_analysis[^"terms.trees.partitioned"], "_key_", "_value_", "
             	if (`&tag` == _value_ || `&tag` == None) {
             		`&tree_configuration`[_key_] = ^'terms.json.attribute.test';}
             	else {
@@ -77,11 +79,10 @@ lfunction selection.io.defineBranchSets(partition_info) {
             if (tag == "Unlabeled branches") {
                 tag = "";
             }
-            utility.ForEachPair (tree_for_analysis["model_map"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_] = ^'terms.json.attribute.background';}");
+            utility.ForEachPair (tree_for_analysis[^"terms.trees.model_map"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_] = ^'terms.json.attribute.background';}");
         }
         return_set + tree_configuration;
     }
-
     return return_set;
 
 }
@@ -99,26 +100,26 @@ lfunction selection.io.startTimer(timers, key, sort_index) {
 //------------------------------------------------------------------------------
 
 lfunction selection.io.stopTimer(timers, key) {
-    (timers[key])["timer"] = Time(1) - (timers[key])["timer"];
+    (timers[key])[^"terms.misc.timer"] = Time(1) - (timers[key])[^"terms.misc.timer"];
 }
 
 //------------------------------------------------------------------------------
 
 lfunction selection.io.extract_global_MLE(fit, id) {
-    return ((fit["global"])[id])["MLE"];
+    return ((fit[^"terms.global"])[id])[^"terms.model.MLE"];
 }
 
 //------------------------------------------------------------------------------
 
 lfunction selection.io.extract_global_MLE_re (fit, regexp) {
-    matches = utility.Filter (utility.Keys(fit["global"]), "_tag_", "regexp.Find (_tag_, `&regexp`)");
+    matches = utility.Filter (utility.Keys(fit[^"terms.global"]), "_tag_", "regexp.Find (_tag_, `&regexp`)");
     return utility.Map (matches, "_tag_", "{'description': _tag_, 'MLE' : ((`&fit`['global'])[_tag_])['MLE']}");
 }
 
 //------------------------------------------------------------------------------
 
 lfunction selection.io.branch.length(branch_info) {
-    return branch_info["MLE"];
+    return branch_info[^"terms.model.MLE"];
 }
 
 //------------------------------------------------------------------------------------------------------------------------
@@ -222,6 +223,7 @@ function selection.io.extract_branch_info(branch_spec, callback) {
     return selection.io.extract_branch_info_result;
 }
 
+// TO DO: THIS IS BOTH A FUNCTION AND LFUNCTION IN THIS FILE.
 function selection.io.branch.length(branch_info) {
-    return branch_info["MLE"];
+    return branch_info[terms.model.MLE];
 }

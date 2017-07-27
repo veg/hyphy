@@ -59,9 +59,10 @@ function load_file (prefix) {
 
         */
 
-    sample_size = codon_data_info["sites"] * codon_data_info["sequences"];
-    codon_data_info["json"] = codon_data_info["file"] + "."+prefix+".json";
+    sample_size = codon_data_info[utility.getGlobalValue("terms.alignments.sites")] * codon_data_info[utility.getGlobalValue("terms.alignments.sequences")];
+    codon_data_info[utility.getGlobalValue("terms.json.json")] = codon_data_info[utility.getGlobalValue("terms.alignments.file")] + "."+prefix+".json";
     name_mapping = codon_data_info[utility.getGlobalValue("terms.json.name_mapping")];
+
         /**
             will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
         */
@@ -70,6 +71,7 @@ function load_file (prefix) {
         name_mapping = {};
         utility.ForEach (alignments.GetSequenceNames (prefix+".codon_data"), "_value_", "`&name_mapping`[_value_] = _value_");
     }
+    
 
     partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.json.partitions")], name_mapping);
 
@@ -103,6 +105,8 @@ function load_file (prefix) {
 
     partition_count = Abs (partitions_and_trees);
 
+
+    // TODO: DE-HARDCODE "filter-string"
     utility.ForEachPair (partitions_and_trees,
                             "_key_",
                             "_value_",
@@ -111,10 +115,10 @@ function load_file (prefix) {
             ensure that all partitions fall on codon boundaries if they are contiguous
         */
 
-
-    io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info["sequences"] + "** sequences, **" + codon_data_info["sites"] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info["file"] + "\`");
+    io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info[utility.getGlobalValue("terms.alignments.sequences")] + "** sequences, **" + codon_data_info[utility.getGlobalValue("terms.alignments.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info[utility.getGlobalValue("terms.alignments.file")] + "\`");
 
     selected_branches = selection.io.defineBranchSets(partitions_and_trees);
+    
         /**  this will return a dictionary of selected branches; one set per partition, like in
         {
             "0": {

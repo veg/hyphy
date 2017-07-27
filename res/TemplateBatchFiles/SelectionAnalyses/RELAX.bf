@@ -784,12 +784,13 @@ function relax.io.defineBranchSets (relax.tree) {
     for (k = 0; k < Columns (relax.tree[terms.trees.model_list]); k += 1) {
         available_models  [(relax.tree[terms.trees.model_list])[k]] = 0;
     }
-
     (relax.tree[terms.trees.model_map])["relax._aux.io.countBranchSets"][""];
 
 
     list_models = Rows (available_models); // get keys
     io.CheckAssertion ("Columns (list_models) > 1", "The tree string must include at least one two sets of branches, at least one of which is annotated using {}");
+
+
 
     option_count = Columns (list_models);
 

@@ -1,5 +1,6 @@
 LoadFunctionLibrary("../IOFunctions.bf");
 LoadFunctionLibrary("../terms-json.bf");
+LoadFunctionLibrary("../all-terms.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 LoadFunctionLibrary("TreeTools");
@@ -194,6 +195,8 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
     return treeString;
 }
 
+
+///////// TO DO: HOW TO UN-HARDCODE THIS FUNCTION? Regular strategies are not working. //////////////
 /**
  * Partitions a tree by assigning nodes to either being internal or leaf
  * @name trees.PartitionTree
@@ -234,10 +237,12 @@ lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
     reverse = {};
     utility.ForEach(utility.Keys(mapping), "_key_", "`&reverse`[`&mapping`[_key_]] = _key_");
 
+
     io.CheckAssertion("Abs (mapping) == Abs (reverse)", "The mapping between original and normalized tree sequence names must be one to one");
     utility.ToggleEnvVariable("TREE_NODE_NAME_MAPPING", reverse);
     result = trees.ExtractTreeInfo(trees.GetTreeString(look_for_newick_tree));
     utility.ToggleEnvVariable("TREE_NODE_NAME_MAPPING", None);
+
     return result;
 }
 
@@ -284,9 +289,9 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
         io.CheckAssertion("Rows(`&tree_matrix`) >= partition_count", "The number of trees in the NEXUS block cannot be smaller than the number of partitions in the file");
         for (i = 0; i < partition_count; i += 1) {
             partrees + {
-                "name": partitions[i][0],
-                "filter-string": partitions[i][1],
-                "tree": trees.LoadAnnotatedTopologyAndMap(tree_matrix[i][1], mapping)
+                ^"terms.alignments.name": partitions[i][0],
+                ^"terms.trees.filter_string": partitions[i][1],
+               ^"terms.trees.tree": trees.LoadAnnotatedTopologyAndMap(tree_matrix[i][1], mapping)
             };
         }
     } else { // no tree matrix; allow if there is a single partition
@@ -295,9 +300,9 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
 
         for (i = 0; i < partition_count; i += 1) {
             partrees + {
-                "name": partitions[i][0],
-                "filter-string": partitions[i][1],
-                "tree": tree_info
+                ^"terms.alignments.name": partitions[i][0],
+                ^"terms.trees.filter_string": partitions[i][1],
+                ^"terms.trees.tree": tree_info
             };
         }
     }
@@ -365,15 +370,16 @@ function trees.ExtractTreeInfo(tree_string) {
     utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", 1);
     T.str = "" + T;
     utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", None);
+    
 
     return {
-        "string": Format(T, 1, 0),
-        "string_with_lengths": Format(T, 1, 1),
-        terms.json.attribute.branch_length: trees.LoadAnnotatedTopology.bls,
-        "annotated_string": T.str,
-        "model_map": modelMap,
-        "partitioned": leaves_internals,
-        "model_list": Columns(modelMap)
+        terms.trees.newick: Format(T, 1, 0),
+        terms.trees.newick_with_lengths: Format(T, 1, 1),
+        terms.trees.branch_length: trees.LoadAnnotatedTopology.bls,
+        terms.trees.newick_annotated: T.str,
+        terms.trees.model_map: modelMap,
+        terms.trees.partitioned: leaves_internals,
+        terms.trees.model_list: Columns(modelMap)
     };
 }
 
@@ -415,7 +421,7 @@ function trees.SortedBranchLengths(tree_string) {
  * @returns {Matrix} 1xN sorted branch names
  */
 function trees.BranchNames(tree) {
-    tree_string = tree["string"];
+    tree_string = tree[terms.trees.newick];
     Topology T = tree_string;
     branch_names = BranchName(T, -1);
     return branch_names;

@@ -1,10 +1,30 @@
 LoadFunctionLibrary("libv3/convenience/matrix.bf");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
+LoadFunctionLibrary("libv3/all-terms.bf");
+
+
 /** @module genetic_code */
 
 genetic_code.hyphyAAOrdering        = "FLIMVSPTAYXHQNKDECWRG";
 genetic_code.alphabeticalAAOrdering = "ACDEFGHIKLMNPQRSTVWY";
+genetic_code.nucleotides            = "ACGT";
+genetic_code.synonymous             = "synonymous";
+genetic_code.nonsynonymous          = "nonsynonymous";
+
+genetic_code.weighting_matrix       = "weighting-matrix";
+genetic_code.count_stop_codons      = "count-stop-codons";
+genetic_code.stop_code = 10;
+genetic_code.EPS                    = "EPS";
+genetic_code.EPN                    = "EPN";
+genetic_code.OPS                    = "OPS";
+genetic_code.OPN                    = "OPN";
+genetic_code.NTP                    = "NTP";
+genetic_code.SS                     = "SS";
+genetic_code.NS                     = "NS";
+
+
+
 
 genetic_code.singleAALetterToFullName = {
     "A": "Alanine",
@@ -30,7 +50,7 @@ genetic_code.singleAALetterToFullName = {
     "X": "Stop Codon"
 };
 
-genetic_code.stop_code = 10;
+
 
 
 /**
@@ -42,7 +62,7 @@ genetic_code.stop_code = 10;
 lfunction genetic_code.DefineCodonToAAGivenCode(code) {
 
     codonToAAMap = {};
-    nucChars = "ACGT";
+    nucChars = ^"genetic_code.nucleotides";
 
     for (p1 = 0; p1 < 64; p1 += 1) {
         codonToAAMap[nucChars[p1$16] + nucChars[p1 % 16 $4] + nucChars[p1 % 4]] = (^"genetic_code.hyphyAAOrdering")[code[p1]];
@@ -61,7 +81,7 @@ function genetic_code.CountSense(code) {
 
 lfunction genetic_code.ComputeCodonCodeToStringMap(genCode) {
     _codonMap = {};
-    _nucLetters = "ACGT";
+    _nucLetters = ^"genetic_code.nucleotides";
     for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
         if (genCode[_idx] != ^ "genetic_code.stop_code") {
             _codonMap + (_nucLetters[_idx$16] + _nucLetters[(_idx % 16) $4] + _nucLetters[_idx % 4]);
@@ -74,7 +94,7 @@ lfunction genetic_code.ComputeCodonCodeToStringMap(genCode) {
 
 lfunction genetic_code.ComputeCodonCodeToStringMapStop (genCode) {
 	_codonMap = {};
-	_nucLetters = "ACGT";
+	_nucLetters =  ^"genetic_code.nucleotides";
 	for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
 		if (genCode[_idx] == ^ "genetic_code.stop_code") {
 			_codonMap + (_nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4]);
@@ -142,7 +162,7 @@ lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
     matrix.Symmetrize(SS);
     matrix.Symmetrize(NS);
 
-    return {"synonymous" : SS, "non-synonymous" : NS};
+    return {^"genetic_code.synonymous" : SS, ^"genetic_code.non-synonymous" : NS};
 
 }
 
@@ -154,7 +174,7 @@ lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
  */
 lfunction genetic_code.DefineCodonToAAMapping (code) {
     codonToAAMap = {};
-    nucChars = "ACGT";
+    nucChars = ^"genetic_code.nucleotides";
 
     for (p = 0; p < 64; p += 1) {
         codonToAAMap[nucChars[p$16] + nucChars[p % 16 $4] + nucChars[p % 4]] = (^"genetic_code.hyphyAAOrdering")[code[p]];
@@ -232,10 +252,10 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
         }; // raw codon index -> # of synonymous sites     [0-3]
         NS = SS; // raw codon index -> # of non-synonymous sites [0-3]
 
-        stop_code = ^ "genetic_code.stop_code";
+        stop_code = ^"genetic_code.stop_code";
 
-        if (Type(options["weighting-matrix"]) == "AssociativeList") {
-            weighting_matrix = options["weighting-matrix"];
+        if (Type(options[^"genetic_code.weighting_matrix"]) == "AssociativeList") {
+            weighting_matrix = options[^"genetic_code.weighting_matrix"];
         } else {
             equal = {
                 4, 4
@@ -248,8 +268,8 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
 
         keep_stop_codons = FALSE;
 
-        if (Type(options["count-stop-codons"]) == "Number") {
-            keep_stop_codons = options["count-stop-codons"];
+        if (Type(options[^"genetic_code.count_stop_codons"]) == "Number") {
+            keep_stop_codons = options[^"genetic_code.count_stop_codons"];
         }
 
         codon_offset = 0;
@@ -477,5 +497,5 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
             NS_sense [codon_1 - codon_offset_1] = NS[codon_1];
         }
 
-        return {"EPS" : EPS, "EPN": EPN, "OPS" : OPS, "OPN" : OPN, "NTP" : NTP, "SS" : SS_sense, "NS": NS_sense};
+        return {^"genetic_code.EPS" : EPS, ^"genetic_code.EPN": EPN, ^"genetic_code.OPS" : OPS, ^"genetic_code.OPN" : OPN, ^"genetic_code.NTP" : NTP, ^"genetic_code.SS" : SS_sense, ^"genetic_code.NS": NS_sense};
 }
