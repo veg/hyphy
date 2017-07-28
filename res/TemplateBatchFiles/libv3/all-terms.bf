@@ -224,6 +224,7 @@ terms.json.attribute = {};
 terms.json.attribute.meta           = "attributes";
 
 
+terms.json.partition_count         = "number of partitions";
 terms.json.info = terms.io.info;
 
 terms.json.json                     = "json";
@@ -251,6 +252,7 @@ terms.json.display_order            = "display order";
 terms.json.tree.newick              = "newick";
 terms.json.partitions               = "partitions";
 terms.json.name_mapping             = "name-mapping";
+terms.json.tested                   = "tested";    
 
 terms.json.test_results = "test results";
 terms.json.p_value = "p";

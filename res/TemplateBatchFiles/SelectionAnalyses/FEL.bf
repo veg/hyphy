@@ -91,11 +91,11 @@ the next set of variables.
 fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
 fel.table_output_options = {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
 
+
 namespace fel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("fel");
 }
-
 
 
 
@@ -117,6 +117,10 @@ utility.ForEachPair (fel.selected_branches, "_partition_", "_selection_",
 
 
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
+
+
+
+
 
 namespace fel {
     doGTR ("fel");
@@ -443,6 +447,11 @@ io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");
 
-io.SpoolJSON (fel.json, fel.codon_data_info["json"]);
+
+
+
+
+
+io.SpoolJSON (fel.json, fel.codon_data_info[terms.json.json]);
 
 

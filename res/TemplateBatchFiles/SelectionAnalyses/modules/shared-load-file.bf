@@ -136,13 +136,31 @@ function load_file (prefix) {
             }
         }
         */
+    
+    /***************************** SJS ************************/
+    
+    // Input attribute to JSON
+    json[utility.getGlobalValue("terms.json.input")] = {};
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.input.filename")] =  codon_data_info[utility.getGlobalValue("terms.alignments.file")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.input.sequences")] = codon_data_info[utility.getGlobalValue("terms.alignments.sequences")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.input.sites")] = codon_data_info[utility.getGlobalValue("terms.alignments.sites")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.partition_count")] = partition_count;
 
+
+    // The trees should go into input as well and they should be w/ their branch lengths
      selection.io.json_store_key_value_pair (json,
-                                             utility.getGlobalValue("terms.json.trees"), utility.getGlobalValue("terms.json.tree.newick"),
-                                             utility.Map (partitions_and_trees, "_pt_", '(_pt_["tree"])["string"]&&1')
+                                             utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
+                                             utility.Map (partitions_and_trees, "_pt_", '(_pt_["tree"])["string_with_lengths"]&&1')
                                              );
-     selection.io.json_store_key_value_pair (json, utility.getGlobalValue("terms.json.trees"), "tested", selected_branches);
+    
+     
 
+
+    // Place in own attribute called `tested`
+     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
+
+    /***************************** SJS DONE ************************/
+    
      filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, "`prefix`.codon_data" , "`prefix`.filter.", codon_data_info);
     /** defines codon filters for each partition, and returns the (codon) sites mapped to each filter
     {

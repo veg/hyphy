@@ -27,8 +27,10 @@ LoadFunctionLibrary("modules/selection_lib.ibf");
 /*------------------------------------------------------------------------------ Display analysis information
 */
 
+
+
 io.DisplayAnalysisBanner({
-    "info": "MEME (Mixed Effects Model of Evolution)
+    terms.io.info: "MEME (Mixed Effects Model of Evolution)
     estimates a site-wise synonymous (&alpha;) and a two-category mixture of non-synonymous
     (&beta;-, with proportion p-, and &beta;+ with proportion [1-p-]) rates, and
     uses a likelihood ratio test to determine if &beta;+ > &alpha; at a site.
@@ -40,11 +42,11 @@ io.DisplayAnalysisBanner({
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    "version": "2.00",
-    "reference": "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
-    "authors": "Sergei L. Kosakovsky Pond, Steven Weaver",
-    "contact": "spond@temple.edu",
-    "requirements": "in-frame codon alignment and a phylogenetic tree"
+    terms.io.version: "2.00",
+    terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
+    terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
+    terms.io.contact: "spond@temple.edu",
+    terms.io.requirements: "in-frame codon alignment and a phylogenetic tree"
 });
 
 
@@ -80,7 +82,7 @@ meme.json = {
 selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
 meme.scaler_prefix = "MEME.scaler";
 
-meme.table_headers = {{"&alpha;", "Synonymous substitution rate at a site"}
+meme.table_headers = {{"alpha;", "Synonymous substitution rate at a site"}
                      {"&beta;<sup>-</sup>", "Non-synonymous substitution rate at a site for the negative/neutral evolution component"}
                      {"p<sup>-</sup>", "Mixture distribution weight allocated to &beta;<sup>-</sup>; loosely -- the proportion of the tree evolving neutrally or under negative selection"}
                      {"&beta;<sup>+</sup>", "Non-synonymous substitution rate at a site for the positive/neutral evolution component"}
