@@ -56,6 +56,7 @@ LoadFunctionLibrary("BranchSiteTemplate");
 
 busted.terms.FG = "FG";
 busted.terms.BG = "BG";
+busted.BG_FG_map = {0: "background", 1: "foreground"}; // for partitions output
 busted.terms.background = "background";
 busted.terms.unconstrained = "unconstrained";
 busted.terms.constrained = "constrained";
@@ -91,10 +92,13 @@ busted.name_mapping = codon_data_info [utility.getGlobalValue("terms.json.name_m
 
 
 
+
 if (None == busted.name_mapping) { /** create a 1-1 mapping if nothing was done */
     busted.name_mapping = {};
     utility.ForEach (alignments.GetSequenceNames ("codon_data"), "_value_", "`&busted.name_mapping`[_value_] = _value_");
 }
+
+
 io.ReportProgressMessageMD ("BUSTED", "Data", "Loaded an MSA with " + codon_data_info[terms.sequences] +
                             " sequences and " + codon_data_info[terms.sites] + " codons from '" + codon_data_info[terms.file] + "'");
 
@@ -114,7 +118,6 @@ io.CheckAssertion("utility.Array1D (`&partitions_and_trees`) == 1", "BUSTED only
 tree_definition   = utility.Map (partitions_and_trees, "_partition_", '_partition_["tree"]');
 
 busted.selected_branches = busted.io.selectBranchesToTest (tree_definition[0]);
-
 
 
 io.ReportProgressMessageMD ("BUSTED", "Data", "Selected " + Abs (busted.selected_branches) + " branches as the test (foreground) set: " + Join (",", Rows (busted.selected_branches)));
@@ -260,23 +263,12 @@ Add input information to the JSON
 
 
 /*
- Instead of JSON key test set (see next comment line), we now use terms.json.partitions that contains two dictionaries of BG or FG species lists
+ Instead of JSON key test set (see next comment line), we now have a single dictionary of node:<background/foreground>.
 former: BUSTED.json ["test set"] = Join (",",Rows(busted.selected_branches));
 */
-
-all_nodes = utility.Keys((tree_definition[0])["partitioned"]);
-busted.bg_nodes = {};
-busted.fg_nodes = {};
-for (i = 0; i < Abs(all_nodes); i += 1){
-     inFG = utility.KeyExists(busted.selected_branches, all_nodes[i]);
-     if (inFG == 1){
-        utility.AddToSet (busted.fg_nodes, all_nodes[i]);
-     }
-     else {
-        utility.AddToSet (busted.bg_nodes, all_nodes[i]);
-     } 
-}
-busted.partitions = {busted.terms.FG: utility.Keys(busted.fg_nodes), busted.terms.BG: utility.Keys(busted.bg_nodes)};
+busted.partitions = {};
+all_nodes = utility.Keys( (tree_definition[0])[terms.trees.model_map] );
+utility.ForEach (all_nodes, "_value_", "`&busted.partitions`[_value_] = `&busted.BG_FG_map`[utility.Has(busted.selected_branches, _value_, None)]");
 BUSTED.json[terms.json.partitions] = busted.partitions; // Improved
 
 

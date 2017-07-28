@@ -507,12 +507,13 @@ Add input information to the JSON
 (RELAX.json[terms.json.input])[terms.json.tree_string] = relax.tree [terms.trees.newick_with_lengths];   //RELAX.json ["tree"] = relax.tree ["string"];
 
 /* 
-partition field should be lists rather than the current situation. For consistency, it is also now named partitions (plural!).
+partition field should be a single dictionary rather than nested with "1" values situation. For consistency, it is also now named partitions (plural!).
     former code: RELAX.json ["partition"] = relax.selected_branches;
 */
-RELAX.json[terms.json.partitions] = {relax.terms.test: utility.Keys(relax.selected_branches[RELAX.test]), 
-                                     relax.terms.reference: utility.Keys(relax.selected_branches[RELAX.reference])};
-
+relax.partitions = {};
+utility.ForEach(utility.Keys(relax.selected_branches[RELAX.test]), "_value_", "`&relax.partitions`[_value_] = relax.terms.test");
+utility.ForEach(utility.Keys(relax.selected_branches[RELAX.reference]), "_value_", "`&relax.partitions`[_value_] = relax.terms.reference");
+RELAX.json[terms.json.partitions] = relax.partitions;
 
 
 
