@@ -156,7 +156,9 @@ public:
      
     */
 
-
+    /** Advance program counter */
+    void      advance (void) {currentCommand ++;}
+  
     // data fields
     // _____________________________________________________________
 
@@ -253,6 +255,7 @@ public:
     bool      HandleDifferentiate                   (_ExecutionList&);
     bool      HandleFindRootOrIntegrate             (_ExecutionList&, bool do_integrate = false);
     long      get_code                              (void) const { return code; };
+    unsigned  long parameter_count                  (void) const { return parameters.countitems();}
     
     static  const _String   FindNextCommand       (_String&);
     // finds & returns the next command block in input
@@ -415,7 +418,7 @@ protected:
     friend  void      UpdateChangingFlas (_SimpleList&);
     
 private:
-    _Variable* _ValidateStorageVariable (_ExecutionList& program) const;
+    _Variable* _ValidateStorageVariable (_ExecutionList& program, unsigned long argument_index = 0UL) const;
 
 protected:  // data members
 

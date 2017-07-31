@@ -138,6 +138,9 @@ bool        CheckReceptacleAndStore
 bool        CheckReceptacleAndStore
 (_String,_String, bool, _PMathObj, bool = true);
 
+_Variable*  CheckReceptacleCommandIDException
+(_String const* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
+
 _Variable*  CheckReceptacleCommandID
 (_String const* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
 

@@ -117,7 +117,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 closeFile                       ("CLOSE_FILE"),
                                 useLastDefinedMatrix            ("USE_LAST_DEFINED_MATRIX"),
                                 selectionStrings                ("SELECTION_STRINGS"),
-                                useNoModel                      ("USE_NO_MODEL"),
                                 stdoutDestination               ("stdout"),
                                 messageLogDestination           ("MESSAGE_LOG"),
                                 dataPanelSourcePath             ("DATA_PANEL_SOURCE_PATH"),
@@ -131,9 +130,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 useNexusFileData                ("USE_NEXUS_FILE_DATA"),
                                 mpiMLELFValue                   ("MPI_MLE_LF_VALUE"),
                                 lf2SendBack                     ("LIKE_FUNC_NAME_TO_SEND_BACK"),
-                                lfStartCompute                  ("LF_START_COMPUTE"),
-                                lfDoneCompute                   ("LF_DONE_COMPUTE"),
-                                getURLFileFlag                  ("SAVE_TO_FILE"),
                                 versionString                   ("HYPHY_VERSION"),
                                 timeStamp                       ("TIME_STAMP"),
                                 listLoadedLibraries             ("LIST_OF_LOADED_LIBRARIES"),
@@ -162,7 +158,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 blFprintfDevNull                ("/dev/null"),
                                 alwaysReloadLibraries           ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
                                 dialogPrompt,
-                                lastModelUsed,
                                 hy_scanf_last_file_path,
                                 defFileNameValue;
 
@@ -1089,7 +1084,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
     if (doCurrentCommand) {
         _ElementaryCommand *theCommand = FetchLastCommand();
         if (theCommand) {
-            errMsg = errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(theCommand->GetCode());
+            errMsg = errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(theCommand->get_code());
         }
     }
     errorState = true;

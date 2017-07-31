@@ -122,7 +122,8 @@ namespace hy_env {
      */
 
     extern const _String
-    
+  
+          assertion_behavior,
           data_file_tree,
           data_file_tree_string,
           nexus_file_tree_matrix      ,

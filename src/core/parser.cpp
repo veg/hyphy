@@ -542,27 +542,37 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
     return FetchVar(f);
 }
 
+//__________________________________________________________________________________
+_Variable* CheckReceptacleCommandIDException (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
+{
+  if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
+    throw  (name->Enquote('\'') & " is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.');
+   }
+  
+  long    f = LocateVarByName (*name);
+  
+  if (f<0L) {
+    _Variable (*name, isGlobal);
+    f = LocateVarByName (*name);
+  }
+  
+  return FetchVar(f);
+}
+
 
 //__________________________________________________________________________________
 _Variable* CheckReceptacleCommandID (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
 {
-    if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
-        _String errMsg = _String ("'") & *name & "' is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.';
-        if (context) {
-            context->ReportAnExecutionError(errMsg);
-        } else {
-            HandleApplicationError (errMsg);
-        }
-        return nil;
+  try {
+    return CheckReceptacleCommandIDException (name, id, checkValid, isGlobal, context);
+  } catch (_String const& err_msg) {
+    if (context) {
+      context->ReportAnExecutionError(err_msg);
+    } else {
+      HandleApplicationError (err_msg);
     }
-    
-    long    f = LocateVarByName (*name);
-    if (f<0) {
-        _Variable dummy (*name, isGlobal);
-        f = LocateVarByName (*name);
-    }
-    
-    return FetchVar(f);
+  }
+  return nil;
 }
 
 //__________________________________________________________________________________

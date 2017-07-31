@@ -38,6 +38,7 @@
 #include      <ctype.h>
 
 #include      "alignment.h"
+#include      "hy_string_buffer.h"
 #include      "global_things.h"
 #include      "trie.h"
 #include      "likefunc.h"
@@ -64,9 +65,6 @@ _String     sqlOpen                 ("SQL_OPEN"),
             sqlColNames             ("SQL_COLUMN_NAMES"),
             lastSetOfConstraints    ("LAST_SET_OF_CONSTRAINTS"),
             deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION"),
-            assertionBehavior       ("ASSERTION_BEHAVIOR"),
-            _hyStatusConditionProbsMatrix
-            ("Constructing Conditional Probabilities Matrix"),
 
             isDynamicGraph          ("BGM_DYNAMIC"),
             treeNodeNameMapping     ("TREE_NODE_NAME_MAPPING");

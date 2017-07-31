@@ -113,10 +113,16 @@ namespace hy_env {
                               .PushPairCopyKey (normalize_sequence_names, new HY_CONSTANT_TRUE)
                               .PushPairCopyKey(message_logging, new HY_CONSTANT_TRUE)
                               .PushPairCopyKey (dataset_save_memory_size, new _Constant (100000.))
-                              .PushPairCopyKey (harvest_frequencies_gap_options, new HY_CONSTANT_TRUE);
+                              .PushPairCopyKey (harvest_frequencies_gap_options, new HY_CONSTANT_TRUE)
+                              .PushPairCopyKey(assertion_behavior, new HY_CONSTANT_FALSE)
+      
+      ;
     }
-    
+  
 _String const
+    assertion_behavior                              ("ASSERTION_BEHAVIOR"),
+        // if set to TRUE, then assertions that fail skip to the end of the current script
+        // otherwise they terminate the program
     base_directory                                  ("HYPHY_BASE_DIRECTORY"),
         // is set to the base directory for local path names; can be set via a CL argument (BASEPATH)
     blockwise_matrix                                ("BLOCK_LIKELIHOOD"),
