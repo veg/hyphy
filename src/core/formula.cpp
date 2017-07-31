@@ -89,6 +89,12 @@ _Formula::_Formula (_PMathObj p, bool isAVar)
 void _Formula::Initialize (void) {}
 
 //__________________________________________________________________________________
+_Formula::_Formula (_Formula const& rhs) {
+    Initialize();
+    Duplicate (&rhs);
+}
+
+//__________________________________________________________________________________
 void _Formula::Duplicate  (_Formula const * f_cast) {
  
     theFormula.Duplicate       (& f_cast->theFormula);
@@ -1943,7 +1949,7 @@ bool _Formula::HasChangedSimple (_SimpleList& variableIndex)
 }
 
 //__________________________________________________________________________________
-void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight)
+void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight) const
 {
     for (unsigned long i = 0; i<theFormula.lLength; i++) {
         _Operation* theObj = ((_Operation**)theFormula.lData)[i];
@@ -2170,19 +2176,30 @@ long _Formula::ObjectClass (void)
 
 //__________________________________________________________________________________
 _Formula::_Formula (_String const &s, _VariableContainer const* theParent, _String* reportErrors) {
+    ParseFormula (s, theParent, reportErrors);
+}
+
+//__________________________________________________________________________________
+long _Formula::ParseFormula (_String const &s, _VariableContainer const* theParent, _String* reportErrors) {
     theTree     = nil;
     resultCache = nil;
     recursion_calls = nil;
     call_count = 0UL;
-
+    
     _FormulaParsingContext fpc (reportErrors, theParent);
-  
+    
     _String formula_copy (s);
-  
-    if (Parse (this, formula_copy, fpc, nil) != HY_FORMULA_EXPRESSION) {
+    
+    long    return_value = Parse (this, formula_copy, fpc, nil);
+    
+    if (return_value != HY_FORMULA_EXPRESSION) {
         Clear();
     }
+    
+    return return_value;
+
 }
+
 //__________________________________________________________________________________
 void    _Formula::ConvertToTree (bool err_msg) {
     if (!theTree && theFormula.lLength) { // work to do

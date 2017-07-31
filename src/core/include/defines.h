@@ -285,8 +285,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_USE_MODEL                                      532L
 #define   HY_HBL_COMMAND_MODEL                                          533L
 #define   HY_HBL_COMMAND_SET_PARAMETER                                  534L
-#define   HY_HBL_COMMAND_SET_CHOICE_LIST                                535L
-#define   HY_HBL_COMMAND_OPEN_DATA_PANEL                                536L
+#define   HY_HBL_COMMAND_CHOICE_LIST                                    535L
 #define   HY_HBL_COMMAND_GET_INFORMATION                                537L
 #define   HY_HBL_COMMAND_EXECUTE_COMMANDS                               538L
 #define   HY_HBL_COMMAND_EXECUTE_A_FILE                                 539L
@@ -316,6 +315,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_ASSERT                                         564L
 #define   HY_HBL_COMMAND_REPLICATE_CONSTRAINT                           565L
 #define   HY_HBL_COMMAND_NESTED_LIST                                    566L
+
+
 
 
 //!  HyPhy standard directory locations 

@@ -280,7 +280,7 @@ void    _LikelihoodFunction::RestoreScalingFactors (long index, long branchID, l
 
 /*--------------------------------------------------------------------------------------------------*/
 
-bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList, _String const & caller) const {
+bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList) const {
     long    partCount = CountObjects(kLFCountPartitions);
   
     if (partitionList) {
@@ -288,7 +288,7 @@ bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matr
         partsToDo.Sort();
         partsToDo.FilterRange (-1, partCount);
         if (partsToDo.lLength == 0) {
-            HandleApplicationError (_String("An invalid partition specification in call to ") & caller);
+            throw (_String("An invalid likelihood function partition specification"));
             return false;
         }
     } else {

@@ -211,7 +211,7 @@ bool    _Variable::IsVariable (void)
 
 //__________________________________________________________________________________
 
-void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* tagger, long weight) {
+void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* tagger, long weight) const {
     if (varValue) {
         varValue->ScanForVariables (l, globals,tagger, weight);
     }

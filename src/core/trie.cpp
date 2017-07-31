@@ -44,12 +44,20 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //----------------------------------------------------------------------------------------------------------------------
 
 _Trie::_Trie (const _String* alphabet) {
+    Initialize(alphabet);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void _Trie::Initialize (const _String* alphabet) {
     SetAlphabet (alphabet, false);
     AppendNewInstance(new _SimpleList);
     payload << 0L;
     parents <<-1L;
+  
 }
-       
+
+
 //----------------------------------------------------------------------------------------------------------------------
 
 _Trie::~_Trie (void){

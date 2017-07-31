@@ -110,11 +110,11 @@ public:
 
     void        ResetFormulae               (void);             // decompile formulas (for reference functions)
     void        ResetNameSpace              (void);
-    void        SetNameSpace                (_String);
+    void        SetNameSpace                (_String const &);
     _String const
                 GetFileName                 (void) const;
     _String*    GetNameSpace                (void);
-    _String     AddNameSpaceToID            (_String&, _String * = nil);
+    _String const    AddNameSpaceToID            (_String const&, _String const * = nil);
     _String     TrimNameSpaceFromID         (_String&);
     _String*    FetchFromStdinRedirect      (void);
     _ElementaryCommand* FetchLastCommand (void) {
@@ -123,7 +123,9 @@ public:
         }
         return nil;
     }
-  
+    _ElementaryCommand* GetIthCommand       (long i) const {
+        return (_ElementaryCommand*) GetItem (i);
+    }
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
@@ -210,31 +212,29 @@ public:
     void      ExecuteDataFilterCases (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
-    void      ExecuteCase21  (_ExecutionList&);
     void      ExecuteCase25  (_ExecutionList&, bool = false); // fscanf
-    void      ExecuteCase26  (_ExecutionList&); // ReplicateConstraint
     void      ExecuteCase31  (_ExecutionList&); // model construction
     void      ExecuteCase32  (_ExecutionList&); // list selection handler
     void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
-    void      ExecuteCase36  (_ExecutionList&); // OpenDataPanel
-    void      ExecuteCase37  (_ExecutionList&); // GetInformation
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
     void      ExecuteCase39  (_ExecutionList&); // Execute Commands
-    void      ExecuteCase43  (_ExecutionList&); // FindRoot
     void      ExecuteCase44  (_ExecutionList&); // MPISend
     void      ExecuteCase45  (_ExecutionList&); // MPIReceive
-    void      ExecuteCase46  (_ExecutionList&); // GetDataInfo
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
     void      ExecuteCase54  (_ExecutionList&); // Topology
-    void      ExecuteCase55  (_ExecutionList&); // AlignSequences
     void      ExecuteCase57  (_ExecutionList&); // GetNeutralNull
     void      ExecuteCase58  (_ExecutionList&); // Profile Code
     void      ExecuteCase61  (_ExecutionList&); // SCFG
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
     void      ExecuteCase64  (_ExecutionList&); // BGM
     
+    bool      HandleReplicateConstraint             (_ExecutionList&);
+    bool      HandleAlignSequences                  (_ExecutionList&);
+    bool      HandleConstructCategoryMatrix         (_ExecutionList&);
+    bool      HandleGetDataInfo                     (_ExecutionList&);
+    bool      HandleGetInformation                  (_ExecutionList&);
     bool      HandleFprintf                         (_ExecutionList&);
     bool      HandleHarvestFrequencies              (_ExecutionList&);
     bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
@@ -251,9 +251,10 @@ public:
     bool      HandleGetString                       (_ExecutionList&);
     bool      HandleExport                          (_ExecutionList&);
     bool      HandleDifferentiate                   (_ExecutionList&);
-    long      GetCode                               (void) { return code; };
+    bool      HandleFindRootOrIntegrate             (_ExecutionList&, bool do_integrate = false);
+    long      get_code                              (void) const { return code; };
     
-    static  const _String   FindNextCommand       (_String&, bool = false);
+    static  const _String   FindNextCommand       (_String&);
     // finds & returns the next command block in input
     // chops the input to remove the newly found line
 
@@ -322,10 +323,6 @@ public:
     (_String&, _ExecutionList&);
     // construct a fscanf command
 
-    static  bool      ConstructReplicateConstraint
-    (_String&, _ExecutionList&);
-    // construct a replicate constraint command
-
     static  bool      ConstructLF           (_String&, _ExecutionList&);
     // construct a likelihood function
 
@@ -345,30 +342,15 @@ public:
     static  bool      ConstructChoiceList   (_String&, _ExecutionList&);
     // construct a category variable
 
-    static  bool      ConstructCategoryMatrix (_String&, _ExecutionList&);
-    // construct a category matrix for the optimized like func
-
-    static  bool      ConstructOpenWindow   (_String&, _ExecutionList&);
-
-    static  bool      ConstructFindRoot     (_String&, _ExecutionList&);
-
-    static  bool      ConstructGetInformation
-    (_String&, _ExecutionList&);
-
     static  bool      ConstructModel        (_String&, _ExecutionList&);
 
     static  bool      ConstructMPISend      (_String&, _ExecutionList&);
 
     static  bool      ConstructMPIReceive   (_String&, _ExecutionList&);
 
-    static  bool      ConstructGetDataInfo  (_String&, _ExecutionList&);
-
     static  bool      ConstructStateCounter (_String&, _ExecutionList&);
 
     static  bool      ConstructDoSQL        (_String&, _ExecutionList&);
-
-    static  bool      ConstructAlignSequences
-    (_String&, _ExecutionList&);
 
     static  bool      ConstructGetNeutralNull
     (_String&, _ExecutionList&);
@@ -408,6 +390,14 @@ protected:
   
     static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList&, bool, _AVLListX& );
 
+    _String  *   GetIthParameter       (unsigned long i, bool range_check = true) const {
+        BaseRef p = parameters.GetItemRangeCheck(i);
+        if (!p && range_check) {
+            hy_global::HandleApplicationError("Internal error in ElemenaryCommand::GetIthParameter", true);
+        }
+        return (_String *)p;
+    }
+
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
     // internal command used
@@ -423,6 +413,9 @@ protected:
     friend  void      DeleteVariable     (long, bool);
     friend  void      UpdateChangingFlas (long);
     friend  void      UpdateChangingFlas (_SimpleList&);
+    
+private:
+    _Variable* _ValidateStorageVariable (_ExecutionList& program) const;
 
 protected:  // data members
 
@@ -513,7 +506,6 @@ getDString                      ,
 useLastFString                  ,
 getFString                      ,
 defFileString                   ,
-useLastModel                    ,
 VerbosityLevelString            ,
 hasEndBeenReached               ,
 clearFile                       ,
@@ -525,7 +517,6 @@ selectionStrings                ,
 useNoModel                      ,
 stdoutDestination               ,
 messageLogDestination           ,
-lastModelParameterList          ,
 dataPanelSourcePath             ,
 windowTypeTree                  ,
 windowTypeClose                 ,
@@ -537,9 +528,6 @@ screenHeightVar                 ,
 useNexusFileData                ,
 mpiMLELFValue                   ,
 lf2SendBack                     ,
-pcAmbiguitiesResolve            ,
-pcAmbiguitiesAverage            ,
-pcAmbiguitiesSkip               ,
 lfStartCompute                  ,
 lfDoneCompute                   ,
 getURLFileFlag                  ,
@@ -582,8 +570,7 @@ blLF                            ,
 blLF3                           ,
 blTree                          ,
 blTopology                      ,
-blSCFG                          ,
-hfCountGap                      ;
+blSCFG                          ;
 
 extern  _ExecutionList              *currentExecutionList;
 
@@ -638,13 +625,18 @@ _String ReturnDialogInput            (bool dispPath = false);
 _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
+
+
 hyFloat
-ProcessNumericArgument               (_String*,_VariableContainer const*, _ExecutionList* = nil);
+_ProcessNumericArgumentWithExceptions (_String&,_VariableContainer const*);
+
+hyFloat
+ProcessNumericArgument                (_String*,_VariableContainer const*, _ExecutionList* = nil);
 const _String ProcessLiteralArgument (_String const*,_VariableContainer const*, _ExecutionList* = nil);
 _AssociativeList*
 ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
-const _String GetStringFromFormula         (_String*,_VariableContainer*);
+const _String GetStringFromFormula         (_String const*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);
 
 void    SerializeModel               (_String&,long,_AVLList* = nil, bool = false);
@@ -658,11 +650,8 @@ void    KillExplicitModelFormulae    (void);
 bool    PushFilePath                 (_String&, bool = true, bool process = true);
 _String const    PopFilePath         (void);
 _String const *  PeekFilePath        (void);
-_String const    GetPathStack        (const _String spacer = ",");
+_String const    GetPathStack        (const _String& spacer = ",");
 
-_Matrix*CheckMatrixArg               (_String const*, bool);
-_AssociativeList *
-CheckAssociativeListArg      (_String const*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
@@ -708,9 +697,9 @@ BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& 
 
 BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 
-_String _HYHBLTypeToText                (long type);
+_String const _HYHBLTypeToText                (long type);
 
-_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = hy_global::kEmptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String& = hy_global::kEmptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 
 
 extern  bool                        numericalParameterSuccessFlag;

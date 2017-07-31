@@ -5001,7 +5001,7 @@ regexec (
 size_t
 regerror (
     int errcode,
-    const regex_t *preg,
+    const regex_t *,
     char *errbuf,
     size_t errbuf_size)
 {

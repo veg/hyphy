@@ -71,9 +71,9 @@ namespace hy_env {
 
     /*********************************************************************************/
     bool       EnvVariableTrue (_String const& name) {
-        _PMathObj default_value = (_PMathObj)EnvVariableGetDefault (name, NUMBER);
-        if (default_value) {
-            return default_value->Value() != 0.0;
+        _PMathObj value = (_PMathObj)EnvVariableGet (name, NUMBER);
+        if (value) {
+            return fabs (value->Value()) > 1e-10;
         }
         return false;
     }
@@ -112,8 +112,8 @@ namespace hy_env {
         _hy_env_default_values.PushPairCopyKey (use_traversal_heuristic,  new HY_CONSTANT_TRUE)
                               .PushPairCopyKey (normalize_sequence_names, new HY_CONSTANT_TRUE)
                               .PushPairCopyKey(message_logging, new HY_CONSTANT_TRUE)
-                              .PushPairCopyKey (dataset_save_memory_size, new _Constant (100000.));
-
+                              .PushPairCopyKey (dataset_save_memory_size, new _Constant (100000.))
+                              .PushPairCopyKey (harvest_frequencies_gap_options, new HY_CONSTANT_TRUE);
     }
     
 _String const
@@ -121,6 +121,8 @@ _String const
         // is set to the base directory for local path names; can be set via a CL argument (BASEPATH)
     blockwise_matrix                                ("BLOCK_LIKELIHOOD"),
         // this _template_ variable is used to define likelihood function evaluator templates
+    covariance_parameter                            ("COVARIANCE_PARAMETER"),
+        // used to control the behavior of CovarianceMatrix
     data_file_partition_matrix                      ("DATA_FILE_PARTITION_MATRIX"),
         // the string of data partitions read from the last valid NEXUS CHARSET block
     data_file_tree                                  ("IS_TREE_PRESENT_IN_DATA"),
@@ -141,15 +143,34 @@ _String const
         // the current HBL standard input buffer, formatted as a list
     error_report_format_expression_string           ("_ERROR_TEXT_"),
     // the text message explaining the error
-    
+    get_data_info_returns_only_the_index            ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
+    // instead of returing {0,0,1,0} for a 'G' character in GetDataInfo (r, filter, species, pattern)
+    // return only the index of 'G', e.g. 2 in this case. -1 is returned for ambigs
     false_const                                     ("FALSE"),
         // the FALSE (0.0) constant
+    harvest_frequencies_gap_options                 ("COUNT_GAPS_IN_FREQUENCIES"),
+    /* 
+        if set to `harvest_frequencies_gap_options` to TRUE, then N-fold ambigs will add 1/N to each character count in HarvestFrequencies,
+        otherwise N-folds are ignored in counting
+     */
+
     kGetStringFromUser                              ("PROMPT_FOR_STRING"),
         // [LEGACY] placeholder for prompting the user for a string value
+
+    kPairwiseCountAmbiguitiesResolve                ("RESOLVE_AMBIGUITIES"),
+    kPairwiseCountAmbiguitiesAverage                ("AVERAGE_AMBIGUITIES"),
+    kPairwiseCountAmbiguitiesSkip                   ("SKIP_AMBIGUITIES"),
+        /*
+            these options controls haw ambiguous characters are handled in 
+            GetDataInfo (counts, filter, sequence1, sequence2);
+         */
     last_file_path                                  ("LAST_FILE_PATH"),
         // is set by various file read/write commands (fscanf, fprintf, dialog prompts)
         // to contain the **absolute** path to the last file interacted with
-
+    last_model_parameter_list          (            "LAST_MODEL_PARAMETER_LIST"),
+        // a stand-in for the list of model parameters for the last
+        // declared model
+    
     lib_directory                                   ("HYPHY_LIB_DIRECTORY"),
         // is set to the library directory for standard library searchers; can be set via a CL argument (LIBPATH)
     matrix_element_column                           ("_MATRIX_ELEMENT_COLUMN_"),
@@ -184,6 +205,8 @@ _String const
         // used to set the progress message displayed to the user
     true_const                                      ("TRUE"),
         // the TRUE (1.0) constant
+    use_last_model                                  ("USE_LAST_MODEL"),
+        // a stand-in for the last declared model
     use_traversal_heuristic                         ("USE_TRAVERSAL_HEURISTIC")
         // TODO (20170413): don't remember what this does; , see @ _DataSetFilter::MatchStartNEnd
         // #DEPRECATE

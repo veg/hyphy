@@ -55,7 +55,7 @@ extern _List likeFuncList,
              scfgList;
 
 extern _SimpleList modelMatrixIndices;
-extern _String lastModelParameterList;
+extern _String last_model_parameter_list;
 
 using namespace hyphy_global_objects;
 using namespace hy_global;
@@ -229,7 +229,7 @@ _PMathObj _FString::Join (_PMathObj p)
         ((_AssociativeList*)(p->Compute()))->FillInList (theStrings);
     }
 
-    return new _FString((_String*)theStrings.Join(theString));
+    return new _FString((_String*)theStrings.Join(*theString));
 }
 
 //__________________________________________________________________________________
@@ -769,10 +769,10 @@ _PMathObj   _FString::MapStringToVector (_PMathObj p)
     if (theString->sLength && p->ObjectClass () == MATRIX) {
         _Matrix         * factoringMatrix = (_Matrix *)p;
 
-        if (factoringMatrix->IsAVector () && factoringMatrix->IsAStringMatrix()) {
+        if ((factoringMatrix->is_row () || factoringMatrix->is_column ()) && factoringMatrix->IsAStringMatrix()) {
             long            mapper [255],
                             keys    = factoringMatrix->GetHDim() * factoringMatrix->GetVDim(),
-                            byRows   = factoringMatrix->IsAVector (HY_MATRIX_COLUMN_VECTOR);
+                            byRows   = factoringMatrix->is_column ();
 
             for (long c = 0; c < 255; c++) {
                 mapper[c] = -1;
@@ -902,7 +902,7 @@ _PMathObj   _FString::CountGlobalObjects (void)
     }
 
     if (standardType < 0) {
-        if ((*theString)==lastModelParameterList) {
+        if ((*theString)==last_model_parameter_list) {
             if (lastMatrixDeclared>=0) {
                 _SimpleList p;
                 _Variable *theM = LocateVar (modelMatrixIndices.lData[lastMatrixDeclared]);

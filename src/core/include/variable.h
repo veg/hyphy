@@ -112,7 +112,7 @@ public:
     long        GetIndex (void) {
         return theIndex;
     }
-    void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
+    void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0) const;
     virtual     bool        IsContainer (void) {
         return false;
     }

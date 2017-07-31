@@ -323,6 +323,30 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
 
 void        UpdateOptimizationStatus (hyFloat, long, char, bool, _String * fileName = nil);
 
+//_______________________________________________________________________________________
+
+_CustomFunction::_CustomFunction (_String const & arg, _VariableContainer const * context ) {
+    _String body        (arg),
+            error ;
+    
+    _FormulaParsingContext fpc (&error, context);
+    
+    if (Parse (&myBody, body, fpc, nil) == HY_FORMULA_EXPRESSION) {
+        _SimpleList myVars;
+        _AVLList al (&myVars);
+        myBody.ScanFForVariables(al,true,false,false);
+        al.ReorderList();
+        
+        for (unsigned long k=0UL; k<myVars.lLength; k++) {
+            if (LocateVar(myVars.lData[k])->IsIndependent()) {
+                indexInd << myVars.lData[k];
+            }
+        }
+    } else {
+        throw (_String ("Error while parsing ") & arg.Enquote() & " in CustomFunction " & error);
+    }
+}
+
 //__________________________________________________________________________________
 
 void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool optimization, _String* fileName)
@@ -1128,11 +1152,17 @@ void    _LikelihoodFunction::GetGlobalVars (_SimpleList& rec) const {
 
 //_______________________________________________________________________________________
 hyFloat  _LikelihoodFunction::GetIthIndependent (long index) const {
+    hyFloat return_value;
+    
     if (parameterValuesAndRanges) {
-        return (*parameterValuesAndRanges)(index,1);
+        return_value = (*parameterValuesAndRanges)(index,1);
+    } else {
+        return_value = ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
     }
-
-    return ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
+    if (isnan(return_value)) {
+        HandleApplicationError(*GetIthIndependentName (index) & " evaluated to a NaN; this can cause all kinds of odd behavior downstream, therefore it is safer to quit now");
+    }
+    return return_value;
 }
 
   //_______________________________________________________________________________________
@@ -1363,8 +1393,7 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
 
 
 //_______________________________________________________________________________________
-_Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichParts, char runMode, bool remap, _String* storageID)
-{
+_Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichParts, CategoryConstructionOptions::CategoryConstructionOptions runMode, bool remap, _String* storageID) {
     long                        hDim = 1,
                                 vDim = 0,
                                 currentOffset = 0;
@@ -9183,7 +9212,7 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::StateCounter (long functionCallback) {
+void    _LikelihoodFunction::StateCounter (long functionCallback) const {
   HandleApplicationError ("This feature has not yet been implemented in the new LF engine framework");
 }
   
@@ -10332,29 +10361,6 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
     
 }
 
-//_______________________________________________________________________________________
-
-_CustomFunction::_CustomFunction (_String* arg) {
-    _String body    (*arg),
-            errMsg ;
-
-    _FormulaParsingContext fpc (&errMsg, nil);
-
-    if (Parse (&myBody, body, fpc, nil) == HY_FORMULA_EXPRESSION) {
-        _SimpleList myVars;
-        _AVLList al (&myVars);
-        myBody.ScanFForVariables(al,true,false,false);
-        al.ReorderList();
-      
-        for (unsigned long k=0UL; k<myVars.lLength; k++) {
-              if (LocateVar(myVars.lData[k])->IsIndependent()) {
-                  indexInd << myVars.lData[k];
-              }
-        }
-    } else {
-        HandleApplicationError (_String ("An invalid expression supplied for formula-based custom LF: '") & errMsg & '\'');
-    }
-}
 
 //_______________________________________________________________________________________
 

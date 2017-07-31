@@ -133,7 +133,7 @@ bool      ListAny (_SimpleList& list, LAMBDA&& condition) {
 template <typename ARG_TYPE, typename LAMBDA>
 void      ArrayForEach (ARG_TYPE* array, unsigned long dimension, LAMBDA&& transform) {
   for (unsigned long i = 0UL; i < dimension; i++) {
-    transform (array[i], i);
+    array[i] = transform (array[i], i);
   }
 }
 

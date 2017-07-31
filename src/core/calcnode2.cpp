@@ -2127,7 +2127,18 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         }
 
         _CalcNode *          currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):((_CalcNode*) flatTree    (nodeCode));
-        hyFloat  const*        transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
+        
+        hyFloat  const*        transitionMatrix = nil;
+        
+        if (!catAssignments) {
+            _Matrix* comp_exp = currentTreeNode->GetCompExp();
+            if (!comp_exp) {
+                hy_global::HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__ & ". Transition matrix not computed for " & *currentTreeNode->GetName());
+                return;
+            }
+            transitionMatrix = comp_exp->theData;
+        }
+        
         // this will need to be toggled on a per site basis
         hyFloat  *       childVector;
 

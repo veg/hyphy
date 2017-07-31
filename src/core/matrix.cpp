@@ -694,6 +694,36 @@ void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
 
 }
 
+//_____________________________________________________________________________________________
+bool        _Matrix::ValidateFormulaEntries (bool callback (long, long, _Formula*)) {
+    if (storageType == _FORMULA_TYPE) {
+        _Formula ** formula_entires = (_Formula**)theData;
+        
+        unsigned long direct_index = 0UL;
+        for (unsigned long row = 0UL; row < hDim ; row++) {
+            for (unsigned long col = 0UL; col < vDim ; col++) {
+                _Formula * this_cell;
+                if (is_dense()) {
+                    this_cell = formula_entires[direct_index++];
+                } else {
+                    direct_index = Hash (row,col);
+                    if (direct_index >= 0) {
+                        this_cell = formula_entires[direct_index++];
+                    } else {
+                        this_cell = nil;
+                    }
+                }
+                if (! callback (row, col, this_cell)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+
 //__________________________________________________________________________________
 _PMathObj   _Matrix::Eigensystem (void)
 {
@@ -4325,15 +4355,20 @@ hyFloat  _Matrix::MaxRelError  (_Matrix& compMx)
 
 //_____________________________________________________________________________________________
 
-bool    _Matrix::IsAVector  (char type)
-{
-    if (GetHDim() == 1) {
-        return type != HY_MATRIX_COLUMN_VECTOR;
-    }
-    if (GetVDim() == 1) {
-        return (type != HY_MATRIX_ROW_VECTOR);
-    }
-    return false;
+bool    _Matrix::is_row(void) const {
+    return GetHDim() == 1;
+}
+
+bool    _Matrix::is_column(void) const {
+    return GetVDim() == 1;
+}
+
+bool    _Matrix::is_square(void) const {
+    return GetHDim() == GetVDim();
+}
+
+bool    _Matrix::is_dense (void) const {
+    return theIndex == nil;
 }
 
 //_____________________________________________________________________________________________
@@ -6379,7 +6414,7 @@ _PMathObj _Matrix::Random (_PMathObj kind)
         _List               * keys      = pdfArgs->GetKeys();
         _String             pdfkey      ("PDF"),
                             * arg0      = (_String *)(*keys)(0);
-
+        DeleteObject (keys);
         if (arg0->Equal(&pdfkey)) {
             _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
                         arg ("ARG0");
@@ -8651,7 +8686,7 @@ _PMathObj   _Matrix::DirichletDeviate (void)
         errMsg = "Only numeric vectors can be passed to <= (DirichletDeviate)";
     }
 
-    if (IsAVector()) {
+    if (is_row || is_column ()) {
         // generate a random deviate from gamma distribution for each hyperparameter
         for (long i = 0; i < dim; i++) {
             if (theData[i] < 0) {
@@ -8925,10 +8960,10 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
                 rd_transpose;
 
 
-    if (!df.IsAVector(0)) {
+    if (!(df.is_row () || df.is_column())) {
         HandleApplicationError ("ERROR in _Matrix::WishartDeviate(), expecting row vector for degrees of freedom argument.");
         return new _Matrix (1,1,false,true);
-    } else if (df.IsAVector(1)) {
+    } else if (df.is_column()) {
         df.Transpose(); // convert column vector to row vector
     }
 
@@ -9232,6 +9267,7 @@ void _AssociativeList::DeleteByKey (_PMathObj p)
             for (long ki = 0; ki < keys2remove->lLength; ki++) {
                 avl.Delete ((_String*)(*keys2remove)(ki),true);
             }
+            DeleteObject (keys2remove);
         } else {
             _String * s = (_String*)p->toStr();
             avl.Delete (s,true);
@@ -9354,10 +9390,14 @@ _String* _AssociativeList::Serialize (unsigned long padding)  {
             doComma = true;
         }
     }
+    
+    DeleteObject (meKeys);
+    
     (*outString) << '\n';
     (*outString) << padder;
     (*outString) << "}";
     outString->Finalize ();
+    
     return outString;
 }
 
@@ -9369,8 +9409,21 @@ _PMathObj _AssociativeList::Compute (void)
 }
 
 //__________________________________________________________________________________
-_List* _AssociativeList::GetKeys (void)  {
-    return (_List*)avl.dataList;
+_List* _AssociativeList::GetKeys (void) const {
+    
+    _List * keys = new _List;
+    
+    _SimpleList  hist;
+    long         ls,
+    cn = avl.Traverser (hist,ls,avl.GetRoot());
+    
+    while (cn >= 0) {
+        keys << theData (cn);
+        cn = avl.Traverser (hist,ls);
+    }
+    
+    return keys;
+    
 }
 
 //_____________________________________________________________________________________________

@@ -42,8 +42,8 @@
 #include "matrix.h"
 #include "simplelist.h"
 
-double AlignStrings( char * r_str
-                   , char * q_str
+double AlignStrings( char const * r_str
+                   , char const * q_str
                    , char * & r_res
                    , char * & q_res
                    , long * char_map
@@ -68,7 +68,7 @@ double AlignStrings( char * r_str
 
 hyFloat LinearSpaceAlign( _String * s1           // first string
                            , _String * s2           // second string
-                           , _SimpleList & cmap     // char -> position in scoring matrix mapper
+                           , long*  cmap     // char -> position in scoring matrix mapper
                            , _Matrix * ccost        // NxN matrix of edit distances on characters
                            , hyFloat gopen       // the cost of opening a gap in sequence 1
                            , hyFloat gextend     // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)

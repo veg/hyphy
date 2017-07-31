@@ -87,7 +87,11 @@ size_t url2String (void *ptr, size_t size, size_t nmemb, void *stream) {
 
 //_________________________________________________________________________
 
-bool    Get_a_URL (_String& urls, _String* fileName) {
+bool    Get_a_URL (_String& urls, _String*
+#ifdef __HYPHYCURL__
+                   fileName
+#endif
+                   ) {
 #ifdef __HYPHYCURL__
     CURL *curl;
     CURLcode res ;

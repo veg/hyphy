@@ -70,11 +70,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* conditional likelihood matrix reconstruction modes */
 
-#define   _hyphyLFConstructCategoryMatrixConditionals   0
-#define   _hyphyLFConstructCategoryMatrixClasses        1
-#define   _hyphyLFConstructCategoryMatrixWeights        2
-#define   _hyphyLFConstructCategoryMatrixPosteriors     3
-#define   _hyphyLFConstructCategoryMatrixSiteProbabilities      4
+namespace CategoryConstructionOptions {
+    enum      CategoryConstructionOptions {
+        kMatrixConditionals =  0,
+        kMatrixClasses      =  1,
+        kMatrixWeights      =  2,
+        kMatrixPosteriors   =  3,
+        kSiteProbabilities  =  4
+    };
+}
 
 /* likelihood seialization model */
 
@@ -202,7 +206,7 @@ public:
     void        DoneComputing    (bool = false);
     virtual
     _Matrix*    Optimize ();
-    _Matrix*    ConstructCategoryMatrix     (const _SimpleList&, char, bool = true, _String* = nil);
+    _Matrix*    ConstructCategoryMatrix     (const _SimpleList&, CategoryConstructionOptions::CategoryConstructionOptions, bool = true, _String* = nil);
 
     hyFloat  SimplexMethod               (hyFloat& precision);
     void        Anneal                      (hyFloat& precision);
@@ -263,7 +267,7 @@ public:
     _Formula*   HasComputingTemplate    (void) const{
         return computingTemplate;
     }
-    void        StateCounter            (long);
+    void        StateCounter            (long) const;
     void        MPI_LF_Compute          (long, bool = false);
 
 #if defined _SLKP_LFENGINE_REWRITE_
@@ -284,7 +288,7 @@ public:
 #endif
 #endif
 
-    bool            ProcessPartitionList        (_SimpleList&, _Matrix*, _String const&) const;
+    bool            ProcessPartitionList        (_SimpleList&, _Matrix*) const;
     // given a matrix argument (argument 2; can be nil to include all)
     // populate a sorted list (argument 1)
     // of partitions indexed in the matrix (e.g. {{1,3}} would include the 2-nd and 4-th partitions
@@ -700,18 +704,16 @@ protected:
 
 //_______________________________________________________________________________________
 
-class   _CustomFunction: public _LikelihoodFunction
-{
+class   _CustomFunction: public _LikelihoodFunction {
 
 public:
 
-    _CustomFunction         (_String*);
+    _CustomFunction         (const _String& , _VariableContainer const * context = nil);
 
-    virtual     hyFloat  Compute                 (void);
+    virtual     hyFloat     Compute                 (void);
     virtual     void        RescanAllVariables      (void) {}
 
-
-
+private:
     _Formula myBody;
 };
 

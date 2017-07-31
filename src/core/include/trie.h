@@ -51,6 +51,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     attached to each string key.
 */
 
+
 //_____________________________________________________________________________
 class _Trie: public _List
 {
@@ -91,6 +92,19 @@ class _Trie: public _List
          * @param alphabet -- a string listing all valid characters (e.g. "ACGT"). By default (or if an empty string is passed), all ASCII characters are allowed
          * @return Nothing. 
          */
+    
+         virtual void Initialize (const _String* alphabet);
+    
+    
+        template <typename KEY, typename PAYLOAD, typename... values>  long  Insert (KEY key, PAYLOAD payload, values... data) {
+            Insert (key, payload);
+            Insert (data...);
+        }
+ 
+        template <typename... values> _Trie (values... data) {
+            Initialize (nil);
+            Insert (data...);
+        }
        
         virtual BaseRef toStr(unsigned long);
         /**

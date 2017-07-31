@@ -238,7 +238,9 @@ namespace hy_global {
             &error_report_format_expression_string,
             &kXVariableName,
             &kNVariableName,
-            &status_bar_update_string
+            &status_bar_update_string,
+            &last_model_parameter_list,
+            &use_last_model
         };
         
         for (_String const * item : mark_as_globals) {

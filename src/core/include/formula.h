@@ -87,8 +87,7 @@ class _FormulaParsingContext {
 };
 
 
-class   _Formula   // a computational formula
-{
+class   _Formula {
 
     friend class _Variable;
     friend class _VariableContainer;
@@ -96,7 +95,11 @@ class   _Formula   // a computational formula
 public:
     _Formula (void);
     _Formula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
+    
+    long     ParseFormula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
+    
     _Formula (_PMathObj, bool isAVar = false);
+    _Formula (_Formula const & rhs);
     virtual ~_Formula (void);
     _PMathObj   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
     // compute the value of the formula
@@ -139,7 +142,7 @@ public:
     virtual long        ObjectClass         (void);
 
 
-    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0);
+    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0) const;
     virtual void        ScanFForType        (_SimpleList&,  int);
     /* SLKP 20100716:
             A simple utility function to retrieve all variables of a given type

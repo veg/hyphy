@@ -54,7 +54,7 @@ class _VariableContainer;
 class _Variable;
 class _Formula;
 
-_Variable * FetchVar (long);
+_Variable * FetchVar (long, unsigned long = HY_ANY_OBJECT);
 
 //__________________________________________________________________________________
 class   _Operation : public BaseObj

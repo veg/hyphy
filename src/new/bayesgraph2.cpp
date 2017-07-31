@@ -702,7 +702,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _
     _AssociativeList *  eigen       = (_AssociativeList *) temp_mat.Eigensystem();
 	
 	// sometimes the eigendecomposition fails
-	if ( (eigen->GetKeys())->lLength == 0 ) {
+	if ( eigen->countitems() == 0 ) {
 		HandleApplicationError (_String("Eigendecomposition failed in bayesgraph2.cpp BottcherScore()."));
 		return -A_LARGE_NUMBER;
 	}

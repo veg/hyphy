@@ -264,7 +264,7 @@ class _SimpleList:public BaseObj {
          * @param index Which item you want.
          * @return A long
          */
-        inline const long Get (long index) const {return lData[index];}
+        inline const long get (long index) const {return lData[index];}
 
         /**
         * Checks if list is identical to other list
@@ -466,7 +466,7 @@ class _SimpleList:public BaseObj {
         */
         void RequestSpace(long);
 
-        void Subtract(_SimpleList&, _SimpleList&);
+        void Subtract(_SimpleList const &, _SimpleList const&);
 
         /**
         * Swaps two positions  

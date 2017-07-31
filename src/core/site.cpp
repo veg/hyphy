@@ -5349,7 +5349,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             
             _ExecutionList * nexusBF = ex ? ex :  new _ExecutionList;
             if (namespaceID) {
-                nexusBF->SetNameSpace(namespaceID);
+                nexusBF->SetNameSpace(*namespaceID);
             }
             nexusBF->BuildList(nexusBFBody, nil, false, true);
             //_ExecutionList nexusBF (nexusBFBody,namespaceID);

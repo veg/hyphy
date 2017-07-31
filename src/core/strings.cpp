@@ -347,15 +347,6 @@ char _String::operator () (long index) const {
 
 //=============================================================
 
-const char _String::get_char(long index) const {
-    if (index >= 0L && index < s_length) {
-        return s_data[index];
-    }
-    return default_return;
-}
-
-//=============================================================
-
 void _String::set_char (unsigned long index, char const data) {
     if (index < s_length) {
         s_data[index] = data;
@@ -673,9 +664,11 @@ void _String::Trim(long start, long end) {
         if (start > 0L) {
             memmove(s_data, s_data + start, resulting_length);
         }
-        s_length = resulting_length;
-        s_data = (char*)MemReallocate(s_data, resulting_length + 1UL);
-        s_data[resulting_length] = '\0';
+        if (s_length != resulting_length) {
+            s_length = resulting_length;
+            s_data = (char*)MemReallocate(s_data, resulting_length + 1UL);
+            s_data[resulting_length] = '\0';
+        }
     } else {
         s_length = 0UL;
         s_data = (char*)MemReallocate(s_data, 1UL);
@@ -719,6 +712,12 @@ const _List _String::Tokenize(const _String& splitter) const {
 
 const _String _String::Enquote (char quote_char) const {
   return _StringBuffer (2UL + s_length) << quote_char  << *this << quote_char;
+}
+
+//=============================================================
+
+const _String _String::Enquote (char open_char, char close_char) const {
+    return _StringBuffer (2UL + s_length) << open_char  << *this << close_char;
 }
 
 //=============================================================
@@ -961,27 +960,6 @@ bool _String::BeginsWithAndIsNotAnIdent (_String const& pattern) const {
 */
 
 
-long _String::FindEndOfIdent(long start, long end, char wild) const {
-  
-  long requested_range = NormalizeRange(start, end);
-
-  if (requested_range > 0L) {
-    long i = start;
-    
-    for (; i<=end; i++)
-      if (!(isalnum(s_data[i])||s_data[i]=='.'||s_data[i]==wild||s_data[i]=='_')) {
-        break;
-      }
-    
-    if (i>start+2L && s_data[i-1L] == '_' && s_data[i-2L] == '_') {
-      return i-3L;
-    }
-    return i-1L;
-  }
-  
-  return kNotFound;
-}
-
 //=============================================================
 
 
@@ -1115,12 +1093,14 @@ long _String::FindTerminator (long start, _String const& terminator) const {
 
 //=============================================================
 
-void _String::StripQuotes(char open_char, char close_char) {
+bool _String::StripQuotes(char open_char, char close_char) {
   if (s_length >= 2UL) {
     if (s_data [0] == open_char && s_data [s_length - 1UL] == close_char) {
       Trim (1, s_length - 2UL);
+        return true;
     }
   }
+    return false;
 }
 
 

@@ -611,8 +611,8 @@ inline void MatchScore( char * r_str
 
 //____________________________________________________________________________________
 
-double AlignStrings( char * const r_str
-                   , char * const q_str
+double AlignStrings( char const * r_str
+                   , char const * q_str
                    , char * & r_res
                    , char * & q_res
                    , long * const char_map
@@ -1213,7 +1213,7 @@ hyFloat   CostOnly   (_String * s1,               // first string
                          long to2,              // up to here in string2 // not inclusive
                          bool rev1,             // reverse string1
                          bool rev2,             // reverse string2
-                         _SimpleList & cmap,         // char -> position in scoring matrix mapper
+                         long*  cmap,         // char -> position in scoring matrix mapper
                          _Matrix * ccost,            // NxN matrix of edit distances on characters
                          hyFloat gopen,          // the cost of opening a gap in sequence 1
                          hyFloat gextend,        // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
@@ -1315,7 +1315,7 @@ hyFloat   CostOnly   (_String * s1,               // first string
                 from2 --;
                 from1 --;
                 for (long r=1; r<=s1Length; r++) { // iterate by rows
-                    long      c1 = cmap.lData[s1->get_uchar (rev1?(to1-r):(from1+r))];
+                    long      c1 = cmap[s1->get_uchar (rev1?(to1-r):(from1+r))];
 
                     if (doLocal2S) {
                         aux2        = 0.;
@@ -1367,7 +1367,7 @@ hyFloat   CostOnly   (_String * s1,               // first string
                         // if this is the second row, then we start a gap in the second sequence -|
 
                         if (c1>=0) {
-                            long       c2 = cmap.lData[s2->get_uchar (rev2?(to2-c):(from2+c))];
+                            long       c2 = cmap[s2->get_uchar (rev2?(to2-c):(from2+c))];
 
                             if (c2>=0) {
                                 gscore3 += ccost->theData[c1*mapL+c2];
@@ -1422,7 +1422,7 @@ hyFloat   CostOnly   (_String * s1,               // first string
                     }
 
                     //printf ("%d: %g\t", r, scoreMatrix.theData[0]);
-                    long      c1 = cmap.lData[s1->get_uchar (rev1?(to1-r):(from1+r-1))];
+                    long      c1 = cmap[s1->get_uchar (rev1?(to1-r):(from1+r-1))];
 
                     for (long c=1; c<=s2Length; c++) {
                         hyFloat score1 = scoreMatrix.theData[c], // gap in 2nd
@@ -1437,7 +1437,7 @@ hyFloat   CostOnly   (_String * s1,               // first string
                         }
 
                         if (c1>=0) {
-                            long       c2 = cmap.lData[s2->get_uchar (rev2?(to2-c):(from2+c-1))];
+                            long       c2 = cmap[s2->get_uchar (rev2?(to2-c):(from2+c-1))];
 
                             if (c2>=0) {
                                 score3 += ccost->theData[c1*mapL+c2];
@@ -1512,7 +1512,7 @@ hyFloat   CostOnly   (_String * s1,               // first string
 
 hyFloat      LinearSpaceAlign (_String *s1,                  // first string
                                   _String *s2,                      // second string
-                                  _SimpleList& cmap,                // char -> position in scoring matrix mapper
+                                  long * cmap,                // char -> position in scoring matrix mapper
                                   _Matrix*    ccost,                // NxN matrix of edit distances on characters
                                   hyFloat gopen,                 // the cost of opening a gap in sequence 1
                                   hyFloat gextend,               // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)

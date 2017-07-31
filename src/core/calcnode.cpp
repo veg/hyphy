@@ -6196,6 +6196,7 @@ void     _TheTree::SetTreeCodeBase (long b) {
 
   //_______________________________________________________________________________________________
 long     _TheTree::IsLinkedToALF (long& pid) const {
+    
   for (long lfID = 0; lfID < likeFuncList.lLength; lfID ++)
     if (likeFuncList.lData[lfID] && (pid = ((_LikelihoodFunction*)likeFuncList(lfID))->DependOnTree (*GetName())) >= 0) {
       return lfID;

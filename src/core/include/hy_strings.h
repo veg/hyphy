@@ -328,7 +328,13 @@ public:
      *  Revision history
      - SLKP 20170517 reviewed while porting from v3 branch
      */
-     inline const       char    get_char          (long) const;
+    inline const       char    get_char          (long index) const {
+        if (index >= 0L && index < s_length) {
+            return s_data[index];
+        }
+        return default_return;
+    }
+
 
     /**
      * Retrieve a read-only element at index x.
@@ -669,8 +675,20 @@ public:
      * @return quote_char + *this + quote_char
      *  Revision history
         -SLKP 20170616 reviewed while porting from v2.3 branch
+        -
      */
     const    _String Enquote (char quote_char = '\'') const;
+    
+    /**
+     * Decorates the string with open/close chars
+     
+     * @param quote_char which character to use as a "quote"
+     * @return open_char + *this + close_char
+     *  Revision history
+     -SLKP 20170626 initial implementation
+     -
+     */
+    const    _String Enquote (char open_char, char close_char) const;
 
     /**
      * Returns a copy of the string with all spaces removed
@@ -881,19 +899,6 @@ public:
      ==============================================================
      */
     
-    /**
-     * Finds end of an ID. An ID is made up of alphanumerics, periods, or '_'
-     * \n\n \b Example: \code _String ("AA$AAA").FindEndOfIdent()\endcode
-     * @param start Where to start looking
-     * @param end Where to end looking, -1 is the end of the string
-     * @param wild Wild character to skip as well
-     * @return Position after the end of the identifier. 2 in the example
-     *  Revision history
-     - SLKP 20170614; reviewed while porting from the v2.3 branch
-     TODO : this is only used in ReplicateConstraint, consider moving or deprecating
-     */
-    
-    long    FindEndOfIdent(long start = 0L, long end = kStringEnd, char wild = '*') const;
  
     /**
      * Starting at index [argument 1],
@@ -943,12 +948,14 @@ public:
      * \n\n \b Example: \code _String("\"hyphy\"").StripQuotes("")\endcode
      * @param open_char : the opening quote char
      * @param close_char : the closing quote char 
+     * @return : true if the string was enquoted and the quotes had been stripped
      
      *  Revision history
         - SLKP 20170616   reviewed while porting from the v3 branch
+        - SLKP 20170702   return TRUE if successfully stripped quotes
      
      */
-    void    StripQuotes(char open_char = '"', char close_char = '"');
+    bool    StripQuotes(char open_char = '"', char close_char = '"');
 
     /**
      * Checks if String is valid ident
@@ -1319,6 +1326,7 @@ _String*StringFromConsole           (void);
     SLKP 20170616: moved to CalcNode as static
  -    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, hyPointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil);  
     SLKP 20170616: moved to hy_global
+ -  SLKP 20170706: removed FindEndOfIdent while rewriting the handler for ReplicateConstraint
 
  */
 

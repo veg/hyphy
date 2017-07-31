@@ -1351,7 +1351,7 @@ void _SimpleList::RequestSpace (long slots)
 
 // Compute the union of two sorted lists
 // Each repeat appears exactly once
-void    _SimpleList::Subtract (_SimpleList& l1, _SimpleList& l2)
+void    _SimpleList::Subtract (_SimpleList const& l1, _SimpleList const& l2)
 {
     if (lLength) {
         Clear();

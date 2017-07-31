@@ -50,8 +50,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define     _FORMULA_TYPE 2
 #define     _SIMPLE_FORMULA_TYPE 3
 
-#define     HY_MATRIX_COLUMN_VECTOR     1
-#define     HY_MATRIX_ROW_VECTOR        2
+
 
 //_____________________________________________________________________________________________
 
@@ -140,7 +139,10 @@ public:
     virtual void        Serialize (_String&,_String&);
     // write the matrix definition in HBL
 
-    virtual bool        IsAVector (char = 0);   // is a vector? 0 - either row or column; 1 column; 2 row
+    virtual bool        is_row (void) const;
+    virtual bool        is_column (void) const;
+    virtual bool        is_square (void) const;
+    virtual bool        is_dense (void) const;
 
     _PMathObj           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original
@@ -158,6 +160,9 @@ public:
     // resolve coordiates from two Number arguments
 
     bool        CheckCoordinates ( long&, long&);
+    // validate matrix coordinates
+
+    bool        ValidateFormulaEntries (bool (long, long, _Formula*));
     // validate matrix coordinates
 
     void        MStore (_PMathObj, _PMathObj, _Formula&, long = HY_OP_CODE_NONE);
@@ -349,6 +354,11 @@ public:
     GetHDim                     (void) const{
         return hDim;
     }
+    
+    bool     check_dimension                         (unsigned long rows, unsigned long columns) const {
+        return hDim == rows && vDim == columns;
+    }
+    
     unsigned long        GetVDim                     (void) const {
         return vDim;
     }
@@ -764,12 +774,15 @@ public:
     virtual unsigned long        ObjectClass     (void)      {
         return ASSOCIATIVE_LIST;
     }
-    _List*              GetKeys         (void);
+    _List*              GetKeys         (void) const;
     void                FillInList      (_List&);
     unsigned long       Length          (void) const {
       return avl.countitems();
     }
     _String*            Serialize       (unsigned long) ;
+    unsigned   long     countitems      (void) const {
+        return avl.countitems();
+    }
     
     /**
      * Traverse the dictionary, cast each value into a float and return their sum.

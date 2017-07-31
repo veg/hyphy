@@ -241,8 +241,8 @@ const _String   PopFilePath (void) {
 //____________________________________________________________________________________
 
 
-const _String   GetPathStack (const _String spacer)  {
-  return _String ((_String*) pathNames.Join (&spacer));
+const _String   GetPathStack (const _String& spacer)  {
+  return _String ((_String*) pathNames.Join (spacer));
 }
 
 //____________________________________________________________________________________

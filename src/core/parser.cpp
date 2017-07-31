@@ -159,7 +159,7 @@ void     parameterToCharBuffer (hyFloat value, char* dump, long length, bool jso
 #else
         format = format&_String(digs)&'g';
 #endif
-        snprintf (dump,length,(const char*)format.sData,value);
+        snprintf (dump,length,(const char*)format,value);
     }
 }
 
@@ -297,8 +297,16 @@ long LocateVarByName (_String const& name) {
 }
 
 //__________________________________________________________________________________
-_Variable* FetchVar (long index) {
-    return index>=0?(_Variable *)variablePtrs.GetItemRangeCheck(variableNames.GetXtra(index)):nil;
+_Variable* FetchVar (long index, unsigned long type_check) {
+    if (index >= 0) {
+        _Variable * var = (_Variable *)variablePtrs.GetItemRangeCheck(variableNames.GetXtra(index));
+        if (var) {
+            if (type_check == HY_ANY_OBJECT || (var->ObjectClass() & type_check)) {
+                return var;
+            }
+        }
+    }
+    return nil;
 }
 
 //__________________________________________________________________________________

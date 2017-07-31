@@ -547,7 +547,7 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
     }
 }
 
-BaseRef  _List::Join (BaseRefConst spacer, long startAt, long endAt) {
+BaseRef  _List::Join (_String const & spacer, long startAt, long endAt) const {
     _StringBuffer *joined = new _StringBuffer (256L);
     if (endAt < 0) { 
         endAt = lLength; 
@@ -557,7 +557,7 @@ BaseRef  _List::Join (BaseRefConst spacer, long startAt, long endAt) {
 
     for (unsigned long k = MAX(0L,startAt); k < endAt; k++) {
         if (k) {
-            (*joined) << *(_String const*)spacer;
+            (*joined) << spacer;
         }
         joined->AppendNewInstance((_String*) ((BaseRef*)lData)[k]->toStr());
     }

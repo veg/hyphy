@@ -73,8 +73,9 @@ class _List:public _SimpleList {
           variadic initializer
          
          */
-        template <typename... Args>
-        _List (const Args&... args) {
+        template <typename... T>
+        _List (const BaseRef& first, const T&... args) {
+          AppendObjectsToList(first);
           AppendObjectsToList (args...);
         };
 
@@ -187,13 +188,12 @@ class _List:public _SimpleList {
   
   
         template <typename ARG_TYPE, typename... Args>
-        void AppendObjectsToList (ARG_TYPE first, const Args&... args) {
-          AppendNewInstance ((BaseRef)first);
+        void AppendObjectsToList (BaseRef const& first, const Args&... args) {
+          AppendNewInstance (first);
           AppendObjectsToList (args...);
         }
   
-        template <typename ARG_TYPE, typename... Args>
-        void AppendObjectsToList (ARG_TYPE first) {
+        void AppendObjectsToList (BaseRef const& first) {
           AppendNewInstance ((BaseRef)first);
         }
 
@@ -324,7 +324,7 @@ class _List:public _SimpleList {
         * @return A pointer to the new string 
         * @sa Find()
         */
-        BaseRef Join(BaseRefConst spacer, long startAt = 0, long endAt = -1);
+        BaseRef Join(_String const& spacer, long startAt = 0, long endAt = -1) const;
 
         /**
         * Identical to << operator. Places new value at the end of the list.

@@ -38,6 +38,7 @@
  */
 
 #include      "baseobj.h"
+#include      "alignment.h"
 #include      "defines.h"
 #include      "batchlan.h"
 #include      "likefunc.h"
@@ -47,6 +48,7 @@
 #include      "global_object_lists.h"
 #include      "mersenne_twister.h"
 #include      "global_things.h"
+#include      "hy_string_buffer.h"
 
 using namespace hy_global;
 using namespace hyphy_global_objects;
@@ -55,164 +57,1152 @@ _List       openFileHandlesBackend;
 _AVLListX   openFileHandles     (&openFileHandlesBackend);
 
 //____________________________________________________________________________________
+/* various helper functions */
 
-bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentProgram) {
-    currentProgram.currentCommand++;
+void _CheckExpressionForCorrectness (_Formula& parsed_expression, _String const& exp, _ExecutionList& program, long desired_type = HY_ANY_OBJECT) {
+    _String error_message;
     
-
-    _String  freqStorageID = *(_String*)parameters(0),
-             dataID        = currentProgram.AddNameSpaceToID(*(_String*)parameters(1)), 
-             errMsg        ;
+    long parse_result = parsed_expression.ParseFormula (exp,program.nameSpacePrefix, &error_message);
     
-    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(freqStorageID,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_HARVEST_FREQUENCIES, true, false, &currentProgram);
-     if (!theReceptacle) {
-        return false;
-    }    
-    SetStatusLine           ("Gathering Frequencies");
-
-
-    long       objectType = HY_BL_DATASET|HY_BL_DATASET_FILTER;
-    BaseRefConst    sourceObject = _HYRetrieveBLObjectByName (dataID, objectType,nil,false);
-    
-    long      unit      = ProcessNumericArgument((_String*)parameters(2),currentProgram.nameSpacePrefix),
-              posspec   = ProcessNumericArgument((_String*)parameters(4),currentProgram.nameSpacePrefix),
-              atom      = ProcessNumericArgument((_String*)parameters(3),currentProgram.nameSpacePrefix);
-    
-    _Matrix*            receptacle = nil;
-    
-    hyFloat          cghf = 1.0;
-    checkParameter      (hfCountGap,cghf,1.0, currentProgram.nameSpacePrefix);
-    
-    if (objectType == HY_BL_DATASET) { // harvest directly from a DataSet
-        _String         vSpecs,
-                        hSpecs;
-        
-        if (parameters.lLength>5)   {
-            vSpecs = *(_String*)parameters(5);
-        }
-        if (parameters.lLength>6)   {
-            hSpecs = *(_String*)parameters(6);
-        }
-        
-        _DataSet const * dataset = (_DataSet const*)sourceObject;
-        _SimpleList     hL, vL;
-        dataset->ProcessPartition (hSpecs,hL,false);
-        dataset->ProcessPartition (vSpecs,vL,true);
-        
-        receptacle = dataset->HarvestFrequencies(unit,atom,posspec,hL, vL,cghf>0.5);
-    } else { // harvest from a DataSetFilter
-        if (objectType == HY_BL_DATASET_FILTER) {
-            receptacle = ((_DataSetFilter const*)sourceObject)->HarvestFrequencies(unit,atom,posspec,cghf>0.5);
-        } else {
-            errMsg = _String ("'") & dataID & "' is neither a DataSet nor a DataSetFilter";
-        }
+    if (error_message.nonempty()) {
+        throw (_String ("Failed to parse ") & exp.Enquote () & " with the following error");
     }
-    
-    SetStatusLine           (kEmptyString);
-    
-    if (errMsg.sLength || receptacle == nil) {
-        DeleteObject (receptacle);
-        currentProgram.ReportAnExecutionError (errMsg); 
-        theReceptacle->SetValue (new _MathObject, false);
-        return false;
-    }   
-    theReceptacle->SetValue (receptacle, false);
-    return true;
-    
-    //CheckReceptacleCommandIDAndStore (&freqStorageID,HY_HBL_COMMAND_HARVEST_FREQUENCIES,true, receptacle, false);
+    if (parse_result != HY_FORMULA_EXPRESSION) {
+        throw (_String ("Parsing ") & exp.Enquote () & " did not parse to a simple expression");
+    }
+    if (parsed_expression.IsEmpty ()) {
+        throw (_String ("Parsing ") & exp.Enquote () & " parsed to an empty expression");
+    }
+    if (!(desired_type == HY_ANY_OBJECT || parsed_expression.ObjectClass() == desired_type)) {
+        // TODO SLKP 20170704: ObjectClass will compute the expression with current values which may fail
+        throw (exp.Enquote () & " did not evaluate to a " & FetchObjectNameFromType (desired_type));
+    }
 }
 
 //____________________________________________________________________________________
 
-bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& currentProgram, bool doOptimize) {
-    currentProgram.currentCommand++;
-    // construct the receptacle matrix
+_Variable* _CheckForExistingVariableByType (_String const& name, _ExecutionList& program, long desired_type = HY_ANY_OBJECT) {
+    _String variable_id = AppendContainerName(name,program.nameSpacePrefix);
+    _Variable * target_variable = FetchVar(LocateVarByName (variable_id));
     
-    _String  lfResName  (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
-             lfNameID   (currentProgram.AddNameSpaceToID(*(_String*)parameters(1)));
-             
-    _Variable* result = CheckReceptacleCommandID (&lfResName, doOptimize?HY_HBL_COMMAND_OPTIMIZE:HY_HBL_COMMAND_COVARIANCE_MATRIX,true);
-
-    // Handle string variables passed as likefunc IDs?
-     _String temp = ProcessLiteralArgument(&lfNameID,currentProgram.nameSpacePrefix);
-    if (temp.sLength) {
-        lfNameID = temp;
+    if (!target_variable) {
+        throw (variable_id.Enquote() & " is not an existing variable");
     }
 
-    long       objectType = HY_BL_LIKELIHOOD_FUNCTION|HY_BL_SCFG|HY_BL_BGM;
-    _LikelihoodFunction    *lkf = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (lfNameID, objectType,nil,doOptimize==false);
+    if (!(desired_type == HY_ANY_OBJECT || target_variable->ObjectClass() == desired_type)) {
+        throw (name.Enquote () & " is not of type " & FetchObjectNameFromType (desired_type));
+    }
+
+    return target_variable;
+}
+
+//____________________________________________________________________________________
+
+_PMathObj   _ProcessAnArgumentByType (_String const& expression, long desired_type, _ExecutionList& program) {
     
-    if (lkf == nil) { // will only happen if the object is a custom function 
-        lkf = new _CustomFunction (&lfNameID);
+    _Formula  parsed_expression;
+    _CheckExpressionForCorrectness (parsed_expression, expression, program, desired_type);
+    
+    _PMathObj expression_result = parsed_expression.Compute(0,program.nameSpacePrefix);
+    if (expression_result && (expression_result->ObjectClass() & desired_type)) {
+        expression_result->AddAReference();
+        return expression_result;
     }
     
-    if (!doOptimize) { 
-        // COVARIANCE_MATRIX 
- 
-        SetStatusLine (_String("Finding the cov. matrix/profile CI for ")&lfNameID);
-        _String              cpl = currentProgram.AddNameSpaceToID(covarianceParameterList);
-        _Variable            *  restrictVariable = FetchVar (LocateVarByName(cpl));
-        _SimpleList          *  restrictor       = nil;
+    throw (expression.Enquote () & " did not evaluate to a " & FetchObjectNameFromType (desired_type));
+    return nil;
+}
+
+//____________________________________________________________________________________
+
+const _String _ProcessALiteralArgument (_String const& expression, _ExecutionList& program) {
+    _PMathObj the_string = _ProcessAnArgumentByType (expression, STRING, program);
+    
+    _String result (*((_FString*)the_string)->theString);
+    the_string->RemoveAReference();
+    return result;
+}
+
+//____________________________________________________________________________________
+
+_Variable* _ElementaryCommand::_ValidateStorageVariable (_ExecutionList& program) const {
+    program.currentCommand++;
+    _String  storage_id (program.AddNameSpaceToID(*GetIthParameter(0)));
+    
+    _Variable * receptacle = CheckReceptacleCommandID (&AppendContainerName(storage_id,program.nameSpacePrefix),get_code(), true, false, &program);
+    if (!receptacle) {
+        throw (kEmptyString);
+    }
+    return receptacle;
+}
+
+//____________________________________________________________________________________
+
+bool     _DefaultExceptionHandler (_Variable * receptacle, _String const& error, _ExecutionList& current_program) {
+    if (receptacle) { // if receptacle is nil, then we have already handled the error
+        current_program.ReportAnExecutionError (error);
+        receptacle->SetValue(new _MathObject, false);
+    }
+    return false;
+}
+
+//____________________________________________________________________________________
+
+_PMathObj    _EnsurePresenceOfKey    (_AssociativeList * dict, _String const& key, long desired_type) {
+    _PMathObj value = dict->GetByKey (key, desired_type);
+    if (!value) {
+        throw (key.Enquote() & " was not a key assoictted with a " & FetchObjectNameFromType (desired_type) & "-typed value");
+    }
+    return value;
+}
+
+//____________________________________________________________________________________
+
+hyFloat    _NumericValueFromKey     (_AssociativeList * dict, _String const& key, hyFloat default_value) {
+    _PMathObj value = dict->GetByKey (key, NUMBER);
+    if (!value) {
+        return default_value;
+    }
+    return value->Compute()->Value();
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& currentProgram, bool do_integrate){
+    
+    _Variable * receptacle = nil;
+    
+    try {
+        receptacle = _ValidateStorageVariable (currentProgram);
+        _String     expression = *GetIthParameter(1);
         
-        if (objectType == HY_BL_LIKELIHOOD_FUNCTION || objectType == HY_BL_SCFG){ 
-        // not a BGM
-            if (restrictVariable) { // only consider some variables
-                _SimpleList variableIDs;
-                if (restrictVariable->ObjectClass () == ASSOCIATIVE_LIST)
-                    // a list of variables stored as keys in an associative array
-                {
-                    restrictor = new _SimpleList;
-                    _List*  restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
-                    for (unsigned long iid = 0; iid < restrictedVariables->lLength; iid++) {
-                        _String varID = currentProgram.AddNameSpaceToID(*(_String*)(*restrictedVariables)(iid));
-                        variableIDs << LocateVarByName (varID);
-                    }
-                } else if (restrictVariable->ObjectClass () == STRING)
-                    // a single variable stored in a string
-                {
-                    _String varID = currentProgram.AddNameSpaceToID(*((_FString*)restrictVariable->Compute())->theString);
-                    variableIDs << LocateVarByName (varID);
-                }
-                if (variableIDs.lLength > 0) {
-                    restrictor = new _SimpleList ();
-                    for (unsigned long var_index = 0; var_index < variableIDs.lLength; var_index++) {
-                        long vID = lkf->GetIndependentVars().Find(variableIDs.lData[var_index]);
-                        if (vID >= 0) (*restrictor) << vID;
-                    }
-                    if (restrictor->lLength == 0) {
-                        DeleteObject (restrictor);
-                        restrictor = nil;
-                    }
-               }
-            }   
-            result->SetValue( (_Matrix*)lkf->CovarianceMatrix(restrictor),false);
-            DeleteObject (restrictor);
-        } else {
-        // BGM
-            _Matrix * optRes = (_Matrix*)lkf->CovarianceMatrix(nil);
-             if (optRes) {
-                result->SetValue(optRes,false);
+        _Formula parsed_expression;
+        _CheckExpressionForCorrectness (parsed_expression, expression, currentProgram);
+         _Variable * target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
+        
+        if (!parsed_expression.DependsOnVariable(target_variable->GetAVariable())) {
+            throw (expression & " does not depend on the variable " & target_variable->GetName()->Enquote());
+        }
+         
+        _Formula  * derivative = do_integrate ? nil : parsed_expression.Differentiate (*target_variable->GetName(),false);
+        
+        hyFloat    lb = _ProcessNumericArgumentWithExceptions (*GetIthParameter(3),currentProgram.nameSpacePrefix),
+                   ub = _ProcessNumericArgumentWithExceptions (*GetIthParameter(4),currentProgram.nameSpacePrefix);
+        
+        if (ub<=lb) {
+            throw (_String ('[') & lb & ',' & ub & "] is not a valid interval");
+            return false;
+        }
+        
+        if (!do_integrate) {
+            if (derivative) {
+                receptacle->SetValue (new _Constant (parsed_expression.Newton (*derivative,target_variable, 0.0, lb, ub)),false);
+            } else {
+                receptacle->SetValue (new _Constant (parsed_expression.Brent (target_variable, lb, ub)), false);
             }
-        }
-    } else {
-        // OPTIMIZE
-        if (objectType != HY_BL_NOT_DEFINED) {
-            SetStatusLine (_String("Optimizing ") & _HYHBLTypeToText (objectType) & ' ' &lfNameID);
         } else {
-            SetStatusLine (_String("Optimizing user function ") &lfNameID);        
+            receptacle->SetValue (new _Constant (parsed_expression.Integral (target_variable, lb, ub, ub-lb>1e10)), false);
         }
-        result -> SetValue(lkf->Optimize(),false);
+        
+        if (derivative) {
+            delete derivative;
+        }
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, currentProgram);
     }
+    return true;
+}
 
-    if (objectType == HY_BL_NOT_DEFINED) {
-        DeleteObject (lkf);    // delete the custom function object
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program) {
+    
+    _Variable * receptacle = nil;
+    
+    try {
+        
+        receptacle = _ValidateStorageVariable (current_program);
+        const _String source_name = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
+        
+        long            object_type = HY_BL_DATASET|HY_BL_DATASET_FILTER;
+        BaseRefConst    source_object = _HYRetrieveBLObjectByName (source_name, object_type,nil,false);
+  
+        
+        if (source_object == nil) {
+            throw (source_name.Enquote('\'') & " is not a " & _HYHBLTypeToText(object_type));
+        }
+        
+        _DataSetFilter const * filter_source  = object_type == HY_BL_DATASET_FILTER ? (_DataSetFilter const *)source_object : nil;
+        _DataSet       const * dataset_source = filter_source ? nil : (_DataSet const *)source_object;
+                
+        switch (parameters.lLength) {
+            case 2UL: { // get site->pattern map
+                if (filter_source) {
+                    receptacle->SetValue (new _Matrix (filter_source->duplicateMap),false);
+                } else {
+                    receptacle->SetValue (new _Matrix (dataset_source->DuplicateMap()),false);
+                }
+            }
+            break;
+                
+            case 3UL: { // data parameters, or sequence string
+                _String const argument = _ProcessALiteralArgument (*GetIthParameter(2),current_program);
+                if (argument == _String ("CHARACTERS")) {
+                    _List characters;
+                    if (filter_source) {
+                       unsigned long character_count = filter_source->GetDimension(true),
+                        fd = filter_source->GetUnitLength();
+                        
+                        for (unsigned long idx = 0UL; idx < character_count; idx++) {
+                            characters < new _String (filter_source->ConvertCodeToLetters (filter_source->CorrectCode(idx), fd));
+                        }
+                    } else {
+                        _String alphabet_string = dataset_source->GetTT () ? dataset_source->GetTT ()->GetAlphabetString() : kEmptyString;
+                        for (unsigned long idx = 0UL; idx < alphabet_string.length(); idx++) {
+                            characters < new _String (alphabet_string (idx));
+                        }
+                    }
+                    receptacle->SetValue (new _Matrix (characters), false);
+                } else if (argument == _String ("PARAMETERS")) {
+                    if (filter_source) {
+                        _AssociativeList * parameterInfo = new _AssociativeList;
+                        
+                        (*parameterInfo) < (_associative_list_key_value){"ATOM_SIZE", new _Constant (filter_source->GetUnitLength())}
+                        < (_associative_list_key_value){"EXCLUSIONS", new _FString  (filter_source->GetExclusions())}
+                        < (_associative_list_key_value){"SITES_STRING", new _FString  ((_String*)filter_source->theOriginalOrder.ListToPartitionString())}
+                        < (_associative_list_key_value){"SEQUENCES_STRING", new _FString  ((_String*)filter_source->theNodeMap.ListToPartitionString())};
+                        
+                        receptacle->SetValue (parameterInfo,false);
+                        
+                    } else {
+                        throw (argument.Enquote('\'') & " is only available for DataSetFilter objects");
+                    }
+                } else if (argument == _String ("CONSENSUS")) { // argument == _String("PARAMETERS")
+                    if (filter_source) {
+                        receptacle->SetValue (new _FString (new _String(filter_source->GenerateConsensusString())), false);
+                    } else {
+                        _DataSetFilter temp;
+                        _SimpleList l1, l2;
+                        temp.SetFilter (dataset_source, 1, l1, l2, false);
+                        receptacle->SetValue (new _FString (new _String(temp.GenerateConsensusString())), false);
+                    }
+                } else {
+                    long seqID = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2),current_program.nameSpacePrefix);
+                    
+                    if (filter_source) {
+                        if (seqID>=0 && seqID < filter_source->NumberSpecies()) {
+                            receptacle->SetValue (new _FString (filter_source->GetSequenceCharacters(seqID)),false);
+                        } else  if (seqID >= -4 && seqID <= -1) {
+                            _SimpleList indices, map, counts;
+                            long uniqueSequences = filter_source->FindUniqueSequences(indices, map, counts, -seqID - 1);
+                            _AssociativeList * parameterInfo = new _AssociativeList;
+                            parameterInfo->MStore ("UNIQUE_SEQUENCES",             new _Constant (uniqueSequences), false);
+                            parameterInfo->MStore ("UNIQUE_INDICES",            new _Matrix (indices), false);
+                            parameterInfo->MStore ("SEQUENCE_MAP",          new _Matrix (map), false);
+                            parameterInfo->MStore ("UNIQUE_COUNTS",      new _Matrix  (counts), false);
+                            receptacle->SetValue (parameterInfo,false);
+                        }
+                    } else { // filter_source
+                        if (seqID>=0 && seqID < dataset_source->NoOfSpecies()) {
+                            receptacle->SetValue (new _FString (dataset_source->GetSequenceCharacters(seqID)),false);
+                        }
+                    }
+                } // else numeric cases
+            }
+            break;
+                
+            case 4UL : {
+                if (filter_source) {
+                    long seq  = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2),current_program.nameSpacePrefix),
+                         site = _ProcessNumericArgumentWithExceptions (*GetIthParameter(3),current_program.nameSpacePrefix);
+                    
+                    if (site >=0 && site<filter_source->GetPatternCount()) {
+                        if ( seq>=0 && seq<filter_source->NumberSpecies()) {
+                            _Matrix             * res = new _Matrix (filter_source->GetDimension (true), 1, false, true);
+                            
+                            bool                only_the_index = hy_env::EnvVariableTrue(hy_env::get_data_info_returns_only_the_index);
+                            
+                            _String             character (filter_source->RetrieveState(site, seq));
+                            long                theValue = filter_source->Translate2Frequencies (character, res->theData,  true);
+                            
+                            if (only_the_index) {
+                                receptacle->SetValue (new _Constant (theValue),false);
+                                DeleteObject     (res);
+                            } else {
+                                receptacle->SetValue (res,false);
+                            }
+                        } else {
+                            bool count_gaps = hy_env::EnvVariableTrue(hy_env::harvest_frequencies_gap_options);
+                            long filter_dimension = filter_source->GetDimension (true);
+                            
+                            _Matrix * accumulator = new _Matrix (filter_dimension, 1, false, true),
+                                    * storage     = new _Matrix (filter_dimension, 1, false, true);
+                            
+                            _String *buffer = filter_source->MakeSiteBuffer();
+                            
+                            for (long species_index = filter_source->NumberSpecies()-1; species_index >= 0; species_index --) {
+                                filter_source->RetrieveState(site,species_index,*buffer, false);
+                                filter_source->Translate2Frequencies (*buffer, storage->theData,  count_gaps >= 0.5);
+                                *accumulator += *storage;
+                            }
+                            receptacle -> SetValue (accumulator, false);
+                            BatchDelete(storage, buffer);
+                            
+                        }
+                    } else {
+                        throw (_String ("Site index ") & site & " is invalid: must be in range " & "[0, " & (long)filter_source->GetPatternCount() & "]");
+                    }
+                } else {
+                    throw ("This set of arguments is only supported for DataSetFilter objects");
+                }
+            }
+            break;
+                        
+            case 5UL: {
+                if (filter_source) {
+                    long seq1  = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2),current_program.nameSpacePrefix),
+                         seq2  = _ProcessNumericArgumentWithExceptions (*GetIthParameter(3),current_program.nameSpacePrefix);
+                    
+                    if ( seq1>=0 && seq2 >=0 && seq1< filter_source->NumberSpecies() && seq2 <filter_source->NumberSpecies()) {
+                        _String const *  res_flag = GetIthParameter(4);
+                        _Matrix * res;
+                        
+                        if (hy_env::kPairwiseCountAmbiguitiesAverage == *res_flag) {
+                            res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingAverageFrequencyAware);
+                        } else if (hy_env::kPairwiseCountAmbiguitiesResolve == *res_flag) {
+                            res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingResolve);
+                        } else if (hy_env::kPairwiseCountAmbiguitiesSkip == *res_flag) {
+                            res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingSkip);
+                        } else {
+                            res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingResolveFrequencyAware);
+                        }
+                        
+                        receptacle->SetValue (res,false);
+                    } else {
+                        throw (_String (seq1).Enquote() & "," & _String (seq2).Enquote() & " is an invalid sequence pair specification.");
+                    }
+                } else {
+                    throw ("This set of options is not supported for DataSet arguments");
+                }
+            }
+            break;
+        // switch
+        }
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
     }
-    
-    
-    SetStatusLine ("Finished with the optimization");
 
     return true;
 }
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleGetInformation (_ExecutionList& current_program) {
+    _Variable * receptacle = nil;
+    
+    try {
+        
+        _Matrix*   result     = nil;
+        receptacle = _ValidateStorageVariable (current_program);
+        const _String source_name = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
+        
+        long            object_type = HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER | HY_BL_MODEL  ,
+                        object_index;
+        BaseRefConst    source_object = _HYRetrieveBLObjectByName (source_name, object_type,&object_index,false);
+        
+        
+        if (source_object) {
+            switch (object_type) {
+                case HY_BL_LIKELIHOOD_FUNCTION: {
+                    // list of ctagory variables
+                    _LikelihoodFunction const * lf = (_LikelihoodFunction const *)source_object;
+                    
+                    _List        catVars;
+                    for (unsigned long k=0UL; k<lf->GetCategoryVars().countitems(); k++) {
+                        catVars << lf->GetIthCategoryVar (k)->GetName();
+                    }
+                    result = new _Matrix (catVars);
+                }
+                break;
+                case HY_BL_DATASET_FILTER : {
+                    result = ((_DataSetFilter const *) source_object)->GetFilterCharacters();
+                }
+                break;
+                case HY_BL_MODEL: {
+                    _SimpleList modelParms;
+                    _AVLList    modelParmsA (&modelParms);
+                    
+                     if (IsModelOfExplicitForm (object_index)) {
+                        ((_Formula const*)source_object)->ScanFForVariables(modelParmsA,false);
+                    } else {
+                        ((_Variable const*)source_object)->ScanForVariables(modelParmsA,false);
+                        
+                    }
+                    _List       modelPNames;
+                    
+                    for (unsigned long vi=0; vi<modelParms.lLength; vi++) {
+                        modelPNames << LocateVar(modelParms.lData[vi])->GetName();
+                    }
+                    
+                    result = new _Matrix (modelPNames);
+                }
+                break;
+            }
+        } else {
+            _Variable* source_object = FetchVar(LocateVarByName (source_name));
+            
+            if (source_object->ObjectClass()==STRING) {
+                source_object    = FetchVar (LocateVarByName (_String((_String*)source_object->Compute()->toStr())));
+            }
+            if (source_object) {
+                if (source_object->IsCategory()) {
+                    _CategoryVariable * thisCV = (_CategoryVariable*)source_object;
+                    thisCV->Refresh();
+                    
+                    _Matrix *values  = thisCV->GetValues(),
+                    *weights = thisCV->GetWeights(!thisCV->IsUncorrelated());
+                    
+                    long size = values->GetHDim()*values->GetVDim();
+                    result = new _Matrix (2,size,false,true);
+                    
+                    for (unsigned long k = 0UL; k< size ; k++) {
+                        result->theData[k]   = values->theData[k];
+                        result->theData[size+k] = weights->theData[k];
+                    }
+                } else {
+                    if (source_object->ObjectClass()==TREE_NODE) {
+                        _CalcNode* theNode = (_CalcNode*)source_object;
+                        if (theNode->GetModelIndex() != HY_NO_MODEL) {
+                            result = new _Matrix;
+                            theNode->RecomputeMatrix (0,1,result);
+                        }
+                    } else {
+                        if (source_object->ObjectClass() == TOPOLOGY || source_object->ObjectClass() == TREE) {
+                            
+                            _List* map = ((_TreeTopology*)source_object)->MapNodesToModels ();
+                            _AssociativeList* return_this = new _AssociativeList();
+                            
+                            for (unsigned long i = 0; i < map->lLength; i++) {
+                                _List * nodeInfo = (_List*) map->GetItem(i);
+                                return_this->MStore(*(_String*)nodeInfo->GetItem(0), *(_String*)nodeInfo->GetItem (1));
+                            }
+                            result = (_Matrix*) return_this;
+                            DeleteObject (map);
+                        }
+                    }
+                    
+                    if ((!result)&& source_object->ObjectClass()==NUMBER) {
+                        result = new _Matrix (1,3,false,true);
+                        result->theData[0]=source_object->Compute()->Value();
+                        result->theData[1]=source_object->GetLowerBound();
+                        result->theData[2]=source_object->GetUpperBound();
+                    }
+                }
+            } else {
+                // TODO : SLKP 20170702, check that this still works, eh?
+                _String reg_exp = GetStringFromFormula (&source_name,current_program.nameSpacePrefix);
+                if (reg_exp != *source_name) {
+                    int errNo = 0;
+                    regex_t* regex = PrepRegExp (reg_exp, errNo, true);
+                    if (regex) {
+                        _List       matches;
+                        
+                        for (AVLListXIteratorKeyValue variable_record : AVLListXIterator (&variableNames)) {
+                            _String* vName = (_String*)variableNames.Retrieve (variable_record.get_index());
+                            if (vName->RegExpMatch (regex).lLength) {
+                                matches << vName;
+                            }
+                        }
+                        if (matches.lLength) {
+                            result = new _Matrix (matches);
+                        }
+                        _String::FlushRegExp (regex);
+                    } else {
+                        HandleApplicationError (_String::GetRegExpError (errNo));
+                    }
+                }
+            }
+        }
+        if (!result) {
+            result = new _Matrix (0,0,false,false);
+        }
+        receptacle->SetValue(result, false);
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
+    }
+    return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& current_program) {
+    
+    static      _Trie        kRunOptions (
+                                            _String ("COMPLETE"), CategoryConstructionOptions::kMatrixConditionals,
+                                            _String ("WEIGHTS"), CategoryConstructionOptions::kMatrixWeights,
+                                            _String ("SITE_LOG_LIKELIHOODS"), CategoryConstructionOptions::kSiteProbabilities,
+                                            _String ("CLASSES"), CategoryConstructionOptions::kMatrixClasses
+                                          );
+
+    
+    _Variable * receptacle = nil;
+    
+    try {
+        
+        _Matrix*   result     = nil;
+        receptacle = _ValidateStorageVariable (current_program);
+        const _String source_name = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
+        long            object_type = HY_BL_LIKELIHOOD_FUNCTION  | HY_BL_TREE  ,
+                        object_index;
+        BaseRef         source_object = _HYRetrieveBLObjectByNameMutable (source_name, object_type,&object_index,false);
+        
+        if (!source_object) {
+            throw (source_name.Enquote('\'') & " is not a " & _HYHBLTypeToText(object_type));
+        }
+        
+        switch (object_type) {
+            case HY_BL_LIKELIHOOD_FUNCTION: {
+                _Matrix * partition_list  = nil;
+                if (parameters.countitems () > 3) { // have a restricting partition
+                    partition_list = (_Matrix*)_ProcessAnArgumentByType(GetIthParameter(3), MATRIX, current_program);
+                }
+                _SimpleList   included_partitions;
+                _LikelihoodFunction * like_func = (_LikelihoodFunction * )source_object;
+                
+                like_func->ProcessPartitionList(included_partitions, partition_list);
+                DeleteObject (partition_list);
+                
+                CategoryConstructionOptions::CategoryConstructionOptions run_mode = CategoryConstructionOptions::kMatrixConditionals;
+ 
+                if (parameters.countitems () > 2) {
+                    long run_mode_long = kRunOptions.GetValueFromString(*GetIthParameter(2));
+                    if (run_mode_long != kNotFound) {
+                        run_mode = (CategoryConstructionOptions::CategoryConstructionOptions)run_mode_long;
+                    }
+                }
+            
+                receptacle->SetValue(like_func->ConstructCategoryMatrix(included_partitions, run_mode ,true, receptacle->GetName()), false);
+            }
+            break;
+            case HY_BL_TREE: {
+                _TheTree  *source_tree       = (_TheTree*)source_object;
+                
+                long    which_partition   = 0L,
+                        linked_likelihood_id = source_tree->IsLinkedToALF (which_partition);
+                
+                if (linked_likelihood_id >= 0) {
+                    _LikelihoodFunction * linked_lf            = (_LikelihoodFunction*) likeFuncList (linked_likelihood_id);
+                    const _DataSetFilter      * filter             = linked_lf->GetIthFilter (which_partition);
+                    linked_lf->PrepareToCompute();
+                    linked_lf->Compute         ();
+                    long patterns                         = filter->GetPatternCount();
+                    
+                    _Matrix             *conditional_matrix     = new _Matrix   (2*patterns*(source_tree->GetLeafCount()
+                                                                                 + source_tree->GetINodeCount()) * source_tree->categoryCount,
+                                                                     source_tree->GetCodeBase(),
+                                                                     false, true);
+                    
+                    _List               leaf_names,
+                                        internal_names;
+                    
+                    _TreeIterator ti (source_tree, _HY_TREE_TRAVERSAL_POSTORDER);
+                    
+                    while (_CalcNode * iterator = ti.Next()) {
+                        if (ti.IsAtLeaf()) {
+                            leaf_names.AppendNewInstance (new _String(iterator->ContextFreeName()));
+                        } else {
+                            internal_names.AppendNewInstance (new _String(iterator->ContextFreeName()));
+                        }
+                    }
+                    
+                    leaf_names << internal_names;
+                    
+                    for (unsigned long site = 0UL; site < patterns; site ++) {
+                        source_tree->RecoverNodeSupportStates (filter,site,*conditional_matrix);
+                    }
+                    
+                    linked_lf->DoneComputing   ();
+                    receptacle->SetValue (
+                        &(*(new _AssociativeList)
+                          < _associative_list_key_value ({"Nodes", new _Matrix (leaf_names)})
+                          < _associative_list_key_value ({"Values", conditional_matrix})),
+                        false
+                    );
+                }
+            }
+        }
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
+    }
+    
+    return true;
+    
+}
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_program) {
+    _Variable * receptacle = nil;
+    
+    static    const   _String   kCharacterMap           ("SEQ_ALIGN_CHARACTER_MAP"),
+                                kScoreMatrix            ("SEQ_ALIGN_SCORE_MATRIX"),
+                                kGapChar                ("SEQ_ALIGN_GAP_CHARACTER"),
+                                kGapOpen                ("SEQ_ALIGN_GAP_OPEN"),
+                                kGapExtend              ("SEQ_ALIGN_GAP_EXTEND"),
+                                kGapOpen2               ("SEQ_ALIGN_GAP_OPEN2"),
+                                kGapExtend2             ("SEQ_ALIGN_GAP_EXTEND2"),
+                                kFrameShift             ("SEQ_ALIGN_FRAMESHIFT"),
+                                kGapLocal               ("SEQ_ALIGN_NO_TP"),
+                                kAffineGaps             ("SEQ_ALIGN_AFFINE"),
+                                kCodonAlign             ("SEQ_ALIGN_CODON_ALIGN"),
+                                kLinearSpace            ("SEQ_ALIGN_LINEAR_SPACE"),
+                                kScoreMatrixCodon3x1    ("SEQ_ALIGN_PARTIAL_3x1_SCORES"),
+                                kScoreMatrixCodon3x2    ("SEQ_ALIGN_PARTIAL_3x2_SCORES"),
+                                kScoreMatrixCodon3x4    ("SEQ_ALIGN_PARTIAL_3x4_SCORES"),
+                                kScoreMatrixCodon3x5    ("SEQ_ALIGN_PARTIAL_3x5_SCORES"),
+                                kLocalAlignment         ("SEQ_ALIGN_LOCAL_ALIGNMENT");
+
+
+    
+    try {
+        _Matrix   * result     = nil;
+        receptacle = _ValidateStorageVariable (current_program);
+        _Matrix   * input_seqs = (_Matrix   *)_ProcessAnArgumentByType(*GetIthParameter(1), MATRIX, current_program);
+        
+        unsigned long        input_seq_count = input_seqs->GetSize ();
+        
+        auto    string_validator = [] (long row, long col, _Formula* cell) -> bool {
+            if (cell) {
+                if (cell->ObjectClass() != STRING) {
+                    throw (_String(" Matrix entry (") & row & "," & col & ") did not evaluate to a string");
+                }
+                return true;
+            }
+            throw (_String("Empty matrix entry (") & row & "," & col & ")");
+            return false;
+        };
+
+        if (! (input_seqs->IsAStringMatrix() && (input_seqs->is_row() || input_seqs->is_column()) && input_seq_count >= 2 && input_seqs->ValidateFormulaEntries (string_validator))) {
+            throw (GetIthParameter(1)->Enquote() & " did not evaluate to a dense string vector with ≥2 entries");
+        }
+        
+        
+        _AssociativeList* alignment_options  = (_AssociativeList   *)_ProcessAnArgumentByType(*GetIthParameter(2), ASSOCIATIVE_LIST, current_program);
+        _FString        * char_vector        = (_FString*)          _EnsurePresenceOfKey (alignment_options, kCharacterMap, STRING);
+        
+        unsigned          long     char_count = 0UL;
+        long              character_map_to_integers [256] = {-1L};
+        
+        for (unsigned long cc = 0UL; cc < char_vector->theString->length(); cc++) {
+            unsigned char this_char = char_vector->theString->get_uchar(cc);
+            if (character_map_to_integers [this_char]>=0) {
+                throw (_String ("Duplicate character ") & _String ((char)this_char).Enquote('\'') & " in " & kCharacterMap);
+            } else {
+                character_map_to_integers [this_char] = cc;
+                char_count ++;
+            }
+        }
+        if (char_count == 0) {
+            throw ("Null alphabet supplied");
+        }
+        
+        bool        do_local       = _NumericValueFromKey (alignment_options,kGapLocal,0.0) > 0.5,
+                    do_affine      = _NumericValueFromKey (alignment_options,kAffineGaps,0.0) > 0.5,
+                    do_linear      = _NumericValueFromKey (alignment_options,kLinearSpace,1.0) > 0.5,
+                    do_codon       = _NumericValueFromKey (alignment_options,kCodonAlign,0.0) > 0.5,
+                    do_full_local  = do_codon && _NumericValueFromKey (alignment_options,kLocalAlignment,0.0) > 0.5;
+        
+        
+        long        codon_count        = char_count * char_count * char_count,
+                    expected_dimension = do_codon ? codon_count + 1UL : char_count + 1UL;
+    
+        _Matrix *   score_matrix = (_Matrix*)_EnsurePresenceOfKey(alignment_options, kScoreMatrix, MATRIX);
+        
+        if (!score_matrix->check_dimension (expected_dimension, expected_dimension)) {
+            throw (_String ("The dimension of the scoring matrix ") & kScoreMatrix.Enquote('(',')') & " was not the expected dimension: " & expected_dimension & 'x' & expected_dimension);
+        }
+        
+        score_matrix = (_Matrix*)score_matrix->ComputeNumeric();
+        score_matrix->CheckIfSparseEnough(true); // force to not be sparse
+        
+        _Matrix     *codon3x5 = nil,
+                    *codon3x4 = nil,
+                    *codon3x2 = nil,
+                    *codon3x1 = nil;
+        
+        if (do_codon) {
+            
+             unsigned long expected_columns [4] = {codon_count * 10UL,codon_count * 4UL,char_count * char_count * 3UL,char_count * 3UL};
+            _String const * keys [4]            = {&kScoreMatrixCodon3x5, &kScoreMatrixCodon3x4, &kScoreMatrixCodon3x2, &kScoreMatrixCodon3x1};
+            _Matrix **      targets [4]         = {&codon3x5, &codon3x4, &codon3x2, &codon3x1};
+            
+            for (int i = 0; i < 4; i++) {
+                (*targets[i]) = (_Matrix*)_EnsurePresenceOfKey(alignment_options, *keys[i], MATRIX);
+                if (!(*targets[i])->check_dimension (expected_dimension, expected_columns[i])) {
+                    throw (_String ("The dimension of the scoring matrix ") & keys[i]->Enquote('(',')') & " was not the expected dimension: " & expected_dimension & 'x' & (long)expected_columns[i]);
+                }
+                (*targets[i]) = (_Matrix*)(*targets[i])->ComputeNumeric();
+                (*targets[i]) -> CheckIfSparseEnough(true);
+            }
+            
+            for (unsigned long i = 0UL; i < 256UL; i++) {
+            // this maps all undefined characters to '?' essentially
+                if (character_map_to_integers[i] < 0) {
+                    character_map_to_integers[i] = -codon_count - 1;
+                }
+            }
+        }
+        
+        char        gap_character = '-';
+        if (_FString    *gap_c = (_FString*)alignment_options->GetByKey (kGapChar, STRING)) {
+            if (gap_c->theString->length () != 1UL) {
+                throw (_String ("Invalid gap character specification ") &  *gap_c->theString);
+            }
+            gap_character = gap_c->theString->char_at(0UL);
+        }
+        
+        hyFloat  gap_open       = _NumericValueFromKey (alignment_options, kGapOpen,15.),
+                 gap_open2      = _NumericValueFromKey (alignment_options, kGapOpen2,gap_open),
+                 gap_extend     = _NumericValueFromKey (alignment_options, kGapExtend,1.),
+                 gap_extend2    = _NumericValueFromKey (alignment_options, kGapExtend2,gap_extend),
+                 gap_frameshift = _NumericValueFromKey (alignment_options, kFrameShift,50.);
+        
+        _StringBuffer settings_report (256L);
+        
+        settings_report << "\n\tGap character               : " << gap_character
+                        << "\n\tGap open cost [reference]   : " << gap_open
+                        << "\n\tGap open cost [query]       : " << gap_open2
+                        << "\n\tGap extend cost [reference] : " << gap_extend
+                        << "\n\tGap extend cost [query]     : " << gap_extend2
+                        << "\n\tCodon frameshift cost       : " << gap_frameshift
+                        << "\n\tIgnore terminal gaps        : " << (do_local?"Yes":"No")
+                        << "\n\tPerform local alignment     : " << (do_full_local?"Yes":"No");
+    
+        if (do_codon) {
+            settings_report << "\n\tUse codon alignment with frameshift routines";
+            do_linear = false;
+        }
+        
+        _AssociativeList *aligned_strings = new _AssociativeList;
+        _String * reference_sequence = ((_FString*)input_seqs->GetFormula(0,0)->Compute())->theString;
+        
+        
+        for (unsigned long index2 = 1UL; index2 < input_seq_count; index2++) {
+            _String * sequence2 = ((_FString*)input_seqs->GetFormula(0,index2)->Compute())->theString;
+            _AssociativeList * pairwise_alignment = new _AssociativeList;
+            hyFloat    score = 0.0;
+            if (do_linear) {
+                unsigned long   size_allocation = sequence2->length()+1UL;
+                
+                _Matrix         *buffers[6];
+                
+                ArrayForEach(buffers, 6, [=] (_Matrix* m, unsigned long) -> _Matrix* {
+                    return new _Matrix (size_allocation,1,false,true);
+                });
+
+                char          *alignment_route = new char[2*(size_allocation)] {0};
+                
+                _SimpleList ops (reference_sequence->length()+2UL,-2,0);
+                ops.lData[reference_sequence->length()+1] = sequence2->length();
+                ops.lData[0]               = -1;
+                
+                score = LinearSpaceAlign(reference_sequence,sequence2,character_map_to_integers,score_matrix,
+                                         gap_open,gap_extend,gap_open2,gap_extend2,
+                                         do_local,do_affine,ops,score,0,
+                                         reference_sequence->length(),0,sequence2->length(),buffers,0,alignment_route);
+                
+                delete[]    alignment_route;
+                
+                _StringBuffer     *result1 = new _StringBuffer (reference_sequence->length() + 1UL),
+                                  *result2 = new _StringBuffer (size_allocation);
+                
+                long             last_column     = ops.lData[ops.lLength-1];
+                
+                for (long position = (long)reference_sequence->length() - 1L; position>=0; position--) {
+                    long current_column     = ops.lData[position+1];
+                    
+                    if (current_column<0) {
+                        if (current_column == -2 /*|| (current_column == -3 && last_column == string2->sLength)*/) {
+                            current_column = last_column;
+                        } else if (current_column == -3) {
+                            // find the next matched char or a -1
+                            long    p   = position, s2p;
+                            while ((ops.lData[p+1]) < -1) {
+                                p--;
+                            }
+                            
+                            s2p = ops.lData[p+1];
+                            
+                            for (long j = last_column-1; j>s2p;) {
+                                (*result1) << gap_character;
+                                (*result2) << sequence2->char_at(j--);
+                            }
+                            
+                            last_column     = s2p+1;
+                            
+                            for (; position>p; position--) {
+                                (*result2) << gap_character;
+                                (*result1) << reference_sequence->char_at(position);
+                            }
+                            position ++;
+                            continue;
+                        } else {
+                            for (last_column--; last_column >=0L; last_column--) {
+                                (*result1) << gap_character;
+                                (*result2) << sequence2->char_at (last_column);
+                            }
+                            while (position>=0) {
+                                (*result1) << reference_sequence->char_at (position--);
+                                (*result2) << gap_character;
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (current_column == last_column) { // insert in sequence 2
+                        (*result1) << reference_sequence->char_at (position);
+                        (*result2) << gap_character;
+                    } else {
+                        last_column--;
+                        
+                        for (; last_column > current_column; last_column--) { // insert in column 1
+                            (*result2) << sequence2->char_at (last_column);
+                            (*result1) << gap_character;
+                        }
+                        (*result1) << reference_sequence->char_at (position);
+                        (*result2) << sequence2->char_at (current_column);
+                    }
+                    //printf ("%s\n%s\n", result1->sData, result2->sData);
+                }
+                
+                for (last_column--; last_column >=0; last_column--) {
+                    (*result1) << gap_character;
+                    (*result2) << sequence2->char_at(last_column);
+                }
+                
+                result1->Flip ();
+                result2->Flip ();
+                pairwise_alignment->MStore ("1", new _FString(result1), false);
+                pairwise_alignment->MStore ("2", new _FString(result2), false);
+            } else { // not linear
+                char * str1r = nil,
+                     * str2r = nil;
+                
+                score = AlignStrings (reference_sequence->get_str(),
+                                      sequence2->get_str(),
+                                      str1r,
+                                      str2r,
+                                      character_map_to_integers,
+                                      score_matrix->fastIndex(),
+                                      score_matrix->GetVDim(),
+                                      gap_character,
+                                      gap_open,
+                                      gap_extend,
+                                      gap_open2,
+                                      gap_extend2,
+                                      gap_frameshift,
+                                      do_local,
+                                      do_affine,
+                                      do_codon,
+                                      char_count,
+                                      do_codon ? codon3x5->fastIndex() : nil,
+                                      do_codon ? codon3x4->fastIndex() : nil,
+                                      do_codon ? codon3x2->fastIndex() : nil,
+                                      do_codon ? codon3x1->fastIndex() : nil,
+                                      do_full_local);
+                
+                if ( str1r && str2r ) {
+                    pairwise_alignment->MStore ("1", new _FString (new _String( str1r )), false);
+                    pairwise_alignment->MStore ("2", new _FString (new _String( str2r )), false);
+                    delete [] str1r;
+                    delete [] str2r;
+                } else {
+                    throw ( "Internal Error in AlignStrings" );
+                }
+                pairwise_alignment->MStore ("0", new _Constant (score), false);
+                aligned_strings->MStore (_String((long)index2-1L), pairwise_alignment, false);
+            }
+        }
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
+    }
+    return true;
+}
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& current_program) {
+    
+    _Variable * receptacle = nil;
+    
+    try {
+        _Matrix   * result     = nil;
+        
+        receptacle = _ValidateStorageVariable (current_program);
+
+        long       object_type = HY_BL_DATASET|HY_BL_DATASET_FILTER;
+        BaseRefConst    source_object = _HYRetrieveBLObjectByName (AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix), object_type,nil,false);
+        
+        long      unit      = _ProcessNumericArgumentWithExceptions(*GetIthParameter(2),current_program.nameSpacePrefix),
+                  atom      = _ProcessNumericArgumentWithExceptions(*GetIthParameter(3),current_program.nameSpacePrefix);
+        
+        bool      position_specific = _ProcessNumericArgumentWithExceptions(*GetIthParameter(3),current_program.nameSpacePrefix) > 0.5,
+                  include_gaps       = hy_env::EnvVariableTrue(hy_env::harvest_frequencies_gap_options);
+        
+        switch (object_type) {
+            case HY_BL_DATASET: {
+                _String vertical_partition      (parameters.countitems () > 5 ? *GetIthParameter(5) : kEmptyString),
+                        horizontal_partition    (parameters.countitems () > 6 ? *GetIthParameter(6) : kEmptyString);
+                
+                _DataSet const * dataset = (_DataSet const*)source_object;
+                _SimpleList     processed_sequence_partition, processed_site_partition;
+                dataset->ProcessPartition (horizontal_partition,processed_sequence_partition,false);
+                dataset->ProcessPartition (vertical_partition,processed_site_partition,true);
+
+                receptacle->SetValue (dataset->HarvestFrequencies(unit,atom,position_specific,processed_sequence_partition, processed_site_partition,include_gaps), false);
+            }
+            break;
+            case HY_BL_DATASET_FILTER: {
+                receptacle->SetValue (((_DataSetFilter const*)source_object)->HarvestFrequencies(unit,atom,position_specific,include_gaps), false);
+                break;
+            }
+        }
+        
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
+    }
+    
+    return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& current_program, bool do_optimize) {
+    _Variable * receptacle = nil;
+    
+    try {
+        receptacle = _ValidateStorageVariable (current_program);
+        
+        long       object_type = HY_BL_LIKELIHOOD_FUNCTION|HY_BL_SCFG|HY_BL_BGM|HY_BL_HBL_FUNCTION;
+        _String    optimize_me = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
+        
+        _LikelihoodFunction*   source_object = (_LikelihoodFunction*)_HYRetrieveBLObjectByNameMutable (AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix), object_type,nil,do_optimize==false);
+        
+        if (!source_object) { // Custom function (expression based)
+            source_object = new _CustomFunction (optimize_me, current_program.nameSpacePrefix);
+        }
+        
+        if (do_optimize) {
+            receptacle -> SetValue(source_object->Optimize(),false);
+        } else {
+            _PMathObj     covariance_parameters = hy_env::EnvVariableGet(hy_env::covariance_parameter, ASSOCIATIVE_LIST|STRING);
+            _SimpleList   *restrictor = nil;
+            switch (object_type) {
+                case HY_BL_LIKELIHOOD_FUNCTION:
+                case HY_BL_SCFG: {
+                    if (covariance_parameters) { // only consider some variables
+                        _SimpleList variable_ids;
+                        if (covariance_parameters->ObjectClass () == ASSOCIATIVE_LIST) {
+                            // a list of variables stored as keys in an associative array
+                            restrictor = new _SimpleList;
+                            _List*  restricted_variables = ((_AssociativeList*)covariance_parameters)->GetKeys();
+                            for (unsigned long iid = 0; iid < restricted_variables->lLength; iid++) {
+                                variable_ids << LocateVarByName (current_program.AddNameSpaceToID(*(_String*)(*restricted_variables)(iid)));
+                            }
+                            DeleteObject (restricted_variables);
+                        } else { // STRING
+                            variable_ids << LocateVarByName (current_program.AddNameSpaceToID(*((_FString*)covariance_parameters)->theString));
+                        }
+                        if (!variable_ids.empty()) {
+                            restrictor = new _SimpleList ();
+
+                            for (unsigned long var_index = 0UL; var_index < variable_ids.lLength; var_index++) {
+                                // TODO SLKP 20170706: this is a very inefficient linear search over and over again (in a large array)
+                                long vID = source_object->GetIndependentVars().Find(variable_ids (var_index));
+                                if (vID >= 0) (*restrictor) << vID;
+                            }
+                            
+                            if (restrictor->empty() == 0) {
+                                DeleteAndZeroObject (restrictor);
+                            }
+                        }
+                    }
+                }
+                break;
+                case HY_BL_BGM: {
+                    _Matrix * bgm_cov = (_Matrix*)source_object->CovarianceMatrix(nil);
+                    if (bgm_cov) {
+                        receptacle->SetValue(bgm_cov,false);
+                    } // TODO SLKP 20170706: handle the case when null is returned (why would that happen?); warn the user.
+                }
+                break;
+            }
+            
+            receptacle->SetValue(source_object->CovarianceMatrix(restrictor),false);
+            DeleteObject (restrictor);
+        }
+        
+        if (object_type == HY_BL_NOT_DEFINED) {
+            DeleteObject (source_object);    // delete the custom function object
+        }
+        
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
+    }
+    
+    return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current_program) {
+    // TODO SLKP 20170706 this needs to be reimplemented; legacy code is ugly and buggy
+    _Variable * receptacle = nil;
+    
+    try {
+        
+        current_program.currentCommand++;
+        _String  const  constraint_pattern = _ProcessALiteralArgument (*GetIthParameter(0), current_program);
+ /*
+  _String *       replicateSource,
+  thisS,
+  prStr = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix);
+  
+  replicateSource = &prStr;
+  
+  _List           parts,
+  theConstraints;
+  
+  _SimpleList     thisIndex,
+  thisArgs;
+  
+  long            ind1    =   replicateSource->Find("this"),
+  ind2,
+  ind3,
+  ind4;
+  
+  if (ind1<0) {
+  HandleApplicationError (*(_String*)parameters(0)&" has no 'this' references in call to ReplicateConstraint!");
+  return ;
+  }
+  
+  _SimpleList thisHits (parameters.lLength-1,0,0);
+  
+  while (ind1>=0) { // references to 'this' still exist
+  ind2 = ind1+4; // look forward to the number of 'this'
+  while ('0'<=replicateSource->sData[ind2] && replicateSource->sData[ind2]<='9') {
+  ind2++;
+  }
+  
+  ind3  = replicateSource->Cut(ind1+4,ind2-1).toNum();
+  ind2  = replicateSource->FindEndOfIdent (ind1,-1,'?');
+  // now ind1-ind2 contains a reference with this...
+  _String newS  (*replicateSource,ind1,ind2);
+  thisS = _String("this")&_String(ind3);
+  if ((ind4 = ((_String*)parameters(ind3))->Find('.'))>=0) { // branch argument
+  newS = newS.Replace (thisS,((_String*)parameters(ind3))->Cut(0,ind4-1), true);
+  } else { // non-branch argument
+  newS = newS.Replace (thisS,*((_String*)parameters(ind3)), true);
+  }
+  parts&& &newS;
+  ind3--;
+  thisIndex<<ind3; // sequence of references to this
+  
+  if (ind3<0 || ind3 >= thisHits.lLength) {
+  HandleApplicationError (_String("Invalid reference to ") & thisS & " in the constraint specification");
+  return ;
+  }
+  thisHits.lData[ind3] = 1;
+  
+  if (ind2>=replicateSource->sLength-1) {
+  break;
+  }
+  ind1 = replicateSource->Find("this",ind2+1,-1);
+  if (ind1==-1) {
+  newS = replicateSource->Cut(ind2+1,-1);
+  } else {
+  newS = replicateSource->Cut(ind2+1,ind1-1);
+  }
+  parts&& &newS;
+  thisIndex<<-1;
+  }
+  // now that the string is conveniently partritioned into blocks
+  // we will check the arguments and store references
+  
+  for (ind1 = 1; ind1<parameters.lLength; ind1++) {
+  if (thisHits.lData[ind1-1] == 0) {
+  HandleApplicationError (_String("Unused ") & ind1 & "-th reference variable: " & *(_String*)parameters(ind1));
+  return ;
+  }
+  
+  _String namespaced = chain.AddNameSpaceToID(*(_String*)parameters(ind1));
+  ind2 = LocateVarByName (namespaced);
+  if (ind2<0) {
+  HandleApplicationError(namespaced & " is undefined in call to ReplicateConstraint.");
+  return  ;
+  }
+  
+  _Variable* thisNode = FetchVar (ind2);
+  if (thisNode->ObjectClass()==TREE_NODE) {
+  thisArgs<< (long)((_CalcNode*)thisNode)->LocateMeInTree();
+  } else if (thisNode->ObjectClass()==TREE) {
+  thisArgs<< (long)&((_TheTree*)thisNode)->GetRoot();
+  } else {
+  HandleApplicationError (*(_String*)parameters(ind1) & " is neither a tree nor a tree node in call to ReplicateConstraint.");
+  return ;
+  }
+  }
+  
+  // now with this list ready we can recurse down the tree and produce the contsraints
+  if (RecurseDownTheTree(thisArgs, parameters, theConstraints, parts, thisIndex)) {
+  if (theConstraints.lLength) {
+  ReportWarning  (_String("\nReplicateConstraint generated the following contsraints:"));
+  hyFloat      doDeferSet;
+  checkParameter (deferConstrainAssignment,doDeferSet,0.0);
+  bool            applyNow = CheckEqual(doDeferSet,0.0);
+  _String         *constraintAccumulator = new _String(128L,true);
+  
+  if (applyNow) {
+  deferSetFormula = new _SimpleList;
+  }
+  
+  for (ind1 = 0; ind1 < theConstraints.lLength; ind1++) {
+  replicateSource = (_String*)(theConstraints(ind1)->toStr());
+  if (applyNow) {
+  _Formula rhs, lhs;
+  _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+  ind2 = Parse (&rhs,*replicateSource,fpc,&lhs);
+  ExecuteFormula(&rhs,&lhs,ind2,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
+  }
+  (*constraintAccumulator) << replicateSource;
+  (*constraintAccumulator) << ';';
+  (*constraintAccumulator) << '\n';
+  //ReportWarning (*replicateSource);
+  DeleteObject (replicateSource);
+  }
+  constraintAccumulator->Finalize();
+  ReportWarning (*constraintAccumulator);
+  CheckReceptacleAndStore (&lastSetOfConstraints,"ReplicateConstraint",false,new _FString(constraintAccumulator),false);
+  if (applyNow) {
+  FinishDeferredSF();
+  }
+  }
+  }
+*/
+  
+        // first find the pattern
+  
+  
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
+    }
+  
+    return true;
+}
+
+//____________________________________________________________________________________
+//____________________________________________________________________________________
+
+
+
 
 //____________________________________________________________________________________
 
@@ -260,11 +1250,11 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
 
     ReadModelList();
 
-    if (((_String*)parameters(0))->Equal(&useLastModel)) {
+    if (((_String*)parameters(0))->Equal(&use_last_model)) {
         if (lastModelUsed.sLength) {
             PushFilePath (lastModelUsed);
         } else {
-            hy_global::HandleApplicationError (_String("First call to SelectTemplateModel. ") & useLastModel &" is meaningless.");
+            hy_global::HandleApplicationError (_String("First call to SelectTemplateModel. ") & use_last_model &" is meaningless.");
             return false;
         }
     } else {
@@ -1258,7 +2248,7 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& currentProgram
         if (theResult) { 
             delete (theResult); 
         } else {
-            errMsg = _String("Differentiation of '") & *(_String*)parameters(1) & "' failed";
+            errMsg = _String("Differentiation of '") & *(_String*)parameters(1) & "' failed: " & errMsg;
         }
         currentProgram.ReportAnExecutionError (errMsg); 
         theReceptacle->SetValue (new _MathObject, false);

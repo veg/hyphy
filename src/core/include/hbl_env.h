@@ -132,6 +132,7 @@ namespace hy_env {
           dataset_save_memory_size,
           sitewise_matrix,
           blockwise_matrix,
+          covariance_parameter,
           selection_strings,
           random_seed,
           assigned_seed,
@@ -141,6 +142,7 @@ namespace hy_env {
           path_to_current_bf,
           true_const,
           false_const,
+          harvest_frequencies_gap_options,
           last_file_path,
           matrix_element_row,
           matrix_element_column,
@@ -154,7 +156,13 @@ namespace hy_env {
           error_report_format_expression_stack,
           error_report_format_expression_stdin,
           status_bar_update_string,
-          kGetStringFromUser;
+          use_last_model,
+          last_model_parameter_list,
+          kGetStringFromUser,
+          kPairwiseCountAmbiguitiesResolve,
+          kPairwiseCountAmbiguitiesAverage,
+          kPairwiseCountAmbiguitiesSkip,
+          get_data_info_returns_only_the_index;
 
     ;
   
