@@ -141,7 +141,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 matrixEvalCount                 ("MATRIX_EXPONENTIATION_COUNTS"),
                                 scfgCorpus                      ("SCFG_STRING_CORPUS"),
                                 _hyLastExecutionError           ("LAST_HBL_EXECUTION_ERROR"),
-                                _hyExecutionErrorMode           ("HBL_EXECUTION_ERROR_HANDLING"),
 
                                 bgmData                         ("BGM_DATA_MATRIX"),
                                 bgmScores                       ("BGM_SCORE_CACHE"),

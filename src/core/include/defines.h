@@ -69,7 +69,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define  kNotFound          (-1L)
 
-
+#define  kMaxDialogPrompts  10L
 
 #define  HY_UNDEFINED       0x000UL
 #define  NUMBER             0x001UL

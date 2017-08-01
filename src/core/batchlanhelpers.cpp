@@ -206,7 +206,7 @@ bool    PushFilePath (_String& pName, bool trim, bool process) {
       pName.ProcessFileName();
       f = pName.FindBackwards(dir_sep,0,-1);
     } else {
-      f = pName.Length();
+      f = pName.length();
     }
   
   

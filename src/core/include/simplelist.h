@@ -291,6 +291,15 @@ class _SimpleList:public BaseObj {
         */
         virtual long Find(long, long startAt = 0) const;
 
+        template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
+          for (unsigned long i = startAt; i<lLength; i++) {
+            if ( condition (((long*)(lData))[i]) ) {
+              return i;
+            }
+          }
+          return kNotFound;
+        }
+  
         /**
         * Same as find, but steps over indices 
         * Example: SimpleList(1,3,5,7).Find(3,3) = -1 

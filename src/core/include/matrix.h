@@ -626,7 +626,8 @@ public:
     void     ZeroUsed       (void) {
         used = 0UL;
     }
-
+    void    Delete          (unsigned long index);
+  
     void    operator <<     (const _SimpleList&);
     _GrowingVector&    operator <<     (hyFloat p) {
         Store (p);

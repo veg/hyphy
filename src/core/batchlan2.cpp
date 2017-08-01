@@ -64,8 +64,6 @@ _String     sqlOpen                 ("SQL_OPEN"),
             sqlRowData              ("SQL_ROW_DATA"),
             sqlColNames             ("SQL_COLUMN_NAMES"),
             lastSetOfConstraints    ("LAST_SET_OF_CONSTRAINTS"),
-            deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION"),
-
             isDynamicGraph          ("BGM_DYNAMIC"),
             treeNodeNameMapping     ("TREE_NODE_NAME_MAPPING");
 

@@ -118,12 +118,7 @@ class _List:public _SimpleList {
         */
         BaseRef operator () (const unsigned long);
 
-        /**
-        * Element location functions - read only
-        * used to avoid (*list)(3) which are hard to read
-        */
-        virtual BaseRef GetItem     (const unsigned long) const;
-
+  
         /**
          * Element location functions - read only
          * used to avoid (*list)(3) which are hard to read
@@ -291,11 +286,20 @@ class _List:public _SimpleList {
         /**
         */
         virtual long FindPointer(BaseRef b, long startat = 0) {
-
             return _SimpleList::Find((long)b, startat);
+       }
 
+        /**
+         * Element location functions - read only
+         * used to avoid (*list)(3) which are hard to read
+         */
+        template <typename INDEX> BaseRef GetItem     (INDEX index) const {
+          return ((BaseRef*)lData)[index];
         }
 
+        template<typename INDEX, typename ...INDICES> BaseRef GetItem (INDEX i0, INDICES... rest) const {
+           return ((_List*)GetItem (i0))->GetItem (rest...);
+         }
  
  
 

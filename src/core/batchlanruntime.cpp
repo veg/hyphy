@@ -136,6 +136,19 @@ BaseRefConst    _GetHBLObjectByType (_String const&  source_name, long& type, lo
   return source_object;
 }
 
+  //____________________________________________________________________________________
+
+BaseRef    _GetHBLObjectByTypeMutable (_String const&  source_name, long& type, long * object_index = nil) {
+  long            object_type = type;
+  BaseRef         source_object = _HYRetrieveBLObjectByNameMutable (source_name, object_type,object_index,false);
+  
+  if (source_object == nil) {
+    throw (source_name.Enquote('\'') & " is not a " & _HYHBLTypeToText(type));
+  }
+  type = object_type;
+  return source_object;
+}
+
 
 //____________________________________________________________________________________
 
@@ -176,6 +189,43 @@ hyFloat    _NumericValueFromKey     (_AssociativeList * dict, _String const& key
         return default_value;
     }
     return value->Compute()->Value();
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& current_program){
+  _Variable * receptacle = nil;
+  current_program.advance ();
+  
+  try {
+    receptacle = _ValidateStorageVariable (current_program);
+    _String     expression = *GetIthParameter(1);
+    
+    _Formula parsed_expression;
+    _CheckExpressionForCorrectness (parsed_expression, expression, current_program);
+ 
+    long times = 1L;
+    if (parameter_count() >= 4) {
+      times = _ProcessNumericArgumentWithExceptions (*GetIthParameter(3),current_program.nameSpacePrefix);
+      if (times <= 0L) {
+        throw (GetIthParameter(3)->Enquote() & " (the number of times to differentiate) must be a non-negative integer");
+      }
+    }
+    
+    _Formula * derivative = parsed_expression.Differentiate(*GetIthParameter(2));
+    for (; times>1 && derivative; times--) {
+      _Formula * temp = derivative->Differentiate (*GetIthParameter(2));
+      delete derivative;
+      derivative = temp;
+    }
+    
+    receptacle->SetFormula(*derivative);
+    delete derivative;
+  
+  } catch (const _String& error) {
+      return  _DefaultExceptionHandler (receptacle, error, current_program);
+  }
+  return true;
 }
 
 //____________________________________________________________________________________
@@ -226,15 +276,67 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
     return true;
 }
 
+  //____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleExport(_ExecutionList& current_program){
+  
+  _Variable * receptacle = nil;
+  current_program.advance();
+  
+  try {
+    receptacle =    _ValidateStorageVariable (current_program);
+
+    const _String source_name   = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
+    long          object_type = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER | HY_BL_HBL_FUNCTION,
+                  object_index;
+    
+    BaseRef       source_object;
+    try {
+      source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
+    } catch (const _String& ) {
+      receptacle->SetValue(new _MathObject);
+    }
+    
+    
+    switch (object_type) {
+      case HY_BL_LIKELIHOOD_FUNCTION: {
+        _StringBuffer * serialized_object = new _StringBuffer (8192L);
+        ((_LikelihoodFunction*)source_object)->SerializeLF (*serialized_object);
+        receptacle->SetValue(new _FString (serialized_object));
+        break;
+      }
+      case HY_BL_DATASET_FILTER: {
+        receptacle->SetValue(new _FString (new _String ((_String*)((_DataSetFilter*)source_object)->toStr())));
+        ReleaseDataFilterLock(object_index);
+        break;
+      }
+      case HY_BL_MODEL: {
+        _StringBuffer * serialized_object = new _StringBuffer (8192L);
+        SerializeModel (*serialized_object,object_index,nil,true);
+        receptacle->SetValue(new _FString (serialized_object));
+        break;
+      }
+      case HY_BL_HBL_FUNCTION: {
+        receptacle->SetValue(new _FString (new _String (ExportBFFunction (object_index))));
+        break;
+      }
+    }
+    
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (receptacle, error, current_program);
+  }
+  return true;
+}
+
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program) {
-    
+  
     _Variable * receptacle = nil;
     current_program.advance();
   
     try {
-        
+      
         receptacle = _ValidateStorageVariable (current_program);
         const _String source_name = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
         
@@ -1402,9 +1504,8 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& current_program) {
 
 bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current_program) {
   static _String last_model_used;
- 
+  
   current_program.advance();
- 
   try {
     _String source_name = *GetIthParameter(0UL);
     if (source_name == hy_env::use_last_model) {
@@ -1445,421 +1546,398 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       if (data_type.empty()) {
         throw (source_name.Enquote () & " contains non-standard data and template models can't be selected on it");
       }
+
+      _SimpleList matching_models;
+
+      for (unsigned long model_index = 0; model_index < templateModelList.lLength; model_index++) {
+        _List *model_components = (_List*)templateModelList(model_index);
+        
+        if (data_type == *(_String*)model_components->GetItem(3)) {
+          _String * dim = (_String*)model_components->GetItem(2);
+          if (*dim== _String("*")|| source_filter->GetDimension() == dim->to_long()) {
+            matching_models << model_index;
+          }
+        }
+      }
+      
+      if (matching_models.empty()) {
+        throw (source_name.Enquote () & " could not be matched with any template models");
+      }
+
+      long model_id = kNotFound;
+      
+      if (current_program.stdinRedirect) {
+        _String const option = current_program.FetchFromStdinRedirect ();
+        
+        model_id = matching_models.FindOnCondition( [&] (long index) -> bool {
+          return option == * (_String*) templateModelList.GetItem (index,0);
+        });
+        
+        
+        if (model_id == kNotFound) {
+          throw (option.Enquote() & " is not a valid model (with input redirect)");
+          return false;
+        }
+      } else {
+        #ifdef __HEADLESS__
+          throw ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
+        #endif
+        
+        
+        
+        for (int i = 0; i < kMaxDialogPrompts; i++) {
+          printf ("\n\n               +--------------------------+\n");
+          printf (    "               | Select a standard model. |\n");
+          printf (    "               +--------------------------+\n\n\n");
+          
+          for (model_id = 0; model_id<matching_models.lLength; model_id++) {
+            printf ("\n\t(%s):%s",((_String*)templateModelList.GetItem((matching_models(model_id),0)))->get_str(),
+                                  ((_String*)templateModelList.GetItem((matching_models(model_id),1)))->get_str());
+          }
+          printf ("\n\n Please type in the abbreviation for the model you want to use:");
+          _String const user_choice = StringFromConsole();
+ 
+          model_id = matching_models.FindOnCondition( [&] (long index) -> bool {
+            return user_choice.EqualIgnoringCase(*(_String*) templateModelList.GetItem (index,0));
+          });
+          
+          if (model_id != kNotFound) {
+            break;
+          }
+        }
+        
+        if (model_id == kNotFound) {
+          throw ("Dialog did not return a valid choice after maximum allowed number of tries");
+          return false;
+        }
+
+      }
+      
+      _String  model_file = GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & *(_String*)templateModelList.GetItem((matching_models(model_id),4));
+
+      _ExecutionList       std_model;
+      PushFilePath        (model_file, false);
+      ReadBatchFile       (model_file,std_model);
+      PopFilePath         ();
+      lastModelUsed       = model_file;
+      std_model.Execute (&current_program);
+      
     }
   } catch (const _String& error) {
       return  _DefaultExceptionHandler (nil, error, current_program);
   }
   
   return true;
-  _String     modelFile,
-  errMsg;
   
-  ReadModelList();
-  
-  if (((_String*)parameters(0))->Equal(&use_last_model)) {
-    if (lastModelUsed.sLength) {
-      PushFilePath (lastModelUsed);
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& current_program){
+  current_program.advance();
+  try {
+    _CalcNode * apply_clock_here = (_CalcNode *)_CheckForExistingVariableByType (*GetIthParameter(0), current_program, TREE | TREE_NODE);
+    _TheTree  * parent_tree;
+    
+    _String   clock_base;
+    
+    if (apply_clock_here->ObjectClass() == TREE_NODE) {
+      parent_tree = (_TheTree*)((_VariableContainer*)apply_clock_here)->GetTheParent();
+      if (!parent_tree) {
+        throw (_String("Internal error - orphaned tree node ") & apply_clock_here->GetName ()->Enquote());
+      }
+      clock_base = apply_clock_here->GetName() -> Cut (parent_tree->GetName()->length() + 1, kStringEnd);
     } else {
-      hy_global::HandleApplicationError ();
-      return false;
+      parent_tree = (_TheTree*)apply_clock_here;
     }
-  } else {
-    _String filterName (currentProgram.AddNameSpaceToID(*(_String*)parameters(0)));
-    long            objectType = HY_BL_DATASET_FILTER;
+
+    parent_tree->MolecularClock(clock_base,parameters);
+
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (nil, error, current_program);
+  }
+  return true;
+}
+
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_program) {
+
+  current_program.advance();
+
+  try {
+    _String object_to_change = *GetIthParameter(0UL);
     
-    
-    
-    _SimpleList matchingModels;
-    
-    for (unsigned long model_index = 0; model_index < templateModelList.lLength; model_index++) {
-      _List *model_components = (_List*)templateModelList(model_index);
+    /* handle special cases */
+    if (object_to_change == hy_env::random_seed) {
+      hy_env::EnvVariableSet(hy_env::random_seed, new _Constant (hy_random_seed = _ProcessNumericArgumentWithExceptions (*GetIthParameter(1),current_program.nameSpacePrefix) ), false);
+      return true;
+    }
+
+    if (object_to_change == hy_env::defer_constrain_assignment) {
+      bool defer_status = _ProcessNumericArgumentWithExceptions (*GetIthParameter(1),current_program.nameSpacePrefix);
+      if (defer_status) {
+        deferSetFormula = new _SimpleList;
+      } else if (deferSetFormula) {
+        FinishDeferredSF ();
+      }
+      return true;
+    }
+
+    if (object_to_change == hy_env::random_seed) {
+      current_program.errorHandlingMode = _ProcessNumericArgumentWithExceptions (*GetIthParameter(1),current_program.nameSpacePrefix);
+      return true;
+ 
+    }
+
+    if (object_to_change == hy_env::status_bar_update_string) {
+      SetStatusLineUser (_ProcessALiteralArgument (*GetIthParameter(1), current_program));
+      return true;
       
-      if (dataType.Equal((_String*)model_components->GetItem(3))) {
-        _String * dim = (_String*)model_components->GetItem(2);
-        if (*dim==_String("*")|| dataDimension == dim->toNum()) {
-          matchingModels << model_index;
+    }
+
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (nil, error, current_program);
+  }
+  return true;
+ 
+  
+  _String *currentArgument = (_String*)parameters(0),
+  nmspc           = AppendContainerName(*currentArgument,currentProgram.nameSpacePrefix),
+  errMsg,
+  result;
+  
+  
+
+  long objectIndex,
+  typeFlag    = HY_BL_ANY;
+  
+  BaseRef theObject      = _HYRetrieveBLObjectByNameMutable (nmspc, typeFlag, &objectIndex);
+  
+  switch (typeFlag)
+  {
+    case HY_BL_BGM: { // BGM Branch
+      currentArgument = (_String*)parameters(1);
+      
+      _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
+        // set data matrix
+      if (currentArgument->Equal (&bgmData)) {
+        _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+        if (dataMx) {
+          long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+          
+          if (dataMx->GetVDim() == num_nodes) {
+            ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx);
+          } else {
+            currentProgram.ReportAnExecutionError (_String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ")");
+            return false;
+          }
+        } else {
+          return false;
+        }
+        
+      }
+      
+        // restore node score cache
+      else if (currentArgument->Equal (&bgmScores)) {
+        _AssociativeList * cacheAVL = (_AssociativeList *)FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER);
+        if (cacheAVL) {
+          ((_BayesianGraphicalModel *)lkf)->ImportCache (cacheAVL);
+        } else {
+          return false;
         }
       }
-    }
-    
-    if (!matchingModels.lLength) {
-      hy_global::HandleApplicationError ((_String)("DataSetFilter '")&filterName&"' could not be matched with any template models.");
-      return false;
-    }
-    unsigned long model_id = HY_MAX_LONG_VALUE;
-    
-    if (currentProgram.stdinRedirect) {
-      errMsg = currentProgram.FetchFromStdinRedirect ();
-      for (model_id = 0; model_id<matchingModels.lLength; model_id++)
-        if (errMsg.Equal((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))) {
-          break;
-        }
       
-      if (model_id >= matchingModels.lLength) {
-        hy_global::HandleApplicationError (errMsg & " is not a valid model (with input redirect) in call to SelectTemplateModel");
+        // set structure to user-specified adjacency matrix
+      else if (currentArgument->Equal (&bgmGraph)) {
+        _Matrix     * graphMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+        
+        if (graphMx) {
+          long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+          
+          if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes) {
+            ((_BayesianGraphicalModel *)lkf)->SetStructure ((_Matrix *) graphMx->makeDynamic());
+          } else {
+            currentProgram.ReportAnExecutionError("Dimension of graph does not match current graph");
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+      
+        // set constraint matrix
+      else if (currentArgument->Equal (&bgmConstraintMx)) {
+        _Matrix     * constraintMx  = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+        
+        if (constraintMx) {
+          long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+          
+          if (constraintMx->GetHDim() == num_nodes && constraintMx->GetVDim() == num_nodes) {
+            ((_BayesianGraphicalModel *)lkf)->SetConstraints ((_Matrix *) constraintMx->makeDynamic());
+          } else {
+            currentProgram.ReportAnExecutionError ("Dimensions of constraint matrix do not match current graph");
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+      
+        // set node order
+      else if (currentArgument->Equal (&bgmNodeOrder)) {
+        _Matrix     * orderMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+        
+        if (orderMx) {
+            // UNDER DEVELOPMENT  April 17, 2008 afyp
+          long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+          
+          _SimpleList     * orderList = new _SimpleList();
+          
+          orderList->Populate (num_nodes, 0, 0);
+          
+          if (orderMx->GetVDim() == num_nodes) {
+            for (long i = 0; i < num_nodes; i++) {
+              orderList->lData[i] = (long) ((*orderMx) (0, i));
+            }
+            
+            ((_BayesianGraphicalModel *)lkf)->SetNodeOrder ( (_SimpleList *) orderList->makeDynamic() );
+          } else {
+            currentProgram.ReportAnExecutionError ("Length of order vector doesn't match number of nodes in graph");
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+      
+      
+        // set network parameters
+      else if (currentArgument->Equal (&bgmParameters)) {
+        _AssociativeList* inAVL = (_AssociativeList*)FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER);
+        if (inAVL) {
+          ((_BayesianGraphicalModel *)lkf)->ImportCache (inAVL);
+        } else {
+          return false;
+        }
+      }
+      
+      
+        // anything else
+      else {
+        currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid BGM parameter");
         return false;
       }
-    } else {
-#ifdef __HEADLESS__
-      hy_global::HandleApplicationError ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
-      return false;
-#else
-#if defined __UNIX__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
-      while (model_id == HY_MAX_LONG_VALUE) {
-        printf ("\n\n               +--------------------------+\n");
-        printf     ("               | Select a standard model. |\n");
-        printf     ("               +--------------------------+\n\n\n");
-        
-        for (model_id = 0; model_id<matchingModels.lLength; model_id++) {
-          printf ("\n\t(%s):%s",((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))->getStr(),
-                  ((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(1))->getStr());
+    } // end BGM
+      break;
+      
+    case HY_BL_SCFG:
+    case HY_BL_LIKELIHOOD_FUNCTION:
+    {
+      currentArgument = (_String*)parameters(1);
+      if (typeFlag == HY_BL_SCFG && currentArgument->Equal (&scfgCorpus)) {
+        ((Scfg*)theObject)->SetStringCorpus ((_String*)parameters(2));
+      } else {
+        _LikelihoodFunction * lkf = (_LikelihoodFunction *) theObject;
+        currentArgument = (_String*)parameters(1);
+        long g = ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix);
+        if (lkf->GetIndependentVars().Map (g) < 0L) {
+          currentProgram.ReportAnExecutionError (*currentArgument & " (=" & g & ") is not a valid parameter index");
+          return false;
         }
-        printf ("\n\n Please type in the abbreviation for the model you want to use:");
-        dataType = StringFromConsole();
-        dataType.UpCase();
-        for (model_id = 0; model_id<matchingModels.lLength; model_id++) {
-          if (dataType.Equal((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))) {
+        currentArgument = (_String*)parameters(2);
+        lkf->SetIthIndependent (g,ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix));
+      }
+    }
+      break;
+        // end SCFG and LF
+      
+    case HY_BL_DATASET:
+    case HY_BL_DATASET_FILTER: {
+      _DataSet * ds = nil;
+      
+      
+      long sequence_index  = ProcessNumericArgument ((_String*)parameters(1),currentProgram.nameSpacePrefix);
+      if (typeFlag == HY_BL_DATASET) {
+        ds = (_DataSet*) theObject;
+      }
+      else {
+        _DataSetFilter *dsf = (_DataSetFilter*)theObject;
+        ds = dsf->GetData ();
+        sequence_index = dsf->theNodeMap.Map (sequence_index);
+      }
+      
+      if (typeFlag == HY_BL_DATASET_FILTER) {
+        ReleaseDataFilterLock(objectIndex);
+      }
+      
+      
+      _String * sequence_name = new _String(ProcessLiteralArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix));
+      
+      if (! ds->SetSequenceName (sequence_index, sequence_name)) {
+        delete sequence_name;
+        currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " (=" & sequence_index & ") is not a valid sequence index");
+        return false;
+        
+      }
+    } // end data set and data set filter
+      break;
+        // Dataset and Datasetfilter
+      
+    default:
+        // check to see if this is a calcnode
+      _CalcNode* treeNode = (_CalcNode*)FetchObjectFromVariableByType(&nmspc, TREE_NODE);
+      if (treeNode) {
+        if (*((_String*)parameters(1)) == _String("MODEL")) {
+          _String modelName = AppendContainerName(*((_String*)parameters(2)),currentProgram.nameSpacePrefix);
+          long modelType = HY_BL_MODEL, modelIndex;
+          BaseRef modelObject      = _HYRetrieveBLObjectByNameMutable (modelName, modelType, &modelIndex, true);
+          if (modelObject) {
+            _VariableContainer * parentTree = treeNode->ParentTree();
+            if (!parentTree) {
+              currentProgram.ReportAnExecutionError (*((_String*)parameters(0)) & " is an orphaned tree node (the parent tree has been deleted)");
+              return false;
+            }
+            long pID, lfID = ((_TheTree*)parentTree->Compute())->IsLinkedToALF(pID);
+            if (lfID>=0){
+              currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &") and cannot be modified ");
+              return false;
+            }
+            
+            treeNode->ReplaceModel (modelName, parentTree);
             break;
           }
-        }
-        if (model_id==matchingModels.lLength) {
-          model_id=HY_MAX_LONG_VALUE;
-        }
-      }
-#endif
-#if !defined __UNIX__ ||  defined __HYPHYQT__ ||  defined __HYPHY_GTK__
-      _SimpleList choiceDummy (2,0,1), sGetelDummy;
-      model_id = HandleListSelection (templateModelList, choiceDummy, matchingModels, "Choose one of the standard substitution models",selDummy,1,nil);
-      if (model_id==-1) {
-        terminate_execution = true;
-        return false;
-      }
-#endif
-#endif
-    }
-    modelFile = GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) &*((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(4));
-    PushFilePath (modelFile, false);
-  }
-  
-  _ExecutionList      stdModel;
-  if (currentProgram.nameSpacePrefix) {
-    stdModel.SetNameSpace (*currentProgram.nameSpacePrefix->GetName());
-  }
-  
-  ReadBatchFile       (modelFile,stdModel);
-  PopFilePath         ();
-  lastModelUsed       = modelFile;
-  
-  stdModel.stdinRedirectAux = currentProgram.stdinRedirectAux;
-  stdModel.stdinRedirect    = currentProgram.stdinRedirect;
-  stdModel.Execute();
-  stdModel.stdinRedirectAux = nil;
-  stdModel.stdinRedirect    = nil;
-  
-  return true;
-  
-}
-//____________________________________________________________________________________
-//____________________________________________________________________________________
-
-
-
-
-//____________________________________________________________________________________
-bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram) {
-
-    currentProgram.currentCommand++;
-    /*
-        first check to see if matrix parameters here are valid
-    */
-  
-    _String *currentArgument = (_String*)parameters(0),
-             nmspc           = AppendContainerName(*currentArgument,currentProgram.nameSpacePrefix),
-             errMsg,
-             result;
-
-    if (currentArgument->Equal (&hy_env::random_seed)) {
-        hy_random_seed = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
-        hy_env::EnvVariableSet(hy_env::random_seed, new _Constant (hy_random_seed), false);
-        return true;
-    }
-
-
-    if (currentArgument->Equal (&deferConstrainAssignment)) {
-        bool on = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
-        if (on) {
-            deferSetFormula = new _SimpleList;
-        } else if (deferSetFormula) {
-            FinishDeferredSF ();
-        }
-        return true;
-    }
-
-    if (currentArgument->Equal (&_hyExecutionErrorMode)) {
-        currentProgram.errorHandlingMode = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
-        return true;
-    }
-
-    if (currentArgument->Equal (&hy_env::status_bar_update_string)) {
-        _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
-         SetStatusLineUser (sbar_value);
-        return true;
-    }
-    long objectIndex,
-         typeFlag    = HY_BL_ANY;
-    
-    BaseRef theObject      = _HYRetrieveBLObjectByNameMutable (nmspc, typeFlag, &objectIndex);
-    
-    switch (typeFlag)
-    {
-        case HY_BL_BGM: { // BGM Branch
-            currentArgument = (_String*)parameters(1);
-
-            _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
-            // set data matrix
-            if (currentArgument->Equal (&bgmData)) {
-                _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
-                if (dataMx) {
-                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
-
-                    if (dataMx->GetVDim() == num_nodes) {
-                        ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx);
-                    } else {
-                        currentProgram.ReportAnExecutionError (_String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ")");
-                        return false;
-                    }
-                } else {
-                     return false;
-                }
-
-            }
-
-            // restore node score cache
-            else if (currentArgument->Equal (&bgmScores)) {
-                _AssociativeList * cacheAVL = (_AssociativeList *)FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER);
-                if (cacheAVL) {
-                    ((_BayesianGraphicalModel *)lkf)->ImportCache (cacheAVL);
-                } else {
-                    return false;
-                }
-            }
-
-            // set structure to user-specified adjacency matrix
-            else if (currentArgument->Equal (&bgmGraph)) {
-                _Matrix     * graphMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
-
-                if (graphMx) {
-                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
-
-                    if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes) {
-                        ((_BayesianGraphicalModel *)lkf)->SetStructure ((_Matrix *) graphMx->makeDynamic());
-                    } else {
-                        currentProgram.ReportAnExecutionError("Dimension of graph does not match current graph");
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
-
-            // set constraint matrix
-            else if (currentArgument->Equal (&bgmConstraintMx)) {
-                _Matrix     * constraintMx  = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
-
-                if (constraintMx) {
-                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
-
-                    if (constraintMx->GetHDim() == num_nodes && constraintMx->GetVDim() == num_nodes) {
-                        ((_BayesianGraphicalModel *)lkf)->SetConstraints ((_Matrix *) constraintMx->makeDynamic());
-                    } else {
-                        currentProgram.ReportAnExecutionError ("Dimensions of constraint matrix do not match current graph");
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
-
-            // set node order
-            else if (currentArgument->Equal (&bgmNodeOrder)) {
-                _Matrix     * orderMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
-
-                if (orderMx) {
-                    // UNDER DEVELOPMENT  April 17, 2008 afyp
-                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
-
-                    _SimpleList     * orderList = new _SimpleList();
-
-                    orderList->Populate (num_nodes, 0, 0);
-
-                    if (orderMx->GetVDim() == num_nodes) {
-                        for (long i = 0; i < num_nodes; i++) {
-                            orderList->lData[i] = (long) ((*orderMx) (0, i));
-                        }
-
-                        ((_BayesianGraphicalModel *)lkf)->SetNodeOrder ( (_SimpleList *) orderList->makeDynamic() );
-                    } else {
-                        currentProgram.ReportAnExecutionError ("Length of order vector doesn't match number of nodes in graph");
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
-
-
-            // set network parameters
-            else if (currentArgument->Equal (&bgmParameters)) {
-                    _AssociativeList* inAVL = (_AssociativeList*)FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER);
-                if (inAVL) {
-                    ((_BayesianGraphicalModel *)lkf)->ImportCache (inAVL);
-                } else {
-                    return false;
-                }
-            }
-
-
-            // anything else
-            else {
-                currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid BGM parameter");
-                return false;
-            }
-        } // end BGM
-        break;
-        
-        case HY_BL_SCFG:
-        case HY_BL_LIKELIHOOD_FUNCTION:
-        {
-            currentArgument = (_String*)parameters(1);
-            if (typeFlag == HY_BL_SCFG && currentArgument->Equal (&scfgCorpus)) {
-                ((Scfg*)theObject)->SetStringCorpus ((_String*)parameters(2));
-            } else {
-                _LikelihoodFunction * lkf = (_LikelihoodFunction *) theObject;
-                currentArgument = (_String*)parameters(1);
-                long g = ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix);
-                if (lkf->GetIndependentVars().Map (g) < 0L) {
-                    currentProgram.ReportAnExecutionError (*currentArgument & " (=" & g & ") is not a valid parameter index");
-                    return false;
-                }
-                currentArgument = (_String*)parameters(2);
-                lkf->SetIthIndependent (g,ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix));
-            }
-        }
-        break;
-        // end SCFG and LF
-        
-        case HY_BL_DATASET:
-        case HY_BL_DATASET_FILTER: {
-            _DataSet * ds = nil;
-          
-            
-            long sequence_index  = ProcessNumericArgument ((_String*)parameters(1),currentProgram.nameSpacePrefix);
-            if (typeFlag == HY_BL_DATASET) {
-                ds = (_DataSet*) theObject;
-            }
-            else {
-                _DataSetFilter *dsf = (_DataSetFilter*)theObject;
-                ds = dsf->GetData ();
-                sequence_index = dsf->theNodeMap.Map (sequence_index);
-            }
-          
-            if (typeFlag == HY_BL_DATASET_FILTER) {
-              ReleaseDataFilterLock(objectIndex);
-            }
-        
-          
-          _String * sequence_name = new _String(ProcessLiteralArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix));
-          
-          if (! ds->SetSequenceName (sequence_index, sequence_name)) {
-            delete sequence_name;
-            currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " (=" & sequence_index & ") is not a valid sequence index");
+          else {
+            currentProgram.ReportAnExecutionError (*((_String*)parameters(2)) & " does not appear to be a valid model name");
             return false;
-           
           }
-        } // end data set and data set filter
-        break; 
-        // Dataset and Datasetfilter
-        
-        default:
-            // check to see if this is a calcnode
-            _CalcNode* treeNode = (_CalcNode*)FetchObjectFromVariableByType(&nmspc, TREE_NODE);
-            if (treeNode) { 
-                if (*((_String*)parameters(1)) == _String("MODEL")) {
-                    _String modelName = AppendContainerName(*((_String*)parameters(2)),currentProgram.nameSpacePrefix);
-                    long modelType = HY_BL_MODEL, modelIndex;
-                    BaseRef modelObject      = _HYRetrieveBLObjectByNameMutable (modelName, modelType, &modelIndex, true);
-                    if (modelObject) {
-                        _VariableContainer * parentTree = treeNode->ParentTree();
-                        if (!parentTree) {
-                            currentProgram.ReportAnExecutionError (*((_String*)parameters(0)) & " is an orphaned tree node (the parent tree has been deleted)");
-                            return false;
-                        }
-                        long pID, lfID = ((_TheTree*)parentTree->Compute())->IsLinkedToALF(pID);
-                        if (lfID>=0){
-                             currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &") and cannot be modified ");
-                             return false;
-                        }
-                        
-                        treeNode->ReplaceModel (modelName, parentTree);
-                        break;
-                    }
-                    else {
-                        currentProgram.ReportAnExecutionError (*((_String*)parameters(2)) & " does not appear to be a valid model name");
-                        return false;
-                    }
-                } else {
-                     currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " is not a supported parameter type for a tree node argument");
-                     return false;
-                }
-            }
-            
-            currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology/tree node");
-            return false;
-
-    
-    } // end cases
-    return true;
+        } else {
+          currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " is not a supported parameter type for a tree node argument");
+          return false;
+        }
+      }
+      
+      currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology/tree node");
+      return false;
+      
+      
+  } // end cases
+  return true;
 }
-
-
-
-
 
 
 //____________________________________________________________________________________
+//____________________________________________________________________________________
 
-bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgram){
-    currentProgram.currentCommand++;
-    
-    _String    theBaseNode          (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
-               treeName;
-    
-    _Variable* theObject = FetchVar (LocateVarByName(theBaseNode));
-    
-    if (!theObject || (theObject->ObjectClass()!=TREE && theObject->ObjectClass()!=TREE_NODE)) {
-        hy_global::HandleApplicationError (_String("Not a defined tree/tree node object '") & theBaseNode & "' in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
-        return false;
-    }
-    
-    _TheTree *theTree = nil;
-    if (theObject->ObjectClass() == TREE_NODE) {
-        theTree     = (_TheTree*)((_VariableContainer*)theObject)->GetTheParent();
-        if (!theTree) {
-            hy_global::HandleApplicationError (_String("Internal error - orphaned tree node '") & theBaseNode & "' in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
-            return false;
-            
-        }
-        treeName    = *theTree->GetName();
-        theBaseNode = theObject->GetName()->Cut(treeName.sLength+1,-1);
-    } else {
-        treeName    = *theObject->GetName();
-        theTree     = (_TheTree*)theObject;
-        theBaseNode = kEmptyString;
-    }
-    
-    theTree->MolecularClock(theBaseNode,parameters);
-    return true;
-}
+
+
+
+
+
+
+
+
 
 
 
@@ -1867,7 +1945,7 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
 
 bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     currentProgram.currentCommand++;
-    
+  
     _String  errMsg,
              *result = nil;
 
@@ -2187,126 +2265,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
 }
 
 
-//____________________________________________________________________________________
-
-bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
-
-    currentProgram.currentCommand++;
-    
-    _String objectID (currentProgram.AddNameSpaceToID(*(_String*)parameters(1))),
-            arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
-            errMsg;
-  
-    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_EXPORT, true, false, &currentProgram);
-    if (!theReceptacle) {
-        return false;
-    }    
- 
-    _FString        * outLF = new _FString (new _String (8192UL,1));
- 
-    long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER | HY_BL_HBL_FUNCTION,
-             index;
-        
-    BaseRef objectToExport = _HYRetrieveBLObjectByNameMutable (objectID, typeFlag, &index);
-    if (! objectToExport) {
-        errMsg = _String ("'") & objectID & "' is not a supported type";
-    } else {
-        switch (typeFlag) {
-            case HY_BL_LIKELIHOOD_FUNCTION: {
-                ((_LikelihoodFunction*)objectToExport)->SerializeLF (*outLF->theString);
-                outLF->theString->Finalize();
-                break;
-            }
-            case HY_BL_DATASET_FILTER: {
-                outLF->theString->Finalize();
-                DeleteObject (outLF->theString);
-                outLF->theString = new _String ((_String*)((_DataSetFilter*)objectToExport)->toStr());
-                ReleaseDataFilterLock(index);
-                break;
-            }
-            case HY_BL_MODEL: {
-                SerializeModel (*outLF->theString,index,nil,true);
-                outLF->theString->Finalize();
-                break;
-            }
-            case HY_BL_HBL_FUNCTION: {
-                (*outLF->theString) << ExportBFFunction (index);
-                outLF->theString->Finalize();
-                break;
-            }
-            
-        }
-    }
-
-    if (errMsg.sLength) {
-        outLF->theString->Finalize();
-        DeleteObject (outLF);
-        currentProgram.ReportAnExecutionError (errMsg); 
-        theReceptacle->SetValue (new _MathObject, false);
-        return false;
-    }
-    
-    theReceptacle->SetValue (outLF,false);
-
-    return true;
-}
-
-//____________________________________________________________________________________
-
-bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& currentProgram){
-
-    currentProgram.currentCommand++;
-   
-    _String  arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
-             errMsg,
-             expressionToParse = *(_String*)parameters(1);
-             
-    _Formula  *theResult = nil;
-
-    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_DIFFERENTIATE, true, false, &currentProgram);
-    if (!theReceptacle) {
-        return false;
-    }    
 
 
-    _Formula theExpression (expressionToParse,currentProgram.nameSpacePrefix, &errMsg);
-    
-    if (!theExpression.IsEmpty() && errMsg.sLength == 0) {
-        long times = 1;
-        if (parameters.lLength==4) {
-            times = ProcessNumericArgument ((_String*)parameters(3),currentProgram.nameSpacePrefix, &currentProgram);
-            if (!numericalParameterSuccessFlag) {
-                return false;
-            }
-        }
-        if (times <= 0) {
-            errMsg = "The number of times to differentiate must be a non-negative integer";
-        }
 
-        theResult = theExpression.Differentiate (*(_String*)parameters(2), false);
-        for (; times>1 && theResult; times--) {
-            _Formula * temp = theResult->Differentiate (*(_String*)parameters(2));
-            delete (theResult);
-            theResult = temp;
-        }
-    }
-
-    if (errMsg.sLength || theResult == nil) {
-        if (theResult) { 
-            delete (theResult); 
-        } else {
-            errMsg = _String("Differentiation of '") & *(_String*)parameters(1) & "' failed: " & errMsg;
-        }
-        currentProgram.ReportAnExecutionError (errMsg); 
-        theReceptacle->SetValue (new _MathObject, false);
-        return false;
-    }
-    
-    theReceptacle->SetFormula (*theResult);
-    if (theResult) delete (theResult);
-
-    return true;
-}
 
 //____________________________________________________________________________________
 

@@ -9735,8 +9735,7 @@ BaseRef     _GrowingVector::makeDynamic (void) const
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-long        _GrowingVector::Store (hyFloat toStore)
-{
+long        _GrowingVector::Store (hyFloat toStore) {
     if (used < hDim) {
         theData[used++] = toStore;  // increment AFTER argument is sent to function
         return used-1UL;
@@ -9744,6 +9743,17 @@ long        _GrowingVector::Store (hyFloat toStore)
         Resize (used + MAX (used/8,64));    // allocate another block of 64
         return Store (toStore);
     }
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------------*/
+
+void        _GrowingVector::Delete (unsigned long index) {
+  if (index + 1UL < used) {
+    for (unsigned long i = index+1UL; i < used; i++) {
+      theData[i-1] = theData[i];
+    }
+    --used;
+  }
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/

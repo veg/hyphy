@@ -133,6 +133,7 @@ namespace hy_env {
           dataset_save_memory_size,
           sitewise_matrix,
           blockwise_matrix,
+          execution_mode,
           covariance_parameter,
           selection_strings,
           random_seed,
@@ -163,8 +164,9 @@ namespace hy_env {
           kPairwiseCountAmbiguitiesResolve,
           kPairwiseCountAmbiguitiesAverage,
           kPairwiseCountAmbiguitiesSkip,
-          get_data_info_returns_only_the_index;
-
+          get_data_info_returns_only_the_index,
+          defer_constrain_assignment
+  
     ;
   
     

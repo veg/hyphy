@@ -139,6 +139,10 @@ _String const
         // sets the maximum dimension of a data filter for generating .site_map, .site_freqs, .sequence_map
     directory_separator_char                        ("DIRECTORY_SEPARATOR"),
         // is set to the platform directory separator (e.g. '/')
+    defer_constrain_assignment                        ("DEFER_CONSTRAINT_APPLICATION"),
+        // if set to TRUE, then constraint application will be done in a single batch
+        // this is helpful when many x := expr statements are strung together to avoid
+        // checking the entire namespace for dependancies
     error_report_format_expression                  ("ERROR_REPORT_FORMAT_EXPRESSION"),
         // if provided, this expression (assumed string valued), will be used to format the error
         // message, with special placeholder variables (see below) will be replaced with the
@@ -149,6 +153,11 @@ _String const
         // the current HBL standard input buffer, formatted as a list
     error_report_format_expression_string           ("_ERROR_TEXT_"),
     // the text message explaining the error
+    execution_mode                                  ("HBL_EXECUTION_ERROR_HANDLING"),
+    // sets HyPhy exception handling
+    // FALSE - bail out on errors
+    // TRUE  - return from the current execution list, but keep the program running (e.g. to allow for HBL testing of error handling)
+
     get_data_info_returns_only_the_index            ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
     // instead of returing {0,0,1,0} for a 'G' character in GetDataInfo (r, filter, species, pattern)
     // return only the index of 'G', e.g. 2 in this case. -1 is returned for ambigs

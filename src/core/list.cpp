@@ -158,10 +158,6 @@ BaseRef _List::operator () (const unsigned long i)
     return ((BaseRef*)lData)[i];
 }
 
-// Element location functions (0,llength - 1)
-BaseRef _List::GetItem (const unsigned long i) const {
-    return ((BaseRef*)lData)[i];
-}
 
   // Element location functions (0,llength - 1)
 BaseRef _List::GetItemRangeCheck(const unsigned long i) const {
