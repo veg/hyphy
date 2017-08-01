@@ -9958,6 +9958,17 @@ long        _GrowingVector::Store (_Parameter toStore)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
+void        _GrowingVector::Delete (unsigned long index) {
+  if (index + 1UL < used) {
+    for (unsigned long i = index+1UL; i < used; i++) {
+      theData[i-1] = theData[i];
+    }
+    --used;
+  }
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------------*/
+
 void        _GrowingVector::operator << (const _SimpleList& theSource)
 {
     for (unsigned long k = 0; k < theSource.lLength; k++) {

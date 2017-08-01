@@ -409,6 +409,7 @@ lfunction slac.extendedBinTail (ebn, ebp, ebx) {
 		return 0;
 	}
 
+
 	ebr = ebx$1; /* rounded to nearest integer */
 
 	currentBinCoeff = (1-ebp)^ebn; /*compute the first binomial coefficient */
@@ -644,7 +645,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
 
             total_subs = (*mx)[s*column_count + 2] + (*mx)[s*column_count + 3];
 
-            (*mx) [s*column_count + 4] = (*mx) [s*column_count + 0]/((*mx) [s*column_count + 1]+(*mx) [s*column_count + 0]);
+            (*mx) [s*column_count + 4] = (*mx) [s*column_count]/((*mx) [s*column_count + 1]+(*mx) [s*column_count ]);
             (*mx) [s*column_count + 5] = (*mx) [s*column_count + 2]/(*mx) [s*column_count + 0];
             (*mx) [s*column_count + 6] = (*mx) [s*column_count + 3]/(*mx) [s*column_count + 1];
             if (k > 0) {
