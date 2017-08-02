@@ -1238,12 +1238,69 @@ void    _TheTree::PostTreeConstructor (bool dupMe)
 }
 //_______________________________________________________________________________________________
 
-void    _TreeTopology::PostTreeConstructor (bool dupMe)
-{
-    BaseRef temp =  variablePtrs(theIndex);
-    variablePtrs[theIndex]=dupMe ? this->makeDynamic() : this;
-    DeleteObject(temp);
+void    _TreeTopology::PostTreeConstructor (bool dupMe) {
+  
+  double acceptRTs = 0.0;
+  checkParameter (acceptRootedTrees,acceptRTs, 0.0);
+  
+  if (theRoot->get_num_nodes() == 2) { // rooted tree - check
+    if (acceptRTs<0.1) {
+      int  i = 1;
+      long node_index = 0;
+      for (; i<=2; i++) {
+        node<long> *node_temp = theRoot->go_down(i);
+        if (node_temp->get_num_nodes()) { // an internal node - make it a root
+          node_temp->detach_parent();
+          node_index = node_temp->get_data();
+          if (i==1) {
+            node_temp->add_node(*theRoot->go_down(2));
+            delete theRoot;
+            theRoot = node_temp;
+            rooted = ROOTED_LEFT;
+          } else {
+            node_temp->prepend_node(*theRoot->go_down(1));
+            delete theRoot;
+            theRoot = node_temp;
+            rooted = ROOTED_RIGHT;
+          }
+          if (i==1) {
+            ReportWarning (_String("Rooted topology. Removing one branch - the left root child has been promoted to be the new root"));
+          } else {
+            ReportWarning (_String("Rooted topology. Removing one branch - the right root child has been promoted to be the new root"));
+          }
+          break;
+        }
+      }
+      if (i==3) {
+        ReportWarning ((_String("One branch topology supplied - hopefully this IS what you meant to do.")));
+        node<long> *node_temp = theRoot->go_down(1);
+        node_temp->detach_parent();
+        node_temp->add_node(*theRoot->go_down(2));
+        delete theRoot;
+        theRoot = node_temp;
+        rooted = ROOTED_LEFT;
+        ReportWarning (_String("Rooted tree. Removing one branch - the left root child has been promoted to be the new root"));
+          //PurgeTree();
+      }
+ 
+      flatTree.Delete (node_index);
+      flatCLeaves.Delete (node_index);
+      ((_GrowingVector*)compExp)->Delete (node_index);
+
+      node_iterator<long>  tree_iterator (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+      while (node<long>*topTraverser = tree_iterator.Next()) {
+        if (topTraverser->get_data () > node_index) {
+          topTraverser->init (topTraverser->get_data () - 1);
+        }
+      }
+    }
+  }
+  
+  BaseRef temp =  variablePtrs(theIndex);
+  variablePtrs[theIndex]=dupMe ? this->makeDynamic() : this;
+  DeleteObject(temp);
 }
+
 
 //_______________________________________________________________________________________________
 _TheTree::_TheTree              (_String name, _String& parms, bool dupMe):_TreeTopology (&name)
