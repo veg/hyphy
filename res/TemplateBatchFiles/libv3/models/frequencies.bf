@@ -1,4 +1,4 @@
-LoadFunctionLibrary("terms.bf");
+//LoadFunctionLibrary("terms.bf");
 LoadFunctionLibrary("parameters.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 LoadFunctionLibrary("model_functions.bf");
@@ -15,13 +15,13 @@ LoadFunctionLibrary("model_functions.bf");
  * @returns {Dictionary} updated model
  */
 function frequencies.equal(model, namespace, datafilter) {
-    __N = Abs(model["alphabet"]);
-    model[terms.efv_estimate] = {
+    __N = Abs(model[terms.model_description.alphabet]);
+    model[terms.model_description.efv_estimate] = {
         __N,
         1
     }["1/__N"];
-    model[terms.efv_estimate_name] = terms.freqs.equal;
-    (model["parameters"])["empirical"] = 0;
+    model[terms.model_description.efv_estimate] = terms.freqs.equal;
+    (model[terms.parameters])[terms.model_description.empirical] = 0;
     return model;
 }
 
@@ -35,8 +35,8 @@ function frequencies.equal(model, namespace, datafilter) {
  */
 function frequencies.empirical.nucleotide(model, namespace, datafilter) {
     model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
-    model[terms.efv_estimate_name] = terms.freqs.4x1;
-    (model["parameters"])["empirical"] = 3;
+    model[terms.model_description.efv_estimate_name] = terms.freqs.4x1;
+    (model[terms.parameters])[terms.model_description.empirical] = 3;
     return model;
 }
 
@@ -50,8 +50,8 @@ function frequencies.empirical.nucleotide(model, namespace, datafilter) {
  */
 function frequencies.empirical.protein (model, namespace, datafilter) {
     model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
-    model[terms.efv_estimate_name] = terms.freqs.20x1;
-    (model["parameters"])["empirical"] = 19;
+    model[terms.model_description.efv_estimate_name] = terms.freqs.20x1;
+    (model[terms.parameters])[terms.model_description.empirical] = 19;
     return model;
 }
 
@@ -66,28 +66,29 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
 
 
     __dimension = model.Dimension(model);
-    __alphabet = model["alphabet"];
+    __alphabet = model[terms.model_description.alphabet];
 
-    if (Type (model[terms.rate_matrix]) == "AssociativeList") {
-        utility.ForEach (model[terms.rate_matrix], "_q_matrix_", '
+    if (Type (model[terms.model_description.rate_matrix]) == "AssociativeList") {
+        utility.ForEach (model[terms.model_description.rate_matrix], "_q_matrix_", '
             assert(Type(_q_matrix_) == "Matrix" && Rows(_q_matrix_) == __dimension && Columns(_q_matrix_) == __dimension,
-            "`terms.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4")
+            "`terms.model_description.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4")
         ');
     } else {
-        assert(Type(model[terms.rate_matrix]) == "Matrix" && Rows(model[terms.rate_matrix]) == __dimension && Columns(model[terms.rate_matrix]) == __dimension,
-            "`terms.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4");
+        assert(Type(model[terms.model_description.rate_matrix]) == "Matrix" && Rows(model[terms.model_description.rate_matrix]) == __dimension && Columns(model[terms.model_description.rate_matrix]) == __dimension,
+            "`terms.model_description.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4");
     }
-
     utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
     __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
     utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
 
-    __estimates = frequencies._aux.CF3x4(__f, model["bases"], __alphabet, model["stop"]);
-    model[terms.efv_estimate] = __estimates["codons"];
+    //TODO
+    __estimates = frequencies._aux.CF3x4(__f, model[terms.model_description.bases], __alphabet, model[terms.model_description.stop]);
+    model[terms.model_description.efv_estimate] = __estimates["codons"];
     __estimates = __estimates["bases"];
 
-    if (Type (model[terms.rate_matrix]) == "AssociativeList") { // handle mixture models
-        __components = Rows (model[terms.rate_matrix]);
+
+    if (Type (model[terms.model_description.rate_matrix]) == "AssociativeList") { // handle mixture models
+        __components = Rows (model[terms.model_description.rate_matrix]);
         __component_count = utility.Array1D (__components);
 
         for (_rowChar = 0; _rowChar < __dimension; _rowChar += 1) {
@@ -96,8 +97,8 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
                 __diff = models.codon.diff(__alphabet[_rowChar], __alphabet[_colChar]);
                 if (None != __diff) {
                     for (__component_id = 0; __component_id < __component_count; __component_id += 1) {
-                         ((model[terms.rate_matrix])[__components[__component_id]]) [_rowChar][_colChar] += "*" + (__estimates[__diff["to"]])[__diff["position"]];
-                         ((model[terms.rate_matrix])[__components[__component_id]]) [_colChar][_rowChar] += "*" + (__estimates[__diff["from"]])[__diff["position"]];
+                         ((model[terms.model_description.rate_matrix])[__components[__component_id]]) [_rowChar][_colChar] += "*" + (__estimates[__diff["to"]])[__diff["position"]];
+                         ((model[terms.model_description.rate_matrix])[__components[__component_id]]) [_colChar][_rowChar] += "*" + (__estimates[__diff["from"]])[__diff["position"]];
                     }
                  }
             }
@@ -108,16 +109,16 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
 
                 __diff = models.codon.diff(__alphabet[_rowChar], __alphabet[_colChar]);
                 if (None != __diff) {
-                    (model[terms.rate_matrix])[_rowChar][_colChar] += "*" + (__estimates[__diff["to"]])[__diff["position"]];
-                    (model[terms.rate_matrix])[_colChar][_rowChar] += "*" + (__estimates[__diff["from"]])[__diff["position"]];
+                    (model[terms.model_description.rate_matrix])[_rowChar][_colChar] += "*" + (__estimates[__diff["to"]])[__diff["position"]];
+                    (model[terms.model_description.rate_matrix])[_colChar][_rowChar] += "*" + (__estimates[__diff["from"]])[__diff["position"]];
                 }
             }
         }
     }
 
 
-    model[terms.efv_estimate_name] = terms.freqs.CF3x4;
-    (model["parameters"])["empirical"] = 9;
+    model[terms.model_description.efv_estimate_name] = terms.freqs.CF3x4;
+    (model[terms.parameters])[terms.model_description.empirical] = 9;
     return model;
 }
 
@@ -199,7 +200,7 @@ function frequencies._aux.empirical.singlechar(model, namespace, datafilter) {
     utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
     __f = frequencies._aux.empirical.collect_data(datafilter, 1, 1, 1);
     utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
-    model[terms.efv_estimate] = __f;
+    model[terms.model_description.efv_estimate] = __f;
     return model;
 }
 

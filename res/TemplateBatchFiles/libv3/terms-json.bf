@@ -1,4 +1,4 @@
-terms.json = {};
+/*terms.json = {};
 terms.json.attribute = {};
 terms.json.attribute.meta = {};
 
@@ -67,4 +67,4 @@ terms.io.requirements = "requirements";
 terms.io.authors = "authors";
 terms.io.contact = "contact";
 terms.io.version = "version";
-
+*/

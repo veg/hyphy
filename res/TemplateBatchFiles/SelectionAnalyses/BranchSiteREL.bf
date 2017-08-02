@@ -23,7 +23,7 @@ LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 
-ChoiceList  (oldBSREL,"Run the adaptive version of BS-REL?", 1,NO_SKIP,
+ChoiceList  (oldBSREL,"Run the adaptive version of BS-REL (aka aBSREL)?", 1,NO_SKIP,
         "Yes","[Strongly recommended] Automatically decide on appropriate model complexity among branches",
         "No", "[Compatibility only] Sets the number of rate classes on each branch to 3 (as done with the 2011 version of BS-REL)");
 
@@ -42,12 +42,14 @@ if (doSynRateVariation < 0) {
 
 _BSREL_json    = {"fits" : {},
                   "test results" : {},
-                  "timers" : {}
+                  "timers" : {},
+                  "input": {}
                   };
 
 if (oldBSREL) {
     _BSREL_json["version"] = "3-rate BS-REL";
     _BSREL_json["PMID"] = "21670087";
+    
 } else {
     _BSREL_json["version"] = "Adaptive BS-REL";
     _BSREL_json["PMID"] = "25697341";
@@ -59,6 +61,7 @@ _BSREL_json["convergence failures"] = 0;
 
 doSynRateVariation = 1-doSynRateVariation;
 
+SetDialogPrompt("Provide a sequence alignment file:");
 DataSet 			ds 				= ReadDataFile(PROMPT_FOR_FILE);
 DataSetFilter 		dsf 			= CreateFilter(ds,3,"","",GeneticCodeExclusions);
 HarvestFrequencies	(nuc3, dsf, 3, 1, 1);
@@ -95,7 +98,12 @@ ExecuteCommands ("Tree baselineTree = " + tree_info["string"]);
 /* 
 Add input data information to JSON
 */
-(_BSREL_json["input"])["filename"] = LAST_FILE_PATH;
+filename = LAST_FILE_PATH;
+_BSREL.output_prefix = filename + ".ABSREL";
+_BSREL.json_path = _BSREL.output_prefix + ".json";
+
+
+(_BSREL_json["input"])["filename"] = filename;
 (_BSREL_json["input"])["tree string"] = tree_info["string_with_lengths"];
 (_BSREL_json["input"])["sequences"] = ds.species;
 (_BSREL_json["input"])["sites"] = ds.sites/3;
@@ -190,20 +198,21 @@ fprintf (stdout, "\n");
 
 //******* BASE MODEL FITTING ********//
 
-
-SetDialogPrompt ("Save analysis results to");
+// Uncomment these lines to save intermediate files in addition to the JSON
+//SetDialogPrompt ("Save analysis results to");
+//fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Branch,Mean_dNdS,RateClasses,OmegaOver1,WtOmegaOver1,LRT,p,p_Holm,BranchLength");
+//csvFilePath = LAST_FILE_PATH;
 
 lrt_column = 4;
 p_uncorrected_column = 5;
 p_corrected_column = 6;
 branch_length_column = 7;
 
-fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Branch,Mean_dNdS,RateClasses,OmegaOver1,WtOmegaOver1,LRT,p,p_Holm,BranchLength");
-csvFilePath = LAST_FILE_PATH;
 
 fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
 
-lfOut	= csvFilePath + ".mglocal.fit";
+// Uncomment line to save intermediate files in addition to the JSON
+//lfOut	= csvFilePath + ".mglocal.fit";
 
 taskTimerStart (0);
 if (_reload_local_fit) {
@@ -234,6 +243,8 @@ current_log_L           = localLL;
 sample_size             = dsf.sites * dsf.species;
 current_IC             = getIC (current_log_L, current_parameter_count, sample_size);
 
+
+// STORE LF
 json_store_lf                (_BSREL_json, "MG94", localLL, localParams,current_IC, _BSREL_timers[0], +BranchLength (baselineTree,-1), Format (baselineTree, 1,1));
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
@@ -441,10 +452,11 @@ for (k = 0; k < totalBranchCount; k+=1) {
 Tree mixtureTree = stepupTree;
 ClearConstraints (mixtureTree);
 
-INCLUDE_MODEL_SPECS = 1;
-save_tree_string_to	= csvFilePath + ".annotated.nwk";
-fprintf (save_tree_string_to, CLEAR_FILE, stepupTree);
-INCLUDE_MODEL_SPECS = 0;
+// Uncomment lines to save intermediate files in addition to the JSON
+//INCLUDE_MODEL_SPECS = 1;
+//save_tree_string_to	= csvFilePath + ".annotated.nwk";
+//fprintf (save_tree_string_to, CLEAR_FILE, stepupTree);
+//INCLUDE_MODEL_SPECS = 0;
 
 // need this so that DeleteObject does not die later
 LikelihoodFunction stepupLF = (dsf, mixtureTree);
@@ -490,11 +502,11 @@ fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF
 //LF_SMOOTHING_SCALER           = 10;
 LF_SMOOTHING_REDUCTION        = 0.1;
 
-
-lfOut	= csvFilePath + ".fit";
-LIKELIHOOD_FUNCTION_OUTPUT = 7;
-fprintf (lfOut, CLEAR_FILE, three_LF);
-LIKELIHOOD_FUNCTION_OUTPUT = 2;
+// Uncomment line to save intermediate files in addition to the JSON
+//lfOut	= csvFilePath + ".fit";
+//LIKELIHOOD_FUNCTION_OUTPUT = 7;
+//fprintf (lfOut, CLEAR_FILE, three_LF);
+//LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 if (doSynRateVariation) {
     bsrel_bls = extractBranchLengthsFromBSREL_SRV ("mixtureTree");
@@ -619,7 +631,8 @@ for	(k = 0; k < totalBranchCount; k += 1) {
 
 
             fprintf 					  (stdout, "[PHASE 2/REPEAT] Detected a convergence problem; refitting the LOCAL alternative model with new starting values\n");
-            lfOut	= csvFilePath + ".fit";
+            // Uncomment line to save intermediate files in addition to the JSON
+            // lfOut	= csvFilePath + ".fit";
             _BSREL_json["convergence failures"] += 1;
             Optimize					  (res_three_LF,three_LF);
             json_store_lf                 ( _BSREL_json,
@@ -632,9 +645,10 @@ for	(k = 0; k < totalBranchCount; k += 1) {
                                             _BSREL_timers[2],
                                             +BranchLength (T, -1),
                                             renderString);
-            LIKELIHOOD_FUNCTION_OUTPUT = 7;
-            fprintf (lfOut, CLEAR_FILE, three_LF);
-            LIKELIHOOD_FUNCTION_OUTPUT = 2;
+            // Uncomment lines to save intermediate files in addition to the JSON
+            //LIKELIHOOD_FUNCTION_OUTPUT = 7;
+            //fprintf (lfOut, CLEAR_FILE, three_LF);
+            //LIKELIHOOD_FUNCTION_OUTPUT = 2;
             _stashLF = saveLF ("three_LF");
             k = 0;
             secondaryOptimizations = 0;
@@ -685,17 +699,18 @@ if (hasBranchesUnderSelection == 0) {
     fprintf (stdout, "\tNo branches were found to be under selection at p <= ", pthreshold, "\n");
 }
 
+// Uncomment lines to save intermediate files in addition to the JSON
+//for		(k = 0; k < totalBranchCount; k = k+1) {
+//    fprintf (csvFilePath, "\n", bNames[k], ",", Join(",",pValueByBranch[k][-1]));
+//}
 
-for		(k = 0; k < totalBranchCount; k = k+1) {
-    fprintf (csvFilePath, "\n", bNames[k], ",", Join(",",pValueByBranch[k][-1]));
-}
+// Uncomment line to save intermediate files in addition to the JSON
+//fprintf (csvFilePath, CLOSE_FILE);
 
 
-fprintf (csvFilePath, CLOSE_FILE);
-jsonFilePath = csvFilePath + ".json";
 taskTimerStop (4);
 (_BSREL_json ["timers"])["overall"] = _BSREL_timers[4];
-fprintf        (jsonFilePath, CLEAR_FILE, _BSREL_json);
+fprintf        (_BSREL.json_path, CLEAR_FILE, _BSREL_json);
 
 
 DeleteObject (stepupLF, three_LF, base_FL);

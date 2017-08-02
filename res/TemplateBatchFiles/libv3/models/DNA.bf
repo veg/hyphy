@@ -1,5 +1,7 @@
-LoadFunctionLibrary ("terms.bf");
+//LoadFunctionLibrary ("terms.bf");
 LoadFunctionLibrary ("frequencies.bf");
+LoadFunctionLibrary ("libv3/all-terms.bf");
+
 
 /** @module models.DNA */
 
@@ -15,20 +17,20 @@ models.DNA.alphabet = {{"A","C","G","T"}};
  */
 function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
 	
-	__alphabet = modelSpec ["alphabet"];
+	__alphabet = modelSpec [terms.model_description.alphabet];
 	assert (Type (__alphabet) == "Matrix" && Columns (__alphabet) == 4, "Unsupported or missing alphabet '" + __alphabet + "'");
 	
-	__modelType = modelSpec["type"];
+	__modelType = modelSpec[terms.model_description.type];
 	if (Type (__modelType) == "None" || Type (__modelType) == "Number") {
-		__modelType = "global";
+		__modelType = terms.global;
 	}
-	modelSpec["type"] = __modelType;
+	modelSpec[terms.model_description.type] = __modelType;
 	assert (__modelType == terms.local || __modelType == terms.global, "Unsupported or missing model type '" + __modelType + "'");
 	
-	__rate_function = modelSpec ["q_ij"];
+	__rate_function = modelSpec [terms.model_description.q_ij];
 	assert (utility.IsFunction (__rate_function), "Missing q_ij callback in model specification");
 
-	__time_function = modelSpec ["time"];
+	__time_function = modelSpec [terms.model_description.time];
 	assert (utility.IsFunction (__time_function), "Missing time callback in model specification");
 	
 	__rate_variation = model.generic.get_rate_variation (modelSpec);
@@ -37,11 +39,12 @@ function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
 
 	if (None != __rate_variation) {
 
+    //TODO
 		__rp = Call (__rate_variation["distribution"], __rate_variation["options"], namespace);
 		__rate_variation ["id"] = (__rp[terms.category])["id"];
 				
 		parameters.DeclareCategory   (__rp[terms.category]);
-        parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+        parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 	} 
 	
 	__rate_matrix = {4,4};
@@ -57,7 +60,7 @@ function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
 													
 																							   
 		 	if (None != __rate_variation) {
-				__rp = Call (__rate_variation["rate_modifier"], 
+				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier], 
 							 __rp,
 							 __alphabet[_rowChar],
 							 __alphabet[_colChar],
@@ -67,7 +70,7 @@ function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
  			
             if (Abs (__rp[terms.rate_entry])) {			
                 parameters.DeclareGlobal (__rp[terms.global], __global_cache);
-                parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+                parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
                             
                 __rate_matrix [_rowChar][_colChar] = __rp[terms.rate_entry];
                 __rate_matrix [_colChar][_rowChar] = __rp[terms.rate_entry];
@@ -81,10 +84,10 @@ function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
 	__rp = Call (__time_function, __modelType);
 	
 	if (Abs (__rp)) {
-		((modelSpec["parameters"])[terms.local])[terms.timeParameter ()] = __rp; 
-	    modelSpec [terms.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, 0);
+		((modelSpec[terms.parameters])[terms.local])[terms.timeParameter ()] = __rp; 
+	    modelSpec [terms.model_description.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, 0);
 	} else {
-	    modelSpec [terms.rate_matrix] = __rate_matrix;
+	    modelSpec [terms.model_description.rate_matrix] = __rate_matrix;
 	}
 	
 }

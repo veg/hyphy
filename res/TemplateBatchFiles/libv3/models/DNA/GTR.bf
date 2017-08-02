@@ -2,6 +2,7 @@ LoadFunctionLibrary("../DNA.bf");
 LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
+LoadFunctionLibrary ("libv3/all-terms.bf");
 
 /** @module models.DNA.GTR */
 
@@ -16,7 +17,7 @@ function models.DNA.GTR.ModelDescription(type) {
         "description": "The general time reversible (GTR) model of nucleotide substitution",
         "canonical": 1, // is of the r_ij \times \pi_j form
         "reversible": 1,
-        terms.efv_estimate_name: terms.freqs.4x1,
+        "Equilibrium frequency estimator": terms.freqs.4x1,
         "parameters": {
             "global": {},
             "local": {},
@@ -70,11 +71,12 @@ function models.DNA.GTR._generateRate(fromChar, toChar, namespace, model_type) {
 function models.DNA.GTR._defineQ(gtr, namespace) {
 
     models.DNA.generic.DefineQMatrix(gtr, namespace);
-    if (gtr["type"] == terms.global) {
-        parameters.SetConstraint(((gtr["parameters"])[terms.global])[terms.nucleotideRate("A", "G")], "1", "");
+    
+    if (gtr[terms.model_description.type] == terms.global) {
+        parameters.SetConstraint(((gtr[terms.parameters])[terms.global])[terms.nucleotideRate("A", "G")], "1", "");
     }
-    if (gtr["type"] == terms.local) {
-        parameters.SetConstraint(((gtr["parameters"])[terms.local])[terms.nucleotideRate("A", "G")], "1", "");
+    if (gtr[terms.model_description.type] == terms.local) {
+        parameters.SetConstraint(((gtr[terms.parameters])[terms.local])[terms.nucleotideRate("A", "G")], "1", "");
     }
     return gtr;
 }

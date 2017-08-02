@@ -12,7 +12,6 @@ LoadFunctionLibrary("../../UtilityFunctions.bf");
  * @param {String} code
  */
 lfunction models.codon.MG_REV.ModelDescription(type, code) {
-
 	
     codons = models.codon.MapCode(code);
 
@@ -25,7 +24,7 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
         "description": "The Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution",
         "canonical": 0, // is NOT of the r_ij \times \pi_j form
         "reversible": 1,
-        ^ "terms.efv_estimate_name": ^ "terms.freqs.CF3x4",
+        utility.getGlobalValue("terms.model_description.efv_estimate_name"): utility.getGlobalValue("terms.freqs.CF3x4"),
         "parameters": {
             "global": {},
             "local": {}
@@ -82,13 +81,13 @@ lfunction models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace
                 aa_rate = beta;
                 (_GenerateRate.p[model_type])[beta_term] = aa_rate;
             }
-            _GenerateRate.p[^"terms.rate_entry"] = nuc_rate + "*" + aa_rate;
+            _GenerateRate.p[^"terms.model_description.rate_entry"] = nuc_rate + "*" + aa_rate;
         } else {
             if (model_type == ^"terms.local") {
                 (_GenerateRate.p[model_type])[alpha_term] = alpha;
-                _GenerateRate.p[^"terms.rate_entry"] = nuc_rate + "*" + alpha;
+                _GenerateRate.p[^"terms.model_description.rate_entry"] = nuc_rate + "*" + alpha;
             } else {
-                _GenerateRate.p[^"terms.rate_entry"] = nuc_rate;
+                _GenerateRate.p[^"terms.model_description.rate_entry"] = nuc_rate;
             }
         }
     }
@@ -105,7 +104,7 @@ lfunction models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace
  */
 function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
     models.codon.generic.DefineQMatrix(mg_rev, namespace);
-    parameters.SetConstraint(((mg_rev["parameters"])[terms.global])[terms.nucleotideRate("A", "G")], "1", "");
+    parameters.SetConstraint(((mg_rev[terms.parameters])[terms.global])[terms.nucleotideRate("A", "G")], "1", "");
     return mg_rev;
 }
 
@@ -131,7 +130,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
 
     if (Type(value) == "AssociativeList") {
-        if (value[terms.branch_length_scaler] == terms.branch_length_constrain) {
+        if (value[terms.model_description.branch_length_scaler] == terms.branch_length_constrain) {
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                 if (Abs(model[terms.synonymous_rate]) == 0) {
                     bl_string = model["branch-length-string"];
@@ -158,11 +157,11 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
             models.codon.MG_REV.set_branch_length.lp = 0;
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
-                Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
+                Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.model_description.branch_length_scaler] + ")*" + value[terms.branch_length]);
                 models.codon.MG_REV.set_branch_length.lp += 1;
             }
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
-                Eval(models.codon.MG_REV.set_branch_length.beta.p + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
+                Eval(models.codon.MG_REV.set_branch_length.beta.p + ":=(" + value[terms.model_description.branch_length_scaler] + ")*" + value[terms.branch_length]);
                 models.codon.MG_REV.set_branch_length.lp += 1;
             }
             return models.codon.MG_REV.set_branch_length.lp;

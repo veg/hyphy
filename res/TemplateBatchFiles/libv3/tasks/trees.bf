@@ -1,5 +1,5 @@
 LoadFunctionLibrary("../IOFunctions.bf");
-LoadFunctionLibrary("../terms-json.bf");
+//LoadFunctionLibrary("../terms-json.bf");
 LoadFunctionLibrary("../all-terms.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
@@ -289,9 +289,9 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
         io.CheckAssertion("Rows(`&tree_matrix`) >= partition_count", "The number of trees in the NEXUS block cannot be smaller than the number of partitions in the file");
         for (i = 0; i < partition_count; i += 1) {
             partrees + {
-                ^"terms.alignments.name": partitions[i][0],
-                ^"terms.trees.filter_string": partitions[i][1],
-               ^"terms.trees.tree": trees.LoadAnnotatedTopologyAndMap(tree_matrix[i][1], mapping)
+                utility.getGlobalValue("terms.data.name"): partitions[i][0],
+                utility.getGlobalValue("terms.data.filter_string"): partitions[i][1],
+                utility.getGlobalValue("terms.data.tree"): trees.LoadAnnotatedTopologyAndMap(tree_matrix[i][1], mapping)
             };
         }
     } else { // no tree matrix; allow if there is a single partition
@@ -300,9 +300,9 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
 
         for (i = 0; i < partition_count; i += 1) {
             partrees + {
-                ^"terms.alignments.name": partitions[i][0],
-                ^"terms.trees.filter_string": partitions[i][1],
-                ^"terms.trees.tree": tree_info
+                utility.getGlobalValue("terms.data.name"): partitions[i][0],
+                utility.getGlobalValue("terms.data.filter_string"): partitions[i][1],
+                utility.getGlobalValue("terms.data.tree"): tree_info
             };
         }
     }
@@ -375,7 +375,7 @@ function trees.ExtractTreeInfo(tree_string) {
     return {
         terms.trees.newick: Format(T, 1, 0),
         terms.trees.newick_with_lengths: Format(T, 1, 1),
-        terms.trees.branch_length: trees.LoadAnnotatedTopology.bls,
+        terms.branch_length: trees.LoadAnnotatedTopology.bls,
         terms.trees.newick_annotated: T.str,
         terms.trees.model_map: modelMap,
         terms.trees.partitioned: leaves_internals,

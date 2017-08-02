@@ -38,9 +38,9 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
     aa_mapping   = genetic_code.DefineCodonToAAMapping (genetic_code);
     integer_mapping = genetic_code.DefineIntegerToAAMapping (genetic_code, TRUE);
 
-    result      = {"codon" : {},
-                   "amino-acid" : {},
-                   "synonymous substitution count" : {},
+    result      = {utility.getGlobalValue("terms.codon") : {},
+                   utility.getGlobalValue("terms.amino_acid") : {},
+                   utility.getGlobalValue("terms."synonymous substitution count" : {},
                    "non-synonymous substitution count" : {}};
 
     code_lookup = {"-1" : "-"};

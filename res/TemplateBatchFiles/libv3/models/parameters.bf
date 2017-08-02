@@ -1,5 +1,6 @@
 LoadFunctionLibrary("GrabBag");
-LoadFunctionLibrary("terms.bf");
+//LoadFunctionLibrary("terms.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
 
 /** @module parameters */
 
@@ -31,7 +32,7 @@ function parameters.UnconstrainParameterSet(lf, set) {
     if (None == set) {
         set = {
             {
-                terms.lf.global.constrained, terms.lf.local.constrained
+                terms.lf.global.constrained, terms.lf.local.constrained // TODO: RENAME THESE POTENTIALLY.
             }
         };
     }
@@ -133,7 +134,7 @@ function parameters.DeclareCategory.helper (dict, key, default) {
 function parameters.DeclareCategory (def) {
 	 
 	 
-	 
+	 // TODO: DEHARDCODE
 	 ExecuteCommands ("category " + def['id'] + "= (" + 
 	 			  Join (",", 
 	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"}, 
@@ -489,7 +490,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
     //result = {"branch lengths" : { "0" : {} } };
 
-    if (type == "codon") {
+    if (type == "codon") { // TODO
         factor = 1;
     } else {
         factor = 1;
@@ -500,11 +501,11 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
     for (i = 0; i < components; i += 1) {
         //((result["branch lengths"])[0])[keys[i]] = {"MLE": factor * dict[keys[i]]};
         this_component = {};
-        utility.ForEachPair((dict[i])[ ^ "terms.json.attribute.branch_length"], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {^'terms.json.MLE' : `&factor`*_branch_length_}");
+        utility.ForEachPair((dict[i])[ utility.getGlobalValue("terms.branch_length")], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {utility.getGlobalValue('terms.fit.MLE') : `&factor`*_branch_length_}");
         result[i] = this_component;
     }
 
-    return { ^ "terms.json.attribute.branch_length": result
+    return { utility.getGlobalValue("terms.branch_length"): result
     };
 }
 
@@ -524,10 +525,11 @@ function parameters.GetProfileCI(id, lf, level) {
     utility.ToggleEnvVariable("COVARIANCE_PRECISION", None);
     utility.ToggleEnvVariable("COVARIANCE_PARAMETER", None);
 
+    //TODO: used to be "`terms.lower_bound`". 
     return {
-        "`terms.lower_bound`": parameters.GetProfileCI.mx[0],
-        "`terms.MLE`": parameters.GetProfileCI.mx[1],
-        "`terms.upper_bound`": parameters.GetProfileCI.mx[2]
+        terms.lower_bound: parameters.GetProfileCI.mx[0],
+        terms.fit.MLE: parameters.GetProfileCI.mx[1],
+        terms.upper_bound: parameters.GetProfileCI.mx[2]
     };
 }
 
@@ -560,7 +562,7 @@ lfunction parameters.ExportParameterDefinition (id) {
 
 lfunction parameters.SetLocalModelParameters (model, tree, node) {
 	node_name = tree + "." + node + ".";
-    utility.ForEach ((model["parameters"])[^'terms.local'], "_parameter_", '
+    utility.ForEach ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.local")], "_parameter_", '
     	^_parameter_ = ^(`&node_name` + _parameter_);
     ');
     

@@ -88,11 +88,11 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 							 __rate_variation ["id"]);
  			}
 
-            if (Abs (__rp[terms.rate_entry])) {
+            if (Abs (__rp[terms.model_description.rate_entry])) {
                 parameters.DeclareGlobal (__rp[terms.global], __global_cache);
                 parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
-                __rate_matrix [_rowChar][_colChar] = __rp[terms.rate_entry];
-                __rate_matrix [_colChar][_rowChar] = __rp[terms.rate_entry];
+                __rate_matrix [_rowChar][_colChar] = __rp[terms.model_description.rate_entry];
+                __rate_matrix [_colChar][_rowChar] = __rp[terms.model_description.rate_entry];
             }
 		}
 	}
@@ -102,12 +102,12 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
         if (Abs (__rp)) {
             ((modelSpec["parameters"])[terms.local])[terms.synonymous_rate] = __rp;
-            modelSpec [terms.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, FALSE);
+            modelSpec [terms.model_description.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, FALSE);
         } else {
-            modelSpec [terms.rate_matrix] = __rate_matrix;
+            modelSpec [terms.model_description.rate_matrix] = __rate_matrix;
         }
     } else {
-        modelSpec [terms.rate_matrix] = __rate_matrix;
+        modelSpec [terms.model_description.rate_matrix] = __rate_matrix;
     }
 
 	return modelSpec;
