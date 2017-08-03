@@ -10,12 +10,12 @@ LoadFunctionLibrary("libv3/models/DNA/GTR.bf");
 utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 
 relative_nuc_rates.analysis_description = {
-    "info": "For a fixed **nucleotide** alignment and tree, infer **relative** site specific substitution rates,
+    terms.io.info: "For a fixed **nucleotide** alignment and tree, infer **relative** site specific substitution rates,
     by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler",
-    "version": "0.1alpha",
-    "reference": "@TBD. Analysis based on Rate4Site method, extended for nucleotides: Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. relative_nuc_rates: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
-    "authors": "Sergei L Kosakovsky Pond and Stephanie J Spielman",
-    "contact": "{spond,stephanie.spielman}@temple.edu"
+    terms.io.version: "0.1alpha",
+    terms.io.reference: "@TBD. Analysis based on Rate4Site method, extended for nucleotides: Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. relative_nuc_rates: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
+    terms.io.authors: "Sergei L Kosakovsky Pond and Stephanie J Spielman",
+    terms.io.contact: "{spond,stephanie.spielman}@temple.edu"
 };
 
 io.DisplayAnalysisBanner(relative_nuc_rates.analysis_description);
@@ -27,19 +27,20 @@ SetDialogPrompt ("Specify a nucleotide multiple sequence alignment file");
 
 
 relative_nuc_rates.alignment_info       = alignments.ReadNucleotideDataSet ("relative_nuc_rates.dataset", None);
-relative_nuc_rates.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relative_nuc_rates.alignment_info[utility.getGlobalValue("terms.json.partitions")], None);
+relative_nuc_rates.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relative_nuc_rates.alignment_info[utility.getGlobalValue("terms.data.partitions")], None);
 relative_nuc_rates.partition_count = Abs (relative_nuc_rates.partitions_and_trees);
+
 
 io.CheckAssertion ("relative_nuc_rates.partition_count==1", "This analysis can only handle a single partition");
 
 
+
 io.ReportProgressMessageMD ("relative_nuc_rates", "Data", "Input alignment description");
 io.ReportProgressMessageMD ("relative_nuc_rates", "Data", "Loaded **" +
-                            relative_nuc_rates.alignment_info ["sequences"] + "** sequences, **" +
-                            relative_nuc_rates.alignment_info ["sites"] + "** sites, and **" + relative_nuc_rates.partition_count + "** partitions from \`" + relative_nuc_rates.alignment_info ["file"] + "\`");
+                            relative_nuc_rates.alignment_info [terms.data.sequences] + "** sequences, **" +
+                            relative_nuc_rates.alignment_info [terms.data.sites] + "** sites, and **" + relative_nuc_rates.partition_count + "** partitions from \`" + relative_nuc_rates.alignment_info [terms.data.file] + "\`");
 
 relative_nuc_rates.filter_specification = alignments.DefineFiltersForPartitions (relative_nuc_rates.partitions_and_trees, "relative_nuc_rates.dataset" , "relative_nuc_rates.filter.", relative_nuc_rates.alignment_info);
-
 
 
 /********* Select model *********/
@@ -60,8 +61,8 @@ relative_nuc_rates.model_generator = relative_nuc_rates.model_generators[relativ
 
 io.ReportProgressMessageMD ("relative_nuc_rates", "overall", "Obtaining alignment-wide branch-length estimates");
 
-relative_nuc_rates.trees = utility.Map (relative_nuc_rates.partitions_and_trees, "_value_", "_value_['tree']"); // value => value['tree']
-relative_nuc_rates.filter_names = utility.Map (relative_nuc_rates.filter_specification, "_value_", "_value_['name']"); // value => value['name']
+relative_nuc_rates.trees = utility.Map (relative_nuc_rates.partitions_and_trees, "_value_", "_value_[terms.data.tree]"); // value => value['tree']
+relative_nuc_rates.filter_names = utility.Map (relative_nuc_rates.filter_specification, "_value_", "_value_[terms.data.name]"); // value => value['name']
 relative_nuc_rates.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           relative_nuc_rates.filter_names,
                                                           relative_nuc_rates.trees, 
@@ -71,7 +72,7 @@ relative_nuc_rates.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           
 estimators.fixSubsetOfEstimates(relative_nuc_rates.alignment_wide_MLES, relative_nuc_rates.alignment_wide_MLES[terms.global]);
 
-io.ReportProgressMessageMD ("relative_nuc_rates", "overall", ">Fitted an alignment-wide model. **Log-L = " + relative_nuc_rates.alignment_wide_MLES ['LogL'] + "**.");
+io.ReportProgressMessageMD ("relative_nuc_rates", "overall", ">Fitted an alignment-wide model. **Log-L = " + relative_nuc_rates.alignment_wide_MLES [terms.fit.log_likelihood] + "**.");
 
 
 /** 
@@ -80,7 +81,7 @@ io.ReportProgressMessageMD ("relative_nuc_rates", "overall", ">Fitted an alignme
 
 
 relative_nuc_rates.table_screen_output  = {{"Site", "Rel. rate (MLE)", "95% profile likelihood CI"}};
-relative_nuc_rates.table_output_options = {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
+relative_nuc_rates.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minumum_column_width : 16, terms.table_options.align : "center"};
 
 relative_nuc_rates.site_patterns = alignments.Extract_site_patterns (relative_nuc_rates.filter_names[0]);
 
@@ -114,7 +115,7 @@ relative_nuc_rates.site_model_mapping = {"relative_nuc_rates_site_model_instance
 // relative_nuc_rates.site_tree is created from the information in  relative_nuc_rates.trees[0]
 // and populated with (the default) model        
         
-model.ApplyModelToTree( "relative_nuc_rates.site_tree", relative_nuc_rates.trees[0], {"default" : relative_nuc_rates.site_model}, None);
+model.ApplyModelToTree( "relative_nuc_rates.site_tree", relative_nuc_rates.trees[0], {terms.default : relative_nuc_rates.site_model}, None);
 
 // create a site filter; this is an ugly hack for the time being
 // alignments.serialize_site_filter returns HBL code as string in 
@@ -122,7 +123,7 @@ model.ApplyModelToTree( "relative_nuc_rates.site_tree", relative_nuc_rates.trees
  
 ExecuteCommands (alignments.serialize_site_filter (
 								   relative_nuc_rates.filter_names[0],
-								   ((relative_nuc_rates.site_patterns[0])["sites"])[0]));
+								   ((relative_nuc_rates.site_patterns[0])[terms.data.sites])[0]));
 
 __make_filter ("relative_nuc_rates.site_filter");
 
@@ -154,8 +155,8 @@ utility.ForEachPair (relative_nuc_rates.site_patterns, "_pattern_", "_pattern_in
 	'
 		mpi.QueueJob (relative_nuc_rates.queue, "relative_nuc_rates.handle_a_site", {"0" : "relative_nuc_rates.site_likelihood",
 														"1" : alignments.serialize_site_filter
-														   ((relative_nuc_rates.filter_specification[0])["name"],
-														   (_pattern_info_["sites"])[0]),
+														   ((relative_nuc_rates.filter_specification[0])[terms.data.name],
+														   (_pattern_info_[terms.data.sites])[0]),
 														"2" : _pattern_info_,
 														"3" : relative_nuc_rates.site_model_mapping
 														},
@@ -165,55 +166,29 @@ utility.ForEachPair (relative_nuc_rates.site_patterns, "_pattern_", "_pattern_in
 
 mpi.QueueComplete (relative_nuc_rates.queue);
 
-relative_nuc_rates.stats = (math.GatherDescriptiveStats(utility.Map (utility.Values(utility.Map (relative_nuc_rates.rate_estimates, "_value_", "_value_[terms.MLE]")), "_value_", "0+_value_")));
-
-
-/*
-{
- "Count":148,
- "Mean":1.016735774503485,
- "Median":0.9798409545051374,
- "Min":0.4983360276068412,
- "Max":1.729838344017373,
- "2.5%":0.6273256414437858,
- "97.5%":1.434471693559964,
- "Sum":150.4768946265158,
- "Std.Dev":0.2171843066029547,
- "Variance":0.04716902303460622,
- "COV":0.2136093880526776,
- "Skewness":0.492213048250155,
- "Kurtosis":3.242020650192995,
- "Sq. sum":300.9537892530316,
- "Non-negative":148
-}
-*/
+relative_nuc_rates.site_rates = utility.Map( utility.Values(utility.Map (relative_nuc_rates.rate_estimates, "_value_", "_value_[terms.fit.MLE]")), "_value_", "0+_value_");
+relative_nuc_rates.stats = math.GatherDescriptiveStats(relative_nuc_rates.site_rates);
 
 io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "Rate distribution summary");
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Mean**: "  + Format (relative_nuc_rates.stats["Mean"], 6, 2));
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Median**: "  + Format (relative_nuc_rates.stats["Median"], 6, 2));
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Std.Dev**: "  + Format (relative_nuc_rates.stats["Std.Dev"], 6, 2));
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **95% Range**: ["  + Format (relative_nuc_rates.stats["2.5%"], 5,2) + "," + Format (relative_nuc_rates.stats["97.5%"], 5,2) + "]");
-/* Without formatting:
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* [Mean] "  + relative_nuc_rates.stats["Mean"]);
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* [Median] "  + relative_nuc_rates.stats["Median"]);
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* [Std.Dev] "  + relative_nuc_rates.stats["Std.Dev"]);
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* [95% Range] "  + relative_nuc_rates.stats["2.5%"] + ":" + relative_nuc_rates.stats["97.5%"]);
-*/
+io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Mean**: "  + Format (relative_nuc_rates.stats[terms.math.mean], 6, 2));
+io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Median**: "  + Format (relative_nuc_rates.stats[terms.math.median], 6, 2));
+io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Std.Dev**: "  + Format (relative_nuc_rates.stats[terms.math.stddev], 6, 2));
+io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **95% Range**: ["  + Format (relative_nuc_rates.stats[terms.math.2.5], 5,2) + "," + Format (relative_nuc_rates.stats[terms.math.97.5], 5,2) + "]");
 
 
-
-tree_definition   = utility.Map (relative_nuc_rates.partitions_and_trees, "_partition_", '_partition_["tree"]');
-io.SpoolJSON ({ "input" : {"filename": relative_nuc_rates.alignment_info["file"],
-                          "sequences": relative_nuc_rates.alignment_info["sequences"],
-                          "sites":     relative_nuc_rates.alignment_info["sites"],
-                          "tree string": (tree_definition[0])["string_with_lengths"]},
-                "analysis" : relative_nuc_rates.analysis_description,       
-				"Relative site rate estimates" : relative_nuc_rates.rate_estimates, 
-				"Global fit": { "tree string": (relative_nuc_rates.alignment_wide_MLES["Trees"])[0],
-				        //     "branch lengths": relative_nuc_rates.alignment_wide_MLES["branch length"],
-				               "logL": relative_nuc_rates.alignment_wide_MLES["LogL"]}
+tree_definition   = utility.Map (relative_nuc_rates.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
+io.SpoolJSON ({ terms.json.input : {terms.json.file: relative_nuc_rates.alignment_info[terms.data.file],
+                          terms.json.sequences: relative_nuc_rates.alignment_info[terms.data.sequences],
+                          terms.json.sites:     relative_nuc_rates.alignment_info[terms.data.sites],
+                          terms.json.tree_string: (tree_definition[0])[terms.trees.newick_with_lengths]},
+                terms.json.analysis : relative_nuc_rates.analysis_description,       
+				terms.json.relative_site_rates : relative_nuc_rates.rate_estimates, 
+				terms.json.global: {terms.json.model: relative_nuc_rates.model_name,
+				               //terms.json.branch_lengths: relative_nuc_rates.alignment_wide_MLES[terms.branch_length],
+				               terms.json.tree_string: (relative_nuc_rates.alignment_wide_MLES[terms.fit.trees])[0],
+				               terms.json.log_likelihood: relative_nuc_rates.alignment_wide_MLES[terms.fit.log_likelihood]}
 				},
-				relative_nuc_rates.alignment_info["file"] + ".site-rates.json");
+				relative_nuc_rates.alignment_info[terms.data.file] + ".site-rates.json");
 
 
 //----------------------------------------------------------------------------------------
@@ -234,19 +209,20 @@ lfunction relative_nuc_rates.handle_a_site (lf, filter_data, pattern_info, model
     __make_filter ((lfInfo["Datafilters"])[0]);
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
     
-    if (pattern_info ["is_constant"]) {
+    if (pattern_info [utility.getGlobalValue("terms.data.is_constant")]) {
     	// the MLE for a constant site is 0; 
     	// only the CI is non-trivial
-		^(^"relative_nuc_rates.site_model_scaler_name") = 0;
+		^(utility.getGlobalValue("relative_nuc_rates.site_model_scaler_name")) = 0;
     
     } else {
     
-		^(^"relative_nuc_rates.site_model_scaler_name") = 1;
+		^(utility.getGlobalValue("relative_nuc_rates.site_model_scaler_name")) = 1;
 		Optimize (results, ^lf);
 	}
 	
-    return parameters.GetProfileCI (^"relative_nuc_rates.site_model_scaler_name", lf, 0.95);
+    return parameters.GetProfileCI (utility.getGlobalValue("relative_nuc_rates.site_model_scaler_name"), lf, 0.95);
 }
+
 
 // handle result processing
 
@@ -258,22 +234,22 @@ lfunction relative_nuc_rates.store_results (node, result, arguments) {
     pattern_info    = arguments [2];
 
 
-	if ((^'relative_nuc_rates.table_output_options')["header"]) {
+	if ((^'relative_nuc_rates.table_output_options')[utility.getGlobalValue("terms.table_options.header")]) {
 		
 		io.ReportProgressMessageMD ("relative_nuc_rates", "sites", "Site rate estimates and associated 95% profile likelihood estimates\n"); 
 
 		fprintf (stdout,
 			io.FormatTableRow (^'relative_nuc_rates.table_screen_output',^'relative_nuc_rates.table_output_options'));
-		(^'relative_nuc_rates.table_output_options')["header"] = FALSE;
+		(^'relative_nuc_rates.table_output_options')[utility.getGlobalValue("terms.table_options.header")] = FALSE;
 	}
 	
 	
-	utility.ForEach (pattern_info["sites"], "_site_index_",
+	utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_site_index_",
 		"
 			relative_nuc_rates.rate_estimates [_site_index_+1] = `&result`;
 			result_row = {1,3};
 			result_row [0] = '' + (_site_index_ + 1);
-			result_row [1] = Format((`&result`)[terms.MLE],6,3);
+			result_row [1] = Format((`&result`)[terms.fit.MLE],6,3);
 			result_row [2] = Format((`&result`)[terms.lower_bound],6,3) + ' :'  +Format((`&result`)[terms.upper_bound],6,3);
 			fprintf (stdout,
 				io.FormatTableRow (result_row,relative_nuc_rates.table_output_options));

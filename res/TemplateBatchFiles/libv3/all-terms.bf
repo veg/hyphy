@@ -1,15 +1,98 @@
-/************************************************************
-This top section contains potential new terms which have NOT BEEN IMPLEMENTED. //\d shows counts of how many times observed to determine if should implement,=.
-************************************************************/
+// MAKE SURE TO SWAP EVERYTHING
+//terms.model.id = "id"; --> terms.id
+//terms.model.model = "model";      ---> terms.model
+//terms.model.parameters = "parameters"; ---> terms.parameters
+//terms.model.parameters.global = "global"; ---> terms.global 
+//terms.model.parameters.local = "local";   ---> terms.local 
+//terms.model.parameters.empirical = "empirical"; ---> terms.model.empirical
+//terms.model.translation_table = "translation-table";   ----> terms.translation_table
+//terms.model.alphabet = "alphabet";       ----> terms.alphabet
+//terms.model.bases = "bases";  --> terms.bases
+//terms.model.stop =  "stop"; -->  terms.stop_codons
+// terms.efv_estimate_name = "Equilibrium frequency estimator"; // ---> terms.model.efv_estimate_name
+//terms.efv_estimate = "EFV";  //   --> terms.fit.efv_estimate
+
+
+/* Models and fits */
+//terms.MLE              = "MLE";   ----> terms.fit.MLE
+//terms.log_likelihood   = "LogL";   -----> terms.fit.log_likelihood
+//terms.empirical        = "empirical";    ----> terms.model.empirical
+//terms.data.id     -------> terms.id
+//terms.model.id     -------> terms.id
+//terms.attribute.test           = "test";      ------> terms.tree_attributes.test
+//terms.attribute.background     = "background";------> terms.tree_attributes.background
+//terms.data.ordering  = "ordering";     ----> terms.code.ordering
+//terms.data.mapping  = "mapping";     ----> terms.code.mapping
+//terms.rate_variation.description = "description"; ------> terms.desription
+//terms.model.description = "description"; ------> terms.desription
+
+
+
+terms.mpi.job_id = "job_id";
+terms.mpi.callback = "callback";
+terms.mpi.arguments = "arguments";
+terms.mpi.Models = "Models";
+terms.mpi.LikelihoodFunctions = "LikelihoodFunctions";
+terms.mpi.Headers = "Headers";
+terms.mpi.Variables = "Variables";
+terms.mpi.Functions = "Functions";
+
+
+
+
+
+
+
+
+
+
+
+
+terms.math.count = "Count";
+terms.math.mean = "Mean";
+terms.math.median = "Median";
+terms.math.stddev = "Std.Dev";
+terms.math.minimum = "Min";
+terms.math.maximum = "Max";
+terms.math.2.5 = "2.5%";
+terms.math.97.5 = "97.5%";
+terms.math.sum = "Sum";
+terms.math.variance = "Variance";
+terms.math.cov = "COV";
+terms.math.skewness = "Skewness";
+terms.math.kurtosis = "Kurtosis";
+terms.math.square_sum = "Sq. sum";
+terms.math.non_negative = "Non-negative";
+
 
 terms.header = "header";//1
 terms.rows = "rows";//1
 
-terms.number_precision = "number-precision";
-terms.table_options.header = terms.header; // 1
-terms.table_options.minumum_column_width = "min-column-width";// 1
-terms.table_options.align    = "align";// 1
-terms.table_options.column_widths = "column-widths";// 1
+terms.table_options.header = terms.header;
+terms.table_options.minumum_column_width = "min-column-width";
+terms.table_options.align    = "align";
+terms.table_options.column_widths = "column-widths";
+
+terms.alphabet       = "alphabet";
+terms.amino_acid     = "amino-acid";
+terms.codon          = "codon"; // TO DO: CODONS?
+terms.sense_codons   = "sense";
+terms.stop_codons    = "stop"; //TODO. This is actually ok.
+terms.bases          = "bases"; 
+terms.codons         = "codons"; // TODO: CODON?
+terms.translation_table = "translation-table";
+
+terms.code   = "code";
+terms.code.stops = "stops";
+terms.code.ordering = "ordering";
+terms.code.mapping = "mapping";
+
+
+
+terms.diff.to = "to";
+terms.diff.from = "from";
+terms.diff.position = "position";
+
 
 
 terms.branch_length_constrain       = "branch length constrain"; // THIS EXISTS BUT UNCLEAR IF CORRECT NAMESPACE
@@ -17,8 +100,10 @@ terms.constraint          = "constraint";
 terms.fix                 = "fix-me";
 terms.likelihood_function = "LF";
 terms.model               = "model";
-
-
+terms.number_precision    = "number-precision";
+terms.three_way = "three-way";
+terms.reduced  = "reduced";
+terms.default_time = "t"; // WHERE???????
 
 //EVERYBODY
 terms.branch_length = "branch length";
@@ -26,16 +111,13 @@ terms.parameters    = "parameters";
 terms.local         = "local";
 terms.global        = "global";
 terms.default        = "default"; // WAS: terms.data.default
-
+terms.id            = "id";
+terms.description = "description";
 
 terms.category = "category";
 
 
-/* Descriptions */
-
-
 /* Frequencies */
-//terms.model_description.model = "model"; // 
 terms.freqs.4x1 = "Nucleotide 4x1 estimator";
 terms.freqs.equal = "Equal frequencies";
 terms.freqs.CF3x4 = "Corrected 3x4 frequency estimator";    
@@ -43,77 +125,41 @@ terms.freqs.20x1 = "Protein 20x1 estimator";
 terms.freqs.predefined = "Based on a training set";    
 
 /* Model description terms */
-terms.model_description.alphabet = "alphabet";
-terms.model_description.description = "description";
-terms.model_description.canonical   = "canonical";
-terms.model_description.reversible  =  "reversible";
-terms.model_description.efv_estimate_name =  "Equilibrium frequency estimator";
-//terms.model_description.parameters = "parameters";
-//terms.model_description.parameters.global = "global";
-//terms.model_description.parameters.local = "local";
-//terms.model_description.parameters.empirical = "empirical";
-terms.model_description.empirical = "empirical";
-terms.model_description.type = "type";
-terms.model_description.get_branch_length = "get-branch-length";
-terms.model_description.set_branch_length = "set-branch-length";
-terms.model_description.constrain_branch_length = "constrain-branch-length";
-terms.model_description.branch_length_string = "branch-length-string";
-terms.model_description.branch_length_scaler  = "branch length scaler";
 
-terms.model_description.efv_estimate = "EFV"; // woah buddy
-terms.model_description.rate_entry = "rate-entry";
-terms.model_description.rate_matrix = "Q";
-terms.model_description.efv_matrix = "pi";
-terms.model_description.matrix_id = "matrix-id";
-terms.model_description.efv_id = "efv-id";
-terms.model_description.id = "id";
-terms.model_description.data = "data";
-
-terms.model_description.frequency_estimator = "frequency-estimator";
-terms.model_description.q_ij = "q_ij";
-terms.model_description.time = "time";
-terms.model_description.defineQ = "defineQ";
-terms.model_description.post_definition = "post-definition";
-terms.model_description.bases = "bases"; 
-terms.model_description.stop =  "stop";
-terms.model_description.translation_table = "translation-table";
-terms.model_description.components = "components";
+terms.model.branch_length_constrain       = "branch length constrain"; //?
 
 
-terms.amino_acid     = "amino-acid";
-terms.codon          = "codon";
-terms.sense_codons   = "sense";
-terms.stop_codons    = "stop"; //TODO
-//terms.bases          = "bases";
-terms.codons         = "codons";
+terms.model.type = "type";
+terms.model.components = "components";
+terms.model.description = "description";
+terms.model.canonical   = "canonical";
+terms.model.reversible  =  "reversible";
+terms.model.efv_estimate_name =  "Equilibrium frequency estimator";
+terms.model.efv_estimate = "EFV"; 
+terms.model.empirical = "empirical";
+terms.model.empirical_rates = "empirical-rates";
+terms.model.get_branch_length       = "get-branch-length";
+terms.model.set_branch_length       = "set-branch-length";
+terms.model.constrain_branch_length = "constrain-branch-length";
+terms.model.frequency_estimator = "frequency-estimator";
+terms.model.q_ij = "q_ij";
+terms.model.time = "time";
+terms.model.defineQ = "defineQ";
+terms.model.post_definition = "post-definition";
+terms.model.rate_entry = "rate-entry";
+terms.model.rate_matrix = "Q";
+terms.model.efv_matrix = "pi";
+terms.model.matrix_id = "matrix-id";
+terms.model.efv_id = "efv-id";
+terms.model.data = "data";
 
 
-/* Mixture */
-terms.mixture                 = "mixture";
-terms.mixture_components      = "mixture components";
-terms.mixture_weight          = "Mixture weight";
-terms.mixture_aux_weight      = "Mixture auxiliary weight";
-terms.initial_values          = "Initial values";
-
-/* Rate variation */
-terms.rate_variation = "Rate variation";
-terms.rate_variation.description = "description";
-terms.rate_variation.description = "distribution";
-terms.rate_variation.rate_modifier = "rate_modifier";
-terms.rate_variation.bins = "Rate variation bins";
-terms.rate_variation.gamma_alpha = "Shape parameter for the gamma distribution (alpha)";
-terms.rate_variation.gamma_beta = "Shape parameter for the gamma distribution (beta)";
-terms.rate_variation.gamma_p_inv = "Estimated proportion of invariant sites";
+terms.model.branch_length_string    = "branch-length-string";
+terms.model.branch_length_scaler    = "branch length scaler";
 
 
 
 
-
-/* I THHINK THESE ARE MODEL DESCRIPTIONS */
-
-// terms.efv_estimate_name = "Equilibrium frequency estimator"; // ---> terms.model_description.efv_estimate_name
-//terms.efv_estimate = "EFV";  //   --> terms.fit.efv_estimate
-terms.default_time = "t";
 
 terms.omega_ratio                   = "non-synonymous/synonymous rate ratio"; // in estimators.bf
 terms.synonymous_rate               = "synonymous rate";
@@ -121,20 +167,52 @@ terms.nonsynonymous_rate            = "non-synonymous rate";
 
 
 
-terms.branch_length_constrain       = "branch length constrain";
+
+
+terms.initial_values          = "Initial values";
+
+
+/* Mixture */
+terms.mixture                 = "mixture";
+terms.mixture_components      = "mixture components";
+terms.mixture_weight          = "Mixture weight";
+terms.mixture_aux_weight      = "Mixture auxiliary weight";
+
+/* Rate variation */
+terms.rate_variation = "Rate variation";
+terms.rate_variation.distribution = "distribution";
+terms.rate_variation.options = "options";
+terms.rate_variation.rate_modifier = "rate_modifier";
+
+terms.category_parameters = "category parameters";
+terms.category.bins = "bins";
+terms.category.weights = "weights";
+terms.category.represent = "represent";
+terms.category.PDF = "PDF";
+terms.category.CDF = "CDF";
+terms.category.dCDF = "dCDF";
+
+
+terms.before = "before";
+terms.after  = "after";
+
+terms.rate_variation.bins = "Rate variation bins";
+
+terms.rate_variation.Gamma = "Gamma";
+terms.rate_variation.GammaI = "Gamma+I";
+terms.rate_variation.gamma_alpha = "Shape parameter for the gamma distribution (alpha)";
+terms.rate_variation.gamma_beta = "Variance parameter for the gamma distribution (beta)";
+terms.rate_variation.gamma_p_inv = "Estimated proportion of invariant sites";
+
+
+
+
 terms.transition_transversion_ratio = "Transitition/transversion ratio";
 terms.transition                    = "transition rate";
 terms.transversion                  = "transversion rate";
 terms.synonymous_sub_count          = "synonymous substitution count"; //SLAC
 terms.nonsynonymous_sub_count       = "nonsynonymous substitution count"; //SLAC
 
-
-/* Rate variation */
-//terms.rate_variation = "Rate variation";
-//terms.rate_variation.bins = "Rate variation bins";
-//terms.rate_variation.gamma_alpha = "Shape parameter for the gamma distribution (alpha)";
-//terms.rate_variation.gamma_beta = "Shape parameter for the gamma distribution (beta)";
-//terms.rate_variation.gamma_p_inv = "Estimated proportion of invariant sites";
 
 /* Term functions */
 function terms.nucleotideRate(fromC, toC) {
@@ -192,16 +270,6 @@ terms.range_gte1 = {
 
 
 
-
-
-
-
-/* Models and fits */
-//terms.MLE              = "MLE";
-//terms.log_likelihood   = "LogL";
-//terms.empirical        = "empirical";
-//
-
 terms.alternative      = "alternative";
 terms.null             = "null";
 terms.LRT              = "LRT";
@@ -212,9 +280,6 @@ terms.p_value          = "p-value"; //   p_value = "p";
 terms.length           = "length";
 terms.length_parameter = "length parameter";
 
-
-
-// Used in site-level selection methods MEME, FEL, estimators.bf
 terms.run_options.retain_lf_object   = "retain-lf-object";
 terms.run_options.proportional_branch_length_scaler = "proportional-branch-length-scaler";
 terms.run_options.retain_model_object = "retain-model-object";
@@ -222,42 +287,30 @@ terms.run_options.model_type          = "model-type";
 terms.run_options.partitioned_omega = "partitioned-omega";
 
 /* Codon model terms */
-//terms.id      = "id";
 terms.omegas  = "omegas";
 terms.weights = "weights";
 terms.omega   = "omega";
 terms.weight  = "weight";
 terms.f       = "f";
 
-
-
 //terms.data.trees_         = "Trees";
 
 
 /* Likelihood fit structures */
-//terms.fit.global = terms.global;
 terms.fit.efv_estimate = "EFV";
 terms.fit.evolutionary_time = "Evolutionary time parameter";
 terms.fit.MLE     = "MLE";
 terms.fit.ID      = "ID";
-terms.fit.trees     = "Trees";
+terms.fit.trees   = "Trees";
 terms.fit.log_likelihood = "LogL";
-//terms.fit.branch_length = "branch length"; 
-//terms.fit.parameters = terms.parameters;
 terms.fit.filters    = "Filters";
 
 
-
 /* Genetics */
-terms.code   = "code";
-terms.code.stops = "stops";
-terms.code.ordering = "ordering";  // GONE: terms.data.ordering  = "ordering";
-terms.code.mapping = "mapping"; // GONE: terms.data.mapping  = "mapping";
 
 
 
-terms.three_way = "three-way";
-terms.reduced  = "reduced";
+
 
 
 
@@ -266,7 +319,6 @@ terms.data.sites          = "sites";
 terms.data.sequences      = "sequences";
 terms.data.sequence       = "sequence";
 terms.data.file           = "file";
-terms.data.id             = "id"; //NOTE: SAME VALUE AS terms.model_description.id
 terms.data.cache          = "cache";
 terms.data.name           = "name";
 terms.data.name_mapping   = "name-mapping";
@@ -291,12 +343,10 @@ terms.trees.newick_annotated = "annotated_string";
 terms.trees.model_map = "model_map";
 terms.trees.partitioned = "partitioned";
 terms.trees.model_list = "model_list";
-
 terms.tree_attributes.internal = "internal";
 terms.tree_attributes.leaf = "leaf";
 terms.tree_attributes.test   = "test";
 terms.tree_attributes.background  = "background";
-
 terms.trees.name = "name";
 
 // TODO: Unclear if these are actually usable
@@ -320,11 +370,9 @@ terms.attribute = {};
 terms.attribute.meta = "attributes"; //terms.attribute.meta = {};
 terms.attribute.meta.type      = "attribute type";
 terms.attribute.meta.order     = "display order";
-terms.attribute.branch_length  = terms.trees.branch_length;
+terms.attribute.branch_length  = terms.branch_length;
 terms.attribute.node_label     = "node label";
 terms.attribute.branch_label   = "branch label";
-//terms.attribute.test           = "test";
-//terms.attribute.background     = "background";
 
 terms.attribute.data           = "data";
 
@@ -343,7 +391,8 @@ terms.json.rate_distributions       = "rate distributions";
 terms.json.log_likelihood           = "log likelihood";
 terms.json.estimated_parameters     = "estimated parameters";
 terms.json.AICc                     = "AIC-c";
-
+terms.json.model                    = "model";
+terms.json.global                   = "Global model fit";
 terms.json.branch_attributes        = "branch attributes";
 terms.json.branch_annotations       = "branch annotations";
 terms.json.branch_lengths           = "branch lengths";
@@ -352,7 +401,6 @@ terms.json.display_order            = terms.attribute.meta.order;
 
 terms.json.tree.newick              = "newick"; // NEEDED?
 terms.json.partitions               = "data partitions";
-//terms.json.name_mapping             = terms.name_mapping;
 terms.json.tested                   = "tested";    
 
 terms.json.test_results = "test results";
@@ -364,10 +412,12 @@ terms.json.partition_count = "partition count";
 terms.json.sites = "number of sites";
 terms.json.tree_string = "tree"; 
 terms.json.tree_length = "tree length";
+terms.json.relative_site_rates = "Relative site rate estimates";
+terms.json.analysis = "analysis";
 
 terms.json.site_log_likelihood = "site log likelihood";
 terms.json.evidence_ratios = "evidence ratios";
-
+terms.json.options  = "options";
 terms.json.runtime = "runtime";
 terms.json.version = "version";
 terms.json.convergence_failures = "convergence failures";

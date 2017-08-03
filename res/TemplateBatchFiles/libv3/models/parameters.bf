@@ -134,12 +134,11 @@ function parameters.DeclareCategory.helper (dict, key, default) {
 function parameters.DeclareCategory (def) {
 	 
 	 
-	 // TODO: DEHARDCODE
-	 ExecuteCommands ("category " + def['id'] + "= (" + 
+	 ExecuteCommands ("category " + def[terms.id] + "= (" + 
 	 			  Join (",", 
-	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"}, 
+	 			  			utility.Map ({"0": terms.category.bins, "1": terms.category.weights, "2": terms.category.represent, "3": terms.category.PDF, "4": terms.category.CDF, "5": terms.lower_bound, "6": terms.upper_bound, "7": terms.category.dCDF}, 
 	 			  						  "_value_",
-	 			  						  'parameters.DeclareCategory.helper(def["category parameters"], _value_, "")')
+	 			  						  'parameters.DeclareCategory.helper(def[terms.category_parameters], _value_, "")')
 	 			  		) + ");");
 	 
 }
@@ -328,6 +327,9 @@ function parameters.SetRange(id, ranges) {
  * @returns {Bool} TRUE if independent, FALSE otherwise
  */
 lfunction parameters.IsIndependent(parameter) {
+
+    //console.log(parameter);
+
     GetString(info, ^ parameter, -1);
     if (Type(info) == "AssociativeList") {
         return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;

@@ -159,8 +159,8 @@ function estimators.ExtractBranchInformation.copy_local(key, value) {
 function estimators.ExtractBranchInformation(tree, node, model) {
     estimators.extractBranchLength.result = {};
 
-    if (Abs(model[terms.model_description.get_branch_length])) {
-        estimators.extractBranchLength.result[terms.fit.MLE] = Call(model[terms.model_description.get_branch_length], model, tree, node);
+    if (Abs(model[terms.model.get_branch_length])) {
+        estimators.extractBranchLength.result[terms.fit.MLE] = Call(model[terms.model.get_branch_length], model, tree, node);
     } else {
         estimators.extractBranchLength.result[terms.fit.MLE] = Eval("BranchLength (`tree`, \"`node`\")");
     }
@@ -180,7 +180,7 @@ function estimators.ExtractBranchInformation(tree, node, model) {
  * @param {String} length
  */
 function estimators.applyBranchLength(tree, node, model, length) {
-    return Call(model[terms.model_description.set_branch_length], model, length, tree + "." + node);
+    return Call(model[terms.model.set_branch_length], model, length, tree + "." + node);
 }
 
 /**
@@ -350,12 +350,11 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                             if (Type(_application_type) == "String") {
                                 _set_branch_length_to = {};
                                 _set_branch_length_to[terms.branch_length] = _existing_estimate[terms.fit.MLE];
-                                _set_branch_length_to[terms.model_description.branch_length_scaler] = _application_type;
+                                _set_branch_length_to[terms.model.branch_length_scaler] = _application_type;
                                 estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers[_application_type] = 1;
                             }
                         }
                     }
-
 
                     estimators.ApplyExistingEstimates.df_correction += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
                 } else {
@@ -385,7 +384,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
  * @returns nothing
  */
 function estimators._aux.countEmpiricalParameters(id, model) {
-    estimators._aux.parameter_counter += (model[terms.parameters])[terms.model_description.empirical];
+    estimators._aux.parameter_counter += (model[terms.parameters])[terms.model.empirical];
 }
 
 /**
@@ -496,11 +495,11 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     
     name_space = & user;
 
+
+
     user_model = model.generic.DefineModel(model_template, name_space, {
             "0": "terms.global" 
         }, filters, None);
-
-
 
 
     for (i = 0; i < components; i += 1) {

@@ -154,7 +154,7 @@ lfunction alignments.GetIthSequence (dataset_name, index) {
 
     GetString   (seq_id, ^dataset_name, index);
     GetDataInfo (seq_string, ^dataset_name, index);
-    return {utility.getGlobalValue("terms.data.id") : seq_id, utility.getGlobalValue("terms.data.sequence") : seq_string};
+    return {utility.getGlobalValue("terms.id") : seq_id, utility.getGlobalValue("terms.data.sequence") : seq_string};
 }
 
 /**
@@ -261,14 +261,15 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
     if (utility.CheckKey(data_info, utility.getGlobalValue("terms.code"), "Matrix")) {
         for (i = 0; i < part_count; i += 1) {
             this_filter = {};
-            DataSetFilter test = CreateFilter( ^ source_data, 1, (partitions[i])["filter-string"]);
+            DataSetFilter test = CreateFilter( ^ source_data, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
             this_filter[utility.getGlobalValue("terms.data.name")] = prefix + (partitions[i])[utility.getGlobalValue("terms.data.name")];
             DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ source_data, 3, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")], , data_info[utility.getGlobalValue("terms.stop_codons")]);
             diff = test.sites - 3 * ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".sites");
-            //TODO: BELOW, IS THE "NAMES" CORRECT OR SHOULD IT BE "NAME"?????
+            
+            //TODO: BELOW, IS THE "names" CORRECT OR SHOULD IT BE "name"????? SJS can't locate another time when the plural is used through libv3.
             io.CheckAssertion("`&diff` == 0", "Partition " + (filters["names"])[i] + " is either has stop codons or is not in frame");
+            
             this_filter[utility.getGlobalValue("terms.data.coverage")] = utility.DictToArray(utility.Map(utility.Filter( ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".site_map"), "_value_", "_value_%3==0"), "_value_", "_value_$3"));
-
             filters + this_filter;
         }
 
@@ -300,9 +301,10 @@ lfunction alignments.serialize_site_filter (data_filter, site_index) {
     Export (filter_string, temp);
     utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", None);
     utility.ToggleEnvVariable ("IS_TREE_PRESENT_IN_DATA", None);
+    // TODO filter string below
     return '
         lfunction __make_filter (name) {
-            DataSet hidden = ReadFromString ("`filter_string`"); // TODO
+            DataSet hidden = ReadFromString ("`filter_string`");
             DataSetFilter ^name = CreateFilter (hidden, `""+fi['ATOM_SIZE']`,,,"`fi['EXCLUSIONS']`");
         };
     ';

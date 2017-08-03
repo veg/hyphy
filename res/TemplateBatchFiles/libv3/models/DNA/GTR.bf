@@ -13,25 +13,25 @@ LoadFunctionLibrary ("libv3/all-terms.bf");
 function models.DNA.GTR.ModelDescription(type) {
 
     return {
-        "alphabet": models.DNA.alphabet,
-        "description": "The general time reversible (GTR) model of nucleotide substitution",
-        "canonical": 1, // is of the r_ij \times \pi_j form
-        "reversible": 1,
-        "Equilibrium frequency estimator": terms.freqs.4x1,
-        "parameters": {
-            "global": {},
-            "local": {},
-            "empirical": 3
+        terms.alphabet: models.DNA.alphabet,
+        terms.description: "The general time reversible (GTR) model of nucleotide substitution",
+        terms.model.canonical: 1, // is of the r_ij \times \pi_j form
+        terms.model.reversible: 1,
+        terms.model.efv_estimate_name: terms.freqs.4x1,
+        terms.parameters: {
+            terms.global: {},
+            terms.local: {},
+            terms.model.empirical: 3
         },
-        "type": type,
-        "get-branch-length": "",
-        "set-branch-length": "models.generic.SetBranchLength",
-        "constrain-branch-length": "models.generic.constrain_branch_length",
-        "frequency-estimator": "frequencies.empirical.nucleotide",
-        "q_ij": "models.DNA.GTR._generateRate",
-        "time": "models.DNA.generic.Time",
-        "defineQ": "models.DNA.GTR._defineQ",
-        "post-definition": "models.generic.post.definition"
+        terms.model.type: type,
+        terms.model.get_branch_length: "",
+        terms.model.set_branch_length: "models.generic.SetBranchLength",
+        terms.model.constrain_branch_length: "models.generic.constrain_branch_length",
+        terms.model.frequency_estimator: "frequencies.empirical.nucleotide",
+        terms.model.q_ij: "models.DNA.GTR._generateRate",
+        terms.model.time: "models.DNA.generic.Time",
+        terms.model.defineQ: "models.DNA.GTR._defineQ",
+        terms.model.post_definition: "models.generic.post.definition"
     };
 }
 
@@ -58,7 +58,7 @@ function models.DNA.GTR._generateRate(fromChar, toChar, namespace, model_type) {
     }
 
     (models.DNA.GTR._generateRate.p[model_type])[terms.nucleotideRate(fromChar, toChar)] = models.DNA.GTR.parameter_name;
-    models.DNA.GTR._generateRate.p[terms.rate_entry] = models.DNA.GTR.parameter_name;
+    models.DNA.GTR._generateRate.p[terms.model.rate_entry] = models.DNA.GTR.parameter_name;
 
     return models.DNA.GTR._generateRate.p;
 }
@@ -72,10 +72,10 @@ function models.DNA.GTR._defineQ(gtr, namespace) {
 
     models.DNA.generic.DefineQMatrix(gtr, namespace);
     
-    if (gtr[terms.model_description.type] == terms.global) {
+    if (gtr[terms.model.type] == terms.global) {
         parameters.SetConstraint(((gtr[terms.parameters])[terms.global])[terms.nucleotideRate("A", "G")], "1", "");
     }
-    if (gtr[terms.model_description.type] == terms.local) {
+    if (gtr[terms.model.type] == terms.local) {
         parameters.SetConstraint(((gtr[terms.parameters])[terms.local])[terms.nucleotideRate("A", "G")], "1", "");
     }
     return gtr;
