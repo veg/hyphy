@@ -95,7 +95,7 @@ long  _AVLList::Find (BaseRefConst obj) const {
         }
     }
 
-    return -1;
+    return kNotFound;
 }
 
 //______________________________________________________________
@@ -115,7 +115,7 @@ long  _AVLList::FindLong (long obj) const {
         }
     }
 
-    return -1;
+    return kNotFound;
 }
 
 //______________________________________________________________

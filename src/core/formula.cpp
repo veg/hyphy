@@ -170,8 +170,8 @@ BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
 
     _String * result = new _String(16UL,true);
 
-    long          savepd = printDigits;
-    printDigits          = 0;
+    long          savepd = print_digit_specification;
+    print_digit_specification          = 0L;
 
     if (theTree) { // there is something to do
         internalToStr (*result, theTree, -1, matchedNames);
@@ -186,7 +186,7 @@ BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
         }
     }
 
-    printDigits = savepd;
+    print_digit_specification = savepd;
     result->Finalize ();
     if (theTree && dropTree) {
         theTree->delete_tree();

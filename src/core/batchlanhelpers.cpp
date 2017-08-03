@@ -73,7 +73,7 @@ void    ReadModelList(void)
     
     _String     modelListFile (GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & "models.lst");
     
-    FILE* modelList = doFileOpen (modelListFile.getStr(),"rb");
+    FILE* modelList = doFileOpen (modelListFile.get_str(),"rb");
     if (!modelList) {
         return;
     }
@@ -340,20 +340,6 @@ _String ReturnFileDialogInput(void)
     return resolvedFilePath;
 }
 
-//____________________________________________________________________________________
-
-_String ProcessStringArgument (_String* data) {
-    if (data->sLength>2) {
-        if (data->sData[data->sLength-1]=='_' && data->sData[data->sLength-2]=='_') {
-            _String varName (*data,0,data->sLength-3);
-            _FString* theVar = (_FString*)FetchObjectFromVariableByType(&varName,STRING);
-            if (theVar) {
-                return *theVar->theString;
-            }
-        }
-    }
-    return kEmptyString;
-}
 
 //____________________________________________________________________________________
 

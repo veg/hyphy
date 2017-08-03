@@ -336,7 +336,6 @@ public:
     // draw a number of values using LHC sampling on parameter bounds
     // and check that they all define valid sets of probabilities
 
-    virtual void        SetStringCorpus         (_String*);
     virtual void        SetStringCorpus         (_Matrix*);
     // the strings to set SCFG string corpus
     // the first one does it from a HyPhy variable identifier, which is assumed
@@ -730,5 +729,6 @@ struct      bitMasks {
 };
 
 extern bitMasks bitMaskArray;
+extern _String  kSCFGCorpus;
 
 #endif

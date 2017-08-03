@@ -78,8 +78,9 @@ _addSCFGInfoStats           ("STATISTICS"),
                             useJeffreysPrior            ("USE_JEFFREYS_PRIOR"),     // added Nov. 28, 2006 by afyp
                             scfgOptimizationMethod      ("SCFG_OPTIMIZATION_METHOD");
 
-extern _String  scfgCorpus;
 
+
+_String kSCFGCorpus        ("SCFG_STRING_CORPUS"),
 
 
 
@@ -739,38 +740,6 @@ void    Scfg::RandomSampleVerify  (long samples)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-void    Scfg::SetStringCorpus  (_String* varID)
-{
-
-
-    _PMathObj    theMatrix  = FetchObjectFromVariableByType (varID, MATRIX),
-                 theString  = nil;
-
-    if (!theMatrix) {   // if the variable is not a matrix, then try treating it as a string
-        theString = FetchObjectFromVariableByType (varID, STRING);
-    }
-
-    if (theMatrix && ((_Matrix*)theMatrix)->IsAStringMatrix ()) {
-        SetStringCorpus ((_Matrix*)theMatrix);
-        return;
-    } else if (theString) {
-        _List t;
-        t << ((_FString*)theString)->theString;
-#ifdef _NEVER_DEFINED_
-        char buf [255];     // DEBUG
-        snprintf (buf, sizeof(buf), "\nSetStringCorpus() string = %s\n", (const char *) *((_FString*)theString)->theString);
-        BufferToConsole (buf);
-#endif
-        _Matrix wrapper (t);
-        SetStringCorpus (&wrapper);
-        return;
-    }
-
-    HandleApplicationError (varID->Enquote() & " must refer either to a matrix of strings or to a single string when setting the corpus for a SCFG.");
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
 void    Scfg::SetStringCorpus  (_Matrix* stringMatrix)
 {
     corpusChar.Clear();
@@ -789,26 +758,10 @@ void    Scfg::SetStringCorpus  (_Matrix* stringMatrix)
             corpusChar << aString->theString;
             corpusInt  << tokenized;
 
-            /*for (long nt=0; nt < byNT2.lLength; nt++)
-                for (long start = 0; start < aString->theString->sLength; start++)
-                    for (long end = start; end < aString->theString->sLength; end++)
-                    {
-                        char buf [255];
-                        snprintf (buf, sizeof(buf), "%2d %2d %2d => %4d\n", start, end, nt, scfgIndexIntoAnArray (start,end,nt,aString->theString->sLength));
-                        BufferToConsole (buf);
-                    }*/
             DeleteObject (tokenized);
         }
 
     }
-    /*
-    char buf [255];
-    for (long c = 0; c < corpusChar.lLength; c++)
-    {
-        snprintf (buf, sizeof(buf), "string %d in corpusChar = %s\n", c, (const char *) *((_String *) corpusChar.lData[c]));
-        BufferToConsole (buf);
-    }
-    */
     InitComputeStructures();
 }
 
@@ -1382,7 +1335,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
 void        Scfg::AddSCFGInfo (_AssociativeList* theList)
 {
     _SimpleList indexer (corpusChar.lLength, 0, 1);
-    InsertStringListIntoAVL (theList, scfgCorpus, indexer, corpusChar);
+    InsertStringListIntoAVL (theList, kSCFGCorpus, indexer, corpusChar);
     _List       ruleStrings;
     for (long i=0; i<rules.lLength; i++) {
         ruleStrings.AppendNewInstance(GetRuleString (i));

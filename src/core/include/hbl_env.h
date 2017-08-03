@@ -142,8 +142,10 @@ namespace hy_env {
           lib_directory,
           directory_separator_char,
           path_to_current_bf,
+          print_float_digits,
           true_const,
           false_const,
+          fprintf_redirect,
           harvest_frequencies_gap_options,
           last_file_path,
           matrix_element_row,
@@ -161,9 +163,6 @@ namespace hy_env {
           use_last_model,
           last_model_parameter_list,
           kGetStringFromUser,
-          kPairwiseCountAmbiguitiesResolve,
-          kPairwiseCountAmbiguitiesAverage,
-          kPairwiseCountAmbiguitiesSkip,
           get_data_info_returns_only_the_index,
           defer_constrain_assignment
   

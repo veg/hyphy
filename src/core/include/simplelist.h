@@ -299,9 +299,15 @@ class _SimpleList:public BaseObj {
           }
           return kNotFound;
         }
-  
+
+        template <typename MAPPER> void Each (MAPPER mapper, long startAt = 0) const {
+          for (unsigned long i = startAt; i<lLength; i++) {
+            mapper ( ((long*)(lData))[i] );
+          }
+        }
+
         /**
-        * Same as find, but steps over indices 
+        * Same as find, but steps over indices
         * Example: SimpleList(1,3,5,7).Find(3,3) = -1 
         * @param s The integer to find
         * @param step The number to skip between searches 

@@ -69,7 +69,6 @@ _List           hyReservedWords,
 _AVLList        *lookAside = nil;
 _AVLListX       variableNames (&varNamesSupportList);
 
-long            printDigits;
 
 
 
@@ -145,7 +144,7 @@ void     parameterToCharBuffer (hyFloat value, char* dump, long length, bool jso
       }
     }
   
-    long digs = printDigits;
+    long digs = print_digit_specification;
     if (digs<=0 || digs>15) {
         if (round(value) == value && fabs (value) < long_max) {
             snprintf (dump,length, "%ld",lrint (value));

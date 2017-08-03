@@ -1632,12 +1632,12 @@ void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
     rec << ",BGM_CONSTRAINT_MATRIX,bgmConstraints);\n";
 
     // serialize data matrix and assign to BGM
-    rec << "bgmData=";
+    rec << "kBGMData=";
     rec << (_String *)theData.toStr();
     rec << ";\n";
     rec << "SetParameter(";
     rec << bgmName;
-    rec << ",BGM_DATA_MATRIX,bgmData);\n";
+    rec << ",BGM_DATA_MATRIX,kBGMData);\n";
 
     /*
     rec << "bgmWeights=";

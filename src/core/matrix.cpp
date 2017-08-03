@@ -105,8 +105,6 @@ long        matrixExpCount = 0,
             squaringsCount = 0,
             non0count = 0;
 
-extern      _String         printDigitsSpec;
-
 _Trie        _HY_MatrixRandomValidPDFs;
 
 
@@ -7190,7 +7188,7 @@ BaseRef _Matrix::toStr(unsigned long padding) {
   _String *result  = new _String (2048L,true),
           padder  (" ", padding);
   
-  checkParameter (printDigitsSpec,printDigits,0L);
+  print_digit_specification = hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
   
   char number_buffer [256];
   
@@ -7338,8 +7336,7 @@ void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
          closeBracket = doJSON ? ']' : '}';
     
     if (!printStrings) {
-      checkParameter (printDigitsSpec,printDigits,0L);
-      digs =  printDigits;
+      digs = print_digit_specification = hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
     }
     
     if (!printStrings && digs != -1) {

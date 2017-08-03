@@ -142,8 +142,9 @@ namespace hy_global {
                      hy_mpi_node_count;
         // [MPI only]  MPI node count on the system
   
-    long             system_CPU_count = 1L;
+    long             system_CPU_count = 1L,
         /** the number of CPUs for OpenMP */
+                     print_digit_specification = 0L;
   
   
     namespace {

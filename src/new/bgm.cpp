@@ -3142,7 +3142,7 @@ void    Bgm::SerializeBgm (_String & rec)
     char        buf [255];
     _String *   bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
     _String     dataStr,
-                dataName ("bgmData"),
+                dataName ("kBGMData"),
                 banStr,
                 banName ("ban_matrix");
 
@@ -3213,12 +3213,12 @@ void    Bgm::SerializeBgm (_String & rec)
     rec << ",BGM_BAN_MATRIX,ban_matrix);\n";
 
     // serialize data matrix and assign to BGM
-    rec << "bgmData=";
+    rec << "kBGMData=";
     rec << (_String *)obsData->toStr();
     rec << ";\n";
     rec << "SetParameter(";
     rec << bgmName;
-    rec << ",BGM_DATA_MATRIX,bgmData);\n";
+    rec << ",BGM_DATA_MATRIX,kBGMData);\n";
 
 }
 #endif

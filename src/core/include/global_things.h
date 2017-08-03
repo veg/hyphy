@@ -265,7 +265,8 @@ namespace hy_global {
   extern  int      hy_mpi_node_rank,
   hy_mpi_node_count;
   
-  extern  long     system_CPU_count;
+  extern  long     system_CPU_count,
+                   print_digit_specification;
   
   
   extern  _String  const kHyPhyVersion,

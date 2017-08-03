@@ -113,4 +113,11 @@ class _AVLList: public BaseObj {
 
 };
 
+template <typename AGGREGARTOR> _SimpleList const PopulateAndSort (AGGREGARTOR agg) {
+  _SimpleList     indexer;
+  _AVLList        avl (&indexer);
+  agg (avl);
+  return indexer;
+}
+
 #endif

@@ -73,8 +73,6 @@ extern      _String                 blDoSQL,
             blGetNeutralNull,
             blHBLProfile,
             blDeleteObject,
-            timeStamp,
-            versionString,
             last_model_parameter_list,
             blGetString,
             blRequireVersion,
@@ -1713,7 +1711,7 @@ BaseRef _HYRetrieveBLObjectByNameMutable    (_String const& name, long& type, lo
     
     if (type & HY_BL_MODEL) {
         loc = FindModelName(name);
-        if (loc < 0 && (name.Equal (&last_model_parameter_list) || name.Equal (&use_last_model))) {
+        if (loc < 0 && (name == last_model_parameter_list || name == hy_env::use_last_model)) {
             loc = lastMatrixDeclared;
         }
         if (loc >= 0) {
@@ -1741,7 +1739,7 @@ BaseRef _HYRetrieveBLObjectByNameMutable    (_String const& name, long& type, lo
     
     if (type & HY_BL_TREE) {
         _Variable* tree_var = FetchVar (LocateVarByName(name));
-        if (tree_var->ObjectClass() == TREE) {
+        if (tree_var && tree_var->ObjectClass() == TREE) {
             return tree_var;
         }
     }
