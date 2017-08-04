@@ -26,8 +26,7 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 /*------------------------------------------------------------------------------ Display analysis information
 */
 
-
-io.DisplayAnalysisBanner({
+fel.analysis_description = {
     terms.io.info: "FEL (Fixed Effects Likelihood)
     estimates site-wise synonymous (&alpha;) and non-synonymous (&beta;) rates, and
     uses a likelihood ratio test to determine if beta &neq; alpha at a site.
@@ -44,7 +43,8 @@ io.DisplayAnalysisBanner({
     terms.io.authors: "Sergei L Kosakovsky Pond and Simon DW Frost",
     terms.io.contact: "spond@temple.edu",
     terms.io.requirements: "in-frame codon alignment and a phylogenetic tree"
-});
+};
+io.DisplayAnalysisBanner(fel.analysis_description);
 
 
 /*------------------------------------------------------------------------------
@@ -69,6 +69,7 @@ fel.scaler_prefix = "FEL.scaler";
 
 // The dictionary of results to be written to JSON at the end of the run
 fel.json = {
+    terms.json.analysis: fel.analysis_description, 
     terms.json.input: {},
     terms.json.fits: {},
     terms.json.timers: {},

@@ -103,7 +103,7 @@ terms.model               = "model";
 terms.number_precision    = "number-precision";
 terms.three_way = "three-way";
 terms.reduced  = "reduced";
-terms.default_time = "t"; // WHERE???????
+terms.default_time = "t"; 
 
 //EVERYBODY
 terms.branch_length = "branch length";
@@ -113,6 +113,21 @@ terms.global        = "global";
 terms.default        = "default"; // WAS: terms.data.default
 terms.id            = "id";
 terms.description = "description";
+
+terms.alternative      = "alternative";
+terms.null             = "null";
+terms.LRT              = "LRT";
+//terms.LR               = "LR";  // change all to terms.LRT
+terms.p_value          = "p-value"; //   p_value = "p";
+/* Codon model terms */
+terms.omegas  = "omegas";
+terms.weights = "weights";
+terms.freqs   = "f";
+terms.omega   = "omega";
+terms.weight  = "weight";
+
+// Strictly for busted, relax.
+
 
 terms.category = "category";
 
@@ -128,6 +143,9 @@ terms.freqs.predefined = "Based on a training set";
 
 terms.model.branch_length_constrain       = "branch length constrain"; //?
 
+terms.model.length           = "length";
+terms.model.length_parameter = "length parameter";
+terms.model.length_expression = "length-expression";
 
 terms.model.type = "type";
 terms.model.components = "components";
@@ -270,15 +288,7 @@ terms.range_gte1 = {
 
 
 
-terms.alternative      = "alternative";
-terms.null             = "null";
-terms.LRT              = "LRT";
-terms.LR               = "LR";
-terms.p_value          = "p-value"; //   p_value = "p";
 
-
-terms.length           = "length";
-terms.length_parameter = "length parameter";
 
 terms.run_options.retain_lf_object   = "retain-lf-object";
 terms.run_options.proportional_branch_length_scaler = "proportional-branch-length-scaler";
@@ -286,12 +296,6 @@ terms.run_options.retain_model_object = "retain-model-object";
 terms.run_options.model_type          = "model-type";
 terms.run_options.partitioned_omega = "partitioned-omega";
 
-/* Codon model terms */
-terms.omegas  = "omegas";
-terms.weights = "weights";
-terms.omega   = "omega";
-terms.weight  = "weight";
-terms.f       = "f";
 
 //terms.data.trees_         = "Trees";
 
@@ -382,7 +386,8 @@ terms.json = {};
 terms.json.json                     = "json"; 
 terms.json.fits                     = "fits";
 terms.json.timers                   = "timers";
-terms.json.pmid                     = "PMID";
+terms.json.PMID                     = "PMID";
+terms.json.PMCID                    = "PMCID"; // because we can't all have a pmid.
 terms.json.trees                    = "trees"; 
 terms.json.MLE                      = "MLE";
 terms.json.headers                  = "headers";
@@ -404,7 +409,6 @@ terms.json.partitions               = "data partitions";
 terms.json.tested                   = "tested";    
 
 terms.json.test_results = "test results";
-terms.json.p_value = "P-value";
 terms.json.input = "input"; 
 terms.json.file = "file name";
 terms.json.sequences = "number of sequences";
