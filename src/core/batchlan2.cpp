@@ -244,7 +244,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 false,
                                                                 &lengthOptions));
 
-    lengthOptions.Clear();lengthOptions.Populate (3,2,3); // 2, 3, 4
+    lengthOptions.Clear();lengthOptions.Populate (3,2,1); // 2, 3, 4
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_DATA_INFO,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetDataInfo(", HY_HBL_COMMAND_GET_DATA_INFO,false),
                                                                 -1,
@@ -255,7 +255,18 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 false,
                                                                 &lengthOptions));
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,
+    lengthOptions.Clear();lengthOptions.Populate (2,2,1); // 2, 3
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_MPI_SEND,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MPISend(", HY_HBL_COMMAND_MPI_SEND,false),
+                                                                -1,
+                                                                "MPISend(<node id>, <string | likelihood function ID | filename [in conjuction with argument 3]>, [if specified, treat the second argument as a script path, and use the dict supplied here as input options to the script])",
+                                                                ',',
+                                                                true,
+                                                                false,
+                                                                false,
+                                                                &lengthOptions));
+
+  _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ConstructCategoryMatrix(", HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,false),
                                                                 -1,
                                                                 "ConstructCategoryMatrix(<receptacle>, <Likelihood Function|Tree>, [optional <COMPLETE|SHORT|WEIGHTS|CLASSES (default = COMPLETE)> , matrix argument with partitions to include (defaut = all)>])",
@@ -281,10 +292,15 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 2, 
                                                                 "Optimize (<receptacle>, <likelihood function/scfg/bgm>)",','));
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_LFCOMPUTE, 
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("LFCompute(", HY_HBL_COMMAND_LFCOMPUTE,false),
-                                                                2, 
-                                                                "LFCompute (<likelihood function/scfg/bgm>,<LF_START_COMPUTE|LF_DONE_COMPUTE|receptacle>)",','));
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_MPI_RECEIVE,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MPIReceive(", HY_HBL_COMMAND_MPI_RECEIVE,false),
+                                                                3,
+                                                                "MPIReceive (<from node; or -1 to receive from any>, <message storage>, <sender index storage>)",','));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_LFCOMPUTE,
+                                      (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("LFCompute(", HY_HBL_COMMAND_LFCOMPUTE,false),
+                                                                  2, 
+                                                                  "LFCompute (<likelihood function/scfg/bgm>,<LF_START_COMPUTE|LF_DONE_COMPUTE|receptacle>)",','));
 
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_COVARIANCE_MATRIX, 

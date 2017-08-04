@@ -246,7 +246,7 @@ class _Trie: public _List
          * @return The string containing all the letters allowed for strings in this trie. The ordering of the letters is ASCII-alphabetical. 
          */
 
-        _String  RetrieveKeyByPayload (const long key);
+        _String  const RetrieveKeyByPayload (const long key);
         /**
          * Return the string spelling the pay to the 'key'
          * @param key -- the key for which we fish to retrieve the path

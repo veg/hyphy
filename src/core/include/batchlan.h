@@ -220,8 +220,6 @@ public:
     void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
     void      ExecuteCase39  (_ExecutionList&); // Execute Commands
-    void      ExecuteCase44  (_ExecutionList&); // MPISend
-    void      ExecuteCase45  (_ExecutionList&); // MPIReceive
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
@@ -254,6 +252,9 @@ public:
     bool      HandleExport                          (_ExecutionList&);
     bool      HandleDifferentiate                   (_ExecutionList&);
     bool      HandleFindRootOrIntegrate             (_ExecutionList&, bool do_integrate = false);
+    bool      HandleMPISend                         (_ExecutionList&);
+    bool      HandleMPIReceive                      (_ExecutionList&);
+  
     long      get_code                              (void) const { return code; };
     unsigned  long parameter_count                  (void) const { return parameters.countitems();}
     
@@ -346,8 +347,6 @@ public:
     // construct a category variable
 
     static  bool      ConstructModel        (_String&, _ExecutionList&);
-
-    static  bool      ConstructMPISend      (_String&, _ExecutionList&);
 
     static  bool      ConstructMPIReceive   (_String&, _ExecutionList&);
 

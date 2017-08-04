@@ -1667,6 +1667,97 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& current_progr
   return true;
 }
 
+  //____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleMPIReceive (_ExecutionList& current_program){
+  current_program.advance();
+  _Variable * receptacle = nil;
+  
+  try {
+    
+#ifdef __HYPHYMPI__
+    
+    
+    
+    
+    receptacle = _ValidateStorageVariable (current_program, 1UL);
+    _Variable* node_index_storage = _ValidateStorageVariable (current_program, 2UL);
+    
+    long target_node = _ProcessNumericArgumentWithExceptions(*GetIthParameter(0UL), current_program.nameSpacePrefix),
+    node_count  = hy_env::EnvVariableGetDefaultNumber(hy_env::mpi_node_count);
+
+    if (target_node < -1L || target_node >= node_count) {
+      throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") is not a valid MPI node index (or -1 to accept from any node");
+    }
+    
+    long received_from;
+    
+    receptacle->SetValue(new _FString (MPIRecvString (target_node,received_from)), false);
+    node_index_storage->SetValue (new _Constant (received_from), false);
+    
+#else
+    throw ("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");
+#endif
+    
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (receptacle, error, current_program);
+  }
+  
+  return true;
+}
+
+  //____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleMPISend (_ExecutionList& current_program){
+  current_program.advance();
+  try {
+    
+#ifdef __HYPHYMPI__
+   long target_node = _ProcessNumericArgumentWithExceptions(*GetIthParameter(0UL), current_program.nameSpacePrefix),
+         node_count  = hy_env::EnvVariableGetDefaultNumber(hy_env::mpi_node_count);
+    
+    if (target_node < 0L || target_node >= node_count) {
+      throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") is not a valid MPI node index");
+    }
+    
+    _StringBuffer message_to_send (1024UL);
+    
+    if (parameter_count() > 2) { // this is the case of MPISend (node, filepath, {input option}
+      _AssociativeList * arguments = (_AssociativeList*)_ProcessAnArgumentByType(*GetIthParameter(2), ASSOCIATIVE_LIST, current_program);
+      _String file_path = *GetIthParameter(1UL);
+      if (! ProcessFileName(file_path,false,true,(hyPointer)current_program.nameSpacePrefix)) {
+        throw (GetIthParameter(1UL)->Enquote() & " is an ivalid file path");
+      }
+      (message_to_send << _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_EXECUTE_A_FILE) << file_path.Enquote() << ',')
+        .AppendNewInstance(arguments->Serialize(0UL)) << ");";
+    } else {
+        // is this a likelihood function?
+        long type = HY_BL_LIKELIHOOD_FUNCTION;
+        try {
+          ((_LikelihoodFunction*) _GetHBLObjectByTypeMutable(AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix), type))->SerializeLF(message_to_send, _hyphyLFSerializeModeOptimize);
+        } catch (const _String &) {
+            // catch literal cases here
+            message_to_send = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program);
+        }
+    }
+    
+    if (message_to_send.nonempty()) {
+      MPISendString(message_to_send, target_node);
+    } else {
+      throw ("An ivalid (empty) MPI message");
+    }
+#else
+    throw ("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");
+#endif
+    
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (nil, error, current_program);
+  }
+
+  return true;
+}
+
+
 
 //____________________________________________________________________________________
 
@@ -2202,7 +2293,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
               
               if (rates) {
                 if (index1 == -1) { // branch length expression
-                  return_value = make_fstring_pointer (((_Matrix*)rates->GetValue())->BranchLengthExpression((_Matrix*)freqs->GetValue(),is_canonical);
+                  return_value = make_fstring_pointer (((_Matrix*)rates->GetValue())->BranchLengthExpression((_Matrix*)freqs->GetValue(),is_canonical));
                 } else
                 /*
                  returns an AVL with keys

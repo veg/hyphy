@@ -450,7 +450,7 @@ BaseRef     _Trie::toStr(unsigned long) {
  
 //----------------------------------------------------------------------------------------------------------------------
 
-_String  _Trie::RetrieveKeyByPayload (const long key){
+_String  const _Trie::RetrieveKeyByPayload (const long key){
     long key_index = payload.Find (key);
     if (key_index >= 0) {
         _SimpleList parent_indices,

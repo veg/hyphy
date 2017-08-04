@@ -1693,8 +1693,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 // execute commands
             {
                 _ElementaryCommand::ConstructExecuteCommands (currentLine, *this);
-            } else if (currentLine.BeginsWith (blMPISend)) { // MPI Send
-                _ElementaryCommand::ConstructMPISend (currentLine, *this);
             } else if (currentLine.BeginsWith (blMPIReceive)) { // MPI Receive
                 _ElementaryCommand::ConstructMPIReceive (currentLine, *this);
             } else if (currentLine.BeginsWith (blStateCounter)) { // Get Data Info
@@ -1905,7 +1903,9 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_GET_DATA_INFO:
         case HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX:
         case HY_HBL_COMMAND_ALIGN_SEQUENCES:
-        case HY_HBL_COMMAND_REPLICATE_CONSTRAINT: {
+        case HY_HBL_COMMAND_REPLICATE_CONSTRAINT:
+        case HY_HBL_COMMAND_MPI_RECEIVE:
+        case HY_HBL_COMMAND_MPI_SEND : {
             (*string_form) << procedure (code);
         }
             
@@ -2028,17 +2028,6 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
         case 66: { // execute commands
             (*string_form) << procedure (HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY);
-        }
-        break;
-
-
-        case 44: { // MPISend
-            (*string_form) << procedure (HY_HBL_COMMAND_MPI_SEND);
-        }
-        break;
-
-        case 45: { // MPISend
-            (*string_form) << procedure (HY_HBL_COMMAND_MPI_RECEIVE);
         }
         break;
 
@@ -3703,112 +3692,6 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain) {
 
 
 
-
-
-
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain) {
-    chain.currentCommand++;
-
-#ifdef __HYPHYMPI__
-    _String *arg1 = GetIthParameter(0),
-            *arg2 = GetIthParameter(1),
-            *arg3 = GetIthParameter(2,false);
-    
-    _StringBuffer *theMessage = nil;
-
-
-    long      nodeCount;
-    checkParameter (hy_env::mpi_node_count,nodeCount,1L);
-
-    long            destID = ProcessNumericArgument (arg1,chain.nameSpacePrefix),
-                    g;
-
-    if (!numericalParameterSuccessFlag || destID<0 || destID>=nodeCount) {
-        HandleApplicationError (*arg1 & " is not a valid MPI node ID in call to MPISend.");
-        return;
-    }
-
-    if (arg3) {
-        _AssociativeList * ar = (_AssociativeList *)FetchObjectFromVariableByType (&AppendContainerName(*arg3,chain.nameSpacePrefix), ASSOCIATIVE_LIST);
-        if (!ar) {
-            HandleApplicationError (*arg3 & " is not a valid associative array for input options in call to MPISend.");
-            return;
-        }
-        theMessage = new _StringBuffer (256L);
-        _String array_ID ("_HYPHY_MPI_INPUT_ARRAY_");
-        
-        (*theMessage) << array_ID << '=';
-        theMessage->AppendNewInstance(ar->Serialize(0UL));
-        (*theMessage) << ';';
-        _String path_name = *arg2;
-        if (! ProcessFileName(path_name,false,true,(hyPointer)chain.nameSpacePrefix)) {
-            HandleApplicationError (*arg2 & " is an invalid path name.");
-            return;
-        }
-        (*theMessage) << "\nExecuteAFile ( " << path_name.Enquote() << "," << array_ID << ");";
-    } else if ((g=FindLikeFuncName(AppendContainerName(*arg2,chain.nameSpacePrefix)))>=0) {
-        theMessage = new _StringBuffer (1024L);
-        ((_LikelihoodFunction*)likeFuncList(g))->SerializeLF(*theMessage,_hyphyLFSerializeModeOptimize);
-    } else {
-        theMessage = new _StringBuffer (ProcessLiteralArgument (arg2,chain.nameSpacePrefix));
-    }
-
-    if (theMessage == nil || theMessage->empty() ==0) {
-        HandleApplicationError (*arg2 & " is not a valid (or is an empty) string (LF ID) in call to MPISend.");
-    } else {
-        MPISendString (*theMessage, destID);
-    }
-
-    DeleteObject (theMessage);
-
-#else
-    HandleApplicationError ("MPISend can't be used by non-MPI versions of HyPhy.");
-#endif
-
-}
-
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase45 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-#ifdef __HYPHYMPI__
-    _String *arg1 = (_String*)parameters(0),
-             *arg2 = (_String*)parameters(1),
-              *arg3 = (_String*)parameters(2);
-
-    long      nodeCount;
-    checkParameter (hy_env::mpi_node_count,nodeCount,1L);
-
-    long            srcT = ProcessNumericArgument (arg1,chain.nameSpacePrefix),
-                    srcID,
-                    g;
-
-    if ((!numericalParameterSuccessFlag)||(srcT<-1)||(srcT>=nodeCount)) {
-        HandleApplicationError (*arg1 & " is not a valid MPI node ID in call to MPIReceive.");
-        return;
-    }
-
-    _Variable* idVar = CheckReceptacle (&AppendContainerName(*arg2,chain.nameSpacePrefix),"MPIReceive"),
-               * mVar  = CheckReceptacle (&AppendContainerName(*arg3,chain.nameSpacePrefix),"MPIReceive");
-
-    if (!(idVar&&mVar)) {
-        return;
-    }
-
-    _FString* theMV = new _FString (MPIRecvString (srcT,srcID));
-    idVar->SetValue (new _Constant (srcID),false);
-    mVar->SetValue (theMV, false);
-#else
-    HandleApplicationError ("MPIReceive can't be used by non-MPI versions of HyPhy.");
-#endif
-
-}
-
-
 //____________________________________________________________________________________
 
 void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain) {
@@ -4434,17 +4317,14 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         break;
 
 
-    case 44:
-        ExecuteCase44 (chain);
+    case HY_HBL_COMMAND_MPI_SEND:
+        return HandleMPISend (chain);
         break;
 
-    case 45:
-        ExecuteCase45 (chain);
+    case HY_HBL_COMMAND_MPI_RECEIVE:
+        HandleMPIReceive(chain);
         break;
 
-    case 46:
-        ExecuteCase46 (chain);
-        break;
 
     case 47:
         ExecuteCase47 (chain);
@@ -4473,7 +4353,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         break;
 
     case HY_HBL_COMMAND_ALIGN_SEQUENCES:
-        return HandleAlignSequenced (chain);
+        return HandleAlignSequences (chain);
         break;
 
     case 57:
@@ -5653,22 +5533,6 @@ bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long bra
 }
 
 
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructMPISend (_String&source, _ExecutionList&target)
-// syntax: MPISend (numeric node ID, string with HBL code <or> a LF ID, <input redirect target>);
-{
-
-    _List pieces;
-    ExtractConditions (source, blMPISend.sLength ,pieces,',');
-    if (pieces.lLength!=2 && pieces.lLength!=3) {
-        HandleApplicationError ("Expected: MPISend (numeric node ID, string with HBL code <or> a LF ID).");
-        return false;
-    }
-    _ElementaryCommand * mpiSend = makeNewCommand (44);
-    mpiSend->addAndClean (target, &pieces, 0);
-    return true;
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructMPIReceive (_String&source, _ExecutionList&target)

@@ -116,6 +116,7 @@ namespace hy_env {
                               .PushPairCopyKey (harvest_frequencies_gap_options, new HY_CONSTANT_TRUE)
                               .PushPairCopyKey(assertion_behavior, new HY_CONSTANT_FALSE)
                               .PushPairCopyKey (print_float_digits, new _Constant (0.))
+                              .PushPairCopyKey (mpi_node_count, new _Constant (1.))
       
       ;
     }
