@@ -65,12 +65,12 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
 
 
-meme.terms.site_alpha = "Site relative synonymous rate";
-meme.terms.site_omega_minus = "Omega ratio on (tested branches); negative selection or neutral evolution (&omega;- <= 1;)";
-meme.terms.site_beta_minus = "Site relative non-synonymous rate (tested branches); negative selection or neutral evolution (&beta;- <= &alpha;)";
-meme.terms.site_beta_plus = "Site relative non-synonymous rate (tested branches); unconstrained";
-meme.terms.site_mixture_weight = "Beta- category weight";
-meme.terms.site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
+meme.parameter_site_alpha = "Site relative synonymous rate";
+meme.parameter_site_omega_minus = "Omega ratio on (tested branches); negative selection or neutral evolution (&omega;- <= 1;)";
+meme.parameter_site_beta_minus = "Site relative non-synonymous rate (tested branches); negative selection or neutral evolution (&beta;- <= &alpha;)";
+meme.parameter_site_beta_plus = "Site relative non-synonymous rate (tested branches); unconstrained";
+meme.parameter_site_mixture_weight = "Beta- category weight";
+meme.parameter_site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
 
 // default cutoff for printing to screen
 meme.pvalue = 0.1;
@@ -214,27 +214,27 @@ selection.io.startTimer (meme.json [terms.json.timers], "MEME analysis", 2);
 // TODO : Why aren't these initially set when the model is first declared?
 
 // FEL parameter declarations
-model.generic.AddGlobal (meme.site.background_fel, "meme.site_alpha", meme.terms.site_alpha);
+model.generic.AddGlobal (meme.site.background_fel, "meme.site_alpha", meme.parameter_site_alpha);
 parameters.DeclareGlobal ("meme.site_alpha", {});
 
-model.generic.AddGlobal (meme.site.background_fel, "meme.site_beta_nuisance", meme.terms.site_beta_nuisance);
+model.generic.AddGlobal (meme.site.background_fel, "meme.site_beta_nuisance", meme.parameter_site_beta_nuisance);
 parameters.DeclareGlobal ("meme.site_beta_nuisance", {});
 
 
 // BSREL mixture model parameter declarations
-model.generic.AddGlobal (meme.site.bsrel, "meme.site_alpha", meme.terms.site_alpha);
-model.generic.AddGlobal (meme.site.bsrel, "meme.site_omega_minus", meme.terms.site_omega_minus);
+model.generic.AddGlobal (meme.site.bsrel, "meme.site_alpha", meme.parameter_site_alpha);
+model.generic.AddGlobal (meme.site.bsrel, "meme.site_omega_minus", meme.parameter_site_omega_minus);
 parameters.DeclareGlobal ("meme.site_omega_minus", {});
 parameters.SetRange ("meme.site_omega_minus", terms.range01);
 
-model.generic.AddGlobal (meme.site.bsrel, "meme.site_beta_minus", meme.terms.site_beta_minus);
+model.generic.AddGlobal (meme.site.bsrel, "meme.site_beta_minus", meme.parameter_site_beta_minus);
 parameters.DeclareGlobal ("meme.site_beta_minus", {});
 parameters.SetConstraint ("meme.site_beta_minus", "meme.site_alpha * meme.site_omega_minus", "");
 
-model.generic.AddGlobal (meme.site.bsrel, "meme.site_beta_plus", meme.terms.site_beta_plus);
+model.generic.AddGlobal (meme.site.bsrel, "meme.site_beta_plus", meme.parameter_site_beta_plus);
 parameters.DeclareGlobal ("meme.site_beta_plus", {});
 
-model.generic.AddGlobal  (meme.site.bsrel, "meme.site_mixture_weight", meme.terms.site_mixture_weight);
+model.generic.AddGlobal  (meme.site.bsrel, "meme.site_mixture_weight", meme.parameter_site_mixture_weight);
 parameters.DeclareGlobal ("meme.site_mixture_weight", {});
 parameters.SetRange ("meme.site_mixture_weight", terms.range01);
 
@@ -460,13 +460,10 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
     Optimize (results, ^lf_fel);
 
-    fel = estimators.ExtractMLEs (lf_fel, model_mapping);
-    
-
-    
+    fel = estimators.ExtractMLEs (lf_fel, model_mapping);   
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
-
+    
  	^"meme.site_mixture_weight" = 0.75;
  	if (^"meme.site_alpha" > 0) {
  		^"meme.site_omega_minus" = 1;
@@ -484,13 +481,14 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 	ancestral_info = ancestral.build (lf_bsrel,0,FALSE);
 
     //TODO
-	branch_attributes = selection.substitution_mapper (ancestral_info ["MATRIX"],
+	branch_substitution_information = selection.substitution_mapper (ancestral_info ["MATRIX"],
 													  ancestral_info ["TREE_AVL"],
 													  ancestral_info ["AMBIGS"],
 													  ^"meme.pairwise_counts",
 													  ancestral_info ["MAPPING"],
 													  (^"meme.codon_data_info")[utility.getGlobalValue("terms.code")]);
 
+	
 	DeleteObject (ancestral_info);
 
 	branch_ebf       = {};
@@ -543,7 +541,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     		utility.getGlobalValue("terms.alternative") : alternative,
     		utility.getGlobalValue("terms.posterior") : branch_posterior,
     		utility.getGlobalValue("terms.empirical_bayes_factor") : branch_ebf,
-    		utility.getGlobalValue("terms.branch_attributes") : branch_attributes, //TODO: keep this attr?
+    		utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information, //TODO: keep this attr?
     		utility.getGlobalValue("terms.null"): null};
 }
 
@@ -590,7 +588,7 @@ lfunction meme.store_results (node, result, arguments) {
                           0  // total branch length of tested branches
                       } };
 
-	  //console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.terms.site_mixture_weight"));
+	  //console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.parameter_site_mixture_weight"));
 
     if (None != result) { // not a constant site
 
@@ -598,10 +596,10 @@ lfunction meme.store_results (node, result, arguments) {
         lrt = {utility.getGlobalValue("terms.LRT") : 2*((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")]-(result[utility.getGlobalValue("terms.null")])[utility.getGlobalValue("terms.fit.log_likelihood")])};
         lrt [utility.getGlobalValue("terms.p_value")] = 2/3-2/3*(0.45*CChi2(lrt[utility.getGlobalValue("terms.LRT")],1)+0.55*CChi2(lrt[utility.getGlobalValue("terms.LRT")],2));
         
-        result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.terms.site_alpha"));
-        result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.terms.site_omega_minus")) * result_row[0];
-        result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.terms.site_mixture_weight"));
-        result_row [3] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.terms.site_beta_plus"));
+        result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.parameter_site_alpha"));
+        result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.parameter_site_omega_minus")) * result_row[0];
+        result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.parameter_site_mixture_weight"));
+        result_row [3] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.parameter_site_beta_plus"));
         result_row [4] = 1-result_row [2];
         result_row [5] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [6] = lrt [utility.getGlobalValue("terms.p_value")];

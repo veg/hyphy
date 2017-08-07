@@ -58,9 +58,11 @@ function load_file (prefix) {
         }
 
         */
-
     sample_size = codon_data_info[utility.getGlobalValue("terms.data.sites")] * codon_data_info[utility.getGlobalValue("terms.data.sequences")];
-    codon_data_info[utility.getGlobalValue("terms.json.json")] = codon_data_info[utility.getGlobalValue("terms.data.file")] + "."+prefix+".json";
+    upper_prefix = prefix && 1; //uppercase the prefix for json name
+    codon_data_info[utility.getGlobalValue("terms.json.json")] = codon_data_info[utility.getGlobalValue("terms.data.file")] + "."+upper_prefix+".json";
+
+    
     name_mapping = codon_data_info[utility.getGlobalValue("terms.data.name_mapping")];
 
         /**

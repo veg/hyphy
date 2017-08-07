@@ -11,6 +11,38 @@ _useGridSearch              = 1;
 LF_SMOOTHING_REDUCTION      = 0.1;
 
 _BSREL.valid_models = {"MGL" : 1};
+_BSREL.adaptive_model = "Adaptive Model";
+_BSREL.mg94_model     = "Global MG94xREV";
+
+//Load these earlier in order to get the analysis description
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/tasks/trees.bf");
+
+
+_BSREL.analysis_description_absrel = {terms.io.info : "aBSREL (Adaptive branch-site random effects likelihood)
+                            uses an adaptive random effects branch-site model framework
+                            to test whether each branch has evolved under positive selection,
+                            using a procedure which infers an optimal number of rate categories per branch.",
+                           terms.io.version : "1.0",
+                           terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353",
+                           terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
+                           terms.io.contact : "spond@temple.edu",
+                           terms.io.requirements : "in-frame codon alignment and a phylogenetic tree"
+                          };
+
+
+_BSREL.analysis_description_3rate_bsrel = {terms.io.info : "BS-REL (branch-site random effects likelihood)
+                            uses an random effects branch-site model framework
+                            to test whether each branch has evolved under positive selection,
+                            assuming three rate categories per branch.",
+                           terms.io.version : "1.0",
+                           terms.io.reference : "A Random Effects Branch-Site Model for Detecting Episodic Diversifying Selection (2011). Mol Biol Evol 28 (11): 3033-3043",
+                           terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
+                           terms.io.contact : "spond@temple.edu",
+                           terms.io.requirements : "in-frame codon alignment and a phylogenetic tree"
+                          };
+
+
 
 
 ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
@@ -19,8 +51,6 @@ LoadFunctionLibrary("dSdNTreeTools");
 LoadFunctionLibrary("CF3x4");
 LoadFunctionLibrary("BranchSiteTemplate");
 LoadFunctionLibrary("TreeTools");
-LoadFunctionLibrary("libv3/UtilityFunctions.bf");
-LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 
 ChoiceList  (oldBSREL,"Run the adaptive version of BS-REL (aka aBSREL)?", 1,NO_SKIP,
@@ -40,22 +70,22 @@ if (doSynRateVariation < 0) {
     return 1;
 }
 
-_BSREL_json    = {"fits" : {},
-                  "test results" : {},
-                  "timers" : {},
-                  "input": {}
+_BSREL_json    = {terms.json.fits : {},
+                  terms.json.test_results: {},
+                  terms.json.timers : {},
+                  terms.json.input: {}
                   };
 
 if (oldBSREL) {
-    _BSREL_json["version"] = "3-rate BS-REL";
-    _BSREL_json["PMID"] = "21670087";
+    io.DisplayAnalysisBanner ( _BSREL.analysis_description_3rate_bsrel );
+    _BSREL_json[terms.json.analysis] = analysis_description_3rate_bsrel;
     
 } else {
-    _BSREL_json["version"] = "Adaptive BS-REL";
-    _BSREL_json["PMID"] = "25697341";
+    io.DisplayAnalysisBanner ( _BSREL.analysis_description_absrel );
+    _BSREL_json[terms.json.analysis] = _BSREL.analysis_description_absrel;
 }
 
-_BSREL_json["convergence failures"] = 0;
+_BSREL_json[terms.json.convergence_failures] = 0;
 
 
 
@@ -91,9 +121,10 @@ tree_info = trees.LoadAnnotatedTopology (1);
 
 Model	  MGL				= (MGMatrixLocal, codon3x4, 0);
 
-tree_info_models = tree_info["model_map"];
+tree_info_models = tree_info[terms.trees.model_map];
 
-ExecuteCommands ("Tree baselineTree = " + tree_info["string"]);
+
+ExecuteCommands ("Tree baselineTree = " + tree_info[terms.trees.newick]);
 
 /* 
 Add input data information to JSON
@@ -103,10 +134,11 @@ _BSREL.output_prefix = filename + ".ABSREL";
 _BSREL.json_path = _BSREL.output_prefix + ".json";
 
 
-(_BSREL_json["input"])["filename"] = filename;
-(_BSREL_json["input"])["tree string"] = tree_info["string_with_lengths"];
-(_BSREL_json["input"])["sequences"] = ds.species;
-(_BSREL_json["input"])["sites"] = ds.sites/3;
+(_BSREL_json[terms.json.input])[terms.json.file] = filename;
+(_BSREL_json[terms.json.input])[terms.json.tree_string] = tree_info[terms.trees.newick_with_lengths];
+(_BSREL_json[terms.json.input])[terms.json.sequences] = ds.species;
+(_BSREL_json[terms.json.input])[terms.json.sites] = ds.sites/3;
+
 
 
 totalBranchCount			 = BranchCount(baselineTree) + TipCount (baselineTree);
@@ -245,7 +277,7 @@ current_IC             = getIC (current_log_L, current_parameter_count, sample_s
 
 
 // STORE LF
-json_store_lf                (_BSREL_json, "MG94", localLL, localParams,current_IC, _BSREL_timers[0], +BranchLength (baselineTree,-1), Format (baselineTree, 1,1));
+json_store_lf(_BSREL_json, _BSREL.mg94_model, localLL, localParams,current_IC, _BSREL_timers[0], +BranchLength (baselineTree,-1), Format (baselineTree, 1,1));
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
@@ -269,7 +301,7 @@ for (k = 0; k < totalBranchCount; k = k+1) {
 	node_omegas[1] = 1;
 
 
-    (((_BSREL_json["fits"])["MG94"]) ["rate distributions"])[bNames[k]] = matrix2json(node_omegas);
+    (((_BSREL_json[terms.json.fits])[_BSREL.mg94_model]) [terms.json.rate_distributions])[bNames[k]] = matrix2json(node_omegas);
 
 
 }
@@ -474,7 +506,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
 fprintf (stdout, "\n");
 
 taskTimerStop (1);
-(_BSREL_json ["timers"])["Complexity analysis"] = _BSREL_timers[1];
+(_BSREL_json [terms.json.timers])["Complexity analysis"] = _BSREL_timers[1];
 
 
 OPTIMIZATION_TIME_HARD_LIMIT = 1e26;
@@ -522,7 +554,9 @@ UseModel (USE_NO_MODEL);
 Tree T = renderString;
 //_BSREL_json ["tree"] = renderString;
 
-json_store_lf                 (_BSREL_json, "Full model", res_three_LF[1][0], res_three_LF[1][1] + 9, getIC (res_three_LF[1][0], res_three_LF[1][1] + 9, sample_size), _BSREL_timers[2],
+
+
+json_store_lf                 (_BSREL_json, _BSREL.adaptive_model, res_three_LF[1][0], res_three_LF[1][1] + 9, getIC (res_three_LF[1][0], res_three_LF[1][1] + 9, sample_size), _BSREL_timers[2],
                                             +BranchLength (T, -1),
                                             renderString);
 
@@ -541,7 +575,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     rate_classes = rate_classes_by_branch[k];
     node_omegas = getNodeOmegaDistribution (ref, rate_classes);
 
-    (((_BSREL_json["fits"])["Full model"]) ["rate distributions"])[bNames[k]] = matrix2json(node_omegas);
+    (((_BSREL_json[terms.json.fits])[_BSREL.adaptive_model]) [terms.json.rate_distributions])[bNames[k]] = matrix2json(node_omegas);
 
     fprintf (stdout, "\n");
     printNodeDesc (ref, rate_classes_by_branch[k]);
@@ -600,8 +634,8 @@ for	(k = 0; k < totalBranchCount; k += 1) {
 
         fprintf (stdout, "p-value = ", pValueByBranch[k][p_uncorrected_column], "\n");
 
-        (_BSREL_json["test results"])[bNames[k]] = {"LRT": pValueByBranch[k][lrt_column],
-                                                    "uncorrected p": pValueByBranch[k][p_uncorrected_column]};
+        (_BSREL_json[terms.json.test_results])[bNames[k]] = {terms.LRT: pValueByBranch[k][lrt_column],
+                                                    terms.json.uncorrected_pvalue: pValueByBranch[k][p_uncorrected_column]};
 
         if (rate_classes > 1) {
             if (doSynRateVariation == 0) {
@@ -633,7 +667,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
             fprintf 					  (stdout, "[PHASE 2/REPEAT] Detected a convergence problem; refitting the LOCAL alternative model with new starting values\n");
             // Uncomment line to save intermediate files in addition to the JSON
             // lfOut	= csvFilePath + ".fit";
-            _BSREL_json["convergence failures"] += 1;
+            _BSREL_json[terms.json.convergence_failures] += 1;
             Optimize					  (res_three_LF,three_LF);
             json_store_lf                 ( _BSREL_json,
                                             "BS-REL",
@@ -660,14 +694,14 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     else
     {
         pValueByBranch[k][p_uncorrected_column] = 1.0;
-        (_BSREL_json["test results"])[bNames[k]] = {"LRT": "test not run",
-                                                    "uncorrected p": 1.0};
+        (_BSREL_json[terms.json.test_results])[bNames[k]] = {terms.LRT: "test not run",
+                                                    terms.json.uncorrected_pvalue: 1.0};
     }
-    ((_BSREL_json["test results"])[bNames[k]])["tested"] = selectedBranches[k];
+    ((_BSREL_json[terms.json.test_results])[bNames[k]])[terms.json.tested] = selectedBranches[k];
 }
 
 taskTimerStop (3);
-(_BSREL_json ["timers"])["Testing"] = _BSREL_timers[3];
+(_BSREL_json [terms.json.timers])["Testing"] = _BSREL_timers[3];
 
 
 OPTIMIZATION_METHOD = 4;
@@ -690,7 +724,7 @@ for		(k = 0; k < totalBranchCount; k = k+1)
         fprintf (stdout, "\t", bNames[pValueSorter[k][0]], " p = ", pValueByBranch[pValueSorter[k][0]][p_corrected_column], "\n");
         hasBranchesUnderSelection += 1;
     }
-    ((_BSREL_json["test results"])[bNames[pValueSorter[k][0]]])["p"] = pValueByBranch[pValueSorter[k][0]][p_corrected_column] ;
+    ((_BSREL_json[terms.json.test_results])[bNames[pValueSorter[k][0]]])[terms.p_value] = pValueByBranch[pValueSorter[k][0]][p_corrected_column] ;
 
 }
 
@@ -709,15 +743,15 @@ if (hasBranchesUnderSelection == 0) {
 
 
 taskTimerStop (4);
-(_BSREL_json ["timers"])["overall"] = _BSREL_timers[4];
+(_BSREL_json [terms.json.timers])["overall"] = _BSREL_timers[4];
 fprintf        (_BSREL.json_path, CLEAR_FILE, _BSREL_json);
 
 
 DeleteObject (stepupLF, three_LF, base_FL);
 
-printTimers (_BSREL_timers, {"0" : "MG94 model fit",
+printTimers (_BSREL_timers, {"0" : "MG94xREV model fit",
                              "1" : "Rate class complexity analysis",
-                             "2" : "aBSREL model fit",
+                             "2" : "Adaptive model fit",
                              "3" : "Individual branch selection testing",
                              "4" : "Total time"});
 
@@ -1099,11 +1133,12 @@ lfunction matrix2json (mx) {
 //------------------------------------------------------------------------------------------------------------------------
 
 lfunction json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_string) {
-    (json["fits"])[name] = {"log-likelihood": ll,
-                            "parameters": df,
-                            "AIC-c" : aicc,
-                            "runtime" : time,
-                            "tree length" : tree_length,
-                            "tree string" : tree_string,
-                            "rate distributions" : {}};
+
+    (json[utility.getGlobalValue("terms.json.fits")])[name] = {utility.getGlobalValue("terms.json.log_likelihood"): ll,
+                            utility.getGlobalValue("terms.json.estimated_parameters"): df,
+                            utility.getGlobalValue("terms.json.AICc") : aicc,
+                            utility.getGlobalValue("terms.json.runtime") : time,
+                            utility.getGlobalValue("terms.json.tree_length") : tree_length,
+                            utility.getGlobalValue("terms.json.tree_string") : tree_string,
+                            utility.getGlobalValue("terms.json.rate_distributions") : {}};
 }

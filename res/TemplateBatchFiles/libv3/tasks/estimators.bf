@@ -300,7 +300,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
 	/* set all category variable values to one */
 
-    GetString(estimators.ApplyExistingEstimates.lfInfo, ^ likelihood_function_id, -1);
+    GetString(estimators.ApplyExistingEstimates.lfInfo, ^ likelihood_function_id, -1);   
     estimators.ApplyExistingEstimates.results = {};
     estimators.ApplyExistingEstimates.partitions = utility.Array1D(estimators.ApplyExistingEstimates.lfInfo[terms.fit.trees]);
 
@@ -527,8 +527,6 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     }
 
    	 Optimize(mles, likelihoodFunction);
-     //Export (lfe, likelihoodFunction);
-     //console.log (lfe);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);

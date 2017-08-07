@@ -200,7 +200,7 @@ terms.model.branch_length_scaler    = "branch length scaler";
 terms.omega_ratio                   = "non-synonymous/synonymous rate ratio"; // in estimators.bf
 terms.synonymous_rate               = "synonymous rate";
 terms.nonsynonymous_rate            = "non-synonymous rate";
-
+terms.branch_selection_attributes   = "Branch selection attributes";  
 
 terms.globals_only = "globals only";
 terms.empirical_bayes_factor  = "BF";
@@ -363,7 +363,7 @@ terms.tree_attributes.internal = "internal";
 terms.tree_attributes.leaf = "leaf";
 terms.tree_attributes.test   = "test";
 terms.tree_attributes.background  = "background";
-terms.branch_attributes = "branch_attributes";
+//terms.branch_attributes = "branch_attributes";
 //terms.trees.name = "name"; // todo: is this real?
 
 // TODO: Unclear if these are actually usable
@@ -420,7 +420,7 @@ terms.json.display_order            = terms.attribute.meta.order;
 terms.json.tree.newick              = "newick"; // NEEDED?
 terms.json.partitions               = "data partitions";
 terms.json.tested                   = "tested";    
-
+terms.json.uncorrected_pvalue       = "uncorrected p-value";
 terms.json.test_results = "test results";
 terms.json.input = "input"; 
 terms.json.file = "file name";

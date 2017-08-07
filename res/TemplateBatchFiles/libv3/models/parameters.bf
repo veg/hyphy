@@ -357,7 +357,6 @@ function parameters.SetConstraint(id, value, global_tag) {
         }
     } else {
         if (Type(id) == "AssociativeList" && Type(value) == "AssociativeList") {
-
             parameters.SetConstraint.var_count = Abs(id);
             for (parameters.SetConstraint.k = 0; parameters.SetConstraint.k < parameters.SetConstraint.var_count; parameters.SetConstraint.k += 1) {
                 parameters.SetConstraint(id[parameters.SetConstraint.k],
