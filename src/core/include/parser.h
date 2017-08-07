@@ -78,7 +78,13 @@ extern      _List           variablePtrs,
             hyReservedWords;
 
 extern      _SimpleList     BuiltInFunctionParameterCount,
-            *deferSetFormula;
+            *deferSetFormula,
+            opPrecedence,
+            BinOps,
+            associativeOps,
+            simpleOperationCodes,
+            simpleOperationFunctions;
+
 
 extern      _AVLListX       variableNames;
 
@@ -86,31 +92,34 @@ extern      _String         HalfOps;
 
 extern      _Trie           UnOps;
 
-extern      _Parameter      printDigits,
-            verbosityLevel;
+extern      long            printDigits,
+                            verbosityLevel;
 
 extern      long            lastMatrixDeclared,
             subNumericValues;
 
-long        LocateVarByName (_String&);
+long        LocateVarByName (_String const&);
 _Variable*  LocateVar       (long index);
 _Variable*  FetchVar        (long index);
-_PMathObj   FetchObjectFromVariableByType       (_String*, const unsigned long, long = -1, _String* = nil);
+_PMathObj   FetchObjectFromVariableByType       (_String const*, const unsigned long, long = -1, _String* = nil);
 _PMathObj   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
+_PMathObj   FetchObjectFromFormulaByType         (_Formula&, const unsigned long, long = -1, _String* = nil);
 _String     FetchObjectNameFromType (const unsigned long);
-_String&    AppendContainerName     (_String&, _VariableContainer*);
-_String&    AppendContainerName     (_String&, _String*);
+_String const&    AppendContainerName     (_String const&, _VariableContainer const*);
+_String const&    AppendContainerName     (_String const&, _String const*);
 _String*    FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex);
 
-void        DeleteVariable  (_String&, bool deleteself = true);
+void        DeleteVariable  (_String const&, bool deleteself = true);
 void        DeleteVariable  (long, bool deleteself);
 
 void        DeleteTreeVariable
 (_String&, _SimpleList&,bool);
-void        checkParameter  (_String& name, _Parameter& dest, _Parameter def, _VariableContainer* = nil);
-void        stashParameter  (_String& name, _Parameter  newVal, bool);
-void        setParameter    (_String& name, _Parameter def, _String* = nil);
-void        setParameter    (_String& name, _PMathObj  def, bool = true, _String* = nil);
+
+
+
+void        stashParameter  (_String const& name, _Parameter  newVal, bool);
+void        setParameter    (_String const& name, _Parameter def, _String* = nil);
+void        setParameter    (_String const& name, _PMathObj  def, _String* = nil, bool = true);
 
 long        VerbosityLevel (void);
 void        ReplaceVar      (_Variable*);
@@ -118,29 +127,23 @@ void        RenameVariable  (_String*,_String*);
 void        CompileListOfUserExpressions
 (_SimpleList&,_List&, bool doAll = false);
 
-void        FindUnusedObjectName
-(_String&, _String&, _List&, bool = false);
-
-void        FindUnusedObjectName
-(_String&, _String&, _AVLListX&, bool = false);
-
 bool        ExpressionCalculator(void);
 bool        ExpressionCalculator(_String data);
 
 _Variable*  CheckReceptacle
-(_String*,_String, bool = true, bool = false);
+(_String const*, _String const & , bool = true, bool = false);
 
 bool        CheckReceptacleAndStore
-(_String*,_String, bool, _PMathObj, bool = true);
+(_String const*,_String, bool, _PMathObj, bool = true);
 
 bool        CheckReceptacleAndStore
 (_String,_String, bool, _PMathObj, bool = true);
 
 _Variable*  CheckReceptacleCommandID
-(_String* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
+(_String const* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
 
 bool        CheckReceptacleCommandIDAndStore
-(_String* name, const long id, bool checkValid, _PMathObj v, bool dup = true, bool isGlobal = false);
+(_String const* name, const long id, bool checkValid, _PMathObj v, bool dup = true, bool isGlobal = false);
 
 void        FinishDeferredSF(void);
 
@@ -187,6 +190,7 @@ _Parameter  MinusNumber (_Parameter);
 _Parameter  MaxNumbers  (_Parameter, _Parameter);
 _Parameter  MinNumbers  (_Parameter, _Parameter);
 _Parameter  FastMxAccess(Ptr, _Parameter);
+void        FastMxWrite (Ptr, _Parameter, _Parameter);
 
 BaseRef parameterToString       (_Parameter);
 void    parameterToCharBuffer   (_Parameter, char*, long, bool json = false);
@@ -200,7 +204,8 @@ void        PopulateArraysForASimpleFormula
 (_SimpleList&, _SimpleFormulaDatum*);
 
 void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
-
+void        WarnWrongNumberOfArguments (_PMathObj, long, _hyExecutionContext*, _List *);
+  
 extern      _Parameter  pi_const;
 extern      bool        useGlobalUpdateFlag;
 extern      _String     noneToken;

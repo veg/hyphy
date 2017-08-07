@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include "errorfns.h"
 #include "hy_strings.h"
+#include "batchlan.h"
+#include "function_templates.h"
 
 
 
@@ -78,12 +80,12 @@ extern  bool dropIntoDebugMode;
 void    SaveConsole (void);
 #endif
 
-#include "batchlan.h"
+
 
 //_____________________________________________________________
 
 _String  DecodeError                    (long);
-_String* ConstructAnErrorMessage        (_String&);
+_String* ConstructAnErrorMessage        (_String const&);
 
 
 //_____________________________________________________________
@@ -148,7 +150,7 @@ _String DecodeError (long errCode)
         return "Export Matrix Called With a Non-polynomial Matrix Argument";
         break;
     case -666:
-        return "Attempting to operate on an undefined value; this is probably a result of an earlier 'soft' error condition";
+        return "Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition";
         break;
     default:
         return "Unclassified Error";
@@ -217,8 +219,7 @@ void*   checkPointer (void* p)
 }
 
 //_______________________________________________________________________
-void    ReportWarning (_String st)
-{
+void    ReportWarning (_String const& st) {
     checkParameter          (MessageLogging, messageLogFlag, 1.0);
 
 #ifdef  __HEADLESS__
@@ -239,8 +240,7 @@ void    ReportWarning (_String st)
 
 
 //_______________________________________________________________________
-void    FlagError (_String st)
-{
+void    FlagError (_String const& st) {
 #ifdef  __HEADLESS__
     if (globalInterfaceInstance) {
         globalInterfaceInstance->PushError (&st);
@@ -284,7 +284,7 @@ void    FlagError (_String st)
     SetStatusLine  (errMsg);
 #else
     _SimpleList color (255,2,0,0);
-    StringToConsole(errMsg, &color);
+    StringToConsole(errMsg);
 #endif
 #endif
 
@@ -310,14 +310,23 @@ void    FlagError (_String st)
 }
 
 //_______________________________________________________________________
-void    WarnErrorWhileParsing (_String st, _String& context)
-{
+void    WarnErrorWhileParsing (_String const&st, _String& context) {
     WarnError (_String ("While parsing:\n") & context & "\n" & st);
 }
 
+extern _List batchLanguageFunctions;
 
 //_______________________________________________________________________
-void WarnError (_String st)
+void WarnOrStoreError (_String * store, _String const & st) {
+    if (store) {
+        *store = st;
+    } else {
+        WarnError (st);
+    }
+}
+
+//_______________________________________________________________________
+void WarnError (_String const & st)
 {
     if (currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
         currentExecutionList->ReportAnExecutionError(st, true);
@@ -370,8 +379,8 @@ void WarnError (_String st)
     #ifdef  _MINGW32_MEGA_
         SetStatusLine  (errMsg);
     #else
-        _SimpleList color (255,2,0,0);
-        StringToConsole(errMsg, &color);
+  //_SimpleList color (255,2,0,0);
+        StringToConsole(errMsg);
 #ifdef __HYPHYQT__
     return;
 #endif
@@ -387,7 +396,10 @@ void WarnError (_String st)
         MPI_Abort (MPI_COMM_WORLD,1);
     }
 #endif
-    //GlobalShutdown();
+    GlobalShutdown();
+  
+  //batchLanguageFunctions.Clear(true);
+  
 
 #ifdef _HY_ABORT_ON_ERROR
     abort ();
@@ -396,6 +408,7 @@ void WarnError (_String st)
       terminateExecution = true;
       ProblemReport (errMsg);
     #else
+  
       exit(1);
     #endif
   
@@ -406,7 +419,7 @@ void WarnError (_String st)
 
 //____________________________________________________________________________________
 
-_String* ConstructAnErrorMessage         (_String& theMessage)
+_String* ConstructAnErrorMessage         (_String const& theMessage)
 {
     _String* errMsg = new _String (128L,true);
 
@@ -425,9 +438,9 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
         _FormulaParsingContext fpc (&errMsgLocal, nil);
         
         if (Parse    (&expression, expr, fpc, nil) == HY_FORMULA_EXPRESSION) {
-            CheckReceptacleAndStore(&errorReportFormatExpressionStr, empty, false, new _FString (theMessage, false), false);
-            CheckReceptacleAndStore(&errorReportFormatExpressionStack, empty, false, new _Matrix (calls), false);
-            CheckReceptacleAndStore(&errorReportFormatExpressionStdin, empty, false, new _Matrix (stdins, false), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStr, emptyString, false, new _FString (theMessage, false), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStack, emptyString, false, new _Matrix (calls), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStdin, emptyString, false, new _Matrix (stdins, false), false);
             _PMathObj expr = expression.Compute();
             if (!terminateExecution && expr && expr->ObjectClass() == STRING) {
                 (*errMsg) << ((_FString*)expr)->theString;

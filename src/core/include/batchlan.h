@@ -46,6 +46,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "trie.h"
 #include <stdio.h>
 
+
 #define  HY_BL_ERROR_HANDLING_DEFAULT 0
 #define  HY_BL_ERROR_HANDLING_SOFT    1
 
@@ -79,6 +80,7 @@ class   _ExecutionList: public _List // a sequence of commands to be executed
 public:
     _ExecutionList (); // doesn't do much
     _ExecutionList (_String&, _String* = nil, bool = false, bool* = nil);
+    void Init (_String* = nil);
 
     virtual
     ~_ExecutionList (void);
@@ -87,13 +89,15 @@ public:
     BaseRef     makeDynamic (void);
 
     virtual
-    BaseRef     toStr (void);
+    BaseRef     toStr (unsigned long = 0UL);
 
     virtual
     void        Duplicate                   (BaseRef);
     bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
 
-    _PMathObj   Execute                     (void);             // run this execution list
+    _PMathObj   Execute                     (_ExecutionList* parent = nil);
+        // if parent is specified, copy stdin redirects from it
+        // run this execution list
     _PMathObj   GetResult                   (void) {
         return result;
     }
@@ -105,7 +109,8 @@ public:
     void        ResetFormulae               (void);             // decompile formulas (for reference functions)
     void        ResetNameSpace              (void);
     void        SetNameSpace                (_String);
-    _String     GetFileName                 (void);
+    _String const
+                GetFileName                 (void) const;
     _String*    GetNameSpace                (void);
     _String     AddNameSpaceToID            (_String&, _String * = nil);
     _String     TrimNameSpaceFromID         (_String&);
@@ -116,6 +121,7 @@ public:
         }
         return nil;
     }
+  
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
@@ -125,7 +131,7 @@ public:
             return errorState;
     }
 
-    void              ReportAnExecutionError (_String  errMsg, bool doCommand = true, bool appendToExisting = false);
+    void              ReportAnExecutionError (_String errMsg, bool doCommand = true, bool appendToExisting = false);
     /**
      * Handle an error message according to the reporting policy of this execution list (defined by errorHandlingMode)
      * @param errMsg -- the current command text stream
@@ -133,6 +139,18 @@ public:
      * @param appendToExisting -- append text to existing error
      
      */
+  
+    void        BuildListOfDependancies   (_AVLListX & collection, bool recursive = true);
+  
+    /**
+     
+     Scan the body of this function/code for dependancies on various objects
+     (currently only supports HBL functions), and store them in `collection`.
+     
+     If recursive is true, then new HBL functions will be scanned for dependancies
+     as well.
+     
+    */
 
 
     // data fields
@@ -152,7 +170,8 @@ public:
     _List                           *stdinRedirectAux;
 
     _String                         sourceFile,
-                                    sourceText;
+                                    sourceText,
+                                    enclosingNamespace;
 
     _SimpleList                     callPoints,
                                     lastif;
@@ -166,6 +185,8 @@ public:
 //____________________________________________________________________________________
 // an elementary command
 
+
+
 class   _ElementaryCommand: public _String // string contains the literal for this command
 {
 public:
@@ -178,7 +199,7 @@ public:
 
     virtual   BaseRef        makeDynamic (void);
     virtual   void           Duplicate (BaseRef);
-    virtual   BaseRef        toStr (void);
+    virtual   BaseRef        toStr (unsigned long = 0UL);
 
     bool      Execute        (_ExecutionList&); // perform this command in a given list
     void      ExecuteCase0   (_ExecutionList&);
@@ -232,7 +253,7 @@ public:
     bool      HandleDifferentiate                   (_ExecutionList&);
     long      GetCode                               (void) { return code; };
     
-    static  _String   FindNextCommand       (_String&, bool = false);
+    static  const _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
     // chops the input to remove the newly found line
 
@@ -251,7 +272,7 @@ public:
      */
    
 
-    static  bool      BuildFor              (_String&, _ExecutionList&, _List&);
+    static  bool      BuildFor              (_String&, _ExecutionList&, _List*);
     // builds the for loop starting from
     // the beginning of input
     // this will process the loop header
@@ -263,7 +284,7 @@ public:
     // this will process the loop header
     // and the entire scope afterwards
 
-    static  bool      BuildWhile            (_String&, _ExecutionList&, _List&);
+    static  bool      BuildWhile            (_String&, _ExecutionList&, _List*);
     // builds the while(..) construct starting from
     // the beginning of input
     // this will process the loop header
@@ -371,9 +392,26 @@ public:
 
     static  bool      SelectTemplateModel   (_String&, _ExecutionList&);
 
-    static  bool      MakeGeneralizedLoop   (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
+    static  bool      MakeGeneralizedLoop      (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
+  
+    bool              DecompileFormulae        (void);
+  
+    void              BuildListOfDependancies  (_AVLListX & collection, bool recursive, _ExecutionList& chain);
+    
+    /**
+     
+     Check this command for
+     (currently only supports HBL functions), and store them in `collection`.
+     
+     If recursive is true, then new HBL functions will be scanned for dependancies
+     as well.
+     
+     */
+
 
 protected:
+  
+    static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList&, bool, _AVLListX& );
 
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
@@ -382,7 +420,8 @@ protected:
     // with two branches
     // and a condition
 
-    void       addAndClean          (_ExecutionList&, _List* = nil, long = 0);
+    void       addAndClean            (_ExecutionList&, _List* = nil, long = 0);
+    void       appendCompiledFormulae (_Formula *, _Formula* = nil);
 
 
     friend  class     _ExecutionList;
@@ -428,14 +467,9 @@ _String* MPIRecvString          (long,long&);
 
 extern  _List
 
-batchLanguageFunctions,
-batchLanguageFunctionNames,
-batchLanguageFunctionParameterLists,
 dataSetList,
 dataSetNamesList,
 likeFuncList,
-dataSetFilterList,
-dataSetFilterNamesList,
 templateModelList,
 scfgNamesList,
 scfgList,
@@ -452,15 +486,14 @@ standardLibraryExtensions;
 
 
 extern  _SimpleList
-
-batchLanguageFunctionParameters,
-batchLanguageFunctionClassification,
 modelMatrixIndices,
 modelTypeList,
 // SLKP: 20100313 this list stores 0 for  normal (rate-matrix based models),
 //       vs expression based matrices, for which the dimension is stored.
 modelFrequenciesIndices,
 listOfCompiledFormulae;
+
+
 
 extern  _String
 
@@ -527,6 +560,7 @@ lfDoneCompute                   ,
 getURLFileFlag                  ,
 versionString                   ,
 timeStamp                       ,
+listLoadedLibraries             ,
 simulationFilter                ,
 prefixDS                        ,
 prefixDF                        ,
@@ -558,6 +592,14 @@ assertionBehavior               ,
 dialogPrompt                    ,
 _hyLastExecutionError           ,
 _hyExecutionErrorMode           ,
+blReturn                        ,
+blDataSet                       ,
+blDataSetFilter                 ,
+blLF                            ,
+blLF3                           ,
+blTree                          ,
+blTopology                      ,
+blSCFG                          ,
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
 mpiNodeCount                    ,
@@ -570,24 +612,44 @@ extern  _ExecutionList              *currentExecutionList;
 extern  _AVLList                    loadedLibraryPaths;
 extern  _AVLListX                   _HY_HBLCommandHelper,
                                     _HY_GetStringGlobalTypes;
-                                    
+
+
 extern  _Trie                       _HY_ValidHBLExpressions,
-                                    _HY_HBL_Namespaces;
+                                    _HY_HBL_Namespaces,
+                                    _HY_HBL_KeywordsPreserveSpaces;
 
 extern  long                        globalRandSeed,
                                     matrixExpCount;
  
 
-long    FindDataSetName              (_String&);
-long    FindDataSetFilterName        (_String&);
-long    FindSCFGName                 (_String&);
-long    FindBFFunctionName           (_String&, _VariableContainer* = nil);
-
-long    FindBgmName                  (_String &);
+long      FindDataSetName                 (_String const&);
+long      FindSCFGName                    (_String const&);
+long      FindBFFunctionName              (_String const&, _VariableContainer const* = nil);
+long    FindBgmName                       (_String const&);
 // added by afyp, March 18, 2007
 
-long    FindLikeFuncName             (_String&, bool = false);
-long    FindModelName                (_String&);
+long    FindLikeFuncName                  (_String const&, bool = false);
+long    FindModelName                     (_String const&);
+
+
+const _String&  GetBFFunctionNameByIndex        (long);
+long      GetBFFunctionArgumentCount  (long);
+_List&    GetBFFunctionArgumentList   (long);
+_SimpleList&    GetBFFunctionArgumentTypes   (long);
+_HY_BL_FUNCTION_TYPE
+         GetBFFunctionType            (long);
+_ExecutionList&
+          GetBFFunctionBody           (long);
+
+_String const
+          ExportBFFunction            (long, bool = true);
+
+
+void      ClearBFFunctionLists        (long = -1L);
+bool      IsBFFunctionIndexValid      (long);
+long      GetBFFunctionCount          (void);
+
+
 void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, bool inclG, long modelID2, bool inclCat);
 /* 20100316 SLKP:
     factored out a function call to scan a particular model
@@ -600,30 +662,30 @@ _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
 _Parameter
-ProcessNumericArgument               (_String*,_VariableContainer*, _ExecutionList* = nil);
-_String ProcessLiteralArgument       (_String*,_VariableContainer*, _ExecutionList* = nil);
+ProcessNumericArgument               (_String*,_VariableContainer const*, _ExecutionList* = nil);
+const _String ProcessLiteralArgument (_String const*,_VariableContainer const*, _ExecutionList* = nil);
 _AssociativeList*
 ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
-_String GetStringFromFormula         (_String*,_VariableContainer*);
+const _String GetStringFromFormula         (_String*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);
 
 void    SerializeModel               (_String&,long,_AVLList* = nil, bool = false);
 bool    Get_a_URL                    (_String&,_String* = nil);
 
-long    AddFilterToList              (_String&,_DataSetFilter*,bool = false);
 long    AddDataSetToList             (_String&,_DataSet*);
-void    SetDataFilterParameters      (_String&, _DataSetFilter*, bool);
-void    KillDataFilterRecord         (long, bool = false);
 void    KillLFRecord                 (long, bool = true);
 void    KillDataSetRecord            (long);
 void    KillModelRecord              (long);
 void    KillExplicitModelFormulae    (void);
-bool    PushFilePath                 (_String&, bool = true);
-void    PopFilePath                  (void);
-_Matrix*CheckMatrixArg               (_String*, bool);
+bool    PushFilePath                 (_String&, bool = true, bool process = true);
+_String const    PopFilePath         (void);
+_String const *  PeekFilePath        (void);
+_String const    GetPathStack        (const _String spacer = ",");
+
+_Matrix*CheckMatrixArg               (_String const*, bool);
 _AssociativeList *
-CheckAssociativeListArg      (_String*);
+CheckAssociativeListArg      (_String const*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
@@ -631,12 +693,12 @@ bool    IsModelOfExplicitForm        (long);
 
 void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);
-_String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
-_String _hblCommandAccessor          (_ExecutionList*, long);
+
+const _String _hblCommandAccessor          (_ExecutionList*, long);
 _String _HYGenerateANameSpace             (void);
 
 _PMathObj
-ProcessAnArgumentByType      (_String*, _VariableContainer*, long, _ExecutionList* = nil);
+ProcessAnArgumentByType      (_String const*, _VariableContainer const*, long, _ExecutionList* = nil);
 
 void    _HBL_Init_Const_Arrays       (void);
 
@@ -665,16 +727,23 @@ void    ReturnCurrentCallStack       (_List&, _List&);
     @version 20120324
 */
 
-BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+
+BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 
 _String _HYHBLTypeToText                (long type);
 _String _HYStandardDirectory            (const unsigned long);
 
-_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = empty, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = emptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 
 
 extern  bool                        numericalParameterSuccessFlag;
 extern  _Parameter                  messageLogFlag;
+
+extern enum       _hy_nested_check {
+  _HY_NO_FUNCTION,
+  _HY_FUNCTION,
+  _HY_NAMESPACE } isInFunction;
 
 
 #endif

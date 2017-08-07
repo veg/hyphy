@@ -1677,7 +1677,7 @@ int f2xact_(long *nrow, long *ncol, double *table,
     long itmp;
     double dspt;
     long itop, jstp, ntot, jstp2, jstp3, jstp4, iflag, ncell, ifreq;
-    bool chisq;
+    bool chisq = false;
     long ikkey;
     double pastp;
     long ikstp;

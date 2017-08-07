@@ -53,6 +53,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #define SWAP(a,b,c) ((c)=(a),(a)=(b),(b)=(c))
+#define EXCHANGE(a,b) {auto c = (a); (a) = (b); (b) = c;} 
 #define DEBUG 0
 
 #include "simplelist.h"
@@ -82,7 +83,14 @@ public:
     void            prepend             (array_data);
     //adds a node to the beginning of the array
     void            delete_entry        (int);
-    int             get_length          (void) {
+    void            clear               () {
+      if (data) {
+        delete [] data;
+        data = NULL;
+        length = 0;
+      }
+    };
+    int             get_length          (void) const {
         return length;
     }
     //returns the length of the array  array_data get_elem(int index);
@@ -103,9 +111,13 @@ public:
     node            (void) {
         parent = NULL;
     }
+    node            (node_data const & d) {
+      parent = NULL;
+      this->init (d);
+    }
     ~node()
     {}
-    void                init            (node_data value) {
+    void                init            (const node_data & value) {
         in_object = value;
     }
     node_data       get_data        (void) {
@@ -121,7 +133,7 @@ public:
     void                detach_parent   (void) {
         parent = NULL;
     }
-    int                 get_num_nodes   (void) {
+    int                 get_num_nodes   (void) const {
         return nodes.get_length();
     }
     void                add_node        (node& thenode) {
@@ -136,16 +148,24 @@ public:
         nodes.prepend(&thenode);
     }
     void                kill_node       (int in) {
-        nodes.delete_entry(in);
+      nodes.delete_entry(in);
     }
+
+  
+    void                kill_all_nodes       (void) {
+       nodes.clear();
+    }
+  
     node*           get_node        (int in) {
         return nodes.data[in-1];
     }
-    node*           get_parent      (void) {
+    node*           get_parent      (void) const {
         return parent;
     }
     int                 get_child_num   (void);
-
+    bool                is_leaf (void) const {return get_num_nodes() == 0L; }
+    bool                is_root (void) const {return get_parent() == nil;}
+  
     node<node_data>*    go_up           (void);
     node<node_data>*  go_next           (void);
     node<node_data>*  go_previous       (void);
@@ -155,32 +175,35 @@ public:
     int                 next            (void);
     int                 up              (void);
     void                delete_tree     (bool = false);
-    node<node_data>*  duplicate_tree  (void);
+    node<node_data>*    duplicate_tree  (void (callback) (node<node_data>*) = nil);
+    node<node_data>*    count_descendants (void);
     // traverse from this node down duplicating the tree and return
     // pointer to the root of the duplicate;
     bool                compare_subtree (node<node_data>*);
 
 };
 
-template <class node_data>  node<node_data>* StepWiseTraverser              (node<node_data>* root);
-template <class node_data>  node<node_data>* StepWiseTraverserLevel         (node_data& level, node<node_data>* root);
-//template <class array_data> node<node_data>* DepthWiseTraverserLevel      (node_data& level, node<node_data>* root);
-template <class node_data> node<node_data>* DepthWiseStepTraverser      (node<node_data>* root);
-template <class node_data> node<node_data>* DepthWiseStepTraverserRight     (node<node_data>* root);
-template <class node_data> long             NodePathTraverser               (_SimpleList& history, node<node_data>* root);
-template <class node_data> node<node_data>* DepthWiseStepTraverserWCount    (long& costCount, node<node_data>* root);
-template <class node_data> node<node_data>* DepthWiseStepTraverserLevel    (long& level, node<node_data>* root);
+#define _HY_TREE_TRAVERSAL_POSTORDER              0x00
+#define _HY_TREE_TRAVERSAL_POSTORDER_RIGHT_FIRST  0x01
+#define _HY_TREE_TRAVERSAL_PREORDER               0x02
 
-typedef  union {
-    long         leafIndex;
-    _SimpleList *leafList;
-}
-descendantInfo;
+template <class node_data> class node_iterator {
+  private:
+    node<node_data>*       iterator_state;
+    long                   traversal_level;
+    int                    travseral_kind;
+    void                   push_history_item  (_SimpleList* history);
+    void                   pop_history_item   (_SimpleList* history);
+  
+  public:
+    node_iterator   (node<node_data>* root, int traverser_kind = _HY_TREE_TRAVERSAL_POSTORDER);
+    ~node_iterator  () {};
+    void             Reset (node<node_data>* root);
+    node<node_data>* Next (_SimpleList* history = NULL);
+    node<node_data>* Current (void) const;
+    long             Level (void) const;
+};
 
-node <descendantInfo>*
-GatherTreeInfo                  (node<long>* oldRoot, long& leafCounter, _SimpleList& reindex);
-
-void        PurgeTreeInfo                   (node<descendantInfo>* root);
 
 #include "../ptr_array.cp"
 #include "../classes.cp"

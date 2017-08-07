@@ -78,21 +78,21 @@ public:
         return true;
     }
 
-    virtual     bool        HasChanged                  (void);
-    virtual     bool        NeedToExponentiate          (bool = false);
+    virtual     bool        HasChanged                  (bool = false);
+    virtual     bool        NeedToExponentiate          (bool = false) const;
 
     void        ScanAndAttachVariables      (void);
 
-    virtual     void        ScanForVariables            (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
-    virtual     void        ScanForDVariables           (_AVLList&,_AVLList&);
-    virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
+    void        ScanContainerForVariables               (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
+    virtual     void        ScanForDVariables           (_AVLList&,_AVLList&) const;
+    virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0) const;
 
     virtual     bool        IsModelVar                  (long);
     virtual     bool        IsConstant                  (void);
     virtual     BaseRef     makeDynamic                 (void);
     virtual     void        Duplicate                   (BaseRef);
 
-    virtual     BaseRef     toStr                       (void);
+    virtual     BaseRef     toStr                       (unsigned long);
 
     bool        HasLocals                   (void);
 
@@ -115,16 +115,16 @@ public:
     virtual     void        CompileListOfDependents     (_SimpleList&);
 
     void        MatchParametersToList       (_List&, bool doAll = false, bool indOnly = false);
-    _Matrix*    GetModelMatrix              (_List* = nil, _SimpleList* = nil);
-    _Matrix*    GetFreqMatrix               (void);
-    bool        HasExplicitFormModel        (void);
-    _Formula*   GetExplicitFormModel        (void);
+    _Matrix*    GetModelMatrix              (_List* = nil, _SimpleList* = nil) const;
+    _Matrix*    GetFreqMatrix               (void) const;
+    bool        HasExplicitFormModel        (void) const;
+    _Formula*   GetExplicitFormModel        (void) const;
 
     long        GetModelIndex               (void) {
         return theModel;
     }
     
-    _String*    GetModelName                (void);
+    _String const*    GetModelName                (void) const;
     
     long        GetModelDimension           (void);
     /* 20100316 SLKP

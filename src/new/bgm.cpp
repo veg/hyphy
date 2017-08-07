@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -135,30 +135,6 @@ void        ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _Strin
 }
 
 #endif
-
-
-//___________________________________________________________________________________________
-
-long integerPower (long base, long exponent)
-{
-    long    result = 1L,
-            mask   = 1L<<(sizeof(long)*8-2); // left shift to left-most position of binary sequence for long integer
-    // e.g. 100...0 (30 zeroes for signed long)
-
-    while ((exponent & mask) == 0) {
-        mask >>= 1;    // bitwise AND, right-shift mask until overlaps with first '1'
-    }
-
-    while (mask) {
-        result *= result;
-        if (exponent & mask) {
-            result = result * base;
-        }
-        mask >>= 1;
-    }
-    return result;
-}
-
 
 
 //___________________________________________________________________________________________

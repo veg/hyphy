@@ -50,6 +50,10 @@
 
 class   _MathObject : public BaseObj  //abstract math operations class
 {
+  
+protected:
+  _MathObject* _extract_argument (_List * arguments, unsigned long index, bool fill_in) const;
+
 
 public:
 
@@ -156,7 +160,13 @@ public:
         warnError (-666);
         return this;
     }
-    virtual _MathObject* Min        (_MathObject*)     {
+
+    virtual _MathObject* Simplify    (void)             {
+      warnError (-666);
+      return this;
+    }
+
+   virtual _MathObject* Min        (_MathObject*)     {
         warnError (-666);
         return this;
     }
@@ -252,12 +262,12 @@ public:
         warnError (-666);
         return this;
     }
-    virtual _MathObject* TEXTreeString(_MathObject*) {
+    virtual _MathObject* TEXTreeString(_MathObject*) const {
         warnError (-666);
-        return this;
+        return new _MathObject;
     }
     virtual _MathObject* Type                          (void);
-    virtual _MathObject* PlainTreeString(_MathObject*) {
+    virtual _MathObject* PlainTreeString(_MathObject*,_MathObject*) {
         warnError (-666);
         return this;
     }
@@ -297,10 +307,11 @@ public:
     // 1 - number
     // 4 - matrix
 
-    virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+  
+    virtual _MathObject* ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     // execute this operation with the list of Args
 
-    virtual bool         HasChanged (void) {
+    virtual bool         HasChanged (bool = false) {
         return false;
     }
 

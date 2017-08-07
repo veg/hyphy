@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -42,18 +42,21 @@
 #include "constant.h"
 #include "matrix.h"
 #include "calcnode.h"
+#include "batchlan.h"
+#include "global_object_lists.h"
 
 extern long lastMatrixDeclared;
 extern _AVLListX _HY_GetStringGlobalTypes;
 
 extern _List likeFuncList,
              batchLanguageFunctionNames,
-             dataSetFilterList,
              dataSetList,
              scfgList;
 
 extern _SimpleList modelMatrixIndices;
 extern _String lastModelParameterList;
+
+using namespace hyphy_global_objects;
 
 _String internalRerootTreeID("_INTERNAL_REROOT_TREE_");
 //__________________________________________________________________________________
@@ -86,8 +89,7 @@ _FString::_FString (long inData)
 }
 
 //__________________________________________________________________________________
-_FString::_FString (_String& data, bool meta)
-{
+_FString::_FString (_String const& data, bool meta) {
     if (meta) {
         unsigned long ssi = _String::storageIncrement;
 
@@ -163,6 +165,12 @@ _PMathObj _FString::Add (_PMathObj p)
     _String res (*theString& *((_String*)convStr));
     DeleteObject (convStr);
     return new _FString (res, false);
+}
+
+//__________________________________________________________________________________
+
+_PMathObj _FString::Sum (void) {
+  return new _Constant (theString->toNum());
 }
 
 //__________________________________________________________________________________
@@ -298,7 +306,7 @@ _PMathObj _FString::ReplaceReqExp (_PMathObj p)
 
                 if (!regex) {
                     WarnError (GetRegExpError (errNo));
-                    return new _FString (empty);
+                    return new _FString (emptyString);
                 }
 
                 theString->RegExpMatchAll(regex, matches);
@@ -336,7 +344,7 @@ _PMathObj _FString::ReplaceReqExp (_PMathObj p)
 
         WarnError ("Invalid 2nd argument in call to string^{{pattern,replacement}}");
     }
-    return new _FString (empty,false);
+    return new _FString (emptyString,false);
 }
 
 //__________________________________________________________________________________
@@ -451,18 +459,16 @@ _PMathObj _FString::Greater (_PMathObj p)
 }
 
 //__________________________________________________________________________________
-BaseRef  _FString::toStr()
+BaseRef  _FString::toStr(unsigned long)
 {
-    theString->nInstances++;
+    theString->AddAReference();
     return theString;
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::RerootTree (void)
-{
-    long     stashedModelID = lastMatrixDeclared,
-             totalNodeCount = 0;
-
+_PMathObj _FString::RerootTree (_PMathObj) {
+  
+    long     stashedModelID = lastMatrixDeclared;
     lastMatrixDeclared      = HY_NO_MODEL;
     /* unset current model; do not want the internal tree to have an attached model */
 
@@ -479,86 +485,55 @@ _PMathObj _FString::RerootTree (void)
         DeleteVariable  (internalRerootTreeID);
         return new _FString;
     }
+  
 
-    _CalcNode   *iterator = rTree.DepthWiseTraversal (true),
-                 *rerootAt;
+    _CalcNode   *rerootAt = nil;
+  
+    node<long>* counted_descendants = rTree.theRoot->duplicate_tree(node_count_descendants);
 
-    node<long>  *cNode;
-
-    _GrowingVector  valueCache;
-
-    while       (iterator)
-        // count the number of descendants of a given node, store as numeric value of the CalcNode
-    {
-        cNode    = &rTree.GetCurrentNode();
-        valueCache.Store(iterator->Value());
-        if (long myNodeCount = cNode->get_num_nodes()) {
-            _Parameter tNodeCount = 0.0;
-
-            for (long k = 1; k <= myNodeCount; k++) {
-                tNodeCount += ((_CalcNode*)LocateVar(cNode->go_down(k)->in_object))->Value();
-            }
-
-            iterator->SetNumericValue(tNodeCount+1.0);
-        } else {
-            iterator->SetNumericValue(1.0);
-        }
-
-        iterator = rTree.DepthWiseTraversal (false);
-        totalNodeCount ++;
-    }
-
-    iterator = rTree.DepthWiseTraversal (true);
-
-    long        maxMin = 0;
+    long        maxMin         = 0L,
+                totalNodeCount = counted_descendants->in_object + 1L;
+  
     _Parameter  bRatio  = 0.0;
+  
+    node_iterator<long> ni (counted_descendants, _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (&rTree, _HY_TREE_TRAVERSAL_POSTORDER);
 
-    while       (iterator) {
-        _Parameter      nodeMin   = totalNodeCount-iterator->Value(),
-                        thisRatio = nodeMin/(_Parameter)iterator->Value();
+    while       (_CalcNode * iterator = ti.Next()) {
+        node<long>* counter_tree = ni.Next();
+        long      nodeMin    = totalNodeCount-counter_tree->in_object-1L;
+        _Parameter thisRatio = nodeMin/(1L+counter_tree->in_object);
 
         if (thisRatio>1.0) {
-            thisRatio = 1./thisRatio;
+            thisRatio = 1.0/thisRatio;
         }
 
-        cNode    = &rTree.GetCurrentNode();
-        if (cNode->get_num_nodes()) {
-            for (long k = cNode->get_num_nodes(); k; k--) {
-                long tt = ((_CalcNode*)LocateVar(cNode->go_down(k)->in_object))->Value();
-                if (tt<nodeMin) {
-                    nodeMin = tt;
-                }
-            }
+        if (counter_tree->is_leaf()) {
+          nodeMin = 1L;
         } else {
-            nodeMin = 1;
+            for (int k = counter_tree->get_num_nodes(); k; k--) {
+              long tt = counter_tree->go_down(k)->in_object;
+              if (tt<nodeMin) {
+                nodeMin = tt;
+              }
+            }
         }
 
-        if ((nodeMin>maxMin)||((nodeMin==maxMin)&&(thisRatio>bRatio))) {
+        if (nodeMin>maxMin || (nodeMin==maxMin && thisRatio>bRatio)) {
             bRatio = thisRatio;
             maxMin = nodeMin;
             rerootAt = iterator;
-            if (!cNode->get_parent()) {
+            if (counter_tree->is_root()) {
                 rerootAt = nil;
             }
         }
-        iterator = rTree.DepthWiseTraversal (false);
     }
-
-    iterator        = rTree.DepthWiseTraversal (true);
-    totalNodeCount  = 0;
-    while       (iterator)
-        // restore branch lengths
-    {
-        iterator->SetNumericValue(valueCache.theData[totalNodeCount]);
-        iterator = rTree.DepthWiseTraversal (false);
-        totalNodeCount ++;
-    }
+  
+    counted_descendants->delete_tree(true);
 
     _FString* res;
     if (rerootAt) {
-        _String stringCopy = *rerootAt->GetName();
-        stringCopy.Trim (stringCopy.FindBackwards ('.',0,-1)+1,-1);
-        _FString    rAt  (stringCopy);
+        _FString    rAt  (rerootAt->ContextFreeName());
         res = (_FString*)rTree.RerootTree (&rAt);
     } else {
         res = new _FString (*theString, false);
@@ -584,7 +559,45 @@ _PMathObj _FString::Evaluate (_hyExecutionContext* context)
             return evalTo;
         }
     }
-    return new _Constant (.0);
+    return new _MathObject;
+}
+
+  //__________________________________________________________________________________
+
+_PMathObj _FString::SubstituteAndSimplify(_PMathObj arguments) {
+  /**
+   "arguments" is expected to be a dictionary of with key : value pairs like
+    "x" : 3, 
+    "y" : {{1,2}}
+   
+    etc
+   */
+  if (theString && theString->sLength) {
+    _String     s (*theString);
+    _Formula    evaluator (s);
+    
+    
+    if (!terminateExecution) {
+      _AssociativeList* argument_substitution_map = (_AssociativeList*) (arguments->ObjectClass() == ASSOCIATIVE_LIST ? arguments : nil);
+      if (argument_substitution_map) { // do direct argument substitution
+        for (unsigned long expression_term = 0UL; expression_term < evaluator.Length(); expression_term++) {
+          _Operation* current_term       = evaluator.GetIthTerm(expression_term);
+          _Variable * variable_reference = current_term->RetrieveVar();
+          if (variable_reference) {
+            _PMathObj replacement = argument_substitution_map->GetByKey (*variable_reference->GetName());
+            if (replacement) {
+              current_term->SetAVariable(-1);
+              current_term->SetNumber ((_PMathObj)replacement->makeDynamic());
+            }
+          }
+        }
+      }
+      
+      evaluator.SimplifyConstants();
+      return new _FString ((_String*)evaluator.toStr());
+    }
+  }
+  return new _MathObject;
 }
 
 //__________________________________________________________________________________
@@ -616,151 +629,170 @@ _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* contex
 //__________________________________________________________________________________
 
 
-_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
-{
-    switch (opCode) {
+_PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)   {
+  
+  switch (opCode) { // first check operations without arguments
     case HY_OP_CODE_NOT: // !
-        return FileExists();
-    case HY_OP_CODE_NEQ: // !=
-        return NotEqual(p);
-        break;
-    case HY_OP_CODE_IDIV: // $ match regexp
-        return EqualRegExp(p);
-        break;
-    case HY_OP_CODE_MOD: // % equal case insenstive
-        return AreEqualCIS(p);
-        break;
-    case HY_OP_CODE_AND: { // && upcase or lowercase
-        _Parameter pVal = 0.0;
-        if (p->ObjectClass () == NUMBER) {
-            pVal = p->Value();
-        }
-
-        if (pVal < 0.0) {
-            return (_PMathObj)makeDynamic();
-        } else {
-            _String * t = nil;
-
-
-            if (CheckEqual(pVal,2.0) || CheckEqual(pVal,3.0) || CheckEqual(pVal,4.0) || CheckEqual(pVal,5.0) || CheckEqual(pVal,6.0)) {
-                checkPointer (t = new _String (theString->sLength+1,true));
-                t->EscapeAndAppend (*theString, CheckEqual(pVal,3.0) + 2*CheckEqual(pVal,4.0) + 4*CheckEqual(pVal,5.0) + 5*CheckEqual(pVal,6.0));
-                t->Finalize();
-            } else {
-                t = new _String (*theString);
-                checkPointer (t);
-                if (CheckEqual(pVal,1.0)) {
-                    t->UpCase();
-                } else {
-                    t->LoCase();
-                }
-            }
-
-            return new _FString (t);
-        }
-    }
-    break;
-    case HY_OP_CODE_MUL: // *
-        if (p) {
-         // NOT a dereference
-            if (p->ObjectClass() == MATRIX) {
-                return      MapStringToVector (p);
-            } else {
-                return new _Constant(AddOn(p));
-            }
-        } else {
-            return Dereference(false, context);
-        }
-        break;
-    case HY_OP_CODE_ADD: // +
-        if (p) {
-            return Add(p);
-        } else {
-            return Sum();
-        }
-        break;
-    case HY_OP_CODE_DIV: // /
-        return EqualAmb(p);
-        break;
-    case HY_OP_CODE_LESS: // <
-        return Less(p);
-        break;
-    case HY_OP_CODE_LEQ: // <=
-        return LessEq(p);
-        break;
-    case HY_OP_CODE_EQ: // ==
-        return AreEqual(p);
-        break;
-    case HY_OP_CODE_GREATER: // >
-        return Greater(p);
-        break;
-    case HY_OP_CODE_GEQ: // >=
-        return GreaterEq(p);
-        break;
+      return FileExists();
     case HY_OP_CODE_ABS: // Abs
-        return new _Constant (theString->sLength);
-        break;
-    case HY_OP_CODE_DIFF: // Differentiate
-        return Differentiate(p);
-        break;
+      return new _Constant (theString->sLength);
     case HY_OP_CODE_EVAL: // Eval
         return Evaluate(context);
-        break;
     case HY_OP_CODE_EXP: // Exp
-        return new _Constant (theString->LempelZivProductionHistory(nil));
-        break;
-    case HY_OP_CODE_FORMAT: { // Format
-        _String cpyString (*theString);
-        _Formula f (cpyString);
-        _PMathObj fv = f.Compute();
-        if (fv && fv->ObjectClass () == NUMBER) {
-            return ((_Constant*)fv)->FormatNumberString (p,p2);
+      return new _Constant (theString->LempelZivProductionHistory(nil));
+    case HY_OP_CODE_LOG: // Log - check sum
+      return new _Constant (theString->Adler32());
+    case HY_OP_CODE_INVERSE:  // Inverse
+      return new _FString (new _String (theString->Reverse()));
+    case HY_OP_CODE_MCOORD: // MCoord
+      return new _FString (*theString, true);
+    case HY_OP_CODE_TYPE: // Type
+      return Type();
+    case HY_OP_CODE_REROOTTREE: // RerootTree
+      return RerootTree (nil);
+    case HY_OP_CODE_ROWS: // Count Objects of given type
+      return CountGlobalObjects();
+  }
+  
+  _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
+  
+  switch (opCode) { // next check operations without arguments or with one argument
+    case HY_OP_CODE_MUL: // *
+      if (arg0) {
+        // NOT a dereference
+        if (arg0->ObjectClass() == MATRIX) {
+          return      MapStringToVector (arg0);
         } else {
+          return new _Constant(AddOn(arg0));
+        }
+      } else {
+        return Dereference(false, context);
+      }
+    case HY_OP_CODE_ADD: // +
+      if (arg0) {
+        return Add(arg0);
+      } else {
+        return Sum();
+      }
+    case HY_OP_CODE_POWER: {
+      // Replace (^)
+      if (arg0)
+        return ReplaceReqExp (arg0);
+      return Dereference(true, context);
+    }
+      
+    case HY_OP_CODE_CALL: // call the function
+      return Call (arguments, context);
+  }
+  
+  if (arg0) {
+    switch (opCode) {
+      case HY_OP_CODE_NEQ: // !=
+        return NotEqual(arg0);
+      case HY_OP_CODE_IDIV: // $ match regexp
+        return EqualRegExp(arg0);
+      case HY_OP_CODE_MOD: // % equal case insenstive
+        return AreEqualCIS(arg0);
+      case HY_OP_CODE_AND: { // && upcase or lowercase
+        _Parameter pVal = 0.0;
+        if (arg0->ObjectClass () == NUMBER) {
+          pVal = arg0->Value();
+        }
+        
+        if (pVal < 0.0) {
+          return (_PMathObj)makeDynamic();
+        } else {
+          _String * t = nil;
+          
+          if (CheckEqual(pVal,2.0) || CheckEqual(pVal,3.0) || CheckEqual(pVal,4.0) || CheckEqual(pVal,5.0) || CheckEqual(pVal,6.0)) {
+            t = new _String (theString->sLength+1,true);
+            t->EscapeAndAppend (*theString, CheckEqual(pVal,3.0) + 2*CheckEqual(pVal,4.0) + 4*CheckEqual(pVal,5.0) + 5*CheckEqual(pVal,6.0));
+            t->Finalize();
+          } else {
+            t = new _String (*theString);
+            if (CheckEqual(pVal,1.0)) {
+              t->UpCase();
+            } else {
+              t->LoCase();
+            }
+          }
+          
+          return new _FString (t);
+        }
+      }
+      case HY_OP_CODE_DIV: // /
+        return EqualAmb(arg0);
+      case HY_OP_CODE_LESS: // <
+        return Less(arg0);
+      case HY_OP_CODE_LEQ: // <=
+        return LessEq(arg0);
+      case HY_OP_CODE_EQ: // ==
+        return AreEqual(arg0);
+      case HY_OP_CODE_GREATER: // >
+        return Greater(arg0);
+      case HY_OP_CODE_GEQ: // >=
+        return GreaterEq(arg0);
+      case HY_OP_CODE_DIFF: // Differentiate
+        return Differentiate(arg0);
+      case HY_OP_CODE_JOIN: // JOIN
+        return Join (arg0);
+      case HY_OP_CODE_SIMPLIFY: // Simplify an expression
+        return SubstituteAndSimplify (arg0);
+      case HY_OP_CODE_OR: // Match all instances of the reg.ex (||)
+        return EqualRegExp (arg0, true);
+    }
+    
+    _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
+    
+    switch (opCode) {
+      case HY_OP_CODE_MACCESS: // MAccess
+        return CharAccess(arg0,arg1);
+    }
+    
+    if (arg1) {
+      switch (opCode) {
+        case HY_OP_CODE_FORMAT: { // Format
+          _String   cpyString (*theString);
+          _Formula f (cpyString);
+          _PMathObj fv = f.Compute();
+          if (fv && fv->ObjectClass () == NUMBER) {
+            return ((_Constant*)fv)->FormatNumberString (arg0,arg1);
+          } else {
             ReportWarning (_String("Failed to evaluate ")& *theString & " to a number in call to Format (string...)");
             return new _FString();
+          }
         }
+          
+      }
     }
-    break;
-    case HY_OP_CODE_INVERSE: { // Inverse
-        _FString * res = new _FString (*theString, false);
-        checkPointer (res);
-        for (long i1 = 0, i2 = theString->sLength-1; i1<theString->sLength; i1++, i2--) {
-            res->theString->sData[i1] = theString->sData[i2];
-        }
-
-        return res;
-    }
-    break;
+  }
+  
+  switch (opCode) {
+    case HY_OP_CODE_NEQ: // !=
+    case HY_OP_CODE_IDIV: // $ match regexp
+    case HY_OP_CODE_MOD: // % equal case insenstive
+    case HY_OP_CODE_AND:// && upcase or lowercase
+    case HY_OP_CODE_DIV: // /
+    case HY_OP_CODE_LESS: // <
+    case HY_OP_CODE_LEQ: // <=
+    case HY_OP_CODE_EQ: // ==
+    case HY_OP_CODE_GREATER: // >
+    case HY_OP_CODE_GEQ: // >=
+    case HY_OP_CODE_DIFF: // Differentiate
     case HY_OP_CODE_JOIN: // Inverse
-        return Join (p);
-
-    case HY_OP_CODE_LOG: // Log - check sum
-        return new _Constant (theString->Adler32());
-    case HY_OP_CODE_MACCESS: // MAccess
-        return CharAccess(p,p2);
-        break;
-    case HY_OP_CODE_REROOTTREE: // RerootTree
-        return RerootTree ();
-        break;
-    case HY_OP_CODE_ROWS: // Count Objects of given type
-        return CountGlobalObjects();
-        break;
-    case HY_OP_CODE_TYPE: // Type
-        return Type();
-        break;
-    case HY_OP_CODE_POWER: // Replace (^)
-        if (p)
-            return ReplaceReqExp (p);
-        return Dereference(true, context);
-        break;
+    case HY_OP_CODE_SIMPLIFY: // Simplify an expression
     case HY_OP_CODE_OR: // Match all instances of the reg.ex (||)
-        return EqualRegExp (p, true);
-        break;
-    }
+    case HY_OP_CODE_MACCESS: // MAccess
+    case HY_OP_CODE_FORMAT:  // Format
+      WarnWrongNumberOfArguments (this, opCode,context, arguments);
+      break;
+    default:
+      WarnNotDefined (this, opCode,context);
 
-    WarnNotDefined (this, opCode,context);
-    return new _FString;
-
+  }
+  
+  return new _MathObject;
+  
 }
 
 //__________________________________________________________________________________
@@ -790,7 +822,7 @@ _PMathObj   _FString::MapStringToVector (_PMathObj p)
 
             _SimpleList mapped;
             for (long s = 0; s < theString->sLength; s++) {
-                mapped << mapper[(unsigned char)theString->sData[s]];
+                mapped << mapper[theString->getUChar(s)];
             }
 
             return new _Matrix (mapped);
@@ -816,8 +848,7 @@ _PMathObj   _FString::CharAccess (_PMathObj p,_PMathObj p2)
     return new _FString (res);
 }
 //__________________________________________________________________________________
-_PMathObj   _FString::FileExists (void)
-{
+_PMathObj   _FString::FileExists (void) {
     _Constant  * retValue = new _Constant (0.0);
     if (theString) {
         _String cpy (*theString);
@@ -829,6 +860,38 @@ _PMathObj   _FString::FileExists (void)
         }
     }
     return retValue;
+}
+
+//__________________________________________________________________________________
+_PMathObj   _FString::Call (_List* arguments, _hyExecutionContext* context) {
+  long function_id = FindBFFunctionName (*theString, NULL);
+  if (function_id >= 0) {
+       _Formula the_call;
+    
+      if (arguments) {
+        for (long k = 0; k < arguments->countitems() ; k ++) {
+          _PMathObj payload = (_PMathObj)arguments->GetItem (k);
+          _Operation *arg_k = new _Operation (payload);
+          payload->AddAReference();
+          the_call.PushTerm(arg_k);
+          arg_k->RemoveAReference();
+        }
+      }
+      
+      _Operation * function_call_term = new _Operation (function_id, -1L-(arguments?arguments->countitems():0L));
+      the_call.PushTerm(function_call_term);
+      DeleteObject (function_call_term);
+      
+      _PMathObj result = the_call.Compute();
+      result->AddAReference();
+      return result;
+      
+  } else {
+    WarnError (_String ("The first argument ('") & *theString & "') to 'Call' was not an HBL function name");
+  }
+  
+  return new _MathObject;
+    
 }
 
 //__________________________________________________________________________________
@@ -847,7 +910,7 @@ _PMathObj   _FString::CountGlobalObjects (void)
     case HY_BL_DATASET:
         return new _Constant (dataSetList.lLength);
     case HY_BL_DATASET_FILTER:
-        return new _Constant (dataSetFilterList.lLength);
+        return new _Constant (CountObjectsByType (HY_BL_DATASET_FILTER));
     case HY_BL_HBL_FUNCTION:
         return new _Constant (batchLanguageFunctionNames.lLength);
     case HY_BL_TREE: {

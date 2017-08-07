@@ -1,0 +1,7 @@
+LoadFunctionLibrary("ProteinAnalyses/relative_prot_rates.bf", {
+    "0": PATH_TO_CURRENT_BF + "data/dat.prot",
+    "1": "Y",
+    "2": "LG", // fit
+    "3": "Yes" // yes +F
+});
+

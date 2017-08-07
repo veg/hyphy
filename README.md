@@ -51,6 +51,9 @@ If you are on an OS X platform, you can specify which OS X SDK to use
 
 `cmake -DCMAKE_OSX_SYSROOT=/Developer/SDKs/MacOSX10.9.sdk/ .`
 
+If building on a hetereogenous cluster with some nodes that do not support auto-vectorization
+`cmake -DNOAVX=ON .`.
+
 If you're on a UNIX-compatible system,
 and you're comfortable with GNU make,
 then run `make` with one of the following build targets:
@@ -58,7 +61,7 @@ then run `make` with one of the following build targets:
 +   MAC - build a Mac Carbon application
 +   HYPHYGTK - HYPHY with GTK
 +   SP - build a HyPhy executable (HYPHYSP) without multiprocessing
-+   MP2 - build a HyPhy executable (HYPHYMP) using pthreads to do multiprocessing
++   MP - build a HyPhy executable (HYPHYMP) using pthreads to do multiprocessing
 +   MPI - build a HyPhy executable (HYPHYMPI) using MPI to do multiprocessing
 +   HYPHYMPI - build a HyPhy executable (HYPHYMPI) using openMPI 
 +   LIB - build a HyPhy library (libhyphy_mp) using pthreads to do multiprocessing

@@ -1,4 +1,6 @@
-RequireVersion ("0.9920060901");
+RequireVersion ("2.2");
+
+LoadFunctionLibrary ("GrabBag");
 
 /*------------------------------------------------------------------------------*/
 function doSNN (vpart1, vpart2, vsize1, vsize2)
@@ -9,7 +11,7 @@ function doSNN (vpart1, vpart2, vsize1, vsize2)
 		minD = 1e100;
 		X_j	 = 0;
 		W_j  = 0;
-		
+
 		for (k2=0; k2<vsize1; k2=k2+1)
 		{
 			if (k!=k2)
@@ -60,58 +62,56 @@ function doSNN (vpart1, vpart2, vsize1, vsize2)
 }
 /*------------------------------------------------------------------------------*/
 
-function computeCompartmentValues (part1, part2)
-{
+function computeCompartmentValues (part1, part2) {
 	resMatrix = {4,1};
 	template1 = {ds.species, ds.species};
 	template2 = {ds.species, ds.species};
-	for (k=0; k<clASize;k=k+1)
-	{
+
+	for (k=0; k<clASize;k += 1) {
 		idx1 = part1[k];
-		for (k2=k+1; k2<clASize;k2=k2+1)
-		{
+		for (k2=k+1; k2<clASize;k2 += 1) {
 			idx2 = part1[k2];
 			template1 [idx1][idx2] = 1;
 			template1 [idx2][idx1] = 1;
 		}
 	}
 
-	for (k=0; k<clBSize;k=k+1)
+	for (k=0; k<clBSize;k += 1)
 	{
 		idx1 = part2[k];
-		for (k2=k+1; k2<clBSize;k2=k2+1)
-		{
+		for (k2=k+1; k2<clBSize;k2=k2+1) {
 			idx2 = part2[k2];
 			template2 [idx1][idx2] = 1;
 			template2 [idx2][idx1] = 1;
 		}
 	}
-	
+
+
 	template3 = totalUnitSqr-template1-template2;
-	
-	count1 = totalUnitRow*(template1*totalUnitCol);
-	count2 = totalUnitRow*(template2*totalUnitCol);
-	count3 = totalUnitRow*(template3*totalUnitCol);
-	
-	sum1   = totalUnitRow*(template1$distanceMatrix*totalUnitCol);
-	sum2   = totalUnitRow*(template2$distanceMatrix*totalUnitCol);
-	sum3   = totalUnitRow*(template3$distanceMatrix*totalUnitCol);
-	
-	dd1 = sum1[0]/count1[0]*f_1^2+sum2[0]/count2[0]*f_2^2;
-	
-	resMatrix[2] = sum3[0]/(count3[0]-bothCladesSize);	/* pi_B */
+
+	count1 = +template1;
+	count2 = +template2;
+	count3 = +template3;
+
+	sum1   = +template1$distanceMatrix;
+	sum2   = +template2$distanceMatrix;
+	sum3   = +template3$distanceMatrix;
+
+	dd1 = sum1/count1*f_1^2+sum2/count2*f_2^2;
+
+	resMatrix[2] = sum3/(count3-bothCladesSize);	/* pi_B */
 	resMatrix[1] = dd1/(f_1^2+f_2^2);			        /* pi_S */
 	resMatrix[0] = dd1 + 2*f_1*f_2*resMatrix[2];        /* pi_T */
-	
+
 	/* now compute S_nn */
-	
+
 	s_nn = 0;
-	
+
 	doSNN (part1, part2, clASize, clBSize);
 	doSNN (part2, part1, clBSize, clASize);
-	
+
 	resMatrix[3] = s_nn / (clASize+clBSize);
-	
+
 	return    resMatrix;
 }
 
@@ -133,7 +133,7 @@ ChoiceList (distanceChoice, "Distance Computation",1,SKIP_NONE,
 			"Distance formulae","Use one of the predefined distance measures based on data comparisons. Fast.",
 			"Full likelihood","Estimate distances using pairwise MLE. More choices but slow.",
 			"Load Matrix","Re-load a previously computed matrix in HyPhy format");
-			
+
 if (distanceChoice < 0) {
 	return 0;
 }
@@ -151,11 +151,11 @@ if (distanceChoice == 2) {
 }
 
 
-if (useSeqData) 
+if (useSeqData)
 {
     ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
                          "Codon","Codon (several available genetic codes).");
-    
+
     if (dataType<0) {
         return;
     }
@@ -167,7 +167,7 @@ if (useSeqData)
     else {
         SetDialogPrompt ("Please choose a nucleotide or amino-acid data file:");
     }
-    
+
     DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
 
     fprintf (stdout, "\nRead the following data:", ds,"\n\n");
@@ -188,7 +188,7 @@ promptFor2ndRegExp = 1;
 ExecuteAFile ("partitionSequences.ibf");
 promptFor2ndRegExp = 0;
 
-bothCladesSize = clASize + clBSize; 
+bothCladesSize = clASize + clBSize;
 f_1 = clASize/bothCladesSize;
 f_2 = clBSize/bothCladesSize;
 
@@ -202,37 +202,29 @@ p1vector = {};
 p2vector = {};
 overallSample2 = {1,bothCladesSize};
 overallSample  = {};
-sequencesIn	   = {};
+sequencesIn	   = cladeA;
+sequencesIn * cladeB;
 
-for (specIndex = 0; specIndex < ds.species; specIndex = specIndex + 1)
-{
-	GetString (specName, ds, specIndex);
-	
-	if (cladeA[specName]>0)
-	{
-		p1vector			[Abs(p1vector)] 		= specIndex;
+for (specIndex = 0; specIndex < ds.species; specIndex += 1) {
+
+	if (Abs(cladeA[specIndex])) {
+		p1vector			+ specIndex;
 		overallSample2		[Abs(overallSample)] 	= 1;
-		overallSample		[Abs(overallSample)] 	= specIndex;
-		sequencesIn			[specIndex] 			= 1;
+		overallSample		+ specIndex;
 	}
-	else
-	{
-		if (cladeB[specName]>0)
-		{
-			p2vector		[Abs(p2vector)] 		= specIndex;
+	else {
+		if (Abs(cladeB[specIndex])) {
+			p2vector		+ specIndex;
 			overallSample2	[Abs(overallSample)] 	= 2;
-			overallSample	[Abs(overallSample)] 	= specIndex;
-			sequencesIn		[specIndex] 			= 1;
+			overallSample	+ specIndex;
 		}
 	}
 }
 
-if (dataType)
-{
+if (dataType) {
 	DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
 }
-else
-{
+else {
 	DataSetFilter filteredData = CreateFilter (ds,1,"","");
 }
 
@@ -243,7 +235,7 @@ if (useSeqData) {
 if (distanceChoice == 1)
 {
 	SelectTemplateModel(filteredData);
-	
+
 	fprintf (stdout,"\nHYPHY is computing pairwise maximum likelihood distance estimates. A total of ", Format(ds.species*(ds.species-1)/2,0,0),
 				    " estimations will be performed.\n");
 
@@ -284,7 +276,7 @@ if (distanceChoice == 1)
 				{
 					Model pairModel = (modelMatrix, vectorOfFrequencies, MULTIPLY_BY_FREQS);
 				}
-			}		
+			}
 			else
 			{
 				if (i+j==0)
@@ -293,7 +285,7 @@ if (distanceChoice == 1)
 					Model pairModel = (modelMatrix, equalFreqs, MULTIPLY_BY_FREQS);
 				}
 			}
-			
+
 			Tree Inferred_Tree = (1,2);
 			LikelihoodFunction lf = (twoSpecFilter,Inferred_Tree);
 			Optimize (res,lf);
@@ -315,14 +307,15 @@ else
 		{
 			fprintf (stdout, "\nThe dimensions of the distance matrix are incompatible with the data set.\n");
 			return  0;
-		}		
+		}
 	}
 	else
 	{
 		DISTANCE_PROMPTS = 1;
-		#include "chooseDistanceFormula.def";
-		dummy = InitializeDistances (0);
-					    
+	    ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR  +
+										 "chooseDistanceFormula.def");
+		InitializeDistances (0);
+
 		tdc = 0;
 		tdp = 0;
 		ldp = 0;
@@ -330,7 +323,7 @@ else
 
 		fprintf (stdout,"\nHYPHY is computing pairwise distance estimates. A total of ", Format(togo,0,0),
 					    " estimations will be performed.\n");
-		
+
 		for (i = 0; i<ds.species-1; i=i+1)
 		{
 			for (j = 0; j<=i; j = j+1)
@@ -344,7 +337,7 @@ else
 			if (tdp>ldp)
 			{
 				ldp = tdp;
-				fprintf (stdout, ldp, "% done\n");
+                SetParameter (STATUS_BAR_STATUS_STRING, "" + ldp + "% done", 0);
 			}
 		}
 
@@ -354,25 +347,20 @@ else
 
 /* make some unit matrices */
 
-totalUnitRow = {1,ds.species};
-totalUnitCol = {ds.species,1};
 totalUnitSqr = {ds.species,ds.species};
 
-for (k=0; k<ds.species; k=k+1)
-{
-	totalUnitRow[k] = 1;
-	totalUnitCol[k] = 1;
-	if (sequencesIn[k])
-	{
-		for (k2=0; k2<ds.species; k2=k2+1)
-		{
-			if (sequencesIn[k2])
-			{
-				totalUnitSqr [k][k2] = 1;
+for (k=0; k<ds.species; k += 1) {
+	if (Abs(sequencesIn[k])) {
+		for (k2=0; k2<ds.species; k2 += 1) {
+			if (Abs(sequencesIn[k2])) {
+			    if (k != k2) {
+				    totalUnitSqr [k][k2] = 1;
+				}
 			}
 		}
 	}
 }
+
 
 resMx = computeCompartmentValues (p1vector,p2vector);
 pi_D = resMx[2]-resMx[1];
@@ -388,9 +376,8 @@ fprintf (stdout, "\n\nPopulation characterisitcs:",
 				 "\nSlatkin                      (Evolution    47:264-279) : ",F_ST_OBS[1],
 				 "\nHudson, Boos and Kaplan	     (Mol Bio Evol 9: 138-151) : ",F_ST_OBS[2],
 				 "\nHudson (S_nn)                (Genetics     155:2011-14): ",F_ST_OBS[3], "\n");
-				 
-F_ST_OBS = F_ST_OBS;
 
+F_ST_OBS = F_ST_OBS;
 
 resultAVL ["pi_T"] = resMx[0];
 resultAVL ["pi_S"] = resMx[1];
@@ -400,98 +387,92 @@ resultAVL ["Slatkin"] = F_ST_OBS[1];
 resultAVL ["Hudson, Boos and Kaplan"] = F_ST_OBS[2];
 resultAVL ["Hudson (S_nn)"] = F_ST_OBS[3];
 
-				 
+
 ChoiceList (resample,"Bootstrap Estimators",1,SKIP_NONE,
 					 "Skip","Do not perform a permutation test.",
 				     "Sure","Resample with replacement within populations to estimate sampling properties of the estimators.");
-				 
+
 
 if (resample < 0)
 {
 	return 0;
 }
 
-if (resample)
-{
-	sampleCount = 0;
-	while (sampleCount < 1)
+if (resample) {
+	sampleCount = prompt_for_a_value ("The number of bootstrap replicates to draw", 100, 1, 100000, 1);
+
+	F_ST_1 = {sampleCount,1};
+	F_ST_2 = {sampleCount,1};
+	F_ST_3 = {sampleCount,1};
+	F_ST_4 = {sampleCount,1};
+	step  = sampleCount$20;
+
+	fprintf (stdout, "Running the simulations...\n");
+
+	saveDM = distanceMatrix;
+
+	p1Size = Abs (p1vector);
+	p2Size = Abs (p2vector);
+	basePartition1 = {1,p1Size};
+	basePartition2 = {1,p2Size};
+
+	for (k=0; k<p1Size;k=k+1)
 	{
-		fprintf (stdout, "\nHow many permutations would you like to perform?");
-		fscanf (stdin,"Number",sampleCount);
+		basePartition1[k] = p1vector[k];
 	}
 
-	F_ST_1 = {sampleCount,1}; 
-	F_ST_2 = {sampleCount,1}; 
-	F_ST_3 = {sampleCount,1}; 
-	F_ST_4 = {sampleCount,1}; 
-	step  = sampleCount$20; 
+	for (k=0; k<p2Size;k=k+1)
+	{
+		basePartition2[k] = p2vector[k];
+	}
 
-	fprintf (stdout, "Running the simulations...\n"); 
-
-	saveDM = distanceMatrix; 
-
-	p1Size = Abs (p1vector); 
-	p2Size = Abs (p2vector); 
-	basePartition1 = {1,p1Size}; 
-	basePartition2 = {1,p2Size}; 
-
-	for (k=0; k<p1Size;k=k+1) 
-	{ 
-		basePartition1[k] = p1vector[k]; 
-	} 
-
-	for (k=0; k<p2Size;k=k+1) 
-	{ 
-		basePartition2[k] = p2vector[k]; 
-	} 
-	 
 	maxSampleCount =  10*sampleCount;
-	 
-	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1) 
-	{ 
-		 /* repeat the following code for each replicate */ 
-		 resampleP1 = Random (basePartition1,1); /* resample vector of indices with replacement */ 
+
+	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
+	{
+		 /* repeat the following code for each replicate */
+		 resampleP1 = Random (basePartition1,1); /* resample vector of indices with replacement */
 		 resampleP2 = Random (basePartition2,1);
-		 distanceMatrix = {Rows(saveDM),Rows(saveDM)}; 
-		 
-		 for (k=0; k<p1Size;k=k+1) /* repopulate distances for population 1 */ 
-		 { 
+		 distanceMatrix = {Rows(saveDM),Rows(saveDM)};
+
+		 for (k=0; k<p1Size;k=k+1) /* repopulate distances for population 1 */
+		 {
 			ki = resampleP1[k];
-			ii = p1vector[k]; 
-			for (k2 = k+1; k2 < p1Size; k2=k2+1) 
-			{ 
-				k2i = resampleP1[k2]; 
+			ii = p1vector[k];
+			for (k2 = k+1; k2 < p1Size; k2=k2+1)
+			{
+				k2i = resampleP1[k2];
 				ii2 = p1vector[k2];
-				distanceMatrix [ii][ii2] = saveDM[ki][k2i]; 
-				distanceMatrix [ii2][ii] = saveDM[k2i][ki]; 
-			} 
-		 } 
+				distanceMatrix [ii][ii2] = saveDM[ki][k2i];
+				distanceMatrix [ii2][ii] = saveDM[k2i][ki];
+			}
+		 }
 
-		 for (k=0; k<p2Size;k=k+1) /* repopulate distances for population 2 */ 
-		 { 
-		  	ki = resampleP2[k]; 
-			ii = p2vector  [k]; 
-		  	for (k2 = k+1; k2 < p2Size; k2=k2+1) 
-			{ 
-				k2i = resampleP2[k2]; 
-				ii2 = p2vector  [k2]; 
-				distanceMatrix  [ii][ii2] = saveDM[ki][k2i]; 
-				distanceMatrix  [ii2][ii] = saveDM[k2i][ki]; 
-			} 
-		 } 
+		 for (k=0; k<p2Size;k=k+1) /* repopulate distances for population 2 */
+		 {
+		  	ki = resampleP2[k];
+			ii = p2vector  [k];
+		  	for (k2 = k+1; k2 < p2Size; k2=k2+1)
+			{
+				k2i = resampleP2[k2];
+				ii2 = p2vector  [k2];
+				distanceMatrix  [ii][ii2] = saveDM[ki][k2i];
+				distanceMatrix  [ii2][ii] = saveDM[k2i][ki];
+			}
+		 }
 
-		for (k=0; k<p1Size;k=k+1) /* repopulate interpopulation distances */ 
-		{ 
-			ki = resampleP1[k]; 
-			ii = p1vector[k]; 
-			for (k2 = 0; k2 < p2Size; k2=k2+1) 
-			{ 
-				k2i = resampleP2[k2]; 
-				ii2 = p2vector  [k2]; 
-				distanceMatrix [ii][ii2] = saveDM[ki][k2i]; 
-				distanceMatrix [ii2][ii] = saveDM[k2i][ki]; 
-			} 
-		} 
+		for (k=0; k<p1Size;k=k+1) /* repopulate interpopulation distances */
+		{
+			ki = resampleP1[k];
+			ii = p1vector[k];
+			for (k2 = 0; k2 < p2Size; k2=k2+1)
+			{
+				k2i = resampleP2[k2];
+				ii2 = p2vector  [k2];
+				distanceMatrix [ii][ii2] = saveDM[ki][k2i];
+				distanceMatrix [ii2][ii] = saveDM[k2i][ki];
+			}
+		}
 
 		if (Abs(distanceMatrix) == 0)
 		{
@@ -506,109 +487,102 @@ if (resample)
 				fprintf (stdout, "[ERROR: TOO MANY IDENTICAL SEQUENCES; CAN'T RESAMPLE WITHOUT OBTAINING ZERO DISTANCE MATRICES IN THE ALLOCATED NUMBER OF TRIES]\n");
 			}
 		}
-	
-		resMx = computeCompartmentValues (basePartition1,basePartition2); 
-		pi_D = resMx[2]-resMx[1]; 
-	
-		F_ST_1[sampleID] = pi_D/(resMx[1]+pi_D); 
-		F_ST_2[sampleID] = pi_D/(resMx[1]+resMx[2]); 
-		F_ST_3[sampleID] = 1-resMx[1]/resMx[0]; 
-		F_ST_4[sampleID] = resMx[3]; 
 
-		if ((sampleID+1)%step == 0) 
-		{ 
-			fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n"); 
-		} 
-		
+		resMx = computeCompartmentValues (basePartition1,basePartition2);
+		pi_D = resMx[2]-resMx[1];
+
+		F_ST_1[sampleID] = pi_D/(resMx[1]+pi_D);
+		F_ST_2[sampleID] = pi_D/(resMx[1]+resMx[2]);
+		F_ST_3[sampleID] = 1-resMx[1]/resMx[0];
+		F_ST_4[sampleID] = resMx[3];
+
+		if ((sampleID+1)%step == 0) {
+		    SetParameter (STATUS_BAR_STATUS_STRING, Format ((sampleID+1)*100/sampleCount, 6, 2) + "% done",
+                0);
+		}
+
 		maxSampleCount = maxSampleCount - 1;
-	} 
+	}
 
-	ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + 
+	ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR +
 										 "DescriptiveStatistics.bf");
-										 
+
 	fprintf (stdout, "\n\nBootstrapped estimator statistics.\n",
 					 "\nHudson, Slatkin and Madison (Genetics     132:583-589)\n");
-	_stats = GatherDescriptiveStats (F_ST_1);				 
+	_stats = GatherDescriptiveStats (F_ST_1);
 	reportBSTRP (_stats, F_ST_OBS[0]);
 	resultAVL ["Bootstrap (Hudson, Slatkin and Maddison)"] = _stats;
 
 	fprintf (stdout, "\nSlatkin                     (Evolution    47:264-279)\n");
-	_stats = GatherDescriptiveStats (F_ST_2);				 
+	_stats = GatherDescriptiveStats (F_ST_2);
 	reportBSTRP (_stats, F_ST_OBS[1]);
 	resultAVL ["Bootstrap (Slatkin)"] = _stats;
 
 	fprintf (stdout, "\nHudson, Boos and Kaplan	    (Mol Bio Evol 9: 138-151)\n");
-	_stats = GatherDescriptiveStats (F_ST_3);				 
+	_stats = GatherDescriptiveStats (F_ST_3);
 	reportBSTRP (_stats, F_ST_OBS[2]);
 	resultAVL ["Bootstrap (Hudson, Boos and Kaplan)"] = _stats;
 
 	fprintf (stdout, "\nHudson (S_nn)               (Genetics     155:2011-14)\n");
-	_stats = GatherDescriptiveStats (F_ST_4);				 
+	_stats = GatherDescriptiveStats (F_ST_4);
 	reportBSTRP (_stats, F_ST_OBS[3]);
 	resultAVL ["Bootstrap (Hudson (S_nn))"] = _stats;
-	
+
 	distanceMatrix = saveDM;
 }
 
 ChoiceList (resample,"Permutation Test",1,SKIP_NONE,
 					 "Skip","Do not perform a permutation test.",
 				     "But of course","Randomly allocate sequences into subpopulations and tabulate the distribution of various F_ST statistics.");
-				 
+
 if (resample > 0)
 {
 
-	sampleCount = 0;
-	while (sampleCount < 1)
-	{
-		fprintf (stdout, "\nHow many permutations would you like to perform?");
-		fscanf (stdin,"Number",sampleCount);
-	}
-	
+	sampleCount = prompt_for_a_value ("The number of permutations to perform", 100, 1, 100000, 1);
+
 	F_ST_1 = {sampleCount,2};
 	F_ST_2 = {sampleCount,2};
 	F_ST_3 = {sampleCount,2};
 	F_ST_4 = {sampleCount,2};
 	step   = sampleCount$20;
-	
+
 	fprintf (stdout, "Running the simulations...\n");
-	
-	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
-	{
+
+	for (sampleID = 0; sampleID < sampleCount; sampleID += 1) {
 		aSample = Random(overallSample2,0);
 		p1_1 	= {};
 		p2_1 	= {};
-		for (k=0; k<bothCladesSize;k=k+1)
-		{
+		for (k=0; k<bothCladesSize;k += 1) {
 			k2 = overallSample[k];
-			if (aSample[k] == 2)
-			{
-				p2_1[Abs(p2_1)] = k2;
+			if (aSample[k] == 2) {
+				p2_1 + k2;
 			}
-			else
-			{
-				p1_1[Abs(p1_1)] = k2;
+			else {
+				p1_1 + k2;
 			}
 		}
+
+
 		resMx = computeCompartmentValues (p1_1,p2_1);
-		pi_D = resMx[2]-resMx[1];	
+		pi_D = resMx[2]-resMx[1];
 		F_ST_1[sampleID][1] = pi_D/(resMx[1]+pi_D);
 		F_ST_2[sampleID][1] = pi_D/(resMx[1]+resMx[2]);
 		F_ST_3[sampleID][1] = 1-resMx[1]/resMx[0];
 		F_ST_4[sampleID][1] = resMx[3];
-		
+
 		if ((sampleID+1)%step == 0)
 		{
-			fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n");
+		    SetParameter (STATUS_BAR_STATUS_STRING, Format ((sampleID+1)*100/sampleCount, 6, 2) + "% done", 0);
 		}
 	}
-	
+
 	F_ST_1 = F_ST_1%1;
 	F_ST_2 = F_ST_2%1;
 	F_ST_3 = F_ST_3%1;
 	F_ST_4 = F_ST_4%1;
-	
+
 	pv = {{sampleCount,sampleCount,sampleCount,sampleCount}};
-	
+
 	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
 	{
 		step = sampleID/sampleCount;
@@ -645,21 +619,21 @@ if (resample > 0)
 			}
 		}
 	}
-	
-	
+
+
 	fprintf (stdout, "\n\nProb {Random F_ST > Observed F_ST}\n",
 					 "\nHudson, Slatkin and Maddison : ",(sampleCount-pv[0])/sampleCount,
 					 "\nSlatkin                      : ",(sampleCount-pv[1])/sampleCount,
 					 "\nHudson, Boos and Kaplan	     : ",(sampleCount-pv[2])/sampleCount,
 					 "\nHudson, S_nn                 : ",(sampleCount-pv[3])/sampleCount, "\n");
-	
+
 	resultAVL ["P (Hudson, Slatkin and Maddison)"] = (sampleCount-pv[0])/sampleCount;
 	resultAVL ["P (nSlatkin)"] = (sampleCount-pv[1])/sampleCount;
 	resultAVL ["P (Hudson, Boos and Kaplan)"] = (sampleCount-pv[2])/sampleCount;
 	resultAVL ["P (Hudson (S_nn))"] = (sampleCount-pv[3])/sampleCount;
-	
+
 	labels = {{"Cumulative Weight","F_ST"}};
-	
+
 	OpenWindow (CHARTWINDOW,{{"Hudson, Slatkin and Madison F_ST"}
 			{"labels"}
 			{"F_ST_1"}
@@ -678,7 +652,7 @@ if (resample > 0)
 			{"16"}
 			},
 			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50;50");
-			
+
 	OpenWindow (CHARTWINDOW,{{"Slatkin F_ST"}
 			{"labels"}
 			{"F_ST_2"}
@@ -697,7 +671,7 @@ if (resample > 0)
 			{"16"}
 			},
 			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50+SCREEN_WIDTH/2;50");
-	
+
 	OpenWindow (CHARTWINDOW,{{"Hudson, Boos and Kaplan F_ST"}
 			{"labels"}
 			{"F_ST_3"}
@@ -716,9 +690,9 @@ if (resample > 0)
 			{"16"}
 			},
 			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50+SCREEN_WIDTH/2;100+SCREEN_HEIGHT/2");
-	
+
 	labels = {{"Cumulative Weight","S_NN"}};
-	
+
 	OpenWindow (CHARTWINDOW,{{"Hudson S_NN"}
 			{"labels"}
 			{"F_ST_4"}

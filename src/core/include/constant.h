@@ -42,8 +42,7 @@
 
 #include "mathobj.h"
 
-class _Constant : public _MathObject   // a numerical constant
-{
+class _Constant : public _MathObject {
 
 public:
 
@@ -103,10 +102,10 @@ public:
         return this;
     };
 
-    virtual   void    Initialize            (void);
+    virtual   void    Initialize            (bool = false);
     virtual   void    Duplicate             (BaseRef);
     virtual   BaseRef makeDynamic           (void);
-    virtual   BaseRef toStr                 (void);
+    virtual   BaseRef toStr                 (unsigned long = 0UL);
     virtual   unsigned long    ObjectClass           (void) {
         return NUMBER;
     }
