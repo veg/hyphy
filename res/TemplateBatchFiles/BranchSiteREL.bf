@@ -57,6 +57,9 @@ _BSREL_json["convergence failures"] = 0;
 
 doSynRateVariation = 1-doSynRateVariation;
 
+
+
+fprintf (stdout, "Select a coding sequence alignment file:");
 DataSet 			ds 				= ReadDataFile(PROMPT_FOR_FILE);
 DataSetFilter 		dsf 			= CreateFilter(ds,3,"","",GeneticCodeExclusions);
 HarvestFrequencies	(nuc3, dsf, 3, 1, 1);
@@ -82,13 +85,19 @@ codon3x4					= BuildCodonFrequencies (nucCF);
 
 tree_info = trees.LoadAnnotatedTopology (1);
 
-fprintf (stdout, tree_info, "\n");
+//fprintf (stdout, tree_info, "\n");
 
 Model	  MGL				= (MGMatrixLocal, codon3x4, 0);
 
 tree_info_models = tree_info["model_map"];
 
 ExecuteCommands ("Tree baselineTree = " + tree_info["string"]);
+
+filename = LAST_FILE_PATH;
+_BSREL.output_prefix = filename + ".ABSREL";
+_BSREL.json_path = _BSREL.output_prefix + ".json";
+
+
 
 totalBranchCount			 = BranchCount(baselineTree) + TipCount (baselineTree);
 bNames						 = BranchName (baselineTree, -1);
@@ -180,19 +189,21 @@ fprintf (stdout, "\n");
 //******* BASE MODEL FITTING ********//
 
 
-SetDialogPrompt ("Save analysis results to");
+// Uncomment these lines to save intermediate files in addition to the JSON
+//SetDialogPrompt ("Save analysis results to");
+//fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Branch,Mean_dNdS,RateClasses,OmegaOver1,WtOmegaOver1,LRT,p,p_Holm,BranchLength");
+//csvFilePath = LAST_FILE_PATH;
 
 lrt_column = 4;
 p_uncorrected_column = 5;
 p_corrected_column = 6;
 branch_length_column = 7;
 
-fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Branch,Mean_dNdS,RateClasses,OmegaOver1,WtOmegaOver1,LRT,p,p_Holm,BranchLength");
-csvFilePath = LAST_FILE_PATH;
 
 fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
 
-lfOut	= csvFilePath + ".mglocal.fit";
+// Uncomment these lines to save intermediate files in addition to the JSON
+//lfOut	= csvFilePath + ".mglocal.fit";
 
 taskTimerStart (0);
 if (_reload_local_fit) {
@@ -430,10 +441,10 @@ for (k = 0; k < totalBranchCount; k+=1) {
 Tree mixtureTree = stepupTree;
 ClearConstraints (mixtureTree);
 
-INCLUDE_MODEL_SPECS = 1;
-save_tree_string_to	= csvFilePath + ".annotated.nwk";
-fprintf (save_tree_string_to, CLEAR_FILE, stepupTree);
-INCLUDE_MODEL_SPECS = 0;
+//INCLUDE_MODEL_SPECS = 1;
+//save_tree_string_to	= csvFilePath + ".annotated.nwk";
+//fprintf (save_tree_string_to, CLEAR_FILE, stepupTree);
+//INCLUDE_MODEL_SPECS = 0;
 
 // need this so that DeleteObject does not die later
 LikelihoodFunction stepupLF = (dsf, mixtureTree);
@@ -480,10 +491,10 @@ fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF
 LF_SMOOTHING_REDUCTION        = 0.1;
 
 
-lfOut	= csvFilePath + ".fit";
-LIKELIHOOD_FUNCTION_OUTPUT = 7;
-fprintf (lfOut, CLEAR_FILE, three_LF);
-LIKELIHOOD_FUNCTION_OUTPUT = 2;
+//lfOut	= csvFilePath + ".fit";
+//LIKELIHOOD_FUNCTION_OUTPUT = 7;
+//fprintf (lfOut, CLEAR_FILE, three_LF);
+//LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 if (doSynRateVariation) {
     bsrel_bls = extractBranchLengthsFromBSREL_SRV ("mixtureTree");
@@ -608,7 +619,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
 
 
             fprintf 					  (stdout, "[PHASE 2/REPEAT] Detected a convergence problem; refitting the LOCAL alternative model with new starting values\n");
-            lfOut	= csvFilePath + ".fit";
+            //lfOut	= csvFilePath + ".fit";
             _BSREL_json["convergence failures"] += 1;
             Optimize					  (res_three_LF,three_LF);
             json_store_lf                 ( _BSREL_json,
@@ -621,9 +632,9 @@ for	(k = 0; k < totalBranchCount; k += 1) {
                                             _BSREL_timers[2],
                                             +BranchLength (T, -1),
                                             renderString);
-            LIKELIHOOD_FUNCTION_OUTPUT = 7;
-            fprintf (lfOut, CLEAR_FILE, three_LF);
-            LIKELIHOOD_FUNCTION_OUTPUT = 2;
+            //LIKELIHOOD_FUNCTION_OUTPUT = 7;
+            //fprintf (lfOut, CLEAR_FILE, three_LF);
+            //LIKELIHOOD_FUNCTION_OUTPUT = 2;
             _stashLF = saveLF ("three_LF");
             k = 0;
             secondaryOptimizations = 0;
@@ -675,16 +686,17 @@ if (hasBranchesUnderSelection == 0) {
 }
 
 
-for		(k = 0; k < totalBranchCount; k = k+1) {
-    fprintf (csvFilePath, "\n", bNames[k], ",", Join(",",pValueByBranch[k][-1]));
-}
+//for		(k = 0; k < totalBranchCount; k = k+1) {
+//    fprintf (csvFilePath, "\n", bNames[k], ",", Join(",",pValueByBranch[k][-1]));
+//}
 
 
-fprintf (csvFilePath, CLOSE_FILE);
-jsonFilePath = csvFilePath + ".json";
+//fprintf (csvFilePath, CLOSE_FILE);
+//jsonFilePath = csvFilePath + ".json";
 taskTimerStop (4);
 (_BSREL_json ["timers"])["overall"] = _BSREL_timers[4];
-fprintf        (jsonFilePath, CLEAR_FILE, _BSREL_json);
+fprintf        (_BSREL.json_path, CLEAR_FILE, _BSREL_json);
+
 
 
 DeleteObject (stepupLF, three_LF, base_FL);
