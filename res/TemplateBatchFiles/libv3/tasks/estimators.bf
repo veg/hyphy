@@ -12,6 +12,7 @@ LoadFunctionLibrary("libv3/all-terms.bf");
  */
 lfunction estimators.GetGlobalMLE(results, tag) {
     estimate = (results[ utility.getGlobalValue("terms.global")])[tag];
+    
     if (Type(estimate) == "AssociativeList") {
         return estimate[ utility.getGlobalValue("terms.fit.MLE")];
     }
@@ -317,7 +318,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
 
     if (Type(branch_length_conditions) == "String") {
-        if (branch_length_conditions == "globals only") {
+        if (branch_length_conditions == terms.globals_only) {
             return estimators.ApplyExistingEstimates.df_correction;
         }
         assert("0", "Unsupported value for 'branch_length_conditions' in estimators.ApplyExistingEstimates");

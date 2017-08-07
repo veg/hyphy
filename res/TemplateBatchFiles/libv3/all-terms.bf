@@ -75,12 +75,27 @@ terms.table_options.column_widths = "column-widths";
 
 terms.alphabet       = "alphabet";
 terms.amino_acid     = "amino-acid";
-terms.codon          = "codon"; // TO DO: CODONS?
+terms.codon          = "codon"; 
 terms.sense_codons   = "sense";
 terms.stop_codons    = "stop"; //TODO. This is actually ok.
 terms.bases          = "bases"; 
-terms.codons         = "codons"; // TODO: CODON?
+terms.codons         = "codons"; 
 terms.translation_table = "translation-table";
+
+terms.synonymous_sub_count          = "synonymous substitution count";
+terms.nonsynonymous_sub_count       = "nonsynonymous substitution count";
+
+terms.genetic_code.synonymous             = "synonymous";
+terms.genetic_code.nonsynonymous          = "nonsynonymous";
+terms.genetic_code.weighting_matrix       = "weighting-matrix";
+terms.genetic_code.count_stop_codons      = "count-stop-codons";
+terms.genetic_code.EPS                    = "EPS";
+terms.genetic_code.EPN                    = "EPN";
+terms.genetic_code.OPS                    = "OPS";
+terms.genetic_code.OPN                    = "OPN";
+terms.genetic_code.NTP                    = "NTP";
+terms.genetic_code.SS                     = "SS";
+terms.genetic_code.NS                     = "NS";
 
 terms.code   = "code";
 terms.code.stops = "stops";
@@ -92,6 +107,13 @@ terms.code.mapping = "mapping";
 terms.diff.to = "to";
 terms.diff.from = "from";
 terms.diff.position = "position";
+
+
+
+terms.transition_transversion_ratio = "Transitition/transversion ratio";
+terms.transition                    = "transition rate";
+terms.transversion                  = "transversion rate";
+
 
 
 
@@ -118,17 +140,13 @@ terms.alternative      = "alternative";
 terms.null             = "null";
 terms.LRT              = "LRT";
 //terms.LR               = "LR";  // change all to terms.LRT
-terms.p_value          = "p-value"; //   p_value = "p";
+terms.p_value          = "p-value"; //
 /* Codon model terms */
 terms.omegas  = "omegas";
 terms.weights = "weights";
 terms.freqs   = "f";
 terms.omega   = "omega";
 terms.weight  = "weight";
-
-// Strictly for busted, relax.
-
-
 terms.category = "category";
 
 
@@ -184,8 +202,9 @@ terms.synonymous_rate               = "synonymous rate";
 terms.nonsynonymous_rate            = "non-synonymous rate";
 
 
-
-
+terms.globals_only = "globals only";
+terms.empirical_bayes_factor  = "BF";
+terms.posterior     = "posterior";
 
 terms.initial_values          = "Initial values";
 
@@ -223,13 +242,6 @@ terms.rate_variation.gamma_beta = "Variance parameter for the gamma distribution
 terms.rate_variation.gamma_p_inv = "Estimated proportion of invariant sites";
 
 
-
-
-terms.transition_transversion_ratio = "Transitition/transversion ratio";
-terms.transition                    = "transition rate";
-terms.transversion                  = "transversion rate";
-terms.synonymous_sub_count          = "synonymous substitution count"; //SLAC
-terms.nonsynonymous_sub_count       = "nonsynonymous substitution count"; //SLAC
 
 
 /* Term functions */
@@ -351,7 +363,8 @@ terms.tree_attributes.internal = "internal";
 terms.tree_attributes.leaf = "leaf";
 terms.tree_attributes.test   = "test";
 terms.tree_attributes.background  = "background";
-terms.trees.name = "name";
+terms.branch_attributes = "branch_attributes";
+//terms.trees.name = "name"; // todo: is this real?
 
 // TODO: Unclear if these are actually usable
 //terms.trees.node_name = "Name";

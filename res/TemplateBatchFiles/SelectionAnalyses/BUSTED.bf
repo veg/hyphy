@@ -57,7 +57,7 @@ LoadFunctionLibrary("BranchSiteTemplate");
 
 busted.FG = "FG";
 busted.BG = "BG";
-busted.BG_FG_map = {0: "background", 1: "foreground"}; // for partitions output
+busted.BG_FG_map = {0: busted.BG = "BG", 1: busted.FG}; // for partitions output
 busted.background = "background";
 busted.unconstrained = "unconstrained";
 busted.constrained = "constrained";
@@ -89,7 +89,7 @@ busted.json    = { terms.json.analysis: busted.analysis_description,
 
 
 codon_data_info = alignments.PromptForGeneticCodeAndAlignment ("codon_data", "codon_filter");
-codon_data_info[terms.json.json] = codon_data_info[terms.file] + ".busted.json";
+codon_data_info[terms.json.json] = codon_data_info[terms.data.file] + ".BUSTED.json";
 busted.name_mapping = codon_data_info [utility.getGlobalValue("terms.data.name_mapping")];
 
 

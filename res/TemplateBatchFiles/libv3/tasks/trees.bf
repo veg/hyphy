@@ -196,7 +196,7 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
 }
 
 
-///////// TO DO: HOW TO UN-HARDCODE THIS FUNCTION? Regular strategies are not working. //////////////
+///////// TODO: HOW TO UN-HARDCODE THIS FUNCTION? Regular strategies are not working. //////////////
 /**
  * Partitions a tree by assigning nodes to either being internal or leaf
  * @name trees.PartitionTree

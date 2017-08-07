@@ -40,8 +40,8 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
 
     result      = {utility.getGlobalValue("terms.codon") : {},
                    utility.getGlobalValue("terms.amino_acid") : {},
-                   utility.getGlobalValue("terms."synonymous substitution count" : {},
-                   "non-synonymous substitution count" : {}};
+                   utility.getGlobalValue("terms.synonymous_sub_count") : {},
+                   utility.getGlobalValue("terms.nonsynonymous_sub_count") : {}};
 
     code_lookup = {"-1" : "-"};
 
@@ -50,17 +50,17 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
         bname  = (tree[b+1])["Name"];
         parent = (tree[b+1])["Parent"] - 1;
 
-        branch_info = {"codon" : {1, site_count},
-                       "amino-acid" : {1, site_count},
-                       "synonymous substitution count" : {1, site_count},
-                       "non-synonymous substitution count" : {1, site_count}};
+        branch_info = {utility.getGlobalValue("terms.codon") : {1, site_count},
+                       utility.getGlobalValue("terms.amino_acid") : {1, site_count},
+                       utility.getGlobalValue("terms.synonymous_sub_count") : {1, site_count},
+                       utility.getGlobalValue("terms.nonsynonymous_sub_count") : {1, site_count}};
 
 
         for (s = 0; s < site_count; s += 1) {
             code        = matrix[b][s];
             parent_code = matrix[parent][s];
 
-            (branch_info["codon"])[s] = code_to_codon[code];
+            (branch_info[utility.getGlobalValue("terms.codon")])[s] = code_to_codon[code];
 
             if (Type(code_lookup [code]) != "String") {
                 if (code >= 0) {
@@ -74,19 +74,20 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
             }
 
             if (code >= 0) {
-                (branch_info["synonymous substitution count"]) [s]     = (pairwise_counts["OPS"])[parent_code][code];
-                (branch_info["non-synonymous substitution count"]) [s] = (pairwise_counts["OPN"])[parent_code][code];
+                (branch_info[utility.getGlobalValue("terms.synonymous_sub_count")]) [s]     = (pairwise_counts[utility.getGlobalValue("terms.genetic_code.OPS")])[parent_code][code];
+                (branch_info[utility.getGlobalValue("terms.nonsynonymous_sub_count")]) [s] = (pairwise_counts[utility.getGlobalValue("terms.genetic_code.OPN")])[parent_code][code];
             } else {
                 if (code != -1) {
                     resolution = (ambig_lookup[-code-2])$(ambig_lookup[-code-2])["_MATRIX_ELEMENT_ROW_"];
                     resolution = resolution[resolution];
-                    (branch_info["synonymous substitution count"]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPS\"])[`&parent_code`][_mapper_]");
-                    (branch_info["non-synonymous substitution count"]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPN\"])[`&parent_code`][_mapper_]");
+                    // TODO: Appropriate syntax for following lines OPS, OPN
+                    (branch_info[utility.getGlobalValue("terms.synonymous_sub_count")]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPS\"])[`&parent_code`][_mapper_]");
+                    (branch_info[utility.getGlobalValue("terms.nonsynonymous_sub_count")]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPN\"])[`&parent_code`][_mapper_]");
                 }
 
             }
 
-            (branch_info["amino-acid"])[s] = code_lookup[code];
+            (branch_info[utility.getGlobalValue("terms.amino_acid")])[s] = code_lookup[code];
         }
 
         utility.ForEach (utility.Keys (branch_info), "slac.substituton_mapper.key",

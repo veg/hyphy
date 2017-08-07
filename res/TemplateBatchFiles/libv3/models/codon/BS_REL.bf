@@ -29,10 +29,10 @@ lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
     return {
         utility.getGlobalValue("terms.alphabet"): codons[utility.getGlobalValue("terms.sense_codons")],
         utility.getGlobalValue("terms.bases"): utility.getGlobalValue("models.DNA.alphabet"),
-        utility.getGlobalValue("terms.model.components") : components,
-        utility.getGlobalValue("terms.stop_codons"): codons["terms.stop_codons"],
+        utility.getGlobalValue("terms.model.components"): components,
+        utility.getGlobalValue("terms.stop_codons"): codons[utility.getGlobalValue("terms.stop_codons")],
         utility.getGlobalValue("terms.model.type"): type,
-        utility.getGlobalValue("terms.translation_table"): codons["terms.translation_table],
+        utility.getGlobalValue("terms.translation_table"): codons[utility.getGlobalValue("terms.translation_table")],
         utility.getGlobalValue("terms.description"): "The branch-site mixture of N Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution",
         utility.getGlobalValue("terms.model.canonical"): "EXPLICIT_FORM_MATRIX_EXPONENTIAL", // is NOT of the r_ij \times \pi_j form
         utility.getGlobalValue("terms.model.reversible"): TRUE,
@@ -43,7 +43,7 @@ lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
         },
         utility.getGlobalValue("terms.model.get_branch_length"): "models.codon.BS_REL.get_branch_length",
         utility.getGlobalValue("terms.model.set_branch_length"): "models.codon.BS_REL.set_branch_length",
-        utility.getGlobalValue("terms.model.constrain-branch_length"): "models.codon.BS_REL.constrain_branch_length",
+        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.codon.BS_REL.constrain_branch_length",
         utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.empirical.corrected.CF3x4",
         utility.getGlobalValue("terms.model.q_ij"): "", // set for individual components in models.codon.BS_REL._DefineQ
         utility.getGlobalValue("terms.model.time"): "models.DNA.generic.Time",
@@ -73,11 +73,15 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing.ModelDescription(type, code, com
 
 lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
 
+
+
     rate_matrices = {};
 
     bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
     bs_rel [utility.getGlobalValue("terms.mixture_components")] = {};
-
+    
+    
+    
     _aux = parameters.GenerateSequentialNames ("bsrel_mixture_aux", bs_rel[utility.getGlobalValue("terms.model.components")] - 1, "_");
     _wts = parameters.helper.stick_breaking (_aux, None);
     mixture = {};
@@ -88,9 +92,9 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
        ExecuteCommands ("
         function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
             return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt,
-                'alpha', utility.getGlobalValue("terms.synonymous_rate"),
-                'beta_`component`', terms.AddCategory (utility.getGlobalValue("terms.nonsynonymous_rate")', component),
-                'omega`component`', terms.AddCategory (utility.getGlobalValue("terms.omega_ratio"), component));
+                'alpha', utility.getGlobalValue('terms.synonymous_rate'),
+                'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.nonsynonymous_rate'), component),
+                'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.omega_ratio'), component));
         }"
        );
        models.codon.generic.DefineQMatrix(bs_rel, namespace);
@@ -111,6 +115,7 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
     //bs_rel[^"terms.mixture_components"] = mixture;
     
     parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
+    
     return bs_rel;
 }
 
@@ -148,7 +153,7 @@ function models.codon.BS_REL.post_definition(model) {
  
 function models.codon.BS_REL.get_branch_length(model, tree, node) {	
 	parameters.SetLocalModelParameters (model, tree, node);
-	bl = Eval (model [terms.model.branch_length_string]);
+	bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]);
 	//console.log ("Branch length = " + bl);
 	return bl;
 }

@@ -154,7 +154,6 @@ fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.tr
     terms.run_options.retain_lf_object: TRUE
 }, fel.partitioned_mg_results);
 
-/* works up to here!!!!!!!!!!!! */
 
 
 io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
@@ -410,7 +409,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
 
 
     estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping, fel.final_partitioned_mg_results,
-                                        "globals only");
+                                        terms.globals_only);
 
 
 
