@@ -73,7 +73,7 @@ lfunction relative_prot_rates.plusF._GenerateRate (from,to,namespace,modelType) 
 lfunction relative_prot_rates.plusF.frequencies (model, namespace, datafilter) {
     model[utility.getGlobalValue("terms.model.efv_estimate")] = utility.getGlobalValue("relative_prot_rates.empirical_frequencies");
     model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.freqs.predefined");
-    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+   // (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
 }
 
 
@@ -92,6 +92,7 @@ if (relative_prot_rates.plusF == "Yes"){
     utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
     relative_prot_rates.normalized_qij = plusF_helper.BuildCustomNormalizedQ(relative_prot_rates.empirical_frequencies, relative_prot_rates.baseline_Rij, models.protein.alphabet);
   
+    
     relative_prot_rates.model_generator = "relative_prot_rates.plusF.ModelDescription";    
     relative_prot_rates.full_model_name = relative_prot_rates.model_name + "+F";
 } else {
@@ -115,7 +116,7 @@ relative_prot_rates.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           relative_prot_rates.model_generator,
                                                           None,
                                                           None);
-                                                          
+                                                     
 estimators.fixSubsetOfEstimates(relative_prot_rates.alignment_wide_MLES, relative_prot_rates.alignment_wide_MLES[terms.global]);
 
 io.ReportProgressMessageMD ("relative_prot_rates", "overall", ">Fitted an alignment-wide model. **Log-L = " + relative_prot_rates.alignment_wide_MLES [terms.fit.log_likelihood] + "**.");
@@ -127,7 +128,7 @@ io.ReportProgressMessageMD ("relative_prot_rates", "overall", ">Fitted an alignm
 
 
 relative_prot_rates.table_screen_output  = {{"Site", "Rel. rate (MLE)", "95% profile likelihood CI"}};
-relative_prot_rates.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minumum_column_width : 16, terms.table_options.align : "center"};
+relative_prot_rates.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width : 16, terms.table_options.align : "center"};
 
 relative_prot_rates.site_patterns = alignments.Extract_site_patterns (relative_prot_rates.filter_names[0]);
 
@@ -190,10 +191,10 @@ estimators.ApplyExistingEstimates ("relative_prot_rates.site_likelihood", relati
 									);
 					
 
-relative_prot_rates.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"relative_prot_rates.site_likelihood"}},
-								    "Models" : {{"relative_prot_rates.site_model"}},
-								    "Headers" : utility.GetListOfLoadedModules (),
-								    "Variables" : {{"relative_prot_rates.site_model_scaler_name"}}
+relative_prot_rates.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"relative_prot_rates.site_likelihood"}},
+								    terms.mpi.Models : {{"relative_prot_rates.site_model"}},
+								    terms.mpi.Headers : utility.GetListOfLoadedModules (),
+								    terms.mpi.Variables : {{"relative_prot_rates.site_model_scaler_name"}}
 							 });
 
 /* run the main loop over all unique site pattern combinations */
@@ -323,8 +324,8 @@ lfunction relative_prot_rates.store_results (node, result, arguments) {
 			relative_prot_rates.rate_estimates [_site_index_+1] = `&result`;
 			result_row = {1,3};
 			result_row [0] = '' + (_site_index_ + 1);
-			result_row [1] = Format((`&result`)[terms.fit.MLE],6,3);
-			result_row [2] = Format((`&result`)[terms.lower_bound],6,3) + ' :'  +Format((`&result`)[terms.upper_bound],6,3);
+			result_row [1] = Format((`&result`)[utility.getGlobalValue('terms.fit.MLE')],6,3);
+			result_row [2] = Format((`&result`)[utility.getGlobalValue('terms.lower_bound')],6,3) + ' :'  +Format((`&result`)[utility.getGlobalValue('terms.upper_bound')],6,3);
 			fprintf (stdout,
 				io.FormatTableRow (result_row,relative_prot_rates.table_output_options));
 		"

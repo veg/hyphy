@@ -113,8 +113,9 @@ lfunction selection.io.extract_global_MLE(fit, id) {
 //------------------------------------------------------------------------------
 
 lfunction selection.io.extract_global_MLE_re (fit, regexp) {
-     matches = utility.Filter (utility.Keys(fit["global"]), "_tag_", "regexp.Find (_tag_, `&regexp`)");
-    return utility.Map (matches, "_tag_", "{'description': _tag_, 'MLE' : ((`&fit`['global'])[_tag_])['MLE']}");
+     matches = utility.Filter (utility.Keys(fit[utility.getGlobalValue("terms.global")]), "_tag_", "regexp.Find (_tag_, `&regexp`)");
+    //TODO: a single 'MLE' in the return line cannot be replaced by terms.
+     return utility.Map (matches, "_tag_", "{utility.getGlobalValue('terms.description'): _tag_, 'MLE' : ((`&fit`[utility.getGlobalValue('terms.global')])[_tag_])[utility.getGlobalValue('terms.fit.MLE')]}");
 }
 
 //------------------------------------------------------------------------------
@@ -197,10 +198,10 @@ function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
 function selection.io.json_store_branch_attribute(json, attribute_name, attribute_type, display_order, partition, values) {
     utility.EnsureKey(json, terms.json.branch_attributes);
     utility.EnsureKey(json[terms.json.branch_attributes], partition);
-    utility.EnsureKey(json[terms.json.branch_attributes], terms.json.attribute.meta);
-    utility.EnsureKey((json[terms.json.branch_attributes])[terms.json.attribute.meta], attribute_name);
-    ((json[terms.json.branch_attributes])[terms.json.attribute.meta])[attribute_name] = {terms.json.attribute.meta.type : attribute_type,
-                                                                                            terms.json.attribute.meta.order: display_order};
+    utility.EnsureKey(json[terms.json.branch_attributes], terms.json.attribute);
+    utility.EnsureKey((json[terms.json.branch_attributes])[terms.json.attribute], attribute_name);
+    ((json[terms.json.branch_attributes])[terms.json.attribute])[attribute_name] = {terms.json.attribute_type : attribute_type,
+                                                                                            terms.json.display_order: display_order};
 
     utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
                              "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");

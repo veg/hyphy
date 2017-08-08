@@ -69,7 +69,7 @@ terms.header = "header";//1
 terms.rows = "rows";//1
 
 terms.table_options.header = terms.header;
-terms.table_options.minumum_column_width = "min-column-width";
+terms.table_options.minimum_column_width = "min-column-width";
 terms.table_options.align    = "align";
 terms.table_options.column_widths = "column-widths";
 
@@ -81,6 +81,7 @@ terms.stop_codons    = "stop"; //TODO. This is actually ok.
 terms.bases          = "bases"; 
 terms.codons         = "codons"; 
 terms.translation_table = "translation-table";
+terms.original_name = "original_name";
 
 terms.synonymous_sub_count          = "synonymous substitution count";
 terms.nonsynonymous_sub_count       = "nonsynonymous substitution count";
@@ -113,6 +114,7 @@ terms.diff.position = "position";
 terms.transition_transversion_ratio = "Transitition/transversion ratio";
 terms.transition                    = "transition rate";
 terms.transversion                  = "transversion rate";
+
 
 
 
@@ -386,10 +388,9 @@ terms.attribute = {};
 /******* TO DO: WHICH ONE IS CORRECT. Assuming the string????? *********/
 terms.attribute.meta = "attributes"; //terms.attribute.meta = {};
 terms.attribute.meta.type      = "attribute type";
-terms.attribute.meta.order     = "display order";
+//terms.attribute.meta.order     = "display order";
 terms.attribute.branch_length  = terms.branch_length;
-terms.attribute.node_label     = "node label";
-terms.attribute.branch_label   = "branch label";
+
 
 terms.attribute.data           = "data";
 
@@ -407,7 +408,7 @@ terms.json.headers                  = "headers";
 terms.json.content                  = "content";
 terms.json.rate_distributions       = "rate distributions";
 terms.json.log_likelihood           = "log likelihood";
-terms.json.estimated_parameters     = "estimated parameters";
+terms.json.parameters               = "estimated parameters";
 terms.json.AICc                     = "AIC-c";
 terms.json.model                    = "model";
 terms.json.global                   = "Global model fit";
@@ -415,10 +416,12 @@ terms.json.branch_attributes        = "branch attributes";
 terms.json.branch_annotations       = "branch annotations";
 terms.json.branch_lengths           = "branch lengths";
 terms.json.annotation_tag           = "annotation tag";
-terms.json.display_order            = terms.attribute.meta.order;
-
-terms.json.tree.newick              = "newick"; // NEEDED?
+terms.json.display_order            = "display order"; //from terms.attribute.meta.order
+terms.json.attribute                = "attributes"; // from terms.json.attributes.meta
+terms.json.attribute_type           = "attribute type"; // from terms.attribute.meta.type
 terms.json.partitions               = "data partitions";
+terms.json.node_label     = "node label";
+terms.json.branch_label   = "branch label";
 terms.json.tested                   = "tested";    
 terms.json.uncorrected_pvalue       = "uncorrected p-value";
 terms.json.test_results = "test results";

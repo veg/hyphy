@@ -81,7 +81,7 @@ io.ReportProgressMessageMD ("relative_nuc_rates", "overall", ">Fitted an alignme
 
 
 relative_nuc_rates.table_screen_output  = {{"Site", "Rel. rate (MLE)", "95% profile likelihood CI"}};
-relative_nuc_rates.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minumum_column_width : 16, terms.table_options.align : "center"};
+relative_nuc_rates.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width : 16, terms.table_options.align : "center"};
 
 relative_nuc_rates.site_patterns = alignments.Extract_site_patterns (relative_nuc_rates.filter_names[0]);
 

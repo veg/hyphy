@@ -102,7 +102,7 @@ is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Mar
 the next set of variables.
 */
 meme.table_screen_output  = {{"Codon", "Partition", "alpha", "beta+", "p+", "LRT", "Episodic selection detected?", "# branches"}};
-meme.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minumum_column_width: 12, terms.table_options.align : "center"};
+meme.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 12, terms.table_options.align : "center"};
 
 
 namespace meme {

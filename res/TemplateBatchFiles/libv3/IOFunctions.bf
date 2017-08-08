@@ -279,7 +279,7 @@ lfunction io.FormatTableRow(row, options) {
 
     cells = utility.Map(row, "_value_", "io.format_object(_value_, `&options`)");
 
-    min_width = Max(3, options[utility.getGlobalValue("terms.table_options.minumum_column_width")]);
+    min_width = Max(3, options[utility.getGlobalValue("terms.table_options.minimum_column_width")]);
 
     underline_chars = {
         {

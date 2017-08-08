@@ -94,7 +94,7 @@ is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Mar
 the next set of variables.
 */
 fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
-fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minumum_column_width: 16, terms.table_options.align : "center"};
+fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
 
 
 namespace fel {
@@ -134,14 +134,11 @@ namespace fel {
     doGTR ("fel");
 }
 
-
 estimators.fixSubsetOfEstimates(fel.gtr_results, fel.gtr_results[terms.global]);
 
 namespace fel {
     doPartitionedMG ("fel", FALSE);
 }
-
-
 
 io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
@@ -161,6 +158,7 @@ fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_r
 utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_[terms.fit.MLE],8,4));');
 
 
+
 estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_partitioned_mg_results[terms.global]);
 
 selection.io.json_store_lf(
@@ -169,7 +167,7 @@ selection.io.json_store_lf(
     fel.final_partitioned_mg_results[terms.fit.log_likelihood],
     fel.final_partitioned_mg_results[terms.parameters],
     fel.sample_size,
-    utility.ArrayToDict (utility.Map (fel.global_dnds, "_value_", "{'key': _value_['description'], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}"))
+    utility.ArrayToDict (utility.Map (fel.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}"))
 );
 
 
@@ -189,7 +187,6 @@ fel.site.mg_rev = model.generic.DefineModel("models.codon.MG_REV.ModelDescriptio
         },
         fel.filter_names,
         None);
-
 
 
 fel.site_model_mapping = {"fel_mg" : fel.site.mg_rev};
@@ -229,6 +226,7 @@ parameters.DeclareGlobal (fel.scalers, {});
 lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping) {
 
 
+
     GetString (lfInfo, ^lf,-1);
     ExecuteCommands (filter_data);
     __make_filter ((lfInfo["Datafilters"])[0]);
@@ -256,6 +254,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     Optimize (results, ^lf);
 
     null = estimators.ExtractMLEs (lf, model_mapping);
+
+    
     null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
     /*
@@ -376,7 +376,7 @@ fel.site_results = {};
 for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.partition_index += 1) {
     fel.report.header_done = FALSE;
     fel.table_output_options[terms.table_options.header] = TRUE;
-    model.ApplyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {"default" : fel.site.mg_rev}, None);
+    model.ApplyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {terms.default : fel.site.mg_rev}, None);
 
     fel.case_respecting_node_names = trees.branch_names (fel.site_tree, TRUE);
 
@@ -396,6 +396,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
              fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
         ');
 
+
     // create the likelihood function for this site
     ExecuteCommands (alignments.serialize_site_filter
                                        ((fel.filter_specification[fel.partition_index])[utility.getGlobalValue("terms.data.name")],
@@ -410,7 +411,6 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
 
     estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping, fel.final_partitioned_mg_results,
                                         terms.globals_only);
-
 
 
     fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},

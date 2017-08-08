@@ -63,6 +63,9 @@ busted.unconstrained = "unconstrained";
 busted.constrained = "constrained";
 busted.optimized_null = "optimized null";
 
+busted.json.background = busted.background;
+busted.json.site_logl  = "Site Log Likelihood";
+busted.json.evidence_ratios  = "Evidence Ratios";
 busted.nrates = 3;
 
 
@@ -80,11 +83,11 @@ busted.taskTimerStart (busted.timers_d["Overall"]);
 busted.json    = { terms.json.analysis: busted.analysis_description,
                    terms.json.input: {},
                    terms.json.partitions: {}, 
-                   terms.json.attribute.background: {},
+                   busted.json.background: {},
                    terms.json.fits : {},
                    terms.json.timers : {},
-                   terms.json.site_log_likelihood : {}, 
-                   terms.json.evidence_ratios: {}
+                   busted.json.site_logl : {}, 
+                   busted.json.evidence_ratios: {}
                   };
 
 
@@ -141,7 +144,7 @@ busted.taskTimerStart(busted.timers_d["Unconstrained model"]);
 
 LikelihoodFunction busted.LF = (codon_filter, busted.tree);
 
-busted.json[terms.json.attribute.background] =  busted.hasBackground  ("busted.tree");
+busted.json[busted.json.background] =  busted.hasBackground  ("busted.tree");
 
 global busted.T_scaler = 4;
 busted.proportional_constraint = "busted.T_scaler";
@@ -196,7 +199,7 @@ busted.json_store_lf                (busted.json, "Unconstrained model",
 
 
 busted.siteLogL = {};
-(busted.json [terms.json.site_log_likelihood])[busted.unconstrained] = busted.computeSiteLikelihoods ("busted.LF");
+(busted.json [busted.json.site_logl])[busted.unconstrained] = busted.computeSiteLikelihoods ("busted.LF");
 
 
 if (busted_positive_class[terms.omega] < terms.range_almost_01[terms.upper_bound] || busted_positive_class[terms.weight] < terms.range_almost_01[terms.lower_bound]) {
@@ -209,11 +212,11 @@ if (busted_positive_class[terms.omega] < terms.range_almost_01[terms.upper_bound
 
     io.ReportProgressMessageMD ("BUSTED",  "BUSTED-null", "Fitting the branch-site model that disallows omega > 1 among foreground branches");
     busted.constrainTheModel (busted.model_definitions);
-    (busted.json [terms.json.site_log_likelihood])[busted.constrained] = busted.computeSiteLikelihoods ("busted.LF");;
+    (busted.json [busted.json.site_logl])[busted.constrained] = busted.computeSiteLikelihoods ("busted.LF");;
     Optimize (busted.MLE_H0, busted.LF);
     // Uncomment line below to get the LF file.
     //io.SpoolLF ("busted.LF", codon_data_info[terms.data.file], "null");
-    (busted.json [terms.json.site_log_likelihood])[busted.optimized_null] = busted.computeSiteLikelihoods ("busted.LF");;
+    (busted.json [busted.json.site_logl])[busted.optimized_null] = busted.computeSiteLikelihoods ("busted.LF");;
     io.ReportProgressMessageMD ("BUSTED", "BUSTED-null", "Log(L) = " + busted.MLE_H0[1][0]);
     busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);
 
@@ -242,8 +245,8 @@ if (busted_positive_class[terms.omega] < terms.range_almost_01[terms.upper_bound
                                         busted.json[busted.background]
                                        );
 
-    (busted.json [terms.json.evidence_ratios])[busted.constrained] = busted.evidenceRatios ( (busted.json [terms.json.site_log_likelihood ])[busted.unconstrained],  (busted.json [terms.json.site_log_likelihood ])[busted.constrained]);
-    (busted.json [terms.json.evidence_ratios])[busted.optimized_null] = busted.evidenceRatios ( (busted.json [terms.json.site_log_likelihood ])[busted.unconstrained],  (busted.json [terms.json.site_log_likelihood ])[busted.optimized_null]);
+    (busted.json [busted.json.evidence_ratios])[busted.constrained] = busted.evidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.constrained]);
+    (busted.json [busted.json.evidence_ratios])[busted.optimized_null] = busted.evidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.optimized_null]);
 }
 
 //busted.taskTimerStop (2);
@@ -348,7 +351,7 @@ function busted.computeSiteLikelihoods (id) {
 
 //------------------------------------------------------------------------------
 function busted.runLRT (ha, h0) {
-    return {terms.LR : 2*(ha-h0),
+    return {terms.LRT : 2*(ha-h0),
             terms.p_value : 1-CChi2 (2*(ha-h0),2)};
 }
 

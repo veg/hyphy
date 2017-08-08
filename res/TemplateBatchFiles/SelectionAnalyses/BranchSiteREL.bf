@@ -1135,7 +1135,7 @@ lfunction matrix2json (mx) {
 lfunction json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_string) {
 
     (json[utility.getGlobalValue("terms.json.fits")])[name] = {utility.getGlobalValue("terms.json.log_likelihood"): ll,
-                            utility.getGlobalValue("terms.json.estimated_parameters"): df,
+                            utility.getGlobalValue("terms.json.parameters"): df,
                             utility.getGlobalValue("terms.json.AICc") : aicc,
                             utility.getGlobalValue("terms.json.runtime") : time,
                             utility.getGlobalValue("terms.json.tree_length") : tree_length,

@@ -7,7 +7,7 @@ RequireVersion("2.3");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/stats.bf");
-LoadFunctionLibrary("libv3/terms-json.bf");
+//LoadFunctionLibrary("libv3/terms-json.bf");
 
 LoadFunctionLibrary("libv3/tasks/ancestral.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
@@ -24,8 +24,8 @@ LoadFunctionLibrary("modules/selection_lib.ibf");
     Display analysis information
 */
 
-io.DisplayAnalysisBanner({
-    "info": "SLAC (Single Likelihood Ancestor Counting)
+slac.analysis_description = {
+    terms.io.info: "SLAC (Single Likelihood Ancestor Counting)
     uses a maximum likelihood ancestral state reconstruction
     and minimum path substitution counting to estimate site - level
     dS and dN,
@@ -38,12 +38,13 @@ io.DisplayAnalysisBanner({
     Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    "version": "2.00",
-    "reference": "Not So Different After All: A Comparison of Methods for Detecting Amino Acid Sites Under Selection (2005). _Mol Biol Evol_ 22 (5): 1208-1222",
-    "authors": "Sergei L Kosakovsky Pond and Simon DW Frost",
-    "contact": "spond@temple.edu",
-    "requirements": "in-frame codon alignment and a phylogenetic tree"
-});
+    terms.io.version: "2.00",
+    terms.io.reference: "Not So Different After All: A Comparison of Methods for Detecting Amino Acid Sites Under Selection (2005). _Mol Biol Evol_ 22 (5): 1208-1222",
+    terms.io.authors: "Sergei L Kosakovsky Pond and Simon DW Frost",
+    terms.io.contact: "spond@temple.edu",
+    terms.io.requirements: "in-frame codon alignment and a phylogenetic tree"
+};
+io.DisplayAnalysisBanner(slac.analysis_description);
 
 
 /*------------------------------------------------------------------------------
@@ -68,6 +69,7 @@ slac.pvalue = 0.1;
     */
 
 slac.json = {
+    terms.json.analysis: slac.analysis_description,
     terms.json.fits: {},
     terms.json.timers: {},
 };
@@ -78,6 +80,16 @@ slac.json = {
 selection.io.startTimer (slac.json [terms.json.timers], "Total time", 0);
 
 slac.scaler_prefix = "SLAC.scaler";
+
+slac.by_site   = "by-site";
+slac.by_branch = "by-branch";
+slac.AVERAGED  = "AVERAGED";
+slac.RESOLVED  = "RESOLVED";
+slac.sample_median = "sample-median";
+slac.sample_2.5 = "sample-2.5";
+slac.sample_97.5 = "sample-97.5";
+
+
 
 slac.table_headers = {{"ES", "Expected synonymous sites"}
                       {"EN", "Expected non-synonymous sites"}
@@ -92,7 +104,7 @@ slac.table_headers = {{"ES", "Expected synonymous sites"}
                       {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
 
 slac.table_screen_output = {{"Codon", "Partition", "S", "N", "dS", "dN", "Selection detected?"}};
-slac.table_output_options =  {"header" : TRUE, "min-column-width" : 16, "align" : "center"};
+slac.table_output_options =  {terms.table_options.header : TRUE, terms.table_options.minimum_column_width : 16, terms.table_options.align : "center"};
 
 namespace slac {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
@@ -107,7 +119,7 @@ slac.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the tes
 io.ReportProgressMessageMD('SLAC',  'selector', 'Branches to include in the SLAC analysis');
 
 utility.ForEachPair (slac.selected_branches, "_partition_", "_selection_",
-    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.json.attribute.test'); io.ReportProgressMessageMD('SLAC',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in SLAC calculations: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
+    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test'); io.ReportProgressMessageMD('SLAC',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in SLAC calculations: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 
 selection.io.startTimer (slac.json [terms.json.timers], "Model fitting",1 );
@@ -115,7 +127,7 @@ selection.io.startTimer (slac.json [terms.json.timers], "Model fitting",1 );
 namespace slac {
     doGTR ("slac");
 }
-estimators.fixSubsetOfEstimates(slac.gtr_results, slac.gtr_results["global"]);
+estimators.fixSubsetOfEstimates(slac.gtr_results, slac.gtr_results[terms.global]);
 
 namespace slac {
     doPartitionedMG ("slac", TRUE);
@@ -127,23 +139,25 @@ selection.io.stopTimer (slac.json [terms.json.timers], "Model fitting");
 selection.io.json_store_lf(
     slac.json,
     "Global MG94xREV",
-    slac.partitioned_mg_results["LogL"],
-    slac.partitioned_mg_results["parameters"],
+    slac.partitioned_mg_results[terms.fit.log_likelihood],
+    slac.partitioned_mg_results[terms.parameters],
     slac.sample_size,
-    utility.ArrayToDict (utility.Map (slac.global_dnds, "_value_", "{'key': _value_['description'], 'value' : Eval({{_value_ ['MLE'],1}})}"))
+    utility.ArrayToDict (utility.Map (slac.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}"))
 );
 
 
 
 utility.ForEachPair (slac.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(slac.json, "Global MG94xREV model", terms.json.attribute.branch_length, 0,
+    'selection.io.json_store_branch_attribute(slac.json, "Global MG94xREV model", terms.branch_length, 0,
                                              _key_,
-                                             selection.io.extract_branch_info((slac.partitioned_mg_results[terms.json.attribute.branch_length])[_key_], "selection.io.branch.length"));');
+                                             selection.io.extract_branch_info((slac.partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 
 
 selection.io.startTimer (slac.json [terms.json.timers], "Primary SLAC analysis", 2);
 
-slac.nucleotide_frequencies    = (slac.gtr_results[terms.efv_estimate])["VALUEINDEXORDER"][0];
+
+
+slac.nucleotide_frequencies    = (slac.gtr_results[terms.fit.efv_estimate])["VALUEINDEXORDER"][0];
 
 /*_EFV_MATRIX0_ = {{1,AC__*pooledFreqs[1],pooledFreqs[2],AT__*pooledFreqs[3]}
 				{AC__*pooledFreqs[0],1,CG__*pooledFreqs[2],CT__*pooledFreqs[3]}
@@ -156,7 +170,7 @@ slac.counting_bias_matrix = {4,4}["1"];
 
 for (slac.i = 0; slac.i < 4; slac.i += 1) {
     for (slac.j = slac.i + 1; slac.j < 4; slac.j += 1) {
-        slac.counting_bias_matrix[slac.i][slac.j] = ((slac.partitioned_mg_results[terms.global])[terms.nucleotideRate (models.DNA.alphabet[slac.i], models.DNA.alphabet[slac.j])])[terms.MLE];
+        slac.counting_bias_matrix[slac.i][slac.j] = ((slac.partitioned_mg_results[terms.global])[terms.nucleotideRate (models.DNA.alphabet[slac.i], models.DNA.alphabet[slac.j])])[terms.fit.MLE];
         slac.counting_bias_matrix[slac.j][slac.i] = slac.counting_bias_matrix[slac.i][slac.j] * slac.nucleotide_frequencies [slac.i];
         slac.counting_bias_matrix[slac.i][slac.j] = slac.counting_bias_matrix[slac.i][slac.j] * slac.nucleotide_frequencies [slac.j];
     }
@@ -168,9 +182,9 @@ slac.counting_bias_array + slac.counting_bias_matrix;
 slac.counting_bias_array + slac.counting_bias_matrix;
 slac.counting_bias_array + slac.counting_bias_matrix;
 
-io.SpoolLF (slac.partitioned_mg_results["LF"], slac.codon_data_info["file"], "slac");
+//io.SpoolLF (slac.partitioned_mg_results[terms.likelihood_function], slac.codon_data_info[terms.data.file], "slac");
 io.ReportProgressMessageMD("slac", "anc", "Performing joint maximum likelihood ancestral state reconstruction");
-slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE, "weighting-matrix" : slac.counting_bias_array});
+slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info[terms.code], {terms.genetic_code.count_stop_codons : FALSE, terms.genetic_code.weighting_matrix : slac.counting_bias_array});
 slac.results   = {};
 
 
@@ -182,10 +196,10 @@ slac.report_to_screen = {};
 
 slac.printed_header = FALSE;
 
-slac.positive_p := Min ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][8], (((slac.results[slac.i]) ["by-site"])["AVERAGED"])[slac.site][8]);
-slac.negative_p := Min ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][9], (((slac.results[slac.i]) ["by-site"])["AVERAGED"])[slac.site][9]);
+slac.positive_p := Min ((((slac.results[slac.i]) [slac.by_site])[slac.RESOLVED])[slac.site][8], (((slac.results[slac.i]) [slac.by_site])[slac.AVERAGED])[slac.site][8]);
+slac.negative_p := Min ((((slac.results[slac.i]) [slac.by_site])[slac.RESOLVED])[slac.site][9], (((slac.results[slac.i]) [slac.by_site])[slac.AVERAGED])[slac.site][9]);
 
-slac.report_positive_site = {{"" + (1+((slac.filter_specification[slac.i])["coverage"])[slac.site]),
+slac.report_positive_site = {{"" + (1+((slac.filter_specification[slac.i])[terms.data.coverage])[slac.site]),
                                     slac.i + 1,
                                     slac.row[2],
                                     slac.row[3],
@@ -193,7 +207,7 @@ slac.report_positive_site = {{"" + (1+((slac.filter_specification[slac.i])["cove
                                     slac.row[6],
                                     "Pos. p = " + slac.row[8]}};
 
-slac.report_negative_site = {{"" + (1+((slac.filter_specification[slac.i])["coverage"])[slac.site]),
+slac.report_negative_site = {{"" + (1+((slac.filter_specification[slac.i])[terms.data.coverage])[slac.site]),
                                     slac.i + 1,
                                     slac.row[2],
                                     slac.row[3],
@@ -204,15 +218,15 @@ slac.report_negative_site = {{"" + (1+((slac.filter_specification[slac.i])["cove
 
 for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
     slac.printed_header_sampler = FALSE;
-    slac.table_output_options["header"] = TRUE;
+    slac.table_output_options[terms.table_options.header] = TRUE;
 
-    slac.ancestors         = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, None);
+    slac.ancestors         = ancestral.build (slac.partitioned_mg_results[terms.likelihood_function], slac.i, None);
     slac.results           [slac.i] = slac.compute_the_counts (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
 
-    slac.partition_sites   = utility.Array1D ((slac.filter_specification[slac.i])["coverage"]);
+    slac.partition_sites   = utility.Array1D ((slac.filter_specification[slac.i])[terms.data.coverage]);
 
     for (slac.site = 0; slac.site < slac.partition_sites; slac.site += 1) {
-        slac.row = utility.Map ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][-1],
+        slac.row = utility.Map ((((slac.results[slac.i]) [slac.by_site])[slac.RESOLVED])[slac.site][-1],
                              "_entry_",
                              "Format (0+_entry_, 0, 3)");
 
@@ -236,35 +250,34 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
                 fprintf (stdout,
                     io.FormatTableRow (slac.table_screen_output,slac.table_output_options));
                 slac.printed_header_sampler = TRUE;
-                slac.table_output_options["header"] = FALSE;
+                slac.table_output_options[terms.table_options.header] = FALSE;
             }
-
             fprintf (stdout,
                 io.FormatTableRow (slac.print_row,slac.table_output_options));
         }
     }
 
-    slac.branch_attributes = selection.substitution_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
+    slac.branch_attributes = selection.substitution_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info[terms.code]);
 
-    selection.io.json_store_branch_attribute(slac.json, "original name", terms.json.attribute.node_label, 0,
+    selection.io.json_store_branch_attribute(slac.json, terms.original_name, terms.json.node_label, 0,
                                              slac.i,
                                              slac.name_mapping);
 
-    selection.io.json_store_branch_attribute(slac.json, "codon", terms.json.attribute.node_label, 0,
+    selection.io.json_store_branch_attribute(slac.json, terms.codon, terms.json.node_label, 0,
                                              slac.i,
-                                             slac.branch_attributes["codon"]);
+                                             slac.branch_attributes[terms.codon]);
 
-    selection.io.json_store_branch_attribute(slac.json, "amino-acid", terms.json.attribute.node_label, 1,
+    selection.io.json_store_branch_attribute(slac.json, terms.amino_acid, terms.json.node_label, 1,
                                              slac.i,
-                                             slac.branch_attributes["amino-acid"]);
+                                             slac.branch_attributes[terms.amino_acid]);
 
-    selection.io.json_store_branch_attribute(slac.json, "synonymous substitution count", terms.json.attribute.branch_label, 0,
+    selection.io.json_store_branch_attribute(slac.json, terms.synonymous_sub_count, terms.json.branch_label, 0,
                                              slac.i,
-                                             slac.branch_attributes["synonymous substitution count"]);
+                                             slac.branch_attributes[terms.synonymous_sub_count]);
 
-    selection.io.json_store_branch_attribute(slac.json, "non-synonymous substitution count", terms.json.attribute.branch_label, 1,
+    selection.io.json_store_branch_attribute(slac.json, terms.nonsynonymous_sub_count, terms.json.branch_label, 1,
                                              slac.i,
-                                             slac.branch_attributes["non-synonymous substitution count"]);
+                                             slac.branch_attributes[terms.nonsynonymous_sub_count]);
 
 
 }
@@ -274,8 +287,9 @@ slac.json [terms.json.MLE ] = {terms.json.headers   : slac.table_headers,
                                terms.json.content : slac.results };
 
 
-io.SpoolJSON (slac.json, slac.codon_data_info["json"]);
+io.SpoolJSON (slac.json, slac.codon_data_info[terms.json.json]);
 selection.io.stopTimer (slac.json [terms.json.timers], "Primary SLAC analysis");
+
 
 
 lfunction slac.handle_a_sample (lf, partition, branches, counts) {
@@ -297,23 +311,23 @@ if (slac.samples > 0) {
     io.ReportProgressMessageMD ("slac", "sampling", "Ancestor sampling analysis");
     io.ReportAnalysisStageMD ("Generating `slac.samples` ancestral sequence samples to obtain confidence intervals");
 
-    utility.EnsureKey (slac.json, "sample-median");
-    utility.EnsureKey (slac.json, "sample-2.5");
-    utility.EnsureKey (slac.json, "sample-97.5");
+    utility.EnsureKey (slac.json, slac.sample_median);
+    utility.EnsureKey (slac.json, slac.sample_2.5);
+    utility.EnsureKey (slac.json, slac.sample_97.5);
 
     for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
 
         slac.printed_header_sampler = FALSE;
-        slac.table_output_options_samplers["header"] = TRUE;
+        slac.table_output_options_samplers[terms.table_options.header] = TRUE;
         slac.sample.results = {};
 
-        slac.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{slac.partitioned_mg_results["LF"]}}});
+        slac.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{slac.partitioned_mg_results[terms.likelihood_function]}}});
 
         for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
 
             io.ReportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
 
-            mpi.QueueJob (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"],
+            mpi.QueueJob (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results[terms.likelihood_function],
                                                                 "1" : slac.i,
                                                                 "2" : slac.selected_branches[slac.i],
                                                                 "3":  slac.counts},
@@ -326,14 +340,14 @@ if (slac.samples > 0) {
         mpi.QueueComplete (slac.queue);
 
         slac.extractor = {slac.samples, 1};
-        slac.sites   = utility.Array1D ((slac.filter_specification[slac.i])["coverage"]);
+        slac.sites   = utility.Array1D ((slac.filter_specification[slac.i])[terms.data.coverage]);
         slac.columns = Rows (slac.table_headers);
 
 
-        slac.json ["sample-median"] + {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
-        slac.json ["sample-2.5"]    + {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
-        slac.json ["sample-97.5"]   + {"RESOLVED" : {slac.sites, slac.columns}, "AVERAGED" : {slac.sites, slac.columns}};
-        slac.keys = {{"RESOLVED", "AVERAGED"}};
+        slac.json [slac.sample_median] + {slac.RESOLVED  : {slac.sites, slac.columns}, slac.AVERAGED  : {slac.sites, slac.columns}};
+        slac.json [slac.sample_2.5]    + {slac.RESOLVED  : {slac.sites, slac.columns}, slac.AVERAGED  : {slac.sites, slac.columns}};
+        slac.json [slac.sample_97.5]   + {slac.RESOLVED  : {slac.sites, slac.columns}, slac.AVERAGED  : {slac.sites, slac.columns}};
+        slac.keys = {{slac.RESOLVED , slac.AVERAGED }};
 
 
         for (slac.s = 0; slac.s < slac.sites; slac.s += 1) {
@@ -342,9 +356,9 @@ if (slac.samples > 0) {
                     slac.key_value = slac.keys[slac.key];
                     slac.col = slac._extract_vector (slac.extractor, slac.sample.results, slac.key_value, slac.s,slac.c);
 
-                    (((slac.json["sample-median"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.5);
-                    (((slac.json["sample-2.5"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.025);
-                    (((slac.json["sample-97.5"])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.975);
+                    (((slac.json[slac.sample_median])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.5);
+                    (((slac.json[slac.sample_2.5])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.025);
+                    (((slac.json[slac.sample_97.5])[slac.i])[slac.key_value])[slac.s][slac.c] = stats.Quantile (slac.col, 0.975);
                 }
             }
             if ((slac.report_to_screen[slac.i])[slac.s]) {
@@ -354,22 +368,22 @@ if (slac.samples > 0) {
                     fprintf (stdout,
                         io.FormatTableRow (slac.table_screen_output_samplers,slac.table_output_options_samplers));
                     slac.printed_header_sampler = TRUE;
-                    slac.table_output_options_samplers["header"] = FALSE;
+                    slac.table_output_options_samplers[terms.table_options.header] = FALSE;
                 }
 
-                slac.row_median = utility.Map ((((slac.json["sample-median"])[slac.i])["RESOLVED"])[slac.s][-1],
+                slac.row_median = utility.Map ((((slac.json[slac.sample_median])[slac.i])[slac.RESOLVED ])[slac.s][-1],
                              "_entry_",
                              "Format (0+_entry_, 0, 2)");
-                slac.row_25 = utility.Map ((((slac.json["sample-2.5"])[slac.i])["RESOLVED"])[slac.s][-1],
+                slac.row_25 = utility.Map ((((slac.json[slac.sample_2.5])[slac.i])[slac.RESOLVED ])[slac.s][-1],
                              "_entry_",
                              "Format (0+_entry_, 0, 2)");
-                slac.row_975 = utility.Map ((((slac.json["sample-97.5"])[slac.i])["RESOLVED"])[slac.s][-1],
+                slac.row_975 = utility.Map ((((slac.json[slac.sample_97.5])[slac.i])[slac.RESOLVED ])[slac.s][-1],
                              "_entry_",
                              "Format (0+_entry_, 0, 2)");
 
                 slac.pi = (slac.report_to_screen[slac.i])[slac.s];
 
-                slac.print_row = {{"" + (1+((slac.filter_specification[slac.i])["coverage"])[slac.s]),
+                slac.print_row = {{"" + (1+((slac.filter_specification[slac.i])[terms.data.coverage])[slac.s]),
                                         slac.i + 1,
                                         slac.row_median[2] + " [" + slac.row_25[2] + "-" + slac.row_975[2] + "]",
                                         slac.row_median[3] + " [" + slac.row_25[3] + "-" + slac.row_975[3] + "]",
@@ -387,7 +401,7 @@ if (slac.samples > 0) {
 }
 
 selection.io.stopTimer (slac.json [terms.json.timers], "Total time");
-io.SpoolJSON (slac.json, slac.codon_data_info["json"]);
+io.SpoolJSON (slac.json, slac.codon_data_info[terms.json.json]);
 
 if (Abs (slac.report_to_screen) == 0) {
     io.ReportProgressMessageMD ("slac", "results", "** No sites found to be under positive or negative selection at p <= " + slac.pvalue + "**");
@@ -498,11 +512,11 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
     report_averaged_by_branch = {selected_branches_count, column_count}["0"];
     report_branch_names = {selected_branches_count,1};
 
-    pairwise_eps = counts ["EPS"];
+    pairwise_eps = counts [utility.getGlobalValue("terms.genetic_code.EPS")];
     state_count  = Rows (pairwise_eps);
-    pairwise_epn = counts ["EPN"];
-    pairwise_ops = counts ["OPS"];
-    pairwise_opn = counts ["OPN"];
+    pairwise_epn = counts [utility.getGlobalValue("terms.genetic_code.EPN")];
+    pairwise_ops = counts [utility.getGlobalValue("terms.genetic_code.OPS")];
+    pairwise_opn = counts [utility.getGlobalValue("terms.genetic_code.OPN")];
     by_site_scaler = {site_count, 1} ["" + selected_branch_total_length];
     column_vector = {state_count,1};
 
@@ -692,11 +706,11 @@ for (k=0; k<Columns(_instructions); k=k+1)
 
 
 
-    return {"by-site" :{"AVERAGED" : report_averaged,
-                        "RESOLVED" : report_resolved},
-          "by-branch" :{"NAMES": report_branch_names,
-                        "AVERAGED" : report_averaged_by_branch,
-                        "RESOLVED" : report_resolved_by_branch}
+    return {utility.getGlobalValue("slac.by_site") :{utility.getGlobalValue("slac.AVERAGED") : report_averaged,
+                        utility.getGlobalValue("slac.RESOLVED") : report_resolved},
+          utility.getGlobalValue("slac.by_branch") :{"NAMES": report_branch_names,
+                        utility.getGlobalValue("slac.AVERAGED") : report_averaged_by_branch,
+                        utility.getGlobalValue("slac.RESOLVED") : report_resolved_by_branch}
                         };
 
 }
