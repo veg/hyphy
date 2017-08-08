@@ -560,8 +560,7 @@ _Variable* CheckReceptacleCommandIDException (_String const* name, const long id
 
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacleCommandID (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
-{
+_Variable* CheckReceptacleCommandID (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context) {
   try {
     return CheckReceptacleCommandIDException (name, id, checkValid, isGlobal, context);
   } catch (_String const& err_msg) {

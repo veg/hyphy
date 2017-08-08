@@ -131,6 +131,11 @@ class _List:public _SimpleList {
         */
         virtual const _List operator = (const _List&);
 
+        template <typename MAPPER> void ForEach (MAPPER mapper, long startAt = 0) const {
+          for (unsigned long i = startAt; i<lLength; i++) {
+            mapper ( ((BaseRef*)(lData))[i] );
+          }
+        }
 
         /**
         * Append operator

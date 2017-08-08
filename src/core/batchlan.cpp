@@ -136,7 +136,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 marginalAncestors               ("MARGINAL"),
                                 doLeavesAncestors               ("DOLEAVES"),
                                 blScanfRewind                   ("REWIND"),
-                                alwaysReloadLibraries           ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
                                 dialogPrompt,
                                 hy_scanf_last_file_path,
                                 defFileNameValue;
@@ -1064,7 +1063,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
     if (doCurrentCommand) {
         _ElementaryCommand *theCommand = FetchLastCommand();
         if (theCommand) {
-            errMsg = errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(theCommand->get_code());
+            errMsg = errMsg & " in to " & _String ((_String*)theCommand->toStr());
         }
     }
     errorState = true;
@@ -1606,10 +1605,48 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_GET_DATA_INFO:
             case HY_HBL_COMMAND_GET_INFORMATION:
             case HY_HBL_COMMAND_REPLICATE_CONSTRAINT:
-                _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
-                handled = true;
-                break;
-                
+            case HY_HBL_COMMAND_MPI_SEND:
+            case HY_HBL_COMMAND_MPI_RECEIVE:
+            case HY_HBL_COMMAND_FIND_ROOT:
+            case HY_HBL_COMMAND_ALIGN_SEQUENCES:
+            case HY_HBL_COMMAND_DO_SQL:
+            {
+                  _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
+                  handled = true;
+                  break;
+            }
+            case HY_HBL_COMMAND_EXECUTE_A_FILE:
+            case HY_HBL_COMMAND_EXECUTE_COMMANDS:
+            case HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY: {
+              _ElementaryCommand * run_source = new _ElementaryCommand (prefixTreeCode);
+              run_source->parameters<<pieces->GetItem(0);
+              
+              if (PeekFilePath()) {
+                run_source->parameters && *PeekFilePath();
+              } else {
+                run_source->parameters.AppendNewInstance(new _String);
+              }
+              
+              if (pieces->countitems() > 1UL) {
+                if (*(_String*)pieces->GetItem (1UL) == _String("compiled")) {
+                  run_source->simpleParameters << 1;
+                } else {
+                  if (*(_String*)pieces->GetItem (1UL) == _String("enclosing_namespace")) {
+                    run_source->parameters.Delete(1);
+                    run_source->parameters < new _String;
+                  } else {
+                    run_source->parameters << pieces->GetItem(1UL);
+                    if (pieces->countitems () > 2UL) {
+                      run_source->parameters << pieces->GetItem(2UL);
+                    }
+                  }
+                }
+              }
+              run_source->addAndClean (*this);
+            }
+            break;
+
+      
         }
         
         if (handled)
@@ -1689,18 +1726,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 _ElementaryCommand::ConstructModel (currentLine, *this);
             } else if (currentLine.BeginsWith (blChoiceList)) { // choice list
                 _ElementaryCommand::ConstructChoiceList (currentLine, *this);
-            } else if (currentLine.BeginsWith (blExecuteCommands) || currentLine.BeginsWith (blExecuteAFile) || currentLine.BeginsWith (blLoadFunctionLibrary))
-                // execute commands
-            {
-                _ElementaryCommand::ConstructExecuteCommands (currentLine, *this);
-            } else if (currentLine.BeginsWith (blMPIReceive)) { // MPI Receive
-                _ElementaryCommand::ConstructMPIReceive (currentLine, *this);
             } else if (currentLine.BeginsWith (blStateCounter)) { // Get Data Info
                 _ElementaryCommand::ConstructStateCounter (currentLine, *this);
-            } else if (currentLine.BeginsWith (blDoSQL)) { // Do SQL
-                _ElementaryCommand::ConstructDoSQL (currentLine, *this);
-            } else if (currentLine.BeginsWith (blAlignSequences)) { // Do AlignSequences
-                _ElementaryCommand::ConstructAlignSequences (currentLine, *this);
             } else if (currentLine.BeginsWith (blHBLProfile)) { // #profile
                 _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
             } else if (currentLine.BeginsWith (blSCFG)) { // SCFG definition
@@ -1905,7 +1932,12 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_ALIGN_SEQUENCES:
         case HY_HBL_COMMAND_REPLICATE_CONSTRAINT:
         case HY_HBL_COMMAND_MPI_RECEIVE:
-        case HY_HBL_COMMAND_MPI_SEND : {
+        case HY_HBL_COMMAND_MPI_SEND :
+        case HY_HBL_COMMAND_EXECUTE_A_FILE :
+        case HY_HBL_COMMAND_EXECUTE_COMMANDS :
+        case HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY :
+        case HY_HBL_COMMAND_DO_SQL:
+        {
             (*string_form) << procedure (code);
         }
             
@@ -2015,22 +2047,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
             
         }
         break;
-            
-        case 39: { // execute commands
-            (*string_form) << procedure (HY_HBL_COMMAND_EXECUTE_COMMANDS);
-        }
-        break;
-
-        case 62: { // execute commands
-            (*string_form) << procedure (HY_HBL_COMMAND_EXECUTE_A_FILE);
-        }
-        break;
-
-        case 66: { // execute commands
-            (*string_form) << procedure (HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY);
-        }
-        break;
-
+        
         case 47: { //GetDataInfo
             (*string_form) << procedure (HY_HBL_COMMAND_STATE_COUNTER);
         }
@@ -2041,10 +2058,6 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         }
         break;
         
-        case 53: { //DoSQL
-            (*string_form) << procedure (HY_HBL_COMMAND_DO_SQL);
-        }
-        break;
         
         case 57: { //neutral null
             (*string_form) << procedure (HY_HBL_COMMAND_GET_NEUTRAL_NULL);
@@ -2646,207 +2659,6 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
         }
     }
 }
-
-//____________________________________________________________________________________
-
-
-void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
-    chain.currentCommand++;
-
-    _String *commands,
-            theCommand,
-            *namespc = nil;
-  
-    _AVLListXL * inArg    = nil;
-    _List      * inArgAux = nil;
-
-    bool    pop_path = false;
-  
-    try {
-      if (code == 39) {
-          commands = ProcessCommandArgument((_String*)parameters(0));
-      } else {
-          _String filePath = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix),
-                  originalPath = filePath;
-        
-
-          FILE * commandSource = nil;
-          
-          hyFloat reload = 0.;
-          checkParameter(alwaysReloadLibraries, reload, 0.);
-
-          if (code == 66) {
-              bool hasExtension    = filePath.FindBackwards (".",0,-1) > 0;
-
-              for (unsigned long p = 0; !commandSource && p < _hy_standard_library_paths.lLength; p++) {
-                  for (unsigned long e = 0; !commandSource && e < _hy_standard_library_extensions.lLength; e++) {
-                      _String tryPath = *((_String*)_hy_standard_library_paths(p)) & filePath & *((_String*)_hy_standard_library_extensions(e));
-
-                      // printf ("%s\n", tryPath.sData);
-
-                      ProcessFileName (tryPath, false, false, (hyPointer)chain.nameSpacePrefix);
-                    
-                      if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
-                          ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
-                          return;
-                      }
-                      if ((commandSource = doFileOpen (tryPath.get_str (), "rb"))) {
-                          filePath = tryPath;
-                          break;
-                      }
-                      if (hasExtension) {
-                          break;
-                      }
-                  }
-              }
-
-          }
-        
-
-          if (commandSource == nil) {
-              ProcessFileName (filePath, false,false,(hyPointer)chain.nameSpacePrefix);
-   
-              if (code == 66 && loadedLibraryPaths.Find(&filePath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
-                  ReportWarning (_String("Already loaded '") & originalPath & "' from " & filePath);
-                  return;
-              }
-              
-              if ((commandSource = doFileOpen (filePath.get_str (), "rb")) == nil) {
-                  HandleApplicationError (_String("Could not read command file in ExecuteAFile.\nOriginal path: '") &
-                                      originalPath & "'.\nExpanded path: '" & filePath & "'");
-                  return;
-              }
-          }
-
-          if (code == 66 && commandSource) {
-              ReportWarning (_String("Loaded '") & originalPath & "' from " & filePath);
-              loadedLibraryPaths.Insert (filePath.makeDynamic(),0,false,true);
-          }
-
-          commands = new _String (commandSource);
-          if (fclose       (commandSource) ) { // failed to fclose
-              DeleteObject (commands);
-              HandleApplicationError (_String("Internal error: failed in a call to fclose ") & filePath);
-          }
-          pop_path = true;
-          PushFilePath (filePath);
-      }
-
-      if (!commands) {
-          throw (1);
-      }
-
-      if (code == 39) {
-          theCommand = ProcessLiteralArgument (commands,chain.nameSpacePrefix);
-      } else {
-          theCommand = commands;
-      }
-
-      if (theCommand.empty()) {
-          HandleApplicationError (_String("Invalid string argument '") & *commands & "' in call to ExecuteCommands/ExecuteAFile.");
-          throw (1);
-      }
-
-      if (code == 39 && ((_String*)parameters(1))->nonempty()) {
-        pop_path = true;
-        PushFilePath (*(_String*)parameters(1), false, false);
-      }
-
-
-      if (parameters.lLength >= 3)
-          // stdin redirect (and/or name space prefix)
-      {
-
-         _PMathObj inAVL = ProcessDictionaryArgument ((_String*)parameters(2),chain.nameSpacePrefix);
-
-          if (!inAVL) {
-              if (parameters.lLength == 3) {
-                  HandleApplicationError (_String("Not a valid associative array index passed as input redirect argument to ExecuteCommands/ExecuteAFile: )") & *(_String*)parameters(2));
-                  throw (1);
-              }
-          } else {
-              _AssociativeList * stdinRedirect = (_AssociativeList*)inAVL;
-
-              inArgAux = new _List;
-              inArg    = new _AVLListXL (inArgAux);
-
-              _List        *stdKeys = stdinRedirect->GetKeys();
-
-              for (long kid = 0; kid < stdKeys->lLength; kid++) {
-                  _String  * aKey         = (_String*)(*stdKeys) (kid);
-                  if (aKey) {
-                      _FString * aString      = (_FString*)stdinRedirect->GetByKey (*aKey, STRING);
-                      if (!aString) {
-                          HandleApplicationError    (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
-                          DeleteObject (inAVL);
-                          throw (1);
-                      }
-                      inArg -> Insert (aKey->makeDynamic(),(long)new _String (*aString->theString),false);
-                  }
-              }
-              DeleteObjet (stdKeys);
-          }
-
-          DeleteObject (inAVL);
-
-          if (parameters.lLength > 3) {
-              _String nameSpaceID = ProcessLiteralArgument((_String*)parameters(3),chain.nameSpacePrefix);
-              if (nameSpaceID.nonempty()) {
-                if (!nameSpaceID.IsValidIdentifier(fIDAllowCompound)) {
-                    HandleApplicationError (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & *(_String*)parameters(3));
-                    throw (1);
-                }
-                namespc = new _String (nameSpaceID);
-              }
-          }
-      }
-
-      if (parameters.lLength <4 && chain.nameSpacePrefix) {
-          namespc = new _String (*chain.nameSpacePrefix->GetName());
-      }
-
-      if (theCommand.BeginsWith ("#NEXUS")) {
-          ReadDataSetFile (nil,1,&theCommand,nil,namespc);
-      } else {
-          bool result = false;
-          _ExecutionList exc (theCommand,namespc, false, &result);
-          
-          if (!result) {
-              chain.ReportAnExecutionError("Encountered an error while parsing HBL", false, true);
-          } else {
-
-              exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
-              exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
-
-              if (simpleParameters.lLength && exc.TryToMakeSimple()) {
-                  ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)exc.toStr()) );
-                  exc.ExecuteSimple ();
-              } else {
-                  exc.Execute();
-              }
-
-              exc.stdinRedirectAux = nil;
-              exc.stdinRedirect    = nil;
-              if (exc.result) {
-                  DeleteObject (chain.result);
-                  chain.result = exc.result;
-                  exc.result = nil;
-              }
-          }
-      }
-    }  catch (int e) {
-      
-    }
-  
-
-    DeleteObject            (inArg);
-    DeleteObject            (inArgAux);
-    DeleteObject            (namespc);
-
-    if (pop_path) {
-      PopFilePath();
-    }
- }
 
 
 
@@ -4300,10 +4112,16 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         ExecuteCase38 (chain, false);
         break;
 
-    case 39:
-    case 62:
-    case 66:
-        ExecuteCase39 (chain);
+    case HY_HBL_COMMAND_EXECUTE_COMMANDS:
+        HandleExecuteCommandsCases(chain, false, false);
+        break;
+
+    case HY_HBL_COMMAND_EXECUTE_A_FILE:
+        HandleExecuteCommandsCases(chain, true, false);
+        break;
+
+    case HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY:
+        HandleExecuteCommandsCases(chain, true, true);
         break;
 
 
@@ -5529,85 +5347,6 @@ bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long bra
         simpleParameters<<oldFla;
     }
 
-    return true;
-}
-
-
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructMPIReceive (_String&source, _ExecutionList&target)
-// syntax: MPIReceive (can receive from node, received from node, receptacle for the string result);
-{
-    _List pieces;
-    ExtractConditions (source, blMPIReceive.sLength ,pieces,',');
-    if (pieces.lLength !=3 ) {
-        HandleApplicationError ("Expected: MPIReceive (can receive from node, received from node, receptacle for the string result).");
-        return false;
-    }
-
-    _ElementaryCommand * mpiRecv= makeNewCommand (45);
-    mpiRecv->addAndClean (target, &pieces, 0);
-    return true;
-}
-
-
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructExecuteCommands (_String&source, _ExecutionList&target) {
-
-    _List pieces;
-
-    char  execAFile = source.BeginsWith (blExecuteAFile)?1:(source.BeginsWith(blLoadFunctionLibrary)?2:0);
-    long  code = 39;
-
-    switch (execAFile) {
-      case 0:
-          ExtractConditions (source,blExecuteCommands.sLength,pieces,',');
-          break;
-
-      case 1:
-          ExtractConditions (source,blExecuteAFile.sLength,pieces,',');
-          code = 62;
-          break;
-
-      case 2:
-          ExtractConditions (source,blLoadFunctionLibrary.sLength,pieces,',');
-          code = 66;
-          break;
-    }
-
-    if (pieces.lLength < 1 || pieces.lLength > 3) {
-        HandleApplicationError ("Expected: ExecuteCommands (identifier, <compiled|(input redirect<,string prefix>)>) or ExecuteAFile (path name, <compiled|(input redirect<,string prefix>)> or LoadFunctionLibrary (path name, <compiled|(input redirect<,string prefix>)>)");
-        return false;
-    }
-
-    _ElementaryCommand * exc = new _ElementaryCommand (code);
-
-    exc->parameters<<pieces(0);
-
-    if (PeekFilePath()) {
-        exc->parameters && *PeekFilePath();
-    } else {
-        exc->parameters.AppendNewInstance(new _String);
-    }
-
-    if (pieces.lLength >1) {
-        if (*(_String*)pieces(1) == _String("compiled")) {
-            exc->simpleParameters << 1;
-        } else {
-          if (*(_String*)pieces(1) == _String("enclosing_namespace")) {
-            exc->parameters.Delete(1);
-            exc->parameters < new _String;
-          } else {
-            exc->parameters << pieces(1);
-            if (pieces.lLength > 2) {
-                exc->parameters << pieces(2);
-            }
-          }
-        }
-    }
-
-    exc->addAndClean (target);
     return true;
 }
 

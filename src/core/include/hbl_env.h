@@ -122,7 +122,7 @@ namespace hy_env {
      */
 
     extern const _String
-  
+          always_reload_libraries ,
           assertion_behavior,
           data_file_tree,
           data_file_tree_string,

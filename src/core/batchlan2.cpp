@@ -48,9 +48,6 @@
 
 #include      "bayesgraph.h"
 
-#ifndef __HYPHY_NO_SQLITE__
-#include "sqlite3.h"
-#endif
 
 
 using namespace hyphy_global_objects;
@@ -59,11 +56,7 @@ using namespace hy_global;
 //____________________________________________________________________________________
 // global variables
 
-_String     sqlOpen                 ("SQL_OPEN"),
-            sqlClose                ("SQL_CLOSE"),
-            sqlRowData              ("SQL_ROW_DATA"),
-            sqlColNames             ("SQL_COLUMN_NAMES"),
-            lastSetOfConstraints    ("LAST_SET_OF_CONSTRAINTS"),
+_String     lastSetOfConstraints    ("LAST_SET_OF_CONSTRAINTS"),
             isDynamicGraph          ("BGM_DYNAMIC"),
             treeNodeNameMapping     ("TREE_NODE_NAME_MAPPING");
 
@@ -78,8 +71,7 @@ extern      _String                 blDoSQL,
             blRequireVersion,
             blAssert;
 
-_SimpleList sqlDatabases,
-            _HY_HBLCommandHelperAux;
+_SimpleList _HY_HBLCommandHelperAux;
             
 _List        scfgList,
              scfgNamesList,
@@ -220,7 +212,38 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 -2,
                                                                 "ReplicateConstraint(<constraint pattern in terms of 'this1', 'this2',...>, <an argument to replace 'this*', for each 'thisN' in the pattern);"));
 
-    
+
+    lengthOptions.Clear();lengthOptions.Populate (3,1,1);
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_EXECUTE_COMMANDS,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ExecuteCommands(", HY_HBL_COMMAND_EXECUTE_COMMANDS,false),
+                                                                -1,
+                                                                "ExecuteCommands(<source code>, [optional <'compiled' | (input redirect , [optional <namespace>]) ])",
+                                                                ',',
+                                                                true,
+                                                                false,
+                                                                false,
+                                                                &lengthOptions));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_EXECUTE_A_FILE,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ExecuteAFile(", HY_HBL_COMMAND_EXECUTE_A_FILE,false),
+                                                                -1,
+                                                                "ExecuteAFile(<file path>, [optional <'compiled' | (input redirect , [optional <namespace>]) ])",
+                                                                ',',
+                                                                true,
+                                                                false,
+                                                                false,
+                                                                &lengthOptions));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("LoadFunctionLibrary(", HY_HBL_COMMAND_EXECUTE_A_FILE,false),
+                                                                -1,
+                                                                "LoadFunctionLibrary(<file path | library name>, [optional <'compiled' | (input redirect , [optional <namespace>]) ])",
+                                                                ',',
+                                                                true,
+                                                                false,
+                                                                false,
+                                                                &lengthOptions));
+
     lengthOptions.Clear();lengthOptions.Populate (3,5,1);
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_HARVEST_FREQUENCIES, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("HarvestFrequencies(", HY_HBL_COMMAND_HARVEST_FREQUENCIES,false),
@@ -308,8 +331,13 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 2, 
                                                                 "CovarianceMatrix (<receptacle>, <likelihood function/scfg/bgm>)",','));
 
-     
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL, 
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_DO_SQL,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("DoSQL(", HY_HBL_COMMAND_DO_SQL,false),
+                                                                3,
+                                                                "DoSQL (<dbID | SQL_OPEN | SQL_CLOSE>, <transaction string | file name>, <ID here | result here>)",','));
+
+  
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SelectTemplateModel(", HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL,false),
                                     1, 
                                     "SelectTemplateModel(<DataSetFilter>);"));
@@ -474,25 +502,6 @@ void         InsertStringListIntoAVL    (_AssociativeList* theList , _String con
     theList->MStore (&arrayKey,mxEntry,false);
 }
 
-
-
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructDoSQL (_String&source, _ExecutionList&target)
-// syntax: DoSQL (dbID,action string|file name,<callback ID>)
-{
-    _List pieces;
-    ExtractConditions (source,blDoSQL.sLength,pieces,',');
-    if (pieces.lLength!=3) {
-        HandleApplicationError (_String ("Expected syntax:")& blDoSQL &"(dbID|" & sqlOpen & '|' & sqlClose & ",transaction string|file name,callback ID for an SQL transaction|where to store DB numeric ID)");
-        return false;
-    }
-
-    _ElementaryCommand * dsql = new _ElementaryCommand (53);
-    dsql->addAndClean(target,&pieces,0);
-    return true;
-}
-
 //____________________________________________________________________________________
 
 bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _ExecutionList&target)
@@ -512,47 +521,6 @@ bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _Executio
 }
 
 
-//____________________________________________________________________________________
-
-int  _HYSQLCallBack (void* exL,int cc, char** rd, char** cn)
-{
-    _ExecutionList * exList = (_ExecutionList *)exL;
-
-    if (!terminate_execution)
-        if (exList && cc && exList->lLength) {
-            _List     rowData,
-                      columnNames;
-
-            for (long cnt = 0; cnt < cc; cnt++) {
-                if (rd[cnt]) {
-                    rowData.AppendNewInstance (new _String (rd[cnt]));
-                } else {
-                    rowData.AppendNewInstance (new _String);
-                }
-
-                if (cn[cnt]) {
-                    columnNames.AppendNewInstance (new _String (cn[cnt]));
-                } else {
-                    columnNames.AppendNewInstance (new _String);
-                }
-            }
-
-
-            _Matrix * rowDataM     = new _Matrix (rowData),
-                    * columnNamesM = new _Matrix (columnNames);
-
-            
-            _Variable* rdv = CheckReceptacle (&sqlRowData, blDoSQL,false),
-                       * cnv = CheckReceptacle (&sqlColNames, blDoSQL,false);
-
-            rdv->SetValue (rowDataM,false);
-            cnv->SetValue (columnNamesM,false);
-
-            exList->Execute();
-
-        }
-    return 0;
-}
 
 //____________________________________________________________________________________
 /*
@@ -776,88 +744,6 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
 }
 
 
-
-
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-#ifdef __HYPHY_NO_SQLITE__
-    _String errStr ("SQLite commands can not be used in a HyPhy version built with the __HYPHY_NO_SQLITE__ flag");
-    WarnError (errStr);
-#else
-
-    _String arg1  (*(_String*)parameters(0));
-
-    char  * errMsg = nil;
-    _String errStr;
-
-    if (arg1.Equal (&sqlOpen)) {
-        _Variable * dbVar = CheckReceptacle ((_String*)parameters(2), blDoSQL);
-
-        if (dbVar) {
-            _String arg2 (*(_String*)parameters(1));
-            arg2.ProcessFileName(true,true,(hyPointer)chain.nameSpacePrefix);
-            int errCode  = SQLITE_OK;
-            sqlite3 *aDB = nil;
-            errCode = sqlite3_open (arg2.sData,&aDB);
-            if (errCode == SQLITE_OK) {
-                errCode = sqlite3_exec(aDB, "SELECT COUNT(*) FROM sqlite_master", _HYSQLCallBack, nil, nil);
-            }
-            if (errCode != SQLITE_OK) {
-                HandleApplicationError (sqlite3_errmsg(aDB));
-                sqlite3_close(aDB);
-                return;
-            } else {
-                long f = sqlDatabases.Find (0);
-                if (f<0) {
-                    f = sqlDatabases.lLength;
-                    sqlDatabases << (long)aDB;
-                } else {
-                    sqlDatabases.lData[f] = (long)aDB;
-                }
-
-                sqlite3_busy_timeout (aDB, 5000);
-
-                dbVar->SetValue (new _Constant (f), false);
-            }
-        }
-    } else {
-        bool doClose =  arg1.Equal (&sqlClose);
-
-        long dbIdx = ProcessNumericArgument (doClose?(_String*)parameters(2):&arg1,chain.nameSpacePrefix);
-
-        if (dbIdx<0 || dbIdx >= sqlDatabases.lLength || sqlDatabases.lData[dbIdx] == 0) {
-            errStr = _String(dbIdx) & " is an invalid database index";
-        } else {
-            if (doClose) {
-                sqlite3_close ((sqlite3*)sqlDatabases.lData[dbIdx]);
-                sqlDatabases.lData[dbIdx] = 0;
-            } else {
-                _String arg3 (ProcessLiteralArgument((_String*)parameters(2),chain.nameSpacePrefix));
-
-                _ExecutionList sqlProcessor (arg3,chain.nameSpacePrefix?(chain.nameSpacePrefix->GetName()):nil);
-                if (!terminate_execution) {
-                    _String arg2 (ProcessLiteralArgument ((_String*)parameters(1),chain.nameSpacePrefix));
-
-                    if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbIdx], arg2.sData, _HYSQLCallBack, (hyPointer)&sqlProcessor, &errMsg) != SQLITE_OK) {
-                        HandleApplicationError (sqlite3_errmsg((sqlite3*)sqlDatabases.lData[dbIdx]));
-                        return;
-                    }
-                }
-            }
-        }
-
-    }
-
-    if (errStr.sLength) {
-         HandleApplicationError (errStr & " in call to DoSQL");
-    }
-
-#endif
-}
 
 //____________________________________________________________________________________
 
