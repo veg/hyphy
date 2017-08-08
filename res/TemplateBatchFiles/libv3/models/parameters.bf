@@ -92,15 +92,15 @@ function parameters.DeclareGlobalWithRanges(id, init, lb, ub) {
 		if (None != init) {
     		ExecuteCommands("global `id` = " + init);
     	} else {
-    		ExecuteCommands("global `id`; ");    	
+    		ExecuteCommands("global `id`; ");
     	}
-    	
+
     	if (None != lb) {
     		ExecuteCommands ("`id` :> " + lb);
-    	}	
+    	}
     	if (None != ub) {
     		ExecuteCommands ("`id` :< " + ub);
-    	}	
+    	}
     } else {
         if (Type(id) == "AssociativeList") {
             parameters.DeclareGlobalWithRanges.var_count = Abs(id);
@@ -131,16 +131,16 @@ function parameters.DeclareCategory.helper (dict, key, default) {
  * @param {Dict} def category definition components
  */
 function parameters.DeclareCategory (def) {
-	 
-	 
-	 
-	 ExecuteCommands ("category " + def['id'] + "= (" + 
-	 			  Join (",", 
-	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"}, 
+
+
+
+	 ExecuteCommands ("category " + def['id'] + "= (" +
+	 			  Join (",",
+	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"},
 	 			  						  "_value_",
 	 			  						  'parameters.DeclareCategory.helper(def["category parameters"], _value_, "")')
 	 			  		) + ");");
-	 
+
 }
 
 
@@ -428,7 +428,7 @@ function parameters.helper.copy_definitions(target, source) {
             target[parameters.helper.copy_definitions.key] * source[parameters.helper.copy_definitions.key];
         }
     }
-    
+
     if (utility.Has (source, terms.category, "AssociativeList")) {
     	utility.EnsureKey (target, terms.category);
     	(target[terms.category])[(source[terms.category])["id"]] = (source[terms.category])["description"];
@@ -485,9 +485,7 @@ lfunction parameters.helper.dump_matrix(matrix) {
  */
 lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
-    components = Abs(dict);
-
-    //result = {"branch lengths" : { "0" : {} } };
+    components = utility.Array1D(dict);
 
     if (type == "codon") {
         factor = 1;
@@ -498,14 +496,12 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
     result = {};
 
     for (i = 0; i < components; i += 1) {
-        //((result["branch lengths"])[0])[keys[i]] = {"MLE": factor * dict[keys[i]]};
         this_component = {};
         utility.ForEachPair((dict[i])[ ^ "terms.json.attribute.branch_length"], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {^'terms.json.MLE' : `&factor`*_branch_length_}");
         result[i] = this_component;
     }
 
-    return { ^ "terms.json.attribute.branch_length": result
-    };
+     return { ^ "terms.json.attribute.branch_length": result };
 }
 
 /**
@@ -552,8 +548,8 @@ lfunction parameters.ExportParameterDefinition (id) {
  * @param {Dict} model - model description
  * @param {String} tree id
  * @param {String} node id
- 
- * e.g. 
+
+ * e.g.
  * 		set alpha = Tree.Node.alpha
  * 		set beta  = Tree.Node.beta
  */
@@ -563,6 +559,6 @@ lfunction parameters.SetLocalModelParameters (model, tree, node) {
     utility.ForEach ((model["parameters"])[^'terms.local'], "_parameter_", '
     	^_parameter_ = ^(`&node_name` + _parameter_);
     ');
-    
+
 }
 

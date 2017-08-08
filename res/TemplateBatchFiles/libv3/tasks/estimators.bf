@@ -331,37 +331,40 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
             for (estimators.ApplyExistingEstimates.b = 0; estimators.ApplyExistingEstimates.b < Abs(estimators.ApplyExistingEstimates.map); estimators.ApplyExistingEstimates.b += 1) {
                 _branch_name = estimators.ApplyExistingEstimates.branch_names[estimators.ApplyExistingEstimates.b];
-                _existing_estimate = ((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name];
 
-               if (Type(_existing_estimate) == "AssociativeList") {
-                   _set_branch_length_to = (((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])["MLE"];
+                if ((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i] / _branch_name) {
+                    _existing_estimate = ((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name];
+
+                    if (Type(_existing_estimate) == "AssociativeList") {
+                       _set_branch_length_to = (((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])["MLE"];
 
 
-                    if (None != branch_length_conditions) {
-                        if (Abs(branch_length_conditions)) {
-                            _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
+                        if (None != branch_length_conditions) {
+                            if (Abs(branch_length_conditions)) {
+                                _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
 
-                            if (Type(_application_type) == "String") {
-                                _set_branch_length_to = {};
-                                _set_branch_length_to[terms.branch_length] = _existing_estimate["MLE"];
-                                _set_branch_length_to[terms.branch_length_scaler] = _application_type;
-                                estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers[_application_type] = 1;
+                                if (Type(_application_type) == "String") {
+                                    _set_branch_length_to = {};
+                                    _set_branch_length_to[terms.branch_length] = _existing_estimate["MLE"];
+                                    _set_branch_length_to[terms.branch_length_scaler] = _application_type;
+                                    estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers[_application_type] = 1;
+                                }
                             }
                         }
-                    }
 
 
-                    estimators.ApplyExistingEstimates.df_correction += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
-                } else {
-                	if (Type(_existing_estimate) != "Unknown") {
-                		warning.log ("Incorrect type for the initial values object of for branch '" + _branch_name + "' : " + _existing_estimate);
-                	}
-               }
+                        estimators.ApplyExistingEstimates.df_correction += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
+                    } else {
+                        if (Type(_existing_estimate) != "Unknown") {
+                            warning.log ("Incorrect type for the initial values object of for branch '" + _branch_name + "' : " + _existing_estimate);
+                        }
+                   }
+                }
             }
 
         } else {
         	if (Type((initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i]) != "Unknown") {
-        		warning.log ("Incorrect type for the initial values object for partition " + estimators.ApplyExistingEstimates.i 
+        		warning.log ("Incorrect type for the initial values object for partition " + estimators.ApplyExistingEstimates.i
         					+ ". " + (initial_values[terms.json.attribute.branch_length])[estimators.ApplyExistingEstimates.i]);
         	}
         }
@@ -407,6 +410,9 @@ function estimators.FitLF(data_filters_list, tree_list, model_map, initial_value
         estimators.FitLF.components[estimators.FitLF.i][0] = data_filters_list[estimators.FitLF.i];
         estimators.FitLF.components[estimators.FitLF.i][1] = tree_list[estimators.FitLF.i];
     }
+
+    console.log (data_filters_list);
+    console.log (tree_list);
 
     LikelihoodFunction estimators.FitLF.likelihoodFunction = (estimators.FitLF.components);
 
@@ -502,9 +508,9 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     }
 
     LikelihoodFunction likelihoodFunction = (lf_components);
-    
+
     //io.SpoolLF (&likelihoodFunction, "/Users/sergei/Desktop/lf", "FitSingleModel_Ext");
-    
+
 
     df = 0;
     if (Type(initial_values) == "AssociativeList") {

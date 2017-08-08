@@ -105,7 +105,6 @@ namespace meme {
     load_file ("meme");
 }
 
-meme.partition_count = Abs (meme.filter_specification);
 meme.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",meme.pvalue,0,1,FALSE);
 io.ReportProgressMessageMD('MEME',  'selector', 'Branches to include in the MEME analysis');
 

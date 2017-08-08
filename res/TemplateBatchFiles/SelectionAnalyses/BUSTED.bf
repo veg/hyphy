@@ -1,27 +1,17 @@
 RequireVersion ("2.31");
 
 
-
-LoadFunctionLibrary("GrabBag");
-LoadFunctionLibrary("CF3x4");
-LoadFunctionLibrary("TreeTools");
-
-
 // namespace 'utility' for convenience functions
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
-
-// namespace 'io' for interactive/datamonkey i/o functions
 LoadFunctionLibrary("libv3/IOFunctions.bf");
-
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
-
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
-
 LoadFunctionLibrary("libv3/models/codon.bf");
-
 LoadFunctionLibrary("libv3/tasks/trees.bf");
-
 LoadFunctionLibrary("libv3/tasks/genetic_code.bf");
+LoadFunctionLibrary("modules/io_functions.ibf");
+LoadFunctionLibrary("modules/selection_lib.ibf");
+LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 
 
 io.DisplayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistical test of episodic diversification)
@@ -38,32 +28,96 @@ io.DisplayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistica
 
 
 
-/*------------------------------------------------------------------------------
-    BranchSiteTemplate Defines
+utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
-    BuildCodonFrequencies (obsF);
-    PopulateModelMatrix (ModelMatrixName&, EFV, synrateP, globalP, nonsynRateP);
-
-------------------------------------------------------------------------------*/
-
-
-skipCodeSelectionStep = TRUE;
-LoadFunctionLibrary ("chooseGeneticCode"); 
-
-LoadFunctionLibrary("BranchSiteTemplate");
-
-_BUSTED_timers  = {3,1};
+busted.timers  = {3,1};
 busted.taskTimerStart (2);
 
-
-
-
-_BUSTED_json    = {"fits" : {},
-                  "timers" : {},
-                  "profiles" : {},
-                  "evidence ratios": {}
+busted.json    = { terms.json.fits: {},
+                   terms.json.timers: {},
+                   "profiles" : {},
+                   "evidence ratios": {}
                   };
 
+namespace busted {
+    LoadFunctionLibrary ("modules/shared-load-file.bf");
+    load_file ("busted");
+}
+
+io.ReportProgressMessageMD('BUSTED',  'selector', 'Branches to test for selection in the BUSTED analysis');
+
+utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
+    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.json.attribute.test');
+     io.ReportProgressMessageMD('BUSTED',  'selector', 'Selected ' + Abs(_selection_) + ' branches to test in the BUSTED analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
+
+// check to see if there are any background branches
+
+busted.has_background = FALSE;
+
+namespace busted {
+    doGTR ("busted");
+}
+
+busted.scaler_prefix = "busted.scaler";
+
+estimators.fixSubsetOfEstimates(busted.gtr_results, busted.gtr_results["global"]);
+
+namespace busted {
+    doPartitionedMG ("busted", FALSE);
+}
+
+io.ReportProgressMessageMD ("BUSTED", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
+
+busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, busted.trees, busted.codon_data_info ["code"], {
+    "model-type": terms.global,
+    "partitioned-omega": busted.selected_branches,
+    "retain-lf-object": TRUE
+}, busted.partitioned_mg_results);
+
+
+io.ReportProgressMessageMD("BUSTED", "codon-refit", "* Log(L) = " + Format(busted.final_partitioned_mg_results["LogL"],8,2));
+busted.global_dnds = selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio);
+utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+
+busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
+        "busted.test", {
+            "0": parameters.Quote(terms.global),
+            "1": busted.codon_data_info["code"],
+            "2": parameters.Quote (3) // the number of rate classes
+        },
+        busted.filter_names,
+        None);
+
+busted.background.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
+        "busted.background", {
+            "0": parameters.Quote(terms.global),
+            "1": busted.codon_data_info["code"],
+            "2": parameters.Quote (3) // the number of rate classes
+        },
+        busted.filter_names,
+        None);
+
+// set up parameter constraints
+
+for (busted.i = 1; busted.i < 4; busted.i += 1) {
+    parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.i)), terms.range01);
+    parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.i)), terms.range01);
+}
+
+busted.test.omega3  = model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,3));
+parameters.SetRange (busted.test.omega3, terms.range_gte1);
+
+busted.model_map = {};
+
+for (busted.partition_index = 0; busted.partition_index < busted.partition_count; busted.partition_index += 1) {
+    busted.model_map + { "busted.test" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ == terms.json.attribute.test'),
+					               "busted.background" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ != terms.json.attribute.test')};
+
+}
+
+busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results);
+
+return 0;
 
 codon_data_info = alignments.PromptForGeneticCodeAndAlignment ("codon_data", "codon_filter");
 codon_data_info["json"] = codon_data_info["file"] + ".BUSTED.json";
@@ -95,7 +149,7 @@ tree_definition   = utility.Map (partitions_and_trees, "_partition_", '_partitio
 
 
 busted.selected_branches = busted.io.selectBranchesToTest (tree_definition[0]);
-_BUSTED_json ["test set"] = Join (",",Rows(busted.selected_branches));
+busted.json ["test set"] = Join (",",Rows(busted.selected_branches));
 
 io.ReportProgressMessageMD ("BUSTED", "Data", "Selected " + Abs (busted.selected_branches) + " branches as the test (foreground) set: " + Join (",", Rows (busted.selected_branches)));
 
@@ -112,7 +166,7 @@ model.ApplyModelToTree ("busted.tree", tree_definition[0], "", {"DEFAULT" : (bus
 busted.taskTimerStart (0);
 LikelihoodFunction busted.LF = (codon_filter, busted.tree);
 
-_BUSTED_json["background"] =  busted.hasBackground  ("busted.tree");
+busted.json["background"] =  busted.hasBackground  ("busted.tree");
 
 global busted.T_scaler = 4;
 BUSTED.proportional_constraint = "busted.T_scaler";
@@ -125,9 +179,9 @@ estimators.ApplyExistingEstimates ("busted.LF", BUSTED.model_specification, bust
 
 io.ReportProgressMessageMD ("BUSTED", "BUSTED-alt", "Fitting the unconstrained branch-site model");
 
-USE_LAST_RESULTS = 1;
-OPTIMIZATION_PRECISION = 0.1;
-ASSUME_REVERSIBLE_MODELS = 1;
+utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
+utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.1);
+utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 
 busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
 
@@ -135,7 +189,7 @@ Optimize (busted.MLE_HA, busted.LF);
 
 parameters.UnconstrainParameterSet ("busted.LF", {{terms.lf.local.constrained}});
 
-OPTIMIZATION_PRECISION = 0.001;
+utility.SetEnvVariable ("USE_LAST_RESULTS", 0.001);
 Optimize (busted.MLE_HA, busted.LF);
 io.SpoolLF ("busted.LF", codon_data_info["file"], None);
 busted_positive_class = busted.checkForPS (busted.model_definitions);
@@ -151,37 +205,37 @@ busted.renderString = PostOrderAVL2StringDistances (busted.tavl, busted.bls);
 UseModel (USE_NO_MODEL);
 Tree busted.T = busted.renderString;
 
-busted.json_store_lf                (_BUSTED_json, "Unconstrained model",
+busted.json_store_lf                (busted.json, "Unconstrained model",
         busted.MLE_HA[1][0], busted.MLE_HA[1][1]+9,
         busted.getIC (busted.MLE_HA[1][0], busted.MLE_HA[1][1]+9, busted.sample_size) ,
-        _BUSTED_timers[0],
+        busted.timers[0],
         +BranchLength (busted.T,-1),
         Format (busted.T, 1,1),
         busted.model_definitions,
-        _BUSTED_json["background"]
+        busted.json["background"]
         );
 
 
 busted.profiles = {};
-(_BUSTED_json ["profiles"])["unconstrained"] = busted.computeSiteLikelihoods ("busted.LF");
+(busted.json ["profiles"])["unconstrained"] = busted.computeSiteLikelihoods ("busted.LF");
 
 
 if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for positive selection under the unconstrained model, skipping constrained model fitting");
-    _BUSTED_json ["test results"] = busted.runLRT (0, 0);
+    busted.json ["test results"] = busted.runLRT (0, 0);
 } else {
     busted.taskTimerStart (1);
 
     io.ReportProgressMessageMD ("BUSTED",  "BUSTED-null", "Fitting the branch-site model that disallows omega > 1 among foreground branches");
     busted.constrainTheModel (busted.model_definitions);
-    (_BUSTED_json ["profiles"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
+    (busted.json ["profiles"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
     Optimize (busted.MLE_H0, busted.LF);
     io.SpoolLF ("busted.LF", codon_data_info["file"], "null");
-    (_BUSTED_json ["profiles"])["optimized null"] = busted.computeSiteLikelihoods ("busted.LF");;
+    (busted.json ["profiles"])["optimized null"] = busted.computeSiteLikelihoods ("busted.LF");;
     io.ReportProgressMessageMD ("BUSTED", "BUSTED-null", "Log(L) = " + busted.MLE_H0[1][0]);
     busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);
 
-    _BUSTED_json ["test results"] = busted.LRT;
+    busted.json ["test results"] = busted.LRT;
 
     io.ReportProgressMessageMD ("BUSTED", "BUSTED-results", "Likelihood ratio test for episodic positive selection, p = " + busted.LRT["p"]);
      busted.taskTimerStop (1);
@@ -192,32 +246,32 @@ if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8
     UseModel (USE_NO_MODEL);
     Tree busted.T = busted.renderString;
 
-    busted.json_store_lf                (_BUSTED_json,
+    busted.json_store_lf                (busted.json,
                                         "Constrained model", busted.MLE_H0[1][0],
                                         busted.MLE_H0[1][1]+9,
                                         busted.getIC (busted.MLE_H0[1][0], busted.MLE_H0[1][1]+9, busted.sample_size) ,
-                                        _BUSTED_timers[1],
+                                        busted.timers[1],
                                          +BranchLength (busted.T,-1),
                                         Format (busted.T, 1,1),
                                         busted.model_definitions,
-                                        _BUSTED_json["background"]
+                                        busted.json["background"]
                                        );
 
-    (_BUSTED_json ["evidence ratios"])["constrained"] = busted.evidenceRatios ( (_BUSTED_json ["profiles"])["unconstrained"],  (_BUSTED_json ["profiles"])["constrained"]);
-    (_BUSTED_json ["evidence ratios"])["optimized null"] = busted.evidenceRatios ( (_BUSTED_json ["profiles"])["unconstrained"],  (_BUSTED_json ["profiles"])["optimized null"]);
+    (busted.json ["evidence ratios"])["constrained"] = busted.evidenceRatios ( (busted.json ["profiles"])["unconstrained"],  (busted.json ["profiles"])["constrained"]);
+    (busted.json ["evidence ratios"])["optimized null"] = busted.evidenceRatios ( (busted.json ["profiles"])["unconstrained"],  (busted.json ["profiles"])["optimized null"]);
 }
 
 busted.taskTimerStop (2);
 
-(_BUSTED_json ["timers"])["overall"] = _BUSTED_timers[2];
-(_BUSTED_json ["timers"])["unconstrained"] = _BUSTED_timers[0];
-(_BUSTED_json ["timers"])["constrained"] = _BUSTED_timers[1];
+(busted.json ["timers"])["overall"] = busted.timers[2];
+(busted.json ["timers"])["unconstrained"] = busted.timers[0];
+(busted.json ["timers"])["constrained"] = busted.timers[1];
 
 USE_JSON_FOR_MATRIX = 1;
-fprintf (codon_data_info["json"], CLEAR_FILE, _BUSTED_json);
+fprintf (codon_data_info["json"], CLEAR_FILE, busted.json);
 USE_JSON_FOR_MATRIX = 0;
 
-return _BUSTED_json;
+return busted.json;
 
 //------------------------------------------------------------------------------
 // HELPER FUNCTIONS FROM HTHIS POINT ON
@@ -508,11 +562,11 @@ function busted.evidenceRatios (ha, h0) {
 //------------------------------------------------------------------------------------------------------------------------
 
 function busted.taskTimerStart (index) {
-    _BUSTED_timers[index] = Time(1);
+    busted.timers[index] = Time(1);
 }
 
 function busted.taskTimerStop (index) {
-    _BUSTED_timers[index] = Time(1) - _BUSTED_timers[index];
+    busted.timers[index] = Time(1) - busted.timers[index];
 
 }
 
