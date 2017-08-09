@@ -432,7 +432,7 @@ function parameters.helper.copy_definitions(target, source) {
     
     if (utility.Has (source, terms.category, "AssociativeList")) {
     	utility.EnsureKey (target, terms.category);
-    	(target[terms.category])[(source[terms.category])["id"]] = (source[terms.category])["description"];
+    	(target[terms.category])[(source[terms.category])[terms.id]] = (source[terms.category])[terms.description];
     }
 }
 

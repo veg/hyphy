@@ -40,7 +40,7 @@ function protein_gtr.save_options() {
  */
 lfunction models.protein.REV.ModelDescription.withGamma (options) {
 	def = models.protein.REV.ModelDescription (options);
-	def [utility.getGlobalValue("terms.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
+	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
 	return def;
 };
 /**
@@ -88,7 +88,7 @@ lfunction protein_gtr.plusF.ModelDescription(type) {
 
 lfunction protein_gtr.plusF.ModelDescription.withGamma (options) {
 	def = protein_gtr.plusF.ModelDescription (options);
-	def [utility.getGlobalValue("terms.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
+	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
 	return def;
 };
 

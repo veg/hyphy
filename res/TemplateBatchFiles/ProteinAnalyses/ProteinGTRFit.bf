@@ -25,9 +25,9 @@ io.DisplayAnalysisBanner({
 });
 
 
-protein_gtr.filename_to_index = "filename-to-index";
-protein_gtr.logl = "LogL";
-protein_gtr.phase = "phase";
+protein_gtr.filename_to_index = terms.data.filename_to_index;
+protein_gtr.logl = terms.fit.log_likelihood;
+protein_gtr.phase = terms.model.phase;
 
 
 /********************************************** MENU PROMPTS ********************************************************/

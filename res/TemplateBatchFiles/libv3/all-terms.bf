@@ -358,7 +358,7 @@ namespace terms{
 
 
     /* Terms accompanying rate_variation.bf rate variation */
-    //rate_variation = "rate_variation"; //Here for reference, but defined above.
+    //Note that rate_variation itself is a **model** term
     namespace rate_variation {
         distribution  = "distribution";
         options       = "options";

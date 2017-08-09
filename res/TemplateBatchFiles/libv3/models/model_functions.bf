@@ -158,7 +158,7 @@ lfunction model.generic.get_a_parameter (model_spec, tag, type) {
 
 lfunction model.generic.get_rate_variation (model_spec) {
 
-	__rate_variation = model_spec[utility.getGlobalValue("terms.rate_variation")];
+	__rate_variation = model_spec[utility.getGlobalValue("terms.model.rate_variation")];
 
 	if (Type (__rate_variation) == "AssociativeList") {
 		assert (utility.Has (__rate_variation, utility.getGlobalValue("terms.rate_variation.distribution"), "String"), "Missing required key `distribution` in the rate variation component definition");
@@ -186,8 +186,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
     // Basic model definition
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
-	
-	
+	    	
 	// Add data filter information to model description
 	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
 
@@ -226,7 +225,6 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
        Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
-
 
 	return model.generic.DefineModel.model;
 }

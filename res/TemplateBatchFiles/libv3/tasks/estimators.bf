@@ -501,7 +501,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
             "0": "terms.global" 
         }, filters, None);
 
-
+    
     for (i = 0; i < components; i += 1) {
 
         lf_components[2 * i + 1] = "tree_" + i;

@@ -1,5 +1,7 @@
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
+
 
 GLOBAL_FPRINTF_REDIRECT = "/dev/null";
 LoadFunctionLibrary ("SelectionAnalyses/SLAC.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "All", "3": "100", "4": "0.1"});
@@ -10,12 +12,14 @@ margin_of_error = .05;
 
 function check_keys() {
     // Ensure that all top-level keys exists
-    assert(utility.KeyExists(slac.json, "fits"), "fits not found");
-    assert(utility.KeyExists(slac.json, "timers"), "timers not found");
-    assert(utility.KeyExists(slac.json, "trees"), "trees not found");
-    assert(utility.KeyExists(slac.json, "partitions"), "partitions not found");
-    assert(utility.KeyExists(slac.json, "branch attributes"), "branch attributes not found");
-    assert(utility.KeyExists(slac.json, "MLE"), "MLE not found");
+    assert(utility.KeyExists(slac.json, terms.json.fits), "fits not found");
+    assert(utility.KeyExists(slac.json, terms.json.timers), "timers not found");
+    assert(utility.KeyExists(slac.json, terms.json.input), "input not found");
+    assert(utility.KeyExists(slac.json, terms.json.analysis), "analysis not found");
+    assert(utility.KeyExists(slac.json, terms.json.tested), "tested not found");
+    assert(utility.KeyExists(slac.json, terms.json.partitions), "partitions not found");
+    assert(utility.KeyExists(slac.json, terms.json.branch_attributes), "branch attributes not found");
+    assert(utility.KeyExists(slac.json, terms.json.MLE), "MLE not found");
     assert(utility.KeyExists(slac.json, "sample-median"), "sample-median not found");
     assert(utility.KeyExists(slac.json, "sample-2.5"), "sample-2.5 not found");
     assert(utility.KeyExists(slac.json, "sample-97.5"), "sample-97.5 not found");
@@ -24,26 +28,27 @@ function check_keys() {
 
 // Check Global MG94xREV results
 function check_global_mg94_results() {
-    mg94 = (slac.json["fits"])["Global MG94xREV"];
+    mg94 = (slac.json[terms.json.fits])["Global MG94xREV"];
     expected_loglikelihood = -3467.072352344857;
-    assert(Abs(mg94["log likelihood"] - expected_loglikelihood) <= margin_of_error, "Log likelihood is substantially different expected");
-    assert(mg94["parameters"] == 31, "number parameters not 31");
+    assert(Abs(mg94[terms.json.log_likelihood] - expected_loglikelihood) <= margin_of_error, "Log likelihood is substantially different expected");
+    assert(mg94[terms.json.parameters] == 31, "number parameters not 31");
 
     //TODO: Make dn/ds ratio a friendlier key
-    dnds = (mg94["rate distributions"])["non-synonymous/synonymous rate ratio for *test*"];
+    dnds = (mg94[terms.json.rate_distributions])["non-synonymous/synonymous rate ratio for *test*"];
     expected_dns = 1.00901487446916;
     assert(Abs(dnds[0] - expected_dns) <= margin_of_error, "dN/dS is substantially different expected");
 }
 
-
+// TODO: following check needs to be updated to reflect new JSON structure
 // Trees
+/*
 function check_tree_results() {
-    trees = slac.json["trees"];
+    trees = slac.json[terms.json.trees];
     // ensure tested and newick exists
-    assert(utility.KeyExists(trees, "newick"), "newick not found");
+    assert(utility.KeyExists(trees, terms.trees.newick), "newick not found");
     assert(utility.KeyExists(trees, "tested"), "tested not found");
 }
-
+*/
 // Branch Attributes
 // Ensure each node has attributes only specified in attributes
 function node_assertion(node, attribute_keys) {
@@ -56,9 +61,9 @@ function node_assertion(node, attribute_keys) {
 
 function check_branch_attributes() {
 
-    branch_attributes = (slac.json["branch attributes"])["attributes"];
+    branch_attributes = (slac.json[terms.json.branch_attributes])[terms.json.attribute];
     attribute_keys = utility.Keys(branch_attributes);
-    branch_nodes = (slac.json["branch attributes"])["0"];
+    branch_nodes = (slac.json[terms.json.branch_attributes])["0"];
 
     utility.ForEachPair(branch_nodes, "_key_", "_node_", "node_assertion(_node_,attribute_keys);");
 
@@ -69,7 +74,7 @@ function check_branch_attributes() {
     assert(Abs(expected_baboon_length - actual_baboon_length) <= margin_of_error,
     "wrong baboon branch length");
 
-    baboon_substitution_count = math.Sum((branch_nodes["BABOON"])["synonymous substitution count"]);
+    baboon_substitution_count = math.Sum((branch_nodes["BABOON"])[terms.synonymous_sub_count]);
     assert(baboon_substitution_count == 1, "unexpected number of substitutions in BABOON");
 
 }
@@ -78,7 +83,7 @@ function check_branch_attributes() {
 // file is currently not supported
 function check_mle_results() {
 
-    mle = (((slac.json["MLE"])["content"])["0"]);
+    mle = (((slac.json[terms.json.MLE])[terms.json.content])["0"]);
     mle_sites = mle["by-site"];
     mle_branches = mle["by-branch"];
 

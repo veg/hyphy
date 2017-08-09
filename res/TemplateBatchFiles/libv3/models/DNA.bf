@@ -41,7 +41,6 @@ function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
     //TODO
 		__rp = Call (__rate_variation[terms.rate_variation.distribution], __rate_variation[terms.rate_variation.options], namespace);
 		__rate_variation [terms.id] = (__rp[terms.category])[terms.id];
-				
 		parameters.DeclareCategory   (__rp[terms.category]);
         parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 	} 

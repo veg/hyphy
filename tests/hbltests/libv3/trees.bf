@@ -1,4 +1,4 @@
-LoadFunctionLibrary("libv3/terms-json.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
@@ -12,13 +12,13 @@ function test_match_partitions () {
     hky85_nucdata_info = alignments.ReadNucleotideAlignment(file_name, "hky85.nuc_data", "hky85.nuc_filter");
     nuc_data_default = { "0" : "hky85.nuc_filter"};
 
-    hky85.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions(hky85_nucdata_info[terms.json.partitions], hky85.name_mapping);
+    hky85.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions(hky85_nucdata_info[terms.data.partitions], hky85.name_mapping);
 
     tree =  hky85.partitions_and_trees["0"];
 
-    assert(utility.KeyExists(tree, "name"), "names key not found");
-    assert(utility.KeyExists(tree, "filter-string"), "filter-string key not found");
-    assert(utility.KeyExists(tree, "tree"), "tree key not found");
+    assert(utility.KeyExists(tree, terms.data.name), "names key not found");
+    assert(utility.KeyExists(tree, terms.data.filter_string), "filter-string key not found");
+    assert(utility.KeyExists(tree, terms.data.tree), "tree key not found");
 
 }
 
@@ -40,7 +40,7 @@ function test_load_annotated_topology() {
     assert(utility.KeyExists(tree, terms.trees.newick), "newick string key not found");
     assert(utility.KeyExists(tree, terms.trees.newick_with_lengths), "newick with lengths key not found");
     assert(utility.KeyExists(tree, terms.trees.newick_annotated), "newick annotated key not found");
-    assert(utility.KeyExists(tree, terms.trees.branch_lengths), "branch lengths key not found");
+    assert(utility.KeyExists(tree, terms.branch_length), "branch lengths key not found");
     assert(utility.KeyExists(tree, terms.trees.model_map), "model map key not found");
     assert(utility.KeyExists(tree, terms.trees.partitioned),"partitioned key not found");
     assert(utility.KeyExists(tree, terms.trees.model_list), "model_list key not found");
