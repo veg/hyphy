@@ -3,6 +3,8 @@ RequireVersion ("2.31");
 
 //LF_SMOOTHING_SCALER         = 0.1;
 
+LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
+
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("CF3x4");
 LoadFunctionLibrary("TreeTools");
