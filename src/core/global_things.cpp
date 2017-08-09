@@ -748,7 +748,7 @@ namespace hy_global {
       }
     }
     
-    catch (_String errmsg) {
+    catch (_String const & errmsg) {
       if (caller) {
         caller->ReportAnExecutionError(errMsg);
       } else {

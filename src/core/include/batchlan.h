@@ -219,7 +219,6 @@ public:
     void      ExecuteCase32  (_ExecutionList&); // list selection handler
     void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
-    void      ExecuteCase39  (_ExecutionList&); // Execute Commands
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
@@ -254,6 +253,8 @@ public:
     bool      HandleFindRootOrIntegrate             (_ExecutionList&, bool do_integrate = false);
     bool      HandleMPISend                         (_ExecutionList&);
     bool      HandleMPIReceive                      (_ExecutionList&);
+    bool      HandleExecuteCommandsCases            (_ExecutionList&, bool do_load_from_file = false, bool do_load_library = false);
+    bool      HandleDoSQL                           (_ExecutionList&);
   
     long      get_code                              (void) const { return code; };
     unsigned  long parameter_count                  (void) const { return parameters.countitems();}
@@ -308,11 +309,6 @@ public:
     static  bool      ConstructDataSet      (_String&, _ExecutionList&);
     // construct a dataset from the string
 
-    static  bool      ConstructExport       (_String&, _ExecutionList&);
-    // construct a matrix export command
-
-    static  bool      ConstructGetString    (_String&, _ExecutionList&);
-    // construct a matrix import command
 
     static  bool      ConstructDataSetFilter(_String&, _ExecutionList&);
     // construct a dataset filter from the string
@@ -337,9 +333,6 @@ public:
     static  bool      ConstructReturn       (_String&, _ExecutionList&);
     // construct a fprintf command
 
-    static  bool      ConstructSetParameter (_String&, _ExecutionList&);
-    // construct a set parameter clause
-
     static  bool      ConstructCategory     (_String&, _ExecutionList&);
     // construct a category variable
 
@@ -348,11 +341,7 @@ public:
 
     static  bool      ConstructModel        (_String&, _ExecutionList&);
 
-    static  bool      ConstructMPIReceive   (_String&, _ExecutionList&);
-
     static  bool      ConstructStateCounter (_String&, _ExecutionList&);
-
-    static  bool      ConstructDoSQL        (_String&, _ExecutionList&);
 
     static  bool      ConstructGetNeutralNull
     (_String&, _ExecutionList&);

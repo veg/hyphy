@@ -50,6 +50,11 @@
 #include      "global_things.h"
 #include      "hy_string_buffer.h"
 
+
+#ifndef __HYPHY_NO_SQLITE__
+  #include "sqlite3.h"
+#endif
+
 using namespace hy_global;
 using namespace hyphy_global_objects;
 
@@ -2111,6 +2116,309 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
 //____________________________________________________________________________________
 
+bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current_program, bool do_load_from_file, bool do_load_library) {
+  current_program.advance ();
+  _String * source_code = nil;
+  bool    pop_path = false;
+  
+  auto cleanup = [&] () -> void {
+    if (pop_path) {
+      PopFilePath();
+    }
+    DeleteObject(source_code);
+  };
+  
+  try {
+    bool has_redirected_input = false;
+
+    _List      _aux_argument_list;
+    _AVLListXL argument_list (&_aux_argument_list);
+ 
+    
+    if (do_load_from_file) {
+      _String file_path = _ProcessALiteralArgument(*GetIthParameter(0UL), current_program),
+              original_path (file_path);
+      
+      FILE * source_file = nil;
+      
+      if (do_load_library) {
+        bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound,
+        reload          = hy_env::EnvVariableTrue(hy_env::always_reload_libraries);
+        
+        for (unsigned long p = 0; !source_file && p < _hy_standard_library_paths.countitems(); p++) {
+          for (unsigned long e = 0; !source_file && e < _hy_standard_library_extensions.countitems(); e++) {
+            _String try_path = *((_String*)_hy_standard_library_paths(p)) & file_path & *((_String*)_hy_standard_library_extensions(e));
+            
+            
+            ProcessFileName (try_path, false, false, (hyPointer)current_program.nameSpacePrefix);
+            
+            if (loadedLibraryPaths.Find(&try_path) >= 0 && parameter_count() == 2UL && !reload) {
+              ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & try_path);
+              return true;
+            }
+            if ((source_file = doFileOpen (try_path.get_str (), "rb"))) {
+              file_path = try_path;
+              break;
+            }
+            if (has_extension) {
+              break;
+            }
+          }
+        }
+        
+        if (source_file == nil) {
+          ProcessFileName (file_path, false,false,(hyPointer)current_program.nameSpacePrefix);
+          
+          if (loadedLibraryPaths.Find(&file_path) >= 0 && parameter_count() == 2UL && !reload) {
+            ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & file_path);
+            return true;
+          }
+          
+          if ((source_file = doFileOpen (file_path.get_str (), "rb")) == nil) {
+            throw (_String("Could not read command file from '") &
+                   original_path & "' (expanded to '" & file_path & "')");
+            return;
+          }
+        }
+        
+        if (do_load_from_file && source_file) {
+          ReportWarning (_String("Loaded ") & original_path.Enquote() & " from " & file_path.Enquote());
+          loadedLibraryPaths.Insert (new _String (file_path),0,false,true);
+        }
+        
+        source_code = new _String (source_file);
+        
+        if (fclose       (source_file) ) { // failed to fclose
+          DeleteObject (source_code);
+          throw (_String("Internal error: failed in a call to fclose ") & file_path.Enquote());
+        }
+        pop_path = true;
+        PushFilePath (file_path);
+        
+      }
+    } else {
+      source_code = new _String (_ProcessALiteralArgument(*GetIthParameter(0UL), current_program));
+    }
+    
+    if (!source_code || source_code->empty()) {
+      throw ("Empty/missing source code string");
+    }
+    
+    if (!do_load_from_file && GetIthParameter(1UL)->nonempty()) {
+      pop_path = true;
+      PushFilePath (*GetIthParameter(1UL), false, false);
+    }
+    
+    _String * use_this_namespace = nil;
+    
+    if (parameter_count() >= 3UL) { // stdin redirect (and/or name space prefix)
+      _AssociativeList * input_arguments = nil;
+      try {
+        input_arguments =  (_AssociativeList *)_ProcessAnArgumentByType(*GetIthParameter(2UL), ASSOCIATIVE_LIST, current_program);
+      } catch (const _String& err) {
+        if (parameter_count() == 3UL) {
+          throw (err);
+        }
+      }
+      
+     
+      if (input_arguments) {
+
+        has_redirected_input = true;
+        
+        _List        *keys = input_arguments->GetKeys();
+        keys->ForEach ([&] (BaseRef item) -> void {
+          _String * key = (_String*) item;
+          if (key) {
+            _FString * payload = (_FString *)input_arguments->GetByKey (*key, STRING);
+            if (!payload) {
+              DeleteObject (keys);
+              throw ((_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & key->Enquote()));
+            }
+            argument_list.Insert (new _String (*key), (long)new _String (payload->get_str()), false);
+          }
+        });
+        
+        DeleteObject (keys);
+        
+
+        if (parameter_count() > 3UL) {
+          _String const namespace_for_code = _ProcessALiteralArgument (*GetIthParameter(3UL),current_program);
+          if (namespace_for_code.nonempty()) {
+            if (!namespace_for_code.IsValidIdentifier(fIDAllowCompound)) {
+              throw (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & GetIthParameter(3UL)->Enquote());
+            }
+            use_this_namespace = new _String (namespace_for_code);
+          }
+        }
+      }
+    }
+
+    if (parameter_count () < 4UL && current_program.nameSpacePrefix) {
+      use_this_namespace = new _String (*current_program.nameSpacePrefix->GetName());
+    }
+    
+    if (source_code->BeginsWith ("#NEXUS")) {
+      ReadDataSetFile (nil,1,source_code,nil,use_this_namespace);
+    } else {
+      bool result = false;
+      
+      _ExecutionList code (*source_code, use_this_namespace, false, &result);
+      
+      if (!result) {
+        throw ("Encountered an error while parsing HBL");
+      } else {
+        
+        code.stdinRedirectAux = has_redirected_input ? &_aux_argument_list : current_program.stdinRedirectAux;
+        code.stdinRedirect    = has_redirected_input? & argument_list :current_program.stdinRedirect;
+        
+        if (!simpleParameters.empty() && code.TryToMakeSimple()) {
+          ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)code.toStr()) );
+          code.ExecuteSimple ();
+        } else {
+          code.Execute();
+        }
+        
+        code.stdinRedirectAux = nil;
+        code.stdinRedirect    = nil;
+        
+        if (code.result) {
+          DeleteObject (current_program.result);
+          current_program.result = code.result;
+          code.result = nil;
+        }
+      }
+    }
+  } catch (const _String& error) {
+    cleanup ();
+    return  _DefaultExceptionHandler (nil, error, current_program);
+  }
+    
+  cleanup ();
+  return true;
+
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
+  
+  static _SimpleList  sql_databases;
+
+  static const _String kSQLOpen                 ("SQL_OPEN"),
+                       kSQLClose                ("SQL_CLOSE");
+  
+  static auto sql_handler = [] (void* exL,int cc, char** rd, char** cn) -> int
+    {
+      static const _String  kSQLRowData              ("SQL_ROW_DATA"),
+                            kSQLColumnNames          ("SQL_COLUMN_NAMES");
+      
+      _ExecutionList * caller = (_ExecutionList *)caller;
+      
+      if (!terminate_execution)
+        if (caller && cc && !caller->empty()) {
+          _List     row_data,
+                    column_names;
+          
+          for (long cnt = 0; cnt < cc; cnt++) {
+            if (rd[cnt]) {
+              row_data.AppendNewInstance (new _String (rd[cnt]));
+            } else {
+              row_data.AppendNewInstance (new _String);
+            }
+            
+            if (cn[cnt]) {
+              column_names.AppendNewInstance (new _String (cn[cnt]));
+            } else {
+              column_names.AppendNewInstance (new _String);
+            }
+          }
+          
+          CheckReceptacleCommandIDException (&kSQLRowData,HY_HBL_COMMAND_DO_SQL,false)->SetValue (new _Matrix (row_data), false);
+          CheckReceptacleCommandIDException (&kSQLColumnNames, HY_HBL_COMMAND_DO_SQL,false)->SetValue (new _Matrix (column_names), false);
+          
+          caller->Execute();
+          
+        }
+       return 0;
+    };
+
+  
+  _Variable * receptacle = nil;
+  
+  current_program.advance ();
+  
+  try {
+#ifdef __HYPHY_NO_SQLITE__
+    throw ("SQLite commands can not be used in a HyPhy version built with the __HYPHY_NO_SQLITE__ flag");
+#else
+    receptacle = _ValidateStorageVariable (current_program, 2UL);
+    
+    if (*GetIthParameter(0UL) == kSQLOpen) { // open a DB from file path
+      _String file_name = _ProcessALiteralArgument (*GetIthParameter(1UL), current_program);
+      if (!ProcessFileName(file_name, true, true, (hyPointer)current_program.nameSpacePrefix,false,&current_program)) {
+        return false;
+      }
+      
+      sqlite3 *db = nil;
+      int err_code = sqlite3_open (file_name.get_str(),&db);
+      if (err_code == SQLITE_OK) {
+        err_code = sqlite3_exec(db, "SELECT COUNT(*) FROM sqlite_master", sql_handler, nil, nil);
+      }
+      
+      if (err_code != SQLITE_OK) {
+        _String err_msg = sqlite3_errmsg(db);
+        sqlite3_close(db);
+        throw (err_msg);
+      } else {
+        long empty_slot = sql_databases.Find (0);
+        if (empty_slot == kNotFound) {
+          empty_slot = sql_databases.countitems();
+          sql_databases << (long)db;
+        } else {
+          sql_databases.lData[empty_slot] = (long)db;
+        }
+        
+        sqlite3_busy_timeout (db, 5000);
+        
+        receptacle->SetValue (new _Constant (empty_slot), false);
+      }
+    } else {
+      bool closing_db = *GetIthParameter(0UL) == kSQLClose;
+      long db_index   = sql_databases.Map(_ProcessNumericArgumentWithExceptions(*GetIthParameter(closing_db ? 2UL : 0UL), current_program.nameSpacePrefix), 0L);
+      
+      if (db_index == 0L) {
+        throw (GetIthParameter(closing_db ? 2UL : 0UL)-> Enquote() & " is an invalid database index");
+      }
+      
+      if (closing_db) {
+        sqlite3_close ((sqlite3*)sql_databases.Element(db_index));
+        sql_databases [db_index] = 0L;
+      } else {
+          _String callback_code = _ProcessALiteralArgument(*GetIthParameter(2UL), current_program);
+        
+          _ExecutionList callback_script (callback_code,current_program.nameSpacePrefix?(current_program.nameSpacePrefix->GetName()):nil);
+        
+          if (!terminate_execution) {
+            _String const sql_code = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program);
+            
+            if (sqlite3_exec((sqlite3*)sql_databases.lData[db_index], sql_code.get_str(), sql_handler, (hyPointer)&callback_script, nil) != SQLITE_OK) {
+              throw _String(sqlite3_errmsg((sqlite3*)sql_databases(db_index)));
+            }
+          }
+      }
+    }
+#endif
+
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (receptacle, error, current_program);
+  }
+
+  return true;
+}
+
+//____________________________________________________________________________________
+
 bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) {
   
     auto make_fstring_pointer = [] (_String * s) -> _FString * {return new _FString (s);};
@@ -2122,7 +2430,8 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
   
  
     _Variable * receptacle = nil;
-                current_program.advance ();
+  
+    current_program.advance ();
     
     try {
       receptacle = _ValidateStorageVariable (current_program);

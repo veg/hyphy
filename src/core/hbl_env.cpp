@@ -117,11 +117,15 @@ namespace hy_env {
                               .PushPairCopyKey(assertion_behavior, new HY_CONSTANT_FALSE)
                               .PushPairCopyKey (print_float_digits, new _Constant (0.))
                               .PushPairCopyKey (mpi_node_count, new _Constant (1.))
-      
+                              .PushPairCopyKey (always_reload_libraries, new HY_CONSTANT_FALSE)
+
       ;
     }
   
 _String const
+    always_reload_libraries                         ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
+        // if TRUE, reparse and re-execute source code for each call to LoadFunctionLibrary,
+        // otherwise load function libraries only once
     assertion_behavior                              ("ASSERTION_BEHAVIOR"),
         // if set to TRUE, then assertions that fail skip to the end of the current script
         // otherwise they terminate the program
