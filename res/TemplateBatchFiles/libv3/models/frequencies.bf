@@ -1,4 +1,4 @@
-//LoadFunctionLibrary("terms.bf");
+LoadFunctionLibrary("../all-terms.bf");
 LoadFunctionLibrary("parameters.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 LoadFunctionLibrary("model_functions.bf");
@@ -16,11 +16,11 @@ LoadFunctionLibrary("model_functions.bf");
  */
 function frequencies.equal(model, namespace, datafilter) {
     __N = Abs(model[terms.alphabet]);
-    model[terms.model.efv_estimate] = {
+    model[terms.efv_estimate] = {
         __N,
         1
     }["1/__N"];
-    model[terms.model.efv_estimate_name] = terms.freqs.equal;
+    model[terms.model.efv_estimate_name] = terms.frequencies.equal;
     (model[terms.parameters])[terms.model.empirical] = 0;
     return model;
 }
@@ -35,7 +35,7 @@ function frequencies.equal(model, namespace, datafilter) {
  */
 function frequencies.empirical.nucleotide(model, namespace, datafilter) {
     model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
-    model[terms.model.efv_estimate_name] = terms.freqs.4x1;
+    model[terms.model.efv_estimate_name] = terms.frequencies._4x1;
     (model[terms.parameters])[terms.model.empirical] = 3;
     return model;
 }
@@ -50,7 +50,7 @@ function frequencies.empirical.nucleotide(model, namespace, datafilter) {
  */
 function frequencies.empirical.protein (model, namespace, datafilter) {
     model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
-    model[terms.model.efv_estimate_name] = terms.freqs.20x1;
+    model[terms.model.efv_estimate_name] = terms.frequencies._20x1;
     (model[terms.parameters])[terms.model.empirical] = 19;
     return model;
 }
@@ -83,7 +83,7 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
 
     //TODO
     __estimates = frequencies._aux.CF3x4(__f, model[terms.bases], __alphabet, model[terms.stop_codons]);
-    model[terms.model.efv_estimate] = __estimates[terms.codons];
+    model[terms.efv_estimate] = __estimates[terms.codons];
     __estimates = __estimates[terms.bases];
 
 
@@ -117,7 +117,7 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
     }
 
 
-    model[terms.model.efv_estimate_name] = terms.freqs.CF3x4;
+    model[terms.model.efv_estimate_name] = terms.frequencies.CF3x4;
     (model[terms.parameters])[terms.model.empirical] = 9;
     return model;
 }
@@ -200,7 +200,7 @@ function frequencies._aux.empirical.singlechar(model, namespace, datafilter) {
     utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
     __f = frequencies._aux.empirical.collect_data(datafilter, 1, 1, 1);
     utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
-    model[terms.model.efv_estimate] = __f;
+    model[terms.efv_estimate] = __f;
     return model;
 }
 

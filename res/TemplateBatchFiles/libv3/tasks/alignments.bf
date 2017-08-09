@@ -1,5 +1,5 @@
 LoadFunctionLibrary("../IOFunctions.bf");
-//LoadFunctionLibrary("../terms-json.bf");
+LoadFunctionLibrary("../all-terms.bf");
 
 
 /**

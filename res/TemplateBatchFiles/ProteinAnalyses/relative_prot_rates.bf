@@ -71,8 +71,8 @@ lfunction relative_prot_rates.plusF._GenerateRate (from,to,namespace,modelType) 
 }
 
 lfunction relative_prot_rates.plusF.frequencies (model, namespace, datafilter) {
-    model[utility.getGlobalValue("terms.model.efv_estimate")] = utility.getGlobalValue("relative_prot_rates.empirical_frequencies");
-    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.freqs.predefined");
+    model[utility.getGlobalValue("terms.efv_estimate")] = utility.getGlobalValue("relative_prot_rates.empirical_frequencies");
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
    // (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
 }
 
@@ -242,7 +242,7 @@ io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "Rate distribution s
 io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* **Mean**: "  + Format (relative_prot_rates.stats[terms.math.mean], 6, 2));
 io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* **Median**: "  + Format (relative_prot_rates.stats[terms.math.median], 6, 2));
 io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* **Std.Dev**: "  + Format (relative_prot_rates.stats[terms.math.stddev], 6, 2));
-io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* **95% Range**: ["  + Format (relative_prot_rates.stats[terms.math.2.5], 5,2) + "," + Format (relative_prot_rates.stats[terms.math.97.5], 5,2) + "]");
+io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* **95% Range**: ["  + Format (relative_prot_rates.stats[terms.math._2.5], 5,2) + "," + Format (relative_prot_rates.stats[terms.math._97.5], 5,2) + "]");
 /* Without formatting:
 io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* [Mean] "  + relative_prot_rates.stats["Mean"]);
 io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* [Median] "  + relative_prot_rates.stats["Median"]);

@@ -71,8 +71,8 @@ function protein_gtr.REV.ModelDescription (type) {
  */
 function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
     model[terms.efv_estimate] = protein_gtr.shared_EFV;
-    model[terms.efv_estimate_name] = terms.freqs.predefined;
-    (model[terms.parameters])[terms.empirical] = 0;
+    model[terms.model.efv_estimate_name] = terms.frequencies.predefined;
+    (model[terms.parameters])[terms.model.empirical] = 0;
     return model;
 }
 
@@ -98,9 +98,9 @@ lfunction protein_gtr.plusF._GenerateRate (from,to,namespace,modelType) {
 }
 
 lfunction protein_gtr.plusF.frequencies (model, namespace, datafilter) {
-    model[utility.getGlobalValue("terms.model.efv_estimate")] = utility.getGlobalValue("protein_gtr.empirical_frequencies");
-    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.freqs.predefined");
-    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    model[utility.getGlobalValue("terms.efv_estimate")] = utility.getGlobalValue("protein_gtr.empirical_frequencies");
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 19;
 }
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -296,11 +296,11 @@ function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
         for (l2 = l1 + 1; l2 < 20; l2 += 1) {
             rate_term = terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2]);
             (protein_gtr.rev_file_mle[terms.global]) [rate_term] =
-                {terms.MLE : (rates[rate_term])[terms.fit.MLE] , terms.fix : TRUE};
+                {terms.fit.MLE : (rates[rate_term])[terms.fit.MLE] , terms.fix : TRUE};
         }
     }
 
-    protein_gtr.rev_file_mle [terms.json.attribute.branch_length] = { "0" : branch_lengths };
+    protein_gtr.rev_file_mle [terms.branch_length] = { "0" : branch_lengths };
 
     utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
     protein_gtr.rev_file_mle = estimators.FitSingleModel_Ext (
@@ -311,7 +311,7 @@ function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
                                         None
                                    );
 
-    protein_gtr.rev_file_mle - terms.glocal; // delete redundant keys
+    protein_gtr.rev_file_mle - terms.global; // delete redundant keys
 
     return protein_gtr.rev_file_mle;
 

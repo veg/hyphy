@@ -10,28 +10,28 @@ LoadFunctionLibrary ("libv3/all-terms.bf");
  * @name models.DNA.GTR.ModelDescription
  * @param {String} type
  */
-function models.DNA.GTR.ModelDescription(type) {
+lfunction models.DNA.GTR.ModelDescription(type) {
 
     return {
-        terms.alphabet: models.DNA.alphabet,
-        terms.description: "The general time reversible (GTR) model of nucleotide substitution",
-        terms.model.canonical: 1, // is of the r_ij \times \pi_j form
-        terms.model.reversible: 1,
-        terms.model.efv_estimate_name: terms.freqs.4x1,
-        terms.parameters: {
-            terms.global: {},
-            terms.local: {},
-            terms.model.empirical: 3
+        utility.getGlobalValue("terms.alphabet"): utility.getGlobalValue("models.DNA.alphabet"),
+        utility.getGlobalValue("terms.description"): "The general time reversible (GTR) model of nucleotide substitution",
+        utility.getGlobalValue("terms.model.canonical"): 1, // is of the r_ij \times \pi_j form
+        utility.getGlobalValue("terms.model.reversible"): 1,
+        utility.getGlobalValue("terms.model.efv_estimate_name"): utility.getGlobalValue("terms.frequencies._4x1"),
+        utility.getGlobalValue("terms.parameters"): {
+            utility.getGlobalValue("terms.global"): {},
+            utility.getGlobalValue("terms.local"): {},
+            utility.getGlobalValue("terms.model.empirical"): 3
         },
-        terms.model.type: type,
-        terms.model.get_branch_length: "",
-        terms.model.set_branch_length: "models.generic.SetBranchLength",
-        terms.model.constrain_branch_length: "models.generic.constrain_branch_length",
-        terms.model.frequency_estimator: "frequencies.empirical.nucleotide",
-        terms.model.q_ij: "models.DNA.GTR._generateRate",
-        terms.model.time: "models.DNA.generic.Time",
-        terms.model.defineQ: "models.DNA.GTR._defineQ",
-        terms.model.post_definition: "models.generic.post.definition"
+        utility.getGlobalValue("terms.model.type"): type,
+        utility.getGlobalValue("terms.model.get_branch_length"): "",
+        utility.getGlobalValue("terms.model.set_branch_length"): "models.generic.SetBranchLength",
+        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.constrain_branch_length",
+        utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.empirical.nucleotide",
+        utility.getGlobalValue("terms.model.q_ij"): "models.DNA.GTR._generateRate",
+        utility.getGlobalValue("terms.model.time"): "models.DNA.generic.Time",
+        utility.getGlobalValue("terms.model.defineQ"): "models.DNA.GTR._defineQ",
+        utility.getGlobalValue("terms.model.post_definition"): "models.generic.post.definition"
     };
 }
 

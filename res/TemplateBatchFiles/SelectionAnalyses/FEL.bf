@@ -7,7 +7,6 @@ RequireVersion("2.3");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/stats.bf");
-LoadFunctionLibrary("libv3/terms-json.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 LoadFunctionLibrary("libv3/tasks/ancestral.bf");
@@ -154,8 +153,8 @@ fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.tr
 
 
 io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
-fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.omega_ratio);
-utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_[terms.fit.MLE],8,4));');
+fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
+utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
 
 
 
@@ -193,8 +192,8 @@ fel.site_model_mapping = {"fel_mg" : fel.site.mg_rev};
 
 /* set up the local constraint model */
 
-fel.alpha = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.synonymous_rate"));
-fel.beta = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.nonsynonymous_rate"));
+fel.alpha = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
+fel.beta = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
 io.CheckAssertion ("None!=fel.alpha && None!=fel.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
 selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
@@ -202,7 +201,7 @@ selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 //----------------------------------------------------------------------------------------
 function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
 
-    fel.branch_length = (branch_length[terms.synonymous_rate])[terms.fit.MLE];
+    fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
 
     node_name = tree_name + "." + node_name;
 

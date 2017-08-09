@@ -3,6 +3,9 @@ RequireVersion ("2.31");
 _BUSTED_timers  = {3,1};
 busted.taskTimerStart (2);
 
+console.log("ERROR: THIS BATCHFILE WILL NOT RUN PROPERLY WITH UPDATED TERMS BASE. QUITTING.");
+exit();
+
 
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("CF3x4");

@@ -1,4 +1,3 @@
-//LoadFunctionLibrary ("terms.bf");
 LoadFunctionLibrary ("frequencies.bf");
 LoadFunctionLibrary ("libv3/all-terms.bf");
 
@@ -98,7 +97,7 @@ function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
  * @returns default time
  */
 function models.DNA.generic.Time (option) {
-	return terms.default_time;
+	return terms.parameters.default_time;
 }
 
 

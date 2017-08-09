@@ -101,7 +101,7 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 	    __rp = Call (__time_function, __modelType);
 
         if (Abs (__rp)) {
-            ((modelSpec[terms.parameters])[terms.local])[terms.synonymous_rate] = __rp;
+            ((modelSpec[terms.parameters])[terms.local])[terms.parameters.synonymous_rate] = __rp;
             modelSpec [terms.model.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, FALSE);
         } else {
             modelSpec [terms.model.rate_matrix] = __rate_matrix;

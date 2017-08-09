@@ -160,7 +160,7 @@ lfunction io.ReportStatsMD(_label, _stats) {
 
     _table_output_options = {
         utility.getGlobalValue("terms.table_options.header"): 1,
-        utility.getGlobalValue("terms.table_options.min_column_width"): 16,
+        utility.getGlobalValue("terms.table_options.minimum_column_width"): 16,
         utility.getGlobalValue("terms.table_options.align"): "center",
         utility.getGlobalValue("terms.table_options.column_widths"): {
             "0": 16,
@@ -637,15 +637,15 @@ lfunction io.ReadDelimitedFile  (path, separator, has_header) {
    } else {
         fscanf (PROMPT_FOR_FILE, REWIND, "Lines", data);
    }
-   result = {utility.getGlobalValue("terms.rows") : {}};
+   result = {utility.getGlobalValue("terms.io.rows") : {}};
    index = 0;
    row_count = utility.Array1D (data);
    if (has_header) {
-        result[utility.getGlobalValue("terms.header")] = regexp.Split (data[0], separator);
+        result[utility.getGlobalValue("terms.io.header")] = regexp.Split (data[0], separator);
         index = 1;
    }
    for (k = index; k < row_count; k+=1) {
-        result [utility.getGlobalValue("terms.rows")] + regexp.Split (data[k], separator);
+        result [utility.getGlobalValue("terms.io.rows")] + regexp.Split (data[k], separator);
    }
    return result;
 }

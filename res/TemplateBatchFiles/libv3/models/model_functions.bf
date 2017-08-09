@@ -217,7 +217,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
     
 	parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.matrix_id],model.generic.DefineModel.model[terms.model.rate_matrix]);
-	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.model.efv_estimate]);
+	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 
     
 	model.define_from_components (id, 	model.generic.DefineModel.model [terms.model.matrix_id], model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
@@ -261,7 +261,7 @@ function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filte
 
 	model.generic.mixture_expr = {};
 
-    utility.ForEachPair (model.generic.DefineModel.model[terms.mixture_components], "model.generic.key", "model.generic.value",
+    utility.ForEachPair (model.generic.DefineModel.model[terms.mixture.mixture_components], "model.generic.key", "model.generic.value",
         '
             (model.generic.DefineModel.model [terms.model.matrix_id])[model.generic.key] = "`id`_" + terms.model.rate_matrix + "_"+ model.generic.key;
             model.generic.mixture_expr + ("Exp(" + (model.generic.DefineModel.model [terms.model.matrix_id])[model.generic.key] + ")*(" +  model.generic.value + ")");
@@ -274,7 +274,7 @@ function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filte
 	model.generic.DefineModel.model [terms.model.efv_id] = "`id`_" + terms.model.efv_matrix;
 	model.generic.DefineModel.model [terms.id] = id;
 
-	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.model.efv_estimate]);
+	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 
 	model.define_from_components (id, 	parameters.Quote (model.generic.DefineModel.model [terms.mixture]), model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
 
@@ -434,7 +434,7 @@ lfunction model.BranchLengthExpression (model) {
 
 
 	if (Type (model[utility.getGlobalValue("terms.model.rate_matrix")]) == "Matrix") {
-		expr = model.BranchLengthExpressionFromMatrix (model[utility.getGlobalValue("terms.model.rate_matrix")], model[utility.getGlobalValue("terms.model.efv_estimate")], model[utility.getGlobalValue("terms.model.canonical")]);
+		expr = model.BranchLengthExpressionFromMatrix (model[utility.getGlobalValue("terms.model.rate_matrix")], model[utility.getGlobalValue("terms.efv_estimate")], model[utility.getGlobalValue("terms.model.canonical")]);
 	} else {
 		components = {};
 		matrix_count = Abs (model[utility.getGlobalValue("terms.model.rate_matrix")]);
@@ -444,8 +444,8 @@ lfunction model.BranchLengthExpression (model) {
 		
 		
 		for (i = 0; i <  matrix_count; i+=1) {
-			expr = model.BranchLengthExpressionFromMatrix ((model[utility.getGlobalValue("terms.model.rate_matrix")])[keys[i]], model[utility.getGlobalValue("terms.model.efv_estimate")], model[utility.getGlobalValue("terms.model.canonical")]);			
-			components + ( "(" + expr + ")*(" + (model[utility.getGlobalValue("terms.mixture_components")])[keys[i]] + ")");
+			expr = model.BranchLengthExpressionFromMatrix ((model[utility.getGlobalValue("terms.model.rate_matrix")])[keys[i]], model[utility.getGlobalValue("terms.efv_estimate")], model[utility.getGlobalValue("terms.model.canonical")]);			
+			components + ( "(" + expr + ")*(" + (model[utility.getGlobalValue("terms.mixture.mixture_components")])[keys[i]] + ")");
 		}
 		expr = Join ("+", components);
 	}

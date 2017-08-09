@@ -230,16 +230,16 @@ RELAX.test.model           = relax.io.define_a_bsrel_model (RELAX.test, relax.co
 RELAX.model_assignment[RELAX.test] = RELAX.test.model[terms.id];
 RELAX.model_specification[RELAX.test.model[terms.id]] = RELAX.test.model;
 
-parameters.ConstrainSets (RELAX.reference.model [terms.omegas], RELAX.test.model [terms.omegas]);
-parameters.ConstrainSets (RELAX.reference.model [terms.freqs], RELAX.test.model [terms.freqs]);
+parameters.ConstrainSets (RELAX.reference.model [terms.parameters.omegas], RELAX.test.model [terms.parameters.omegas]);
+parameters.ConstrainSets (RELAX.reference.model [terms.parameters.freqs], RELAX.test.model [terms.parameters.freqs]);
 
 if (RELAX.has_unclassified) {
     RELAX.unclassified.model = relax.io.define_a_bsrel_model (RELAX.unclassified, relax.codon_frequencies, estimators.GetGlobalMLE (relax.mg_results, RELAX.test) ,1);
     RELAX.model_assignment[RELAX.unclassified] = RELAX.unclassified.model[terms.id];
     RELAX.model_specification[RELAX.unclassified.model[terms.id]] = RELAX.unclassified.model;
 
-    parameters.ConstrainSets (RELAX.reference.model [terms.omegas], RELAX.unclassified.model [terms.omegas]);
-    parameters.ConstrainSets (RELAX.reference.model [terms.freqs], RELAX.unclassified.model [terms.freqs]);
+    parameters.ConstrainSets (RELAX.reference.model [terms.parameters.omegas], RELAX.unclassified.model [terms.parameters.omegas]);
+    parameters.ConstrainSets (RELAX.reference.model [terms.parameters.freqs], RELAX.unclassified.model [terms.parameters.freqs]);
 
 }
 
@@ -273,7 +273,7 @@ if (RELAX.runModel == 0) {
     Optimize (relax.MLE.general_descriptive, relax.LF);
 
     OPTIMIZATION_PRECISION = 0.001;
-    parameters.UnconstrainParameterSet ("relax.LF", {{terms.lf.local.constrained}});
+    parameters.UnconstrainParameterSet ("relax.LF", {{terms.parameters.local_constrained}});
 
     Optimize (relax.MLE.general_descriptive, relax.LF);
     io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.general_descriptive[1][0]);
@@ -295,7 +295,7 @@ if (RELAX.runModel == 0) {
     relax.json_spool (relax.json, relax.codon_data_info[terms.json.json]);
 
 } else {
-    parameters.UnconstrainParameterSet ("relax.LF", {{terms.lf.local.constrained}});
+    parameters.UnconstrainParameterSet ("relax.LF", {{terms.parameters.local_constrained}});
 }
 
 
@@ -303,8 +303,8 @@ if (RELAX.runModel == 0) {
 
 
 if (RELAX.has_unclassified) {
-    parameters.RemoveConstraint (RELAX.unclassified.model [terms.omegas]);
-    parameters.RemoveConstraint (RELAX.unclassified.model [terms.freqs]);
+    parameters.RemoveConstraint (RELAX.unclassified.model [terms.parameters.omegas]);
+    parameters.RemoveConstraint (RELAX.unclassified.model [terms.parameters.freqs]);
 }
 
 relax.taskTimerStart (3);
@@ -400,8 +400,8 @@ if (RELAX.runModel == 0) {
 
     relax.taskTimerStart  (5);
 
-    parameters.RemoveConstraint (RELAX.test.model [terms.omegas]);
-    parameters.RemoveConstraint (RELAX.test.model [terms.freqs]);
+    parameters.RemoveConstraint (RELAX.test.model [terms.parameters.omegas]);
+    parameters.RemoveConstraint (RELAX.test.model [terms.parameters.freqs]);
     parameters.SetConstraint    (RELAX.relaxation_parameter, Eval (RELAX.relaxation_parameter), "");
 
 
@@ -465,7 +465,7 @@ function relax.branch.length (branch_info) {
 }
 
 function relax.branch.omega  (branch_info) {
-    return parameters.NormalizeRatio ((branch_info[terms.nonsynonymous_rate])[terms.fit.MLE], (branch_info[terms.synonymous_rate])[terms.fit.MLE]);
+    return parameters.NormalizeRatio ((branch_info[terms.parameters.nonsynonymous_rate])[terms.fit.MLE], (branch_info[terms.parameters.synonymous_rate])[terms.fit.MLE]);
 }
 
 function relax.branch.local_k  (branch_info) {
@@ -485,13 +485,13 @@ function relax._aux.extract_branch_info (branch_spec, callback) {
 
 //------------------------------------------------------------------------------
 function relax.getRateDistribution (model_description, K) {
-  relax.getRateInformation.rate_classes = Abs (model_description[terms.omegas]);
+  relax.getRateInformation.rate_classes = Abs (model_description[terms.parameters.omegas]);
   relax.getRateInformation.omega_info = {relax.getRateInformation.rate_classes,2};
 
     
   for (relax.getRateInformation.k = 0; relax.getRateInformation.k < relax.getRateInformation.rate_classes; relax.getRateInformation.k += 1) {
-    relax.getRateInformation.omega_info[relax.getRateInformation.k][0] = Eval ((model_description[terms.omegas])[relax.getRateInformation.k])^K;
-    relax.getRateInformation.omega_info[relax.getRateInformation.k][1] = Eval ((model_description[terms.weights])[relax.getRateInformation.k]);
+    relax.getRateInformation.omega_info[relax.getRateInformation.k][0] = Eval ((model_description[terms.parameters.omegas])[relax.getRateInformation.k])^K;
+    relax.getRateInformation.omega_info[relax.getRateInformation.k][1] = Eval ((model_description[terms.parameters.weights])[relax.getRateInformation.k]);
   }
   return relax.getRateInformation.omega_info % 0;
 }
@@ -507,7 +507,7 @@ function relax.define.null._aux (key, value) {
 //------------------------------------------------------------------------------
 function relax.define.null (tree_id, general_model, partition) {
     RELAX.null = general_model;
-    parameters.RemoveConstraint ((general_model[terms.omegas])[2]);
+    parameters.RemoveConstraint ((general_model[terms.parameters.omegas])[2]);
 
     relax.define.null.local = ((general_model[terms.parameters])[terms.local])[term.RELAX.k];
 
@@ -574,34 +574,34 @@ function relax.io.evaluator (key, value) {
 //------------------------------------------------------------------------------
 function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
 
-    model_parameters = {terms.parameters : {terms.global : {}, terms.local : {}}, terms.omegas : {}, terms.weights : {}, terms.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""};
+    model_parameters = {terms.parameters : {terms.global : {}, terms.local : {}}, terms.parameters.omegas : {}, terms.parameters.weights : {}, terms.parameters.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""};
 
-    model_parameters[terms.omegas] = parameters.GenerateSequentialNames ("`id`.omega",    3, "_");
-    model_parameters[terms.freqs]      = parameters.GenerateSequentialNames ("`id`.aux_freq", 2, "_");
+    model_parameters[terms.parameters.omegas] = parameters.GenerateSequentialNames ("`id`.omega",    3, "_");
+    model_parameters[terms.parameters.freqs]      = parameters.GenerateSequentialNames ("`id`.aux_freq", 2, "_");
 
-    parameters.DeclareGlobal    (model_parameters[terms.freqs], None);
-    parameters.SetRange         (model_parameters[terms.freqs], terms.range01);
+    parameters.DeclareGlobal    (model_parameters[terms.parameters.freqs], None);
+    parameters.SetRange         (model_parameters[terms.parameters.freqs], terms.range01);
 
-    parameters.DeclareGlobal    (model_parameters[terms.omegas], None);
+    parameters.DeclareGlobal    (model_parameters[terms.parameters.omegas], None);
 
-    model_parameters[terms.weights] = parameters.helper.stick_breaking (model_parameters[terms.freqs], {{0.7,0.25,0.05}});
+    model_parameters[terms.parameters.weights] = parameters.helper.stick_breaking (model_parameters[terms.parameters.freqs], {{0.7,0.25,0.05}});
 
     relax.init_omegas = {{0.05,0.25,4}};
-    relax.init_omegas = relax.init_omegas * (1/ parameters.Mean (relax.init_omegas, model_parameters[terms.weights], Abs (model_parameters[terms.omegas])));
+    relax.init_omegas = relax.init_omegas * (1/ parameters.Mean (relax.init_omegas, model_parameters[terms.parameters.weights], Abs (model_parameters[terms.parameters.omegas])));
 
-    parameters.SetRange ((model_parameters[terms.omegas])[0], terms.range_almost_01);
-    parameters.SetValue ((model_parameters[terms.omegas])[0], relax.init_omegas[0]);
+    parameters.SetRange ((model_parameters[terms.parameters.omegas])[0], terms.range_almost_01);
+    parameters.SetValue ((model_parameters[terms.parameters.omegas])[0], relax.init_omegas[0]);
 
-    parameters.SetRange ((model_parameters[terms.omegas])[1], terms.range_almost_01);
-    parameters.SetValue ((model_parameters[terms.omegas])[1], relax.init_omegas[1]);
+    parameters.SetRange ((model_parameters[terms.parameters.omegas])[1], terms.range_almost_01);
+    parameters.SetValue ((model_parameters[terms.parameters.omegas])[1], relax.init_omegas[1]);
 
-    parameters.SetRange ((model_parameters[terms.omegas])[2], terms.range_gte1);
-    parameters.SetValue ((model_parameters[terms.omegas])[2], relax.init_omegas[2]);
+    parameters.SetRange ((model_parameters[terms.parameters.omegas])[2], terms.range_gte1);
+    parameters.SetValue ((model_parameters[terms.parameters.omegas])[2], relax.init_omegas[2]);
 
     if (do_local) {
-        parameters.SetConstraint ((model_parameters[terms.omegas])[2], " 1/" + ((model_parameters[terms.omegas])[0]) + "/" + ((model_parameters[terms.omegas])[1]) , "");
+        parameters.SetConstraint ((model_parameters[terms.parameters.omegas])[2], " 1/" + ((model_parameters[terms.parameters.omegas])[0]) + "/" + ((model_parameters[terms.parameters.omegas])[1]) , "");
         relax.io.define_a_bsrel_model_r = {terms.lower_bound : 1e-4, terms.upper_bound : 1};
-        parameters.SetRange ((model_parameters[terms.omegas])[1], relax.io.define_a_bsrel_model_r);
+        parameters.SetRange ((model_parameters[terms.parameters.omegas])[1], relax.io.define_a_bsrel_model_r);
     }
 
 
@@ -616,21 +616,21 @@ function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
 
 
     for (k = 1; k <= 3; k +=1) {
-        ((model_parameters[terms.parameters])[terms.global])[relax.define_omega_term (k)] = (model_parameters[terms.omegas])[k-1];
+        ((model_parameters[terms.parameters])[terms.global])[relax.define_omega_term (k)] = (model_parameters[terms.parameters.omegas])[k-1];
         if (k < 3) {
-            ((model_parameters[terms.parameters])[terms.global])[relax.define_weight_term (k)] = (model_parameters[terms.freqs])[k-1];
+            ((model_parameters[terms.parameters])[terms.global])[relax.define_weight_term (k)] = (model_parameters[terms.parameters.freqs])[k-1];
         }
 
         model_parameters[terms.model.rate_matrix] + ("Q_`id`_" + k);
         if (do_local) {
-            PopulateModelMatrix			  ((model_parameters[terms.model.rate_matrix])[k-1],  relax.nuc, terms.default_time, "Min (1000," + (model_parameters[terms.omegas])[k-1] +"^local_k)", "");
+            PopulateModelMatrix			  ((model_parameters[terms.model.rate_matrix])[k-1],  relax.nuc, terms.parameters.default_time, "Min (1000," + (model_parameters[terms.parameters.omegas])[k-1] +"^local_k)", "");
         } else {
-            PopulateModelMatrix			  ((model_parameters[terms.model.rate_matrix])[k-1],  relax.nuc, terms.default_time, (model_parameters[terms.omegas])[k-1], "");
+            PopulateModelMatrix			  ((model_parameters[terms.model.rate_matrix])[k-1],  relax.nuc, terms.parameters.default_time, (model_parameters[terms.parameters.omegas])[k-1], "");
         }
     }
 
     model_parameters[terms.id] = "`id`_model";
-    model_parameters[terms.model.length_expression] = relax._aux.define_bsrel_model ("`id`_model", model_parameters[terms.model.rate_matrix], model_parameters[terms.weights], frequencies[terms.codons]);
+    model_parameters[terms.model.length_expression] = relax._aux.define_bsrel_model ("`id`_model", model_parameters[terms.model.rate_matrix], model_parameters[terms.parameters.weights], frequencies[terms.codons]);
 
     ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("A","C")] = "AC";
     ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("A","T")] = "AT";
@@ -640,8 +640,8 @@ function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
 
     model_parameters[terms.model.set_branch_length] = "relax.aux.copy_branch_length";
 
-    model_parameters[terms.model.length_parameter] = terms.default_time;
-    ((model_parameters[terms.parameters])[terms.local])[terms.timeParameter ()] = terms.default_time;
+    model_parameters[terms.model.length_parameter] = terms.parameters.default_time;
+    ((model_parameters[terms.parameters])[terms.local])[terms.timeParameter ()] = terms.parameters.default_time;
     if (do_local) {
         ((model_parameters[terms.parameters])[terms.local])[term.RELAX.k] = "local_k";
     }

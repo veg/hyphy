@@ -7,7 +7,6 @@ RequireVersion("2.3");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/stats.bf");
-LoadFunctionLibrary("libv3/terms-json.bf");
 
 LoadFunctionLibrary("libv3/tasks/ancestral.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
@@ -140,15 +139,15 @@ io.ReportProgressMessageMD ("MEME", "codon-refit", "Improving branch lengths, nu
 
 meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.global,
-    terms.run_options.model_type.partitioned_omega: meme.selected_branches,
-    terms.run_options.model_type.retain_lf_object: TRUE
+    terms.run_options.partitioned_omega: meme.selected_branches,
+    terms.run_options.retain_lf_object: TRUE
 }, meme.partitioned_mg_results);
 
 
 
 
 io.ReportProgressMessageMD("MEME", "codon-refit", "* Log(L) = " + Format(meme.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
-meme.global_dnds = selection.io.extract_global_MLE_re (meme.final_partitioned_mg_results, "^" + terms.omega_ratio);
+meme.global_dnds = selection.io.extract_global_MLE_re (meme.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
 
 
@@ -181,8 +180,8 @@ meme.site.background_fel = model.generic.DefineModel("models.codon.MG_REV.ModelD
         None);
         
         
-meme.alpha = model.generic.GetLocalParameter (meme.site.background_fel, terms.synonymous_rate);
-meme.beta  = model.generic.GetLocalParameter (meme.site.background_fel, terms.nonsynonymous_rate);
+meme.alpha = model.generic.GetLocalParameter (meme.site.background_fel, terms.parameters.synonymous_rate);
+meme.beta  = model.generic.GetLocalParameter (meme.site.background_fel, terms.parameters.nonsynonymous_rate);
 
 io.CheckAssertion ("None!=meme.alpha && None!=meme.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
@@ -196,9 +195,9 @@ meme.site.bsrel =  model.generic.DefineMixtureModel("models.codon.BS_REL_Per_Bra
         None);
         
 
-meme.beta1  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.nonsynonymous_rate,1));
-meme.beta2  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.nonsynonymous_rate,2));
-meme.branch_mixture = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.mixture_aux_weight,1));
+meme.beta1  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.parameters.nonsynonymous_rate,1));
+meme.beta2  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.parameters.nonsynonymous_rate,2));
+meme.branch_mixture = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.mixture.mixture_aux_weight,1));
 
 io.CheckAssertion ("None!=meme.beta2&&None!=meme.beta1&&None!=meme.branch_mixture", "Could not find expected local rate and mixture parameters for the BS-REL model");
 
@@ -377,7 +376,7 @@ io.SpoolJSON (meme.json, meme.codon_data_info[terms.json.json]);
 
 function meme.apply_proportional_site_constraint.fel (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
 
-    meme.branch_length = (branch_length[terms.synonymous_rate])[terms.fit.MLE];
+    meme.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
 
     node_name = tree_name + "." + node_name;
 
@@ -390,7 +389,7 @@ function meme.apply_proportional_site_constraint.fel (tree_name, node_name, alph
 
 function meme.apply_proportional_site_constraint.bsrel (tree_name, node_name, alpha_parameter, beta_parameter, beta_parameter2, mixture_parameter, alpha_factor, omega_factor, beta_factor, mixture_global, branch_length) {
 
-    meme.branch_length = (branch_length[terms.synonymous_rate])[terms.fit.MLE];
+    meme.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
 
     node_name = tree_name + "." + node_name;
 

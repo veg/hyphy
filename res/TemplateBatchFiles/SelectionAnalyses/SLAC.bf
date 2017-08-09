@@ -7,7 +7,6 @@ RequireVersion("2.3");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/stats.bf");
-//LoadFunctionLibrary("libv3/terms-json.bf");
 
 LoadFunctionLibrary("libv3/tasks/ancestral.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
@@ -157,7 +156,7 @@ selection.io.startTimer (slac.json [terms.json.timers], "Primary SLAC analysis",
 
 
 
-slac.nucleotide_frequencies    = (slac.gtr_results[terms.fit.efv_estimate])["VALUEINDEXORDER"][0];
+slac.nucleotide_frequencies    = (slac.gtr_results[terms.efv_estimate])["VALUEINDEXORDER"][0];
 
 /*_EFV_MATRIX0_ = {{1,AC__*pooledFreqs[1],pooledFreqs[2],AT__*pooledFreqs[3]}
 				{AC__*pooledFreqs[0],1,CG__*pooledFreqs[2],CT__*pooledFreqs[3]}

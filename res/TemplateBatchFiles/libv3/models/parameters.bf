@@ -1,5 +1,4 @@
 LoadFunctionLibrary("GrabBag");
-//LoadFunctionLibrary("terms.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 /** @module parameters */
@@ -32,7 +31,7 @@ function parameters.UnconstrainParameterSet(lf, set) {
     if (None == set) {
         set = {
             {
-                terms.lf.global.constrained, terms.lf.local.constrained // TODO: RENAME THESE POTENTIALLY.
+                terms.parameters.global_constrained, terms.parameters.local_constrained
             }
         };
     }
@@ -138,7 +137,7 @@ function parameters.DeclareCategory (def) {
 	 			  Join (",", 
 	 			  			utility.Map ({"0": terms.category.bins, "1": terms.category.weights, "2": terms.category.represent, "3": terms.category.PDF, "4": terms.category.CDF, "5": terms.lower_bound, "6": terms.upper_bound, "7": terms.category.dCDF}, 
 	 			  						  "_value_",
-	 			  						  'parameters.DeclareCategory.helper(def[terms.category_parameters], _value_, "")')
+	 			  						  'parameters.DeclareCategory.helper(def[terms.category.category_parameters], _value_, "")')
 	 			  		) + ");");
 	 
 }

@@ -1,6 +1,5 @@
 LoadFunctionLibrary("libv3/convenience/matrix.bf");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
-
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 

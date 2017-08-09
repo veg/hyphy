@@ -1,4 +1,4 @@
-//LoadFunctionLibrary ("terms.bf");
+LoadFunctionLibrary ("../all-terms.bf");
 LoadFunctionLibrary ("frequencies.bf");
 
 /** @module models.protein */
@@ -107,7 +107,7 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
  * @returns default time
  */
 function models.protein.generic.Time (option) {
-	return terms.default_time;
+	return terms.parameters.default_time;
 }
 
 

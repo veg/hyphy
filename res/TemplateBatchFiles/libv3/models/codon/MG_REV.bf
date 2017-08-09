@@ -24,7 +24,7 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
         utility.getGlobalValue("terms.description"): "The Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution",
         utility.getGlobalValue("terms.model.canonical"): 0, // is NOT of the r_ij \times \pi_j form
         utility.getGlobalValue("terms.model.reversible"): 1,
-        utility.getGlobalValue("terms.model.efv_estimate_name"): utility.getGlobalValue("terms.freqs.CF3x4"),
+        utility.getGlobalValue("terms.model.efv_estimate_name"): utility.getGlobalValue("terms.frequencies.CF3x4"),
         utility.getGlobalValue("terms.parameters"): {
             utility.getGlobalValue("terms.global"): {},
             utility.getGlobalValue("terms.local"): {}
@@ -42,7 +42,7 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
 
 
 lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, _tt) {
-    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, "alpha", utility.getGlobalValue("terms.synonymous_rate"), "beta", utility.getGlobalValue("terms.nonsynonymous_rate"), "omega", utility.getGlobalValue("terms.omega_ratio"));
+    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"), "beta", utility.getGlobalValue("terms.parameters.nonsynonymous_rate"), "omega", utility.getGlobalValue("terms.parameters.omega_ratio"));
 }
 
 /**
@@ -121,8 +121,8 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     }
 
 
-    models.codon.MG_REV.set_branch_length.beta = model.generic.GetLocalParameter(model, terms.nonsynonymous_rate);
-    models.codon.MG_REV.set_branch_length.alpha = model.generic.GetLocalParameter(model, terms.synonymous_rate);
+    models.codon.MG_REV.set_branch_length.beta = model.generic.GetLocalParameter(model, terms.parameters.nonsynonymous_rate);
+    models.codon.MG_REV.set_branch_length.alpha = model.generic.GetLocalParameter(model, terms.parameters.synonymous_rate);
 
     models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
     models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
@@ -132,22 +132,22 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     if (Type(value) == "AssociativeList") {
         if (value[terms.model.branch_length_scaler] == terms.model.branch_length_constrain) {
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
-                if (Abs(model[terms.synonymous_rate]) == 0) {
+                if (Abs(model[terms.parameters.synonymous_rate]) == 0) {
                     bl_string = model[terms.model.branch_length_string];
 
                     models.codon.MG_REV.set_branch_length.sub = {};
                     models.codon.MG_REV.set_branch_length.sub[models.codon.MG_REV.set_branch_length.alpha] = 1;
                     models.codon.MG_REV.set_branch_length.sub[models.codon.MG_REV.set_branch_length.beta] = 0;
-                    model[terms.synonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
+                    model[terms.parameters.synonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
 
                     models.codon.MG_REV.set_branch_length.sub[models.codon.MG_REV.set_branch_length.alpha] = 0;
                     models.codon.MG_REV.set_branch_length.sub[models.codon.MG_REV.set_branch_length.beta] = 1;
-                    model[terms.nonsynonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
+                    model[terms.parameters.nonsynonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
                 }
 
                 //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
 
-                parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.synonymous_rate] + "))/(" + model[terms.nonsynonymous_rate] + ")", "");
+                parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.parameters.synonymous_rate] + "))/(" + model[terms.parameters.nonsynonymous_rate] + ")", "");
                 return 1;
 
             } else {

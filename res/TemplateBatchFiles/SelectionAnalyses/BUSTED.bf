@@ -1,6 +1,7 @@
 RequireVersion ("2.31");
 
 
+LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("CF3x4");
@@ -23,7 +24,6 @@ LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 LoadFunctionLibrary("libv3/tasks/genetic_code.bf");
 
-//LoadFunctionLibrary("libv3/models/terms.bf");
 
 
 busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification)
@@ -38,7 +38,6 @@ busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted
                            terms.io.requirements : "in-frame codon alignment and a phylogenetic tree (optionally annotated with {})"
                           };
 io.DisplayAnalysisBanner (busted.analysis_description);
-
 
 
 /*------------------------------------------------------------------------------
@@ -165,14 +164,14 @@ busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "buste
 
 Optimize (busted.MLE_HA, busted.LF);
 
-parameters.UnconstrainParameterSet ("busted.LF", {{terms.lf.local.constrained}});
+parameters.UnconstrainParameterSet ("busted.LF", {{terms.parameters.local_constrained}});
 
 utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.001);
 Optimize (busted.MLE_HA, busted.LF);
 // Uncomment the line below to export the LF fit file, a hyphy nexus file.
 //io.SpoolLF ("busted.LF", codon_data_info[terms.data.file], None);
 busted_positive_class = busted.checkForPS (busted.model_definitions);
-io.ReportProgressMessageMD ("BUSTED", "BUSTED-alt", "Log(L) = " + busted.MLE_HA[1][0] + ". Unrestricted class omega = " + busted_positive_class[terms.omega] + " (weight = " + busted_positive_class[terms.weight] + ")");
+io.ReportProgressMessageMD ("BUSTED", "BUSTED-alt", "Log(L) = " + busted.MLE_HA[1][0] + ". Unrestricted class omega = " + busted_positive_class[terms.parameters.omega] + " (weight = " + busted_positive_class[terms.parameters.weight] + ")");
 
 
 busted.sample_size             =codon_data_info[terms.data.sites] * codon_data_info[terms.data.sequences];
@@ -202,7 +201,7 @@ busted.siteLogL = {};
 (busted.json [busted.json.site_logl])[busted.unconstrained] = busted.computeSiteLikelihoods ("busted.LF");
 
 
-if (busted_positive_class[terms.omega] < terms.range_almost_01[terms.upper_bound] || busted_positive_class[terms.weight] < terms.range_almost_01[terms.lower_bound]) {
+if (busted_positive_class[terms.parameters.omega] < terms.range_almost_01[terms.upper_bound] || busted_positive_class[terms.parameters.weight] < terms.range_almost_01[terms.lower_bound]) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for positive selection under the unconstrained model, skipping constrained model fitting");
     busted.json [terms.json.test_results] = busted.runLRT (0, 0);
 } else {
@@ -312,12 +311,12 @@ function busted.hasBackground (id) {
 //------------------------------------------------------------------------------
 function busted.getRateDistribution (model_description, key) {
 
-  busted.getRateInformation.rate_classes = Abs ((model_description[key])[terms.omegas]);
+  busted.getRateInformation.rate_classes = Abs ((model_description[key])[terms.parameters.omegas]);
   busted.getRateInformation.omega_info = {busted.getRateInformation.rate_classes,2};
 
   for (busted.getRateInformation.k = 0; busted.getRateInformation.k < busted.getRateInformation.rate_classes; busted.getRateInformation.k += 1) {
-    busted.getRateInformation.omega_info[busted.getRateInformation.k][0] = Eval (((model_description[key])[terms.omegas])[busted.getRateInformation.k]);
-    busted.getRateInformation.omega_info[busted.getRateInformation.k][1] = Eval (((model_description[key])[terms.weights])[busted.getRateInformation.k]);
+    busted.getRateInformation.omega_info[busted.getRateInformation.k][0] = Eval (((model_description[key])[terms.parameters.omegas])[busted.getRateInformation.k]);
+    busted.getRateInformation.omega_info[busted.getRateInformation.k][1] = Eval (((model_description[key])[terms.parameters.weights])[busted.getRateInformation.k]);
   }
   return busted.getRateInformation.omega_info;
 }
@@ -331,14 +330,14 @@ function busted._aux.free_lengths (key, value) {
 
 //------------------------------------------------------------------------------
 function busted.checkForPS (model_parameters) {
-   return {terms.omega :Eval (((model_parameters[busted.FG])[terms.omegas])[2]),
-           terms.weight: Eval (((model_parameters[busted.FG])[terms.weights])[2])};
+   return {terms.parameters.omega :Eval (((model_parameters[busted.FG])[terms.parameters.omegas])[2]),
+           terms.parameters.weight: Eval (((model_parameters[busted.FG])[terms.parameters.weights])[2])};
 
 }
 
 //------------------------------------------------------------------------------
 function busted.constrainTheModel (model_parameters) {
-  ExecuteCommands (((model_parameters[busted.FG])[terms.omegas])[2] + ":=1");
+  ExecuteCommands (((model_parameters[busted.FG])[terms.parameters.omegas])[2] + ":=1");
 }
 
 //------------------------------------------------------------------------------
@@ -425,39 +424,39 @@ function busted.io.evaluate_branch_lengths (model_parameters, tree_id, fg_set) {
 function busted.io.define_bsrel_models (foreground_id, background_id, frequencies) {
 
     model_parameters =
-        {busted.FG: {terms.omegas : {}, terms.weights : {}, terms.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""},
-         busted.BG: {terms.omegas : {}, terms.weights : {}, terms.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""},
+        {busted.FG: {terms.parameters.omegas : {}, terms.parameters.weights : {}, terms.parameters.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""},
+         busted.BG: {terms.parameters.omegas : {}, terms.parameters.weights : {}, terms.parameters.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""},
          terms.parameters : {terms.global : {}, terms.local : {}}
           };
 
     for (k = 1; k <= busted.nrates; k +=1) {
         tag = "" + k;
-        ((model_parameters[busted.FG])[terms.omegas]) + "`foreground_id`_omega_`tag`";
-        ((model_parameters[busted.BG])[terms.omegas]) + "`background_id`_omega_`tag`";
+        ((model_parameters[busted.FG])[terms.parameters.omegas]) + "`foreground_id`_omega_`tag`";
+        ((model_parameters[busted.BG])[terms.parameters.omegas]) + "`background_id`_omega_`tag`";
         if (k < busted.nrates) {
-            ((model_parameters[busted.FG])[terms.freqs]) + "`foreground_id`_f_`tag`";
-            ((model_parameters[busted.BG])[terms.freqs]) + "`background_id`_f_`tag`";
+            ((model_parameters[busted.FG])[terms.parameters.freqs]) + "`foreground_id`_f_`tag`";
+            ((model_parameters[busted.BG])[terms.parameters.freqs]) + "`background_id`_f_`tag`";
         }
 
     }
   
 
-    ((model_parameters[busted.FG])[terms.weights])  = busted._aux.stick_breaking (((model_parameters[busted.FG])[terms.freqs]));
-    ((model_parameters[busted.BG])[terms.weights])  = busted._aux.stick_breaking (((model_parameters[busted.BG])[terms.freqs]));
+    ((model_parameters[busted.FG])[terms.parameters.weights])  = busted._aux.stick_breaking (((model_parameters[busted.FG])[terms.parameters.freqs]));
+    ((model_parameters[busted.BG])[terms.parameters.weights])  = busted._aux.stick_breaking (((model_parameters[busted.BG])[terms.parameters.freqs]));
 
     busted.init_values = {"0" : 0.1, "1" : 0.5, "2" : 1};
 
-    ((model_parameters[busted.FG])[terms.omegas])["busted._aux.define_parameter"][""];
-    ((model_parameters[busted.BG])[terms.omegas])["busted._aux.define_parameter"][""];
+    ((model_parameters[busted.FG])[terms.parameters.omegas])["busted._aux.define_parameter"][""];
+    ((model_parameters[busted.BG])[terms.parameters.omegas])["busted._aux.define_parameter"][""];
 
-    Eval (((model_parameters[busted.FG])[terms.omegas])[2] + ":<" + terms.range_gte1[terms.upper_bound]);
-    Eval (((model_parameters[busted.FG])[terms.omegas])[2] + ":>" + terms.range_gte1[terms.lower_bound]);
-    Eval (((model_parameters[busted.BG])[terms.omegas])[2] + ":<" + terms.range_gte1[terms.upper_bound]);
+    Eval (((model_parameters[busted.FG])[terms.parameters.omegas])[2] + ":<" + terms.range_gte1[terms.upper_bound]);
+    Eval (((model_parameters[busted.FG])[terms.parameters.omegas])[2] + ":>" + terms.range_gte1[terms.lower_bound]);
+    Eval (((model_parameters[busted.BG])[terms.parameters.omegas])[2] + ":<" + terms.range_gte1[terms.upper_bound]);
 
     busted.init_values = {"0" : 0.8, "1" : 0.75};
 
-    ((model_parameters[busted.FG])[terms.freqs])["busted._aux.define_parameter"][""];
-    ((model_parameters[busted.BG])[terms.freqs])["busted._aux.define_parameter"][""];
+    ((model_parameters[busted.FG])[terms.parameters.freqs])["busted._aux.define_parameter"][""];
+    ((model_parameters[busted.BG])[terms.parameters.freqs])["busted._aux.define_parameter"][""];
 
     busted.nuc = {4,3};
     for (k = 0; k < 4; k+=1) {
@@ -471,17 +470,17 @@ function busted.io.define_bsrel_models (foreground_id, background_id, frequencie
     for (k = 1; k <= busted.nrates; k +=1) {
 
         ((model_parameters[busted.FG])[terms.model.rate_matrix]) + ("Q_`foreground_id`_" + k);
-        PopulateModelMatrix			  (((model_parameters[busted.FG])[terms.model.rate_matrix])[k-1],  busted.nuc, terms.default_time,((model_parameters[busted.FG])[terms.omegas])[k-1], "");
+        PopulateModelMatrix			  (((model_parameters[busted.FG])[terms.model.rate_matrix])[k-1],  busted.nuc, terms.parameters.default_time,((model_parameters[busted.FG])[terms.parameters.omegas])[k-1], "");
 
         ((model_parameters[busted.BG])[terms.model.rate_matrix]) + ("Q_`background_id`_" + k);
-        PopulateModelMatrix			  (((model_parameters[busted.BG])[terms.model.rate_matrix])[k-1],  busted.nuc, terms.default_time,((model_parameters[busted.BG])[terms.omegas])[k-1], "");
+        PopulateModelMatrix			  (((model_parameters[busted.BG])[terms.model.rate_matrix])[k-1],  busted.nuc, terms.parameters.default_time,((model_parameters[busted.BG])[terms.parameters.omegas])[k-1], "");
     }
 
 
     (model_parameters[busted.BG])[terms.model] = "`background_id`_model";
-    (model_parameters[busted.BG])[terms.model.length] = busted._aux.define_bsrel_model ("`background_id`_model", (model_parameters[busted.BG])[terms.model.rate_matrix], (model_parameters[busted.BG])[terms.weights], frequencies[terms.codons]);
+    (model_parameters[busted.BG])[terms.model.length] = busted._aux.define_bsrel_model ("`background_id`_model", (model_parameters[busted.BG])[terms.model.rate_matrix], (model_parameters[busted.BG])[terms.parameters.weights], frequencies[terms.codons]);
     (model_parameters[busted.FG])[terms.model] = "`foreground_id`_model";
-    (model_parameters[busted.FG])[terms.model.length] = busted._aux.define_bsrel_model ("`foreground_id`_model", (model_parameters[busted.FG])[terms.model.rate_matrix], (model_parameters[busted.FG])[terms.weights], frequencies[terms.codons]);
+    (model_parameters[busted.FG])[terms.model.length] = busted._aux.define_bsrel_model ("`foreground_id`_model", (model_parameters[busted.FG])[terms.model.rate_matrix], (model_parameters[busted.FG])[terms.parameters.weights], frequencies[terms.codons]);
 
     ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("A","C")] = "AC";
     ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("A","T")] = "AT";
@@ -490,9 +489,9 @@ function busted.io.define_bsrel_models (foreground_id, background_id, frequencie
     ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("G","T")] = "GT";
      model_parameters["set-branch-length"] = "busted.aux.copy_branch_length";
 
-    ((model_parameters[terms.parameters])[terms.local])[terms.timeParameter ()] = terms.default_time;
+    ((model_parameters[terms.parameters])[terms.local])[terms.timeParameter ()] = terms.parameters.default_time;
 
-     model_parameters[terms.model.length_parameter] = terms.default_time;
+     model_parameters[terms.model.length_parameter] = terms.parameters.default_time;
 
     return model_parameters;
 }

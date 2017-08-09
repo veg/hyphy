@@ -1,446 +1,434 @@
-// MAKE SURE TO SWAP EVERYTHING
-//terms.model.id = "id"; --> terms.id
-//terms.model.model = "model";      ---> terms.model
-//terms.model.parameters = "parameters"; ---> terms.parameters
-//terms.model.parameters.global = "global"; ---> terms.global 
-//terms.model.parameters.local = "local";   ---> terms.local 
-//terms.model.parameters.empirical = "empirical"; ---> terms.model.empirical
-//terms.model.translation_table = "translation-table";   ----> terms.translation_table
-//terms.model.alphabet = "alphabet";       ----> terms.alphabet
-//terms.model.bases = "bases";  --> terms.bases
-//terms.model.stop =  "stop"; -->  terms.stop_codons
-// terms.efv_estimate_name = "Equilibrium frequency estimator"; // ---> terms.model.efv_estimate_name
-//terms.efv_estimate = "EFV";  //   --> terms.fit.efv_estimate
+/* Terms used throughout HyPhy */
 
-
-/* Models and fits */
-//terms.MLE              = "MLE";   ----> terms.fit.MLE
-//terms.log_likelihood   = "LogL";   -----> terms.fit.log_likelihood
-//terms.empirical        = "empirical";    ----> terms.model.empirical
-//terms.data.id     -------> terms.id
-//terms.model.id     -------> terms.id
-//terms.attribute.test           = "test";      ------> terms.tree_attributes.test
-//terms.attribute.background     = "background";------> terms.tree_attributes.background
-//terms.data.ordering  = "ordering";     ----> terms.code.ordering
-//terms.data.mapping  = "mapping";     ----> terms.code.mapping
-//terms.rate_variation.description = "description"; ------> terms.desription
-//terms.model.description = "description"; ------> terms.desription
-
-
-
-terms.mpi.job_id = "job_id";
-terms.mpi.callback = "callback";
-terms.mpi.arguments = "arguments";
-terms.mpi.Models = "Models";
-terms.mpi.LikelihoodFunctions = "LikelihoodFunctions";
-terms.mpi.Headers = "Headers";
-terms.mpi.Variables = "Variables";
-terms.mpi.Functions = "Functions";
-
-
-
-
-
-
-
-
-
-
-
-
-terms.math.count = "Count";
-terms.math.mean = "Mean";
-terms.math.median = "Median";
-terms.math.stddev = "Std.Dev";
-terms.math.minimum = "Min";
-terms.math.maximum = "Max";
-terms.math.2.5 = "2.5%";
-terms.math.97.5 = "97.5%";
-terms.math.sum = "Sum";
-terms.math.variance = "Variance";
-terms.math.cov = "COV";
-terms.math.skewness = "Skewness";
-terms.math.kurtosis = "Kurtosis";
-terms.math.square_sum = "Sq. sum";
-terms.math.non_negative = "Non-negative";
-
-
-terms.header = "header";//1
-terms.rows = "rows";//1
-
-terms.table_options.header = terms.header;
-terms.table_options.minimum_column_width = "min-column-width";
-terms.table_options.align    = "align";
-terms.table_options.column_widths = "column-widths";
-
-terms.alphabet       = "alphabet";
-terms.amino_acid     = "amino-acid";
-terms.codon          = "codon"; 
-terms.sense_codons   = "sense";
-terms.stop_codons    = "stop"; //TODO. This is actually ok.
-terms.bases          = "bases"; 
-terms.codons         = "codons"; 
-terms.translation_table = "translation-table";
-terms.original_name = "original_name";
-
-terms.synonymous_sub_count          = "synonymous substitution count";
-terms.nonsynonymous_sub_count       = "nonsynonymous substitution count";
-
-terms.genetic_code.synonymous             = "synonymous";
-terms.genetic_code.nonsynonymous          = "nonsynonymous";
-terms.genetic_code.weighting_matrix       = "weighting-matrix";
-terms.genetic_code.count_stop_codons      = "count-stop-codons";
-terms.genetic_code.EPS                    = "EPS";
-terms.genetic_code.EPN                    = "EPN";
-terms.genetic_code.OPS                    = "OPS";
-terms.genetic_code.OPN                    = "OPN";
-terms.genetic_code.NTP                    = "NTP";
-terms.genetic_code.SS                     = "SS";
-terms.genetic_code.NS                     = "NS";
-
-terms.code   = "code";
-terms.code.stops = "stops";
-terms.code.ordering = "ordering";
-terms.code.mapping = "mapping";
-
-
-
-terms.diff.to = "to";
-terms.diff.from = "from";
-terms.diff.position = "position";
-
-
-
-terms.transition_transversion_ratio = "Transitition/transversion ratio";
-terms.transition                    = "transition rate";
-terms.transversion                  = "transversion rate";
-
-
-
-
-
-terms.branch_length_constrain       = "branch length constrain"; // THIS EXISTS BUT UNCLEAR IF CORRECT NAMESPACE
-terms.constraint          = "constraint";
-terms.fix                 = "fix-me";
-terms.likelihood_function = "LF";
-terms.model               = "model";
-terms.number_precision    = "number-precision";
-terms.three_way = "three-way";
-terms.reduced  = "reduced";
-terms.default_time = "t"; 
-
-//EVERYBODY
-terms.branch_length = "branch length";
-terms.parameters    = "parameters";
-terms.local         = "local";
-terms.global        = "global";
-terms.default        = "default"; // WAS: terms.data.default
-terms.id            = "id";
-terms.description = "description";
-
-terms.alternative      = "alternative";
-terms.null             = "null";
-terms.LRT              = "LRT";
-//terms.LR               = "LR";  // change all to terms.LRT
-terms.p_value          = "p-value"; //
-/* Codon model terms */
-terms.omegas  = "omegas";
-terms.weights = "weights";
-terms.freqs   = "f";
-terms.omega   = "omega";
-terms.weight  = "weight";
-terms.category = "category";
-
-
-/* Frequencies */
-terms.freqs.4x1 = "Nucleotide 4x1 estimator";
-terms.freqs.equal = "Equal frequencies";
-terms.freqs.CF3x4 = "Corrected 3x4 frequency estimator";    
-terms.freqs.20x1 = "Protein 20x1 estimator";     
-terms.freqs.predefined = "Based on a training set";    
-
-/* Model description terms */
-
-terms.model.branch_length_constrain       = "branch length constrain"; //?
-
-terms.model.length           = "length";
-terms.model.length_parameter = "length parameter";
-terms.model.length_expression = "length-expression";
-
-terms.model.type = "type";
-terms.model.components = "components";
-terms.model.description = "description";
-terms.model.canonical   = "canonical";
-terms.model.reversible  =  "reversible";
-terms.model.efv_estimate_name =  "Equilibrium frequency estimator";
-terms.model.efv_estimate = "EFV"; 
-terms.model.empirical = "empirical";
-terms.model.empirical_rates = "empirical-rates";
-terms.model.get_branch_length       = "get-branch-length";
-terms.model.set_branch_length       = "set-branch-length";
-terms.model.constrain_branch_length = "constrain-branch-length";
-terms.model.frequency_estimator = "frequency-estimator";
-terms.model.q_ij = "q_ij";
-terms.model.time = "time";
-terms.model.defineQ = "defineQ";
-terms.model.post_definition = "post-definition";
-terms.model.rate_entry = "rate-entry";
-terms.model.rate_matrix = "Q";
-terms.model.efv_matrix = "pi";
-terms.model.matrix_id = "matrix-id";
-terms.model.efv_id = "efv-id";
-terms.model.data = "data";
-
-
-terms.model.branch_length_string    = "branch-length-string";
-terms.model.branch_length_scaler    = "branch length scaler";
-
-
-
-
-
-terms.omega_ratio                   = "non-synonymous/synonymous rate ratio"; // in estimators.bf
-terms.synonymous_rate               = "synonymous rate";
-terms.nonsynonymous_rate            = "non-synonymous rate";
-terms.branch_selection_attributes   = "Branch selection attributes";  
-
-terms.globals_only = "globals only";
-terms.empirical_bayes_factor  = "BF";
-terms.posterior     = "posterior";
-
-terms.initial_values          = "Initial values";
-
-
-/* Mixture */
-terms.mixture                 = "mixture";
-terms.mixture_components      = "mixture components";
-terms.mixture_weight          = "Mixture weight";
-terms.mixture_aux_weight      = "Mixture auxiliary weight";
-
-/* Rate variation */
-terms.rate_variation = "Rate variation";
-terms.rate_variation.distribution = "distribution";
-terms.rate_variation.options = "options";
-terms.rate_variation.rate_modifier = "rate_modifier";
-
-terms.category_parameters = "category parameters";
-terms.category.bins = "bins";
-terms.category.weights = "weights";
-terms.category.represent = "represent";
-terms.category.PDF = "PDF";
-terms.category.CDF = "CDF";
-terms.category.dCDF = "dCDF";
-
-
-terms.before = "before";
-terms.after  = "after";
-
-terms.rate_variation.bins = "Rate variation bins";
-
+// These terms must be defined in this manner in order to avoid conflicts w/ built-in functions global and Gamma
+terms.global               = "global";
+terms.json.global          = "Global model fit";
 terms.rate_variation.Gamma = "Gamma";
-terms.rate_variation.GammaI = "Gamma+I";
-terms.rate_variation.gamma_alpha = "Shape parameter for the gamma distribution (alpha)";
-terms.rate_variation.gamma_beta = "Variance parameter for the gamma distribution (beta)";
-terms.rate_variation.gamma_p_inv = "Estimated proportion of invariant sites";
+
+
+namespace terms{
+
+    /* Generic terms which are used in a variety of contexts */
+    alphabet                = "alphabet";
+    code                    = "code";
+    bases                   = "bases";
+    amino_acid              = "amino-acid";
+    codons                  = "codons";
+    codon                   = "codon";
+    sense_codons            = "sense";
+    stop_codons             = "stop";
+    translation_table       = "translation-table";
+    synonymous_sub_count    = "synonymous substitution count";
+    nonsynonymous_sub_count = "nonsynonymous substitution count";
+    original_name           = "original_name";
+    
+    category            = "category";
+    mixture             = "mixture";    
+    timers              = "timers";
+    constraint          = "constraint";
+    fix                 = "fix-me";
+    likelihood_function = "LF";
+    model               = "model";
+    number_precision    = "number-precision";
+    three_way           = "three-way";
+    reduced             = "reduced";
+    
+    parameters     = "parameters";
+    local          = "local";
+   // global         = "global"; // Defined at the top of file
+    globals_only   = "globals only";
+    initial_values = "Initial values";
+    default        = "default";
+    id             = "ID"; // everything now
+    description    = "description";
+      
+    efv_estimate   = "EFV";
+    branch_length  = "branch length";
+    alternative    = "alternative";
+    null           = "null";
+    LRT            = "LRT";
+    p_value        = "p-value";
+    
+    branch_selection_attributes   = "Branch selection attributes";
+    empirical_bayes_factor  = "BF";
+    posterior               = "posterior";
+
+    global_mg94xrev = "Global MG94xREV";
+
+
+    lower_bound = "LB";
+    upper_bound = "UB";
+    range01 = {
+        lower_bound: "0",
+        upper_bound: "1"
+    };
+
+    range_almost_01 = {
+        lower_bound: "1e-8",
+        upper_bound: "1"
+    };
+
+    range_gte1 = {
+        lower_bound: "1",
+        upper_bound: "1e26"
+    };
 
 
 
 
-/* Term functions */
-function terms.nucleotideRate(fromC, toC) {
-    return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
+
+
+    /* Term functions */
+    function nucleotideRate(fromC, toC) {
+        return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
+    }
+    function aminoacidRate(fromA, toA) {
+        return "Substitution rate from aminoacid " + fromA + " to aminoacid " + toA;
+    }
+    function timeParameter() {
+        return "Evolutionary time parameter";
+    }
+    function AddCategory (term, categoryID) {
+        return term + " for category " + categoryID;
+    }
+
+
+    /* Terms accompanying category defintions */
+    //category = "category" // Defined above under genetic terms. Left here as a comment for future reminders.
+    namespace category {
+        category_parameters = "category parameters";
+        bins                = "bins";
+        weights             = "weights";
+        represent           = "represent";
+        PDF                 = "PDF";
+        CDF                 = "CDF";
+        dCDF                = "dCDF";
+    }
+
+
+    /* Terms for code structures */
+    //code = "code";// Defined above under general terms. Left here as a comment for future reminders.
+    namespace code{
+        stops    = "stops";
+        ordering = "ordering";
+        mapping  = "mapping";
+    }
+
+
+    /* Terms associated with data structures */
+    namespace data {
+        sites          = "sites";
+        sequences      = "sequences";
+        sequence       = "sequence";
+        file           = "file";
+        cache          = "cache";
+        name           = "name";
+        name_mapping   = "name-mapping";
+        partitions     = "partitions";
+        tree           = "tree";
+        dataset        = "dataset";
+        data_filter    = "datafilter";
+        coverage       = "coverage";
+        filter_string  = "filter-string";
+        is_constant    = "is_constant";
+        pattern_id     = "pattern id";
+        filename_to_index = "filename-to-index";
+    }
+
+
+    /* Terms for evaluating diff's b/w states */
+    namespace diff{
+        to       = "to";
+        from     = "from";
+        position = "position";
+    }
+
+
+    /* Terms specific to model fits.*/
+    // Note that some terms used in model fits are also under the genetic terms
+    namespace fit{
+        MLE                 = "MLE";
+        trees               = "Trees";
+        nonsynonymous_trees = "non-synonymous-trees";
+        synonymous_trees    = "synonymous-trees";
+        log_likelihood      = "LogL";
+        filters             = "Filters";
+        phase               = "phase";
+    }
+
+
+    /* Terms accompanying models/frequencies.bf */
+    namespace frequencies {
+        _4x1       = "Nucleotide 4x1 estimator";
+        equal      = "Equal frequencies";
+        CF3x4      = "Corrected 3x4 frequency estimator";
+        _20x1      = "Protein 20x1 estimator";
+        predefined = "Based on a training set";
+    }
+
+    /* Terms accompanying tasks/genetic_code.bf */
+    namespace genetic_code {
+        synonymous        = "synonymous";
+        nonsynonymous     = "nonsynonymous";
+        weighting_matrix  = "weighting-matrix";
+        count_stop_codons = "count-stop-codons";
+        EPS               = "EPS";
+        EPN               = "EPN";
+        OPS               = "OPS";
+        OPN               = "OPN";
+        NTP               = "NTP";
+        SS                = "SS";
+        NS                = "NS";
+    }
+
+    /* Terms used in I/O */
+    namespace io {
+        //Analysis banner
+        info         = "info";
+        requirements = "requirements";
+        reference    = "citation";
+        authors      = "authors";
+        contact      = "contact";
+        version      = "version";
+        
+        //ReadDelimitedFile
+        header       = "header";
+        rows         = "rows";
+    }
+
+    /* Terms used to write to JSONs */
+    namespace json{
+        // For any json
+        json                  = "json";
+        analysis              = "analysis";
+        input                 = "input";
+        file                  = "file name";
+        sequences             = "number of sequences";
+        sites                 = "number of sites";
+        fits                  = "fits";
+        timers                = "timers";
+        trees                 = "trees";
+        MLE                   = "MLE";
+        rate_distributions    = "rate distributions";
+        parameters            = "estimated parameters";
+        PMID                  = "PMID";
+ //       PMCID                 = "PMCID";
+        test_results          = "test results";
+        tree_string           = "tree";
+        tree_length           = "tree length";
+        rate_distributions    = "Rate Distributions";
+        log_likelihood        = "Log Likelihood";
+        AICc                  = "AIC-c";
+        model                 = "model"; // TODO: change string to "model name"
+       // global                = "Global model fit"; // Defined at the top of file
+        attribute             = "attributes";
+        display_order         = "display order";
+        attribute_type        = "attribute type";
+        nodel_label           = "node label";
+        branch_label          = "branch label";
+        branch_attributes     = "branch attributes";
+        branch_annotations    = "branch annotations";
+        annotation_tag        = "annotation tag";
+        branch_lengths        = "branch lengths";        
+  //      background            = "background";
+
+        headers               = "headers";
+        content               = "content";
+        partition_count       = "partition count";
+        partitions            = "data partitions";
+
+        tested                = "tested";
+        uncorrected_pvalue    = "uncorrected p-value";
+        relative_site_rates   = "Relative site rate estimates";
+      //  site_log_likelihood   = "site log likelihood";
+     //   evidence_ratios       = "evidence ratios";
+        options               = "options";
+        runtime               = "runtime";
+        version               = "version";
+        convergence_failures  = "convergence failures";
+    }
+
+
+    /* Terms accompanying convenience/math.bf */
+    namespace math {
+        count        = "Count";
+        mean         = "Mean";
+        median       = "Median";
+        stddev       = "Std.Dev";
+        minimum      = "Min";
+        maximum      = "Max";
+        _2.5         = "2.5%";
+        _97.5        = "97.5%";
+        sum          = "Sum";
+        variance     = "Variance";
+        cov          = "COV";
+        skewness     = "Skewness";
+        kurtosis     = "Kurtosis";
+        square_sum   = "Sq. sum";
+        non_negative = "Non-negative";
+    }
+
+
+
+    /* Terms for mixture models */
+    //mixture  = "mixture"; // Defined above under general terms. Left here as a comment for future reminders.
+    namespace mixture {
+        mixture_components = "mixture components";
+        mixture_weight     = "Mixture weight";
+        mixture_aux_weight = "Mixture auxiliary weight";
+    }
+
+
+    /* Terms accompanying models/* ;Primary terms used in model definitions */
+    namespace model {
+
+        efv_estimate_name       = "Equilibrium frequency estimator";
+        frequency_estimator     = "frequency-estimator";
+        efv_matrix              = "pi";
+        efv_id                  = "efv-id";
+
+        defineQ                 = "defineQ";
+        q_ij                    = "q_ij";
+        rate_matrix             = "Q";
+        matrix_id               = "matrix-id";
+        rate_entry              = "rate-entry";
+        empirical_rates         = "empirical-rates";
+
+        rate_variation          = "Rate variation";
+
+        time                    = "time";
+
+        type                    = "type";
+        components              = "components";
+        canonical               = "canonical";
+        reversible              = "reversible";
+        empirical               = "empirical";
+        
+        branch_length_constrain = "branch length constrain";// TODO
+        get_branch_length       = "get-branch-length";
+        set_branch_length       = "set-branch-length";
+        constrain_branch_length = "constrain-branch-length";
+        branch_length_string    = "branch-length-string";
+        branch_length_scaler    = "branch length scaler";
+        post_definition         = "post-definition";
+        length                  = "length";
+        length_parameter        = "length parameter";
+        length_expression       = "length-expression";
+
+        data                    = "data";
+
+    }
+    
+
+
+    /* Terms accompanying tasks/mpi.bf */
+    namespace mpi {
+        job_id              = "job_id";
+        callback            = "callback";
+        arguments           = "arguments";
+        Models              = "Models";
+        LikelihoodFunctions = "LikelihoodFunctions";
+        Headers             = "Headers";
+        Variables           = "Variables";
+        Functions           = "Functions";
+    }
+
+    
+
+    /* Terms accompanying models/parameters.bf or any terms specifically referring to a model parameter */
+    namespace parameters {
+        local_constrained             = "Local Constrained";// from terms.lf.local.constrained
+        global_constrained            = "Global Constrained";// from terms.lf.global.constrained
+        transition                    = "transition";
+        transversion                  = "transversion";
+        transition_transversion_ratio = "Transitition/transversion ratio";
+        kappa                         = "kappa";
+        synonymous_rate               = "synonymous rate";
+        nonsynonymous_rate            = "non-synonymous rate";
+        omega_ratio                   = "non-synonymous/synonymous rate ratio";
+        one                           = "1";
+        theta                         = "theta";
+        default_time                  = "t";
+        omegas                        = "omegas";
+        omega                         = "omega";
+        weights                       = "weights";
+        weight                        = "weight";
+        freqs                         = "f";
+    }
+
+
+    /* Terms accompanying rate_variation.bf rate variation */
+    //rate_variation = "rate_variation"; //Here for reference, but defined above.
+    namespace rate_variation {
+        distribution  = "distribution";
+        options       = "options";
+        rate_modifier = "rate_modifier";
+        bins          = "Rate variation bins";
+        //Gamma         = "Gamma"; // Defined at the top of file
+        GammaI        = "Gamma+I";
+        gamma_alpha   = "Shape parameter for the gamma distribution (alpha)";
+        gamma_beta    = "Variance parameter for the gamma distribution (beta)";
+        gamma_p_inv   = "Estimated proportion of invariant sites";
+        before        = "before";
+        after         = "after";
+    }
+        
+        
+            
+    /* Terms used to specify runtime options for model fitting */
+    namespace run_options {
+        model_type                        = "model-type";
+        proportional_branch_length_scaler = "proportional-branch-length-scaler";
+        retain_lf_object                  = "retain-lf-object";
+        retain_model_object               = "retain-model-object";
+        partitioned_omega                 = "partitioned-omega";
+    }
+    
+    /* Terms formatting table output */
+    namespace table_options{
+        header               = "header";
+        minimum_column_width = "min-column-width";
+        align                = "align";
+        column_widths        = "column-widths";
+    }
+
+    /* Terms used for runtime tracking */
+    //timers = "timers";// Defined above under genetic terms. Left here as a comment for future reminders.
+    namespace timers {
+        timer = "timer";
+        order = "order";
+    }
+
+
+    /* Terms associated with tree structures */
+    namespace trees {
+        newick = "string";
+        newick_with_lengths = "string_with_lengths";
+        newick_annotated = "annotated_string";
+        model_map = "model_map";
+        partitioned = "partitioned";
+        model_list = "model_list";
+        
+        //node_name = "Name";
+        //children = "Children";
+        //parent = "Parent";
+    }
+    
+    /* Terms associated with tree labeling */
+    namespace tree_attributes{
+        internal    = "internal";
+        leaf        = "leaf";
+        test        = "test";
+        background  = "background";
+    }
+    
 }
 
-function terms.aminoacidRate(fromA, toA) {
-    return "Substitution rate from aminoacid " + fromA + " to aminoacid " + toA;
-}
-
-// TODO: Why is this here?
-function terms.timeParameter() {
-    return "Evolutionary time parameter";
-}
-
-function terms.AddCategory (term, categoryID) {
-    return term + " for category " + categoryID;
-}
 
 
 
 
 
-/* Generic */
-
-terms.lf.local.constrained = "Local Constrained";
-terms.lf.global.constrained = "Global Constrained";
-
-
-
-
-
-terms.timers = "timers";
-terms.timers.timer = "timer";
-terms.timers.order = "order";
-
-
-terms.lower_bound = "LB";
-terms.upper_bound = "UB";
-terms.range01 = {
-    terms.lower_bound: "0",
-    terms.upper_bound: "1"
-};
-
-terms.range_almost_01 = {
-    terms.lower_bound: "1e-8",
-    terms.upper_bound: "1"
-};
-
-terms.range_gte1 = {
-    terms.lower_bound: "1",
-    terms.upper_bound: "1e26"
-};
-
-
-
-
-
-
-terms.run_options.retain_lf_object   = "retain-lf-object";
-terms.run_options.proportional_branch_length_scaler = "proportional-branch-length-scaler";
-terms.run_options.retain_model_object = "retain-model-object";
-terms.run_options.model_type          = "model-type";
-terms.run_options.partitioned_omega = "partitioned-omega";
-
-
-//terms.data.trees_         = "Trees";
-
-
-/* Likelihood fit structures */
-terms.fit.efv_estimate = "EFV";
-terms.fit.evolutionary_time = "Evolutionary time parameter";
-terms.fit.MLE     = "MLE";
-terms.fit.ID      = "ID";
-terms.fit.trees   = "Trees";
-terms.fit.log_likelihood = "LogL";
-terms.fit.filters    = "Filters";
-
-
-/* Genetics */
-
-
-
-
-
-
-
-/* Data */
-terms.data.sites          = "sites";
-terms.data.sequences      = "sequences";
-terms.data.sequence       = "sequence";
-terms.data.file           = "file";
-terms.data.cache          = "cache";
-terms.data.name           = "name";
-terms.data.name_mapping   = "name-mapping";
-terms.data.partitions     = "partitions";
-terms.data.tree           = "tree";
-terms.data.dataset        = "dataset";
-terms.data.data_filter    = "datafilter";
-terms.data.coverage       = "coverage";
-terms.data.filter_string  = "filter-string";
-terms.data.is_constant    = "is_constant";
-terms.data.pattern_id     = "pattern id";
-
-
-
-
-/* Tree structures */
-terms.trees = {};
-//terms.trees.branch_length = "branch length";
-terms.trees.newick = "string";
-terms.trees.newick_with_lengths = "string_with_lengths";
-terms.trees.newick_annotated = "annotated_string";
-terms.trees.model_map = "model_map";
-terms.trees.partitioned = "partitioned";
-terms.trees.model_list = "model_list";
-terms.tree_attributes.internal = "internal";
-terms.tree_attributes.leaf = "leaf";
-terms.tree_attributes.test   = "test";
-terms.tree_attributes.background  = "background";
-//terms.branch_attributes = "branch_attributes";
-//terms.trees.name = "name"; // todo: is this real?
-
-// TODO: Unclear if these are actually usable
-//terms.trees.node_name = "Name";
-//terms.trees.children = "Children";
-//terms.trees.parent = "Parent";
-//
-
-/* Input/output banner */
-terms.io.info         = "info";
-terms.io.requirements = "requirements";
-terms.io.reference    = "citation";
-terms.io.authors      = "authors";
-terms.io.contact      = "contact";
-terms.io.version      = "version";
-
-
-/* Attribute terms */
-terms.attribute = {};
-/******* TO DO: WHICH ONE IS CORRECT. Assuming the string????? *********/
-terms.attribute.meta = "attributes"; //terms.attribute.meta = {};
-terms.attribute.meta.type      = "attribute type";
-//terms.attribute.meta.order     = "display order";
-terms.attribute.branch_length  = terms.branch_length;
-
-
-terms.attribute.data           = "data";
-
-/* JSON terms. Many of these are copied from above.*/
-terms.json = {};
-
-terms.json.json                     = "json"; 
-terms.json.fits                     = "fits";
-terms.json.timers                   = "timers";
-terms.json.PMID                     = "PMID";
-terms.json.PMCID                    = "PMCID"; // because we can't all have a pmid.
-terms.json.trees                    = "trees"; 
-terms.json.MLE                      = "MLE";
-terms.json.headers                  = "headers";
-terms.json.content                  = "content";
-terms.json.rate_distributions       = "rate distributions";
-terms.json.log_likelihood           = "log likelihood";
-terms.json.parameters               = "estimated parameters";
-terms.json.AICc                     = "AIC-c";
-terms.json.model                    = "model";
-terms.json.global                   = "Global model fit";
-terms.json.branch_attributes        = "branch attributes";
-terms.json.branch_annotations       = "branch annotations";
-terms.json.branch_lengths           = "branch lengths";
-terms.json.annotation_tag           = "annotation tag";
-terms.json.display_order            = "display order"; //from terms.attribute.meta.order
-terms.json.attribute                = "attributes"; // from terms.json.attributes.meta
-terms.json.attribute_type           = "attribute type"; // from terms.attribute.meta.type
-terms.json.partitions               = "data partitions";
-terms.json.node_label     = "node label";
-terms.json.branch_label   = "branch label";
-terms.json.tested                   = "tested";    
-terms.json.uncorrected_pvalue       = "uncorrected p-value";
-terms.json.test_results = "test results";
-terms.json.input = "input"; 
-terms.json.file = "file name";
-terms.json.sequences = "number of sequences";
-terms.json.partition_count = "partition count";
-terms.json.sites = "number of sites";
-terms.json.tree_string = "tree"; 
-terms.json.tree_length = "tree length";
-terms.json.relative_site_rates = "Relative site rate estimates";
-terms.json.analysis = "analysis";
-
-terms.json.site_log_likelihood = "site log likelihood";
-terms.json.evidence_ratios = "evidence ratios";
-terms.json.options  = "options";
-terms.json.runtime = "runtime";
-terms.json.version = "version";
-terms.json.convergence_failures = "convergence failures";
 
 
 

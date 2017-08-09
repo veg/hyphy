@@ -36,7 +36,7 @@ lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
         utility.getGlobalValue("terms.description"): "The branch-site mixture of N Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution",
         utility.getGlobalValue("terms.model.canonical"): "EXPLICIT_FORM_MATRIX_EXPONENTIAL", // is NOT of the r_ij \times \pi_j form
         utility.getGlobalValue("terms.model.reversible"): TRUE,
-        utility.getGlobalValue("terms.model.efv_estimate_name"): utility.getGlobalValue("terms.freqs.CF3x4"),
+        utility.getGlobalValue("terms.model.efv_estimate_name"): utility.getGlobalValue("terms.frequencies.CF3x4"),
         utility.getGlobalValue("terms.parameters"): {
             utility.getGlobalValue("terms.global"): {},
             utility.getGlobalValue("terms.local"):  {}
@@ -78,7 +78,7 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
     rate_matrices = {};
 
     bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
-    bs_rel [utility.getGlobalValue("terms.mixture_components")] = {};
+    bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")] = {};
     
     
     
@@ -92,27 +92,27 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
        ExecuteCommands ("
         function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
             return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt,
-                'alpha', utility.getGlobalValue('terms.synonymous_rate'),
-                'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.nonsynonymous_rate'), component),
-                'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.omega_ratio'), component));
+                'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
         }"
        );
        models.codon.generic.DefineQMatrix(bs_rel, namespace);
        rate_matrices [key] = bs_rel[utility.getGlobalValue("terms.model.rate_matrix")];
-       (bs_rel [utility.getGlobalValue("terms.mixture_components")])[key] = _wts [component-1];
+       (bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")])[key] = _wts [component-1];
 
        if ( component < bs_rel[utility.getGlobalValue("terms.model.components")]) {
-            model.generic.AddLocal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture_aux_weight"), component ));
+            model.generic.AddLocal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
             parameters.SetRange (_aux[component-1], utility.getGlobalValue("terms.range_almost_01"));
         }
     	//mixture [key] = "mixture_weight_" + component;
-        //model.generic.AddLocal ( bs_rel, mixture [key], terms.AddCategory (^'terms.mixture_weight', component));
+        //model.generic.AddLocal ( bs_rel, mixture [key], terms.AddCategory (^'terms.mixture.mixture_weight', component));
         //parameters.SetConstraint (mixture [key], _wts[component-1], "");
 
     }
 
     bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
-    //bs_rel[^"terms.mixture_components"] = mixture;
+    //bs_rel[^"terms.mixture.mixture_components"] = mixture;
     
     parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
     

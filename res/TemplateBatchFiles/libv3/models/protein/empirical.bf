@@ -2,7 +2,7 @@ LoadFunctionLibrary("../protein.bf");
 LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
-LoadFunctionLibrary("../terms.bf");
+LoadFunctionLibrary("../../all-terms.bf");
 
 /** @module models.protein.empirical */
 
@@ -18,7 +18,7 @@ function models.protein.empirical.ModelDescription(type) {
         terms.description: "General class of empirical substitution matrices for amino-acids",
         terms.model.canonical: 1, // is of the r_ij \times \pi_j form
         terms.model.reversible: 1,
-        terms.model.efv_estimate_name: terms.freqs.predefined,
+        terms.model.efv_estimate_name: terms.frequencies.predefined,
         terms.parameters: {
             terms.global: {},
             terms.local: {},
@@ -87,7 +87,7 @@ function models.protein.WAGF.ModelDescription(type) {
  * @description Define the empirical amino acid frequencies associated with the WAG model of protein evolution
  */
 function models.protein.WAG.frequencies (model, namespace, datafilter) {
-    model[terms.model.efv_estimate] =
+    model[terms.efv_estimate] =
         {{     0.0866279}
         {     0.0193078}
         {     0.0570451}
@@ -110,7 +110,7 @@ function models.protein.WAG.frequencies (model, namespace, datafilter) {
         {     0.0352742}
         };
 
-    model[terms.model.efv_estimate_name] = terms.freqs.predefined;
+    model[terms.model.efv_estimate_name] = terms.frequencies.predefined;
     (model[terms.parameters])[terms.model.empirical] = 0;
     return model;
 }
@@ -403,7 +403,7 @@ function models.protein.LGF.ModelDescription(type) {
  * @description Define the empirical amino acid frequencies associated with the LG model of protein evolution
  */
 function models.protein.LG.frequencies (model, namespace, datafilter) {
-    model[terms.model.efv_estimate] =
+    model[terms.efv_estimate] =
  
           {{     0.07906500000000008}
            {     0.012937}
@@ -427,7 +427,7 @@ function models.protein.LG.frequencies (model, namespace, datafilter) {
            {     0.034155}
           };
 
-    model[terms.model.efv_estimate_name] = terms.freqs.predefined;
+    model[terms.model.efv_estimate_name] = terms.frequencies.predefined;
     (model[terms.parameters])[terms.model.empirical] = 0;
     return model;
 }
@@ -718,7 +718,7 @@ function models.protein.JTTF.ModelDescription(type) {
  * @description Define the empirical amino acid frequencies associated with the JTT model of protein evolution
  */
 function models.protein.JTT.frequencies (model, namespace, datafilter) {
-    model[terms.model.efv_estimate] =
+    model[terms.efv_estimate] =
       {{	0.07686099999999986}
         {	0.020279}
         {	0.051269}
@@ -741,7 +741,7 @@ function models.protein.JTT.frequencies (model, namespace, datafilter) {
         {   0.032303}
     };
 
-    model[terms.model.efv_estimate_name] = terms.freqs.predefined;
+    model[terms.model.efv_estimate_name] = terms.frequencies.predefined;
     (model[terms.parameters])[terms.model.empirical] = 0;
     return model;
 }
@@ -1032,7 +1032,7 @@ function models.protein.JCF.ModelDescription(type) {
  * @description Define the empirical amino acid frequencies associated with the JC69 model of protein evolution
  */
 function models.protein.JC.frequencies (model, namespace, datafilter) {
-    model[terms.model.efv_estimate] =
+    model[terms.efv_estimate] =
       {{	0.05}
         {	0.05}
         {	0.05}
@@ -1055,7 +1055,7 @@ function models.protein.JC.frequencies (model, namespace, datafilter) {
         {   0.05}
     };
 
-    model[terms.model.efv_estimate_name] = terms.freqs.predefined;
+    model[terms.model.efv_estimate_name] = terms.frequencies.predefined;
     (model[terms.parameters])[terms.model.empirical] = 0;
     return model;
 }

@@ -1,5 +1,4 @@
 LoadFunctionLibrary("../models/model_functions.bf");
-//LoadFunctionLibrary("../models/terms.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
@@ -55,7 +54,7 @@ function estimators.copyGlobals2(key2, value2) {
     }
 
     (estimators.ExtractMLEs.results[terms.global])[key2] = {
-        terms.fit.ID: value2,
+        terms.id: value2,
         terms.fit.MLE: Eval(value2)
     };
 
@@ -83,7 +82,7 @@ function estimators.copyGlobals(key, value) {
  * @returns nothing
  */
 function estimators.CopyFrequencies(model_name, model_decription) {
-    (estimators.ExtractMLEs.results[terms.fit.efv_estimate])[model_name] = model_decription[terms.fit.efv_estimate];
+    (estimators.ExtractMLEs.results[terms.efv_estimate])[model_name] = model_decription[terms.efv_estimate];
 }
 
 
@@ -96,7 +95,7 @@ function estimators.SetGlobals2(key, value) {
             ExecuteCommands("`value` := " + __init_value[terms.fit.MLE]);
         } else {
             if (parameters.IsIndependent (value)) {
-                //fprintf (stdout, "Setting `value` to " + __init_value[terms.fitMLE] + "\n", parameters.IsIndependent (value), "\n");
+                //fprintf (stdout, "Setting `value` to " + __init_value[terms.fit.MLE] + "\n", parameters.IsIndependent (value), "\n");
                 ExecuteCommands("`value` = " + __init_value[terms.fit.MLE]);
             } else {
                 messages.log (value + " was already constrained in estimators.SetGlobals2");
@@ -140,7 +139,7 @@ function estimators.ExtractBranchInformation.copy_local(key, value) {
     estimators.ExtractBranchInformation.copy_local.var_name = estimators.extractBranchLength.parameter_tag + "." + value;
 
     estimators.extractBranchLength.result[key] = {
-        terms.fit.ID: value,
+        terms.id: value,
         terms.fit.MLE: Eval(estimators.ExtractBranchInformation.copy_local.var_name)
     };
 
@@ -256,7 +255,7 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
 
     estimators.ExtractMLEs.results[terms.global] = {};
     model_descriptions["estimators.copyGlobals"][""];
-    estimators.ExtractMLEs.results[terms.fit.efv_estimate] = {};
+    estimators.ExtractMLEs.results[terms.efv_estimate] = {};
     model_descriptions["estimators.CopyFrequencies"][""];
     estimators.ExtractMLEs.results[terms.branch_length] = {};
     estimators.ExtractMLEs.results[terms.fit.trees] = estimators.ExtractMLEs.lfInfo[terms.fit.trees];
@@ -711,7 +710,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
        
         new_globals = {};
         utility.ForEachPair(partition_omega, "_key_", "_value_",
-            '`&new_globals` [_key_] = (`&name_space` + ".omega_" + Abs (`&new_globals`)); model.generic.AddGlobal (`&mg_rev`, `&new_globals` [_key_] , (utility.getGlobalValue("terms.omega_ratio")) + " for *" + _key_ + "*")');
+            '`&new_globals` [_key_] = (`&name_space` + ".omega_" + Abs (`&new_globals`)); model.generic.AddGlobal (`&mg_rev`, `&new_globals` [_key_] , (utility.getGlobalValue("terms.parameters.omega_ratio")) + " for *" + _key_ + "*")');
         parameters.DeclareGlobal(new_globals, None);
 
 
@@ -719,8 +718,8 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
             now replicate the local constraint for individual branches
         */
 
-        alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.synonymous_rate"));
-        beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.nonsynonymous_rate"));
+        alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
+        beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];

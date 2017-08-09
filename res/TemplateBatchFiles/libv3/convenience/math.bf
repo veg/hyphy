@@ -170,8 +170,8 @@ lfunction math.GatherDescriptiveStats(_data_vector) {
   _dstats[utility.getGlobalValue("terms.math.median")] = math.Median(_data_vector);
   _dstats[utility.getGlobalValue("terms.math.minimum")] = _sorted_data_vector[0];
   _dstats[utility.getGlobalValue("terms.math.maximum")] = _sorted_data_vector[_count - 1];
-  _dstats[utility.getGlobalValue("terms.math.2.5")] = _sorted_data_vector[(_count*0.025)$1];
-  _dstats[utility.getGlobalValue("terms.math.97.5")] = _sorted_data_vector[Min((_count*0.975+0.5)$1, _count-1)];
+  _dstats[utility.getGlobalValue("terms.math._2.5")] = _sorted_data_vector[(_count*0.025)$1];
+  _dstats[utility.getGlobalValue("terms.math._97.5")] = _sorted_data_vector[Min((_count*0.975+0.5)$1, _count-1)];
   _dstats[utility.getGlobalValue("terms.math.sum")] = _sum;
   //_dstats["Mean"] = _sum/_count;
   _dstats[utility.getGlobalValue("terms.math.stddev")] = _std;

@@ -119,12 +119,12 @@ function utility.SetEnvVariable (var, value) {
  */
 lfunction utility.CheckCacheFile (data_info) {
     cache_info = {};
-    cache_info[utility.getGlobalValue("terms.file")] = data_info[utility.getGlobalValue("terms.file")] + ".hyphy_cache";
-    if (!(cache_info[utility.getGlobalValue("terms.file")])) {
-        fscanf (cache_info[utility.getGlobalValue("terms.file")], "Raw", _cache);
-        cache_info[utility.getGlobalValue("terms.cache")] = Eval (_cache);
+    cache_info[utility.getGlobalValue("terms.data.file")] = data_info[utility.getGlobalValue("terms.data.file")] + ".hyphy_cache";
+    if (!(cache_info[utility.getGlobalValue("terms.data.file")])) {
+        fscanf (cache_info[utility.getGlobalValue("terms.data.file")], "Raw", _cache);
+        cache_info[utility.getGlobalValue("terms.data.cache")] = Eval (_cache);
     } else {
-         cache_info[utility.getGlobalValue("terms.cache")] = {};
+         cache_info[utility.getGlobalValue("terms.data.cache")] = {};
     }
     return cache_info;
 }

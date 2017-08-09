@@ -252,8 +252,8 @@ function doPartitionedMG (prefix, keep_lf) {
 
 
     io.ReportProgressMessageMD("`prefix`", "codon-fit", "* Log(L) = " + Format(partitioned_mg_results[utility.getGlobalValue("terms.fit.log_likelihood")],8,2));
-    global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.omega_ratio"));    
-    utility.ForEach (global_dnds, "_value_", 'io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+    global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.parameters.omega_ratio"));    
+    utility.ForEach (global_dnds, "_value_", 'io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_[utility.getGlobalValue("terms.description")] + " = " + Format (_value_[utility.getGlobalValue("terms.fit.MLE")],8,4));');
 
     /** extract and report dN/dS estimates */
 }

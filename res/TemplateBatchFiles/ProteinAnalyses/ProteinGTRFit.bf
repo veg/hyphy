@@ -171,7 +171,7 @@ if (utility.Has (protein_gtr.analysis_results, result_key, None)) {
 protein_gtr.scores + (protein_gtr.analysis_results[result_key])[terms.fit.log_likelihood];
 
 /* Now that the initial GTR fit has been performed, we toggle between a GTR fit and a branch length fit under the estimated GTR parameters */
-protein_gtr.shared_EFV = (utility.Values (protein_gtr.current_gtr_fit [terms.model.efv_estimate]))[0];
+protein_gtr.shared_EFV = (utility.Values (protein_gtr.current_gtr_fit [terms.efv_estimate]))[0];
 if (Type (protein_gtr.shared_EFV) == "String") {
     protein_gtr.shared_EFV = Eval (protein_gtr.shared_EFV);
 }

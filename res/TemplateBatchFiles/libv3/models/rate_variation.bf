@@ -49,7 +49,7 @@ lfunction rate_variation_define_gamma (options, namespace) {
 	
 	definition = {utility.getGlobalValue("terms.id") : parameters.ApplyNameSpace("rv_gamma", namespace),
 				  utility.getGlobalValue("terms.description") : "Discretized unit mean Gamma distribution with " + categories + " categories", 
-				  utility.getGlobalValue("terms.category_parameters") : {
+				  utility.getGlobalValue("terms.category.category_parameters") : {
 				  		utility.getGlobalValue("terms.category.bins") : ""+categories,
 				  		utility.getGlobalValue("terms.category.weights") : "EQUAL",
 				  		utility.getGlobalValue("terms.category.represent") : "MEAN",
@@ -59,8 +59,8 @@ lfunction rate_variation_define_gamma (options, namespace) {
 				  		utility.getGlobalValue("terms.upper_bound") : 1e25,
 				  		utility.getGlobalValue("terms.category.dCDF"): "CGammaDist(_x_,`alpha`+1,`alpha`)"
 				  },
-				  utility.getGlobalValue("terms.before") : None,
-				  utility.getGlobalValue("terms.after") : None,
+				  utility.getGlobalValue("terms.rate_variation.before") : None,
+				  utility.getGlobalValue("terms.rate_variation.after") : None,
 				  };
 				  
 	return {utility.getGlobalValue("terms.global") : {"Gamma distribution shape parameter" : alpha},
@@ -86,7 +86,7 @@ lfunction rate_variation_define_gdd(options, namespace) {
 	utility.ForEachPair (rates, "_key_", "_value_", '(`&globals`)["GDD rate category " + (1+_key_)] = _value_');
 	
 	weights = parameters.GenerateSequentialNames (parameters.ApplyNameSpace("rv_gdd_weights", namespace), categories-1, "_");
-	utility.ForEachPair (weights, "_key_", "_value_", '(`&globals`)[utility.getGlobalValue("terms.mixture_aux_weight") + " " + (1+_key_)] = _value_');
+	utility.ForEachPair (weights, "_key_", "_value_", '(`&globals`)[utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " " + (1+_key_)] = _value_');
 
 	parameters.DeclareGlobalWithRanges (weights, 1/categories, 0, 1);
 	parameters.DeclareGlobal (rates, {});
@@ -109,7 +109,7 @@ lfunction rate_variation_define_gdd(options, namespace) {
 	
 	definition = {utility.getGlobalValue("terms.id"): parameters.ApplyNameSpace("rv_gdd", namespace),
 				  utility.getGlobalValue("terms.description") : "Discretized unit mean Gamma distribution with " + categories + " categories", 
-				  utility.getGlobalValue("terms.category_parameters") : {
+				  utility.getGlobalValue("terms.category.category_parameters") : {
 				  		utility.getGlobalValue("terms.category.bins") : ""+categories,
 				  		utility.getGlobalValue("terms.category.weights") : "{{" + Join (",", weight_vector) + "}}",
 				  		utility.getGlobalValue("terms.category.represent") : "MEAN",
@@ -117,8 +117,8 @@ lfunction rate_variation_define_gdd(options, namespace) {
 				  		utility.getGlobalValue("terms.lower_bound") : 0,
 				  		utility.getGlobalValue("terms.upper_bound") : 1e25,
 				  },
-				  utility.getGlobalValue("terms.before") : None,
-				  utility.getGlobalValue("terms.after") : None,
+				  utility.getGlobalValue("terms.rate_variation.before") : None,
+				  utility.getGlobalValue("terms.rate_variation.after") : None,
 				  };
 				  
 	return {utility.getGlobalValue("terms.global") : globals,
@@ -160,7 +160,7 @@ lfunction rate_variation_define_gamma_inv (options, namespace) {
 	
 	definition = {utility.getGlobalValue("terms.id") : parameters.ApplyNameSpace("rv_gamma_inv", namespace),
 				  utility.getGlobalValue("terms.description"): "Discretized (unit mean) invariant class + Gamma distribution with " + categories + " categories", 
-				  utility.getGlobalValue("terms.category_parameters"): {
+				  utility.getGlobalValue("terms.category.category_parameters"): {
 				  		utility.getGlobalValue("terms.category.bins"): ""+(categories+1),
 				  		utility.getGlobalValue("terms.category.weights"): weights,
 				  		utility.getGlobalValue("terms.category.represent"): "MEAN",
@@ -170,8 +170,8 @@ lfunction rate_variation_define_gamma_inv (options, namespace) {
 				  		utility.getGlobalValue("terms.upper_bound"): 1e25,
 				  		utility.getGlobalValue("terms.category.dCDF"): "(1-`p`)*CGammaDist(_x_,`alpha`+1,`alpha`)*(`alpha`/`beta`)*(_x_>0)"
                   },
-				  utility.getGlobalValue("terms.before"): None,
-				  utility.getGlobalValue("terms.after"): None,
+				  utility.getGlobalValue("terms.rate_variation.before"): None,
+				  utility.getGlobalValue("terms.rate_variation.after"): None,
 				  };
 				  
 				  

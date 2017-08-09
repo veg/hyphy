@@ -173,7 +173,7 @@ io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "Rate distribution su
 io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Mean**: "  + Format (relative_nuc_rates.stats[terms.math.mean], 6, 2));
 io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Median**: "  + Format (relative_nuc_rates.stats[terms.math.median], 6, 2));
 io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **Std.Dev**: "  + Format (relative_nuc_rates.stats[terms.math.stddev], 6, 2));
-io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **95% Range**: ["  + Format (relative_nuc_rates.stats[terms.math.2.5], 5,2) + "," + Format (relative_nuc_rates.stats[terms.math.97.5], 5,2) + "]");
+io.ReportProgressMessageMD ("relative_nuc_rates", "Stats", "* **95% Range**: ["  + Format (relative_nuc_rates.stats[terms.math._2.5], 5,2) + "," + Format (relative_nuc_rates.stats[terms.math._97.5], 5,2) + "]");
 
 
 tree_definition   = utility.Map (relative_nuc_rates.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');

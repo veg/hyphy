@@ -16,7 +16,7 @@ function models.protein.REV.ModelDescription(type) {
         terms.description: "General time reversible model for protein sequences",
         terms.model.canonical: 1, // is of the r_ij \times \pi_j form
         terms.model.reversible: 1,
-        terms.model.efv_estimate_name: terms.freqs.20x1,
+        terms.model.efv_estimate_name: terms.frequencies._20x1,
         terms.parameters: {
             terms.global: {},
             terms.local: {},

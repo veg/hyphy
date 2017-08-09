@@ -1,5 +1,9 @@
 RequireVersion ("2.31");
 
+console.log("ERROR: THIS BATCHFILE WILL NOT RUN PROPERLY WITH UPDATED TERMS BASE. QUITTING.");
+exit();
+
+
 RELAX.debug.reload = FALSE;
 
 LoadFunctionLibrary("GrabBag");
