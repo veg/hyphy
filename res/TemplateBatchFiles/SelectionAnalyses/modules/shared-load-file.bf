@@ -168,7 +168,7 @@ function load_file (prefix) {
 
 function doGTR (prefix) {
 
-    io.ReportProgressMessageMD (prefix, "nuc-fit", "Obtaining branch lengths and nucleotide rates under the  GTR model");
+    io.ReportProgressMessageMD (prefix, "nuc-fit", "Obtaining branch lengths and nucleotide substitution biases under the nucleotide GTR model");
 
 
     gtr_results = estimators.FitGTR(filter_names,

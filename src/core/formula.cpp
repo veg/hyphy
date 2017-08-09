@@ -670,7 +670,10 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramet
   }
   
   if (func_left*func_right>0.0) { // bracket fail
-    ReportWarning (_String((_String*)toStr())&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
+    subNumericValues = 3;
+    _String msg ((_String*)toStr());
+    subNumericValues = 0;
+    ReportWarning (msg&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf); " & func_left & "-" & func_right);
     return    left;
   }
   // else all is good we can start the machine

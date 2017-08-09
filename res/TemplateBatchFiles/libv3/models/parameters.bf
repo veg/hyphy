@@ -334,7 +334,7 @@ lfunction parameters.IsIndependent(parameter) {
     return TRUE;
 }
 
-lfunction parameters.getConstraint(parameter) {
+lfunction parameters.GetConstraint(parameter) {
     GetString(info, ^ parameter, -2);
     return info;
 }
@@ -434,6 +434,52 @@ function parameters.helper.copy_definitions(target, source) {
     	(target[terms.category])[(source[terms.category])["id"]] = (source[terms.category])["description"];
     }
 }
+
+/**
+ * @name pparameters.SetStickBreakingDistribution
+ * @param {AssociativeList} parameters
+ * @param {Matrix} values
+ * @returns nothing
+ */
+
+lfunction parameters.SetStickBreakingDistribution (parameters, values) {
+    rate_count = Rows (values);
+    left_over  = 1;
+
+    for (i = 0; i < rate_count; i += 1) {
+        parameters.SetValue ((parameters["rates"])[i], values[i][0]);
+        if (i < rate_count - 1) {
+            break_here = values[i][1] / left_over;
+            parameters.SetValue ((parameters["weights"])[i], break_here);
+            left_over = left_over * (1-break_here);
+       }
+    }
+}
+
+/**
+ * @name pparameters.GetStickBreakingDistribution
+ * @param {AssociativeList} parameters
+ * @returns {Matrix} computed distribution (Nx2)
+ */
+
+lfunction parameters.GetStickBreakingDistribution (parameters) {
+    rate_count = Rows (parameters["rates"]);
+    distribution = {rate_count, 2};
+
+    current_weight = 1;
+
+    for (i = 0; i < rate_count; i += 1) {
+        distribution [i][0] = Eval ((parameters["rates"])[i]);
+        if (i < rate_count - 1) {
+            distribution [i][1] = current_weight * Eval ((parameters["weights"])[i]);
+            current_weight = current_weight * (1-Eval ((parameters["weights"])[i]));
+        } else {
+            distribution [i][1] = current_weight;
+        }
+    }
+    return distribution;
+}
+
 
 /**
  * @name parameters.helper.stick_breaking

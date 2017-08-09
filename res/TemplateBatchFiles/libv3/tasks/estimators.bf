@@ -58,7 +58,7 @@ function estimators.copyGlobals2(key2, value2) {
     };
 
     if (parameters.IsIndependent(value2) != TRUE) {
-        ((estimators.ExtractMLEs.results["global"])[key2])["constraint"] = parameters.getConstraint(value2);
+        ((estimators.ExtractMLEs.results["global"])[key2])["constraint"] = parameters.GetConstraint(value2);
     }
 }
 
@@ -143,7 +143,7 @@ function estimators.ExtractBranchInformation.copy_local(key, value) {
     };
 
     if (parameters.IsIndependent(estimators.ExtractBranchInformation.copy_local.var_name) != TRUE) {
-        (estimators.extractBranchLength.result[key])["constraint"] = parameters.getConstraint(estimators.ExtractBranchInformation.copy_local.var_name);
+        (estimators.extractBranchLength.result[key])["constraint"] = parameters.GetConstraint(estimators.ExtractBranchInformation.copy_local.var_name);
     }
 
 }
@@ -394,62 +394,73 @@ function estimators._aux.countEmpiricalParameters(id, model) {
  * @param initial_values
  * @returns LF results
  */
-function estimators.FitLF(data_filters_list, tree_list, model_map, initial_values) {
-    estimators.FitLF.component_count = utility.Array1D(data_filters_list);
+lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_objects, run_options) {
 
-    assert(estimators.FitLF.component_count == utility.Array1D(tree_list),
-        "Data filters and tree lists must have the same dimensions in call to estimators.FitLF");
-
-
-    estimators.FitLF.components = {
-        estimators.FitLF.component_count,
-        2
-    };
-
-    for (estimators.FitLF.i = 0; estimators.FitLF.i < estimators.FitLF.component_count; estimators.FitLF.i += 1) {
-        estimators.FitLF.components[estimators.FitLF.i][0] = data_filters_list[estimators.FitLF.i];
-        estimators.FitLF.components[estimators.FitLF.i][1] = tree_list[estimators.FitLF.i];
+    if (Type(data_filter) == "String") {
+        return estimators.FitLF ({
+            {
+                data_filter__
+            }
+        }, {
+            "0": tree
+        },
+        {
+            "0" : model_map
+        },
+        initial_values, model_objects, run_options);
     }
 
-    console.log (data_filters_list);
-    console.log (tree_list);
+    components = utility.Array1D(data_filter);
 
-    LikelihoodFunction estimators.FitLF.likelihoodFunction = (estimators.FitLF.components);
+
+    lf_components = {
+        2 * components,
+        1
+    };
+
+
+    for (i = 0; i < components; i += 1) {
+        lf_components[2 * i] = data_filter[i];
+        tree_id = "tree_" + i;
+        lf_components[2 * i + 1] = &tree_id;
+        model.ApplyModelToTree(lf_components[2*i + 1], tree[i], None, model_map[i]);
+    }
+
+
+    lf_id = &likelihoodFunction;
+
+    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
+
+
+    df = 0;
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-        estimators.ApplyExistingEstimates("estimators.FitLF.likelihoodFunction", model_map, initial_values, None);
+            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options["proportional-branch-length-scaler"]);
     }
 
-    /*Export (boom, estimators.FitLF.likelihoodFunction);
-    fprintf (stdout, boom, "\n");
-    assert (0);*/
-    Optimize(estimators.FitLF.mles, estimators.FitLF.likelihoodFunction);
+    //Export (lf,likelihoodFunction);
+    //console.log (lf);
+
+   	Optimize (mles, likelihoodFunction);
+
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
     }
 
-    estimators.FitLF.results = estimators.ExtractMLEs("estimators.FitLF.likelihoodFunction", model_map);
+    results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
 
-    estimators._aux.parameter_counter = 0;
-    model_map["estimators._aux.countEmpiricalParameters"][""];
+    results["LogL"] = mles[1][0];
+    results["parameters"] = mles[1][1] + df;
 
-    estimators.FitLF.results["LogL"] = estimators.FitLF.mles[1][0];
-    estimators.FitLF.results["parameters"] = estimators.FitLF.mles[1][1] + estimators._aux.parameter_counter;
-    estimators.FitLF.results["Filters"] = {
-        1,
-        estimators.FitLF.component_count
-    };
 
-    for (estimators.FitLF.i = 0; estimators.FitLF.i < estimators.FitLF.component_count; estimators.FitLF.i += 1) {
-        (estimators.FitLF.results["Filters"])[estimators.FitLF.i] = data_filters_list[estimators.FitLF.i];
-        //(estimators.FitLF.results["Trees"])[estimators.FitLF.i]   = Eval ("Format("+tree_list[estimators.FitLF.i]+",1,1)");
+    if (run_options["retain-lf-object"]) {
+        results["LF"] = & likelihoodFunction;
+    } else {
+        DeleteObject(likelihoodFunction);
     }
 
-
-    DeleteObject(estimators.FitLF.likelihoodFunction);
-
-    return estimators.FitLF.results;
+    return results;
 }
 
 
@@ -464,6 +475,7 @@ function estimators.FitLF(data_filters_list, tree_list, model_map, initial_value
  */
 
 lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, initial_values, run_options) {
+
 
     if (Type(data_filter) == "String") {
         return estimators.FitSingleModel_Ext ({
@@ -509,7 +521,6 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
 
     LikelihoodFunction likelihoodFunction = (lf_components);
 
-    //io.SpoolLF (&likelihoodFunction, "/Users/sergei/Desktop/lf", "FitSingleModel_Ext");
 
 
     df = 0;
@@ -677,7 +688,6 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     partition_omega = {};
 
-
     if (option["model-type"] == ^ "terms.local" && Type(option["partitioned-omega"]) == "AssociativeList") {
         /**
             Assumes that option["partitioned-omega"] is a dictionary where each partition has
@@ -738,6 +748,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     //Export (lfs, likelihoodFunction);
     //console.log (lfs);
+
     Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {

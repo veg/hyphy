@@ -66,17 +66,19 @@ namespace busted {
     doPartitionedMG ("busted", FALSE);
 }
 
+//utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+
 io.ReportProgressMessageMD ("BUSTED", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
 busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, busted.trees, busted.codon_data_info ["code"], {
-    "model-type": terms.global,
+    "model-type": terms.local,
     "partitioned-omega": busted.selected_branches,
-    "retain-lf-object": TRUE
 }, busted.partitioned_mg_results);
 
 
 io.ReportProgressMessageMD("BUSTED", "codon-refit", "* Log(L) = " + Format(busted.final_partitioned_mg_results["LogL"],8,2));
 busted.global_dnds = selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio);
+
 utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
 
 busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
@@ -88,6 +90,7 @@ busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL
         busted.filter_names,
         None);
 
+
 busted.background.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
         "busted.background", {
             "0": parameters.Quote(terms.global),
@@ -97,6 +100,24 @@ busted.background.bsrel_model =  model.generic.DefineMixtureModel("models.codon.
         busted.filter_names,
         None);
 
+
+models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
+
+busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio + ".+test.+"), "_value_",
+            "_value_[terms.MLE]"));
+
+busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
+parameters.SetStickBreakingDistribution (busted.distribution, busted.test_guess);
+
+
+busted.mean_background = utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio + ".+background.+"), "_value_",
+            "_value_[terms.MLE]");
+
+
+
+busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
+                            "busted.test" :       busted.test.bsrel_model };
+
 // set up parameter constraints
 
 for (busted.i = 1; busted.i < 4; busted.i += 1) {
@@ -104,18 +125,20 @@ for (busted.i = 1; busted.i < 4; busted.i += 1) {
     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.i)), terms.range01);
 }
 
-busted.test.omega3  = model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,3));
-parameters.SetRange (busted.test.omega3, terms.range_gte1);
+busted.test.omega3_parameter  = model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,3));
+parameters.SetRange (busted.test.omega3_parameter, terms.range_gte1);
 
 busted.model_map = {};
 
 for (busted.partition_index = 0; busted.partition_index < busted.partition_count; busted.partition_index += 1) {
     busted.model_map + { "busted.test" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ == terms.json.attribute.test'),
 					               "busted.background" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ != terms.json.attribute.test')};
-
 }
 
-busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results);
+utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
+//utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+
+busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, None);
 
 return 0;
 
@@ -134,8 +157,6 @@ io.ReportProgressMessageMD ("BUSTED", "Data", "Loaded an MSA with " + codon_data
 codon_lists = models.codon.MapCode (codon_data_info["code"]);
 
 _Genetic_Code = codon_data_info["code"];
-
-
 
 codon_frequencies     = frequencies._aux.CF3x4(frequencies._aux.empirical.collect_data ("codon_filter",3,1,1),
                         utility.getGlobalValue ("models.DNA.alphabet"), codon_lists["sense"], codon_lists["stop"]);
@@ -277,6 +298,15 @@ return busted.json;
 // HELPER FUNCTIONS FROM HTHIS POINT ON
 //------------------------------------------------------------------------------
 
+
+lfunction busted.DistributionGuess (mean) {
+    guess = {{0,0.7}
+             {0.1,0.2}
+             {10,0.1}};
+
+    guess_mean = 1/(+(guess [-1][0] $ guess [-1][1]));
+    return guess["_MATRIX_ELEMENT_VALUE_*(guess_mean*(_MATRIX_ELEMENT_COLUMN_==0)+(_MATRIX_ELEMENT_COLUMN_==1))"];
+}
 
 //------------------------------------------------------------------------------
 function busted.hasBackground (id) {

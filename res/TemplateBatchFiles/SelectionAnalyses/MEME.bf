@@ -133,7 +133,7 @@ namespace meme {
 io.ReportProgressMessageMD ("MEME", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
 meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info ["code"], {
-    "model-type": terms.global,
+    "model-type": terms.local,
     "partitioned-omega": meme.selected_branches,
     "retain-lf-object": TRUE
 }, meme.partitioned_mg_results);

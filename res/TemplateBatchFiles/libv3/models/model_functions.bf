@@ -2,6 +2,7 @@ LoadFunctionLibrary ("DNA.bf");
 LoadFunctionLibrary ("parameters.bf");
 LoadFunctionLibrary ("frequencies.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
+LoadFunctionLibrary ("../convenience/regexp.bf");
 
 /** @module model */
 
@@ -20,6 +21,7 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 	    // or a dictionary where keys are the branch names)
 	    // OR
 	    // DEFAULT : model id
+
 
 	    if (Abs (rules["DEFAULT"])) {
             ExecuteCommands ("UseModel (" + rules["DEFAULT"] + ");
@@ -94,7 +96,7 @@ function model.define_from_components (id,q,efv,canonical) {
 }
 
 /**
- * @name model.generic.AddGlobal
+ * @name model.generic.AddLocal
  * @param model_spec
  * @param id
  * @param tag
@@ -315,7 +317,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 messages.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");
             }
         } else {
-	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");		        
+	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");
         }
     } else {
         messages.log ("models.generic.SetBranchLength: more than one local model parameter");
@@ -403,6 +405,35 @@ lfunction model.MatchAlphabets (a1, a2) {
 }
 
 /**
+ * @name models.BindGlobalParameters
+ * compute the algebraic expression for the branch length
+ * @param {Dict} models - list of model objects
+ * @param {RegEx} filter - only apply to parameters matching this expression
+ */
+
+lfunction models.BindGlobalParameters (models, filter) {
+    if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
+        reference_set = (((models[0])["parameters"])[^"terms.global"]);
+        candidate_set = utility.Values(utility.Filter (utility.Keys (reference_set), "_key_",
+            "regexp.Find (_key_,`&filter`)"
+        ));
+
+        for (k = 1; k < Abs (models); k+=1) {
+            parameter_set = (((models[k])["parameters"])[^"terms.global"]);
+            utility.ForEach (candidate_set, "_p_",
+                "if (`&parameter_set` / _p_) {
+                    if (parameters.IsIndependent (`&parameter_set`[_p_])) {
+                        parameters.SetConstraint (`&parameter_set`[_p_], `&reference_set`[_p_], '');
+                    }
+                }"
+            );
+        }
+
+    }
+    return 0;
+}
+
+/**
  * @name model.BranchLengthExpression
  * compute the algebraic expression for the branch length
  * @param {Dict} model - first alphabet to compare
@@ -439,7 +470,7 @@ lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
 				if (i != j) {
 					expr = q[i][j];
 					if (Abs (expr)) {
-						if (is_canonical) {
+						if (is_canonical == TRUE) {
 							by_expr[expr] += freqs[i]*freqs[j];
 						} else {
 							by_expr[expr] += freqs[i];
