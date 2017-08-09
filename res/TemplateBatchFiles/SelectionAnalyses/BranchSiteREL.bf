@@ -261,9 +261,10 @@ if (_reload_local_fit) {
     Optimize					  (res_base,base_LF);
 
     OPTIMIZATION_TIME_HARD_LIMIT = (Time(1)-T0)*4;
-    LIKELIHOOD_FUNCTION_OUTPUT = 7;
-    fprintf (lfOut, CLEAR_FILE, base_LF);
-    LIKELIHOOD_FUNCTION_OUTPUT = 2;
+    // Uncomment these lines to obtain base likelihood function file `lfOut`
+    //LIKELIHOOD_FUNCTION_OUTPUT = 7;
+    //fprintf (lfOut, CLEAR_FILE, base_LF);
+    //LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
     localLL						 = res_base[1][0];
     localParams					 = res_base[1][1] + 9;
