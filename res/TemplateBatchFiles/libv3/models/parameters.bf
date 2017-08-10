@@ -1,5 +1,5 @@
 LoadFunctionLibrary("GrabBag");
-LoadFunctionLibrary("terms.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
 
 /** @module parameters */
 
@@ -31,7 +31,7 @@ function parameters.UnconstrainParameterSet(lf, set) {
     if (None == set) {
         set = {
             {
-                terms.lf.global.constrained, terms.lf.local.constrained
+                terms.parameters.global_constrained, terms.parameters.local_constrained
             }
         };
     }
@@ -131,14 +131,11 @@ function parameters.DeclareCategory.helper (dict, key, default) {
  * @param {Dict} def category definition components
  */
 function parameters.DeclareCategory (def) {
-
-
-
-	 ExecuteCommands ("category " + def['id'] + "= (" +
+	 ExecuteCommands ("category " + def[terms.id] + "= (" +
 	 			  Join (",",
-	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"},
+	 			  			utility.Map ({"0": terms.category.bins, "1": terms.category.weights, "2": terms.category.represent, "3": terms.category.PDF, "4": terms.category.CDF, "5": terms.lower_bound, "6": terms.upper_bound, "7": terms.category.dCDF},
 	 			  						  "_value_",
-	 			  						  'parameters.DeclareCategory.helper(def["category parameters"], _value_, "")')
+	 			  						  'parameters.DeclareCategory.helper(def[terms.category.category_parameters], _value_, "")')
 	 			  		) + ");");
 
 }
@@ -327,6 +324,9 @@ function parameters.SetRange(id, ranges) {
  * @returns {Bool} TRUE if independent, FALSE otherwise
  */
 lfunction parameters.IsIndependent(parameter) {
+
+    //console.log(parameter);
+
     GetString(info, ^ parameter, -1);
     if (Type(info) == "AssociativeList") {
         return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;
@@ -354,7 +354,6 @@ function parameters.SetConstraint(id, value, global_tag) {
         }
     } else {
         if (Type(id) == "AssociativeList" && Type(value) == "AssociativeList") {
-
             parameters.SetConstraint.var_count = Abs(id);
             for (parameters.SetConstraint.k = 0; parameters.SetConstraint.k < parameters.SetConstraint.var_count; parameters.SetConstraint.k += 1) {
                 parameters.SetConstraint(id[parameters.SetConstraint.k],
@@ -431,7 +430,7 @@ function parameters.helper.copy_definitions(target, source) {
 
     if (utility.Has (source, terms.category, "AssociativeList")) {
     	utility.EnsureKey (target, terms.category);
-    	(target[terms.category])[(source[terms.category])["id"]] = (source[terms.category])["description"];
+    	(target[terms.category])[(source[terms.category])[terms.id]] = (source[terms.category])[terms.description];
     }
 }
 
@@ -533,7 +532,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
     components = utility.Array1D(dict);
 
-    if (type == "codon") {
+    if (type == "codon") { // TODO
         factor = 1;
     } else {
         factor = 1;
@@ -543,11 +542,12 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
     for (i = 0; i < components; i += 1) {
         this_component = {};
-        utility.ForEachPair((dict[i])[ ^ "terms.json.attribute.branch_length"], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {^'terms.json.MLE' : `&factor`*_branch_length_}");
+        utility.ForEachPair((dict[i])[ utility.getGlobalValue("terms.branch_length")], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {utility.getGlobalValue('terms.fit.MLE') : `&factor`*_branch_length_}");
         result[i] = this_component;
     }
 
-     return { ^ "terms.json.attribute.branch_length": result };
+    return { utility.getGlobalValue("terms.branch_length"): result
+    };
 }
 
 /**
@@ -566,10 +566,11 @@ function parameters.GetProfileCI(id, lf, level) {
     utility.ToggleEnvVariable("COVARIANCE_PRECISION", None);
     utility.ToggleEnvVariable("COVARIANCE_PARAMETER", None);
 
+    //TODO: used to be "`terms.lower_bound`".
     return {
-        "`terms.lower_bound`": parameters.GetProfileCI.mx[0],
-        "`terms.MLE`": parameters.GetProfileCI.mx[1],
-        "`terms.upper_bound`": parameters.GetProfileCI.mx[2]
+        terms.lower_bound: parameters.GetProfileCI.mx[0],
+        terms.fit.MLE: parameters.GetProfileCI.mx[1],
+        terms.upper_bound: parameters.GetProfileCI.mx[2]
     };
 }
 
@@ -602,7 +603,7 @@ lfunction parameters.ExportParameterDefinition (id) {
 
 lfunction parameters.SetLocalModelParameters (model, tree, node) {
 	node_name = tree + "." + node + ".";
-    utility.ForEach ((model["parameters"])[^'terms.local'], "_parameter_", '
+    utility.ForEach ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.local")], "_parameter_", '
     	^_parameter_ = ^(`&node_name` + _parameter_);
     ');
 

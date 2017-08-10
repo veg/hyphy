@@ -1,5 +1,8 @@
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("convenience/regexp.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
+
+
 
 /**
  * @name io.CheckAssertion
@@ -156,10 +159,10 @@ lfunction io.ReportProgressMessageMD(analysis, stage, text) {
 lfunction io.ReportStatsMD(_label, _stats) {
 
     _table_output_options = {
-        "header": 1,
-        "min-column-width": 16,
-        "align": "center",
-        "column-widths": {
+        utility.getGlobalValue("terms.table_options.header"): 1,
+        utility.getGlobalValue("terms.table_options.minimum_column_width"): 16,
+        utility.getGlobalValue("terms.table_options.align"): "center",
+        utility.getGlobalValue("terms.table_options.column_widths"): {
             "0": 16,
             "1": 16,
             "2": 16,
@@ -188,7 +191,7 @@ lfunction io.ReportStatsMD(_label, _stats) {
     _header[0] = "Metric";
     _header[1] = "Value";
     fprintf(stdout, io.FormatTableRow(_header, _table_output_options));
-    _table_output_options["header"] = FALSE;
+    _table_output_options[utility.getGlobalValue("terms.table_options.header")] = FALSE;
 
     for (_k = 0; _k < Abs(_stats); _k = _k + 1) {
         _tmp_matrix = {
@@ -254,8 +257,8 @@ lfunction io.format_object(object, options) {
     }
     if (Type(object) == "Number") {
         if (None != options) {
-            if (Abs(options["number-precision"]) > 0) {
-                return Eval("Format (`&object`, 0, " + options["number-precision"] + ")");
+            if (Abs(options[utility.getGlobalValue("terms.number_precision")]) > 0) {
+                return Eval("Format (`&object`, 0, " + options[utility.getGlobalValue("terms.number_precision")] + ")");
             }
         }
     }
@@ -276,7 +279,7 @@ lfunction io.FormatTableRow(row, options) {
 
     cells = utility.Map(row, "_value_", "io.format_object(_value_, `&options`)");
 
-    min_width = Max(3, options["min-column-width"]);
+    min_width = Max(3, options[utility.getGlobalValue("terms.table_options.minimum_column_width")]);
 
     underline_chars = {
         {
@@ -289,20 +292,21 @@ lfunction io.FormatTableRow(row, options) {
 
     row = "";
     row * 128;
-    if (options["header"]) {
+    if (options[utility.getGlobalValue("terms.table_options.header")]) {
         underlines = "";
         underlines * 128;
         widths = {};
 
-        if (utility.Has (options, "column-widths", "AssociativeList")) {
-            widths = options["column-widths"]
+        if (utility.Has (options, utility.getGlobalValue("terms.table_options.column_widths"), "AssociativeList")) {
+            widths = options[utility.getGlobalValue("terms.table_options.column_widths")]
         }
 
-        if (options["align"] == "center") {
+
+        if (options[utility.getGlobalValue("terms.table_options.align")] == "center") {
             underline_chars[0] = ':';
             underline_chars[2] = ':';
         } else {
-            if (options["align"] == "right") {
+            if (options[utility.getGlobalValue("terms.table_options.align")] == "right") {
                 underline_chars[2] = ':';
             }
 
@@ -335,11 +339,11 @@ lfunction io.FormatTableRow(row, options) {
         row * "\n";
         row * underlines;
         row * "\n";
-        options["column-widths"] = widths;
+        options[utility.getGlobalValue("terms.table_options.column_widths")] = widths;
     } else {
         for (i = 0; i < dim; i += 1) {
             content_width = Abs(cells[i]);
-            cell_width = (options["column-widths"])[i];
+            cell_width = (options[utility.getGlobalValue("terms.table_options.column_widths")])[i];
 
             row * "|";
             if (cell_width <= content_width + 3) {
@@ -394,29 +398,31 @@ function io.get_a_list_of_files(filename) {
  * @param analysis_info
  */
 lfunction io.DisplayAnalysisBanner(analysis_info) {
-    if (io.HasStringKey("info", analysis_info)) {
+
+
+    if (io.HasStringKey(utility.getGlobalValue("terms.io.info"), analysis_info)) {
         io.PrintAndUnderline("Analysis Description", "-");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["info"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.info")], 72), "\n");
     }
-    if (io.HasStringKey("requirements", analysis_info)) {
+    if (io.HasStringKey(utility.getGlobalValue("terms.io.requirements"), analysis_info)) {
         fprintf(stdout, "\n- __Requirements__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["requirements"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.requirements")], 72), "\n");
     }
-    if (io.HasStringKey("reference", analysis_info)) {
+    if (io.HasStringKey(utility.getGlobalValue("terms.io.reference"), analysis_info)) {
         fprintf(stdout, "\n- __Citation__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["reference"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.reference")], 72), "\n");
     }
-    if (io.HasStringKey("authors", analysis_info)) {
+    if (io.HasStringKey(utility.getGlobalValue("terms.io.authors"), analysis_info)) {
         fprintf(stdout, "\n- __Written by__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["authors"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.authors")], 72), "\n");
     }
-    if (io.HasStringKey("contact", analysis_info)) {
+    if (io.HasStringKey(utility.getGlobalValue("terms.io.contact"), analysis_info)) {
         fprintf(stdout, "\n- __Contact Information__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["contact"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.contact")], 72), "\n");
     }
-    if (io.HasStringKey("version", analysis_info)) {
+    if (io.HasStringKey(utility.getGlobalValue("terms.io.version"), analysis_info)) {
         fprintf(stdout, "\n- __Analysis Version__: ");
-        fprintf(stdout, io.FormatLongStringToWidth(analysis_info["version"], 72), "\n");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.version")], 72), "\n");
     }
     fprintf(stdout, "\n");
 
@@ -637,15 +643,15 @@ lfunction io.ReadDelimitedFile  (path, separator, has_header) {
    } else {
         fscanf (PROMPT_FOR_FILE, REWIND, "Lines", data);
    }
-   result = {"rows" : {}};
+   result = {utility.getGlobalValue("terms.io.rows") : {}};
    index = 0;
    row_count = utility.Array1D (data);
    if (has_header) {
-        result["header"] = regexp.Split (data[0], separator);
+        result[utility.getGlobalValue("terms.io.header")] = regexp.Split (data[0], separator);
         index = 1;
    }
    for (k = index; k < row_count; k+=1) {
-        result ["rows"] + regexp.Split (data[k], separator);
+        result [utility.getGlobalValue("terms.io.rows")] + regexp.Split (data[k], separator);
    }
    return result;
 }

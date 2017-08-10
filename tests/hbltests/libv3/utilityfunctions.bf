@@ -28,9 +28,9 @@ function test_utility_for_each_pair() {
 function test_utility.Keys() {
     test = {};
     keys = utility.Keys(absrel.stats);
-    expected_keys =  {"Count", "Mean", "Median", "Min", "Max", "2.5%", "97.5%",
-    "Sum", "Std.Dev", "Variance", "COV", "Skewness", ,"Kurtosis", "Sq. sum",
-    "Non-negative"};
+    expected_keys =  {terms.math.count, terms.math.mean, terms.math.median, terms.math.min, terms.math.max, terms.math._2.5, terms.mat._97.5,
+    terms.math.sum, terms.math.stddev, terms.math.variance, terms.math.cov, terms.math.skewness, terms.math.kurtosis, terms.math.square_sum,
+    terms.math.non_negative};
     //TODO: write function to test string matrix equality
     assert(Abs(keys) == 10, "did not return all keys");
 }

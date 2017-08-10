@@ -2,7 +2,7 @@ LoadFunctionLibrary("../protein.bf");
 LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
-LoadFunctionLibrary("../terms.bf");
+LoadFunctionLibrary("../../all-terms.bf");
 
 /** @module models.protein.empirical */
 
@@ -12,27 +12,27 @@ LoadFunctionLibrary("../terms.bf");
  * @returns {Dictionary} model description
  * @description Create the baseline schema (dictionary) for empirical protein model definitions
  */
-function models.protein.empirical.ModelDescription(type) {
+lfunction models.protein.empirical.ModelDescription(type) {
     return {
-        "alphabet": models.protein.alphabet,
-        "description": "General class of empirical substitution matrices for amino-acids",
-        "canonical": 1, // is of the r_ij \times \pi_j form
-        "reversible": 1,
-        terms.efv_estimate_name: terms.freqs.predefined,
-        "parameters": {
-            "global": {},
-            "local": {},
-            "empirical": 0
+        utility.getGlobalValue("terms.alphabet"): utility.getGlobalValue("models.protein.alphabet"),
+        utility.getGlobalValue("terms.description"): "General class of empirical substitution matrices for amino-acids",
+        utility.getGlobalValue("terms.model.canonical"): 1, // is of the r_ij \times \pi_j form
+        utility.getGlobalValue("terms.model.reversible"): 1,
+        utility.getGlobalValue("terms.model.efv_estimate_name"): utility.getGlobalValue("terms.frequencies.predefined"),
+        utility.getGlobalValue("terms.parameters"): {
+            utility.getGlobalValue("terms.global"): {},
+            utility.getGlobalValue("terms.local"): {},
+            utility.getGlobalValue("terms.model.empirical"): 0
         },
-        "type": type,
-        "get-branch-length": "",
-        "set-branch-length": "models.generic.SetBranchLength",
-        "constrain-branch-length": "models.generic.constrain_branch_length",
-        "frequency-estimator": "frequencies.empirical.protein",
-        "q_ij": "",
-        "time": "models.protein.generic.Time",
-        "defineQ": "models.protein.empirical._DefineQ",
-        "post-definition": "models.generic.post.definition"
+        utility.getGlobalValue("terms.model.type"): type,
+        utility.getGlobalValue("terms.model.get_branch_length"): "",
+        utility.getGlobalValue("terms.model.set_branch_length"): "models.generic.SetBranchLength",
+        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.constrain_branch_length",
+        utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.empirical.protein",
+        utility.getGlobalValue("terms.model.q_ij"): "",
+        utility.getGlobalValue("terms.model.time"): "models.protein.generic.Time",
+        utility.getGlobalValue("terms.model.defineQ"): "models.protein.empirical._DefineQ",
+        utility.getGlobalValue("terms.model.post_definition"): "models.generic.post.definition"
     };
 }
 
@@ -46,8 +46,8 @@ function models.protein.empirical.ModelDescription(type) {
  * @param {String} namespace
  * @param {String} modelType
  */
-function models.protein.WAG._GenerateRate (from,to,namespace,modelType) {
-    return models.protein.empirical._GenerateRate (models.protein.WAG.empirical_Q, from,to,namespace,modelType);
+lfunction models.protein.WAG._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (utility.getGlobalValue("models.protein.WAG.empirical_Q"), from,to,namespace,modelType);
 }
 
 /**
@@ -58,9 +58,9 @@ function models.protein.WAG._GenerateRate (from,to,namespace,modelType) {
  */
 function models.protein.WAG.ModelDescription(type) {
     models.protein.WAG.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
-    models.protein.WAG.ModelDescription.model_definition ["empirical-rates"] = models.protein.WAG.empirical_Q;
-    models.protein.WAG.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.WAG.frequencies";
-    models.protein.WAG.ModelDescription.model_definition ["q_ij"] = "models.protein.WAG._GenerateRate";
+    models.protein.WAG.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.WAG.empirical_Q;
+    models.protein.WAG.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.WAG.frequencies";
+    models.protein.WAG.ModelDescription.model_definition [terms.model.q_ij] = "models.protein.WAG._GenerateRate";
     return models.protein.WAG.ModelDescription.model_definition;
 }
 
@@ -86,8 +86,8 @@ function models.protein.WAGF.ModelDescription(type) {
  * @returns {Dictionary} Updated WAG model with empirical frequencies
  * @description Define the empirical amino acid frequencies associated with the WAG model of protein evolution
  */
-function models.protein.WAG.frequencies (model, namespace, datafilter) {
-    model[terms.efv_estimate] =
+lfunction models.protein.WAG.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
         {{     0.0866279}
         {     0.0193078}
         {     0.0570451}
@@ -110,8 +110,8 @@ function models.protein.WAG.frequencies (model, namespace, datafilter) {
         {     0.0352742}
         };
 
-    model[terms.efv_estimate_name] = terms.freqs.predefined;
-    (model["parameters"])["empirical"] = 0;
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
     return model;
 }
 
@@ -360,8 +360,8 @@ models.protein.WAG.empirical_Q = {
  * @param {String} namespace
  * @param {String} modelType
  */
-function models.protein.LG._GenerateRate (from,to,namespace,modelType) {
-    return models.protein.empirical._GenerateRate (models.protein.LG.empirical_Q, from,to,namespace,modelType);
+lfunction models.protein.LG._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (utility.getGlobalValue("models.protein.LG.empirical_Q"), from,to,namespace,modelType);
 }
 
 /**
@@ -372,9 +372,9 @@ function models.protein.LG._GenerateRate (from,to,namespace,modelType) {
  */
  function models.protein.LG.ModelDescription(type) {
     models.protein.LG.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
-    models.protein.LG.ModelDescription.model_definition ["empirical-rates"] = models.protein.LG.empirical_Q;
-    models.protein.LG.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.LG.frequencies";
-    models.protein.LG.ModelDescription.model_definition ["q_ij"] = "models.protein.LG._GenerateRate";
+    models.protein.LG.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.LG.empirical_Q;
+    models.protein.LG.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.LG.frequencies";
+    models.protein.LG.ModelDescription.model_definition [terms.model.q_ij] = "models.protein.LG._GenerateRate";
     return models.protein.LG.ModelDescription.model_definition;
 }
 
@@ -402,8 +402,8 @@ function models.protein.LGF.ModelDescription(type) {
  * @returns {Dictionary} Updated LG model with empirical frequencies
  * @description Define the empirical amino acid frequencies associated with the LG model of protein evolution
  */
-function models.protein.LG.frequencies (model, namespace, datafilter) {
-    model[terms.efv_estimate] =
+lfunction models.protein.LG.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
  
           {{     0.07906500000000008}
            {     0.012937}
@@ -426,8 +426,9 @@ function models.protein.LG.frequencies (model, namespace, datafilter) {
            {     0.012066}
            {     0.034155}
           };
-    model[terms.efv_estimate_name] = terms.freqs.predefined;
-    (model["parameters"])["empirical"] = 0;
+
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
     return model;
 }
 
@@ -675,8 +676,8 @@ models.protein.LG.empirical_Q = {
  * @param {String} namespace
  * @param {String} modelType
  */
-function models.protein.JTT._GenerateRate (from,to,namespace,modelType) {
-    return models.protein.empirical._GenerateRate (models.protein.JTT.empirical_Q, from,to,namespace,modelType);
+lfunction models.protein.JTT._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (utility.getGlobalValue("models.protein.JTT.empirical_Q"), from,to,namespace,modelType);
 }
 
 /**
@@ -687,9 +688,9 @@ function models.protein.JTT._GenerateRate (from,to,namespace,modelType) {
  */
  function models.protein.JTT.ModelDescription(type) {
     models.protein.JTT.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
-    models.protein.JTT.ModelDescription.model_definition ["empirical-rates"] = models.protein.JTT.empirical_Q;
-    models.protein.JTT.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.JTT.frequencies";
-    models.protein.JTT.ModelDescription.model_definition ["q_ij"] = "models.protein.JTT._GenerateRate";
+    models.protein.JTT.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.JTT.empirical_Q;
+    models.protein.JTT.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.JTT.frequencies";
+    models.protein.JTT.ModelDescription.model_definition [terms.model.q_ij] = "models.protein.JTT._GenerateRate";
     return models.protein.JTT.ModelDescription.model_definition;
 }
 
@@ -717,7 +718,7 @@ function models.protein.JTTF.ModelDescription(type) {
  * @description Define the empirical amino acid frequencies associated with the JTT model of protein evolution
  */
 function models.protein.JTT.frequencies (model, namespace, datafilter) {
-    model[terms.efv_estimate] =
+    model[utility.getGlobalValue("terms.efv_estimate")] =
       {{	0.07686099999999986}
         {	0.020279}
         {	0.051269}
@@ -739,8 +740,9 @@ function models.protein.JTT.frequencies (model, namespace, datafilter) {
         {	0.014336}
         {   0.032303}
     };
-    model[terms.efv_estimate_name] = terms.freqs.predefined;
-    (model["parameters"])["empirical"] = 0;
+
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
     return model;
 }
 
@@ -988,8 +990,8 @@ models.protein.JTT.empirical_Q = {
  * @param {String} namespace
  * @param {String} modelType
  */
-function models.protein.JC._GenerateRate (from,to,namespace,modelType) {
-    return models.protein.empirical._GenerateRate (models.protein.JC.empirical_Q, from,to,namespace,modelType);
+lfunction models.protein.JC._GenerateRate (from,to,namespace,modelType) {
+    return models.protein.empirical._GenerateRate (utility.getGlobalValue("models.protein.JC.empirical_Q"), from,to,namespace,modelType);
 }
 
  /**
@@ -1000,9 +1002,9 @@ function models.protein.JC._GenerateRate (from,to,namespace,modelType) {
  */
 function models.protein.JC.ModelDescription(type) {
     models.protein.JC.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
-    models.protein.JC.ModelDescription.model_definition ["empirical-rates"] = models.protein.JC.empirical_Q;
-    models.protein.JC.ModelDescription.model_definition ["frequency-estimator"] = "models.protein.JC.frequencies";
-    models.protein.JC.ModelDescription.model_definition ["q_ij"] = "models.protein.JC._GenerateRate";
+    models.protein.JC.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.JC.empirical_Q;
+    models.protein.JC.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.JC.frequencies";
+    models.protein.JC.ModelDescription.model_definition [terms.model.q_ij] = "models.protein.JC._GenerateRate";
     return models.protein.JC.ModelDescription.model_definition;
 }
 
@@ -1029,8 +1031,8 @@ function models.protein.JCF.ModelDescription(type) {
  * @returns {Dictionary} Updated JC69 model with empirical frequencies
  * @description Define the empirical amino acid frequencies associated with the JC69 model of protein evolution
  */
-function models.protein.JC.frequencies (model, namespace, datafilter) {
-    model[terms.efv_estimate] =
+lfunction models.protein.JC.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
       {{	0.05}
         {	0.05}
         {	0.05}
@@ -1052,8 +1054,9 @@ function models.protein.JC.frequencies (model, namespace, datafilter) {
         {	0.05}
         {   0.05}
     };
-    model[terms.efv_estimate_name] = terms.freqs.predefined;
-    (model["parameters"])["empirical"] = 0;
+
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
     return model;
 }
 
@@ -1282,14 +1285,14 @@ models.protein.JC.empirical_Q = {
  * @param {String} model_type
  * @return list of parameters
  */
-function models.protein.empirical._GenerateRate(rateDict, fromChar, toChar, namespace, model_type) {
+lfunction models.protein.empirical._GenerateRate(rateDict, fromChar, toChar, namespace, model_type) {
 
     models.protein.empirical._GenerateRate.p = {};
     models.protein.empirical._GenerateRate.p  [model_type]       = {};
     if (fromChar < toChar) {
-        models.protein.empirical._GenerateRate.p  [terms.rate_entry] = "" + (rateDict[fromChar])[toChar];
+        models.protein.empirical._GenerateRate.p  [utility.getGlobalValue("terms.model.rate_entry")] = "" + (rateDict[fromChar])[toChar];
     } else {
-        models.protein.empirical._GenerateRate.p  [terms.rate_entry] = "" + (rateDict[toChar])[fromChar];
+        models.protein.empirical._GenerateRate.p  [utility.getGlobalValue("terms.model.rate_entry")] = "" + (rateDict[toChar])[fromChar];
     }
     return models.protein.empirical._GenerateRate.p;
 }
@@ -1299,7 +1302,7 @@ function models.protein.empirical._GenerateRate(rateDict, fromChar, toChar, name
  * @param {Dictionary} model definition
  * @param {String} namespace
  */
-function models.protein.empirical._DefineQ(model_dict, namespace) {
+lfunction models.protein.empirical._DefineQ(model_dict, namespace) {
     models.protein.generic.DefineQMatrix (model_dict, namespace);
     return model_dict;
 }

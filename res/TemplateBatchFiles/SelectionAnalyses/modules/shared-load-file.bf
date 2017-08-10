@@ -61,10 +61,12 @@ function load_file (prefix) {
         }
 
         */
+    sample_size = codon_data_info[utility.getGlobalValue("terms.data.sites")] * codon_data_info[utility.getGlobalValue("terms.data.sequences")];
+    upper_prefix = prefix && 1; //uppercase the prefix for json name
+    codon_data_info[utility.getGlobalValue("terms.json.json")] = codon_data_info[utility.getGlobalValue("terms.data.file")] + "."+upper_prefix+".json";
+    
+    name_mapping = codon_data_info[utility.getGlobalValue("terms.data.name_mapping")];
 
-    sample_size = codon_data_info["sites"] * codon_data_info["sequences"];
-    codon_data_info["json"] = codon_data_info["file"] + "."+prefix+".json";
-    name_mapping = codon_data_info[utility.getGlobalValue("terms.json.name_mapping")];
         /**
             will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
         */
@@ -73,8 +75,9 @@ function load_file (prefix) {
         name_mapping = {};
         utility.ForEach (alignments.GetSequenceNames (prefix+".codon_data"), "_value_", "`&name_mapping`[_value_] = _value_");
     }
+    
 
-    partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.json.partitions")], name_mapping);
+    partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
 
         /**  this will return a dictionary of partition strings and trees; one set per partition, as in
         {
@@ -106,18 +109,23 @@ function load_file (prefix) {
 
     partition_count = Abs (partitions_and_trees);
 
+
+    // TODO: DE-HARDCODE "filter-string"
     utility.ForEachPair (partitions_and_trees,
                             "_key_",
                             "_value_",
-                            '(`&partitions_and_trees`[_key_])["filter-string"] = selection.io.adjust_partition_string (_value_["filter-string"], 3*`&codon_data_info`["sites"])');
+                            '(`&partitions_and_trees`[_key_])[utility.getGlobalValue("terms.data.filter_string")] = selection.io.adjust_partition_string (_value_[utility.getGlobalValue("terms.data.filter_string")], 3*`&codon_data_info`[utility.getGlobalValue("terms.data.sites")])');
         /**
             ensure that all partitions fall on codon boundaries if they are contiguous
         */
 
+    io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + codon_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
 
-    io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info["sequences"] + "** sequences, **" + codon_data_info["sites"] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info["file"] + "\`");
+
+
 
     selected_branches = selection.io.defineBranchSets(partitions_and_trees);
+    
         /**  this will return a dictionary of selected branches; one set per partition, like in
         {
             "0": {
@@ -135,13 +143,33 @@ function load_file (prefix) {
             }
         }
         */
+    
+    /***************************** SJS ************************/
+    
+    // Input attribute to JSON
 
+    
+    json[utility.getGlobalValue("terms.json.input")] = {};
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.file")] =  codon_data_info[utility.getGlobalValue("terms.data.file")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sequences")] = codon_data_info[utility.getGlobalValue("terms.data.sequences")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sites")] = codon_data_info[utility.getGlobalValue("terms.data.sites")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.partition_count")] = partition_count;
+
+
+    // The trees should go into input as well and they should be w/ their branch lengths
      selection.io.json_store_key_value_pair (json,
-                                             utility.getGlobalValue("terms.json.trees"), utility.getGlobalValue("terms.json.tree.newick"),
-                                             utility.Map (partitions_and_trees, "_pt_", '(_pt_["tree"])["string"]&&1')
+                                             utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
+                                             utility.Map (partitions_and_trees, "_pt_", '(_pt_["tree"])["string_with_lengths"]&&1')
                                              );
-     selection.io.json_store_key_value_pair (json, utility.getGlobalValue("terms.json.trees"), "tested", selected_branches);
+    
+     
 
+
+    // Place in own attribute called `tested`
+     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
+
+    /***************************** SJS DONE ************************/
+    
      filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, "`prefix`.codon_data" , "`prefix`.filter.", codon_data_info);
     /** defines codon filters for each partition, and returns the (codon) sites mapped to each filter
     {
@@ -169,19 +197,33 @@ function load_file (prefix) {
      filter_names = utility.Map (filter_specification, "_partition_", '_partition_["name"]');
 }
 
+
+
+
+
+
+
+
 function doGTR (prefix) {
 
     io.ReportProgressMessageMD (prefix, "nuc-fit", "Obtaining branch lengths and nucleotide substitution biases under the nucleotide GTR model");
 
-
+    
     gtr_results = estimators.FitGTR(filter_names,
                                          trees,
                                          parameters.helper.tree_lengths_to_initial_values (trees, None));
 
-
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* Log(L) = " + Format (gtr_results["LogL"], 8, 2));
 
 }
+
+
+
+
+
+
+
+
 
 /**
  * @name doPartitionMG
@@ -201,18 +243,21 @@ function doPartitionedMG (prefix, keep_lf) {
     scaler_variables = utility.PopulateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
 
     utility.ForEach (scaler_variables, "_value_", "parameters.DeclareGlobal(_value_, None);parameters.SetValue(_value_, 3);");
-
-
-    partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info ["code"], {
-        "model-type": utility.getGlobalValue("terms.local"),
-        "proportional-branch-length-scaler": scaler_variables,
-        "partitioned-omega": selected_branches,
-        "retain-lf-object": keep_lf
+    
+    
+    
+    partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
+        utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"), // TODO
+        utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,
+        utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
+        utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
     }, gtr_results);
 
-    io.ReportProgressMessageMD("`prefix`", "codon-fit", "* Log(L) = " + Format(partitioned_mg_results["LogL"],8,2));
-    global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.omega_ratio"));
-    utility.ForEach (global_dnds, "_value_", 'io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+
+
+    io.ReportProgressMessageMD("`prefix`", "codon-fit", "* Log(L) = " + Format(partitioned_mg_results[utility.getGlobalValue("terms.fit.log_likelihood")],8,2));
+    global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.parameters.omega_ratio"));    
+    utility.ForEach (global_dnds, "_value_", 'io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_[utility.getGlobalValue("terms.description")] + " = " + Format (_value_[utility.getGlobalValue("terms.fit.MLE")],8,4));');
 
     /** extract and report dN/dS estimates */
 }

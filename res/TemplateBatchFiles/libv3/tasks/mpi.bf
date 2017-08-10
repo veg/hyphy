@@ -1,4 +1,4 @@
-LoadFunctionLibrary ("../terms-json.bf");
+LoadFunctionLibrary ("../all-terms.bf");
 
 /** @module mpi
         Functions for creating, populating, and manipulating
@@ -44,7 +44,7 @@ namespace mpi {
                     send_to_nodes * 128;
 
 
-                    utility.ForEach (nodesetup["LikelihoodFunctions"], "_value_",
+                    utility.ForEach (nodesetup[utility.getGlobalValue("terms.mpi.LikelihoodFunctions")], "_value_",
                                      '
                                         ExecuteCommands ("Export (create_queue.temp, " + _value_ + ")");
                                         for (`&k` = 1; `&k` < `mpi_node_count`; `&k` += 1) {
@@ -57,14 +57,14 @@ namespace mpi {
                                      ');
 
 
-                    if (utility.Has (nodesetup, "Headers", None)) {
+                    if (utility.Has (nodesetup, utility.getGlobalValue("terms.mpi.Headers"), None)) {
                         send_to_nodes * "PRESERVE_SLAVE_NODE_STATE = TRUE;\n";
-                        send_to_nodes * (Join (";\n",utility.Map (nodesetup["Headers"], "_value_", "'LoadFunctionLibrary(\"' + _value_ +'\")'")) + ";");
+                        send_to_nodes * (Join (";\n",utility.Map (nodesetup[utility.getGlobalValue("terms.mpi.Headers")], "_value_", "'LoadFunctionLibrary(\"' + _value_ +'\")'")) + ";");
                     }
 
-                    if (utility.Has (nodesetup, "Functions", None)) {
+                    if (utility.Has (nodesetup, utility.getGlobalValue("terms.mpi.Functions"), None)) {
                         send_to_nodes * "PRESERVE_SLAVE_NODE_STATE = TRUE;\n";
-                        utility.ForEach (nodesetup["Functions"], "_value_",
+                        utility.ForEach (nodesetup[utility.getGlobalValue("terms.mpi.Functions")], "_value_",
                             '
                                 ExecuteCommands ("Export (_test_id_," + _value_ + ")");
                                 `&send_to_nodes` * _test_id_;
@@ -72,15 +72,15 @@ namespace mpi {
                         );
                     }
 
-                    if (utility.Has (nodesetup, "Variables", None)) {
-                        utility.ForEach (nodesetup["Variables"], "_value_",
+                    if (utility.Has (nodesetup, utility.getGlobalValue("terms.mpi.Variables"), None)) {
+                        utility.ForEach (nodesetup[utility.getGlobalValue("terms.mpi.Variables")], "_value_",
                             '
                                 `&send_to_nodes` * ("\n" + _value_ + " = " +  (parameters.Quote(^_value_)) + ";\n") ;
                             '
                         );
                     }
 
-                    model_count = utility.Array1D (nodesetup["Models"]);
+                    model_count = utility.Array1D (nodesetup[utility.getGlobalValue("terms.mpi.Models")]);
 
                     if (model_count) {
                         send_to_nodes * "PRESERVE_SLAVE_NODE_STATE = TRUE;\n";
@@ -89,14 +89,14 @@ namespace mpi {
                         functions_to_export = {};
 
                         for (m = 0; m < model_count; m+=1) {
-                            model_name = (nodesetup["Models"])[m];
-                            model_globals = utility.Values(((^model_name)["parameters"])[^"terms.global"]);
+                            model_name = (nodesetup[utility.getGlobalValue("terms.mpi.Models")])[m];
+                            model_globals = utility.Values(((^model_name)[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
                             model_global_count = utility.Array1D (model_globals);
                             for (v = 0; v < model_global_count; v+=1) {
                                 globals_to_export [model_globals[v]] = 1;
                             }
 
-                            utility.ForEach ({{"get-branch-length","set-branch-length"}}, "_value_",
+                            utility.ForEach ({{ utility.getGlobalValue("terms.model.get_branch_length"), utility.getGlobalValue("terms.model.set_branch_length") }}, "_value_",
                             '
                                 _test_id_ = (^(`&model_name`))[_value_];
                                 if (Type (_test_id_) == "String" && Abs (_test_id_) > 0) {
@@ -136,7 +136,7 @@ namespace mpi {
 
             //assert (0);
             for (k = 1; k < mpi_node_count; k += 1) {
-                queue [k] = {"job_id" : None, "callback" : None, "arguments": None};
+                queue [k] = {utility.getGlobalValue("terms.mpi.job_id") : None, utility.getGlobalValue("terms.mpi.callback") : None, utility.getGlobalValue("terms.mpi.arguments"): None};
             }
         }
         return queue;
@@ -156,7 +156,7 @@ namespace mpi {
 
         if (mpi_node_count > 1) {
             for (node = 1; node < mpi_node_count; node += 1) {
-                if (None == (queue [node])["job_id"]) {
+                if (None == (queue [node])[utility.getGlobalValue("terms.mpi.job_id")]) {
                     break;
                 }
             }
@@ -170,10 +170,15 @@ namespace mpi {
             //console.log (complete_function_dump);
             job_id = get_next_job_id();
             //fprintf (stdout, "Sending to node ", node, "\n");
-            queue [node] = {"job_id" : job_id, "callback" : result_callback, "arguments" : arguments};
+            queue [node] = {utility.getGlobalValue("terms.mpi.job_id") : job_id, utility.getGlobalValue("terms.mpi.callback") : result_callback, utility.getGlobalValue("terms.mpi.arguments") : arguments};
              MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');
 
         } else {
+        
+            //console.log(job);
+            //console.log(arguments);
+            //console.log(result_callback);
+            //exit();
             Call (result_callback, 0, Eval (job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')'), arguments);
         }
     }
@@ -186,7 +191,7 @@ namespace mpi {
             do {
 
                 for (node = 1; node < mpi_node_count; node += 1) {
-                    if (None != (queue [node])["job_id"]) {
+                    if (None != (queue [node])[utility.getGlobalValue("terms.mpi.job_id")]) {
                         break;
                     }
                 }
@@ -207,8 +212,8 @@ namespace mpi {
 
         lfunction _handle_receieve (queue) {
             MPIReceive (-1,from,result);
-            Call ((queue [from])["callback"], from, Eval(result), (queue [from])["arguments"]);
-            queue [from] = {"job_id" : None, "callback" : None};
+            Call ((queue [from])[utility.getGlobalValue("terms.mpi.callback")], from, Eval(result), (queue [from])[utility.getGlobalValue("terms.mpi.arguments")]);
+            queue [from] = {utility.getGlobalValue("terms.mpi.job_id") : None, utility.getGlobalValue("terms.mpi.callback") : None};
             return from;
         }
     }

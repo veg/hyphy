@@ -10,9 +10,9 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
  */
 function models.codon.MapCode (genetic_code) {
 
-	return {"sense" : utility.Values (genetic_code.ComputeCodonCodeToStringMap (genetic_code)),
-	        "stop"  : utility.Values (genetic_code.ComputeCodonCodeToStringMapStop (genetic_code)),
-	        "translation-table" : genetic_code.DefineCodonToAAGivenCode (genetic_code) };
+	return {terms.sense_codons : utility.Values (genetic_code.ComputeCodonCodeToStringMap (genetic_code)),
+	        terms.stop_codons  : utility.Values (genetic_code.ComputeCodonCodeToStringMapStop (genetic_code)),
+	        terms.translation_table : genetic_code.DefineCodonToAAGivenCode (genetic_code) };
 }
 
 /**
@@ -22,30 +22,30 @@ function models.codon.MapCode (genetic_code) {
  */
 function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
-	__base_alphabet = modelSpec ["bases"];
+	__base_alphabet = modelSpec [terms.bases];
 	assert (Type (__base_alphabet) == "Matrix" && Columns (__base_alphabet) == 4, "Unsupported codon bases '" + __base_alphabet + "'");
 
-	__alphabet      = modelSpec ["alphabet"];
+	__alphabet      = modelSpec [terms.alphabet];
 	// need at least one codon per amino-acid
 
 	__dimension     = model.Dimension (modelSpec);
 
-	__stops         = modelSpec ["stop"];
-	__table         = modelSpec ["translation-table"];
+	__stops         = modelSpec [terms.stop_codons]; // "stop"
+	__table         = modelSpec [terms.translation_table];
 
 	assert (Type (__alphabet) == "Matrix" && __dimension > 20 && __dimension + Columns (__stops) && Abs (__table) == 64, "Unsupported or missing alphabet '" + __alphabet + "' (stop codons :'" + __codons + "')");
 
-	__modelType = modelSpec["type"];
+	__modelType = modelSpec[terms.model.type];
 	if (Type (__modelType) == "None" || Type (__modelType) == "Number") {
 		__modelType = terms.global;
 	}
-	modelSpec["type"] = __modelType;
+	modelSpec[terms.model.type] = __modelType;
 	assert (__modelType == terms.local || __modelType == terms.global, "Unsupported or missing model type '" + __modelType + "'");
 
-	__rate_function = modelSpec ["q_ij"];
+	__rate_function = modelSpec [terms.model.q_ij];
 	assert (utility.IsFunction (__rate_function), "Missing q_ij callback in model specification");
 
-	__time_function = modelSpec ["time"];
+	__time_function = modelSpec [terms.model.time];
 	assert (utility.IsFunction (__time_function), "Missing time callback in model specification");
 
 	__rate_matrix = {__dimension,__dimension};
@@ -57,11 +57,11 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 	if (None != __rate_variation) {
 
-		__rp = Call (__rate_variation["distribution"], __rate_variation["options"], namespace);
-		__rate_variation ["id"] = (__rp[terms.category])["id"];
+		__rp = Call (__rate_variation[terms.rate_variation.distribution], __rate_variation[terms.rate_variation.options], namespace);
+		__rate_variation [terms.id] = (__rp[terms.category])[terms.id];
 				
 		parameters.DeclareCategory   (__rp[terms.category]);
-        parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+        parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 	} 
 
 
@@ -80,19 +80,19 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 
 		 	if (None != __rate_variation) {
-				__rp = Call (__rate_variation["rate_modifier"], 
+				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier], 
 							 __rp,
 							 __alphabet[_rowChar],
 							 __alphabet[_colChar],
 							 namespace,
-							 __rate_variation ["id"]);
+							 __rate_variation [terms.id]);
  			}
 
-            if (Abs (__rp[terms.rate_entry])) {
+            if (Abs (__rp[terms.model.rate_entry])) {
                 parameters.DeclareGlobal (__rp[terms.global], __global_cache);
-                parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
-                __rate_matrix [_rowChar][_colChar] = __rp[terms.rate_entry];
-                __rate_matrix [_colChar][_rowChar] = __rp[terms.rate_entry];
+                parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
+                __rate_matrix [_rowChar][_colChar] = __rp[terms.model.rate_entry];
+                __rate_matrix [_colChar][_rowChar] = __rp[terms.model.rate_entry];
             }
 		}
 	}
@@ -101,13 +101,13 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 	    __rp = Call (__time_function, __modelType);
 
         if (Abs (__rp)) {
-            ((modelSpec["parameters"])[terms.local])[terms.synonymous_rate] = __rp;
-            modelSpec [terms.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, FALSE);
+            ((modelSpec[terms.parameters])[terms.local])[terms.parameters.synonymous_rate] = __rp;
+            modelSpec [terms.model.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, FALSE);
         } else {
-            modelSpec [terms.rate_matrix] = __rate_matrix;
+            modelSpec [terms.model.rate_matrix] = __rate_matrix;
         }
     } else {
-        modelSpec [terms.rate_matrix] = __rate_matrix;
+        modelSpec [terms.model.rate_matrix] = __rate_matrix;
     }
 
 	return modelSpec;
@@ -116,22 +116,22 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 
 lfunction models.codon.diff (a,b) {
-    r = {"from" : None,
-         "to" : None,
-         "position" : None};
+    r = {utility.getGlobalValue("terms.diff.from") : None,
+         utility.getGlobalValue("terms.diff.to") : None,
+         utility.getGlobalValue("terms.diff.position") : None};
 
     for (i = 0; i < 3; i += 1) {
         if (a[i] != b[i]) {
-            if (r["position"] != None) {
+            if (r[utility.getGlobalValue("terms.diff.position")] != None) {
                 return None;
             }
-            r["from"] = a[i];
-            r["to"] = b[i];
-            r["position"] = i;
+            r[utility.getGlobalValue("terms.diff.from")] = a[i];
+            r[utility.getGlobalValue("terms.diff.to")] = b[i];
+            r[utility.getGlobalValue("terms.diff.position")] = i;
         }
     }
 
-    if (r ["position"] == None) {
+    if (r [utility.getGlobalValue("terms.diff.position")] == None) {
         return None;
     }
     return r;

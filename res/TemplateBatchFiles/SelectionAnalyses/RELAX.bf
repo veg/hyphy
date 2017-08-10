@@ -3,6 +3,8 @@ RequireVersion ("2.31");
 
 //LF_SMOOTHING_SCALER         = 0.1;
 
+LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
+
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("CF3x4");
 LoadFunctionLibrary("TreeTools");
@@ -45,9 +47,10 @@ RELAX.timers  = {6,1};
 
 relax.taskTimerStart (0);
 
-RELAX.json    = {"fits" : {},
-                  "timers" : {},
-                  "relaxation-test" : None
+relax.json    = { terms.json.input: {},
+                  terms.json.fits : {},
+                  terms.json.timers : {},
+                  terms.json.test_results : None
                   };
 
 RELAX.test            = "RELAX.test";
@@ -57,25 +60,32 @@ RELAX.relaxation_parameter        = "RELAX.K";
 
 term.RELAX.k          = "relaxation coefficient";
 
+RELAX.test_branches_name = "Test";
+RELAX.reference_branches_name = "Reference";
+RELAX.unclassified_branches_name = "Unclassified";
+
 /*------------------------------------------------------------------------------*/
 
 
-io.DisplayAnalysisBanner ({"info" : "RELAX (a random effects test of selection relaxation)
+relax.analysis_description = {terms.io.info : "RELAX (a random effects test of selection relaxation)
                             uses a random effects branch-site model framework
                             to test whether a set of 'Test' branches evolves under relaxed
                             selection relative to a set of 'Reference' branches (R), as measured
                             by the relaxation parameter (K).",
-                           "version" : "1.0",
-                           "reference" : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
-                           "authors" : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
-                           "contact" : "spond@temple.edu",
-                           "requirements" : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"
-                          } );
+                           terms.io.version : "1.0",
+                           terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
+                           terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
+                           terms.io.contact : "spond@temple.edu",
+                           terms.io.requirements : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"
+                          };
+
+io.DisplayAnalysisBanner ( relax.analysis_description );
+
 
 relax.codon_data_info     = alignments.PromptForGeneticCodeAndAlignment ("RELAX.codon_data", "RELAX.codon_filter");
-relax.sample_size         = relax.codon_data_info["sites"] * relax.codon_data_info["sequences"];
+relax.sample_size         = relax.codon_data_info[terms.data.sites] * relax.codon_data_info[terms.data.sequences];
 
-relax.name_mapping = relax.codon_data_info[utility.getGlobalValue("terms.json.name_mapping")];
+relax.name_mapping = relax.codon_data_info[utility.getGlobalValue("terms.data.name_mapping")];
     /**
         will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
     */
@@ -85,12 +95,12 @@ if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
     utility.ForEach (alignments.GetSequenceNames ("RELAX.codon_data"), "_value_", "`&name_mapping`[_value_] = _value_");
 }
 
-relax.codon_data_info["json"] = relax.codon_data_info["file"] + ".RELAX.json";
-io.ReportProgressMessage ("RELAX", "Loaded an MSA with " + relax.codon_data_info["sequences"] + " sequences and " + relax.codon_data_info["sites"] + " codons from '" + relax.codon_data_info["file"] + "'");
+relax.codon_data_info[terms.json.json] = relax.codon_data_info[terms.data.file] + ".RELAX.json";
+io.ReportProgressMessage ("RELAX", "Loaded an MSA with " + relax.codon_data_info[terms.data.sequences] + " sequences and " + relax.codon_data_info[terms.data.sites] + " codons from '" + relax.codon_data_info[terms.data.file] + "'");
 
-relax.codon_lists = models.codon.MapCode (relax.codon_data_info["code"]);
+relax.codon_lists = models.codon.MapCode (relax.codon_data_info[terms.code]);
 
-_Genetic_Code = relax.codon_data_info["code"];
+_Genetic_Code = relax.codon_data_info[terms.code];
     /*
 
      hack to make PopulateModelMatrix work
@@ -98,19 +108,20 @@ _Genetic_Code = relax.codon_data_info["code"];
     */
 
 relax.codon_frequencies     = frequencies._aux.CF3x4(frequencies._aux.empirical.collect_data ("RELAX.codon_filter",3,1,1),
-models.DNA.alphabet, relax.codon_lists["sense"], relax.codon_lists["stop"]);
+models.DNA.alphabet, relax.codon_lists[terms.sense_codons], relax.codon_lists[terms.stop_codons]);
  ("RELAX.codon_filter");
 
 
-relax.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relax.codon_data_info[utility.getGlobalValue("terms.json.partitions")], relax.name_mapping);
+relax.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relax.codon_data_info[utility.getGlobalValue("terms.data.partitions")], relax.name_mapping);
 
 
 io.CheckAssertion("utility.Array1D (relax.partitions_and_trees) == 1", "RELAX only works on a single partition dataset");
 
 relax.filter_specification = alignments.DefineFiltersForPartitions (relax.partitions_and_trees, "RELAX.codon_data" , "RELAX.codon_filter.", relax.codon_data_info);
 
-relax.trees = utility.Map (relax.partitions_and_trees, "_partition_", '_partition_["tree"]');
-relax.filter_names = utility.Map (relax.filter_specification, "_partition_", '_partition_["name"]');
+//TODO
+relax.trees = utility.Map (relax.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
+relax.filter_names = utility.Map (relax.filter_specification, "_partition_", '_partition_[terms.data.name]');
 
 relax.tree = relax.trees[0];
 
@@ -123,8 +134,6 @@ RELAX.has_unclassified = relax.selected_branches / RELAX.unclassified;
 RELAX.branch_to_partiton = {};
 utility.ForEachPair (relax.selected_branches, "_key_", "_value_", "utility.ForEach (utility.Keys(_value_), '_branch_', 'RELAX.branch_to_partiton[_branch_] = _key_')");
 
-RELAX.json ["partition"] = relax.selected_branches;
-RELAX.json ["tree"] = relax.tree ["string"];
 
 io.ReportProgressMessage ("RELAX", "Selected " + Abs (relax.selected_branches[RELAX.test]) + " branches as the test set: " + Join (",", Rows (relax.selected_branches[RELAX.test])));
 
@@ -137,14 +146,33 @@ if (RELAX.runModel < 0) {
     return None;
 }
 
+
+/******** Add input and partition information to JSON ***********/
+(relax.json[terms.json.input])[terms.json.file]  = relax.codon_data_info[terms.data.file];
+(relax.json[terms.json.input])[terms.json.sequences]  = relax.codon_data_info[terms.data.sequences];
+(relax.json[terms.json.input])[terms.json.sites]  = relax.codon_data_info[terms.data.sites];
+(relax.json[terms.json.input])[terms.json.tree_string] = relax.tree[terms.trees.newick_with_lengths];   //relax.json ["tree"] = relax.tree ["string"];
+
+relax.partitions = {};
+
+utility.ForEach(utility.Keys(relax.selected_branches[RELAX.test]), "_value_", "`&relax.partitions`[_value_] = RELAX.test_branches_name");
+utility.ForEach(utility.Keys(relax.selected_branches[RELAX.reference]), "_value_", "`&relax.partitions`[_value_] = RELAX.reference_branches_name");
+if (relax.has_unclassified){
+    utility.ForEach(utility.Keys(relax.selected_branches[relax.unclassified_branches]), "_value_", "`&relax.partitions`[_value_] = RELAX.unclassified_branches_name");
+}
+relax.json[terms.json.partitions] = relax.partitions;
+relax.json_spool (relax.json, relax.codon_data_info[terms.json.json]);
+/***************************************************************/
+
+
 relax.taskTimerStart (1);
 
 
 if (RELAX.settings["GTR"]) {
     io.ReportProgressMessage ("RELAX", "Obtaining branch lengths under the GTR model");
     relax.gtr_results = estimators.FitGTR     ("RELAX.codon_filter", relax.tree, None);
-    io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.gtr_results["LogL"]);
-    estimators.fixSubsetOfEstimates (relax.gtr_results, relax.gtr_results["global"]);
+    io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.gtr_results[terms.fit.log_likelihood]);
+    estimators.fixSubsetOfEstimates (relax.gtr_results, relax.gtr_results[terms.global]);
 } else {
     relax.gtr_results = None;
 }
@@ -152,9 +180,9 @@ if (RELAX.settings["GTR"]) {
 
 if (RELAX.settings["LocalMG"] && RELAX.runModel == 0) {
   io.ReportProgressMessage ("RELAX", "Obtaining  omega and branch length estimates under the local MG94xGTR model");
-  relax.local_mg_results  = estimators.FitMGREV     (relax.filter_names, relax.trees, relax.codon_data_info ["code"], {"model-type" : terms.local}, relax.gtr_results);
-  io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.local_mg_results["LogL"]);
-  estimators.fixSubsetOfEstimates (relax.local_mg_results, relax.local_mg_results["global"]);
+  relax.local_mg_results  = estimators.FitMGREV     (relax.filter_names, relax.trees, relax.codon_data_info [terms.code], {terms.run_options.model_type : terms.local}, relax.gtr_results);
+  io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.local_mg_results[terms.fit.log_likelihood]);
+  estimators.fixSubsetOfEstimates (relax.local_mg_results, relax.local_mg_results[terms.global]);
 } else {
   relax.local_mg_results = relax.gtr_results;
 }
@@ -163,30 +191,32 @@ parameters.DeclareGlobal ("relax.codon_branch_scaler", None);
 
 
 io.ReportProgressMessage ("RELAX", "Obtaining omega and branch length estimates under the partitioned MG94xGTR model");
-relax.mg_results  = estimators.FitMGREV     (relax.filter_names, relax.trees, relax.codon_data_info ["code"],
-                                             {"model-type" : terms.local, "partitioned-omega" : {"0" : RELAX.branch_to_partiton}, "proportional-branch-length-scaler": {"0" : "relax.codon_branch_scaler"}},
+relax.mg_results  = estimators.FitMGREV     (relax.filter_names, relax.trees, relax.codon_data_info [terms.code],
+                                             {terms.run_options.model_type : terms.local, terms.run_options.partitioned_omega : {"0" : RELAX.branch_to_partiton}, terms.run_options.proportional_branch_length_scaler: {"0" : "relax.codon_branch_scaler"}},
                                              relax.local_mg_results);
+
+
 relax.taskTimerStop (1);
 
 relax.mg_results_rate =
-                     {"Reference"   : {{estimators.GetGlobalMLE (relax.mg_results, RELAX.reference),1}},
-                      "Test"        : {{estimators.GetGlobalMLE (relax.mg_results, RELAX.test),1}}};
+                     {RELAX.reference_branches_name   : {{estimators.GetGlobalMLE (relax.mg_results, RELAX.reference),1}},
+                      RELAX.test_branches_name        : {{estimators.GetGlobalMLE (relax.mg_results, RELAX.test),1}}};
 
 
 
-io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.mg_results["LogL"]);
+io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.mg_results[terms.fit.log_likelihood]);
 
 
-relax.json_store_lf (RELAX.json, "Partitioned MG94xREV",
-                     relax.mg_results["LogL"], relax.mg_results["parameters"] + 5,
+relax.json_store_lf (relax.json, "Partitioned MG94xREV",
+                     relax.mg_results[terms.fit.log_likelihood], relax.mg_results[terms.parameters] + 5,
                      RELAX.timers[1],
-                     relax._aux.extract_branch_info ((relax.mg_results["branch length"])[0], "relax.branch.length"),
-                     relax._aux.extract_branch_info ((relax.mg_results["branch length"])[0], "relax.branch.omega"),
+                     relax._aux.extract_branch_info ((relax.mg_results[terms.branch_length])[0], "relax.branch.length"),
+                     relax._aux.extract_branch_info ((relax.mg_results[terms.branch_length])[0], "relax.branch.omega"),
                      relax.mg_results_rate,
                      None,
                      "&omega;"
                     );
-relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
+relax.json_spool (relax.json, relax.codon_data_info[terms.json.json]);
 
 relax.taskTimerStart (2);
 
@@ -194,23 +224,24 @@ RELAX.model_assignment             = {};
 RELAX.model_specification          = {};
 
 RELAX.reference.model      = relax.io.define_a_bsrel_model (RELAX.reference, relax.codon_frequencies, estimators.GetGlobalMLE (relax.mg_results, RELAX.reference) ,1);
-RELAX.model_assignment[RELAX.reference] = RELAX.reference.model["id"];
-RELAX.model_specification[RELAX.reference.model["id"]] = RELAX.reference.model;
+RELAX.model_assignment[RELAX.reference] = RELAX.reference.model[terms.id];
+RELAX.model_specification[RELAX.reference.model[terms.id]] = RELAX.reference.model;
+
 
 RELAX.test.model           = relax.io.define_a_bsrel_model (RELAX.test, relax.codon_frequencies, estimators.GetGlobalMLE (relax.mg_results, RELAX.test) ,1);
-RELAX.model_assignment[RELAX.test] = RELAX.test.model["id"];
-RELAX.model_specification[RELAX.test.model["id"]] = RELAX.test.model;
+RELAX.model_assignment[RELAX.test] = RELAX.test.model[terms.id];
+RELAX.model_specification[RELAX.test.model[terms.id]] = RELAX.test.model;
 
-parameters.ConstrainSets (RELAX.reference.model ["omegas"], RELAX.test.model ["omegas"]);
-parameters.ConstrainSets (RELAX.reference.model ["f"], RELAX.test.model ["f"]);
+parameters.ConstrainSets (RELAX.reference.model [terms.parameters.omegas], RELAX.test.model [terms.parameters.omegas]);
+parameters.ConstrainSets (RELAX.reference.model [terms.parameters.freqs], RELAX.test.model [terms.parameters.freqs]);
 
 if (RELAX.has_unclassified) {
     RELAX.unclassified.model = relax.io.define_a_bsrel_model (RELAX.unclassified, relax.codon_frequencies, estimators.GetGlobalMLE (relax.mg_results, RELAX.test) ,1);
-    RELAX.model_assignment[RELAX.unclassified] = RELAX.unclassified.model["id"];
-    RELAX.model_specification[RELAX.unclassified.model["id"]] = RELAX.unclassified.model;
+    RELAX.model_assignment[RELAX.unclassified] = RELAX.unclassified.model[terms.id];
+    RELAX.model_specification[RELAX.unclassified.model[terms.id]] = RELAX.unclassified.model;
 
-    parameters.ConstrainSets (RELAX.reference.model ["omegas"], RELAX.unclassified.model ["omegas"]);
-    parameters.ConstrainSets (RELAX.reference.model ["f"], RELAX.unclassified.model ["f"]);
+    parameters.ConstrainSets (RELAX.reference.model [terms.parameters.omegas], RELAX.unclassified.model [terms.parameters.omegas]);
+    parameters.ConstrainSets (RELAX.reference.model [terms.parameters.freqs], RELAX.unclassified.model [terms.parameters.freqs]);
 
 }
 
@@ -223,10 +254,13 @@ global RELAX.branch_scaler = 4;
 RELAX.proportional_constraint = "RELAX.branch_scaler";
 
 if (RELAX.settings["Estimate GTR"] != 1) {
-    estimators.fixSubsetOfEstimates   (relax.mg_results, relax.mg_results["global"]);
+    estimators.fixSubsetOfEstimates   (relax.mg_results, relax.mg_results[terms.global]);
 }
 
 estimators.ApplyExistingEstimates ("relax.LF",  RELAX.model_specification, relax.mg_results, None);
+
+
+
 
 
 utility.SetEnvVariable ("USE_LAST_RESULTS", 1);
@@ -241,7 +275,7 @@ if (RELAX.runModel == 0) {
     Optimize (relax.MLE.general_descriptive, relax.LF);
 
     OPTIMIZATION_PRECISION = 0.001;
-    parameters.UnconstrainParameterSet ("relax.LF", {{terms.lf.local.constrained}});
+    parameters.UnconstrainParameterSet ("relax.LF", {{terms.parameters.local_constrained}});
 
     Optimize (relax.MLE.general_descriptive, relax.LF);
     io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.general_descriptive[1][0]);
@@ -251,29 +285,28 @@ if (RELAX.runModel == 0) {
 
     relax.taskTimerStop (2);
 
-    relax.json_store_lf (RELAX.json, "General Descriptive",
-                         relax.general_descriptive["LogL"], relax.general_descriptive["parameters"],
+    relax.json_store_lf (relax.json, "General Descriptive",
+                         relax.general_descriptive[terms.fit.log_likelihood], relax.general_descriptive[terms.parameters],
                          RELAX.timers[2],
-                         relax._aux.extract_branch_info ((relax.general_descriptive["branch length"])[0], "relax.branch.length"),
-                         relax._aux.extract_branch_info ((relax.general_descriptive["branch length"])[0], "relax.branch.local_k"),
+                         relax._aux.extract_branch_info ((relax.general_descriptive[terms.branch_length])[0], "relax.branch.length"),
+                         relax._aux.extract_branch_info ((relax.general_descriptive[terms.branch_length])[0], "relax.branch.local_k"),
                          {"All" : relax.getRateDistribution (RELAX.reference.model, 1)},
                          None,
                          "k"
                         );
-    relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
+    relax.json_spool (relax.json, relax.codon_data_info[terms.json.json]);
 
 } else {
-    parameters.UnconstrainParameterSet ("relax.LF", {{terms.lf.local.constrained}});
+    parameters.UnconstrainParameterSet ("relax.LF", {{terms.parameters.local_constrained}});
 }
 
 
 
 
 
-
 if (RELAX.has_unclassified) {
-    parameters.RemoveConstraint (RELAX.unclassified.model ["omegas"]);
-    parameters.RemoveConstraint (RELAX.unclassified.model ["f"]);
+    parameters.RemoveConstraint (RELAX.unclassified.model [terms.parameters.omegas]);
+    parameters.RemoveConstraint (RELAX.unclassified.model [terms.parameters.freqs]);
 }
 
 relax.taskTimerStart (3);
@@ -283,36 +316,45 @@ io.ReportProgressMessage ("RELAX", "Fitting the RELAX null model");
 
 RELAX.null = relax.define.null ("RELAX.tree", RELAX.reference.model, relax.selected_branches);
 
+
+
+
 Optimize (relax.MLE.null, relax.LF);
+
+
+
 io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.null[1][0]);
 
 
 relax.null = estimators.ExtractMLEs ("relax.LF", RELAX.model_specification);
+
+
 relax.add_scores (relax.null, relax.MLE.null);
 
 relax.taskTimerStop (3);
 
+
 relax.omega_distributions = {};
-relax.omega_distributions["Test"] = relax.getRateDistribution (RELAX.test.model, 1);
-relax.omega_distributions["Reference"] =  relax.getRateDistribution (RELAX.reference.model, 1);
+relax.omega_distributions[RELAX.test_branches_name] = relax.getRateDistribution (RELAX.test.model, 1);
+relax.omega_distributions[RELAX.reference_branches_name] =  relax.getRateDistribution (RELAX.reference.model, 1);
 
 if (RELAX.has_unclassified) {
-    relax.omega_distributions ["Unclassified"] = relax.getRateDistribution (RELAX.unclassified.model, 1);
+    relax.omega_distributions [RELAX.unclassified_branches_name] = relax.getRateDistribution (RELAX.unclassified.model, 1);
 }
 
 //io.SpoolLF ("relax.LF", "/Volumes/home-raid/Desktop/null", None);
 
-relax.json_store_lf (RELAX.json, "Null",
-                     relax.null["LogL"], relax.null["parameters"],
+relax.json_store_lf (relax.json, "Null",
+                     relax.null[terms.fit.log_likelihood], relax.null[terms.parameters],
                      RELAX.timers[3],
-                     relax._aux.extract_branch_info ((relax.null["branch length"])[0], "relax.branch.length"),
-                     relax._aux.extract_branch_info ((relax.null["branch length"])[0], "relax.branch.local_k"),
+                     relax._aux.extract_branch_info ((relax.null[terms.branch_length])[0], "relax.branch.length"),
+                     relax._aux.extract_branch_info ((relax.null[terms.branch_length])[0], "relax.branch.local_k"),
                      relax.omega_distributions,
                      1,
                      "k"
                     );
 
-relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
+relax.json_spool (relax.json, relax.codon_data_info[terms.json.json]);
 
 io.ReportProgressMessage ("RELAX", "Fitting the RELAX alternative model");
 
@@ -321,33 +363,35 @@ parameters.RemoveConstraint (RELAX.relaxation_parameter);
 Optimize (relax.MLE.alt, relax.LF);
 io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.alt[1][0] + ". Relaxation parameter K = " + Eval (RELAX.relaxation_parameter));
 
-LIKELIHOOD_FUNCTION_OUTPUT = 7;
-fprintf (relax.codon_data_info["file"] + ".alternative.fit", CLEAR_FILE, relax.LF);
-LIKELIHOOD_FUNCTION_OUTPUT = 2;
+
+// Uncomment following lines to obtain full alternative fit information
+//LIKELIHOOD_FUNCTION_OUTPUT = 7;
+//fprintf (relax.codon_data_info["file"] + ".alternative.fit", CLEAR_FILE, relax.LF);
+//LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 
 relax.alt = estimators.ExtractMLEs ("relax.LF", RELAX.model_specification);
 relax.add_scores (relax.alt, relax.MLE.alt);
 
-RELAX.json ["relaxation-test"] = relax.runLRT (relax.alt["LogL"], relax.null["LogL"]);
+relax.relaxation_test = relax.runLRT (relax.alt[terms.fit.log_likelihood], relax.null[terms.fit.log_likelihood]);
 
-io.ReportProgressMessage ("RELAX", "Likelihood ratio test for relaxation on Test branches, p = " + (RELAX.json ["relaxation-test"])["p"]);
+io.ReportProgressMessage ("RELAX", "Likelihood ratio test for relaxation on Test branches, p = " + relax.relaxation_test[terms.p_value]);
 
 relax.taskTimerStop  (4);
 
 
-relax.omega_distributions["Test"] = relax.getRateDistribution (RELAX.null, Eval (RELAX.relaxation_parameter));
-relax.omega_distributions["Reference"] =  relax.getRateDistribution (RELAX.null, 1);
+relax.omega_distributions[RELAX.test_branches_name] = relax.getRateDistribution (RELAX.null, Eval (RELAX.relaxation_parameter));
+relax.omega_distributions[RELAX.reference_branches_name] =  relax.getRateDistribution (RELAX.null, 1);
 
 if (RELAX.has_unclassified) {
-    relax.omega_distributions ["Unclassified"] = relax.getRateDistribution (RELAX.unclassified.model, 1);
+    relax.omega_distributions [RELAX.unclassified_branches_name] = relax.getRateDistribution (RELAX.unclassified.model, 1);
 }
 
-relax.json_store_lf (RELAX.json, "Alternative",
-                     relax.alt["LogL"], relax.alt["parameters"],
+relax.json_store_lf (relax.json, "Alternative",
+                     relax.alt[terms.fit.log_likelihood], relax.alt[terms.parameters],
                      RELAX.timers[4],
-                     relax._aux.extract_branch_info ((relax.alt["branch length"])[0], "relax.branch.length"),
-                     relax._aux.extract_branch_info ((relax.alt["branch length"])[0], "relax.branch.local_k"),
+                     relax._aux.extract_branch_info ((relax.alt[terms.branch_length])[0], "relax.branch.length"),
+                     relax._aux.extract_branch_info ((relax.alt[terms.branch_length])[0], "relax.branch.local_k"),
                      relax.omega_distributions,
                      Eval (RELAX.relaxation_parameter),
                      "k"
@@ -358,8 +402,8 @@ if (RELAX.runModel == 0) {
 
     relax.taskTimerStart  (5);
 
-    parameters.RemoveConstraint (RELAX.test.model ["omegas"]);
-    parameters.RemoveConstraint (RELAX.test.model ["f"]);
+    parameters.RemoveConstraint (RELAX.test.model [terms.parameters.omegas]);
+    parameters.RemoveConstraint (RELAX.test.model [terms.parameters.freqs]);
     parameters.SetConstraint    (RELAX.relaxation_parameter, Eval (RELAX.relaxation_parameter), "");
 
 
@@ -367,26 +411,27 @@ if (RELAX.runModel == 0) {
     Optimize (relax.MLE.part.expl, relax.LF);
     io.ReportProgressMessage ("RELAX", "Log(L) = " + relax.MLE.part.expl [1][0]);
 
-    LIKELIHOOD_FUNCTION_OUTPUT = 7;
-    fprintf (relax.codon_data_info["file"] + ".partitioned_descriptive.fit", CLEAR_FILE, relax.LF);
-    LIKELIHOOD_FUNCTION_OUTPUT = 2;
+    // Uncomment following lines to obtain full partitioned descriptive fit information
+    //LIKELIHOOD_FUNCTION_OUTPUT = 7;
+    //fprintf (relax.codon_data_info["file"] + ".partitioned_descriptive.fit", CLEAR_FILE, relax.LF);
+    //LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
     relax.part.expl = estimators.ExtractMLEs ("relax.LF", RELAX.model_specification);
 
-    relax.omega_distributions["Test"]       = relax.getRateDistribution (RELAX.test.model,Eval (RELAX.relaxation_parameter));
-    relax.omega_distributions["Reference"] =  relax.getRateDistribution (RELAX.reference.model, 1);
+    relax.omega_distributions[RELAX.test_branches_name]       = relax.getRateDistribution (RELAX.test.model,Eval (RELAX.relaxation_parameter));
+    relax.omega_distributions[RELAX.reference_branches_name] =  relax.getRateDistribution (RELAX.reference.model, 1);
 
     if (RELAX.has_unclassified) {
-        relax.omega_distributions ["Unclassified"] = relax.getRateDistribution (RELAX.unclassified.model, 1);
+        relax.omega_distributions [RELAX.unclassified_branches_name] = relax.getRateDistribution (RELAX.unclassified.model, 1);
     }
 
     relax.add_scores (relax.part.expl, relax.MLE.part.expl);
 
     relax.taskTimerStop  (5);
-    relax.json_store_lf (RELAX.json, "Partitioned Exploratory",
-                         relax.part.expl["LogL"], relax.part.expl["parameters"],
+    relax.json_store_lf (relax.json, "Partitioned Exploratory",
+                         relax.part.expl[terms.fit.log_likelihood], relax.part.expl[terms.parameters],
                          RELAX.timers[5],
-                         relax._aux.extract_branch_info ((relax.part.expl["branch length"])[0], "relax.branch.length"),
+                         relax._aux.extract_branch_info ((relax.part.expl[terms.branch_length])[0], "relax.branch.length"),
                          None,
                          relax.omega_distributions,
                          None,
@@ -398,16 +443,19 @@ if (RELAX.runModel == 0) {
 relax.taskTimerStop  (0);
 
 
-(RELAX.json ["timers"])["Overall"]                  = RELAX.timers[0];
-(RELAX.json ["timers"])["Preliminaries"]            = RELAX.timers[1];
-(RELAX.json ["timers"])["General Descriptive"]      = RELAX.timers[2];
-(RELAX.json ["timers"])["Null"]                     = RELAX.timers[3];
-(RELAX.json ["timers"])["Alternative"]              = RELAX.timers[4];
-(RELAX.json ["timers"])["Partitioned Descriptive"]  = RELAX.timers[5];
+(relax.json [terms.json.timers])["Overall"]                  = RELAX.timers[0];
+(relax.json [terms.json.timers])["Preliminaries"]            = RELAX.timers[1];
+(relax.json [terms.json.timers])["General Descriptive"]      = RELAX.timers[2];
+(relax.json [terms.json.timers])["Null"]                     = RELAX.timers[3];
+(relax.json [terms.json.timers])["Alternative"]              = RELAX.timers[4];
+(relax.json [terms.json.timers])["Partitioned Descriptive"]  = RELAX.timers[5];
 
-relax.json_spool (RELAX.json, relax.codon_data_info["json"]);
+//Test results
+relax.json[terms.json.test_results] = relax.relaxation_test;
 
-return RELAX.json;
+relax.json_spool (relax.json, relax.codon_data_info[terms.json.json]);
+
+return relax.json;
 
 //------------------------------------------------------------------------------
 // HELPER FUNCTIONS FROM THIS POINT ON
@@ -415,15 +463,15 @@ return RELAX.json;
 
 
 function relax.branch.length (branch_info) {
-    return branch_info["MLE"];
+    return branch_info[terms.fit.MLE];
 }
 
 function relax.branch.omega  (branch_info) {
-    return parameters.NormalizeRatio ((branch_info[terms.nonsynonymous_rate])["MLE"], (branch_info[terms.synonymous_rate])["MLE"]);
+    return parameters.NormalizeRatio ((branch_info[terms.parameters.nonsynonymous_rate])[terms.fit.MLE], (branch_info[terms.parameters.synonymous_rate])[terms.fit.MLE]);
 }
 
 function relax.branch.local_k  (branch_info) {
-    return (branch_info[term.RELAX.k])["MLE"];
+    return (branch_info[term.RELAX.k])[terms.fit.MLE];
 }
 
 function relax._aux.extract_branch_info.callback (key, value) {
@@ -439,12 +487,13 @@ function relax._aux.extract_branch_info (branch_spec, callback) {
 
 //------------------------------------------------------------------------------
 function relax.getRateDistribution (model_description, K) {
-  relax.getRateInformation.rate_classes = Abs (model_description["omegas"]);
+  relax.getRateInformation.rate_classes = Abs (model_description[terms.parameters.omegas]);
   relax.getRateInformation.omega_info = {relax.getRateInformation.rate_classes,2};
 
+
   for (relax.getRateInformation.k = 0; relax.getRateInformation.k < relax.getRateInformation.rate_classes; relax.getRateInformation.k += 1) {
-    relax.getRateInformation.omega_info[relax.getRateInformation.k][0] = Eval ((model_description["omegas"])[relax.getRateInformation.k])^K;
-    relax.getRateInformation.omega_info[relax.getRateInformation.k][1] = Eval ((model_description["weights"])[relax.getRateInformation.k]);
+    relax.getRateInformation.omega_info[relax.getRateInformation.k][0] = Eval ((model_description[terms.parameters.omegas])[relax.getRateInformation.k])^K;
+    relax.getRateInformation.omega_info[relax.getRateInformation.k][1] = Eval ((model_description[terms.parameters.weights])[relax.getRateInformation.k]);
   }
   return relax.getRateInformation.omega_info % 0;
 }
@@ -460,9 +509,9 @@ function relax.define.null._aux (key, value) {
 //------------------------------------------------------------------------------
 function relax.define.null (tree_id, general_model, partition) {
     RELAX.null = general_model;
-    parameters.RemoveConstraint ((general_model["omegas"])[2]);
+    parameters.RemoveConstraint ((general_model[terms.parameters.omegas])[2]);
 
-    relax.define.null.local = ((general_model["parameters"])["local"])[term.RELAX.k];
+    relax.define.null.local = ((general_model[terms.parameters])[terms.local])[term.RELAX.k];
 
     //fprintf (stdout, "\n**", relax.define.null.par , "\n");
     relax.define.null.global = "1";
@@ -473,7 +522,7 @@ function relax.define.null (tree_id, general_model, partition) {
 
     (partition[RELAX.test])["relax.define.null._aux"][""];
 
-    ((general_model["parameters"])["global"])[RELAX.relaxation_parameter] = RELAX.relaxation_parameter;
+    ((general_model[terms.parameters])[terms.global])[RELAX.relaxation_parameter] = RELAX.relaxation_parameter;
 
     return RELAX.null;
 }
@@ -483,15 +532,15 @@ function relax.define.null (tree_id, general_model, partition) {
 //------------------------------------------------------------------------------
 function relax.add_scores (desc, mles) {
     if (Type (mles) == "Matrix") {
-        desc ["LogL"] = mles[1][0];
-        desc ["parameters"] = mles[1][1] + 9 + 5 * (RELAX.settings["Estimate GTR"] != 1);
+        desc [terms.fit.log_likelihood] = mles[1][0];
+        desc [terms.parameters] = mles[1][1] + 9 + 5 * (RELAX.settings["Estimate GTR"] != 1);
     }
 }
 
 //------------------------------------------------------------------------------
 function relax.runLRT (ha, h0) {
-    return {"LR" : 2*(ha-h0),
-            "p" : 1-CChi2 (2*(ha-h0),1)};
+    return {terms.LRT : 2*(ha-h0),
+            terms.p_value : 1-CChi2 (2*(ha-h0),1)};
 }
 
 
@@ -527,34 +576,34 @@ function relax.io.evaluator (key, value) {
 //------------------------------------------------------------------------------
 function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
 
-    model_parameters = {"parameters" : {"global" : {}, "local" : {}}, "omegas" : {}, "weights" : {}, "f" : {}, "Q" : {}, "length" : ""};
+    model_parameters = {terms.parameters : {terms.global : {}, terms.local : {}}, terms.parameters.omegas : {}, terms.parameters.weights : {}, terms.parameters.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""};
 
-    model_parameters["omegas"] = parameters.GenerateSequentialNames ("`id`.omega",    3, "_");
-    model_parameters["f"]      = parameters.GenerateSequentialNames ("`id`.aux_freq", 2, "_");
+    model_parameters[terms.parameters.omegas] = parameters.GenerateSequentialNames ("`id`.omega",    3, "_");
+    model_parameters[terms.parameters.freqs]      = parameters.GenerateSequentialNames ("`id`.aux_freq", 2, "_");
 
-    parameters.DeclareGlobal    (model_parameters["f"], None);
-    parameters.SetRange         (model_parameters["f"], terms.range01);
+    parameters.DeclareGlobal    (model_parameters[terms.parameters.freqs], None);
+    parameters.SetRange         (model_parameters[terms.parameters.freqs], terms.range01);
 
-    parameters.DeclareGlobal    (model_parameters["omegas"], None);
+    parameters.DeclareGlobal    (model_parameters[terms.parameters.omegas], None);
 
-    model_parameters["weights"] = parameters.helper.stick_breaking (model_parameters["f"], {{0.7,0.25,0.05}});
+    model_parameters[terms.parameters.weights] = parameters.helper.stick_breaking (model_parameters[terms.parameters.freqs], {{0.7,0.25,0.05}});
 
     relax.init_omegas = {{0.05,0.25,4}};
-    relax.init_omegas = relax.init_omegas * (1/ parameters.Mean (relax.init_omegas, model_parameters["weights"], Abs (model_parameters["omegas"])));
+    relax.init_omegas = relax.init_omegas * (1/ parameters.Mean (relax.init_omegas, model_parameters[terms.parameters.weights], Abs (model_parameters[terms.parameters.omegas])));
 
-    parameters.SetRange ((model_parameters["omegas"])[0], terms.range_almost_01);
-    parameters.SetValue ((model_parameters["omegas"])[0], relax.init_omegas[0]);
+    parameters.SetRange ((model_parameters[terms.parameters.omegas])[0], terms.range_almost_01);
+    parameters.SetValue ((model_parameters[terms.parameters.omegas])[0], relax.init_omegas[0]);
 
-    parameters.SetRange ((model_parameters["omegas"])[1], terms.range_almost_01);
-    parameters.SetValue ((model_parameters["omegas"])[1], relax.init_omegas[1]);
+    parameters.SetRange ((model_parameters[terms.parameters.omegas])[1], terms.range_almost_01);
+    parameters.SetValue ((model_parameters[terms.parameters.omegas])[1], relax.init_omegas[1]);
 
-    parameters.SetRange ((model_parameters["omegas"])[2], terms.range_gte1);
-    parameters.SetValue ((model_parameters["omegas"])[2], relax.init_omegas[2]);
+    parameters.SetRange ((model_parameters[terms.parameters.omegas])[2], terms.range_gte1);
+    parameters.SetValue ((model_parameters[terms.parameters.omegas])[2], relax.init_omegas[2]);
 
     if (do_local) {
-        parameters.SetConstraint ((model_parameters["omegas"])[2], " 1/" + ((model_parameters["omegas"])[0]) + "/" + ((model_parameters["omegas"])[1]) , "");
-        relax.io.define_a_bsrel_model_r = {"LB" : 1e-4, "UB" : 1};
-        parameters.SetRange ((model_parameters["omegas"])[1], relax.io.define_a_bsrel_model_r);
+        parameters.SetConstraint ((model_parameters[terms.parameters.omegas])[2], " 1/" + ((model_parameters[terms.parameters.omegas])[0]) + "/" + ((model_parameters[terms.parameters.omegas])[1]) , "");
+        relax.io.define_a_bsrel_model_r = {terms.lower_bound : 1e-4, terms.upper_bound : 1};
+        parameters.SetRange ((model_parameters[terms.parameters.omegas])[1], relax.io.define_a_bsrel_model_r);
     }
 
 
@@ -563,42 +612,42 @@ function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
     relax.nuc = {4,3};
     for (k = 0; k < 4; k+=1) {
         for (k2 = 0; k2 < 3; k2 += 1) {
-            relax.nuc [k][k2] = ((frequencies["bases"])[models.DNA.alphabet[k]])[k2];
+            relax.nuc [k][k2] = ((frequencies[terms.bases])[models.DNA.alphabet[k]])[k2];
         }
     }
 
 
     for (k = 1; k <= 3; k +=1) {
-        ((model_parameters["parameters"])["global"])[relax.define_omega_term (k)] = (model_parameters["omegas"])[k-1];
+        ((model_parameters[terms.parameters])[terms.global])[relax.define_omega_term (k)] = (model_parameters[terms.parameters.omegas])[k-1];
         if (k < 3) {
-            ((model_parameters["parameters"])["global"])[relax.define_weight_term (k)] = (model_parameters["f"])[k-1];
+            ((model_parameters[terms.parameters])[terms.global])[relax.define_weight_term (k)] = (model_parameters[terms.parameters.freqs])[k-1];
         }
 
-        model_parameters["Q"] + ("Q_`id`_" + k);
+        model_parameters[terms.model.rate_matrix] + ("Q_`id`_" + k);
         if (do_local) {
-            PopulateModelMatrix			  ((model_parameters["Q"])[k-1],  relax.nuc, "t", "Min (1000," + (model_parameters["omegas"])[k-1] +"^local_k)", "");
+            PopulateModelMatrix			  ((model_parameters[terms.model.rate_matrix])[k-1],  relax.nuc, terms.parameters.default_time, "Min (1000," + (model_parameters[terms.parameters.omegas])[k-1] +"^local_k)", "");
         } else {
-            PopulateModelMatrix			  ((model_parameters["Q"])[k-1],  relax.nuc, "t", (model_parameters["omegas"])[k-1], "");
+            PopulateModelMatrix			  ((model_parameters[terms.model.rate_matrix])[k-1],  relax.nuc, terms.parameters.default_time, (model_parameters[terms.parameters.omegas])[k-1], "");
         }
     }
 
-    model_parameters["id"] = "`id`_model";
-    model_parameters["length-expression"] = relax._aux.define_bsrel_model ("`id`_model", model_parameters["Q"], model_parameters["weights"], frequencies["codons"]);
+    model_parameters[terms.id] = "`id`_model";
+    model_parameters[terms.model.length_expression] = relax._aux.define_bsrel_model ("`id`_model", model_parameters[terms.model.rate_matrix], model_parameters[terms.parameters.weights], frequencies[terms.codons]);
 
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","C")] = "AC";
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","T")] = "AT";
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","G")] = "CG";
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","T")] = "CT";
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("G","T")] = "GT";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("A","C")] = "AC";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("A","T")] = "AT";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("C","G")] = "CG";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("C","T")] = "CT";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("G","T")] = "GT";
 
-    model_parameters["set-branch-length"] = "relax.aux.copy_branch_length";
+    model_parameters[terms.model.set_branch_length] = "relax.aux.copy_branch_length";
 
-    model_parameters["length parameter"] = "t";
-    ((model_parameters["parameters"])[terms.local])[terms.timeParameter ()] = "t";
+    model_parameters[terms.model.length_parameter] = terms.parameters.default_time;
+    ((model_parameters[terms.parameters])[terms.local])[terms.timeParameter ()] = terms.parameters.default_time;
     if (do_local) {
-        ((model_parameters["parameters"])[terms.local])[term.RELAX.k] = "local_k";
+        ((model_parameters[terms.parameters])[terms.local])[term.RELAX.k] = "local_k";
     }
-    model_parameters["get-branch-length"] = "relax.aux.retrieve_branch_length";
+    model_parameters[terms.model.get_branch_length] = "relax.aux.retrieve_branch_length";
     return model_parameters;
 }
 
@@ -606,19 +655,19 @@ function relax.io.define_a_bsrel_model (id, frequencies, mean_omega, do_local) {
 
 
 function relax.aux.retrieve_branch_length (model, tree, node) {
-    relax.aux.retrieve_branch_length.locals = Columns ((model_parameters["parameters"])[terms.local]);
+    relax.aux.retrieve_branch_length.locals = Columns ((model_parameters[terms.parameters])[terms.local]);
     for (relax.aux.retrieve_branch_length.i = 0; relax.aux.retrieve_branch_length.i < Columns (relax.aux.retrieve_branch_length.locals); relax.aux.retrieve_branch_length.i += 1) {
         Eval (relax.aux.retrieve_branch_length.locals[relax.aux.retrieve_branch_length.i] + " = `tree`.`node`." + relax.aux.retrieve_branch_length.locals[relax.aux.retrieve_branch_length.i]);
     }
-    return Eval (model["length-expression"]);
+    return Eval (model[terms.model.length_expression]);
 }
 
 //------------------------------------------------------------------------------
 
 function relax.aux.copy_branch_length (model, value, parameter) {
 
-    relax.aux.copy_branch_length.t = ((model["parameters"])["local"])[terms.timeParameter ()];
-    relax.aux.copy_branch_length.k = ((model["parameters"])["local"])[term.RELAX.k];
+    relax.aux.copy_branch_length.t = ((model[terms.parameters])[terms.local])[terms.timeParameter ()];
+    relax.aux.copy_branch_length.k = ((model[terms.parameters])[terms.local])[term.RELAX.k];
 
     if (Abs (RELAX.proportional_constraint)) {
         Eval ("`parameter`.`relax.aux.copy_branch_length.t` := `RELAX.proportional_constraint` * " + value);
@@ -640,7 +689,7 @@ function relax._aux.io.mapBranchSets (key, value) {
     /*if (Abs (value) == 0) {
         value = RELAX.unclassified;
     }*/
-    (relax.tree ["model_map"])[key] = branch_set[value];
+    (relax.tree [terms.trees.model_map])[key] = branch_set[value];
     (return_set[branch_set[value]])[key] = 1;
     return None;
 }
@@ -660,11 +709,11 @@ function relax.io.defineBranchSets (relax.tree) {
     branch_set              = {};
 
 
-    for (k = 0; k < Columns (relax.tree["model_list"]); k += 1) {
-        available_models  [(relax.tree["model_list"])[k]] = 0;
+    for (k = 0; k < Columns (relax.tree[terms.trees.model_list]); k += 1) {
+        available_models  [(relax.tree[terms.trees.model_list])[k]] = 0;
     }
 
-    (relax.tree["model_map"])["relax._aux.io.countBranchSets"][""];
+    (relax.tree[terms.trees.model_map])["relax._aux.io.countBranchSets"][""];
 
 
     list_models = Rows (available_models); // get keys
@@ -710,8 +759,8 @@ function relax.io.defineBranchSets (relax.tree) {
         return_set [RELAX.reference] = {};
      }
 
-    (relax.tree["model_map"])["relax._aux.io.mapBranchSets"][""];
-    relax.tree["model_list"] = Columns (relax.tree["model_map"]);
+    (relax.tree[terms.trees.model_map])["relax._aux.io.mapBranchSets"][""];
+    relax.tree[terms.trees.model_list] = Columns (relax.tree[terms.trees.model_map]);
     //fprintf (stdout, "\n", relax.tree, "\n", return_set, "\n");
 
     return return_set;
@@ -768,15 +817,15 @@ lfunction CountSenseCodons (code) {
 
 function relax.json_store_lf (json, name, ll, df, time, branch_length, branch_annotation, omega_distribution, K, annotation_tag) {
 
-    (json["fits"])[name] = {"log-likelihood"     : ll,
-                            "parameters"         : df,
-                            "AIC-c"              : relax.getIC (ll, df, relax.sample_size),
-                            "runtime"            : time,
-                            "branch-lengths"     : branch_length,
-                            "branch-annotations" : branch_annotation,
-                            "rate-distributions" : omega_distribution,
+    (json[terms.json.fits])[name] = {terms.json.log_likelihood     : ll,
+                            terms.json.parameters         : df,
+                            terms.json.AICc              : relax.getIC (ll, df, relax.sample_size),
+                            terms.json.runtime           : time,
+                            terms.json.branch_lengths     : branch_length,
+                            terms.json.branch_annotations : branch_annotation,
+                            terms.json.rate_distributions : omega_distribution,
                             "K" : K,
-                            "annotation-tag" : annotation_tag,
-                            "display-order" : Abs (json["fits"])};
+                            terms.json.annotation_tag : annotation_tag,
+                            terms.json.display_order : Abs (json[terms.json.fits])};
 
  }

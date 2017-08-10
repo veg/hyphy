@@ -5,7 +5,7 @@ RequireVersion("2.31"); // Should also be in the calling batchfile, but repeated
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/stats.bf"); 
-LoadFunctionLibrary("libv3/terms-json.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
 
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");

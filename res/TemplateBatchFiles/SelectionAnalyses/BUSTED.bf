@@ -1,7 +1,7 @@
 RequireVersion ("2.31");
 
 
-// namespace 'utility' for convenience functions
+LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
@@ -14,30 +14,50 @@ LoadFunctionLibrary("modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 
 
-io.DisplayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistical test of episodic diversification)
+
+busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification)
                             uses a random effects branch-site model fitted jointly to all or a subset of tree branches
                             in order to test for alignment-wide evidence of episodic diversifying selection. Assuming
                             there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform
                             a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection.",
-                           "version" : "1.2",
-                           "reference" : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
-                           "authors" : "Sergei L Kosakovsky Pond",
-                           "contact" : "spond@temple.edu",
-                           "requirements" : "in-frame codon alignment and a phylogenetic tree (optionally annotated with {})"
-                          } );
+                           terms.io.version : "1.2",
+                           terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
+                           terms.io.authors : "Sergei L Kosakovsky Pond",
+                           terms.io.contact : "spond@temple.edu",
+                           terms.io.requirements : "in-frame codon alignment and a phylogenetic tree (optionally annotated with {})"
+                          };
 
-
+io.DisplayAnalysisBanner (busted.analysis_description);
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
-busted.timers  = {3,1};
-busted.taskTimerStart (2);
+busted.FG = "FG";
+busted.BG = "BG";
+busted.BG_FG_map = {0: busted.BG, 1: busted.FG}; // for partitions output
+busted.background = "background";
+busted.unconstrained = "unconstrained";
+busted.constrained = "constrained";
+busted.optimized_null = "optimized null";
+
+busted.json.background = busted.background;
+busted.json.site_logl  = "Site Log Likelihood";
+busted.json.evidence_ratios  = "Evidence Ratios";
 busted.rate_classes = 3;
 
-busted.json    = { terms.json.fits: {},
-                   terms.json.timers: {},
-                   "profiles" : {},
-                   "evidence ratios": {}
+busted.json    = { terms.json.analysis: busted.analysis_description,
+                   terms.json.input: {},
+                   terms.json.partitions: {},
+                   busted.json.background: {},
+                   terms.json.fits : {},
+                   terms.json.timers : {},
+                   busted.json.site_logl : {},
+                   busted.json.evidence_ratios: {},
+                   busted.json.site_logl : {}
                   };
+
+
+
+
+selection.io.startTimer (busted.json [terms.json.timers], "Overall", 0);
 
 namespace busted {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
@@ -47,7 +67,7 @@ namespace busted {
 io.ReportProgressMessageMD('BUSTED',  'selector', 'Branches to test for selection in the BUSTED analysis');
 
 utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
-    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.json.attribute.test');
+    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
      io.ReportProgressMessageMD('BUSTED',  'selector', 'Selected ' + Abs(_selection_) + ' branches to test in the BUSTED analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 // check to see if there are any background branches
@@ -55,22 +75,22 @@ utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
 busted.has_background = FALSE;
 
 utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
-    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ != terms.json.attribute.test');
+    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ != terms.tree_attributes.test');
      if (utility.Array1D (_selection_)) { busted.has_background = TRUE;} ");
+
+selection.io.startTimer (busted.json [terms.json.timers], "Preliminary model fitting", 1);
 
 namespace busted {
     doGTR ("busted");
 }
 
 busted.scaler_prefix = "busted.scaler";
-
 estimators.fixSubsetOfEstimates(busted.gtr_results, busted.gtr_results["global"]);
 
 namespace busted {
     doPartitionedMG ("busted", FALSE);
 }
 
-utility.SetEnvVariable ("VERBOSITY_LEVEL", 0);
 
 io.ReportProgressMessageMD ("BUSTED", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
@@ -81,9 +101,11 @@ busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, 
 
 
 io.ReportProgressMessageMD("BUSTED", "codon-refit", "* Log(L) = " + Format(busted.final_partitioned_mg_results["LogL"],8,2));
-busted.global_dnds = selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio);
+busted.global_dnds = selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 
 utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+
+selection.io.stopTimer (busted.json [terms.json.timers], "Preliminary model fitting");
 
 busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
         "busted.test", {
@@ -107,8 +129,8 @@ busted.background.bsrel_model =  model.generic.DefineMixtureModel("models.codon.
 
 models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 
-busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio + ".+test.+"), "_value_",
-            "_value_[terms.MLE]"));
+busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
+            "_value_[terms.fit.MLE]"));
 
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
@@ -119,8 +141,8 @@ if (busted.has_background) {
     busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
                                 "busted.test" :       busted.test.bsrel_model };
     busted.background_distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.background.bsrel_model);
-    busted.background_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio + ".+background.+"), "_value_",
-            "_value_[terms.MLE]"));
+    busted.background_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+background.+"), "_value_",
+            "_value_[terms.fit.MLE]"));
     parameters.SetStickBreakingDistribution (busted.background_distribution, busted.background_guess);
 } else {
     busted.model_object_map = { "busted.test" :       busted.test.bsrel_model };
@@ -129,17 +151,17 @@ if (busted.has_background) {
 // set up parameter constraints
 
 for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
-    parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.i)), terms.range01);
-    parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.i)), terms.range01);
+    parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.i)), terms.range01);
+    parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.i)), terms.range01);
 }
 
-parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.rate_classes)), terms.range_gte1);
+parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)), terms.range_gte1);
 
 busted.model_map = {};
 
 for (busted.partition_index = 0; busted.partition_index < busted.partition_count; busted.partition_index += 1) {
-    busted.model_map + { "busted.test" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ == terms.json.attribute.test'),
-					     "busted.background" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ != terms.json.attribute.test')};
+    busted.model_map + { "busted.test" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ == terms.tree_attributes.test'),
+					     "busted.background" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ != terms.tree_attributes.test')};
 }
 
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
@@ -161,17 +183,17 @@ if (busted.has_background) {
 
 busted.run_test = busted.inferred_test_distribution [busted.rate_classes-1][0] > 1 && busted.inferred_test_distribution [busted.rate_classes-1][1] > 0;
 
-(busted.json ["profiles"])["unconstrained"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
+(busted.json [busted.json.site_logl])["unconstrained"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
 
 if (!busted.run_test) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for episodic diversifying positive selection under the unconstrained model, skipping constrained model fitting");
     busted.json ["test results"] = busted.LRT (0, 0);
 } else {
     io.ReportProgressMessageMD ("BUSTED", "test", "Performing the constrained (dN/dS > 1 not allowed) model fit");
-    parameters.SetConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.rate_classes)), "1", terms.global);
-    (busted.json ["profiles"])["constrained"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
+    parameters.SetConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)), "1", terms.global);
+    (busted.json [busted.json.site_logl])["constrained"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
     Optimize (busted.MLE_H0, ^(busted.full_model["LF"]));
-    (busted.json ["profiles"])["optimized null"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
+    (busted.json [busted.json.site_logl])["optimized null"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
     io.ReportProgressMessageMD ("BUSTED", "test", "Log(L) = " + Format(busted.MLE_H0[1][0],8,2));
     busted.LRT = busted.ComputeLRT (busted.full_model["LogL"], busted.MLE_H0[1][0]);
     busted.json ["test results"] = busted.LRT;
@@ -180,72 +202,107 @@ if (!busted.run_test) {
     busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (busted.distribution) % 0;
     selection.report_dnds (parameters.GetStickBreakingDistribution (busted.distribution) % 0);
 
-    (busted.json ["evidence ratios"])["constrained"] = busted.EvidenceRatios ( (busted.json ["profiles"])["unconstrained"],  (busted.json ["profiles"])["constrained"]);
-    (busted.json ["evidence ratios"])["optimized null"] = busted.EvidenceRatios ( (busted.json ["profiles"])["unconstrained"],  (busted.json ["profiles"])["optimized null"]);
+    (busted.json [busted.json.evidence_ratios])["constrained"] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])["unconstrained"],  (busted.json [busted.json.site_logl])["constrained"]);
+    (busted.json [busted.json.evidence_ratios ])["optimized null"] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])["unconstrained"],  (busted.json [busted.json.site_logl])["optimized null"]);
 }
 
 
-console.log ("----\n## Branch-site Unrestricted Test for Episodic Diversification [BUSTED]");
+console.log ("----\n## Branch-site unrestricted statistical test of episodic diversification [BUSTED]");
 console.log ( "Likelihood ratio test for episodic diversifying positive selection, **p = " + Format ((busted.json ["test results"])["p"], 8, 4) + "**.");
+
+selection.io.stopTimer (busted.json [terms.json.timers], "Overall", 0);
 
 
 return busted.json;
 
-codon_data_info = alignments.PromptForGeneticCodeAndAlignment ("codon_data", "codon_filter");
-codon_data_info["json"] = codon_data_info["file"] + ".BUSTED.json";
-name_mapping = codon_data_info [utility.getGlobalValue("terms.json.name_mapping")];
+/// HELPERS
 
-if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
-    name_mapping = {};
-    utility.ForEach (alignments.GetSequenceNames ("codon_data"), "_value_", "`&name_mapping`[_value_] = _value_");
+//------------------------------------------------------------------------------
+function busted.ComputeSiteLikelihoods (id) {
+   ConstructCategoryMatrix (_siteLike, *id, SITE_LOG_LIKELIHOODS);
+   return _siteLike;
+}
+//------------------------------------------------------------------------------
+
+function busted.ComputeLRT (ha, h0) {
+    return {"LR" : 2*(ha-h0),
+            "p" : 1-CChi2 (2*(ha-h0),2)};
 }
 
-io.ReportProgressMessageMD ("BUSTED", "Data", "Loaded an MSA with " + codon_data_info["sequences"] +
-                            " sequences and " + codon_data_info["sites"] + " codons from '" + codon_data_info["file"] + "'");
+//------------------------------------------------------------------------------
+function busted.EvidenceRatios (ha, h0) {
+    sites = Rows (ha) * Columns (ha);
+    return ha["Exp(_MATRIX_ELEMENT_VALUE_-h0[_MATRIX_ELEMENT_COLUMN_])"];
+}
+//------------------------------------------------------------------------------
 
-codon_lists = models.codon.MapCode (codon_data_info["code"]);
+lfunction busted.DistributionGuess (mean) {
+    /*guess = {{Random (0,0.25),Random (0.5,0.7)}
+             {Random (0.25,0.6),Random (0.1,0.2)}
+             {Random (2,20),Random (0.01, 0.1)}};
+    */
 
-_Genetic_Code = codon_data_info["code"];
+    guess = {{0,0.7}{0.25,0.2}{10,0.1}};
 
+    norm = + guess[-1][1];
+    guess_mean = 1/(+(guess [-1][0] $ guess [-1][1]))/norm;
+    return guess["_MATRIX_ELEMENT_VALUE_*(guess_mean*(_MATRIX_ELEMENT_COLUMN_==0)+(_MATRIX_ELEMENT_COLUMN_==1)*(1/norm))"];
+}
+
+==== TO BE MERGED ==
+
+
+/*
 codon_frequencies     = frequencies._aux.CF3x4(frequencies._aux.empirical.collect_data ("codon_filter",3,1,1),
-                        utility.getGlobalValue ("models.DNA.alphabet"), codon_lists["sense"], codon_lists["stop"]);
+                        utility.getGlobalValue ("models.DNA.alphabet"), codon_lists[terms.sense_codons], codon_lists[terms.stop_codons]);
 
 
-partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.json.partitions")], name_mapping);
+partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.data.partitions")], busted.name_mapping);
 
 io.CheckAssertion("utility.Array1D (`&partitions_and_trees`) == 1", "BUSTED only works on a single partition dataset");
 
-tree_definition   = utility.Map (partitions_and_trees, "_partition_", '_partition_["tree"]');
-
+tree_definition   = utility.Map (partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
 
 busted.selected_branches = busted.io.selectBranchesToTest (tree_definition[0]);
+<<<<<<< HEAD
 busted.json ["test set"] = Join (",",Rows(busted.selected_branches));
+=======
+
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
 
 io.ReportProgressMessageMD ("BUSTED", "Data", "Selected " + Abs (busted.selected_branches) + " branches as the test (foreground) set: " + Join (",", Rows (busted.selected_branches)));
 
-busted.model_definitions = busted.io.define_bsrel_models  ("FG","BG", codon_frequencies);
+
+busted.model_definitions = busted.io.define_bsrel_models  (busted.FG, busted.BG, codon_frequencies);
 io.ReportProgressMessageMD ("BUSTED", "GTR", "Obtaining initial branch lengths under the GTR model");
 busted.gtr_results = estimators.FitGTR     ("codon_filter", tree_definition[0], None);
-io.ReportProgressMessageMD ("BUSTED", "GTR", "Log(L) = " + busted.gtr_results["LogL"]);
+io.ReportProgressMessageMD ("BUSTED", "GTR", "Log(L) = " + busted.gtr_results[terms.fit.log_likelihood]);
 
-model.ApplyModelToTree ("busted.tree", tree_definition[0], "", {"DEFAULT" : (busted.model_definitions["BG"])["model"],
-                                                             (busted.model_definitions["FG"])["model"] : Rows (busted.selected_branches)});
+model.ApplyModelToTree ("busted.tree", tree_definition[0], "", {"DEFAULT" : (busted.model_definitions[busted.BG])[terms.model],
+                                                             (busted.model_definitions[busted.FG])[terms.model] : Rows (busted.selected_branches)});
 
 
 
-busted.taskTimerStart (0);
+
+//busted.taskTimerStart (0);
+busted.taskTimerStart(busted.timers_d["Unconstrained model"]);
+
 LikelihoodFunction busted.LF = (codon_filter, busted.tree);
 
+<<<<<<< HEAD
 busted.json["background"] =  busted.hasBackground  ("busted.tree");
+=======
+busted.json[busted.json.background] =  busted.hasBackground  ("busted.tree");
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
 
 global busted.T_scaler = 4;
-BUSTED.proportional_constraint = "busted.T_scaler";
+busted.proportional_constraint = "busted.T_scaler";
 
-BUSTED.model_specification = {};
-BUSTED.model_specification[(busted.model_definitions["FG"])["model"]] = busted.model_definitions;
-BUSTED.model_specification[(busted.model_definitions["BG"])["model"]] = busted.model_definitions;
+busted.model_specification = {};
+busted.model_specification[(busted.model_definitions[busted.FG])[terms.model]] = busted.model_definitions;
+busted.model_specification[(busted.model_definitions[busted.BG])[terms.model]] = busted.model_definitions;
 
-estimators.ApplyExistingEstimates ("busted.LF", BUSTED.model_specification, busted.gtr_results, None);
+estimators.ApplyExistingEstimates ("busted.LF", busted.model_specification, busted.gtr_results, None);
 
 io.ReportProgressMessageMD ("BUSTED", "BUSTED-alt", "Fitting the unconstrained branch-site model");
 
@@ -257,17 +314,25 @@ busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "buste
 
 Optimize (busted.MLE_HA, busted.LF);
 
-parameters.UnconstrainParameterSet ("busted.LF", {{terms.lf.local.constrained}});
+parameters.UnconstrainParameterSet ("busted.LF", {{terms.parameters.local_constrained}});
 
+<<<<<<< HEAD
 utility.SetEnvVariable ("USE_LAST_RESULTS", 0.001);
+=======
+utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.001);
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
 Optimize (busted.MLE_HA, busted.LF);
-io.SpoolLF ("busted.LF", codon_data_info["file"], None);
+// Uncomment the line below to export the LF fit file, a hyphy nexus file.
+//io.SpoolLF ("busted.LF", codon_data_info[terms.data.file], None);
 busted_positive_class = busted.checkForPS (busted.model_definitions);
-io.ReportProgressMessageMD ("BUSTED", "BUSTED-alt", "Log(L) = " + busted.MLE_HA[1][0] + ". Unrestricted class omega = " + busted_positive_class["omega"] + " (weight = " + busted_positive_class["weight"] + ")");
+io.ReportProgressMessageMD ("BUSTED", "BUSTED-alt", "Log(L) = " + busted.MLE_HA[1][0] + ". Unrestricted class omega = " + busted_positive_class[terms.parameters.omega] + " (weight = " + busted_positive_class[terms.parameters.weight] + ")");
 
 
-busted.sample_size             =codon_data_info["sites"] * codon_data_info["sequences"];
-busted.taskTimerStop (0);
+busted.sample_size             =codon_data_info[terms.data.sites] * codon_data_info[terms.data.sequences];
+
+//busted.taskTimerStop (0);
+busted.taskTimerStop(busted.timers_d["Unconstrained model"]);
+
 
 busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
 busted.tavl         = busted.tree ^ 0;
@@ -282,22 +347,38 @@ busted.json_store_lf                (busted.json, "Unconstrained model",
         +BranchLength (busted.T,-1),
         Format (busted.T, 1,1),
         busted.model_definitions,
+<<<<<<< HEAD
         busted.json["background"]
         );
 
 
 busted.profiles = {};
 (busted.json ["profiles"])["unconstrained"] = busted.ComputeSiteLikelihoods ("busted.LF");
+=======
+        busted.json[busted.background]
+        );
 
 
-if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8) {
+busted.siteLogL = {};
+(busted.json [busted.json.site_logl])[busted.unconstrained] = busted.computeSiteLikelihoods ("busted.LF");
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
+
+
+if (busted_positive_class[terms.parameters.omega] < terms.range_almost_01[terms.upper_bound] || busted_positive_class[terms.parameters.weight] < terms.range_almost_01[terms.lower_bound]) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for positive selection under the unconstrained model, skipping constrained model fitting");
+<<<<<<< HEAD
     busted.json ["test results"] = busted.ComputeLRT (0, 0);
+=======
+    busted.json [terms.json.test_results] = busted.runLRT (0, 0);
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
 } else {
-    busted.taskTimerStart (1);
+
+//    busted.taskTimerStart (1);
+    busted.taskTimerStart(busted.timers_d["Constrained model"]);
 
     io.ReportProgressMessageMD ("BUSTED",  "BUSTED-null", "Fitting the branch-site model that disallows omega > 1 among foreground branches");
     busted.constrainTheModel (busted.model_definitions);
+<<<<<<< HEAD
     (busted.json ["profiles"])["constrained"] = busted.computeSiteLikelihoods ("busted.LF");;
     Optimize (busted.MLE_H0, busted.LF);
     io.SpoolLF ("busted.LF", codon_data_info["file"], "null");
@@ -306,9 +387,23 @@ if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8
     busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);
 
     busted.json ["test results"] = busted.LRT;
+=======
+    (busted.json [busted.json.site_logl])[busted.constrained] = busted.computeSiteLikelihoods ("busted.LF");;
+    Optimize (busted.MLE_H0, busted.LF);
+    // Uncomment line below to get the LF file.
+    //io.SpoolLF ("busted.LF", codon_data_info[terms.data.file], "null");
+    (busted.json [busted.json.site_logl])[busted.optimized_null] = busted.computeSiteLikelihoods ("busted.LF");;
+    io.ReportProgressMessageMD ("BUSTED", "BUSTED-null", "Log(L) = " + busted.MLE_H0[1][0]);
+    busted.LRT = busted.runLRT (busted.MLE_HA[1][0], busted.MLE_H0[1][0]);
 
-    io.ReportProgressMessageMD ("BUSTED", "BUSTED-results", "Likelihood ratio test for episodic positive selection, p = " + busted.LRT["p"]);
-     busted.taskTimerStop (1);
+    busted.json [terms.json.test_results] = busted.LRT;
+
+    io.ReportProgressMessageMD ("BUSTED", "BUSTED-results", "Likelihood ratio test for episodic positive selection, p = " + busted.LRT[terms.p_value]);
+
+//    busted.taskTimerStop (1);
+    busted.taskTimerStop(busted.timers_d["Constrained model"]);
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
+
 
     busted.bls = busted.io.evaluate_branch_lengths (busted.model_definitions, "busted.tree", busted.selected_branches);
     busted.tavl         = busted.tree ^ 0;
@@ -324,15 +419,57 @@ if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8
                                          +BranchLength (busted.T,-1),
                                         Format (busted.T, 1,1),
                                         busted.model_definitions,
+<<<<<<< HEAD
                                         busted.json["background"]
                                        );
 
     (busted.json ["evidence ratios"])["constrained"] = busted.evidenceRatios ( (busted.json ["profiles"])["unconstrained"],  (busted.json ["profiles"])["constrained"]);
     (busted.json ["evidence ratios"])["optimized null"] = busted.evidenceRatios ( (busted.json ["profiles"])["unconstrained"],  (busted.json ["profiles"])["optimized null"]);
+=======
+                                        busted.json[busted.background]
+                                       );
+
+    (busted.json [busted.json.evidence_ratios])[busted.constrained] = busted.evidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.constrained]);
+    (busted.json [busted.json.evidence_ratios])[busted.optimized_null] = busted.evidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.optimized_null]);
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
 }
 
-busted.taskTimerStop (2);
+//busted.taskTimerStop (2);
+busted.taskTimerStop(busted.timers_d["Overall"]);
 
+
+
+
+/*
+    Populate remaining bits of JSON
+*/
+
+
+/*
+Add input information to the JSON
+*/
+(busted.json[terms.json.input])[terms.json.file] = codon_data_info[terms.data.file];
+(busted.json[terms.json.input])[terms.json.sequences] = codon_data_info[terms.data.sequences];
+(busted.json[terms.json.input])[terms.json.sites] = codon_data_info[terms.data.sites];
+(busted.json[terms.json.input])[terms.json.tree_string] = (tree_definition[0])[terms.trees.newick_with_lengths];
+
+
+/*
+ Instead of JSON key test set (see next comment line), we now have a single dictionary of node:<background/foreground>.
+former: busted.json ["test set"] = Join (",",Rows(busted.selected_branches));
+*/
+busted.partitions = {};
+all_nodes = utility.Keys( (tree_definition[0])[terms.trees.model_map] );
+utility.ForEach (all_nodes, "_value_", "`&busted.partitions`[_value_] = `&busted.BG_FG_map`[utility.Has(busted.selected_branches, _value_, None)]");
+busted.json[terms.json.partitions] = busted.partitions; // Improved
+
+
+(busted.json [terms.json.timers])["Overall"] = busted.timers[busted.timers_d["Overall"]];
+(busted.json [terms.json.timers])["Unconstrained model"] = busted.timers[busted.timers_d["Unconstrained model"]];
+(busted.json [terms.json.timers])["Constrained model"] = busted.timers[busted.timers_d["Constrained model"]];
+
+
+<<<<<<< HEAD
 (busted.json ["timers"])["overall"] = busted.timers[2];
 (busted.json ["timers"])["unconstrained"] = busted.timers[0];
 (busted.json ["timers"])["constrained"] = busted.timers[1];
@@ -341,10 +478,23 @@ USE_JSON_FOR_MATRIX = 1;
 fprintf (codon_data_info["json"], CLEAR_FILE, busted.json);
 USE_JSON_FOR_MATRIX = 0;
 
+=======
+
+USE_JSON_FOR_MATRIX = 1;
+fprintf (codon_data_info[terms.json.json], CLEAR_FILE, busted.json);
+USE_JSON_FOR_MATRIX = 0;
+
+
+
+
+
+
+
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
 return busted.json;
 
 //------------------------------------------------------------------------------
-// HELPER FUNCTIONS FROM HTHIS POINT ON
+// HELPER FUNCTIONS FROM THIS POINT ON
 //------------------------------------------------------------------------------
 
 
@@ -362,20 +512,272 @@ lfunction busted.DistributionGuess (mean) {
 }
 
 
+<<<<<<< HEAD
 
 //------------------------------------------------------------------------------
 function busted.ComputeSiteLikelihoods (id) {
+=======
+//------------------------------------------------------------------------------
+function busted.checkForPS (model_parameters) {
+   return {terms.parameters.omega :Eval (((model_parameters[busted.FG])[terms.parameters.omegas])[2]),
+           terms.parameters.weight: Eval (((model_parameters[busted.FG])[terms.parameters.weights])[2])};
+
+}
+
+//------------------------------------------------------------------------------
+function busted.constrainTheModel (model_parameters) {
+  ExecuteCommands (((model_parameters[busted.FG])[terms.parameters.omegas])[2] + ":=1");
+}
+
+//------------------------------------------------------------------------------
+function busted.computeSiteLikelihoods (id) {
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
    ConstructCategoryMatrix (_siteLike, *id, SITE_LOG_LIKELIHOODS);
    return _siteLike;
 }
 
 
 //------------------------------------------------------------------------------
+<<<<<<< HEAD
 function busted.ComputeLRT (ha, h0) {
     return {"LR" : 2*(ha-h0),
             "p" : 1-CChi2 (2*(ha-h0),2)};
 }
 
+=======
+function busted.runLRT (ha, h0) {
+    return {terms.LRT : 2*(ha-h0),
+            terms.p_value : 1-CChi2 (2*(ha-h0),2)};
+}
+
+//------------------------------------------------------------------------------
+lfunction busted._aux.stick_breaking (parameters) {
+    left_over = "";
+    weights = {};
+    for (k = 0; k < Abs (parameters); k += 1) {
+        weights [k] = left_over + parameters[k];
+        left_over += "(1-" + parameters[k] + ")*";
+    }
+    weights[k] = left_over[0][Abs (left_over)-2];
+    return weights;
+}
+
+//------------------------------------------------------------------------------
+function busted._aux.define_bsrel_model (id,Q,weights,freqs) {
+    rate_count = Abs (Q);
+    components = {};
+    length = "";
+
+    Eval ("`id`_eqf = freqs");
+
+    for (k = 0; k < rate_count; k+=1) {
+        components[k] = "Exp(" + Q[k] + ")*" + weights[k];
+        ExecuteCommands ("Model busted._aux.define_bsrel_model_bl = (" + Q[k] + ",`id`_eqf,0)");
+        GetString (blExp, busted._aux.define_bsrel_model_bl, -1);
+        if (k) {
+            length += "+";
+        }
+        length += "(`blExp`)*" + weights[k];
+    }
+
+    ExecuteCommands ("Model `id` =(\"" + Join("+",components) + "\",`id`_eqf,EXPLICIT_FORM_MATRIX_EXPONENTIAL);");
+    return length;
+}
+
+//------------------------------------------------------------------------------
+function busted._aux.define_parameter (key, value) {
+   ExecuteCommands ("global `value` :< 1;");
+   ExecuteCommands ("`value` :> 0;");
+   ExecuteCommands ("`value` = " + busted.init_values[key]);
+}
+
+//------------------------------------------------------------------------------
+function busted.io.evaluate_branch_lengths (model_parameters, tree_id, fg_set) {
+    busted.io.evaluate_branch_lengths.res    = {};
+    busted.io.evaluate_branch_lengths.bnames = BranchName (*tree_id, -1);
+    for (busted.io.evaluate_branch_lengths.k = 0;
+         busted.io.evaluate_branch_lengths.k < Columns (busted.io.evaluate_branch_lengths.bnames)-1;
+         busted.io.evaluate_branch_lengths.k += 1) {
+
+         busted.io.evaluate_branch_lengths.lexpr = "";
+
+         busted.io.evaluate_branch_lengths.b_name = busted.io.evaluate_branch_lengths.bnames[busted.io.evaluate_branch_lengths.k];
+         if (fg_set [busted.io.evaluate_branch_lengths.b_name]) {
+            //fprintf (stdout, busted.io.evaluate_branch_lengths.b_name, "=>FG\n");
+            busted.io.evaluate_branch_lengths.lexpr = (model_parameters[busted.FG])[terms.model.length];
+         } else {
+            //fprintf (stdout, busted.io.evaluate_branch_lengths.b_name, "=>BG\n");
+            busted.io.evaluate_branch_lengths.lexpr = (model_parameters[busted.BG])[terms.model.length];
+         }
+         Eval (model_parameters[terms.model.length_parameter] + " = `tree_id`.`busted.io.evaluate_branch_lengths.b_name`." + model_parameters[terms.model.length_parameter]);
+         busted.io.evaluate_branch_lengths.res [ busted.io.evaluate_branch_lengths.b_name ] =
+            Eval (busted.io.evaluate_branch_lengths.lexpr);
+    }
+    return busted.io.evaluate_branch_lengths.res;
+}
+
+//------------------------------------------------------------------------------
+function busted.io.define_bsrel_models (foreground_id, background_id, frequencies) {
+
+    model_parameters =
+        {busted.FG: {terms.parameters.omegas : {}, terms.parameters.weights : {}, terms.parameters.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""},
+         busted.BG: {terms.parameters.omegas : {}, terms.parameters.weights : {}, terms.parameters.freqs : {}, terms.model.rate_matrix : {}, terms.model.length : ""},
+         terms.parameters : {terms.global : {}, terms.local : {}}
+          };
+
+    for (k = 1; k <= busted.nrates; k +=1) {
+        tag = "" + k;
+        ((model_parameters[busted.FG])[terms.parameters.omegas]) + "`foreground_id`_omega_`tag`";
+        ((model_parameters[busted.BG])[terms.parameters.omegas]) + "`background_id`_omega_`tag`";
+        if (k < busted.nrates) {
+            ((model_parameters[busted.FG])[terms.parameters.freqs]) + "`foreground_id`_f_`tag`";
+            ((model_parameters[busted.BG])[terms.parameters.freqs]) + "`background_id`_f_`tag`";
+        }
+
+    }
+
+
+    ((model_parameters[busted.FG])[terms.parameters.weights])  = busted._aux.stick_breaking (((model_parameters[busted.FG])[terms.parameters.freqs]));
+    ((model_parameters[busted.BG])[terms.parameters.weights])  = busted._aux.stick_breaking (((model_parameters[busted.BG])[terms.parameters.freqs]));
+
+    busted.init_values = {"0" : 0.1, "1" : 0.5, "2" : 1};
+
+    ((model_parameters[busted.FG])[terms.parameters.omegas])["busted._aux.define_parameter"][""];
+    ((model_parameters[busted.BG])[terms.parameters.omegas])["busted._aux.define_parameter"][""];
+
+    Eval (((model_parameters[busted.FG])[terms.parameters.omegas])[2] + ":<" + terms.range_gte1[terms.upper_bound]);
+    Eval (((model_parameters[busted.FG])[terms.parameters.omegas])[2] + ":>" + terms.range_gte1[terms.lower_bound]);
+    Eval (((model_parameters[busted.BG])[terms.parameters.omegas])[2] + ":<" + terms.range_gte1[terms.upper_bound]);
+
+    busted.init_values = {"0" : 0.8, "1" : 0.75};
+
+    ((model_parameters[busted.FG])[terms.parameters.freqs])["busted._aux.define_parameter"][""];
+    ((model_parameters[busted.BG])[terms.parameters.freqs])["busted._aux.define_parameter"][""];
+
+    busted.nuc = {4,3};
+    for (k = 0; k < 4; k+=1) {
+        for (k2 = 0; k2 < 3; k2 += 1) {
+            busted.nuc [k][k2] = ((frequencies[terms.bases])[utility.getGlobalValue ("models.DNA.alphabet")[k]])[k2];
+        }
+    }
+
+
+
+    for (k = 1; k <= busted.nrates; k +=1) {
+
+        ((model_parameters[busted.FG])[terms.model.rate_matrix]) + ("Q_`foreground_id`_" + k);
+        PopulateModelMatrix			  (((model_parameters[busted.FG])[terms.model.rate_matrix])[k-1],  busted.nuc, terms.parameters.default_time,((model_parameters[busted.FG])[terms.parameters.omegas])[k-1], "");
+
+        ((model_parameters[busted.BG])[terms.model.rate_matrix]) + ("Q_`background_id`_" + k);
+        PopulateModelMatrix			  (((model_parameters[busted.BG])[terms.model.rate_matrix])[k-1],  busted.nuc, terms.parameters.default_time,((model_parameters[busted.BG])[terms.parameters.omegas])[k-1], "");
+    }
+
+
+    (model_parameters[busted.BG])[terms.model] = "`background_id`_model";
+    (model_parameters[busted.BG])[terms.model.length] = busted._aux.define_bsrel_model ("`background_id`_model", (model_parameters[busted.BG])[terms.model.rate_matrix], (model_parameters[busted.BG])[terms.parameters.weights], frequencies[terms.codons]);
+    (model_parameters[busted.FG])[terms.model] = "`foreground_id`_model";
+    (model_parameters[busted.FG])[terms.model.length] = busted._aux.define_bsrel_model ("`foreground_id`_model", (model_parameters[busted.FG])[terms.model.rate_matrix], (model_parameters[busted.FG])[terms.parameters.weights], frequencies[terms.codons]);
+
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("A","C")] = "AC";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("A","T")] = "AT";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("C","G")] = "CG";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("C","T")] = "CT";
+    ((model_parameters[terms.parameters])[terms.global])[terms.nucleotideRate ("G","T")] = "GT";
+     model_parameters["set-branch-length"] = "busted.aux.copy_branch_length";
+
+    ((model_parameters[terms.parameters])[terms.local])[terms.timeParameter ()] = terms.parameters.default_time;
+
+     model_parameters[terms.model.length_parameter] = terms.parameters.default_time;
+
+    return model_parameters;
+}
+
+function busted.aux.copy_branch_length (model, value, parameter) {
+
+    busted.aux.copy_branch_length.t = ((model[terms.parameters])[terms.local])[terms.timeParameter ()];
+
+    if (Abs (busted.proportional_constraint)) {
+        Eval ("`parameter`.`busted.aux.copy_branch_length.t` := `busted.proportional_constraint` * " + value);
+    } else {
+        Eval ("`parameter`.`busted.aux.copy_branch_length.t` = " + value);
+    }
+
+
+
+    // This can probably be deleted. Appears to be accidental carry-over from RELAX.bf
+    /*
+    if (Type (relax.aux.copy_branch_length.k) == "String") {
+        Eval ("`parameter`.`relax.aux.copy_branch_length.k` = 1");
+    }
+    */
+}
+
+//------------------------------------------------------------------------------
+lfunction busted.io.selectBranchesToTest (tree_definition) {
+
+    extra_models = {};
+
+    for (k = 0; k < Columns (tree_definition[utility.getGlobalValue("terms.trees.model_list")]); k += 1) {
+        model_id = (tree_definition[utility.getGlobalValue("terms.trees.model_list")])[k];
+        if (model_id != "") {
+            extra_models  + model_id;
+        }
+    }
+
+
+    UseModel (USE_NO_MODEL);
+    ExecuteCommands ("Topology  T = " + tree_definition[utility.getGlobalValue("terms.trees.newick")]);
+    tAVL = T^0;
+
+    totalBranchCount = Abs (tAVL) - 2;
+
+    selectedBranches = {};
+    selectTheseForTesting = {totalBranchCount + 3 + Abs (extra_models), 2};
+    selectTheseForTesting [0][0] = "All";  selectTheseForTesting [0][1] = "Test for selection on all branches jointly";
+    selectTheseForTesting [1][0] = "Internal";  selectTheseForTesting [1][1] = "Test for selection on all internal branches jointly";
+    selectTheseForTesting [2][0] = "Leaves";  selectTheseForTesting [2][1] = "Test for selection on all terminal branches jointly";
+
+    for (k = 0; k < Abs (extra_models); k+=1) {
+        selectTheseForTesting [3+k][0] = "Set " + extra_models[k];
+        selectTheseForTesting [3+k][1] = "Test for selection on all branches labeled with {" + extra_models[k] + "} jointly";
+    }
+
+    for (k = 0; k < totalBranchCount; k += 1) {
+        selectTheseForTesting [k+3 + Abs (extra_models)][0] = (tAVL[k+1])["Name"];
+        selectTheseForTesting [k+3 + Abs (extra_models)][1] = "Add branch '" + selectTheseForTesting [k+3 + Abs (extra_models)][0] + "' to the test set";
+
+    }
+
+    ChoiceList  (whichBranchesToTest,"Which branches to test?",0,NO_SKIP,selectTheseForTesting);
+
+    for (k = 0; k < Columns (whichBranchesToTest); k += 1) {
+       if (whichBranchesToTest [k] < 3) {
+            for (k2 = 1; k2 <=  totalBranchCount; k2 += 1) {
+                if (whichBranchesToTest[k] == 0 || whichBranchesToTest[k] == 1 && Abs ((tAVL[k2])["Children"]) > 0 || whichBranchesToTest[k] == 2 && Abs ((tAVL[k2])["Children"]) == 0) {
+                    selectedBranches [(tAVL[k2])["Name"]] = 1;
+                }
+            }
+            return selectedBranches;
+        }
+        if (whichBranchesToTest [k] < 3 + Abs (extra_models)) {
+            model_key = extra_models [whichBranchesToTest [k] - 3];
+            for (k2 = 1; k2 <=  totalBranchCount; k2 += 1) {
+                bName = (tAVL[k2])["Name"];
+                if ((tree_definition[terms.trees.model_map])[bName] == model_key) {
+                    selectedBranches [bName] = 1;
+                }
+            }
+            return selectedBranches;
+        }
+
+        selectedBranches [(tAVL[whichBranchesToTest [k] - 2 - Abs (extra_models)])["Name"]] = 1;
+    }
+
+
+    return selectedBranches;
+}
+
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
 //------------------------------------------------------------------------------------------------------------------------
 
 function busted.EvidenceRatios (ha, h0) {
@@ -385,6 +787,7 @@ function busted.EvidenceRatios (ha, h0) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
+<<<<<<< HEAD
 lfunction busted.json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_string, defs, has_bg) {
     (json["fits"])[name] = {"log-likelihood": ll,
                             "parameters": df,
@@ -395,8 +798,42 @@ lfunction busted.json_store_lf (json, name, ll, df, aicc, time, tree_length, tre
                             "rate distributions" : {}};
 
     (((json["fits"])[name])["rate distributions"])["FG"] = busted.getRateDistribution (defs, "FG");
-    if (has_bg) {
-        (((json["fits"])[name])["rate distributions"])["BG"] = busted.getRateDistribution (defs, "BG");
-    }
+=======
+function busted.taskTimerStart (index) {
+    busted.timers[index] = Time(1);
 }
 
+function busted.taskTimerStop (index) {
+    busted.timers[index] = Time(1) - busted.timers[index];
+
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+function busted.getIC (logl,params,samples) {
+    return -2*logl + 2*samples/(samples-params-1)*params;
+}
+
+
+
+//------------------------------------------------------------------------------------------------------------------------
+
+// TODO: Should this be a function (as it is in RELAX.bf) or lfunction as written here?
+function busted.json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_string, defs, has_bg) {
+
+    (json[terms.json.fits])[name] = {terms.json.log_likelihood     : ll,
+                                     terms.json.parameters         : df,
+                                     terms.json.AICc               : aicc,
+                                     terms.json.runtime            : time,
+                                     terms.json.tree_length        : tree_length,
+                                     terms.json.tree_string        : tree_string,
+                                     terms.json.rate_distributions : {}
+                                     };
+
+    (((json[terms.json.fits])[name])[terms.json.rate_distributions])[busted.FG] = busted.getRateDistribution (defs, busted.FG);
+>>>>>>> 8e58a31ed4e9d149d549fec453570d38d27cbce2
+    if (has_bg) {
+        (((json[terms.json.fits])[name])[terms.json.rate_distributions])[busted.BG] = busted.getRateDistribution (defs, busted.BG);
+    }
+}
+*/
