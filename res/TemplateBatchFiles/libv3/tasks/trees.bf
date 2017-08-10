@@ -122,7 +122,7 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
         }
 
         if (utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
-            fprintf(stdout, "\n> A tree was found in the data file: ``", utility.GetEnvVariable("DATAFILE_TREE"), "``\n>Would you like to use it? ");
+            fprintf(stdout, "\n\n>A tree was found in the data file: ``", utility.GetEnvVariable("DATAFILE_TREE"), "``\n\n>Would you like to use it (y/n)? ");
             fscanf(stdin, "String", response);
             if (response == "n" || response == "N") {
                 utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);

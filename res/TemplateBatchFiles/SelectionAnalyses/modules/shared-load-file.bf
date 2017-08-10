@@ -23,6 +23,9 @@
  * @param prefix {String} : The namespace to prefix all file information variables with
  * @return nothing, the function sets variables within a namespace
  */
+
+utility.SetEnvVariable ("MARKDOWN_OUTPUT", TRUE);
+
 function load_file (prefix) {
 
     codon_data_info = alignments.PromptForGeneticCodeAndAlignment(prefix+".codon_data", prefix+".codon_filter");

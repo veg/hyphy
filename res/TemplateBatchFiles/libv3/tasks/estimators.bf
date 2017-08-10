@@ -421,8 +421,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i] = data_filter[i];
-        tree_id = "tree_" + i;
-        lf_components[2 * i + 1] = &tree_id;
+        lf_components[2 * i + 1] = &tree_id + "_" + i;
         model.ApplyModelToTree(lf_components[2*i + 1], tree[i], None, model_map[i]);
     }
 
@@ -433,14 +432,14 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
 
     df = 0;
+    //Export (lf,likelihoodFunction);
+    //console.log (lf);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
             df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options["proportional-branch-length-scaler"]);
     }
 
-    //Export (lf,likelihoodFunction);
-    //console.log (lf);
 
    	Optimize (mles, likelihoodFunction);
 

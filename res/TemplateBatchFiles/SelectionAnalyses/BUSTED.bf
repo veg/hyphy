@@ -27,11 +27,11 @@ io.DisplayAnalysisBanner ({"info" : "BUSTED (branch-site unrestricted statistica
                           } );
 
 
-
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
 busted.timers  = {3,1};
 busted.taskTimerStart (2);
+busted.rate_classes = 3;
 
 busted.json    = { terms.json.fits: {},
                    terms.json.timers: {},
@@ -54,6 +54,10 @@ utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
 
 busted.has_background = FALSE;
 
+utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
+    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ != terms.json.attribute.test');
+     if (utility.Array1D (_selection_)) { busted.has_background = TRUE;} ");
+
 namespace busted {
     doGTR ("busted");
 }
@@ -66,7 +70,7 @@ namespace busted {
     doPartitionedMG ("busted", FALSE);
 }
 
-//utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+utility.SetEnvVariable ("VERBOSITY_LEVEL", 0);
 
 io.ReportProgressMessageMD ("BUSTED", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
@@ -85,7 +89,7 @@ busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL
         "busted.test", {
             "0": parameters.Quote(terms.global),
             "1": busted.codon_data_info["code"],
-            "2": parameters.Quote (3) // the number of rate classes
+            "2": parameters.Quote (busted.rate_classes) // the number of rate classes
         },
         busted.filter_names,
         None);
@@ -95,7 +99,7 @@ busted.background.bsrel_model =  model.generic.DefineMixtureModel("models.codon.
         "busted.background", {
             "0": parameters.Quote(terms.global),
             "1": busted.codon_data_info["code"],
-            "2": parameters.Quote (3) // the number of rate classes
+            "2": parameters.Quote (busted.rate_classes) // the number of rate classes
         },
         busted.filter_names,
         None);
@@ -106,41 +110,86 @@ models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.backgr
 busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio + ".+test.+"), "_value_",
             "_value_[terms.MLE]"));
 
+
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
 parameters.SetStickBreakingDistribution (busted.distribution, busted.test_guess);
 
 
-busted.mean_background = utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio + ".+background.+"), "_value_",
-            "_value_[terms.MLE]");
-
-
-
-busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
-                            "busted.test" :       busted.test.bsrel_model };
+if (busted.has_background) {
+    busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
+                                "busted.test" :       busted.test.bsrel_model };
+    busted.background_distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.background.bsrel_model);
+    busted.background_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.omega_ratio + ".+background.+"), "_value_",
+            "_value_[terms.MLE]"));
+    parameters.SetStickBreakingDistribution (busted.background_distribution, busted.background_guess);
+} else {
+    busted.model_object_map = { "busted.test" :       busted.test.bsrel_model };
+}
 
 // set up parameter constraints
 
-for (busted.i = 1; busted.i < 4; busted.i += 1) {
+for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.i)), terms.range01);
     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.i)), terms.range01);
 }
 
-busted.test.omega3_parameter  = model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,3));
-parameters.SetRange (busted.test.omega3_parameter, terms.range_gte1);
+parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.rate_classes)), terms.range_gte1);
 
 busted.model_map = {};
 
 for (busted.partition_index = 0; busted.partition_index < busted.partition_count; busted.partition_index += 1) {
     busted.model_map + { "busted.test" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ == terms.json.attribute.test'),
-					               "busted.background" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ != terms.json.attribute.test')};
+					     "busted.background" : utility.Filter (busted.selected_branches[busted.partition_index], '_value_', '_value_ != terms.json.attribute.test')};
 }
 
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
-//utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
 
-busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, None);
+io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 allowed) branch-site model fit");
+busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {"retain-lf-object": TRUE});
+io.ReportProgressMessageMD("BUSTED", "main", "* Log(L) = " + Format(busted.full_model["LogL"],8,2));
+io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the following rate distribution for branch-site combinations was inferred");
 
-return 0;
+busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (busted.distribution) % 0;
+selection.report_dnds (busted.inferred_test_distribution);
+
+if (busted.has_background) {
+    io.ReportProgressMessageMD("BUSTED", "main", "* For *background* branches, the following rate distribution for branch-site combinations was inferred");
+    busted.inferred_background_distribution = parameters.GetStickBreakingDistribution (busted.background_distribution) % 0;
+    selection.report_dnds (busted.inferred_background_distribution);
+
+}
+
+busted.run_test = busted.inferred_test_distribution [busted.rate_classes-1][0] > 1 && busted.inferred_test_distribution [busted.rate_classes-1][1] > 0;
+
+(busted.json ["profiles"])["unconstrained"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
+
+if (!busted.run_test) {
+    io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for episodic diversifying positive selection under the unconstrained model, skipping constrained model fitting");
+    busted.json ["test results"] = busted.LRT (0, 0);
+} else {
+    io.ReportProgressMessageMD ("BUSTED", "test", "Performing the constrained (dN/dS > 1 not allowed) model fit");
+    parameters.SetConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.omega_ratio,busted.rate_classes)), "1", terms.global);
+    (busted.json ["profiles"])["constrained"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
+    Optimize (busted.MLE_H0, ^(busted.full_model["LF"]));
+    (busted.json ["profiles"])["optimized null"] = busted.ComputeSiteLikelihoods (busted.full_model["LF"]);
+    io.ReportProgressMessageMD ("BUSTED", "test", "Log(L) = " + Format(busted.MLE_H0[1][0],8,2));
+    busted.LRT = busted.ComputeLRT (busted.full_model["LogL"], busted.MLE_H0[1][0]);
+    busted.json ["test results"] = busted.LRT;
+    io.ReportProgressMessageMD("BUSTED", "test", "* For *test* branches under the null (no dN/dS model), the following rate distribution for branch-site combinations was inferred");
+
+    busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (busted.distribution) % 0;
+    selection.report_dnds (parameters.GetStickBreakingDistribution (busted.distribution) % 0);
+
+    (busted.json ["evidence ratios"])["constrained"] = busted.EvidenceRatios ( (busted.json ["profiles"])["unconstrained"],  (busted.json ["profiles"])["constrained"]);
+    (busted.json ["evidence ratios"])["optimized null"] = busted.EvidenceRatios ( (busted.json ["profiles"])["unconstrained"],  (busted.json ["profiles"])["optimized null"]);
+}
+
+
+console.log ("----\n## Branch-site Unrestricted Test for Episodic Diversification [BUSTED]");
+console.log ( "Likelihood ratio test for episodic diversifying positive selection, **p = " + Format ((busted.json ["test results"])["p"], 8, 4) + "**.");
+
+
+return busted.json;
 
 codon_data_info = alignments.PromptForGeneticCodeAndAlignment ("codon_data", "codon_filter");
 codon_data_info["json"] = codon_data_info["file"] + ".BUSTED.json";
@@ -238,12 +287,12 @@ busted.json_store_lf                (busted.json, "Unconstrained model",
 
 
 busted.profiles = {};
-(busted.json ["profiles"])["unconstrained"] = busted.computeSiteLikelihoods ("busted.LF");
+(busted.json ["profiles"])["unconstrained"] = busted.ComputeSiteLikelihoods ("busted.LF");
 
 
 if (busted_positive_class["omega"] < 1 || busted_positive_class["weight"] < 1e-8) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for positive selection under the unconstrained model, skipping constrained model fitting");
-    busted.json ["test results"] = busted.runLRT (0, 0);
+    busted.json ["test results"] = busted.ComputeLRT (0, 0);
 } else {
     busted.taskTimerStart (1);
 
@@ -300,313 +349,39 @@ return busted.json;
 
 
 lfunction busted.DistributionGuess (mean) {
-    guess = {{0,0.7}
-             {0.1,0.2}
-             {10,0.1}};
+    /*guess = {{Random (0,0.25),Random (0.5,0.7)}
+             {Random (0.25,0.6),Random (0.1,0.2)}
+             {Random (2,20),Random (0.01, 0.1)}};
+    */
 
-    guess_mean = 1/(+(guess [-1][0] $ guess [-1][1]));
-    return guess["_MATRIX_ELEMENT_VALUE_*(guess_mean*(_MATRIX_ELEMENT_COLUMN_==0)+(_MATRIX_ELEMENT_COLUMN_==1))"];
-}
+    guess = {{0,0.7}{0.25,0.2}{10,0.1}};
 
-//------------------------------------------------------------------------------
-function busted.hasBackground (id) {
-   ExecuteCommands ("GetInformation (busted.nodeMap, `id`)");
-   busted.nodeMap = Columns(busted.nodeMap);
-   return Rows (busted.nodeMap) * Columns (busted.nodeMap) > 1;
-}
-
-//------------------------------------------------------------------------------
-function busted.getRateDistribution (model_description, key) {
-  busted.getRateInformation.rate_classes = Abs ((model_description[key])["omegas"]);
-  busted.getRateInformation.omega_info = {busted.getRateInformation.rate_classes,2};
-
-  for (busted.getRateInformation.k = 0; busted.getRateInformation.k < busted.getRateInformation.rate_classes; busted.getRateInformation.k += 1) {
-    busted.getRateInformation.omega_info[busted.getRateInformation.k][0] = Eval (((model_description[key])["omegas"])[busted.getRateInformation.k]);
-    busted.getRateInformation.omega_info[busted.getRateInformation.k][1] = Eval (((model_description[key])["weights"])[busted.getRateInformation.k]);
-  }
-  return busted.getRateInformation.omega_info;
+    norm = + guess[-1][1];
+    guess_mean = 1/(+(guess [-1][0] $ guess [-1][1]))/norm;
+    return guess["_MATRIX_ELEMENT_VALUE_*(guess_mean*(_MATRIX_ELEMENT_COLUMN_==0)+(_MATRIX_ELEMENT_COLUMN_==1)*(1/norm))"];
 }
 
 
-//------------------------------------------------------------------------------
-function busted._aux.free_lengths (key, value) {
-    ExecuteCommands ("busted.tree." + key + ".t = busted.tree." + key + ".t");
-}
-
 
 //------------------------------------------------------------------------------
-function busted.checkForPS (model_parameters) {
-   return {"omega" :Eval (((model_parameters["FG"])["omegas"])[2]),
-           "weight" : Eval (((model_parameters["FG"])["weights"])[2])};
-
-}
-
-//------------------------------------------------------------------------------
-function busted.constrainTheModel (model_parameters) {
-  ExecuteCommands (((model_parameters["FG"])["omegas"])[2] + ":=1");
-}
-
-//------------------------------------------------------------------------------
-function busted.computeSiteLikelihoods (id) {
+function busted.ComputeSiteLikelihoods (id) {
    ConstructCategoryMatrix (_siteLike, *id, SITE_LOG_LIKELIHOODS);
    return _siteLike;
 }
 
 
-
 //------------------------------------------------------------------------------
-function busted.runLRT (ha, h0) {
+function busted.ComputeLRT (ha, h0) {
     return {"LR" : 2*(ha-h0),
             "p" : 1-CChi2 (2*(ha-h0),2)};
 }
 
-//------------------------------------------------------------------------------
-lfunction busted._aux.stick_breaking (parameters) {
-    left_over = "";
-    weights = {};
-    for (k = 0; k < Abs (parameters); k += 1) {
-        weights [k] = left_over + parameters[k];
-        left_over += "(1-" + parameters[k] + ")*";
-    }
-    weights[k] = left_over[0][Abs (left_over)-2];
-    return weights;
-}
-
-//------------------------------------------------------------------------------
-function busted._aux.define_bsrel_model (id,Q,weights,freqs) {
-    rate_count = Abs (Q);
-    components = {};
-    length = "";
-
-    Eval ("`id`_eqf = freqs");
-
-    for (k = 0; k < rate_count; k+=1) {
-        components[k] = "Exp(" + Q[k] + ")*" + weights[k];
-        ExecuteCommands ("Model busted._aux.define_bsrel_model_bl = (" + Q[k] + ",`id`_eqf,0)");
-        GetString (blExp, busted._aux.define_bsrel_model_bl, -1);
-        if (k) {
-            length += "+";
-        }
-        length += "(`blExp`)*" + weights[k];
-    }
-
-    ExecuteCommands ("Model `id` =(\"" + Join("+",components) + "\",`id`_eqf,EXPLICIT_FORM_MATRIX_EXPONENTIAL);");
-    return length;
-}
-
-//------------------------------------------------------------------------------
-function busted._aux.define_parameter (key, value) {
-   ExecuteCommands ("global `value` :< 1;");
-   ExecuteCommands ("`value` :> 0;");
-   ExecuteCommands ("`value` = " + busted.init_values[key]);
-}
-
-//------------------------------------------------------------------------------
-function busted.io.evaluate_branch_lengths (model_parameters, tree_id, fg_set) {
-    busted.io.evaluate_branch_lengths.res    = {};
-    busted.io.evaluate_branch_lengths.bnames = BranchName (*tree_id, -1);
-    for (busted.io.evaluate_branch_lengths.k = 0;
-         busted.io.evaluate_branch_lengths.k < Columns (busted.io.evaluate_branch_lengths.bnames)-1;
-         busted.io.evaluate_branch_lengths.k += 1) {
-
-         busted.io.evaluate_branch_lengths.lexpr = "";
-
-         busted.io.evaluate_branch_lengths.b_name = busted.io.evaluate_branch_lengths.bnames[busted.io.evaluate_branch_lengths.k];
-         if (fg_set [busted.io.evaluate_branch_lengths.b_name]) {
-            //fprintf (stdout, busted.io.evaluate_branch_lengths.b_name, "=>FG\n");
-            busted.io.evaluate_branch_lengths.lexpr = (model_parameters["FG"])["length"];
-         } else {
-            //fprintf (stdout, busted.io.evaluate_branch_lengths.b_name, "=>BG\n");
-            busted.io.evaluate_branch_lengths.lexpr = (model_parameters["BG"])["length"];
-         }
-         Eval (model_parameters["length parameter"] + " = `tree_id`.`busted.io.evaluate_branch_lengths.b_name`." + model_parameters["length parameter"]);
-         busted.io.evaluate_branch_lengths.res [ busted.io.evaluate_branch_lengths.b_name ] =
-            Eval (busted.io.evaluate_branch_lengths.lexpr);
-    }
-    return busted.io.evaluate_branch_lengths.res;
-}
-
-//------------------------------------------------------------------------------
-function busted.io.define_bsrel_models (foreground_id, background_id, frequencies) {
-
-    model_parameters =
-        {"FG": {"omegas" : {}, "weights" : {}, "f" : {}, "Q" : {}, "length" : ""},
-         "BG": {"omegas" : {}, "weights" : {}, "f" : {}, "Q" : {}, "length" : ""},
-         "parameters" : {"global" : {}, "local" : {}}
-          };
-
-    for (k = 1; k <= 3; k +=1) {
-        tag = "" + k;
-        ((model_parameters["FG"])["omegas"]) + "`foreground_id`_omega_`tag`";
-        ((model_parameters["BG"])["omegas"]) + "`background_id`_omega_`tag`";
-        if (k < 3) {
-            ((model_parameters["FG"])["f"]) + "`foreground_id`_f_`tag`";
-            ((model_parameters["BG"])["f"]) + "`background_id`_f_`tag`";
-        }
-
-    }
-
-
-
-    ((model_parameters["FG"])["weights"])  = busted._aux.stick_breaking (((model_parameters["FG"])["f"]));
-    ((model_parameters["BG"])["weights"])  = busted._aux.stick_breaking (((model_parameters["BG"])["f"]));
-
-    busted.init_values = {"0" : 0.1, "1" : 0.5, "2" : 1};
-
-    ((model_parameters["FG"])["omegas"])["busted._aux.define_parameter"][""];
-    ((model_parameters["BG"])["omegas"])["busted._aux.define_parameter"][""];
-
-    Eval (((model_parameters["FG"])["omegas"])[2] + ":<1e26");
-    Eval (((model_parameters["FG"])["omegas"])[2] + ":>1");
-    Eval (((model_parameters["BG"])["omegas"])[2] + ":<1e26");
-
-    busted.init_values = {"0" : 0.8, "1" : 0.75};
-
-    ((model_parameters["FG"])["f"])["busted._aux.define_parameter"][""];
-    ((model_parameters["BG"])["f"])["busted._aux.define_parameter"][""];
-
-    busted.nuc = {4,3};
-    for (k = 0; k < 4; k+=1) {
-        for (k2 = 0; k2 < 3; k2 += 1) {
-            busted.nuc [k][k2] = ((frequencies["bases"])[utility.getGlobalValue ("models.DNA.alphabet")[k]])[k2];
-        }
-    }
-
-    for (k = 1; k <= 3; k +=1) {
-
-        ((model_parameters["FG"])["Q"]) + ("Q_`foreground_id`_" + k);
-        PopulateModelMatrix			  (((model_parameters["FG"])["Q"])[k-1],  busted.nuc, "t",((model_parameters["FG"])["omegas"])[k-1], "");
-
-        ((model_parameters["BG"])["Q"]) + ("Q_`background_id`_" + k);
-        PopulateModelMatrix			  (((model_parameters["BG"])["Q"])[k-1],  busted.nuc, "t",((model_parameters["BG"])["omegas"])[k-1], "");
-    }
-
-
-    (model_parameters["BG"])["model"] = "`background_id`_model";
-    (model_parameters["BG"])["length"] = busted._aux.define_bsrel_model ("`background_id`_model", (model_parameters["BG"])["Q"], (model_parameters["BG"])["weights"], frequencies["codons"]);
-    (model_parameters["FG"])["model"] = "`foreground_id`_model";
-    (model_parameters["FG"])["length"] = busted._aux.define_bsrel_model ("`foreground_id`_model", (model_parameters["FG"])["Q"], (model_parameters["FG"])["weights"], frequencies["codons"]);
-
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","C")] = "AC";
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("A","T")] = "AT";
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","G")] = "CG";
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("C","T")] = "CT";
-    ((model_parameters["parameters"])["global"])[terms.nucleotideRate ("G","T")] = "GT";
-     model_parameters["set-branch-length"] = "busted.aux.copy_branch_length";
-
-    ((model_parameters["parameters"])[terms.local])[terms.timeParameter ()] = "t";
-
-     model_parameters["length parameter"] = "t";
-
-    return model_parameters;
-}
-
-function busted.aux.copy_branch_length (model, value, parameter) {
-
-    busted.aux.copy_branch_length.t = ((model["parameters"])["local"])[terms.timeParameter ()];
-
-    if (Abs (BUSTED.proportional_constraint)) {
-        Eval ("`parameter`.`busted.aux.copy_branch_length.t` := `BUSTED.proportional_constraint` * " + value);
-    } else {
-        Eval ("`parameter`.`busted.aux.copy_branch_length.t` = " + value);
-    }
-
-
-
-    if (Type (relax.aux.copy_branch_length.k) == "String") {
-        Eval ("`parameter`.`relax.aux.copy_branch_length.k` = 1");
-    }
-}
-
-//------------------------------------------------------------------------------
-lfunction busted.io.selectBranchesToTest (tree_definition) {
-
-    extra_models = {};
-
-    for (k = 0; k < Columns (tree_definition["model_list"]); k += 1) {
-        model_id = (tree_definition["model_list"])[k];
-        if (model_id != "") {
-            extra_models  + model_id;
-        }
-    }
-
-
-    UseModel (USE_NO_MODEL);
-    ExecuteCommands ("Topology  T = " + tree_definition["string"]);
-    tAVL = T^0;
-
-    totalBranchCount = Abs (tAVL) - 2;
-
-    selectedBranches = {};
-    selectTheseForTesting = {totalBranchCount + 3 + Abs (extra_models), 2};
-    selectTheseForTesting [0][0] = "All";  selectTheseForTesting [0][1] = "Test for selection on all branches jointly";
-    selectTheseForTesting [1][0] = "Internal";  selectTheseForTesting [1][1] = "Test for selection on all internal branches jointly";
-    selectTheseForTesting [2][0] = "Leaves";  selectTheseForTesting [2][1] = "Test for selection on all terminal branches jointly";
-
-    for (k = 0; k < Abs (extra_models); k+=1) {
-        selectTheseForTesting [3+k][0] = "Set " + extra_models[k];
-        selectTheseForTesting [3+k][1] = "Test for selection on all branches labeled with {" + extra_models[k] + "} jointly";
-    }
-
-    for (k = 0; k < totalBranchCount; k += 1) {
-        selectTheseForTesting [k+3 + Abs (extra_models)][0] = (tAVL[k+1])["Name"];
-        selectTheseForTesting [k+3 + Abs (extra_models)][1] = "Add branch '" + selectTheseForTesting [k+3 + Abs (extra_models)][0] + "' to the test set";
-
-    }
-
-    ChoiceList  (whichBranchesToTest,"Which branches to test?",0,NO_SKIP,selectTheseForTesting);
-
-    for (k = 0; k < Columns (whichBranchesToTest); k += 1) {
-       if (whichBranchesToTest [k] < 3) {
-            for (k2 = 1; k2 <=  totalBranchCount; k2 += 1) {
-                if (whichBranchesToTest[k] == 0 || whichBranchesToTest[k] == 1 && Abs ((tAVL[k2])["Children"]) > 0 || whichBranchesToTest[k] == 2 && Abs ((tAVL[k2])["Children"]) == 0) {
-                    selectedBranches [(tAVL[k2])["Name"]] = 1;
-                }
-            }
-            return selectedBranches;
-        }
-        if (whichBranchesToTest [k] < 3 + Abs (extra_models)) {
-            model_key = extra_models [whichBranchesToTest [k] - 3];
-            for (k2 = 1; k2 <=  totalBranchCount; k2 += 1) {
-                bName = (tAVL[k2])["Name"];
-                if ((tree_definition["model_map"])[bName] == model_key) {
-                    selectedBranches [bName] = 1;
-                }
-            }
-            return selectedBranches;
-        }
-
-        selectedBranches [(tAVL[whichBranchesToTest [k] - 2 - Abs (extra_models)])["Name"]] = 1;
-    }
-
-    return selectedBranches;
-}
-
 //------------------------------------------------------------------------------------------------------------------------
 
-function busted.evidenceRatios (ha, h0) {
+function busted.EvidenceRatios (ha, h0) {
     sites = Rows (ha) * Columns (ha);
     return ha["Exp(_MATRIX_ELEMENT_VALUE_-h0[_MATRIX_ELEMENT_COLUMN_])"];
 }
-
-//------------------------------------------------------------------------------------------------------------------------
-
-function busted.taskTimerStart (index) {
-    busted.timers[index] = Time(1);
-}
-
-function busted.taskTimerStop (index) {
-    busted.timers[index] = Time(1) - busted.timers[index];
-
-}
-
-//------------------------------------------------------------------------------------------------------------------------
-
-function busted.getIC (logl,params,samples) {
-    return -2*logl + 2*samples/(samples-params-1)*params;
-}
-
-
 
 //------------------------------------------------------------------------------------------------------------------------
 

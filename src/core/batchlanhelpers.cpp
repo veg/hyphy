@@ -40,6 +40,7 @@
 #include      "batchlan.h"
 #include      "defines.h"
 #include      "global_object_lists.h"
+#include      "function_templates.h"
 
 #ifdef __HYPHYQT__
 #include "hyphy_qt_helpers.h"
@@ -53,6 +54,7 @@ _Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
 
 extern  _List batchLanguageFunctionNames;
+extern  _String markdownOutput;
 
 //____________________________________________________________________________________
 
@@ -293,7 +295,15 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
 
 _String ReturnDialogInput(bool dispPath)
 {
+    long do_markdown;
+    checkParameter (markdownOutput, do_markdown, 0L);
+  
     NLToConsole ();
+  
+    if (do_markdown) {
+      BufferToConsole("\n>");
+    }
+
     StringToConsole (dialogPrompt);
   
     if (dispPath) {

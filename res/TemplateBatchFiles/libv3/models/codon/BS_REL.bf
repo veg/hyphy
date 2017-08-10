@@ -122,8 +122,6 @@ lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
     rates = {count, 1};
     weights = {count-1, 1};
 
-    console.log (((bs_rel["parameters"])[^'terms.global']));
-
     for (i = 1; i <= count; i+=1) {
         rates [i-1] = ((bs_rel["parameters"])[^'terms.global'])[terms.AddCategory (^'terms.omega_ratio', i)];
         if (i < count ) {
@@ -173,6 +171,7 @@ lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
     }
 
 
+    bs_rel[^"terms.rate_matrix"] = rate_matrices;
     parameters.SetConstraint(((bs_rel["parameters"])[^'terms.global'])[terms.nucleotideRate("A", "G")], "1", "");
     return bs_rel;
 }

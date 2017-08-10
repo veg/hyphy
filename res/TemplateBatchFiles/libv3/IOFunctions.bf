@@ -236,7 +236,7 @@ lfunction io.validate_a_list_of_files(list) {
 				}
             }
             io.CheckAssertion("io.FileExists(`&fn`)", "HyPhy cannot open '" + fn + "' for reading");
-            
+
         }
     }
     return result;
@@ -294,6 +294,10 @@ lfunction io.FormatTableRow(row, options) {
         underlines * 128;
         widths = {};
 
+        if (utility.Has (options, "column-widths", "AssociativeList")) {
+            widths = options["column-widths"]
+        }
+
         if (options["align"] == "center") {
             underline_chars[0] = ':';
             underline_chars[2] = ':';
@@ -305,8 +309,9 @@ lfunction io.FormatTableRow(row, options) {
         }
         for (i = 0; i < dim; i += 1) {
             content_width = Abs(cells[i]);
-            cell_width = Max(min_width, content_width);
-            widths + cell_width;
+            cell_width = Max (widths[i], Max(min_width, content_width));
+            widths [i] =  cell_width;
+
             row * "|";
             padding = cell_width - content_width;
 
