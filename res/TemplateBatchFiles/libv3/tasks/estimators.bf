@@ -390,6 +390,24 @@ function estimators._aux.countEmpiricalParameters(id, model) {
 
 /**
  * Fits a LikelihoodFunction
+ * @name estimators.FitExistingLF
+ * @param model_map
+ * @returns LF results
+ */
+lfunction estimators.FitExistingLF (lf_id, model_objects) {
+    utility.ToggleEnvVariable("USE_LAST_RESULTS", TRUE);
+    Optimize (mles, ^lf_id);
+    utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
+
+    results = estimators.ExtractMLEs( lf_id, model_objects);
+    results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
+    results[utility.getGlobalValue ("terms.parameters")] = mles[1][1] + df;
+
+    return results;
+}
+
+/**
+ * Fits a LikelihoodFunction
  * @name estimators.FitLF
  * @param {Matrix} data_filters_list  - a vector of {DataFilter}s
  * @param {Matrix} tree_list  - a vector of {Tree}s
@@ -430,7 +448,6 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
 
     lf_id = &likelihoodFunction;
-
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
 
 
@@ -440,7 +457,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options["proportional-branch-length-scaler"]);
+            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobaValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
 

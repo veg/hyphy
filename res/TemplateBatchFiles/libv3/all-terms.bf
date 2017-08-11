@@ -20,7 +20,7 @@ namespace terms{
     translation_table       = "translation-table";
     synonymous_sub_count    = "synonymous substitution count";
     nonsynonymous_sub_count = "nonsynonymous substitution count";
-    original_name           = "original_name";
+    original_name           = "original name";
 
     category            = "category";
     mixture             = "mixture";
@@ -120,6 +120,7 @@ namespace terms{
         sites          = "sites";
         sequences      = "sequences";
         sequence       = "sequence";
+        sample_size    = "sample size";
         file           = "file";
         cache          = "cache";
         name           = "name";
@@ -224,7 +225,7 @@ namespace terms{
         attribute             = "attributes";
         display_order         = "display order";
         attribute_type        = "attribute type";
-        nodel_label           = "node label";
+        node_label           = "node label";
         branch_label          = "branch label";
         branch_attributes     = "branch attributes";
         branch_annotations    = "branch annotations";
@@ -246,6 +247,8 @@ namespace terms{
         runtime               = "runtime";
         version               = "version";
         convergence_failures  = "convergence failures";
+        omega_ratio           = "omega";
+        proportion            = "proportion";
     }
 
 

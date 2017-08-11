@@ -28,7 +28,7 @@ function utility.AssociativeListToJSON(associative_list) {
  * @param arguments
  */
 function utility.CallFunction (id, arguments) {
-   
+
 
     if (Type (id) == "String") {
         if (Type (arguments) == "AssociativeList") {
@@ -198,6 +198,21 @@ lfunction utility.DictToArray (object) {
     return result;
 }
 
+
+/**
+ * @name utility.Range
+ * @param elements
+ * @param from
+ * @param step
+ */
+lfunction utility.Range (elements, from, step) {
+    range = {};
+    for (i = 0; i < elements; i+=1) {
+        range + (from + i * step);
+    }
+    return range;
+}
+
 /**
  * @name utility.Map
  * @param {AssociativeList|Matrix} object - object to iterate over
@@ -360,7 +375,7 @@ function utility.ForEach (object, lambda_name, transform) {
     	for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
     		utility.ForEach._aux [utility.ForEach.r ] = utility.ForEach._aux2 [utility.ForEach.r ];
     	}
-    	
+
         DeleteObject (utility.ForEach._aux2);
         utility.ForEach (utility.ForEach._aux, lambda_name, transform);
         DeleteObject (utility.ForEach._aux);

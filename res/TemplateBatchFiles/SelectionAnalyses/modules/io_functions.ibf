@@ -113,7 +113,7 @@ lfunction selection.io.extract_global_MLE(fit, id) {
 
 //------------------------------------------------------------------------------
 
-lfunction selection.report_dnds (distribution) {
+lfunction selection.io.report_dnds (distribution) {
     settings = {"header" : TRUE, "column-widths": {
             "0": 35,
             "1": 15,
@@ -155,6 +155,7 @@ lfunction selection.report_dnds (distribution) {
 
     }
     fprintf (stdout, "\n");
+    return row_matrix;
 }
 
 
