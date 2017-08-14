@@ -74,9 +74,6 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing.ModelDescription(type, code, com
  */
 
 lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
-
-
-
     rate_matrices = {};
 
     bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;

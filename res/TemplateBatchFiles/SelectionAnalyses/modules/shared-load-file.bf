@@ -28,6 +28,13 @@ utility.SetEnvVariable ("MARKDOWN_OUTPUT", TRUE);
 
 function load_file (prefix) {
 
+    settings = None;
+
+    if (Type (prefix) == "AssociativeList") {
+        settings = prefix["settings"];
+        prefix = prefix ["prefix"];
+    }
+
     codon_data_info = alignments.PromptForGeneticCodeAndAlignment(prefix+".codon_data", prefix+".codon_filter");
 
         /** example output
@@ -121,10 +128,11 @@ function load_file (prefix) {
 
     io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + codon_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
 
-
-
-
-    selected_branches = selection.io.defineBranchSets(partitions_and_trees);
+    if (utility.Has (settings, "branch-selector", "String")) {
+        selected_branches =  Call (settings["branch-selector"], partitions_and_trees);
+    } else {
+        selected_branches = selection.io.defineBranchSets(partitions_and_trees);
+    }
 
         /**  this will return a dictionary of selected branches; one set per partition, like in
         {

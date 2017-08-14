@@ -188,39 +188,39 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
     // Basic model definition
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
-	    	
+
 	// Add data filter information to model description
 	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
 
 
-    
+
     // Set Q field
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.defineQ], model.generic.DefineModel.model, id);
 
-	
+
     // Define id's for frequencies, Q, and id
 	model.generic.DefineModel.model [terms.model.matrix_id] = "`id`_" + terms.model.rate_matrix;
 	model.generic.DefineModel.model [terms.model.efv_id] = "`id`_" + terms.model.efv_matrix;
 	model.generic.DefineModel.model [terms.id] = id;
-	
 
-    
+
+
     // Define type of frequency estimator
 	if (estimator_type != None) {
 		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
 	}
 
-       
+
     // Set EFV field
 	Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
 													    id,
-													    data_filter); 
+													    data_filter);
 
-    
+
 	parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.matrix_id],model.generic.DefineModel.model[terms.model.rate_matrix]);
 	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 
-    
+
 	model.define_from_components (id, 	model.generic.DefineModel.model [terms.model.matrix_id], model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
 
     if (Type (model.generic.DefineModel.model[terms.model.post_definition]) == "String") {
@@ -427,6 +427,7 @@ lfunction model.MatchAlphabets (a1, a2) {
  * compute the algebraic expression for the branch length
  * @param {Dict} models - list of model objects
  * @param {RegEx} filter - only apply to parameters matching this expression
+ * @return {Dict} the set of constraints applied
  */
 
 lfunction models.BindGlobalParameters (models, filter) {
@@ -436,19 +437,24 @@ lfunction models.BindGlobalParameters (models, filter) {
             "regexp.Find (_key_,`&filter`)"
         ));
 
+        constraints_set = {};
+
         for (k = 1; k < Abs (models); k+=1) {
             parameter_set = (((models[k])["parameters"])[^"terms.global"]);
             utility.ForEach (candidate_set, "_p_",
                 "if (`&parameter_set` / _p_) {
                     if (parameters.IsIndependent (`&parameter_set`[_p_])) {
                         parameters.SetConstraint (`&parameter_set`[_p_], `&reference_set`[_p_], '');
+                        `&constraints_set` [`&parameter_set`[_p_]] = `&reference_set`[_p_];
                     }
                 }"
             );
         }
 
+        return constraints_set;
+
     }
-    return 0;
+    return None;
 }
 
 /**
@@ -469,11 +475,11 @@ lfunction model.BranchLengthExpression (model) {
 		matrix_count = Abs (model[utility.getGlobalValue("terms.model.rate_matrix")]);
 		//keys = utility.Keys (model[utility.getGlobalValue("terms.model.rate_matrix"));
 	    keys = utility.Keys (model[utility.getGlobalValue("terms.model.rate_matrix")]);
-	    
-		
-		
+
+
+
 		for (i = 0; i <  matrix_count; i+=1) {
-			expr = model.BranchLengthExpressionFromMatrix ((model[utility.getGlobalValue("terms.model.rate_matrix")])[keys[i]], model[utility.getGlobalValue("terms.efv_estimate")], model[utility.getGlobalValue("terms.model.canonical")]);			
+			expr = model.BranchLengthExpressionFromMatrix ((model[utility.getGlobalValue("terms.model.rate_matrix")])[keys[i]], model[utility.getGlobalValue("terms.efv_estimate")], model[utility.getGlobalValue("terms.model.canonical")]);
 			components + ( "(" + expr + ")*(" + (model[utility.getGlobalValue("terms.mixture.mixture_components")])[keys[i]] + ")");
 		}
 		expr = Join ("+", components);

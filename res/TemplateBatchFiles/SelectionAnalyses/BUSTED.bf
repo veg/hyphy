@@ -14,6 +14,7 @@ LoadFunctionLibrary("modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
 
+utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
 
 busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection.",
@@ -25,7 +26,6 @@ busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted
                           };
 
 io.DisplayAnalysisBanner (busted.analysis_description);
-utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
 busted.FG = "Test";
 busted.BG = "Background";
@@ -64,7 +64,7 @@ io.ReportProgressMessageMD('BUSTED',  'selector', 'Branches to test for selectio
 
 utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
-     io.ReportProgressMessageMD('BUSTED',  'selector', 'Selected ' + Abs(_selection_) + ' branches to test in the BUSTED analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
+     io.ReportProgressMessageMD('BUSTED',  'selector', '* Selected ' + Abs(_selection_) + ' branches to test in the BUSTED analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 // check to see if there are any background branches
 
@@ -82,10 +82,11 @@ namespace busted {
     doGTR ("busted");
 }
 
-busted.scaler_prefix = "busted.scaler";
+
 estimators.fixSubsetOfEstimates(busted.gtr_results, busted.gtr_results["global"]);
 
 namespace busted {
+    scaler_prefix = "busted.scaler";
     doPartitionedMG ("busted", FALSE);
 }
 
@@ -101,7 +102,7 @@ busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, 
 io.ReportProgressMessageMD("BUSTED", "codon-refit", "* Log(L) = " + Format(busted.final_partitioned_mg_results["LogL"],8,2));
 busted.global_dnds = selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 
-utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_["MLE"],8,4));');
+utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_[terms.json.MLE],8,4));');
 
 selection.io.stopTimer (busted.json [terms.json.timers], "Preliminary model fitting");
 

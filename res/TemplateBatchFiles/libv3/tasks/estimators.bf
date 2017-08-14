@@ -447,19 +447,30 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     }
 
 
+
+    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
+        console.log ("Calling constraint setter");
+        Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_components, data_filter, tree, model_map, initial_values, model_objects);
+    }
+
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
 
 
     df = 0;
-    //Export (lf,likelihoodFunction);
-    //console.log (lf);
+
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobaValue("terms.run_options.proportional_branch_length_scaler")]);
+            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
+    Export (lf,likelihoodFunction);
+    console.log (lf);
+
+    //assert (0);
+
+    utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
 
    	Optimize (mles, likelihoodFunction);
 
@@ -557,7 +568,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
             df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", {
                 name_space: user_model
-            }, initial_values, run_options[utility.getGlobaValue("terms.run_options.proportional_branch_length_scaler")]);
+            }, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
 
 
     }

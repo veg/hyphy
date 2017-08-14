@@ -272,12 +272,10 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
  * @name parameters.GenerateSequentialNames
  * @param {String} prefix
  * @param {Number} count
- * @name parameters.GenerateSequentialNames
- * @param {String} prefix
- * @param {Number} count
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
+
 lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
     if (delimiter == None) {
         delimiter = "_";

@@ -385,6 +385,12 @@ namespace terms{
         retain_lf_object                  = "retain-lf-object";
         retain_model_object               = "retain-model-object";
         partitioned_omega                 = "partitioned-omega";
+        apply_user_constraints            = "apply-user-constraints";
+    }
+
+    /* selection analysis attributes */
+    namespace selection_analysis {
+        branch_selector = "branch selector";
     }
 
     /* Terms formatting table output */

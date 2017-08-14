@@ -678,38 +678,40 @@ lfunction utility.EnsureKey (dict, key) {
  */
 lfunction utility.Has (d, key, type) {
 
-    if (Type (key) == "String") {
-        if (d/key) {
-            if (type == None) {
-                return TRUE;
+    if (Type (d) == "AssociativeList") {
+        if (Type (key) == "String") {
+            if (d/key) {
+                if (type == None) {
+                    return TRUE;
+                }
+                return Type (d[key]) == type;
             }
-            return Type (d[key]) == type;
+            return FALSE;
         }
-        return FALSE;
-    }
 
-    if (Type (key) == "Matrix") {
-        depth = utility.Array1D (key);
-        current_check = &d;
-        current_key   = key[0];
+        if (Type (key) == "Matrix") {
+            depth = utility.Array1D (key);
+            current_check = &d;
+            current_key   = key[0];
 
-        for (i = 1; i < depth; i += 1) {
-             if (Eval ("`current_check`/'`current_key`'")) {
-                current_check = "(" + current_check + ")['`current_key`']";
-                if (Eval ("Type(`current_check`)") != "AssociativeList") {
+            for (i = 1; i < depth; i += 1) {
+                 if (Eval ("`current_check`/'`current_key`'")) {
+                    current_check = "(" + current_check + ")['`current_key`']";
+                    if (Eval ("Type(`current_check`)") != "AssociativeList") {
+                        return FALSE;
+                    }
+                    current_key = key[i];
+                } else {
                     return FALSE;
                 }
-                current_key = key[i];
-            } else {
-                return FALSE;
             }
-        }
 
-        if ( Eval ("`current_check`/'`current_key`'") ) {
-            if (type == None) {
-                return TRUE;
+            if ( Eval ("`current_check`/'`current_key`'") ) {
+                if (type == None) {
+                    return TRUE;
+                }
+                return Eval ("Type((`current_check`)['`current_key`'])") == type;
             }
-            return Eval ("Type((`current_check`)['`current_key`'])") == type;
         }
     }
     return FALSE;
