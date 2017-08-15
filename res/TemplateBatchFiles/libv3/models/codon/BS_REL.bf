@@ -133,6 +133,27 @@ lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
 }
 
 /**
+ * @name models.codon.BS_REL.ExtractMixtureDistribution
+ * @param {Dict} bs_rel
+ * @returns {Dict} mixture distribution parameters
+ */
+
+lfunction models.codon.BS_REL.ExtractMixtureDistributionFromFit (bs_rel, fit) {
+    count = bs_rel [utility.getGlobalValue ("terms.model.components")];
+    rates = {count, 1};
+    weights = {count-1, 1};
+
+    for (i = 1; i <= count; i+=1) {
+        rates [i-1] = estimators.GetGlobalMLE (fit, terms.AddCategory (utility.getGlobalValue ("terms.parameters.omega_ratio"), i));
+        if (i < count ) {
+            weights [i-1] = estimators.GetGlobalMLE (fit, terms.AddCategory (utility.getGlobalValue ("terms.mixture.mixture_aux_weight"), i ));
+        }
+    }
+
+    return {"rates" : rates, "weights" : weights };
+}
+
+/**
  * @name models.codon.BS_REL.BS_REL._DefineQ
  * @param {Dict} mg_rev
  * @param {String} namespace

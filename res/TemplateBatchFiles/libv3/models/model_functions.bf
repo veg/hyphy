@@ -308,14 +308,41 @@ function models.generic.post.definition  (model) {
  */
 function models.generic.SetBranchLength (model, value, parameter) {
 
-     if (Abs((model[terms.parameters])[terms.local]) == 1) {
+     if (Abs((model[terms.parameters])[terms.local]) >= 1) {
         if (Type (model [terms.model.branch_length_string]) == "String") {
-            models.generic.SetBranchLength.bl = (Columns ((model[terms.parameters])[terms.local]))[0];
-            models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
+            models.generic.SetBranchLength.expression = model [terms.model.branch_length_string];
+
+            if (Abs((model[terms.parameters])[terms.local]) > 1) {
+                models.generic.SetBranchLength.bl = Call (model [terms.model.time], model[terms.model.type]);
+                models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
+                if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) == FALSE) {
+                     models.generic.SetBranchLength.bl = utility.First (utility.Values ((model[terms.parameters])[terms.local]), "_name_",
+                            'parameters.IsIndependent (parameter + "." + _name_)');
+
+                     if (None == models.generic.SetBranchLength.bl) {
+                        messages.log ("models.generic.SetBranchLength: no independent model parameters");
+                        return 0;
+                     }
+                     models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
+                }
+
+                models.generic.SetBranchLength.substitution = {};
+                utility.ForEach (utility.Values ((model[terms.parameters])[terms.local]), "_name_",
+                            'if (_name_ != models.generic.SetBranchLength.bl) {
+                                models.generic.SetBranchLength.substitution [_name_] = Eval (parameter + "." + _name_);
+                             }');
+
+                models.generic.SetBranchLength.expression = Simplify (models.generic.SetBranchLength.expression, models.generic.SetBranchLength.substitution);
+            } else {
+                models.generic.SetBranchLength.bl = (Columns ((model[terms.parameters])[terms.local]))[0];
+                models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
+            }
+
              if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p)) {
+
                 if (Type (value) == "AssociativeList") {
-                 	if (Abs (model [terms.model.branch_length_string])) {
-                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model [terms.model.branch_length_string] + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                 	if (Abs (models.generic.SetBranchLength.expression)) {
+                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
                     	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 
@@ -327,9 +354,9 @@ function models.generic.SetBranchLength (model, value, parameter) {
                     return 1;
 
                 } else {
-                    ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model [terms.model.branch_length_string] + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
-                    Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
-                    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
+                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                     Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
+                     messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
               }
             } else {
                 messages.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");
@@ -338,7 +365,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
 	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");
         }
     } else {
-        messages.log ("models.generic.SetBranchLength: more than one local model parameter");
+        messages.log ("models.generic.SetBranchLength: no local model parameters");
     }
     return 0;
 }

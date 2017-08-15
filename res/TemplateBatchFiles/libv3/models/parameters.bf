@@ -169,6 +169,25 @@ function parameters.SetValue(id, value) {
     Eval("`id` = " + value);
 }
 
+
+/**
+ * Ensures that the mean of parameters in a set is maintained
+ * @name parameters.ConstrainMeanOfSet
+ * @param {Dict}   set  - list of variable ids
+ * @param {Number} mean - desired mean
+ * @returns nothing
+ */
+lfunction parameters.ConstrainMeanOfSet (set, mean, namespace) {
+    unscaled = utility.Map (utility.Values (set), "_name_", "_name_ + '_scaler_variable'");
+    global_scaler = namespace + ".scaler_variable";
+    parameters.SetConstraint (global_scaler, Join ("+", unscaled), "global");
+    utility.ForEach (set, "_name_", '
+        parameters.SetValue (_name_ + "_scaler_variable", _name_);
+        parameters.SetConstraint (_name_, "(" + `&mean` + ")*" + _name_ + "_scaler_variable/`global_scaler`", "");
+    ');
+}
+
+
 /**
  * Returns mean of values
  * @name parameters.Mean
@@ -422,6 +441,7 @@ function parameters.helper.copy_definitions(target, source) {
     for (parameters.helper.copy_definitions.i = 0; parameters.helper.copy_definitions.i < Columns(parameters.helper.copy_definitions.key_iterator); parameters.helper.copy_definitions.i += 1) {
         parameters.helper.copy_definitions.key = parameters.helper.copy_definitions.key_iterator[parameters.helper.copy_definitions.i];
         if (Type(source[parameters.helper.copy_definitions.key]) == "AssociativeList") {
+            utility.EnsureKey (target, parameters.helper.copy_definitions.key);
             target[parameters.helper.copy_definitions.key] * source[parameters.helper.copy_definitions.key];
         }
     }
@@ -430,6 +450,8 @@ function parameters.helper.copy_definitions(target, source) {
     	utility.EnsureKey (target, terms.category);
     	(target[terms.category])[(source[terms.category])[terms.id]] = (source[terms.category])[terms.description];
     }
+
+    return target;
 }
 
 /**

@@ -158,6 +158,10 @@ lfunction io.ReportProgressMessageMD(analysis, stage, text) {
  */
 lfunction io.ReportStatsMD(_label, _stats) {
 
+    if (Abs (_label)) {
+        console.log (_label + "\n");
+    }
+
     _table_output_options = {
         utility.getGlobalValue("terms.table_options.header"): 1,
         utility.getGlobalValue("terms.table_options.minimum_column_width"): 16,

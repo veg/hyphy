@@ -290,6 +290,29 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
  * @name estimators.ApplyExistingEstimates
  * @param {String} likelihood_function_id
  * @param {Dictionary} model_descriptions
+ * @param {String} callback (tree, node, parameter_list)
+
+ */
+lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_descriptions, callback) {
+    GetString(lf_info, ^ likelihood_function_id, -1);
+    partitions = utility.Array1D(lf_info[utility.getGlobalValue ("terms.fit.trees")]);
+    result = {};
+    for (i = 0; i < partitions; i += 1) {
+        tree_name = (lf_info[utility.getGlobalValue ("terms.fit.trees")])[i];
+        GetInformation (map, ^tree_name);
+        branch_names = Rows (map);
+        for (b = 0; b < Abs(map); b += 1) {
+            _branch_name = branch_names[b];
+            result[_branch_name] = Call (callback, tree_name, _branch_name, (model_descriptions [map[_branch_name]])[utility.getGlobalValue ("terms.parameters")]);
+        }
+    }
+    return result;
+}
+
+/**
+ * @name estimators.ApplyExistingEstimates
+ * @param {String} likelihood_function_id
+ * @param {Dictionary} model_descriptions
  * @param {Matrix} initial_values
  * @param branch_length_conditions
  * @returns estimators.ApplyExistingEstimates.df_correction - Abs(estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers);
@@ -448,10 +471,6 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
 
 
-    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
-        console.log ("Calling constraint setter");
-        Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_components, data_filter, tree, model_map, initial_values, model_objects);
-    }
 
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
@@ -459,11 +478,15 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     df = 0;
 
-
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
             df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
+
+    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
+        df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
+    }
+
 
     Export (lf,likelihoodFunction);
     console.log (lf);
