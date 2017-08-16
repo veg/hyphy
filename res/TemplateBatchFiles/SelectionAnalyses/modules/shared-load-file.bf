@@ -215,10 +215,20 @@ function doGTR (prefix) {
 
     io.ReportProgressMessageMD (prefix, "nuc-fit", "Obtaining branch lengths and nucleotide substitution biases under the nucleotide GTR model");
 
+    gtr_results = utility.Extend (parameters.helper.tree_lengths_to_initial_values (trees, None),
+                                  {
+                                    utility.getGlobalValue ("terms.global") : {
+                                        terms.nucleotideRate ("A","C") : { utility.getGlobalValue ("terms.fit.MLE") : 0.25} ,
+                                        terms.nucleotideRate ("A","T") : { utility.getGlobalValue ("terms.fit.MLE") : 0.25} ,
+                                        terms.nucleotideRate ("C","G") : { utility.getGlobalValue ("terms.fit.MLE") : 0.25} ,
+                                        terms.nucleotideRate ("G","T") : { utility.getGlobalValue ("terms.fit.MLE") : 0.25}
+                                    }
+                                 });
+
 
     gtr_results = estimators.FitGTR(filter_names,
                                          trees,
-                                         parameters.helper.tree_lengths_to_initial_values (trees, None));
+                                         gtr_results);
 
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* Log(L) = " + Format (gtr_results["LogL"], 8, 2));
 

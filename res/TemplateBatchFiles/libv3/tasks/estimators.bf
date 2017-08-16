@@ -596,7 +596,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
 
     }
 
-   	 Optimize(mles, likelihoodFunction);
+   	Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);

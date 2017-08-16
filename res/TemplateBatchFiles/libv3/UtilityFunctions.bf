@@ -419,14 +419,7 @@ function utility.ForEach (object, lambda_name, transform) {
  * @returns {Bool} TRUE if key exists and is of expected type, otherwise FALSE
  */
 function utility.KeyExists(dict, key) {
-
-    keys = utility.Keys(dict);
-
-    if(utility.Find(keys, key) != -1) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
+    return dict / key;
 }
 
 /**

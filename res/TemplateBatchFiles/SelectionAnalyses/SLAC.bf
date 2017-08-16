@@ -645,14 +645,17 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
         upto = Rows (*mx);
 
         for (s = 0; s < upto; s+=1) {
-            k = by_site_scaler[s];
-            (*mx)[s*column_count + column_count - 1] = k;
-            (*mx)[s*column_count + column_count - 1] = k;
+            if (i < 2) {
+                k = by_site_scaler[s];
+                (*mx)[s*column_count + column_count - 1] = k;
 
-            if (k > 0) {
-                sc = selected_branch_total_length/k;
-                (*mx)[s*column_count + 0] = (*mx)[s*column_count + 0] * sc;
-                (*mx)[s*column_count + 1] = (*mx)[s*column_count + 1] * sc;
+                if (k > 0) {
+                    sc = selected_branch_total_length/k;
+                    (*mx)[s*column_count + 0] = (*mx)[s*column_count + 0] * sc;
+                    (*mx)[s*column_count + 1] = (*mx)[s*column_count + 1] * sc;
+                }
+            } else {
+                (*mx)[s*column_count + column_count - 1] = selected_branches_lengths[s];
             }
 
             total_subs = (*mx)[s*column_count + 2] + (*mx)[s*column_count + 3];
@@ -677,7 +680,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
                 (*mx) [s*column_count + 8] = 1;
                 (*mx) [s*column_count + 9] = 1;
 
-            }
+        }
 
         }
     }
