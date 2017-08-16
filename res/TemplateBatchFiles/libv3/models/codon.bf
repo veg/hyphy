@@ -21,6 +21,7 @@ function models.codon.MapCode (genetic_code) {
  * @param namespace
  */
 function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
+//#profile START;
 
 	__base_alphabet = modelSpec [terms.bases];
 	assert (Type (__base_alphabet) == "Matrix" && Columns (__base_alphabet) == 4, "Unsupported codon bases '" + __base_alphabet + "'");
@@ -59,10 +60,10 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 		__rp = Call (__rate_variation[terms.rate_variation.distribution], __rate_variation[terms.rate_variation.options], namespace);
 		__rate_variation [terms.id] = (__rp[terms.category])[terms.id];
-				
+
 		parameters.DeclareCategory   (__rp[terms.category]);
         parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
-	} 
+	}
 
 
 	for (_rowChar = 0; _rowChar < __dimension; _rowChar +=1 ){
@@ -80,7 +81,7 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 
 		 	if (None != __rate_variation) {
-				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier], 
+				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier],
 							 __rp,
 							 __alphabet[_rowChar],
 							 __alphabet[_colChar],
@@ -110,7 +111,30 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
         modelSpec [terms.model.rate_matrix] = __rate_matrix;
     }
 
-	return modelSpec;
+/*
+#profile _hyphy_profile_dump;
+
+
+
+stats  			= _hyphy_profile_dump["STATS"];
+_profile_summer = ({1,Rows(stats)}["1"]) * stats;
+_instructions   = _hyphy_profile_dump["INSTRUCTION"];
+_indices	    = _hyphy_profile_dump["INSTRUCTION INDEX"];
+
+fprintf (stdout, "\nTotal run time (seconds)      : ", Format(_profile_summer[1],15,6),
+                 "\nTotal number of steps         : ", Format(_profile_summer[0],15,0), "\n\n");
+
+to_sort        =  stats["-_MATRIX_ELEMENT_VALUE_*_MATRIX_ELEMENT_COLUMN_+(_MATRIX_ELEMENT_COLUMN_==0)*_MATRIX_ELEMENT_ROW_"] % 1;
+
+for (k=0; k<Columns(_instructions); k=k+1)
+{
+    k2 = to_sort[k][0];
+    fprintf (stdout, Format (_indices[k2],6,0), " : ", _instructions[k2], "\n\tCall count: ", stats[k2][0],
+                                                   "\n\tTime (seconds): ", stats[k2][1], "\n");
+}
+*/
+
+    return modelSpec;
 
 }
 

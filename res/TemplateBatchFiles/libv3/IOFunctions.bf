@@ -169,11 +169,6 @@ lfunction io.ReportStatsMD(_label, _stats) {
         utility.getGlobalValue("terms.table_options.column_widths"): {
             "0": 16,
             "1": 16,
-            "2": 16,
-            "3": 16,
-            "4": 16,
-            "5": 16,
-            "6": 19
         }
     };
 

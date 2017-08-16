@@ -99,7 +99,7 @@ busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, 
 }, busted.partitioned_mg_results);
 
 
-io.ReportProgressMessageMD("BUSTED", "codon-refit", "* Log(L) = " + Format(busted.final_partitioned_mg_results["LogL"],8,2));
+io.ReportProgressMessageMD("BUSTED", "codon-refit", "* " + selection.io.report_fit (busted.final_partitioned_mg_results, 9, busted.codon_data_info[terms.data.sample_size]));
 busted.global_dnds = selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 
 utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_[terms.json.MLE],8,4));');
@@ -180,7 +180,7 @@ selection.io.startTimer (busted.json [terms.json.timers], "Unconstrained BUSTED 
 
 io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 allowed) branch-site model fit");
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {"retain-lf-object": TRUE});
-io.ReportProgressMessageMD("BUSTED", "main", "* Log(L) = " + Format(busted.full_model[terms.fit.log_likelihood],8,2));
+io.ReportProgressMessageMD("BUSTED", "main", "* " + selection.io.report_fit (busted.full_model, 9, busted.codon_data_info[terms.data.sample_size]));
 io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the following rate distribution for branch-site combinations was inferred");
 
 selection.io.stopTimer (busted.json [terms.json.timers], "Unconstrained BUSTED model fitting");
@@ -206,11 +206,11 @@ if (busted.has_background) {
                                                            terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
 }
 
-selection.io.json_store_lf (busted.json,
+selection.io.json_store_lf_spool (busted.codon_data_info [terms.json.json], busted.json,
                             "Unconstrained model",
                             busted.full_model[terms.fit.log_likelihood],
                             busted.full_model[terms.parameters] + 9 , // +9 comes from CF3x4
-                            math.GetIC (busted.full_model[terms.fit.log_likelihood], busted.full_model[terms.parameters] + 9, busted.codon_data_info[terms.data.sample_size]),
+                            busted.codon_data_info[terms.data.sample_size],
                             busted.distribution_for_json);
 
 
@@ -230,24 +230,25 @@ if (!busted.run_test) {
 } else {
     selection.io.startTimer (busted.json [terms.json.timers], "Constrained BUSTED model fitting", 3);
 
+
     io.ReportProgressMessageMD ("BUSTED", "test", "Performing the constrained (dN/dS > 1 not allowed) model fit");
     parameters.SetConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)), "1", terms.global);
     (busted.json [busted.json.site_logl])[busted.constrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
     busted.null_results = estimators.FitExistingLF (busted.full_model[terms.likelihood_function], busted.model_object_map);
     (busted.json [busted.json.site_logl])[busted.optimized_null] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
-    io.ReportProgressMessageMD ("BUSTED", "test", "Log(L) = " + Format(busted.null_results[terms.fit.log_likelihood],8,2));
+    io.ReportProgressMessageMD ("BUSTED", "test", "* " + selection.io.report_fit (busted.null_results, 9, busted.codon_data_info[terms.data.sample_size]));
     busted.LRT = busted.ComputeLRT (busted.full_model[terms.fit.log_likelihood], busted.null_results[terms.fit.log_likelihood]);
     busted.json [terms.json.test_results] = busted.LRT;
-    io.ReportProgressMessageMD("BUSTED", "test", "* For *test* branches under the null (no dN/dS model), the following rate distribution for branch-site combinations was inferred");
 
 
     selection.io.stopTimer (busted.json [terms.json.timers], "Constrained BUSTED model fitting");
 
-   utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
+    utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
         'selection.io.json_store_branch_attribute(busted.json, busted.constrained, terms.branch_length, 1,
                                                  _key_,
                                                  selection.io.extract_branch_info((busted.null_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 
+    io.ReportProgressMessageMD("BUSTED", "test", "* For *test* branches under the null (no dN/dS > 1 model), the following rate distribution for branch-site combinations was inferred");
     busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (busted.distribution) % 0;
     selection.io.report_dnds (parameters.GetStickBreakingDistribution (busted.distribution) % 0);
 
@@ -266,11 +267,11 @@ if (!busted.run_test) {
     }
 
 
-    selection.io.json_store_lf (busted.json,
+    selection.io.json_store_lf_spool (busted.codon_data_info [terms.json.json], busted.json,
                             "Constrained model",
-                            busted.MLE_H0[1][0],
-                            busted.full_model[terms.parameters] + 8 , // +9 comes from CF3x4
-                            math.GetIC ( busted.MLE_H0[1][0], busted.full_model[terms.parameters] + 8, busted.codon_data_info[terms.data.sample_size]),
+                            busted.null_results[terms.fit.log_likelihood],
+                            busted.null_results[terms.parameters] + 9 , // +9 comes from CF3x4
+                            busted.codon_data_info[terms.data.sample_size],
                             busted.distribution_for_json);
 
     (busted.json [busted.json.evidence_ratios])[busted.constrained] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.constrained]);

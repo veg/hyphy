@@ -161,6 +161,8 @@ lfunction models.codon.BS_REL.ExtractMixtureDistributionFromFit (bs_rel, fit) {
  */
 
 lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
+
+
     rate_matrices = {};
 
     bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;

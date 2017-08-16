@@ -230,7 +230,7 @@ function doGTR (prefix) {
                                          trees,
                                          gtr_results);
 
-    io.ReportProgressMessageMD (prefix, "nuc-fit", "* Log(L) = " + Format (gtr_results["LogL"], 8, 2));
+    io.ReportProgressMessageMD (prefix, "nuc-fit", "* " + selection.io.report_fit (gtr_results, 3, 3*(^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
 
 }
 
@@ -271,8 +271,7 @@ function doPartitionedMG (prefix, keep_lf) {
     }, gtr_results);
 
 
-
-    io.ReportProgressMessageMD("`prefix`", "codon-fit", "* Log(L) = " + Format(partitioned_mg_results[utility.getGlobalValue("terms.fit.log_likelihood")],8,2));
+    io.ReportProgressMessageMD("`prefix`", "codon-fit", "* " + selection.io.report_fit (partitioned_mg_results, 9, (^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
     global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.parameters.omega_ratio"));
     utility.ForEach (global_dnds, "_value_", 'io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_[utility.getGlobalValue("terms.description")] + " = " + Format (_value_[utility.getGlobalValue("terms.fit.MLE")],8,4));');
 

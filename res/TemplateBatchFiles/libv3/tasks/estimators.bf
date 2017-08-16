@@ -418,6 +418,7 @@ function estimators._aux.countEmpiricalParameters(id, model) {
  * @returns LF results
  */
 lfunction estimators.FitExistingLF (lf_id, model_objects) {
+
     utility.ToggleEnvVariable("USE_LAST_RESULTS", TRUE);
     Optimize (mles, ^lf_id);
     utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
@@ -487,13 +488,12 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
     }
 
-
-    Export (lf,likelihoodFunction);
-    console.log (lf);
+    //Export (lf,likelihoodFunction);
+    //console.log (lf);
 
     //assert (0);
 
-    utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
 
    	Optimize (mles, likelihoodFunction);
 

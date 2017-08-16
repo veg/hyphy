@@ -179,6 +179,16 @@ lfunction selection.io.getIC(logl, params, samples) {
     return -2 * logl + 2 * samples / (samples - params - 1) * params;
 }
 
+//------------------------------------------------------------------------------
+
+function selection.io.report_fit (fit, xp, ss) {
+    return "Log(L) = " +
+            Format (fit[terms.fit.log_likelihood], 8, 2) +
+            ", AIC-c = " +
+            Format (selection.io.getIC(fit[terms.fit.log_likelihood], fit[terms.parameters] + xp, ss), 8, 2) +
+            " (" + (xp+fit[terms.parameters]) + " estimated parameters)";
+}
+
 
 //------------------------------------------------------------------------------
 
@@ -193,6 +203,15 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
             terms.json.rate_distributions: rate_distribution,
             terms.json.display_order: Abs(json[terms.json.fits])
     });
+
+}
+
+//------------------------------------------------------------------------------
+
+function selection.io.json_store_lf_spool (file, json, name, ll, df, ss, rate_distribution) {
+
+    selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution);
+    io.SpoolJSON (json, file);
 
 }
 
