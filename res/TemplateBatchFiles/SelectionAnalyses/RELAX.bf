@@ -50,7 +50,7 @@ relax.MG94 = "MG94xREV with separate rates for branch sets";
 terms.relax.k          = "relaxation or intensification parameter";
 terms.relax.k_range    = {
         terms.lower_bound: "0",
-        terms.upper_bound: "20"
+        terms.upper_bound: "10"
     };
 
 relax.test_branches_name = "Test";
@@ -634,10 +634,10 @@ lfunction relax.select_branches(partition_info) {
         }
     }
 
-    ChoiceList(testSet, "Choose the set of branches to use the _test_ set", 1, NO_SKIP, selectTheseForTesting);
+    ChoiceList(testSet, "Choose the set of branches to use as the _test_ set", 1, NO_SKIP, selectTheseForTesting);
     io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
     if (option_count > 2) {
-        ChoiceList(referenceSet, "Choose the set of branches to use the _reference_ set", 1, testSet, selectTheseForTesting);
+        ChoiceList(referenceSet, "Choose the set of branches to use as the _reference_ set", 1, testSet, selectTheseForTesting);
         io.CheckAssertion ("`&referenceSet` >= 0", "User cancelled branch selection; analysis terminating");
     } else {
         referenceSet = 1-testSet;
