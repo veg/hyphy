@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -38,6 +38,8 @@
  */
 
 #include    "scfg.h"
+#include "function_templates.h"
+
 
 #ifdef      _USE_HYPHY_HOOKS_
 
@@ -77,9 +79,6 @@ _addSCFGInfoStats           ("STATISTICS"),
 extern _String  scfgCorpus;
 
 
-#ifdef      __MACPROFILE__
-#include "profiler.h"
-#endif
 
 #else
 
@@ -154,7 +153,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         // add    the literal to the parse tree
                         // handle the first character separately
 
-                        char        currentCharacter = literal->theString->getChar(0);
+                        unsigned char        currentCharacter = literal->theString->getChar(0);
                         node<long>* currentTreeNode  = parseTree[currentCharacter];
 
                         bool        addedRootStub    = false;
@@ -616,9 +615,9 @@ bool    Scfg::CheckANT  (long lhs, long rhs1, long rhs2, _AVLListX& tempNT, long
 
 void    Scfg::ScanAllVariables  (void)
 {
-    GetIndependentVars().Clear();
-    GetDependentVars().Clear();
-    GetCategoryVars().Clear();
+    indexInd.Clear();
+    indexDep.Clear();
+    indexCat.Clear();
 
     _SimpleList allVariables;
     _AVLList    scannerList(&allVariables);
@@ -632,11 +631,11 @@ void    Scfg::ScanAllVariables  (void)
     for (long varID = 0; varID < allVariables.lLength; varID++) {
         _Variable * aParameter = LocateVar (allVariables.lData[varID]);
         if (aParameter->IsCategory()) {
-            GetCategoryVars() << allVariables.lData[varID];
+            indexCat << allVariables.lData[varID];
         } else if (aParameter->IsIndependent()) {
-            GetIndependentVars() << allVariables.lData[varID];
+            indexInd << allVariables.lData[varID];
         } else {
-            GetDependentVars() << allVariables.lData[varID];
+            indexDep << allVariables.lData[varID];
         }
     }
 }
@@ -660,7 +659,7 @@ _String*    Scfg::VerifyValues  (void)
         BufferToConsole(buf);
         */
         if (aValue < 0.0 || aValue > 1.0) {
-            return (_String*)(_String ("Probability value for rule ") & _String (GetRuleString (k)) & " is not within [0,1]: " & aValue).makeDynamic();
+            return new _String (_String ("Probability value for rule ") & _String (GetRuleString (k)) & " is not within [0,1]: " & aValue);
         }
     }
 
@@ -682,7 +681,7 @@ _String*    Scfg::VerifyValues  (void)
             }
 
             if (!CheckEqual (p_sum, 1.0)) { // check within reasonable system precision
-                return (_String*)(_String ("Probability values for non-terminal ") & (k+1) & " do not appear to add up to one: " & p_sum).makeDynamic();
+                return new _String (_String ("Probability values for non-terminal ") & (k+1) & " do not appear to add up to one: " & p_sum);
             }
         }
     }
@@ -836,7 +835,7 @@ _String*    Scfg::TokenizeString    (_String& inString, _SimpleList& outTokens)
     long        stringIndex     = 0;
 
     for (; stringIndex < inString.sLength; stringIndex++) {
-        char currentChar  = inString.getChar (stringIndex);
+        unsigned char currentChar  = inString.getChar (stringIndex);
         if (currentTreeNode == nil) { // root of the tree
             if   (!(currentTreeNode = parseTree[currentChar])) {
                 break;
@@ -915,7 +914,7 @@ _String *   Scfg::GetRuleString (long ruleIdx)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-BaseRef     Scfg::toStr  (void)
+BaseRef     Scfg::toStr  (unsigned long)
 {
     _String * result = new _String (128L, true); // allocate a buffer with the initial length of 128 characters
 
@@ -946,9 +945,6 @@ void        Scfg::DumpComputeStructures (void)
 
 _Parameter      Scfg::Compute (void)
 {
-#ifdef      __MACPROFILE__
-    ProfilerInit(collectDetailed,bestTimeBase,1000,500);
-#endif
 
     bool first = computeFlagsI.lLength;
 
@@ -1005,10 +1001,6 @@ _Parameter      Scfg::Compute (void)
 
     insideCalls = 0;    // reset counter
 
-#ifdef      __MACPROFILE__
-    ProfilerDump("\pSCFG Profile");
-    ProfilerTerm();
-#endif
 
 
 #ifdef __NEVER_DEFINED__
@@ -1142,36 +1134,20 @@ _Parameter      Scfg::Compute (void)
 
 void        Scfg::InitComputeStructures (void)
 {
-    long maxStringLength = 0;
-    for (long stringCount = 0; stringCount < corpusChar.lLength; stringCount++) {
-        _SimpleList             emptyList;
-        _GrowingVector  *aMatrix;
-        _AVLListX               *searchTree;
+    unsigned long maxStringLength = 0UL;
+    for (unsigned long stringCount = 0UL; stringCount < corpusChar.lLength; stringCount++) {
 
-        long                    maxDimension = ((_String*)corpusChar(stringCount))->sLength;
+        unsigned long                    maxDimension = ((_String*)corpusChar(stringCount))->sLength;
         maxStringLength         = MAX (maxStringLength, maxDimension);
 
-        // unused variable? -AFYP 2006-07-07
-        maxDimension = (maxDimension*(maxDimension+1)/2*byNT2.lLength/32+1)*32;
+        insideProbsT.AppendNewInstance(new _SimpleList);
+        outsideProbsT.AppendNewInstance(new _SimpleList);
 
-        insideProbsT  && & emptyList;
-        outsideProbsT && & emptyList;
-
-        checkPointer (searchTree = new _AVLListX ((_SimpleList*)insideProbsT(stringCount)));
-        insideProbs << searchTree;
-        DeleteObject (searchTree);
-
-        checkPointer (searchTree = new _AVLListX ((_SimpleList*)outsideProbsT(stringCount)));
-        outsideProbs << searchTree;
-        DeleteObject (searchTree);
-
-        checkPointer (aMatrix = new _GrowingVector);
-        storedInsideP << aMatrix;
-        DeleteObject (aMatrix);
-
-        checkPointer (aMatrix = new _GrowingVector);
-        storedOutsideP << aMatrix;
-        DeleteObject (aMatrix);
+        insideProbs.AppendNewInstance(new _AVLListX ((_SimpleList*)insideProbsT(stringCount)));
+        outsideProbs.AppendNewInstance(new _AVLListX ((_SimpleList*)outsideProbsT(stringCount)));
+      
+        storedInsideP.AppendNewInstance(new _GrowingVector);
+        storedInsideP.AppendNewInstance(new _GrowingVector);
 
     }
     maxStringLength = (maxStringLength * (maxStringLength+1) * byNT2.lLength / 64)+1;
@@ -1641,9 +1617,6 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
     char    buf [256];      // debugging buffer
 
 
-#ifdef      __MACPROFILE__
-    ProfilerInit(collectDetailed,bestTimeBase,1000,500);
-#endif
 
 
     // populated with zeros for longest string by InitComputeStructures();
@@ -1692,7 +1665,8 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
     /* calculate current corpus log-likelihood */
     _Parameter  newLk = Compute(),
-                oldLk = newLk;
+                oldLk;
+  
     long        rep = 0;
 
 
@@ -1793,7 +1767,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                                 continue;
                             }
 
-                            char *  thisString = ((_String**)corpusInt.lData)[stringID]->getStr();
+                            const char *  thisString = ((_String**)corpusInt.lData)[stringID]->getStr();
 
                             for (long from = 0; from < stringL; from++) {
                                 long    thisSymbol = thisString[from];
@@ -2031,10 +2005,6 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
     delete  thisLink;   // release allocated memory
 
-#ifdef      __MACPROFILE__
-    ProfilerDump("\pSCFGProfile");
-    ProfilerTerm();
-#endif
 
     // SLKP:  TBI this actually needs to be populated still
     /* return new _Matrix (1,1,false,true); */
@@ -2146,18 +2116,20 @@ _String *   Scfg::BestParseTree(void)
         for (long from = 0; from < stringL-1; from++) { // iterate over all substrings and non-terminals
             for (long to = from+1; to < stringL; to++) {
                 for (long ntIndex = 0; ntIndex < countNT; ntIndex++) {
-                    _Parameter      maxLk = 0;
-                    long            maxLeft,
-                                    maxRight,
-                                    maxBisect;
+                    _Parameter      maxLk = 0.;
+                  
+                    long            maxLeft    = -1L,
+                                    maxRight   = -1L,
+                                    maxBisect  = -1L;
+                  
                     _SimpleList *   itsRules = ((_SimpleList **) byNT3.lData)[ntIndex];
 
-                    for (long ruleIdx = 0; ruleIdx < itsRules->lLength; ruleIdx++) {    // iterate over all productions
+                    for (unsigned long ruleIdx = 0UL; ruleIdx < itsRules->lLength; ruleIdx++) {    // iterate over all productions
                         long            currentRuleIndex    = itsRules->lData[ruleIdx];
                         _SimpleList *   currentRule         = ((_SimpleList**)rules.lData)[currentRuleIndex];
                         _Parameter      ruleProb            = LookUpRuleProbability(currentRuleIndex);
                         long            leftNT              = currentRule->lData[1],
-                                        rightNT               = currentRule->lData[2];
+                                        rightNT             = currentRule->lData[2];
 
                         if (ruleProb > 0.) {
                             for (long bisect = from; bisect < to; bisect++) {       // iterate over all bisects of substring
@@ -2180,7 +2152,7 @@ _String *   Scfg::BestParseTree(void)
                             mxID         = -1,
                             insertFlag;
 
-                    if (maxLk > 0) {
+                    if (maxLk > 0.) {
                         mxID = theMatrix->Store (maxLk);    // store most likely production and bisect for triplet
 
                         // snprintf (buf, sizeof(buf), "stored triplet into matrix ID %d\n", mxID);

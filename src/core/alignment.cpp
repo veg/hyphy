@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -598,9 +598,9 @@ inline void MatchScore( char * r_str
                       , double & score
                       )
 {
-    const long r_char = char_map[ r_str[ r - 1 ] ];
+    const long r_char = char_map[ (unsigned char)r_str[ r - 1 ] ];
     if ( r_char >= 0 ) {
-        const long q_char = char_map[ q_str[ q - 1 ] ];
+        const long q_char = char_map[ (unsigned char) q_str[ q - 1 ] ];
         if ( q_char >= 0 )
             score += cost_matrix[ r_char * cost_stride + q_char ];
     }
@@ -705,9 +705,9 @@ double AlignStrings( char * const r_str
 
             if ( do_codon ) {
                 for ( i = 0; i < r_len; ++i )
-                    r_enc[ i ] = char_map[ r_str[ i ] ];
+                    r_enc[ i ] = char_map[ (unsigned char) r_str[ i ] ];
                 for ( i = 0; i < q_len; ++i )
-                    q_enc[ i ] = char_map[ q_str[ i ] ];
+                    q_enc[ i ] = char_map[ (unsigned char) q_str[ i ] ];
             }
 
             if ( do_affine ) {
@@ -827,7 +827,7 @@ double AlignStrings( char * const r_str
                 // not doing codon alignment
             } else {
                 for ( i = 1; i < score_rows; ++i ) {
-                    const long r_char = char_map[ r_str[ i - 1 ] ];
+                    const long r_char = char_map[ (unsigned char) r_str[ i - 1 ] ];
                     for ( j = 1; j < score_cols; ++j ) {
                         const long curr = ( i - 0 ) * score_cols + j,
                         prev = ( i - 1 ) * score_cols + j;
@@ -840,7 +840,7 @@ double AlignStrings( char * const r_str
 
                         // if there is a match bonus or penalty, add it in
                         if ( r_char >= 0 ) {
-                            const long q_char = char_map[ q_str[ j - 1 ] ];
+                            const long q_char = char_map[ (unsigned char) q_str[ j - 1 ] ];
                             if ( q_char >= 0 ) {
                                 match += cost_matrix[ r_char * cost_stride + q_char ];
                             }
@@ -1312,7 +1312,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                 from2 --;
                 from1 --;
                 for (long r=1; r<=s1Length; r++) { // iterate by rows
-                    long      c1 = cmap.lData[s1->sData[rev1?(to1-r):(from1+r)]];
+                    long      c1 = cmap.lData[(unsigned char) s1->sData[rev1?(to1-r):(from1+r)]];
 
                     if (doLocal2S) {
                         aux2        = 0.;
@@ -1364,7 +1364,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                         // if this is the second row, then we start a gap in the second sequence -|
 
                         if (c1>=0) {
-                            long       c2 = cmap.lData[s2->sData[rev2?(to2-c):(from2+c)]];
+                            long       c2 = cmap.lData[(unsigned char) s2->sData[rev2?(to2-c):(from2+c)]];
 
                             if (c2>=0) {
                                 gscore3 += ccost->theData[c1*mapL+c2];
@@ -1419,7 +1419,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                     }
 
                     //printf ("%d: %g\t", r, scoreMatrix.theData[0]);
-                    long      c1 = cmap.lData[s1->sData[rev1?(to1-r):(from1+r-1)]];
+                    long      c1 = cmap.lData[(unsigned char) s1->sData[rev1?(to1-r):(from1+r-1)]];
 
                     for (long c=1; c<=s2Length; c++) {
                         _Parameter score1 = scoreMatrix.theData[c], // gap in 2nd
@@ -1434,7 +1434,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                         }
 
                         if (c1>=0) {
-                            long       c2 = cmap.lData[s2->sData[rev2?(to2-c):(from2+c-1)]];
+                            long       c2 = cmap.lData[(unsigned char) s2->sData[rev2?(to2-c):(from2+c-1)]];
 
                             if (c2>=0) {
                                 score3 += ccost->theData[c1*mapL+c2];

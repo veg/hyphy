@@ -10,34 +10,32 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 	no_tp = alignOptions["SEQ_ALIGN_NO_TP"];
 
 	alignOptions = {};
-	
-	
-	
-    
+
  	protLetters = "ARNDCQEGHILKMFPSTWYV";
    _cdnaln_cdnScoreMatrix = pSM2cSM(protScoreMatrix, protLetters);
-	
-	
+
+
 	alignOptions ["SEQ_ALIGN_SCORE_MATRIX"] = 	_cdnaln_cdnScoreMatrix;
 	maxScore = Max (protScoreMatrix,0);
 	minScore = Min (protScoreMatrix,0);
-	
+
 	alignOptions ["SEQ_ALIGN_GAP_OPEN"]		= 	2*Max(maxScore,-minScore);
 	alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	2*Max(maxScore,-minScore);
 	alignOptions ["SEQ_ALIGN_GAP_EXTEND"]	= 	1;
 	alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	1;
-	alignOptions ["SEQ_ALIGN_FRAMESHIFT"]	= 	3*Max(maxScore,-minScore);
+	alignOptions ["SEQ_ALIGN_FRAMESHIFT"]	= 	Max(maxScore,-minScore);
 	alignOptions ["SEQ_ALIGN_CODON_ALIGN"]	= 	1;
 	alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]=  "ACGT";
 	alignOptions ["SEQ_ALIGN_NO_TP"]        =  no_tp;
-   
+
     _cdnaln_partialScoreMatrices = cSM2partialSMs(_cdnaln_cdnScoreMatrix,0);
-    
+
     alignOptions ["SEQ_ALIGN_PARTIAL_3x1_SCORES"] = _cdnaln_partialScoreMatrices["3x1"];
     alignOptions ["SEQ_ALIGN_PARTIAL_3x2_SCORES"] = _cdnaln_partialScoreMatrices["3x2"];
     alignOptions ["SEQ_ALIGN_PARTIAL_3x4_SCORES"] = _cdnaln_partialScoreMatrices["3x4"];
     alignOptions ["SEQ_ALIGN_PARTIAL_3x5_SCORES"] = _cdnaln_partialScoreMatrices["3x5"];
-        
+
+
 }
 
 function Uppercase( _str )
@@ -52,12 +50,12 @@ function _cdn_alignment_cleanup (reference, query, offset_nuc) {
     too_long  = 0;
     span      = 0; // how many nucleotides in the reference were covered by non-gaps
     _seqL     = Abs (reference);
-    
-    ref_cleaned = ""; ref_cleaned * 128; 
+
+    ref_cleaned = ""; ref_cleaned * 128;
     qry_cleaned = ""; qry_cleaned * 128;
-    
+
     _codon_in_reference = 0;
-    
+
 	for ( _rcidx = 0; _rcidx < _seqL; _rcidx += 1 ) {
 	    _del1 = reference [_rcidx] != (reference [_rcidx]&&1);
 	    if (_del1) {
@@ -75,17 +73,14 @@ function _cdn_alignment_cleanup (reference, query, offset_nuc) {
 	        } else {
                 ref_cleaned * (reference [_rcidx]&&1);
                 qry_cleaned * (query [_rcidx]&&1);
-                span += 1;	            
+                span += 1;
                 _codon_in_reference +=1;
 	        }
 	    }
 	}
-	/*for (;_rcidx < _seqL; _rcidx += 1 ) {
-        ref_cleaned * (reference [_rcidx]&&1);
-        qry_cleaned * (query [_rcidx]&&1);
-    }*/
+
 	ref_cleaned * 0; qry_cleaned * 0;
-	
+
 	return {"REF": ref_cleaned, "QRY": qry_cleaned, "TOO_SHORT" : too_short, "TOO_LONG": too_long, "SPAN": span};
 }
 
@@ -101,18 +96,20 @@ function cSM2partialSMs(_cdnScoreMatrix, penalties)
     m3x1  =  { 65,  12 };
 
     // minor penalties to make mismatch not entirely free
-    
+
     if (Rows(penalties)*Columns(penalties) == 4) {
         p3x1 = penalties [0];
         p3x2 = penalties [1];
         p3x4 = penalties [2];
         p3x5 = penalties [3];
-    } else {    
+    } else {
         p3x5 = 0;
         p3x4 = 0;
         p3x2 = 0;
         p3x1 = 0;
     }
+
+
     for ( thisCodon = 0; thisCodon < 64; thisCodon += 1 ) {
         for ( d1 = 0; d1 < 4; d1 += 1 ) {
             max100 = -1e100;
@@ -167,6 +164,8 @@ function cSM2partialSMs(_cdnScoreMatrix, penalties)
             m3x1[ thisCodon ][ 3 * d1 + 2 ] = max001 - p3x1;
         }
     }
+
+
     return { "3x1": m3x1, "3x2": m3x2, "3x4": m3x4, "3x5": m3x5 };
 }
 
@@ -176,6 +175,7 @@ function pSM2cSM(_scorematrix, _letters)
 
     _cdnScoreMatrix  = { 65,65 };
     _mapping      = mapStrings( _hyphyAAOrdering, _letters );
+
     for ( _k = 0; _k < 64; _k += 1 ) {
         _mappedK = _mapping[ _Genetic_Code[ _k ] ];
         if ( _mappedK >= 0) {

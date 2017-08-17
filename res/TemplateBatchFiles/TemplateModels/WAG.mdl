@@ -5,7 +5,7 @@ if (!SKIP_MODEL_PARAMETER_LIST)
 	if (modelType == 1)
 	{
 		#include "defineGamma.mdl";
-	}	
+	}
 	if (modelType == 2)
 	{
 		#include "defineHM.mdl";

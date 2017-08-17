@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -58,18 +58,16 @@ _AVLListXL::_AVLListXL (_SimpleList* d):_AVLList(d)
 
 //______________________________________________________________
 
-BaseRef _AVLListXL::GetXtra (long d)
-{
-    return xtraD(d);
+BaseRef _AVLListXL::GetXtra (long d) const {
+    return xtraD.GetItem(d);
 }
 
 
 //______________________________________________________________
 
-BaseRef _AVLListXL::GetDataByKey(BaseRef key)
-{
+BaseRef _AVLListXL::GetDataByKey(BaseRefConst key) const {
     long f = Find (key);
-    if (f < 0) {
+    if (f < 0L) {
         return nil;
     }
     return GetXtra(f);
@@ -78,15 +76,14 @@ BaseRef _AVLListXL::GetDataByKey(BaseRef key)
 
 //______________________________________________________________
 
-void    _AVLListXL::SetXtra (long i, BaseRef d, bool dup)
-{
+void    _AVLListXL::SetXtra (long i, BaseRef d, bool dup) {
     xtraD.Replace (i,d, dup);
 }
 
 
 //______________________________________________________________
 
-BaseRef _AVLListXL::toStr (void)
+BaseRef _AVLListXL::toStr (unsigned long)
 {
     _String * str = new _String (128L, true);
     checkPointer (str);
@@ -100,11 +97,11 @@ BaseRef _AVLListXL::toStr (void)
         cn = Traverser (hist,ls,root);
 
         while (cn>=0) {
-            _String * keyVal = (_String*)Retrieve (cn);
-            (*str) << keyVal;
-            (*str) << " : ";
-            (*str) << (_String*)GetXtra (cn);
+            (*str) << (_String*)Retrieve (cn)
+                   << " : ";
+            str->AppendNewInstance((_String*)GetXtra (cn)->toStr());
             (*str) << '\n';
+          
             cn = Traverser (hist,ls);
         }
     }
@@ -153,7 +150,7 @@ long  _AVLListXL::InsertData (BaseRef b, long xl, bool cp)
         balanceFactor.lData[n] = 0;
         ((BaseRef*)xtraD.lData)[n] = x;
         if (cp) {
-            x->nInstances++;
+            x->AddAReference();
         }
         ((BaseRef*)dataList->lData)[n] = b;
     } else {
@@ -164,7 +161,7 @@ long  _AVLListXL::InsertData (BaseRef b, long xl, bool cp)
         balanceFactor << 0;
         xtraD << x;
         if (!cp) {
-            x->nInstances--;
+            x->RemoveAReference();
         }
     }
     return n;

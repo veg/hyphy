@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -148,9 +148,11 @@ TEST_F(StringTest,DuplicateErasingTest)
                DuplicateErasing is called
     */
     _String test = _String ("hyphy"),
-            dupe = _String ("old_hyphy");
+            dupe = _String ("old_hyphy"),
+            empty;
 
-    char*   oldSData = dupe.sData;
+    empty.Initialize();
+
     dupe.DuplicateErasing(&test);
 
     test = empty;
@@ -163,14 +165,16 @@ TEST_F(StringTest,DuplicateErasingTest)
 
 TEST_F(StringTest,makeDynamicTest)
 {
-    //What is the difference between this and dupicate?
 
     /* 20110825: SLKP code coverage complete
           The idea of make dynamic is to convert a stack object into a heap object, see code below
      */
 
     _String stackString (globalTest1, 5, -1), // this helps test one of the constructors
-            *heapString = (_String*)stackString.makeDynamic();
+            *heapString = (_String*)stackString.makeDynamic(),
+            empty;
+
+    empty.Initialize();
 
     EXPECT_STREQ (stackString.getStr(), heapString->getStr());
     stackString = empty; // overwrite the stack object
@@ -186,7 +190,11 @@ TEST_F(StringTest,getCharTest)
 
     /* 20110825: SLKP code coverage complete */
 
-    _String test (globalTest1);
+    _String test (globalTest1),
+            empty;
+
+    empty.Initialize();
+
     EXPECT_EQ('e', test.getChar(5));
 
     //Default return is 0
@@ -200,7 +208,11 @@ TEST_F(StringTest,getCharTest)
 
 TEST_F(StringTest,setCharTest)
 {
-    _String test (globalTest1);
+    _String test (globalTest1),
+            empty;
+
+    empty.Initialize();
+
     test.setChar(5,'d');
     EXPECT_EQ('d', test.getChar(5));
 
@@ -702,9 +714,9 @@ TEST_F(StringTest,CompareTest)
     //composer precedes computer
     //H2O precedes HOTEL
 
-    //ERROR: This returns true
     _String result = _String ("household");
     _String* substr = new _String ("house");
+    EXPECT_EQ(1, result.Compare(substr));
 
     _String result2 = _String ("household");
     _String* substr2 = new _String ("household");
@@ -928,8 +940,8 @@ TEST_F(StringTest,TokenizeTest)
     _String test_string = _String("house,condo,hyphy");
     _String* sub_string = new _String(",");
 
-    _List* result_list = test_string.Tokenize(sub_string);
-    _String* result = (_String*)result_list->lData[0];
+    _List result_list = test_string.Tokenize(sub_string);
+    _String* result = (_String*)result_list.lData[0];
 
     EXPECT_STREQ("house", result->getStr());
 
@@ -1222,44 +1234,25 @@ TEST_F(StringTest,AppendAnAssignmentToBufferTest)
     _String initial = _String("dither");
     _String append = _String("test");
     _String append2 = _String("34");
-    initial.AppendAnAssignmentToBuffer(&append, &append2, false, false, false);
+    initial.AppendAnAssignmentToBuffer(&append, &append2, 0);
 
     _String expected = _String("dithertest=34;\n");
+
     EXPECT_EQ(expected.getStr()[expected.sLength - 1], 
               initial.getStr()[expected.sLength -1]);
 
     initial = _String("dither");
     append = _String("12");
     _String* pAppend = new _String("34");
-    initial.AppendAnAssignmentToBuffer(&append, pAppend, true, true, true);
+
+    initial.AppendAnAssignmentToBuffer(&append, pAppend, kAppendAnAssignmentToBufferQuote | kAppendAnAssignmentToBufferAssignment);
 
     _String expected2 = _String("dither12:=\"34\";\n");
+
     EXPECT_EQ(expected2.getStr()[expected2.sLength - 1], 
               initial.getStr()[expected2.sLength - 1]);
 
 }
-
-/*
- *TEST_F(StringTest,AppendVariableValueAVLTest) {
- *
- *    _String initial = _String("life");
- *    _String* append = new _String("answer");
- *
- *    unsigned long num = 5;
- *    _SimpleList matched_pairs(num);
- *
- *    long int1 = 4;
- *    long int2 = 2;
- *
- *    matched_pairs.InsertElement((BaseRef)int1,-1,false,false);
- *    matched_pairs.InsertElement((BaseRef)int1,-1,false,false);
- *
- *    initial.AppendVariableValueAVL(append, matched_pairs);
- *
- *    EXPECT_STREQ("life[answer]=4,2", initial.getStr());
- *}
- */
-
 
 //Operator Tests
 TEST_F(StringTest,BracketTest)

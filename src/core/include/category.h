@@ -86,7 +86,7 @@ public:
     virtual
     void        Duplicate               (BaseRef);
     virtual
-    BaseRef     toStr                   (void);
+    BaseRef     toStr                   (unsigned long = 0UL);
 
     virtual
     bool        IsGlobal                (void);
@@ -226,7 +226,7 @@ private:
 
 //__________________________________________________________________________________
 
-extern  _Parameter  maxCategoryIntervals;
+extern  unsigned long  maxCategoryIntervals;
 extern  _Variable*  _x_, *_n_;
 
 #endif

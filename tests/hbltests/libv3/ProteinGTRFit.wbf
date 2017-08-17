@@ -1,0 +1,47 @@
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+
+OPTIMIZATION_TIME_HARD_LIMIT=1;
+
+
+function ensureFullPath (path) {
+    if ((path $ "/")[0]!= 0){
+        return HYPHY_LIB_DIRECTORY + ".." + DIRECTORY_SEPARATOR + path;
+    }
+    return path;
+}
+
+function writeNewPath (new_path) {
+    fprintf(list_path_final, new_path + "\n");
+}
+
+
+
+
+list_path_raw = PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines_raw.txt"; // file list with relative paths
+list_path_final = PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines.txt"; // file list with relative paths
+
+
+fscanf (list_path_raw, "Lines", file_list1);               
+file_list2 = utility.Map(file_list1, "_value_", "ensureFullPath(_value_)"); // ensure full path for each file
+
+fprintf(list_path_final, CLEAR_FILE, "");
+utility.ForEach(file_list2, "_value_", "writeNewPath(_value_)");
+
+// Create an empty cache file to ensure that args issued below will always work
+list_file = PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines.txt";
+cache_file = list_file + ".cache";
+io.WriteCacheToFile(cache_file, ""); // Empty file exists no matter what
+
+
+
+LoadFunctionLibrary("ProteinAnalyses/ProteinGTRFit.bf", {
+    "0":  PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines.txt",
+    "1": "NO", // Ignore cache file
+    "2": "LogL", // use logL convergence
+    "3": "0.1", // stopping
+    "4": "WAG", // use WAG for baseline
+    "5": "Yes", // use a gamma for rate variation
+});
+
+
