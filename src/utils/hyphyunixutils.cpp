@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (spond@temple.edu)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include "likefunc.h"
+#include "function_templates.h"
 
 
 
@@ -62,6 +63,8 @@ void            mpiOptimizerLoop (int, int);
 void            mpiBgmLoop (int, int);
 _SimpleList     mpiNodesThatCantSwitch;
 #endif
+
+extern _List batchLanguageFunctionNames;
 
 
 //_________________________________________________________________________
@@ -167,10 +170,10 @@ _String*    StringFromConsole   (bool)
     int       readAChar;
     while    ((readAChar = getc(stdin)) != '\n') {
         if (readAChar == EOF) {
-            CheckReceptacleAndStore (&hasEndBeenReached,empty,false,new _Constant (1.), false);
+            CheckReceptacleAndStore (&hasEndBeenReached,emptyString,false,new _Constant (1.), false);
             break;
         }
-        *returnme << readAChar;
+        *returnme << (char)readAChar;
     }
 #else
     WarnError ("Unhandled standard input interaction in StringFromConsole for headless HyPhy");
@@ -182,16 +185,14 @@ _String*    StringFromConsole   (bool)
 
 //__________________________________________________________________________________
 
-void    StringToConsole (_String & s,  _SimpleList *)
-{
-    BufferToConsole ((const char*)s.sData);
+void    StringToConsole (_String const s,  void * extra) {
+    BufferToConsole ((const char*)s.sData, extra);
 }
 
 
 //__________________________________________________________________________________
 
-void    BufferToConsole (const char* s, _SimpleList *)
-{
+void    BufferToConsole (const char* s, void * extra) {
 #ifdef __HYPHYMPI__
     if (_hy_mpi_node_rank == 0)
 #endif
@@ -201,15 +202,18 @@ void    BufferToConsole (const char* s, _SimpleList *)
             globalInterfaceInstance->PushOutString(&st);
         }
 #else
-        printf ("%s",s);
+  if (extra) {
+    fprintf ((FILE*)extra, "%s",s);
+  } else {
+    printf ("%s",s);
+  }
 #endif
 }
 
 //__________________________________________________________________________________
 
-void    NLToConsole (void)
-{
-    BufferToConsole ("\n");
+void    NLToConsole (void * extra) {
+    BufferToConsole ("\n", extra);
 }
 
 #endif
@@ -241,7 +245,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
             mpiOptimizerLoop        (rank,size);
             ReportWarning           ("[MPI] Returned from mpiOptimizer loop");
             hyphyMPIOptimizerMode   = _hyphyLFMPIModeNone;
-            pathNames               && & baseDir;
+            PushFilePath(baseDir, false, false);
         } else if ( theMessage->Equal (&mpiLoopSwitchToBGM) ) {
             ReportWarning       ("[MPI] Received signal to switch to mpiBgmLoop");
             MPISendString       (mpiLoopSwitchToBGM, senderID); // feedback to source to confirm receipt of message
@@ -250,9 +254,10 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
         } else {
             if (theMessage->beginswith ("#NEXUS")) {
                 _String             msgCopy (*theMessage);
-                ReportWarning       ("[MPI] Received a function to optimize");
+                ReportWarning       ("[MPI] Received a likelihood function");
+                //ReportWarning       (msgCopy);
                 ReadDataSetFile     (nil,true,theMessage);
-                ReportWarning       ("[MPI] Done with the optimization");
+                ReportWarning       ("[MPI] Read/optimized the likelihood function");
                 _Variable*          lfName = FetchVar(LocateVarByName(MPI_NEXUS_FILE_RETURN));
 
                 if (lfName) {
@@ -265,25 +270,28 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                         break;
                     }
 
-                    long f = likeFuncNamesList.Find (lfID->theString);
+                    long type = HY_BL_LIKELIHOOD_FUNCTION, index;
+                    
+                    _LikelihoodFunction *lf = (_LikelihoodFunction *)_HYRetrieveBLObjectByName    (*lfID->theString, type, &index, false, false);
 
-                    if (f<0) {
-                        FlagError ("[MPI] Malformed MPI likelihood function optimization request - LF name to return did not refer to a well-defined likelihood function.\n\n\n");
+                    if (lf == nil) {
+                        FlagError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & *lfID->theString &"' did not refer to a well-defined likelihood function.\n\n\n");
                         break;
                     }
                     _Parameter      pv;
-                    checkParameter (shortMPIReturn, pv ,0);
+                    checkParameter (shortMPIReturn, pv ,0.);
                     resStr       = (_String*)checkPointer(new _String (1024L,true));
-                    ((_LikelihoodFunction*)likeFuncList (f))->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
+                    lf->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                     resStr->Finalize();
                 }
             } else {
+                // ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 _ExecutionList exL (*theMessage);
+                //ReportWarning (_String ((_String*)batchLanguageFunctionNames.toStr()));
                 _PMathObj res = exL.Execute();
                 resStr = res?(_String*)res->toStr():new _String ("0");
             }
 
-            checkPointer (resStr);
             MPISendString(*resStr,senderID);
 
             _Parameter      keepState = 0.0;
@@ -291,7 +299,11 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
             if (keepState < 0.5) {
                 PurgeAll (true);
-                pathNames && & baseDir;
+                InitializeGlobals ();
+                PushFilePath(baseDir, false, false);
+                ReportWarning("Reset node state");
+            } else {
+                ReportWarning("Preserved node state");
             }
         }
         DeleteObject (theMessage);
@@ -327,20 +339,24 @@ void mpiOptimizerLoop (int rank, int size)
             // send back the list of independent variables
 
             _LikelihoodFunction * theLF = (_LikelihoodFunction*)likeFuncList (0);
-            if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL && theLF->CountObjects (4)) {
+            if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL && theLF->CountObjects (kLFCountCategoryVariables)) {
                 FlagError (_String("[MPI] Likelihood functions spawned off to slave MPI nodes can't have category variables.n\n\n"));
                 break;
             }
 
-            _SimpleList* ivl = & theLF->GetIndependentVars();
+            _SimpleList const * ivl = & theLF->GetIndependentVars();
+  
+          
             _String      variableSpec (128L, true);
 
-            (variableSpec) << LocateVar(ivl->lData[0])->GetName();
 
+            (variableSpec) << LocateVar(ivl->lData[0])->GetName();
+            
             for (long kk = 1; kk < ivl->lLength; kk++) {
-                (variableSpec) << ';';
-                (variableSpec) << LocateVar(ivl->lData[kk])->GetName();
+              (variableSpec) << ';';
+              (variableSpec) << LocateVar(ivl->lData[kk])->GetName();
             }
+          
             variableSpec.Finalize();
             ReportWarning         (_String("[MPI] Sending back the following variable list\n") & variableSpec);
             MPISendString         (variableSpec,senderID);
@@ -349,6 +365,8 @@ void mpiOptimizerLoop (int rank, int size)
                                                hyphyMPIOptimizerMode  == _hyphyLFMPIModeSiteTemplate));
             theLF->DoneComputing();
             PurgeAll (true);
+            InitializeGlobals ();
+            ReportWarning("Reset node state at the end of MPI optimizaer loop");
         }
         DeleteObject (theMessage);
         theMessage = MPIRecvString (-1,senderID);

@@ -66,10 +66,12 @@ typedef char* Ptr;
 #define _hprestrict_
 #endif
 
-#include "stdio.h"
+#include "hy_types.h"
 
-class BaseObj
-{
+#include <stdio.h>
+
+
+class BaseObj {
 
     //base object class
 public:
@@ -78,11 +80,9 @@ public:
 
     virtual ~BaseObj(void) {}
 
-    virtual BaseObj* toStr (void);
-
-    virtual BaseObj* toErrStr (void);
-
-    virtual void     toFileStr (FILE*);
+    virtual BaseObj* toStr     (unsigned long = 0UL);
+    virtual BaseObj* toErrStr  (unsigned long = 0UL);
+    virtual void     toFileStr (FILE*, unsigned long = 0UL);
 
     /*virtual operator const char*(void);*/
 
@@ -92,21 +92,23 @@ public:
         return 0;
     }
 
-    virtual void     Initialize (void) {
-        nInstances=1;
+    virtual void     Initialize (bool = false) {
+        nInstances=1L;
     }
 
     virtual void     Duplicate (BaseObj* ref) {
         nInstances=++ref->nInstances;
     }
 
-    virtual void     AddAReference (void)     {
+    inline virtual void     AddAReference (void)     {
         nInstances ++;
     }
 
-    virtual void     RemoveAReference (void)     {
+    virtual inline void     RemoveAReference (void)     {
         nInstances --;
     }
+  
+    void ConsoleLog (void);
 
     long             nInstances;
 
@@ -114,8 +116,10 @@ public:
 };
 
 typedef BaseObj*  BaseRef;
+typedef BaseObj const * BaseRefConst;
 
-extern  void      DeleteObject (BaseRef); // delete a dynamic object
+
+bool      DeleteObject (BaseRef); // delete / decrease counter for a dynamic object
 
 
 #ifdef  __HYPHYDMALLOC__
@@ -127,13 +131,15 @@ char*   MemReallocate (Ptr, long);
 #endif
 
 bool    GlobalStartup();
+void    InitializeGlobals ();
 bool    GlobalShutdown();
 
 
 extern  FILE*   globalErrorFile;
 extern  FILE*   globalMessageFile;
+
 extern  bool    terminateExecution,
-        skipWarningMessages;
+                skipWarningMessages;
 
 extern long     systemCPUCount;
 
@@ -143,7 +149,6 @@ unsigned long genrand_int32             (void);
 double        genrand_real2             (void);
 FILE*         doFileOpen                (const char *, const char *, bool = false);
 // 20110324: SLKP added the bool flag to allow automatic "Can't open file" error reports
-double        TimerDifferenceFunction   (bool);
 
 #define       RAND_MAX_32               4294967295.0
 #define       USE_AVL_NAMES

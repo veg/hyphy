@@ -1,0 +1,8 @@
+LoadFunctionLibrary("SelectionAnalyses/FEL.bf", {
+    "0": "Universal",
+    "1": PATH_TO_CURRENT_BF + "data/CD2.nex",
+    //"2": "y",
+    "3": "All",
+    "4": "Yes", // two rate parameterization
+    "5": "0.1"
+});

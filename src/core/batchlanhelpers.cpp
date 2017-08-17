@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -39,6 +39,8 @@
 
 #include      "batchlan.h"
 #include      "defines.h"
+#include      "global_object_lists.h"
+#include      "function_templates.h"
 
 #ifdef __HYPHYQT__
 #include "hyphy_qt_helpers.h"
@@ -51,6 +53,9 @@
 _Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
 
+extern  _List batchLanguageFunctionNames;
+extern  _String markdownOutput;
+
 //____________________________________________________________________________________
 
 _String    _HYGenerateANameSpace () {
@@ -58,8 +63,8 @@ _String    _HYGenerateANameSpace () {
             capLetters ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
     do {
         nmsp = _String::Random (8, &capLetters);
-        
-    } while (_HY_HBL_Namespaces.Find (nmsp) != HY_TRIE_NOTFOUND);
+      
+    } while (_HY_HBL_Namespaces.FindKey (nmsp) != HY_TRIE_NOTFOUND);
     
     _HY_HBL_Namespaces.Insert (nmsp, 0);
     return nmsp;
@@ -67,8 +72,7 @@ _String    _HYGenerateANameSpace () {
 
 //____________________________________________________________________________________
 
-_String    _HYStandardDirectory (const unsigned long which_one) 
-{
+_String    _HYStandardDirectory (const unsigned long which_one) {
     _String dirSpacer (GetPlatformDirectoryChar());
 
     switch (which_one) {
@@ -77,7 +81,7 @@ _String    _HYStandardDirectory (const unsigned long which_one)
             return libDirectory & "TemplateBatchFiles" & dirSpacer & "TemplateModels" & dirSpacer;
     }
 
-    return empty;
+    return emptyString;
 }
 
 //____________________________________________________________________________________
@@ -211,21 +215,31 @@ bool    ExpressionCalculator (void)
 //____________________________________________________________________________________
 
 
-bool    PushFilePath (_String& pName, bool trim)
-{
-    char c = GetPlatformDirectoryChar();
-
-    long    f = pName.FindBackwards(_String(c),0,-1);
+bool    PushFilePath (_String& pName, bool trim, bool process) {
+  
+    //fprintf (stderr, "\nPushing %s\n", pName.sData);
+  
+    long f;
+  
+    if (process) {
+      _String dir_sep (GetPlatformDirectoryChar());
+      pName.ProcessFileName();
+      f = pName.FindBackwards(dir_sep,0,-1);
+    } else {
+      f = pName.Length();
+    }
+  
+  
+  
     if (f>=0) {
-        _String newP = pName.Cut(0,f);
-        pathNames && & newP;
+         pathNames < new _String (pName, 0, f);
         if (trim)
             pName.Trim (f+1,-1);
         return true;
     } else if (pathNames.lLength) {
         pathNames && pathNames(pathNames.lLength-1);
     } else {
-        pathNames && & empty;
+        pathNames && & emptyString;
     }
 
     return false;
@@ -234,10 +248,33 @@ bool    PushFilePath (_String& pName, bool trim)
 //____________________________________________________________________________________
 
 
-void   PopFilePath (void)
-{
+const _String   PopFilePath (void) {
+    if (pathNames.empty()) {
+      return emptyString;
+    }
+    _String top = *(_String*)pathNames.GetElement (-1L);
     pathNames.Delete (pathNames.lLength-1);
+    //fprintf (stderr, "\nPopping %s\n", top.sData);
+    return top;
 }
+
+//____________________________________________________________________________________
+
+
+const _String   GetPathStack (const _String spacer)  {
+  return _String ((_String*) pathNames.Join (&spacer));
+}
+
+//____________________________________________________________________________________
+
+
+const _String *  PeekFilePath (void) {
+  if (pathNames.empty()) {
+    return nil;
+  }
+  return (_String*)pathNames.GetElement (-1L);
+}
+
 
 //____________________________________________________________________________________
 
@@ -258,21 +295,27 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
 
 _String ReturnDialogInput(bool dispPath)
 {
-    if (!dispPath) {
-        NLToConsole ();
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
-    } else {
-        NLToConsole ();
-        if (pathNames.lLength) {
-            StringToConsole(*(_String*)pathNames(pathNames.lLength-1));
+    long do_markdown;
+    checkParameter (markdownOutput, do_markdown, 0L);
+  
+    NLToConsole ();
+  
+    if (do_markdown) {
+      BufferToConsole("\n>");
+    }
+
+    StringToConsole (dialogPrompt);
+  
+    if (dispPath) {
+      BufferToConsole (" (`");
+      if (PeekFilePath()) {
+            StringToConsole(*PeekFilePath());
         } else {
             StringToConsole (baseDirectory);
         }
-        
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
+      BufferToConsole ("`)");
     }
+    BufferToConsole (" ");
     return StringFromConsole();
 }
 
@@ -337,7 +380,7 @@ _String ProcessStringArgument (_String* data) {
             }
         }
     }
-    return empty;
+    return emptyString;
 }
 
 //____________________________________________________________________________________
@@ -383,60 +426,10 @@ _String WriteFileDialogInput(void) {
     if (resolvedFilePath.sLength == 0) {
         terminateExecution = true;
     }
-    defFileNameValue = empty;
+    defFileNameValue = emptyString;
     return resolvedFilePath;
 
 }
 
-//____________________________________________________________________________________
 
-_String* _HBLObjectNameByType (const long type, const long index, bool correct_for_empties) {
-
-    if (index < 0) {
-        return nil;
-    }
-    _List * theList = nil;
-    switch (type) {
-        case HY_BL_DATASET:
-            theList = &dataSetNamesList;
-            break;
-        case HY_BL_DATASET_FILTER:
-            theList = &dataSetFilterNamesList;
-            break;
-        case HY_BL_LIKELIHOOD_FUNCTION:
-            theList = &likeFuncNamesList;
-            break;
-        case HY_BL_HBL_FUNCTION:
-            theList = &batchLanguageFunctionNames;
-            break;
-        case HY_BL_MODEL:
-            theList = &modelNames;
-            break;
-        case HY_BL_SCFG:
-            theList = &scfgNamesList;
-            break;
-        case HY_BL_BGM:
-            theList = &bgmNamesList;
-            break;
-            
-    }
-    if (theList) {
-        // account for deleted objects
-        if (!correct_for_empties) 
-            return (_String*)(*theList)(index);
-            
-        long counter = 0;
-        for (unsigned long name_index = 0; name_index < theList->lLength; name_index++) {
-            _String *thisName = (_String*)(*theList)(name_index);
-            if (thisName && thisName->sLength) {
-                if (name_index - counter == index) {
-                    return thisName;
-                }
-            } else {
-                counter ++;
-            }
-        }
-    }
-    return nil;
-}
 

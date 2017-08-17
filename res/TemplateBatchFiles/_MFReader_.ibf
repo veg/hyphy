@@ -4,12 +4,12 @@ function readNEXUS_partitionInfo (dummy)
 {
 	ExecuteAFile 	(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TreeTools.ibf");
 	ExecuteAFile 	(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "ReadDelimitedFiles.bf");
-	
+
 	mySplits 		 = {};
 	myTrees  		 = {};
 	treeStrings		 = {};
 	splitCoordinates = {};
-	
+
 	for (_k2 = 0; _k2 < _pCount; _k2 = _k2 + 1)
 	{
 		if (Columns(DATA_FILE_PARTITION_MATRIX) == 0)
@@ -26,7 +26,7 @@ function readNEXUS_partitionInfo (dummy)
 			}
 			else
 			{
-				_r1 = (0+_pos[0])$3*3;					
+				_r1 = (0+_pos[0])$3*3;
 			}
 			_r2 = (0+_pos[1])%3;
 			if (_r2 >=1)
@@ -35,7 +35,7 @@ function readNEXUS_partitionInfo (dummy)
 			}
 			else
 			{
-				_r2 = (0+_pos[1])$3*3-1;					
+				_r2 = (0+_pos[1])$3*3-1;
 			}
 			mySplits[_k2]		 					 = Format(_r1,10,0)+"-"+Format(_r2,10,0);
 			splitCoordinates[Abs(splitCoordinates)]	 = {{_r1__,_r2__}};
@@ -57,12 +57,12 @@ function constructLF (lf_name, filter_pref, tree_pref, part_count)
 	lfDefCommand = "";
 	lfDefCommand * 128;
 	lfDefCommand * ("LikelihoodFunction  " + lf_name + " = (" + filter_pref + "_1," + tree_pref + "_1");
-	
+
 	for (_partID = 2; _partID <= part_count; _partID = _partID + 1)
 	{
 		lfDefCommand * ("," + filter_pref + "_" + _partID + "," + tree_pref + "_" +  _partID);
 	}
-	
+
 	lfDefCommand * ");";
 	lfDefCommand * 0;
 	return lfDefCommand;
@@ -74,12 +74,12 @@ function populateTrees (tree_pref, part_count)
 {
 	lfDefCommand = "";
 	lfDefCommand * 128;
-	
+
 	for (_partID = 1; _partID <= part_count; _partID = _partID + 1)
 	{
 		lfDefCommand * ("Tree " + tree_pref + "_" + _partID + " = " + treeStrings[_partID] + ";\n");
 	}
-	
+
 	lfDefCommand * 0;
 	ExecuteCommands (lfDefCommand);
 	return 0;
@@ -91,20 +91,20 @@ function copyTreeBL (tree_pref, tree_pref_2, scaler_pref, part_count)
 {
 	lfDefCommand = "";
 	lfDefCommand * 128;
-	
+
 	for (_partID = 1; _partID <= part_count; _partID = _partID + 1)
 	{
 		lfDefCommand * ("Tree " + tree_pref + "_" + _partID + " = " + treeStrings[_partID] + ";\nglobal " + scaler_pref + "_" + _partID + "=1;");
-		
-		lfDefCommand * ("ReplicateConstraint(\"this1.?.?:=" + 
-											scaler_pref + 
-											"_" + 
-											_partID + 
+
+		lfDefCommand * ("ReplicateConstraint(\"this1.?.?:=" +
+											scaler_pref +
+											"_" +
+											_partID +
 											"*this2.?.?__\","+
 											tree_pref + "_" + _partID + "," +
 											tree_pref_2 + "_" + _partID + ");");
 	}
-	
+
 	lfDefCommand * 0;
 	ExecuteCommands (lfDefCommand);
 	return 0;
@@ -122,50 +122,53 @@ if (_runAsFunctionLibrary != 1)
 		fscanf  (stdin, "Number", fileCount);
 		fileCount = fileCount $ 1;
 	}
-	
+
 	totalCodonCount  = 0;
 	totalCharCount	 = 0;
 	totalUniqueSites = 0;
 	treeStrings		 = {};
 	splitCoordinates = {};
-	
-	if (Abs(GeneticCodeExclusions) == 0) 
+
+	if (Abs(GeneticCodeExclusions) == 0)
 	{
 		GeneticCodeExclusions = "";
 	}
-	
-	
+
+
 	for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 	{
 		fprintf (stdout, "\nReading input file ", fileID, "/", fileCount, "\n");
 		SetDialogPrompt ("Please specify codon data #" + fileID + ":");
-	
+
 		ExecuteCommands (
 		"DataSet				ds_" +fileID + " = ReadDataFile (PROMPT_FOR_FILE);");
-		
+
+        if (fileID == 1) {
+                _base_file_path = LAST_FILE_PATH;
+        }
+
 		if (fileCount == 1)
 		{
 			_pCount = Rows(NEXUS_FILE_TREE_MATRIX);
 			if ((_pCount == Columns(DATA_FILE_PARTITION_MATRIX) && Columns(DATA_FILE_PARTITION_MATRIX)) || _pCount == 1)
 			{
-				readNEXUS_partitionInfo (0);
 				fileCount = _pCount;
-	
 				DataSet 	ds_0 = ReadDataFile (LAST_FILE_PATH);
+				readNEXUS_partitionInfo (0);
 				for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 				{
 					DataSetFilter filteredData = CreateFilter (ds_0,3,mySplits[fileID-1],,GeneticCodeExclusions);
 					Export (baseFPath,filteredData);
-					
+
 					if (_doAAcids == 0)
 					{
-						codonComponent = "DataSetFilter filteredData_" + fileID + " = CreateFilter (ds_"+fileID +",3,\"\",\"\",GeneticCodeExclusions);totalCharCount=totalCharCount+filteredData_"+fileID+".sites*filteredData_"+fileID+".species;totalCodonCount=totalCodonCount+filteredData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+filteredData_"+fileID+".unique_sites;";
+						codonComponent = "DataSetFilter filteredData_" + fileID + " = CreateFilter (ds_"+fileID +",3,\"\",\"\",GeneticCodeExclusions);totalCharCount=totalCharCount+filteredData_"+fileID+".sites*filteredData_"+fileID+".species;totalCodonCount=totalCodonCount+filteredData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+Columns(filteredData_"+fileID+".site_freqs);";
 					}
 					else
 					{
-						codonComponent = "totalCharCount=totalCharCount+nucData_"+fileID+".sites*nucData_"+fileID+".species;totalCodonCount=totalCodonCount+nucData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+nucData_"+fileID+".unique_sites;";
+						codonComponent = "totalCharCount=totalCharCount+nucData_"+fileID+".sites*nucData_"+fileID+".species;totalCodonCount=totalCodonCount+nucData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+Columns(nucData_"+fileID+".site_freqs);";
 					}
-					ExecuteCommands ( 
+					ExecuteCommands (
 									"DataSet				ds_" +fileID + " = ReadFromString (baseFPath);"+
 									"fprintf (stdout,\"\\n\",ds_" + fileID + ");"+
 									"DataSetFilter nucData_" + fileID + " = CreateFilter (ds_"+fileID +",1);"+
@@ -177,8 +180,8 @@ if (_runAsFunctionLibrary != 1)
 				break;
 			}
 		}
-		
-		
+
+
 		if (_doAAcids == 0)
 		{
 			codonComponent = "DataSetFilter filteredData_" + fileID + " = CreateFilter (ds_"+fileID +",3,\"\",\"\",GeneticCodeExclusions);totalCharCount=totalCharCount+filteredData_"+fileID+".sites*filteredData_"+fileID+".species;totalCodonCount=totalCodonCount+filteredData_"+fileID+".sites;totalUniqueSites=totalUniqueSites+filteredData_"+fileID+".unique_sites;";
@@ -192,22 +195,22 @@ if (_runAsFunctionLibrary != 1)
 		ExecuteCommands ("treeString_" + fileID + " = treeString;");
 		treeStrings[fileID] = treeString;
 	}
-	
+
 	if (_doAAcids)
 	{
 		overallFrequencies 		  = {20,1};
-	}	
+	}
 	else
 	{
 		positionFrequencies       = {4,3};
 		overallFrequencies 		  = {4,1};
 	}
-	
+
 	for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 	{
 		if (_doAAcids)
 		{
-			ExecuteCommands 	  		("HarvestFrequencies (ts, nucData_"+fileID+",1,1,1);cfs = nucData_"+fileID+".sites;");		
+			ExecuteCommands 	  		("HarvestFrequencies (ts, nucData_"+fileID+",1,1,1);cfs = nucData_"+fileID+".sites;");
 		}
 		else
 		{

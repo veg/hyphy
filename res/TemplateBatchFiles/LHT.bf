@@ -22,7 +22,8 @@ SelectTemplateModel(filteredData);
 
 /*check if there are any partitions.*/
 
-partitionsFound = partitionsFound;
+
+partitionsFound = Rows (DATA_FILE_PARTITION_MATRIX);
 
 fprintf (stdout,"\n\n",partitionsFound," character sets found\n");
 if (partitionsFound==0)
@@ -56,7 +57,7 @@ bestTree	=	{partitionsFound,1};
 bestLk2		=	{partitionsFound,1};
 globalLk	=	{ntree,1};
 
-/*GET LIKELIHOOD FOR TREES FOR ALL PARTITIONS AND CHOOSE THE BEST TREE*/    
+/*GET LIKELIHOOD FOR TREES FOR ALL PARTITIONS AND CHOOSE THE BEST TREE*/
 for (part=0; part<partitionsFound; part=part+1)
 {
   DataSetFilter dsf=CreateFilter (ds,1,DATA_FILE_PARTITION_MATRIX[1][part]);
@@ -66,14 +67,14 @@ for (part=0; part<partitionsFound; part=part+1)
       MBF = PopulateModelMatrix ("filterModelMatrix", baseFreqs);
       Model filterModel = (filterModelMatrix, baseFreqs, MBF);
   }
-  
+
   fprintf(stdout,"Analysis for partition ",DATA_FILE_PARTITION_MATRIX[0][part]," given trees:\n");
   for (i=0; i<ntree; i=i+1)
   {
 		Tree uniqueTree=NEXUS_FILE_TREE_MATRIX[i][1];
 		LikelihoodFunction lf = (dsf,uniqueTree);
 		Optimize (mles,lf);
-		if (part==0) 
+		if (part==0)
 			{fprintf(stdout,lf);}
 		listOfLk[part][i]=mles[1][0];
 		if (i==0)
@@ -100,7 +101,7 @@ lk1=0;  /*H0: constrained same tree for different partition*/
 for (i=0; i<ntree; i=i+1)
 {
 	globalLk[i]=0;
-	for (part=0; part<partitionsFound; part=part+1) 
+	for (part=0; part<partitionsFound; part=part+1)
 	{
 		globalLk[i]=globalLk[i]+listOfLk[part][i];
 	}
@@ -120,7 +121,7 @@ for (i=0; i<ntree; i=i+1)
 }
 
 fprintf (stdout,"\n| Tree n.  |");
-for (i=0;i<partitionsFound;i=i+1) 
+for (i=0;i<partitionsFound;i=i+1)
 {
 	fprintf(stdout," ",DATA_FILE_PARTITION_MATRIX[0][i],"\t|");
 }
@@ -143,7 +144,7 @@ fprintf(stdout,"L1= ",Format(lk2,10,10),"\n");
 lnlikDelta= 2*(lk2-lk1);
 fprintf(stdout,"LRT= ",Format(lnlikDelta,10,10),"\n\n");
 
-/*PARAMETRIC BOOTSTRAP*/    
+/*PARAMETRIC BOOTSTRAP*/
 count=0;
 
 for (replicate=0;replicate<nreplicates;replicate=replicate+1)
@@ -165,7 +166,7 @@ for (replicate=0;replicate<nreplicates;replicate=replicate+1)
 
 		/*simulate constrained different partition*/
 		DataSet simData = SimulateDataSet(lf);
-		DataSetFilter simDataf=CreateFilter (simData,1);     
+		DataSetFilter simDataf=CreateFilter (simData,1);
 		if (FREQUENCY_SENSITIVE)
 		{
 			HarvestFrequencies (baseFreqs, simDataf, 1,1,1);
@@ -173,17 +174,18 @@ for (replicate=0;replicate<nreplicates;replicate=replicate+1)
 			Model filterModel = (filterModelMatrix, baseFreqs, MBF);
 		}
 
-		/*H0: constrained same tree for different partition*/ 
+		/*H0: constrained same tree for different partition*/
 		Tree globalTree=NEXUS_FILE_TREE_MATRIX[theBestTree][1];
 		LikelihoodFunction lfsim = (simDataf,globalTree);
 		Optimize (mles,lfsim);
-		lk1=lk1+mles[1][0];  
+		lk1=lk1+mles[1][0];
 
 		/*H1: unconstrained difffeent tree for different partition*/
 		for (i=0; i<ntree; i=i+1)
 		{
 			Tree uniqueTree=NEXUS_FILE_TREE_MATRIX[i][1];
-			LikelihoodFunction lfsim2 = (simDataf,uniqueTree);
+		    DataSetFilter simDataf2=CreateFilter (simData,1);
+			LikelihoodFunction lfsim2 = (simDataf2,uniqueTree);
 			Optimize (mles,lfsim2);
 			if (i==0) {bestLk=mles[1][0];} else {bestLk=Max(bestLk,mles[1][0]);}
 		}
@@ -198,7 +200,7 @@ for (replicate=0;replicate<nreplicates;replicate=replicate+1)
 	{
 		fprintf(stdout,"replicate ",replicate,"- 0.00000 *",simLRT,"\n");
 	}
-	if (lnlikDelta>simLRT) 
+	if (lnlikDelta>simLRT)
 	{
 		count = count+1;
 	}
