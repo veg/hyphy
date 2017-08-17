@@ -128,7 +128,7 @@ namespace terms{
         partitions     = "partitions";
         tree           = "tree";
         dataset        = "dataset";
-        data_filter    = "datafilter";
+        datafilter     = "datafilter";
         coverage       = "coverage";
         filter_string  = "filter-string";
         is_constant    = "is_constant";
@@ -360,6 +360,14 @@ namespace terms{
     }
 
 
+    /* Terms for an AssociativeList prefix */
+    prefix = "prefix";
+    settings = "settings";
+    namespace settings {
+        branch_selector = "branch-selector";  
+    }
+    
+    
     /* Terms accompanying rate_variation.bf rate variation */
     //Note that rate_variation itself is a **model** term
     namespace rate_variation {
@@ -388,10 +396,6 @@ namespace terms{
         apply_user_constraints            = "apply-user-constraints";
     }
 
-    /* selection analysis attributes */
-    namespace selection_analysis {
-        branch_selector = "branch selector";
-    }
 
     /* Terms formatting table output */
     namespace table_options{
