@@ -7,6 +7,7 @@ sudo : required
 dist: trusty
 
 notifications:
+    slack: veg-igem:vds64dtEO5py4gL1TLVnPXcS
     email:
         recipients:
             - spond@temple.edu

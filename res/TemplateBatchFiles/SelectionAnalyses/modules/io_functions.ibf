@@ -114,6 +114,8 @@ lfunction selection.io.extract_global_MLE(fit, id) {
 //------------------------------------------------------------------------------
 
 lfunction selection.io.report_dnds (distribution) {
+
+    // TODO remove hardcoding
     settings = {"header" : TRUE, "column-widths": {
             "0": 35,
             "1": 15,

@@ -53,12 +53,15 @@ busted.json    = { terms.json.analysis: busted.analysis_description,
 
 
 
+
+
 selection.io.startTimer (busted.json [terms.json.timers], "Overall", 0);
 
 namespace busted {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("busted");
 }
+
 
 io.ReportProgressMessageMD('BUSTED',  'selector', 'Branches to test for selection in the BUSTED analysis');
 
@@ -83,7 +86,7 @@ namespace busted {
 }
 
 
-estimators.fixSubsetOfEstimates(busted.gtr_results, busted.gtr_results["global"]);
+estimators.fixSubsetOfEstimates(busted.gtr_results, busted.gtr_results[terms.global]);
 
 namespace busted {
     scaler_prefix = "busted.scaler";
@@ -93,16 +96,16 @@ namespace busted {
 
 io.ReportProgressMessageMD ("BUSTED", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
-busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, busted.trees, busted.codon_data_info ["code"], {
-    "model-type": terms.local,
-    "partitioned-omega": busted.selected_branches,
+busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, busted.trees, busted.codon_data_info [terms.code], {
+    terms.run_options.model_type: terms.local,
+    terms.run_options.partitioned_omega: busted.selected_branches,
 }, busted.partitioned_mg_results);
 
 
 io.ReportProgressMessageMD("BUSTED", "codon-refit", "* " + selection.io.report_fit (busted.final_partitioned_mg_results, 0, busted.codon_data_info[terms.data.sample_size]));
 busted.global_dnds = selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 
-utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_[terms.json.MLE],8,4));');
+utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
 
 selection.io.stopTimer (busted.json [terms.json.timers], "Preliminary model fitting");
 
@@ -115,7 +118,7 @@ utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
 busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
         "busted.test", {
             "0": parameters.Quote(terms.global),
-            "1": busted.codon_data_info["code"],
+            "1": busted.codon_data_info[terms.code],
             "2": parameters.Quote (busted.rate_classes) // the number of rate classes
         },
         busted.filter_names,
@@ -125,7 +128,7 @@ busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL
 busted.background.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
         "busted.background", {
             "0": parameters.Quote(terms.global),
-            "1": busted.codon_data_info["code"],
+            "1": busted.codon_data_info[terms.code],
             "2": parameters.Quote (busted.rate_classes) // the number of rate classes
         },
         busted.filter_names,
@@ -226,13 +229,13 @@ utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
 
 if (!busted.run_test) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for episodic diversifying positive selection under the unconstrained model, skipping constrained model fitting");
-    busted.json [terms.json.test_results] = busted.LRT (0, 0);
+    busted.json [terms.json.test_results] = busted.ComputeLRT (0, 0);
 } else {
     selection.io.startTimer (busted.json [terms.json.timers], "Constrained BUSTED model fitting", 3);
 
 
     io.ReportProgressMessageMD ("BUSTED", "test", "Performing the constrained (dN/dS > 1 not allowed) model fit");
-    parameters.SetConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)), "1", terms.global);
+    parameters.SetConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)), terms.parameters.one, terms.global);
     (busted.json [busted.json.site_logl])[busted.constrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
     busted.null_results = estimators.FitExistingLF (busted.full_model[terms.likelihood_function], busted.model_object_map);
     (busted.json [busted.json.site_logl])[busted.optimized_null] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
@@ -275,12 +278,12 @@ if (!busted.run_test) {
                             busted.distribution_for_json);
 
     (busted.json [busted.json.evidence_ratios])[busted.constrained] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.constrained]);
-    (busted.json [busted.json.evidence_ratios ])["optimized null"] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.optimized_null]);
+    (busted.json [busted.json.evidence_ratios ])[busted.optimized_null] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.optimized_null]);
 }
 
 
 console.log ("----\n## Branch-site unrestricted statistical test of episodic diversification [BUSTED]");
-console.log ( "Likelihood ratio test for episodic diversifying positive selection, **p = " + Format ((busted.json [terms.json.test_results])["p"], 8, 4) + "**.");
+console.log ( "Likelihood ratio test for episodic diversifying positive selection, **p = " + Format ((busted.json [terms.json.test_results])[terms.p_value], 8, 4) + "**.");
 
 selection.io.stopTimer (busted.json [terms.json.timers], "Overall");
 
@@ -298,8 +301,8 @@ lfunction busted.ComputeSiteLikelihoods (id) {
 //------------------------------------------------------------------------------
 
 function busted.ComputeLRT (ha, h0) {
-    return {"LR" : 2*(ha-h0),
-            "p" : 1-CChi2 (2*(ha-h0),2)};
+    return {terms.LRT : 2*(ha-h0),
+            terms.p_value : 1-CChi2 (2*(ha-h0),2)};
 }
 
 //------------------------------------------------------------------------------
