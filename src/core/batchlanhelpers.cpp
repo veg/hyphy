@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -51,6 +51,8 @@
 _Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
 
+extern  _List batchLanguageFunctionNames;
+
 //____________________________________________________________________________________
 
 _String    _HYGenerateANameSpace () {
@@ -58,8 +60,8 @@ _String    _HYGenerateANameSpace () {
             capLetters ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
     do {
         nmsp = _String::Random (8, &capLetters);
-        
-    } while (_HY_HBL_Namespaces.Find (nmsp) != HY_TRIE_NOTFOUND);
+      
+    } while (_HY_HBL_Namespaces.FindKey (nmsp) != HY_TRIE_NOTFOUND);
     
     _HY_HBL_Namespaces.Insert (nmsp, 0);
     return nmsp;
@@ -213,9 +215,11 @@ bool    ExpressionCalculator (void)
 
 bool    PushFilePath (_String& pName, bool trim)
 {
-    char c = GetPlatformDirectoryChar();
-
-    long    f = pName.FindBackwards(_String(c),0,-1);
+    _String dir_sep (GetPlatformDirectoryChar());
+  
+    pName.ProcessFileName();
+  
+    long    f = pName.FindBackwards(dir_sep,0,-1);
     if (f>=0) {
         _String newP = pName.Cut(0,f);
         pathNames && & newP;
@@ -258,21 +262,19 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
 
 _String ReturnDialogInput(bool dispPath)
 {
-    if (!dispPath) {
-        NLToConsole ();
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
-    } else {
-        NLToConsole ();
-        if (pathNames.lLength) {
+    NLToConsole ();
+    StringToConsole (dialogPrompt);
+  
+    if (dispPath) {
+      BufferToConsole (" (`");
+      if (pathNames.lLength) {
             StringToConsole(*(_String*)pathNames(pathNames.lLength-1));
         } else {
             StringToConsole (baseDirectory);
         }
-        
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
+      BufferToConsole ("`)");
     }
+    BufferToConsole (" ");
     return StringFromConsole();
 }
 
@@ -392,7 +394,7 @@ _String WriteFileDialogInput(void) {
 
 _String* _HBLObjectNameByType (const long type, const long index, bool correct_for_empties) {
 
-    if (index < 0) {
+    if (index < 0L) {
         return nil;
     }
     _List * theList = nil;
@@ -423,11 +425,11 @@ _String* _HBLObjectNameByType (const long type, const long index, bool correct_f
     if (theList) {
         // account for deleted objects
         if (!correct_for_empties) 
-            return (_String*)(*theList)(index);
+            return (_String*)theList->GetItem (index);
             
         long counter = 0;
         for (unsigned long name_index = 0; name_index < theList->lLength; name_index++) {
-            _String *thisName = (_String*)(*theList)(name_index);
+            _String *thisName = (_String*)theList->GetItem(name_index);
             if (thisName && thisName->sLength) {
                 if (name_index - counter == index) {
                     return thisName;

@@ -53,11 +53,10 @@ v=0;
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
-function PopulateModelMatrix (ModelMatrixName&, EFV, synrateP, globalP, nonsynRateP)
-{
+function PopulateModelMatrix (ModelMatrixName&, EFV, synrateP, globalP, nonsynRateP) {
+
     ModelMatrixDimension = CountSenseCodons (_Genetic_Code);
-	
-	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+	ModelMatrixName      = {ModelMatrixDimension,ModelMatrixDimension}; 
 
 	hshift = 0;
 	

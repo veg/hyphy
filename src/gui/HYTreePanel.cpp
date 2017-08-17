@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -456,7 +456,7 @@ void  _HYTreePanel::HandleContextPopup (long h, long v)
 
     menuChoice = HandlePullDown (menuOptions, h,v ,-1);
 
-    switch (menuOptions.Find(&menuChoice)) {
+    switch (menuOptions.FindObject(&menuChoice)) {
     case 0: {
         _HYCanvas* theCanvas = (_HYCanvas*)GetObject (0);
         theCanvas->_CopyToClipboard ();
@@ -1075,7 +1075,7 @@ void  _HYTreePanel::MatchToDataSet (void)
             sortedDSNames->Sort();
 
             for (j=0; j<tips.lLength; j++)
-                if ((k = sortedDSNames->BinaryFind((_String*)tips(j))) < 0) {
+                if ((k = sortedDSNames->BinaryFindObject(tips(j))) < 0) {
                     break;
                 } else {
                     tipMatches<<k;
@@ -1502,7 +1502,7 @@ void    _HYTreePanel::UpdateScalingVariablesList (void)
 
         for (k=0; k<modelSCV.lLength; k++) {
             _String modelVar = *LocateVar (modelSCV.lData[k])->GetName();
-            if (uE.Find(&modelVar)<0) {
+            if (uE.FindObject(&modelVar)<0) {
                 uE.InsertElement (&modelVar,k,true);
             }
         }
@@ -2665,9 +2665,9 @@ void  _HYTreePanel::SelectRangeAndScroll (_List& nodeNames, bool upcaseMe)
                 if (upcaseMe) {
                     _String upcased (*nodeName);
                     upcased.UpCase();
-                    addMe = nodeNames.BinaryFind (&upcased)>=0;
+                    addMe = nodeNames.BinaryFindObject (&upcased)>=0;
                 } else {
-                    addMe = nodeNames.BinaryFind (nodeName)>=0;
+                    addMe = nodeNames.BinaryFindObject (nodeName)>=0;
                 }
 
                 if (addMe) {
@@ -2905,12 +2905,13 @@ void  _HYTreePanel::PaintSquareBranchLabels (_HYCanvas* theCanvas, node<nodeCoor
             mh = nodeCircle.left+(nodeCircle.right-nodeCircle.left-lw)/2;
         }
 
-        if ((lw<=nodeCircle.right-nodeCircle.left-2*(branchWidth+1))&&(cDig>=firstDig))
+      if ((lw<=nodeCircle.right-nodeCircle.left-2*(branchWidth+1))&&(cDig>=firstDig)) {
             if (above) {
                 theCanvas->DisplayText (label,mv-2,mh,true);
             } else {
                 theCanvas->DisplayText (label,mv+branchLabel2.size+2,mh,true);
             }
+      }
     }
 
     int n;
@@ -4503,7 +4504,7 @@ void    _HYTreePanel::PasteClipboardTree (void)
         return;
     }
 
-    node<long> *p1, *ct, *newp;
+    node<long> *p1, *ct = nil, *newp;
 
     _CalcNode* travNode = me->DepthWiseTraversal (true);
 
@@ -4597,7 +4598,7 @@ void    _HYTreePanel::MoveSubTree (void)
     if (selectionTop) {
         PrepareUndoData (9);
         _CalcNode* travNode = me->DepthWiseTraversal (true), *killedNode;
-        node<long>* ct;
+        node<long>* ct = nil;
 
         while (travNode) {
             if (travNode->GetAVariable()==selectionTop->in_object.varRef) {
@@ -4608,7 +4609,7 @@ void    _HYTreePanel::MoveSubTree (void)
         }
 
         if (ct) {
-            node<long> *p1, *p2, *ct2;
+            node<long> *p1, *p2, *ct2 = nil;
 
             p1 = ct->parent;
             if (p1) {
@@ -4924,13 +4925,14 @@ void _HYTreePanel::InvertSelection()
     currentSelection.Clear();
 
     while (currentNd) {
-        if (currentNd->in_object.branchName.sLength)
+        if (currentNd->in_object.branchName.sLength) {
             if (currentNd->in_object.flags&HY_BRANCH_SELECT) {
                 currentNd->in_object.flags-=HY_BRANCH_SELECT;
             } else {
                 currentNd->in_object.flags|=HY_BRANCH_SELECT;
                 currentSelection<<(long)currentNd;
             }
+        }
         currentNd = NodeTraverser((node <nodeCoord>*)nil)   ;
     }
     _UpdateOperationsMenu();
@@ -5046,7 +5048,7 @@ void _HYTreePanel::InvokeNodeEditor (void)
     node<nodeCoord>* thisNode = (node<nodeCoord>*) currentSelection.lData[0];
 
     _TheTree* me = LocateMyTreeVariable();
-    long      f;
+    long      f = -1L;
     if (!me) {
         return;
     }
@@ -5063,7 +5065,7 @@ void _HYTreePanel::InvokeNodeEditor (void)
     bool        doSCV = false,
                 incFlag;
 
-    if (currentSelection.lLength==1) {
+    if (currentSelection.lLength==1UL) {
         f = dubiousNodes.Find(thisNode->in_object.varRef);
     }
     incFlag = (f>=0);
@@ -5343,7 +5345,7 @@ void  _HYTreePanel::HandleFisheyeButton (void)
     bb->_UnpushButton();
 
     if (menuChoice.sLength) {
-        h = menuAll.Find (&menuChoice);
+        h = menuAll.FindObject (&menuChoice);
         if (h==0) {
             menuChoice = distortion;
             if (EnterStringDialog (menuChoice, prStr, (Ptr)this)) {
@@ -5594,14 +5596,14 @@ _HYLabelDialog::_HYLabelDialog (_HYTreePanel* rec, _List& options,bool below):_H
 
     _String * scv = &(below?rec->branchVar2:rec->branchVar1);
 
-    k = options.Find (scv);
+    k = options.FindObject (scv);
 
     if (k==-1) {
         long f;
         k=0;
-        if (scv->Equal (&expectedNumberOfSubs) && ((f=options.Find (&eSubsScale))>=0)) {
+        if (scv->Equal (&expectedNumberOfSubs) && ((f=options.FindObject (&eSubsScale))>=0)) {
             k = f;
-        } else if (scv->Equal (&stringSuppliedLengths) && ((f=options.Find (&assValScale))>=0)) {
+        } else if (scv->Equal (&stringSuppliedLengths) && ((f=options.FindObject (&assValScale))>=0)) {
             k = f;
         }
     }
@@ -6116,10 +6118,8 @@ void    _HYTreePanel::HandleTreeSave (long c, _String filePath)
                             fprintf (theFile,",");
                         }
                         _String * rmp = new _String (nodeCounter++),
-                        *nname = new _String;
-                        checkPointer (nname);
-                        checkPointer (rmp);
-                        me->GetNodeName (&me->GetCurrentNode(),*nname,false);
+                        *nname = new _String (me->GetCurrentNode());
+  
                         nodeRemap.Insert (nname,(long)rmp);
                         fprintf (theFile,"\n\t\t%s %s",rmp->sData,nname->sData);
                         DeleteObject (rmp);
@@ -6183,14 +6183,15 @@ void    _HYTreePanel::GenerateDistanceTable (char opt)
             if (currentSelection.lLength == 0) {
                 node<nodeCoord>* meNode = NodeTraverser(coordTree);
                 while (meNode->parent) {
-                    if (meNode->in_object.varRef>=0)
-                        if (meNode->get_num_nodes()) {
-                            sortingOrder    << (long)meNode;
-                            iBranchLengths.AppendNewInstance(new _Constant(meNode->in_object.bL));
-                        } else {
-                            sortingOrder2   << (long)meNode;
-                            leafLengths.AppendNewInstance(new _Constant (meNode->in_object.bL));
-                        }
+                    if (meNode->in_object.varRef>=0) {
+                          if (meNode->get_num_nodes()) {
+                              sortingOrder    << (long)meNode;
+                              iBranchLengths.AppendNewInstance(new _Constant(meNode->in_object.bL));
+                          } else {
+                              sortingOrder2   << (long)meNode;
+                              leafLengths.AppendNewInstance(new _Constant (meNode->in_object.bL));
+                          }
+                    }
 
                     meNode = NodeTraverser((node<nodeCoord>*)NULL);
                 }
@@ -6768,7 +6769,7 @@ _HYNodeInfoDialog::_HYNodeInfoDialog     (_String& n, long* ms, bool is, _TheTre
                 spName = (_String*)(thisSet->GetNames()(whatW));
                 tryName = namePrefix&*spName;
                 if (LocateVarByName(tryName)<0) {
-                    long iType = thisList.BinaryFind (spName);
+                    long iType = thisList.BinaryFindObject (spName);
                     if (iType<0) {
                         if (thisList.lLength) {
                             iType = -iType-2;
@@ -7181,80 +7182,80 @@ long    _HYNodeInfoDialog::AddParameterRow (_String& pname, _String& ptype, _Str
 
 bool    _HYNodeInfoDialog::SetNodeModel (_CalcNode* thisCNode, long modelID, bool isFirst)
 {
-    if (isFirst)
-        if (!displayNotUndoable)
-            if (ProceedPromptWithCheck (notUndoableWarning,donotWarnAgain,displayNotUndoable)) {
-                _SimpleList depVars;
-                for (long iType=0; iType<tSel->lLength; iType++) {
-                    LocateVar (((node<nodeCoord>*)tSel->lData[iType])->in_object.varRef)->CompileListOfDependents(depVars);
-                }
-
-                if (depVars.lLength) {
-                    _String depVarList ("The following variables depend on the parameters you are about to delete: ");
-                    for (long i=0; i<depVars.lLength; i++) {
-                        if (i) {
-                            depVarList = depVarList & ", " ;
-                        }
-                        depVarList = depVarList & *LocateVar(depVars.lData[i])->GetName();
-                    }
-                    depVarList = depVarList & ((char)13)&"You are about to remove those dependencies.";
-                    if (!ProceedPrompt (depVarList,(Ptr)this)) {
-                        return false;
-                    }
-                }
-                *modelSelection = modelID+1;
-            } else {
-                return false;
-            }
-
-    _String treeName (*thisCNode->GetName());
-    treeName.Trim (0,treeName.Find('.')-1);
-
-    if (modelID<0) {
-        if (isFirst&&(!parentRef->KillLikeFunc (-1))) {
-            return false;
+  if (isFirst && !displayNotUndoable) {
+    if (ProceedPromptWithCheck (notUndoableWarning,donotWarnAgain,displayNotUndoable)) {
+      _SimpleList depVars;
+      for (long iType=0; iType<tSel->lLength; iType++) {
+        LocateVar (((node<nodeCoord>*)tSel->lData[iType])->in_object.varRef)->CompileListOfDependents(depVars);
+      }
+      
+      if (depVars.lLength) {
+        _String depVarList ("The following variables depend on the parameters you are about to delete: ");
+        for (long i=0; i<depVars.lLength; i++) {
+          if (i) {
+            depVarList = depVarList & ", " ;
+          }
+          depVarList = depVarList & *LocateVar(depVars.lData[i])->GetName();
         }
-
-        DeleteVariable (*thisCNode->GetName(),false);
+        depVarList = depVarList & ((char)13)&"You are about to remove those dependencies.";
+        if (!ProceedPrompt (depVarList,(Ptr)this)) {
+          return false;
+        }
+      }
+      *modelSelection = modelID+1;
     } else {
-        _String theName (*thisCNode->GetName()),
-                modelName (*(_String*)modelNames(modelID)),
-                dummy;
-
-        theName.Trim (theName.Find('.')+1,-1);
-
-        _CalcNode* travNode = treeRef->DepthWiseTraversal (true);
-
-        while (travNode!=thisCNode) {
-            travNode = treeRef->DepthWiseTraversal ();
-        }
-
-        DeleteVariable (*thisCNode->GetName(),true);
-        treeRef->FinalizeNode (&treeRef->GetCurrentNode(),0,theName,modelName,dummy);
-        thisCNode = (_CalcNode*)LocateVar (treeRef->GetCurrentNode().in_object);
-        _SimpleList newVars;
-        {
-            _AVLList  nal (&newVars);
-            thisCNode->ScanForVariables (nal,nal);
-            nal.ReorderList();
-        }
-        thisCNode->SetCodeBase(thisCNode->GetModelDimension());
-        _Constant   newVal (.25);
-        for (long i=0; i<newVars.lLength; i++) {
-            LocateVar(newVars.lData[i])->SetValue (&newVal);
-        }
-
-        for (long i = 0; i<likeFuncList.lLength; i++) {
-            if (((_String*)likeFuncNamesList(i))->sLength) {
-                _LikelihoodFunction * thisLF = (_LikelihoodFunction*)likeFuncList(i);
-                if (thisLF->DependOnTree(treeName)>=0) {
-                    thisLF->RescanAllVariables();
-                }
-            }
-        }
+      return false;
     }
-
-    return true;
+  }
+  
+  _String treeName (*thisCNode->GetName());
+  treeName.Trim (0,treeName.Find('.')-1);
+  
+  if (modelID<0) {
+    if (isFirst&&(!parentRef->KillLikeFunc (-1))) {
+      return false;
+    }
+    
+    DeleteVariable (*thisCNode->GetName(),false);
+  } else {
+    _String theName (*thisCNode->GetName()),
+    modelName (*(_String*)modelNames(modelID)),
+    dummy;
+    
+    theName.Trim (theName.Find('.')+1,-1);
+    
+    _CalcNode* travNode = treeRef->DepthWiseTraversal (true);
+    
+    while (travNode!=thisCNode) {
+      travNode = treeRef->DepthWiseTraversal ();
+    }
+    
+    DeleteVariable (*thisCNode->GetName(),true);
+    treeRef->FinalizeNode (&treeRef->GetCurrentNode(),0,theName,modelName,dummy);
+    thisCNode = (_CalcNode*)LocateVar (treeRef->GetCurrentNode().in_object);
+    _SimpleList newVars;
+    {
+      _AVLList  nal (&newVars);
+      thisCNode->ScanForVariables (nal,nal);
+      nal.ReorderList();
+    }
+    thisCNode->SetCodeBase(thisCNode->GetModelDimension());
+    _Constant   newVal (.25);
+    for (long i=0; i<newVars.lLength; i++) {
+      LocateVar(newVars.lData[i])->SetValue (&newVal);
+    }
+    
+    for (long i = 0; i<likeFuncList.lLength; i++) {
+      if (((_String*)likeFuncNamesList(i))->sLength) {
+        _LikelihoodFunction * thisLF = (_LikelihoodFunction*)likeFuncList(i);
+        if (thisLF->DependOnTree(treeName)>=0) {
+          thisLF->RescanAllVariables();
+        }
+      }
+    }
+  }
+  
+  return true;
 }
 
 //__________________________________________________________________
@@ -7318,7 +7319,7 @@ bool    _HYNodeInfoDialog::ProcessEvent  (_HYEvent* e)
             bb->GetButtonLoc (0,h,v,true);
             _String*tbs;
             tb->StoreText (tbs);
-            firstArg = HandlePullDown (allowableDataNames,h,v,allowableDataNames.Find(tbs));
+            firstArg = HandlePullDown (allowableDataNames,h,v,allowableDataNames.FindObject(tbs));
             DeleteObject (tbs);
             if (firstArg.sLength) {
                 tb->SetText (firstArg);

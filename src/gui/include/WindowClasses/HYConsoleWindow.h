@@ -51,7 +51,7 @@ public:
     }
     void                PrintString             (_String&);
     _String*            ReadString              (void);
-    void                SetFont                 (_HYFont);
+  //void                SetFont                 (_HYFont&);
     void                DoFind                  (bool);
 
     virtual void        DoSave                  (void);

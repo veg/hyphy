@@ -3,17 +3,17 @@
 sudo : false
 
 notifications:
-    slack: veg-igem:vds64dtEO5py4gL1TLVnPXcS
     email:
         recipients:
-            - steven@stevenweaver.org
             - spond@temple.edu
-        on_success: always
+            - steven@stevenweaver.org
+        on_success: change
         on_failure: always
 
 branches:
   only:
     - master
+    - v2.3-alpha
 
 cache:
   directories:
@@ -49,4 +49,8 @@ install:
 
 script: 
   - ./HYPHYGTEST
-
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/math.bf
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/iofunctions.bf
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/utilityfunctions.bf
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC.wbf
+  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC-partitioned.wbf

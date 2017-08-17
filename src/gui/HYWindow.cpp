@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -674,53 +674,54 @@ long        _HYTWindow::MatchComponentID (_String& text)
 //__________________________________________________________________
 void        _HYTWindow::HandleCopyPaste (bool paste)
 {
-    int         componentID = keyboardFocus;
-
-    if          (paste) {
-        BaseRef      pastingReference = nil;
-        _String*     clipData = _GetPasteString();
-
-        if (clipData->sLength)
-            if (componentID < 0) {
-                for (componentID=0; componentID<components.lLength; componentID++)
-                    if (cells.Find(componentID)>=0)
-                        if ((pastingReference =     ((_HYComponent*)components(componentID))->CanPaste (*clipData))) {
-                            break;
-                        }
-
-            } else {
-                pastingReference =  ((_HYComponent*)components(componentID))->CanPaste (*clipData);
+  int         componentID = keyboardFocus;
+  
+  if          (paste) {
+    BaseRef      pastingReference = nil;
+    _String*     clipData = _GetPasteString();
+    
+    if (clipData->sLength) {
+      if (componentID < 0) {
+        for (componentID=0; componentID<components.lLength; componentID++)
+          if (cells.Find(componentID)>=0)
+            if ((pastingReference =     ((_HYComponent*)components(componentID))->CanPaste (*clipData))) {
+              break;
             }
-
-        DeleteObject (clipData);
-        if (pastingReference) {
-            ((_HYComponent*)components(componentID))->HandlePaste (pastingReference);
-            DeleteObject (pastingReference);
-        }
-    } else {
-        _String*     clipData = nil;
-
-        if (componentID < 0) {
-            for (componentID=0; componentID<components.lLength; componentID++)
-                if (cells.Find(componentID)>=0)
-                    if (((_HYComponent*)components(componentID))->CanCopy()) {
-                        break;
-                    }
-
-        } else if (!((_HYComponent*)components(componentID))->CanCopy()) {
-            componentID = components.lLength;
-        }
-
-        if (componentID < components.lLength) {
-            clipData = ((_HYComponent*)components(componentID))->HandleCopy ();
-            if (clipData) {
-                _SetCopyString (clipData);
-                DeleteObject   (clipData);
-            }
-        }
-
+        
+      } else {
+        pastingReference =  ((_HYComponent*)components(componentID))->CanPaste (*clipData);
+      }
     }
-
+    
+    DeleteObject (clipData);
+    if (pastingReference) {
+      ((_HYComponent*)components(componentID))->HandlePaste (pastingReference);
+      DeleteObject (pastingReference);
+    }
+  } else {
+    _String*     clipData = nil;
+    
+    if (componentID < 0) {
+      for (componentID=0; componentID<components.lLength; componentID++)
+        if (cells.Find(componentID)>=0)
+          if (((_HYComponent*)components(componentID))->CanCopy()) {
+            break;
+          }
+      
+    } else if (!((_HYComponent*)components(componentID))->CanCopy()) {
+      componentID = components.lLength;
+    }
+    
+    if (componentID < components.lLength) {
+      clipData = ((_HYComponent*)components(componentID))->HandleCopy ();
+      if (clipData) {
+        _SetCopyString (clipData);
+        DeleteObject   (clipData);
+      }
+    }
+    
+  }
+  
 }
 
 //__________________________________________________________________

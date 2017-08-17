@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (spond@temple.edu)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include "likefunc.h"
+#include "function_templates.h"
 
 
 
@@ -170,7 +171,7 @@ _String*    StringFromConsole   (bool)
             CheckReceptacleAndStore (&hasEndBeenReached,empty,false,new _Constant (1.), false);
             break;
         }
-        *returnme << readAChar;
+        *returnme << (char)readAChar;
     }
 #else
     WarnError ("Unhandled standard input interaction in StringFromConsole for headless HyPhy");
@@ -182,16 +183,14 @@ _String*    StringFromConsole   (bool)
 
 //__________________________________________________________________________________
 
-void    StringToConsole (_String & s,  _SimpleList *)
-{
-    BufferToConsole ((const char*)s.sData);
+void    StringToConsole (_String const s,  void * extra) {
+    BufferToConsole ((const char*)s.sData, extra);
 }
 
 
 //__________________________________________________________________________________
 
-void    BufferToConsole (const char* s, _SimpleList *)
-{
+void    BufferToConsole (const char* s, void * extra) {
 #ifdef __HYPHYMPI__
     if (_hy_mpi_node_rank == 0)
 #endif
@@ -201,15 +200,18 @@ void    BufferToConsole (const char* s, _SimpleList *)
             globalInterfaceInstance->PushOutString(&st);
         }
 #else
-        printf ("%s",s);
+  if (extra) {
+    fprintf ((FILE*)extra, "%s",s);
+  } else {
+    printf ("%s",s);
+  }
 #endif
 }
 
 //__________________________________________________________________________________
 
-void    NLToConsole (void)
-{
-    BufferToConsole ("\n");
+void    NLToConsole (void * extra) {
+    BufferToConsole ("\n", extra);
 }
 
 #endif
@@ -250,9 +252,10 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
         } else {
             if (theMessage->beginswith ("#NEXUS")) {
                 _String             msgCopy (*theMessage);
-                ReportWarning       ("[MPI] Received a function to optimize");
+                ReportWarning       ("[MPI] Received a likelihood function");
+                //ReportWarning       (msgCopy);
                 ReadDataSetFile     (nil,true,theMessage);
-                ReportWarning       ("[MPI] Done with the optimization");
+                ReportWarning       ("[MPI] Read/optimized the likelihood function");
                 _Variable*          lfName = FetchVar(LocateVarByName(MPI_NEXUS_FILE_RETURN));
 
                 if (lfName) {
@@ -265,19 +268,22 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                         break;
                     }
 
-                    long f = likeFuncNamesList.Find (lfID->theString);
+                    long type = HY_BL_LIKELIHOOD_FUNCTION, index;
+                    
+                    _LikelihoodFunction *lf = (_LikelihoodFunction *)_HYRetrieveBLObjectByName    (*lfID->theString, type, &index, false, false);
 
-                    if (f<0) {
-                        FlagError ("[MPI] Malformed MPI likelihood function optimization request - LF name to return did not refer to a well-defined likelihood function.\n\n\n");
+                    if (lf == nil) {
+                        FlagError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & *lfID->theString &"' did not refer to a well-defined likelihood function.\n\n\n");
                         break;
                     }
                     _Parameter      pv;
                     checkParameter (shortMPIReturn, pv ,0);
                     resStr       = (_String*)checkPointer(new _String (1024L,true));
-                    ((_LikelihoodFunction*)likeFuncList (f))->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
+                    lf->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                     resStr->Finalize();
                 }
             } else {
+              //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 _ExecutionList exL (*theMessage);
                 _PMathObj res = exL.Execute();
                 resStr = res?(_String*)res->toStr():new _String ("0");
@@ -291,7 +297,11 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
             if (keepState < 0.5) {
                 PurgeAll (true);
+                InitializeGlobals ();
                 pathNames && & baseDir;
+                ReportWarning("Reset node state");
+            } else {
+                ReportWarning("Preserved node state");
             }
         }
         DeleteObject (theMessage);

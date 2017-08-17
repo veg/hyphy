@@ -52,8 +52,13 @@ class _ExecutionList; // forward declaration
 #define HY_STRING_GLOBAL_DEREFERENCE    0x03
 
 
-class _String:public BaseObj
-{
+#define kAppendAnAssignmentToBufferFree       0x01
+#define kAppendAnAssignmentToBufferQuote      0x02
+#define kAppendAnAssignmentToBufferAssignment 0x04
+#define kAppendAnAssignmentToBufferGlobal     0x08
+
+
+class _String:public BaseObj {
 
     // contructor/destructor methods
 private:
@@ -115,6 +120,11 @@ public:
     _String (const char);
 
     /**
+     * A constructor that maked N copies of the same char
+     */
+    _String (const _String&, unsigned long);
+
+    /**
     * A constructor that reads from an open file.
     * @param F open file stream buffer to copy from
     */
@@ -136,7 +146,7 @@ public:
     /**
     * Initializes _String object to 0 length and 0 sData
     */
-    virtual     void    Initialize (void);
+    virtual     void    Initialize (bool = false);
 
     /**
     * Duplicates a string
@@ -162,7 +172,17 @@ public:
     * @param index The int location of the char in the string
     * @return char located at specified location
     */
-    const       char    getChar          (long);
+    const       char    getChar          (long) const;
+
+    /**
+     * Returns the character at a specified index as unsigned (suiable for indexing)
+     * \n Usage: unsigned char c = string.getUChar(5);
+     * @param index The int location of the char in the string
+     * @return char located at specified location case to (unsigned char)
+     */
+    inline const       unsigned char    getUChar          (long i) const {
+      return (unsigned char)sData[i];
+    }
 
     /**
     * Sets the character of the string instance at a specified index
@@ -207,7 +227,7 @@ public:
     * \n\n \b Example: \code long l = string.Length(); \endcode
     * @return Length of string
     */
-    unsigned long Length(void);
+    unsigned long Length(void) const;
 
     /**
     * Append operator
@@ -215,7 +235,7 @@ public:
     * @return "AB"
     * @sa EscapeAndAppend()
     */
-    _String operator & (_String);
+    const _String operator & (const _String) const;
 
     /**
     * Append operator
@@ -237,6 +257,13 @@ public:
     * @sa EscapteAndAppend()
     */
     void    AppendNewInstance (_String*);
+
+    /**
+     * Append multiple copies of the same string to the buffer
+     * @param value the string to copy
+     * @param copies how many copies to make
+     */
+    void    AppendNCopies   (_String const& value, unsigned long copies);
 
     /**
     * Append operator
@@ -293,19 +320,19 @@ public:
     * Converts a good ole char*
     * \n\n \b Example: \code string.toStr(); \endcode
     */
-    virtual     BaseRef toStr (void);
+    virtual     BaseRef toStr (unsigned long = 0UL);
 
     /**
     * Return good ole char*
     */
-    virtual     operator const char* (void);
+    virtual     operator const char* (void) const;
 
     /**
     * Returns a good ole char*
     * \n\n \b Example: \code char * new_str = string.getStr(); \endcode
     * @return Returns a good ole char*
     */
-    char*    getStr(void);
+    const char*    getStr(void) const;
 
     /**
     * Removes part of string that is between the two specified indices
@@ -316,7 +343,7 @@ public:
     * @sa Cut()
     * @sa Trim()
     */
-    _String Chop(long, long);
+    const _String Chop(long, long) const;
 
     /**
     * Cuts part of string that is between the two specified indices
@@ -327,7 +354,7 @@ public:
     * @sa Chop()
     * @sa Trim()
     */
-    _String Cut (long, long);
+    const _String Cut (long, long) const;
 
     /**
     *
@@ -336,7 +363,16 @@ public:
     * \n\n \b Example: \code _String("ABC").Flip() \endcode
     * @return Transforms string to "CBA"
     */
-    void    Flip(void);
+    const _String    Flip(void);
+
+    /**
+     *
+     * Return a reversed string
+     * \n s[0]...s[sLength-1] => s[sLength-1]...s[0]
+     * \n\n \b Example: \code _String("ABC").Reverse() \endcode
+     * @return "CBA"
+     */
+    const _String    Reverse(void) const;
 
     /**
     * Trim the string between from and to
@@ -382,7 +418,7 @@ public:
     * @return "AAAZZZCCC"
     */
 
-    _String Replace(_String, _String, bool);
+    const _String Replace(const _String, const _String, bool) const;
 
 
     /**
@@ -405,7 +441,7 @@ public:
     * @return The index of the first non-space, in the example, 4.
     * @see FirstNonSpaceIndex()
     */
-    long    FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1);
+    long    FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1) const;
 
 
     /**
@@ -418,7 +454,19 @@ public:
     * @return Returns the index of the first non-space. 1 in the example.
     * @sa FirstSpaceIndex()
     */
-    long    FirstSpaceIndex(long start = 0, long end = -1, char direction = 1);
+    long    FirstSpaceIndex(long start = 0, long end = -1, char direction = 1) const;
+
+    /**
+     * Locate the first non-space character of the string following one or more spaces
+     * \n Returns index of first space character
+     * \n\n \b Example: \code _String ("h yphy").FirstSpaceIndex()\endcode
+     * @param start starting index
+     * @param end ending index to search
+     * @param direction If the direction is less than 0, then go backwards
+     * @return Returns the index of the first non-space. 1 in the example.
+     * @sa FirstSpaceIndex()
+     */
+    long    FirstNonSpaceFollowingSpace(long start = 0, long end = -1, char direction = 1) const;
 
     /**
     * Finds end of an ID. An ID is made up of alphanumerics, periods, or '_'
@@ -439,12 +487,12 @@ public:
     * @return Returns the index of the first instance of the substr, -1 if not found. 2 in the example
     * @sa FindKMP()
     */
-    long    Find(_String s, long from = 0, long to = -1);
+    long    Find(const _String s, long from = 0, long to = -1) const;
 
     /**
     *  @see Find()
     */
-    long    Find(char s, long from = 0, long to = -1);
+    long    Find(char s, long from = 0, long to = -1) const ;
 
     /**
     * Find first occurence of the string between from and to
@@ -473,7 +521,7 @@ public:
     * Backwards Find
     * @see Find()
     */
-    long    FindBackwards(_String, long, long);
+    long    FindBackwards(_String const&, long, long) const;
 
     /**
     * Binary searches for a char inside of a string
@@ -508,7 +556,7 @@ public:
     * Checks if string is lexicographically equal
     * @see Equal()
     */
-    bool    operator == (_String);
+    bool    operator == (_String const&) const;
 
     /**
     * Lexicographic comparison
@@ -517,7 +565,7 @@ public:
     * @return true if strings are equal
     * @sa Compare()
     */
-    bool Equal   (_String*);
+    bool Equal   (_String const*) const;
 
     /**
     * Case Insensitive Lexicographic comparison
@@ -544,7 +592,7 @@ public:
     * @return 1 if strings are equal, -1 if strings are not
     * @sa Equal()
     */
-    char Compare (_String*);
+    char Compare (_String const*) const;
 
     /**
     * Lexicographic comparison with a wild character
@@ -627,7 +675,7 @@ public:
     * @sa startswith()
     * @sa endswith()
     */
-    bool beginswith (_String, bool = true);
+    bool beginswith (_String const, bool = true) const;
 
     /**
     * Checks to see if String starts with substring
@@ -638,7 +686,18 @@ public:
     * @sa beginswith()
     * @sa endswith()
     */
-    bool startswith (_String&);
+    bool startswith (_String const&) const;
+
+    /**
+     * Checks to see if String starts with substring and it can't be extended to make a valid ident
+     * \n\n \b Example: \code _String("return;").startswith("return"); _String("return_me").startswith("return")\endcode
+     * @param s Substring
+     * @return true if string starts with substring. Example 1 would return true, and example 2 would return false
+     * @sa contains()
+     * @sa beginswith()
+     * @sa endswith()
+     */
+    bool startswith_noident (_String const&) const;
 
     /**
     * Checks to see if String ends with substring
@@ -668,14 +727,15 @@ public:
     * SLKP 20090817: A utility function to append a statement of the form
     * \n\n \b Example: _String("hyphy").AppendAnAssignmentToBuffer("12","12",false,false,false) makes "hyphy12=12"
     * @param id = value; to the current string assumed to be in the buffer form
-    * @param doFree free the 2nd string argument when done
-    * @param doQuotes put quotes around the value
-    * @param doBind use := instead of =
+    * @param flags: a bitwise combination of flags; set kAppendAnAssignmentToBufferFree to free 'value'; \\
+      set kAppendAnAssignmentToBufferQuote to put quotes around the value \\
+      set kAppendAnAssignmentToBufferAssignment to use ':=' instead of '=' \\
+      default is to use kAppendAnAssignmentToBufferFree
     * @sa AppendNewInstance()
     * @sa AppendVariableValueAVL()
     */
 
-    void    AppendAnAssignmentToBuffer (_String*, _String*, bool = true, bool = false, bool = false);
+    void    AppendAnAssignmentToBuffer (_String*, _String*, unsigned long = kAppendAnAssignmentToBufferFree);
 
     /**
     * SLKP 20090817:
@@ -698,7 +758,7 @@ public:
     * @param s The substring to split the string by
     * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
     */
-    _List*  Tokenize (_String);
+    const _List  Tokenize (_String const&) const;
 
     /**
     * TODO: With batchlan
@@ -740,14 +800,14 @@ public:
     * @param strict If strict, only alphabetic, no numerals.
     * @sa ConvertToAnIdent();
     */
-    bool    IsValidIdentifier(bool = true);
+    bool    IsValidIdentifier(bool = true) const;
 
     /**
     * Same as IsValidIdentifier, but must end with a '&'
     * \n\n \bExample: 'hyphy&' is a valid ref identifier
     * @see IsValidIdentifier()
     */
-    bool    IsValidRefIdentifier(void);
+    bool    IsValidRefIdentifier(void) const;
 
     /**
     * If it is enclosed in quotes, then it is a literal argument
@@ -876,9 +936,16 @@ public:
     * @sa ProcessTreeBranchLength()
     */
 
-    _Parameter      toNum (void);
+    _Parameter      toNum (void) const;
 
     /**
+     * Converts a into a long
+     * \n\n \b Example: "3.14" becomes 3
+     */
+    
+    long      toLong (void) const;
+
+  /**
     * Sets Length
     */
     void    SetLength (unsigned long nl) {
@@ -916,7 +983,7 @@ public:
     *
     */
 
-    long    FindTerminator          (long, _String&);
+    long    FindTerminator          (long, _String const&) const;
 
 
     // Data Fields
@@ -943,7 +1010,7 @@ void    SetStatusLine               (_String, _String, _String, long l);
 void    SetStatusLine               (_String, _String, _String);
 void    SetStatusLine               (_String, _String, _String, long, char);
 
-void    SetStatusLineUser           (_String);
+void    SetStatusLineUser           (_String const);
 
 
 Ptr     PrepRegExp                  (_String*, int&, bool);
@@ -956,15 +1023,16 @@ void    WarnError                   (_String);
 _String GetVersionString            (void);
 _String GetTimeStamp                (bool = false);
 
-void    StringToConsole             (_String&, _SimpleList* = nil);
-void    BufferToConsole             (const char*, _SimpleList* = nil);
-void    NLToConsole                 (void);
+void    StringToConsole             (_String const, void * extra = nil);
+void    BufferToConsole             (const char*, void * extra = nil);
+void    NLToConsole                 (void * extra = nil);
+
 _String*StringFromConsole           (bool=true);
 
 char    GetPlatformDirectoryChar    (void);
 
 
-extern  _String                     __KERNEL__VERSION__;
+extern  _String                     __HYPHY__VERSION__;
 
 #ifdef __UNIX__
 	extern bool	needExtraNL;

@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -37,15 +37,18 @@
  
  */
 
+#define  HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
+#define   DATA_SET_SWITCH_THRESHOLD     100000
+
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 
-#define  HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
 
+#include "site.h"
 #include "likefunc.h"
+#include "function_templates.h"
 
-#define   DATA_SET_SWITCH_THRESHOLD     100000
 
 #include "math.h"
 
@@ -89,6 +92,7 @@ _String           dataFileTree             ("IS_TREE_PRESENT_IN_DATA"),
                   dataFilePartitionMatrix  ("DATA_FILE_PARTITION_MATRIX"),
                   useTraversalHeuristic    ("USE_TRAVERSAL_HEURISTIC"),
                   defaultLargeFileCutoff   ("USE_MEMORY_SAVING_DATA_STRUCTURES"),
+                  normalizeSequenceNames   ("NORMALIZE_SEQUENCE_NAMES"),
                   fileTreeString;
 
 //_________________________________________________________
@@ -161,19 +165,17 @@ long    _TranslationTable::TokenCode (char token)
 {
     // standard translations
     long * receptacle       = new long[baseLength];
-    if (!receptacle) {
-        checkPointer    (receptacle);
-    }
+  
     TokenCode               (token,receptacle);
 
     long                    theCode         = 0,
                             shifter       = 1;
 
-    for (int i = 0; i<baseLength; i++, shifter <<= 1) {
+    for (unsigned long i = 0; i<baseLength; i++, shifter <<= 1) {
         theCode +=  shifter*receptacle[i];
     }
 
-    delete receptacle;
+    delete [] receptacle;
     return theCode;
 }
 
@@ -236,18 +238,16 @@ char    _TranslationTable::CodeToLetter (long* split)
 }
 
 //_________________________________________________________
-void    _TranslationTable::SplitTokenCode (long code, long* receptacle)
-{
-    long shifter = 1;
-    for (int i=0; i<baseLength; i++) {
-        receptacle[i] = ((code&shifter)!=0);
-        shifter*=2;
+void    _TranslationTable::SplitTokenCode (long code, long* receptacle) const {
+    unsigned long shifter = 1L;
+    for (unsigned int i=0; i<baseLength; i++) {
+        receptacle[i] = ((code&shifter)!=0) ? 1L : 0L;
+        shifter >>= 1;
     }
 }
 
 //_________________________________________________________
-long    _TranslationTable::LengthOfAlphabet (void)
-{
+long    _TranslationTable::LengthOfAlphabet (void) const {
     return baseSet.sLength?baseSet.sLength:baseLength;
 }
 
@@ -557,7 +557,7 @@ void    _TranslationTable::PrepareForChecks (void)
     }
 
     for (long i=0; i<checkSymbols.sLength; i++) {
-        checkTable[checkSymbols(i)] = 1;
+        checkTable[(unsigned char)checkSymbols(i)] = 1;
     }
 }
 
@@ -567,7 +567,7 @@ bool    _TranslationTable::IsCharLegal (char c)
     if (!checkTable) {
         PrepareForChecks();
     }
-    return checkTable[c];
+    return checkTable[(unsigned char)c];
 }
 //___________________________________________
 
@@ -946,7 +946,7 @@ _DataSet::~_DataSet (void)
 
 //_______________________________________________________________________
 
-void _DataSet::Clear (void)
+void _DataSet::Clear (bool )
 {
     _List::Clear();
     theMap.Clear();
@@ -1063,10 +1063,8 @@ void     _DataSet::AddSite (char c)
         if (useHorizontalRep == false) {
             if (lLength < DATA_SET_SWITCH_THRESHOLD) {
                 _Site* nC = new _Site(c);
-                checkPointer(nC);
-                theFrequencies<<1;
-                (*this)<<nC;
-                nC->nInstances --;
+                theFrequencies<<1L;
+                AppendNewInstance(nC);
                 return;
             } else {
                 ConvertRepresentations ();
@@ -1487,7 +1485,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
     }
 
     for (charsIn=0; charsIn<baseSymbols.sLength; charsIn++) {
-        checks[baseSymbols.sData[charsIn]] = 1;
+        checks[(unsigned char)baseSymbols.sData[charsIn]] = 1;
     }
 
     charsIn = 0;
@@ -1496,7 +1494,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
         _String* thisColumn = (_String*)lData[i];
         long     w = theFrequencies.lData[i];
         for (long j = 0; j<thisColumn->sLength; j++)
-            if (checks[thisColumn->sData[j]]) {
+            if (checks[(unsigned char)thisColumn->sData[j]]) {
                 charsIn+=w;
             } else if (gapChar == thisColumn->sData[j]) {
                 gaps += w;
@@ -1511,7 +1509,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
 
 //___________________________________________________
 
-BaseRef _DataSet::toStr (void)
+BaseRef _DataSet::toStr (unsigned long)
 {
     _String * s = new _String(NoOfSpecies()*30, true),
     *str;
@@ -1536,10 +1534,10 @@ BaseRef _DataSet::toStr (void)
 
 //___________________________________________________
 
-void    _DataSet::toFileStr (FILE* dest)
+void    _DataSet::toFileStr (FILE* dest, unsigned long padding)
 {
     fprintf (dest, "%ld species: ",NoOfSpecies());
-    theNames.toFileStr(dest);
+    theNames.toFileStr(dest, padding);
 
     fprintf (dest, ";\nTotal Sites: %ld",GetNoTypes()) ;
     fprintf (dest, ";\nDistinct Sites: %ld",theFrequencies.lLength);
@@ -1568,9 +1566,10 @@ void    _DataSet::AddName (_String& s)
 
 //_________________________________________________________
 
-void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert, long limit)
+void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert, long limit, _String* scope)
 {
     _String     varName  = isVert ? "siteIndex" : "speciesIndex";
+    varName = AppendContainerName(varName, scope);
     _Variable   *v       = CheckReceptacle (&varName, empty, false);
 
     for (long i=0; i<limit; i++) {
@@ -2393,24 +2392,24 @@ long    _DataSetFilter::FindSpeciesName (_List& s, _SimpleList& r)
     _List           newNames;
     _AVLListX       matched (&newNames);
 
-    for (long k=0; k<theNodeMap.lLength; k++) {
+    for (unsigned long k=0UL; k<theNodeMap.lLength; k++) {
         long i = theNodeMap.lData[k];
         _String * uC = new _String (*(_String*)theData->theNames (i));
         uC->UpCase();
         matched.Insert (uC,i);
     }
 
-    for (long m = 0; m < s.lLength; m++) {
-        _String ts (*((_String*)s(m)));
+    for (unsigned long m = 0UL; m < s.lLength; m++) {
+        _String ts (*(_String*)s.GetItem (m));
         ts.UpCase();
         long f = matched.Find (&ts);
-        if (f>=0) {
+        if (f>=0L) {
             r << matched.GetXtra (f);
         } else {
             break;
         }
     }
-
+    
     return r.lLength;
 }
 
@@ -2622,23 +2621,25 @@ void    _DataSetFilter::SetExclusions (_String* theList, bool filter)
         return;
     }
 
-    _List        *tokens = theList->Tokenize(',');
+    _List        tokens (theList->Tokenize(','));
     _SimpleList  holder;
     _AVLList     exclusions (&holder);
 
-    for (long k = 0; k < tokens->lLength; k++) {
-        long posMarker = MapStringToCharIndex(*(_String*)((*tokens)(k)));
+    for (long k = 0; k < tokens.lLength; k++) {
+      
+        _String* kth_token = (_String*)tokens.GetItem(k);
+      
+        long posMarker = MapStringToCharIndex(*kth_token);
 
         if (posMarker < 0) {
-            ReportWarning (_String("Exclusion request for '") & *(_String*)((*tokens)(k)) &"' does not represent a unique state and will therefore be ignored.");
+            ReportWarning (_String("Exclusion request for '") & *kth_token &"' does not represent a unique state and will therefore be ignored.");
         } else {
             if (exclusions.Insert((BaseRef)posMarker) < 0) {
-                ReportWarning (_String("Exclusion symbol for '") & *(_String*)((*tokens)(k)) &"' is included more than once.");
+                ReportWarning (_String("Exclusion symbol for '") & *kth_token &"' is included more than once.");
             }
         }
     }
 
-    DeleteObject (tokens);
     exclusions.ReorderList();
 
     if (filter) {
@@ -2686,7 +2687,7 @@ long    _DataSetFilter::GetDimension (bool correct)
 //____________________________________________________________________________________
 //  20110610: SLKP, some cleanup and refactoring
 
-void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool isVertical, _SimpleList* additionalFilter, _SimpleList* otherDimension)
+void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool isVertical, _SimpleList* additionalFilter, _SimpleList* otherDimension, _String* scope)
 {
     if (!input2.sLength) {
         return;
@@ -2704,8 +2705,9 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
 
     if (!input.IsALiteralArgument(true)) { // not a literal argument
         _Formula fmla, lhs;
-
         _FormulaParsingContext fpc;
+        fpc.setScope (scope);
+      
         long     outcome = Parse (&fmla, input, fpc,&lhs);
 
         if (outcome!=HY_FORMULA_EXPRESSION) {
@@ -2719,7 +2721,7 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
             newSpec << ((_FString*)fV)->theString;
             newSpec << '"';
             newSpec.Finalize();
-            ProcessPartition (newSpec, target, isVertical, additionalFilter);
+            ProcessPartition (newSpec, target, isVertical, additionalFilter, nil, scope);
         } else {
             _DataSet::MatchIndices (fmla, target, isVertical, totalLength);
         }
@@ -2968,7 +2970,6 @@ void    _DataSetFilter::FindAllSitesLikeThisOne (long index, _SimpleList& recept
     if (theData->NoOfSpecies()==theNodeMap.lLength) {
         long *matchMap = new long[unitLength];
 
-        checkPointer (matchMap);
         for (m=0; m<unitLength; m++)
             //matchMap[m] = theData->theMap.lData[theOriginalOrder.lData[oindex+1]];
         {
@@ -2988,7 +2989,7 @@ void    _DataSetFilter::FindAllSitesLikeThisOne (long index, _SimpleList& recept
                 }
         }
 
-        delete matchMap;
+        delete [] matchMap;
     } else {
         char ** matchMap = (char**)MemAllocate (sizeof (char*) * unitLength);
         checkPointer (matchMap);
@@ -3292,8 +3293,8 @@ _Matrix* _DataSetFilter::PairwiseCompare (_SimpleList* s1, _SimpleList *s2, _Lis
             res->theData[c1*c+c2] += 1.;
         }
 
-        delete sort1;
-        delete sort2;
+        delete [] sort1;
+        delete [] sort2;
     } else {
         checkPointer (nil);
     }
@@ -3405,10 +3406,6 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
     long        loopDim  = GetDimension();
     _Parameter* store    = new _Parameter [loopDim];
 
-    if (!store) {
-        warnError( -108);
-    }
-
     long j,
          upTo = theNodeMap.lLength?theNodeMap.lLength:theData->NoOfSpecies();
 
@@ -3432,13 +3429,13 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
                 outcome = true;
                 storage->Insert ((BaseRef)theNodeMap.lData[k]);
             } else {
-                delete store;
+                delete [] store;
                 return true;
             }
         }
     }
 
-    delete store;
+    delete [] store;
     return outcome;
 }
 
@@ -3446,52 +3443,48 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
 //_______________________________________________________________________
 bool    _DataSetFilter::IsConstant (unsigned long site,bool relaxedDeletions)
 {
-    _Parameter* store = nil, *store2 = nil;
+    _Parameter *store = new _Parameter [GetDimension()],
+               *store2 = new _Parameter [GetDimension()];
 
-    store = new _Parameter [GetDimension()];
-    store2 = new _Parameter [GetDimension()];
-
-    if (!(store&&store2)) {
-        warnError(-108);
-    }
-    long j,
+    unsigned long j,
          upTo = theNodeMap.lLength?theNodeMap.lLength:theData->NoOfSpecies(),
          loopDim = GetDimension();
 
     Translate2Frequencies ((*this)(site,0), store, false);
 
     if (relaxedDeletions) {
-        for (unsigned int k = 1; k<upTo; k++) {
+        for (unsigned long k = 1UL; k<upTo; k++) {
             Translate2Frequencies ((*this)(site,k), store2, false);
-            for (j=0; j<loopDim; j++) {
+            for (j=0UL; j<loopDim; j++) {
                 if (store2[j]==0.0) {
                     store[j]=0.0;
                 }
             }
         }
-        for (j=0; j<loopDim; j++)
+        for (j=0UL; j<loopDim; j++)
             if (store[j]!=0.0) {
-                delete store;
-                delete store2;
-                return true;
+              break;
             }
-        if (j==loopDim) {
-            delete store;
-            delete store2;
-            return false;
-        }
+      
+        delete [] store;
+        delete [] store2;
+        return j!=loopDim;
+      
     } else {
-        for (unsigned int k = 1; k<upTo; k++) {
+        for (unsigned long k = 1; k<upTo; k++) {
             Translate2Frequencies ((*this)(site,k), store2, false);
-            for (j=0; j<loopDim; j++)
+            for (j=0UL; j<loopDim; j++)
+              
                 if (store[j]!=store2[j]) {
-                    delete store;
-                    delete store2;
+                    delete [] store;
+                    delete [] store2;
                     return false;
                 }
         }
     }
-
+  
+    delete [] store;
+    delete [] store2;
     return true;
 }
 
@@ -4266,7 +4259,7 @@ long    _DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect
 
         count = 1;
         for (m = 0; m<unitLength; m++ ) {
-            theData->theTT->TokenCode (str.sData[m], storeP+theData->theTT->baseLength*m);
+            theData->theTT->TokenCode (str.sData[m], storeP+theData->theTT->baseLength*m, smear);
         }
 
         for (m = unitLength-1; m>=0; m--) {
@@ -4449,7 +4442,6 @@ long    _DataSetFilter::MapStringToCharIndex (_String& str)
         }
 
         if (count==1) {
-            m = 0;
             if (theExclusions.lLength) {
                 for (long exc = 0; exc < theExclusions.lLength; exc++)
                     if (index == theExclusions.lData[exc]) {
@@ -4894,7 +4886,7 @@ void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine)
     } else {
         treeString.Finalize();
         setParameter (dataFileTree,1.0,fState->theNamespace);
-        setParameter (dataFileTreeString, new _FString (treeString), false);
+        setParameter (dataFileTreeString, new _FString (treeString), nil, false);
     }
 
 }
@@ -5259,7 +5251,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             ReadNexusFile (fState,f,(*result));
             doAlphaConsistencyCheck = false;
         } else {
-            long i,j,k, filePosition = -1, saveSpecExpected;
+            long i,j,k, filePosition = -1, saveSpecExpected = 0x7FFFFFFF;
             char c;
             while (CurrentLine.sLength) { // stuff to do
                 // check if the line has a command in it
@@ -5341,8 +5333,8 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                                 if (fState.totalSpeciesRead<fState.totalSpeciesExpected) {
                                     TrimPhylipLine (CurrentLine, (*result));
                                 }
-                                if ((fState.curSite)&&(fState.curSpecies >= saveSpecExpected)&&
-                                        (fState.totalSitesRead >= fState.totalSitesExpected)) {
+                                if (fState.curSite && fState.curSpecies >= saveSpecExpected &&
+                                        fState.totalSitesRead >= fState.totalSitesExpected) {
                                     // reached the end of the data - see maybe there is a tree
                                     ReadNextLine (f,&CurrentLine,&fState);
                                     if (CurrentLine.sLength) {
@@ -5551,7 +5543,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
         if (execBF == 1) {
             lastNexusDataMatrix = result;
 
-            long            bfl = batchLanguageFunctions.lLength;
+            long            bfl = GetBFFunctionCount ();
 
             _ExecutionList nexusBF (nexusBFBody,namespaceID);
             if (bfName) {
@@ -5577,11 +5569,10 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
 
 //_________________________________________________________
 
-BaseRef _DataSetFilter::toStr (void)
+BaseRef _DataSetFilter::toStr (unsigned long)
 {
     //return new _String("DataSetFilters only print to files");
     _String * res = new _String (4096L, true);
-    checkPointer (res);
     internalToStr (nil,*res);
     res->Finalize();
     return res;
@@ -5729,7 +5720,7 @@ _String _DataSetFilter::GenerateConsensusString (_SimpleList* majority)
 
 
 //_________________________________________________________
-void    _DataSetFilter::toFileStr (FILE*dest)
+void    _DataSetFilter::toFileStr (FILE*dest, unsigned long)
 {
 // write out the file with this dataset filter
     if (!dest) {
@@ -5786,7 +5777,7 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
     long i,
          j;
 
-    if (outputFormat < 4 || outputFormat > 8)
+    if (outputFormat < 4 || outputFormat > 8) // not NEXUS or serial
         if (!(theData->theTT->IsStandardNucleotide() || theData->theTT->IsStandardAA())) {
             _String * bSet = &theData->theTT->baseSet;
             if (dest) {
@@ -5891,7 +5882,7 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
         } else {
             rec << _String((long)theNodeMap.lLength);
             rec << '\t';
-            rec << _String((long)theNodeMap.lLength,theOriginalOrder.lLength);
+            rec << _String(theOriginalOrder.lLength);
             rec << '\n';
         }
         // proceed to spool out the data
@@ -5952,7 +5943,7 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
         } else {
             rec << _String((long)theNodeMap.lLength);
             rec << '\t';
-            rec << _String((long)theNodeMap.lLength,theOriginalOrder.lLength);
+            rec << _String(theOriginalOrder.lLength);
             rec << '\n';
         }
         // proceed to spool out the data
@@ -6415,7 +6406,51 @@ bool    StoreADataSet (_DataSet* ds, _String* setName)
             }
         dataSetList.Replace(pos,ds,false);
     }
+  
+    _Parameter normalizeSeqNames = 1.;
+    checkParameter (normalizeSequenceNames, normalizeSeqNames, 0.0);
+  
+    CheckReceptacleAndStore (*setName&".mapping",empty,false, new _MathObject, false);
+    if (normalizeSeqNames > 0.1) {
+      _List _id_mapping;
+      _AVLListXL id_mapping (&_id_mapping);
+      bool       did_something = false;
+      
+      for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
+        _String * old_name = new _String (*ds->GetSequenceName (i));
+        if (! old_name->IsValidIdentifier(false) ) {
+          ds->GetSequenceName (i)->ConvertToAnIdent(false);
+          did_something = true;
+        }
+        if (id_mapping.Find (ds->GetSequenceName (i)) >= 0) {
+          _String new_name (*ds->GetSequenceName (i));
+          long suffix = 1L;
+          do {
+            new_name = *ds->GetSequenceName (i) & "_" & suffix++;
+          } while (id_mapping.Find (&new_name) >= 0);
+          *ds->GetSequenceName (i) = new_name;
+          did_something = true;
+        }
+        
+        ds->GetSequenceName (i)->AddAReference();
+        id_mapping.Insert (ds->GetSequenceName (i), (long)old_name, false, false);
+      }
+      
+      if (did_something) {
+        _AssociativeList * mapping = new _AssociativeList();
+        
+        _SimpleList history;
+        long t,
+             current_index = id_mapping.Traverser(history, t, id_mapping.GetRoot());
 
+        while (current_index >= 0L) {
+          mapping->MStore(*(_String*)_id_mapping.GetItem (current_index), *(_String*)id_mapping.GetXtra(current_index));
+          current_index = id_mapping.Traverser(history, t);
+        }
+        
+        CheckReceptacleAndStore (*setName&".mapping",empty,false, mapping, false);
+     }
+    }
 
     CheckReceptacleAndStore (*setName&".species",empty,false, new _Constant (ds->NoOfSpecies()), false);
     CheckReceptacleAndStore (*setName&".sites",empty,false, new _Constant (ds->NoOfColumns()), false);
@@ -6454,7 +6489,7 @@ _Matrix * _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _Sim
 
     vD = posSpec?unit/atom:1;
 
-    _Matrix   *  out = (_Matrix*) checkPointer(new _Matrix (hD, vD, false, true));
+    _Matrix   *  out = new _Matrix (hD, vD, false, true);
 
     long     positions  =   unit/atom,
              *store        = new long[atom*theTT->baseLength];

@@ -62,7 +62,7 @@ class _AVLListX: public _AVLList
         _AVLListX(_SimpleList*);
 
         virtual ~_AVLListX(void){}
-        virtual BaseRef toStr(void);
+        virtual BaseRef toStr(unsigned long = 0UL);
 
         virtual void Clear(bool = false);
         virtual void DeleteXtra(long);

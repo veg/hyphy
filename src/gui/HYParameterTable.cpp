@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -49,6 +49,7 @@
 #include "HYSharedMain.h"
 #include "HYGWindow.h"
 #include "HYChartWindow.h"
+#include "function_templates.h"
 
 #include "math.h"
 
@@ -544,7 +545,7 @@ void    _HYParameterTable::SetSelectedRows (_List& theNames)
         }
     }
     for (k=0; k<patterns.lLength; k++) {
-        if (theNames.BinaryFind(patterns(k))>=0) {
+        if (theNames.BinaryFindObject(patterns(k))>=0) {
             rowsToSelect << patternIndex.lData[k];
         }
     }
@@ -1364,7 +1365,7 @@ void    _HYParameterTable::HandleRestoreLF (_String* lfName)
 {
     _HYDataPanel*parent = (_HYDataPanel*)RetrieveParentDataPanel ();
     if (parent) {
-        long k = parent->savedLFNames.Find (lfName);
+        long k = parent->savedLFNames.FindObject (lfName);
         if (k>=0) {
             if (!parent->LFRestore (k)) {
                 return;
@@ -1398,7 +1399,7 @@ void    _HYParameterTable::HandleDeleteLF (_String* lfName)
 {
     _HYDataPanel*parent = (_HYDataPanel*)RetrieveParentDataPanel ();
     if (parent) {
-        long k = parent->savedLFNames.Find (lfName);
+        long k = parent->savedLFNames.FindObject (lfName);
         if (k>=0) {
             parent->savedLFNames.Delete (k);
             parent->savedLFStates.Delete (k);
@@ -2018,7 +2019,7 @@ void    _HYParameterTable::DoEqualConstraint (void)
     menuChoice = HandlePullDown (menuOptions,h,v,0);
     bb->_UnpushButton();
 
-    v = menuOptions.Find (&menuChoice);
+    v = menuOptions.FindObject (&menuChoice);
     if (v<0) {
         return;
     }
@@ -2187,7 +2188,7 @@ void    _HYParameterTable::DoProportionalConstraint (void)
         menuChoice = HandlePullDown (menuOptions,h,v,0);
         bb->_UnpushButton();
 
-        v = menuOptions.Find (&menuChoice);
+        v = menuOptions.FindObject (&menuChoice);
 
         if (v<0) {
             return;
@@ -2201,7 +2202,7 @@ void    _HYParameterTable::DoProportionalConstraint (void)
                 if (!EnterStringDialog (newID,prStr, (Ptr)this, hyIDValidator)) {
                     return;
                 } else {
-                    if ((h=globalVars.Find (&newID))>=0) {
+                    if ((h=globalVars.FindObject (&newID))>=0) {
                         menuChoice = menuChoice.Replace ("{New Ratio}", newID, true);
                     } else {
                         if (!newID.IsValidIdentifier()) {
@@ -2355,7 +2356,7 @@ void    _HYParameterTable::DoProportionalSubtrees (void)
         ((_TheTree*)thisTree2)->ScanSubtreeVars (menuOptions2,1,thisCN2);
 
         for (k=menuOptions.lLength-1; k>=0; k--)
-            if (menuOptions2.Find (menuOptions(k))<0) {
+            if (menuOptions2.FindObject (menuOptions(k))<0) {
                 menuOptions.Delete (k);
             }
 
@@ -2373,7 +2374,7 @@ void    _HYParameterTable::DoProportionalSubtrees (void)
         menuChoice = HandlePullDown (menuOptions,h,v,0);
         bb->_UnpushButton();
 
-        v = menuOptions.Find (&menuChoice);
+        v = menuOptions.FindObject (&menuChoice);
 
         if (v<0) {
             return;
@@ -2391,7 +2392,7 @@ void    _HYParameterTable::DoProportionalSubtrees (void)
 
             _List globalVars;
             long insertAt = GatherListOfGlobals (globalVars);
-            if (globalVars.Find(&newID)<0) {
+            if (globalVars.FindObject(&newID)<0) {
                 _Variable newVar (newID,true);
                 LocateVar(newVar.GetAVariable())->SetNumericValue(1.);
                 table->AddRow (insertAt,HY_PARAMETER_TABLE_ROW_HEIGHT,HY_TABLE_STATIC_TEXT);
@@ -2475,7 +2476,7 @@ void    _HYParameterTable::DoBoundsChange (void)
         menuChoice = HandlePullDown (menuOptions,h,v,0);
         bb->_UnpushButton();
 
-        v = menuOptions.Find (&menuChoice);
+        v = menuOptions.FindObject (&menuChoice);
 
         if (v<0) {
             return;
@@ -2581,7 +2582,7 @@ void    _HYParameterTable::DoMolecularClock (void)
         bb->GetButtonLoc(4,h,v,true);
         menuChoice = HandlePullDown (menuOptions,h,v,0);
 
-        v = menuOptions.Find (&menuChoice);
+        v = menuOptions.FindObject (&menuChoice);
         if (v<0) {
             return;
         }
@@ -3092,7 +3093,7 @@ void    _HYParameterTable::HandleVarianceEstimates (void)
         SortLists (&independents, &indIndices);
 
         for (long k2=0; k2<rows.lLength; k2++) {
-            long    f = independents.BinaryFind (table->GetCellData(1,rows.lData[k2]));
+            long    f = independents.BinaryFindObject (table->GetCellData(1,rows.lData[k2]));
             if (f>=0) {
                 filteredList << indIndices.lData[f];
             }
@@ -3848,7 +3849,7 @@ bool    _HYBootstrapWindow::ProcessEvent (_HYEvent* e)
                 firstArg = HandlePullDown (menuOptions,h,v,0);
                 bb->_UnpushButton();
 
-                v = menuOptions.Find (&firstArg);
+                v = menuOptions.FindObject (&firstArg);
 
                 if (v>=0) {
                     if (v%2 == 0) {
@@ -4929,7 +4930,7 @@ bool    _HYGeneralBootstrapWindow::ProcessEvent (_HYEvent* e)
                 bb->GetButtonLoc(0,h,v,true);
                 menuChoice = HandlePullDown (menuOptions,h,v,0);
                 bb->_UnpushButton();
-                i = menuOptions.Find (&menuChoice);
+                i = menuOptions.FindObject (&menuChoice);
                 if (i>=0) {
                     HandleBootstrap (i);
                 }

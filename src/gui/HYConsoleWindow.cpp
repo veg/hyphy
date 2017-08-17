@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -279,7 +279,7 @@ bool    _HYConsoleWindow::ProcessEvent (_HYEvent* e)
                         justTheName = userAction;
 
                 bb->_UnpushButton();
-                i = menuChoices.Find (&userAction);
+                i = menuChoices.FindObject (&userAction);
                 if (i>=0) {
                     _ExecutionList uxl;
                     if (k==0) {

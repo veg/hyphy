@@ -4,9 +4,9 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 
 Copyright (C) 1997-now
 Core Developers:
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
   Art FY Poon    (apoon@cfenet.ubc.ca)
-  Steven Weaver (sweaver@ucsd.edu)
+  Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
@@ -129,7 +129,7 @@ void _Trie::Duplicate (BaseRef storage) {
     
 //----------------------------------------------------------------------------------------------------------------------
 
-long    _Trie::FindNextLetter (const char letter, const unsigned long current_index) {
+long    _Trie::FindNextLetter (const char letter, const unsigned long current_index) const {
     long letterKey = charMap.lData[(const unsigned char)letter];
     if (letterKey >= 0) {
         _SimpleList* thisList = ((_SimpleList**)lData)[current_index];
@@ -177,7 +177,7 @@ long    _Trie::InsertNextLetter (const char letter, const unsigned long current_
 
 
 //----------------------------------------------------------------------------------------------------------------------
-long     _Trie::Find (const _String& key, _SimpleList* path, bool prefixOK){
+long     _Trie::FindKey (const _String& key, _SimpleList* path, bool prefixOK) const{
     long current_index = 0,
          next_index    = 0;
     for (long k = 0; k <= key.sLength && current_index >= 0; k++){
@@ -194,8 +194,9 @@ long     _Trie::Find (const _String& key, _SimpleList* path, bool prefixOK){
     return current_index;
 }
 
+
 //----------------------------------------------------------------------------------------------------------------------
-long     _Trie::Find (const char key, bool prefixOK){
+long     _Trie::FindKey (const char key, bool prefixOK) const {
     long current_index = 0,
     next_index    = FindNextLetter (key, current_index);
     if (next_index < 0 && prefixOK) {
@@ -207,7 +208,7 @@ long     _Trie::Find (const char key, bool prefixOK){
 
 //----------------------------------------------------------------------------------------------------------------------
 long     _Trie::GetValueFromString (const _String& key){
-    long keyIndex = Find(key);
+    long keyIndex = FindKey (key);
     if (keyIndex != HY_TRIE_NOTFOUND) {
         return GetValue (keyIndex);
     }
@@ -299,7 +300,7 @@ unsigned long    _Trie::Insert (const _List& key, const _SimpleList* values) {
 //----------------------------------------------------------------------------------------------------------------------
 bool    _Trie::Delete (const _String& key){
     _SimpleList history;
-    long found_key = Find (key, &history);
+    long found_key = FindKey (key, &history);
     if (found_key >= 0) {
         // now traverse the history list backwards and delete all keys that have no children
         for (long k = history.lLength-1; k>=0; k--) {
@@ -381,7 +382,7 @@ void    _Trie::DumpRaw() {
                                                             
 //----------------------------------------------------------------------------------------------------------------------
 
-BaseRef     _Trie::toStr() {
+BaseRef     _Trie::toStr(unsigned long) {
     _String         * serialized = new _String (128L, true),
                       alph       = Alphabet();
                       

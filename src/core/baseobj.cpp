@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -36,6 +36,8 @@
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
  */
+
+//#define __HYPHY_MPI_MESSAGE_LOGGING__
 
 #include "baseobj.h"
 #include "errorfns.h"
@@ -71,6 +73,12 @@ extern int _hy_mpi_node_rank;
     #include <Windows.h>
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__)
+  #include <mach/mach.h>
+  #include <mach/mach_time.h>
+  mach_timebase_info_data_t    sTimebaseInfo;
+#endif
+
 
 
 bool        terminateExecution  = false;
@@ -82,7 +90,6 @@ bool        terminateExecution  = false;
 FILE*     globalErrorFile   = nil,
           *   globalMessageFile = nil;
 
-extern    bool          isInFunction;
 
 extern    _String   scanfLastFilePath;
 
@@ -96,7 +103,9 @@ long            globalRandSeed;
 //____________________________________________________________________________________
 
 _String         errorFileName   ("errors.log"),
-                messageFileName ("messages.log");
+                messageFileName ("messages.log"),
+                _hy_TRUE ("TRUE"),
+                _hy_FALSE ("FALSE");
 
 
 //____________________________________________________________________________________
@@ -108,28 +117,24 @@ BaseObj::BaseObj()
 
 
 //____________________________________________________________________________________
-BaseRef   BaseObj::toStr (void)
-{
-    return new _String ("null");
+BaseRef   BaseObj::toStr (unsigned long padding) {
+  return new _String ("null");
 }
 
 //____________________________________________________________________________________
-BaseRef   BaseObj::toErrStr (void)
-{
-    return toStr();
+BaseRef   BaseObj::toErrStr (unsigned long padding) {
+    return toStr(padding);
 }
 
 //____________________________________________________________________________________
-void     BaseObj::toFileStr (FILE* dest)
-{
-    _String* s = (_String*)toStr();
+void     BaseObj::toFileStr (FILE* dest, unsigned long padding) {
+    _String* s = (_String*)toStr(padding);
     fwrite(s->sData,1,s->Length(),dest);
     DeleteObject (s);
 }
 
 //____________________________________________________________________________________
-BaseObj*  BaseObj::makeDynamic(void)
-{
+BaseObj*  BaseObj::makeDynamic(void) {
     warnError(-112);
     return nil;
 }
@@ -154,6 +159,53 @@ FILE *      doFileOpen (const char * fileName, const char * mode, bool warn)
     return daFile;
 }
 
+void    InitializeGlobals (void) {
+  _hyApplicationGlobals.Insert(new _String (dataFileTree));
+  _hyApplicationGlobals.Insert(new _String (dataFileTreeString));
+  _hyApplicationGlobals.Insert(new _String (siteWiseMatrix));
+  _hyApplicationGlobals.Insert(new _String (blockWiseMatrix));
+  _hyApplicationGlobals.Insert(new _String (selectionStrings));
+  _hyApplicationGlobals.Insert(new _String (randomSeed));
+  _hyApplicationGlobals.Insert(new _String (statusBarUpdateString));
+  _hyApplicationGlobals.Insert(new _String (statusBarProgressValue));
+  _hyApplicationGlobals.Insert(new _String (hyphyBaseDirectory));
+  _hyApplicationGlobals.Insert(new _String (hyphyLibDirectory));
+  _hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
+  _hyApplicationGlobals.Insert(new _String (pathToCurrentBF));
+  _hyApplicationGlobals.Insert(new _String (_hy_TRUE));
+  _hyApplicationGlobals.Insert(new _String (_hy_FALSE));
+  _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_VALUE_"));
+  _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_ROW_"));
+  _hyApplicationGlobals.Insert(new _String ("_MATRIX_ELEMENT_COLUMN_"));
+  _hyApplicationGlobals.Insert(new _String (nexusFileTreeMatrix));
+  _hyApplicationGlobals.Insert(new _String (dataFilePartitionMatrix));
+  _hyApplicationGlobals.Insert(new _String (useLastFString));
+  
+  
+  _String             dd (GetPlatformDirectoryChar());
+  
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd));
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "UserAddIns" & dd));
+  standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
+  
+  standardLibraryExtensions.AppendNewInstance (new _String (""));
+  standardLibraryExtensions.AppendNewInstance (new _String (".bf"));
+  standardLibraryExtensions.AppendNewInstance (new _String (".ibf"));
+  standardLibraryExtensions.AppendNewInstance (new _String (".def"));
+  standardLibraryExtensions.AppendNewInstance (new _String (".mdl"));
+  
+  _HBL_Init_Const_Arrays  ();
+  
+  CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.), false);
+  CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.), false);
+  setParameter        (platformDirectorySeparator, new _FString (dd, false), nil, false); // these should be set globally?
+  setParameter        (hyphyBaseDirectory, new _FString (baseDirectory, false), nil, false);
+  setParameter        (hyphyLibDirectory, new _FString (libDirectory, false), nil, false);
+  
+
+}
 
 //____________________________________________________________________________________
 bool    GlobalStartup (void)
@@ -180,58 +232,30 @@ bool    GlobalStartup (void)
     init_genrand            (seed_init);
     globalRandSeed          = seed_init;
     setParameter            (randomSeed,globalRandSeed);
-    long                    p   = 1;
 
-    _hyApplicationGlobals.Insert(new _String (dataFileTree));
-    _hyApplicationGlobals.Insert(new _String (dataFileTreeString));
-    _hyApplicationGlobals.Insert(new _String (siteWiseMatrix));
-    _hyApplicationGlobals.Insert(new _String (blockWiseMatrix));
-    _hyApplicationGlobals.Insert(new _String (selectionStrings));
-    _hyApplicationGlobals.Insert(new _String (randomSeed));
-    _hyApplicationGlobals.Insert(new _String (statusBarUpdateString));
-    _hyApplicationGlobals.Insert(new _String (statusBarProgressValue));
-    _hyApplicationGlobals.Insert(new _String (hyphyBaseDirectory));
-    _hyApplicationGlobals.Insert(new _String (hyphyLibDirectory));
-    _hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
-    _hyApplicationGlobals.Insert(new _String (pathToCurrentBF));
-
-    _String             dd (GetPlatformDirectoryChar());
-
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "UserAddIns" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
-
-    standardLibraryExtensions.AppendNewInstance (new _String (""));
-    standardLibraryExtensions.AppendNewInstance (new _String (".bf"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".ibf"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".def"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".mdl"));
-
-    _HBL_Init_Const_Arrays  ();
-
+    InitializeGlobals();
 
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
     if (_hy_mpi_node_rank == 0) {
 #endif
+      long                    p   = 1;
 
 
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
-#ifndef __HYPHYMPI__
-    _String fileName(errorFileName);
-#if defined __HYPHYXCODE__ || defined __WINDOZE__
-    fileName = baseDirectory & fileName;
-#endif
-#else
-    _String fileName = errorFileName & ".mpinode" & (long)_hy_mpi_node_rank;
-#endif
+  #ifndef __HYPHYMPI__
+      _String fileName(errorFileName);
+      #if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
+          fileName = baseDirectory & fileName;
+      #endif
+  #else
+      _String fileName = errorFileName & ".mpinode" & (long)_hy_mpi_node_rank;
+  #endif
 
     globalErrorFile = doFileOpen (fileName.sData,"w+");
     while (globalErrorFile == nil && p<10) {
         fileName = errorFileName&'.'&_String(p);
-#if defined __HYPHYXCODE__ || defined __WINDOZE__
+#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
         fileName = baseDirectory & fileName;
 #endif
         globalErrorFile = doFileOpen (fileName.sData,"w+");
@@ -242,7 +266,7 @@ bool    GlobalStartup (void)
     p=1;
 #ifndef __HYPHYMPI__
     fileName = messageFileName;
-#if defined __HYPHYXCODE__ || defined __WINDOZE__
+#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
     fileName = baseDirectory & fileName;
 #endif
 #else
@@ -253,7 +277,7 @@ bool    GlobalStartup (void)
 
     while (globalMessageFile == nil && p<10) {
         fileName = messageFileName&'.'&_String(p);
-#if defined __HYPHYXCODE__ || defined __WINDOZE__
+#if defined __HYPHYXCODE__ || defined __WINDOZE__ || defined __MINGW32__
         fileName = baseDirectory & fileName;
 #endif
         globalMessageFile = doFileOpen (fileName.sData,"w+");
@@ -264,8 +288,9 @@ bool    GlobalStartup (void)
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
     }
 #endif
+  
 
-    return globalErrorFile && globalMessageFile;
+  return globalErrorFile && globalMessageFile;
 }
 
 
@@ -288,11 +313,15 @@ bool    GlobalShutdown (void)
     // force manual clear to help debuggin 'exit' crashes
     ReportWarning ("PurgeAll was successful");
     if (_hy_mpi_node_rank == 0) {
+        fflush (stdout);
+
         for (long count = 1; count < size; count++) {
             ReportWarning (_String ("Sending shutdown command to node ") & count & '.');
             MPISendString(empty,count);
         }
     }
+#else
+  fflush (stdout);  
 #endif
 
 #ifdef  __HYPHYMPI__
@@ -308,6 +337,7 @@ bool    GlobalShutdown (void)
     ReportWarning ("Returned from MPI_Finalize");
 #endif
 
+  
 
     if (globalErrorFile) {
         fflush (globalErrorFile);
@@ -358,6 +388,8 @@ bool    GlobalShutdown (void)
     }
     _HY_HBLCommandHelper.Clear();
     _HY_ValidHBLExpressions.Clear();
+    listOfCompiledFormulae.Clear();
+  
 
     return res;
 }
@@ -366,11 +398,7 @@ bool    GlobalShutdown (void)
 
 void    PurgeAll (bool all)
 {
-    batchLanguageFunctions.Clear();
-    batchLanguageFunctionNames.Clear();
-    batchLanguageFunctionParameterLists.Clear();
-    batchLanguageFunctionParameters.Clear();
-    batchLanguageFunctionClassification.Clear();
+    ClearBFFunctionLists();
     executionStack.Clear();
     loadedLibraryPaths.Clear(true);
     _HY_HBL_Namespaces.Clear();
@@ -391,16 +419,16 @@ void    PurgeAll (bool all)
         variablePtrs.Clear();
         freeSlots.Clear();
         lastMatrixDeclared = -1;
-        {
-            variableNames.Clear(true);
-        }
+        variableNames.Clear(true);
+        _hyApplicationGlobals.Clear(true);
+      
         _x_ = nil;
         _n_ = nil;
         pathNames.Clear();
     }
     scanfLastFilePath = empty;
     setParameter (randomSeed,globalRandSeed);
-    isInFunction        = false;
+    isInFunction        = _HY_NO_FUNCTION;
     isDefiningATree     = 0;
 #ifdef __HYPHYMPI__
     int            size;
@@ -412,8 +440,7 @@ void    PurgeAll (bool all)
 }
 
 //____________________________________________________________________________________
-void    DeleteObject (BaseRef theObject)
-{
+void    DeleteObject (BaseRef theObject) {
     if (theObject) {
         if (theObject->nInstances<=1) {
             delete (theObject);
@@ -474,6 +501,8 @@ void        yieldCPUTime(void)
 double      TimerDifferenceFunction (bool doRetrieve)
 {
     double timeDiff = 0.0;
+  
+  
 #ifdef __MAC__
     static UnsignedWide microsecsIn;
     UnsignedWide microsecsOut;
@@ -509,7 +538,7 @@ double      TimerDifferenceFunction (bool doRetrieve)
         if (doRetrieve) {
             QueryPerformanceCounter (&tOut);
             timeDiff   = (tOut.QuadPart-tIn.QuadPart) * winTimerScaler;
-
+          
         } else {
             QueryPerformanceCounter (&tIn);
         }
@@ -526,13 +555,32 @@ double      TimerDifferenceFunction (bool doRetrieve)
     }
     else
         clockIn  = clock();*/
+  
+#if defined(__APPLE__) && defined(__MACH__)
+  static uint64_t        clockIn, clockOut;
+  
+  if (doRetrieve) {
+    clockOut = mach_absolute_time();
+    uint64_t diff = clockOut - clockIn;
+    if ( sTimebaseInfo.denom == 0 ) {
+      (void) mach_timebase_info(&sTimebaseInfo);
+    }
+    
+    return diff * 1e-9 * sTimebaseInfo.numer / sTimebaseInfo.denom;
+  
+  } else {
+    clockIn = mach_absolute_time();
+  }
+#else
     static timeval clockIn, clockOut;
     if (doRetrieve) {
         gettimeofday (&clockOut,nil);
         timeDiff = (clockOut.tv_sec-clockIn.tv_sec) + (clockOut.tv_usec-clockIn.tv_usec)*0.000001;
+      
     } else {
         gettimeofday (&clockIn,nil);
     }
+#endif
 
 #endif
 

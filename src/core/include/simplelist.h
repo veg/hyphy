@@ -106,7 +106,7 @@ class _SimpleList:public BaseObj
         long operator () (const unsigned long);
 
         // assignment operator
-        virtual _SimpleList operator = (_SimpleList);
+        virtual _SimpleList const & operator = (_SimpleList const&);
 
         // append operator
         virtual _SimpleList operator & (_SimpleList);
@@ -142,7 +142,7 @@ class _SimpleList:public BaseObj
         * @param startAt Index to start at 
         * @return -1 if not found, index if found
         */
-        virtual long BinaryFind(long, long startAt=0);
+        virtual long BinaryFind(long, long startAt=0) const;
 
         // insert an element into the sorted list preserving the sortedness
         long BinaryInsert(long);
@@ -162,7 +162,7 @@ class _SimpleList:public BaseObj
         * @return -1 if i<j, 0 if i==j, or 1 if i>j 
         */
         virtual long Compare(long,long);
-        virtual long Compare(BaseRef,long);
+        virtual long Compare(BaseObj const*,long);
 
         long CountCommonElements(_SimpleList&, bool=false);
 
@@ -171,7 +171,7 @@ class _SimpleList:public BaseObj
         * Example: SimpleList SimpleList([4, 1, 2]).countitems() = 4 
         * @return Unsigned long of item length    
         */
-        unsigned long countitems(void);
+        inline unsigned long countitems(void) const {return lLength;}
 
         /**
         * SLKP: 20090611    
@@ -210,14 +210,14 @@ class _SimpleList:public BaseObj
         * @param index Which item you want.
         * @return A long    
         */
-        long Element(long);
+        long Element(long) const;
 
         /**
         * Checks if list is identical to other list 
         * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4 
         * @return true if equal. 
         */
-        bool Equal(_SimpleList&);
+        bool Equal(_SimpleList const&) const;
 
         /**
         * Retain all those elements that are between (strictly) the 1st and the 2nd argument
@@ -423,7 +423,7 @@ class _SimpleList:public BaseObj
         */
         void Swap(long, long); //swap two elements
 
-        virtual BaseRef toStr(void);
+        virtual BaseRef toStr(unsigned long = 0UL);
 
 
         /**

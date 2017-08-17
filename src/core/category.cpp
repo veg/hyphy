@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -39,6 +39,7 @@
 
 #include  "category.h"
 #include  "math.h"
+#include  "function_templates.h"
 
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
@@ -276,7 +277,6 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                 if (scannedVarsList.lLength) {
                     if(scannedVarsList.lLength==1) {
                         if (scannedVarsList[0]==_n_->GetAVariable()) {
-                            check = true;
                               for (unsigned long i=0; i<intervals; i++) {
                                 _n_->SetValue(new _Constant ((_Parameter)i), false);
                                 (*weights)[i]= probabilities.Compute()->Value();
@@ -423,7 +423,6 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             param               = (_String*)parameters(3);
             _String             splitterName (AppendContainerName(*param,theP));
             f = LocateVarByName (splitterName);
-            check = true;
             if (f>=0) {
                 _Variable * cbase = FetchVar (f);
                 if (cbase->IsCategory()) {
@@ -465,7 +464,6 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             _Matrix* catMatrix = (_Matrix*)tryMatrix;
             if (!( ((catMatrix->GetHDim()==1)&&(catMatrix->GetVDim()==intervals))||
                     ((catMatrix->GetHDim()==intervals)&&(catMatrix->GetVDim()==1)))) {
-                check = false;
                 errorMsg = errorMsg & ("Dimension of category representatives matrix is not the same as the number of categories");
                 WarnError (errorMsg );
                 return;
@@ -735,33 +733,24 @@ void    _CategoryVariable::Clear (void)
 }
 
 //___________________________________________________________________________________________
-BaseRef _CategoryVariable::toStr (void)
+BaseRef _CategoryVariable::toStr (unsigned long)
 {
     UpdateIntervalsAndValues(true);
-    _String result (10,true), *s, st;
+    _String result (32UL,true);
     if (weights) {
-        st = "\nClass weights are:";
-        result<<&st;
+        result<< "\nClass weights are:";
         _Matrix* cw =(_Matrix*)weights->ComputeNumeric();
         checkWeightMatrix(*cw);
-        s = (_String*)cw->toStr();
-        result<<s;
+        result.AppendNewInstance((_String*)cw->toStr());
         result<<'\n';
-        DeleteObject(s);
     }
     if (values) {
-        st = "Classes represented by:";
-        result<<&st;
-        s = (_String*)values->toStr();
-        result<<s;
-        DeleteObject(s);
+        result<<"Classes represented by:";
+        result.AppendNewInstance((_String*)values->toStr());
     }
     if (intervalEnds) {
-        st = "Interval ends:";
-        result<<&st;
-        s = (_String*)intervalEnds->toStr();
-        result<<s;
-        DeleteObject(s);
+        result<< "Interval ends:";
+        result.AppendNewInstance((_String*)intervalEnds->toStr());
     }
     if (!density.IsEmpty()) {
         result << "\nSupported on [";

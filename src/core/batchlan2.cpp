@@ -3,9 +3,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -40,6 +40,7 @@
 #include      "likefunc.h"
 #include      "scfg.h"
 #include      <ctype.h>
+#include      "function_templates.h"
 
 #include      "bayesgraph.h"
 
@@ -92,7 +93,8 @@ _String     sqlOpen                 ("SQL_OPEN"),
             _hyStatusConditionProbsMatrix
             ("Constructing Conditional Probabilities Matrix"),
 
-            isDynamicGraph          ("BGM_DYNAMIC");
+            isDynamicGraph          ("BGM_DYNAMIC"),
+            treeNodeNameMapping     ("TREE_NODE_NAME_MAPPING");
 
 
 extern      _String                 blDoSQL,
@@ -179,7 +181,7 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_GetStringGlobalTypes.Insert(new _String("Tree"), HY_BL_TREE);
     _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), HY_BL_SCFG);
     _HY_GetStringGlobalTypes.Insert(new _String("Variable"), HY_BL_VARIABLE);
-	_HY_GetStringGlobalTypes.Insert(new _String("BayesianGraphicalModel"), HY_BL_BGM);
+    _HY_GetStringGlobalTypes.Insert(new _String("BayesianGraphicalModel"), HY_BL_BGM);
 
 
     _HY_ValidHBLExpressions.Insert ("function ",                            HY_HBL_COMMAND_FUNCTION);
@@ -383,8 +385,15 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_MatrixRandomValidPDFs.Insert ("Wishart", _HY_MATRIX_RANDOM_WISHART);
     _HY_MatrixRandomValidPDFs.Insert ("InverseWishart", _HY_MATRIX_RANDOM_INVERSE_WISHART);
     _HY_MatrixRandomValidPDFs.Insert ("Multinomial", _HY_MATRIX_RANDOM_MULTINOMIAL);
-
-
+  
+  
+  _List keywords (&blReturn, 6, &blDataSet, &blDataSetFilter, &blTree, &blTopology, &blLF, &blLF3, &blSCFG);
+  
+  for (long key = 0; key < keywords.lLength; key++) {
+    _String* key_string = (_String*)keywords.GetItem (key);
+    _HY_HBL_KeywordsPreserveSpaces.Insert (key_string->Reverse().Cut (1,-1), key_string->Length()-1);
+  }
+  
 }
 
 //____________________________________________________________________________________
@@ -717,20 +726,20 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
 
     if (!isFilter) {
         dataset = (_DataSet*)dataSetList(dsID);
-        dataset -> ProcessPartition (hSpecs,hL,false);
+        dataset -> ProcessPartition (hSpecs,hL,false, nil, nil, chain.GetNameSpace());
         if (code!=6 && vSpecs.sLength==0) {
             vSpecs = _String("0-")&_String(dataset->NoOfColumns()-1);
         }
-        dataset->ProcessPartition (vSpecs,vL,true);
+        dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
     } else {
         _DataSetFilter * dataset1 = (_DataSetFilter*)dataSetFilterList(dsID);
-        dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder);
+        dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
 
         if (code!=6 && vSpecs.sLength==0) {
             vSpecs = _String("0-")&_String(dataset1->GetFullLengthSpecies()-1);
         }
 
-        dataset1->GetData()->ProcessPartition (vSpecs,vL,true,  &dataset1->theOriginalOrder, &dataset1->theNodeMap);
+        dataset1->GetData()->ProcessPartition (vSpecs,vL,true,  &dataset1->theOriginalOrder, &dataset1->theNodeMap, chain.GetNameSpace());
         dataset = (_DataSet*)dataset1;
     }
 
@@ -812,6 +821,7 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
             }
             ob = lf->ConstructCategoryMatrix(partsToDo,runMode,true, &resultID);
         }
+        DeleteObject (partitionList);
     } else {
         _TheTree * testTree = (_TheTree*) FetchObjectFromVariableByType (&objectName, TREE);
         if (testTree) {
@@ -828,28 +838,26 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
                         + testTree->GetINodeCount()) * testTree->categoryCount,
                         testTree->GetCodeBase(),
                         false, true);
+              
                 _List               leafNames,
                                     inodeNames;
-
-                testTree->DepthWiseT(true);
-
-                while (testTree->currentNode) {
-                    _String       * bs = new _String;
-                    testTree->GetNodeName  (testTree->currentNode, *bs);
-                    if (testTree->IsCurrentNodeATip()) {
-                        leafNames << bs;
+              
+              
+                _TreeIterator ti (testTree, _HY_TREE_TRAVERSAL_POSTORDER);
+              
+                while (_CalcNode * iterator = ti.Next()) {
+                    if (ti.IsAtLeaf()) {
+                        leafNames.AppendNewInstance (new _String(iterator->ContextFreeName()));
                     } else {
-                        inodeNames << bs;
+                        inodeNames.AppendNewInstance (new _String(iterator->ContextFreeName()));
                     }
-                    DeleteObject (bs);
-                    testTree->DepthWiseT(false);
                 }
 
                 leafNames << inodeNames;
 
                 _Matrix  *nodeNames = new _Matrix (leafNames);
 
-                for (long siteC = 0; siteC < objectID; siteC ++) {
+                for (long siteC = 0L; siteC < objectID; siteC ++) {
                     testTree->RecoverNodeSupportStates (dsf,siteC,siteC-1,*condMx);
                 }
 
@@ -968,6 +976,8 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain)
     _String  *treeSpec = ((_String*)parameters(1));
     treeSpec->ProcessParameter();
     _TreeTopology * tr = nil;
+  
+    _AssociativeList* mapping = (_AssociativeList*)FetchObjectFromVariableByType(&treeNodeNameMapping, ASSOCIATIVE_LIST);
 
     if (treeSpec->sLength) {
         if (treeSpec->sData[0]!='(') {
@@ -981,7 +991,7 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain)
                 if (formRes&&formRes->ObjectClass () == STRING)
                     tr = new _TreeTopology (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix),
                                             *((_FString*)formRes)->theString,
-                                            false);
+                                            false, mapping);
             }
         } else
             tr = new _TreeTopology (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix),
@@ -1053,12 +1063,12 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 
                 if (charVector) {
                     for (long cc = 0; cc < charVector->theString->sLength; cc++)
-                        if (ccount.lData[(unsigned char)charVector->theString->sData[cc]]>=0) {
+                        if (ccount.lData[charVector->theString->getUChar(cc)]>=0) {
                             charCount = 0; // this is an error condition for
                             // duplicate characters in the string
                             break;
                         } else {
-                            ccount.lData[(unsigned char)charVector->theString->sData[cc]] = cc;
+                            ccount.lData[charVector->theString->getUChar(cc)] = cc;
                             charCount ++;
                         }
                 }
@@ -1511,13 +1521,15 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
     bool        doThisOne = (firstNode->get_parent()!=nil), good = true;
     long        index, ind, i;
 
-    /*if (!doThisOne)
+    /*
+     if (doThisOne)
     {
         BufferToConsole (_String((_String*)theParts.toStr()));
         NLToConsole();
         BufferToConsole (_String((_String*)partIndex.toStr()));
         NLToConsole();
-    }*/
+    }
+     */
 
     // there are a few cases to consider
     for (ind = 1; ind<=firstNode->get_num_nodes(); ind++) { // have children nodes
@@ -1720,9 +1732,10 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
             return ;
         }
 
-        ind2 = LocateVarByName (*(_String*)parameters(ind1));
+        _String namespaced = chain.AddNameSpaceToID(*(_String*)parameters(ind1));
+        ind2 = LocateVarByName (namespaced);
         if (ind2<0) {
-            _String newS = *(_String*)parameters(ind1) & " is undefined in call to ReplicateConstraint.";
+            _String newS = namespaced & " is undefined in call to ReplicateConstraint.";
             acknError (newS);
             return  ;
         }
@@ -1853,7 +1866,7 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
         if (chain.profileCounter) {
             DeleteObject (chain.profileCounter);
         }
-        checkPointer(chain.profileCounter = new _Matrix (chain.lLength, 2, false, true));
+        chain.profileCounter = new _Matrix (chain.lLength, 2, false, true);
         chain.doProfile = 1;
     } else if (*profileCode == _String ("PAUSE")) {
         chain.doProfile = 2;
@@ -1864,17 +1877,14 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
         if (outVar) {
             if (chain.profileCounter) {
                 _AssociativeList * profileDump = new _AssociativeList;
-                checkPointer     (profileDump);
 
                 _SimpleList      instructions;
                 _List            descriptions;
 
-                for (long k=1; k<2*chain.lLength; k+=2) {
+                for (unsigned long k=1UL; k<2*chain.lLength; k+=2UL) {
                     if (chain.profileCounter->theData[k] > 0.0) {
                         instructions << k/2;
-                        _String * desc = (_String*)((_ElementaryCommand*)chain(k/2))->toStr();
-                        descriptions << desc;
-                        DeleteObject (desc);
+                        descriptions.AppendNewInstance((_String*)((_ElementaryCommand*)chain(k/2))->toStr());
                     }
                 }
 
@@ -1882,25 +1892,17 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
                 * instCounter = new _Matrix (instructions),
                 * descList    = new _Matrix (descriptions);
 
-                checkPointer    (execProfile);
-                checkPointer    (instCounter);
-                checkPointer    (descList);
-
-                long k2 = 0;
-                for (long m=1; m<2*chain.lLength; m+=2) {
+                unsigned long k2 = 0UL;
+                for (unsigned long m=1UL; m<2*chain.lLength; m+=2UL) {
                     if (chain.profileCounter->theData[m] > 0.0) {
                         execProfile->theData[k2++] = chain.profileCounter->theData[m];
                         execProfile->theData[k2++] = chain.profileCounter->theData[m-1];
                     }
                 }
 
-                _FString  aKey;
-                *aKey.theString = "INSTRUCTION INDEX";
-                profileDump->MStore (&aKey, instCounter, false);
-                *aKey.theString = "INSTRUCTION";
-                profileDump->MStore (&aKey, descList, false);
-                *aKey.theString = "STATS";
-                profileDump->MStore (&aKey, execProfile, false);
+                profileDump->MStore ("INSTRUCTION INDEX", instCounter, false);
+                profileDump->MStore ("INSTRUCTION", descList, false);
+                profileDump->MStore ("STATS", execProfile, false);
                 outVar->SetValue (profileDump,false);
                 chain.doProfile = 0;
                 DeleteObject (chain.profileCounter);
@@ -2043,6 +2045,69 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
     }
 }
 
+//____________________________________________________________________________________
+
+
+void   _ElementaryCommand::appendCompiledFormulae(_Formula* f, _Formula *f2) {
+  if (f || f2) {
+    _SimpleList*        varList = new _SimpleList;
+    _AVLList            varListA (varList);
+    if (f)
+      f->ScanFForVariables (varListA, true, true, true, true);
+    if (f2)
+      f2->ScanFForVariables(varListA, true, true);
+    varListA.ReorderList();
+    listOfCompiledFormulae<<(long)this;
+    compiledFormulaeParameters.AppendNewInstance(varList);
+  }
+}
+
+//____________________________________________________________________________________
+bool    _ElementaryCommand::DecompileFormulae (void) {
+  switch (code) {
+    case 0:
+      if (simpleParameters.lLength) {
+        //printf ("[ResetFormulae] %s\n", thisCommand->sData);
+        _Formula* f = (_Formula*)simpleParameters.lData[1],
+                *f2 = (_Formula*)simpleParameters.lData[2] ;
+        if (f) {
+          delete f;
+        }
+        if (f2) {
+          delete f2;
+        }
+        simpleParameters.Clear();
+        
+        return true;
+      }
+      break;
+    case 4: {
+      if (parameters.lLength && simpleParameters.lLength == 3) {
+        _Formula* f = (_Formula*)simpleParameters.lData[2];
+        if (f) {
+          delete f;
+        }
+        simpleParameters.Delete (2);
+        return true;
+      }
+      break;
+    }
+    case 14: {
+      if (parameters.lLength && simpleParameters.lLength == 2) {
+        _Formula* f = (_Formula*)simpleParameters.lData[1];
+        if (f) {
+          delete f;
+        }
+        simpleParameters.Delete (1);
+        return true;
+      }
+      break;
+    }
+      
+
+  }
+  return false;
+}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target)
@@ -2313,7 +2378,7 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
             if (index) {
                 *index = loc;
             }
-            return batchLanguageFunctions (loc);
+            return &GetBFFunctionBody (loc);
         }
     }
     
@@ -2327,6 +2392,46 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
     }
     type = HY_BL_NOT_DEFINED;
     return nil;
+}
+
+//____________________________________________________________________________________
+
+
+void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expression, _ExecutionList& chain, bool recursive, _AVLListX& collection ) {
+  
+  _Formula f, f2;
+  
+  _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+  
+  long     parseCode = Parse(&f,*expression,fpc,&f2);
+  
+  if (parseCode != HY_FORMULA_FAILED ) {
+    f.ScanFormulaForHBLFunctions (collection, recursive);
+    f2.ScanFormulaForHBLFunctions(collection, recursive);
+  }
+
+  
+}
+
+//____________________________________________________________________________________
+
+void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection, bool recursive, _ExecutionList& chain) {
+  
+  switch (code) {
+      
+    case 0:
+    case 4:
+    case 14:
+    {
+      if (parameters.lLength) {
+        ScanStringExpressionForHBLFunctions((_String*)parameters (0), chain, recursive, collection);
+      }
+      break;
+    }
+      
+    
+    
+  }
 }
 
 

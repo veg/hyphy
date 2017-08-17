@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -81,7 +81,7 @@ void _AVLListX::Clear (bool cL)
 
 //______________________________________________________________
 
-BaseRef _AVLListX::toStr (void)
+BaseRef _AVLListX::toStr (unsigned long)
 {
     _String * str = new _String (128L, true);
     checkPointer (str);

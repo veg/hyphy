@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -51,6 +51,8 @@
 #include "float.h"
 #include "batchlan.h"
 #include "category.h"
+#include "function_templates.h"
+
 
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
@@ -156,8 +158,13 @@ _Parameter  LogNumbers  (_Parameter x)
 }
 _Parameter  FastMxAccess(Ptr m, _Parameter index)
 {
-    return ((_Parameter*)m)[(long)index];
+    return ((_Parameter*)m)[(unsigned long)index];
 }
+
+void  FastMxWrite(Ptr m, _Parameter index, _Parameter value) {
+  ((_Parameter*)m)[(unsigned long)index] = value;
+}
+
 _Parameter  AndNumbers  (_Parameter x, _Parameter y)
 {
     return x != 0.0 && y != 0.0;
@@ -200,7 +207,11 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
         if (varValue->ObjectClass() == NUMBER) {
             values[k2].value = varValue->Value();
         } else {
-            values[k2].reference = (Ptr)((_Matrix*)varValue)->theData;
+            if (varValue->ObjectClass() == MATRIX) {
+              values[k2].reference = (Ptr)((_Matrix*)varValue)->theData;
+            } else {
+              WarnError ("Internal error in PopulateArraysForASimpleFormula");
+            }
         }
     }
 }
@@ -208,17 +219,24 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
 
 //__________________________________________________________________________________
 
-void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* context)
-{
+void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* context) {
     _FString * t = (_FString*)p->Type();
     context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' is not implemented/defined for a " & *t->theString);        
     DeleteObject (t);
 }
 
+//__________________________________________________________________________________
+
+void        WarnWrongNumberOfArguments (_PMathObj p, long opCode, _hyExecutionContext* context, _List * args) {
+  _FString * t = (_FString*)p->Type();
+  context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' was called with an incorrect number of arguments (" & (long) (args ? args->lLength : 0L) & ") for " & *t->theString);
+  DeleteObject (t);
+}
+
 
 //__________________________________________________________________________________
-_Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Parameter *c , _Parameter *d, _Parameter x, _Parameter& err)
-{
+_Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Parameter *c , _Parameter *d, _Parameter x, _Parameter& err) {
+  // Neville's algoruthm for polynomial interpolation (Numerical Recipes' rawinterp)
     _Parameter y,
                den,
                dif = 1e10,
@@ -227,9 +245,9 @@ _Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Param
                hp,
                w;
 
-    long   ns;
+    long   ns = 0L;
 
-    for (long i=0; i<n; i++) {
+    for (unsigned long i=0; i<n; i++) {
         dift = fabs(x-theX[i]);
         if (dift<dif) {
             ns = i;
@@ -238,10 +256,9 @@ _Parameter  InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Param
         c[i] = d[i] = theY[i];
     }
 
-    y = theY[ns];
-    ns --;
+    y = theY[ns--];
 
-    for (long m=1; m<n; m++) {
+    for (unsigned long m=1; m<n; m++) {
         for (long i=0; i<=n-m-1; i++) {
             ho = theX[i]-x;
             hp = theX[i+m]-x;
@@ -506,14 +523,18 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         } else {
             _Variable* mmo = LocateVar(((_Operation*)f->theFormula(0))->GetAVariable());
 
-            if (mmo)
-                if (mmo->ObjectClass () == MATRIX) {
-                    mmx = (_Matrix*)(mmo->GetValue());
-                    ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
-                } else if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
-                    mma = (_AssociativeList*)(mmo->GetValue());
-                    ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+            if (mmo) {
+              if (mmo->ObjectClass () == MATRIX) {
+                mmx = (_Matrix*)(mmo->GetValue());
+                ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+              } else {
+                
+                if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
+                  mma = (_AssociativeList*)(mmo->GetValue());
+                  ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
                 }
+              }
+            }
         }
 
         _PMathObj coordMx = nil;
@@ -567,11 +588,11 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
 
 struct      characterChecker {
     characterChecker (_String s) {
-        for (long r = 0; r<256; r++) {
+        for (long r = 0L; r<256L; r++) {
             isAllowed [r] = false;
         }
         for (long r2 = 0; r2<s.sLength; r2++) {
-            isAllowed [(unsigned char)s.sData[r2]] = true;
+            isAllowed [s.getUChar (r2)] = true;
         }
     }
     bool     isAllowed [256];
@@ -603,7 +624,7 @@ long        HandleFormulaParsingError (_String errMsg, _String* saveError, _Stri
 }
 
 //__________________________________________________________________________________
-bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char & deref, _Formula * f, _Variable*& lhs) {
+bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char & deref, _Formula * f, _Variable*& lhs, _FormulaParsingContext& context) {
     bool check = true;
     
     lhs = nil;
@@ -648,13 +669,35 @@ bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char &
         }
     }
     if (check && levelData->lLength == 1) {
-        _Operation * theOp = (_Operation*)(*levelData)(0);
-        if (!theOp->IsAVariable(false)) {
-            errMsg = "The left-hand side of an assignment must be a variable (not a constant)";
-            return false;
-        }        
-        lhs = LocateVar(theOp->GetAVariable());
-    }   
+        _Operation * theOp = dynamic_cast<_Operation*>(levelData->GetItem(0));
+      
+        check = false;
+        if (theOp) {
+          if (theOp->IsAVariable(false)) {
+            lhs = LocateVar(theOp->GetAVariable());
+            check = true;
+          } else {
+            if (theOp->GetANumber() && theOp->GetANumber()->ObjectClass() == STRING) {
+              // handle things like ^"id" = value
+              if (deref != HY_STRING_DIRECT_REFERENCE) {
+                _hyExecutionContext cntx (context.formulaScope(), context.errMsg());
+                lhs = (_Variable*) ((_FString*)theOp->GetANumber())->Dereference(deref == HY_STRING_GLOBAL_DEREFERENCE, &cntx, true);
+                if (!lhs) {
+                  errMsg = "The left-hand side of an assignment like ^\"id\" must reference an existing variable";
+                  return false;
+                } else {
+                  deref = HY_STRING_DIRECT_REFERENCE;
+                  check = true;
+                }
+              }
+            }
+          }
+        }
+      
+        if (!check) {
+          errMsg = "The left-hand side of an assignment must be a variable (not a constant)";
+        }
+    }
     return check;
 }
 
@@ -708,7 +751,9 @@ long _parserHelperHandleInlineAssignmentCases (_String& s, _FormulaParsingContex
             return HandleFormulaParsingError ("Invalid RHS in an assignment ", parsingContext.errMsg(), s, i);
         }
         if (twoToken && s.getChar(i-1) == '+') {
-            theV->SetValue(theV->Compute()->Execute(HY_OP_CODE_ADD,varObj));
+            _List arg;
+            arg <<  varObj;
+            theV->SetValue(theV->Compute()->ExecuteSingleOp(HY_OP_CODE_ADD,&arg));
         } else {
             theV->SetValue(varObj);
         }
@@ -717,6 +762,23 @@ long _parserHelperHandleInlineAssignmentCases (_String& s, _FormulaParsingContex
     }
     return HY_FORMULA_EXPRESSION;
 }
+
+//__________________________________________________________________________________
+
+void        _parse_new_level (long & level, _List & operations, _List& operands, _List*& levelOps, _List*& levelData, _String& curOp, _SimpleList& functionCallTags, long function_tag = -1L) {
+  
+  level ++;
+  operations.AppendNewInstance (new _List);
+  operands.AppendNewInstance (new _List);
+  
+  levelOps  = (_List*)(operations(level));
+  levelData = (_List*)(operands(level));
+  
+  functionCallTags << function_tag;
+  
+  curOp = empty;
+}
+
 
 
 //__________________________________________________________________________________
@@ -760,7 +822,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 */
 
 {
-    static bool inAssignment = false;
+  //static bool inAssignment = false;
 
     expressionsParsed++;
 
@@ -773,11 +835,18 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
     _SimpleList     squareBrackets,
                     mergeMAccess,
-                    mergeMAccessLevel;
-                    
+                    mergeMAccessLevel,
+                    functionCallTags
+                    /*
+                      for each context level, stores -1, if this level is not a function call,
+                      or the first operation associated with the argument list for this function
+                      call
+                     */
+                    ;
+  
 
 
-    long            level                 = 0;
+    long            level                 = -1;
     /* 04252006 mlevel = -1, */
     /* mcount = 0 ; */
 
@@ -790,12 +859,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
     char            storage     = 0;
 
 
-    operations.AppendNewInstance (new _List);
-    operands.AppendNewInstance (new _List);
-
-    levelOps  = (_List*)(operations(level));
-    levelData = (_List*)(operands(level));
-
+    _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
     for (long i = 0; i<=s.sLength; i++) {
         storage = 0; // no implied ops by default
 
@@ -805,31 +869,24 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
         char     lookAtMe = s.getChar(i);
 
-        if (i==s.sLength || lookAtMe == ')' || lookAtMe == ']' || lookAtMe == ',') // closing ) or ]
+        if (i==s.sLength || lookAtMe == ')' || lookAtMe == ']' || lookAtMe == ',') {
+            // closing ) or ]
             // or a parameter list
-        {
-
-            /* 04252006 if (level == mlevel && s.getChar(i)!=']')*/
+                /* 04252006 if (level == mlevel && s.getChar(i)!=']')*/
             if (squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength-1] == level && lookAtMe != ']') {
                 return HandleFormulaParsingError ("Missing or unbalanced '[]' ", parsingContext.errMsg(), s, i);
-             }
+            }
 
-            /* 04252006 if (s.getChar(i)==']' && s.getChar(i+1)!='[')
-                mlevel = -1; */
-
-            if (lookAtMe != ',')
-                if (i != s.sLength) {
-                    level--;
-                } else if (level) {
-                    level = -1;
+            if (lookAtMe != ',') {
+              if (i != s.sLength) {
+                level--;
+              } else {
+                if (level != 0L) {
+                  level = -1L;
                 }
-
-            /* 04252206 if (i!=s.sLength && lookAtMe != ',')
-                level --;
-            else
-                if (lookAtMe !=',' && level)
-                    level = -1; */
-
+              }
+            }
+          
             if (level<0) {
                 return HandleFormulaParsingError ("Unbalanced '()' parentheses ", parsingContext.errMsg(), s, i);
             }
@@ -843,14 +900,12 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     return HandleFormulaParsingError ("Syntax error ", parsingContext.errMsg(), s, i);
                 }
 
-                for (int i = 0; i<levelData->countitems(); i++) {
-                    f->theFormula << (*levelData)(i);    // mod 07072006 to not duplicate
+                for (unsigned long i = 0UL; i<levelData->countitems(); i++) {
+                    f->PushTerm (levelData->GetItem (i));
                 }
 
-                levelData->Clear();
-
-                for (int k = levelOps->countitems()-1; k>=0; k--) {
-                    f->theFormula << (*levelOps)(k);    // mod 07072006 to not duplicate
+                for (long k = levelOps->countitems()-1L; k>=0; k--) {
+                    f->PushTerm (levelOps->GetItem(k));
                 }
 
                 levelOps->Clear();
@@ -858,17 +913,47 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (levelData->lLength>1) {
                     return HandleFormulaParsingError ("Syntax error ", parsingContext.errMsg(), s, i);
                 } else if (levelData->lLength) {
-                    f->theFormula << (*levelData)(0);    // mod 07072006 to not duplicate
+                  //f->theFormula << (*levelData)(0);    // mod 07072006 to not duplicate
+                  f->PushTerm (levelData->GetItem(0));
                 }
 
-                levelData->Clear();
             }
 
+            levelData->Clear();
+
             if (i<s.sLength && lookAtMe !=',' ) {
-                operations.Delete(level+1);
-                operands.Delete(level+1);
-                levelOps    = (_List*)(operations(level));
-                levelData   = (_List*)(operands(level));
+                operations.Delete (level+1);
+                operands.Delete   (level+1);
+                functionCallTags.Pop();
+              
+                levelOps          = (_List*)operations(level);
+                levelData         = (_List*)operands(level);
+              
+                long function_call_pop = functionCallTags.Element (-1);
+              
+                if (function_call_pop >= 0) {
+                  if (levelData->lLength == 0L && levelOps->lLength == 1L) {
+                    long argument_count = f->StackDepth(function_call_pop);
+                    
+                    _Operation* function_call = (_Operation*)levelOps->GetItem(0);
+                    if (function_call->IsHBLFunctionCall()) {
+                      function_call->SetTerms(-argument_count-1L);
+                    } else {
+                      function_call->SetTerms(argument_count);
+                    }
+                    
+                    f->PushTerm (function_call);
+                    
+                    operations.Delete (level);
+                    operands.Delete   (level);
+                    functionCallTags.Pop();
+                    
+                    levelOps          = (_List*)operations(--level);
+                    levelData         = (_List*)operands(level);
+                 } else {
+                    return HandleFormulaParsingError ("Syntax error ", parsingContext.errMsg(), s, i);
+                  }
+                }
 
                 if (lookAtMe !=']')
                     if ( BinOps.Find(s.getChar(i+1))==-1 && i<s.sLength-1 && s.getChar(i+1)!=')' && s.getChar(i+1)!=']' && s.getChar(i+1)!='[' && HalfOps.Find(s.getChar(i+1))==-1 && s.getChar(i+1)!=',') {
@@ -917,7 +1002,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
         if (s.getChar(i) == '=' && s.getChar(i+1) != '=' && (!twoToken || s.getChar(i-1)==':' || s.getChar (i-1) == '+')) { // assignment operator
             _String  errMsg;
 
-            bool check               = !inAssignment,
+            bool check               = !parsingContext.inAssignment(),
                  is_array_assignment = f->IsArrayAccess();
                  
             char deref = 0; 
@@ -929,7 +1014,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (is_array_assignment) {
                     (((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->TheCode()) = HY_OP_CODE_MCOORD;
                 } else {
-                    check = checkLHS (levelOps, levelData, errMsg, deref, f, lhs_variable);
+                    check = checkLHS (levelOps, levelData, errMsg, deref, f, lhs_variable, parsingContext);
                 }
             } else {
                 errMsg = "Can't assign within another assignment";
@@ -939,15 +1024,15 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 return HandleFormulaParsingError (errMsg, parsingContext.errMsg(), s, i);
             }
 
-            inAssignment = true;
+            parsingContext.inAssignment() = true;
             _String ss (s,i+1,-1); // this is the RHS
             _Formula  newF;
            
             if (Parse(&newF,ss,parsingContext, f2) != HY_FORMULA_EXPRESSION) {
-                inAssignment = false;
+                parsingContext.inAssignment() = false;
                 return HY_FORMULA_FAILED;
             }
-            inAssignment = false;
+            parsingContext.inAssignment() = false;
             if (!is_array_assignment && lhs_variable)
                 // normal variable assignment
             {
@@ -971,8 +1056,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     }
                     f->Duplicate((BaseRef)&newF);
                 }
-                twoToken     = false;
-
+              
                 parsingContext.assignmentRefID()   = lhs_variable->GetAVariable();
                 parsingContext.assignmentRefType() = deref;
 
@@ -1021,14 +1105,18 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         } else {
                             _Variable* mmo = ((_Operation*)f->theFormula(0))->IsAVariable()?LocateVar(((_Operation*)f->theFormula(0))->GetAVariable()):nil;
 
-                            if (mmo)
-                                if (mmo->ObjectClass () == MATRIX) {
-                                    mmx = (_Matrix*)(mmo->GetValue());
-                                    ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
-                                } else if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
-                                    mma = (_AssociativeList*)(mmo->GetValue());
-                                    ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                            if (mmo) {
+                              if (mmo->ObjectClass () == MATRIX) {
+                                mmx = (_Matrix*)(mmo->GetValue());
+                                ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                              } else {
+                                
+                                if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
+                                  mma = (_AssociativeList*)(mmo->GetValue());
+                                  ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
                                 }
+                              }
+                            }
                         }
 
                         if (mmx) {
@@ -1100,23 +1188,22 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             _String errMsg;
             char    deref;
             
-            if (inAssignment||f->IsArrayAccess()||! checkLHS (levelOps, levelData, errMsg, deref, f, lhs)) {
+            if (parsingContext.inAssignment()||f->IsArrayAccess()||! checkLHS (levelOps, levelData, errMsg, deref, f, lhs, parsingContext)) {
                return HandleFormulaParsingError ("Can't set bounds like this ", parsingContext.errMsg(), s, i);
             }
 
-            inAssignment = true;
+            parsingContext.inAssignment() = true;
 
             _String ss (s,i+1,-1);
             _Formula newF;
 
             if (Parse(&newF,ss,parsingContext,f2) != HY_FORMULA_EXPRESSION) {
-                inAssignment = false;
+                parsingContext.inAssignment() = false;
                 return HY_FORMULA_FAILED;
             }
 
 
-            inAssignment = false;
-            twoToken     = false;
+            parsingContext.inAssignment() = false;
 
 
     
@@ -1165,13 +1252,11 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
 
             _String matrixDef   (s,i,j);
+            bool has_values = false;
 
-            if (matrixDef.sLength == 2 || matrixDef.sData[1] == '"') {
+            if (matrixDef.sLength == 2 || (has_values = matrixDef.FindTerminator(1, ":") >= 0L) || matrixDef.FirstNonSpaceIndex(1,-1) == matrixDef.sLength - 1) {
                 _AssociativeList *theList = new _AssociativeList ();
-                if (!theList) {
-                    checkPointer (theList);
-                }
-                if (matrixDef.sLength > 2) {
+                if (has_values) {
                     matrixDef.Trim (1,matrixDef.sLength-2);
                     if (!theList->ParseStringRepresentation (matrixDef,parsingContext.errMsg() == nil, parsingContext.formulaScope())) {
                         return HandleFormulaParsingError ("Poorly formed associative array construct ", parsingContext.errMsg(), s, i);
@@ -1181,9 +1266,6 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 levelData->AppendNewInstance (new _Operation (theList));
             } else {
                 _Matrix *theMatrix = new _Matrix (matrixDef,false,parsingContext.formulaScope());
-                if (!theMatrix) {
-                    checkPointer (theMatrix);
-                }
                 levelData->AppendNewInstance (new _Operation (theMatrix));
             }
 
@@ -1208,44 +1290,40 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 }
 
                 if (levelData->lLength) {
-                    f->theFormula.AppendNewInstance((*levelData)[levelData->lLength-1]);
-                    levelData->Delete(levelData->lLength-1,false);
+                    //f->theFormula.AppendNewInstance((*levelData)[levelData->lLength-1]);
+                    f->PushTerm(levelData->GetItem(levelData->lLength-1));
+                    levelData->Delete(levelData->lLength-1);
                 }
             }
 
-            squareBrackets << ++level;
-
-            curOp       = empty;
-            operations.AppendNewInstance(new _List);
-            operands.AppendNewInstance(new _List);
-            levelOps   = (_List*) (operations(level));
-            levelData  = (_List*) (operands  (level));
-
+ 
+            _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
+            squareBrackets << level;
             continue;
         }
 
 
         if (s.getChar(i) == '(') { // opening (
-            level++;
-            operations.AppendNewInstance (new _List);
-            operands.AppendNewInstance   (new _List);
-            levelOps    =   (_List*)(operations(level));
-            levelData   =   (_List*)(operands(level));
-            curOp       =   empty;
-            continue;
+          // check to see if this is a function call
+          
+          _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
+          continue;
         }
 
-        if (s.getChar(i)=='"') { // a string literal
+        if (s.getChar(i)=='"' || s.getChar (i) == '\'') { // a string literal
             long j             = 1,
                  inPlaceID     = -1;
+          
+          char terminator = s.getChar (i);
 
-            _String * literal = (_String*)checkPointer(new _String (16,true));
+            _String * literal = new _String (16,true);
+            _List * formula_list = nil;
 
             while (i+j<s.sLength) {
                 char aChar = s.sData[i+j];
                 if (aChar =='\\') {
                     if (i+j+1<s.sLength) {
-                        if (s.sData[i+j+1]=='"' ||s.sData[i+j+1]=='`' ) {
+                        if (s.sData[i+j+1]=='"' ||s.sData[i+j+1]=='`' ||  s.sData[i+j+1]=='\'') {
                             j++;
                             (*literal)<<s.sData[i+j++];
                         } else {
@@ -1256,30 +1334,64 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     continue;
                 }
 
-                if (aChar =='"' && inPlaceID < 0) {
+                if (aChar == terminator && inPlaceID < 0) {
                     break;
                 }
-
+              
+ 
                 if (aChar == '`') {
                     if (inPlaceID < 0) {
                         inPlaceID = ++j;
                     } else if (j == inPlaceID) {
-                        return HandleFormulaParsingError ("Attempted to string substitute an empty quotation ", parsingContext.errMsg(), s, i);
+                      //return HandleFormulaParsingError ("Attempted to string substitute an empty quotation ", parsingContext.errMsg(), s, i);
+                      (*literal) << '`';
+                      inPlaceID = -1L;
+                      j++;
+      
                     } else {
-                        _String     inPlaceVID (s,i+inPlaceID,i+j-1),
-                                    inPlaceValue = ProcessLiteralArgument(&inPlaceVID, parsingContext.formulaScope());
-
-                        /*if (!inPlaceValue) {
-                            inPlaceValue = (_FString*)ProcessLiteralArgument(&inPlaceVID, theParent);
-                            if (!inPlaceValue) {
-                                return HandleFormulaParsingError ("Attempted to string substitute something other that a string variable/expression ", saveError, s, i);
-                            }
-                        }*/
-
-                        (*literal) << inPlaceValue;
-                        inPlaceID = -1;
-                        parsingContext.isVolatile() = true;
+                        _String     inPlaceVID (s,i+inPlaceID,i+j-1);
+                        _Formula    expressionProcessor;
+                      
+                        long parse_result = Parse(&expressionProcessor, inPlaceVID, parsingContext, nil);
+                      
+                        if (parse_result != HY_FORMULA_EXPRESSION) {
+                          return HandleFormulaParsingError ("Not a valid/simple expression inside `` ", parsingContext.errMsg(), s, i);
+                        }
+                      
+                        if (expressionProcessor.IsConstant()) {
+                          _PMathObj constant_literal = expressionProcessor.Compute (0, nil, nil, nil, STRING);
+                          if (constant_literal) {
+                            (*literal) << *((_FString*)constant_literal)->theString;
+                          }
+                          else {
+                            return HandleFormulaParsingError ("Constant expression inside `` did not evaluate to a string ", parsingContext.errMsg(), s, i);
+                          }
+                        } else {
+                          // push this expression down
+                          if (!formula_list) {
+                            formula_list = new _List;
+                          }
+                          
+                          literal->Finalize();
+                          if (literal->sLength) {
+                            formula_list->AppendNewInstance(new _Operation (new _FString(literal)));
+                          } else {
+                            DeleteObject (literal);
+                          }
+                          if (formula_list->lLength > 1L) {
+                            formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
+                          }
+                          literal = new _String (16,true);
+                          (*formula_list) << expressionProcessor.theFormula;
+                          if (formula_list->lLength > expressionProcessor.theFormula.lLength) {
+                            formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
+                          }
+                        }
+                        inPlaceID = -1L;
+                        //parsingContext.isVolatile() = true;
                         j++;
+                      
+                      
                     }
 
                 } else {
@@ -1289,12 +1401,31 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     j++;
                 }
             }
+          
+          
             literal->Finalize();
-            if (inPlaceID >= 0) {
-                return HandleFormulaParsingError ("Unterminated string substitution inside a literal ", parsingContext.errMsg(), s, i);
+          
+            if (formula_list) {
+              if (literal->sLength) {
+                formula_list->AppendNewInstance(new _Operation (new _FString(literal)));
+                formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
+              } else {
+                DeleteObject (literal);
+              }
+              formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_MCOORD),1));
+             
+              levelData->AppendNewInstance(new _List(*formula_list));
+              DeleteObject (formula_list);
+              
+            } else {
+              levelData->AppendNewInstance (new _Operation (new _FString(*literal)));
+              DeleteObject(literal);
             }
-            levelData->AppendNewInstance (new _Operation (new _FString(*literal)));
-            DeleteObject(literal);
+          
+          
+            if (inPlaceID >= 0) {
+              return HandleFormulaParsingError ("Unterminated string substitution (``) inside a literal ", parsingContext.errMsg(), s, i);
+            }
 
             i += j;
             continue;
@@ -1308,6 +1439,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 char opChar = s.getChar(i-1);
                 if (((_String*)BuiltInFunctions(HY_OP_CODE_REF))->Equal(opChar)) {
                     takeVarReference = true;
+                    twoToken = false;
                 } else {
                     _String thisOp (opChar);
                     levelOps->AppendNewInstance (new _Operation (thisOp,1L));
@@ -1321,9 +1453,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 j++;
             }
 
-            curOp =  (s.Cut(i,i+j-1));
-            i+=j-1;
-
+          
+            curOp =  s.Cut(i,i+j-1L);
+            i+=j-1L;
+          
             if (curOp.Equal(&globalToken)) {
                 if (takeVarReference) {
                     return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & globalToken, parsingContext.errMsg(), s, i);
@@ -1340,8 +1473,8 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                noneObject = true;
                 globalKey  = true;
             }
-                
-            if (UnOps.Find(curOp)>=0) { // a standard function
+          
+            if (UnOps.FindKey(curOp)>=0) { // a standard function
                 if (takeVarReference) {
                     return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
                 }
@@ -1350,12 +1483,15 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 continue;
             } else { // a variable
                 // check if this is a function defined  in the list of "standard functions"
-                long bLang = noneObject?-1:FunctionNameList.BinaryFind(&curOp);
+                long bLang = noneObject?-1:FunctionNameList.BinaryFindObject (&curOp);
                 if (bLang>=0) {
                     if (takeVarReference) {
                         return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
                     }
-                    levelOps->AppendNewInstance (new _Operation (curOp,FunctionArgumentCount(bLang)));
+                    // built-in function
+                    _Operation * built_in_call = new _Operation (curOp,FunctionArgumentCount(bLang));
+                    _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags, f->NumberOperations());
+                    levelOps->AppendNewInstance (built_in_call);
                     continue;
                 }
 
@@ -1365,7 +1501,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     if (takeVarReference) {
                         return HandleFormulaParsingError ("Cannot make a reference from user-defined function", parsingContext.errMsg(), s, i);
                     }
-                    levelOps->AppendNewInstance (new _Operation (curOp,-bLang-1));
+                    // HBL function
+                    _Operation * hbl_call = new _Operation (curOp,-bLang-1);
+                    _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags, f->NumberOperations());
+                    levelOps->AppendNewInstance (hbl_call);
                     continue;
                 }
 
@@ -1378,7 +1517,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                     long realVarLoc = LocateVarByName (realVarName);
                     if (realVarLoc<0) { // bad instant variable reference
-                        return HandleFormulaParsingError ("Attempted to take value of undeclared variable ", parsingContext.errMsg(), s, i);
+                        return HandleFormulaParsingError ("Attempted to evaluate an undeclared variable ", parsingContext.errMsg(), s, i);
                      }
                     if (!f2) { // 03/25/2004 ? Confused why the else
                         levelData->AppendNewInstance(new _Operation((_MathObject*)FetchVar (realVarLoc)->Compute()->makeDynamic()));
@@ -1438,18 +1577,21 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 continue;
             }
         }
-        
-        if ( BinOps.Find (s.getChar(i))!=-1 || (twoToken&& (BinOps.Find(s.getChar(i-1)*(long)256+s.getChar(i))!=-1)) ) {
-            if (!twoToken && BinOps.Find(s.getChar(i)*(long)256+s.getChar(i+1)) != -1) {
+   
+        if ( BinOps.Find (s.getChar(i)) != -1L || (twoToken&&  _Operation::BinOpCode (s, i) != -1L)) {
+          
+            bool look_ahead = _Operation::BinOpCode (s, i+1) != -1L;
+          
+            if (!twoToken && look_ahead) {
                 twoToken = true;
                 continue;
             }
 
-            if (twoToken||(BinOps.Find(s.getChar(i)*256+s.getChar(i+1))!=-1)) {
+            if (twoToken|| look_ahead) {
                 if (!twoToken) {
                     i++;
                 }
-                curOp = _String(s.getChar(i-1))&(_String)(s.getChar(i));
+                curOp = _String(s.getChar(i-1)) & s.getChar(i);
             } else {
                 curOp = s.getChar(i);
             }
@@ -1462,7 +1604,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
             if (levelData->countitems()==0) {
                 if (s[i-curOp.sLength]!=')' && storage!=')' && s[i-curOp.sLength] !=']') {
-                    if (!twoToken && UnOps.Find (s.getChar(i)) >= 0) {
+                    if (!twoToken && UnOps.FindKey (s.getChar(i)) >= 0) {
                         twoOrOne = 1;
                     } else {
                         return HandleFormulaParsingError ("Bad binary operator placement ", parsingContext.errMsg(), s, i);
@@ -1476,14 +1618,16 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (storage) {
                     BaseRef newS = (*levelData)(levelData->countitems()-1)->makeDynamic();
                     for (unsigned long k = 0; k<levelData->countitems()-1; k++) {
-                        f->theFormula&&((*levelData)(k));
+                        f->PushTerm (levelData->GetItem (k));
+                        //f->theFormula << ((*levelData)(k));
                     }
 
                     levelData->Clear();
                     levelData->AppendNewInstance (newS);
                 } else {
                     for (unsigned long k = 0; k<levelData->countitems(); k++) {
-                        f->theFormula << ((*levelData)(k));
+                        f->PushTerm (levelData->GetItem (k));
+                        //f->theFormula << ((*levelData)(k));
                     }
                     levelData->Clear();
                 }
@@ -1502,18 +1646,16 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             long h,g;
             _String prevOp = *((((_Operation*)((*levelOps)(levelOps->countitems()-1)))->GetCode()));
 
-            h = BinOps.Find(prevOp.sLength==2?prevOp.getChar(0)*256+prevOp.getChar(1):prevOp.getChar(0));
-            g = BinOps.Find(curOp.sLength==2?curOp.getChar(0)*256+curOp.getChar(1):curOp.getChar(0));
+            h = _Operation::BinOpCode (prevOp);
+            g = _Operation::BinOpCode (curOp);
 
-            if (h!=-1) {
+            if (h >= 0L) {
                 h = opPrecedence (h);
             }
-
             g = opPrecedence (g);
 
 
-
-            if (g>h && h!=-1) { // store the op, don't do it yet!
+           if (g>h && h!=-1) { // store the op, don't do it yet!
                 levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
                 if (terminateExecution) {
                     return HY_FORMULA_FAILED;
@@ -1525,9 +1667,9 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
             for (int j = levelOps->countitems()-1; j>=0; j--) {
                 _String  sss = (((_Operation*)((*levelOps)(levelOps->countitems()-1)))->GetCode());
-                h = BinOps.Find(sss.sLength==2?sss.getChar(0)*256+sss.getChar(1):sss.getChar(0));
-                if (h==-1) {
-                    h=100;
+                h = _Operation::BinOpCode (sss);
+                if (h < 0L) {
+                    h = 0xFFFF;
                 } else {
                     h = opPrecedence (h);
                 }
@@ -1535,16 +1677,16 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 if (h<g) {
                     break;
                 }
-                f->theFormula&&((*levelOps)(j));
-                levelOps->Delete((*levelOps).lLength-1);
+                f->theFormula << levelOps->GetItem(j);
+                levelOps->Delete(levelOps->lLength-1);
             }
             levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
             if (terminateExecution) {
                 return HY_FORMULA_FAILED;
             }
             continue;
-        } else if (UnOps.Find(s.getChar(i)) >= 0) {
-            if ((s.getChar(i)=='-' || s.getChar(i)=='+') && (!i|| s.getChar(i-1)=='(')) { // unary minus?
+        } else if (UnOps.FindKey (s.getChar(i)) >= 0) {
+            if ((s.getChar(i)=='-' || s.getChar(i)=='+') && (!i|| s.getChar(i-1)=='(')) { // unary minus or plus
                 curOp   = s.getChar(i);
                 levelOps->AppendNewInstance (new _Operation (curOp,1));
                 continue;
@@ -1574,22 +1716,6 @@ long     VerbosityLevel (void)
     return verbosityLevel;
 }
 
-//__________________________________________________________________________________
-void  checkParameter (_String& name, _Parameter& dest, _Parameter def, _VariableContainer* theP)
-{
-    long f;
-    if (theP) {
-        _String ppn = *theP->GetName() & '.' & name;
-        f = LocateVarByName(ppn);
-    } else {
-        f = LocateVarByName (name);
-    }
-    if (f<0) {
-        dest = def;
-    } else {
-        dest = FetchVar(f)->Value();
-    }
-}
 
 //__________________________________________________________________________________
 void  stashParameter (_String& name, _Parameter v, bool set)
@@ -1633,16 +1759,16 @@ void  setParameter (_String& name, _Parameter def, _String* namespc)
 
 //__________________________________________________________________________________
 
-void  setParameter (_String& name, _PMathObj def, bool dup, _String* namespc)
+void  setParameter (_String& name, _PMathObj def, _String* namespc, bool dup)
 {
     if (namespc) {
         _String namespcd = AppendContainerName(name,namespc);
-        setParameter (namespcd,def,dup);
+        setParameter (namespcd,def,nil, dup);
     } else {
         long f = LocateVarByName (name);
         if (f<0) {
             _Variable cornholio(name);
-            setParameter (name,def,dup);
+            setParameter (name,def,nil, dup);
         } else {
             FetchVar(f)->SetValue(def,dup);
         }

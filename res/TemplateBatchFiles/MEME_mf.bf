@@ -585,7 +585,7 @@ function SendJobMEME ()
                 } else {
                     Optimize (res, siteLikelihood);
                     result_String = fakeMPIReturnFromLF ("siteLikelihood", res);
-                    result_String ["BRANCHES"] = obtainBranchWiseEBEstimates (sFactor, nsFactor1, nsFactor2, mixingP,filterString);
+                    result_String ["BRANCHES"] = obtainBranchWiseEBEstimatesMPI (sFactor, nsFactor1, nsFactor2, mixingP);
                     result_String = "" + result_String;
                 }
                 if (debugVerboseFlag)
@@ -684,7 +684,10 @@ function obtainBranchWiseEBEstimatesMPI (_sFactor,_nsFactor1,_nsFactor2,_mixingP
         
         _bn = BranchName (perBranchTree, -1);
         
-		LikelihoodFunction siteLikelihoodLoc = (siteFilter, perBranchTree);
+        DataSetFilter locSiteFilter = CreateFilter (siteFilter,3,"","",GeneticCodeExclusions);
+
+        
+		LikelihoodFunction siteLikelihoodLoc = (locSiteFilter, perBranchTree);
         LFCompute (siteLikelihoodLoc,LF_START_COMPUTE);
         LFCompute (siteLikelihoodLoc,baseline);
         
@@ -743,7 +746,7 @@ function obtainBranchWiseEBEstimates (_sFactor,_nsFactor1,_nsFactor2, _mixingP,f
         subMap = _tabulateSubstitutionsAtSiteByBranch (ancID,0);
         _destroyAncestralCache (ancID);
 
-       _bn = BranchName (perBranchTree, -1);
+        _bn = BranchName (perBranchTree, -1);
         
         DataSetFilter locSiteFilter = CreateFilter (ds,3,filterString,"",GeneticCodeExclusions);
         

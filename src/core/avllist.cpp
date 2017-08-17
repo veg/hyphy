@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -406,11 +406,9 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
 
 //______________________________________________________________
 
-BaseRef  _AVLList::toStr (void)
-{
+BaseRef  _AVLList::toStr (unsigned long) {
     _String * str = new _String (128L, true);
-    checkPointer (str);
-
+ 
     if (countitems() == 0) {
         (*str) << "Empty Associative List";
     } else {
@@ -481,8 +479,7 @@ long  _AVLList::InsertData (BaseRef b, long, bool)
 
 //______________________________________________________________
 
-unsigned long _AVLList::countitems (void)
-{
+unsigned long _AVLList::countitems (void) const {
     return dataList->lLength - emptySlots.lLength;
 }
 

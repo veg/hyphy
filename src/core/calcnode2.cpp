@@ -4,9 +4,9 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 
 Copyright (C) 1997-now
 Core Developers:
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
   Art FY Poon    (apoon@cfenet.ubc.ca)
-  Steven Weaver (sweaver@ucsd.edu)
+  Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
@@ -144,6 +144,7 @@ inline void _handle4x4_pruning_case (double* childVector, double* tMatrix, doubl
 
 }
 
+
 /*----------------------------------------------------------------------------------------------------------*/
 
 _Parameter  acquireScalerMultiplier (long s)
@@ -178,10 +179,10 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         if (thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm)) {
              hasExpForm = true;
         }
-        #ifdef _UBER_VERBOSE_DUMP
-          if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP)
-            printf ("NodeID %d (%s). Old length %ld, new length %ld\n", nodeID, thisNode->GetName()->sData, didIncrease,matrixQueue.lLength); 
-        #endif
+      #ifdef _UBER_VERBOSE_DUMP
+      if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP)
+            printf ("NodeID %ld (%s). Old length %ld, new length %ld (%ld)\n", nodeID, thisNode->GetName()->sData, didIncrease,matrixQueue.lLength, isExplicitForm.lLength);
+      #endif
         if ((didIncrease = (matrixQueue.lLength - didIncrease))) {
             for (long copies = 0; copies < didIncrease; copies++) {
                 nodesToDo << thisNode;
@@ -202,7 +203,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
     #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
-        if (isExplicitForm.lData[matrixID] == 0) { // normal matrix to exponentiate
+        if (isExplicitForm.lData[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);
         } else {
              (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate();
@@ -296,7 +297,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
         currentTreeNode = isLeaf? (((_CalcNode**) flatCLeaves.lData)[nodeID]):
                           (((_CalcNode**) flatTree.lData)  [nodeID - flatLeaves.lLength]);
 
-        if (currentTreeNode->NeedToExponentiate (catID)) {
+        if (currentTreeNode->NeedNewCategoryExponential (catID)) {
             if (expNodes) {
                 (*expNodes) << currentTreeNode;
                 //printf ("EXP>%s\n", currentTreeNode->GetName()->sData);
@@ -2076,10 +2077,9 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 
 void     _TheTree::SetupCategoryMapsForNodes (_List& containerVariables, _SimpleList& classCounter, _SimpleList& multipliers)
 {
-    _CalcNode* iterator = DepthWiseTraversal (true);
-    while (iterator) {
+    _TreeIterator ti (this, _HY_TREE_TRAVERSAL_POSTORDER);
+    while (_CalcNode* iterator = ti.Next()) {
         iterator->SetupCategoryMap (containerVariables,classCounter,multipliers);
-        iterator = DepthWiseTraversal(false);
     }
 }
 //_______________________________________________________________________________________________
@@ -2109,7 +2109,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
         for (long myCatID = 0; myCatID <= catCount; myCatID++) {
             long coordinate = containerVariables.FindPointer(LocateVar(categoryVariables.lData[myCatID]));
             if (coordinate < 0) {
-                WarnError ("Internal error in SetupCategoryMap. Please report to spond@ucsd.edu");
+                WarnError ("Internal error in SetupCategoryMap. Please report to sergeilkp@icloud.com");
             }
             localCategories *= classCounter.lData[coordinate];
             remappedIDs << coordinate;
@@ -2215,14 +2215,15 @@ _Parameter   _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, l
 
 void        _TreeTopology::ComputeClusterTable (_SimpleList& result, _SimpleList& pswRepresentation)
 {
-    long            leafCount = pswRepresentation.Element(-2),
-                    leafCode  = 0,
-                    L,R;
+    long            leafCount = pswRepresentation.Element(-2L),
+                    leafCode  = 0L,
+                    L = 0L,
+                    R = 0L;
 
     result.Clear    ();
     result.Populate (3*leafCount,-1,0);
 
-    for (long k = 0; k < pswRepresentation.lLength-2; k+=2) {
+    for (long k = 0; k < pswRepresentation.lLength-2L; k+=2) {
         if (pswRepresentation.lData[k] < leafCount) { // is a leaf
             R = leafCode++;
         } else {
@@ -2285,24 +2286,20 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
     pswRepresentation.Clear();
 
     long    leafIndex  = 0,
-            iNodeCount = -1,
-            level      = 0;
+            iNodeCount = -1;
 
-    _String nodeName;
-
-    DepthWiseTLevel (level,&GetRoot());
     _SimpleList levelBuffer;
+  
+    node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+  
+    while (node<long> * currentNode = ni.Next (&levelBuffer)) {
+        _String nodeName = GetNodeName (currentNode);
 
-    while (currentNode) {
-        GetNodeName (currentNode,nodeName,false);
-
-
-        while (levelBuffer.countitems() <= level) {
+        while (levelBuffer.countitems() <= ni.Level()) {
             levelBuffer << 0;
         }
 
-        if (IsCurrentNodeATip()) {
-
+        if (currentNode->is_leaf()) {
             pswRepresentation << leafIndex;
             pswRepresentation << 0;
             if (reference) {
@@ -2324,7 +2321,7 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
             }
         } else {
             pswRepresentation << iNodeCount;
-            pswRepresentation << levelBuffer.lData[level];
+            pswRepresentation << levelBuffer.lData[ni.Level()];
             if (reference) {
                 pswRepresentation << 0;
             } else {
@@ -2333,11 +2330,10 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
 
             iNodeCount--;
         }
-        if (level) {
-            levelBuffer.lData[level-1] += levelBuffer.lData[level]+1;
+        if (ni.Level()) {
+            levelBuffer.lData[ni.Level()-1] += levelBuffer.lData[ni.Level()]+1;
         }
-        levelBuffer.lData[level]   = 0;
-        DepthWiseTLevel  (level,nil);
+        levelBuffer.lData[ni.Level()]   = 0;
     }
 
     for (long k = 0; k < pswRepresentation.lLength; k+=(reference?3:2))
@@ -2426,7 +2422,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p)
             long matchCount = 0,
                  iNodeCount = 0;
 
-            long L, R;
+            long L, R = -1L;
 
             _SimpleList leafSpans (leafCount,0,0),
                         iNodesTouched;
@@ -2498,6 +2494,76 @@ _VariableContainer*     _CalcNode::ParentTree(void) {
     }
     return nil;
 }
+
+  //_______________________________________________________________________________________________
+
+/*
+class _TreeIterator {
+private:
+  
+  node_iterator<long> iterator;
+  int           traverser;
+  _SimpleList   history;
+  
+public:*/
+
+_TreeIterator::_TreeIterator (_TheTree const* source, int traversal_type): iterator(source->theRoot, traversal_type & _HY_TREE_TRAVERSAL_MASK) {
+  source_tree = source;
+  flags  = traversal_type;
+}
+
+_TreeIterator::~_TreeIterator (void) {};
+
+void     _TreeIterator:: Reset (void) {
+  iterator.Reset (source_tree->theRoot);
+}
+
+
+_CalcNode *     _TreeIterator:: Next (void) {
+  
+  node<long> * nn = iterator.Next(&history);
+  
+  if (nn) {
+    if (nn->is_root() && (flags & _HY_TREE_TRAVERSAL_SKIP_ROOT)) {
+      return Next();
+    }
+    if (!nn->is_leaf() && (flags & _HY_TREE_TRAVERSAL_LEAVES)) {
+      return Next();
+    }
+  
+    return _mapNodeToCalcNode(nn);
+  }
+  return nil;
+}
+
+_CalcNode *     _TreeIterator::Current (void) const {
+  return _mapNodeToCalcNode(iterator.Current());
+}
+
+long     _TreeIterator::Depth (void) const {
+  return iterator.Level();
+}
+
+const _SimpleList&  _TreeIterator::History (void) const {
+  return history;
+}
+
+bool  _TreeIterator::IsAtLeaf          (void) const {
+  node <long>* current = iterator.Current();
+  if (current) {
+    return current->get_num_nodes() == 0L;
+  }
+  return false;
+}
+
+bool  _TreeIterator::IsAtRoot          (void) const {
+  node <long>* current = iterator.Current();
+  if (current) {
+    return current->get_parent() == nil;
+  }
+  return false;
+}
+
 
 
 #endif
