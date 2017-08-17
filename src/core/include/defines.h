@@ -4,9 +4,9 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 
 Copyright (C) 1997-now
 Core Developers:
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Sergei L Kosakovsky Pond (sergeilkp@mac.com)
   Art FY Poon    (apoon@cfenet.ubc.ca)
-  Steven Weaver (sweaver@ucsd.edu)
+  Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
@@ -72,6 +72,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_VARIABLE_NOTSET     0x80
 #define  HY_VARIABLE_SET        0x7F
 #define  HY_VARIABLE_COMPUTING  0x100
+
 #define  HY_VARIABLE_COMPUTING_CLR 0x0FF
 
 #define  HY_VC_CLR_NO_CHECK     0xFBF

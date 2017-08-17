@@ -85,7 +85,7 @@ void    SaveConsole (void);
 //_____________________________________________________________
 
 _String  DecodeError                    (long);
-_String* ConstructAnErrorMessage        (_String&);
+_String* ConstructAnErrorMessage        (_String const&);
 
 
 //_____________________________________________________________
@@ -219,8 +219,7 @@ void*   checkPointer (void* p)
 }
 
 //_______________________________________________________________________
-void    ReportWarning (_String st)
-{
+void    ReportWarning (_String const& st) {
     checkParameter          (MessageLogging, messageLogFlag, 1.0);
 
 #ifdef  __HEADLESS__
@@ -241,8 +240,7 @@ void    ReportWarning (_String st)
 
 
 //_______________________________________________________________________
-void    FlagError (_String st)
-{
+void    FlagError (_String const& st) {
 #ifdef  __HEADLESS__
     if (globalInterfaceInstance) {
         globalInterfaceInstance->PushError (&st);
@@ -312,15 +310,23 @@ void    FlagError (_String st)
 }
 
 //_______________________________________________________________________
-void    WarnErrorWhileParsing (_String st, _String& context)
-{
+void    WarnErrorWhileParsing (_String const&st, _String& context) {
     WarnError (_String ("While parsing:\n") & context & "\n" & st);
 }
 
 extern _List batchLanguageFunctions;
 
 //_______________________________________________________________________
-void WarnError (_String st)
+void WarnOrStoreError (_String * store, _String const & st) {
+    if (store) {
+        *store = st;
+    } else {
+        WarnError (st);
+    }
+}
+
+//_______________________________________________________________________
+void WarnError (_String const & st)
 {
     if (currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
         currentExecutionList->ReportAnExecutionError(st, true);
@@ -413,7 +419,7 @@ void WarnError (_String st)
 
 //____________________________________________________________________________________
 
-_String* ConstructAnErrorMessage         (_String& theMessage)
+_String* ConstructAnErrorMessage         (_String const& theMessage)
 {
     _String* errMsg = new _String (128L,true);
 
@@ -432,9 +438,9 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
         _FormulaParsingContext fpc (&errMsgLocal, nil);
         
         if (Parse    (&expression, expr, fpc, nil) == HY_FORMULA_EXPRESSION) {
-            CheckReceptacleAndStore(&errorReportFormatExpressionStr, empty, false, new _FString (theMessage, false), false);
-            CheckReceptacleAndStore(&errorReportFormatExpressionStack, empty, false, new _Matrix (calls), false);
-            CheckReceptacleAndStore(&errorReportFormatExpressionStdin, empty, false, new _Matrix (stdins, false), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStr, emptyString, false, new _FString (theMessage, false), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStack, emptyString, false, new _Matrix (calls), false);
+            CheckReceptacleAndStore(&errorReportFormatExpressionStdin, emptyString, false, new _Matrix (stdins, false), false);
             _PMathObj expr = expression.Compute();
             if (!terminateExecution && expr && expr->ObjectClass() == STRING) {
                 (*errMsg) << ((_FString*)expr)->theString;

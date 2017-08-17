@@ -49,7 +49,7 @@ function models.DNA.HKY85.is_transition(fromChar, toChar) {
  * @param {Number} toChar
  * @param {String} namespace
  * @param {String} model_type
- * @return models.DNA.HKY85._GenerateRate.p 
+ * @return models.DNA.HKY85._GenerateRate.p
  */
 function models.DNA.HKY85._GenerateRate(fromChar, toChar, namespace, model_type) {
     models.DNA.HKY85._GenerateRate.p = {};
@@ -57,7 +57,6 @@ function models.DNA.HKY85._GenerateRate(fromChar, toChar, namespace, model_type)
 
 
     if (model_type == terms.global) {
-        models.DNA.HKY85.parameter_name = parameters.ApplyNameSpace(models.DNA.HKY85.parameter_name, namespace);
         if (models.DNA.HKY85.is_transition(fromChar, toChar)) {
             models.DNA.HKY85.parameter_name = parameters.ApplyNameSpace("kappa", namespace);
             (models.DNA.HKY85._GenerateRate.p[model_type])[terms.transition_transversion_ratio] = models.DNA.HKY85.parameter_name;

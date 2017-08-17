@@ -114,29 +114,6 @@ _List::_List (BaseRef br) {
     ((BaseRef*)lData)[0]= object_copy;
 }
 
-// Data constructor (variable number of string constants)
-_List::_List (const char* firstString, const unsigned long number, ...) {
-    va_list vl;
-    AppendNewInstance (new _String (firstString));
-    va_start(vl,number);
-    for (unsigned long arg_id =0;arg_id<number;arg_id++) {
-        char * val=va_arg(vl,char *);
-        AppendNewInstance (new _String (val));
-    }
-    va_end(vl);
-}
-
-// Data constructor (variable number of base refs)
-_List::_List (BaseObj* ref, const unsigned long number, ...) {
-  va_list vl;
-  (*this) << ref;
-  va_start(vl,number);
-  for (unsigned long arg_id =0;arg_id<number;arg_id++) {
-    BaseObj * val=va_arg(vl,BaseObj *);
-    (*this) << val;
-  }
-  va_end(vl);
-}
 
 //Destructor
 _List::~_List(void)
@@ -186,6 +163,12 @@ BaseRef _List::operator () (const unsigned long i)
 BaseRef _List::GetItem (const unsigned long i) const {
     return ((BaseRef*)lData)[i];
 }
+
+  // Element location functions (0,llength - 1)
+BaseRef _List::GetItemRangeCheck(const unsigned long i) const {
+  return i < lLength ? ((BaseRef*)lData)[i] : nil;
+}
+
 
 // Assignment operator
 const _List _List::operator = (const _List& l) {
@@ -263,45 +246,58 @@ const _List _List::operator & (BaseRef br) const
     return res;
 }
 
-void _List::operator && (BaseRef br)
-{
+_List& _List::operator && (BaseRef br) {
     InsertElement (br);
+    return *this;
 }
 
-void _List::operator && (const char * buffer)
-{
-    _String*        newString = new _String (buffer);
-    checkPointer    (newString);
-    InsertElement   (newString,-1,false);
-    DeleteObject    (newString);
+_List& _List::operator && (const char * buffer) {
+    InsertElement   (new _String (buffer),-1,false,false);
+    return *this;
 }
 
-void _List::operator << (BaseRef br)
-{
-//  InsertElement (br, -1, false);
-    lLength++;
-    if (lLength>laLength) {
-        unsigned long incBy = (MEMORYSTEP*5 > lLength)? MEMORYSTEP: lLength/5;
-
-        laLength+=incBy;
-
-        if (lData) {
-            checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
-        } else {
-            checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
-        }
+_List& _List::operator < (BaseRef br) {
+  //  InsertElement (br, -1, false);
+  lLength++;
+  if (lLength>laLength) {
+    unsigned long incBy = (MEMORYSTEP*5 > lLength)? MEMORYSTEP: lLength/5;
+    
+    laLength+=incBy;
+    
+    if (lData) {
+      checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
+    } else {
+      checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
     }
-
-    ((BaseRef*)lData)[lLength-1]=br;
-    br->nInstances++;
+  }
+  
+  ((BaseRef*)lData)[lLength-1]=br;
+  return *this;
 }
 
-void _List::operator << (_List const& source) {
-    for (unsigned long k=0UL; k<source.lLength; k++) {
-        (*this) << ((BaseRef*)source.lData)[k];
-    }
+_List& _List::operator << (BaseRef br) {
+    br->AddAReference();
+    return (*this) < br;
 }
 
+_List& _List::operator << (_List const& source) {
+  for (unsigned long k=0UL; k<source.lLength; k++) {
+      (*this) << ((BaseRef*)source.lData)[k];
+  }
+  return *this;
+}
+
+_List& _List::operator < (_List const& source) {
+  for (unsigned long k=0UL; k<source.lLength; k++) {
+    (*this) << ((BaseRef*)source.lData)[k];
+  }
+  return *this;
+}
+
+
+_List& _List::operator < (const char * text) {
+  return (*this) < new _String (text);
+}
 
 /*
 ==============================================================
@@ -309,15 +305,17 @@ Methods
 ==============================================================
 */
 
-void _List::AppendNewInstance (BaseRef br)
-{
+void _List::AppendNewInstance (BaseRef br) {
     if (br) {
         (*this)<<br;
-        br->nInstances--;
+        br->RemoveAReference();
     } else {
         checkPointer (br);
     }
 }
+
+
+
 
 long  _List::BinaryFindObject (BaseObj const * s, long startAt) const {
     _String const * st = (_String const*)s;
@@ -388,7 +386,7 @@ void    _List::bumpNInst (void)
 void  _List::Clear (bool completeClear)
 {
     if (nInstances<=1) {
-        for (unsigned long i = 0; i<lLength; i++) {
+        for (unsigned long i = 0UL; i<lLength; i++) {
             DeleteObject (((BaseRef*)lData)[i]);
         }
         _SimpleList::Clear(completeClear);
@@ -398,14 +396,14 @@ void  _List::Clear (bool completeClear)
     }
 }
 
-long  _List::Compare (long i, long j) {
+long  _List::Compare (long i, long j) const {
     _String             *si = (_String*)lData[i],
                          *sj = (_String*)lData[j];
 
     return  si->Compare(sj);
 }
 
-long  _List::Compare (BaseObj const * i, long j) {
+long  _List::Compare (BaseObj const * i, long j) const {
     _String const       *sj = (_String const*)lData[j],
                         *si = (_String const*)i;
 
@@ -493,8 +491,7 @@ bool _List::Equal(_List const & l2) const
     return true;
 }
 
-long  _List::FindObject (BaseRefCosnt s, long startat) const
-{
+long  _List::FindObject (BaseRefConst s, long startat) const {
     _String const * st = (_String const*)s;
     for (unsigned long i = startat; i<lLength; i++) {
         _String * sp = (_String*)(((BaseRef*)lData)[i]->toStr());
@@ -592,8 +589,7 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
     }
 }
 
-BaseRef  _List::Join (BaseRef spacer, long startAt, long endAt)
-{
+BaseRef  _List::Join (BaseRefConst spacer, long startAt, long endAt) {
     _String *joined = new _String (256L,true);
     if (endAt < 0) { 
         endAt = lLength; 
@@ -601,9 +597,9 @@ BaseRef  _List::Join (BaseRef spacer, long startAt, long endAt)
         endAt = lLength;
     }
 
-    for (unsigned long k = MAX(0,startAt); k < endAt; k++) {
+    for (unsigned long k = MAX(0L,startAt); k < endAt; k++) {
         if (k) {
-            (*joined) << *(_String*)spacer;
+            (*joined) << *(_String const*)spacer;
         }
         joined->AppendNewInstance((_String*) ((BaseRef*)lData)[k]->toStr());
     }
@@ -677,9 +673,9 @@ BaseRef _List::toStr(unsigned long) {
           (*s)<< ", ";
           s->AppendNewInstance ((_String*)GetItem(i)->toStr());
       }
-      (*s)<<'}';
     }
   
+    (*s)<<'}';
     s->Finalize();
     return s;
 }
@@ -710,5 +706,25 @@ void    _List::Map (_List& target, _SimpleList& mapping) {
         DeleteObject (s_object);
     }
 }
+
+const _String _List::GenerateUniqueNameForList (_String const& base, bool sorted) const {
+  _String try_name (base);
+  long    suffix = 1L;
+  
+  if (sorted)
+    while (BinaryFindObject (&try_name)>=0) {
+      suffix++;
+      try_name = base & "_" & suffix;
+    }
+  else
+    while (FindObject(&try_name)>=0) {
+      suffix++;
+      try_name = base & "_" & suffix;
+    }
+  
+  return try_name;
+
+}
+
 
 

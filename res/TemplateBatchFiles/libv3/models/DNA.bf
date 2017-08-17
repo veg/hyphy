@@ -3,6 +3,9 @@ LoadFunctionLibrary ("frequencies.bf");
 
 /** @module models.DNA */
 
+models.DNA.models = {{"GTR", "General time reversible model"}, 
+                     {"HKY85", "Hasegawa Kishino Yano 85 (HKY85) model"}};
+
 models.DNA.alphabet = {{"A","C","G","T"}};
 
 /**
@@ -28,29 +31,50 @@ function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
 	__time_function = modelSpec ["time"];
 	assert (utility.IsFunction (__time_function), "Missing time callback in model specification");
 	
+	__rate_variation = model.generic.get_rate_variation (modelSpec);
+
+	__global_cache = {};
+
+	if (None != __rate_variation) {
+
+		__rp = Call (__rate_variation["distribution"], __rate_variation["options"], namespace);
+		__rate_variation ["id"] = (__rp[terms.category])["id"];
+				
+		parameters.DeclareCategory   (__rp[terms.category]);
+        parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+	} 
 	
 	__rate_matrix = {4,4};
 	__rate_matrix [0][0] = "";
-	__global_cache = {};
 	
 	
 	for (_rowChar = 0; _rowChar < 4; _rowChar +=1 ){
 		for (_colChar = _rowChar + 1; _colChar < 4; _colChar += 1) {
 			__rp = Call (__rate_function, __alphabet[_rowChar], 
-															__alphabet[_colChar],
-															 namespace,
-															__modelType);
-															   
-															   
+													__alphabet[_colChar],
+													 namespace,
+													__modelType);
+													
+																							   
+		 	if (None != __rate_variation) {
+				__rp = Call (__rate_variation["rate_modifier"], 
+							 __rp,
+							 __alphabet[_rowChar],
+							 __alphabet[_colChar],
+							 namespace,
+							 __rate_variation ["id"]);
+ 			}
+ 			
             if (Abs (__rp[terms.rate_entry])) {			
                 parameters.DeclareGlobal (__rp[terms.global], __global_cache);
                 parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
                             
                 __rate_matrix [_rowChar][_colChar] = __rp[terms.rate_entry];
                 __rate_matrix [_colChar][_rowChar] = __rp[terms.rate_entry];
-                continue;
-            } 
-			__rate_matrix [_rowChar][_colChar] = "";
+                
+            } else {
+				__rate_matrix [_rowChar][_colChar] = "";
+			}
 		}	
 	}
 	

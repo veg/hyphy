@@ -46,6 +46,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_____________________________________________________________________________
 
+class _String;
+// forward declaration
+
 //_____________________________________________________________________________
 
 class _List:public _SimpleList
@@ -91,24 +94,6 @@ class _List:public _SimpleList
         _List(BaseRef);
 
         /**
-        * Data constructor list of char* supplied as a variable 
-        * \n\n \b Example: \code _List list = _List((BaseRef)new _String("one")); \endcode
-        * @param char* the first string to add to the list
-        * @param const unsigned long the number of additional char* arguments supplied to the constructor
-        * @param 2-N: char* to be added to the list
-        */
-        _List(const char*, const unsigned long, ...);
-        
-        /**
-         * Data constructor list of BaseRefs supplied as a variable
-         * \n\n \b Example: \code _List list = _List((BaseRef)new _String("one")); \endcode
-         * @param char* the first string to add to the list
-         * @param const unsigned long the number of additional char* arguments supplied to the constructor
-         * @param 2-N: char* to be added to the list
-         */
-        _List(BaseObj*, const unsigned long, ...);
-
-        /**
         * The deconstructor
         */
         virtual ~_List(void);
@@ -130,6 +115,13 @@ class _List:public _SimpleList
         virtual BaseRef GetItem     (const unsigned long) const;
 
         /**
+         * Element location functions - read only
+         * used to avoid (*list)(3) which are hard to read
+         * checks for valid index range and returns NULL if outside the range
+         */
+        virtual BaseRef GetItemRangeCheck     (const unsigned long) const;
+
+        /**
         * Element location functions - read only
         */
         virtual const _List operator = (const _List&);
@@ -147,29 +139,32 @@ class _List:public _SimpleList
         * \n\n \b Example: \code _List result_list = list && new _String("one"); \endcode 
         * @return Nothing. Acts on list that is being operated on
         */
-        void operator && (BaseRef);
+        _List& operator && (BaseRef);
 
         /**
         * Append operator
         * \n\n \b Example: \code _List result_list = list && "one"; \endcode 
         */
-        void operator && (const char*);
+        _List& operator && (const char*);
 
         /**
-        * Append reference to *this
+        * Append reference to *this (<< also increments the reference counter)
         * \n\n \b Example: \code _List result_list << new _String("one"); \endcode 
         * @return Nothing. Operates on the _List.
         */
-        void operator << (BaseRef);
+        _List& operator << (BaseRef);
+        _List& operator <  (BaseRef);
 
         /**
-        * Appends existing list to *this
+        * Appends existing list to *this (<< also increments the reference counters)
         * \n\n \b Example: \code _List result_list << existing_list \endcode 
         * @param l2 The list to be appended
         * @return Nothing. Operates on the _List.
         * @sa AppendNewInstance()
         */
-        void operator << (_List const&);
+        _List& operator << (_List const&);
+        _List& operator < (_List const&);
+        _List& operator < (const char *);
 
         /**
         * Append operator
@@ -189,6 +184,13 @@ class _List:public _SimpleList
         * @sa AppendNewInstance()
         */
         void AppendNewInstance(BaseRef);
+  
+        /**
+         * Append a variable number of arguments without increasing ref counts
+         
+         * @sa _List constructors()
+         */
+        void AppendNewInstance (BaseObj* ref, const unsigned long number, ...);
 
         /**
         * Find the position of a search string in the list of strings (ONLY)
@@ -215,11 +217,11 @@ class _List:public _SimpleList
 
         /**
         */
-        virtual long Compare(long,long);
+        virtual long Compare(long,long) const;
 
         /**
         */
-        virtual long Compare(BaseObj const *,long);
+        virtual long Compare(BaseObj const *,long) const;
 
         /**
         * Return number of elements 
@@ -262,7 +264,7 @@ class _List:public _SimpleList
         * @param s The integer to find
         * @return -1 if not found, index if found
         */
-        virtual long FindObject (BaseRefCosnt, long startat = 0) const;
+        virtual long FindObject (BaseRefConst, long startat = 0) const;
 
         /**
         */
@@ -316,7 +318,7 @@ class _List:public _SimpleList
         * @return A pointer to the new string 
         * @sa Find()
         */
-        BaseRef Join(BaseRef spacer, long startAt = 0, long endAt = -1);
+        BaseRef Join(BaseRefConst spacer, long startAt = 0, long endAt = -1);
 
         /**
         * Identical to << operator. Places new value at the end of the list.
@@ -358,6 +360,18 @@ class _List:public _SimpleList
         /**
         */
         virtual void toFileStr(FILE*, unsigned long = 0UL);
+  
+        /**
+         Generate a string that is not present in the list.
+         The string will look like 'base_[autogenerated number]'
+         
+         @param base the prefix to use for the name
+         @sorted is the list sorted?
+         
+         @return a unique string
+         
+         */
+        const _String GenerateUniqueNameForList (_String const& base, bool sorted) const;
 
 };
 

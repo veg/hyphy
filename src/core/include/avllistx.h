@@ -47,8 +47,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_____________________________________________________________________________
 
-class _AVLListX: public _AVLList
-{
+class _AVLListX: public _AVLList {
 
     public:
         /* SLKP: 20090817
@@ -72,7 +71,7 @@ class _AVLListX: public _AVLList
         virtual long UpdateValue (BaseRef, long, long);
 
         void        SetXtra(long,long);
-        long        GetXtra(long);
+        long        GetXtra(long) const;
 
 };
 

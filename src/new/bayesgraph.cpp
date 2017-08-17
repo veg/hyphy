@@ -40,6 +40,7 @@
 
 #include "bayesgraph.h"
 #include "function_templates.h"
+#include "time_difference.h"
 
 #ifdef __HYPHYQT__
     #include "hyphymain.h"
@@ -129,28 +130,6 @@ void        ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _Strin
 #endif
 
 
-
-//__________________________________________________________________________________________________________
-long        integerPower (long base, long exponent)
-{
-    //  Rapid computation of an integer power.
-    long    result = 1,
-            mask   = 1L<<(sizeof(long)*8-2); // left shift to left-most position of binary sequence for long integer
-    // e.g. 100...0 (30 zeroes for signed long)
-
-    while ((exponent & mask) == 0) {
-        mask >>= 1;    // bitwise AND, right-shift mask until overlaps with first '1'
-    }
-
-    while (mask) {
-        result *= result;
-        if (exponent & mask) {
-            result = result * base;
-        }
-        mask >>= 1;
-    }
-    return result;
-}
 
 
 
@@ -1095,8 +1074,8 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
 
 
 #if defined __HYPHYMPI__
-    _Parameter  use_mpi_caching;
-    checkParameter (_HYBgm_MPI_CACHING, use_mpi_caching, 0);
+    bool  use_mpi_caching;
+    checkParameter (_HYBgm_MPI_CACHING, use_mpi_caching, false);
 
     if (use_mpi_caching) {
         ReportWarning (_String ("Using MPI to cache node scores."));
@@ -1598,11 +1577,11 @@ void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
 
     _String *   bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
 
-    _Parameter  impute_max_steps, impute_burnin, impute_sample_size;    // permit user to reset impute settings
+    long  impute_max_steps, impute_burnin, impute_sample_size;    // permit user to reset impute settings
 
-    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_max_steps, 10000);
-    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 1000);
-    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_sample_size, 100);
+    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_max_steps, 10000L);
+    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 1000L);
+    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_sample_size, 100L);
 
     rec << "USE_MPI_CACHING=1;\n";
     rec << "PRINT_DIGITS=-1;\n";
@@ -1723,31 +1702,31 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
     if (optMethod < 2) {
         ReportWarning (_String("... starting K2 algorithm"));
 
-        _Parameter  num_restarts,           // HBL settings
+        long        num_restarts,           // HBL settings
                     num_randomize;
 
-        checkParameter (_HYBgm_K2_RESTARTS, num_restarts, 1.);
+        checkParameter (_HYBgm_K2_RESTARTS, num_restarts, 1L);
         checkParameter (_HYBgm_K2_RANDOMIZE, num_randomize, num_nodes);
 
         checkPointer (output_matrix =  new _Matrix (num_nodes * num_nodes, 2, false, true));
         K2Search (optMethod, num_restarts, num_randomize, output_matrix);
     } else {
         _String         oops;
-        _Parameter      mcmc_steps, mcmc_burnin, mcmc_samples;
+        long      mcmc_steps, mcmc_burnin, mcmc_samples;
 
 
         // acquisition of HBL arguments with a few sanity checks
-        checkParameter (_HYBgm_MCMC_MAXSTEPS, mcmc_steps, 0);
+        checkParameter (_HYBgm_MCMC_MAXSTEPS, mcmc_steps, 0L);
         if (mcmc_steps <= 0)    {
             oops = _String ("You asked HyPhy to run MCMC with zero steps in the chain! Did you forget to set Bgm_MCMC_STEPS?\n");
         }
 
-        checkParameter (_HYBgm_MCMC_BURNIN, mcmc_burnin, 0);
+        checkParameter (_HYBgm_MCMC_BURNIN, mcmc_burnin, 0L);
         if (mcmc_burnin < 0)    {
             oops = _String("You can't have a negative burn-in (_HYBgm_MCMC_BURNIN)!\n");
         }
 
-        checkParameter (_HYBgm_MCMC_SAMPLES, mcmc_samples, 0);
+        checkParameter (_HYBgm_MCMC_SAMPLES, mcmc_samples, 0L);
         if (mcmc_samples < 0)   {
             oops = _String ("You can't have a negative sample size!");
         }
@@ -2049,10 +2028,11 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
 
     _Parameter      current_score, proposed_score, best_score,
                     lk_ratio,
-                    prob_swap, param_max_fails;
+                    prob_swap;
+  
 
     long            sampling_interval = mcmc_steps / mcmc_samples,
-                    max_fails;
+                    max_fails, param_max_fails;
 
     _SimpleList *   proposed_order  = new _SimpleList();
     _SimpleList     current_order;
@@ -2061,12 +2041,11 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
     // parse HBL settings
     checkParameter (_HYBgm_MCMC_PROBSWAP, prob_swap, 0.1);
     if (prob_swap < 0 || prob_swap > 1.) {
-        _String oops ("BGM_MCMC_PROBSWAP must be assigned a value between 0 and 1.  Exiting.\n");
-        WarnError (oops);
+        WarnError ("BGM_MCMC_PROBSWAP must be assigned a value between 0 and 1.  Exiting.\n");
         return;
     }
 
-    checkParameter (_HYBgm_MCMC_MAXFAILS, param_max_fails, 100);
+    checkParameter (_HYBgm_MCMC_MAXFAILS, param_max_fails, 100L);
     if (param_max_fails <= 0.) {
         WarnError ("BGM_MCMC_MAXFAILS must be assigned a value greater than 0");
         return;
@@ -2103,7 +2082,7 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
 	
 	// randomize the initial graph
 	RandomizeGraph (proposed_graph, proposed_order, prob_swap, num_nodes*num_nodes, max_fails, fixed_order);
-	ReportWarning (_String ("seeding with randomized graph:\n") & (_String *) proposed_graph->toStr());
+	ReportWarning (_String ("seeding with randomized graph:\n") & _String ((_String *) proposed_graph->toStr()));
 
     // status line
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
@@ -2494,7 +2473,10 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
      */
     VerbosityLevel();
     long howManyTimesUpdated = 0; // how many times has the line been updated; is the same as the # of seconds
-    TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+  
+  
+    TimeDifference timer;
+    // save initial timer; will only update every 1 second
 #ifdef __HEADLESS__
     SetStatusLine (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")));
 #else
@@ -2502,12 +2484,12 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
     SetStatusLine     (empty,_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")), empty ,0,HY_SL_TASK|HY_SL_PERCENT);
 #else
     _String         * progressReportFile = NULL;
-    _Variable       * progressFile = CheckReceptacle (&optimizationStatusFile, empty, false);
+    _Variable       * progressFile = CheckReceptacle (&optimizationStatusFile, emptyString, false);
 
     if (progressFile->ObjectClass () == STRING) {
         progressReportFile = ((_FString*)progressFile->Compute())->theString;
     }
-    ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")), -1., progressReportFile);
+    ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? emptyString : _String(" burnin")), -1., progressReportFile);
 #endif
 #endif
 
@@ -2596,9 +2578,9 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 
 
         /*SLKP 20070926; include progress report updates */
-        if (TimerDifferenceFunction(true)>1.0) { // time to update
+        if (timer.TimeSinceStart()>1.0) { // time to update
             howManyTimesUpdated ++;
-            _String statusLine = _HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")) & " " & (step+1) & "/" & n_steps
+            _String statusLine = _HYBgm_STATUS_LINE_MCMC & (do_sampling ? emptyString : _String(" burnin")) & " " & (step+1) & "/" & n_steps
                                  & " steps (" & (1.0+step)/howManyTimesUpdated & "/second)";
 #if  defined __HEADLESS__
             SetStatusLine (statusLine);
@@ -2615,7 +2597,7 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 #endif
 #endif
 
-            TimerDifferenceFunction(false); // reset timer for the next second
+            timer.Start(); // reset timer for the next second
         }
         /* SLKP */
 

@@ -15,7 +15,7 @@
 "AI","Peter Simmonds' Association Index (AI).","SimmondsAI.bf";
 "BDN","Fit several dN/dS to branch classes, based on a pre-partitioned tree.","BranchClassDNDS.bf";
 "BSEL","Split a tree into two clades (compartments) and a separating branch and test for equality of dN/dS between compartments and for selection along the separating branch using a series of Likelihood Ratio Tests.","SelectionLRT.bf";
-"CORR","Assess the correlation between phylogenetic and compartment segregation using generalized correlation coefficients and permutation tests.","TreeCorrelationCoefficients.bf"; 
+"CORR","Assess the correlation between phylogenetic and compartment segregation using generalized correlation coefficients and permutation tests.","TreeCorrelationCoefficients.bf";
 "FST","Compute various measures of F_ST and (optionally) perform permutation tests.","F_ST.bf";
 "SM","Peform a Slatkin-Maddison test for the number migrations.","SlatkinMaddison.bf";
 "TC","Test whether a group of sequences in a sample cluster together","TestClade.bf";
@@ -85,7 +85,7 @@
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 "PSM","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1. Multiple subsets of one data set with shared dN/dS.","MFPositiveSelection.bf";
 "QSD","Quickly test for positive selection using several approaches.","QuickSelectionDetection.bf";
-"RELAX","Test whether selected branches are under relaxed or intensified selection against reference branches","RELAX.bf";
+"RELAX","Test whether selected branches are under relaxed or intensified selection against reference branches","SelectionAnalyses/RELAX.bf";
 "SSD","Use approximate likelihoods at a site to test for subtree specific selective pressure.","SubtreeSelectionComparison.bf";
 "DST","Perform a random effects (D)irectional (E)volution on (P)rotein (S)equences test to identify sites which evolve directionally towards a given residue [MPI enabled].","DirectionalREL.bf";
 "MEDS","Test for Episodic Directional Selection on a set of labeled branches","MEDS.bf";
@@ -93,7 +93,7 @@
 "","Test for recombination.","!Recombination";
 "GARD","Screen an alignment using GARD (requires an MPI environment).","GARD.bf";
 "GRDR","Process GARD results.","GARDProcessor.bf";
-"LHT","A Likelihood Ratio Test to detect conflicting phylogenetic signal Huelsenbeck and Bull, 1996. [Contributed by Olivier Fedrigo].","LHT.bf";Ê Ê
+"LHT","A Likelihood Ratio Test to detect conflicting phylogenetic signal Huelsenbeck and Bull, 1996. [Contributed by Olivier Fedrigo].","LHT.bf";
 "SBL","Search an alignment for a single breakpoint.","SingleBreakpointRecomb.bf";
 "SPL","Plot genetic distances (similarity) of one sequence against all others in an alignment, using a sliding window. Optionally, determine NJ-based clustering and bootstrap support in every window. This is a HyPhy adaptation of the excellent (but Windows only tool) SimPlot (and/or VarPlot) written by Stuart Ray (http://sray.med.som.jhmi.edu/SCRoftware/simplot/)","SimilarityPlot.bf";
 

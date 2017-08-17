@@ -71,8 +71,7 @@ typedef char* Ptr;
 #include <stdio.h>
 
 
-class BaseObj
-{
+class BaseObj {
 
     //base object class
 public:
@@ -105,9 +104,11 @@ public:
         nInstances ++;
     }
 
-    virtual void     RemoveAReference (void)     {
+    virtual inline void     RemoveAReference (void)     {
         nInstances --;
     }
+  
+    void ConsoleLog (void);
 
     long             nInstances;
 
@@ -115,11 +116,10 @@ public:
 };
 
 typedef BaseObj*  BaseRef;
-typedef BaseObj const * BaseRefCosnt;
+typedef BaseObj const * BaseRefConst;
 
 
-
-extern  void      DeleteObject (BaseRef); // delete a dynamic object
+bool      DeleteObject (BaseRef); // delete / decrease counter for a dynamic object
 
 
 #ifdef  __HYPHYDMALLOC__
@@ -149,7 +149,6 @@ unsigned long genrand_int32             (void);
 double        genrand_real2             (void);
 FILE*         doFileOpen                (const char *, const char *, bool = false);
 // 20110324: SLKP added the bool flag to allow automatic "Can't open file" error reports
-double        TimerDifferenceFunction   (bool);
 
 #define       RAND_MAX_32               4294967295.0
 #define       USE_AVL_NAMES

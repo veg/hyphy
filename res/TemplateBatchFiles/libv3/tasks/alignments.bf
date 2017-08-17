@@ -14,17 +14,54 @@ lfunction alignments.ReadCodonDataSet(dataset_name) {
 
 /**
  * Reads dataset from a file path
+ * @name alignments.LoadGeneticCode
+ * @param {String} code name - name of the genetic code to load, or None to prompt
+ * @returns {Dictionary} - metadata pertaining to the genetic code
+ */
+
+
+lfunction alignments.LoadGeneticCode (code) {
+     if (Type (code) == "String") {
+        ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def",
+            {"0" : code });
+     } else {
+        ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
+     }
+     return {
+        "code" : _Genetic_Code,
+        "stops" : GeneticCodeExclusions,
+        "ordering" : _hyphyAAOrdering,
+        "mapping" : defineCodonToAA ()
+     };
+}
+/**
+ * Reads dataset from a file path
  * @name alignments.ReadCodonDataSetFromPath
  * @param {String} dataset_name - name of variable you would like to set the dataset to
  * @param {String} path - path to alignment file
  * @returns {Dictionary} r - metadata pertaining to the dataset
  */
+
 lfunction alignments.ReadCodonDataSetFromPath(dataset_name, path) {
-    ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
+     code_info = alignments.LoadGeneticCode (None);
+     return alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code_info["code"], code_info["stops"]);
+}
+
+/**
+ * Reads a codon dataset from a file path given a genetic code
+ * @name alignments.ReadCodonDataSetFromPathGivenCode
+ * @param {String} dataset_name - name of variable you would like to set the dataset to
+ * @param {String} path - path to alignment file
+ * @param {Matrix} code - genetic code
+ * @param {String} stop_codons - the list of stopcodons
+ * @returns {Dictionary} r - metadata pertaining to the dataset
+ */
+lfunction alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code, stop_codons) {
 
     if (Type(path) == "String") {
         DataSet ^ dataset_name = ReadDataFile(path);
     } else {
+        SetDialogPrompt ("Select a coding sequence alignment file");
         DataSet ^ dataset_name = ReadDataFile(PROMPT_FOR_FILE);
         path = ^ "LAST_FILE_PATH";
     }
@@ -32,12 +69,11 @@ lfunction alignments.ReadCodonDataSetFromPath(dataset_name, path) {
     r = alignments.ReadNucleotideDataSet_aux(dataset_name);
 
     r * {
-        "code": _Genetic_Code,
-        "stop": GeneticCodeExclusions,
+        "code": code,
+        "stop": stop_codons,
         "file": path,
         "sequences": Eval( ^ "`dataset_name`.species")
     };
-
 
     return r;
 }
@@ -80,11 +116,45 @@ lfunction alignments.ReadNucleotideDataSet_aux(dataset_name) {
  * Get sequence names from existing dataset
  * @name alignments.GetSequenceNames
  * @param {String} dataset_name - name of dataset to get sequence names from
- * @returns {Dictionary} list of sequence names
+ * @returns {Matrix} list of sequence names
  */
 lfunction alignments.GetSequenceNames(dataset_name) {
     GetString(result, ^ dataset_name, -1);
     return result;
+}
+
+/**
+ * Get sequence from existing dataset by name
+ * @name alignments.GetSequenceNames
+ * @param {String} dataset_name - name of dataset to get sequence names from
+ * @param {String|None} sequence_name - the name of the sequence to extract or None to set up the initial mapping
+ * @returns {String} the corresponding sequence string
+ */
+
+lfunction alignments.GetSequenceByName (dataset_name, sequence_name) {
+    if (None == sequence_name) {
+        cache = utility.MatrixToDict (alignments.GetSequenceNames (dataset_name));
+        return None;
+    }
+
+    assert (cache/sequence_name, "Invalid sequence name `sequence_name` for data set `dataset_name` in call to alignments.GetSequenceByName");
+    GetDataInfo (seq_string, ^dataset_name, cache[sequence_name]);
+    return seq_string;
+}
+
+/**
+ * Get i-th sequence name/value from an alignment
+ * @name alignments.GetIthSequence
+ * @param {String} dataset_name - name of dataset to get sequence names from
+ * @param {String} index - the name of the sequence to extract or None to set up the initial mapping
+ * @returns {Dict} {"id" : sequence name, "sequence" : sequence data}
+ */
+
+lfunction alignments.GetIthSequence (dataset_name, index) {
+
+    GetString   (seq_id, ^dataset_name, index);
+    GetDataInfo (seq_string, ^dataset_name, index);
+    return {"id" : seq_id, "sequence" : seq_string};
 }
 
 /**
@@ -96,10 +166,10 @@ lfunction alignments.GetSequenceNames(dataset_name) {
  */
 lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
     if (Type(file_name) == "String") {
-        // 
-        DataSet ^ dataset_name = ReadDataFile( ^ file_name);
+        DataSet ^dataset_name = ReadDataFile(file_name);
     } else {
-        DataSet ^ dataset_name = ReadDataFile(PROMPT_FOR_FILE);
+        SetDialogPrompt ("Select a sequence alignment file");
+        DataSet ^dataset_name = ReadDataFile(PROMPT_FOR_FILE);
         file_name = LAST_FILE_PATH;
     }
 
@@ -223,7 +293,7 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
  */
 lfunction alignments.serialize_site_filter (data_filter, site_index) {
     GetDataInfo (fi, ^data_filter, "PARAMETERS");
-    utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 9);
+    utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 6);
     utility.ToggleEnvVariable ("IS_TREE_PRESENT_IN_DATA", FALSE);
     DataSetFilter temp = CreateFilter (^data_filter,fi["ATOM_SIZE"],'' + site_index*fi["ATOM_SIZE"] + '-' + ((site_index+1)*fi["ATOM_SIZE"]-1),'',fi["EXCLUSIONS"]);
     Export (filter_string, temp);
@@ -235,6 +305,131 @@ lfunction alignments.serialize_site_filter (data_filter, site_index) {
             DataSetFilter ^name = CreateFilter (hidden, `""+fi['ATOM_SIZE']`,,,"`fi['EXCLUSIONS']`");
         };
     ';
+}
+
+/**
+ * @name alignments.TranslateCodonsToAminoAcids
+ * Translate a codon sequence to amino-acids using the mapping provided by the
+ * genetic code
+ * @param {String} sequence - the string to translate
+ * @param {Number} offset - start at this position (should be in {0,1,2})
+ * @param {Dictionary} code - genetic code description (e.g. returned by alignments.LoadGeneticCode)
+ * @returns {String} the amino-acid translation ('?' is used to represent ambiguities; 'X' - stop codons)
+ */
+
+lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
+    l = Abs (sequence);
+	translation = "";
+	translation * (l/3+1);
+	for (k = offset; k < l; k += 3) {
+		codon = sequence[k][k+2];
+		if (code ["mapping"] / codon) {
+		    translation * (code ["mapping"])[codon];
+		}
+		else {
+		    if (codon == "---") {
+			    translation * "-";
+		    } else {
+			    translation * "?";
+			}
+	    }
+	}
+	translation * 0;
+	return translation;
+}
+
+/**
+ * @name alignments.MapAlignmentToReferenceCoordinates
+ * Map a query sequence from the aligned coordinates
+ * genetic code
+ * @param {String} sequence - the string to translate
+ * @returns {String} the amino-acid translation ('?' is used to represent ambiguities; 'X' - stop codons)
+ */
+
+lfunction alignments.MapAlignmentToReferenceCoordinates (reference, aligned_reference, aligned_qry, offset) {
+
+
+    realigned         = {};
+    mapping           = {};
+    coordinates       = {1,Abs(reference)};
+    reduced_alignment = {1,Abs(reference)};
+    /* this will contain a list of coordinates,
+       in terms of the original reference alignment,
+       that overlap with non-gap positions in the query
+    */
+
+    for (i = 0; i < 3; i+=1) {
+        realigned[i] = ""; realigned[i] * Abs (reference);
+    }
+
+    reference_coordinate = 0;
+
+    if (offset) {
+         for (letter_offset = 0; letter_offset < offset;) {
+            realigned[0] * (reference[reference_coordinate]);
+            if (reference[reference_coordinate] != '-') {
+                letter_offset += 1;
+            }
+            realigned[1] * "-";
+            realigned[2] * "-";
+            coordinates[reference_coordinate] = -1;
+            reduced_alignment[reference_coordinate] = FALSE;
+            reference_coordinate += 1;
+        }
+    }
+
+
+    alignment_coordinate = 0;
+
+    while (alignment_coordinate < Abs (aligned_reference) && reference_coordinate < Abs (reference)) {
+        coordinates[reference_coordinate] = alignment_coordinate;
+        if (reference [reference_coordinate] == "-") { // gap in the reference coordinates; add to all
+            reduced_alignment[reference_coordinate] = FALSE;
+            reference_coordinate += 1;
+            realigned[0] * "-";
+            realigned[1] * "-";
+            realigned[2] * "-";
+        } else {
+            if (aligned_reference[alignment_coordinate] == "-") { // insert in the reference
+                realigned [0] * "-";
+                realigned [1] * "-";
+                realigned [2] * aligned_qry[alignment_coordinate];
+                alignment_coordinate += 1;
+            } else {
+                assert ((aligned_reference[alignment_coordinate] &&1) == (reference [reference_coordinate] && 1), "Mismatch between reference and aligned_reference : '`reference [reference_coordinate]`' != '`aligned_reference[alignment_coordinate]`'");
+                realigned [0] * reference [reference_coordinate];
+                realigned [1] * aligned_reference[alignment_coordinate];
+                realigned [2] * aligned_qry[alignment_coordinate];
+                reduced_alignment[reference_coordinate] = TRUE;
+                alignment_coordinate += 1;
+                reference_coordinate += 1;
+           }
+        }
+    }
+
+    while (alignment_coordinate < Abs (aligned_reference)) { // qry is longer than the reference pa
+        coordinates[reference_coordinate] = alignment_coordinate;
+        realigned [0] * "-";
+        realigned [1] * "-";
+        realigned [2] * aligned_qry[alignment_coordinate];
+        alignment_coordinate += 1;
+    }
+
+    while (reference_coordinate < Abs (reference)) { // qry is longer than the reference pa
+        coordinates[reference_coordinate] = alignment_coordinate;
+        realigned [0] * reference[reference_coordinate];
+        realigned [1] * "-";
+        realigned [2] * "-";
+        reference_coordinate += 1;
+    }
+
+
+    for (i = 0; i < 3; i+=1) {
+        realigned[i] * 0;
+    }
+
+    return {"three-way" : Eval (realigned), "mapping" : Eval (coordinates), "reduced" : Eval (reduced_alignment)};
+
 }
 
 /**

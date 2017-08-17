@@ -18,6 +18,7 @@ LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
+LoadFunctionLibrary("modules/selection_lib.ibf");
 
 /*------------------------------------------------------------------------------
     Display analysis information
@@ -143,10 +144,34 @@ utility.ForEachPair (slac.filter_specification, "_key_", "_value_",
 
 selection.io.startTimer (slac.json [terms.json.timers], "Primary SLAC analysis", 2);
 
+slac.nucleotide_frequencies    = (slac.gtr_results[terms.efv_estimate])["VALUEINDEXORDER"][0];
+
+/*_EFV_MATRIX0_ = {{1,AC__*pooledFreqs[1],pooledFreqs[2],AT__*pooledFreqs[3]}
+				{AC__*pooledFreqs[0],1,CG__*pooledFreqs[2],CT__*pooledFreqs[3]}
+				{pooledFreqs[0],CG__*pooledFreqs[3],1,GT__*pooledFreqs[3]}
+				{AT__*pooledFreqs[0],CT__*pooledFreqs[3],GT__*pooledFreqs[2],1}};
+*/
+
+
+slac.counting_bias_matrix = {4,4}["1"];
+
+for (slac.i = 0; slac.i < 4; slac.i += 1) {
+    for (slac.j = slac.i + 1; slac.j < 4; slac.j += 1) {
+        slac.counting_bias_matrix[slac.i][slac.j] = ((slac.partitioned_mg_results[terms.global])[terms.nucleotideRate (models.DNA.alphabet[slac.i], models.DNA.alphabet[slac.j])])[terms.MLE];
+        slac.counting_bias_matrix[slac.j][slac.i] = slac.counting_bias_matrix[slac.i][slac.j] * slac.nucleotide_frequencies [slac.i];
+        slac.counting_bias_matrix[slac.i][slac.j] = slac.counting_bias_matrix[slac.i][slac.j] * slac.nucleotide_frequencies [slac.j];
+    }
+}
+
+
+slac.counting_bias_array = {};
+slac.counting_bias_array + slac.counting_bias_matrix;
+slac.counting_bias_array + slac.counting_bias_matrix;
+slac.counting_bias_array + slac.counting_bias_matrix;
 
 io.SpoolLF (slac.partitioned_mg_results["LF"], slac.codon_data_info["file"], "slac");
 io.ReportProgressMessageMD("slac", "anc", "Performing joint maximum likelihood ancestral state reconstruction");
-slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE});
+slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info["code"], {"count-stop-codons" : FALSE, "weighting-matrix" : slac.counting_bias_array});
 slac.results   = {};
 
 
@@ -187,7 +212,6 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
 
     slac.partition_sites   = utility.Array1D ((slac.filter_specification[slac.i])["coverage"]);
 
-
     for (slac.site = 0; slac.site < slac.partition_sites; slac.site += 1) {
         slac.row = utility.Map ((((slac.results[slac.i]) ["by-site"])["RESOLVED"])[slac.site][-1],
                              "_entry_",
@@ -221,7 +245,7 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
         }
     }
 
-    slac.branch_attributes = slac.substituton_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
+    slac.branch_attributes = selection.substitution_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info["code"]);
 
     selection.io.json_store_branch_attribute(slac.json, "original name", terms.json.attribute.node_label, 0,
                                              slac.i,
@@ -284,17 +308,13 @@ if (slac.samples > 0) {
         slac.table_output_options_samplers["header"] = TRUE;
         slac.sample.results = {};
 
-        slac.queue = mpi.create_queue ({"LikelihoodFunctions": {{slac.partitioned_mg_results["LF"]}}});
-
+        slac.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{slac.partitioned_mg_results["LF"]}}});
 
         for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
 
-            //slac.sampled   = ancestral.build (slac.partitioned_mg_results["LF"], slac.i, {"sample": TRUE});
-            //slac.sample.results + slac.compute_the_counts (slac.sampled["MATRIX"], slac.sampled["TREE_AVL"], slac.sampled["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
-
             io.ReportProgressBar("", "\tSample " + (slac.s+1) + "/" + slac.samples + " for partition " + (1+slac.i));
 
-            mpi.queue_job (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"],
+            mpi.QueueJob (slac.queue, "slac.handle_a_sample", {"0" : slac.partitioned_mg_results["LF"],
                                                                 "1" : slac.i,
                                                                 "2" : slac.selected_branches[slac.i],
                                                                 "3":  slac.counts},
@@ -304,7 +324,7 @@ if (slac.samples > 0) {
 
         io.ReportProgressBar("", "Done with ancestral sampling              \n");
 
-        mpi.queue_complete (slac.queue);
+        mpi.QueueComplete (slac.queue);
 
         slac.extractor = {slac.samples, 1};
         slac.sites   = utility.Array1D ((slac.filter_specification[slac.i])["coverage"]);
@@ -389,6 +409,7 @@ lfunction slac.extendedBinTail (ebn, ebp, ebx) {
 		return 0;
 	}
 
+
 	ebr = ebx$1; /* rounded to nearest integer */
 
 	currentBinCoeff = (1-ebp)^ebn; /*compute the first binomial coefficient */
@@ -417,101 +438,7 @@ function slac._extract_vector (to, from, key, row, column) {
     return to ["(((from[_MATRIX_ELEMENT_ROW_])[\"by-site\"])[key])[row][column]"]%0;
 }
 
-/*------------------------------------------------------------------------------------*/
 
-lfunction slac.substituton_mapper (matrix, tree, ambig_lookup, pairwise_counts, code_to_codon, genetic_code) {
-
-    /*
-        Return a dictionary with the following entries
-
-
-            "codon" : {
-                "each branch name" : {
-                    "codon" :          { an array of strings; codon per site }
-                 }
-             },
-            "amino-acid" : {
-                "each branch name" : {
-                    { an array of strings; amino-acid per site }
-                 }
-             },
-            "synonymous substitution count" : {
-                "each branch name" : {
-                    { an array of floats: for each site, # of synonymous substitutions at this branch/site; by convention set to 0 at the root node }
-                 }
-             },
-            "non-synonymous substitution count" : {
-                "each branch name" : {
-                    { an array of floats: for each site, # of non-synonymous substitutions at this branch/site; by convention set to 0 at the root node }
-                 }
-             }
-
-    */
-
-    site_count   = Columns (matrix);
-    branch_count = Rows (matrix);
-    aa_mapping   = genetic_code.DefineCodonToAAMapping (genetic_code);
-    integer_mapping = genetic_code.DefineIntegerToAAMapping (genetic_code, TRUE);
-
-    result      = {"codon" : {},
-                   "amino-acid" : {},
-                   "synonymous substitution count" : {},
-                   "non-synonymous substitution count" : {}};
-
-    code_lookup = {"-1" : "-"};
-
-    for (b = 0; b < branch_count; b += 1) {
-
-        bname  = (tree[b+1])["Name"];
-        parent = (tree[b+1])["Parent"] - 1;
-
-        branch_info = {"codon" : {1, site_count},
-                       "amino-acid" : {1, site_count},
-                       "synonymous substitution count" : {1, site_count},
-                       "non-synonymous substitution count" : {1, site_count}};
-
-
-        for (s = 0; s < site_count; s += 1) {
-            code        = matrix[b][s];
-            parent_code = matrix[parent][s];
-
-            (branch_info["codon"])[s] = code_to_codon[code];
-
-            if (Type(code_lookup [code]) != "String") {
-                if (code >= 0) {
-                    code_lookup [code] = aa_mapping [code_to_codon[code]];
-
-                } else {
-                    collect_residues = {};
-                    utility.ForEach ( ambig_lookup[-code-2], "_for_each_", "`&collect_residues`[`&integer_mapping`[_for_each_]] = 1");
-                    code_lookup [code] = Join ("", utility.Keys (collect_residues));
-                }
-            }
-
-            if (code >= 0) {
-                (branch_info["synonymous substitution count"]) [s]     = (pairwise_counts["OPS"])[parent_code][code];
-                (branch_info["non-synonymous substitution count"]) [s] = (pairwise_counts["OPN"])[parent_code][code];
-            } else {
-                if (code != -1) {
-                    resolution = (ambig_lookup[-code-2])$(ambig_lookup[-code-2])["_MATRIX_ELEMENT_ROW_"];
-                    resolution = resolution[resolution];
-                    (branch_info["synonymous substitution count"]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPS\"])[`&parent_code`][_mapper_]");
-                    (branch_info["non-synonymous substitution count"]) [s] = + utility.Map (resolution, "_mapper_", "(`&pairwise_counts`[\"OPN\"])[`&parent_code`][_mapper_]");
-                }
-
-            }
-
-            (branch_info["amino-acid"])[s] = code_lookup[code];
-        }
-
-        utility.ForEach (utility.Keys (branch_info), "slac.substituton_mapper.key",
-                         "(`&result`[slac.substituton_mapper.key])[`&bname`] = `&branch_info`[slac.substituton_mapper.key]");
-
-     }
-
-    return result;
-
-}
 
 /*------------------------------------------------------------------------------------*/
 
@@ -532,7 +459,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
     tip_count = 0;
 
     for (i = 1; i < Abs (tree); i+=1) {
-        if (selected_branches [(tree[i])["Name"]&&1]) {
+        if (selected_branches [(tree[i])["Name"]]) {
             selected_branches_in_avl[k]   = i-1;
             selected_branches_lengths[k] = (tree[i])["Length"];
             selected_branches_parents[k] = (tree[i])["Parent"] - 1;
@@ -718,14 +645,14 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
 
             total_subs = (*mx)[s*column_count + 2] + (*mx)[s*column_count + 3];
 
-            if (total_subs) {
-                (*mx) [s*column_count + 4] = (*mx) [s*column_count + 0]/((*mx) [s*column_count + 1]+(*mx) [s*column_count + 0]);
-                (*mx) [s*column_count + 5] = (*mx) [s*column_count + 2]/(*mx) [s*column_count + 0];
-                (*mx) [s*column_count + 6] = (*mx) [s*column_count + 3]/(*mx) [s*column_count + 1];
+            (*mx) [s*column_count + 4] = (*mx) [s*column_count]/((*mx) [s*column_count + 1]+(*mx) [s*column_count ]);
+            (*mx) [s*column_count + 5] = (*mx) [s*column_count + 2]/(*mx) [s*column_count + 0];
+            (*mx) [s*column_count + 6] = (*mx) [s*column_count + 3]/(*mx) [s*column_count + 1];
+            if (k > 0) {
+                (*mx) [s*column_count + 7] = ((*mx) [s*column_count + 6] - (*mx) [s*column_count + 5])/k;
+            }
 
-                if (k > 0) {
-                    (*mx) [s*column_count + 7] = ((*mx) [s*column_count + 6] - (*mx) [s*column_count + 5])/k;
-                }
+            if (total_subs) {
 
                 syn_count = (*mx) [s*column_count + 2];
                 (*mx) [s*column_count + 8] = slac.extendedBinTail(total_subs,(*mx) [s*column_count + 4],syn_count);

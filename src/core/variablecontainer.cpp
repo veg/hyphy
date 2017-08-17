@@ -46,11 +46,14 @@
 #include "polynoml.h"
 #include "batchlan.h"
 
+#include "global_object_lists.h"
+
+using namespace hyphy_global_objects;
+
 
 //__________________________________________________________________________________
 
-_VariableContainer::_VariableContainer (void)
-{
+_VariableContainer::_VariableContainer (void) {
     theParent = nil;
     theModel = -1;
     iVariables = nil;
@@ -210,12 +213,12 @@ _Formula* _VariableContainer::GetExplicitFormModel (void) const {
 
 //__________________________________________________________________________________
 
-_String* _VariableContainer::GetModelName (void) {
-    _String * res = _HBLObjectNameByType (HY_BL_MODEL, theModel, false);
+_String const* _VariableContainer::GetModelName (void)  const{
+    _String const * res = GetObjectNameByType (HY_BL_MODEL, theModel, false);
     if (res) {
         return res;
     }
-    return &empty;
+    return &emptyString;
 }
 
 //__________________________________________________________________________________
@@ -280,7 +283,7 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
         {
             
             long cachedID = -1;
-            bool doScan   = !varCache || (cachedID = varCache->Find ((BaseRef) theModel)) < 0 ;
+            bool doScan   = !varCache || (cachedID = varCache->Find ((BaseRef) theModel)) < 0L ;
 
             if (doScan) {
 
@@ -303,21 +306,18 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
 
         }
 
-        for (long i=0; i<mVars.lLength; i++) {
+        for (long i=0L; i<mVars.lLength; i++) {
             _Variable * aVar = (_Variable*)variablePtrs (mVars.lData[i]);
             if (aVar->IsGlobal()) {
-                //if (curVar->IsIndependent())
-                {
-                    if (!gVariables) {
-                        checkPointer (gVariables = new _SimpleList);
-                    }
-                    (*gVariables) << aVar->GetAVariable();
+                if (!gVariables) {
+                    gVariables = new _SimpleList;
                 }
+                (*gVariables) << aVar->GetAVariable();
                 continue;
             }
 
-            long f = aVar->theName->FindBackwards('.',0,-1);
-            if (f>=0) {
+            long f = aVar->theName->FindBackwards('.',0L,-1L);
+            if (f>=0L) {
                 varName = fullName&'.'& aVar->theName->Cut(f+1,-1);
             } else {
                 varName = fullName&'.'& *aVar->theName;
@@ -325,10 +325,9 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
 
 
             f = LocateVarByName (varName);
-            if (f<0) {
+            if (f<0L) {
                 _Variable v (varName);
-                //printf ("%x %s\n", v.theName, v.theName->sData);
-                f = v.theIndex;
+                 f = v.theIndex;
             } else {
                 f = variableNames.GetXtra (f);
             }
@@ -338,13 +337,13 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
 
             if (aVar->IsIndependent()) {
                 if (!iVariables) {
-                    checkPointer (iVariables = new _SimpleList);
+                    iVariables = new _SimpleList;
                 }
                 (*iVariables) << f;
                 (*iVariables) << mVars.lData[i];
             } else {
                 if (!dVariables) {
-                    checkPointer (dVariables = new _SimpleList);
+                    dVariables = new _SimpleList;
                 }
                 (*dVariables) << f;
                 (*dVariables) << mVars.lData[i];
@@ -362,36 +361,34 @@ void    _VariableContainer::SetModel (long modelID, _AVLListXL* varCache)
 }
 
 //__________________________________________________________________________________
-void    _VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache)
-{
-    _String fullName (aName);
+void    _VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache) {
     
     theParent = theP;
 
-
     if (aName.sLength) {
+        /*
+            SLKP
+            this entire section may be deprecated, and may actuall
+        */
+        theName = new _String (aName);
+
         long f = aName.Find('.');
 
         while (theP) {
-            if (f!=-1) {
-                f = aName.Find('.',f+1,-1);
+            if (f != -1L) {
+                f = aName.Find('.',f+1L,-1L);
             } else {
                 break;
             }
-
             theP = theP->theParent;
         }
 
         if (theP) {
-            fullName = (*(theP->theName))&'.'&fullName;
+            *theName = (*(theP->theName))&'.'&*theName;
         }
 
-        theName = (_String*)(fullName.makeDynamic());
         InsertVar (this);
-    } else {
-        fullName = *theName;
     }
-    
     SetModel (FindModelName(theTmplt), varCache);
 }
 

@@ -12,7 +12,7 @@ function io.CheckAssertion(statement, error_msg) {
 
 /**
  * @name io.PromptUser
- * @param statement
+ * @param prompt
  * @param default
  * @param lower_bound
  * @param upper_bound
@@ -46,11 +46,25 @@ lfunction io.PromptUser(prompt,
 }
 
 /**
- * @name io.SpoolLF
- * @param lf_id
- * @param trunk_path
- * @param tag
- * @returns nothing
+ * @name io.PromptUserString
+ * @param prompt
+ */
+lfunction io.PromptUserForString(prompt) {
+
+    str_val = "";
+
+    while (Abs (str_val) == 0) {
+        fprintf(stdout, prompt, " : ");
+        fscanf(stdin, "String", str_val);
+    }
+    return str_val;
+}
+
+/**
+ * @name io._reportMessageHelper
+ * @param analysis
+ * @param text
+ * @returns formatted message
  */
 lfunction io._reportMessageHelper(analysis, text) {
     if (Abs(analysis)) {
@@ -60,14 +74,14 @@ lfunction io._reportMessageHelper(analysis, text) {
     }
 }
 
-/** 
+/**
  * @name io.SpoolJSON
  * @param json
  * @param file
  */
 lfunction io.SpoolJSON(json, file) {
     utility.ToggleEnvVariable("USE_JSON_FOR_MATRIX", 1);
-    if (Type(file) == "String") {
+    if (Type(file) == "String" && Abs (file) > 0) {
         fprintf(file, CLEAR_FILE, json);
     } else {
         fprintf(stdout, "\n", json, "\n");
@@ -75,7 +89,7 @@ lfunction io.SpoolJSON(json, file) {
     utility.ToggleEnvVariable("USE_JSON_FOR_MATRIX", None);
 }
 
-/** 
+/**
  * TODO: Does not support arrays in JSON
  * Parses json from file_path
  * @name io.ParseJSON
@@ -87,7 +101,7 @@ lfunction io.ParseJSON(file_path) {
     return parsed_test;
 }
 
-/** 
+/**
  * @name io.ReportProgressMessage
  * @param analysis
  * @param text
@@ -96,7 +110,7 @@ lfunction io.ReportProgressMessage(analysis, text) {
     fprintf(stdout, io._reportMessageHelper(analysis, text), "\n");
 }
 
-/** 
+/**
  * @name io.ReportAnalysisStageMD
  * @param stage
  */
@@ -104,7 +118,7 @@ lfunction io.ReportAnalysisStageMD(stage) {
     fprintf(stdout, "\n>", stage, "\n\n");
 }
 
-/** 
+/**
  * @name io.ReportProgressMessageMD
  * @param analysis
  * @param stage
@@ -117,9 +131,10 @@ lfunction io.ReportProgressMessageMD(analysis, stage, text) {
     advance = TRUE;
     utility.EnsureKey(cache, analysis);
 
-    if ((cache[analysis])[stage]) {
+    if (utility.Has (cache[analysis],stage,"Number")) {
         advance = FALSE;
     }
+
     (cache[analysis])[stage] += 1;
 
     if (advance) {
@@ -188,7 +203,7 @@ lfunction io.ReportStatsMD(_label, _stats) {
     return 0;
 }
 
-/** 
+/**
  * @name io.ReportProgressBar
  * @param analysis
  * @param text
@@ -197,23 +212,37 @@ lfunction io.ReportProgressBar(analysis, text) {
     SetParameter(STATUS_BAR_STATUS_STRING, io._reportMessageHelper(analysis, text), 0);
 }
 
-/** 
+/**
  * @name io.validate_a_list_of_files
  * @param list
  */
-function io.validate_a_list_of_files(list) {
-    io.validate_a_list_of_files.result = {};
-    for (io.validate_a_list_of_files.i = 0; io.validate_a_list_of_files.i < Rows(list) * Columns(list); io.validate_a_list_of_files.i += 1) {
-        if (Abs(list[io.validate_a_list_of_files.i])) {
-            io.validate_a_list_of_files.fn = list[io.validate_a_list_of_files.i];
-            io.CheckAssertion("!io.validate_a_list_of_files.fn", "HyPhy cannot open '" + io.validate_a_list_of_files.fn + "' for reading");
-            io.validate_a_list_of_files.result + io.validate_a_list_of_files.fn;
+lfunction io.validate_a_list_of_files(list) {
+    result = {};
+    dim = utility.Array1D (list);
+	base_dir = utility.GetEnvVariable ("HYPHY_BASE_DIRECTORY");
+
+
+    for (i = 0; i < dim; i += 1) {
+        if (Abs(list[i])) {
+            fn = list[i];
+            if (io.FileExists (fn)) {
+            	result + fn;
+            	continue;
+            } else {
+            	fn = base_dir + fn;
+            	if (io.FileExists (fn)) {
+            		result + fn;
+            		continue;
+				}
+            }
+            io.CheckAssertion("io.FileExists(`&fn`)", "HyPhy cannot open '" + fn + "' for reading");
+            
         }
     }
-    return io.validate_a_list_of_files.result;
+    return result;
 }
 
-/** 
+/**
  * @name io.format_object
  * @param object
  * @param options
@@ -234,7 +263,7 @@ lfunction io.format_object(object, options) {
     return "" + object;
 }
 
-/** 
+/**
  * @name io.FormatTableRow
  * @param row
  * @param options
@@ -465,4 +494,182 @@ function io.FormatLongStringToWidth(string, width) {
     }
 
     return Join("\n", lines);
+}
+
+/**
+ * I am tired of typing fprintf (stdout, ...)
+ * @returns nothing
+ */
+lfunction console.log (arg) {
+    fprintf (stdout, arg, "\n");
+}
+
+/**
+ * I am tired of typing fprintf (MESSAGE_LOG, ...)
+ * @returns nothing
+ */
+lfunction messages.log (arg) {
+    fprintf (MESSAGE_LOG, arg, "\n");
+}
+
+
+/**
+ * I am tired of typing fprintf (stdout,  ...)
+ * @returns nothing
+ */
+lfunction warning.log (arg) {
+    fprintf (stdout, "[**WARNING**] ", arg, "\n");
+}
+
+/**
+ * Checks if there is a file exists
+ * @param {String} path the path to check
+ * @returns {Number} TRUE if file exists and is readable; FALSE otherwise
+ */
+
+lfunction io.FileExists  (path) {
+    return !path;
+}
+
+/**
+ * Converts a relative path to the absolute path using the current batch file as base
+ * @param {String} relative path
+ * @returns {String} absolute path
+ */
+
+lfunction io.MakeAbsoluteFilePath  (path) {
+    if (path [0] != "/") {
+        return utility.getGlobalValue ("PATH_TO_CURRENT_BF") + path;
+    }
+    return path;
+}
+
+
+/**
+ * Checks if there is a cache file; creates if empty
+ * @param {String} path  the path to the cache file; will be created if it doesn't exist
+ * @returns {Dict} the contents of the file
+ */
+lfunction io.LoadCacheFromFile  (path) {
+    if (io.FileExists (path) == TRUE) { // exists
+        fscanf (path, REWIND, "Raw", contents);
+        contents =  Eval (contents);
+        if (Type (contents) == "AssociativeList") {
+            return contents;
+        }
+    } else {
+        fprintf (path, CLEAR_FILE, {});
+    }
+    return {};
+}
+
+/**
+ * Checks if there is a cache file; creates if empty
+ * @param {String} path  the path to the cache file; will be created if it doesn't exist
+ * @param {Dict} data  the contents of the cache to save to a file
+ * @returns nothing
+ */
+lfunction io.WriteCacheToFile  (path, data) {
+    fprintf (path, CLEAR_FILE, data);
+}
+
+/**
+ * Format the time in seconds as (DD:)HH:MM:SS ('DD' is only shown if more than HH > 24 hours
+ * @param {Number} interval  the time interval in seconds
+ * @returns {String} formatted string
+ */
+lfunction io.FormatTimeInterval  (interval) {
+    pieces  = {{interval % 60, interval % 3600 $ 60, interval $ 3600 % 24, interval $ (3600*24)}};
+
+    time_pieces = {};
+
+    for (k = 3; k >= 0; k = k - 1) {
+        if (pieces[k] || k < 3) {
+            if (pieces[k] < 10) {
+                time_pieces + ("0" + pieces[k]);
+            } else {
+                time_pieces + pieces[k];
+            }
+        }
+    }
+
+    return Join (":", time_pieces);
+}
+
+/**
+ * Read a delimiter separated file
+ * @param {String}  path  path to file; if None, user will be prompted for file
+ * @param {String}  separator the separator to use to segment a line into fields
+ * @param {Boolean} has_header treat the first line as header
+ * @returns {Dict}
+
+  {
+      "rows": {
+          "0": {
+              "0": "KC618402",
+              "1": "Human"
+          },
+          "1": {
+              "0": "KC618403",
+              "1": "Human"
+          },
+          "2": {
+              "0": "AB248520",
+              "1": "Human"
+          },
+          ...
+      }
+      "header": {
+          "0": "accession",
+          "1": "Host"
+      }
+  }
+
+ */
+lfunction io.ReadDelimitedFile  (path, separator, has_header) {
+   if (Type (path) == "String") {
+        fscanf (path, REWIND, "Lines", data);
+   } else {
+        fscanf (PROMPT_FOR_FILE, REWIND, "Lines", data);
+   }
+   result = {"rows" : {}};
+   index = 0;
+   row_count = utility.Array1D (data);
+   if (has_header) {
+        result["header"] = regexp.Split (data[0], separator);
+        index = 1;
+   }
+   for (k = index; k < row_count; k+=1) {
+        result ["rows"] + regexp.Split (data[k], separator);
+   }
+   return result;
+}
+
+/**
+ * Present a selection dialog and return an option
+ * @param {Dict/Matrix} options key : value or {{key, value}...}, using the matrix version ensures ordering
+ * @param {String} description dialog caption
+ * @returns {String/None} selected key or None if selection canceled
+ */
+
+lfunction io.SelectAnOption  (options, description) {
+    option_set = {utility.Array1D (options),2};
+    selection = None;
+    if (Rows (option_set) > 0) {
+        if (Type (options) == "Matrix") {
+            option_set = options;
+        } else {
+            keys = utility.Keys (options);
+            for (k = 0; k < Rows (option_set); k+=1) {
+                option_set [k][0] = keys[k];
+                option_set [k][1] = options[keys[k]];
+            }
+        }
+        ChoiceList  (selection,description,1,NO_SKIP,option_set);
+        if (selection >= 0) {
+            return option_set[selection][0];
+        }
+   }
+    assert (None != selection, "Selection canceled");
+    return None;
 }

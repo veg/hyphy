@@ -46,14 +46,14 @@ _hyExecutionContext _hyDefaultExecutionContextAux (nil, nil),
 
 //_____________________________________________________________
 
-_hyExecutionContext::_hyExecutionContext (_VariableContainer *context, _String* errorBuffer) {
+_hyExecutionContext::_hyExecutionContext (_VariableContainer const *context, _String* errorBuffer) {
     contextSpec = context;
     errMsg      = errorBuffer;
 }
 
 //_____________________________________________________________
 
-_VariableContainer* _hyExecutionContext::GetContext (void) {
+_VariableContainer const* _hyExecutionContext::GetContext (void)  const{
     return contextSpec;
 }
 

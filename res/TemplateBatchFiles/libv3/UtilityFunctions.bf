@@ -71,15 +71,12 @@ function utility.IsFunction (id) {
 			return Type (__funcInfo["ID"]) == "String" && Type (__funcInfo["Arguments"]) == "Matrix" && Type (__funcInfo["Body"]) == "String";
 		}
 	}
-	return 0;
+	return FALSE;
 }
 
 function utility.getGlobalValue (val) {
     return ^val;
 }
-
-
-utility.ToggleEnvVariable.cache = {};
 
 /**
  * @name utility.ToggleEnvVariable
@@ -88,6 +85,9 @@ utility.ToggleEnvVariable.cache = {};
  */
 function utility.ToggleEnvVariable (var, value) {
 	if (None != value) {
+	    if (Type (utility.ToggleEnvVariable.cache) != "AssociativeList") {
+	        utility.ToggleEnvVariable.cache = {};
+	    }
 		utility.ToggleEnvVariable.cache[var] = Eval (var);
 		*var = value;
 	} else {
@@ -108,7 +108,7 @@ function utility.GetEnvVariable (var) {
  * @param var
  */
 function utility.SetEnvVariable (var, value) {
-    Eval (var); // this is hack to make sure the variable exists before assigning to it
+    Eval (var); // this is a hack to make sure the variable exists before assigning to it
 	^var = value;
 }
 
@@ -173,6 +173,21 @@ lfunction utility.ArrayToDict (object) {
 }
 
 /**
+ * Converts a matrix into a lookup dict, of the form value -> index
+ * @name   utility.MatrixToDict
+ * @param  {Matrix} object
+ * @return {Dictionary} lookup table
+ * @example utility.MatrixToDict ({{"a","b","c"}}) => {"a" : 0, "b" : 1, "c" : 2}
+ */
+
+lfunction utility.MatrixToDict (matrix) {
+    result = {};
+    counter = 0;
+    utility.ForEach(matrix, "_value_", "(`&result`)[_value_] = `&counter`; `&counter` += 1;");
+    return result;
+}
+
+/**
  * @name utility.DictToArray
  * @param object
  */
@@ -223,8 +238,8 @@ function utility.Map (object, lambda_name, transform) {
 }
 
 /**
- * @name utility.MatrixToListOfRows 
- * @param {Matrix} object - MxN matrix to convert 
+ * @name utility.MatrixToListOfRows
+ * @param {Matrix} object - MxN matrix to convert
  * @param {Matrix} converted 1 x (M*N) Row vector
  */
 lfunction utility.MatrixToListOfRows (object) {
@@ -245,10 +260,8 @@ lfunction utility.MatrixToListOfRows (object) {
 /**
  * Filters 1xN Matrix or Dictionary
  * @name utility.Filter
- * @param {Dictionary|Matrix} object - matrix to convert 
+ * @param {Dictionary|Matrix} object - matrix to convert
  * @param {String} lambda_name - function to discern whether element is filtered. All elements of iterable object that are false will be removed.
- * @param condition
- * @param {Dictionary} or {Matrix} filtered object
  * @returns filtered object
  * @example
  * _nonnegatives = utility.Filter (_data_vector, "_value_", "_value_ >= 0");
@@ -287,8 +300,51 @@ function utility.Filter (object, lambda_name, condition) {
 }
 
 /**
+ * Find the first element in a matrix or an array that matches the predicate; none otherwise
+ * Keys are traversed alphabetically; matrices, by column - then row
+ * @name utility.First
+ * @param {Dictionary|Matrix} object - matrix to convert
+ * @param {String} lambda_name - function to discern whether element is filtered.
+ * @returns first matched object or none
+ */
+function utility.First (object, lambda_name, condition) {
+
+
+    Eval ("`lambda_name` = None");
+
+     if (Type (object) == "AssociativeList") {
+        utility.Filter.keys = Rows (object);
+        ^(lambda_name) := object [utility.Filter.keys[utility.Filter.k]];
+        for (utility.Filter.k = 0; utility.Filter.k < Abs (object); utility.Filter.k += 1) {
+
+
+            if (Eval (condition)) {
+                return ^(lambda_name);
+            }
+        }
+        return None;
+    }
+
+    if (Type (object) == "Matrix") {
+        utility.Filter.rows = Rows (object);
+        utility.Filter.columns = Columns (object);
+        ^(lambda_name) := object [utility.Filter.r][utility.Filter.c];
+        for (utility.Filter.r = 0; utility.Filter.r < utility.Filter.rows; utility.Filter.r += 1) {
+            for (utility.Filter.c = 0; utility.Filter.c < utility.Filter.columns; utility.Filter.c += 1) {
+                if (Eval (condition)) {
+                    return ^(lambda_name);
+                }
+            }
+        }
+        return None;
+    }
+
+    return None;
+}
+
+/**
  * @name utility.ForEach
- * @param {Tree|Dictionary|Matrix} object - matrix to convert 
+ * @param {Tree|Dictionary|Matrix} object - matrix to convert
  * @param {String} lambda_name
  * @param {String} transform
  * @returns nothing
@@ -296,7 +352,17 @@ function utility.Filter (object, lambda_name, condition) {
 function utility.ForEach (object, lambda_name, transform) {
 
     if (Type (object) == "Tree" || Type (object) == "Topology") {
-        utility.ForEach (BranchName (object, -1), lambda_name, transform);
+    	// strip out the root node
+    	utility.ForEach._aux2 = BranchName (object, -1);
+    	utility.ForEach.rows = utility.Array1D (utility.ForEach._aux2) - 1;
+    	utility.ForEach._aux = {utility.ForEach.rows, 1};
+    	for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
+    		utility.ForEach._aux [utility.ForEach.r ] = utility.ForEach._aux2 [utility.ForEach.r ];
+    	}
+    	
+        DeleteObject (utility.ForEach._aux2);
+        utility.ForEach (utility.ForEach._aux, lambda_name, transform);
+        DeleteObject (utility.ForEach._aux);
         return;
     }
 
@@ -304,9 +370,11 @@ function utility.ForEach (object, lambda_name, transform) {
 
     if (Type (object) == "AssociativeList") {
         utility.ForEach.keys = Rows (object);
+
         ^(lambda_name) := object [utility.ForEach.keys[utility.ForEach.k]];
+
         for (utility.ForEach.k = 0; utility.ForEach.k < Abs (object); utility.ForEach.k += 1) {
-            ExecuteCommands (transform);
+            ExecuteCommands (transform, enclosing_namespace);
         }
         return;
     }
@@ -314,12 +382,14 @@ function utility.ForEach (object, lambda_name, transform) {
     if (Type (object) == "Matrix") {
         utility.ForEach.rows = Rows (object);
         utility.ForEach.columns = Columns (object);
-        utility.ForEach.return_object = {utility.ForEach.rows,  utility.ForEach.columns};
-        ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
-        for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
-            for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
-                ExecuteCommands (transform);
 
+        if (utility.ForEach.rows && utility.ForEach.columns)  {
+             ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
+            for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
+                for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
+                    ExecuteCommands (transform, enclosing_namespace);
+
+                }
             }
         }
     }
@@ -344,8 +414,43 @@ function utility.KeyExists(dict, key) {
 }
 
 /**
+ * Given the lookup string (lookup), maps each character in
+ * string to the index of the same character in lookup (>=0)
+ * or -1 if no such character exists
+ * @name utility.MapStrings
+ * @param {String} string - the string to map
+ * @param {String} lookup - mapping lookup string
+ * @returns {Matrix} the mapping
+ * @example utility.MapStrings ("ABCD","DOBAZ") => {
+ *        "0":3,
+ *        "1":2,
+ *        "2":-1,
+ *        "3":0
+ *       }
+ */
+lfunction utility.MapStrings (string,lookup) {
+
+// source ID -> target ID (-1 means no correspondence)
+
+	mapping 	  = {};
+	targetIndexing = {};
+	_d = Abs(lookup);
+
+	for (_i = 0; _i < _d; _i += 1) {
+		targetIndexing [lookup[_i]] = _i + 1;
+	}
+
+	_d = Abs (string);
+	for (_i = 0; _i < _d; _i += 1) {
+		mapping [_i] = targetIndexing[string[_i]] - 1;
+	}
+
+	return mapping;
+}
+
+/**
  * Checks whether key is a certain type
- * @name utility.CheckKey 
+ * @name utility.CheckKey
  * @param {Dictionary} dict - dictionary to check
  * @param {String} key - key to check
  * @param {String} type - check whether key is "Matrix", "AssociativeList", "String", or "Tree"
@@ -363,7 +468,7 @@ function utility.CheckKey (dict, key, type) {
 /**
  * Adds string or list of strings to a dictionary and sets value to 1
  * @name utility.AddToSet
- * @param {AssociativeList} set - 
+ * @param {AssociativeList} set -
  * @param {String}, {Matrix}, or {AssociativeList} object
  * @returns nothing
  */
@@ -414,7 +519,7 @@ function utility.Intersect(set, set1, set2) {
 
 
 /**
- * @name utility.PopulateDict 
+ * @name utility.PopulateDict
  * @param {Number} from
  * @param {Number} to
  * @param {Number|AssociativeList|String|Matrix} value
@@ -425,7 +530,7 @@ function utility.PopulateDict (from, to, value, lambda) {
     utility.PopulateDict.result = {};
     if (Type (lambda) == "String" && Type (value) == "String") {
         Eval ("`lambda` = None");
-        ^lambda = utility.PopulateDict.k;
+        ^lambda := utility.PopulateDict.k;
         for (utility.PopulateDict.k = from; utility.PopulateDict.k < to; utility.PopulateDict.k+=1) {
             utility.PopulateDict.result[utility.PopulateDict.k] = Eval (value);
         }
@@ -440,7 +545,7 @@ function utility.PopulateDict (from, to, value, lambda) {
 
 /**
  * Iterates over dictionaries
- * @name utility.ForEachPair 
+ * @name utility.ForEachPair
  * @param {Dictionary} object - the dictionary to iterate over
  * @param {String} key_name - the variable name for the key in the lambda expression
  * @param {String} value_name - the variable name for the value in the lambda expression
@@ -460,21 +565,24 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
         ^(key_name) := utility.ForEachPair.keys[utility.ForEachPair.k];
         ^(value_name) := object [utility.ForEachPair.keys[utility.ForEachPair.k]];
         for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {
-            ExecuteCommands (transform);
+            ExecuteCommands (transform, enclosing_namespace);
         }
         return;
     }
     if (Type (object) == "Matrix") {
         utility.ForEachPair.rows = Rows (object);
         utility.ForEachPair.columns = Columns (object);
-        utility.ForEachPair.return_object = {utility.ForEachPair.rows,  utility.ForEachPair.columns};
-        ^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
-        ^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
 
-        for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
-            for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
-                ExecuteCommands (transform);
+        if (utility.ForEachPair.rows && utility.ForEachPair.columns) {
 
+            ^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
+            ^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
+
+            for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
+                for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
+                    ExecuteCommands (transform, enclosing_namespace);
+
+                }
             }
         }
     }
@@ -541,3 +649,174 @@ lfunction utility.EnsureKey (dict, key) {
         dict[key] = {};
     }
 }
+
+/**
+ * Ensures a key exists in a dictionary
+ * @name utility.Has
+ * @param {Dictionary} d - the object to return keys from
+ * @param {String/Matrix} key - check to see if key is in the dictionary
+ * if the value is a matrix, checks for [key[0]][key[1]][...][key[N]] nested keys
+ * type check is performed on the last level
+ * @param {String/None} type - if specified will further check if the object has the right type
+ * @returns value mapped to the key or None
+ */
+lfunction utility.Has (d, key, type) {
+
+    if (Type (key) == "String") {
+        if (d/key) {
+            if (type == None) {
+                return TRUE;
+            }
+            return Type (d[key]) == type;
+        }
+        return FALSE;
+    }
+
+    if (Type (key) == "Matrix") {
+        depth = utility.Array1D (key);
+        current_check = &d;
+        current_key   = key[0];
+
+        for (i = 1; i < depth; i += 1) {
+             if (Eval ("`current_check`/'`current_key`'")) {
+                current_check = "(" + current_check + ")['`current_key`']";
+                if (Eval ("Type(`current_check`)") != "AssociativeList") {
+                    return FALSE;
+                }
+                current_key = key[i];
+            } else {
+                return FALSE;
+            }
+        }
+
+        if ( Eval ("`current_check`/'`current_key`'") ) {
+            if (type == None) {
+                return TRUE;
+            }
+            return Eval ("Type((`current_check`)['`current_key`'])") == type;
+        }
+    }
+    return FALSE;
+}
+
+/**
+ * Extends a dict with keys from another dict
+ * @name utility.Extend
+ * @param {Dictionary} d - the object to extend
+ * @param {Dictionary} n - the object whose key/value pairs will be added to 'd'
+ * @returns d with new keys added
+ */
+lfunction utility.Extend (d, n) {
+
+    if (Type (d) == "AssociativeList" && Type (n) == "AssociativeList") {
+        nkeys = utility.Keys (n);
+        size = Abs (n);
+        for (i = 0; i < size; i+=1) {
+            if (d/nkeys[i] == FALSE) {
+                d[nkeys[i]] = n[nkeys[i]];
+            }
+        }
+    }
+
+    return d;
+}
+
+
+/**
+ * Returns the list of currently defined variables whose names match a regex
+ * @param selector {String} : reg exp selector; show all if None
+ * @return {MATRIX} : all the selected variables
+ */
+lfunction utility.DefinedVariablesMatchingRegex (selector) {
+    if (Type (selector) == "String") {
+        ExecuteCommands ('GetInformation (`&res`, "`selector`")');
+    } else {
+        GetInformation (res, ".");
+    }
+    return res;
+}
+
+
+/**
+ * Returns the list of modules loaded with `LoadFunctionLibrary`
+ * @returns a string matrix with (absolute) file paths for loaded modules
+ */
+lfunction utility.GetListOfLoadedModules () {
+    GetString (res, LIST_OF_LOADED_LIBRARIES, -1);
+    return res;
+}
+
+/**
+ * Execute some commands in the global namespace
+ * @param commands {String} : the commands to execture
+ * @returns None
+ */
+function utility.ExecuteInGlobalNamespace (commands) {
+    ExecuteCommands (commands);
+}
+
+/**
+ * A product function, which takes a list of k variable IDs (dicts)
+ * and returns a dictionary of sets of keys (N1 x N2 x ... Nk)
+ * @param {Dictionary} : a list of variable IDs to scan
+ * @returns {Dictionary} : {"0" : {{"key_11","key_21",...,"key_k1"}}, "1" : {"key_11","key_21",...,"key_k2"}...}
+ * or None if something went wrong
+ */
+lfunction utility.CatersianProduct (arguments) {
+    if (Type (arguments) != "AssociativeList") {
+        return None;
+    }
+
+    arg_count = Abs (arguments);
+
+    if (arg_count == 0) {
+        return None;
+    }
+
+    product = {};
+
+    key_counts = {1,arg_count};
+    arg_keys   = utility.Keys (arguments);
+    key_sets   = {};
+
+    for (k = 0; k < arg_count; k+=1) {
+        this_key = arg_keys[k];
+        if (Type (arguments[this_key]) != "AssociativeList") {
+            return None;
+        }
+        key_sets   [k] = utility.Keys (arguments[this_key]);
+        key_counts [k] = Abs (arguments[this_key]);
+        if (key_counts[k] == 0) {
+            return None;
+        }
+    }
+
+    indices = {1,arg_count};
+    done    = FALSE;
+
+    while (1) {
+        an_item = {};
+        for (k = 0; k < arg_count; k+=1) {
+            an_item + (key_sets[k])[indices[k]];
+        }
+        product + an_item;
+
+        for (k = arg_count - 1; k >= 0; k = k - 1) {
+            indices [k] += 1;
+            if (indices[k] == key_counts[k]) {
+                indices[k] = 0;
+            } else {
+                break;
+            }
+        }
+
+        if (k < 0) {
+            break;
+        }
+
+    }
+
+    return product;
+}
+
+

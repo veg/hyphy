@@ -171,6 +171,16 @@ bool _Operation::CanResultsBeCached (_Operation* prev, bool exp_only)
 
 //__________________________________________________________________________________
 
+bool   _Operation::IsConstantOfType   (const long type) const {
+  if (theNumber && (theNumber->ObjectClass() & type)) {
+    return true;
+  }
+  return false;
+}
+
+
+//__________________________________________________________________________________
+
 bool _Operation::HasChanged (void)
 {
     if (theNumber) {
@@ -184,26 +194,26 @@ bool _Operation::HasChanged (void)
 }
 
 //__________________________________________________________________________________
-_Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContainer* theParent, bool take_a_reference)
+_Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContainer const* theParent, bool take_a_reference)
 {
     if (isVar) { // creating a variable
         long f;
         _String theS (stuff);
-        if (theParent/*&&(!isG)*/) { // 20070620: SLKP the commenting may break default behavior!
+        if (theParent) {
             f = LocateVarByName(theS);
 
-            if (f>=0 && !FetchVar(f)->IsGlobal()) {
-                f = -1;
+            if (f>=0L && !FetchVar(f)->IsGlobal()) {
+                f = -1L;
             }
 
-            if (f<0) {
+            if (f<0L) {
                 theS = (*theParent->theName)&"."&theS;
             }
         }
 
         f = LocateVarByName(theS);
 
-        if (f<0) {
+        if (f<0L) {
             _Variable v (theS, isG);
             f = v.theIndex;
         } else {
@@ -215,14 +225,14 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
         numberOfTerms = take_a_reference?(1):0;
         
     } else {
-        numberOfTerms = 0;
+        numberOfTerms = 0L;
         if (stuff.Equal (&noneToken))
             theNumber = new _MathObject;            
         else
             theNumber = new _Constant (stuff);
-        theData = -1;
+        theData = -1L;
     }
-    opCode = -1;
+    opCode = -1L;
 
 }
 
@@ -239,7 +249,7 @@ _Operation::~_Operation (void)
 //__________________________________________________________________________________
 bool _Operation::IsAVariable(bool deep)
 {
-    if (theData==-1) {
+    if (theData==-1 || theData == -2) {
         if (deep&&theNumber) {
             return theNumber->IsVariable();
         }
@@ -339,7 +349,7 @@ long        _Operation::StackDepth (void) const {
 
 
 //__________________________________________________________________________________
-bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg) {
+bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nameSpace, _String* errMsg) {
   if (theNumber) { // push value
     theScrap.Push(theNumber);
     return true;
@@ -367,7 +377,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
       
       if (theScrap.StackDepth()<arguments) {
         return ReportOperationExecutionError (_String("User-defined function:") &
-                                              & GetBFFunctionNameByIndex (opCode)
+                                              GetBFFunctionNameByIndex (opCode)
                                               &" needs "&_String(long(arguments))& " parameters: "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
       }
       
@@ -409,7 +419,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
           }
         }
         
-        _Variable* argument_var = CheckReceptacle (argument_k, empty, false, false);
+        _Variable* argument_var = CheckReceptacle (argument_k, emptyString, false, false);
         
         if (!isRefVar) {
           if (argument_var->IsIndependent()) {
@@ -446,7 +456,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
             *refArgName = AppendContainerName (*refArgName, nameSpace);
           }
           
-          _Variable* reference_var = CheckReceptacle (refArgName, empty, false, false);
+          _Variable* reference_var = CheckReceptacle (refArgName, emptyString, false, false);
           
           variableNames.SetXtra (new_index, reference_var->GetAVariable());
           
@@ -608,7 +618,7 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
     DeleteObject (arg0);
     
     
-    if (temp) {
+    if (temp && temp->ObjectClass() != HY_UNDEFINED ) {
       theScrap.theStack.Place(temp);
       return true;
     } else {

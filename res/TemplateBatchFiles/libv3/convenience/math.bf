@@ -3,6 +3,15 @@ LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 /** @module math */
 
 /**
+* Converts a float to integer by rounding
+* @name math.Int
+* @param float
+*/
+lfunction math.Int (float) {
+  return (float + 0.5)$1;
+}
+
+/**
 * Computes small-sample AIC
 * @name math.GetIC
 * @param logl
@@ -23,8 +32,8 @@ lfunction math.GetIC(logl,params,samples) {
 lfunction math.DoLRT (lognull,logalt,df) {
   lrt = 2 * (logalt - lognull);
   return {
-           "LRT"     : lrt,
-           "p-value" : 1-CChi2 (lrt, df)
+           "LRT"     : lrt__,
+           "p-value" : 1-CChi2 (lrt__, df__)
          }
 }
 

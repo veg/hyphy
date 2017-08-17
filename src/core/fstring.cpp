@@ -43,18 +43,20 @@
 #include "matrix.h"
 #include "calcnode.h"
 #include "batchlan.h"
+#include "global_object_lists.h"
 
 extern long lastMatrixDeclared;
 extern _AVLListX _HY_GetStringGlobalTypes;
 
 extern _List likeFuncList,
              batchLanguageFunctionNames,
-             dataSetFilterList,
              dataSetList,
              scfgList;
 
 extern _SimpleList modelMatrixIndices;
 extern _String lastModelParameterList;
+
+using namespace hyphy_global_objects;
 
 _String internalRerootTreeID("_INTERNAL_REROOT_TREE_");
 //__________________________________________________________________________________
@@ -304,7 +306,7 @@ _PMathObj _FString::ReplaceReqExp (_PMathObj p)
 
                 if (!regex) {
                     WarnError (GetRegExpError (errNo));
-                    return new _FString (empty);
+                    return new _FString (emptyString);
                 }
 
                 theString->RegExpMatchAll(regex, matches);
@@ -342,7 +344,7 @@ _PMathObj _FString::ReplaceReqExp (_PMathObj p)
 
         WarnError ("Invalid 2nd argument in call to string^{{pattern,replacement}}");
     }
-    return new _FString (empty,false);
+    return new _FString (emptyString,false);
 }
 
 //__________________________________________________________________________________
@@ -635,7 +637,7 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
     case HY_OP_CODE_ABS: // Abs
       return new _Constant (theString->sLength);
     case HY_OP_CODE_EVAL: // Eval
-      return Evaluate(context);
+        return Evaluate(context);
     case HY_OP_CODE_EXP: // Exp
       return new _Constant (theString->LempelZivProductionHistory(nil));
     case HY_OP_CODE_LOG: // Log - check sum
@@ -732,7 +734,7 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
         return GreaterEq(arg0);
       case HY_OP_CODE_DIFF: // Differentiate
         return Differentiate(arg0);
-      case HY_OP_CODE_JOIN: // Inverse
+      case HY_OP_CODE_JOIN: // JOIN
         return Join (arg0);
       case HY_OP_CODE_SIMPLIFY: // Simplify an expression
         return SubstituteAndSimplify (arg0);
@@ -846,8 +848,7 @@ _PMathObj   _FString::CharAccess (_PMathObj p,_PMathObj p2)
     return new _FString (res);
 }
 //__________________________________________________________________________________
-_PMathObj   _FString::FileExists (void)
-{
+_PMathObj   _FString::FileExists (void) {
     _Constant  * retValue = new _Constant (0.0);
     if (theString) {
         _String cpy (*theString);
@@ -909,7 +910,7 @@ _PMathObj   _FString::CountGlobalObjects (void)
     case HY_BL_DATASET:
         return new _Constant (dataSetList.lLength);
     case HY_BL_DATASET_FILTER:
-        return new _Constant (dataSetFilterList.lLength);
+        return new _Constant (CountObjectsByType (HY_BL_DATASET_FILTER));
     case HY_BL_HBL_FUNCTION:
         return new _Constant (batchLanguageFunctionNames.lLength);
     case HY_BL_TREE: {

@@ -63,17 +63,25 @@ class _FormulaParsingContext {
     char                 assignment_ref_type;
     bool                 is_volatile;
     bool                 in_assignment;
+    bool                 build_complex_objects;
+        /* 
+            this controls whether or not
+            [matrix, TBD] and dictionary constant are built in place (default)
+            or deferred (is false)
+         
+        */
     _String            * err_msg;
-    _VariableContainer * formula_scope;
+    _VariableContainer const * formula_scope;
     
     public:
-        _FormulaParsingContext (_String* = nil, _VariableContainer* = nil);
+        _FormulaParsingContext (_String* = nil, _VariableContainer const* = nil);
         bool&       isVolatile (void)                   { return is_volatile; }
         bool&       inAssignment (void)                 { return in_assignment;}
+        bool&       buildComplexObjects (void)          { return build_complex_objects;}
         long&       assignmentRefID (void)              { return assignment_ref_id; }
         char&       assignmentRefType (void)            { return assignment_ref_type;} 
         _String*    errMsg (void)                       { return err_msg; }
-        _VariableContainer* formulaScope (void)         { return formula_scope; }
+        _VariableContainer const* formulaScope (void)         { return formula_scope; }
         void        setScope (_String const* scope);
         _String const     contextualizeRef (_String&);
 };
@@ -87,10 +95,10 @@ class   _Formula   // a computational formula
 
 public:
     _Formula (void);
-    _Formula (_String&,_VariableContainer* theParent=nil,_String* errorString = nil);
+    _Formula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
     _Formula (_PMathObj, bool isAVar = false);
     virtual ~_Formula (void);
-    _PMathObj   Compute             (long = 0, _VariableContainer* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
+    _PMathObj   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
     // compute the value of the formula
     // 1st argument : execute from this instruction onwards
     // see the commend for ExecuteFormula for the second argument
@@ -214,7 +222,7 @@ public:
     
     _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
   
-    void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive) const;
+    void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive);
 
 
 protected:

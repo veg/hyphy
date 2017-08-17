@@ -241,6 +241,12 @@ long    _Trie::Insert (const char* key, const long value, bool return_index) {
     return ret_value;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
+_Trie& _Trie::operator < (const char* key) {
+  Insert (_String (key), 0L);
+  return *this;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -458,7 +464,7 @@ _String  _Trie::RetrieveKeyByPayload (const long key){
         return _String(RetrieveStringFromPath(traversal_history, &alph));
         
     }
-    return empty;
+    return emptyString;
 }
 
 

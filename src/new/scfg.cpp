@@ -79,9 +79,6 @@ _addSCFGInfoStats           ("STATISTICS"),
 extern _String  scfgCorpus;
 
 
-#ifdef      __MACPROFILE__
-#include "profiler.h"
-#endif
 
 #else
 
@@ -618,9 +615,9 @@ bool    Scfg::CheckANT  (long lhs, long rhs1, long rhs2, _AVLListX& tempNT, long
 
 void    Scfg::ScanAllVariables  (void)
 {
-    GetIndependentVars().Clear();
-    GetDependentVars().Clear();
-    GetCategoryVars().Clear();
+    indexInd.Clear();
+    indexDep.Clear();
+    indexCat.Clear();
 
     _SimpleList allVariables;
     _AVLList    scannerList(&allVariables);
@@ -634,11 +631,11 @@ void    Scfg::ScanAllVariables  (void)
     for (long varID = 0; varID < allVariables.lLength; varID++) {
         _Variable * aParameter = LocateVar (allVariables.lData[varID]);
         if (aParameter->IsCategory()) {
-            GetCategoryVars() << allVariables.lData[varID];
+            indexCat << allVariables.lData[varID];
         } else if (aParameter->IsIndependent()) {
-            GetIndependentVars() << allVariables.lData[varID];
+            indexInd << allVariables.lData[varID];
         } else {
-            GetDependentVars() << allVariables.lData[varID];
+            indexDep << allVariables.lData[varID];
         }
     }
 }
@@ -948,9 +945,6 @@ void        Scfg::DumpComputeStructures (void)
 
 _Parameter      Scfg::Compute (void)
 {
-#ifdef      __MACPROFILE__
-    ProfilerInit(collectDetailed,bestTimeBase,1000,500);
-#endif
 
     bool first = computeFlagsI.lLength;
 
@@ -1007,10 +1001,6 @@ _Parameter      Scfg::Compute (void)
 
     insideCalls = 0;    // reset counter
 
-#ifdef      __MACPROFILE__
-    ProfilerDump("\pSCFG Profile");
-    ProfilerTerm();
-#endif
 
 
 #ifdef __NEVER_DEFINED__
@@ -1627,9 +1617,6 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
     char    buf [256];      // debugging buffer
 
 
-#ifdef      __MACPROFILE__
-    ProfilerInit(collectDetailed,bestTimeBase,1000,500);
-#endif
 
 
     // populated with zeros for longest string by InitComputeStructures();
@@ -2018,10 +2005,6 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
     delete  thisLink;   // release allocated memory
 
-#ifdef      __MACPROFILE__
-    ProfilerDump("\pSCFGProfile");
-    ProfilerTerm();
-#endif
 
     // SLKP:  TBI this actually needs to be populated still
     /* return new _Matrix (1,1,false,true); */

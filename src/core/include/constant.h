@@ -42,8 +42,7 @@
 
 #include "mathobj.h"
 
-class _Constant : public _MathObject   // a numerical constant
-{
+class _Constant : public _MathObject {
 
 public:
 

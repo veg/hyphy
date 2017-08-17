@@ -69,7 +69,7 @@
 #define MOD_ADLER 65521
 
 _String   compileDate = __DATE__,
-          __HYPHY__VERSION__ = _String ("2.30alpha") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+          __HYPHY__VERSION__ = _String ("2.31alpha") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
                                                                                                   Replace("Mar", "03", true).
                                                                                                   Replace("Apr", "04", true).
@@ -84,7 +84,7 @@ _String   compileDate = __DATE__,
                                                                                                   & compileDate.Cut (4,5).Replace (" ", "0", true) & "beta";
 
  
-_String     empty(""),
+_String     emptyString (""),
             emptyAssociativeList ("{}"),
             hyphyCiteString ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n");
 
@@ -136,10 +136,9 @@ _String::_String (void)
 }
 
 //Length constructor
-_String::_String (unsigned long sL, bool flag)
-{
+_String::_String (unsigned long sL, bool is_buffer) {
 
-    if (flag) {
+    if (is_buffer) {
         sLength = 0;
         nInstances = sL>storageIncrement?sL:storageIncrement;
         sData = (char*)MemAllocate (nInstances*sizeof (char));
@@ -339,10 +338,9 @@ bool _String::operator == (_String const& s) const {
 }
 
 //Append operator
-const _String _String::operator & (const _String s) const
-{
+const _String _String::operator & (const _String& s) const {
     if (sLength+s.sLength == 0UL) {
-        return empty;
+        return emptyString;
     }
 
     _String res (sLength+s.sLength,false);
@@ -360,8 +358,7 @@ const _String _String::operator & (const _String s) const
 }
 
 // append operator
-void _String::operator << (const _String* s)
-{
+_String& _String::operator << (const _String* s) {
   if ( s && s->sLength) {
     if (nInstances < sLength + s->sLength) {
       unsigned long incBy = sLength + s->sLength - nInstances;
@@ -377,7 +374,7 @@ void _String::operator << (const _String* s)
       nInstances+=incBy;
       
       if (! (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)))) {
-        return;
+        return *this;
       }
       
     }
@@ -389,30 +386,30 @@ void _String::operator << (const _String* s)
     //memcpy(sData+sLength,s->sData,s->sLength);
     sLength+=s->sLength;
   }
+  
+  return *this;
 }
 
 // append operator
-void _String::operator << (const _String& s)
-{
-   (*this) << &s;
+_String& _String::operator << (const _String& s) {
+   return (*this) << &s;
 }
 
 //Append operator
-void _String::operator << (const char* str)
-{
+_String& _String::operator << (const char* str) {
     _String conv (str);
-    (*this)<<&conv;
+    return (*this)<<&conv;
 }
 
 //Append operator
-void _String::operator << (const char c)
-{
-    if (nInstances <= sLength) {
-        nInstances  += ((storageIncrement*8 > sLength)? storageIncrement: (sLength/8+1));
-        checkPointer (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)));
-    }
+_String& _String::operator << (const char c) {
+  if (nInstances <= sLength) {
+      nInstances  += ((storageIncrement*8 > sLength)? storageIncrement: (sLength/8+1));
+      checkPointer (sData = (char*)MemReallocate((char*)sData, nInstances*sizeof(char)));
+  }
 
-    sData[sLength++]=c;
+  sData[sLength++]=c;
+  return *this;
 }
 
 //Return good ole char*
@@ -421,32 +418,27 @@ _String::operator const char* (void) const {
 }
 
 //Lexicographic comparison
-bool _String::operator > (_String s)
-{
+bool _String::operator > (_String const& s) const {
     return Greater(&s);
 }
 
 //Lexicographic comparison
-bool _String::operator <= (_String s)
-{
+bool _String::operator <= (_String const & s) const {
     return !((*this)>s);
 }
 
 //Lexicographic comparison
-bool _String::operator >= (_String s)
-{
-    return (((*this)>s)||(*this==s));
+bool _String::operator >= (_String const &s) const {
+    return !((*this) < s);
 }
 
 //Lexicographic comparison
-bool _String::operator != (_String s)
-{
+bool _String::operator != (_String const& s) const {
     return !(*this==s);
 }
 
 //Lexicographic comparison
-bool _String::operator < (_String s)
-{
+bool _String::operator < (_String const & s) const {
     return Less(&s);
 }
 
@@ -563,7 +555,7 @@ void _String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
 const _String _String::Chop(long from, long to) const
 {
     if (sLength == 0UL) {
-        return empty;
+        return emptyString;
     }
     if (from == -1) {
         from = 0L;
@@ -572,7 +564,7 @@ const _String _String::Chop(long from, long to) const
         to = sLength-1UL;
     }
     if (to<from) {
-        return empty;
+        return emptyString;
     }
   
     _String res (sLength+from-to+1, false);
@@ -651,7 +643,7 @@ const _String _String::Cut(long from, long to) const
         return res;
       }
     }
-    return empty;
+    return emptyString;
 }
 
 //Delete range char operator
@@ -1200,8 +1192,7 @@ const char * _String::getStr (void) const
 }
 
 //Element location functions
-const char _String::getChar (long index) const
-{
+const char _String::getChar (long index) const {
     if (((unsigned long)index)<sLength) {
         return sData[index];
     }
@@ -1309,7 +1300,7 @@ BaseRef _String::makeDynamic (void)
 const _String _String::Replace(const _String s, const _String d, bool flag) const
 {
     if (!sLength) {
-        return empty;
+        return emptyString;
     }
     if (sLength<s.sLength) {
         return *this;
@@ -1442,13 +1433,18 @@ _String* _String::Sort (_SimpleList* index)
     return new _String;
 }
 
-void    _String::StripQuotes (void)
-{
+void    _String::StripQuotes (void) {
     if (sLength&&(sData[sLength-1]=='"')&&(sData[0]=='"')) {
         Trim(1,sLength-2);
     }    
 }
 
+const _String _String::Enquote (char quote_char) const {
+  _String quoted (2UL + sLength, true);
+  quoted << quote_char  << *this << quote_char;
+  quoted.Finalize();
+  return quoted;
+}
 
 const _List _String::Tokenize (_String const& s) const {
     _List pieces;
@@ -1752,79 +1748,73 @@ bool _String::Equal (const char c)
     return sLength == 1 &&  sData[0] == c;
 }
 
-//S may contain a wild char
-bool _String::EqualWithWildChar (_String* s, char wildchar)
-{
-    char *sP = sData, *ssP = (s->sData); // optimize
-    // we start comparing the strings until we run into a wildchar.
-    long matchLength, t, q, p, curPos = 0;
-    while (*ssP) {
-        if (*ssP!=wildchar) {
-            if (*ssP==*sP) {
-                ssP++;
-                sP++;
-                curPos++;
+bool _String::EqualWithWildChar(const _String *pattern, const char wildchar, unsigned long start_this, unsigned long start_pattern) const {
+    // wildcards only matter in the second string
+  
+  if (pattern->sLength > start_pattern && wildchar != '\0') {
+    unsigned long   match_this_char = start_pattern;
+      // the position we are currently trying to match in the pattern
+    
+    bool            is_wildcard = pattern->sData[match_this_char] == wildchar,
+    scanning_pattern = is_wildcard;
+    
+    unsigned long i = start_this;
+      // the position we are currently trying to match in *this
+    
+    while (i <= sLength) {
+      
+      if (scanning_pattern) { // skip consecutive wildcards in "pattern"
+        scanning_pattern = pattern->sData[++match_this_char] == wildchar;
+      } else {
+        if (sData[i] == pattern->sData[match_this_char]) {
+          
+            if (is_wildcard) {
+              // could either match the next char or consume it into the wildcard
+              if (EqualWithWildChar (pattern, wildchar, i, match_this_char)) {
+                  // matching worked
+                return true;
+              } else {
+                i++;
                 continue;
+              }
             } else {
-                return false;
+              // try character match
+              // note that the terminal '0' characters will always match, so
+              // this is where we terminate
+              i++;
+              match_this_char++;
+              if (i > sLength || match_this_char > pattern->sLength) {
+                break;
+              }
+              is_wildcard =  pattern->sData[match_this_char] == wildchar;
+              scanning_pattern = is_wildcard;
             }
+        } else { // match wildcard
+          if (!is_wildcard) {
+            return false;
+          }
+          scanning_pattern = false;
+          i++;
         }
-        // wildchar found
-        // skip the wildchar and scroll the 1st string until match is found
-        matchLength = 0;
-        ssP++;
-        while (*ssP&&(*ssP!=wildchar)) {
-            ssP++;
-            matchLength++;
-        }
-        if (!matchLength) { // wildchar is the last symbol in expression
-            if (!*ssP) {
-                return true; // expressions matched
-            }
-        } else { // check sP for a possible match
-            t = matchLength-1;
-            q = matchLength+curPos-1;
-            ssP--;
-            while (q<sLength) {
-                if (sP[t]==*ssP) {
-                    p = 1;
-                    while (p<matchLength) {
-                        char c = *(ssP-p);
-                        if (sP[t-p]!=c) {
-                            break;
-                        }
-                        p++;
-                    }
-                    if (p==matchLength) {
-                        sP += t+1;
-                        curPos = q+1;
-                        ssP++;
-                        break;
-//                      ssP++;
-                    }
-                }
-                t++;
-                q++;
-            }
-            if (q==sLength) {
-                return false;
-            }
-        }
+      }
     }
-
-    return (*sP==0);
+    
+    return match_this_char > pattern->sLength;
+  } else {
+    return sLength == start_this;
+  }
+  
+  return false;
 }
 
-bool _String::Greater (_String *s)
-{
+bool _String::Greater (_String const *s) const {
     unsigned long top = ((s->sLength>sLength)?sLength:s->sLength);
 
     for (long i=0; i<top; i++) {
-        int j = sData[i]-s->sData[i];
-        if (j>0) {
+        if (sData[i] > s->sData[i]) {
             return true;
         }
-        if (j<0) {
+        if (sData[i] < s->sData[i]) {
             return false;
         }
     }
@@ -1832,19 +1822,17 @@ bool _String::Greater (_String *s)
     return (sLength>s->sLength);
 }
 
-bool _String::Less (_String *s)
-{
+bool _String::Less (_String const *s) const {
     unsigned long top = ((s->sLength>sLength)?sLength:s->sLength);
 
     for (long i=0; i<top; i++) {
-        int j= sData[i]-s->sData[i];
-        if (j>0) {
-            return false;
-        }
-        if (j<0) {
-            return true;
-        }
-    }
+      if (sData[i] < s->sData[i]) {
+        return true;
+      }
+      if (sData[i] > s->sData[i]) {
+        return false;
+      }
+   }
 
     return (sLength<s->sLength);
 
@@ -1988,7 +1976,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
                         throw ("Failed to create a temporary file name");
                     }
                     *this = tmpFileName;
-                    CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+                    CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
                     close (fileDescriptor);
                     return true;
                 #else
@@ -2009,7 +1997,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             #endif
             ,caller);
             
-            CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+            CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
             return true;
         }
 
@@ -2018,12 +2006,14 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             if (caller && caller->IsErrorState()) {
                 return false;
             }
+ 
         } else {
             StripQuotes();
         }
 
         if (!sLength) {
-            return true;
+           CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
+           return true;
         }
     }
     
@@ -2205,48 +2195,48 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             }
             *this = lastPath->Cut(0,f+1)& Cut(k,-1);
         } else {
-            *this = empty;
+            *this = emptyString;
         }
     }
 #endif
+    CheckReceptacleAndStore(&useLastFString,emptyString,false, new _FString (*this, false), false);
     return true;
 }
 
 //Compose two UNIX paths (abs+rel)
-_String _String::PathComposition (_String relPath)
-{
+_String const _String::PathComposition (_String const relPath) const {
     if (relPath.sData[0]!='/') { // relative path
-        long f = -1, k = 0;
+        long f = -1L, k = 0;
         f = sLength-2;
-        _String result = *this;
+        _String result = *this,
+        relative_path = relPath;
 
-        while (relPath.beginswith("../")) {
+        while (relative_path.beginswith("../")) {
 
             //Cut Trim relPath
             f = FindBackwards('/',0,f)-1;
 
-            relPath = relPath.Chop(0,2);
+            relative_path = relative_path.Chop(0,2);
             result.Trim(0,f+1);
 
             if (f==-1) {
-                return empty;
+                return emptyString;
             }
             k++;
 
         }
 
-        return result&relPath;
+        return result&relative_path;
     }
 
     else {
         return relPath;
     }
-    return empty;
+    return emptyString;
 }
 
 //Mac only so far
-_String _String::PathSubtraction (_String& p2, char)
-{
+_String const _String::PathSubtraction (_String const p2, char) const {
     _String result;
     char separator = GetPlatformDirectoryChar();
 
@@ -2275,7 +2265,7 @@ _String _String::PathSubtraction (_String& p2, char)
             return result;
         }
     }
-    return empty;
+    return emptyString;
 }
 
 //TODO: These are global methods. Should they even be here?
@@ -2392,9 +2382,6 @@ bool    _String::IsValidRefIdentifier (void) const
 void _String::ConvertToAnIdent (bool strict)
 {
     _String * result = new _String ((unsigned long)sLength+1,true);
-    if (!result) {
-        checkPointer (result);
-    }
 
     if (sLength) {
         if (strict) {
@@ -2564,13 +2551,13 @@ void    _String::AppendNCopies   (_String const& value, unsigned long copies) {
 }
 
 
-unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object, _String * context) {
+unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object, _String const * context) const {
     char first_char    = getChar(0);
     bool is_func_ref  = getChar(sLength-1) == '&';
          
     if (first_char == '*' || first_char == '^') {
         if (is_func_ref) {
-            referenced_object = empty;
+            referenced_object = emptyString;
             return HY_STRING_INVALID_REFERENCE;
         }
         bool is_global_ref = first_char == '^';
@@ -2625,6 +2612,6 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
         }
     }
     
-    referenced_object = empty;
+    referenced_object = emptyString;
     return HY_STRING_INVALID_REFERENCE;
 }

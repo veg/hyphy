@@ -21,7 +21,7 @@ function parameters.ApplyNameSpace(id, namespace) {
 }
 
 /**
- * @name parameters.UnconstrainParameterSet 
+ * @name parameters.UnconstrainParameterSet
  * @param {LikelihoodFunction} lf - the likelihood function to operate on
  * @param {Matrix} set - set of parameters to unconstrain
  * @returns nothing
@@ -44,7 +44,7 @@ function parameters.UnconstrainParameterSet(lf, set) {
 }
 
 /**
- * @name parameters.DeclareGlobal 
+ * @name parameters.DeclareGlobal
  * @param {String} id
  * @param {Matrix} cache
  * @returns nothing
@@ -80,8 +80,73 @@ function parameters.DeclareGlobal(id, cache) {
 }
 
 /**
+ * @name parameters.DeclareGlobalWithRanges
+ * @param {String} id variable id
+ * @param {Number} init initial value (could be None)
+ * @param {Number} lb lower bound (could be None)
+ * @param {Number} ub upper bound (could be None)
+ * @returns nothing
+ */
+function parameters.DeclareGlobalWithRanges(id, init, lb, ub) {
+	if (Type (id) == "String") {
+		if (None != init) {
+    		ExecuteCommands("global `id` = " + init);
+    	} else {
+    		ExecuteCommands("global `id`; ");    	
+    	}
+    	
+    	if (None != lb) {
+    		ExecuteCommands ("`id` :> " + lb);
+    	}	
+    	if (None != ub) {
+    		ExecuteCommands ("`id` :< " + ub);
+    	}	
+    } else {
+        if (Type(id) == "AssociativeList") {
+            parameters.DeclareGlobalWithRanges.var_count = Abs(id);
+            parameters.DeclareGlobalWithRanges.names = Columns(id);
+            for (parameters.DeclareGlobalWithRanges.k = 0; parameters.DeclareGlobalWithRanges.k < parameters.DeclareGlobalWithRanges.var_count; parameters.DeclareGlobalWithRanges.k += 1) {
+                parameters.DeclareGlobalWithRanges(parameters.DeclareGlobalWithRanges.names[parameters.DeclareGlobalWithRanges.k], init, lb, ub);
+            }
+        } else {
+            if (Type(id) == "Matrix") {
+                parameters.DeclareGlobalWithRanges.var_count = Columns(id) * Rows(id);
+                for (parameters.DeclareGlobalWithRanges.k = 0; parameters.DeclareGlobalWithRanges.k < parameters.DeclareGlobalWithRanges.var_count; parameters.DeclareGlobalWithRanges.k += 1) {
+                    parameters.DeclareGlobalWithRanges(id[parameters.DeclareGlobalWithRanges.k], init, lb, ub);
+                }
+            }
+        }
+    }
+}
+
+function parameters.DeclareCategory.helper (dict, key, default) {
+	if (dict / key) {
+		return dict[key];
+	}
+	return default;
+}
+
+/**
+ * @name parameters.DeclareCategory
+ * @param {Dict} def category definition components
+ */
+function parameters.DeclareCategory (def) {
+	 
+	 
+	 
+	 ExecuteCommands ("category " + def['id'] + "= (" + 
+	 			  Join (",", 
+	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"}, 
+	 			  						  "_value_",
+	 			  						  'parameters.DeclareCategory.helper(def["category parameters"], _value_, "")')
+	 			  		) + ");");
+	 
+}
+
+
+/**
  * @name parameters.NormalizeRatio
- * @param {Number} n 
+ * @param {Number} n
  * @param {Number} d
  * @returns n/d
  */
@@ -138,7 +203,7 @@ function parameters.Quote(arg) {
 }
 
 /**
- * @name parameters.AddMultiplicativeTerm 
+ * @name parameters.AddMultiplicativeTerm
  * @param {Matrix} matrix - matrix to scale
  * @param {Number} term - scalar to multiply matrix by
  * @param {Number} do_empties - if element matrix is empty, fill with term
@@ -168,7 +233,7 @@ lfunction parameters.AddMultiplicativeTerm(matrix, term, do_empties) {
 }
 
 /**
- * @name parameters.StringMatrixToFormulas 
+ * @name parameters.StringMatrixToFormulas
  * @param {String} id - matrix to scale
  * @param {Matrix} matrix - if element matrix is empty, fill with term
  * @returns nothing
@@ -190,9 +255,9 @@ function parameters.StringMatrixToFormulas(id, matrix) {
 }
 
 /**
- * @name parameters.GenerateAttributedNames 
- * @param {String} prefix 
- * @param {Dictionary} attributes 
+ * @name parameters.GenerateAttributedNames
+ * @param {String} prefix
+ * @param {Dictionary} attributes
  * @param {String} delimiter
  */
 function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
@@ -207,25 +272,28 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
 }
 
 /**
- * @name parameters.GenerateSequentialNames 
- * @param {String} prefix 
- * @param {Number} count 
+ * @name parameters.GenerateSequentialNames
+ * @param {String} prefix
+ * @param {Number} count
+ * @name parameters.GenerateSequentialNames
+ * @param {String} prefix
+ * @param {Number} count
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
-function parameters.GenerateSequentialNames(prefix, count, delimiter) {
+lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
     if (delimiter == None) {
         delimiter = "_";
     }
-    parameters.generate_names.holder = {};
-    for (parameters.generate_names.k = 0; parameters.generate_names.k < count; parameters.generate_names.k += 1) {
-        parameters.generate_names.holder + (prefix + delimiter + parameters.generate_names.k);
+    holder = {};
+    for (k = 0; k < count; k += 1) {
+        holder + (prefix + delimiter + k);
     }
-    return parameters.generate_names.holder;
+    return holder;
 }
 
 /**
- * @name parameters.SetRange 
+ * @name parameters.SetRange
  * @param id
  * @param ranges
  * @returns nothing
@@ -300,8 +368,8 @@ function parameters.SetConstraint(id, value, global_tag) {
 /**
  * constraint set of parameters
  * @name parameters.ConstrainSets
- * @param {AssociativeList} set1 - 
- * @param {AssociativeList} set2 - 
+ * @param {AssociativeList} set1 -
+ * @param {AssociativeList} set2 -
  * @returns nothing
  */
 function parameters.ConstrainSets(set1, set2) {
@@ -343,7 +411,7 @@ function parameters.RemoveConstraint(id) {
 /**
  * Copies definitions from target to source
  * @name parameters.helper.copy_definitions
- * @param {Dictionary} target - the target dictionary 
+ * @param {Dictionary} target - the target dictionary
  * @param {Dictionary} source - the source element to copy to target
  * @returns nothing
  */
@@ -360,10 +428,15 @@ function parameters.helper.copy_definitions(target, source) {
             target[parameters.helper.copy_definitions.key] * source[parameters.helper.copy_definitions.key];
         }
     }
+    
+    if (utility.Has (source, terms.category, "AssociativeList")) {
+    	utility.EnsureKey (target, terms.category);
+    	(target[terms.category])[(source[terms.category])["id"]] = (source[terms.category])["description"];
+    }
 }
 
 /**
- * @name parameters.helper.stick_breaking 
+ * @name parameters.helper.stick_breaking
  * @param {AssociativeList} parameters
  * @param {Matrix} initial_values
  * @returns weights
@@ -406,7 +479,7 @@ lfunction parameters.helper.dump_matrix(matrix) {
 /**
  * Sets tree lengths to initial values
  * @name parameters.helper.tree_lengths_to_initial_values
- * @param dict - a [0 to N-1] dictrionary of tree objects 
+ * @param dict - a [0 to N-1] dictrionary of tree objects
  * @param type - codon or nucleotide
  * @returns {Dictionary} dictionary of initial branch lengths
  */
@@ -440,7 +513,7 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
  * @name parameters.GetProfileCI
  * @param {String} id - covariance parameter id
  * @param {LikelihoodFunction} lf - likelihood function to profile
- * @param {Number} - Covariance precision level 
+ * @param {Number} - Covariance precision level
  * @returns {Dictionary} a dictionary containing profiling information
  */
 function parameters.GetProfileCI(id, lf, level) {
@@ -457,3 +530,39 @@ function parameters.GetProfileCI(id, lf, level) {
         "`terms.upper_bound`": parameters.GetProfileCI.mx[2]
     };
 }
+
+/**
+ * Geneate an HBL string needed to define a parameter
+ * @name parameters.ExportParameterDefinition
+ * @param {String} id - the name of the parameter to export;
+ * @returns {String} the string for an HBL definition of the parameter
+ * e.g. "global x := 2.3; x :> 1; x :< 3"; note that the definition will
+ * be NOT recursive, so if x depends on y and z, then y and z need to be
+ * exported separately
+ */
+
+lfunction parameters.ExportParameterDefinition (id) {
+    GetString (parameter_definition, ^id, -3);
+    return parameter_definition;
+}
+
+/**
+ * Copy local parameters from a node to 'template' variables
+ * @name parameters.SetLocalModelParameters
+ * @param {Dict} model - model description
+ * @param {String} tree id
+ * @param {String} node id
+ 
+ * e.g. 
+ * 		set alpha = Tree.Node.alpha
+ * 		set beta  = Tree.Node.beta
+ */
+
+lfunction parameters.SetLocalModelParameters (model, tree, node) {
+	node_name = tree + "." + node + ".";
+    utility.ForEach ((model["parameters"])[^'terms.local'], "_parameter_", '
+    	^_parameter_ = ^(`&node_name` + _parameter_);
+    ');
+    
+}
+

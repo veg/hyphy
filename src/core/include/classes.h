@@ -53,6 +53,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #define SWAP(a,b,c) ((c)=(a),(a)=(b),(b)=(c))
+#define EXCHANGE(a,b) {auto c = (a); (a) = (b); (b) = c;} 
 #define DEBUG 0
 
 #include "simplelist.h"
@@ -82,6 +83,13 @@ public:
     void            prepend             (array_data);
     //adds a node to the beginning of the array
     void            delete_entry        (int);
+    void            clear               () {
+      if (data) {
+        delete [] data;
+        data = NULL;
+        length = 0;
+      }
+    };
     int             get_length          (void) const {
         return length;
     }
@@ -140,8 +148,14 @@ public:
         nodes.prepend(&thenode);
     }
     void                kill_node       (int in) {
-        nodes.delete_entry(in);
+      nodes.delete_entry(in);
     }
+
+  
+    void                kill_all_nodes       (void) {
+       nodes.clear();
+    }
+  
     node*           get_node        (int in) {
         return nodes.data[in-1];
     }

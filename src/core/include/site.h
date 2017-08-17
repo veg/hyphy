@@ -4,10 +4,10 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 
 Copyright (C) 1997-now
 Core Developers:
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
-  Steven Weaver (sweaver@ucsd.edu)
-  
+   Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
+   Art FY Poon    (apoon@cfenet.ubc.ca)
+   Steven Weaver (sweaver@temple.edu)
+   
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -49,21 +49,22 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "avllistxl.h"
 #include "stdlib.h"
 
-#define   NUCLEOTIDEDATA 0
-#define   CODONDATA      1
-
-
-
+#define   HY_TRANSLATION_TABLE_DNA      0x01
+#define   HY_TRANSLATION_TABLE_RNA      0x02
+#define   HY_TRANSLATION_TABLE_BINARY   0x04
+#define   HY_TRANSLATION_TABLE_PROTEIN  0x08
 
 
 //_________________________________________________________
-class _TranslationTable:public BaseObj
-{
+class _TranslationTable:public BaseObj {
+  
+private:
+    static _List _list_of_default_tables;
 
 public:
 
     _TranslationTable                       (void);
-    _TranslationTable                       (char);
+    _TranslationTable                       (unsigned char);
     _TranslationTable                       (_String&);
     /* 20100618: SLKP
 
@@ -72,7 +73,7 @@ public:
               DNA/RNA/Protein or Binary
 
      */
-    _TranslationTable                       (_TranslationTable&);
+    _TranslationTable                       (_TranslationTable const&);
     virtual ~_TranslationTable              (void) {
         if (checkTable) {
             free (checkTable);
@@ -80,19 +81,51 @@ public:
     }
     virtual BaseRef  makeDynamic            (void);
 
-    long    TokenCode                       (char);
-    char    CodeToLetter                    (long*);
+    long    TokenCode                       (char) const;
+    char    AmbigToLetter                    (long*, unsigned long ) const;
 
     void    AddBaseSet                      (_String&);
-    bool    TokenCode                       (char, long*, bool = true);
     void    SplitTokenCode                  (long, long*) const;
+
+    long    TokenResolutions                (char token, long * buffer, bool gap_to_one = true) const;
+    /**
+      Given a character in this translation table, return the number of
+      base alphabet characters that map to it, and populate buffer with
+      their codes. For example `TokenResolutions ('T', buffer) will
+      return 2 and set buffer[0] = 1, buffer[1] = 3, assuming the translation
+      table has the standard IUPAC nucleotdie code
+     
+      @param token the character (unique or ambiguous) to translate
+      @param buffer store the resolved characters (up to baseLength) here
+      @param gap_to_one if `true`, map gaps (or equivalents) to fully ambiguous characters
+     
+      @return the number of resolutions
+     
+    */
+
+    long    MultiTokenResolutions                (const _String& tokens, long * buffer, bool gap_to_one = true) const;
+    /**
+     Given a string of several in this translation table, return the unique resolutions of 
+     characters to base, and populate buffer with
+     their codes. For example `TokenResolutions ('ATR', buffer) will
+     return 2 and set buffer[0] = 12 [0*16+3*4+0], buffer[1] = 14 [0*16+3*4+2], assuming the translation
+     table has the standard IUPAC nucleotdie code. Passing NULL as buffer will result in 
+     returning the code for the resolution (if UNIQUE), otherwise -1.
+     
+     @param tokens the characters (unique or ambiguous) to translate
+     @param buffer store the resolved characters (up to baseLength) here [must be at least baseLength ^ length (token) long]
+            can be set to NULL in which case the return behavior is modified
+     @param gap_to_one if `true`, map gaps (or equivalents) to fully ambiguous characters
+     
+     @return the number of resolutions OR (if buffer == NULL) the code for the SINGLE resolution or -1 (multiple or invalid resolutions)
+    */
 
     void    AddTokenCode                    (char, _String&);
     void    PrepareForChecks                (void);
     bool    IsCharLegal                     (char);
     char    GetSkipChar                     (void);
-    char    GetGapChar                      (void);
-    _String ConvertCodeToLetters            (long, char);
+    char    GetGapChar                      (void) const;
+    const _String ConvertCodeToLetters            (long, unsigned char) const;
     long    LengthOfAlphabet                (void) const;
     bool    IsStandardBinary                (void) const {
         return baseLength==2 && baseSet.sLength==0;
@@ -103,10 +136,31 @@ public:
     bool    IsStandardAA                    (void) const {
         return baseLength==20&& baseSet.sLength==0;
     }
-    _TranslationTable*
-    MergeTables                     (_TranslationTable*);
+  
+    const _String&   ExpandToken            (char token) const;
+  
+    /** given a (possibly) ambiguous character 
+        expand it to a string to equivalent characters
+        e.g. ExpandToken ('R') -> "AG" for IUPAC nucleotide data
+     
+        @param token the character to expand
+        @return a string of complete expansions
+     
+     */
+  
+    const _String& GetAlphabetString (void) const;
 
-    char                                    baseLength;
+    /** return the alphabet string for this table, so that code 0 maps to result[0], etc
+     *
+     * @return the alphabet string (e.g. ACGT for standard DNA)
+    */
+  
+    _TranslationTable*
+    MergeTables                     (_TranslationTable const*) const;
+  
+    static const _String&                   GetDefaultTable (long tableType);
+
+    unsigned char                                    baseLength;
     // number of "fundamental" tokens
     //(4 for nucl, ACGT; 20 for amino acids)
 
@@ -240,16 +294,16 @@ public:
     void        Finalize                (void);
     // remove duplicate data types and compress
 
-    long        GetNoTypes              (void);
+    long        GetNoTypes              (void) const;
     // return the number of unique sites
 
-    long        GetCharDimension        (void);
+    unsigned long        GetCharDimension        (void) const;
     // return the size of the alphabet space
 
-    long        GetFreqType             (long);
+    unsigned long        GetFreqType             (long) const;
     // return the frequency of a site
 
-    _Site*      GetSite                 (long index) {
+    _Site*      GetSite                 (long index) const {
         return ((_Site**)lData)[theMap.lData[index]];
     }
 
@@ -258,7 +312,7 @@ public:
 
     void        Clear                   (bool = true);
 
-    virtual  char       operator ()             (unsigned long, unsigned long, unsigned int);
+    virtual  char       operator ()             (unsigned long, unsigned long, unsigned int) const;
     // retrieve element pos of site-th site
 
     virtual  BaseRef    toStr                   (unsigned long = 0UL);
@@ -270,7 +324,7 @@ public:
     // release string overhead
     void        ConvertRepresentations  (void);
 
-    _Matrix *           HarvestFrequencies      (char, char, bool, _SimpleList&, _SimpleList&, bool = true);
+    _Matrix *           HarvestFrequencies      (unsigned char, unsigned char, bool, _SimpleList&, _SimpleList&, bool = true) const;
     // this function counts observed frequencies of elements in a data set
     // unit is the length of an info unit (nucl - 1, codons - 3)
     // atom is the "minimal" countable element (nucl - 1, codons - 1)
@@ -278,52 +332,80 @@ public:
     // segmentation - partition of the underlying DataSet to look at
     // null for segmentation assumes the entire dataset
 
-    void        MatchIndices            (_Formula&, _SimpleList& , bool , long, _String* = nil);
+    void        MatchIndices            (_Formula&, _SimpleList& , bool , long, _String const* = nil) const;
     friend   void       printFileResults        (_DataSet* );
-    char        InternalStorageMode     (void) {
+    char        InternalStorageMode     (void) const{
         return useHorizontalRep;
     }
 
-    long        NoOfSpecies             (void) {
+    unsigned long        NoOfSpecies             (void) const{
         return noOfSpecies;
     }
 
-    long        NoOfColumns             (void) {
+    unsigned long        NoOfColumns             (void) const{
         return theMap.lLength;
     }
-    long        NoOfUniqueColumns       (void) {
+    unsigned long        NoOfUniqueColumns       (void) const{
         return lLength;
     }
-    void        AddName                 (_String&);
+    void        AddName                 (_String const&);
+    void        InsertName              (_String const& name, long where);
   
     _String*   GetSequenceName      (unsigned long i) const {
       return (_String*)theNames.GetItem (i) ;
     }
-    _List&     GetNames             (void) {
+  
+    _List const&     GetNames             (void) const {
         return theNames;
     }
-    _SimpleList&
+  
+    void  ClearNames (void) {
+        theNames.Clear();
+    }
+  
+    _String*        GetSequenceCharacters (long seqID)  const;
+  
+    bool   SetSequenceName (long index, _String * new_name) {
+      if (index >= 0L && index < theNames.lLength) {
+        theNames.Replace (index, new_name, false);
+        return true;
+      }
+      return false;
+    }
+  
+    void  SetNames (_List const& copy_from) {
+      theNames.Clear(); theNames << copy_from;
+    }
+    
+  
+    _SimpleList &
     GetTheMap               (void) {
         return theMap;
     }
+  
+    _SimpleList const&   DuplicateMap (void) const {
+        return theMap;
+    }
+  
     void        FindAllSitesLikeThisOne (long, _SimpleList&);
 
     friend      class       _DataSetFilter;
-    friend      _DataSet*    ReadDataSetFile        (FILE*,char,_String*,_String*, _String*,_TranslationTable*);
+    friend      _DataSet*    ReadDataSetFile        (FILE*,char,_String*,_String*, _String*,_TranslationTable*, _ExecutionList*);
     friend      long         ProcessLine            (_String&s , FileState *fs, _DataSet& ds);
 
-    static      _DataSet*    Concatenate            (_SimpleList);
-    static      _DataSet*    Combine                (_SimpleList);
+    static      _DataSet*    Concatenate            (const _SimpleList&);
+    static      _DataSet*    Combine                (const _SimpleList&);
 
     static      _TranslationTable*
-    CheckCompatibility(_SimpleList& ref, char concatOrCombine);
+    CheckCompatibility(_SimpleList const& ref, char concatOrCombine);
 
 
-    void         ProcessPartition       (_String&, _SimpleList&,  bool, _SimpleList* = nil, _SimpleList* = nil, _String* scope = nil);
+    void         ProcessPartition       (_String const&, _SimpleList&,  bool, _SimpleList const* = nil, _SimpleList const* = nil, _String const* scope = nil) const;
+  
     void         SetTranslationTable    (_DataSet *  newTT );
     void         SetTranslationTable    (_TranslationTable *  newTT );
-    _TranslationTable*
-    GetTT                   (void) {
+    _TranslationTable const*
+    GetTT                   (void) const {
         return theTT;
     }
     _Parameter   CheckAlphabetConsistency
@@ -333,10 +415,10 @@ public:
         noOfSpecies = n;
     }
     void         ResetIHelper           (void);
+  
 private:
 
-     void        constructFreq           (long*, _Parameter *, char, long, long, int, int, int);
-
+ 
     _SimpleList theMap,
                 theFrequencies;         // remapping vector, and the counter of frequencies
 
@@ -354,10 +436,16 @@ private:
 
 };
 
+enum _hy_dataset_filter_ambiguity_resolution {
+  kAmbiguityHandlingResolve,
+  kAmbiguityHandlingResolveFrequencyAware,
+  kAmbiguityHandlingAverageFrequencyAware,
+  kAmbiguityHandlingSkip
+};
+
 //_________________________________________________________
 
-class _DataSetFilter:public BaseObj
-{
+class _DataSetFilter:public BaseObj {
 
 public:
 
@@ -371,20 +459,15 @@ public:
 
     virtual  BaseRef            makeDynamic     (void);
     virtual  long               FreeUpMemory    (long);
-    virtual  bool               IsNormalFilter  (void) {
+    virtual  bool               IsNormalFilter  (void) const {
         return true;
     }
 
-    void                CopyFilter      (_DataSetFilter*);
+    void     CopyFilter         (_DataSetFilter*);
+    void     SetFilter          (_DataSet const*, unsigned char, _SimpleList&, _SimpleList&, bool isFilteredAlready = false);
+    void     SetExclusions      (_String*, bool = true);
 
-
-//  void     SetFilter  (_DataSet*, char, _String&);
-
-    void     SetFilter (_DataSet*, char, _SimpleList&, _SimpleList&, bool isFilteredAlready = false);
-
-    void     SetExclusions (_String*, bool = true);
-
-    _String* GetExclusions (void);
+    _String* GetExclusions      (void) const;
 
     void     SetMap  (_String&); // used to allow nonsequential maps to tree leaves
 
@@ -393,52 +476,69 @@ public:
         theNodeMap.Duplicate(&newMap);
     }
 
-    long     NumberDistinctSites (void) {
-        return theFrequencies.lLength;
-    }
-
-    long     NumberSpecies (void) {
+    unsigned long     NumberSpecies (void) const{
         return theNodeMap.lLength;
     }
 
-    virtual  long
-    GetFullLengthSpecies (void) {
+    virtual  long GetSiteCount (void) const{
         return theOriginalOrder.lLength;
     }
 
+    virtual  long GetSiteCountInUnits (void) const{
+      return theOriginalOrder.lLength / unitLength;
+    }
+
     virtual  long
-    GetSiteCount        (void) {
-        return duplicateMap.lLength;
+    GetPatternCount        (void) const{
+        return theFrequencies.lLength;
     }
 
-    long     GetFrequency  (long i) {
-        return theFrequencies(i);
+    unsigned long     GetFrequency  (long i) const{
+        return theFrequencies.Element(i);
     }
 
-    long     GetUnitLength  (void) {
+    unsigned long     GetUnitLength  (void) const{
         return unitLength;
     }
 
-    virtual  long    GetDimension (bool correct = true);
+    virtual  unsigned long    GetDimension (bool correct = true) const;
 
     long     GetOriginalToShortMap (long i);
 
-    void     ComputePairwiseDifferences (_Matrix&, long, long);
-    _Matrix* ComputePairwiseDifferences (long, long, char = 0);
+    void     ComputePairwiseDifferences (_Matrix&, long, long) const;
+    _Matrix* ComputePairwiseDifferences (long, long, _hy_dataset_filter_ambiguity_resolution = kAmbiguityHandlingResolveFrequencyAware) const;
 
-    BaseRef  GetMap (void) {
+    BaseRefConst  GetMap (void) const {
         return theNodeMap.lLength?&theNodeMap:NULL;
+    }
+
+    BaseRefConst  GetDuplicateSiteMap (void) const {
+      return duplicateMap.lLength?&duplicateMap:NULL;
     }
 
     virtual  _String&   operator () (unsigned long site, unsigned long pos);
     // site indexes unique sites
 
-    virtual  void   RetrieveState (unsigned long site, unsigned long pos, _String&, bool = true);
+    const _String   RetrieveState (unsigned long site, unsigned long pos) const;
+      // site indexes all sites, including duplicates
+
+    virtual  void   RetrieveState (unsigned long site, unsigned long pos, _String&, bool = true) const;
     // site indexes all sites, including duplicates
+  
+    _TranslationTable const * GetTranslationTable (void) const {
+        return theData->theTT;
+    }
+  
+    _String* MakeSiteBuffer (void) const;
+    /**
+      * allocate a string of the right dimension to pass as an argument to RetrieveState
+      * it is the responsibility of the caller to delete the returned string when done
+      * @return the buffer string 
+     */
 
     void     FindAllSitesLikeThisOne (long, _SimpleList&);
 
-    _String  GenerateConsensusString (_SimpleList* =nil);
+    _String const&  GenerateConsensusString (_SimpleList* =nil) const;
 
     void     GrabSite (unsigned long,unsigned long,_String&);
     void     GrabSite (unsigned long,unsigned long,char*);
@@ -449,37 +549,36 @@ public:
     long       HasExclusions  (unsigned long site, _SimpleList* theExc, _Parameter *buffer);
     bool       IsConstant     (unsigned long site,  bool relaxedDeletions = true);
 
-    long     Translate2Frequencies (_String&, _Parameter*, bool);
-    long     MapStringToCharIndex  (_String&);
+    long     Translate2Frequencies (_String const&, _Parameter*, bool) const;
+    long     MapStringToCharIndex  (_String&) const;
     //long   Translate2Frequencies (char*,    _Parameter*, bool = true);
-    long     Translate2Frequencies (char,     _Parameter*, bool);
+    long     Translate2Frequencies (char,     _Parameter*, bool) const;
 
-    _Matrix* HarvestFrequencies (char unit, char atom, bool posSpec, bool = true);
+    _Matrix* HarvestFrequencies (char unit, char atom, bool posSpec, bool = true) const;
 
     void     Freeze (long);
 
     void     UnFreeze (long);
 
-    void     MatchStartNEnd (_SimpleList&, _SimpleList&, _SimpleList* = nil);
+    void     MatchStartNEnd (_SimpleList&, _SimpleList&, _SimpleList* = nil) const;
 
-    _String* GetSequenceName(long idx) {
-        return (_String*)(theData->GetNames ()(theNodeMap.lData[idx]));
+    _String* GetSequenceName(long idx) const {
+        return theData->GetSequenceName(theNodeMap.lData[idx]);
     }
 
-    _String* GetSequenceCharacters
-    (long);
+    _String* GetSequenceCharacters (long) const;
 
-    _DataSet*                       GetData                     (void) {
+    _DataSet*                       GetData                     (void) const{
         return theData;
     }
     void                            SetData                     (_DataSet* ds) {
         theData = ds;
     }
-    _String                         ConvertCodeToLetters        (long code, char base) {
+    const _String                         ConvertCodeToLetters        (long code, char base) const {
         return theData->theTT->ConvertCodeToLetters(code,base);
     }
 
-    void                            ConvertCodeToLettersBuffered(long code, char base, char *, _AVLListXL* );
+    void                            ConvertCodeToLettersBuffered(long code, char base, char *, _AVLListXL* ) const;
     // 20090212: SLKP
     // added this function to cache repeated character code -> string conversions
     // and to skip returning temp objects but simply writing to buffer
@@ -487,7 +586,7 @@ public:
     /**
     * Find all unique sequences in the data filter. 
     *
-    * \n Usage: FindDuplicateSequences(uniqueIndex, instanceCount, true);
+    * \n Usage: FindUniqueSequences (uniqueIndex, instanceCount, true);
     * @author SLKP
     * @param indices For each sequence - the list of indices corresponding to the unique strings
                      For example, if sequence 1 == sequence 3 and sequence 4 == sequence 5 this list 
@@ -498,7 +597,7 @@ public:
     * @param counts  The number of copies for each unique string found
                      For example, if sequence 1 == sequence 3 and sequence 4 == sequence 5 this list 
                      will contain 2,1,2
-    * @param strict  Controls is the strings must match exactly (0), exactly + gap (1), via the superset rule (2) or via the partial match rule (3).
+    * @param mode  Controls is the strings must match exactly (0), exactly + gap (1), via the superset rule (2) or via the partial match rule (3).
                      Nucleotide letters A and - (or ?) (IUPAC code for A or G) will count as mismatched for mode 0 and matched for mode 1.
                      Nucleotide letters A and R (IUPAC code for A or G) will count as mismatched for mode 0 and matched for
                      modes 2 and 3 because R is a superset of A. (note that R matches R in all modes, even though the letter is
@@ -509,28 +608,31 @@ public:
                     
     * @return The number of unique sequences. 
     */
-    unsigned long                   FindUniqueSequences      (_SimpleList&, _SimpleList&, _SimpleList&, short = 0);
+    unsigned long                   FindUniqueSequences      (_SimpleList& indices, _SimpleList& map, _SimpleList& counts, short mode = 0) const;
 
 
-    long                            CorrectCode                 (long code);
-    virtual  bool                   CompareTwoSites             (unsigned long, unsigned long,unsigned long);
-    bool                            CompareTwoSitesChar         (unsigned long, unsigned long,unsigned long);
-    long                            FindSpeciesName             (_List&, _SimpleList&);
+    long                            CorrectCode                 (long code) const;
+    virtual  bool                   CompareTwoSites             (unsigned long, unsigned long,unsigned long) const;
+    bool                            CompareTwoSitesChar         (unsigned long, unsigned long,unsigned long) const;
+    long                            FindSpeciesName             (_List&, _SimpleList&) const;
     _DataSetFilter*                 PairFilter                  (long, long, _DataSetFilter*);
     void                            SetDimensions               ();
-    long                            LookupConversion            (char c, _Parameter* receptacle);
+    long                            LookupConversion            (char c, _Parameter* receptacle) const;
     void                            SetupConversion             (void);
+    bool                            ConfirmConversionCache      (void) const;
     void                            FilterDeletions             (_SimpleList* theExc = nil);
-    _Matrix*                        GetFilterCharacters         (bool = false);
+    _Matrix*                        GetFilterCharacters         (bool = false) const;
     _SimpleList*                    CountAndResolve             (long, _Parameter* = nil, bool = false);
     _Matrix*                        PairwiseCompare             (_SimpleList*, _SimpleList*, _List* = nil);
 
-    _List*                          ComputePatternToSiteMap     (void);
-    // 20090206: SLKP
-    // a utility function to return a _List of simplelists (one per unique site pattern) that provides an ordered list of
-    //           the indices of all sites that have the same pattern in the original alignment
-
-    void                            PatternToSiteMapper         (void*, void*, char, long);
+    _List*                          ComputePatternToSiteMap     (void) const;
+  
+    /**
+     * a utility function to return a _List of simplelists (one per unique site pattern) that provides an ordered list of
+     * the indices of all sites that have the same pattern in the original alignment
+    */
+  
+    void                            PatternToSiteMapper         (void*, void*, char, long) const;
     /*
         20090325: SLKP
         a function that takes per pattern values (source, argument 1)
@@ -552,7 +654,7 @@ public:
     theExclusions,
     duplicateMap;
 
-    char*    GetColumn (long index) {
+    char const*    GetColumn (long index) const {
         return ((_Site*)(((BaseRef*)theData->lData)[theData->theMap.lData[theMap.lData[index]]]))->sData;
     }
 
@@ -560,7 +662,7 @@ public:
 
 protected:
 
-    char            unitLength;
+    unsigned char   unitLength;
     long            dimension;
 
 private:
@@ -573,9 +675,6 @@ private:
     _DataSet*       theData;
 //      _SimpleList     conversionCache;
 
-    void            XferwCorrection (_Matrix& , _Parameter*, long);
-    void            XferwCorrection (_Parameter* , _Parameter*, long);
-    void            XferwCorrection (long* , _Parameter*, long);
 };
 
 
@@ -587,22 +686,22 @@ class _DataSetFilterNumeric:public _DataSetFilter
 
 public:
 
-    _DataSetFilterNumeric                       (void) {
-    }
+    _DataSetFilterNumeric                       (void) {}
     _DataSetFilterNumeric                       (_Matrix*, _List&,_DataSet*,long);
+    virtual ~_DataSetFilterNumeric              (void);
 
-    virtual  bool                                       IsNormalFilter          (void) {
+    virtual  bool                                       IsNormalFilter          (void)  const {
         return false;
     }
 
 
     virtual  BaseRef                                    makeDynamic             (void);
-    virtual  long                                       GetDimension            (bool) {
+    virtual  unsigned long                              GetDimension            (bool) const{
         return dimension;
     }
 
     _Parameter*                 getProbabilityVector    (long,long,long = 0);
-    virtual  bool               CompareTwoSites         (unsigned long, unsigned long,unsigned long);
+    virtual  bool               CompareTwoSites         (unsigned long, unsigned long,unsigned long) const;
 
     long                    shifter,
                             categoryShifter,
@@ -620,7 +719,7 @@ public:
 extern          _TranslationTable       defaultTranslationTable;
 
 void            ReadNextLine            (FILE* fp, _String *s, FileState* fs, bool append = false, bool upCase = true);
-_DataSet*       ReadDataSetFile         (FILE*, char = 0, _String* = nil, _String* = nil, _String* = nil,_TranslationTable* = &defaultTranslationTable);
+_DataSet*       ReadDataSetFile         (FILE*, char = 0, _String* = nil, _String* = nil, _String* = nil,_TranslationTable* = &defaultTranslationTable, _ExecutionList* target = nil);
 void            fillDefaultCharTable    (void);
 void            printFileResults        (_DataSet*);
 void            printDSFilter           (_DataSetFilter* d);
@@ -628,17 +727,8 @@ void            printDSFilter           (_DataSetFilter* d);
 bool            StoreADataSet           (_DataSet*, _String*);
 
 
-extern _String  dataFileTree,
-       dataFileTreeString,
-       aminoAcidOneCharCodes,
-       dnaOneCharCodes,
-       rnaOneCharCodes,
-       binaryOneCharCodes,
-       nexusFileTreeMatrix,
-       dataFilePartitionMatrix,
-       defaultLargeFileCutoff,
-       nexusBFBody;
 
+extern _String  nexusBFBody;
 extern _DataSet*lastNexusDataMatrix;
 
 #endif

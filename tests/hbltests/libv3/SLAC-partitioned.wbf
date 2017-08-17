@@ -1,1 +1,1 @@
-LoadFunctionLibrary ("SelectionAnalyses/SLAC.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/partitioned.nex", "2" : "Internal","3": "10", "4": "0.2"});
+LoadFunctionLibrary ("SelectionAnalyses/SLAC.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/partitioned.nex", "2" : "Internal","3": "100", "4": "0.2"});

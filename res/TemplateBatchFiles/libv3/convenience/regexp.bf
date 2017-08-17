@@ -2,9 +2,20 @@
 /** @module regexp */
 
 /**
+ * @name regexp.Replace
+ * @param {String} string
+ * @param {String} re - search for this expression
+ * @param {String} repl - replace each occurence of re with repl
+ * @returns {Dictionary} a dictionary containing split strings
+ */
+lfunction regexp.Replace(string, re, repl) {
+    return string ^ {{re,repl}};
+}
+
+/**
  * @name regexp.Split
  * @param {String} string
- * @param {Function} re - the regular expression
+ * @param {String} re - the regular expression
  * @returns {Dictionary} a dictionary containing split strings
  */
 lfunction regexp.Split(string, re) {
@@ -41,7 +52,7 @@ lfunction regexp.Split(string, re) {
 /**
  * @name regexp.Find
  * @param {String} string
- * @param {Function} re - the regular expression
+ * @param {String} re - the regular expression
  * @returns {String} the portion of the string that is matching
  */
 lfunction regexp.Find(string, re) {

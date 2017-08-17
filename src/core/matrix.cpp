@@ -87,24 +87,17 @@ int _Matrix::storageIncrement = 16;
 //  percent of total size (reasonable values divide 100)
 int _Matrix::switchThreshold = 40;
 
-#ifndef     __HYALTIVEC__
 _Parameter  _Matrix::truncPrecision = 1e-13;
 #define     MatrixMemAllocate(X) MemAllocate(X)
 #define     MatrixMemFree(X)     free(X)
-#else
-#define     MatrixMemAllocate(X) VecMemAllocate(X)
-#define     MatrixMemFree(X)     vec_free(X)
-extern      vector float VECTOR_ZERO;
-_Parameter  _Matrix::truncPrecision = 1e-8;
-#endif
 
 _Parameter  analMatrixTolerance = 1e-6,
             zero = 0,
-            ANALYTIC_COMPUTATION_FLAG = 0,
             AUTO_PAD_DIAGONAL = 1,
             toPolyOrNot=0.0,
             toMorNot2M=1.0;
 
+long        ANALYTIC_COMPUTATION_FLAG = 0;
 
 _List       builtInMatrixFunctions;
 
@@ -130,6 +123,15 @@ void        MatrixIndexError        (long, long, long, long);
 // function prototypes
 _Parameter  lnGamma (_Parameter),
             gammaDeviate (double, double = 1.);
+
+
+#ifdef _SLKP_USE_AVX_INTRINSICS
+  void echo_avx_sum_4 (__m256d const x) {
+    double a[4];
+    _mm256_storeu_pd(a, x);
+    printf ("%g|%g|%g|%g\n", a[0], a[1], a[2], a[3]);
+  }
+#endif
 
 
 //__________________________________________________________________________________________________________
@@ -401,7 +403,7 @@ inline static void ROTATE(_Parameter * a, long i, long j, long k, long l, _Param
 void        _Matrix::Balance (void)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        _String errorMsg ("Balance only works with numerical non-empty square dense matrices");
+        _String errorMsg ("Balance only works with numerical non-emptyString square dense matrices");
         WarnError (errorMsg);
         return;
     }
@@ -458,7 +460,7 @@ void        _Matrix::Balance (void)
 void        _Matrix::Schur (void)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        _String errorMsg ("Hessenberg only works with numerical non-empty square dense matrices");
+        _String errorMsg ("Hessenberg only works with numerical non-emptyString square dense matrices");
         WarnError (errorMsg);
         return;
     }
@@ -521,7 +523,7 @@ void        _Matrix::Schur (void)
 void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        _String errorMsg ("EigenDecomp only works with numerical non-empty square dense matrices");
+        _String errorMsg ("EigenDecomp only works with numerical non-emptyString square dense matrices");
         WarnError (errorMsg);
         return;
     }
@@ -713,7 +715,7 @@ _PMathObj   _Matrix::Eigensystem (void)
     // a square matrix where columns are the corresponding eigenvalues
 
     if ((storageType!=1)||(hDim!=vDim)||(hDim==0)) { // only works for numerical matrices at this stage
-        _String errorMsg ("Eigensystem only works with numerical non-empty square matrices");
+        _String errorMsg ("Eigensystem only works with numerical non-emptyString square matrices");
         WarnError (errorMsg);
         return    new _AssociativeList();
     }
@@ -930,7 +932,7 @@ _PMathObj   _Matrix::LUDecompose (void)
     // the return object is an nx(n+1) matrix which contains the LU decomposition followed
     // by a vector of row interchanges
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        _String errorMsg ("LUDecompose only works with numerical non-empty square matrices");
+        _String errorMsg ("LUDecompose only works with numerical non-emptyString square matrices");
         WarnError (errorMsg);
         return    new _Matrix();
     }
@@ -1042,7 +1044,7 @@ _PMathObj   _Matrix::LUSolve (_PMathObj p)
 {
 
     if ((storageType!=1)||(hDim+1!=vDim)||(vDim<=0)) { // only works for numerical matrices at this stage
-        _String errorMsg ("LUSolve only works with numerical non-empty matrices of dimension nx(n+1) returned by LUDecompose.");
+        _String errorMsg ("LUSolve only works with numerical non-emptyString matrices of dimension nx(n+1) returned by LUDecompose.");
         WarnError (errorMsg);
         return    nil;
     }
@@ -1103,7 +1105,7 @@ _PMathObj   _Matrix::CholeskyDecompose (void)
        --------------------------------------------------- */
 
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical square matrices at this stage
-        _String errorMsg ("CholeskyDecompose only works with numerical non-empty square matrices");
+        _String errorMsg ("CholeskyDecompose only works with numerical non-emptyString square matrices");
         WarnError (errorMsg);
         return    new _Matrix();
     }
@@ -1178,7 +1180,7 @@ _PMathObj   _Matrix::Log (void)
 _PMathObj   _Matrix::Inverse (void)
 {
     if ((storageType!=1)||(hDim!=vDim)||(hDim==0)) {
-        _String errorMsg ("Inverse only works with numerical non-empty square matrices.");
+        _String errorMsg ("Inverse only works with numerical non-emptyString square matrices.");
         WarnError (errorMsg);
         return    nil;
     }
@@ -1277,21 +1279,29 @@ _PMathObj   _Matrix::MultByFreqs (long freqID)
                         theMatrix[i] *= (*freqMatrix)[i%vDim];
                     }
                 } else {
-                    for (long i=0; i<lDim; i++) {
-                        theMatrix[i] *= freqMatrix->theData[i%vDim];
+                    for (unsigned long column=0UL; column<vDim; column++) {
+                      const _Parameter freq_i = freqMatrix->theData[column];
+                      unsigned long entry = column;
+                      for (;entry < lDim - vDim; entry += vDim) {
+                        theMatrix[entry] *= freq_i;
+                        theMatrix[entry+=vDim] *= freq_i;
+                      }
+                      if (entry < lDim) {
+                        theMatrix[entry] *= freq_i;
+                      }
                     }
                 }
             }
-            {
-                for (long i=0; i<lDim; i+=(vDim+1)) {
-                    theMatrix[i] = 0.;
-                }
-            }
-            for (long i=0; i<lDim; i++) {
-                long h = i/vDim,v = i%vDim;
-                if (h!=v) {
-                    theMatrix[h*vDim+h]-=theMatrix[h*vDim+v];
-                }
+          
+            for (unsigned long row_start = 0UL, row = 0UL; row_start < lDim; row_start+=vDim, row++) {
+              unsigned long diag = row_start + row;
+              theMatrix [diag] = 0.;
+              for (unsigned long col = 0UL; col < row; col++) {
+                theMatrix[diag] -= theMatrix[row_start + col];
+              }
+              for (unsigned long col = row+1; col < vDim; col++) {
+                theMatrix[diag] -= theMatrix[row_start + col];
+              }
             }
         }
 
@@ -2054,7 +2064,7 @@ void _Matrix::Duplicate (BaseRef obj)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)    // create an empty matrix of given dimensions;
+_Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)    // create an emptyString matrix of given dimensions;
 // the flag specifies whether it is sparse or not
 
 {
@@ -2094,12 +2104,11 @@ void    _Matrix::Convert2Formulas (void)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
+_Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 // takes two separate formats
 // 1st : {{i11,...,i1n}{i21,...,i2n}....{in1,...,inn}} // all elements must be explicitly specified
 // 2st : {hor dim, <vert dim>,{hor index, vert index, value or formula}{...}...}
-{
-    // decide which input type is being presented
+
     Initialize();
 
     bool    isAConstant = true; // is this a matrix of numbers, or formulas
@@ -2114,7 +2123,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 
     _String terminators (",}");
 
-    if (j>i && s.sLength>4) { // non-empty string
+    if (j>i && s.sLength>4) { // non-emptyString string
         _String term;
         if (s.sData[i]=='{' && s.sData[j]=='{') { // first type
             i = j+1;
@@ -2178,16 +2187,16 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 
                         if (isNumeric) {
                             if (lterm.sLength == 1 && lterm.sData[0]=='*') {
-                                lterm = empty;    // dummy element in probability matrix
+                                lterm = emptyString;    // dummy element in probability matrix
                             }
 
                             theData[vDim*hPos+vPos] = lterm.toNum();
                         } else {
                             if (lterm.sLength == 1 && lterm.sData[0]=='*') {
-                                lterm = empty;    // dummy element in probability matrix
+                                lterm = emptyString;    // dummy element in probability matrix
                             }
 
-                            _Formula*  theTerm = (_Formula*)checkPointer(new _Formula (lterm, theP));
+                            _Formula*  theTerm = new _Formula (lterm, theP);
 
                             if (isAConstant) {
                               // there is hope that this matrix is of numbers
@@ -2300,7 +2309,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 
                     if (isNumeric) {
                         if ((term.sLength == 1) && (term.sData[0]=='*')) {
-                            term = empty;    // dummy element in probability matrix
+                            term = emptyString;    // dummy element in probability matrix
                         }
 
                         (*this)[vDim*hPos+vPos];
@@ -2308,17 +2317,16 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
                         theData[k]=term.toNum();
                     } else {
                         if ((term.sLength == 1) && (term.sData[0]=='*')) {
-                            term = empty;    // dummy element in probability matrix
+                            term = emptyString;    // dummy element in probability matrix
                         }
 
-                        _Formula theTerm (term,theP);
-                        if (isAConstant) { // there is hope that this matrix is of numbers
-                            isAConstant = theTerm.IsAConstant();
-                        }
-
+                        _Formula * theTerm = new _Formula (term,theP);
+                        isAConstant = isAConstant && theTerm->IsAConstant();
+  
+                      
                         (*this)[vDim*hPos+vPos];
                         k = Hash (hPos,vPos);
-                        ((_Formula**)theData)[k]=(_Formula*)theTerm.makeDynamic();
+                        ((_Formula**)theData)[k]=theTerm;
                     }
                     i = j;
                 }
@@ -2327,7 +2335,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 
         if (!isNumeric) {
             storageType = 2; // formula elements
-            checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
+            checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
             if ((ANALYTIC_COMPUTATION_FLAG)&&!isAConstant) {
                 ConvertFormulas2Poly (false);
             }
@@ -2350,8 +2358,7 @@ _Matrix::_Matrix (_Matrix& m)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_SimpleList& sl, long colArg)
-{
+_Matrix::_Matrix (_SimpleList const& sl, long colArg) {
     if (sl.lLength) {
         if (colArg > 0 && colArg < sl.lLength) {
             CreateMatrix (this, sl.lLength/colArg + colArg*(sl.lLength%colArg > 0), colArg,     false, true, false);
@@ -2968,26 +2975,23 @@ bool        _Matrix::IsAStringMatrix (void)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::FillInList (_List& fillMe, bool doNumeric)
+void        _Matrix::FillInList (_List& fillMe, bool doNumeric) {
 // check if a formula matrix contains strings
-{
-    if (storageType == _FORMULA_TYPE)
-        for (long r=0; r<hDim; r++)
-            for (long c=0; c<vDim; c++) {
-                _Formula * entryFla = GetFormula(r,c);
-                if (entryFla) {
-                    _PMathObj computedValue = entryFla->Compute();
-                    if (computedValue) {
-                          if (computedValue->ObjectClass() == STRING) {
-                              fillMe && ((_FString*)computedValue)->theString;
-                          } else {
-                              fillMe.Clear();
-                              return;
-                          }
-                    }
-                }
-            }
-    else {
+    if (storageType == _FORMULA_TYPE) {
+          for (long r=0; r<hDim; r++)
+              for (long c=0; c<vDim; c++) {
+                  _Formula * entryFla = GetFormula(r,c);
+                  if (entryFla) {
+                      _PMathObj computedValue = FetchObjectFromFormulaByType (*entryFla, STRING);
+                      if (computedValue) {
+                          fillMe && ((_FString*)computedValue)->theString;
+                      } else {
+                        fillMe.Clear();
+                        return;
+                      }
+                  }
+              }
+    } else {
         if (doNumeric && storageType == _NUMERICAL_TYPE) {
             for (long r=0; r<hDim; r++)
                 for (long c=0; c<vDim; c++) {
@@ -3385,7 +3389,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                         for (i = 0; i<secondArg.lDim; i++)
                             if (secondArg.IsNonEmpty(i)) {
                                 long hb =secondArg.HashBack (i), h = Hash (hb/vDim, hb%vDim);
-                                if (h<0) { // empty slot in matrix 1
+                                if (h<0) { // emptyString slot in matrix 1
                                     storage.StoreObject (hb,secondArg.GetMatrixObject(i)->Minus());
                                 } else {
                                     storage.StoreObject (hb, GetMatrixObject(h)->Sub (secondArg.GetMatrixObject(i)));
@@ -3395,7 +3399,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                         for (i = 0; i<secondArg.lDim; i++)
                             if (secondArg.IsNonEmpty(i)) {
                                 long hb =secondArg.HashBack (i), h = Hash (hb/vDim, hb%vDim);
-                                if (h<0) { // empty slot in matrix 1
+                                if (h<0) { // emptyString slot in matrix 1
                                     storage.StoreObject (hb,secondArg.GetMatrixObject(i),true);
                                 } else {
                                     storage.StoreObject (hb,GetMatrixObject(h)->Add (secondArg.GetMatrixObject(i)));
@@ -3638,80 +3642,176 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
             if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
                 /* two square dense matrices */
             {
-                long cumulativeIndex = 0,
-                     dimm4 = vDim - vDim%4;
+               unsigned long cumulativeIndex = 0UL;
+              
+               const unsigned long
+                              dimm4 = vDim - vDim%4,
+                              column_shift2 = secondArg.vDim * 2,
+                              column_shift3 = secondArg.vDim * 3,
+                              column_shift4 = secondArg.vDim * 4;
 
-                _Parameter _hprestrict_ * row = theData;
-                _Parameter _hprestrict_ * dest = storage.theData;
+                const _Parameter * row = theData;
+                _Parameter  * dest = storage.theData;
+              
 
 #ifndef _SLKP_SSE_VECTORIZATION_
+              
                 
-               
-                for (long i=0; i<hDim; i++, row += vDim) {
-                    for (long j=0; j<secondArg.vDim; j++) {
-                        _Parameter resCell  = 0.0;
+                
+/*#ifdef  _SLKP_USE_AVX_INTRINSICS
+              __m256d buffer1,
+                      buffer2;
+              __m128d two1,
+                      two2;
+              
+              double  d[2] __attribute__ ((aligned (16)));
 
-                        long k = 0, 
-                             column = j;
-                        
-                        for (; k < dimm4; k+=4, column += (secondArg.vDim<<2)) {
-                            _Parameter pr1 = row[k]   * secondArg.theData [column],                         
-                                       pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
-                                       pr3 = row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)],
-                                       pr4 = row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
-                            resCell += pr1 + pr2 + pr3 + pr4;
-                        }
-                        
-                        if (dimm4 < vDim)
-                            for (; k < vDim; k++, column += secondArg.vDim) {
-                                resCell += row[k] * secondArg.theData[column];
-                            }
-
-                        dest[cumulativeIndex++] = resCell;
-
+              for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
+                for (unsigned long j=0; j<secondArg.vDim; j++) {
+                  _Parameter resCell  = 0.0;
+                  
+           
+                  unsigned long k = 0,
+                  column = j;
+                  
+                  
+                  for (; k < dimm4; k+=4, column += column_shift4) {
+                    buffer1 = _mm256_loadu_pd (row+k);
+                    buffer2 = _mm256_set_pd  (secondArg.theData [column + column_shift3],
+                                              secondArg.theData [column + column_shift2],
+                                              secondArg.theData [column + secondArg.vDim],
+                                              secondArg.theData [column]);
+                    
+                                              
+                    buffer1 = _mm256_mul_pd      (buffer1,buffer2);
+                    buffer1 = _mm256_add_pd     (
+                                                  _mm256_shuffle_pd (buffer1, buffer1, 0x0),_mm256_shuffle_pd (buffer1, buffer1, 0xf));
+ 
+                    two1 = _mm256_extractf128_pd(buffer1,0);
+                    two2 = _mm256_extractf128_pd(buffer1,1);
+                    
+                    _mm_store_pd(d,_mm_add_pd(two1, two2));
+                    resCell += d[0];
+                   
+                  }
+                  
+                  if (dimm4 < vDim)
+                    for (; k < vDim; k++, column += secondArg.vDim) {
+                      resCell += row[k] * secondArg.theData[column];
                     }
+                  
+                  dest[cumulativeIndex++] = resCell;
+                  
                 }
-                /*_Parameter cache [128];
-                for (long i=0; i<hDim; i++, row += vDim) {
-                    for (long j=0; j<secondArg.vDim; j++) {
-                        _Parameter resCell  = 0.0;
-                        for (long l = 0, m = j; l < secondArg.vDim; l++, m += secondArg.vDim)
-                            cache[l] = secondArg.theData [m ];
+              }
+#else*/
+              
+              if (dimm4 == vDim) {
+                InitializeArray (dest, lDim, 0.0);
+                for (unsigned long c = 0UL; c < secondArg.vDim; c ++) {
+                  
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+
+                  if (vDim == 20UL) { // special case for amino-acids
+                    
+                    __m256d __attribute__ ((aligned (32))) col_buffer[5];
+                    
+                    _Parameter col[4] __attribute__ ((aligned (32)));
+                     unsigned long col_index = c;
+                     for (unsigned long quad = 0UL; quad < 5UL; quad ++) {
+                       for (unsigned long i = 0UL; i < 4UL; i++, col_index += 20UL) {
+                         col [i] = secondArg.theData[col_index];
+                       }
+                       col_buffer[quad] = _mm256_load_pd (col);
+                     }
+                  
+                    
+                    _Parameter const * p = theData;
+                    for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
+                      
+                      __m256d r0 = _mm256_mul_pd(_mm256_loadu_pd(p), col_buffer[0]);
+                      __m256d r1 = _mm256_mul_pd(_mm256_loadu_pd(p+4), col_buffer[1]);
+                      __m256d r2 = _mm256_mul_pd(_mm256_loadu_pd(p+8), col_buffer[2]);
+                      __m256d r3 = _mm256_mul_pd(_mm256_loadu_pd(p+12), col_buffer[3]);
+                      __m256d r4 = _mm256_mul_pd(_mm256_loadu_pd(p+16), col_buffer[4]);
+                      
+                      __m256d s01 = _mm256_add_pd(r0, r1);
+                      __m256d s23 = _mm256_add_pd(r2, r3);
+                      __m256d s234 = _mm256_add_pd(s23, r4);
+ 
+                       dest[r*vDim + c] = _avx_sum_4 (_mm256_add_pd(s01, s234));
+                    }
+                    continue;
+                  }
+
+#endif
+                  /*
+                   load a series of 4 consecutive elements from a column in the second matrix,
+                   say c [] = [i,i+1,i+2,i+3: c]
+                   
+                   next, iterate over all rows in the first matrix, looking for matched consecutive
+                   elements, e.g.
+                   
+                   r [] = [r: i,i+1,i+2,i+3]
+                   
+                   compute sum_{t=0..3} c[t] * r[t]
+                   
+                   add to the element (r,c) in the destination matrix
+                   
+                   */
+                  
+                   for (unsigned long i = 0UL, vector_index = c; i < secondArg.hDim; i += 4UL, vector_index += column_shift4) {
+                      _Parameter c0 = secondArg.theData[vector_index],
+                                 c1 = secondArg.theData[vector_index+secondArg.vDim],
+                                 c2 = secondArg.theData[vector_index+column_shift2],
+                                 c3 = secondArg.theData[vector_index+column_shift3];
+                
+                      for (unsigned long r = 0UL; r < hDim; r ++) {
+                        
+                        unsigned long element = r*vDim + i;
+                        
+                        _Parameter r0 = theData[element]   * c0,
+                                   r1 = theData[element+1] * c1,
+                                   r2 = theData[element+2] * c2,
+                                   r3 = theData[element+3] * c3;
+                        
+                        r0 += r1;
+                        r2 += r3;
+                        dest[r*vDim + c] += r0 + r2;
+                  
+                      }
+                   }
+                }
+              } else {
+                  for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
+                      for (unsigned long j=0UL; j<secondArg.vDim; j++) {
+                          _Parameter resCell  = 0.0;
+
+                          unsigned long k = 0UL,
+                                       column = j;
+                        
+                          
+                          for (; k < dimm4; k+=4, column += column_shift4) {
+                              _Parameter pr1 = row[k]   * secondArg.theData [column],                         
+                                         pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
+                                         pr3 = row[k+2] * secondArg.theData [column + column_shift2],
+                                         pr4 = row[k+3] * secondArg.theData [column + column_shift3];
                             
-                        long k = 0;
+                              pr1 += pr2;
+                              pr3 += pr4;
+                            
+                              resCell += pr1 + pr3;
+                          }
+                          
+                          for (; k < vDim; k++, column += secondArg.vDim) {
+                              resCell += row[k] * secondArg.theData[column];
+                          }
                         
-                        for (; k < dimm4; k+=4) {
-                            _Parameter pr1 = row[k]   * cache[k],                         
-                            pr2 = row[k+1] * cache[k+1],      
-                            pr3 = row[k+2] * cache[k+2],
-                            pr4 = row[k+3] * cache[k+3];
-                            pr1 += pr2;
-                            pr3 += pr4;
-                            resCell += pr1 + pr3;
-                        }
-                        
-                        if (dimm4 < vDim)
-                            for (; k < vDim; k++) {
-                                resCell += row[k] * cache[k];
-                            }
-                        
-                        storage.theData[cumulativeIndex++] = resCell;
-                        
-                    }
-                }*/
-                /*} else {
-                    for (long i=0; i<hDim; i++, row += vDim) {
-                        for (long j=0; j<secondArg.vDim; j++) {
-                            _Parameter resCell = 0.0;
-
-                            for (long k = 0, column = j; k < vDim; k++, column += secondArg.vDim) {
-                                resCell += row[k] * secondArg.theData[column];
-                            }
-
-                            storage.theData[cumulativeIndex++] = resCell;
-                        }
-                    }
-                }*/
+                          dest[cumulativeIndex++] = resCell;
+                     }
+                  }
+              }
+              
 #else
                 secondArg.Transpose();
                 for (long i=0; i<hDim; i++, row += vDim) {
@@ -3828,106 +3928,69 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
     } else if (theIndex && !secondArg.theIndex) { // sparse multiplied by non-sparse
         if (storageType == 1 && secondArg.storageType ==1) { // both numeric
             if ( vDim == hDim && secondArg.vDim==secondArg.hDim) { // both square and same dimension
-                long loopBound = vDim - vDim%4;
-
-                for (long k=0; k<lDim; k++) { // loop over entries in the 1st matrix
-                    long m = theIndex[k];
-                    if  (m!=-1) { // non-zero
-                        long i;
-                        if (vDim == 61) {
-                            i = m % 61;
-                        } else {
-                            i = m%vDim;
-                        }
-                        // this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
-                        // in the form of A_rc * B_cc'
-
-                        _Parameter  value                           = theData[k];
-                        _Parameter  _hprestrict_ *res               = storage.theData    + (m-i);
-                        _Parameter  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
-
-#ifndef _SLKP_SSE_VECTORIZATION_
-#ifdef  _SLKP_USE_SSE_INTRINSICS
-
-                         __m128d buffer1,
-                                buffer2,
-                                buffer3,
-                                buffer4,
-                                value_op = _mm_load1_pd (&value);
-                                
-                        if (((long int)secArg & 0x1111b) == 0 && ((long int)res & 0x1111b) == 0) {
-                            for (long i = 0; i < loopBound; i+=4) {
-                                buffer1 = _mm_load_pd (secArg+i);
-                                buffer2 = _mm_load_pd (secArg+i+2);
-                                buffer3 = _mm_load_pd (res+i);
-                                buffer4 = _mm_load_pd (res+i+2);
-                                buffer1 = _mm_mul_pd (buffer1, value_op);
-                                buffer2 = _mm_mul_pd (buffer2, value_op);
-                                buffer3 = _mm_add_pd (buffer3, buffer1);
-                                buffer4 = _mm_add_pd (buffer4, buffer2);
-                                _mm_store_pd (res+i, buffer3);
-                                _mm_store_pd (res+i+2, buffer4);
-                             }
-                        } else {
-                            for (long i = 0; i < loopBound; i+=4) {
-                                buffer1 = _mm_loadu_pd (secArg+i);
-                                buffer2 = _mm_loadu_pd (secArg+i+2);
-                                buffer3 = _mm_loadu_pd (res+i);
-                                buffer4 = _mm_loadu_pd (res+i+2);
-                                buffer1 = _mm_mul_pd (buffer1, value_op);
-                                buffer2 = _mm_mul_pd (buffer2, value_op);
-                                buffer3 = _mm_add_pd (buffer3, buffer1);
-                                buffer4 = _mm_add_pd (buffer4, buffer2);
-                                _mm_storeu_pd (res+i, buffer3);
-                                _mm_storeu_pd (res+i+2, buffer4);
-                             }
-                        }
-
-#endif
-                        
-#ifdef  _SLKP_USE_AVX_INTRINSICS
-                        __m256d buffer1,
-                                buffer2,
-                                value_op = _mm256_set_pd (value,value,value,value);
-                        
-                        if (((long int)secArg & 0x11111b) == 0 && ((long int)res & 0x11111b) == 0) {
-                            for (long i = 0; i < loopBound; i+=4) {
-                                buffer1 = _mm256_load_pd (secArg+i);
-                                buffer2 = _mm256_load_pd (res+i);
-                                buffer1 = _mm256_mul_pd (buffer1, value_op);
-                                buffer2 = _mm256_add_pd (buffer2, buffer1);
-                                _mm256_store_pd (res+i, buffer2);
-                            }
-                        } else {
-                            for (long i = 0; i < loopBound; i+=4) {
-                                buffer1 = _mm256_loadu_pd (secArg+i);
-                                buffer2 = _mm256_loadu_pd (res+i);
-                                buffer1 = _mm256_mul_pd (buffer1, value_op);
-                                buffer2 = _mm256_add_pd (buffer2, buffer1);
-                                _mm256_storeu_pd (res+i, buffer2);
-                            }
-                        }
-#endif
-                        
-#if not defined  _SLKP_USE_AVX_INTRINSICS and not defined _SLKP_USE_SSE_INTRINSICS
-                        for (long i = 0; i < loopBound; i+=4) {
-                            res[i] += value * secArg[i];
-                            res[i+1] += value * secArg[i+1];
-                            res[i+2] += value * secArg[i+2];
-                            res[i+3] += value * secArg[i+3];
-                        }
-#endif
-                        for (long j = loopBound; j < vDim; j++) {
-                            res[j]   += value * secArg[j];
-                        }
-#else
-                        for (long i = 0; i < vDim; i++) {
-                            res[i]   += value * secArg[i];
-                        }
-#endif
-
-                    }
+                /*
+                  break out a special case for universal code
+                */
+              
+              if (vDim == 61) {
+                for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
+                  long m = theIndex[k];
+                  if (m != -1L) {
+                    long i = m%61;
+                  
+                  
+                    _Parameter  value                           = theData[k];
+                    _Parameter  _hprestrict_ *res               = storage.theData    + (m-i);
+                    _Parameter  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                    
+  #ifdef  _SLKP_USE_AVX_INTRINSICS
+                      __m256d  value_op = _mm256_set1_pd (value);
+                    
+                      for (unsigned long i = 0UL; i < 60UL; i+=12UL) {
+                        _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
+                        _mm256_storeu_pd (res+i+4, _mm256_add_pd (_mm256_loadu_pd(res+i+4),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i+4))));
+                        _mm256_storeu_pd (res+i+8, _mm256_add_pd (_mm256_loadu_pd(res+i+8),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i+8))));
+                      }
+  #else
+                      for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
+                        res[i]   += value * secArg[i];
+                        res[i+1] += value * secArg[i+1];
+                        res[i+2] += value * secArg[i+2];
+                        res[i+3] += value * secArg[i+3];
+                       }
+  #endif
+                      res[60]   += value * secArg[60];
+                  }
+                  
                 }
+                
+              } else {
+                  long loopBound = vDim - vDim%4;
+
+                  for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
+                      long m = theIndex[k];
+                      if  (m != -1L ) { // non-zero
+                          long i = m%vDim;
+                          // this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
+                          // in the form of A_rc * B_cc'
+
+                          _Parameter  value                           = theData[k];
+                          _Parameter  _hprestrict_ *res               = storage.theData    + (m-i);
+                          _Parameter  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+
+                          for (unsigned long i = 0UL; i < loopBound; i+=4) {
+                              res[i]   += value * secArg[i];
+                              res[i+1] += value * secArg[i+1];
+                              res[i+2] += value * secArg[i+2];
+                              res[i+3] += value * secArg[i+3];
+                          }
+                           for (unsigned long i = loopBound; i < vDim; i++) {
+                              res[i]   += value * secArg[i];
+                          }
+
+                      }
+                  }
+              } // special codon case
             } else {
                 for (long k=0; k<lDim; k++) {
                     long m = theIndex[k];
@@ -4810,7 +4873,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
     return new _Constant (0.0);
   }
   
-  if (hDim <= 0 || vDim <= 0) {
+  if (hDim <= 0L || vDim <= 0L) {
     return new _Constant (0.0);
   }
   
@@ -4834,20 +4897,19 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
           if (nn->hDim > 0 && nn->vDim == 1) { // extract by row
             _SimpleList hL;
             
-            for (long r=0; r<nn->hDim; r++) {
-              long v = (*nn)(r,0);
-              if (v>=0 && v<hDim) {
+            for (unsigned long r=0UL; r<nn->hDim; r++) {
+              long v = floor((*nn)(r,0L));
+              if (v>=0L && v<hDim) {
                 hL<<v;
               }
             }
             
             if (hL.lLength) {
               _Matrix * result = new _Matrix (hL.lLength,vDim,false,true);
-              checkPointer (result);
-              long k = 0;
-              for (long r=0; r<hL.lLength; r++) {
-                long ri = hL.lData[r];
-                for (long c=0; c<vDim; c++,k++) {
+              unsigned long k = 0UL;
+              for (unsigned long r=0UL; r<hL.lLength; r++) {
+                unsigned long ri = hL.lData[r];
+                for (unsigned long c=0UL; c<vDim; c++,k++) {
                   result->theData[k] = (*this)(ri,c);
                 }
               }
@@ -4929,9 +4991,9 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
         cell_row   ("_MATRIX_ELEMENT_ROW_"),
         cell_column("_MATRIX_ELEMENT_COLUMN_");
         
-        _Variable * cv = CheckReceptacle(&cell_value, empty, false),
-        * cr = CheckReceptacle(&cell_row, empty, false),
-        * cc = CheckReceptacle(&cell_column, empty, false);
+        _Variable * cv = CheckReceptacle(&cell_value, emptyString, false),
+        * cr = CheckReceptacle(&cell_row, emptyString, false),
+        * cc = CheckReceptacle(&cell_column, emptyString, false);
         
         cv->CheckAndSet (0.0);
         cr->CheckAndSet (0.0);
@@ -5722,12 +5784,14 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
         if (hDim==4)
             // special case for nucleotides
         {
-            for (long i=0, k = 0; i<16; i+=4) {
-                for (long j=0; j<4; j++, k++) {
-                    stash[k] = theData[i]   * theData [j]
-                               + theData[i+1] * theData [j+4]
-                               + theData[i+2] * theData [j+8]
-                               + theData[i+3] * theData [j+12];
+            for (unsigned long i=0UL, k = 0UL; i<16; i+=4) {
+                for (unsigned long j=0UL; j<4UL; j++, k++) {
+                  _Parameter p1 = theData[i]   * theData [j];
+                  _Parameter p2 = theData[i+1] * theData [j+4];
+                   p1 += theData[i+2] * theData [j+8];
+                   p2 += theData[i+3] * theData [j+12];
+                  
+                   stash[k] = p1+p2;
                 }
             }
         } else {
@@ -5736,113 +5800,61 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
 
             // loop interchange rocks!
 
-#ifdef _SLKP_USE_SSE_INTRINSICS
-            double buffer[2] __attribute__ ((aligned (16)));
-#endif
-            
-#ifdef _SLKP_USE_AVX_INTRINSICS
-            double buffer[4] __attribute__ ((aligned (32)));
-#endif
-            
+          
             _Parameter  _hprestrict_ * column = stash+lDim;
-            _Parameter  _hprestrict_ * source = theData;
+            _Parameter const  _hprestrict_ * source = theData;
 
             for (long j = 0; j < vDim; j++) {
                 for (long c = 0; c < vDim; c++) {
                     column[c] = source[j + c * vDim];
                 }
 
-#ifdef _SLKP_USE_SSE_INTRINSICS
-
-                for (long i = 0; i < lDim; i += vDim) {
+#ifdef _SLKP_USE_AVX_INTRINSICS
+                if (vDim == 61UL) {
+                  for (unsigned long i = 0; i < lDim; i += 61) {
                     _Parameter * row = theData + i;
                     
                     
-                    __m128d buffer1,
-                            buffer2,
-                            buffer3 = _mm_setzero_pd(),
-                            buffer4 = _mm_setzero_pd(),
-                            load1, 
-                            load2,
-                            load3,
-                            load4;
-                            
-                    long k;
+                    __m256d   sum256 = _mm256_setzero_pd();
                     
-                    if (((long int)row & 0x1111b) == 0 && ((long int)column & 0x1111b) == 0){ 
-                         for (k = 0; k < loopBound; k += 4) {
-                            load1 = _mm_load_pd (row+k);
-                            load2 = _mm_load_pd (row+k+2);
-                            load3 = _mm_load_pd (column+k);
-                            load4 = _mm_load_pd (column+k+2);
-                            buffer1 = _mm_mul_pd (load1, load3);
-                            buffer2 = _mm_mul_pd (load2, load4);
-                            buffer3 = _mm_add_pd (buffer1,buffer3);
-                            buffer4 = _mm_add_pd (buffer2,buffer4);
-                        }    
-                   
-                    } else {
-                        for (k = 0; k < loopBound; k += 4) {
-                            load1 = _mm_loadu_pd (row+k);
-                            load2 = _mm_loadu_pd (row+k+2);
-                            load3 = _mm_loadu_pd (column+k);
-                            load4 = _mm_loadu_pd (column+k+2);
-                            buffer1 = _mm_mul_pd (load1, load3);
-                            buffer2 = _mm_mul_pd (load2, load4);
-                            buffer3 = _mm_add_pd (buffer1,buffer3);
-                            buffer4 = _mm_add_pd (buffer2,buffer4);
-                        }    
+                    for (unsigned long k = 0; k < 60; k += 12) {
+                      __m256d term0 = _mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k));
+                      __m256d term1 = _mm256_mul_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4));
+                      __m256d term2 = _mm256_mul_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8));
+                      
+                      __m256d sum01 = _mm256_add_pd(term0,term1);
+                      __m256d plus2 = _mm256_add_pd(term2, sum256);
+                      
+                      sum256 = _mm256_add_pd (sum01, plus2);
+                    
                     }
                     
-                    buffer3 = _mm_add_pd (buffer3, buffer4);    
-                    _mm_store_pd (buffer, buffer3);
+                    stash[i+j] = _avx_sum_4(sum256) + row[60] * column [60];
                     
-                    for (; k < vDim; k++) {
-                        buffer[0] += row[k] * column [k];
-                    }
-                
-                    stash[i+j] = buffer[0] + buffer[1];
-                 
-                }
-
-#elif defined _SLKP_USE_AVX_INTRINSICS
-
-                for (long i = 0; i < lDim; i += vDim) {
-                    _Parameter * row = theData + i;
+                  }
+                  
+                } else {
+                  for (unsigned long i = 0; i < lDim; i += vDim) {
+                      _Parameter * row = theData + i;
+                      
+                      
+                      __m256d   sum256 = _mm256_setzero_pd();
                     
+                      long k;
+                      
+                      for (k = 0; k < loopBound; k += 4) {
+                          sum256 = _mm256_add_pd (_mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k)), sum256);
+                      }
                     
-                    __m256d   buffer1,
-                              buffer2 = _mm256_setzero_pd(),
-                              load1,
-                              load2;
+                      _Parameter result = _avx_sum_4(sum256);
                     
-                    long k;
-                    
-                    if (((long int)row & 0x11111b) == 0 && ((long int)column & 0x11111b) == 0){
-                        for (k = 0; k < loopBound; k += 4) {
-                            load1 = _mm256_load_pd (row+k);
-                            load2 = _mm256_load_pd (column+k);
-                            buffer1 = _mm256_mul_pd (load1, load2);
-                            buffer2 = _mm256_add_pd (buffer1,buffer2);
-                        }
-                        
-                    } else {
-                        for (k = 0; k < loopBound; k += 4) {
-                            load1 = _mm256_loadu_pd (row+k);
-                            load2 = _mm256_loadu_pd (column+k);
-                            buffer1 = _mm256_mul_pd (load1, load2);
-                            buffer2 = _mm256_add_pd (buffer1,buffer2);
-                        }
-                    }
-                    
-                    _mm256_store_pd (buffer, buffer2);
-                    
-                    for (; k < vDim; k++) {
-                        buffer[0] += row[k] * column [k];
-                    }
-                    
-                    stash[i+j] = buffer[0] + buffer[1] + buffer[2] + buffer[3];
-                    
+                      for (; k < vDim; k++) {
+                          result += row[k] * column [k];
+                      }
+                      
+                      stash[i+j] = result;
+                      
+                  }
                 }
 
 #else
@@ -5851,10 +5863,9 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
                                  buffer [4] = {0.,0.,0.,0.};
 
 
-#ifndef _SLKP_SSE_VECTORIZATION_
-                    long        k;
+                    unsigned long        k;
 
-                    for (k = 0; k < loopBound; k += 4) {
+                    for (k = 0UL; k < loopBound; k += 4UL) {
                         buffer [0] += row[k] * column [k];
                         buffer [1] += row[k+1] * column [k+1];
                         buffer [2] += row[k+2] * column [k+2];
@@ -5864,13 +5875,8 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
                     for (; k < vDim; k++) {
                         buffer[0] += row[k] * column [k];
                     }
-#else
-                    for (long k = 0; k < vDim; k++) {
-                        buffer[0] += row[k]   * column [k];
-                    }
 
-#endif
-                    stash[i+j] = buffer[0] + buffer[1] + buffer[2] + buffer[3];
+                    stash[i+j] = (buffer[0] + buffer[1]) + (buffer[2] + buffer[3]);
                 }
 #endif
            }
@@ -6358,7 +6364,7 @@ _PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp)
         if (mp->ObjectClass () == MATRIX) {
             m = (_Matrix*)mp->Compute();
             if (m->GetHDim() == m->GetVDim()) {
-                errMsg = empty;
+                errMsg = emptyString;
             }
         }
     }
@@ -7397,7 +7403,7 @@ BaseRef _Matrix::toStr(unsigned long padding) {
   _String *result  = new _String (2048L,true),
           padder  (" ", padding);
   
-  checkParameter (printDigitsSpec,printDigits,0);
+  checkParameter (printDigitsSpec,printDigits,0L);
   
   char number_buffer [256];
   
@@ -7415,12 +7421,10 @@ BaseRef _Matrix::toStr(unsigned long padding) {
       closeBracket = doJSON ? ']' : '}';
       
       //(*result) << padder;
-      (*result) << openBracket;
-      (*result) << '\n';
+      (*result) << openBracket << '\n';
     
       for (long i = 0L; i<hDim; i++) {
-         (*result)<<padder;
-         (*result)<<openBracket;
+         (*result)<<padder <<openBracket;
         
   
          for (long j = 0L; j<vDim; j++) {
@@ -7453,19 +7457,19 @@ BaseRef _Matrix::toStr(unsigned long padding) {
           (*result)<<'\n';
         }
       }
-      (*result)<<'\n';
-      (*result)<<padder;
-      (*result)<<closeBracket;
+      (*result) <<'\n'
+                <<padder
+                <<closeBracket;
  
     } else if (storageType == 0) {
-      checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
+      checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
       if (!ANALYTIC_COMPUTATION_FLAG) {
+        result->Finalize(); DeleteObject (result);
         return Compute()->toStr(padding);
       }
       
       for (long i = 0; i<hDim; i++) {
-        (*result)<<'\n';
-        (*result)<<'[';
+        (*result)<<'\n' <<'[';
         for (long j = 0; j<vDim; j++) {
           long p = Hash (i,j);
           if (GetMatrixObject(p)) {
@@ -7482,8 +7486,7 @@ BaseRef _Matrix::toStr(unsigned long padding) {
         }
         (*result)<<']';
       }
-      (*result)<<'\n';
-      (*result)<<'\n';
+      (*result)<<'\n' << '\n';
     } else {
       result->Finalize(); DeleteObject (result);
       return ComputeNumeric()->toStr(padding);
@@ -7548,7 +7551,7 @@ void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
          closeBracket = doJSON ? ']' : '}';
     
     if (!printStrings) {
-      checkParameter (printDigitsSpec,printDigits,0);
+      checkParameter (printDigitsSpec,printDigits,0L);
       digs =  printDigits;
     }
     
@@ -7611,7 +7614,7 @@ void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
       fprintf (dest, "%s%c", padder.sData, closeBracket);
     }
   } else if (storageType==0) {
-    checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
+    checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
     if (!ANALYTIC_COMPUTATION_FLAG) {
       Compute()->toFileStr(dest);
       return;
@@ -7683,7 +7686,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource)
             buffer [i] = 0;
             _String varName (buffer);
 
-            _Variable * ppv = CheckReceptacle (&varName, empty, true);
+            _Variable * ppv = CheckReceptacle (&varName, emptyString, true);
             varList << ppv->GetAVariable();
             i = 0;
         } else {
@@ -8679,7 +8682,7 @@ _Matrix*    _Matrix::SimplexSolve (_Parameter desiredPrecision )
 // upon return, will contain a row matrix of either C-1 cells:
 // extreme value of the objective function in the first cell
 // variable values in the same order as originally supplied
-// if an empty matrix is returned - no feasible solution could be found
+// if an emptyString matrix is returned - no feasible solution could be found
 // if a 1x1 matrix is returned - the objective function is unbounded
 
 {
@@ -9048,7 +9051,7 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
 #if !defined __UNIX__ || defined __HEADLESS__
             TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
 #if !defined __HEADLESS__
-            SetStatusLine     (empty,_HYMultinomialStatus, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+            SetStatusLine     (emptyString,_HYMultinomialStatus, emptyString, 0, HY_SL_TASK|HY_SL_PERCENT);
 #else
             SetStatusLine     (_HYMultinomialStatus);
 #endif
@@ -9077,7 +9080,7 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
 #if defined __HEADLESS__
                     SetStatusLine (statusLine);
 #else
-                    SetStatusLine (empty,statusLine,empty,100*(float)it/(samples),HY_SL_TASK|HY_SL_PERCENT);
+                    SetStatusLine (emptyString,statusLine,emptyString,100*(float)it/(samples),HY_SL_TASK|HY_SL_PERCENT);
 #endif
                     TimerDifferenceFunction (false); // reset timer for the next second
                     yieldCPUTime (); // let the GUI handle user actions
@@ -9212,7 +9215,7 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
 
                 DeleteObject (cholesky);
             } else {
-                return (cholesky);  // empty _Matrix from error in CholeskyDecompose()
+                return (cholesky);  // emptyString _Matrix from error in CholeskyDecompose()
             }
         }
     }
@@ -9271,14 +9274,18 @@ BaseRef _AssociativeList::makeDynamic (void)
 
 //_____________________________________________________________________________________________
 
-bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool doErrors, _VariableContainer* theP)
-{
+bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, _FormulaParsingContext& fpc ) {
     _List               splitKeys;
+    bool                doErrors = fpc.errMsg() == nil,
+                        compute_keys_values = fpc.buildComplexObjects();
+   _VariableContainer const* theP = fpc.formulaScope();
+  
     _ElementaryCommand::ExtractConditions (serializedForm, 0, splitKeys, ',' , false);
-    for (long k = 0; k < splitKeys.lLength; k = k + 1) {
+  
+    for (unsigned long k = 0UL; k < splitKeys.lLength; k ++) {
         _List aPair;
         _ElementaryCommand::ExtractConditions (*(_String*)splitKeys(k), 0, aPair, ':' , false);
-        if (aPair.lLength == 2) {
+        if (aPair.lLength == 2UL) {
             _String  key        (ProcessLiteralArgument((_String*)aPair(0),theP)),
                      errMsg;
           
@@ -9286,11 +9293,11 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool 
               key = *(_String*)aPair(0);
             }
             
-            _Formula value      (*(_String*)aPair(1),theP, doErrors?nil:&errMsg);
-
-            _PMathObj   valueC  = value.Compute();
+            _Formula value      (*(_String*)aPair(1),theP, doErrors?nil :&errMsg);
+            _PMathObj   valueC  = compute_keys_values ? value.Compute() : new _MathObject;
+          
             if (valueC) {
-                MStore (key, valueC, true);
+                MStore (key, valueC, compute_keys_values);
             } else {
                 if (doErrors) {
                     WarnError (*(_String*)aPair(1) & " could not be evaluated");
@@ -9377,7 +9384,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
                 WarnError ("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)");
             } else {
                 if (fID2 >= 0 && GetBFFunctionArgumentCount (fID2) != 1L) {
-                    WarnError ("The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument");
+                    WarnError ("The second argument in an iterator call for Associative Arrays must be either emptyString or a valid identifier of a function taking a single argument");
                 }
 
                 _Formula      testFormula,
@@ -9385,11 +9392,11 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 
                 actionFormula.GetList().AppendNewInstance(new _Operation());
                 actionFormula.GetList().AppendNewInstance(new _Operation());
-                actionFormula.GetList().AppendNewInstance(new _Operation(empty,-fID-1));
+                actionFormula.GetList().AppendNewInstance(new _Operation(emptyString,-fID-1));
 
                 if (fID2 >= 0) {
                     testFormula.GetList().AppendNewInstance(new _Operation());
-                    testFormula.GetList().AppendNewInstance(new _Operation(empty,-fID2-1));
+                    testFormula.GetList().AppendNewInstance(new _Operation(emptyString,-fID2-1));
                 }
 
 
@@ -9453,38 +9460,29 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (_String& key, long objType)
-{
-    long        f = avl.Find (&key);
-
-    if (f>=0) {
-        _PMathObj res = (_PMathObj)avl.GetXtra (f);
-        if (res->ObjectClass () == objType) {
-            return res;
-        }
+_PMathObj _AssociativeList::GetByKey (_String const& key, long objType) const {
+    _PMathObj res = GetByKey(key);
+    if (res && ((res->ObjectClass() & objType) > 0L)) {
+      return res;
     }
-
     return nil;
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (_String& key)
-{
-    long        f = avl.Find (&key);
-
-    if (f>=0) {
-        return (_PMathObj)avl.GetXtra (f);
-    }
-
-    return nil;
+_PMathObj _AssociativeList::GetByKey (_String const& key) const {
+    return (_PMathObj)avl.GetDataByKey(&key);
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (long nKey, long objType)
-{
-    _String key (nKey);
-    return GetByKey (key, objType);
+_PMathObj _AssociativeList::GetByKey (long nKey, long objType) const {
+    return GetByKey (_String(nKey), objType);
 }
+
+  //_____________________________________________________________________________________________
+void _AssociativeList::Clear (void) {
+  avl.Clear(true);
+}
+
 
 //_____________________________________________________________________________________________
 void _AssociativeList::DeleteByKey (_PMathObj p)
@@ -9546,6 +9544,32 @@ void _AssociativeList::MStore (const _String& obj, _PMathObj inObject, bool repl
     _FString f (obj);
     MStore (&f,inObject, repl);
 }
+
+//_____________________________________________________________________________________________
+
+_AssociativeList &  _AssociativeList:: operator <<     (_associative_list_key_value pair) {
+  if (pair.key) {
+    MStore (pair.key, pair.payload, true);
+  } else {
+    _String next_index ((long)Length());
+    MStore (next_index, pair.payload, true);
+  }
+  return *this;
+}
+
+//_____________________________________________________________________________________________
+
+
+_AssociativeList &  _AssociativeList:: operator <     (_associative_list_key_value pair) {
+  if (pair.key) {
+    MStore (pair.key, pair.payload, false);
+  } else {
+    _String next_index ((long)Length());
+    MStore (next_index, pair.payload, false);
+  }
+  return *this;
+}
+
 
 //_____________________________________________________________________________________________
 void _AssociativeList::MStore (const _String& obj, const _String& info) {
@@ -9613,18 +9637,39 @@ _List* _AssociativeList::GetKeys (void)  {
 }
 
 //_____________________________________________________________________________________________
-void        _AssociativeList::FillInList (_List& fillMe)
-{
-    _SimpleList  hist;
-    long         ls,
-                 cn = avl.Traverser (hist,ls,avl.GetRoot());
-
-    while (cn >= 0) {
-        _String* aKey = ((_String**)avl.dataList->lData)[cn];
-        if (aKey) {
-            fillMe.AppendNewInstance(avl.GetXtra (cn)->toStr());
+void        _AssociativeList::FillInList (_List& fill_me) {
+  
+    unsigned long ll = fill_me.countitems();
+    try {
+        // checkpoint the length of the list
+      unsigned long  my_length = avl.countitems();
+      
+      for (long index = 0; index < my_length; index++) {
+        _String key (index);
+        if (_PMathObj value = GetByKey (key)) {
+          fill_me.AppendNewInstance(value->toStr());
+        } else {
+          throw (1);
         }
-        cn = avl.Traverser (hist,ls);
+      }
+    }
+  
+    catch (int e) {
+        while (fill_me.countitems () > ll) {
+          fill_me.Delete(fill_me.countitems ()-1);
+        }
+      
+        _SimpleList  hist;
+        long         ls,
+        cn = avl.Traverser (hist,ls,avl.GetRoot());
+        
+        while (cn >= 0) {
+          _String* aKey = ((_String**)avl.dataList->lData)[cn];
+          if (aKey) {
+            fill_me.AppendNewInstance(avl.GetXtra (cn)->toStr());
+          }
+          cn = avl.Traverser (hist,ls);
+        }
     }
 }
 
@@ -9666,9 +9711,48 @@ void        _AssociativeList::Merge (_PMathObj p)
     }
 }
 
+  //_____________________________________________________________________________________________
+_PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
+  _String const * best_key = nil;
+  _Parameter best_value = do_mimimum ? INFINITY : -INFINITY;
+  
+  if (avl.countitems()) {
+  
+    _SimpleList  hist;
+    long         ls = -1L,
+    cn = avl.Traverser (hist,ls,avl.GetRoot());
+   
+    while (cn >= 0) {
+      _PMathObj value = (_PMathObj)avl.GetXtra (cn);
+      switch (value->ObjectClass()){
+        case NUMBER:
+          _Parameter number = ((_Constant*)value)->Value();
+          if (do_mimimum) {
+            if (number < best_value) {
+              best_value = number;
+              best_key   = (_String const*)avl.Retrieve (cn);
+            }
+          } else {
+            if (number > best_value) {
+              best_value = number;
+              best_key   = (_String const*)avl.Retrieve (cn);
+            }
+          }
+          break;
+        }
+      cn = avl.Traverser (hist,ls);
+    }
+  }
+  
+  _AssociativeList * result = new _AssociativeList;
+  (*result) < _associative_list_key_value {"key", best_key ? new _FString (*best_key, false) : new _MathObject}
+            < _associative_list_key_value {"value", new _Constant (best_value)};
+  return result;
+  
+}
+
 //_____________________________________________________________________________________________
-_PMathObj        _AssociativeList::Sum (void)
-{
+_PMathObj        _AssociativeList::Sum (void) {
     _Parameter sum = 0.;
         
     _SimpleList  hist;
@@ -9710,7 +9794,11 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
   
   switch (opCode) {
     case HY_OP_CODE_ABS:
-      return new _Constant (avl.countitems());
+      return new _Constant (Length());
+      
+    case HY_OP_CODE_EVAL:
+      return (_PMathObj) makeDynamic();
+      
     case HY_OP_CODE_COLUMNS: {
       // Columns -- get all unique values (as strings)
       _List    unique_values_aux;
@@ -9747,6 +9835,14 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
     case HY_OP_CODE_TYPE: // Type
       return Type();
       
+    case HY_OP_CODE_MAX: // Max
+      return ExtremeValue (false);
+      
+    case HY_OP_CODE_MIN: // Max
+      return ExtremeValue (true);
+     
+
+      
   }
   
   _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
@@ -9760,6 +9856,7 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
       return Sum ();
   }
   
+
   if (arg0) {
     switch (opCode) { // operations that require exactly one argument
       case HY_OP_CODE_MCOORD: // MCoord
@@ -9772,6 +9869,20 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
       case HY_OP_CODE_SUB:
         DeleteByKey (arg0);
         return new _Constant (avl.countitems());
+        
+      case HY_OP_CODE_DIV:
+        
+        if (arg0->ObjectClass () == STRING) {
+          if (avl.Find (((_FString*)arg0)->theString) >= 0L) {
+            return new _Constant (1.0);
+          }
+        } else {
+          _String serialized ((_String*)arg0->toStr());
+          if (avl.Find (&serialized) >= 0L) {
+            return new _Constant (1.0);
+          }
+        }
+        return new _Constant (0.0);
         
     }
     _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
@@ -9794,6 +9905,7 @@ _PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyE
     case HY_OP_CODE_MUL:
     case HY_OP_CODE_SUB:
     case HY_OP_CODE_MACCESS:
+    case HY_OP_CODE_DIV:
       WarnWrongNumberOfArguments (this, opCode,context, arguments);
       break;
     default:
@@ -9846,6 +9958,17 @@ long        _GrowingVector::Store (_Parameter toStore)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
+void        _GrowingVector::Delete (unsigned long index) {
+  if (index + 1UL < used) {
+    for (unsigned long i = index+1UL; i < used; i++) {
+      theData[i-1] = theData[i];
+    }
+    --used;
+  }
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------------*/
+
 void        _GrowingVector::operator << (const _SimpleList& theSource)
 {
     for (unsigned long k = 0; k < theSource.lLength; k++) {
@@ -9884,7 +10007,7 @@ _NTupleStorage::_NTupleStorage (unsigned long N, unsigned long K)
     // now compute what dimension of the matrix will be required
     // handle the special cases first
 
-    if (storageK) { // not just the empty set
+    if (storageK) { // not just the emptyString set
         // populate C_NK_Lookup
         for (long i2=0; i2<=storageN; i2++) {
             C_NK_Lookup << 1;    // N choose 0 is always 1 for every N

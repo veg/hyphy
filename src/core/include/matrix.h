@@ -85,8 +85,7 @@ struct      _CompiledMatrixData {
 
 /*__________________________________________________________________________________________________________________________________________ */
 
-class       _Matrix: public _MathObject
-{
+class       _Matrix: public _MathObject {
 
 public:
 
@@ -94,7 +93,7 @@ public:
 
     _Matrix ();                                 // default constructor, doesn't do much
 
-    _Matrix (_String&, bool = false, _VariableContainer* = nil);
+    _Matrix (_String&, bool = false, _VariableContainer const* = nil);
     // matrix from a string of the form
     // {{i11,i12,...}{i21,i22,..}{in1,in2..)})
     // or {# rows,<# cols>{i1,j1,expr}{i2,j2,expr}..}
@@ -113,9 +112,9 @@ public:
     // where the third parameter specifies the percentage of 0 entries and
     // the first flag indicates how to store the matrix: as spars or usual
 
-    _Matrix ( _Matrix &);                       //duplicator
+    _Matrix ( _Matrix&);                       //duplicator
 
-    _Matrix ( _SimpleList &, long = -1);        // make matrix from simple list
+    _Matrix ( _SimpleList const &, long = -1);        // make matrix from simple list
     // the optional argument C (if > 0) tells HyPhy
     // to make a matrix with C elements per row
     // if <= 0 - a row matrix is returned
@@ -417,7 +416,7 @@ public:
     // if element was not found, the number returned
     // indicates the first available slot
 
-    _Parameter*       fastIndex(void)   {
+    _Parameter*       fastIndex(void)  const {
         return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(_Parameter*)theData:nil;
     }
     inline            _Parameter&         directIndex(long k)   {
@@ -617,8 +616,13 @@ public:
     void     ZeroUsed       (void) {
         used = 0UL;
     }
+    void    Delete          (unsigned long index);
 
     void    operator <<     (const _SimpleList&);
+    _GrowingVector&    operator <<     (_Parameter p) {
+        Store (p);
+        return *this;
+    }
 
     unsigned long   used;
     bool   isColumn;
@@ -691,13 +695,17 @@ private:
 
 /*__________________________________________________________________________________________________________________________________________ */
 
-class           _AssociativeList: public _MathObject
-{
+struct _associative_list_key_value {
+  const char * key;
+  _PMathObj  payload;
+};
+
+class           _AssociativeList: public _MathObject {
 public:
     _AssociativeList                    (void);
     virtual ~_AssociativeList           (void) {}
 
-    bool    ParseStringRepresentation   (_String&, bool = true, _VariableContainer* = nil);
+    bool    ParseStringRepresentation   (_String&, _FormulaParsingContext&);
     /* SLKP 20090803
 
         Parse the list represented as
@@ -714,6 +722,7 @@ public:
     // execute this operation with the list of Args
     virtual BaseRef     makeDynamic     (void);
     virtual _PMathObj   Compute         (void);
+    void                Clear           (void);
     virtual void        Merge           (_PMathObj);
     /* 20100907: SLKP
             A simple function to merge two lists;
@@ -735,21 +744,32 @@ public:
        returns the number of items processed
     */
 
-    _PMathObj           GetByKey        (_String&, long);
-    _PMathObj           GetByKey        (_String&);
-    _PMathObj           GetByKey        (long, long);
+    _PMathObj           GetByKey        (_String const&, long) const;
+    _PMathObj           GetByKey        (_String const&) const;
+    _PMathObj           GetByKey        (long, long) const;
     void                DeleteByKey     (_PMathObj);
     _PMathObj           MCoord          (_PMathObj);
     void                MStore          (_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
     // SLKP 20100811: see the comment for _Matrix::MStore
 
     void                MStore          (const _String&  , _PMathObj, bool = true);
+  
+    /* a convenience build-out function to push key-value pairs
+       << adds a reference count to the payload
+    */
+  
+    _AssociativeList &  operator <<     (_associative_list_key_value pair);
+    _AssociativeList &  operator <     (_associative_list_key_value pair);
+  
     void                MStore          (const _String&  , const _String&);
     virtual unsigned long        ObjectClass     (void)      {
         return ASSOCIATIVE_LIST;
     }
     _List*              GetKeys         (void);
     void                FillInList      (_List&);
+    unsigned long       Length          (void) const {
+      return avl.countitems();
+    }
     _String*            Serialize       (unsigned long) ;
     
     /**
@@ -759,6 +779,13 @@ public:
      * @return The sum of all dictionary elements.
      */
     _PMathObj           Sum             (void);
+    /**
+     * Traverse the dictionary, and return { "key" : key, "value" : min / max over the list}
+     * All values that cannot be cast to a float will be IGNORED.
+     * If no valid numbers could be found, "key" will be None, and min/max will be an +/-Inf
+     * @return The minimum or maximum numeric value and corresponding key
+     */
+    _PMathObj           ExtremeValue    (bool do_mimimum) const;
 
     _AVLListXL          avl;
 
@@ -771,8 +798,24 @@ private:
 
 extern  _Matrix *GlobalFrequenciesMatrix;
 // the matrix of frequencies for the trees to be set by block likelihood evaluator
-extern  _Parameter  ANALYTIC_COMPUTATION_FLAG;
+extern  long  ANALYTIC_COMPUTATION_FLAG;
 
-void       InsertStringListIntoAVL  (_AssociativeList* , _String, _SimpleList&, _List&);
-void       InsertVarIDsInList       (_AssociativeList* , _String, _SimpleList&);
+void       InsertStringListIntoAVL  (_AssociativeList* , _String const&, _SimpleList const&, _List const&);
+void       InsertVarIDsInList       (_AssociativeList* , _String const&, _SimpleList const&);
+
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+    inline const double _avx_sum_4 (__m256d const & x) {
+      __m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
+                                 // (x3,x3,x1,x1)
+                                 _mm256_shuffle_pd (x, x, 0xf)
+                                 // (x2,x2,x0,x0);
+                                 );
+      return _mm_cvtsd_f64 (_mm_add_pd(
+                                       _mm256_castpd256_pd128 (t), // (x3+x2,x3+x2)
+                                       _mm256_extractf128_pd(t,1)  // (x1+x0,x0+x1);
+                                       ));
+      
+    }
+#endif
+
 #endif

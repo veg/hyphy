@@ -37,7 +37,6 @@
  
  */
 
-//#define __HYPHY_MPI_MESSAGE_LOGGING__
 
 #include "baseobj.h"
 #include "errorfns.h"
@@ -46,6 +45,8 @@
 #include "batchlan.h"
 #include "category.h"
 #include "likefunc.h"
+#include "hbl_env.h"
+#include "global_object_lists.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +58,7 @@ extern int _hy_mpi_node_rank;
 #endif
 
 #if defined   __UNIX__ || defined __HYPHY_GTK__
-#include <sys/time.h>
+
 #include <unistd.h>
 #endif
 
@@ -73,13 +74,8 @@ extern int _hy_mpi_node_rank;
     #include <Windows.h>
 #endif
 
-#if defined(__APPLE__) && defined(__MACH__)
-  #include <mach/mach.h>
-  #include <mach/mach_time.h>
-  mach_timebase_info_data_t    sTimebaseInfo;
-#endif
 
-
+  //#define     __HYPHY_MPI_MESSAGE_LOGGING__
 
 bool        terminateExecution  = false;
 
@@ -119,6 +115,11 @@ BaseObj::BaseObj()
 //____________________________________________________________________________________
 BaseRef   BaseObj::toStr (unsigned long padding) {
   return new _String ("null");
+}
+
+//____________________________________________________________________________________
+void   BaseObj::ConsoleLog (void) {
+  fprintf (stderr, "\n[%x]\n%s\n", this, (const char*)_String ((_String*)toStr()));
 }
 
 //____________________________________________________________________________________
@@ -198,8 +199,8 @@ void    InitializeGlobals (void) {
   
   _HBL_Init_Const_Arrays  ();
   
-  CheckReceptacleAndStore(&_hy_TRUE, empty, false, new _Constant (1.), false);
-  CheckReceptacleAndStore(&_hy_FALSE, empty, false, new _Constant (0.), false);
+  CheckReceptacleAndStore(&_hy_TRUE, emptyString, false, new _Constant (1.), false);
+  CheckReceptacleAndStore(&_hy_FALSE, emptyString, false, new _Constant (0.), false);
   setParameter        (platformDirectorySeparator, new _FString (dd, false), nil, false); // these should be set globally?
   setParameter        (hyphyBaseDirectory, new _FString (baseDirectory, false), nil, false);
   setParameter        (hyphyLibDirectory, new _FString (libDirectory, false), nil, false);
@@ -317,67 +318,14 @@ bool    GlobalShutdown (void)
 
         for (long count = 1; count < size; count++) {
             ReportWarning (_String ("Sending shutdown command to node ") & count & '.');
-            MPISendString(empty,count);
+            MPISendString(emptyString,count);
         }
     }
 #else
   fflush (stdout);  
 #endif
 
-#ifdef  __HYPHYMPI__
-    // MPI_Barrier (MPI_COMM_WORLD);
-    ReportWarning ("Calling MPI_Finalize");
-#ifdef __USE_ABORT_HACK__
-    MPI_Abort(MPI_COMM_WORLD,0);
-#else
-    MPI_Finalized(&flag);
-    if (!flag)
-        MPI_Finalize();
-#endif
-    ReportWarning ("Returned from MPI_Finalize");
-#endif
-
   
-
-    if (globalErrorFile) {
-        fflush (globalErrorFile);
-        fseek(globalErrorFile,0,SEEK_END);
-        unsigned long fileSize = ftell(globalErrorFile);
-        if (fileSize) {
-#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
-
-#else
-            fprintf (stderr, "\nCheck %s for details on execution errors.\n",errorFileName.getStr());
-#endif
-            res = false;
-            fclose (globalErrorFile);
-
-        } else {
-            fclose (globalErrorFile);
-#ifdef __HYPHYXCODE__
-            remove (DoMacToPOSIX(errorFileName).getStr());
-#else
-            remove (errorFileName.getStr());
-#endif
-        }
-    }
-    if (globalMessageFile) {
-        if (ftell(globalMessageFile)) {
-#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
-#else
-            fprintf (stderr, "\nCheck %s details of this run.\n",messageFileName.getStr());
-#endif
-            fclose (globalMessageFile);
-        } else {
-            fclose (globalMessageFile);
-#ifdef __HYPHYXCODE__
-            remove (DoMacToPOSIX(messageFileName).getStr());
-#else
-            remove (messageFileName.getStr());
-#endif
-        }
-    }
-    
     _SimpleList  hist;
     long         ls,
                  cn = _HY_HBLCommandHelper.Traverser (hist,ls,_HY_HBLCommandHelper.GetRoot());
@@ -386,27 +334,84 @@ bool    GlobalShutdown (void)
         delete ((_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra(cn));
         cn = _HY_HBLCommandHelper.Traverser (hist,ls);
     }
+  
+    PurgeAll(true);
+  
     _HY_HBLCommandHelper.Clear();
     _HY_ValidHBLExpressions.Clear();
     listOfCompiledFormulae.Clear();
+
+#ifdef  __HYPHYMPI__
+  // MPI_Barrier (MPI_COMM_WORLD);
+  ReportWarning ("Calling MPI_Finalize");
+#ifdef __USE_ABORT_HACK__
+  MPI_Abort(MPI_COMM_WORLD,0);
+#else
+  MPI_Finalized(&flag);
+  if (!flag)
+    MPI_Finalize();
+#endif
+  ReportWarning ("Returned from MPI_Finalize");
+#endif
   
+  
+  
+  if (globalErrorFile) {
+    fflush (globalErrorFile);
+    fseek(globalErrorFile,0,SEEK_END);
+    unsigned long fileSize = ftell(globalErrorFile);
+    if (fileSize) {
+#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
+      
+#else
+      fprintf (stderr, "\nCheck %s for details on execution errors.\n",errorFileName.getStr());
+#endif
+      res = false;
+      fclose (globalErrorFile);
+      
+    } else {
+      fclose (globalErrorFile);
+#ifdef __HYPHYXCODE__
+      remove (DoMacToPOSIX(errorFileName).getStr());
+#else
+      remove (errorFileName.getStr());
+#endif
+    }
+  }
+  if (globalMessageFile) {
+    if (ftell(globalMessageFile)) {
+#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
+#else
+      fprintf (stderr, "\nCheck %s details of this run.\n",messageFileName.getStr());
+#endif
+      fclose (globalMessageFile);
+    } else {
+      fclose (globalMessageFile);
+#ifdef __HYPHYXCODE__
+      remove (DoMacToPOSIX(messageFileName).getStr());
+#else
+      remove (messageFileName.getStr());
+#endif
+    }
+  }
+
 
     return res;
 }
 
 //____________________________________________________________________________________
 
-void    PurgeAll (bool all)
-{
+void    PurgeAll (bool all) {
+  using namespace hyphy_global_objects;
+  
     ClearBFFunctionLists();
     executionStack.Clear();
     loadedLibraryPaths.Clear(true);
     _HY_HBL_Namespaces.Clear();
     if (all) {
+        ClearAllGlobals ();
         likeFuncList.Clear();
         likeFuncNamesList.Clear();
-        dataSetFilterList.Clear();
-        dataSetFilterNamesList.Clear();
         dataSetList.Clear();
         dataSetNamesList.Clear();
         compiledFormulaeParameters.Clear();
@@ -426,7 +431,7 @@ void    PurgeAll (bool all)
         _n_ = nil;
         pathNames.Clear();
     }
-    scanfLastFilePath = empty;
+    scanfLastFilePath = emptyString;
     setParameter (randomSeed,globalRandSeed);
     isInFunction        = _HY_NO_FUNCTION;
     isDefiningATree     = 0;
@@ -440,14 +445,16 @@ void    PurgeAll (bool all)
 }
 
 //____________________________________________________________________________________
-void    DeleteObject (BaseRef theObject) {
+bool    DeleteObject (BaseRef theObject) {
     if (theObject) {
         if (theObject->nInstances<=1) {
             delete (theObject);
+            return true;
         } else {
-            theObject->nInstances--;
+            theObject->RemoveAReference();
         }
     }
+    return false;
 }
 
 
@@ -494,99 +501,6 @@ void        yieldCPUTime(void)
 
 #endif 
 
-//____________________________________________________________________________________
-
-// time differencing function
-
-double      TimerDifferenceFunction (bool doRetrieve)
-{
-    double timeDiff = 0.0;
-  
-  
-#ifdef __MAC__
-    static UnsignedWide microsecsIn;
-    UnsignedWide microsecsOut;
-
-    if (doRetrieve) {
-        Microseconds      (&microsecsOut);
-        timeDiff = 0.000001*((microsecsOut.hi-microsecsIn.hi)*(_Parameter)0xffffffff
-                             + (microsecsOut.lo-microsecsIn.lo));
-    } else {
-        Microseconds      (&microsecsIn);
-    }
-
-#endif
-
-#ifdef  __WINDOZE__
-    static          char            canRunTimer    = 0;
-    static          _Parameter      winTimerScaler = 0.0;
-    static          LARGE_INTEGER   tIn;
-
-    LARGE_INTEGER   tOut;
-
-    if (canRunTimer == 0) {
-        if (QueryPerformanceFrequency(&tIn) && tIn.QuadPart) {
-            winTimerScaler = 1./tIn.QuadPart;
-            canRunTimer    = 1;
-        } else {
-            canRunTimer = -1;
-        }
-
-    }
-
-    if (canRunTimer == 1)
-        if (doRetrieve) {
-            QueryPerformanceCounter (&tOut);
-            timeDiff   = (tOut.QuadPart-tIn.QuadPart) * winTimerScaler;
-          
-        } else {
-            QueryPerformanceCounter (&tIn);
-        }
-#endif
-
-#if !defined __WINDOZE__ && !defined __MAC__
-    /*static    clock_t         clockIn;
-            clock_t         clockOut;
-
-    if (doRetrieve)
-    {
-        clockOut = clock();
-        timeDiff   = (clockOut-clockIn) * 1.0 / CLOCKS_PER_SEC;
-    }
-    else
-        clockIn  = clock();*/
-  
-#if defined(__APPLE__) && defined(__MACH__)
-  static uint64_t        clockIn, clockOut;
-  
-  if (doRetrieve) {
-    clockOut = mach_absolute_time();
-    uint64_t diff = clockOut - clockIn;
-    if ( sTimebaseInfo.denom == 0 ) {
-      (void) mach_timebase_info(&sTimebaseInfo);
-    }
-    
-    return diff * 1e-9 * sTimebaseInfo.numer / sTimebaseInfo.denom;
-  
-  } else {
-    clockIn = mach_absolute_time();
-  }
-#else
-    static timeval clockIn, clockOut;
-    if (doRetrieve) {
-        gettimeofday (&clockOut,nil);
-        timeDiff = (clockOut.tv_sec-clockIn.tv_sec) + (clockOut.tv_usec-clockIn.tv_usec)*0.000001;
-      
-    } else {
-        gettimeofday (&clockIn,nil);
-    }
-#endif
-
-#endif
-
-
-    return timeDiff;
-}
 
 
 //____________________________________________________________________________________

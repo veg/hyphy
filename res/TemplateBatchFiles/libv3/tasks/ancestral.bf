@@ -2,41 +2,119 @@ RequireVersion("2.26");
 
 LoadFunctionLibrary("../UtilityFunctions.bf");
 
+/** @module ancestral */
+
 ancestral._ancestralRecoveryCache = {};
 
 /*******************************************
-	call _buildAncestralCache function with the likelihood function ID 
-	and a 0-based partition index to produce an
-	internal structure storing internal states at 
-	nodes;
-	
-	returns an integer index to reference
-	the opaque structure for subsequent operations
+
+Example Structure
+
+{
+ "DIMENSIONS":{
+   "SITES":1,
+   "SEQUENCES":10,
+   "BRANCHES":17,
+   "CHARS":61
+  },
+ "CHARS":{
+  {"AAA", "AAC", "AAG", "AAT", "ACA", "ACC", "ACG", "ACT", "AGA", "AGC", "AGG", "AGT", "ATA", "ATC", "ATG", "ATT", "CAA", "CAC", "CAG", "CAT", "CCA", "CCC", "CCG", "CCT", "CGA", "CGC", "CGG", "CGT", "CTA", "CTC", "CTG", "CTT", "GAA", "GAC", "GAG", "GAT", "GCA", "GCC", "GCG", "GCT", "GGA", "GGC", "GGG", "GGT", "GTA", "GTC", "GTG", "GTT", "TAC", "TAT", "TCA", "TCC", "TCG", "TCT", "TGC", "TGG", "TGT", "TTA", "TTC", "TTG", "TTT"}
+  },
+ "MATRIX":{
+  {-1}
+  {-1}
+  {-1}
+  {-1}
+  {-1}
+  {-1}
+  {0}
+  {0}
+  {0}
+  {0}
+  {32}
+  {0}
+  {0}
+  {0}
+  {-1}
+  {-1}
+  {0}
+  },
+ "TREE_AVL":{
+   "1":{
+     "Name":"PIG",
+     "Length":-1,
+     "Depth":4,
+     "Parent":3
+    },
+   "2":{
+     "Name":"COW",
+     "Length":-1,
+     "Depth":4,
+     "Parent":3
+    },
+    .
+    .
+    .
+   "17":{
+     "Name":"Node0",
+     "Length":-1,
+     "Depth":0,
+     "Children":{
+       "0":14,
+       "1":15,
+       "2":16
+      }
+    },
+   "0":{
+     "Name":"meme.site_tree_bsrel",
+     "Root":17
+    }
+  },
+ "AMBIGS":{
+  },
+ "MAPPING":{
+   "-1":"---",
+   "0":"AAA",
+   "32":"GAA"
+  }
+}
+
 
 *******************************************/
 
-//LoadFunctionLibrary			("TreeTools.ibf");
 
 ancestral._bacCacheInstanceCounter = 0;
 
-/*******************************************
-	main function
-*******************************************/
-
-function ancestral.build(_lfID, _lfComponentID, options) {
+/**
+ * Builds ancestral states
+ * @name ancestral.build
+ * @param {Number} _lfID - the likelihood function ID
+ * @param {Number} _lfComponentID - 
+ * @param {options} options - 
+ * @returns an integer index to reference
+ * the opaque structure for subsequent operations
+ * @example
+ */
+function ancestral.build (_lfID, _lfComponentID, options) {
     return ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, options["sample"]);
 }
 
 
-/*******************************************
-	internal function to do the work
-*******************************************/
-
+/**
+ * internal function to do the work of ancestral.build
+ * @name ancestral._buildAncestralCacheInternal
+ * @private
+ * @param {Number} _lfID - the likelihood function ID
+ * @param {Number} _lfComponentID - 
+ * @param {options} options - 
+ * @returns an integer index to reference
+ * the opaque structure for subsequent operations
+ */
 lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample) {
 
     /* 1; grab the information AVL from the likelihood function */
 
-    GetString(_bac_lfInfo, ^ _lfID, -1);
+    GetString(_bac_lfInfo, ^_lfID, -1);
     if (Columns(_bac_lfInfo["Trees"]) <= _lfComponentID) {
         return None;
     }
@@ -44,7 +122,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     _bac_treeID = (_bac_lfInfo["Trees"])[_lfComponentID];
     _bac_filterID = (_bac_lfInfo["Datafilters"])[_lfComponentID];
 
-    /* 2; construct a temporary likelihood function with 
+    /* 2; construct a temporary likelihood function with
        the tree and the filter; and an AVL representation of the tree */
 
     if (doSample) {
@@ -61,7 +139,9 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         });
     }
 
+
     _bac_tree_avl = ( ^ _bac_treeID) ^ 0;
+
     GetString(_bacSequenceNames, ^ _bac_filterID, -1);
 
 
@@ -79,12 +159,12 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     GetDataInfo(_bacAncestralPatternMap, _bacAF);
 
     /* now start building a matrix of mapped states;
-       
-       each row in the matrix corresponds to a tree NODE in the same order as 
-       they are listed in the tree AVL 
-       
+
+       each row in the matrix corresponds to a tree NODE in the same order as
+       they are listed in the tree AVL
+
        each column correponds to a site
-       
+
        the entries are as follows:
     	   0.._bacFilterDimension-1 an unambigous character
     	   -1 a deletion/complete ambiguity
@@ -102,7 +182,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     _bacHandledResolutionsAmbig = {};
     _bacHandledResolutionsCodons = {};
 
-    /* map where sequences are in the filter vs where they are in the 
+    /* map where sequences are in the filter vs where they are in the
 	tree structure */
 
     _bacMapTreeNodeToDF = {};
@@ -136,6 +216,8 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         Columns(_bacCharHandles)
     }["_MATRIX_ELEMENT_COLUMN_"];
 
+
+    debug = 0;
     /* loop over branches (rows) */
     for (_bacBranchCounter = 1; _bacBranchCounter <= _bacBranchCount; _bacBranchCounter += 1) {
         _bacRowIndex = _bacMapTreeNodeToDF[_bacBranchCounter - 1];
@@ -216,14 +298,130 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
 }
 
 
+
+/**
+ * Prepare a substitution matrix for use by BGM
+ * @name ancestral.ComputeSubstitutionCounts
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
+
+ * @param {Function/None} substitution_filter - how to decide if the substitution should count
+          None -- different characters (except anything vs a gap) yields a 1
+          Function -- callback (state1, state2, ancestral_data) will return the value
+
+ * @param {Function/None} site_filter - how to decide which sites will be kept
+          None     -- at least one substitution
+          Function -- callback (substitution vector) will T/F
+
+ * @returns
+        {
+         "Branches" :  {Matrix Nx1} names of selected branches,
+         "Sites"    :  {Matrix Sx1} indices of sites passing filter,
+         "Counts"   :  {Matrix NxS} of substitution counts,
+        }
+
+        N = number of selected branches
+        S = number of sites passing filter
+
+ */
+ 
+ 
+
+/*******************************************/
+
+lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, substitution_filter, site_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+    coordinates = {{k-1, parent-1}};
+
+    for (k = 1; k < Abs(ancestral_data["TREE_AVL"]); k+=1) {
+        parent = ((ancestral_data["TREE_AVL"])[k])["Parent"];
+
+        if (parent) {
+            node_name = ((ancestral_data["TREE_AVL"])[k])["Name"];
+            if (None != branch_filter) {
+                if (Type (branch_filter) == "AssociativeList") {
+                    if (branch_filter [node_name] != TRUE) {
+                        continue;
+                    }
+                } else {
+                    if (Call (branch_filter, node_name) == FALSE) {
+                        continue;
+                    }
+                }
+            }
+            selected_branches + Eval (coordinates);
+            selected_branch_names + node_name;
+        }
+    }
+
+    branches = Abs (selected_branches);
+
+    sites  = (ancestral_data["DIMENSIONS"])["SITES"];
+    counts = {branches,sites};
+    retained_sites = {};
+
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        parent = (selected_branches[b])[1];
+        for (s = 0; s < sites; s += 1) {
+            own_state    = (ancestral_data["MATRIX"])[self][s];
+            parent_state = (ancestral_data["MATRIX"])[parent][s];
+            if (None == substitution_filter) {
+                counts[b][s] = (own_state != parent_state) && (own_state != -1) && (parent_state != -1);
+            } else {
+                counts[b][s] = Call (substitution_filter, own_state, parent_state, ancestral_data);
+            }
+        }
+    }
+
+    for (s = 0; s < sites; s += 1) {
+        site_counts = counts [-1][s];
+        if (None == site_filter) {
+            if (+site_counts == 0) {
+                continue;
+            }
+        } else {
+            if (Call(site_filter, site_counts) == FALSE) {
+                continue;
+            }
+        }
+        retained_sites + s;
+    }
+
+    retained_site_count = Abs (retained_sites);
+    retained_counts = {branches, retained_site_count};
+
+    for (s = 0; s < retained_site_count; s+=1) {
+        full_index = retained_sites [s];
+        for (b = 0; b < branches; b += 1) {
+            retained_counts[b][s] = counts[b][full_index];
+        }
+    }
+
+    counts = None;
+
+    return  {
+             "Branches"  : selected_branch_names,
+             "Sites"     : retained_sites,
+             "Counts"    : retained_counts
+            };
+
+}
+
 /*******************************************
 	count subsitutions at a given site;
-	returns an AVL with 
-	
+	returns an AVL with
+
 	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix 
+	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
 				 with counts of substitutions at the site
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -259,12 +457,12 @@ lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
 
 /*******************************************
 	count subsitutions at a given site;
-	along a subset of branches. 
-	
+	along a subset of branches.
+
 	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix 
+	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
 				 with counts of substitutions at the site
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -301,12 +499,12 @@ function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
 
 /*******************************************
 	returns the reconstructed root state for a given site;
-	returns an AVL with 
-	
+	returns an AVL with
+
 	["CHAR"]  - the root character
 	["INDEX"] - the index of the root character (consisent with the data filter representation),
 			  - this value will be negative if the root state is ambiguous (e.g. a gap)
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -331,7 +529,7 @@ function _rootState(_ancID, _siteID) {
 }
 
 /*******************************************
-	map all site substitutions or character states to a tree; 
+	map all site substitutions or character states to a tree;
 	'_scaled' != 0 will use branch lengths to draw the tree
 	returns PostScript code for the image
 
@@ -476,7 +674,7 @@ function _mapSubstitutionsBySiteAux(_ancID, _siteID, _scaled, mode) {
 }
 
 /*******************************************
-	map all site substitutions (or character states) to a tree; 
+	map all site substitutions (or character states) to a tree;
 	'_scaled' != 0 will use branch lengths to draw the tree
 	returns Newick code for the annotated tree
 
@@ -525,9 +723,9 @@ function _mapSubstitutionsBySiteNewickAux(_ancID, _siteID, _scaled, mode) {
 
 
 /*******************************************
-	
+
 	_filterDimensions returns a {{sites,branches}} matrix
-	
+
 *******************************************/
 
 function _filterDimensions(_ancID) {
@@ -545,8 +743,8 @@ function _filterDimensions(_ancID) {
 }
 
 /*******************************************
-	
-	_countSubstitutionsByBranchSite returns a 
+
+	_countSubstitutionsByBranchSite returns a
 	binary vector (one entry per branch) which
 	contains '1' if the branch has substitutions
 	defined by '_filter' (a CxC matrix)
@@ -590,7 +788,7 @@ function _countSubstitutionsByBranchSite(_ancID, _siteID, _filter) {
 
 
 /*******************************************
-	
+
 	_tabulateSubstitutionsAtSiteByBranch returns
 	a dictionary with keys = branch names and
 	values = counts of synonymous and non-synonymous

@@ -44,6 +44,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 
+
+
 #ifdef _MINGW32_MEGA_
   #include <Windows.h>
   HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
@@ -74,6 +76,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifdef _OPENMP
 #include "omp.h"
+#endif
+
+//#define _COMPARATIVE_LF_DEBUG_CHECK "/Users/sergei/Desktop/lf.sequence"
+//#define _COMPARATIVE_LF_DEBUG_DUMP "/Users/sergei/Desktop/lf.sequence"
+
+#if defined _COMPARATIVE_LF_DEBUG_CHECK
+    FILE* _comparative_lf_debug_matrix_content_file = doFileOpen (_COMPARATIVE_LF_DEBUG_CHECK, "r", true);
+    _String _comparative_lf_debug_matrix_content (_comparative_lf_debug_matrix_content_file);
+    _Matrix* _comparative_lf_debug_matrix = new _Matrix (_comparative_lf_debug_matrix_content, true);
+#else
+    #if defined _COMPARATIVE_LF_DEBUG_DUMP
+    _GrowingVector* _comparative_lf_debug_matrix = new _GrowingVector ();
+    #endif
 #endif
 
 _List   availableTemplateFiles,
@@ -562,6 +577,9 @@ int main (int argc, char* argv[])
 {
     mainArgCount = argc - 1;
 
+#ifdef _COMPARATIVE_LF_DEBUG_DUMP
+    FILE * comparative_lf_debug_matrix_content_file = doFileOpen (_COMPARATIVE_LF_DEBUG_DUMP, "w");
+#endif
 
 #ifdef  __HYPHYMPI__
     int            rank,
@@ -625,8 +643,7 @@ int main (int argc, char* argv[])
     libArgDir     = libDirectory;
     baseDirectory = baseDir;
     baseArgDir    = baseDirectory;
-
-  
+    
 #ifdef _OPENMP
     systemCPUCount = omp_get_max_threads();
 #endif
@@ -654,7 +671,9 @@ int main (int argc, char* argv[])
     }
 #endif
 
-    for (long i=1; i<argc; i++) {
+    _List positional_arguments;
+    
+    for (unsigned long i=1UL; i<argc; i++) {
         _String thisArg (argv[i]);
         if (thisArg.sData[0]=='-') {
             ProcessConfigStr (thisArg);
@@ -695,26 +714,27 @@ int main (int argc, char* argv[])
                 pthread_setconcurrency ((int)systemCPUCount+1);
             } else
 #endif
-                argFile = thisArg;
+        //argFile = thisArg;
+        positional_arguments && &thisArg;
     }
 
     GlobalStartup();
+    
+    if (positional_arguments.Count()) {
+        argFile = *(_String*) positional_arguments.GetItem(0UL);
+    }
   
-  /*_String exp2 ("1+x*t+y*t"),
-          exp1 ("y*t");
-  
-  _Formula f1 (exp1),
-           f2 (exp2);
-  
-  _MathObject *pl = ((_Polynomial*)f1.ConstructPolynomial ())->Add (f2.ConstructPolynomial());
-  
-  fprintf (stdout, "%s\n", _String ((_String*)pl->toStr()).getStr());*/
-           
+    
 
     _ExecutionList ex;
   
   
-  if (calculatorMode) {
+    if (calculatorMode) {
+        if (argFile.sLength) {
+          PushFilePath  (argFile);
+          ReadBatchFile (argFile,ex);
+          ex.Execute();
+        }
         printf ("\nHYPHY is running in calculator mode. Type 'exit' when you are finished.\n");
         while (ExpressionCalculator()) ;
         return 0;
@@ -787,6 +807,18 @@ int main (int argc, char* argv[])
                 ReadBatchFile (templ,ex);
             }
         } else {
+            
+            if (positional_arguments.Count () > 1) {
+                ex.stdinRedirectAux = new _List;
+                ex.stdinRedirect = new _AVLListXL (ex.stdinRedirectAux);
+                for (unsigned long i = 1UL; i < positional_arguments.Count (); i++) {
+                    char buf[256];
+                    snprintf(buf, 255, "%012ld", i);
+                    ex.stdinRedirect->Insert (new _String(buf), (long)positional_arguments.GetItem (i), true);
+                }
+            }
+
+            
 #ifndef __MINGW32__
             if (argFile.sData[0] != '/') {
                 argFile       = baseDirectory & argFile;
@@ -797,9 +829,12 @@ int main (int argc, char* argv[])
             }
 #endif
             PushFilePath  (argFile);
+            
+            // if this is a nexus file, it will be executed here
             ReadBatchFile (argFile,ex);
         }
 
+        
         ex.Execute();
 
         if (usePostProcessors && (!updateMode)) {
@@ -847,8 +882,15 @@ int main (int argc, char* argv[])
     }
 #endif
   
-    DeleteObject (new _String ("AAA"));
-
+#if defined _COMPARATIVE_LF_DEBUG_CHECK
+    fclose (_comparative_lf_debug_matrix_content_file);
+#endif
+#if defined _COMPARATIVE_LF_DEBUG_DUMP
+    _comparative_lf_debug_matrix->Trim();
+    _comparative_lf_debug_matrix->toFileStr(comparative_lf_debug_matrix_content_file);
+    fclose (comparative_lf_debug_matrix_content_file);
+#endif
+    
     PurgeAll                    (true);
     GlobalShutdown              ();
 

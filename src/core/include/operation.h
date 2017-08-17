@@ -70,7 +70,7 @@ public:
     // number of operands
     _Operation  (const long,const long);
 
-    _Operation  (bool, _String&, bool isG = false, _VariableContainer*  = nil, bool take_a_reference = false);
+    _Operation  (bool, _String&, bool isG = false, _VariableContainer const*  = nil, bool take_a_reference = false);
     // store a variable or a constant
     _Operation  (_PMathObj);
     // store a non-numeric constant
@@ -79,7 +79,7 @@ public:
 
     virtual   BaseObj*      makeDynamic         (void);
 
-    bool            Execute             (_Stack&, _VariableContainer* = nil, _String* errMsg = nil); //execute this operation
+    bool            Execute             (_Stack&, _VariableContainer const* = nil, _String* errMsg = nil); //execute this operation
     // see the commend for _Formula::ExecuteFormula for the second argument
     virtual   void          StackDepth          (long&);
 
@@ -89,7 +89,7 @@ public:
     virtual   void          Initialize          (bool = false);
     virtual   void          Duplicate           (BaseRef);
     _String&    GetCode             (void) {
-        return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):empty;
+        return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):emptyString;
     }
     long&       TheCode             (void) {
         return opCode;
@@ -146,6 +146,8 @@ public:
     long            PrecedenceLevel     (void);
 
     bool            CanResultsBeCached (_Operation *, bool exp_only = false);
+  
+    bool            IsConstantOfType   (const long type) const;
 
 
     virtual bool            EqualOp             (_Operation*);
