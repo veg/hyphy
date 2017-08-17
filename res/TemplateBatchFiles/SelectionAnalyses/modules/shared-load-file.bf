@@ -31,9 +31,10 @@ function load_file (prefix) {
     settings = None;
 
     if (Type (prefix) == "AssociativeList") {
-        settings = prefix["settings"];
-        prefix = prefix ["prefix"];
+        settings = prefix[utility.getGlobalValue("terms.settings")];
+        prefix = prefix [utility.getGlobalValue("terms.prefix")];
     }
+    
 
     codon_data_info = alignments.PromptForGeneticCodeAndAlignment(prefix+".codon_data", prefix+".codon_filter");
 
@@ -128,8 +129,9 @@ function load_file (prefix) {
 
     io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + codon_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
 
-    if (utility.Has (settings, "branch-selector", "String")) {
-        selected_branches =  Call (settings["branch-selector"], partitions_and_trees);
+
+    if (utility.Has (settings, utility.getGlobalValue("terms.settings.branch_selector"), "String")) {
+        selected_branches =  Call (settings[utility.getGlobalValue("terms.settings.branch_selector")], partitions_and_trees);
     } else {
         selected_branches = selection.io.defineBranchSets(partitions_and_trees);
     }
@@ -167,7 +169,7 @@ function load_file (prefix) {
 
      selection.io.json_store_key_value_pair (json,
                                              utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
-                                             utility.Map (partitions_and_trees, "_pt_", '(_pt_["tree"])["string_with_lengths"]')
+                                             utility.Map (partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick_with_lengths]')
                                              );
 
 
@@ -176,7 +178,6 @@ function load_file (prefix) {
     // Place in own attribute called `tested`
      selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
 
-    /***************************** SJS DONE ************************/
 
      filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, "`prefix`.codon_data" , "`prefix`.filter.", codon_data_info);
     /** defines codon filters for each partition, and returns the (codon) sites mapped to each filter
@@ -201,8 +202,8 @@ function load_file (prefix) {
 
      selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.partitions"),
                                                          filter_specification);
-     trees = utility.Map (partitions_and_trees, "_partition_", '_partition_["tree"]');
-     filter_names = utility.Map (filter_specification, "_partition_", '_partition_["name"]');
+     trees = utility.Map (partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
+     filter_names = utility.Map (filter_specification, "_partition_", '_partition_[terms.data.name]');
 }
 
 
@@ -265,7 +266,7 @@ function doPartitionedMG (prefix, keep_lf) {
 
 
     partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
-        utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"), // TODO
+        utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"), 
         utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,
         utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
         utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
