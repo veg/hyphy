@@ -99,7 +99,7 @@ busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, 
 }, busted.partitioned_mg_results);
 
 
-io.ReportProgressMessageMD("BUSTED", "codon-refit", "* " + selection.io.report_fit (busted.final_partitioned_mg_results, 9, busted.codon_data_info[terms.data.sample_size]));
+io.ReportProgressMessageMD("BUSTED", "codon-refit", "* " + selection.io.report_fit (busted.final_partitioned_mg_results, 0, busted.codon_data_info[terms.data.sample_size]));
 busted.global_dnds = selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 
 utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BUSTED", "codon-refit", "* " + _value_["description"] + " = " + Format (_value_[terms.json.MLE],8,4));');

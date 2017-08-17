@@ -153,7 +153,6 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                 assert(0, "TBA in models.codon.MG_REV.set_branch_length");
             }
         } else {
-
             models.codon.MG_REV.set_branch_length.lp = 0;
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                 Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);

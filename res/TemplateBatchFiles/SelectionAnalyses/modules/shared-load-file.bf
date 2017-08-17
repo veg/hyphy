@@ -164,6 +164,7 @@ function load_file (prefix) {
     (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.partition_count")] = partition_count;
 
     // The trees should go into input as well and they should be w/ their branch lengths
+
      selection.io.json_store_key_value_pair (json,
                                              utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
                                              utility.Map (partitions_and_trees, "_pt_", '(_pt_["tree"])["string_with_lengths"]')
@@ -230,7 +231,7 @@ function doGTR (prefix) {
                                          trees,
                                          gtr_results);
 
-    io.ReportProgressMessageMD (prefix, "nuc-fit", "* " + selection.io.report_fit (gtr_results, 3, 3*(^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
+    io.ReportProgressMessageMD (prefix, "nuc-fit", "* " + selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
 
 }
 
@@ -271,7 +272,7 @@ function doPartitionedMG (prefix, keep_lf) {
     }, gtr_results);
 
 
-    io.ReportProgressMessageMD("`prefix`", "codon-fit", "* " + selection.io.report_fit (partitioned_mg_results, 9, (^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
+    io.ReportProgressMessageMD("`prefix`", "codon-fit", "* " + selection.io.report_fit (partitioned_mg_results, 0, (^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
     global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.parameters.omega_ratio"));
     utility.ForEach (global_dnds, "_value_", 'io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_[utility.getGlobalValue("terms.description")] + " = " + Format (_value_[utility.getGlobalValue("terms.fit.MLE")],8,4));');
 

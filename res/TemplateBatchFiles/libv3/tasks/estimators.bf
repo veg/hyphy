@@ -488,14 +488,15 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
     }
 
-    //Export (lf,likelihoodFunction);
-    //console.log (lf);
 
     //assert (0);
 
     //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
 
    	Optimize (mles, likelihoodFunction);
+
+    //Export (lf,likelihoodFunction);
+    //console.log (lf);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
@@ -608,7 +609,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
 
 
     results[utility.getGlobalValue("terms.fit.log_likelihood")] = mles[1][0];
-    results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + 3 + df;
+    results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + (user_model [utility.getGlobalValue("terms.parameters")]) [utility.getGlobalValue("terms.model.empirical")] + df;
 
 
     if (run_options[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
@@ -821,11 +822,6 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
         df += estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_id_to_object, initial_values, option[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
-
-
-    //Export (lfs, likelihoodFunction);
-    //console.log (lfs);
-
     Optimize(mles, likelihoodFunction);
 
 
@@ -837,7 +833,8 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
 
     results[utility.getGlobalValue("terms.fit.log_likelihood")] = mles[1][0];
-    results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + 9 + df; /* 9 frequency parameters */
+    results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + (mg_rev [utility.getGlobalValue("terms.parameters")]) [utility.getGlobalValue("terms.model.empirical")] + df;
+
 
     if (option[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
         results[utility.getGlobalValue("terms.likelihood_function")] = & likelihoodFunction;

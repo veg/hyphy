@@ -368,6 +368,7 @@ function parameters.SetConstraint(id, value, global_tag) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             ExecuteCommands("`global_tag` `id` := " + value);
+            //console.log ("`global_tag` `id` := " + value);
         }
     } else {
         if (Type(id) == "AssociativeList" && Type(value) == "AssociativeList") {
