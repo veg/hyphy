@@ -82,6 +82,7 @@ LoadFunctionLibrary("TreeTools");
  * @returns {String} sanitized string
  */
 lfunction trees.GetTreeString._sanitize(string) {
+
     if (utility.GetEnvVariable("_DO_TREE_REBALANCE_")) {
         string = RerootTree(string, 0);
     }
@@ -111,6 +112,7 @@ lfunction trees.GetTreeString._sanitize(string) {
  * @returns {String} a newick tree string
  */
 lfunction trees.GetTreeString(look_for_newick_tree) {
+
 
     UseModel(USE_NO_MODEL);
 
@@ -146,7 +148,8 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
                     return 1;
                 }
 
-                nftm = utility.GetEnvVariable("NEXUS_FILE_TREE_MATRIX")
+                nftm = utility.GetEnvVariable("NEXUS_FILE_TREE_MATRIX");
+
 
                 if (Rows(nftm) > 1) {
                     ChoiceList(treeChoice, "Select a tree", 1, SKIP_NONE, nftm);
@@ -284,6 +287,7 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
 
     tree_matrix = utility.GetEnvVariable("NEXUS_FILE_TREE_MATRIX");
 
+
     if (Type(tree_matrix) == "Matrix") {
         io.CheckAssertion("Rows(`&tree_matrix`) >= partition_count", "The number of trees in the NEXUS block cannot be smaller than the number of partitions in the file");
         for (i = 0; i < partition_count; i += 1) {
@@ -369,7 +373,7 @@ function trees.ExtractTreeInfo(tree_string) {
     utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", 1);
     T.str = "" + T;
     utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", None);
-    
+
 
     return {
         terms.trees.newick: Format(T, 1, 0),

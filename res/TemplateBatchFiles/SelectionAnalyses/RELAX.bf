@@ -50,7 +50,7 @@ relax.MG94 = "MG94xREV with separate rates for branch sets";
 terms.relax.k          = "relaxation or intensification parameter";
 terms.relax.k_range    = {
         terms.lower_bound: "0",
-        terms.upper_bound: "10"
+        terms.upper_bound: "100"
     };
 
 relax.p_threshold = 0.05;
@@ -259,8 +259,7 @@ relax.reference.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS
         relax.filter_names,
         None);
 
-relax.bound_weights = models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.reference.bsrel_model}, terms.mixture.mixture_aux_weight + ".+");
-
+relax.bound_weights = models.BindGlobalParameters ({"0" : relax.reference.bsrel_model, "1" : relax.test.bsrel_model}, terms.mixture.mixture_aux_weight + ".+");
 models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.reference.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 
 parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);

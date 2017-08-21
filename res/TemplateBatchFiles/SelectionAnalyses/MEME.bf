@@ -353,7 +353,6 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
 
     meme.site_results[meme.partition_index] = meme.partition_matrix;
 
-
 }
 
 meme.json [terms.json.MLE ] = {terms.json.headers   : meme.table_headers,
