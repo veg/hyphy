@@ -59,7 +59,7 @@ function estimators.copyGlobals2(key2, value2) {
     };
 
     if (parameters.IsIndependent(value2) != TRUE) {
-        ((estimators.ExtractMLEs.results[terms.global])[key2])[terms.constraint] = parameters.getConstraint(value2);
+        ((estimators.ExtractMLEs.results[terms.global])[key2])[terms.constraint] = parameters.GetConstraint(value2);
     }
 }
 
@@ -144,7 +144,7 @@ function estimators.ExtractBranchInformation.copy_local(key, value) {
     };
 
     if (parameters.IsIndependent(estimators.ExtractBranchInformation.copy_local.var_name) != TRUE) {
-        (estimators.extractBranchLength.result[key])[terms.constraint] = parameters.getConstraint(estimators.ExtractBranchInformation.copy_local.var_name);
+        (estimators.extractBranchLength.result[key])[terms.constraint] = parameters.GetConstraint(estimators.ExtractBranchInformation.copy_local.var_name);
     }
 
 }
@@ -287,7 +287,7 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
 }
 
 /**
- * @name estimators.ApplyExistingEstimates
+ * @name estimators.TraverseLocalParameters
  * @param {String} likelihood_function_id
  * @param {Dictionary} model_descriptions
  * @param {String} callback (tree, node, parameter_list)
@@ -308,6 +308,7 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
     }
     return result;
 }
+
 
 /**
  * @name estimators.ApplyExistingEstimates
@@ -821,6 +822,9 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df += estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_id_to_object, initial_values, option[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
+
+    //Export (lfe, likelihoodFunction);
+    //console.log (lfe);
 
     Optimize(mles, likelihoodFunction);
 
