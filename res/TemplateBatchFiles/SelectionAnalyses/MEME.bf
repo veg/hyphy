@@ -154,7 +154,7 @@ estimators.fixSubsetOfEstimates(meme.final_partitioned_mg_results, meme.final_pa
 
 selection.io.json_store_lf(
     meme.json,
-    "Global MG94xREV",
+    terms.json.global_mg94xrev,
     meme.final_partitioned_mg_results[terms.fit.log_likelihood],
     meme.final_partitioned_mg_results[terms.parameters],
     meme.sample_size,
@@ -162,7 +162,7 @@ selection.io.json_store_lf(
 );
 
 utility.ForEachPair (meme.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(meme.json, "Global MG94xREV model", terms.branch_length, 0,
+    'selection.io.json_store_branch_attribute(meme.json, utility.getGlobalValue("terms.json.global_mg94xrev"), terms.branch_length, 0,
                                              _key_,
                                              selection.io.extract_branch_info((meme.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 
