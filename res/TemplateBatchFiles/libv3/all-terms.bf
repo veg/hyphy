@@ -73,6 +73,11 @@ namespace terms{
         upper_bound: "1e26"
     };
 
+    range_any = {
+        lower_bound: "0",
+        upper_bound: "1e26"
+    };
+
 
 
 
@@ -364,10 +369,10 @@ namespace terms{
     prefix = "prefix";
     settings = "settings";
     namespace settings {
-        branch_selector = "branch-selector";  
+        branch_selector = "branch-selector";
     }
-    
-    
+
+
     /* Terms accompanying rate_variation.bf rate variation */
     //Note that rate_variation itself is a **model** term
     namespace rate_variation {

@@ -287,7 +287,6 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
 
     tree_matrix = utility.GetEnvVariable("NEXUS_FILE_TREE_MATRIX");
 
-
     if (Type(tree_matrix) == "Matrix") {
         io.CheckAssertion("Rows(`&tree_matrix`) >= partition_count", "The number of trees in the NEXUS block cannot be smaller than the number of partitions in the file");
         for (i = 0; i < partition_count; i += 1) {

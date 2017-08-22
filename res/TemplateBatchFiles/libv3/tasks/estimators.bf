@@ -19,6 +19,24 @@ lfunction estimators.GetGlobalMLE(results, tag) {
 }
 
 /**
+ * @name estimators.GetBranchEstimates
+ * @param {Dictionary} results
+ * @param {Number} partiton_index
+ * @param {String} node_name
+ * @returns None
+ */
+lfunction estimators.GetBranchEstimates (results, partition_index, node_name) {
+
+    estimate = ((results[ utility.getGlobalValue("terms.branch_length")])[partition_index])[node_name];
+
+    if (Type(estimate) == "AssociativeList") {
+        return estimate;
+    }
+    return None;
+}
+
+
+/**
  * Extract global scope parameter estimates that match a regular expression
  * @name estimators.GetGlobalMLE_RegExp
  * @param {Dictionary} results

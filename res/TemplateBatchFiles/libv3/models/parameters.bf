@@ -169,6 +169,22 @@ function parameters.SetValue(id, value) {
     Eval("`id` = " + value);
 }
 
+/**
+ * Sets value of passed parameter id
+ * @name parameters.SetValues
+ * @param {dict} desc -> {id : id, mle : value}
+ * @returns nothing
+ */
+
+
+function parameters.SetValues(set) {
+    if (Type (set) == "AssociativeList") {
+        utility.ForEachPair (set, "_key_", "_value_",
+        '
+            parameters.SetValue (_value_[terms.id], _value_[terms.fit.MLE]);
+        ');
+    }
+}
 
 /**
  * Ensures that the mean of parameters in a set is maintained
@@ -316,6 +332,7 @@ function parameters.SetRange(id, ranges) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {
+                //console.log (id + "=>" + ranges);
                 if (Abs(ranges[terms.lower_bound])) {
                     ExecuteCommands("`id` :> " + ranges[terms.lower_bound]);
                 }

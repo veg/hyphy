@@ -724,7 +724,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
 
 //_______________________________________________________________________________________
 
-void     _LikelihoodFunction::Rebuild (void) {
+void     _LikelihoodFunction::Rebuild (bool rescan_parameters) {
   computationalResults.Clear();
   hasBeenSetUp     = 0;
   hasBeenOptimized = false;
@@ -743,7 +743,11 @@ void     _LikelihoodFunction::Rebuild (void) {
   }
   AllocateTemplateCaches();
   Setup(false);
+  if (rescan_parameters) {
+    RescanAllVariables();
+  }
 }
+
 //_______________________________________________________________________________________
 
 void     _LikelihoodFunction::Clear (void)
