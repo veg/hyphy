@@ -157,11 +157,8 @@ function load_file (prefix) {
         }
         */
 
-    /***************************** SJS ************************/
 
-    // Input attribute to JSON
-
-
+    /** Input attribute to JSON **/
     json[utility.getGlobalValue("terms.json.input")] = {};
     (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.file")] =  codon_data_info[utility.getGlobalValue("terms.data.file")];
     (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sequences")] = codon_data_info[utility.getGlobalValue("terms.data.sequences")];
@@ -170,9 +167,7 @@ function load_file (prefix) {
 
     // The trees should go into input as well and they should be w/ their branch lengths but ONLY if they have any.
     t = (partitions_and_trees["0"])[utility.getGlobalValue("terms.data.tree")];
-    abs_branch_lengths = Abs(t[utility.getGlobalValue("terms.branch_length")]);
-    console.log(abs_branch_lengths);
-    
+    abs_branch_lengths = Abs(t[utility.getGlobalValue("terms.branch_length")]);  
     
     if (abs_branch_lengths == 0){
         selection.io.json_store_key_value_pair (json,
