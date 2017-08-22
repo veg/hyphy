@@ -5,6 +5,27 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
 LoadFunctionLibrary ("../convenience/regexp.bf");
 
 /** @module model */
+/**
+ * @name model.ApplyModelToTree
+ * @param id
+ * @param tree
+ * @param model_list
+ * @param rules
+ */
+lfunction model.GetParameters_RegExp(model, re) {
+
+    names = utility.Filter (utility.Keys ((model[utility.getGlobalValue ("terms.parameters")])[ utility.getGlobalValue("terms.global")]),
+                            "_parameter_description_",
+                            "None != regexp.Find (_parameter_description_, `&re`)");
+
+    result = {};
+    count  = utility.Array1D (names);
+    for (k = 0; k < count; k += 1) {
+        result [names[k]] = ((model[utility.getGlobalValue ("terms.parameters")])[ utility.getGlobalValue("terms.global")])[names[k]];
+    }
+
+    return result;
+}
 
 /**
  * @name model.ApplyModelToTree

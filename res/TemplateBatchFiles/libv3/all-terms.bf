@@ -254,6 +254,7 @@ namespace terms{
         convergence_failures  = "convergence failures";
         omega_ratio           = "omega";
         proportion            = "proportion";
+        positive              = "positive test results";
     }
 
 

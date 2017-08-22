@@ -36,8 +36,6 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 
 
-
-
 /*------------------------------------------------------------------------------*/
 
 absrel.json    = {
@@ -49,6 +47,7 @@ absrel.json    = {
 
 absrel.max_rate_classes  = 5;
 absrel.MG94 = "MG94xREV with separate dN/dS for each branch";
+
 
 absrel.p_threshold = 0.05;
 
@@ -83,7 +82,6 @@ utility.ForEachPair (absrel.selected_branches, "_partition_", "_selection_",
      io.ReportProgressMessageMD('RELAX',  'selector', '* Selected ' + Abs(_selection_) + ' branches for testing: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 
-
 /*
 absrel.srv = io.SelectAnOption ({
                                         {"Yes", "Both synonymous and non-synonymous rates vary in a branch-site fashion (~5x more computationally expensive)"}
@@ -100,6 +98,8 @@ namespace absrel {
 
 selection.io.stopTimer (absrel.json [terms.json.timers], "Preliminary model fitting");
 selection.io.startTimer (absrel.json [terms.json.timers], "Baseline model fitting", 2);
+
+estimators.fixSubsetOfEstimates(absrel.gtr_results, absrel.gtr_results[terms.global]);
 
 io.ReportProgressMessageMD ("absrel", "base", "Fitting the baseline model with a single dN/dS class per branch, and no site-to-site variation. ");
 
@@ -122,7 +122,7 @@ absrel.baseline.omegas = selection.io.extract_branch_info((absrel.base.results[t
 
 absrel.omega_stats = math.GatherDescriptiveStats (utility.Map (utility.Values (absrel.baseline.omegas), "_value_", "0+_value_"));
 
-io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.omega_ratio` distribution has mean " + Format (absrel.omega_stats[terms.math.mean], 5,2) + ", median " +
+io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.omega_ratio` distribution has median " +
                                              Format (absrel.omega_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (absrel.omega_stats[terms.math._2.5], 5,2) + " - " + Format (absrel.omega_stats[terms.math._97.5], 5,2));
 
 
@@ -176,8 +176,18 @@ absrel.tree_id = absrel.get_tree_name (absrel.likelihood_function_id);
 absrel.model_id = absrel.get_model_id (absrel.likelihood_function_id);
 absrel.MG94.model = (absrel.base.results[terms.model])[(utility.Keys (absrel.base.results[terms.model]))[0]];
 
+absrel.temp = model.GetParameters_RegExp (absrel.MG94.model, terms.nucleotideRate("[ACGT]","[ACGT]"));
+absrel.temp - terms.nucleotideRate("A","G");
+absrel.full_model_parameters = {};
+utility.AddToSet (absrel.full_model_parameters, absrel.temp);
+
 selection.io.startTimer (absrel.json [terms.json.timers], "Complexity analysis", 3);
 
+absrel.model_object_map = {
+    absrel.MG94.model [terms.id] : absrel.MG94.model
+};
+
+absrel.model_defintions [1] = absrel.MG94.model;
 for (absrel.i = 2; absrel.i <= absrel.max_rate_classes; absrel.i += 1) {
     absrel.model_defintions [absrel.i] = model.generic.DefineMixtureModel("absrel.BS_REL.ModelDescription",
             "absrel.model." + absrel.i, {
@@ -188,6 +198,7 @@ for (absrel.i = 2; absrel.i <= absrel.max_rate_classes; absrel.i += 1) {
             absrel.filter_names,
             None);
 
+    absrel.model_object_map [(absrel.model_defintions [absrel.i])[terms.id]] = absrel.model_defintions [absrel.i];
     models.BindGlobalParameters ({"1" : absrel.model_defintions [absrel.i], "0" : absrel.MG94.model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 }
 
@@ -196,19 +207,36 @@ io.ReportProgressMessageMD ("absrel", "complexity", "Determining the optimal num
 
 absrel.current_parameter_count    = absrel.base.results[terms.parameters];
 absrel.current_best_score         = math.GetIC (absrel.base.results[terms.fit.log_likelihood], absrel.current_parameter_count, absrel.codon_data_info[terms.data.sample_size]);
-absrel.complexity.by_branch       = {};
+absrel.branch.complexity       = {};
 
 utility.ToggleEnvVariable ("USE_LAST_RESULTS", TRUE);
+
+absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+            "0": 35,
+            "1": 10,
+            "2": 10,
+            "3": 20,
+            "4": 15,
+            "5": 15,
+            "6": 15
+            },
+            terms.number_precision : 2};
+
+fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. dN/dS", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
+absrel.complexity_table.settings [terms.table_options.header] = FALSE;
 
 for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch_id += 1) {
 
     absrel.current_branch           = absrel.names_sorted_by_length[absrel.branch_id];
     absrel.current_branch_estimates = absrel.GetBranchEstimates (absrel.MG94.model, absrel.tree_id, absrel.current_branch);
-    io.ReportProgressMessageMD ("absrel", "complexity", "* Examining branch `absrel.current_branch` (length = " + Format (absrel.baseline.branch_lengths[absrel.current_branch], 8, 6) + ")");
+    absrel.report.row = {};
+    absrel.report.row [0] =  absrel.current_branch;
+    absrel.report.row [1] =  absrel.baseline.branch_lengths[absrel.current_branch];
 
     absrel.current_rate_count = 2;
 
     while (TRUE) {
+        absrel.report.row [2] =  Format(absrel.current_rate_count,0,0);
         model.ApplyToBranch ((absrel.model_defintions [absrel.current_rate_count])[terms.id], absrel.tree_id, absrel.current_branch);
         parameters.SetValues (absrel.current_branch_estimates);
 
@@ -216,26 +244,34 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
 
         absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
 
-        //VERBOSITY_LEVEL = 10;
-
         Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id);
         absrel.current_test_score = math.GetIC (absrel.stepup.mles[1][0], absrel.current_parameter_count + 2, absrel.codon_data_info[terms.data.sample_size]);
-        absrel.delta = absrel.current_best_score-absrel.current_test_score;
-        if (absrel.delta > 0) {
-            io.ReportProgressMessageMD ("absrel", "complexity", "    * A " + absrel.current_rate_count + "-rate model yielded Log(L) =  " + Format(absrel.stepup.mles[1][0],8,2) + ", which is a " + Format (absrel.current_best_score-absrel.current_test_score,8,2) + " point _improvement_ in AIC-c");
+
+        absrel.provisional_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
+        absrel.dn_ds.distro = absrel.GetRateDistribution (absrel.provisional_estimates);
+        if (absrel.dn_ds.distro[absrel.current_rate_count-1][0] < 1000) {
+            absrel.report.row [3] = Format (absrel.dn_ds.distro[absrel.current_rate_count-1][0],5,2) + " (" + Format (absrel.dn_ds.distro[absrel.current_rate_count-1][1]*100,5,2) + "%)";
         } else {
-            io.ReportProgressMessageMD ("absrel", "complexity", "    * A " + absrel.current_rate_count + "-rate model yielded Log(L) =  " + Format(absrel.stepup.mles[1][0],8,2) + ", which is a " + Format (absrel.current_best_score-absrel.current_test_score,8,2) + " point _regression_  in AIC-c");
+             absrel.report.row [3] = ">1000 (" + Format (absrel.dn_ds.distro[absrel.current_rate_count-1][1]*100,5,2) + "%)";
         }
+        absrel.report.row [4] = absrel.stepup.mles[1][0];
+        absrel.report.row [5] = absrel.current_test_score;
+
 
         if (absrel.current_test_score < absrel.current_best_score) {
-            absrel.current_branch_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
+            absrel.current_branch_estimates = absrel.provisional_estimates;
             absrel.current_best_score = absrel.current_test_score;
+            absrel.report.row [6] = absrel.current_test_score;
+            fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.complexity_table.settings));
+
             if (absrel.current_rate_count >= absrel.max_rate_classes) {
                 break;
             }
             absrel.current_rate_count      += 1;
             absrel.current_parameter_count += 2;
         } else {
+            absrel.report.row [6] = absrel.current_best_score;
+            fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.complexity_table.settings));
             break;
         }
     }
@@ -251,19 +287,158 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         parameters.SetValues (absrel.current_branch_estimates);
     }
 
-    io.ReportProgressMessageMD ("absrel", "complexity", "    * **" + absrel.current_rate_count + "** rate classes have been selected");
+    utility.AddToSet (absrel.full_model_parameters,
+                     utility.Map (absrel.current_branch_estimates, "_parameter_", "_parameter_[terms.id]"));
 
-    absrel.complexity.by_branch [absrel.current_branch] = absrel.current_rate_count;
+
+
+    absrel.branch.complexity [absrel.current_branch] = absrel.current_rate_count;
     absrel.constrain_everything (absrel.likelihood_function_id);
 
 }
 
-console.log (absrel.complexity.by_branch);
+selection.io.json_store_branch_attribute(absrel.json, "Rate classes", terms.json.branch_label, 2,
+                                                      0,
+                                                      absrel.branch.complexity);
+
+
+io.ReportProgressMessageMD ("absrel", "complexity-summary", "Rate class analyses summary");
+utility.ForEachPair (utility.BinByValue (absrel.branch.complexity), "_rates_", "_branches_",
+    "io.ReportProgressMessageMD('absrel',  'complexity-summary', '*  ' + Abs(_branches_) + ' branches with **' + _rates_ + '** rate classes')");
 
 selection.io.stopTimer (absrel.json [terms.json.timers], "Complexity analysis");
 
 
+selection.io.startTimer (absrel.json [terms.json.timers], "Full model fit", 4);
+io.ReportProgressMessageMD ("absrel", "Full model", "Improving parameter estimates of the adaptive rate class model");
+
+parameters.RemoveConstraint (utility.Keys (absrel.full_model_parameters));
+absrel.full_model.fit = estimators.FitExistingLF (absrel.likelihood_function_id,absrel.model_object_map);
+
+absrel.full_model.mle_set = estimators.TakeLFStateSnapshot (absrel.likelihood_function_id);
+
+io.ReportProgressMessageMD("absrel", "Full model", "* " + selection.io.report_fit (absrel.full_model.fit, 9, absrel.codon_data_info[terms.data.sample_size]));
+
+selection.io.stopTimer (absrel.json [terms.json.timers], "Full model fit");
+
+selection.io.json_store_branch_attribute(absrel.json, "Full model", terms.branch_length, 2,
+                                             0,
+                                             selection.io.extract_branch_info((absrel.full_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
+
+absrel.branch.rate_distributions = selection.io.extract_branch_info((absrel.full_model.fit[terms.branch_length])[0], "absrel.GetRateDistribution");
+
+
+selection.io.json_store_branch_attribute(absrel.json, "dN/dS distribution", terms.json.branch_label, 3,
+                                                      0,
+                                                      absrel.branch.rate_distributions);
+
+
+selection.io.json_store_lf_spool (absrel.codon_data_info [terms.json.json], absrel.json,
+                            "Full Model",
+                            absrel.full_model.fit[terms.fit.log_likelihood],
+                            absrel.full_model.fit[terms.parameters] + 9 ,
+                            absrel.codon_data_info[terms.data.sample_size],
+                            {});
+
+
+/***
+    Testing individual branches for selection
+***/
+
+selection.io.startTimer (absrel.json [terms.json.timers], "Testing for selection", 5);
+io.ReportProgressMessageMD ("absrel", "testing", "Testing selected branches for selection");
+
+absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+            "0": 35,
+            "1": 10,
+            "2": 20,
+            "3": 20,
+            "4": 20,
+            },
+            terms.number_precision : 2};
+
+fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+
+absrel.testing_table.settings [terms.table_options.header] = FALSE;
+absrel.branch.p_values                                        = {};
+absrel.branch.lrt                                             = {};
+
+for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch_id += 1) {
+    absrel.current_branch           = absrel.names_sorted_by_length[absrel.branch_id];
+
+    absrel.report.row = {};
+
+    absrel.report.row [0] =  absrel.current_branch;
+    absrel.report.row [1] =  Format (absrel.branch.complexity[absrel.current_branch], 3, 0);
+    absrel.dn_ds.distro   = absrel.branch.rate_distributions [absrel.current_branch];
+
+    if (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][0] < 1000) {
+        absrel.report.row [2] = Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][0],5,2) + " (" + Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][1]*100,5,2) + "%)";
+    } else {
+        absrel.report.row [2] = ">1000 (" + Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][1]*100,5,2) + "%)";
+    }
+
+    if ((absrel.selected_branches[0])[absrel.current_branch] == terms.tree_attributes.test) {
+
+        if (absrel.dn_ds.distro [absrel.branch.complexity[absrel.current_branch]-1][0] > 1) {
+            absrel.branch.ConstrainForTesting (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
+            Optimize (absrel.null.mles, ^absrel.likelihood_function_id);
+            absrel.branch.test = absrel.ComputeLRT ( absrel.full_model.fit[terms.fit.log_likelihood], absrel.null.mles[1][0]);
+            estimators.RestoreLFStateFromSnapshot (absrel.likelihood_function_id, absrel.full_model.mle_set);
+        } else {
+            absrel.branch.test = {terms.LRT : 0, terms.p_value : 1};
+        }
+        absrel.branch.p_values [ absrel.current_branch ] = absrel.branch.test [terms.p_value];
+        absrel.branch.lrt       [absrel.current_branch] = absrel.branch.test [terms.LRT];
+        absrel.report.row [3] = absrel.branch.test [terms.LRT];
+        absrel.report.row [4] = Format (absrel.branch.test [terms.p_value], 8, 5);
+    } else {
+        absrel.branch.lrt [absrel.current_branch] = None;
+        absrel.branch.p_values [absrel.current_branch] = None;
+        absrel.report.row [3] = "Not selected";
+        absrel.report.row [4] = "for testing";
+    }
+
+    fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.testing_table.settings));
+}
+
+selection.io.json_store_branch_attribute(absrel.json, "LRT", terms.json.branch_label, 4,
+                                                      0,
+                                                       absrel.branch.lrt);
+
+selection.io.json_store_branch_attribute(absrel.json, "Uncorrected p-value", terms.json.branch_label, 5,
+                                                      0,
+                                                       absrel.branch.p_values);
+
+absrel.branch.p_values.corrected = math.HolmBonferroniCorrection (absrel.branch.p_values);
+
+selection.io.json_store_branch_attribute (absrel.json, "Corrected p-value", terms.json.branch_label, 6,
+                                                       0,
+                                                       absrel.branch.p_values.corrected);
+
+absrel.test.all      = utility.Filter (absrel.branch.p_values.corrected, "_value_", "None!=_value_");
+absrel.test.positive = utility.Filter (absrel.test.all, "_value_", "_value_<=absrel.p_threshold");
+
+console.log ("----\n### Adaptive branch site random effects likelihood test ");
+console.log ( "Likelihood ratio test for episodic diversifying positive selection at Holm-Bonferroni corrected _p = " + Format (absrel.p_threshold, 8, 4) + "_ found **" + Abs(absrel.test.positive) + "** branches under selection among **"+ Abs (absrel.test.all) + "** tested.\n");
+utility.ForEachPair (absrel.test.positive, "_name_", "_p_",
+            '
+            console.log ("* " + _name_ + ", p-value = " + Format (_p_, 8,5));
+            ');
+
+absrel.json [terms.json.test_results] = {
+                                             terms.p_value : absrel.p_threshold,
+                                             terms.tested  : Abs (absrel.test.all),
+                                             terms.positive : Abs (absrel.test.positive)
+                                         };
+
+/***
+    Cleanup
+***/
+
+selection.io.stopTimer (absrel.json [terms.json.timers], "Overall");
 utility.ToggleEnvVariable ("USE_LAST_RESULTS", None);
+io.SpoolJSON (absrel.json, absrel.codon_data_info [terms.json.json]);
 
 
 return absrel.json;
@@ -271,6 +446,13 @@ return absrel.json;
 //------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------
+
+lfunction absrel.ComputeLRT (ha, h0) {
+    lrt  = 2*(ha-h0);
+    return {^"terms.LRT" : lrt,
+            ^"terms.p_value" : (1-0.4*CChi2 (lrt,1)-0.6* CChi2 (lrt,2))*.5};
+}
+
 
 lfunction absrel.GetBranchEstimates (model, tree_id, branch_id) {
     values = {};
@@ -287,6 +469,30 @@ lfunction absrel.GetBranchEstimates (model, tree_id, branch_id) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
+lfunction absrel.GetRateDistribution (local_parameters) {
+
+    result = None;
+    component_count = (Abs (local_parameters))$2;
+    if (component_count > 1) {
+        rates = {"rates" : {component_count,1}, "weights" : {component_count,1}};
+        for (k = 1; k < component_count; k+=1) {
+            (rates["rates"])[k-1]   = (local_parameters[terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), k)])[utility.getGlobalValue ("terms.fit.MLE")];
+            (rates["weights"])[k-1]   = (local_parameters[terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), k)])[utility.getGlobalValue ("terms.fit.MLE")];
+        }
+        (rates["rates"])[component_count-1]   = (local_parameters[terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component_count)])[utility.getGlobalValue ("terms.fit.MLE")];
+        result = parameters.GetStickBreakingDistribution (rates) % 0;
+    } else {
+        result = {{parameters.NormalizeRatio (
+                                            (local_parameters[utility.getGlobalValue('terms.parameters.nonsynonymous_rate')])[utility.getGlobalValue ("terms.fit.MLE")],
+                                            (local_parameters[utility.getGlobalValue('terms.parameters.synonymous_rate')])[utility.getGlobalValue ("terms.fit.MLE")]
+                                          ),
+                1}};
+    }
+    return result;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
 lfunction absrel.SetBranchConstraints (model, tree_id, branch_id) {
     component_count = model[utility.getGlobalValue ("terms.model.components")];
     local_parameters = (model[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")];
@@ -299,6 +505,21 @@ lfunction absrel.SetBranchConstraints (model, tree_id, branch_id) {
     parameters.SetRange ("`tree_id`.`branch_id`.`local_parameters[omega_k]`", utility.getGlobalValue ("terms.range_any"));
 }
 
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction absrel.branch.ConstrainForTesting (model, tree_id, branch_id) {
+    component_count = model[utility.getGlobalValue ("terms.model.components")];
+    local_parameters = (model[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")];
+     if (component_count > 1) {
+        omega_k   = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component_count);
+        parameters.SetConstraint ("`tree_id`.`branch_id`.`local_parameters[omega_k]`", "1", '');
+    } else {
+        parameters.SetConstraint (
+            "`tree_id`.`branch_id`.`local_parameters[utility.getGlobalValue ('terms.parameters.nonsynonymous_rate')]`",
+            "`tree_id`.`branch_id`.`local_parameters[utility.getGlobalValue ('terms.parameters.synonymous_rate')]`", '');
+    }
+
+}
 //------------------------------------------------------------------------------------------------------------------------
 
 lfunction absrel.PopulateInitialGrid (model, tree_id, branch_id, current_estimates) {
@@ -508,461 +729,4 @@ lfunction absrel.BS_REL._DefineQ(bs_rel, namespace) {
     bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
     parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
     return bs_rel;
-}
-
-return 0;
-
-io.ReportProgressMessageMD("RELAX", "codon-refit", "* " + selection.io.report_fit (relax.final_partitioned_mg_results, 0, relax.codon_data_info[terms.data.sample_size]));
-
-relax.global_dnds  = selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
-relax.report_dnds = {};
-
-utility.ForEach (relax.global_dnds, "_value_", '
-    io.ReportProgressMessageMD ("RELAX", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));
-    relax.report_dnds [(regexp.FindSubexpressions (_value_[terms.description], "^" + terms.parameters.omega_ratio + ".+\\*(.+)\\*$"))[1]] = {"0" : {terms.json.omega_ratio : _value_[terms.fit.MLE], terms.json.proportion : 1}};
-');
-
-selection.io.json_store_branch_attribute(relax.json, terms.original_name, terms.json.node_label, 0,
-                                         0,
-                                         relax.name_mapping);
-
-
-selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                            relax.MG94,
-                            relax.final_partitioned_mg_results[terms.fit.log_likelihood],
-                            relax.final_partitioned_mg_results[terms.parameters] ,
-                            math.GetIC (relax.final_partitioned_mg_results[terms.fit.log_likelihood], relax.final_partitioned_mg_results[terms.parameters], relax.codon_data_info[terms.data.sample_size]),
-                            relax.report_dnds);
-
-
-selection.io.stopTimer (relax.json [terms.json.timers], "Preliminary model fitting");
-
-
-if (relax.model_set == "All") { // run all the models
-
-    relax.ge.bsrel_model =  model.generic.DefineMixtureModel("relax.BS_REL.ModelDescription",
-            "relax.ge", {
-                "0": parameters.Quote(terms.local),
-                "1": relax.codon_data_info[terms.code],
-                "2": parameters.Quote (relax.rate_classes) // the number of rate classes
-            },
-            relax.filter_names,
-            None);
-
-    for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
-        parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range_almost_01);
-    }
-    parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
-
-    relax.model_object_map = { "relax.ge" :       relax.ge.bsrel_model };
-
-    io.ReportProgressMessageMD ("RELAX", "gd", "Fitting the general descriptive (separate k per branch) model");
-    selection.io.startTimer (relax.json [terms.json.timers], "General descriptive model fitting", 2);
-
-    relax.ge_guess = relax.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
-            "_value_[terms.fit.MLE]"));
-
-    relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
-    parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
-
-    relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
-                                        relax.trees,
-                                        { "0" : {"DEFAULT" : "relax.ge"}},
-                                        relax.final_partitioned_mg_results,
-                                        relax.model_object_map,
-                                        {
-                                            terms.run_options.apply_user_constraints: "relax.init.k"
-                                        });
-
-
-
-    selection.io.stopTimer (relax.json [terms.json.timers], "General descriptive model fitting");
-
-    io.ReportProgressMessageMD("RELAX", "ge", "* " + selection.io.report_fit (relax.general_descriptive.fit, 9, relax.codon_data_info[terms.data.sample_size]));
-    io.ReportProgressMessageMD("RELAX", "ge", "* The following baseline rate distribution for branch-site combinations was inferred");
-    relax.inferred_ge_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.ge.bsrel_model, relax.general_descriptive.fit)) % 0;
-    selection.io.report_dnds (relax.inferred_ge_distribution);
-    relax.distribution_for_json = {'Shared' : utility.Map (utility.Range (relax.rate_classes, 0, 1),
-                                                         "_index_",
-                                                         "{terms.json.omega_ratio : relax.inferred_ge_distribution [_index_][0],
-                                                           terms.json.proportion  : relax.inferred_ge_distribution [_index_][1]}")
-                                   };
-    selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                                "General descriptive",
-                                relax.general_descriptive.fit[terms.fit.log_likelihood],
-                                relax.general_descriptive.fit[terms.parameters] + 9 , // +9 comes from CF3x4
-                                math.GetIC (relax.general_descriptive.fit[terms.fit.log_likelihood], relax.general_descriptive.fit[terms.parameters] + 9, relax.codon_data_info[terms.data.sample_size]),
-                                relax.distribution_for_json
-                            );
-
-    selection.io.json_store_branch_attribute(relax.json, "General descriptive", terms.branch_length, 1,
-                                                 0,
-                                                 selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "selection.io.branch.length"));
-
-    relax.k_estimates = selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "relax.extract.k");
-
-    relax.k_stats = math.GatherDescriptiveStats (utility.Map (utility.Values (relax.k_estimates), "_value_", "0+_value_"));
-
-    io.ReportProgressMessageMD("RELAX", "ge", "* Branch-level `terms.relax.k` distribution has mean " + Format (relax.k_stats[terms.math.mean], 5,2) + ", median " +
-                                                 Format (relax.k_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (relax.k_stats[terms.math._2.5], 5,2) + " - " + Format (relax.k_stats[terms.math._97.5], 5,2));
-
-
-    selection.io.json_store_branch_attribute(relax.json, "k (general descriptive)", terms.json.branch_label, 1,
-                                                 0,
-                                                 relax.k_estimates);
-
-} else {
-    relax.general_descriptive.fit = relax.final_partitioned_mg_results;
-}
-
-/* now fit the two main models for RELAX */
-
-io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model to test K != 1");
-
-selection.io.startTimer (relax.json [terms.json.timers], "RELAX alternative model fitting", 3);
-
-relax.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
-        "relax.test", {
-            "0": parameters.Quote(terms.global),
-            "1": relax.codon_data_info[terms.code],
-            "2": parameters.Quote (relax.rate_classes) // the number of rate classes
-        },
-        relax.filter_names,
-        None);
-
-
-
-relax.reference.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
-        "relax.reference", {
-            "0": parameters.Quote(terms.global),
-            "1": relax.codon_data_info[terms.code],
-            "2": parameters.Quote (relax.rate_classes) // the number of rate classes
-        },
-        relax.filter_names,
-        None);
-
-relax.bound_weights = models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.reference.bsrel_model}, terms.mixture.mixture_aux_weight + ".+");
-
-models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.reference.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
-
-parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
-model.generic.AddGlobal (relax.test.bsrel_model, relax.relaxation_parameter, terms.relax.k);
-
-for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
-    parameters.SetRange (model.generic.GetGlobalParameter (relax.reference.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
-    parameters.SetRange (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
-    parameters.SetConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)),
-                              model.generic.GetGlobalParameter (relax.reference.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)) + "^" + relax.relaxation_parameter,
-                              terms.global);
-}
-parameters.SetRange (model.generic.GetGlobalParameter (relax.reference.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
-parameters.SetRange (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
-parameters.SetConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)),
-                          model.generic.GetGlobalParameter (relax.reference.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)) + "^" + relax.relaxation_parameter,
-                          terms.global);
-
-relax.model_map = {
-                    "relax.test" : utility.Filter (relax.selected_branches[0], '_value_', '_value_ == relax.test_branches_name'),
-                    "relax.reference" : utility.Filter (relax.selected_branches[0], '_value_', '_value_ == relax.reference_branches_name')
-                  };
-
-
-// constrain the proportions to be the same
-
-relax.model_object_map = { "relax.reference" : relax.reference.bsrel_model,
-                            "relax.test" :       relax.test.bsrel_model };
-
-if (relax.model_set != "All") {
-    relax.ge_guess = relax.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
-            "_value_[terms.fit.MLE]"));
-
-    relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.reference.bsrel_model);
-    parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
-}
-
-if (relax.has_unclassified) {
-    relax.unclassified.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
-        "relax.unclassified", {
-            "0": parameters.Quote(terms.global),
-            "1": relax.codon_data_info[terms.code],
-            "2": parameters.Quote (relax.rate_classes) // the number of rate classes
-        },
-        relax.filter_names,
-        None);
-
-    for (relax.i = 1; relax.i < relax.rate_classes-1; relax.i += 1) {
-        parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
-    }
-
-    parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
-
-    relax.model_object_map ["relax.unclassified"] = relax.unclassified.bsrel_model;
-    relax.model_map ["relax.unclassified"] = utility.Filter (relax.selected_branches[0], '_value_', '_value_ == relax.unclassified_branches_name');
-    models.BindGlobalParameters ({"0" : relax.unclassified.bsrel_model, "1" : relax.reference.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
-}
-
-relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
-
-io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
-
-
-relax.fitted.K = estimators.GetGlobalMLE (relax.alternative_model.fit,terms.relax.k);
-io.ReportProgressMessageMD("RELAX", "alt", "* Relaxation/intensification parameter (K) = " + Format(relax.fitted.K,8,2));
-io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **test** branches");
-relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.test.bsrel_model)) % 0;
-selection.io.report_dnds (relax.inferred_distribution);
-
-io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **reference** branches");
-relax.inferred_distribution_ref = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.reference.bsrel_model)) % 0;
-selection.io.report_dnds (relax.inferred_distribution_ref);
-
-relax.distribution_for_json = {relax.test_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),
-                                                     "_index_",
-                                                     "{terms.json.omega_ratio : relax.inferred_distribution [_index_][0],
-                                                       terms.json.proportion  : relax.inferred_distribution [_index_][1]}"),
-
-                                relax.reference_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),
-                                                     "_index_",
-                                                     "{terms.json.omega_ratio : relax.inferred_distribution_ref [_index_][0],
-                                                       terms.json.proportion  : relax.inferred_distribution_ref [_index_][1]}")
-                               };
-
-selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                            "RELAX alternative",
-                            relax.alternative_model.fit[terms.fit.log_likelihood],
-                            relax.alternative_model.fit[terms.parameters] + 9 , // +9 comes from CF3x4
-                            relax.codon_data_info[terms.data.sample_size],
-                            relax.distribution_for_json
-                        );
-
-selection.io.json_store_branch_attribute(relax.json, "RELAX alternative", terms.branch_length, 2,
-                                             0,
-                                             selection.io.extract_branch_info((relax.alternative_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
-
-selection.io.stopTimer (relax.json [terms.json.timers], "RELAX alternative model fitting");
-
-// NULL MODEL
-
-selection.io.startTimer (relax.json [terms.json.timers], "RELAX null model fitting", 4);
-
-io.ReportProgressMessageMD ("RELAX", "null", "Fitting the null (K := 1) model");
-parameters.SetConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.relax.k), terms.parameters.one, terms.global);
-relax.null_model.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
-io.ReportProgressMessageMD ("RELAX", "null", "* " + selection.io.report_fit (relax.null_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
-relax.LRT = math.DoLRT (relax.null_model.fit[terms.fit.log_likelihood], relax.alternative_model.fit[terms.fit.log_likelihood], 1);
-
-
-io.ReportProgressMessageMD("RELAX", "null", "* The following rate distribution for test/reference branches was inferred");
-relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.test.bsrel_model, relax.null_model.fit)) % 0;
-selection.io.report_dnds (relax.inferred_distribution);
-
-relax.distribution_for_json = {relax.test_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),
-                                                     "_index_",
-                                                     "{terms.json.omega_ratio : relax.inferred_distribution [_index_][0],
-                                                       terms.json.proportion  : relax.inferred_distribution [_index_][1]}")};
-
-relax.distribution_for_json   [relax.reference_branches_name] =   relax.distribution_for_json   [relax.test_branches_name];
-
-selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                            "RELAX null",
-                            relax.null_model.fit[terms.fit.log_likelihood],
-                            relax.null_model.fit[terms.parameters] + 9 , // +9 comes from CF3x4
-                            relax.codon_data_info[terms.data.sample_size],
-                            relax.distribution_for_json
-                        );
-
-selection.io.json_store_branch_attribute(relax.json, "RELAX null", terms.branch_length, 3,
-                                             0,
-                                             selection.io.extract_branch_info((relax.null_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
-
-
-console.log ("----\n## Test for relaxation (or intensification) of selection [RELAX]");
-console.log ( "Likelihood ratio test **p = " + Format (relax.LRT[terms.p_value], 8, 4) + "**.");
-
-if (relax.LRT[terms.p_value] <= relax.p_threshold) {
-    if (relax.fitted.K > 1) {
-        console.log (">Evidence for relaxation of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
-    } else {
-        console.log (">Evidence for intensification of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
-    }
-} else {
-    console.log (">No significant evidence for relaxation (or intensification) of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
-}
-
-relax.json [terms.json.test_results] = relax.LRT;
-(relax.json [terms.json.test_results])[terms.relax.k] = relax.fitted.K;
-
-console.log ("----\n");
-
-selection.io.stopTimer (relax.json [terms.json.timers], "RELAX null model fitting");
-
-if (relax.model_set == "All") {
-    selection.io.startTimer (relax.json [terms.json.timers], "RELAX partitioned exploratory", 5);
-
-    io.ReportProgressMessageMD ("RELAX", "pe", "Fitting the partitioned exploratory model (separate distributions for *test* and *reference* branches)");
-    parameters.RemoveConstraint (utility.Keys (relax.bound_weights));
-    for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
-        parameters.RemoveConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
-    }
-    relax.pe.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
-    io.ReportProgressMessageMD ("RELAX", "pe", "* " + selection.io.report_fit (relax.pe.fit, 9, relax.codon_data_info[terms.data.sample_size]));
-    io.ReportProgressMessageMD ("RELAX", "pe", "* The following rate distribution was inferred for *test* branches ");
-    relax.test.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution(relax.test.bsrel_model)) % 0;
-    selection.io.report_dnds (relax.test.inferred_distribution);
-    io.ReportProgressMessageMD("RELAX", "pe", "* The following rate distribution was inferred for *reference* branches ");
-    relax.reference.inferred_distribution =  parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution(relax.reference.bsrel_model)) % 0;
-    selection.io.report_dnds (relax.reference.inferred_distribution);
-
-    relax.distribution_for_json = {relax.test_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),
-                                                         "_index_",
-                                                         "{terms.json.omega_ratio : relax.test.inferred_distribution [_index_][0],
-                                                           terms.json.proportion  : relax.test.inferred_distribution [_index_][1]}"),
-
-                                    relax.reference_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),
-                                                         "_index_",
-                                                         "{terms.json.omega_ratio : relax.reference.inferred_distribution [_index_][0],
-                                                           terms.json.proportion  : relax.reference.inferred_distribution [_index_][1]}")
-                                   };
-
-    selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                                "RELAX partitioned exploratory",
-                                relax.pe.fit[terms.fit.log_likelihood],
-                                relax.pe.fit[terms.parameters] + 9 , // +9 comes from CF3x4
-                                relax.codon_data_info[terms.data.sample_size],
-                                relax.distribution_for_json
-                            );
-
-    selection.io.json_store_branch_attribute(relax.json, "RELAX partitioned exploratory", terms.branch_length, 4,
-                                                 0,
-                                                 selection.io.extract_branch_info((relax.pe.fit[terms.branch_length])[0], "selection.io.branch.length"));
-
-
-    selection.io.stopTimer (relax.json [terms.json.timers], "RELAX partitioned exploratory");
-}
-
-selection.io.stopTimer (relax.json [terms.json.timers], "Overall");
-io.SpoolJSON (relax.json, relax.codon_data_info [terms.json.json]);
-
-return relax.json;
-
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
-
-lfunction relax.extract.k(branch_info) {
-    return (branch_info[utility.getGlobalValue("terms.relax.k")])[utility.getGlobalValue("terms.fit.MLE")];
-}
-
-//------------------------------------------------------------------------------
-
-lfunction relax.set.k (tree_name, node_name, model_description) {
-    if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.relax.k"), "String")) {
-        k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];
-        parameters.SetValue (tree_name + "." + node_name + "." + k, 1);
-        parameters.SetRange (tree_name + "." + node_name + "." + k, utility.getGlobalValue ("terms.relax.k_range"));
-    }
-    return tree_name + "." + node_name + "." + k;
-}
-
-//------------------------------------------------------------------------------
-
-lfunction relax.init.k (lf_id, components, data_filter, tree, model_map, initial_values, model_objects) {
-    parameter_set = estimators.TraverseLocalParameters (lf_id, model_objects, "relax.set.k");
-    parameters.SetConstraint (model.generic.GetGlobalParameter (utility.getGlobalValue("relax.ge.bsrel_model") , terms.AddCategory (utility.getGlobalValue("terms.parameters.omega_ratio"),2)), utility.getGlobalValue("terms.parameters.one"), utility.getGlobalValue("terms.global"));
-    /*parameters.SetConstraint (model.generic.GetGlobalParameter (utility.getGlobalValue("relax.ge.bsrel_model") , terms.AddCategory (utility.getGlobalValue("terms.parameters.omega_ratio"),utility.getGlobalValue ("relax.rate_classes"))),
-                             "1/(" +
-                                Join ("*", utility.Map (
-                                    utility.Range (utility.getGlobalValue ("relax.rate_classes") - 1, 1, 1),
-                                    "_value_",
-                                    'model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,_value_))'
-                                    ))
-                             + ")",
-                            "global");*/
-
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-
-
-lfunction relax.DistributionGuess (mean) {
-    guess = {{0.05,0.7}{0.25,0.2}{10,0.1}};
-
-    norm = + guess[-1][1];
-    guess_mean = 1/(+(guess [-1][0] $ guess [-1][1]))/norm;
-    return guess["_MATRIX_ELEMENT_VALUE_*(guess_mean*(_MATRIX_ELEMENT_COLUMN_==0)+(_MATRIX_ELEMENT_COLUMN_==1)*(1/norm))"];
-}
-
-
-//------------------------------------------------------------------------------
-lfunction relax.select_branches(partition_info) {
-
-    io.CheckAssertion("utility.Array1D (`&partition_info`) == 1", "RELAX only works on a single partition dataset");
-    available_models = {};
-    branch_set = {};
-
-
-    tree_for_analysis = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
-    utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
-    list_models   = utility.Keys   (available_models); // get keys
-    branch_counts = utility.Values (available_models);
-    option_count  = Abs (available_models);
-
-    io.CheckAssertion("`&option_count` >= 2", "RELAX requires at least one designated set of branches in the tree.");
-
-    selectTheseForTesting = {
-        option_count, 2
-    };
-
-    for (k = 0; k < option_count; k += 1) {
-        if (list_models[k] != "") {
-            selectTheseForTesting[k][0] = list_models[k];
-            selectTheseForTesting[k][1] = "Set " + list_models[k] + " with " + available_models[list_models[k]] + " branches";
-        } else {
-            selectTheseForTesting[k][0] = "Unlabeled branches";
-            selectTheseForTesting[k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
-        }
-    }
-
-    ChoiceList(testSet, "Choose the set of branches to use as the _test_ set", 1, NO_SKIP, selectTheseForTesting);
-    io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
-    if (option_count > 2) {
-        ChoiceList(referenceSet, "Choose the set of branches to use as the _reference_ set", 1, testSet, selectTheseForTesting);
-        io.CheckAssertion ("`&referenceSet` >= 0", "User cancelled branch selection; analysis terminating");
-    } else {
-        referenceSet = 1-testSet;
-    }
-
-    return_set = {};
-
-    tree_configuration = {};
-    tree_for_analysis = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
-
-    tag_test = selectTheseForTesting [testSet][0];
-    if (tag_test == "Unlabeled branches") {
-        tag_test = "";
-    }
-    tag_reference = selectTheseForTesting [referenceSet][0];
-    if (tag_reference == "Unlabeled branches") {
-        tag_reference = "";
-    }
-
-    utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "
-        if (`&tag_test` == _value_ ) {
-            `&tree_configuration`[_key_] = utility.getGlobalValue('relax.test_branches_name');
-        } else {
-            if (`&tag_reference` == _value_ ) {
-                `&tree_configuration`[_key_] = utility.getGlobalValue('relax.reference_branches_name');
-            } else {
-                `&tree_configuration`[_key_] = utility.getGlobalValue('relax.unclassified_branches_name');
-            }
-        }
-    ");
-
-    return_set + tree_configuration;
-    return return_set;
 }

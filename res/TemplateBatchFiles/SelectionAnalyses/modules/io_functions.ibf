@@ -284,9 +284,7 @@ function selection.io.json_store_branch_attribute(json, attribute_name, attribut
 //------------------------------------------------------------------------------------------------------------------------
 
 function selection.io._aux.extract_branch_info.callback(key, value) {
-    selection.io.extract_branch_info_result[key] = utility.CallFunction(callback, {
-        "0": "value"
-    });
+    selection.io.extract_branch_info_result[key] = Call (callback, value);
 }
 
 function selection.io.extract_branch_info(branch_spec, callback) {

@@ -3,6 +3,43 @@ LoadFunctionLibrary("../models/DNA/GTR.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
+
+/**
+ * @name estimators.TakeLFStateSnapshot
+ * @param {String} lf_id
+ * @returns {Dict} parameter -> {"MLE" : value, "constraint" : string (if present)}
+ */
+
+lfunction estimators.TakeLFStateSnapshot(lf_id) {
+    snapshot = {};
+    GetString (info, ^lf_id,-1);
+
+    utility.ForEach (info["Global Independent"], "_name_",
+                    '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_)};');
+    utility.ForEach (info["Local Independent"], "_name_",
+                    '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_)};');
+    utility.ForEach (info["Global Constrained"], "_name_",
+                    '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_),
+                                            terms.constraint : parameters.GetConstraint (_name_)};');
+    utility.ForEach (info["Local Constrained"], "_name_",
+                    '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_),
+                                            terms.constraint : parameters.GetConstraint (_name_)};');
+
+    return snapshot;
+}
+
+lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
+    utility.ForEachPair (snapshot, "_name_", "_info_",
+    '
+        if (_info_ / terms.constraint) {
+            parameters.SetConstraint (_name_, _info_ [terms.constraint], "");
+
+        } else {
+            parameters.SetValue (_name_, _info_ [terms.fit.MLE]);
+        }
+    ');
+}
+
 /**
  * @name estimators.GetGlobalMLE
  * @param {Dictionary} results
@@ -208,7 +245,10 @@ function estimators.applyBranchLength(tree, node, model, length) {
  * @param {String} value
  */
 function estimators.fixSubsetOfEstimates.helper(key, value) {
-    value[terms.fix] = 1;
+    if (value / terms.constraint == FALSE) {
+        estimators.fixSubsetOfEstimates.fixed + value[terms.id];
+        value[terms.fix] = TRUE;
+    }
 }
 
 /**
@@ -228,7 +268,9 @@ function estimators.fixSubsetOfEstimates.helper_condition(key) {
  * @returns nothing
  */
 function estimators.fixSubsetOfEstimates(estimates, variables) {
+    estimators.fixSubsetOfEstimates.fixed = {};
     (estimates[terms.global])["estimators.fixSubsetOfEstimates.helper"]["estimators.fixSubsetOfEstimates.helper_condition"];
+    return estimators.fixSubsetOfEstimates.fixed;
 }
 
 /**
@@ -444,7 +486,7 @@ lfunction estimators.FitExistingLF (lf_id, model_objects) {
 
     results = estimators.ExtractMLEs( lf_id, model_objects);
     results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
-    results[utility.getGlobalValue ("terms.parameters")] = mles[1][1] + df;
+    results[utility.getGlobalValue ("terms.parameters")] = mles[1][1];
 
     return results;
 }
@@ -617,7 +659,6 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     }
 
    	Optimize(mles, likelihoodFunction);
-
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
     }
