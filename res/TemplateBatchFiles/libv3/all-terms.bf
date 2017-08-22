@@ -215,16 +215,16 @@ namespace terms{
         timers                = "timers";
         trees                 = "trees";
         MLE                   = "MLE";
-        rate_distributions    = "rate distributions";
         parameters            = "estimated parameters";
         PMID                  = "PMID";
  //       PMCID                 = "PMCID";
         test_results          = "test results";
         tree_string           = "tree";
         tree_length           = "tree length";
-        rate_distributions    = "Rate Distributions";
+        rate_distribution     = "Rate Distribution";
         log_likelihood        = "Log Likelihood";
         AICc                  = "AIC-c";
+        global_mg94xrev       = "Global MG94xREV";
         model                 = "model"; // TODO: change string to "model name"
        // global                = "Global model fit"; // Defined at the top of file
         attribute             = "attributes";
@@ -244,7 +244,9 @@ namespace terms{
         partitions            = "data partitions";
 
         tested                = "tested";
-        uncorrected_pvalue    = "uncorrected p-value";
+        uncorrected_pvalue    = "Uncorrected P-value";
+        corrected_pvalue      = "Corrected P-value";
+        pvalue_threshold      = "P-value threshold";
         relative_site_rates   = "Relative site rate estimates";
       //  site_log_likelihood   = "site log likelihood";
      //   evidence_ratios       = "evidence ratios";
@@ -348,6 +350,8 @@ namespace terms{
     namespace parameters {
         local_constrained             = "Local Constrained";// from terms.lf.local.constrained
         global_constrained            = "Global Constrained";// from terms.lf.global.constrained
+        local_independent             = "Local Independent";
+        global_independent            = "Global Independent";
         transition                    = "transition";
         transversion                  = "transversion";
         transition_transversion_ratio = "Transitition/transversion ratio";

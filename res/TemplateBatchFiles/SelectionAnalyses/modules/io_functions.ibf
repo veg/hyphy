@@ -202,7 +202,7 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
             terms.json.log_likelihood: ll,
             terms.json.parameters: df,
             terms.json.AICc: selection.io.getIC(ll, df, ss),
-            terms.json.rate_distributions: rate_distribution,
+            terms.json.rate_distribution: rate_distribution,
             terms.json.display_order: Abs(json[terms.json.fits])
     });
 

@@ -137,7 +137,7 @@ selection.io.stopTimer (slac.json [terms.json.timers], "Model fitting");
 
 selection.io.json_store_lf(
     slac.json,
-    "Global MG94xREV",
+    terms.json.global_mg94xrev,
     slac.partitioned_mg_results[terms.fit.log_likelihood],
     slac.partitioned_mg_results[terms.parameters],
     slac.sample_size,
@@ -147,7 +147,7 @@ selection.io.json_store_lf(
 
 
 utility.ForEachPair (slac.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(slac.json, "Global MG94xREV model", terms.branch_length, 0,
+    'selection.io.json_store_branch_attribute(slac.json, utility.getGlobalValue("terms.json.global_mg94xrev"), terms.branch_length, 0,
                                              _key_,
                                              selection.io.extract_branch_info((slac.partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 

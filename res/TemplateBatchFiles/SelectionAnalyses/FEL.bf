@@ -104,8 +104,8 @@ namespace fel {
 
 
 /* Prompt for one-rate or two-rate analysis */
-fel.tworate = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS = 1 at each site)."}},
-                                  "Use rate variation? Strongly recommended YES for selection inference.");
+fel.tworate = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS := 1 at each site)."}},
+                                  "Use synonymous rate variation? Strongly recommended YES for selection inference.");
 console.log(fel.tworate);
 if (fel.tworate == "Yes"){
     fel.tworate = TRUE
@@ -162,7 +162,7 @@ estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_part
 
 selection.io.json_store_lf(
     fel.json,
-    "Global MG94xREV",
+    terms.json.global_mg94xrev,
     fel.final_partitioned_mg_results[terms.fit.log_likelihood],
     fel.final_partitioned_mg_results[terms.parameters],
     fel.sample_size,
@@ -171,7 +171,7 @@ selection.io.json_store_lf(
 
 
 utility.ForEachPair (fel.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(fel.json, "Global MG94xREV model", terms.branch_length, 0,
+    'selection.io.json_store_branch_attribute(fel.json, utility.getGlobalValue("terms.json.global_mg94xrev"), terms.branch_length, 0,
                                              _key_,
                                              selection.io.extract_branch_info((fel.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 
@@ -238,7 +238,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     {
         ^"fel.alpha_scaler" := 1;
     }
-    //^"fel.alpha_scaler" = 1;
     ^"fel.beta_scaler_test"  = 1;    
     ^"fel.beta_scaler_nuisance"  = 1;
 

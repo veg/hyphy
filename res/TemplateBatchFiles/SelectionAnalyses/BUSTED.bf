@@ -70,13 +70,11 @@ utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
      io.ReportProgressMessageMD('BUSTED',  'selector', '* Selected ' + Abs(_selection_) + ' branches to test in the BUSTED analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 // check to see if there are any background branches
-
 busted.has_background = FALSE;
 
 utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ != terms.tree_attributes.test');
      if (utility.Array1D (_selection_)) { busted.has_background = TRUE;} ");
-
 busted.json[busted.json.background] =  busted.has_background;
 
 selection.io.startTimer (busted.json [terms.json.timers], "Preliminary model fitting", 1);
@@ -139,6 +137,7 @@ models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.backgr
 
 busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
             "_value_[terms.fit.MLE]"));
+            
 
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
@@ -209,7 +208,10 @@ if (busted.has_background) {
                                                            terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
 }
 
-selection.io.json_store_lf_spool (busted.codon_data_info [terms.json.json], busted.json,
+
+
+
+selection.io.json_store_lf (busted.json,
                             "Unconstrained model",
                             busted.full_model[terms.fit.log_likelihood],
                             busted.full_model[terms.parameters] + 9 , // +9 comes from CF3x4
@@ -270,7 +272,7 @@ if (!busted.run_test) {
     }
 
 
-    selection.io.json_store_lf_spool (busted.codon_data_info [terms.json.json], busted.json,
+    selection.io.json_store_lf (busted.json,
                             "Constrained model",
                             busted.null_results[terms.fit.log_likelihood],
                             busted.null_results[terms.parameters] + 9 , // +9 comes from CF3x4

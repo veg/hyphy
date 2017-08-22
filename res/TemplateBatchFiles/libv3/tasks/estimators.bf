@@ -14,14 +14,14 @@ lfunction estimators.TakeLFStateSnapshot(lf_id) {
     snapshot = {};
     GetString (info, ^lf_id,-1);
 
-    utility.ForEach (info["Global Independent"], "_name_",
+    utility.ForEach (info[utility.getGlobalValue("terms.parameters.global_independent")], "_name_",
                     '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_)};');
-    utility.ForEach (info["Local Independent"], "_name_",
+    utility.ForEach (info[utility.getGlobalValue("terms.parameters.local_independent")], "_name_",
                     '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_)};');
-    utility.ForEach (info["Global Constrained"], "_name_",
+    utility.ForEach (info[utility.getGlobalValue("terms.parameters.global_constrained")], "_name_",
                     '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_),
                                             terms.constraint : parameters.GetConstraint (_name_)};');
-    utility.ForEach (info["Local Constrained"], "_name_",
+    utility.ForEach (info[utility.getGlobalValue("terms.parameters.local_independent")], "_name_",
                     '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_),
                                             terms.constraint : parameters.GetConstraint (_name_)};');
 

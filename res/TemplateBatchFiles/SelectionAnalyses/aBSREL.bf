@@ -46,10 +46,14 @@ absrel.json    = {
                   };
 
 absrel.max_rate_classes  = 5;
-absrel.MG94 = "MG94xREV with separate dN/dS for each branch";
-
-
 absrel.p_threshold = 0.05;
+
+absrel.MG94                 = "MG94xREV with separate omega for each branch";
+absrel.baseline_mg94xrev    = "Baseline MG94xREV";
+absrel.baseline_omega_ratio = "Baseline MG94xREV omega ratio";
+absrel.full_adaptive_model  = "Full adaptive model";
+absrel.rate_classes         = "Rate classes";
+absrel.per_branch_omega     = "Per-branch omega";
 
 /*------------------------------------------------------------------------------*/
 
@@ -101,7 +105,7 @@ selection.io.startTimer (absrel.json [terms.json.timers], "Baseline model fittin
 
 estimators.fixSubsetOfEstimates(absrel.gtr_results, absrel.gtr_results[terms.global]);
 
-io.ReportProgressMessageMD ("absrel", "base", "Fitting the baseline model with a single dN/dS class per branch, and no site-to-site variation. ");
+io.ReportProgressMessageMD ("absrel", "base", "Fitting the baseline model with a single omega class per branch, and no site-to-site variation. ");
 
 absrel.base.results = estimators.FitMGREV (absrel.filter_names, absrel.trees, absrel.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
@@ -126,11 +130,11 @@ io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.o
                                              Format (absrel.omega_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (absrel.omega_stats[terms.math._2.5], 5,2) + " - " + Format (absrel.omega_stats[terms.math._97.5], 5,2));
 
 
-selection.io.json_store_branch_attribute(absrel.json, "Baseline MG94xREV", terms.branch_length, 1,
+selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_mg94xrev, terms.branch_length, 1,
                                                       0,
                                                       absrel.baseline.branch_lengths);
 
-selection.io.json_store_branch_attribute(absrel.json, "Baseline dN/dS ratio", terms.json.branch_label, 1,
+selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_omega_ratio, terms.json.branch_label, 1,
                                                       0,
                                                       absrel.baseline.omegas);
 
@@ -152,15 +156,15 @@ for (absrel.i = absrel.branch_count - 1; absrel.i >= 0;  absrel.i = absrel.i - 1
     absrel.names_sorted_by_length [absrel.branch_count - 1 - absrel.i] =  absrel.bnames [absrel.sorted_branch_lengths[absrel.i][1]];
 }
 
-absrel.distribution_for_json = {'Per-branch dN/dS' :
+absrel.distribution_for_json = {absrel.per_branch_omega :
                                     {terms.math.mean : absrel.omega_stats[terms.math.mean],
                                     terms.math.median : absrel.omega_stats[terms.math.median],
                                     terms.math._2.5 : absrel.omega_stats[terms.math._2.5],
                                     terms.math._97.5 : absrel.omega_stats[terms.math._97.5]}
                                };
 
-selection.io.json_store_lf_spool (absrel.codon_data_info [terms.json.json], absrel.json,
-                            "Baseline",
+selection.io.json_store_lf (absrel.json,
+                            absrel.baseline_mg94xrev,
                             absrel.base.results[terms.fit.log_likelihood],
                             absrel.base.results[terms.parameters] ,
                             absrel.codon_data_info[terms.data.sample_size],
@@ -222,7 +226,7 @@ absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.tab
             },
             terms.number_precision : 2};
 
-fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. dN/dS", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
+fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. omega", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
 absrel.complexity_table.settings [terms.table_options.header] = FALSE;
 
 for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch_id += 1) {
@@ -297,7 +301,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
 
 }
 
-selection.io.json_store_branch_attribute(absrel.json, "Rate classes", terms.json.branch_label, 2,
+selection.io.json_store_branch_attribute(absrel.json, absrel.rate_classes, terms.json.branch_label, 2,
                                                       0,
                                                       absrel.branch.complexity);
 
@@ -309,32 +313,32 @@ utility.ForEachPair (utility.BinByValue (absrel.branch.complexity), "_rates_", "
 selection.io.stopTimer (absrel.json [terms.json.timers], "Complexity analysis");
 
 
-selection.io.startTimer (absrel.json [terms.json.timers], "Full model fit", 4);
-io.ReportProgressMessageMD ("absrel", "Full model", "Improving parameter estimates of the adaptive rate class model");
+selection.io.startTimer (absrel.json [terms.json.timers], "Full adaptive model fitting", 4);
+io.ReportProgressMessageMD ("absrel", "Full adaptive model", "Improving parameter estimates of the adaptive rate class model");
 
 parameters.RemoveConstraint (utility.Keys (absrel.full_model_parameters));
 absrel.full_model.fit = estimators.FitExistingLF (absrel.likelihood_function_id,absrel.model_object_map);
 
 absrel.full_model.mle_set = estimators.TakeLFStateSnapshot (absrel.likelihood_function_id);
 
-io.ReportProgressMessageMD("absrel", "Full model", "* " + selection.io.report_fit (absrel.full_model.fit, 9, absrel.codon_data_info[terms.data.sample_size]));
+io.ReportProgressMessageMD("absrel", "Full adaptive model", "* " + selection.io.report_fit (absrel.full_model.fit, 9, absrel.codon_data_info[terms.data.sample_size]));
 
-selection.io.stopTimer (absrel.json [terms.json.timers], "Full model fit");
+selection.io.stopTimer (absrel.json [terms.json.timers], "Full adaptive model fitting");
 
-selection.io.json_store_branch_attribute(absrel.json, "Full model", terms.branch_length, 2,
+selection.io.json_store_branch_attribute(absrel.json, absrel.full_adaptive_model, terms.branch_length, 2,
                                              0,
                                              selection.io.extract_branch_info((absrel.full_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
 absrel.branch.rate_distributions = selection.io.extract_branch_info((absrel.full_model.fit[terms.branch_length])[0], "absrel.GetRateDistribution");
 
 
-selection.io.json_store_branch_attribute(absrel.json, "dN/dS distribution", terms.json.branch_label, 3,
+selection.io.json_store_branch_attribute(absrel.json, terms.json.rate_distribution, terms.json.branch_label, 3,
                                                       0,
                                                       absrel.branch.rate_distributions);
 
 
-selection.io.json_store_lf_spool (absrel.codon_data_info [terms.json.json], absrel.json,
-                            "Full Model",
+selection.io.json_store_lf (absrel.json,
+                            absrel.full_adaptive_model,
                             absrel.full_model.fit[terms.fit.log_likelihood],
                             absrel.full_model.fit[terms.parameters] + 9 ,
                             absrel.codon_data_info[terms.data.sample_size],
@@ -357,7 +361,7 @@ absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_
             },
             terms.number_precision : 2};
 
-fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. omega", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
 
 absrel.testing_table.settings [terms.table_options.header] = FALSE;
 absrel.branch.p_values                                        = {};
@@ -402,22 +406,26 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.testing_table.settings));
 }
 
-selection.io.json_store_branch_attribute(absrel.json, "LRT", terms.json.branch_label, 4,
+selection.io.json_store_branch_attribute(absrel.json, terms.LRT, terms.json.branch_label, 4,
                                                       0,
                                                        absrel.branch.lrt);
 
-selection.io.json_store_branch_attribute(absrel.json, "Uncorrected p-value", terms.json.branch_label, 5,
+selection.io.json_store_branch_attribute(absrel.json, terms.json.uncorrected_pvalue, terms.json.branch_label, 5,
                                                       0,
                                                        absrel.branch.p_values);
 
 absrel.branch.p_values.corrected = math.HolmBonferroniCorrection (absrel.branch.p_values);
 
-selection.io.json_store_branch_attribute (absrel.json, "Corrected p-value", terms.json.branch_label, 6,
+selection.io.json_store_branch_attribute (absrel.json, terms.json.corrected_pvalue, terms.json.branch_label, 6,
                                                        0,
                                                        absrel.branch.p_values.corrected);
 
 absrel.test.all      = utility.Filter (absrel.branch.p_values.corrected, "_value_", "None!=_value_");
 absrel.test.positive = utility.Filter (absrel.test.all, "_value_", "_value_<=absrel.p_threshold");
+
+selection.io.stopTimer (absrel.json [terms.json.timers], "Testing for selection");
+
+
 
 console.log ("----\n### Adaptive branch site random effects likelihood test ");
 console.log ( "Likelihood ratio test for episodic diversifying positive selection at Holm-Bonferroni corrected _p = " + Format (absrel.p_threshold, 8, 4) + "_ found **" + Abs(absrel.test.positive) + "** branches under selection among **"+ Abs (absrel.test.all) + "** tested.\n");
@@ -427,9 +435,9 @@ utility.ForEachPair (absrel.test.positive, "_name_", "_p_",
             ');
 
 absrel.json [terms.json.test_results] = {
-                                             terms.p_value : absrel.p_threshold,
-                                             terms.tested  : Abs (absrel.test.all),
-                                             terms.positive : Abs (absrel.test.positive)
+                                             terms.json.pvalue_threshold : absrel.p_threshold,
+                                             terms.json.tested  : Abs (absrel.test.all),
+                                             terms.json.positive : Abs (absrel.test.positive)
                                          };
 
 /***
@@ -449,8 +457,8 @@ return absrel.json;
 
 lfunction absrel.ComputeLRT (ha, h0) {
     lrt  = 2*(ha-h0);
-    return {^"terms.LRT" : lrt,
-            ^"terms.p_value" : (1-0.4*CChi2 (lrt,1)-0.6* CChi2 (lrt,2))*.5};
+    return {utility.getGlobalValue("terms.LRT") : lrt,
+            utility.getGlobalValue("terms.p_value") : (1-0.4*CChi2 (lrt,1)-0.6* CChi2 (lrt,2))*.5};
 }
 
 
@@ -627,9 +635,9 @@ lfunction absrel.get_model_id (lf_id) {
 function absrel.constrain_everything (lf_id) {
     GetString (absrel.constrain_everything.info, ^lf_id, -1);
 
-    utility.ForEach (absrel.constrain_everything.info ["Global Independent"], "_value_",
+    utility.ForEach (absrel.constrain_everything.info [utility.getGlobalValue("terms.parameters.global_independent")], "_value_",
                      "parameters.SetConstraint (_value_, Eval (_value_), terms.global)");
-    utility.ForEach (absrel.constrain_everything.info ["Local Independent"], "_value_",
+    utility.ForEach (absrel.constrain_everything.info [utility.getGlobalValue("terms.parameters.local_independent")], "_value_",
                      "parameters.SetConstraint (_value_, Eval (_value_), '')");
 }
 

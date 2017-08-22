@@ -480,7 +480,7 @@ lfunction model.MatchAlphabets (a1, a2) {
 
 lfunction models.BindGlobalParameters (models, filter) {
     if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
-        reference_set = (((models[0])[^"terms.parameters"])[^"terms.global"]);
+        reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
         candidate_set = utility.Values(utility.Filter (utility.Keys (reference_set), "_key_",
             "regexp.Find (_key_,`&filter`)"
         ));
@@ -488,7 +488,7 @@ lfunction models.BindGlobalParameters (models, filter) {
         constraints_set = {};
 
         for (k = 1; k < Abs (models); k+=1) {
-            parameter_set = (((models[k])[^"terms.parameters"])[^"terms.global"]);
+            parameter_set = (((models[k])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
             if (Type (parameter_set) == "AssociativeList") {
                 utility.ForEach (candidate_set, "_p_",
                     "if (`&parameter_set` / _p_) {
