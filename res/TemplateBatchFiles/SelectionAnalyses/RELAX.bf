@@ -2,11 +2,6 @@ RequireVersion ("2.31");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
-LoadFunctionLibrary("GrabBag");
-LoadFunctionLibrary("CF3x4");
-LoadFunctionLibrary("TreeTools");
-
-
 // namespace 'utility' for convenience functions
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 

@@ -89,6 +89,21 @@ lfunction selection.io.defineBranchSets(partition_info) {
 }
 
 //------------------------------------------------------------------------------
+lfunction selection.io.SelectAllBranches(partition_info) {
+    for (k = 0; k < Abs (partition_info); k+=1) {
+        tree_configuration = {};
+        tree_for_analysis = (partition_info[k])[utility.getGlobalValue("terms.data.tree")];
+        utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.partitioned")], "_key_", "_value_",
+        '
+            `&tree_configuration`[_key_] = utility.getGlobalValue("terms.tree_attributes.test");
+        ');
+        return_set + tree_configuration;
+    }
+    return return_set;
+
+}
+
+//------------------------------------------------------------------------------
 
 lfunction selection.io.startTimer(timers, key, sort_index) {
     timers[key] = {

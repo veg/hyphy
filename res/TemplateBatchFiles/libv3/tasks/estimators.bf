@@ -587,20 +587,8 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     return results;
 }
 
-
-/**
- * @name estimators.FitSingleModel_Ext
- * @param {DataFilter} data_filter
- * @param {Tree} tree
- * @param {Dict} model
- * @param {Matrix} initial_values
- * @param {Dict} run_options
- * @returns results
- */
-
-lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, initial_values, run_options) {
-
-   if (Type(data_filter) == "String") {
+lfunction estimators.CreateLFObject (context, data_filter, tree, model_template, initial_values, run_options) {
+    if (Type(data_filter) == "String") {
         return estimators.FitSingleModel_Ext ({
             {
                 data_filter__
@@ -615,70 +603,92 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     filters = utility.Map({
         components,
         1
-    }["_MATRIX_ELEMENT_ROW_"], "_value_", "''+ '`&nuc_data`_' + _value_");
+    }["_MATRIX_ELEMENT_ROW_"], "_value_", "''+ '`context`.nuc_data_' + _value_");
 
     lf_components = {
         2 * components,
         1
     };
 
+
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i] = filters[i];
         DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
     }
 
-    name_space = & user;
-
-
-
-    user_model = model.generic.DefineModel(model_template, name_space, {
+    user_model_id = context + ".user_model";
+    utility.ExecuteInGlobalNamespace ("`user_model_id` = 0");
+    ^(user_model_id) = model.generic.DefineModel(model_template, context + ".model", {
             "0": "terms.global"
         }, filters, None);
 
 
     for (i = 0; i < components; i += 1) {
-
-        lf_components[2 * i + 1] = "tree_" + i;
-        model.ApplyModelToTree(Eval("&`lf_components[2*i + 1]`"), tree[i], {
-            "default": user_model
+        lf_components[2 * i + 1] = "`context`.tree_" + i;
+        model.ApplyModelToTree(lf_components[2 * i + 1], tree[i], {
+            "default": ^(user_model_id)
         }, None);
     }
 
-    LikelihoodFunction likelihoodFunction = (lf_components);
 
-
+    lfid = context + ".likelihoodFunction";
+    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lfid` = (`&lf_components`)");
 
     df = 0;
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", {
-                name_space: user_model
+            df = estimators.ApplyExistingEstimates(lfid, {
+                (^user_model_id)[utility.getGlobalValue ("terms.id")]: ^(user_model_id)
             }, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
-
-
     }
 
+    return df;
+}
+
+/**
+ * @name estimators.FitSingleModel_Ext
+ * @param {DataFilter} data_filter
+ * @param {Tree} tree
+ * @param {Dict} model
+ * @param {Matrix} initial_values
+ * @param {Dict} run_options
+ * @returns results
+ */
+
+lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, initial_values, run_options) {
+
+    this_namespace = (&_);
+    this_namespace = this_namespace[0][Abs (this_namespace)-3];
+
+    df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options);
+
    	Optimize(mles, likelihoodFunction);
+
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
     }
 
-    results = estimators.ExtractMLEs( & likelihoodFunction, {
-        name_space: user_model
-    });
+    model_id_to_object = {
+        (this_namespace + ".model"): user_model
+    };
+
+
+    results = estimators.ExtractMLEs( & likelihoodFunction, model_id_to_object);
 
 
     results[utility.getGlobalValue("terms.fit.log_likelihood")] = mles[1][0];
     results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + (user_model [utility.getGlobalValue("terms.parameters")]) [utility.getGlobalValue("terms.model.empirical")] + df;
 
 
-    if (run_options[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
+    if (option[utility.getGlobalValue("terms.run_options.retain_model_object")]) {
+        results[utility.getGlobalValue("terms.model")] = model_id_to_object;
+    }
+
+   if (run_options[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
         results[utility.getGlobalValue("terms.likelihood_function")] = & likelihoodFunction;
     } else {
         DeleteObject(likelihoodFunction);
     }
-
-
 
     return results;
 }

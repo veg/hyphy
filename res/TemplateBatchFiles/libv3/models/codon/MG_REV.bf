@@ -167,7 +167,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     } else {
         if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
-                models.codon.MG_REV.set_branch_length.lp = parameters.NormalizeRatio(Eval(models.codon.MG_REV.set_branch_length.beta), Eval(models.codon.MG_REV.set_branch_length.alpha));
+                models.codon.MG_REV.set_branch_length.lp = parameters.NormalizeRatio(Eval(models.codon.MG_REV.set_branch_length.beta.p), Eval(models.codon.MG_REV.set_branch_length.alpha.p));
                 parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
                 ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                 Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);

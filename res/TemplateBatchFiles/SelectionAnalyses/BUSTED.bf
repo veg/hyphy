@@ -52,9 +52,6 @@ busted.json    = { terms.json.analysis: busted.analysis_description,
 
 
 
-
-
-
 selection.io.startTimer (busted.json [terms.json.timers], "Overall", 0);
 
 namespace busted {
@@ -137,7 +134,7 @@ models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.backgr
 
 busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
             "_value_[terms.fit.MLE]"));
-            
+
 
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);

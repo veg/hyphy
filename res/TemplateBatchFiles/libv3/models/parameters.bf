@@ -170,6 +170,19 @@ function parameters.SetValue(id, value) {
 }
 
 /**
+ * Sets value of passed parameter tree.branch.id
+ * @name parameters.SetLocalValue
+ * @param {String} tree - id of tree
+ * @param {String} branch - id of branch
+ * @param {String} id - id of parameter to set value to
+ * @param {Number} value - value to set
+ * @returns nothing
+ */
+function parameters.SetLocalValue(tree, branch, id, value) {
+    Eval("`tree`.`branch`.`id` = " + value);
+}
+
+/**
  * Sets value of passed parameter id
  * @name parameters.SetValues
  * @param {dict} desc -> {id : id, mle : value}
@@ -385,7 +398,6 @@ function parameters.SetConstraint(id, value, global_tag) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             ExecuteCommands("`global_tag` `id` := " + value);
-            //console.log ("`global_tag` `id` := " + value);
         }
     } else {
         if (Type(id) == "AssociativeList" && Type(value) == "AssociativeList") {

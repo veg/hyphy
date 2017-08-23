@@ -1,12 +1,6 @@
 RequireVersion ("2.31");
 
-
-
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
-
-LoadFunctionLibrary("GrabBag");
-LoadFunctionLibrary("CF3x4");
-LoadFunctionLibrary("TreeTools");
 
 
 // namespace 'utility' for convenience functions
@@ -315,8 +309,9 @@ selection.io.stopTimer (absrel.json [terms.json.timers], "Complexity analysis");
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Full adaptive model fitting", 4);
 io.ReportProgressMessageMD ("absrel", "Full adaptive model", "Improving parameter estimates of the adaptive rate class model");
-
 parameters.RemoveConstraint (utility.Keys (absrel.full_model_parameters));
+
+
 absrel.full_model.fit = estimators.FitExistingLF (absrel.likelihood_function_id,absrel.model_object_map);
 
 absrel.full_model.mle_set = estimators.TakeLFStateSnapshot (absrel.likelihood_function_id);
