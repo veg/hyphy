@@ -9511,12 +9511,15 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
             root_state = DrawFromDiscrete(this_freqs, filter_dimension);
           }
           
+          
           _SimpleList ancestral_values,
                       leaf_values;
           
           if (SingleBuildLeafProbs    (this_tree->GetRoot(), root_state, leaf_values, user_exclusions_numeric,this_tree, true, this_filter, storeIntermediates?&ancestral_values:nil)) {
             good_sites++;
               //add this site to the simulated dataset
+            
+            
             
             _String simulated_unit (this_filter->ConvertCodeToLetters(this_filter->CorrectCode(leaf_values(0)), sites_per_unit));
 
@@ -9525,7 +9528,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
               leaf_count ++;
             }
 
-            for (unsigned long sequence_index = 0UL; sequence_index < species_count; sequence_index++) {
+            for (unsigned long sequence_index = 1UL; sequence_index < species_count; sequence_index++) {
               simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(leaf_values(sequence_index)), sites_per_unit);
               for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
                 target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
@@ -9659,19 +9662,7 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
         m = ccurNode->GetCompExp()->GetVDim();
 
         for (i = 0; i<vecSize; i++) {
-            _Parameter randVal = genrand_int32()/(_Parameter)RAND_MAX_32,
-                       sumSoFar = 0,
-                       *fastI = baseI + baseVector[i]*m;
-            k=0;
-            while ((randVal>sumSoFar)&&(k<m)) {
-                sumSoFar+=fastI[k];
-                k++;
-            }
-            if (k==0) {
-                curVector[i]=0;
-            } else {
-                curVector[i]=k-1;
-            }
+          curVector[i] = DrawFromDiscrete( baseI + baseVector[i]*m, m);
         }
     } else {
         // handle the degenerate tree case
@@ -9746,71 +9737,57 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
 
 //_______________________________________________________________________________________
 
-bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long parentState, _SimpleList& target, _SimpleList& theExc, _TheTree* curTree, bool isRoot, _DataSetFilter const* dsf, _SimpleList * iNodes) const
-{
-    long myState = 0;
+  bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long parentState, _SimpleList& target, _SimpleList& theExc, _TheTree* curTree, bool isRoot, _DataSetFilter const* dsf, _SimpleList * iNodes) const {
+    
+    long myState = parentState;
+    
     if (!isRoot) {
+      
+      _CalcNode* ccurNode = (_CalcNode*)LocateVar (curNode.get_data());
+      
+      if (ccurNode->NeedNewCategoryExponential(-1)) {
+        ccurNode->RecomputeMatrix(0,1);
+      }
+      
+      unsigned long matrix_dimension = ccurNode->GetCompExp()->GetVDim();
+      
+      
+      _Parameter* fastI = ccurNode->GetCompExp()->fastIndex()+parentState*matrix_dimension;
+      
+      myState = DrawFromDiscrete(fastI, matrix_dimension);
 
-        // first "mutate" the parent vector
-        _CalcNode* ccurNode = (_CalcNode*)LocateVar (curNode.get_data());
-
-        if (ccurNode->NeedNewCategoryExponential(-1)) {
-            ccurNode->RecomputeMatrix(0,1);
-        }
-
-        _Parameter* fastI = ccurNode->GetCompExp()->fastIndex()+parentState*ccurNode->GetCompExp()->GetVDim(),
-                    randVal = genrand_int32()/(_Parameter)RAND_MAX_32,
-                    sumSoFar = 0.0;
-
-        long   k=0,
-               n = ccurNode->GetCompExp()->GetVDim();
-
-        while  ((randVal>sumSoFar)&&(k<n)) {
-            sumSoFar+=fastI[k];
-            k++;
-        }
-
-        if (k==0) {
-            myState = 0;
-        } else {
-            myState=k-1;
-        }
-
-        if (curNode.nodes.length) {
-            if (iNodes) {
-                if (theExc.Find(myState)!=-1) {
-                    return false;
-                }
-                (*iNodes)<<myState;
-                //return true;
-            }
-        } else { // reached a leaf
-            // attach a row to the new data set
-            if (theExc.Find(myState)!=-1) {
-                return false;
-            }
-            target<<myState;
-            return true;
-
-        }
-    } else {
-        if (curNode.nodes.length == 1) {
-            target << parentState;
-        } else if (iNodes) {
-            (*iNodes)<<parentState;
-        }
-
-    }
-
-    // now scan the "children" and pass on the parameters as needed
-
-    for (long k = 1; k<=curNode.get_num_nodes(); k++) {
-        if(!SingleBuildLeafProbs (*curNode.go_down(k), isRoot?parentState:myState, target, theExc,curTree, false, dsf, iNodes)) {
+      if (! curNode.is_leaf()) {
+        if (iNodes) {
+          if (theExc.Find(myState)!=-1) {
             return false;
+          }
+          (*iNodes)<<myState;
+          //return true;
         }
+      } else {
+        if (theExc.Find(myState)!=-1) {
+          return false;
+        }
+        target<<myState;
+        return true;
+      }
+    } else {
+      if (curNode.nodes.length == 1) { // two taxon sumulation
+        target << parentState;
+      } else if (iNodes) {
+        (*iNodes)<<parentState;
+      }
+    }
+    
+    // now scan the "children" and pass on the parameters as needed
+    
+    for (long k = 1; k<=curNode.get_num_nodes(); k++) {
+      if(!SingleBuildLeafProbs (*curNode.go_down(k), myState, target, theExc, curTree, false, dsf, iNodes)) {
+        return false;
+      }
     }
     return true;
-}
+  }
 
 //_______________________________________________________________________________________
 
