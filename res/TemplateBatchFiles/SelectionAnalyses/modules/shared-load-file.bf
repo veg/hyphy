@@ -136,6 +136,9 @@ function load_file (prefix) {
         selected_branches = selection.io.defineBranchSets(partitions_and_trees);
     }
 
+    // Place in own attribute called `tested`
+     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
+
         /**  this will return a dictionary of selected branches; one set per partition, like in
         {
             "0": {
@@ -154,29 +157,31 @@ function load_file (prefix) {
         }
         */
 
-    /***************************** SJS ************************/
 
-    // Input attribute to JSON
-
-
+    /** Input attribute to JSON **/
     json[utility.getGlobalValue("terms.json.input")] = {};
     (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.file")] =  codon_data_info[utility.getGlobalValue("terms.data.file")];
     (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sequences")] = codon_data_info[utility.getGlobalValue("terms.data.sequences")];
     (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sites")] = codon_data_info[utility.getGlobalValue("terms.data.sites")];
     (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.partition_count")] = partition_count;
 
-    // The trees should go into input as well and they should be w/ their branch lengths
-
-     selection.io.json_store_key_value_pair (json,
+    // The trees should go into input as well and they should be w/ their branch lengths but ONLY if they have any.
+    t = (partitions_and_trees["0"])[utility.getGlobalValue("terms.data.tree")];
+    abs_branch_lengths = Abs(t[utility.getGlobalValue("terms.branch_length")]);  
+    
+    if (abs_branch_lengths == 0){
+        selection.io.json_store_key_value_pair (json,
+                                             utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
+                                             utility.Map (partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick]')
+                                             );    
+    } else {    
+        selection.io.json_store_key_value_pair (json,
                                              utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
                                              utility.Map (partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick_with_lengths]')
-                                             );
+                                             ); 
+    }
 
 
-
-
-    // Place in own attribute called `tested`
-     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
 
 
      filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, "`prefix`.codon_data" , "`prefix`.filter.", codon_data_info);

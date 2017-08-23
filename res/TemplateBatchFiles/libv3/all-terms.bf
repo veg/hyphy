@@ -221,7 +221,7 @@ namespace terms{
         test_results          = "test results";
         tree_string           = "tree";
         tree_length           = "tree length";
-        rate_distribution     = "Rate Distribution";
+        rate_distribution     = "Rate Distributions";
         log_likelihood        = "Log Likelihood";
         AICc                  = "AIC-c";
         global_mg94xrev       = "Global MG94xREV";

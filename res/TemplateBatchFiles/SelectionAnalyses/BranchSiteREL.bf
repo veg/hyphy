@@ -135,7 +135,7 @@ _BSREL.json_path = _BSREL.output_prefix + ".json";
 
 
 (_BSREL_json[terms.json.input])[terms.json.file] = filename;
-(_BSREL_json[terms.json.input])[terms.json.tree_string] = tree_info[terms.trees.newick_with_lengths];
+(_BSREL_json[terms.json.input])[terms.json.tree_string] = tree_info[terms.trees.newick_with_lengths]; // TODO: without lengths if there are none.
 (_BSREL_json[terms.json.input])[terms.json.sequences] = ds.species;
 (_BSREL_json[terms.json.input])[terms.json.sites] = ds.sites/3;
 
