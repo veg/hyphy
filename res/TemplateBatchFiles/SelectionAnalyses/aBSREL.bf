@@ -105,7 +105,7 @@ selection.io.startTimer (absrel.json [terms.json.timers], "Baseline model fittin
 
 estimators.fixSubsetOfEstimates(absrel.gtr_results, absrel.gtr_results[terms.global]);
 
-io.ReportProgressMessageMD ("absrel", "base", "Fitting the baseline model with a single omega class per branch, and no site-to-site variation. ");
+io.ReportProgressMessageMD ("absrel", "base", "Fitting the baseline model with a single dN/dS class per branch, and no site-to-site variation. ");
 
 absrel.base.results = estimators.FitMGREV (absrel.filter_names, absrel.trees, absrel.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
@@ -226,7 +226,7 @@ absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.tab
             },
             terms.number_precision : 2};
 
-fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. omega", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
+fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. dN/dS", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
 absrel.complexity_table.settings [terms.table_options.header] = FALSE;
 
 for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch_id += 1) {
@@ -361,7 +361,7 @@ absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_
             },
             terms.number_precision : 2};
 
-fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. omega", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
 
 absrel.testing_table.settings [terms.table_options.header] = FALSE;
 absrel.branch.p_values                                        = {};
