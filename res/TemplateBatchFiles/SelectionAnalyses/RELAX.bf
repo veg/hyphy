@@ -414,7 +414,7 @@ selection.io.stopTimer (relax.json [terms.json.timers], "RELAX null model fittin
 if (relax.model_set == "All") {
     selection.io.startTimer (relax.json [terms.json.timers], "RELAX partitioned descriptive", 5);
 
-    io.ReportProgressMessageMD ("RELAX", "pe", "Fitting the partitioned exploratory model (separate distributions for *test* and *reference* branches)");
+    io.ReportProgressMessageMD ("RELAX", "pe", "Fitting the partitioned descriptive model (separate distributions for *test* and *reference* branches)");
     parameters.RemoveConstraint (utility.Keys (relax.bound_weights));
     for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
         parameters.RemoveConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
