@@ -1,10 +1,15 @@
-/* define various genetic code translation tables
-	
-   Table definitions used here can be found on the NCBI web page at
-   http://www3.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c#SG1
+RequireVersion("2.30");
 
-  	here's how codes translate to aminoacids
- 	
+LoadFunctionLibrary("libv3/convenience/matrix.bf");
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+
+/* define various genetic code translation tables
+
+   Table definitions used here can be found on the NCBI web page at
+   https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
+
+  	here's how HyPhy codes translate to aminoacids
+
  	0 == Phe
  	1 == Leu
  	2 == Ile
@@ -26,9 +31,9 @@
  	18 == Trp
  	19 == Arg
  	20 == Gly
- 	
+
  	AAA,AAC,AAG....TTA,TTC,TTG,TTT - 64 all in all*/
-				
+
 
 /* defines model states which are not allowed, i.e. termination codons.
    GeneticCodeExclusions string is used by DataSetFilter to
@@ -36,319 +41,358 @@
 
 
 
-_geneticCodeOptionMatrix   = 
-			{
-			{"Universal","Universal code. (Genebank transl_table=1)."}
-			{"Vertebrate mtDNA","Vertebrate mitochondrial DNA code. (Genebank transl_table=2)."}
-			{"Yeast mtDNA","Yeast mitochondrial DNA code. (Genebank transl_table=3)."}
-			{"Mold/Protozoan mtDNA","Mold, Protozoan and Coelenterate mitochondrial DNA and the Mycloplasma/Spiroplasma code. (Genebank transl_table=4)."}
-			{"Invertebrate mtDNA","Invertebrate mitochondrial DNA code. (Genebank transl_table=5)."}
-			{"Ciliate Nuclear","Ciliate, Dasycladacean and Hexamita Nuclear code. (Genebank transl_table=6)."}
-			{"Echinoderm mtDNA","Echinoderm mitochondrial DNA code. (Genebank transl_table=9)."}
-			{"Euplotid Nuclear","Euplotid Nuclear code. (Genebank transl_table=10)."}
-			{"Alt. Yeast Nuclear","Alternative Yeast Nuclear code. (Genebank transl_table=12)."}
-			{"Ascidian mtDNA","Ascidian mitochondrial DNA code. (Genebank transl_table=13)."}
-			{"Flatworm mtDNA","Flatworm mitochondrial DNA code. (Genebank transl_table=14)."}
-			{"Blepharisma Nuclear","Blepharisma Nuclear code. (Genebank transl_table=15)."}
-			{"Chlorophycean mtDNA","Chlorophycean Mitochondrial Code (transl_table=16)."}
-			{"Trematode mtDNA","Trematode Mitochondrial Code (transl_table=21)."}
-			{"Scenedesmus obliquus mtDNA","Scenedesmus obliquus mitochondrial Code (transl_table=22)."}
-			{"Thraustochytrium mtDNA","Thraustochytrium Mitochondrial Code (transl_table=23)."}
-			};
-			
-_genBankTranTableMap = {};
-_genBankTranTableMap ["1"] = "Universal";
-_genBankTranTableMap ["2"] = "Vertebrate mtDNA";
-_genBankTranTableMap ["3"] = "Yeast mtDNA";
-_genBankTranTableMap ["4"] = "Mold/Protozoan mtDNA";
-_genBankTranTableMap ["5"] = "Invertebrate mtDNA";
-_genBankTranTableMap ["6"] = "Ciliate Nuclear";
-_genBankTranTableMap ["9"] = "Echinoderm mtDNA";
-_genBankTranTableMap ["10"] = "Euplotid Nuclear";
-_genBankTranTableMap ["12"] = "Alt. Yeast Nuclear";
-_genBankTranTableMap ["13"] = "Ascidian mtDNA";
-_genBankTranTableMap ["14"] = "Flatworm mtDNA";
-_genBankTranTableMap ["15"] = "Blepharisma Nuclear";
-_genBankTranTableMap ["16"] = "Chlorophycean mtDNA";
-_genBankTranTableMap ["21"] = "Trematode mtDNA";
-_genBankTranTableMap ["22"] = "Scenedesmus obliquus mtDNA";
-_genBankTranTableMap ["23"] = "Thraustochytrium mtDNA";
-			
-_hyphyAAOrdering		   = "FLIMVSPTAYXHQNKDECWRG";
-_alphabeticalAAOrdering	   = "ACDEFGHIKLMNPQRSTVWY";
-
-_aaLetterToCode			   = {};
-
-_singleAALetterToFullName  = {
-"A": "Alanine",
-"C": "Cysteine",
-"D": "Aspartic Acid",
-"E": "Glutamic Acid",
-"F": "Phenylalanine",
-"G": "Glycine",
-"H": "Histidine",
-"I": "Isoleucine",
-"K": "Lysine",
-"L": "Leucine",
-"M": "Methionine",
-"N": "Aspargine",
-"P": "Proline",
-"Q": "Glutamine",
-"R": "Arginine",
-"S": "Serine",
-"T": "Theronine",
-"V": "Valine",
-"W": "Tryptophan",
-"Y": "Tyrosine",
-"X": "Stop Codon"
+_geneticCodeOptionMatrix = {
+    {
+        "Universal", "Universal code. (Genebank transl_table=1)."
+    } {
+        "Vertebrate mtDNA", "Vertebrate mitochondrial DNA code. (Genebank transl_table=2)."
+    } {
+        "Yeast mtDNA", "Yeast mitochondrial DNA code. (Genebank transl_table=3)."
+    } {
+        "Mold/Protozoan mtDNA", "Mold, Protozoan and Coelenterate mitochondrial DNA and the Mycloplasma/Spiroplasma code. (Genebank transl_table=4)."
+    } {
+        "Invertebrate mtDNA", "Invertebrate mitochondrial DNA code. (Genebank transl_table=5)."
+    } {
+        "Ciliate Nuclear", "Ciliate, Dasycladacean and Hexamita Nuclear code. (Genebank transl_table=6)."
+    } {
+        "Echinoderm mtDNA", "Echinoderm mitochondrial DNA code. (Genebank transl_table=9)."
+    } {
+        "Euplotid Nuclear", "Euplotid Nuclear code. (Genebank transl_table=10)."
+    } {
+        "Alt. Yeast Nuclear", "Alternative Yeast Nuclear code. (Genebank transl_table=12)."
+    } {
+        "Ascidian mtDNA", "Ascidian mitochondrial DNA code. (Genebank transl_table=13)."
+    } {
+        "Flatworm mtDNA", "Flatworm mitochondrial DNA code. (Genebank transl_table=14)."
+    } {
+        "Blepharisma Nuclear", "Blepharisma Nuclear code. (Genebank transl_table=15)."
+    } {
+        "Chlorophycean mtDNA", "Chlorophycean Mitochondrial Code (transl_table=16)."
+    } {
+        "Trematode mtDNA", "Trematode Mitochondrial Code (transl_table=21)."
+    } {
+        "Scenedesmus obliquus mtDNA", "Scenedesmus obliquus mitochondrial Code (transl_table=22)."
+    } {
+        "Thraustochytrium mtDNA", "Thraustochytrium Mitochondrial Code (transl_table=23)."
+    } {
+        "Pterobranchia mtDNA", "Pterobranchia Mitochondrial Code (transl_table=24)."
+    } {
+        "SR1 and Gracilibacteria", "Candidate Division SR1 and Gracilibacteria Code (transl_table=25)."
+    } {
+        "Pachysolen Nuclear", "Pachysolen tannophilus Nuclear Code (transl_table=26)."
+    }
 };
 
-for (_idx = 0; _idx < Abs (_hyphyAAOrdering); _idx = _idx+1)
-{
-	_aaLetterToCode[_hyphyAAOrdering[_idx]] = _idx;
-}
+_hyphyAAOrdering        = "FLIMVSPTAYXHQNKDECWRG";
+_alphabeticalAAOrdering = "ACDEFGHIKLMNPQRSTVWY";
 
-_geneticCodeNameToIndexMap = {};
+_singleAALetterToFullName = {
+    "A": "Alanine",
+    "C": "Cysteine",
+    "D": "Aspartic Acid",
+    "E": "Glutamic Acid",
+    "F": "Phenylalanine",
+    "G": "Glycine",
+    "H": "Histidine",
+    "I": "Isoleucine",
+    "K": "Lysine",
+    "L": "Leucine",
+    "M": "Methionine",
+    "N": "Aspargine",
+    "P": "Proline",
+    "Q": "Glutamine",
+    "R": "Arginine",
+    "S": "Serine",
+    "T": "Theronine",
+    "V": "Valine",
+    "W": "Tryptophan",
+    "Y": "Tyrosine",
+    "X": "Stop Codon"
+};
 
-for (_idx = 0; _idx < Rows(_geneticCodeOptionMatrix); _idx = _idx+1)
-{
-	_geneticCodeNameToIndexMap[_geneticCodeOptionMatrix[_idx][0]] = _idx;
-}
+if (!skipCodeSelectionStep) {
 
-if (!skipCodeSelectionStep)
-{
+    ChoiceList(modelType, "Choose Genetic Code", 1, SKIP_NONE, _geneticCodeOptionMatrix);
 
-	ChoiceList (modelType,"Choose Genetic Code",1,SKIP_NONE,_geneticCodeOptionMatrix);			
-	
-	if (modelType < 0)
-	{
-		return;
-	}
-	
-	ApplyGeneticCodeTable (modelType);
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function CountSenseCodons (code) {
-    sense_count = 0;
-    for (_idx = 0; _idx < 64; _idx += 1) {
-        if (IsStop (_idx, code) == 0) {
-            sense_count += 1;
-        }
+    if (modelType < 0) {
+        return;
     }
-    return sense_count;
+
+    ApplyGeneticCodeTable(modelType);
+}
+
+genetic_code.stop_code = 10;
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+MapCodonIndex.lookup = {"A" : 0, "C" : 1, "G" : 2, "T" : 3};
+
+lfunction MapCodonIndex(codon_string) {
+    codon_string = codon_string && 1;
+    codon = 0;
+    for (k = 0; k < 3; k+=1) {
+        codon += (^"MapCodonIndex.lookup")[codon_string[k]] * (4^(2-k));
+    }
+    return (codon+0.5)$1;
 }
 
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-
-function ApplyGeneticCodeTable (myModelType)
-{
-	_Genetic_Code = {
-		
-		{14,/*AAA*/ 13,/*AAC*/ 14,/*AAG*/  13,/*AAT*/
-		  7, /*ACA*/ 7, /*ACC*/ 7, /*ACG*/  7, /*ACT*/
-		 19, /*AGA*/ 5, /*AGC*/19, /*AGG*/  5, /*AGT*/
-		  2, /*ATA*/ 2, /*ATC*/	3, /*ATG*/  2, /*ATT*/
-		 12,/*CAA*/ 11,/*CAC*/ 12,/*CAG*/  11,/*CAT*/
-		  6, /*CCA*/ 6, /*CCC*/ 6, /*CCG*/  6, /*CCT*/
-		 19,/*CGA*/ 19,/*CGC*/ 19,/*CGG*/  19,/*CGT*/
-		  1, /*CTA*/ 1, /*CTG*/ 1, /*CTC*/  1, /*CTT*/
-		 16,/*GAA*/ 15,/*GAC*/ 16,/*GAG*/  15,/*GAT*/
-		  8, /*GCA*/ 8, /*GCC*/ 8, /*GCG*/  8, /*GCT*/
-		 20,/*GGA*/ 20,/*GGC*/ 20,/*GGG*/  20,/*GGT*/
-		  4, /*GTA*/ 4, /*GTC*/ 4, /*GTG*/  4, /*GTT*/
-		 10,/*TAA*/  9, /*TAC*/10,/*TAG*/   9, /*TAT*/
-		  5, /*TCA*/ 5, /*TCC*/ 5, /*TCG*/  5, /*TCT*/
-		 10,/*TGA*/ 17,/*TGC*/ 18,/*TGG*/  17,/*TGT*/
-		  1, /*TTA*/ 0, /*TTC*/ 1, /*TTG*/  0  /*TTT*/ }
-	};
-					
-	GeneticCodeExclusions = "TAA,TAG,TGA";	
-	
-	if (myModelType == 1)
-	/* Vertebrate mtDNA */
-	{
-		_Genetic_Code [8] = 10; /* AGA => stop */
-		_Genetic_Code [10] = 10;/* AGG => stop */
-		_Genetic_Code [12] = 3; /* ATA => Met  */
-		_Genetic_Code [56] = 18;/* TGA => Trp  */
-		
-		GeneticCodeExclusions = "AGA,AGG,TAA,TAG";
-	}
-
-	if (myModelType == 2)
-	/* Yeast mtDNA */
-	{
-		_Genetic_Code [12] = 3; /* ATA => Met */
-		_Genetic_Code [28] = 7; /* CTA => Thr */
-		_Genetic_Code [29] = 7; /* CTC => Thr */
-		_Genetic_Code [30] = 7; /* CTG => Thr */
-		_Genetic_Code [31] = 7; /* CTT => Thr */
-		_Genetic_Code [56] = 18;/* TGA => Trp */
-		
-		GeneticCodeExclusions = "TAA,TAG";
-	}
-
-	if (myModelType == 3)
-	/* Mold,Protozoan and Coelenterate mtDNA */
-	{
-		_Genetic_Code [56] = 18;/* TGA => Trp */
-		GeneticCodeExclusions = "TAA,TAG";
-	}
-
-	if (myModelType == 4)
-	/* Invertebrate mtDNA */
-	{
-		_Genetic_Code [8] = 5; /* AGA => Ser  */
-		_Genetic_Code [10] = 5;/* AGG => Ser  */
-		_Genetic_Code [12] = 3;/* ATA => Met  */
-		_Genetic_Code [56] = 18;/* TGA => Trp  */
-		
-		GeneticCodeExclusions = "TAA,TAG";
-	}
-
-	if (myModelType == 5)
-	/* Ciliate Nuclear Code */
-	{
-		_Genetic_Code [48] = 12;/* TAA => Gln  */
-		_Genetic_Code [50] = 12;/* TAG => Gln  */
-		
-		GeneticCodeExclusions = "TGA";
-	}
-
-	if (myModelType == 6)
-	/* Echinoderm mtDNA */
-	{
-		_Genetic_Code [0] = 13; /* AAA => Asn  */
-		_Genetic_Code [8] = 5;  /* AGA => Ser  */
-		_Genetic_Code [10] = 5; /* AGG => Ser  */
-		_Genetic_Code [56] = 18;/* TGA => Trp  */
-		
-		GeneticCodeExclusions = "TAA,TAG";
-	}
-
-	if (myModelType == 7)
-	/* Euplotid mtDNA */
-	{
-		_Genetic_Code [56] = 17;/* TGA => Cys  */
-		
-		GeneticCodeExclusions = "TAA,TAG";
-	}
-
-	if (myModelType == 8)
-	/* Alternative Yeast Nuclear */
-	{
-		_Genetic_Code [30] = 5;/* CTG => Ser  */
-		
-		GeneticCodeExclusions = "TAA,TAG,TGA";
-	}
-
-	if (myModelType == 9)
-	/* Ascidian mtDNA */
-	{
-		_Genetic_Code [8] = 20;  /* AGA => Gly  */
-		_Genetic_Code [10] = 20; /* AGG => Gly  */
-		_Genetic_Code [12] = 3;  /* AGG => Met */
-		_Genetic_Code [56] = 18; /* TGA => Trp  */
-		
-		GeneticCodeExclusions = "TAA,TAG";
-	}
-
-	if (myModelType == 10)
-	/* Flatworm mtDNA */
-	{
-		_Genetic_Code [0] = 13;  /* AAA => Asn  */
-		_Genetic_Code [8] = 5;   /* AGA => Ser  */
-		_Genetic_Code [10] = 5;  /* AGG => Ser  */
-		_Genetic_Code [48] = 9;  /* TAA => Tyr */
-		_Genetic_Code [56] = 18; /* TGA => Trp  */
-		
-		GeneticCodeExclusions = "TAG";
-	}
-
-	if (myModelType == 11)
-	/* Blepharisma Nuclear */
-	{
-		_Genetic_Code [50] = 12;/* TAG => Gln  */
-		
-		GeneticCodeExclusions = "TAA,TGA";
-	}
-
-
-	if (myModelType == 12)
-	/* Chlorophycean Mitochondrial Code */
-	{
-		_Genetic_Code [50] = 1;/* TAG => Leu  */
-		
-		GeneticCodeExclusions = "TAA,TGA";
-	}
-
-	if (myModelType == 13)
-	/* Trematode Mitochondrial Code */
-	{
-		_Genetic_Code [56] = 18; /* TGA => Trp  */
-		_Genetic_Code [12] = 3;  /* ATA => Met  */
-		_Genetic_Code [8]  = 5;  /* AGA => Ser  */
-		_Genetic_Code [10] = 5;  /* AGG => Trp  */
-		_Genetic_Code [0]  = 13; /* AAA => Asn  */
-		
-		GeneticCodeExclusions = "TAA,TAG";
-	}
-
-	if (myModelType == 14)
-	/*  Scenedesmus obliquus mitochondrial Code */
-	{
-		_Genetic_Code [52] = 10;  /* TCA => Stop  */
-		_Genetic_Code [50] = 1;   /* TAG => Leu  */
-				
-		GeneticCodeExclusions = "TAA,TCA,TGA";
-	}
-
-	if (myModelType == 15)
-	/*  Thraustochytrium mtDNA */
-	{
-		_Genetic_Code [60] = 10;  /* TTA => Stop  */
-				
-		GeneticCodeExclusions = "TAA,TAG,TGA,TTA";
-	}
-
-	return  myModelType;
+function CountSenseCodons(code) {
+    return +code["_MATRIX_ELEMENT_VALUE_!=genetic_code.stop_code"];
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function mapCodonsToAAGivenMappingAux (codonSeq,aaSequence, mapping, this_many_mm) {
-    seqLen  = Abs (aaSequence);
-	translString = "";
-	translString * (seqLen);
-	seqLenN = Abs (codonSeq);
-	
-	aaPos     = 0;
-	seqPos    = 0;
-	codon     = codonSeq[seqPos][seqPos+2];
-	currentAA = mapping[codon];
-	mismatch_count = 0;
-	
-	for (aaPos = 0; aaPos < seqLen && seqPos < seqLenN; aaPos += 1)
-	{
-		advance = 1;
-		copy_codon = 1;
-		
-		if (currentAA != 0) {
+
+function ApplyGeneticCodeTable(myModelType) {
+    _Genetic_Code = {
+        {
+            14, /*AAA*/ 13, /*AAC*/ 14, /*AAG*/ 13, /*AAT*/
+            7, /*ACA*/ 7, /*ACC*/ 7, /*ACG*/ 7, /*ACT*/
+            19, /*AGA*/ 5, /*AGC*/ 19, /*AGG*/ 5, /*AGT*/
+            2, /*ATA*/ 2, /*ATC*/ 3, /*ATG*/ 2, /*ATT*/
+            12, /*CAA*/ 11, /*CAC*/ 12, /*CAG*/ 11, /*CAT*/
+            6, /*CCA*/ 6, /*CCC*/ 6, /*CCG*/ 6, /*CCT*/
+            19, /*CGA*/ 19, /*CGC*/ 19, /*CGG*/ 19, /*CGT*/
+            1, /*CTA*/ 1, /*CTG*/ 1, /*CTC*/ 1, /*CTT*/
+            16, /*GAA*/ 15, /*GAC*/ 16, /*GAG*/ 15, /*GAT*/
+            8, /*GCA*/ 8, /*GCC*/ 8, /*GCG*/ 8, /*GCT*/
+            20, /*GGA*/ 20, /*GGC*/ 20, /*GGG*/ 20, /*GGT*/
+            4, /*GTA*/ 4, /*GTC*/ 4, /*GTG*/ 4, /*GTT*/
+            10, /*TAA*/ 9, /*TAC*/ 10, /*TAG*/ 9, /*TAT*/
+            5, /*TCA*/ 5, /*TCC*/ 5, /*TCG*/ 5, /*TCT*/
+            10, /*TGA*/ 17, /*TGC*/ 18, /*TGG*/ 17, /*TGT*/
+            1, /*TTA*/ 0, /*TTC*/ 1, /*TTG*/ 0 /*TTT*/
+        }
+    };
+
+
+    GeneticCodeExclusions = "TAA,TAG,TGA";
+
+    if (myModelType == 1)
+    /* Vertebrate mtDNA */
+    {
+        _Genetic_Code[8] = 10; /* AGA => stop */
+        _Genetic_Code[10] = 10; /* AGG => stop */
+        _Genetic_Code[12] = 3; /* ATA => Met  */
+        _Genetic_Code[56] = 18; /* TGA => Trp  */
+
+        GeneticCodeExclusions = "AGA,AGG,TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 2)
+    /* Yeast mtDNA */
+    {
+        _Genetic_Code[12] = 3; /* ATA => Met */
+        _Genetic_Code[28] = 7; /* CTA => Thr */
+        _Genetic_Code[29] = 7; /* CTC => Thr */
+        _Genetic_Code[30] = 7; /* CTG => Thr */
+        _Genetic_Code[31] = 7; /* CTT => Thr */
+        _Genetic_Code[56] = 18; /* TGA => Trp */
+
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+   }
+
+    if (myModelType == 3)
+    /* Mold,Protozoan and Coelenterate mtDNA */
+    {
+        _Genetic_Code[56] = 18; /* TGA => Trp */
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 4)
+    /* Invertebrate mtDNA */
+    {
+        _Genetic_Code[8] = 5; /* AGA => Ser  */
+        _Genetic_Code[10] = 5; /* AGG => Ser  */
+        _Genetic_Code[12] = 3; /* ATA => Met  */
+        _Genetic_Code[56] = 18; /* TGA => Trp  */
+
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 5)
+    /* Ciliate Nuclear Code */
+    {
+        _Genetic_Code[48] = 12; /* TAA => Gln  */
+        _Genetic_Code[50] = 12; /* TAG => Gln  */
+
+        GeneticCodeExclusions = "TGA";
+        return myModelType;
+    }
+
+    if (myModelType == 6)
+    /* Echinoderm mtDNA */
+    {
+        _Genetic_Code[0] = 13; /* AAA => Asn  */
+        _Genetic_Code[8] = 5; /* AGA => Ser  */
+        _Genetic_Code[10] = 5; /* AGG => Ser  */
+        _Genetic_Code[56] = 18; /* TGA => Trp  */
+
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 7)
+    /* Euplotid mtDNA */
+    {
+        _Genetic_Code[56] = 17; /* TGA => Cys  */
+
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 8)
+    /* Alternative Yeast Nuclear */
+    {
+        _Genetic_Code[30] = 5; /* CTG => Ser  */
+
+        GeneticCodeExclusions = "TAA,TAG,TGA";
+        return myModelType;
+    }
+
+    if (myModelType == 9)
+    /* Ascidian mtDNA */
+    {
+        _Genetic_Code[8] = 20; /* AGA => Gly  */
+        _Genetic_Code[10] = 20; /* AGG => Gly  */
+        _Genetic_Code[12] = 3; /* AGG => Met */
+        _Genetic_Code[56] = 18; /* TGA => Trp  */
+
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 10)
+    /* Flatworm mtDNA */
+    {
+        _Genetic_Code[0] = 13; /* AAA => Asn  */
+        _Genetic_Code[8] = 5; /* AGA => Ser  */
+        _Genetic_Code[10] = 5; /* AGG => Ser  */
+        _Genetic_Code[48] = 9; /* TAA => Tyr */
+        _Genetic_Code[56] = 18; /* TGA => Trp  */
+
+        GeneticCodeExclusions = "TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 11)
+    /* Blepharisma Nuclear */
+    {
+        _Genetic_Code[50] = 12; /* TAG => Gln  */
+
+        GeneticCodeExclusions = "TAA,TGA";
+        return myModelType;
+   }
+
+
+    if (myModelType == 12)
+    /* Chlorophycean Mitochondrial Code */
+    {
+        _Genetic_Code[50] = 1; /* TAG => Leu  */
+
+        GeneticCodeExclusions = "TAA,TGA";
+        return myModelType;
+   }
+
+    if (myModelType == 13)
+    /* Trematode Mitochondrial Code */
+    {
+        _Genetic_Code[56] = 18; /* TGA => Trp  */
+        _Genetic_Code[12] = 3; /* ATA => Met  */
+        _Genetic_Code[8] = 5; /* AGA => Ser  */
+        _Genetic_Code[10] = 5; /* AGG => Trp  */
+        _Genetic_Code[0] = 13; /* AAA => Asn  */
+
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 14)
+    /*  Scenedesmus obliquus mitochondrial Code */
+    {
+        _Genetic_Code[52] = 10; /* TCA => Stop  */
+        _Genetic_Code[50] = 1; /* TAG => Leu  */
+
+        GeneticCodeExclusions = "TAA,TCA,TGA";
+        return myModelType;
+    }
+
+    if (myModelType == 15)
+    /*  Thraustochytrium mtDNA */
+    {
+        _Genetic_Code[60] = 10; /* TTA => Stop  */
+
+        GeneticCodeExclusions = "TAA,TAG,TGA,TTA";
+        return myModelType;
+    }
+
+    if (myModelType == 16)
+    /*   Pterobranchia mtDNA */
+    {
+        _Genetic_Code[56]  = 18; /* TGA => Trp  */
+        _Genetic_Code[8]  = 5; /* AGA => Serine */
+        _Genetic_Code[10]  = 14; /* AGG => Lysine */
+
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 17)
+    /*   Candidate Division SR1 */
+    {
+        _Genetic_Code[56]  = 20; /* TGA => Gly  */
+
+        GeneticCodeExclusions = "TAA,TAG";
+        return myModelType;
+    }
+
+    if (myModelType == 18)
+    /*   Pachysolen tannophilus nuclear */
+    {
+        _Genetic_Code[30]  = 8; /* CTG => Ala  */
+
+        GeneticCodeExclusions = "TAA,TAG,TGA";
+        return myModelType;
+    }
+
+    return myModelType;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function mapCodonsToAAGivenMappingAux(codonSeq, aaSequence, mapping, this_many_mm) {
+    seqLen = Abs(aaSequence);
+    translString = "";
+    translString * (seqLen);
+    seqLenN = Abs(codonSeq);
+
+    aaPos = 0;
+    seqPos = 0;
+    codon = codonSeq[seqPos][seqPos + 2];
+    currentAA = mapping[codon];
+    mismatch_count = 0;
+
+    for (aaPos = 0; aaPos < seqLen && seqPos < seqLenN; aaPos += 1) {
+        advance = 1;
+        copy_codon = 1;
+
+        if (currentAA != 0) {
             if (aaSequence[aaPos] == "-") {
                 if (currentAA != "X") {
                     translString * "---";
                     advance = 0;
                 }
-            }
-            else {
+            } else {
                 mismatch_count += (aaSequence[aaPos] != currentAA);
                 if (this_many_mm == 1) {
-                    assert (mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos 
-                            + " : codon '" + codonSeq[seqPos][seqPos+2] + "'(" + aaSequence[aaPos] + ") a.a. '`currentAA`'");
+                    assert(mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos + " (codon `seqPos`) : codon '" + codonSeq[seqPos][seqPos + 2] + "'(`currentAA`) a.a. '`aaSequence[aaPos]`'");
                 } else {
                     if (mismatch_count >= this_many_mm) {
                         translString * 0;
@@ -359,266 +403,632 @@ function mapCodonsToAAGivenMappingAux (codonSeq,aaSequence, mapping, this_many_m
         } else {
             copy_codon = 0;
         }
-        
-		if (advance) {
-		    if (copy_codon) {
-		    	if (currentAA == "X") {
-                	translString * "---";
+
+        if (advance) {
+            if (copy_codon) {
+                if (currentAA == "X") {
+                    translString * "---";
                 } else {
-                	translString * codon;                
+                    translString * codon;
                 }
             } else {
                 //fprintf (stdout, "Skipping codon ", codon, "\n");
-                aaPos = aaPos -1;
+                aaPos = aaPos - 1;
             }
-            seqPos    += 3;
-            codon     = codonSeq[seqPos][seqPos+2];
+            seqPos += 3;
+            codon = codonSeq[seqPos][seqPos + 2];
             currentAA = mapping[codon];
-		}
-	} 
-	
-	
-	translString * 0;
-	
-	return translString;
+        }
+    }
+
+
+    translString * 0;
+
+    return translString;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping) {
-    return mapCodonsToAAGivenMappingAux (codonSeq,aaSequence, mapping, 1);
-}
-
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function mapCodonsToAA (codonSeq,aaSequence) {
-	return mapCodonsToAAGivenMapping (codonSeq,aaSequence,defineCodonToAA ());
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function mapCodonsToAAFuzzy (codonSeq,aaSequence, mismatches) {
-	return mapCodonsToAAGivenMappingAux (codonSeq,aaSequence,defineCodonToAA (),mismatches);
+function mapCodonsToAAGivenMapping(codonSeq, aaSequence, mapping) {
+    return mapCodonsToAAGivenMappingAux(codonSeq, aaSequence, mapping, 1);
 }
 
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function CompareCodonProperties (codon1, codon2, code)
-/* given: 
-		 codon1 (a number between 0 and 63 in AAA...TTT encoding), 
-		 codon2 (same encoding),
-		 code (the genetic code)
-		 
-	returns a dictionary with the following keys:
-	
-		"NONSYNONYMOUS" : [BOOLEAN] set to 1 if codon1 <-> codon2 is a non-synynomous substitution, otherwise 0
-		"DIFFERENCES"   : [INTEGER 0,1,2,3] set to the number of nucleotide differences
-		"BY_POSITION"	: [BOOLEAN MATRIX] a 1x3 matrix, where the i-th entry is 1 if the corresponding nucleotide position is different between the codons
-		"1"				: [1x2 MATRIX]	   nucleotide substitution in position 1 (from -> to) encoded as an index into "ACGT"
-										   for example, codon1 = TCT, codon 2 = GCT, this matrix will be {{3,2}}
+function mapCodonsToAA(codonSeq, aaSequence) {
+    return mapCodonsToAAGivenMapping(codonSeq, aaSequence, defineCodonToAA());
+}
 
-		"2"				: ... same for the second position
-		"3"				: ... same for the third  position		
-*/		 
+/*----------------------------------------------------------------------------------------------------------*/
+
+function mapCodonsToAAFuzzy(codonSeq, aaSequence, mismatches) {
+    return mapCodonsToAAGivenMappingAux(codonSeq, aaSequence, defineCodonToAA(), mismatches);
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction CompareCodonProperties(codon1, codon2, code)
+    /* given:
+    		 codon1 (a number between 0 and 63 in AAA...TTT encoding),
+    		 codon2 (same encoding),
+    		 code (the genetic code)
+
+    	returns a dictionary with the following keys:
+
+    		"NONSYNONYMOUS" : [BOOLEAN] set to 1 if codon1 <-> codon2 is a non-synynomous substitution, otherwise 0
+    		"DIFFERENCES"   : [INTEGER 0,1,2,3] set to the number of nucleotide differences
+    		"BY_POSITION"	: [BOOLEAN MATRIX] a 1x3 matrix, where the i-th entry is 1 if the corresponding nucleotide position is different between the codons
+    		"1"				: [1x2 MATRIX]	   nucleotide substitution in position 1 (from -> to) encoded as an index into "ACGT"
+    										   for example, codon1 = TCT, codon 2 = GCT, this matrix will be {{3,2}}
+
+    		"2"				: ... same for the second position
+    		"3"				: ... same for the third  position
+    */
 
 {
-	_codonCompResult = {};
-	
-	_codonCompResult ["NONSYNONYMOUS"] = (code[codon1] != code[codon2]);
-	_codonCompResult ["BY_POSITION"]   = {1,3};
-	
-	for (_ci = 0; _ci < 3; _ci = _ci + 1)
-	{
-		
-		_positionMatrix = {1,2};
-		_positionMatrix [0] = codon1 % 4;
-		_positionMatrix [1] = codon2 % 4;
-	
-		_codonCompResult[1+_ci] = _positionMatrix;
-		(_codonCompResult ["BY_POSITION"])  [_ci] = (_positionMatrix [0] != _positionMatrix [1]);
-		
-		codon1 = codon1 $ 4;
-		codon2 = codon2 $ 4;
-	}
-	
-	_codonCompResult ["DIFFERENCES"] = (_codonCompResult ["BY_POSITION"])[0] + (_codonCompResult ["BY_POSITION"])[1] + (_codonCompResult ["BY_POSITION"])[2];
-	
-	return _codonCompResult;
+    _codonCompResult = {};
+
+    _codonCompResult["NONSYNONYMOUS"] = (code[codon1] != code[codon2]);
+    _codonCompResult["BY_POSITION"] = {
+        1, 2
+    };
+
+    _positionMatrix = {
+        {
+            codon1 % 4, codon2 % 4
+        }
+    };
+
+    for (_ci = 0; _ci < 3; _ci += 1) {
+
+        _codonCompResult[1 + _ci] = Eval(_positionMatrix);
+        (_codonCompResult["BY_POSITION"])[_ci] = (_positionMatrix[0] != _positionMatrix[1]);
+
+        codon1 = codon1 $ 4;
+        codon2 = codon2 $ 4;
+    }
+
+    _codonCompResult["DIFFERENCES"] = (_codonCompResult["BY_POSITION"])[0] + (_codonCompResult["BY_POSITION"])[1] + (_codonCompResult["BY_POSITION"])[2];
+
+    return _codonCompResult;
+}
+
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function defineCodonToAA() {
+    codonToAAMap = {};
+    nucChars = "ACGT";
+
+    for (p1 = 0; p1 < 64; p1 = p1 + 1) {
+        codonToAAMap[nucChars[p1$16] + nucChars[p1 % 16 $4] + nucChars[p1 % 4]] = _hyphyAAOrdering[_Genetic_Code[p1]];
+    }
+
+    return codonToAAMap;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function defineCodonToAA ()
-{	
-	codonToAAMap = {};
-	nucChars = "ACGT";
-	
-	for (p1=0; p1<64; p1=p1+1)
-	{
-		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[_Genetic_Code[p1]];
-	}
-	
-	return codonToAAMap;
+function defineCodonToAAGivenCode(code) {
+    codonToAAMap = {};
+    nucChars = "ACGT";
+
+    for (p1 = 0; p1 < 64; p1 += 1) {
+        codonToAAMap[nucChars[p1$16] + nucChars[p1 % 16 $4] + nucChars[p1 % 4]] = _hyphyAAOrdering[code[p1]];
+    }
+
+    return codonToAAMap;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function defineCodonToAAGivenCode (code)
-{	
-	codonToAAMap = {};
-	nucChars = "ACGT";
-	
-	for (p1=0; p1<64; p1+=1) {
-		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[code[p1]];
-	}
-	
-	return codonToAAMap;
+function findAllCodonsForAA(aa) {
+    codonsForAA = {};
+
+    for (p1 = 0; p1 < 64; p1 = p1 + 1) {
+        if (_hyphyAAOrdering[_Genetic_Code[p1]] == aa) {
+            codonsForAA[p1] = 1;
+        }
+    }
+
+    return codonsForAA;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function findAllCodonsForAA (aa)
-{	
-	codonsForAA = {};
-	
-	for (p1=0; p1<64; p1=p1+1)
-	{
-		if (_hyphyAAOrdering[_Genetic_Code[p1]] == aa) {
-		    codonsForAA [p1] = 1;
-		}
-	}
-	
-	return codonsForAA;
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function RawToSense (code)
-/* 
+function RawToSense(code)
+/*
     given:
     		genetic code,
-    
+
     returns a 64x1 matrix mapping raw codons to sense codons only (stops are mapped to -1)
 */
 {
-	_codonMap = {64,1};
-	
-	_cShift = 0;
-	for (_ci = 0; _ci < 64; _ci = _ci + 1)
-	{
-		if (code[_ci] == 10)
-		{
-			_cShift = _cShift + 1;
-			_codonMap [_ci] = -1;
-		}
-		else
-		{
-			_codonMap [_ci] = _ci - _cShift;
-		}
-	}
-	
-	return _codonMap;
+    _codonMap = {
+        64, 1
+    };
+
+    _cShift = 0;
+    for (_ci = 0; _ci < 64; _ci = _ci + 1) {
+        if (code[_ci] == genetic_code.stop_code) {
+            _cShift = _cShift + 1;
+            _codonMap[_ci] = -1;
+        } else {
+            _codonMap[_ci] = _ci - _cShift;
+        }
+    }
+
+    return _codonMap;
 }
 
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function IsTransition (pair)
-/* 
+function IsTransition(pair)
+/*
     given:
     		a pair of nucleotides (as a 1x2 matrix, e.g. as returned by CompareCodonProperties["1"]),
-    
-    returns 1 if the substitution is a transition 
+
+    returns 1 if the substitution is a transition
     returns -1 if the substitution is a transversion
-    
+
     RETURNS 0 IF NO SUBSTITUTION TOOK PLACE
 */
 {
-	if (pair[0] != pair[1])
-	{
-		if (Abs(pair[0]-pair[1])%2 == 0)
-		{
-			return 1;
-		}
-		return -1;
-	}
-	return 0;
+    if (pair[0] != pair[1]) {
+        if (Abs(pair[0] - pair[1]) % 2 == 0) {
+            return 1;
+        }
+        return -1;
+    }
+    return 0;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function IsStop (codon, code)
+lfunction IsStop(codon, code)
 
-/* 
-	given: 
+/*
+	given:
 		 codon (a number between 0 and 63 in AAA...TTT encoding)
 		 code (the genetic code)
-		 
-	returns 
+
+	returns
 		 whether or not the codon is a stop codon
-*/		 
+*/
 
 {
-	return code[codon] == 10;
+    return code[codon] == ^ "genetic_code.stop_code";
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function translateCodonToAA (codonSeq,mapping,offset)
-{
-	seqLen = Abs (codonSeq);
-	translString = "";
-	translString * (seqLen/3+1);
-	for (seqPos = offset; seqPos < seqLen; seqPos += 3) {
-		codon = codonSeq[seqPos][seqPos+2];
-		prot  = mapping[codon];
-		if (Abs(prot))
-		{
-			translString * prot;
-		}
-		else
-		{
-		    if (codon == "---") {
-			    translString * "-";
-		    } else {
-			    translString * "?";
-			}
-	    }
-	} 
-	translString * 0;
-	translString = translString^{{"X$","?"}};
-	
-	return translString;
+function translateCodonToAA(codonSeq, mapping, offset) {
+    seqLen = Abs(codonSeq);
+    translString = "";
+    translString * (seqLen / 3 + 1);
+    for (seqPos = offset; seqPos < seqLen; seqPos += 3) {
+        codon = codonSeq[seqPos][seqPos + 2];
+        prot = mapping[codon];
+        if (Abs(prot)) {
+            translString * prot;
+        } else {
+            if (codon == "---") {
+                translString * "-";
+            } else {
+                translString * "?";
+            }
+        }
+    }
+    translString * 0;
+    translString = translString ^ {
+        {
+            "X$", "?"
+        }
+    };
+
+    return translString;
 }
 
 
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-lfunction ComputeCodonCodeToStringMap (genCode)
-{
+lfunction ComputeCodonCodeToStringMap(genCode) {
+    _codonMap = {};
+    _nucLetters = "ACGT";
+    for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
+        if (genCode[_idx] != ^ "genetic_code.stop_code") {
+            _codonMap + (_nucLetters[_idx$16] + _nucLetters[(_idx % 16) $4] + _nucLetters[_idx % 4]);
+        }
+    }
+    return _codonMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction ComputeCodonCodeToStringMapStop (genCode) {
 	_codonMap = {};
 	_nucLetters = "ACGT";
 	for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
-		if (genCode[_idx] != 10) {
-		    _codonMap + (_nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4]);
-		}
-	}
-	return _codonMap;
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-lfunction ComputeCodonCodeToStringMapStop (genCode)
-{
-	_codonMap = {};
-	_nucLetters = "ACGT";
-	for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
-		if (genCode[_idx] == 10) {
+		if (genCode[_idx] == ^ "genetic_code.stop_code") {
 			_codonMap + (_nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4]);
 		}
 	}
 	return _codonMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction genetic_code.partition_codon(codon) {
+    return Eval({
+        {
+            codon$16, (codon % 16) $4, codon % 4
+        }
+    });
+}
+
+lfunction genetic_code.assemble_codon(positions) {
+    return positions[0] * 16 + positions[1] * 4 + positions[2];
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
+ /*
+            given a genetic code (`genCode`), computes a matrix of N x N entries (N = sense codons)
+            where a value of 1 in cell (i,j) means that i <-> j is a substitution of a specific type
+            (e.g. synonymous or non-synonymous), and a value of 0 is assigned to all other cells.
+
+            returns a dictionary with 'synonymous' and 'non-synonymous' keys
+
+            Also see inline comments
+
+        */
+
+    sense_codons = CountSenseCodons (genCode);
+    SS = {sense_codons, sense_codons};
+    NS = {sense_codons, sense_codons};
+
+    stop_code = ^ "genetic_code.stop_code";
+    codon_offset = 0;
+
+
+    for (codon = 0; codon < 64; codon += 1) {
+        if (genCode[codon] == stop_code) {
+            codon_offset += 1;
+        } else {
+            aa1 = genCode [codon];
+            codon_offset2 = codon_offset;
+            for (codon2 = codon + 1; codon2 < 64; codon2 += 1) {
+                if (genCode [codon2] == stop_code) {
+                    codon_offset2 += 1;
+                } else {
+                    if (aa1 == genCode [codon2]) {
+                        SS [codon-codon_offset][codon2-codon_offset2] = 1;
+                    } else {
+                        NS [codon-codon_offset][codon2-codon_offset2] = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    matrix.Symmetrize(SS);
+    matrix.Symmetrize(NS);
+
+    return {"synonymous" : SS, "non-synonymous" : NS};
+
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction genetic_code.DefineCodonToAAMapping (code) {
+    codonToAAMap = {};
+    nucChars = "ACGT";
+
+    for (p = 0; p < 64; p += 1) {
+        codonToAAMap[nucChars[p$16] + nucChars[p % 16 $4] + nucChars[p % 4]] = (^"_hyphyAAOrdering")[code[p]];
+    }
+
+    return codonToAAMap;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction genetic_code.DefineIntegerToAAMapping (code, only_sense) {
+    codon_code_map = {};
+
+    shift = 0;
+
+    for (p = 0; p < 64; p += 1) {
+        if (IsStop (p, code)) {
+            if (only_sense) {
+               shift += 1;
+               continue;
+            }
+        }
+
+        codon_code_map[p-shift] = (^"_hyphyAAOrdering")[code[p]];
+    }
+
+    return codon_code_map;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, options) {
+        /*
+            given a genetic code (`genCode`), computes a number of per-codon (or per pair of codons)
+            quantities that relate to numbers of synonymous and non-synonymous sites or
+            substitutions.
+
+            `options` can be null, or have any of the following keys:
+
+                `weighting-matrix` is expected to be a set of 3 4x4 matrices showing relative frequencies of
+                various nucleotide->nucleotide substitutions stratified by codon position; by default they
+                are all equal
+
+                `count-stop-codons` treat mutations to stop codons as non-synonymous changes for counting purposes
+                (by the default they are not counted at all)
+
+            Also see inline comments
+
+        */
+
+        SS = {
+            64, 1
+        }; // raw codon index -> # of synonymous sites     [0-3]
+        NS = SS; // raw codon index -> # of non-synonymous sites [0-3]
+
+        stop_code = ^ "genetic_code.stop_code";
+
+        if (Type(options["weighting-matrix"]) == "AssociativeList") {
+            weighting_matrix = options["weighting-matrix"];
+        } else {
+            equal = {
+                4, 4
+            }["1"];
+            weighting_matrix = {};
+            weighting_matrix + equal;
+            weighting_matrix + equal;
+            weighting_matrix + equal;
+        }
+
+        keep_stop_codons = FALSE;
+
+        if (Type(options["count-stop-codons"]) == "Number") {
+            keep_stop_codons = options["count-stop-codons"];
+        }
+
+        codon_offset = 0;
+
+        for (codon = 0; codon < 64; codon += 1) {
+
+            if (genCode[codon] == stop_code) {
+                codon_offset += 1;
+            } else {
+
+                codon_info = genetic_code.partition_codon(codon);
+                aa = genCode[codon];
+
+                for (codon_position = 0; codon_position < 3; codon_position += 1) {
+                    norm_factor = 0.0;
+                    sSites = 0.0;
+                    nsSites = 0.0;
+                    // mutagenize 'codon' at 'codon_position'
+
+                    copy_codon = codon_info;
+                    for (new_nuc = 0; new_nuc < 4; new_nuc += 1) {
+                        if (new_nuc != codon_info[codon_position]) {
+                            copy_codon[codon_position] = new_nuc;
+                            new_codon = genetic_code.assemble_codon(copy_codon);
+                            w = (weighting_matrix[codon_position])[codon_info[codon_position]][new_nuc];
+                            if (keep_stop_codons || stop_code == genCode[new_codon] == 0) {
+                                if (genCode[new_codon] != aa) {
+                                    nsSites += w;
+                                } else {
+                                    sSites += w;
+                                }
+                            }
+                            norm_factor += w;
+                        }
+                    }
+
+                    if (norm_factor > 0) {
+                        SS[codon] += sSites / norm_factor;
+                        NS[codon] += nsSites / norm_factor;
+                    }
+
+                }
+            }
+        }
+
+        senseCodonCount = 64 - codon_offset;
+
+        EPS = {
+            senseCodonCount, senseCodonCount
+        };
+        EPN = EPS;
+        OPS = EPS;
+        OPN = EPS;
+        NTP = EPS["-1"];
+
+        empty_dict = {};
+
+        codon_offset_1 = 0;
+
+        all_permutations = {
+            "0": {
+                {
+                    0, 1, 2
+                }
+            },
+            "1": {
+                {
+                    0, 2, 1
+                }
+            },
+            "2": {
+                {
+                    1, 0, 2
+                }
+            },
+            "3": {
+                {
+                    1, 2, 0
+                }
+            },
+            "4": {
+                {
+                    2, 0, 1
+                }
+            },
+            "5": {
+                {
+                    2, 1, 0
+                }
+            }
+        };
+
+        ntp_matrix = {
+            {
+                0, 0, 1, 2
+            } {
+                0, 0, 3, 4
+            } {
+                0, 0, 0, 5
+            } {
+                0, 0, 0, 0
+            }
+        };
+
+        matrix.Symmetrize(ntp_matrix);
+
+
+        for (codon_1 = 0; codon_1 < 64; codon_1 += 1) {
+            if (genCode[codon_1] == stop_code) {
+                codon_offset_1 += 1;
+                continue;
+            }
+
+            codon_info_1 = genetic_code.partition_codon(codon_1);
+            aa_1 = genCode[codon_1];
+            direct_index_1 = codon_1 - codon_offset_1;
+
+            EPS[direct_index_1][direct_index_1] = SS[codon_1];
+            EPN[direct_index_1][direct_index_1] = NS[codon_1];
+
+            codon_offset_2 = codon_offset_1;
+
+
+            for (codon_2 = codon_1 + 1; codon_2 < 64; codon_2 += 1) {
+                if (genCode[codon_2] == stop_code) {
+                    codon_offset_2 += 1;
+                    continue;
+                }
+
+
+                codon_info_2 = genetic_code.partition_codon(codon_2);
+                aa_2 = genCode[codon_2];
+                direct_index_2 = codon_2 - codon_offset_2;
+
+
+                path_count = 0;
+                eps = 0;
+                epn = 0;
+                ops = 0;
+                opn = 0;
+                ntp = None;
+
+                for (path = 0; path < 6; path += 1) {
+                    current_codon = codon_info_1;
+                    current_aa = aa_1;
+                    codon_sequence = empty_dict;
+                    codon_sequence + codon_1;
+
+                    ps = 0;
+                    pn = 0;
+
+                    for (path_step = 0; path_step < 3; path_step += 1) {
+                        change_index = (all_permutations[path])[path_step];
+                        if (current_codon[change_index] != codon_info_2[change_index]) {
+                            current_codon[change_index] = codon_info_2[change_index];
+                            current_codon_index = genetic_code.assemble_codon(current_codon);
+                            next_aa = genCode[current_codon_index];
+                            if (next_aa == stop_code) {
+                                break;
+                            }
+                            codon_sequence + current_codon_index;
+                            if (current_aa == next_aa) {
+                                ps += 1;
+                            } else {
+                                pn += 1;
+                            }
+                            current_aa = next_aa;
+                        }
+                    }
+
+                    if (path_step == 3) {
+                        path_count += 1;
+                        path_length = Abs(codon_sequence);
+
+                        if (path_length == 2 && ntp == None) {
+                            for (position = 0; position < 3; position += 1) {
+                                if (codon_info_1[position] != codon_info_2[position]) {
+                                    ntp = ntp_matrix[codon_info_1[position]][codon_info_2[position]];
+                                    break;
+                                }
+                            }
+                        }
+
+                        pes = 0;
+                        pns = 0;
+                        for (path_step = 0; path_step < path_length; path_step += 1) {
+                            pes += SS[codon_sequence[path_step]];
+                            pns += NS[codon_sequence[path_step]];
+                        }
+                        eps += pes / path_length;
+                        epn += pns / path_length;
+                        ops += ps;
+                        opn += pn;
+                    }
+                }
+
+                if (path_count > 0) {
+                    EPS[direct_index_1][direct_index_2] = eps / path_count;
+                    EPN[direct_index_1][direct_index_2] = epn / path_count;
+                    OPS[direct_index_1][direct_index_2] = ops / path_count;
+                    OPN[direct_index_1][direct_index_2] = opn / path_count;
+                    if (None != ntp) {
+                        NTP[direct_index_1][direct_index_2] = ntp;
+                    }
+                }
+
+            }
+        }
+
+        matrix.Symmetrize(EPS);
+        matrix.Symmetrize(EPN);
+        matrix.Symmetrize(OPS);
+        matrix.Symmetrize(OPN);
+        matrix.Symmetrize(NTP);
+
+        SS_sense = {senseCodonCount, 1};
+        NS_sense = {senseCodonCount, 1};
+
+        codon_offset_1 = 0;
+        for (codon_1 = 0; codon_1 < 64; codon_1 += 1) {
+            if (genCode[codon_1] == stop_code) {
+                codon_offset_1 += 1;
+            }
+            SS_sense [codon_1 - codon_offset_1] = SS[codon_1];
+            NS_sense [codon_1 - codon_offset_1] = NS[codon_1];
+        }
+
+        return {"EPS" : EPS, "EPN": EPN, "OPS" : OPS, "OPN" : OPN, "NTP" : NTP, "SS" : SS_sense, "NS": NS_sense};
 }

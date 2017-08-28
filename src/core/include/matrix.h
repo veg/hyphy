@@ -85,8 +85,7 @@ struct      _CompiledMatrixData {
 
 /*__________________________________________________________________________________________________________________________________________ */
 
-class       _Matrix: public _MathObject
-{
+class       _Matrix: public _MathObject {
 
 public:
 
@@ -94,7 +93,7 @@ public:
 
     _Matrix ();                                 // default constructor, doesn't do much
 
-    _Matrix (_String&, bool = false, _VariableContainer* = nil);
+    _Matrix (_String&, bool = false, _VariableContainer const* = nil);
     // matrix from a string of the form
     // {{i11,i12,...}{i21,i22,..}{in1,in2..)})
     // or {# rows,<# cols>{i1,j1,expr}{i2,j2,expr}..}
@@ -113,14 +112,14 @@ public:
     // where the third parameter specifies the percentage of 0 entries and
     // the first flag indicates how to store the matrix: as spars or usual
 
-    _Matrix ( _Matrix &);                       //duplicator
+    _Matrix ( _Matrix&);                       //duplicator
 
-    _Matrix ( _SimpleList &, long = -1);        // make matrix from simple list
+    _Matrix ( _SimpleList const &, long = -1);        // make matrix from simple list
     // the optional argument C (if > 0) tells HyPhy
     // to make a matrix with C elements per row
     // if <= 0 - a row matrix is returned
 
-    _Matrix ( _List &);                         //make string matrix from a list
+    _Matrix ( _List const &);                         //make string matrix from a list
 
     _Matrix (_Parameter *, unsigned long, unsigned long);
     /*
@@ -136,7 +135,7 @@ public:
 
     virtual void    Clear (void);               //deletes all the entries w/o destroying the matrix
 
-    void    Initialize (void);                  // zeros all matrix structures
+    void    Initialize (bool = false);                  // zeros all matrix structures
 
     virtual void        Serialize (_String&,_String&);
     // write the matrix definition in HBL
@@ -146,7 +145,7 @@ public:
     _PMathObj           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original
 
-    virtual _PMathObj   Execute (long opCode, _PMathObj p = nil, _PMathObj p2 = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual _PMathObj   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     // execute this operation with the list of Args
 
     _PMathObj   MAccess (_PMathObj, _PMathObj);
@@ -317,9 +316,9 @@ public:
 
     virtual     void        Duplicate   (BaseRef obj); // duplicate this object into a dynamic copy
 
-    virtual     BaseRef     toStr       (void);       // convert this matrix to a string
+    virtual     BaseRef     toStr       (unsigned long = 0UL);       // convert this matrix to a string
 
-    virtual     void        toFileStr   (FILE*dest);
+    virtual     void        toFileStr   (FILE*dest, unsigned long = 0UL);
 
     bool        AmISparse               (void);
 
@@ -343,17 +342,17 @@ public:
 
     _Parameter  FisherExact             (_Parameter, _Parameter, _Parameter);
 
-    virtual     bool        HasChanged  (void);
+    virtual     bool        HasChanged  (bool = false);
     // have any variables which are referenced by the elements changed?
 
-    virtual     long
-    GetHDim                     (void) {
+    virtual     unsigned long
+    GetHDim                     (void) const{
         return hDim;
     }
-    long        GetVDim                     (void) {
+    unsigned long        GetVDim                     (void) const {
         return vDim;
     }
-    long        GetSize                     (void) {
+    unsigned long        GetSize                     (void) const {
         return lDim;
     }
     long        GetMySize                   (void) {
@@ -417,7 +416,7 @@ public:
     // if element was not found, the number returned
     // indicates the first available slot
 
-    _Parameter*       fastIndex(void)   {
+    _Parameter*       fastIndex(void)  const {
         return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(_Parameter*)theData:nil;
     }
     inline            _Parameter&         directIndex(long k)   {
@@ -494,7 +493,7 @@ private:
     _Matrix*    branchLengthStencil (void);
 
     //bool      IsAStringMatrix     (void);
-    void        Add                 (_Matrix&, _Matrix&, bool sub = false);
+    void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
     // aux arithmetic rountines
     bool        AddWithThreshold    (_Matrix&, _Parameter);
     void        RowAndColumnMax     (_Parameter&, _Parameter&, _Parameter* = nil);
@@ -595,29 +594,37 @@ public:
 
     virtual     void        Clear (void);
 
-    virtual     long        GetHDim                     (void) {
+    virtual     unsigned long        GetHDim                     (void) const {
         if (isColumn) {
             return GetUsed();
         }
-        return 1;
+        return 1UL;
     }
-    virtual     long        GetVDim                     (void) {
+    virtual     long        GetVDim                     (void) const {
         if (!isColumn) {
             return GetUsed();
         }
-        return 1;
+        return 1UL;
     }
+  
+    void   Trim             (void);
+  
     long   Store            (_Parameter);
-    long   GetUsed          (void) {
+    long   GetUsed          (void) const {
         return used;
     }
     void     ZeroUsed       (void) {
-        used = 0;
+        used = 0UL;
     }
+    void    Delete          (unsigned long index);
 
     void    operator <<     (const _SimpleList&);
+    _GrowingVector&    operator <<     (_Parameter p) {
+        Store (p);
+        return *this;
+    }
 
-    long   used;
+    unsigned long   used;
     bool   isColumn;
 };
 
@@ -688,13 +695,17 @@ private:
 
 /*__________________________________________________________________________________________________________________________________________ */
 
-class           _AssociativeList: public _MathObject
-{
+struct _associative_list_key_value {
+  const char * key;
+  _PMathObj  payload;
+};
+
+class           _AssociativeList: public _MathObject {
 public:
     _AssociativeList                    (void);
     virtual ~_AssociativeList           (void) {}
 
-    bool    ParseStringRepresentation   (_String&, bool = true, _VariableContainer* = nil);
+    bool    ParseStringRepresentation   (_String&, _FormulaParsingContext&);
     /* SLKP 20090803
 
         Parse the list represented as
@@ -706,10 +717,12 @@ public:
 
      */
 
-    virtual BaseRef     toStr           (void);
-    virtual _PMathObj   Execute         (long opCode, _PMathObj = nil, _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual BaseRef     toStr           (unsigned long = 0UL);
+    virtual _PMathObj   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    // execute this operation with the list of Args
     virtual BaseRef     makeDynamic     (void);
     virtual _PMathObj   Compute         (void);
+    void                Clear           (void);
     virtual void        Merge           (_PMathObj);
     /* 20100907: SLKP
             A simple function to merge two lists;
@@ -731,22 +744,33 @@ public:
        returns the number of items processed
     */
 
-    _PMathObj           GetByKey        (_String&, long);
-    _PMathObj           GetByKey        (_String&);
-    _PMathObj           GetByKey        (long, long);
+    _PMathObj           GetByKey        (_String const&, long) const;
+    _PMathObj           GetByKey        (_String const&) const;
+    _PMathObj           GetByKey        (long, long) const;
     void                DeleteByKey     (_PMathObj);
     _PMathObj           MCoord          (_PMathObj);
     void                MStore          (_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
     // SLKP 20100811: see the comment for _Matrix::MStore
 
-    void                MStore          (_String  , _PMathObj, bool = true);
-    void                MStore          (_String  , _String);
+    void                MStore          (const _String&  , _PMathObj, bool = true);
+  
+    /* a convenience build-out function to push key-value pairs
+       << adds a reference count to the payload
+    */
+  
+    _AssociativeList &  operator <<     (_associative_list_key_value pair);
+    _AssociativeList &  operator <     (_associative_list_key_value pair);
+  
+    void                MStore          (const _String&  , const _String&);
     virtual unsigned long        ObjectClass     (void)      {
         return ASSOCIATIVE_LIST;
     }
     _List*              GetKeys         (void);
     void                FillInList      (_List&);
-    _String*            Serialize       (_String&);
+    unsigned long       Length          (void) const {
+      return avl.countitems();
+    }
+    _String*            Serialize       (unsigned long) ;
     
     /**
      * Traverse the dictionary, cast each value into a float and return their sum.
@@ -755,6 +779,13 @@ public:
      * @return The sum of all dictionary elements.
      */
     _PMathObj           Sum             (void);
+    /**
+     * Traverse the dictionary, and return { "key" : key, "value" : min / max over the list}
+     * All values that cannot be cast to a float will be IGNORED.
+     * If no valid numbers could be found, "key" will be None, and min/max will be an +/-Inf
+     * @return The minimum or maximum numeric value and corresponding key
+     */
+    _PMathObj           ExtremeValue    (bool do_mimimum) const;
 
     _AVLListXL          avl;
 
@@ -767,8 +798,24 @@ private:
 
 extern  _Matrix *GlobalFrequenciesMatrix;
 // the matrix of frequencies for the trees to be set by block likelihood evaluator
-extern  _Parameter  ANALYTIC_COMPUTATION_FLAG;
+extern  long  ANALYTIC_COMPUTATION_FLAG;
 
-void       InsertStringListIntoAVL  (_AssociativeList* , _String, _SimpleList&, _List&);
-void       InsertVarIDsInList       (_AssociativeList* , _String, _SimpleList&);
+void       InsertStringListIntoAVL  (_AssociativeList* , _String const&, _SimpleList const&, _List const&);
+void       InsertVarIDsInList       (_AssociativeList* , _String const&, _SimpleList const&);
+
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+    inline const double _avx_sum_4 (__m256d const & x) {
+      __m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
+                                 // (x3,x3,x1,x1)
+                                 _mm256_shuffle_pd (x, x, 0xf)
+                                 // (x2,x2,x0,x0);
+                                 );
+      return _mm_cvtsd_f64 (_mm_add_pd(
+                                       _mm256_castpd256_pd128 (t), // (x3+x2,x3+x2)
+                                       _mm256_extractf128_pd(t,1)  // (x1+x0,x0+x1);
+                                       ));
+      
+    }
+#endif
+
 #endif

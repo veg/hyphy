@@ -4,12 +4,12 @@ if (_WRAP_PASSTHROUGH_FLAG_)
 	if (_DO_TREE_REBALANCE_)
 	{
 		treeString = RerootTree (treeString,0);
-	}			
+	}
 	if (_KEEP_I_LABELS_)
 	{
 		INTERNAL_NODE_PREFIX = "intNode";
 	}
-	
+
 	Tree givenTree = treeString;
 	if (_KEEP_I_LABELS_)
 	{
@@ -22,7 +22,7 @@ else
 	{
 		fprintf (stdout, "\n\nA tree was found in the data file:\n",DATAFILE_TREE,"\n\nWould you like to use it:(Y/N)?");
 		fscanf (stdin, "String", response);
-		if ((response=="n")||(response=="N"))
+        if ((response=="n")||(response=="N"))
 		{
 			IS_TREE_PRESENT_IN_DATA = 0;
 		}
@@ -36,7 +36,7 @@ else
 			{
 				treeString = DATAFILE_TREE;
 			}
-			
+
 			if (_KEEP_I_LABELS_)
 			{
 				INTERNAL_NODE_PREFIX = "intNode";
@@ -57,7 +57,7 @@ else
 		SetDialogPrompt ("Please select a tree file for the data:");
 
 		fscanf (PROMPT_FOR_FILE, REWIND, "Raw", treeString);
-		
+
 		treeStringPattern = treeString$"^#NEXUS";
 		if (treeStringPattern[0]>=0)
 		{
@@ -69,7 +69,7 @@ else
 			}
 			if (Rows(NEXUS_FILE_TREE_MATRIX)>1)
 			{
-			
+
 				ChoiceList (treeChoice,"Select a tree",1,SKIP_NONE, NEXUS_FILE_TREE_MATRIX);
 				if (treeChoice < 0)
 				{
@@ -111,28 +111,28 @@ else
 					}
 					cp = cp+1;
 				}
-				
+
 				if (parenCounter)
 				{
 					fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file. Can't match the parentheses.\nHad:",treeString).
-					return 1;	
+					return 1;
 				}
-				
+
 				treeStringPattern = treeStringPattern[0];
 				treeString = treeString[treeStringPattern][cp-1];
 		}
 		}
-			
+
 		if (_DO_TREE_REBALANCE_)
 		{
 			treeString = RerootTree (treeString,0);
 		}
-			
+
 		if (_KEEP_I_LABELS_)
 		{
 			INTERNAL_NODE_PREFIX = "intNode";
 		}
-		
+
 		Tree givenTree = treeString;
 		if (_KEEP_I_LABELS_)
 		{

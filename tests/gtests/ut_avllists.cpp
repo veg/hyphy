@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -163,6 +163,7 @@ protected:
 TEST_F(AVLListTest,FindTest){
     //AVL List always takes a pointer to a SimpleList
     //Keeps going down through right children until lData is 0
+    
     long info; 
     _SimpleList sl; 
 
@@ -180,6 +181,7 @@ TEST_F(AVLListTest,FindTest){
 TEST_F(AVLListTest,FindLongTest){
     //AVL List always takes a pointer to a SimpleList
     //Keeps going down through right children until lData is 0
+    
     long info; 
     _SimpleList sl; 
 
@@ -196,6 +198,7 @@ TEST_F(AVLListTest,FindLongTest){
 TEST_F(AVLListTest,FindBestTest){
     //AVL List always takes a pointer to a SimpleList
     //Keeps going down through right children until lData is 0
+    
     long info; 
     _SimpleList sl; 
 
@@ -298,7 +301,7 @@ TEST_F(AVLListTest,GetByIndexTest){
 
 TEST_F(AVLListTest,ReorderListTest){
 
-    long info; 
+    //long info; 
     _SimpleList sl,sl2;
     _AVLList al(&sl);
     
@@ -334,7 +337,7 @@ TEST_F(AVLListTest,ReorderListTest){
 
 TEST_F(AVLListTest,TraverserTest){
 
-    long info; 
+    //long info; 
     long t = 5;
     long r = 0;
 
@@ -354,7 +357,7 @@ TEST_F(AVLListTest,TraverserTest){
 
 TEST_F(AVLListTest,toStrTest){
 
-    long info;
+    //long info;
     _SimpleList sl;
 
     _AVLList al(&sl);
@@ -364,7 +367,7 @@ TEST_F(AVLListTest,toStrTest){
     }
 
     _String* return_str = (_String*)al.toStr();
-    EXPECT_STREQ("0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n", return_str->getStr());
+    EXPECT_STREQ("(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", return_str->getStr());
 }
 
 TEST_F(AVLListTest,RetrieveTest) {
@@ -384,7 +387,7 @@ TEST_F(AVLListTest,RetrieveTest) {
 
 TEST_F(AVLListTest,ClearTest){
 
-    long info; 
+    //long info; 
     _SimpleList sl; 
 
     _AVLList al(&sl);
@@ -400,7 +403,8 @@ TEST_F(AVLListTest,ClearTest){
 }
 
 TEST_F(AVLListTest,InsertTest){
-    long info; 
+
+    //long info; 
     _SimpleList sl; 
     _AVLList al(&sl);
 
@@ -416,7 +420,8 @@ TEST_F(AVLListTest,InsertTest){
 }
 
 TEST_F(AVLListTest,InsertDataTest){
-    long info;
+
+    //long info;
     _SimpleList sl;
     _AVLList al(&sl);
 
@@ -428,7 +433,8 @@ TEST_F(AVLListTest,InsertDataTest){
 }
 
 TEST_F(AVLListTest,HasDataTest){
-    long info; 
+
+    //long info; 
     _SimpleList sl; 
     _AVLList al(&sl);
 
@@ -437,13 +443,12 @@ TEST_F(AVLListTest,HasDataTest){
     }
 
     EXPECT_EQ(true, al.HasData(2));
-    //Do not understand the fail condition
-    //EXPECT_EQ(false, al.HasData(20));
 }
 
 
 TEST_F(AVLListTest,DeleteTest){
-    long info; 
+
+    //long info; 
     _SimpleList sl; 
     _AVLList al(&sl);
 
@@ -457,7 +462,6 @@ TEST_F(AVLListTest,DeleteTest){
 
 TEST_F(AVLListTest,countitemsTest){
 
-    long info; 
     _SimpleList sl;
     _AVLList al(&sl);
 
@@ -469,49 +473,8 @@ TEST_F(AVLListTest,countitemsTest){
 }
 
 
-//TEST_F(AVLListXTest,toStrTest){
-
-//    long info; 
-//    _SimpleList sl; 
-
-//    _AVLListX alx(&sl);
-//    _String test_string = _String("house,condo,hyphy");
-//    _String* sub_string = new _String(",");
-
-//    _List* result_list = test_string.Tokenize(sub_string);
-//    _List rl = *result_list;
-//    alx.PopulateFromList(rl);
-
-//    _String* rs = (_String*)alx.toStr();
-//    _String expected("house : 0\ncondo : 1\nhyphy : 2\n"); 
-//    EXPECT_STREQ(expected.getStr(),rs->getStr());
-//}
-
-
-//TEST_F(AVLListXLTest,toStrTest){
-//
-//    long info; 
-//    _SimpleList sl; 
-//
-//    _AVLListXL alxl(&sl);
-//
-//    _String* test = new _String("new");
-//
-//    alxl.xtraD.AppendNewInstance(new _String("zero"));
-//
-//    for(int i=0; i<=10; i++) {
-//        alxl.InsertData((BaseRef)test, 0, true);    
-//    }
-//
-//    _String* rs = (_String*)alxl.toStr();
-//    EXPECT_STREQ("1,2,3,4,5",rs->getStr());
-//
-//}
-
-
 TEST_F(AVLListXLTest,ClearTest){
 
-    long info; 
     _SimpleList sl; 
     _AVLList alxl(&sl);
 
@@ -526,7 +489,6 @@ TEST_F(AVLListXLTest,ClearTest){
 
 TEST_F(AVLListXTest,InsertDataTest){
 
-    long info;
     _SimpleList sl;
     _AVLListX al(&sl);
 
@@ -537,7 +499,6 @@ TEST_F(AVLListXTest,InsertDataTest){
 
 TEST_F(AVLListXLTest,InsertDataTest){
 
-    long info;
     _SimpleList sl;
     _AVLListX al(&sl);
 
@@ -549,7 +510,6 @@ TEST_F(AVLListXLTest,InsertDataTest){
 
 TEST_F(AVLListXLTest,DeleteXtraTest){
 
-    long info; 
     _SimpleList sl; 
 
     _AVLListXL alxl(&sl);
@@ -570,16 +530,14 @@ TEST_F(AVLListXLTest,DeleteXtraTest){
 }
 
 TEST_F(AVLListXTest,DeleteXtraTest){
-     //It seems as though if you don't use a pointer to 
-    long info; 
+
     _SimpleList sl; 
 
     _AVLListX alx(&sl);
     _String test_string = _String("house,condo,hyphy");
     _String* sub_string = new _String(",");
 
-    _List* result_list = test_string.Tokenize(sub_string);
-    _List rl = *result_list;
+    _List rl = test_string.Tokenize(sub_string);
 
     alx.PopulateFromList(rl);
 
@@ -600,9 +558,9 @@ TEST_F(AVLListXTest,PopulateFromListTest){
     _String test_string = _String("house,condo,hyphy");
     _String* sub_string = new _String(",");
     
-    _List* result_list = test_string.Tokenize(sub_string);
+    _List result_list = test_string.Tokenize(sub_string);
     
-    alx.PopulateFromList(*result_list);
+    alx.PopulateFromList(result_list);
     _String* return_str = (_String*)alx.dataList->lData[2];
     EXPECT_STREQ("hyphy", return_str->getStr());
 }
@@ -611,29 +569,26 @@ TEST_F(AVLListXTest,PopulateFromListTest){
 
 
 TEST_F(AVLListXTest,SetAndGetXtraTest){
-     //It seems as though if you don't use a pointer to 
 
-    long info; 
     _SimpleList sl; 
 
     _AVLListX alx(&sl);
     _String test_string = _String("house,condo,hyphy");
     _String* sub_string = new _String(",");
 
-    _List* result_list = test_string.Tokenize(sub_string);
-    _List rl = *result_list;
+    _List rl = test_string.Tokenize(sub_string);
 
     alx.PopulateFromList(rl);
 
     alx.SetXtra(0,13);
     long x = alx.GetXtra((long)0);
     EXPECT_EQ(13,x);
+
 }
 
 
 TEST_F(AVLListXLTest,SetAndGetXtraTest){
 
-    long info; 
     _SimpleList sl; 
 
     _AVLListXL alxl(&sl);
@@ -648,6 +603,7 @@ TEST_F(AVLListXLTest,SetAndGetXtraTest){
 
     _String* x = (_String*)alxl.GetXtra((long)0);
     EXPECT_STREQ("xtra",x->getStr());
+
 }
 
 }

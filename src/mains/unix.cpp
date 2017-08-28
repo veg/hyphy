@@ -34,8 +34,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unistd.h>
 #include "polynoml.h"
 
-#if !defined __MINGW32__
-
+#if defined __MINGW32__
+    #include <shlwapi.h>
+#else
     #include <termios.h>
     #include <signal.h>
     #define __HYPHY_HANDLE_TERM_SIGNAL__
@@ -43,10 +44,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 
+
+
 #ifdef _MINGW32_MEGA_
-#include <Windows.h>
-HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
+  #include <Windows.h>
+  HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 #endif
+
 
 #ifdef  __UNITTEST__
 #include "gtest/gtest.h"
@@ -72,6 +76,19 @@ HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 
 #ifdef _OPENMP
 #include "omp.h"
+#endif
+
+//#define _COMPARATIVE_LF_DEBUG_CHECK "/Users/sergei/Desktop/lf.sequence"
+//#define _COMPARATIVE_LF_DEBUG_DUMP "/Users/sergei/Desktop/lf.sequence"
+
+#if defined _COMPARATIVE_LF_DEBUG_CHECK
+    FILE* _comparative_lf_debug_matrix_content_file = doFileOpen (_COMPARATIVE_LF_DEBUG_CHECK, "r", true);
+    _String _comparative_lf_debug_matrix_content (_comparative_lf_debug_matrix_content_file);
+    _Matrix* _comparative_lf_debug_matrix = new _Matrix (_comparative_lf_debug_matrix_content, true);
+#else
+    #if defined _COMPARATIVE_LF_DEBUG_DUMP
+    _GrowingVector* _comparative_lf_debug_matrix = new _GrowingVector ();
+    #endif
 #endif
 
 _List   availableTemplateFiles,
@@ -143,13 +160,23 @@ void            mpiOptimizerLoop (int, int);
 
 //____________________________________________________________________________________
 
-_String getLibraryPath() {
 
-    char    curWd[4096],
-            dirSlash = GetPlatformDirectoryChar();
-    getcwd (curWd,4096);
+#define _HYPHY_MAX_PATH_LENGTH 8192L
+
+_String getLibraryPath() {
+  char    dirSlash = GetPlatformDirectoryChar();
+
+#ifdef __MINGW32__
+  TCHAR buffer[_HYPHY_MAX_PATH_LENGTH];
+  GetModuleFileName(NULL, buffer, _HYPHY_MAX_PATH_LENGTH);
+  _String baseDir (buffer);
+  baseDir.Trim (0, baseDir.FindBackwards (dirSlash, 0, -1) - 1L);
+#else
+    char    curWd[_HYPHY_MAX_PATH_LENGTH];
+    getcwd (curWd,_HYPHY_MAX_PATH_LENGTH);
 
     _String baseDir (curWd);
+#endif
 
     if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
@@ -183,13 +210,24 @@ _String getLibraryPath() {
 }
 
 //__________________________________________________________________________________
+
+void   _helper_clear_screen (void) {
+  #ifdef __MINGW32__
+    system("cls");
+  #else
+    printf ("\033[2J\033[H");
+  #endif
+}
+
+//__________________________________________________________________________________
 void    ReadInTemplateFiles(void)
 {
-    _String fileIndex;
-    fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/files.lst";
+    _String dir_sep (GetPlatformDirectoryChar()),
+            fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles" & dir_sep & "files.lst";
+  
     FILE* modelList = fopen (fileIndex.getStr(),"r");
     if (!modelList) {
-        fileIndex = baseArgDir&"TemplateBatchFiles/files.lst";
+        fileIndex = baseArgDir&"TemplateBatchFiles" & dir_sep & "files.lst";
         modelList = fopen (fileIndex.getStr(),"r");
         if (!modelList) {
             return;
@@ -226,13 +264,13 @@ void    ReadInPostFiles(void)
 {
     //if (!likeFuncList.lLength)
     //  return;
-
-    _String fileIndex;
-    FILE* modelList = fopen (fileIndex.getStr(),"r");
-    fileIndex = libArgDir &"TemplateBatchFiles/postprocessors.lst";
-    modelList = fopen (fileIndex.getStr(),"r");
+ 
+    _String dir_sep (GetPlatformDirectoryChar());
+  
+    _String fileIndex = libArgDir & "TemplateBatchFiles" & dir_sep & "postprocessors.lst";
+    FILE*  modelList = fopen (fileIndex.getStr(),"r");
     
-    if (modelList == NULL) {
+    if (!modelList) {
         return;
     }
 
@@ -241,7 +279,8 @@ void    ReadInPostFiles(void)
     
     if (theData.sLength) {
         _ElementaryCommand::ExtractConditions(theData,0,availablePostProcessors);
-        for (long i = 0; i<availablePostProcessors.countitems(); i++) {
+      
+        for (unsigned long i = 0; i<availablePostProcessors.countitems(); i++) {
             _String* thisString = (_String*)availablePostProcessors(i);
             _List   thisFile;
             _ElementaryCommand::ExtractConditions(*thisString,thisString->FirstNonSpaceIndex(),thisFile,',');
@@ -254,11 +293,11 @@ void    ReadInPostFiles(void)
                 ((_String*)thisFile(j))->StripQuotes();
             }
             if (*(_String*)thisFile(0)!=_String("SEPARATOR")) {
-                fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/" & *(_String*)thisFile(1);
+                fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles" & dir_sep & *(_String*)thisFile(1);
                 //printf ("%s\n", fileIndex.sData);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
-                    fileIndex =libArgDir&"TemplateBatchFiles/"& *(_String*)thisFile(1);
+                    fileIndex =libArgDir&"TemplateBatchFiles"& dir_sep & *(_String*)thisFile(1);
                     dummyFile = fopen (fileIndex,"r");
                 }
                 if (dummyFile) {
@@ -354,8 +393,8 @@ long    DisplayListOfChoices (void)
                     padder.Finalize();
                     verString = padder & '/' & verString & "\\" & padder;
                 }
-
-                printf ("\n\033[2J\033[H%s\n%s\n\n",verString.getStr(), header.getStr());
+                _helper_clear_screen ();
+                printf ("%s\n%s\n\n",verString.getStr(), header.getStr());
                 for (choice = 0; choice<categoryHeadings.lLength; choice++) {
                     printf ("\n\t(%ld) %s",choice+1,((_String*)categoryHeadings(choice))->getStr());
                 }
@@ -374,13 +413,14 @@ long    DisplayListOfChoices (void)
                     return -1;
                 }
 
-                choice = fileAbbr.toNum();
+                choice = fileAbbr.toLong();
 
                 if ( choice>0 && choice<=categoryHeadings.lLength) {
                     categNumber = choice-1;
                 }
             } else {
-                printf ("\n\033[2J\033[H ***************** FILES IN '%s' ***************** \n\n",((_String*)categoryHeadings(categNumber))->getStr());
+                _helper_clear_screen ();
+                printf ("***************** FILES IN '%s' ***************** \n\n",((_String*)categoryHeadings(categNumber))->getStr());
                 long start = categoryDelimiters.lData[categNumber]+1,
                      end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.lData[categNumber+1];
 
@@ -399,7 +439,7 @@ long    DisplayListOfChoices (void)
                 if (fileAbbr.FirstNonSpaceIndex()<0) {
                     categNumber = -1;
                 } else {
-                    choice = fileAbbr.toNum();
+                    choice = fileAbbr.toLong();
                     if ((choice>0 && choice<=end-start)) {
                         return start+choice-1;
                     }
@@ -418,7 +458,8 @@ long    DisplayListOfPostChoices (void)
     long choice = -1;
     if (availablePostProcessors.lLength) {
         _String fileAbbr;
-        printf ("\033[2J\033[H\n\t Available Result Processing Tools\n\t ---------------------------------\n\n");
+        _helper_clear_screen ();
+        printf ("\n\t Available Result Processing Tools\n\t ---------------------------------\n\n");
         while (choice == -1) {
             for (choice = 0; choice<availablePostProcessors.lLength; choice++) {
                 printf ("\n\t(%ld):%s",choice+1,
@@ -433,7 +474,7 @@ long    DisplayListOfPostChoices (void)
             if (!fileAbbr.sLength||((fileAbbr.sLength==1)&&(fileAbbr.sData[0]=='Q'))) {
                 return -1;
             }
-            choice = fileAbbr.toNum();
+            choice = fileAbbr.toLong();
 
             if (choice<=0 || choice>availablePostProcessors.lLength) {
                 choice = -1;
@@ -500,13 +541,11 @@ void hyphyBreak (int signo)
 }
 
 //__________________________________________________________________________________
-void    SetStatusBarValue           (long,_Parameter,_Parameter)
-{
+void    SetStatusBarValue           (long,_Parameter,_Parameter){
 
 }
 //__________________________________________________________________________________
-void    SetStatusLine               (_String s)
-{
+void    SetStatusLine               (_String s) {
 #ifdef  _MINGW32_MEGA_
     if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE) {
         DWORD bytesWritten = 0;
@@ -523,11 +562,11 @@ void    SetStatusLine               (_String s)
 }
 
 //__________________________________________________________________________________
-void    SetStatusLineUser   (_String s)
+void    SetStatusLineUser   (_String const s)
 {
-    setvbuf(stdout, NULL, _IONBF, 0);
-    BufferToConsole("\33[2K\r");
-    StringToConsole(s);
+    setvbuf(stderr, NULL, _IONBF, 0);
+    BufferToConsole("\33[2K\r", stderr);
+    StringToConsole(s, stderr);
     needExtraNL = true;
 }
 
@@ -538,6 +577,9 @@ int main (int argc, char* argv[])
 {
     mainArgCount = argc - 1;
 
+#ifdef _COMPARATIVE_LF_DEBUG_DUMP
+    FILE * comparative_lf_debug_matrix_content_file = doFileOpen (_COMPARATIVE_LF_DEBUG_DUMP, "w");
+#endif
 
 #ifdef  __HYPHYMPI__
     int            rank,
@@ -553,23 +595,19 @@ int main (int argc, char* argv[])
 
     if (rank == 0) {
         mpiNodesThatCantSwitch.Populate (size,1,0);
-        /* {
-              char hostname[256];
-              gethostname(hostname, sizeof(hostname));
-              printf("PID %d on %s ready for attach\n", getpid(), hostname);
-              fflush(stdout);
-              //getchar ();
-          } */
-#endif
-
-
-        //for (long k=0; k<NSIG; k++)
-        //{
-        //  signal(k, &hyphyBreak);
-        //}
-
-#ifdef  __HYPHYMPI__
     }
+  
+    /*
+    int i = 0;
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    printf("PID %d on %s ready for attach\n", getpid(), hostname);
+    fflush(stdout);
+    while (0 == i)
+      sleep(5);
+    printf("PID %d on continuing\n", getpid());
+     */
+  
 #endif
 
 #ifdef __HYPHY_HANDLE_TERM_SIGNAL__
@@ -577,28 +615,35 @@ int main (int argc, char* argv[])
          signal (SIGTERM, SIG_IGN);
      if (signal (SIGINT, hyphy_sigterm_handler) == SIG_IGN)
          signal (SIGINT, SIG_IGN);
-         
 #endif
+  
     char    curWd[4096],
             dirSlash = GetPlatformDirectoryChar();
     getcwd (curWd,4096);
-
+  
     _String baseDir (curWd);
+  
 
     if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
     }
-    
+  
     _String libDir = getLibraryPath();
+
+
+#ifdef __MINGW32__
+     baseDir = libDir;
+#endif
+  
     pathNames&& &libDir;
     _String argFile;
+  
 
     libDirectory  = libDir;
     libArgDir     = libDirectory;
     baseDirectory = baseDir;
     baseArgDir    = baseDirectory;
-
-  
+    
 #ifdef _OPENMP
     systemCPUCount = omp_get_max_threads();
 #endif
@@ -626,7 +671,9 @@ int main (int argc, char* argv[])
     }
 #endif
 
-    for (long i=1; i<argc; i++) {
+    _List positional_arguments;
+    
+    for (unsigned long i=1UL; i<argc; i++) {
         _String thisArg (argv[i]);
         if (thisArg.sData[0]=='-') {
             ProcessConfigStr (thisArg);
@@ -660,33 +707,34 @@ int main (int argc, char* argv[])
 #ifdef __MP__
             if (thisArg.beginswith ("CPU=")) {
                 _String cpus = thisArg.Cut(4,-1);
-                systemCPUCount = cpus.toNum();
+                systemCPUCount = cpus.toLong();
                 if (systemCPUCount<1) {
                     systemCPUCount = 1;
                 }
-                pthread_setconcurrency (systemCPUCount+1);
+                pthread_setconcurrency ((int)systemCPUCount+1);
             } else
 #endif
-                argFile = thisArg;
+        //argFile = thisArg;
+        positional_arguments && &thisArg;
     }
 
     GlobalStartup();
+    
+    if (positional_arguments.Count()) {
+        argFile = *(_String*) positional_arguments.GetItem(0UL);
+    }
   
-  /*_String exp2 ("1+x*t+y*t"),
-          exp1 ("y*t");
-  
-  _Formula f1 (exp1),
-           f2 (exp2);
-  
-  _MathObject *pl = ((_Polynomial*)f1.ConstructPolynomial ())->Add (f2.ConstructPolynomial());
-  
-  fprintf (stdout, "%s\n", _String ((_String*)pl->toStr()).getStr());*/
-           
+    
 
     _ExecutionList ex;
   
   
-  if (calculatorMode) {
+    if (calculatorMode) {
+        if (argFile.sLength) {
+          PushFilePath  (argFile);
+          ReadBatchFile (argFile,ex);
+          ex.Execute();
+        }
         printf ("\nHYPHY is running in calculator mode. Type 'exit' when you are finished.\n");
         while (ExpressionCalculator()) ;
         return 0;
@@ -759,6 +807,18 @@ int main (int argc, char* argv[])
                 ReadBatchFile (templ,ex);
             }
         } else {
+            
+            if (positional_arguments.Count () > 1) {
+                ex.stdinRedirectAux = new _List;
+                ex.stdinRedirect = new _AVLListXL (ex.stdinRedirectAux);
+                for (unsigned long i = 1UL; i < positional_arguments.Count (); i++) {
+                    char buf[256];
+                    snprintf(buf, 255, "%012ld", i);
+                    ex.stdinRedirect->Insert (new _String(buf), (long)positional_arguments.GetItem (i), true);
+                }
+            }
+
+            
 #ifndef __MINGW32__
             if (argFile.sData[0] != '/') {
                 argFile       = baseDirectory & argFile;
@@ -769,9 +829,12 @@ int main (int argc, char* argv[])
             }
 #endif
             PushFilePath  (argFile);
+            
+            // if this is a nexus file, it will be executed here
             ReadBatchFile (argFile,ex);
         }
 
+        
         ex.Execute();
 
         if (usePostProcessors && (!updateMode)) {
@@ -818,10 +881,24 @@ int main (int argc, char* argv[])
         CloseHandle (_HY_MEGA_Pipe);
     }
 #endif
-
+  
+#if defined _COMPARATIVE_LF_DEBUG_CHECK
+    fclose (_comparative_lf_debug_matrix_content_file);
+#endif
+#if defined _COMPARATIVE_LF_DEBUG_DUMP
+    _comparative_lf_debug_matrix->Trim();
+    _comparative_lf_debug_matrix->toFileStr(comparative_lf_debug_matrix_content_file);
+    fclose (comparative_lf_debug_matrix_content_file);
+#endif
+    
     PurgeAll                    (true);
     GlobalShutdown              ();
 
+#ifdef __MINGW32__
+  fflush (stdout);
+  system("PAUSE");
+#endif
+  
 #ifdef __HYPHYMPI__
     if (rank == 0) {
         printf ("\n\n");

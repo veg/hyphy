@@ -262,38 +262,30 @@ function splitOnRegExp (string, splitter)
 }
 
 
+
 /*----------------------------------------------------------------*/
 
-function extractSubexpressions (string, splitter, merge, spacer)
-{
+function extractSubexpressions (string, splitter, merge, spacer) {
 	matched = string $ splitter;
-	if (merge)
-	{
+	if (merge) {
 		splitBits = "";
 		splitBits * 128;
 	}
-	else
-	{
+	else {
 		splitBits = {};
 	}
 	rMatched = Rows(matched);
-	if (rMatched>2)
-	{
-		if (merge)
-		{
-			for (mc = 2; mc < rMatched; mc = mc+2)
-			{
-				if (mc>2)
-				{
+	if (rMatched>2) {
+		if (merge) {
+			for (mc = 2; mc < rMatched; mc = mc+2) {
+				if (mc>2) {
 					splitBits * spacer;
 				}
 				splitBits * string[matched[mc]][matched[mc+1]];
 			}
 		}		
-		else
-		{
-			for (mc = 2; mc < rMatched; mc = mc+2)
-			{
+		else {
+			for (mc = 2; mc < rMatched; mc = mc+2) {
 				splitBits [Abs(splitBits)] = string[matched[mc]][matched[mc+1]];
 			}
 		}
@@ -307,23 +299,18 @@ function extractSubexpressions (string, splitter, merge, spacer)
 
 /*----------------------------------------------------------------*/
 
-function findAllUniqueExpressions (list, regExp, isMatrix)
-{
+function findAllUniqueExpressions (list, regExp, isMatrix) {
 	uniqueExpressions = {};
-	if (isMatrix)
-	{
+	if (isMatrix) {
 		totalCount = Rows(list)*Columns(list);
 	}
-	else
-	{
+	else {
 		totalCount = Abs (list);
 	}
 	
-	for (_k = 0; _k < totalCount; _k += 1)
-	{
+	for (_k = 0; _k < totalCount; _k += 1) {
 		matchRes = list[_k] $ regExp;
-		if (matchRes[0] >= 0)
-		{
+		if (matchRes[0] >= 0) {
 			matchRes = (list[_k])[matchRes[0]][matchRes[1]];
 			uniqueExpressions [matchRes] += 1;
 		}
@@ -446,22 +433,23 @@ function normalizeSequenceNamesInAFilterWithTree (filterName, treeName)
 			if (Abs (treeName) > 0) {
 			    (_treeAVL[_node_id_by_name [_seqNames[_k]]])["Name"] = _seqName2;
 			}
+			
+			ExecuteCommands ("SetParameter (`treeName`, _node_id_by_name [_seqNames[_k]]-1,_seqName2)");
 
 			_totalRenamed += 1;
 		}
 	}
 	
-	if (_totalRenamed && Abs (treeName) > 0) {
+	/*if (_totalRenamed && Abs (treeName) > 0) {
 	    ExecuteCommands ("Topology `treeName` = " + PostOrderAVL2String (_treeAVL));
-	}
+	}*/
 	
 	return _totalRenamed;
 }
 
 /*----------------------------------------------------------------*/
 
-function matchStringToSetOfPatterns (str, patterns)
-{
+function matchStringToSetOfPatterns (str, patterns) {
 	for (currentIndex = 0; currentIndex < Abs(patterns);currentIndex=currentIndex+1)
 	{
 		if ((str$patterns[currentIndex])[0] >= 0)

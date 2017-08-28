@@ -4,9 +4,9 @@
  
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
- Steven Weaver (sweaver@ucsd.edu)
+ Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
@@ -842,39 +842,51 @@ void    _Polynomial::Duplicate  (BaseRef tp)
 //__________________________________________________________________________________
 
 
-_PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
+_PMathObj _Polynomial::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)
 {
-    switch (opCode) {
-    case HY_OP_CODE_MUL: //*
-        if (p)
-            return Mult(p);
-        break;
-    case HY_OP_CODE_ADD: // +
-        if (p) {
-            return Add(p);
-        } else {
-            return Sum ();
-        }
-        break;
-    case HY_OP_CODE_SUB: // -
-        if (p) {
-            return Sub(p);
-        } else {
-            return Minus();
-        }
-        break;
+  switch (opCode) { // first check operations without arguments
     case HY_OP_CODE_TYPE: // Type
-        return Type();
-        break;
-    case HY_OP_CODE_POWER: // ^
-        if (p)
-            Raise(p);
-        break;
+      return Type();
+  }
+  
+  _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
+  
+  switch (opCode) { // next check operations without arguments or with one argument
+    case HY_OP_CODE_SUB: // -
+      if (arg0) {
+        return Sub(arg0);
+      } else {
+        return Minus();
+      }
+    case HY_OP_CODE_ADD: // +
+      if (arg0) {
+        return Add(arg0);
+      } else {
+        return Sum ();
+      }
+  }
+  
+  if (arg0) {
+    switch (opCode) {
+      case HY_OP_CODE_MUL: //*
+        return Mult(arg0);
+      case HY_OP_CODE_POWER: // ^
+        return Raise(arg0);
     }
-
-    WarnNotDefined (this, opCode, context);
-    return nil;
-
+    
+  }
+  
+  switch (opCode) {
+    case HY_OP_CODE_MUL:
+    case HY_OP_CODE_POWER:
+      WarnWrongNumberOfArguments (this, opCode,context, arguments);
+      break;
+    default:
+      WarnNotDefined (this, opCode,context);
+  }
+  
+  return new _MathObject;
+  
 }
 
 //__________________________________________________________________________________
@@ -2034,13 +2046,8 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
             terms1.Clear();
             terms2.Clear();
             idx1 = index.quickArrayAccess()+nt1+nt2-1;
-            long temp1 = sqrt((_Parameter)ref*nt1/nt2)+1, temp2 = sqrt((_Parameter)ref*nt2/nt1)+1;
-            if (temp1>nt1) {
-                temp1 = nt1;
-            }
-            if (temp2>nt2) {
-                temp2 = nt2;
-            }
+          
+          
             for (i = 0; i<ref; i++, idx1--) {
                 if (*idx1>=nt1) {
                     terms2<<*idx1;
@@ -2288,10 +2295,10 @@ _MathObject* _Polynomial::Raise (_MathObject* m)
 
         } else { // binary raise
             result = new _Polynomial(1.0);
-            checkPointer(result);
+          
             _Polynomial* oldR;
-            char bits[sizeof(long)*8], nLength = 0;
-            long pwr = m->Value();
+            unsigned char bits[sizeof(long)*8];
+            long pwr = m->Value(), nLength = 0L;
             while (pwr) {
                 bits[nLength]=pwr%2;
                 pwr/=2;
@@ -2481,7 +2488,7 @@ void    _Polynomial::Convert2ComputationForm(_SimpleList* c1, _SimpleList* c2, _
             (*cL2)<<s;
         }
 
-        delete (powerDiff);
+        delete [] powerDiff;
         if (!(c1&&c2)) {
             free(theTerms->thePowers);
             theTerms->thePowers = nil;
@@ -2564,7 +2571,7 @@ void _Polynomial::Convert2OperationForm (void)
             }
         }
         if (scratch) {
-            delete scratch;
+            delete [] scratch;
         }
         compList1.Clear();
         compList2.Clear();
@@ -2590,7 +2597,7 @@ _Parameter _Polynomial::ComputePolynomial (void)
     }
     _Parameter result = ComputeP (varValues, theTerms->GetCoeff(),n,compList1.countitems(),
                                   compList1.quickArrayAccess(), compList2.quickArrayAccess());
-    delete varValues;
+    delete [] varValues;
     return result;
 }
 //__________________________________________________________________________________
@@ -2671,7 +2678,7 @@ _Parameter      _Polynomial::ComputeP (_Parameter* varValues, _Parameter* compCo
 
         }
     }
-    delete holder;
+    delete [] holder;
     return result;
 }
 //__________________________________________________________________________________
@@ -2688,7 +2695,7 @@ void    _Polynomial::RankTerms(_SimpleList* receptacle)
 
 //__________________________________________________________________________________
 
-BaseObj* _Polynomial::toStr (void) {
+BaseObj* _Polynomial::toStr (unsigned long padding) {
   _String result (10, true);
   if (theTerms->NumberOfTerms()) {
     long i;
@@ -2743,11 +2750,11 @@ BaseObj* _Polynomial::toStr (void) {
       }
     }
   } else {
-    _String*s = (_String*)compList1.toStr();
+    _String*s = (_String*)compList1.toStr(padding);
     result<<s;
     result<<'\n';
     DeleteObject(s);
-    s = (_String*)compList2.toStr();
+    s = (_String*)compList2.toStr(padding);
     result<<s;
     result<<'\n';
     DeleteObject(s);
@@ -2758,7 +2765,7 @@ BaseObj* _Polynomial::toStr (void) {
 
 //__________________________________________________________________________________
 
-void _Polynomial::toFileStr (FILE*f)
+void _Polynomial::toFileStr (FILE*f, unsigned long padding)
 {
     if (theTerms->NumberOfTerms()&&theTerms->thePowers) {
         fprintf(f,"p(");
@@ -2794,8 +2801,8 @@ void _Polynomial::toFileStr (FILE*f)
             }
         }
     } else {
-        compList1.toFileStr(f);
-        compList2.toFileStr(f);
+        compList1.toFileStr(f, padding);
+        compList2.toFileStr(f, padding);
     }
 }
 
@@ -2839,7 +2846,7 @@ bool    _Polynomial::IsObjectEmpty (void)
     return true;
 }
 //__________________________________________________________________________________
-bool    _Polynomial::HasChanged (void)
+bool    _Polynomial::HasChanged (bool)
 {
     for (long k=variableIndex.countitems()-1; k>=0; k--) {
         if (LocateVar(variableIndex(k))->HasChanged()) {
