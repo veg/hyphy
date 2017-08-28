@@ -3,6 +3,43 @@ LoadFunctionLibrary("../models/DNA/GTR.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
+
+/**
+ * @name estimators.TakeLFStateSnapshot
+ * @param {String} lf_id
+ * @returns {Dict} parameter -> {"MLE" : value, "constraint" : string (if present)}
+ */
+
+lfunction estimators.TakeLFStateSnapshot(lf_id) {
+    snapshot = {};
+    GetString (info, ^lf_id,-1);
+
+    utility.ForEach (info[utility.getGlobalValue("terms.parameters.global_independent")], "_name_",
+                    '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_)};');
+    utility.ForEach (info[utility.getGlobalValue("terms.parameters.local_independent")], "_name_",
+                    '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_)};');
+    utility.ForEach (info[utility.getGlobalValue("terms.parameters.global_constrained")], "_name_",
+                    '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_),
+                                            terms.constraint : parameters.GetConstraint (_name_)};');
+    utility.ForEach (info[utility.getGlobalValue("terms.parameters.local_constrained")], "_name_",
+                    '`&snapshot`[_name_] = {terms.fit.MLE : Eval (_name_),
+                                            terms.constraint : parameters.GetConstraint (_name_)};');
+
+    return snapshot;
+}
+
+lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
+    utility.ForEachPair (snapshot, "_name_", "_info_",
+    '
+        if (_info_ / terms.constraint) {
+            parameters.SetConstraint (_name_, _info_ [terms.constraint], "");
+
+        } else {
+            parameters.SetValue (_name_, _info_ [terms.fit.MLE]);
+        }
+    ');
+}
+
 /**
  * @name estimators.GetGlobalMLE
  * @param {Dictionary} results
@@ -17,6 +54,24 @@ lfunction estimators.GetGlobalMLE(results, tag) {
     }
     return None;
 }
+
+/**
+ * @name estimators.GetBranchEstimates
+ * @param {Dictionary} results
+ * @param {Number} partiton_index
+ * @param {String} node_name
+ * @returns None
+ */
+lfunction estimators.GetBranchEstimates (results, partition_index, node_name) {
+
+    estimate = ((results[ utility.getGlobalValue("terms.branch_length")])[partition_index])[node_name];
+
+    if (Type(estimate) == "AssociativeList") {
+        return estimate;
+    }
+    return None;
+}
+
 
 /**
  * Extract global scope parameter estimates that match a regular expression
@@ -59,7 +114,7 @@ function estimators.copyGlobals2(key2, value2) {
     };
 
     if (parameters.IsIndependent(value2) != TRUE) {
-        ((estimators.ExtractMLEs.results[terms.global])[key2])[terms.constraint] = parameters.getConstraint(value2);
+        ((estimators.ExtractMLEs.results[terms.global])[key2])[terms.constraint] = parameters.GetConstraint(value2);
     }
 }
 
@@ -144,7 +199,7 @@ function estimators.ExtractBranchInformation.copy_local(key, value) {
     };
 
     if (parameters.IsIndependent(estimators.ExtractBranchInformation.copy_local.var_name) != TRUE) {
-        (estimators.extractBranchLength.result[key])[terms.constraint] = parameters.getConstraint(estimators.ExtractBranchInformation.copy_local.var_name);
+        (estimators.extractBranchLength.result[key])[terms.constraint] = parameters.GetConstraint(estimators.ExtractBranchInformation.copy_local.var_name);
     }
 
 }
@@ -190,7 +245,10 @@ function estimators.applyBranchLength(tree, node, model, length) {
  * @param {String} value
  */
 function estimators.fixSubsetOfEstimates.helper(key, value) {
-    value[terms.fix] = 1;
+    if (value / terms.constraint == FALSE) {
+        estimators.fixSubsetOfEstimates.fixed + value[terms.id];
+        value[terms.fix] = TRUE;
+    }
 }
 
 /**
@@ -210,7 +268,9 @@ function estimators.fixSubsetOfEstimates.helper_condition(key) {
  * @returns nothing
  */
 function estimators.fixSubsetOfEstimates(estimates, variables) {
+    estimators.fixSubsetOfEstimates.fixed = {};
     (estimates[terms.global])["estimators.fixSubsetOfEstimates.helper"]["estimators.fixSubsetOfEstimates.helper_condition"];
+    return estimators.fixSubsetOfEstimates.fixed;
 }
 
 /**
@@ -287,7 +347,7 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
 }
 
 /**
- * @name estimators.ApplyExistingEstimates
+ * @name estimators.TraverseLocalParameters
  * @param {String} likelihood_function_id
  * @param {Dictionary} model_descriptions
  * @param {String} callback (tree, node, parameter_list)
@@ -308,6 +368,7 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
     }
     return result;
 }
+
 
 /**
  * @name estimators.ApplyExistingEstimates
@@ -425,7 +486,7 @@ lfunction estimators.FitExistingLF (lf_id, model_objects) {
 
     results = estimators.ExtractMLEs( lf_id, model_objects);
     results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
-    results[utility.getGlobalValue ("terms.parameters")] = mles[1][1] + df;
+    results[utility.getGlobalValue ("terms.parameters")] = mles[1][1];
 
     return results;
 }
@@ -526,20 +587,8 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     return results;
 }
 
-
-/**
- * @name estimators.FitSingleModel_Ext
- * @param {DataFilter} data_filter
- * @param {Tree} tree
- * @param {Dict} model
- * @param {Matrix} initial_values
- * @param {Dict} run_options
- * @returns results
- */
-
-lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, initial_values, run_options) {
-
-   if (Type(data_filter) == "String") {
+lfunction estimators.CreateLFObject (context, data_filter, tree, model_template, initial_values, run_options) {
+    if (Type(data_filter) == "String") {
         return estimators.FitSingleModel_Ext ({
             {
                 data_filter__
@@ -554,48 +603,64 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     filters = utility.Map({
         components,
         1
-    }["_MATRIX_ELEMENT_ROW_"], "_value_", "''+ '`&nuc_data`_' + _value_");
+    }["_MATRIX_ELEMENT_ROW_"], "_value_", "''+ '`context`.nuc_data_' + _value_");
 
     lf_components = {
         2 * components,
         1
     };
 
+
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i] = filters[i];
         DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
     }
 
-    name_space = & user;
-
-
-
-    user_model = model.generic.DefineModel(model_template, name_space, {
+    user_model_id = context + ".user_model";
+    utility.ExecuteInGlobalNamespace ("`user_model_id` = 0");
+    ^(user_model_id) = model.generic.DefineModel(model_template, context + ".model", {
             "0": "terms.global"
         }, filters, None);
 
 
     for (i = 0; i < components; i += 1) {
-
-        lf_components[2 * i + 1] = "tree_" + i;
-        model.ApplyModelToTree(Eval("&`lf_components[2*i + 1]`"), tree[i], {
-            "default": user_model
+        lf_components[2 * i + 1] = "`context`.tree_" + i;
+        model.ApplyModelToTree(lf_components[2 * i + 1], tree[i], {
+            "default": ^(user_model_id)
         }, None);
     }
 
-    LikelihoodFunction likelihoodFunction = (lf_components);
 
-
+    lfid = context + ".likelihoodFunction";
+    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lfid` = (`&lf_components`)");
 
     df = 0;
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", {
-                name_space: user_model
+            df = estimators.ApplyExistingEstimates(lfid, {
+                (^user_model_id)[utility.getGlobalValue ("terms.id")]: ^(user_model_id)
             }, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
-
-
     }
+
+    return df;
+}
+
+/**
+ * @name estimators.FitSingleModel_Ext
+ * @param {DataFilter} data_filter
+ * @param {Tree} tree
+ * @param {Dict} model
+ * @param {Matrix} initial_values
+ * @param {Dict} run_options
+ * @returns results
+ */
+
+lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, initial_values, run_options) {
+
+    this_namespace = (&_);
+    this_namespace = this_namespace[0][Abs (this_namespace)-3];
+
+    df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options);
 
    	Optimize(mles, likelihoodFunction);
 
@@ -603,22 +668,27 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
     }
 
-    results = estimators.ExtractMLEs( & likelihoodFunction, {
-        name_space: user_model
-    });
+    model_id_to_object = {
+        (this_namespace + ".model"): user_model
+    };
+
+
+    results = estimators.ExtractMLEs( & likelihoodFunction, model_id_to_object);
 
 
     results[utility.getGlobalValue("terms.fit.log_likelihood")] = mles[1][0];
     results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + (user_model [utility.getGlobalValue("terms.parameters")]) [utility.getGlobalValue("terms.model.empirical")] + df;
 
 
-    if (run_options[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
+    if (option[utility.getGlobalValue("terms.run_options.retain_model_object")]) {
+        results[utility.getGlobalValue("terms.model")] = model_id_to_object;
+    }
+
+   if (run_options[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
         results[utility.getGlobalValue("terms.likelihood_function")] = & likelihoodFunction;
     } else {
         DeleteObject(likelihoodFunction);
     }
-
-
 
     return results;
 }
@@ -821,6 +891,9 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df += estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_id_to_object, initial_values, option[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
+
+    //Export (lfe, likelihoodFunction);
+    //console.log (lfe);
 
     Optimize(mles, likelihoodFunction);
 

@@ -4,7 +4,7 @@
 "SLAC","Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).","SelectionAnalyses/SLAC.bf";
 "FUBAR","Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).","FUBAR.bf";
 "BUSTED","Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED.bf";
-"aBSREL","Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/BranchSiteREL.bf";
+"aBSREL","Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
 "RELAX","Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";
 
 "","Perform a maximum likelihood analysis on a single file given a single tree.","!Basic Analyses";

@@ -85,7 +85,7 @@ bool    FindNextNexusToken (FileState& fState, FILE* f, _String& CurrentLine, lo
 {
     pos = CurrentLine.FirstNonSpaceIndex (pos,-1,1);
     if (pos==-1) {
-        ReadNextLine(f,&CurrentLine,&fState,false);
+        ReadNextLine(f,&CurrentLine,&fState,false, false);
         pos = CurrentLine.FirstNonSpaceIndex (0,-1,1);
         if (pos==-1) {
             return false;
@@ -103,7 +103,7 @@ bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _String& CurrentL
     static _String endMark ("END");
     pos = CurrentLine.Find (endMark,pos+1,-1);
     while (pos<0) {
-        ReadNextLine(file,&CurrentLine,&fState,false);
+        ReadNextLine(file,&CurrentLine,&fState,false, false);
         if (!CurrentLine.sLength) {
             return false;
         }
@@ -113,12 +113,12 @@ bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _String& CurrentL
             if (pos>=0) {
                 CurrentLine.Trim (pos+endMark.sLength, -1);
                 if (!CurrentLine.sLength) {
-                    ReadNextLine(file,&CurrentLine,&fState,false);
+                    ReadNextLine(file,&CurrentLine,&fState,false, false);
                 }
             } else {
                 _String errMsg ("Found END w/o a trailing semicolon. Assuming end of block and skipping the rest of the line.");
                 ReportWarning (errMsg);
-                ReadNextLine(file,&CurrentLine,&fState,false);
+                ReadNextLine(file,&CurrentLine,&fState,false, false);
             }
             return true;
         }
@@ -204,7 +204,7 @@ bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
             if (NLonly&&(blank.FirstNonSpaceIndex(0,-1,1)>=0)) {
                 break;
             }
-            ReadNextLine(f,&CurrentLine,&fState,false);
+            ReadNextLine(f,&CurrentLine,&fState,false, false);
             newPos = 0;
             if (!CurrentLine.sLength) {
                 c=';';
@@ -608,7 +608,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
             break;
         }
         // now that we've got stuff to work with see what it is
-
+      
         if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
@@ -786,6 +786,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                 key2 = key1.Cut(i,lastNode-1);
                 i = lastNode-1;
                 lastNode = translationsFrom.BinaryFindObject (&key2);
+              
                 if (lastNode>=0) {
                     revisedTreeString<< (_String*)translationsTo.lData[lastNode];
                 } else {
@@ -1316,7 +1317,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
         }
         if (!done) {
             if (CurrentLine.sLength == 0) {
-                ReadNextLine(f,&CurrentLine,&fState,false);
+                ReadNextLine(f,&CurrentLine,&fState,false,false);
             }
             pos = 0;
             if (CurrentLine.sLength==0) {
@@ -1340,7 +1341,7 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
     _String CurrentLine, beginMark ("BEGIN"), endMark ("END"), blockName, data ("DATA"), chars ("CHARACTERS"),
             taxa ("TAXA"), trees ("TREES"), assumptions ("ASSUMPTIONS"), hyphy ("HYPHY"), sets ("SETS");
 
-    ReadNextLine(file,&CurrentLine,&fState,false);
+    ReadNextLine(file,&CurrentLine,&fState,false, false);
     while (CurrentLine.sLength) {
         f = 0;
         while ((f = CurrentLine.FindAnyCase(beginMark,f,-1 ))>=0) {
@@ -1405,7 +1406,7 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
             lookForEnd = false;
             SkipUntilNexusBlockEnd (fState,file,CurrentLine,f);
         } else {
-            ReadNextLine(file,&CurrentLine,&fState,false);
+            ReadNextLine(file,&CurrentLine,&fState,false, false);
         }
 
     }

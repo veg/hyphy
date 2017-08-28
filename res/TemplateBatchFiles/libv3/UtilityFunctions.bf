@@ -747,6 +747,45 @@ lfunction utility.DefinedVariablesMatchingRegex (selector) {
     return res;
 }
 
+/**
+ * Bin an iterable-type object by value
+ * @param  obj {Dict | Matrix}
+ * @return Dict value->list of keys
+ */
+lfunction utility.BinByValue (obj) {
+    if (Type (obj) == "AssociativeList") {
+        keys  = Rows (obj);
+        count = Abs  (obj);
+        result = {};
+        for (i = 0; i < count; i+=1) {
+            str_value = "" + obj[keys[i]];
+            if (result / str_value) {
+                result [str_value] + keys[i];
+            } else {
+                result [str_value] = {"0" : keys[i]};
+            }
+        }
+        return result;
+    } else {
+        if (Type (obj) == "Matrix") {
+            count = Rows (obj)*Columns (obj);
+            result = {};
+            for (i = 0; i < count; i+=1) {
+                str_value = "" + obj[i];
+                if (result / str_value) {
+                    result [str_value] + i;
+                } else {
+                    result [str_value] = {"0" : i};
+                }
+            }
+        }
+        return result;
+    }
+
+    return None;
+}
+
+
 
 /**
  * Returns the list of modules loaded with `LoadFunctionLibrary`

@@ -5,6 +5,27 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
 LoadFunctionLibrary ("../convenience/regexp.bf");
 
 /** @module model */
+/**
+ * @name model.ApplyModelToTree
+ * @param id
+ * @param tree
+ * @param model_list
+ * @param rules
+ */
+lfunction model.GetParameters_RegExp(model, re) {
+
+    names = utility.Filter (utility.Keys ((model[utility.getGlobalValue ("terms.parameters")])[ utility.getGlobalValue("terms.global")]),
+                            "_parameter_description_",
+                            "None != regexp.Find (_parameter_description_, `&re`)");
+
+    result = {};
+    count  = utility.Array1D (names);
+    for (k = 0; k < count; k += 1) {
+        result [names[k]] = ((model[utility.getGlobalValue ("terms.parameters")])[ utility.getGlobalValue("terms.global")])[names[k]];
+    }
+
+    return result;
+}
 
 /**
  * @name model.ApplyModelToTree
@@ -459,7 +480,7 @@ lfunction model.MatchAlphabets (a1, a2) {
 
 lfunction models.BindGlobalParameters (models, filter) {
     if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
-        reference_set = (((models[0])["parameters"])[^"terms.global"]);
+        reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
         candidate_set = utility.Values(utility.Filter (utility.Keys (reference_set), "_key_",
             "regexp.Find (_key_,`&filter`)"
         ));
@@ -467,15 +488,17 @@ lfunction models.BindGlobalParameters (models, filter) {
         constraints_set = {};
 
         for (k = 1; k < Abs (models); k+=1) {
-            parameter_set = (((models[k])["parameters"])[^"terms.global"]);
-            utility.ForEach (candidate_set, "_p_",
-                "if (`&parameter_set` / _p_) {
-                    if (parameters.IsIndependent (`&parameter_set`[_p_])) {
-                        parameters.SetConstraint (`&parameter_set`[_p_], `&reference_set`[_p_], '');
-                        `&constraints_set` [`&parameter_set`[_p_]] = `&reference_set`[_p_];
-                    }
-                }"
-            );
+            parameter_set = (((models[k])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
+            if (Type (parameter_set) == "AssociativeList") {
+                utility.ForEach (candidate_set, "_p_",
+                    "if (`&parameter_set` / _p_) {
+                        if (parameters.IsIndependent (`&parameter_set`[_p_])) {
+                            parameters.SetConstraint (`&parameter_set`[_p_], `&reference_set`[_p_], '');
+                            `&constraints_set` [`&parameter_set`[_p_]] = `&reference_set`[_p_];
+                        }
+                    }"
+                );
+            }
         }
 
         return constraints_set;

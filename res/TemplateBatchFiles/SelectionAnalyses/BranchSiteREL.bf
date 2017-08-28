@@ -135,7 +135,7 @@ _BSREL.json_path = _BSREL.output_prefix + ".json";
 
 
 (_BSREL_json[terms.json.input])[terms.json.file] = filename;
-(_BSREL_json[terms.json.input])[terms.json.tree_string] = tree_info[terms.trees.newick_with_lengths];
+(_BSREL_json[terms.json.input])[terms.json.tree_string] = tree_info[terms.trees.newick_with_lengths]; // TODO: without lengths if there are none.
 (_BSREL_json[terms.json.input])[terms.json.sequences] = ds.species;
 (_BSREL_json[terms.json.input])[terms.json.sites] = ds.sites/3;
 
@@ -302,7 +302,7 @@ for (k = 0; k < totalBranchCount; k = k+1) {
 	node_omegas[1] = 1;
 
 
-    (((_BSREL_json[terms.json.fits])[_BSREL.mg94_model]) [terms.json.rate_distributions])[bNames[k]] = matrix2json(node_omegas);
+    (((_BSREL_json[terms.json.fits])[_BSREL.mg94_model]) [terms.json.rate_distribution])[bNames[k]] = matrix2json(node_omegas);
 
 
 }
@@ -576,7 +576,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     rate_classes = rate_classes_by_branch[k];
     node_omegas = getNodeOmegaDistribution (ref, rate_classes);
 
-    (((_BSREL_json[terms.json.fits])[_BSREL.adaptive_model]) [terms.json.rate_distributions])[bNames[k]] = matrix2json(node_omegas);
+    (((_BSREL_json[terms.json.fits])[_BSREL.adaptive_model]) [terms.json.rate_distribution])[bNames[k]] = matrix2json(node_omegas);
 
     fprintf (stdout, "\n");
     printNodeDesc (ref, rate_classes_by_branch[k]);
@@ -1141,5 +1141,5 @@ lfunction json_store_lf (json, name, ll, df, aicc, time, tree_length, tree_strin
                             utility.getGlobalValue("terms.json.runtime") : time,
                             utility.getGlobalValue("terms.json.tree_length") : tree_length,
                             utility.getGlobalValue("terms.json.tree_string") : tree_string,
-                            utility.getGlobalValue("terms.json.rate_distributions") : {}};
+                            utility.getGlobalValue("terms.json.rate_distribution") : {}};
 }

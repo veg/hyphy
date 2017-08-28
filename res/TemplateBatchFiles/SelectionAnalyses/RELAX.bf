@@ -1,13 +1,6 @@
 RequireVersion ("2.31");
 
-
-
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
-
-LoadFunctionLibrary("GrabBag");
-LoadFunctionLibrary("CF3x4");
-LoadFunctionLibrary("TreeTools");
-
 
 // namespace 'utility' for convenience functions
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
@@ -45,12 +38,17 @@ relax.json    = { terms.json.input: {},
 
 relax.relaxation_parameter        = "relax.K";
 relax.rate_classes     = 3;
-relax.MG94 = "MG94xREV with separate rates for branch sets";
+relax.MG94_name = "MG94xREV with separate rates for branch sets";
+relax.general_descriptive_name = "General descriptive";
+relax.alternative_name = "RELAX alternative";
+relax.null_name = "RELAX null";
+relax.partitioned_descriptive_name = "RELAX partitioned descriptive";
+
 
 terms.relax.k          = "relaxation or intensification parameter";
 terms.relax.k_range    = {
         terms.lower_bound: "0",
-        terms.upper_bound: "20"
+        terms.upper_bound: "50"
     };
 
 relax.p_threshold = 0.05;
@@ -145,11 +143,11 @@ selection.io.json_store_branch_attribute(relax.json, terms.original_name, terms.
                                          relax.name_mapping);
 
 
-selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                            relax.MG94,
+selection.io.json_store_lf (relax.json,
+                            relax.MG94_name,
                             relax.final_partitioned_mg_results[terms.fit.log_likelihood],
                             relax.final_partitioned_mg_results[terms.parameters] ,
-                            math.GetIC (relax.final_partitioned_mg_results[terms.fit.log_likelihood], relax.final_partitioned_mg_results[terms.parameters], relax.codon_data_info[terms.data.sample_size]),
+                            relax.codon_data_info[terms.data.sample_size],
                             relax.report_dnds);
 
 
@@ -205,15 +203,15 @@ if (relax.model_set == "All") { // run all the models
                                                          "{terms.json.omega_ratio : relax.inferred_ge_distribution [_index_][0],
                                                            terms.json.proportion  : relax.inferred_ge_distribution [_index_][1]}")
                                    };
-    selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                                "General descriptive",
+    selection.io.json_store_lf (relax.json,
+                                relax.general_descriptive_name,
                                 relax.general_descriptive.fit[terms.fit.log_likelihood],
                                 relax.general_descriptive.fit[terms.parameters] + 9 , // +9 comes from CF3x4
-                                math.GetIC (relax.general_descriptive.fit[terms.fit.log_likelihood], relax.general_descriptive.fit[terms.parameters] + 9, relax.codon_data_info[terms.data.sample_size]),
+                                relax.codon_data_info[terms.data.sample_size],
                                 relax.distribution_for_json
                             );
 
-    selection.io.json_store_branch_attribute(relax.json, "General descriptive", terms.branch_length, 1,
+    selection.io.json_store_branch_attribute(relax.json, relax.general_descriptive_name, terms.branch_length, 1,
                                                  0,
                                                  selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
@@ -259,8 +257,7 @@ relax.reference.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS
         relax.filter_names,
         None);
 
-relax.bound_weights = models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.reference.bsrel_model}, terms.mixture.mixture_aux_weight + ".+");
-
+relax.bound_weights = models.BindGlobalParameters ({"0" : relax.reference.bsrel_model, "1" : relax.test.bsrel_model}, terms.mixture.mixture_aux_weight + ".+");
 models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.reference.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 
 parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
@@ -345,15 +342,15 @@ relax.distribution_for_json = {relax.test_branches_name : utility.Map (utility.R
                                                        terms.json.proportion  : relax.inferred_distribution_ref [_index_][1]}")
                                };
 
-selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                            "RELAX alternative",
+selection.io.json_store_lf (relax.json,
+                            relax.alternative_name,
                             relax.alternative_model.fit[terms.fit.log_likelihood],
                             relax.alternative_model.fit[terms.parameters] + 9 , // +9 comes from CF3x4
                             relax.codon_data_info[terms.data.sample_size],
                             relax.distribution_for_json
                         );
 
-selection.io.json_store_branch_attribute(relax.json, "RELAX alternative", terms.branch_length, 2,
+selection.io.json_store_branch_attribute(relax.json, relax.alternative_name, terms.branch_length, 2,
                                              0,
                                              selection.io.extract_branch_info((relax.alternative_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
@@ -381,15 +378,15 @@ relax.distribution_for_json = {relax.test_branches_name : utility.Map (utility.R
 
 relax.distribution_for_json   [relax.reference_branches_name] =   relax.distribution_for_json   [relax.test_branches_name];
 
-selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                            "RELAX null",
+selection.io.json_store_lf (relax.json,
+                            relax.null_name ,
                             relax.null_model.fit[terms.fit.log_likelihood],
                             relax.null_model.fit[terms.parameters] + 9 , // +9 comes from CF3x4
                             relax.codon_data_info[terms.data.sample_size],
                             relax.distribution_for_json
                         );
 
-selection.io.json_store_branch_attribute(relax.json, "RELAX null", terms.branch_length, 3,
+selection.io.json_store_branch_attribute(relax.json, relax.null_name, terms.branch_length, 3,
                                              0,
                                              selection.io.extract_branch_info((relax.null_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
@@ -415,9 +412,9 @@ console.log ("----\n");
 selection.io.stopTimer (relax.json [terms.json.timers], "RELAX null model fitting");
 
 if (relax.model_set == "All") {
-    selection.io.startTimer (relax.json [terms.json.timers], "RELAX partitioned exploratory", 5);
+    selection.io.startTimer (relax.json [terms.json.timers], "RELAX partitioned descriptive", 5);
 
-    io.ReportProgressMessageMD ("RELAX", "pe", "Fitting the partitioned exploratory model (separate distributions for *test* and *reference* branches)");
+    io.ReportProgressMessageMD ("RELAX", "pe", "Fitting the partitioned descriptive model (separate distributions for *test* and *reference* branches)");
     parameters.RemoveConstraint (utility.Keys (relax.bound_weights));
     for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
         parameters.RemoveConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
@@ -442,23 +439,24 @@ if (relax.model_set == "All") {
                                                            terms.json.proportion  : relax.reference.inferred_distribution [_index_][1]}")
                                    };
 
-    selection.io.json_store_lf_spool (relax.codon_data_info [terms.json.json], relax.json,
-                                "RELAX partitioned exploratory",
+    selection.io.json_store_lf (relax.json,
+                                relax.partitioned_descriptive_name,
                                 relax.pe.fit[terms.fit.log_likelihood],
                                 relax.pe.fit[terms.parameters] + 9 , // +9 comes from CF3x4
                                 relax.codon_data_info[terms.data.sample_size],
                                 relax.distribution_for_json
                             );
 
-    selection.io.json_store_branch_attribute(relax.json, "RELAX partitioned exploratory", terms.branch_length, 4,
+    selection.io.json_store_branch_attribute(relax.json, relax.partitioned_descriptive_name, terms.branch_length, 4,
                                                  0,
                                                  selection.io.extract_branch_info((relax.pe.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
 
-    selection.io.stopTimer (relax.json [terms.json.timers], "RELAX partitioned exploratory");
+    selection.io.stopTimer (relax.json [terms.json.timers], "RELAX partitioned descriptive");
 }
 
 selection.io.stopTimer (relax.json [terms.json.timers], "Overall");
+
 io.SpoolJSON (relax.json, relax.codon_data_info [terms.json.json]);
 
 return relax.json;
@@ -638,10 +636,10 @@ lfunction relax.select_branches(partition_info) {
         }
     }
 
-    ChoiceList(testSet, "Choose the set of branches to use the _test_ set", 1, NO_SKIP, selectTheseForTesting);
+    ChoiceList(testSet, "Choose the set of branches to use as the _test_ set", 1, NO_SKIP, selectTheseForTesting);
     io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
     if (option_count > 2) {
-        ChoiceList(referenceSet, "Choose the set of branches to use the _reference_ set", 1, testSet, selectTheseForTesting);
+        ChoiceList(referenceSet, "Choose the set of branches to use as the _reference_ set", 1, testSet, selectTheseForTesting);
         io.CheckAssertion ("`&referenceSet` >= 0", "User cancelled branch selection; analysis terminating");
     } else {
         referenceSet = 1-testSet;

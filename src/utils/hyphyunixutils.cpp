@@ -206,6 +206,7 @@ void    BufferToConsole (const char* s, void * extra) {
     fprintf ((FILE*)extra, "%s",s);
   } else {
     printf ("%s",s);
+    fflush(stdout);
   }
 #endif
 }

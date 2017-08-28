@@ -24,8 +24,10 @@ function io.CheckAssertion(statement, error_msg) {
 lfunction io.PromptUser(prompt,
     default, lower_bound, upper_bound, is_integer) {
     value = lower_bound - 1;
+    max_tries = 10;
 
     while (value < lower_bound || value > upper_bound) {
+        io.CheckAssertion ("`&max_tries`", "Failed to provide a valid value after the maximum number of propmts");
 
         fprintf(stdout, prompt, " (permissible range = [", lower_bound, ",", upper_bound, "], default value = ",
             default);
@@ -44,6 +46,7 @@ lfunction io.PromptUser(prompt,
         if (is_integer) {
             value = value $ 1;
         }
+        max_tries = max_tries - 1;
     }
     return value;
 }
