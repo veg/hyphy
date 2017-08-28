@@ -20,7 +20,6 @@ cache:
       - $HOME/cmake-3.3.2-Linux-x86_64/ 
 
 env:
-  - MPI=openmpi
   - METHOD_TEST=tests/hbltests/libv3/SLAC.wbf
   - METHOD_TEST=tests/hbltests/libv3/SLAC-partitioned.wbf
   - METHOD_TEST=tests/hbltests/libv3/FEL.wbf
