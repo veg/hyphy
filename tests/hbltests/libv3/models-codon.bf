@@ -12,9 +12,9 @@ function test_model_codon_mapcode() {
     expected_sense = { {"AAA", "AAC", "AAG", "AAT", "ACA", "ACC", "ACG", "ACT", "AGA", "AGC", "AGG", "AGT", "ATA", "ATC", "ATG", "ATT", "CAA", "CAC", "CAG", "CAT", "CCA", "CCC", "CCG", "CCT", "CGA", "CGC", "CGG", "CGT", "CTA", "CTC", "CTG", "CTT", "GAA", "GAC", "GAG", "GAT", "GCA", "GCC", "GCG", "GCT", "GGA", "GGC", "GGG", "GGT", "GTA", "GTC", "GTG", "GTT", "TAC", "TAT", "TCA", "TCC", "TCG", "TCT", "TGC", "TGG", "TGT", "TTA", "TTC", "TTG", "TTT"} };
     expected_stop = {{"TAA", "TAG", "TGA"}};
 
-    assert((mapped_code["sense"])[0] == expected_sense[0], "wrong sense");
-    assert((mapped_code["stop"])[0] == expected_stop[0], "wrong sense");
-    assert(utility.KeyExists(mapped_code, "translation-table"), "translation-table key not found");
+    assert((mapped_code[terms.sense_codons])[0] == expected_sense[0], "wrong sense");
+    assert((mapped_code[terms.stop_codons])[0] == expected_stop[0], "wrong sense");
+    assert(utility.KeyExists(mapped_code, terms.translation_table), "translation-table key not found");
 
 }
 

@@ -2,8 +2,30 @@ LoadFunctionLibrary ("DNA.bf");
 LoadFunctionLibrary ("parameters.bf");
 LoadFunctionLibrary ("frequencies.bf");
 LoadFunctionLibrary ("../UtilityFunctions.bf");
+LoadFunctionLibrary ("../convenience/regexp.bf");
 
 /** @module model */
+/**
+ * @name model.ApplyModelToTree
+ * @param id
+ * @param tree
+ * @param model_list
+ * @param rules
+ */
+lfunction model.GetParameters_RegExp(model, re) {
+
+    names = utility.Filter (utility.Keys ((model[utility.getGlobalValue ("terms.parameters")])[ utility.getGlobalValue("terms.global")]),
+                            "_parameter_description_",
+                            "None != regexp.Find (_parameter_description_, `&re`)");
+
+    result = {};
+    count  = utility.Array1D (names);
+    for (k = 0; k < count; k += 1) {
+        result [names[k]] = ((model[utility.getGlobalValue ("terms.parameters")])[ utility.getGlobalValue("terms.global")])[names[k]];
+    }
+
+    return result;
+}
 
 /**
  * @name model.ApplyModelToTree
@@ -14,12 +36,15 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
  */
 function model.ApplyModelToTree (id, tree, model_list, rules) {
 
+
+
 	if (Type (rules) == "AssociativeList") {
 	    // this has the form
 	    // model id : list of branches to apply the model (as a string COLUMN matrix with branch names,
 	    // or a dictionary where keys are the branch names)
 	    // OR
 	    // DEFAULT : model id
+
 
 	    if (Abs (rules["DEFAULT"])) {
             ExecuteCommands ("UseModel (" + rules["DEFAULT"] + ");
@@ -56,8 +81,9 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 	    }
 
 	} else {
+	    // TO DO: REMOVE HARDCODING
 		model.ApplyModelToTree.modelID = model_list[model_list ["INDEXORDER"][0]];
-		ExecuteCommands ("UseModel (" + model.ApplyModelToTree.modelID["id"] + ");
+		ExecuteCommands ("UseModel (" + model.ApplyModelToTree.modelID[terms.id] + ");
 						  Tree `id` = " + tree["string"] + ";
 						  ");
 	}
@@ -94,13 +120,13 @@ function model.define_from_components (id,q,efv,canonical) {
 }
 
 /**
- * @name model.generic.AddGlobal
+ * @name model.generic.AddLocal
  * @param model_spec
  * @param id
  * @param tag
  */
 function model.generic.AddLocal (model_spec, id, tag) {
-    ((model_spec["parameters"])[terms.local])[tag] = id;
+    ((model_spec[terms.parameters])[terms.local])[tag] = id;
 }
 
 /**
@@ -110,7 +136,7 @@ function model.generic.AddLocal (model_spec, id, tag) {
  * @param tag
  */
 function model.generic.AddGlobal (model_spec, id, tag) {
-    ((model_spec["parameters"])[terms.global])[tag] = id;
+    ((model_spec[terms.parameters])[terms.global])[tag] = id;
 }
 
 
@@ -120,7 +146,7 @@ function model.generic.AddGlobal (model_spec, id, tag) {
  * @param tag
  */
 lfunction model.generic.GetLocalParameter (model_spec, tag) {
-   return model.generic.get_a_parameter (model_spec, tag, ^"terms.local");
+   return model.generic.get_a_parameter (model_spec, tag, utility.getGlobalValue("terms.local"));
 }
 
 /**
@@ -129,7 +155,7 @@ lfunction model.generic.GetLocalParameter (model_spec, tag) {
  * @param tag
  */
 lfunction model.generic.GetGlobalParameter (model_spec, tag) {
-   return model.generic.get_a_parameter (model_spec, tag, ^"terms.global");
+   return model.generic.get_a_parameter (model_spec, tag, utility.getGlobalValue("terms.global"));
 }
 
 /**
@@ -139,7 +165,7 @@ lfunction model.generic.GetGlobalParameter (model_spec, tag) {
  * @param type
  */
 lfunction model.generic.get_a_parameter (model_spec, tag, type) {
-    v = ((model_spec["parameters"])[type])[tag];
+    v = ((model_spec[utility.getGlobalValue("terms.parameters")])[type])[tag];
     if (Type (v) == "String") {
         return v;
     }
@@ -155,13 +181,13 @@ lfunction model.generic.get_a_parameter (model_spec, tag, type) {
 
 lfunction model.generic.get_rate_variation (model_spec) {
 
-	__rate_variation = model_spec[^"terms.rate_variation"];
+	__rate_variation = model_spec[utility.getGlobalValue("terms.model.rate_variation")];
 
 	if (Type (__rate_variation) == "AssociativeList") {
-		assert (utility.Has (__rate_variation, "distribution", "String"), "Missing required key `distribution' in the rate variation component definition");
-		assert (utility.Has (__rate_variation, "rate_modifier", "String"), "Missing required key `rate_modifier' in the rate variation component definition");
-		assert (utility.IsFunction (__rate_variation["distribution"]), "'" + parameters.Quote (__rate_variation["distribution"]) + " must be a function ID");
-		assert (utility.IsFunction (__rate_variation["rate_modifier"]), "'" + parameters.Quote (__rate_variation["rate_modifier"]) + " must be a function ID");
+		assert (utility.Has (__rate_variation, utility.getGlobalValue("terms.rate_variation.distribution"), "String"), "Missing required key `distribution` in the rate variation component definition");
+		assert (utility.Has (__rate_variation, utility.getGlobalValue("terms.rate_variation.rate_modifier"), "String"), "Missing required key `rate_modifier' in the rate variation component definition");
+		assert (utility.IsFunction (__rate_variation[utility.getGlobalValue("terms.rate_variation.distribution")]), "'" + parameters.Quote (__rate_variation[utility.getGlobalValue("terms.rate_variation.distribution")]) + " must be a function ID");
+		assert (utility.IsFunction (__rate_variation[utility.getGlobalValue("terms.rate_variation.rate_modifier")]), "'" + parameters.Quote (__rate_variation[utility.getGlobalValue("terms.rate_variation.rate_modifier")]) + " must be a function ID");
 		return __rate_variation;
 	}
 
@@ -181,31 +207,46 @@ lfunction model.generic.get_rate_variation (model_spec) {
  */
 function model.generic.DefineModel (model_spec, id, arguments, data_filter, estimator_type) {
 
+    // Basic model definition
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
+
+	// Add data filter information to model description
 	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
 
-	model.generic.DefineModel.model = Call (model.generic.DefineModel.model ["defineQ"], model.generic.DefineModel.model, id);
 
-	model.generic.DefineModel.model ["matrix-id"] = "`id`_" + terms.rate_matrix;
-	model.generic.DefineModel.model ["efv-id"] = "`id`_" + terms.efv_matrix;
-	model.generic.DefineModel.model ["id"] = id;
 
+    // Set Q field
+	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.defineQ], model.generic.DefineModel.model, id);
+
+
+    // Define id's for frequencies, Q, and id
+	model.generic.DefineModel.model [terms.model.matrix_id] = "`id`_" + terms.model.rate_matrix;
+	model.generic.DefineModel.model [terms.model.efv_id] = "`id`_" + terms.model.efv_matrix;
+	model.generic.DefineModel.model [terms.id] = id;
+
+
+
+    // Define type of frequency estimator
 	if (estimator_type != None) {
-		model.generic.DefineModel.model ["frequency-estimator"] = estimator_type;
+		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
 	}
 
-	Call (model.generic.DefineModel.model ["frequency-estimator"], model.generic.DefineModel.model,
+
+    // Set EFV field
+	Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
 													    id,
-													    data_filter); // this sets the EFV field
+													    data_filter);
 
 
-	parameters.StringMatrixToFormulas (model.generic.DefineModel.model ["matrix-id"],model.generic.DefineModel.model[terms.rate_matrix]);
-	utility.SetEnvVariable (model.generic.DefineModel.model ["efv-id"], model.generic.DefineModel.model[terms.efv_estimate]);
+	parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.matrix_id],model.generic.DefineModel.model[terms.model.rate_matrix]);
+	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 
-	model.define_from_components (id, 	model.generic.DefineModel.model ["matrix-id"], model.generic.DefineModel.model ["efv-id"], model.generic.DefineModel.model ["canonical"]);
 
-    if (Type (model.generic.DefineModel.model["post-definition"]) == "String") {
-        Call (model.generic.DefineModel.model["post-definition"], model.generic.DefineModel.model);
+	model.define_from_components (id, 	model.generic.DefineModel.model [terms.model.matrix_id], model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
+
+    if (Type (model.generic.DefineModel.model[terms.model.post_definition]) == "String") {
+
+       Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
 
 	return model.generic.DefineModel.model;
@@ -226,41 +267,41 @@ function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filte
 	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
 
     // for mixture models this will define the mixture components as well
-	model.generic.DefineModel.model = Call (model.generic.DefineModel.model ["defineQ"], model.generic.DefineModel.model, id);
+	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.defineQ], model.generic.DefineModel.model, id);
 
 	if (estimator_type != None) {
-		model.generic.DefineModel.model ["frequency-estimator"] = estimator_type;
+		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
 	}
 
     // this sets the EFV field
- 	Call (model.generic.DefineModel.model ["frequency-estimator"], model.generic.DefineModel.model,
+ 	Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
 													    id,
 													    data_filter);
 
-	model.generic.DefineModel.model ["matrix-id"] = {};
+	model.generic.DefineModel.model [terms.model.matrix_id] = {};
 
 	model.generic.mixture_expr = {};
 
-    utility.ForEachPair (model.generic.DefineModel.model[terms.mixture_components], "model.generic.key", "model.generic.value",
+    utility.ForEachPair (model.generic.DefineModel.model[terms.mixture.mixture_components], "model.generic.key", "model.generic.value",
         '
-            (model.generic.DefineModel.model ["matrix-id"])[model.generic.key] = "`id`_" + terms.rate_matrix + "_"+ model.generic.key;
-            model.generic.mixture_expr + ("Exp(" + (model.generic.DefineModel.model ["matrix-id"])[model.generic.key] + ")*(" +  model.generic.value + ")");
-	        parameters.StringMatrixToFormulas ((model.generic.DefineModel.model ["matrix-id"])[model.generic.key],(model.generic.DefineModel.model[terms.rate_matrix])[model.generic.key]);
+            (model.generic.DefineModel.model [terms.model.matrix_id])[model.generic.key] = "`id`_" + terms.model.rate_matrix + "_"+ model.generic.key;
+            model.generic.mixture_expr + ("Exp(" + (model.generic.DefineModel.model [terms.model.matrix_id])[model.generic.key] + ")*(" +  model.generic.value + ")");
+	        parameters.StringMatrixToFormulas ((model.generic.DefineModel.model [terms.model.matrix_id])[model.generic.key],(model.generic.DefineModel.model[terms.model.rate_matrix])[model.generic.key]);
         '
     );
 
     model.generic.DefineModel.model [terms.mixture]= Join ("+",model.generic.mixture_expr);
 
-	model.generic.DefineModel.model ["efv-id"] = "`id`_" + terms.efv_matrix;
-	model.generic.DefineModel.model ["id"] = id;
+	model.generic.DefineModel.model [terms.model.efv_id] = "`id`_" + terms.model.efv_matrix;
+	model.generic.DefineModel.model [terms.id] = id;
 
-	utility.SetEnvVariable (model.generic.DefineModel.model ["efv-id"], model.generic.DefineModel.model[terms.efv_estimate]);
+	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 
-	model.define_from_components (id, 	parameters.Quote (model.generic.DefineModel.model [terms.mixture]), model.generic.DefineModel.model ["efv-id"], model.generic.DefineModel.model ["canonical"]);
+	model.define_from_components (id, 	parameters.Quote (model.generic.DefineModel.model [terms.mixture]), model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
 
 
-    if (Type (model.generic.DefineModel.model["post-definition"]) == "String") {
-        Call (model.generic.DefineModel.model["post-definition"], model.generic.DefineModel.model);
+    if (Type (model.generic.DefineModel.model[terms.model.post_definition]) == "String") {
+        Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
 
 	return model.generic.DefineModel.model;
@@ -272,9 +313,9 @@ function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filte
  * @returns {String}
  */
 function models.generic.post.definition  (model) {
-    if (Type (model ["id"]) == "String") {
-        ExecuteCommands ("GetString (models.generic.post.definition.bl,"+model ["id"]+",-1)");
-        model ["branch-length-string"] = models.generic.post.definition.bl;
+    if (Type (model [terms.id]) == "String") {
+        ExecuteCommands ("GetString (models.generic.post.definition.bl,"+model [terms.id]+",-1)");
+        model [terms.model.branch_length_string] = models.generic.post.definition.bl;
     }
     return model;
 }
@@ -288,37 +329,64 @@ function models.generic.post.definition  (model) {
  */
 function models.generic.SetBranchLength (model, value, parameter) {
 
-     if (Abs((model["parameters"])["local"]) == 1) {
-        if (Type (model ["branch-length-string"]) == "String") {
-            models.generic.SetBranchLength.bl = (Columns ((model["parameters"])["local"]))[0];
-            models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
+     if (Abs((model[terms.parameters])[terms.local]) >= 1) {
+        if (Type (model [terms.model.branch_length_string]) == "String") {
+            models.generic.SetBranchLength.expression = model [terms.model.branch_length_string];
+
+            if (Abs((model[terms.parameters])[terms.local]) > 1) {
+                models.generic.SetBranchLength.bl = Call (model [terms.model.time], model[terms.model.type]);
+                models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
+                if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) == FALSE) {
+                     models.generic.SetBranchLength.bl = utility.First (utility.Values ((model[terms.parameters])[terms.local]), "_name_",
+                            'parameters.IsIndependent (parameter + "." + _name_)');
+
+                     if (None == models.generic.SetBranchLength.bl) {
+                        messages.log ("models.generic.SetBranchLength: no independent model parameters");
+                        return 0;
+                     }
+                     models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
+                }
+
+                models.generic.SetBranchLength.substitution = {};
+                utility.ForEach (utility.Values ((model[terms.parameters])[terms.local]), "_name_",
+                            'if (_name_ != models.generic.SetBranchLength.bl) {
+                                models.generic.SetBranchLength.substitution [_name_] = Eval (parameter + "." + _name_);
+                             }');
+
+                models.generic.SetBranchLength.expression = Simplify (models.generic.SetBranchLength.expression, models.generic.SetBranchLength.substitution);
+            } else {
+                models.generic.SetBranchLength.bl = (Columns ((model[terms.parameters])[terms.local]))[0];
+                models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
+            }
+
              if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p)) {
+
                 if (Type (value) == "AssociativeList") {
-                 	if (Abs (model ["branch-length-string"])) {
-                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
-                    	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
-					    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+                 	if (Abs (models.generic.SetBranchLength.expression)) {
+                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                    	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+					    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 
 					} else {
-                    	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + value[terms.branch_length]);
-                    	messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+                    	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
+                    	messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					}
 
                     return 1;
 
                 } else {
-                    ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + model ["branch-length-string"] + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
-                    Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
-                    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
+                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                     Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
+                     messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
               }
             } else {
                 messages.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");
             }
         } else {
-	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");		        
+	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");
         }
     } else {
-        messages.log ("models.generic.SetBranchLength: more than one local model parameter");
+        messages.log ("models.generic.SetBranchLength: no local model parameters");
     }
     return 0;
 }
@@ -335,17 +403,17 @@ lfunction models.generic.AttachFilter (model, filter) {
 
     if (Type (filter) != "String") {
         utility.ForEach (filter, "_filter_", "models.generic.AttachFilter (`&model`, _filter_)");
-        model["data"] = filter;
+        model[utility.getGlobalValue("terms.model.data")] = filter;
         return model;
     }
 
 	GetDataInfo (givenAlphabet, ^filter, "CHARACTERS");
-	alphabet = model ["alphabet"];
+	alphabet = model [utility.getGlobalValue("terms.alphabet")];
 
 	assert (Columns (alphabet) == Columns (givenAlphabet) && model.MatchAlphabets (givenAlphabet, alphabet), "The declared model alphabet '" +alphabet + "' does not match the `filter` filter: '" + givenAlphabet + "'");
 
-	model ["alphabet"] = givenAlphabet;
-	model ["data"] = filter;
+	model [utility.getGlobalValue("terms.alphabet")] = givenAlphabet;
+	model [utility.getGlobalValue("terms.model.data")] = filter;
 	return model;
 }
 
@@ -355,8 +423,8 @@ lfunction models.generic.AttachFilter (model, filter) {
  * @returns {Matrix} dimensions of model
  */
 function model.Dimension (model) {
-    if (Type (model["alphabet"]) == "Matrix") {
-        return Columns (model["alphabet"]);
+    if (Type (model[terms.alphabet]) == "Matrix") {
+        return Columns (model[terms.alphabet]);
     }
     return None;
 }
@@ -367,7 +435,7 @@ function model.Dimension (model) {
  * @returns {Matrix} local parameters
  */
 function model.parameters.Local (model) {
-    return (model["parameters"])["local"];
+    return (model[terms.parameters])[terms.local];
 }
 
 
@@ -377,7 +445,7 @@ function model.parameters.Local (model) {
  * @returns {Matrix} global parameters
  */
 function model.parameters.Global (model) {
-    return (model["parameters"])["global"];
+    return (model[terms.parameters])[terms.global];
 }
 
 /**
@@ -403,6 +471,43 @@ lfunction model.MatchAlphabets (a1, a2) {
 }
 
 /**
+ * @name models.BindGlobalParameters
+ * compute the algebraic expression for the branch length
+ * @param {Dict} models - list of model objects
+ * @param {RegEx} filter - only apply to parameters matching this expression
+ * @return {Dict} the set of constraints applied
+ */
+
+lfunction models.BindGlobalParameters (models, filter) {
+    if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
+        reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
+        candidate_set = utility.Values(utility.Filter (utility.Keys (reference_set), "_key_",
+            "regexp.Find (_key_,`&filter`)"
+        ));
+
+        constraints_set = {};
+
+        for (k = 1; k < Abs (models); k+=1) {
+            parameter_set = (((models[k])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
+            if (Type (parameter_set) == "AssociativeList") {
+                utility.ForEach (candidate_set, "_p_",
+                    "if (`&parameter_set` / _p_) {
+                        if (parameters.IsIndependent (`&parameter_set`[_p_])) {
+                            parameters.SetConstraint (`&parameter_set`[_p_], `&reference_set`[_p_], '');
+                            `&constraints_set` [`&parameter_set`[_p_]] = `&reference_set`[_p_];
+                        }
+                    }"
+                );
+            }
+        }
+
+        return constraints_set;
+
+    }
+    return None;
+}
+
+/**
  * @name model.BranchLengthExpression
  * compute the algebraic expression for the branch length
  * @param {Dict} model - first alphabet to compare
@@ -411,15 +516,21 @@ lfunction model.MatchAlphabets (a1, a2) {
  */
 
 lfunction model.BranchLengthExpression (model) {
-	if (Type (model[^'terms.rate_matrix']) == "Matrix") {
-		expr = model.BranchLengthExpressionFromMatrix (model[^'terms.rate_matrix'], model[^'terms.efv_estimate'], model['canonical']);
+
+
+	if (Type (model[utility.getGlobalValue("terms.model.rate_matrix")]) == "Matrix") {
+		expr = model.BranchLengthExpressionFromMatrix (model[utility.getGlobalValue("terms.model.rate_matrix")], model[utility.getGlobalValue("terms.efv_estimate")], model[utility.getGlobalValue("terms.model.canonical")]);
 	} else {
 		components = {};
-		matrix_count = Abs (model[^'terms.rate_matrix']);
-		keys = utility.Keys (model[^'terms.rate_matrix']);
+		matrix_count = Abs (model[utility.getGlobalValue("terms.model.rate_matrix")]);
+		//keys = utility.Keys (model[utility.getGlobalValue("terms.model.rate_matrix"));
+	    keys = utility.Keys (model[utility.getGlobalValue("terms.model.rate_matrix")]);
+
+
+
 		for (i = 0; i <  matrix_count; i+=1) {
-			expr = model.BranchLengthExpressionFromMatrix ((model[^'terms.rate_matrix'])[keys[i]], model[^'terms.efv_estimate'], model['canonical']);
-			components + ( "(" + expr + ")*(" + (model[^'terms.mixture_components'])[keys[i]] + ")");
+			expr = model.BranchLengthExpressionFromMatrix ((model[utility.getGlobalValue("terms.model.rate_matrix")])[keys[i]], model[utility.getGlobalValue("terms.efv_estimate")], model[utility.getGlobalValue("terms.model.canonical")]);
+			components + ( "(" + expr + ")*(" + (model[utility.getGlobalValue("terms.mixture.mixture_components")])[keys[i]] + ")");
 		}
 		expr = Join ("+", components);
 	}
@@ -439,7 +550,7 @@ lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
 				if (i != j) {
 					expr = q[i][j];
 					if (Abs (expr)) {
-						if (is_canonical) {
+						if (is_canonical == TRUE) {
 							by_expr[expr] += freqs[i]*freqs[j];
 						} else {
 							by_expr[expr] += freqs[i];

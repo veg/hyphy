@@ -151,6 +151,7 @@ modelFrequenciesIndices,
 listOfCompiledFormulae;
 
 _String
+markdownOutput                  ("MARKDOWN_OUTPUT"),
 globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 enforceGlobalPolynomialCap      ("ENFORCE_GLOBAL_POLYNOMIAL_CAP"),
                                 dropPolynomialTerms             ("DROP_POLYNOMIAL_TERMS"),
@@ -4349,6 +4350,8 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
     _SimpleList sel,
                 exclusions;
 
+    long         do_markdown;
+    checkParameter (markdownOutput,do_markdown,0L);
   
     _Variable* holder;
 
@@ -4574,19 +4577,27 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 WarnError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
                 return;
 #else
-                 printf ("\n\n\t\t\t+");
+              
+              
+              
+                if (do_markdown) {
+                  printf ("\n\n####%s\n", dialog_title.getStr());
+                } else {
+                
+                  printf ("\n\n\t\t\t+");
 
-                for (f = 1; f<dialog_title.sLength+1; f++) {
-                    printf ("-");
+                  for (f = 1; f<dialog_title.sLength+1; f++) {
+                      printf ("-");
+                  }
+
+                  printf ("+\n\t\t\t|%s|\n\t\t\t+",(const char*)dialog_title);
+
+                  for (f = 1; f<dialog_title.sLength+1; f++) {
+                      printf ("-");
+                  }
+
+                  printf ("+\n\n");
                 }
-
-                printf ("+\n\t\t\t|%s|\n\t\t\t+",(const char*)dialog_title);
-
-                for (f = 1; f<dialog_title.sLength+1; f++) {
-                    printf ("-");
-                }
-
-                printf ("+\n\n");
 
 
                 long  loopits = 1;
@@ -4594,10 +4605,14 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 if (fixedLength == 1) {
                     while (choice == -1) {
                         for (choice = 0; choice<theChoices->lLength; choice++) {
+                          if (do_markdown) {
+                            printf ("\n%ld. [**%s**] %s", choice+1, ((_String*)(*(_List*)(*theChoices)(choice))(0))->getStr(),((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
+                          } else {
                             printf ("\n\t(%ld):[%s] %s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(0))->getStr(),((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
+                          }
                         }
-
-                        printf ("\n\n Please choose an option (or press q to cancel selection):");
+                      
+                        printf ("\n\n%sPlease choose an option (or press q to cancel selection):", do_markdown ? ">" : "");
                         _String buffer (StringFromConsole());
                         if (buffer.sData[0] == 'q' || buffer.sData[0] =='Q') {
                             choice = -1;
@@ -4622,7 +4637,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                                     printf ("\n\t(%ld):%s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
                                 }
                             }
-                            printf ("\n\n Please choose option %ld of %ld (or press q to cancel selection):",sel.lLength+1,fixedLength);
+                            printf ("\n\n%sPlease choose option %ld of %ld (or press q to cancel selection):",do_markdown ? ">" : "", sel.lLength+1,fixedLength);
                             _String buffer (StringFromConsole());
                             if (buffer.sData[0] == 'q' || buffer.sData[0] =='Q') {
                                 choice = -1;
@@ -4647,7 +4662,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                                     printf ("\n\t(%ld):[%s] %s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(0))->getStr(),((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
                                 }
                             }
-                            printf ("\n\n Please choose option %ld, enter d to complete selection, enter q to cancel:",sel.lLength+1);
+                            printf ("\n\n%sPlease choose option %ld, enter d to complete selection, enter q to cancel:",do_markdown ? ">" : "",sel.lLength+1);
                             _String buffer (StringFromConsole());
                             if (buffer.sData[0] == 'q' || buffer.sData[0] =='Q') {
                                 choice = -1;

@@ -29,6 +29,7 @@ function utility.AssociativeListToJSON(associative_list) {
  */
 function utility.CallFunction (id, arguments) {
 
+
     if (Type (id) == "String") {
         if (Type (arguments) == "AssociativeList") {
             return Eval ("`id` (" + Join (",", arguments) + ")");
@@ -118,12 +119,12 @@ function utility.SetEnvVariable (var, value) {
  */
 lfunction utility.CheckCacheFile (data_info) {
     cache_info = {};
-    cache_info["file"] = data_info["file"] + ".hyphy_cache";
-    if (!(cache_info["file"])) {
-        fscanf (cache_info["file"], "Raw", _cache);
-        cache_info["cache"] = Eval (_cache);
+    cache_info[utility.getGlobalValue("terms.data.file")] = data_info[utility.getGlobalValue("terms.data.file")] + ".hyphy_cache";
+    if (!(cache_info[utility.getGlobalValue("terms.data.file")])) {
+        fscanf (cache_info[utility.getGlobalValue("terms.data.file")], "Raw", _cache);
+        cache_info[utility.getGlobalValue("terms.data.cache")] = Eval (_cache);
     } else {
-         cache_info["cache"] = {};
+         cache_info[utility.getGlobalValue("terms.data.cache")] = {};
     }
     return cache_info;
 }
@@ -195,6 +196,21 @@ lfunction utility.DictToArray (object) {
     result = {1,Abs (object)};
     utility.ForEachPair(object, "key", "_value_", "(`&result`)[+key] = _value_");
     return result;
+}
+
+
+/**
+ * @name utility.Range
+ * @param elements
+ * @param from
+ * @param step
+ */
+lfunction utility.Range (elements, from, step) {
+    range = {};
+    for (i = 0; i < elements; i+=1) {
+        range + (from + i * step);
+    }
+    return range;
 }
 
 /**
@@ -359,7 +375,7 @@ function utility.ForEach (object, lambda_name, transform) {
     	for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
     		utility.ForEach._aux [utility.ForEach.r ] = utility.ForEach._aux2 [utility.ForEach.r ];
     	}
-    	
+
         DeleteObject (utility.ForEach._aux2);
         utility.ForEach (utility.ForEach._aux, lambda_name, transform);
         DeleteObject (utility.ForEach._aux);
@@ -403,14 +419,7 @@ function utility.ForEach (object, lambda_name, transform) {
  * @returns {Bool} TRUE if key exists and is of expected type, otherwise FALSE
  */
 function utility.KeyExists(dict, key) {
-
-    keys = utility.Keys(dict);
-
-    if(utility.Find(keys, key) != -1) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
+    return dict / key;
 }
 
 /**
@@ -662,38 +671,40 @@ lfunction utility.EnsureKey (dict, key) {
  */
 lfunction utility.Has (d, key, type) {
 
-    if (Type (key) == "String") {
-        if (d/key) {
-            if (type == None) {
-                return TRUE;
+    if (Type (d) == "AssociativeList") {
+        if (Type (key) == "String") {
+            if (d/key) {
+                if (type == None) {
+                    return TRUE;
+                }
+                return Type (d[key]) == type;
             }
-            return Type (d[key]) == type;
+            return FALSE;
         }
-        return FALSE;
-    }
 
-    if (Type (key) == "Matrix") {
-        depth = utility.Array1D (key);
-        current_check = &d;
-        current_key   = key[0];
+        if (Type (key) == "Matrix") {
+            depth = utility.Array1D (key);
+            current_check = &d;
+            current_key   = key[0];
 
-        for (i = 1; i < depth; i += 1) {
-             if (Eval ("`current_check`/'`current_key`'")) {
-                current_check = "(" + current_check + ")['`current_key`']";
-                if (Eval ("Type(`current_check`)") != "AssociativeList") {
+            for (i = 1; i < depth; i += 1) {
+                 if (Eval ("`current_check`/'`current_key`'")) {
+                    current_check = "(" + current_check + ")['`current_key`']";
+                    if (Eval ("Type(`current_check`)") != "AssociativeList") {
+                        return FALSE;
+                    }
+                    current_key = key[i];
+                } else {
                     return FALSE;
                 }
-                current_key = key[i];
-            } else {
-                return FALSE;
             }
-        }
 
-        if ( Eval ("`current_check`/'`current_key`'") ) {
-            if (type == None) {
-                return TRUE;
+            if ( Eval ("`current_check`/'`current_key`'") ) {
+                if (type == None) {
+                    return TRUE;
+                }
+                return Eval ("Type((`current_check`)['`current_key`'])") == type;
             }
-            return Eval ("Type((`current_check`)['`current_key`'])") == type;
         }
     }
     return FALSE;
@@ -735,6 +746,45 @@ lfunction utility.DefinedVariablesMatchingRegex (selector) {
     }
     return res;
 }
+
+/**
+ * Bin an iterable-type object by value
+ * @param  obj {Dict | Matrix}
+ * @return Dict value->list of keys
+ */
+lfunction utility.BinByValue (obj) {
+    if (Type (obj) == "AssociativeList") {
+        keys  = Rows (obj);
+        count = Abs  (obj);
+        result = {};
+        for (i = 0; i < count; i+=1) {
+            str_value = "" + obj[keys[i]];
+            if (result / str_value) {
+                result [str_value] + keys[i];
+            } else {
+                result [str_value] = {"0" : keys[i]};
+            }
+        }
+        return result;
+    } else {
+        if (Type (obj) == "Matrix") {
+            count = Rows (obj)*Columns (obj);
+            result = {};
+            for (i = 0; i < count; i+=1) {
+                str_value = "" + obj[i];
+                if (result / str_value) {
+                    result [str_value] + i;
+                } else {
+                    result [str_value] = {"0" : i};
+                }
+            }
+        }
+        return result;
+    }
+
+    return None;
+}
+
 
 
 /**

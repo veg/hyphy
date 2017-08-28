@@ -1,5 +1,5 @@
 LoadFunctionLibrary("GrabBag");
-LoadFunctionLibrary("terms.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
 
 /** @module parameters */
 
@@ -31,7 +31,7 @@ function parameters.UnconstrainParameterSet(lf, set) {
     if (None == set) {
         set = {
             {
-                terms.lf.global.constrained, terms.lf.local.constrained
+                terms.parameters.global_constrained, terms.parameters.local_constrained
             }
         };
     }
@@ -92,15 +92,15 @@ function parameters.DeclareGlobalWithRanges(id, init, lb, ub) {
 		if (None != init) {
     		ExecuteCommands("global `id` = " + init);
     	} else {
-    		ExecuteCommands("global `id`; ");    	
+    		ExecuteCommands("global `id`; ");
     	}
-    	
+
     	if (None != lb) {
     		ExecuteCommands ("`id` :> " + lb);
-    	}	
+    	}
     	if (None != ub) {
     		ExecuteCommands ("`id` :< " + ub);
-    	}	
+    	}
     } else {
         if (Type(id) == "AssociativeList") {
             parameters.DeclareGlobalWithRanges.var_count = Abs(id);
@@ -131,16 +131,13 @@ function parameters.DeclareCategory.helper (dict, key, default) {
  * @param {Dict} def category definition components
  */
 function parameters.DeclareCategory (def) {
-	 
-	 
-	 
-	 ExecuteCommands ("category " + def['id'] + "= (" + 
-	 			  Join (",", 
-	 			  			utility.Map ({"0": "bins", "1": "weights", "2": "represent", "3": "PDF", "4": "CDF", "5": terms.lower_bound, "6": terms.upper_bound, "7": "dCDF"}, 
+	 ExecuteCommands ("category " + def[terms.id] + "= (" +
+	 			  Join (",",
+	 			  			utility.Map ({"0": terms.category.bins, "1": terms.category.weights, "2": terms.category.represent, "3": terms.category.PDF, "4": terms.category.CDF, "5": terms.lower_bound, "6": terms.upper_bound, "7": terms.category.dCDF},
 	 			  						  "_value_",
-	 			  						  'parameters.DeclareCategory.helper(def["category parameters"], _value_, "")')
+	 			  						  'parameters.DeclareCategory.helper(def[terms.category.category_parameters], _value_, "")')
 	 			  		) + ");");
-	 
+
 }
 
 
@@ -171,6 +168,54 @@ function parameters.NormalizeRatio(n, d) {
 function parameters.SetValue(id, value) {
     Eval("`id` = " + value);
 }
+
+/**
+ * Sets value of passed parameter tree.branch.id
+ * @name parameters.SetLocalValue
+ * @param {String} tree - id of tree
+ * @param {String} branch - id of branch
+ * @param {String} id - id of parameter to set value to
+ * @param {Number} value - value to set
+ * @returns nothing
+ */
+function parameters.SetLocalValue(tree, branch, id, value) {
+    Eval("`tree`.`branch`.`id` = " + value);
+}
+
+/**
+ * Sets value of passed parameter id
+ * @name parameters.SetValues
+ * @param {dict} desc -> {id : id, mle : value}
+ * @returns nothing
+ */
+
+
+function parameters.SetValues(set) {
+    if (Type (set) == "AssociativeList") {
+        utility.ForEachPair (set, "_key_", "_value_",
+        '
+            parameters.SetValue (_value_[terms.id], _value_[terms.fit.MLE]);
+        ');
+    }
+}
+
+/**
+ * Ensures that the mean of parameters in a set is maintained
+ * @name parameters.ConstrainMeanOfSet
+ * @param {Dict}   set  - list of variable ids
+ * @param {Number} mean - desired mean
+ * @returns nothing
+ */
+lfunction parameters.ConstrainMeanOfSet (set, mean, namespace) {
+    unscaled = utility.Map (utility.Values (set), "_name_", "_name_ + '_scaler_variable'");
+    global_scaler = namespace + ".scaler_variable";
+    parameters.SetConstraint (global_scaler, Join ("+", unscaled), "global");
+    utility.ForEach (set, "_name_", '
+        parameters.SetValue (_name_ + "_scaler_variable", _name_);
+        parameters.SetConstraint (_name_, "(" + `&mean` + ")*" + _name_ + "_scaler_variable/`global_scaler`", "");
+    ');
+}
+
 
 /**
  * Returns mean of values
@@ -275,12 +320,10 @@ function parameters.GenerateAttributedNames(prefix, attributes, delimiter) {
  * @name parameters.GenerateSequentialNames
  * @param {String} prefix
  * @param {Number} count
- * @name parameters.GenerateSequentialNames
- * @param {String} prefix
- * @param {Number} count
  * @param {String} delimiter
  * @returns {Matrix} 1 x <count> row vector of generated names
  */
+
 lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
     if (delimiter == None) {
         delimiter = "_";
@@ -302,6 +345,7 @@ function parameters.SetRange(id, ranges) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {
+                //console.log (id + "=>" + ranges);
                 if (Abs(ranges[terms.lower_bound])) {
                     ExecuteCommands("`id` :> " + ranges[terms.lower_bound]);
                 }
@@ -327,6 +371,9 @@ function parameters.SetRange(id, ranges) {
  * @returns {Bool} TRUE if independent, FALSE otherwise
  */
 lfunction parameters.IsIndependent(parameter) {
+
+    //console.log(parameter);
+
     GetString(info, ^ parameter, -1);
     if (Type(info) == "AssociativeList") {
         return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;
@@ -334,7 +381,7 @@ lfunction parameters.IsIndependent(parameter) {
     return TRUE;
 }
 
-lfunction parameters.getConstraint(parameter) {
+lfunction parameters.GetConstraint(parameter) {
     GetString(info, ^ parameter, -2);
     return info;
 }
@@ -354,7 +401,6 @@ function parameters.SetConstraint(id, value, global_tag) {
         }
     } else {
         if (Type(id) == "AssociativeList" && Type(value) == "AssociativeList") {
-
             parameters.SetConstraint.var_count = Abs(id);
             for (parameters.SetConstraint.k = 0; parameters.SetConstraint.k < parameters.SetConstraint.var_count; parameters.SetConstraint.k += 1) {
                 parameters.SetConstraint(id[parameters.SetConstraint.k],
@@ -425,15 +471,64 @@ function parameters.helper.copy_definitions(target, source) {
     for (parameters.helper.copy_definitions.i = 0; parameters.helper.copy_definitions.i < Columns(parameters.helper.copy_definitions.key_iterator); parameters.helper.copy_definitions.i += 1) {
         parameters.helper.copy_definitions.key = parameters.helper.copy_definitions.key_iterator[parameters.helper.copy_definitions.i];
         if (Type(source[parameters.helper.copy_definitions.key]) == "AssociativeList") {
+            utility.EnsureKey (target, parameters.helper.copy_definitions.key);
             target[parameters.helper.copy_definitions.key] * source[parameters.helper.copy_definitions.key];
         }
     }
-    
+
     if (utility.Has (source, terms.category, "AssociativeList")) {
     	utility.EnsureKey (target, terms.category);
-    	(target[terms.category])[(source[terms.category])["id"]] = (source[terms.category])["description"];
+    	(target[terms.category])[(source[terms.category])[terms.id]] = (source[terms.category])[terms.description];
+    }
+
+    return target;
+}
+
+/**
+ * @name pparameters.SetStickBreakingDistribution
+ * @param {AssociativeList} parameters
+ * @param {Matrix} values
+ * @returns nothing
+ */
+
+lfunction parameters.SetStickBreakingDistribution (parameters, values) {
+    rate_count = Rows (values);
+    left_over  = 1;
+
+    for (i = 0; i < rate_count; i += 1) {
+        parameters.SetValue ((parameters["rates"])[i], values[i][0]);
+        if (i < rate_count - 1) {
+            break_here = values[i][1] / left_over;
+            parameters.SetValue ((parameters["weights"])[i], break_here);
+            left_over = left_over * (1-break_here);
+       }
     }
 }
+
+/**
+ * @name pparameters.GetStickBreakingDistribution
+ * @param {AssociativeList} parameters
+ * @returns {Matrix} computed distribution (Nx2)
+ */
+
+lfunction parameters.GetStickBreakingDistribution (parameters) {
+    rate_count = Rows (parameters["rates"]);
+    distribution = {rate_count, 2};
+
+    current_weight = 1;
+
+    for (i = 0; i < rate_count; i += 1) {
+        distribution [i][0] = Eval ((parameters["rates"])[i]);
+        if (i < rate_count - 1) {
+            distribution [i][1] = current_weight * Eval ((parameters["weights"])[i]);
+            current_weight = current_weight * (1-Eval ((parameters["weights"])[i]));
+        } else {
+            distribution [i][1] = current_weight;
+        }
+    }
+    return distribution;
+}
+
 
 /**
  * @name parameters.helper.stick_breaking
@@ -485,11 +580,9 @@ lfunction parameters.helper.dump_matrix(matrix) {
  */
 lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
-    components = Abs(dict);
+    components = utility.Array1D(dict);
 
-    //result = {"branch lengths" : { "0" : {} } };
-
-    if (type == "codon") {
+    if (type == "codon") { // TODO
         factor = 1;
     } else {
         factor = 1;
@@ -498,13 +591,12 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
     result = {};
 
     for (i = 0; i < components; i += 1) {
-        //((result["branch lengths"])[0])[keys[i]] = {"MLE": factor * dict[keys[i]]};
         this_component = {};
-        utility.ForEachPair((dict[i])[ ^ "terms.json.attribute.branch_length"], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {^'terms.json.MLE' : `&factor`*_branch_length_}");
+        utility.ForEachPair((dict[i])[ utility.getGlobalValue("terms.branch_length")], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {utility.getGlobalValue('terms.fit.MLE') : `&factor`*_branch_length_}");
         result[i] = this_component;
     }
 
-    return { ^ "terms.json.attribute.branch_length": result
+    return { utility.getGlobalValue("terms.branch_length"): result
     };
 }
 
@@ -524,10 +616,11 @@ function parameters.GetProfileCI(id, lf, level) {
     utility.ToggleEnvVariable("COVARIANCE_PRECISION", None);
     utility.ToggleEnvVariable("COVARIANCE_PARAMETER", None);
 
+    //TODO: used to be "`terms.lower_bound`".
     return {
-        "`terms.lower_bound`": parameters.GetProfileCI.mx[0],
-        "`terms.MLE`": parameters.GetProfileCI.mx[1],
-        "`terms.upper_bound`": parameters.GetProfileCI.mx[2]
+        terms.lower_bound: parameters.GetProfileCI.mx[0],
+        terms.fit.MLE: parameters.GetProfileCI.mx[1],
+        terms.upper_bound: parameters.GetProfileCI.mx[2]
     };
 }
 
@@ -552,17 +645,17 @@ lfunction parameters.ExportParameterDefinition (id) {
  * @param {Dict} model - model description
  * @param {String} tree id
  * @param {String} node id
- 
- * e.g. 
+
+ * e.g.
  * 		set alpha = Tree.Node.alpha
  * 		set beta  = Tree.Node.beta
  */
 
 lfunction parameters.SetLocalModelParameters (model, tree, node) {
 	node_name = tree + "." + node + ".";
-    utility.ForEach ((model["parameters"])[^'terms.local'], "_parameter_", '
+    utility.ForEach ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.local")], "_parameter_", '
     	^_parameter_ = ^(`&node_name` + _parameter_);
     ');
-    
+
 }
 

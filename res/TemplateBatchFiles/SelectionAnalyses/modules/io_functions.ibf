@@ -4,6 +4,7 @@ LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/convenience/regexp.bf");
 
+LoadFunctionLibrary("libv3/all-terms.bf");
 
 //------------------------------------------------------------------------------
 lfunction selection.io.defineBranchSets(partition_info) {
@@ -13,9 +14,11 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
     tree_for_analysis = None;
 
+
+
     if (Abs (partition_info) == 1) { // allow more refined selections if there is only one tree
-        tree_for_analysis = (partition_info[0])["tree"];
-        utility.ForEach (tree_for_analysis["model_map"], "_value_", "`&available_models`[_value_] += 1");
+        tree_for_analysis = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
+        utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
         list_models   = utility.Keys   (available_models); // get keys
         branch_counts = utility.Values (available_models);
         option_count  = Abs (available_models);
@@ -52,36 +55,50 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
     for (k = 0; k < Abs (partition_info); k+=1) {
         tree_configuration = {};
-        tree_for_analysis = (partition_info[k])["tree"];
+        tree_for_analysis = (partition_info[k])[utility.getGlobalValue("terms.data.tree")];
         if (testSet < 3) {
             if (testSet == 0) {
                 tag = None;
             } else {
                 if (testSet == 1) {
-                    tag = "internal";
+                    tag = utility.getGlobalValue("terms.tree_attributes.internal");
                 } else {
-                    tag = "leaf";
+                    tag = utility.getGlobalValue("terms.tree_attributes.leaf");
                 }
             }
-
-            utility.ForEachPair (tree_for_analysis["partitioned"], "_key_", "_value_", "
+            utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.partitioned")], "_key_", "_value_", '
             	if (`&tag` == _value_ || `&tag` == None) {
-            		`&tree_configuration`[_key_] = ^'terms.json.attribute.test';}
-            	else {
-            		`&tree_configuration`[_key_] = ^'terms.json.attribute.background';
+            		`&tree_configuration`[_key_] = utility.getGlobalValue("terms.tree_attributes.test");
             	}
-            ");
+            	else {
+            		`&tree_configuration`[_key_] = utility.getGlobalValue("terms.tree_attributes.background");
+            	}
+            ');
 
         } else {
             tag = SELECTION_STRINGS;
             if (tag == "Unlabeled branches") {
                 tag = "";
             }
-            utility.ForEachPair (tree_for_analysis["model_map"], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_] = ^'terms.json.attribute.test';} else {`&tree_configuration`[_key_] = ^'terms.json.attribute.background';}");
+            utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "if (`&tag` == _value_ || `&tag` == None) {`&tree_configuration`[_key_] = utility.getGlobalValue('terms.tree_attributes.test');} else {`&tree_configuration`[_key_] = utility.getGlobalValue('terms.tree_attributes.background');}");
         }
         return_set + tree_configuration;
     }
+    return return_set;
 
+}
+
+//------------------------------------------------------------------------------
+lfunction selection.io.SelectAllBranches(partition_info) {
+    for (k = 0; k < Abs (partition_info); k+=1) {
+        tree_configuration = {};
+        tree_for_analysis = (partition_info[k])[utility.getGlobalValue("terms.data.tree")];
+        utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.partitioned")], "_key_", "_value_",
+        '
+            `&tree_configuration`[_key_] = utility.getGlobalValue("terms.tree_attributes.test");
+        ');
+        return_set + tree_configuration;
+    }
     return return_set;
 
 }
@@ -90,8 +107,8 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
 lfunction selection.io.startTimer(timers, key, sort_index) {
     timers[key] = {
-        "timer": Time(1),
-        "order": sort_index
+        utility.getGlobalValue("terms.timers.timer"): Time(1),
+        utility.getGlobalValue("terms.timers.order"): sort_index
     };
 
 }
@@ -99,32 +116,94 @@ lfunction selection.io.startTimer(timers, key, sort_index) {
 //------------------------------------------------------------------------------
 
 lfunction selection.io.stopTimer(timers, key) {
-    (timers[key])["timer"] = Time(1) - (timers[key])["timer"];
+    (timers[key])[utility.getGlobalValue("terms.timers.timer")] = Time(1) - (timers[key])[utility.getGlobalValue("terms.timers.timer")];
 }
 
 //------------------------------------------------------------------------------
 
 lfunction selection.io.extract_global_MLE(fit, id) {
-    return ((fit["global"])[id])["MLE"];
+    return ((fit[utility.getGlobalValue("terms.global")])[id])[utility.getGlobalValue("terms.fit.MLE")];
 }
+
+
+//------------------------------------------------------------------------------
+
+lfunction selection.io.report_dnds (distribution) {
+
+    // TODO remove hardcoding
+    settings = {"header" : TRUE, "column-widths": {
+            "0": 35,
+            "1": 15,
+            "2": 10,
+            "3": 35
+            }};
+
+    fprintf (stdout, "\n", io.FormatTableRow ({{"Selection mode", "dN/dS", "Proportion, %", "Notes"}}, settings));
+    rates = Rows (distribution);
+    settings ["header"] = FALSE;
+    for (i = 0; i < rates; i += 1) {
+        row_matrix = {1,4};
+
+        if (distribution [i][0] < 1) {
+            row_matrix [0] = "Negative selection";
+        } else {
+            if (distribution [i][0] == 1) {
+                row_matrix [0] = "Neutral evolution";
+            } else {
+               row_matrix [0]  = "Diversifying selection";
+            }
+        }
+
+        row_matrix [1] = Format (distribution [i][0], 6, 3);
+        row_matrix [2] =  Format (distribution [i][1] * 100, 6, 3);
+        row_matrix [3] = "";
+
+        if (distribution [i][1] < 1e-4) {
+            row_matrix [3] = "Not supported by data";
+        } else {
+            if (i > 0) {
+                if (distribution [i-1][0] == distribution [i][0] || parameters.NormalizeRatio (Abs(distribution [i-1][0] - distribution [i][0]), Max (distribution [i-1][0], distribution [i][0])) < 0.05) {
+                    row_matrix [3] = "Collapsed rate class";
+                }
+            }
+        }
+
+        fprintf (stdout, io.FormatTableRow (row_matrix, settings));
+
+    }
+    fprintf (stdout, "\n");
+    return row_matrix;
+}
+
 
 //------------------------------------------------------------------------------
 
 lfunction selection.io.extract_global_MLE_re (fit, regexp) {
-    matches = utility.Filter (utility.Keys(fit["global"]), "_tag_", "regexp.Find (_tag_, `&regexp`)");
-    return utility.Map (matches, "_tag_", "{'description': _tag_, 'MLE' : ((`&fit`['global'])[_tag_])['MLE']}");
+     matches = utility.Filter (utility.Keys(fit[utility.getGlobalValue("terms.global")]), "_tag_", "regexp.Find (_tag_, `&regexp`)");
+    //TODO: a single 'MLE' in the return line cannot be replaced by terms.
+     return utility.Map (matches, "_tag_", "{utility.getGlobalValue('terms.description'): _tag_, 'MLE' : ((`&fit`[utility.getGlobalValue('terms.global')])[_tag_])[utility.getGlobalValue('terms.fit.MLE')]}");
 }
 
 //------------------------------------------------------------------------------
 
 lfunction selection.io.branch.length(branch_info) {
-    return branch_info["MLE"];
+    return branch_info[utility.getGlobalValue("terms.fit.MLE")];
 }
 
 //------------------------------------------------------------------------------------------------------------------------
 
 lfunction selection.io.getIC(logl, params, samples) {
     return -2 * logl + 2 * samples / (samples - params - 1) * params;
+}
+
+//------------------------------------------------------------------------------
+
+function selection.io.report_fit (fit, xp, ss) {
+    return "Log(L) = " +
+            Format (fit[terms.fit.log_likelihood], 8, 2) +
+            ", AIC-c = " +
+            Format (selection.io.getIC(fit[terms.fit.log_likelihood], fit[terms.parameters] + xp, ss), 8, 2) +
+            " (" + (xp+fit[terms.parameters]) + " estimated parameters)";
 }
 
 
@@ -138,9 +217,18 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution) {
             terms.json.log_likelihood: ll,
             terms.json.parameters: df,
             terms.json.AICc: selection.io.getIC(ll, df, ss),
-            terms.json.rate_distributions: rate_distribution,
+            terms.json.rate_distribution: rate_distribution,
             terms.json.display_order: Abs(json[terms.json.fits])
     });
+
+}
+
+//------------------------------------------------------------------------------
+
+function selection.io.json_store_lf_spool (file, json, name, ll, df, ss, rate_distribution) {
+
+    selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution);
+    io.SpoolJSON (json, file);
 
 }
 
@@ -195,10 +283,10 @@ function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
 function selection.io.json_store_branch_attribute(json, attribute_name, attribute_type, display_order, partition, values) {
     utility.EnsureKey(json, terms.json.branch_attributes);
     utility.EnsureKey(json[terms.json.branch_attributes], partition);
-    utility.EnsureKey(json[terms.json.branch_attributes], terms.json.attribute.meta);
-    utility.EnsureKey((json[terms.json.branch_attributes])[terms.json.attribute.meta], attribute_name);
-    ((json[terms.json.branch_attributes])[terms.json.attribute.meta])[attribute_name] = {terms.json.attribute.meta.type : attribute_type,
-                                                                                            terms.json.attribute.meta.order: display_order};
+    utility.EnsureKey(json[terms.json.branch_attributes], terms.json.attribute);
+    utility.EnsureKey((json[terms.json.branch_attributes])[terms.json.attribute], attribute_name);
+    ((json[terms.json.branch_attributes])[terms.json.attribute])[attribute_name] = {terms.json.attribute_type : attribute_type,
+                                                                                            terms.json.display_order: display_order};
 
     utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
                              "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
@@ -211,9 +299,7 @@ function selection.io.json_store_branch_attribute(json, attribute_name, attribut
 //------------------------------------------------------------------------------------------------------------------------
 
 function selection.io._aux.extract_branch_info.callback(key, value) {
-    selection.io.extract_branch_info_result[key] = utility.CallFunction(callback, {
-        "0": "value"
-    });
+    selection.io.extract_branch_info_result[key] = Call (callback, value);
 }
 
 function selection.io.extract_branch_info(branch_spec, callback) {
@@ -222,6 +308,3 @@ function selection.io.extract_branch_info(branch_spec, callback) {
     return selection.io.extract_branch_info_result;
 }
 
-function selection.io.branch.length(branch_info) {
-    return branch_info["MLE"];
-}

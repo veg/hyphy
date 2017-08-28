@@ -62,3 +62,26 @@ lfunction regexp.Find(string, re) {
     }
     return None;
 }
+
+/**
+ * @name regexp.FindSubexpressions
+ * @param {String} string
+ * @param {String} re - the regular expression
+ * @returns {AssociativeList} all matched RE subsexpressions
+ */
+lfunction regexp.FindSubexpressions(string, re) {
+    coordinates = string $ re;
+
+    if (coordinates[0] >= 0) {
+        matched = {};
+        upto = utility.Array1D (coordinates);
+        for (k = 0; k < upto; k += 2) {
+            matched + string[coordinates[k]][coordinates[k+1]];
+        }
+        return matched;
+    }
+    return None;
+}
+
+
+

@@ -15,14 +15,20 @@ utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.1); // for testing purposes.
 utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", 1); // for testing purposes
 
 io.DisplayAnalysisBanner({
-    "info": "Fit a general time reversible model to a collection
+    terms.io.info: "Fit a general time reversible model to a collection
     of training protein sequence alignments. Generate substitution
     and scoring matrices following the procedures described in Nickle et al 2007",
-    "version": "0.01",
-    "reference": "Nickle DC, Heath L, Jensen MA, Gilbert PB, Mullins JI, Kosakovsky Pond SL (2007) HIV-Specific Probabilistic Models of Protein Evolution. PLoS ONE 2(6): e503. doi:10.1371/journal.pone.0000503",
-    "authors": "Sergei L Kosakovsky Pond and Stephanie J Spielman",
-    "contact": "{spond,stephanie.spielman}@temple.edu"
+    terms.io.version: "0.01",
+    terms.io.reference: "Nickle DC, Heath L, Jensen MA, Gilbert PB, Mullins JI, Kosakovsky Pond SL (2007) HIV-Specific Probabilistic Models of Protein Evolution. PLoS ONE 2(6): e503. doi:10.1371/journal.pone.0000503",
+    terms.io.authors: "Sergei L Kosakovsky Pond and Stephanie J Spielman",
+    terms.io.contact: "{spond,stephanie.spielman}@temple.edu"
 });
+
+
+protein_gtr.filename_to_index = terms.data.filename_to_index;
+protein_gtr.logl = terms.fit.log_likelihood;
+protein_gtr.phase = terms.model.phase;
+
 
 /********************************************** MENU PROMPTS ********************************************************/
 /********************************************************************************************************************/
@@ -139,7 +145,7 @@ mpi.QueueComplete (protein_gtr.queue);
 
 
 // Sum of the logL from fitted baseline model across each data set
-protein_gtr.baseline_fit_logL = math.Sum (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_key"), "_value_", "(_value_[protein_gtr.phase_key])['LogL']"));
+protein_gtr.baseline_fit_logL = math.Sum (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_key"), "_value_", "(_value_[protein_gtr.phase_key])[terms.fit.log_likelihood]"));
 
 io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                             "Overall Log(L) = " + protein_gtr.baseline_fit_logL);
@@ -155,14 +161,14 @@ result_key = "REV-Phase-" + protein_gtr.fit_phase;
 
 if (utility.Has (protein_gtr.analysis_results, result_key, None)) {
     io.ReportProgressMessageMD ("Protein GTR Fitter", result_key,
-                                "Loaded cached results for '" + result_key + "'. Log(L) = " + (protein_gtr.analysis_results[result_key])["LogL"] );
+                                "Loaded cached results for '" + result_key + "'. Log(L) = " + (protein_gtr.analysis_results[result_key])[terms.fit.log_likelihood] );
     protein_gtr.current_gtr_fit = protein_gtr.analysis_results [result_key];
 } else {
     protein_gtr.current_gtr_fit = protein_gtr.fitGTRtoFileList (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/'" + protein_gtr.phase_key + "'"), "_value_", "_value_['" + protein_gtr.phase_key + "']"), protein_gtr.current_gtr_fit, result_key, FALSE);
 }
 
 // Record logL
-protein_gtr.scores + (protein_gtr.analysis_results[result_key])["LogL"];
+protein_gtr.scores + (protein_gtr.analysis_results[result_key])[terms.fit.log_likelihood];
 
 /* Now that the initial GTR fit has been performed, we toggle between a GTR fit and a branch length fit under the estimated GTR parameters */
 protein_gtr.shared_EFV = (utility.Values (protein_gtr.current_gtr_fit [terms.efv_estimate]))[0];
@@ -215,8 +221,8 @@ for (;;) {
         for (l1 = 0; l1 < 20; l1 += 1) {
             for (l2 = l1 + 1; l2 < 20; l2 += 1) {
 
-                previous = (previous_Q[ terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2]) ])[terms.MLE];
-                current = (current_Q[ terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2]) ])[terms.MLE];
+                previous = (previous_Q[ terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2]) ])[terms.fit.MLE];
+                current = (current_Q[ terms.aminoacidRate (models.protein.alphabet[l1],models.protein.alphabet[l2]) ])[terms.fit.MLE];
 
                 rmse += (previous - current)^2;
                 N += 1;

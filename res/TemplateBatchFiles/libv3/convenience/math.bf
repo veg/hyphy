@@ -32,8 +32,8 @@ lfunction math.GetIC(logl,params,samples) {
 lfunction math.DoLRT (lognull,logalt,df) {
   lrt = 2 * (logalt - lognull);
   return {
-           "LRT"     : lrt__,
-           "p-value" : 1-CChi2 (lrt__, df__)
+           utility.getGlobalValue("terms.LRT"): lrt__,
+           utility.getGlobalValue("terms.p_value") : 1-CChi2 (lrt__, df__)
          }
 }
 
@@ -154,6 +154,7 @@ lfunction math.Std(_data_vector) {
 */
 lfunction math.GatherDescriptiveStats(_data_vector) {
 
+
   _count = utility.Array1D (_data_vector);
   _sorted_data_vector = _data_vector % 0;
 
@@ -164,25 +165,56 @@ lfunction math.GatherDescriptiveStats(_data_vector) {
   _nonnegatives = utility.Filter (_data_vector, "_value_", "_value_ >= 0");
 
   _dstats = {};
-  _dstats["Count"] = _count;
-  _dstats["Mean"] = math.Mean(_data_vector);
-  _dstats["Median"] = math.Median(_data_vector);
-  _dstats["Min"] = _sorted_data_vector[0];
-  _dstats["Max"] = _sorted_data_vector[_count - 1];
-  _dstats["2.5%"] = _sorted_data_vector[(_count*0.025)$1];
-  _dstats["97.5%"] = _sorted_data_vector[Min((_count*0.975+0.5)$1, _count-1)];
-  _dstats["Sum"] = _sum;
-  _dstats["Mean"] = _sum/_count;
-  _dstats["Std.Dev"] = _std;
-  _dstats["Variance"] = _variance;
-  _dstats["COV"] = _std*_count/_sum;
-  _dstats["Skewness"] = math.Skewness(_data_vector);
-  _dstats["Kurtosis"] = math.Kurtosis(_data_vector);
-  _dstats ["Sq. sum"] = math.Sum(_data_vector*2);
-  _dstats ["Non-negative"]= Abs(_nonnegatives);
+  _dstats[utility.getGlobalValue("terms.math.count")] = _count;
+  _dstats[utility.getGlobalValue("terms.math.mean")] = math.Mean(_data_vector);
+  _dstats[utility.getGlobalValue("terms.math.median")] = math.Median(_data_vector);
+  _dstats[utility.getGlobalValue("terms.math.minimum")] = _sorted_data_vector[0];
+  _dstats[utility.getGlobalValue("terms.math.maximum")] = _sorted_data_vector[_count - 1];
+  _dstats[utility.getGlobalValue("terms.math._2.5")] = _sorted_data_vector[(_count*0.025)$1];
+  _dstats[utility.getGlobalValue("terms.math._97.5")] = _sorted_data_vector[Min((_count*0.975+0.5)$1, _count-1)];
+  _dstats[utility.getGlobalValue("terms.math.sum")] = _sum;
+  //_dstats["Mean"] = _sum/_count;
+  _dstats[utility.getGlobalValue("terms.math.stddev")] = _std;
+  _dstats[utility.getGlobalValue("terms.math.variance")] = _variance;
+  _dstats[utility.getGlobalValue("terms.math.cov")] = _std*_count/_sum;
+  _dstats[utility.getGlobalValue("terms.math.skewness")] = math.Skewness(_data_vector);
+  _dstats[utility.getGlobalValue("terms.math.kurtosis")] = math.Kurtosis(_data_vector);
+  _dstats [utility.getGlobalValue("terms.math.square_sum")] = math.Sum(_data_vector*2);
+  _dstats [utility.getGlobalValue("terms.math.non_negative")]= Abs(_nonnegatives);
 
   return _dstats;
 
 }
+
+/**
+* Returns Holm-Bonferroni corrected p-values
+* @name math.HolmBonferroniCorrection
+* @param {Dict} ps - a key -> p-value (or null, for not done)
+
+*/
+lfunction math.HolmBonferroniCorrection(ps) {
+  tested  = utility.Filter (ps, "_value_", "None!=_value_");
+  count   = utility.Array1D (tested);
+  names   = utility.Keys (tested);
+  indexed = {count, 2};
+  for (k = 0; k < count; k+=1) {
+    indexed [k][0] = tested[names[k]];
+    indexed [k][1] = k;
+  }
+  indexed = indexed % 0;
+
+
+  for (k = 0; k < count; k+=1) {
+    indexed[k][0] = indexed[k][0] * (count - k);
+  }
+
+  corrected = {};
+
+  for (k = 0; k < count; k+=1) {
+    corrected[names[indexed[k][1]]] = Min (1,indexed[k][0]);
+  }
+  utility.Extend (corrected, ps);
+  return corrected;
+};
 
 
