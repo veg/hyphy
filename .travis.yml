@@ -23,7 +23,6 @@ env:
 
 language: c++
 compiler: 
-  - clang
   - gcc
 
 addons:
