@@ -1,4 +1,4 @@
-LoadFunctionLibrary ("terms.bf");
+LoadFunctionLibrary ("../all-terms.bf");
 LoadFunctionLibrary ("frequencies.bf");
 
 /** @module models.protein */
@@ -9,13 +9,11 @@ LoadFunctionLibrary ("frequencies.bf");
 models.protein.alphabet = {{"A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"}};
 
 
-/* Dictionary of available empirical models */
-models.protein.empirical_options = {{"WAG","Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
-                                     {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
-                                     {"LG", "Empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067 "},
-                                     {"JC", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."}};
-
-
+/* Array of available empirical models */
+models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067"},
+                                   {"WAG", "Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
+                                   {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
+                                   {"JC", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."}};
 
 
 
@@ -27,20 +25,20 @@ models.protein.empirical_options = {{"WAG","Empirical model of protein evolution
  */
 function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 
-	__alphabet = modelSpec ["alphabet"];
+	__alphabet = modelSpec [terms.alphabet];
 	assert (Type (__alphabet) == "Matrix" && Columns (__alphabet) == 20, "Unsupported or missing alphabet '" + __alphabet + "'");
 
-	__modelType = modelSpec["type"];
+	__modelType = modelSpec[terms.model.type];
 	if (Type (__modelType) == "None" || Type (__modelType) == "Number") {
-		__modelType = "global";
+		__modelType = terms.global;
 	}
-	modelSpec["type"] = __modelType;
+	modelSpec[terms.model.type] = __modelType;
 	assert (__modelType == terms.local || __modelType == terms.global, "Unsupported or missing model type '" + __modelType + "'");
 
-	__rate_function = modelSpec ["q_ij"];
+	__rate_function = modelSpec [terms.model.q_ij];
 	assert (utility.IsFunction (__rate_function), "Missing q_ij callback in model specification");
 
-	__time_function = modelSpec ["time"];
+	__time_function = modelSpec [terms.model.time];
 	assert (utility.IsFunction (__time_function), "Missing time callback in model specification");
 
 
@@ -49,15 +47,18 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 
 	__rate_variation = model.generic.get_rate_variation (modelSpec);
 
+
+
 	__global_cache = {};
 
 	if (None != __rate_variation) {
 
-		__rp = Call (__rate_variation["distribution"], __rate_variation["options"], namespace);
-		__rate_variation ["id"] = (__rp[terms.category])["id"];
+
+		__rp = Call (__rate_variation[terms.rate_variation.distribution], __rate_variation[terms.rate_variation.options], namespace);
+		__rate_variation [terms.id] = (__rp[terms.category])[terms.id];
 				
 		parameters.DeclareCategory   (__rp[terms.category]);
-        parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+        parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 	} 
 
 	for (_rowChar = 0; _rowChar < 20; _rowChar +=1 ){
@@ -69,20 +70,20 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 
 
 		 	if (None != __rate_variation) {
-				__rp = Call (__rate_variation["rate_modifier"], 
+				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier], 
 							 __rp,
 							 __alphabet[_rowChar],
 							 __alphabet[_colChar],
 							 namespace,
-							 __rate_variation ["id"]);
+							 __rate_variation [terms.id]);
  			}
 
-            if (Abs (__rp[terms.rate_entry])) {
+            if (Abs (__rp[terms.model.rate_entry])) {
                 parameters.DeclareGlobal (__rp[terms.global], __global_cache);
-                parameters.helper.copy_definitions (modelSpec["parameters"], __rp);
+                parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 
-                __rate_matrix [_rowChar][_colChar] = __rp[terms.rate_entry];
-                __rate_matrix [_colChar][_rowChar] = __rp[terms.rate_entry];
+                __rate_matrix [_rowChar][_colChar] = __rp[terms.model.rate_entry];
+                __rate_matrix [_colChar][_rowChar] = __rp[terms.model.rate_entry];
                 continue;
             }
 			__rate_matrix [_rowChar][_colChar] = "";
@@ -92,10 +93,10 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 	__rp = Call (__time_function, __modelType);
 
 	if (Abs (__rp)) {
-		((modelSpec["parameters"])[terms.local])[terms.timeParameter ()] = __rp;
-	    modelSpec [terms.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, 0);
+		((modelSpec[terms.parameters])[terms.local])[terms.timeParameter ()] = __rp;
+	    modelSpec [terms.model.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, 0);
 	} else {
-	    modelSpec [terms.rate_matrix] = __rate_matrix;
+	    modelSpec [terms.model.rate_matrix] = __rate_matrix;
 	}
 
 }
@@ -106,7 +107,7 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
  * @returns default time
  */
 function models.protein.generic.Time (option) {
-	return terms.default_time;
+	return terms.parameters.default_time;
 }
 
 

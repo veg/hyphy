@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
- 
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,7 +34,7 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
 #include      "batchlan.h"
@@ -48,6 +48,7 @@ _Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
 
 extern  _List batchLanguageFunctionNames;
+extern  _String markdownOutput;
 
 //____________________________________________________________________________________
 
@@ -56,9 +57,9 @@ _String    _HYGenerateANameSpace () {
             capLetters ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
     do {
         nmsp = _String::Random (8, &capLetters);
-      
+
     } while (_HY_HBL_Namespaces.FindKey (nmsp) != kNotFound);
-    
+
     _HY_HBL_Namespaces.Insert (nmsp, 0);
     return nmsp;
 }
@@ -67,12 +68,12 @@ _String    _HYGenerateANameSpace () {
 //____________________________________________________________________________________
 
 
-void    ReadModelList(void) 
+void    ReadModelList(void)
 {
-    if (templateModelList.lLength > 0) return; 
-    
+    if (templateModelList.lLength > 0) return;
+
     _String     modelListFile (GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & "models.lst");
-    
+
     FILE* modelList = doFileOpen (modelListFile.get_str(),"rb");
     if (!modelList) {
         return;
@@ -117,10 +118,10 @@ bool ExpressionCalculator (_String data)
 
     _Formula   lhs,
                rhs;
-              
+
     _String    errMsg;
     _FormulaParsingContext fpc (&errMsg, nil);
-    
+
     long       retCode = Parse(&lhs, data, fpc, nil);
 
     if (retCode != HY_FORMULA_FAILED) {
@@ -196,11 +197,11 @@ bool    ExpressionCalculator (void)
 
 
 bool    PushFilePath (_String& pName, bool trim, bool process) {
-  
+
     //fprintf (stderr, "\nPushing %s\n", pName.sData);
-  
+
     long f;
-  
+
     if (process) {
       _String dir_sep (get_platform_directory_char());
       pName.ProcessFileName();
@@ -208,9 +209,9 @@ bool    PushFilePath (_String& pName, bool trim, bool process) {
     } else {
       f = pName.length();
     }
-  
-  
-  
+
+
+
     if (f>=0) {
          pathNames < new _String (pName, 0, f);
         if (trim)
@@ -275,9 +276,17 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
 
 _String ReturnDialogInput(bool dispPath)
 {
+    long do_markdown;
+    checkParameter (markdownOutput, do_markdown, 0L);
+
     NLToConsole ();
+
+    if (do_markdown) {
+      BufferToConsole("\n>");
+    }
+
     StringToConsole (dialogPrompt);
-  
+
     if (dispPath) {
       BufferToConsole (" (`");
       if (PeekFilePath()) {
@@ -302,9 +311,9 @@ _String ReturnFileDialogInput(void)
             return outS;
         }
     }
-    
+
     _String resolvedFilePath;
-    
+
 #ifdef __HEADLESS__
     WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
     return empty;
@@ -322,21 +331,21 @@ _String ReturnFileDialogInput(void)
     if (PopUpFileDialog (dialogPrompt)) {
         resolvedFilePath = *argFileName;
     }
-#endif 
+#endif
 
-#ifdef __HYPHYQT__  
+#ifdef __HYPHYQT__
     resolvedFilePath = _hyQTFileDialog (dialogPrompt,empty, false);
 #endif
-    
+
 #if defined __UNIX__ && ! defined __HYPHYQT__ && ! defined __HYPHY_GTK__
     resolvedFilePath = ReturnDialogInput(true);
 #endif
 
-    
+
     if (resolvedFilePath.sLength == 0) {
         terminate_execution = true;
     }
-    
+
     return resolvedFilePath;
 }
 
@@ -350,10 +359,10 @@ _String WriteFileDialogInput(void) {
             return outS;
         }
     }
-    
+
     defFileNameValue = ProcessLiteralArgument (&defFileString,nil);
     _String resolvedFilePath;
-    
+
 #ifdef __HEADLESS__
     WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
     return empty;
@@ -370,17 +379,17 @@ _String WriteFileDialogInput(void) {
   #ifdef __HYPHY_GTK__
       if (PopUpFileDialog (dialogPrompt)) {
           resolvedFilePath = *argFileName;
-      } 
+      }
   #endif
-    #ifdef __HYPHYQT__  
+    #ifdef __HYPHYQT__
         resolvedFilePath = _hyQTFileDialog (dialogPrompt,defFileNameValue, true);
     #endif
-            
+
     #if defined __UNIX__ && ! defined __HYPHYQT__ && ! defined __HYPHY_GTK__
         resolvedFilePath = ReturnDialogInput(true);
     #endif
 #endif
-    
+
     if (resolvedFilePath.sLength == 0) {
         terminate_execution = true;
     }

@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -105,7 +105,7 @@ namespace CategoryConstructionOptions {
 /* interval mapping functions */
 
 #define   _hyphyIntervalMapID                           0x0 // identify
-#define   _hyphyIntervalMapExpit                        0x1 // expit -- maps [-infty,infty) to [0,1] 
+#define   _hyphyIntervalMapExpit                        0x1 // expit -- maps [-infty,infty) to [0,1]
 // 1/(1+exp[-x])
 #define   _hyphyIntervalMapSqueeze                      0x2 // maps [0,infty) to [0,1)
 // x / (1+x)
@@ -241,19 +241,19 @@ public:
     FindCategoryVar         (long);
     // return the category variable for a given partition
     void        RankVariables           (_AVLListX* tagger = nil);
-  
-  
+
+
     _TheTree*         GetIthTree            (long) const;
     _DataSetFilter const *  GetIthFilter    (long) const;
     _DataSetFilter *  GetIthFilterMutable   (long) const;
     _String const*         GetIthFilterName      (long) const;
-  
+
     _Matrix*          GetIthFrequencies     (long) const;
     _String const*         GetIthFrequenciesName (long) const;
- 
-  
+
+
     void        FillInConditionals      (long = -1);
-    
+
     void        Setup                   (bool check_reversibility = true);
     bool&       HasBeenOptimized (void) {
         return hasBeenOptimized;
@@ -319,8 +319,8 @@ public:
 
     _AssociativeList*CollectLFAttributes         (void) const;
 protected:
-  
-  
+
+
     void            AllocateTemplateCaches  (void);
     bool            CheckIthPartition       (unsigned long index, _String* errorString, _String const* = nil, _String const * = nil, _String const * = nil);
 
@@ -419,9 +419,9 @@ protected:
 
 
     void            ComputeParameterPenalty     (void);
-    
-    
-    
+
+
+
     bool            SendOffToMPI                (long);
     void            InitMPIOptimizer            (void);
     void            CleanupMPIOptimizer         (void);
@@ -500,9 +500,9 @@ protected:
      compute the log likelihood of the partition
 
      */
-  
+
      /** optimization logger functions **/
-  
+
     void LoggerLogL               (hyFloat logL);
     void LoggerAddGradientPhase   (hyFloat precision);
     void LoggerAddCoordinatewisePhase (hyFloat shrinkage, char convergence_mode);
@@ -625,7 +625,7 @@ protected:
 
     _Formula*       computingTemplate;
     MSTCache*       mstCache;
-    
+
     hyFloat      smoothingTerm,
                     smoothingReduction,
                     smoothingPenalty;
@@ -692,7 +692,7 @@ protected:
                         // on a site-by-site basis; includes scratch cache for remapping
                         gradientBlocks
                         ;
-  
+
     _AssociativeList    *optimizatonHistory;
 
 #ifdef  _OPENMP

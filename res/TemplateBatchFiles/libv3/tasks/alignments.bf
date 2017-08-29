@@ -1,5 +1,5 @@
 LoadFunctionLibrary("../IOFunctions.bf");
-LoadFunctionLibrary("../terms-json.bf");
+LoadFunctionLibrary("../all-terms.bf");
 
 
 /**
@@ -28,10 +28,10 @@ lfunction alignments.LoadGeneticCode (code) {
         ExecuteAFile(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "chooseGeneticCode.def");
      }
      return {
-        "code" : _Genetic_Code,
-        "stops" : GeneticCodeExclusions,
-        "ordering" : _hyphyAAOrdering,
-        "mapping" : defineCodonToAA ()
+        utility.getGlobalValue("terms.code") : _Genetic_Code,
+        utility.getGlobalValue("terms.code.stops") : GeneticCodeExclusions,
+        utility.getGlobalValue("terms.code.ordering") : _hyphyAAOrdering,
+        utility.getGlobalValue("terms.code.mapping") : defineCodonToAA ()
      };
 }
 /**
@@ -44,7 +44,7 @@ lfunction alignments.LoadGeneticCode (code) {
 
 lfunction alignments.ReadCodonDataSetFromPath(dataset_name, path) {
      code_info = alignments.LoadGeneticCode (None);
-     return alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code_info["code"], code_info["stops"]);
+     return alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code_info[utility.getGlobalValue("terms.code")], code_info[utility.getGlobalValue("terms.code.stops")]);
 }
 
 /**
@@ -69,10 +69,10 @@ lfunction alignments.ReadCodonDataSetFromPathGivenCode (dataset_name, path, code
     r = alignments.ReadNucleotideDataSet_aux(dataset_name);
 
     r * {
-        "code": code,
-        "stop": stop_codons,
-        "file": path,
-        "sequences": Eval( ^ "`dataset_name`.species")
+        utility.getGlobalValue("terms.code"): code,
+        utility.getGlobalValue("terms.stop_codons"): stop_codons, // this is indeed stop, not stops
+        utility.getGlobalValue("terms.data.file"): path,
+        utility.getGlobalValue("terms.data.sequences"): Eval( ^ "`dataset_name`.species")
     };
 
     return r;
@@ -92,7 +92,7 @@ lfunction alignments.ReadNucleotideDataSet_aux(dataset_name) {
 
     partitions = {
         {
-            "default",
+            utility.getGlobalValue("terms.default"),
             ""
         }
     };
@@ -105,10 +105,10 @@ lfunction alignments.ReadNucleotideDataSet_aux(dataset_name) {
     }
 
     return {
-        "sequences": Eval("`dataset_name`.species"),
-        "sites": Eval("`dataset_name`.sites"),
-        "name-mapping": Eval("`dataset_name`.mapping"),
-        "partitions": partitions
+        utility.getGlobalValue("terms.data.sequences"): Eval("`dataset_name`.species"),
+        utility.getGlobalValue("terms.data.sites"): Eval("`dataset_name`.sites"),
+        utility.getGlobalValue("terms.data.name_mapping"): Eval("`dataset_name`.mapping"),
+        utility.getGlobalValue("terms.data.partitions"): partitions
     };
 }
 
@@ -154,7 +154,7 @@ lfunction alignments.GetIthSequence (dataset_name, index) {
 
     GetString   (seq_id, ^dataset_name, index);
     GetDataInfo (seq_string, ^dataset_name, index);
-    return {"id" : seq_id, "sequence" : seq_string};
+    return {utility.getGlobalValue("terms.id") : seq_id, utility.getGlobalValue("terms.data.sequence") : seq_string};
 }
 
 /**
@@ -174,7 +174,7 @@ lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
     }
 
     result = alignments.ReadNucleotideDataSet_aux(dataset_name);
-    result["file"] = file_name;
+    result[utility.getGlobalValue("terms.data.file")] = file_name;
     return result;
 }
 
@@ -222,11 +222,11 @@ function alignments.LoadGeneticCodeAndAlignment(dataset_name, datafilter_name, p
  * @returns {Dictionary} updated data_info that includes the number of sites, dataset, and datafilter name
  */
 function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) {
-    DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3, , , data_info["stop"]);
+    DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3, , , data_info[terms.stop_codons]);
     io.CheckAssertion("`datafilter_name`.sites*3==`dataset_name`.sites", "The input alignment must not contain stop codons");
-    data_info["sites"] = ^ "`datafilter_name`.sites";
-    data_info["dataset"] = dataset_name;
-    data_info["datafilter"] = datafilter_name;
+    data_info[terms.data.sites] = ^ "`datafilter_name`.sites";
+    data_info[terms.data.dataset] = dataset_name;
+    data_info[terms.data.datafilter] = datafilter_name;
     return data_info;
 }
 
@@ -241,9 +241,9 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
 function alignments.ReadNucleotideAlignment(file_name, dataset_name, datafilter_name) {
     data_info = alignments.ReadNucleotideDataSet(dataset_name, file_name);
     ExecuteCommands("DataSetFilter `datafilter_name` = CreateFilter (`dataset_name`,1)");
-    data_info["sites"] = Eval("`datafilter_name`.sites");
-    data_info["dataset"] = dataset_name;
-    data_info["datafilter"] = datafilter_name;
+    data_info[terms.data.sites] = Eval("`datafilter_name`.sites");
+    data_info[terms.data.dataset] = dataset_name;
+    data_info[terms.data.datafilter] = datafilter_name;
 
     return data_info;
 }
@@ -258,25 +258,27 @@ function alignments.ReadNucleotideAlignment(file_name, dataset_name, datafilter_
 lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix, data_info) {
     part_count = utility.Array1D(partitions);
     filters = {};
-    if (utility.CheckKey(data_info, "code", "Matrix")) {
+    if (utility.CheckKey(data_info, utility.getGlobalValue("terms.code"), "Matrix")) {
         for (i = 0; i < part_count; i += 1) {
             this_filter = {};
-            DataSetFilter test = CreateFilter( ^ source_data, 1, (partitions[i])["filter-string"]);
-            this_filter["name"] = prefix + (partitions[i])["name"];
-            DataSetFilter ^ (this_filter["name"]) = CreateFilter( ^ source_data, 3, (partitions[i])["filter-string"], , data_info["stop"]);
-            diff = test.sites - 3 * ^ (this_filter["name"] + ".sites");
+            DataSetFilter test = CreateFilter( ^ source_data, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
+            this_filter[utility.getGlobalValue("terms.data.name")] = prefix + (partitions[i])[utility.getGlobalValue("terms.data.name")];
+            DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ source_data, 3, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")], , data_info[utility.getGlobalValue("terms.stop_codons")]);
+            diff = test.sites - 3 * ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".sites");
+            
+            //TODO: BELOW, IS THE "names" CORRECT OR SHOULD IT BE "name"????? SJS can't locate another time when the plural is used through libv3.
             io.CheckAssertion("`&diff` == 0", "Partition " + (filters["names"])[i] + " is either has stop codons or is not in frame");
-            this_filter["coverage"] = utility.DictToArray(utility.Map(utility.Filter( ^ (this_filter["name"] + ".site_map"), "_value_", "_value_%3==0"), "_value_", "_value_$3"));
-
+            
+            this_filter[utility.getGlobalValue("terms.data.coverage")] = utility.DictToArray(utility.Map(utility.Filter( ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".site_map"), "_value_", "_value_%3==0"), "_value_", "_value_$3"));
             filters + this_filter;
         }
 
     } else {
         for (i = 0; i < part_count; i += 1) {
             this_filter = {};
-            this_filter["name"] = prefix + (partitions[i])["name"];
-            DataSetFilter ^ (this_filter["name"]) = CreateFilter( ^ source_data, 1, (partitions[i])["filter-string"]);
-            this_filter["coverage"] = ^ (this_filter["name"] + ".site_map");
+            this_filter[utility.getGlobalValue("terms.data.name")] = prefix + (partitions[i])[utility.getGlobalValue("terms.data.name")];
+            DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ source_data, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
+            this_filter[utility.getGlobalValue("terms.data.coverage")] = ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".site_map");
             filters + this_filter;
 
         }
@@ -299,6 +301,7 @@ lfunction alignments.serialize_site_filter (data_filter, site_index) {
     Export (filter_string, temp);
     utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", None);
     utility.ToggleEnvVariable ("IS_TREE_PRESENT_IN_DATA", None);
+    // TODO filter string below
     return '
         lfunction __make_filter (name) {
             DataSet hidden = ReadFromString ("`filter_string`");
@@ -323,8 +326,8 @@ lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
 	translation * (l/3+1);
 	for (k = offset; k < l; k += 3) {
 		codon = sequence[k][k+2];
-		if (code ["mapping"] / codon) {
-		    translation * (code ["mapping"])[codon];
+		if (code [utility.getGlobalValue("terms.code.mapping")] / codon) {
+		    translation * (code [utility.getGlobalValue("terms.code.mapping")])[codon];
 		}
 		else {
 		    if (codon == "---") {
@@ -428,7 +431,7 @@ lfunction alignments.MapAlignmentToReferenceCoordinates (reference, aligned_refe
         realigned[i] * 0;
     }
 
-    return {"three-way" : Eval (realigned), "mapping" : Eval (coordinates), "reduced" : Eval (reduced_alignment)};
+    return {utility.getGlobalValue("terms.three_way") : Eval (realigned), utility.getGlobalValue("terms.code.mapping") : Eval (coordinates), utility.getGlobalValue("terms.reduced") : Eval (reduced_alignment)};
 
 }
 
@@ -475,18 +478,18 @@ lfunction alignments.Extract_site_patterns (data_filter) {
     utility.ForEachPair (pattern_list, "_site_index_", "_pattern_",
         '
         utility.EnsureKey (`&site_info`, _pattern_);
-        utility.EnsureKey (`&site_info`[_pattern_], "sites");
+        utility.EnsureKey (`&site_info`[_pattern_], utility.getGlobalValue("terms.data.sites"));
 
-        (`&site_info`[_pattern_])["sites"] + _site_index_[1];
+        (`&site_info`[_pattern_])[utility.getGlobalValue("terms.data.sites")] + _site_index_[1];
 
-        if (Abs ((`&site_info`[_pattern_])["sites"]) == 1) {
+        if (Abs ((`&site_info`[_pattern_])[utility.getGlobalValue("terms.data.sites")]) == 1) {
             // first time we see this site
             GetDataInfo (`&site_characters`, `data_filter`, -1, _pattern_);
             `&site_characters` = utility.Filter (`&site_characters`,
                                                  "_value_",
                                                  "(+_value_>0)");
 
-            (`&site_info`[_pattern_])["is_constant"] = Abs (`&site_characters`) <= 1;
+            (`&site_info`[_pattern_])[utility.getGlobalValue("terms.data.is_constant")] = Abs (`&site_characters`) <= 1;
 
         }
         '

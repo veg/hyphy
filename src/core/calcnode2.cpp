@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
   Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@temple.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -87,7 +87,7 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
                                                             childVector[1],
                                                             childVector[2],
                                                             childVector[3]};
-                                                    
+
         __m128d buffer0 = _mm_loadu_pd (tv),
                 buffer1 = _mm_loadu_pd (tv+2),
                 matrix01 = _mm_loadu_pd (tMatrix),
@@ -96,7 +96,7 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
                 matrix56 = _mm_loadu_pd (tMatrix+6),
                 reg_storage  = _mm_mul_pd (buffer0, matrix01),
                 reg_storage2 = _mm_mul_pd (buffer0, matrix34);
-               
+
         matrix34     = _mm_mul_pd(buffer1, matrix12);
         matrix56     = _mm_mul_pd(buffer1, matrix56);
         reg_storage  = _mm_add_pd (reg_storage, matrix34);
@@ -105,72 +105,72 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
         matrix01 = _mm_loadu_pd (parentConditionals);
         matrix01 = _mm_mul_pd (reg_storage, matrix01);
         _mm_storeu_pd (parentConditionals, matrix01);
-        
-                
-        
+
+
+
         matrix01 = _mm_loadu_pd (tMatrix+8);
         matrix12 = _mm_loadu_pd (tMatrix+10);
         matrix34 = _mm_loadu_pd (tMatrix+12);
         matrix56 = _mm_loadu_pd (tMatrix+14);
         reg_storage  = _mm_mul_pd (buffer0, matrix01);
-        reg_storage2 = _mm_mul_pd (buffer0, matrix34);                
-              
+        reg_storage2 = _mm_mul_pd (buffer0, matrix34);
+
         matrix34     = _mm_mul_pd(buffer1, matrix12);
         matrix56     = _mm_mul_pd(buffer1, matrix56);
         reg_storage  = _mm_add_pd (reg_storage, matrix34);
         reg_storage2 = _mm_add_pd (reg_storage2, matrix56);
         reg_storage  = _mm_hadd_pd (reg_storage,reg_storage2);
-        
+
         matrix01 = _mm_loadu_pd (parentConditionals+2);
         matrix01 = _mm_mul_pd (reg_storage, matrix01);
         _mm_storeu_pd (parentConditionals+2, matrix01);
 
-               
+
   /*
    A1*B1 + A2*B2 + A3*B3 + A4*B4, where A4 = 1-A1-A2-A3 can be done with three multipications
    and 3 extra additions, like
-   
+
    A1*(B1-B4) + A2*(B2-B4) + A3*(B3-B4) + B4
-   
+
    */
 
 #elif defined _SLKP_USE_AVX_INTRINSICS
-  
+
 
       __m256d c3     = _mm256_set1_pd(childVector[3]),
               c0     = _mm256_sub_pd(_mm256_set1_pd(childVector[0]),c3),
               c1     = _mm256_sub_pd(_mm256_set1_pd(childVector[1]),c3),
               c2     = _mm256_sub_pd(_mm256_set1_pd(childVector[2]),c3),
               t0,t1,t2;
-  
+
           if (transposed_mx) {
              t0    = ((__m256d*)transposed_mx)[0];
              t1    = ((__m256d*)transposed_mx)[1];
              t2    = ((__m256d*)transposed_mx)[2];
-            
+
           } else {
             t0     = (__m256d) {tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]};
             t1     = (__m256d) {tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]};
             t2     = (__m256d) {tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]};
           }
-  
+
         // load transition matrix by column
-  
+
         __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
                 sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), c3);
-  
+
         _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
-  
+
 
 
 #else
         // 12 multiplications, 16 additions, 3 subtractions
-  
+
         hyFloat t1 = childVector[0] - childVector[3],
                    t2 = childVector[1] - childVector[3],
                    t3 = childVector[2] - childVector[3],
                    t4 = childVector[3];
-                   
+
         parentConditionals [0] *= (tMatrix[0]  * t1 + tMatrix[1] * t2) + (tMatrix[2] * t3 + t4);
         parentConditionals [1] *= (tMatrix[4]  * t1 + tMatrix[5] * t2) + (tMatrix[6] * t3 + t4);
         parentConditionals [2] *= (tMatrix[8]  * t1 + tMatrix[9] * t2) + (tMatrix[10] * t3 + t4);
@@ -204,7 +204,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 {
     _List           matrixQueue,
                     nodesToDo;
-                    
+
     _SimpleList     isExplicitForm;
     bool            hasExpForm = false;
 
@@ -224,13 +224,13 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
             }
         }
     }
-    
+
     //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
 
     unsigned long matrixID;
-    
+
     _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
-    
+
 #ifdef _OPENMP
     unsigned long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
     matrixExpCount += matrixQueue.lLength;
@@ -244,15 +244,15 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
              (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate();
         }
     }
-    
-    
-  
+
+
+
 
 
     if (computedExponentials) {
         _CalcNode * current_node         = nil;
         _List       buffered_exponentials;
-        
+
         for (unsigned long mx_index = 0; mx_index < nodesToDo.lLength; mx_index++) {
             if (isExplicitForm.lData[mx_index]) {
                 _CalcNode *next_node = (_CalcNode*) nodesToDo (mx_index);
@@ -281,7 +281,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         DeleteObject(computedExponentials);
     #ifdef _UBER_VERBOSE_DUMP_MATRICES
       if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP) {
-        fprintf (stderr, "\n T_MATRIX = {"); 
+        fprintf (stderr, "\n T_MATRIX = {");
         for (unsigned long nodeID = 0; nodeID < flatLeaves.lLength + flatTree.lLength - 1; nodeID++) {
             bool    isLeaf     = nodeID < flatLeaves.lLength;
 
@@ -290,10 +290,10 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
             if (nodeID) {
               fprintf (stderr, ",");
             }
-            fprintf (stderr, "\n\"%s\":%s", current_node->GetName()->sData, _String((_String*)current_node->GetCompExp()->toStr()).sData); 
-            
+            fprintf (stderr, "\n\"%s\":%s", current_node->GetName()->sData, _String((_String*)current_node->GetCompExp()->toStr()).sData);
+
           }
-        fprintf (stderr, "\n};\n"); 
+        fprintf (stderr, "\n};\n");
       }
     #endif
 
@@ -410,7 +410,7 @@ void        _TheTree::FillInConditionals        (_DataSetFilter const*        th
 /*----------------------------------------------------------------------------------------------------------*/
 
 #ifdef MDSOCL
-hyFloat _TheTree::OCLLikelihoodEvaluator (			_SimpleList&		     updateNodes, 
+hyFloat _TheTree::OCLLikelihoodEvaluator (			_SimpleList&		     updateNodes,
 														_DataSetFilter*		 theFilter,
                                                         hyFloat*			 iNodeCache,
                                                         long	   *			 lNodeFlags,
@@ -683,7 +683,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         hyFloat  const * transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
         hyFloat  *       childVector,
                     *       lastUpdatedSite;
-      
+
 #ifdef _SLKP_USE_AVX_INTRINSICS
       __m256d tmatrix_transpose [4] = {
         (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
@@ -734,7 +734,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     /*
                     if (likeFuncEvalCallCount == 4 || likeFuncEvalCallCount == 5) {
                         printf ("\nSKIPPED site %ld @ eval %ld\n", siteID, likeFuncEvalCallCount);
-                    }*/   
+                    }*/
                     continue;
                 }
                 parentTCCIBit++;
@@ -833,24 +833,24 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 hyFloat sum = 0.0;
 
                 if (alphabetDimension > alphabetDimensionmod4){
-                  
-                  
+
+
                     for (long p = 0L; p < alphabetDimension; p++) {
                          hyFloat      accumulator = 0.0;
-                      
+
 #ifdef _SLKP_USE_SSE_INTRINSICS
 
                         __m128d buffer1,
                                 buffer2,
                                 buffer3 = _mm_setzero_pd(),
                                 buffer4 = _mm_setzero_pd(),
-                                load1, 
+                                load1,
                                 load2,
                                 load3,
                                 load4;
-                                
-                        
-                        if (((long int)tMatrix & 0x1111b) == 0 && ((long int)childVector & 0x1111b) == 0){ 
+
+
+                        if (((long int)tMatrix & 0x1111b) == 0 && ((long int)childVector & 0x1111b) == 0){
                            for (long c = 0; c < alphabetDimensionmod4; c+=4) {
                                 load1 = _mm_load_pd (tMatrix+c);
                                 load2 = _mm_load_pd (tMatrix+c+2);
@@ -860,7 +860,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                                 buffer2 = _mm_mul_pd (load2, load4);
                                 buffer3 = _mm_add_pd (buffer1,buffer3);
                                 buffer4 = _mm_add_pd (buffer2,buffer4);
-                            }      
+                            }
                         } else {
                            for (long c = 0; c < alphabetDimensionmod4; c+=4) {
                                 load1 = _mm_loadu_pd (tMatrix+c);
@@ -871,19 +871,19 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                                 buffer2 = _mm_mul_pd (load2, load4);
                                 buffer3 = _mm_add_pd (buffer1,buffer3);
                                 buffer4 = _mm_add_pd (buffer2,buffer4);
-                            }      
-                        
+                            }
+
                         }
-                        
-                        buffer3 = _mm_add_pd (buffer3, buffer4);    
+
+                        buffer3 = _mm_add_pd (buffer3, buffer4);
                         double buffer[2] __attribute__ ((aligned (16)));
                         _mm_store_pd (buffer, buffer3);
                         accumulator = buffer[0] + buffer[1];
-                      
+
 #elif defined _SLKP_USE_AVX_INTRINSICS // end _SLKP_USE_SSE_INTRINSICS
-                        
+
                         __m256d sum256 = _mm256_setzero_pd();
-                      
+
                         /*if (((long int)tMatrix & 0x11111b) == 0 && ((long int)childVector & 0x11111b) == 0){
                             for (long c = 0L; c < alphabetDimensionmod4; c+=4L) {
                                 sum = _mm256_add_pd (sum,_mm256_mul_pd (_mm256_load_pd (tMatrix+c), _mm256_load_pd (childVector+c)));
@@ -893,16 +893,16 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                               __m256d matrix_quad = _mm256_loadu_pd (tMatrix+c),
                                       child_quad = _mm256_loadu_pd (childVector+c),
                                       prod = _mm256_mul_pd (matrix_quad, child_quad);
-                              
+
                                 sum256 = _mm256_add_pd (sum256,prod);
                             }
-                            
+
                         //}
                         //double buffer[4] __attribute__ ((aligned (32)));
                         //_mm256_store_pd(buffer, sum256);
-                      
+
                         //accumulator = (buffer[0] + buffer[1]) + (buffer[2] + buffer[3]);
-                      
+
                         accumulator = _avx_sum_4(sum256);
                         //NOT sure why copy to doubles and add is faster
                         // that AVX istructions
@@ -936,23 +936,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                                 _mm256_loadu_pd(tMatrix+8UL),
                                 _mm256_loadu_pd(tMatrix+12UL),
                                 _mm256_loadu_pd(tMatrix+16UL)},
-                              
+
                               c_vector[5] = {_mm256_loadu_pd(childVector),
                                 _mm256_loadu_pd(childVector+4UL),
                                 _mm256_loadu_pd(childVector+8UL),
                                 _mm256_loadu_pd(childVector+12UL),
                                 _mm256_loadu_pd(childVector+16UL)};
-                              
+
                               t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
                               t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
                               t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
                               t_matrix[3] = _mm256_mul_pd(t_matrix[3], c_vector[3]);
                               t_matrix[4] = _mm256_mul_pd(t_matrix[4], c_vector[4]);
-                              
+
                               t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
                               t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
                               t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
-                              
+
                               tMatrix               += 20UL;
                               sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
                            }
@@ -1049,7 +1049,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
     for (long siteID = siteFrom, rootIndex = 0L; siteID < siteTo; siteID++) {
         hyFloat accumulator = 0.;
-      
+
         if (setBranch == flatTree.lLength-1) {
             long                rootState = setBranchTo[siteOrdering.lData[siteID]];
             accumulator         = rootConditionals[rootIndex + rootState] * theProbs[rootState];
@@ -1082,12 +1082,12 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 }
                 break;
             }
-          
+
             hyFloat term = log(accumulator),
                        temp_sum;
-            
+
             long       site_frequency = theFilter->theFrequencies (siteOrdering.lData[siteID]);
-          
+
             if (site_frequency > 1L) {
                 term *= site_frequency;
             }
@@ -1096,7 +1096,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             temp_sum = result + term;
             correction = (temp_sum - result) - term;
             result = temp_sum;
-          
+
         }
     }
 
@@ -1141,7 +1141,7 @@ void            _TheTree::ComputeBranchCache    (
     hyFloat*         siteRes
 )
 {
-  
+
 
     //printf ("ComputeBranchCache\n");
 
@@ -1183,7 +1183,7 @@ void            _TheTree::ComputeBranchCache    (
     printf ("\n");
     echoNodeList (nodesToProcess,flatLeaves,flatNodes);
     */
-  
+
     hyFloat * state = cache + alphabetDimension * siteFrom,
                  * childVector;
 
@@ -1250,8 +1250,8 @@ void            _TheTree::ComputeBranchCache    (
 
         long    nodeCode   = notPassedRoot?nodesToProcess.lData [nodeID]:rootPath.lData[nodeID-nodesToProcess.lLength],
                 parentCode = notPassedRoot?flatParents.lData [nodeCode]:(rootPath.lData[nodeID-nodesToProcess.lLength+1] - flatLeaves.lLength);
-      
- 
+
+
         bool    isLeaf     = nodeCode < flatLeaves.lLength;
 
         if (!isLeaf) {
@@ -1291,7 +1291,7 @@ void            _TheTree::ComputeBranchCache    (
         //printf ("isLeaf = %d, nodeCode = %ld, parentCode = %ld, matrix from %s, parent name %s\n", isLeaf, nodeCode, parentCode, currentTreeNode->GetName()->sData, ((_CalcNode    *)flatTree(parentCode))->GetName()->sData);
 
         hyFloat  const * _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
-      
+
         #ifdef _SLKP_USE_AVX_INTRINSICS
               __m256d tmatrix_transpose [4] = {
                 (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
@@ -1300,14 +1300,14 @@ void            _TheTree::ComputeBranchCache    (
                 (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
               };
         #endif
-      
+
        hyFloat  *       childVector,
                     *     lastUpdatedSite;
 
         if (!isLeaf) {
             lastUpdatedSite = childVector = iNodeCache + (siteFrom + nodeCode * siteCount) * alphabetDimension;
         }
-      
+
 
         long currentTCCIndex        ,
              currentTCCBit            ,
@@ -1412,40 +1412,40 @@ void            _TheTree::ComputeBranchCache    (
                 childVector += 4;
             } else {
                 for (long p = 0; p < alphabetDimension; p++) {
-                  
+
 #ifdef _SLKP_USE_AVX_INTRINSICS
                   if (alphabetDimension == 20UL) {
-                    
+
                     __m256d t_matrix[5] = {_mm256_loadu_pd(tMatrix),
                                            _mm256_loadu_pd(tMatrix+4UL),
                                            _mm256_loadu_pd(tMatrix+8UL),
                                            _mm256_loadu_pd(tMatrix+12UL),
                                             _mm256_loadu_pd(tMatrix+16UL)},
-                    
+
                             c_vector[5] = {_mm256_loadu_pd(childVector),
                               _mm256_loadu_pd(childVector+4UL),
                               _mm256_loadu_pd(childVector+8UL),
                               _mm256_loadu_pd(childVector+12UL),
                               _mm256_loadu_pd(childVector+16UL)};
-                    
+
                     t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
                     t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
                     t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
                     t_matrix[3] = _mm256_mul_pd(t_matrix[3], c_vector[3]);
                     t_matrix[4] = _mm256_mul_pd(t_matrix[4], c_vector[4]);
-                    
+
                     t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
                     t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
                     t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
-                    
+
                     tMatrix               += 20UL;
                     sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
                     continue;
-                    
+
                   }
 #endif
                   hyFloat      accumulator = 0.0;
-                
+
                   for (long c = 0; c < alphabetDimensionmod4; c+=4) { // 4 - unroll the loop
                       hyFloat  pr1 =    tMatrix[c]   * childVector[c],
                                   pr2 =    tMatrix[c+1] * childVector[c+1],
@@ -1466,7 +1466,7 @@ void            _TheTree::ComputeBranchCache    (
                 }
 
                 childVector    += alphabetDimension;
-              
+
                 if (canScale) {
                     if (sum < _lfScalingFactorThreshold && sum > 0.0) {
                         hyFloat tryScale                                 = scalingAdjustments [nodeCode*siteCount + siteID] * _lfScalerUpwards;
@@ -1500,7 +1500,7 @@ void            _TheTree::ComputeBranchCache    (
         }
     }
 
-  
+
 
     //printf ("root name %s\n", ((_CalcNode    *)flatTree(rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength))->GetName()->sData);
 
@@ -1515,7 +1515,7 @@ void            _TheTree::ComputeBranchCache    (
     if (!siteCorrectionCounts && localScalerChange) {
         #pragma omp atomic
         overallScaler += localScalerChange;
-      
+
       //#pragma omp atomic
       // printf ("Rescale in ComputeBranchCache at branch %ld %ld\n", brID, localScalerChange);
     }
@@ -1542,16 +1542,16 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
 )
 {
   auto bookkeeping =  [&siteOrdering, &storageVec, &theFilter] (const long siteID, const hyFloat accumulator, hyFloat& correction, hyFloat& result) ->  void {
-     
+
     long direct_index = siteOrdering.lData[siteID];
-      
+
     if (storageVec) {
       storageVec [direct_index] = accumulator;
     } else {
       if (accumulator <= 0.0) {
         throw (1L+direct_index);
       }
-        
+
       hyFloat term;
       long       site_frequency = theFilter->theFrequencies.Get(direct_index);
       if ( site_frequency > 1L) {
@@ -1585,15 +1585,15 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
 
     hyFloat  const *   _hprestrict_ transitionMatrix = givenTreeNode->GetCompExp(catID)->theData;
 
-  
+
 // cases by alphabet dimension
 
   try {
     switch (alphabetDimension) {
 /****
- 
+
   NUCLEOTIDES
- 
+
  ****/
         case 4UL: {
           #ifdef _SLKP_USE_AVX_INTRINSICS
@@ -1617,7 +1617,7 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                s01    = _mm256_add_pd ( _mm256_mul_pd (b_cond0, tmatrix_transpose[0]), _mm256_mul_pd (b_cond1, tmatrix_transpose[1])),
                s23    = _mm256_add_pd ( _mm256_mul_pd (b_cond2, tmatrix_transpose[2]), _mm256_mul_pd (b_cond3, tmatrix_transpose[3]));
                accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));
-            
+
               #else
                   accumulator =    rootConditionals[0] * theProbs[0] *
                   (branchConditionals[0] *  transitionMatrix[0] + branchConditionals[1] *  transitionMatrix[1] + branchConditionals[2] *  transitionMatrix[2] + branchConditionals[3] *  transitionMatrix[3]) +
@@ -1635,9 +1635,9 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
         }
         break;
 /****
- 
+
  AMINOACIDS
- 
+
  ****/
       case 20UL: {
         for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
@@ -1648,59 +1648,59 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
               _mm256_loadu_pd(branchConditionals+8UL),
               _mm256_loadu_pd(branchConditionals+12UL),
               _mm256_loadu_pd(branchConditionals+16UL)};
-            
-            
+
+
             hyFloat const * tm = transitionMatrix;
-            
+
             for (unsigned long p = 0UL; p < 20UL; p++, rootConditionals++) {
-              
+
               __m256d t_matrix[5] = { _mm256_loadu_pd(tm),
                                       _mm256_loadu_pd(tm+4UL),
                                       _mm256_loadu_pd(tm+8UL),
                                       _mm256_loadu_pd(tm+12UL),
                                       _mm256_loadu_pd(tm+16UL)};
-              
-              
+
+
               t_matrix[0] = _mm256_mul_pd(t_matrix[0], bc_vector[0]);
               t_matrix[1] = _mm256_mul_pd(t_matrix[1], bc_vector[1]);
               t_matrix[2] = _mm256_mul_pd(t_matrix[2], bc_vector[2]);
               t_matrix[3] = _mm256_mul_pd(t_matrix[3], bc_vector[3]);
               t_matrix[4] = _mm256_mul_pd(t_matrix[4], bc_vector[4]);
-              
+
               t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
               t_matrix[1] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
               t_matrix[3] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
-              
+
               tm += 20UL;
-              
+
               accumulator += *rootConditionals * theProbs[p] * _avx_sum_4(_mm256_add_pd (t_matrix[3],t_matrix[4]));
             }
           #else // _SLKP_USE_AVX_INTRINSICS
             unsigned long rmx = 0UL;
             for (unsigned long p = 0UL; p < 20UL; p++,rootConditionals++) {
                 hyFloat     r2 = 0.;
-      
+
                   for (unsigned long c = 0UL; c < 20UL; c+=4UL, rmx +=4UL) {
                     r2 += (branchConditionals[c]   *  transitionMatrix[rmx] +
                           branchConditionals[c+1] *  transitionMatrix[rmx+1]) +
                           (branchConditionals[c+2] *  transitionMatrix[rmx+2] +
                           branchConditionals[c+3] *  transitionMatrix[rmx+3]);
                   }
-              
+
                 accumulator += *rootConditionals * theProbs[p] * r2;
             }
           #endif  // _SLKP_USE_AVX_INTRINSICS
           branchConditionals += 20UL;
           bookkeeping (siteID, accumulator, correction, result);
-          
+
       } // siteID
-        
+
       } // case 20
       break;
         /****
-         
+
          CODONS
-         
+
          ****/
       case 60UL:
       case 61UL:
@@ -1708,35 +1708,35 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
       case 63UL: {
         for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
           hyFloat accumulator = 0.;
-          
+
           unsigned long rmx = 0UL;
           for (unsigned long p = 0UL; p < alphabetDimension; p++,rootConditionals++) {
             hyFloat     r2 = 0.;
             unsigned       long c = 0UL;
-            
+
            #ifdef _SLKP_USE_AVX_INTRINSICS
-            
+
             __m256d sum256 = _mm256_setzero_pd ();
-            
+
             for (; c < 60UL; c+=12UL, rmx +=12UL) {
-              
+
               __m256d branches0 = _mm256_loadu_pd (branchConditionals+c),
                       branches1 = _mm256_loadu_pd (branchConditionals+c+4),
                       branches2 = _mm256_loadu_pd (branchConditionals+c+8),
                       matrix0   = _mm256_loadu_pd (transitionMatrix+rmx),
                       matrix1   = _mm256_loadu_pd (transitionMatrix+rmx+4),
                       matrix2   = _mm256_loadu_pd (transitionMatrix+rmx+8);
-              
+
                 branches0 = _mm256_mul_pd(branches0, matrix0);
                 branches1 = _mm256_mul_pd(branches1, matrix1);
                 branches2 = _mm256_mul_pd(branches2, matrix2);
-              
+
                 branches0 = _mm256_add_pd (branches0,branches2);
                 sum256 = _mm256_add_pd (branches0,_mm256_add_pd (sum256, branches1));
              }
-            
+
               r2 = _avx_sum_4(sum256);
-            
+
            #else // _SLKP_USE_AVX_INTRINSICS
              for (; c < 60UL; c+=4UL, rmx +=4UL) {
                 r2 += (branchConditionals[c]   *  transitionMatrix[rmx] +
@@ -1745,67 +1745,67 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                  branchConditionals[c+3] *  transitionMatrix[rmx+3]);
               }
             #endif
-            
+
             for (; c < alphabetDimension; c++, rmx ++) {
               r2 += branchConditionals[c]   *  transitionMatrix[rmx];
             }
-            
+
             accumulator += *rootConditionals * theProbs[p] * r2;
           }
-        
+
           branchConditionals += alphabetDimension;
           bookkeeping (siteID, accumulator, correction, result);
-          
+
         }
       } // cases 60-63
       break;
       default: { // valid alphabetDimension >= 2
-        
+
         if (alphabetDimension % 2) { // odd
           unsigned long alphabetDimension_minus1 = alphabetDimension-1;
           for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
             hyFloat accumulator = 0.;
-            
+
             unsigned long rmx = 0UL;
             for (unsigned long p = 0UL; p < alphabetDimension; p++,rootConditionals++) {
               hyFloat     r2 = 0.;
-              
+
               for (unsigned long c = 0UL; c < alphabetDimension_minus1; c+=2UL, rmx +=2UL) {
                 r2 +=  branchConditionals[c]   *  transitionMatrix[rmx] +
                        branchConditionals[c+1] *  transitionMatrix[rmx+1];
               }
-              
+
               r2 += branchConditionals[alphabetDimension_minus1]   *  transitionMatrix[rmx++];
-              
+
               accumulator += *rootConditionals * theProbs[p] * r2;
             }
-            
+
             branchConditionals += alphabetDimension;
             bookkeeping (siteID, accumulator, correction, result);
-            
+
           }
         } else {
           for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
             hyFloat accumulator = 0.;
-            
+
             unsigned long rmx = 0UL;
             for (unsigned long p = 0UL; p < alphabetDimension; p++,rootConditionals++) {
               hyFloat     r2 = 0.;
-              
+
               for (unsigned long c = 0UL; c < alphabetDimension; c+=2UL, rmx +=2UL) {
                 r2 +=  branchConditionals[c]   *  transitionMatrix[rmx] +
                        branchConditionals[c+1] *  transitionMatrix[rmx+1];
               }
-              
+
               accumulator += *rootConditionals * theProbs[p] * r2;
             }
-            
+
             branchConditionals += alphabetDimension;
             bookkeeping (siteID, accumulator, correction, result);
-            
+
           }
         }
-        
+
       } // default
     } // switch (alphabetDimension)
   } catch (long site) {
@@ -1855,7 +1855,7 @@ hyFloat      _TheTree::ComputeTwoSequenceLikelihood
 
         long siteState1 = lNodeFlags[siteOrdering.lData[siteID]],
              siteState2 = lNodeFlags[siteCount + siteOrdering.lData[siteID]];
-        
+
         if (siteState1 >= 0)
             // a single character state; sweep down the appropriate column
         {
@@ -2087,7 +2087,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
                     siteCount                        = dsf->GetSiteCountInUnits    (),
                     allNodeCount                     = 0,
                     stateCacheDim                    = (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount));
-    
+
     long            *stateCache                     = new long [patternCount*(iNodeCount-1)*alphabetDimension],
                     *leafBuffer                     = new long [(alsoDoLeaves?leafCount*patternCount:1)*alphabetDimension];
 
@@ -2127,9 +2127,8 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         }
 
         _CalcNode *          currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):((_CalcNode*) flatTree    (nodeCode));
-        
         hyFloat  const*        transitionMatrix = nil;
-        
+
         if (!catAssignments) {
             _Matrix* comp_exp = currentTreeNode->GetCompExp();
             if (!comp_exp) {
@@ -2138,7 +2137,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
             }
             transitionMatrix = comp_exp->theData;
         }
-        
+
         // this will need to be toggled on a per site basis
         hyFloat  *       childVector;
 
@@ -2185,7 +2184,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
             long       *stateBuffer                   = isLeaf?leafBuffer:stateCache;
 
             // check for degeneracy
-            
+
             bool completely_unresolved = ArrayAll (childVector, alphabetDimension, [] (hyFloat x, unsigned long) {return x == 1.;});
 
             if (completely_unresolved) {
@@ -2343,7 +2342,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
 
     //for (long k = 0; k<categoryVariables.lLength;k++)
     //    printf ("%ld\n", categoryVariables(k));//, ((_Variable*)categoryVariables(k))->GetName()->sData);
-  
+
     if (catCount<0) {
         remapMyCategories.Clear();
     } else {
@@ -2537,9 +2536,9 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
             iNodeCount = -1;
 
     _SimpleList levelBuffer;
-  
+
     node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
-  
+
     while (node<long> * currentNode = ni.Next (&levelBuffer)) {
         _String nodeName = GetNodeName (currentNode);
 
@@ -2747,11 +2746,11 @@ _VariableContainer*     _CalcNode::ParentTree(void) {
 /*
 class _TreeIterator {
 private:
-  
+
   node_iterator<long> iterator;
   int           traverser;
   _SimpleList   history;
-  
+
 public:*/
 
 _TreeIterator::_TreeIterator (_TheTree const* source, int traversal_type): iterator(source->theRoot, traversal_type & _HY_TREE_TRAVERSAL_MASK) {
@@ -2767,9 +2766,9 @@ void     _TreeIterator:: Reset (void) {
 
 
 _CalcNode *     _TreeIterator:: Next (void) {
-  
+
   node<long> * nn = iterator.Next(&history);
-  
+
   if (nn) {
     if (nn->is_root() && (flags & _HY_TREE_TRAVERSAL_SKIP_ROOT)) {
       return Next();
@@ -2777,7 +2776,7 @@ _CalcNode *     _TreeIterator:: Next (void) {
     if (!nn->is_leaf() && (flags & _HY_TREE_TRAVERSAL_LEAVES)) {
       return Next();
     }
-  
+
     return map_node_to_calcnode(nn);
   }
   return nil;

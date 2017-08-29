@@ -1,3 +1,12 @@
+"","Run a standard selection inference method on coding-sequence data.","!Selection Analyses";
+"MEME","Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).","SelectionAnalyses/MEME.bf";
+"FEL","Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).","SelectionAnalyses/FEL.bf";
+"SLAC","Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).","SelectionAnalyses/SLAC.bf";
+"FUBAR","Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).","FUBAR.bf";
+"BUSTED","Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED.bf";
+"aBSREL","Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
+"RELAX","Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";
+
 "","Perform a maximum likelihood analysis on a single file given a single tree.","!Basic Analyses";
 "ACD","Analyse codon data with a variery of standard models using given tree.","AnalyzeCodonData.bf";
 "AD","Analyse nucleotide or aminoacid data with a variery of standard models using given tree.","AnalyzeNucProtData.bf";
@@ -79,7 +88,7 @@
 "BSREL","Use the random effects branch-site model (2010) to find lineages subject to episodic selection.","BranchSiteREL.bf";
 "BST","Use the improved branch-site REL method of Yang and Nielsen (2005) to look for episodic selection in sequences.","YangNielsenBranchSite2005.bf";
 "BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf";
-"BUSTED","Run the Branch-site Unrestricted Statistical Test for Episodic Diversification to test for evidence of episodic alignment-wide selective pressure","BUSTED.bf";
+"BUSTED","Run the Branch-site Unrestricted Statistical Test for Episodic Diversification to test for evidence of episodic alignment-wide selective pressure","SelectionAnalyses/BUSTED.bf";
 "PSD","Test whether sites in two populations are evolving under different selective pressures.","CompareSelectivePressure.bf";
 "PSDI","Test whether sites in two populations are evolving under different selective pressures along internal tree branches.","CompareSelectivePressureIVL.bf";
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";

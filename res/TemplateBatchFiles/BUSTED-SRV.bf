@@ -1,5 +1,9 @@
 RequireVersion ("2.1320141020");
 
+console.log("ERROR: THIS BATCHFILE WILL NOT RUN PROPERLY WITH UPDATED TERMS BASE. QUITTING.");
+exit();
+
+
 _BUSTED_timers  = {3,1};
 busted.taskTimerStart (2);
 

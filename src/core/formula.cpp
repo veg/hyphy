@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
- 
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,7 +34,7 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
 #include <math.h>
@@ -77,7 +77,7 @@ _Formula::_Formula (_PMathObj p, bool isAVar)
     resultCache = nil;
     recursion_calls = nil;
     call_count = 0UL;
-  
+
     if (!isAVar) {
         theFormula.AppendNewInstance (new _Operation (p));
     } else {
@@ -96,7 +96,7 @@ _Formula::_Formula (_Formula const& rhs) {
 
 //__________________________________________________________________________________
 void _Formula::Duplicate  (_Formula const * f_cast) {
- 
+
     theFormula.Duplicate       (& f_cast->theFormula);
     theStack.theStack.Duplicate(& f_cast->theStack.theStack);
     call_count = f_cast->call_count;
@@ -159,7 +159,7 @@ void    _Formula::Clear (void)
     if (recursion_calls) {
       delete (recursion_calls);
     }
-  
+
 //  theStack.Clear();
 }
 
@@ -223,7 +223,7 @@ _Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from
     varID = variableNames.GetXtra (varID);
 
     _Formula*     res = new _Formula ();
- 
+
      ConvertToTree    ();
 
     _SimpleList  varRefs,
@@ -233,18 +233,18 @@ _Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from
     _AVLList al (&varRefs);
     ScanFForVariables (al, true, true, true);
     al.ReorderList ();
-  
+
     for (unsigned long k=0UL; k < varRefs.lLength; k++) {
         _Variable* thisVar = LocateVar (varRefs.lData[k]);
         _Formula * dYdX;
-      
+
         if (thisVar->IsIndependent()) {
             dYdX = new _Formula ((thisVar->GetName()->Equal (&varName))?new _Constant (1.0):new _Constant (0.0));
             dYdX->ConvertToTree();
             dydx << (long)dYdX;
         } else {
             dYdX = thisVar->varFormula->Differentiate (varName, bail, false);
-          
+
             if (dYdX->theFormula.lLength == 0) {
                 delete (dYdX);
                 return res;
@@ -277,12 +277,12 @@ _Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from
 
     res->theFormula.AppendNewInstance (new _Operation(new _Constant (0.0))) ;
     res->theTree         = dTree;
-  
+
     // consistency check
-  
+
     /*_SimpleList preOrderNodes;
     node_iterator<long> iterator (dTree, _HY_TREE_TRAVERSAL_PREORDER);
-    
+
     while (node <long> * ni = iterator.Next()) {
       printf ("Differentiate %x\n", ni);
       if (preOrderNodes.Find ((long)ni) >= 0) {
@@ -291,12 +291,12 @@ _Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from
       }
       preOrderNodes << (long)ni;
     }
-  
+
     StringToConsole (_String("\nNode count:") & (long) preOrderNodes.countitems());
     NLToConsole();*/
-  
+
     res->InternalSimplify (dTree);
-  
+
     if (convert_from_tree)
       res->ConvertFromTree  ();
     return res;
@@ -312,16 +312,16 @@ bool _Formula::InternalSimplify (node<long>* startNode)
     long        numChildren = startNode->get_num_nodes();
 
     _Operation* op = GetIthTerm(startNode->get_data());
-  
+
     if  (numChildren == 0) {
       return !op->IsAVariable();
     }
 
-  
+
     bool        isConstant  = true,
                 firstConst  = true,
                 secondConst = (numChildren>1L);
-  
+
     long        prune_this_child = -1;
 
     hyFloat  theVal      = 0.0;
@@ -329,7 +329,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 
 
     //printf ("InternalSimplify %x\n", startNode);
-  
+
     for  (unsigned long k=1UL; k<=numChildren; k++) {
         if (k==1UL) {
             firstConst = InternalSimplify (startNode->go_down(k));
@@ -354,10 +354,10 @@ bool _Formula::InternalSimplify (node<long>* startNode)
             newVal = (_PMathObj)scrap.Pop();//->makeDynamic();
         } else {
             if (firstConst||secondConst) {
-              
+
                 _PMathObj constant_value = ((_Operation*)theFormula (startNode->go_down(firstConst?1:2)->get_data()))->GetANumber();
-              
-              
+
+
                 if (constant_value->ObjectClass() == NUMBER) {
                   theVal  = constant_value->Value();
 
@@ -386,7 +386,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 
                       case HY_OP_CODE_SUB: { // x-0 => x
                                              // 0-x => -x
-                        
+
                           if (CheckEqual (theVal,0.0)) {
                               //printf ("-0\n");
                              prune_this_child = firstConst? -2 : 2;
@@ -657,8 +657,8 @@ hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat tar
   root_guess, func_root_guess,
   lastCorrection = 100.,
   newCorrection;
-  
-  
+
+
   unknown->SetValue(left);
   func_left = Compute()->Value()-targetValue;
   if (func_left==0.0) {
@@ -669,22 +669,22 @@ hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat tar
   if (func_right==0.0) {
     return right;
   }
-  
+
   if (func_left*func_right>0.0) { // bracket fail
     subNumericValues = 3;
     _String msg ((_String*)toStr());
     subNumericValues = 0;
-    ReportWarning (msg&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
+    ReportWarning (msg&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf); " & func_left & "-" & func_right);
     return    left;
   }
   // else all is good we can start the machine
   bool useNewton = false;
-  
+
   root_guess = (right+left) * .5;
-  
+
   for (unsigned long iterCount  = 0L; iterCount < 200UL; iterCount++) {
     if ( fabs(right-left)/MAX(left,right) > machineEps*10. ) { // stuff to do
-      
+
       unknown->SetValue(root_guess);
       func_root_guess = Compute()->Value()-targetValue;
       if (func_root_guess == 0.) {
@@ -693,21 +693,21 @@ hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat tar
       // get the correction term from the derivative
       hyFloat df_dx = derivative.Compute()->Value(),
       adjusted_root_guess;
-      
+
       useNewton = true;
       if (df_dx==0.0) {
         useNewton = false;
       } else {
         newCorrection = -func_root_guess/df_dx;
-        
+
         if (fabs(newCorrection/func_root_guess)<machineEps*2. || fabs(newCorrection)<machineEps*2.) { // correction too small - the root has been found
             return root_guess;
         }
-        
+
         if (fabs(newCorrection/lastCorrection)>4.) { // Newton correction too large - revert to bisection
           useNewton = false;
         }
-        
+
         adjusted_root_guess = root_guess +newCorrection;
         if (adjusted_root_guess<=left || adjusted_root_guess >=right) {
           useNewton = false;
@@ -715,7 +715,7 @@ hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat tar
           lastCorrection = newCorrection;
         }
       }
-      
+
       if (useNewton) {
         root_guess = adjusted_root_guess;
       } else {
@@ -730,7 +730,7 @@ hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat tar
         }
         root_guess = (right+left) * .5;
       }
-      
+
     } else {
       break;
     }
@@ -826,7 +826,7 @@ hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol,
 
         unknown->SetValue(b);
         fb = Compute()->Value()-rhs;
-      
+
         if (storeEvals) {
           storeEvals->AppendNewInstance(new _Constant (b));
           storeEvals->AppendNewInstance(new _Constant (fb));
@@ -962,12 +962,12 @@ hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol,
     }
 
     subNumericValues = 2;
-  
+
     /*for (long i = 0; i < theFormula.lLength; i++) {
       _Operation *op_i = GetIthTerm(i);
       printf ("%ld: %s\n", i+1, _String((_String*)op_i->toStr()).sData);
     }*/
-  
+
     _String msg ((_String*)toStr());
     subNumericValues = 0;
     msg = msg & "=" & rhs;
@@ -1047,9 +1047,9 @@ hyFloat   _Formula::Newton(_Variable* unknown, hyFloat targetValue, hyFloat x_mi
     }
     // else all is good we can start the machine
     bool useNewton = false;
-  
+
     t3 = (right + left) * 0.5;
-  
+
     while (right-left>1e-6) { // stuff to do
         if (!useNewton) {
             t3 = (right+left) * 0.5;
@@ -1150,10 +1150,10 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
             return Integral(dx,left,right1,false);
         }
     }
-  
+
     hyFloat       localPrecisionFactor;
     long             localIntegrationLoops;
-  
+
     checkParameter (intPrecFact,localPrecisionFactor,integrationPrecisionFactor);
     checkParameter (intMaxIter, localIntegrationLoops,maxRombergSteps);
 
@@ -1262,12 +1262,12 @@ long     _Formula::NumberOperations(void) const
 
 long      _Formula::ExtractMatrixExpArguments (_List* storage) {
     long count = 0;
-    
+
     if (resultCache && resultCache->lLength) {
-        long cacheID     = 0;     
-        bool cacheUpdated = false; 
-            // whether or not a cached result was used 
-            
+        long cacheID     = 0;
+        bool cacheUpdated = false;
+            // whether or not a cached result was used
+
 
         for (unsigned long i=0; i<theFormula.lLength; i++) {
             _Operation* thisOp ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
@@ -1303,11 +1303,11 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                 if (cacheUpdated) {
                     cacheID++;
                     cacheUpdated = false;
-                }            
+                }
             }
         }
     }
-    
+
     return count;
 }
 
@@ -1318,11 +1318,11 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
     if (computedValue && computedValue->ObjectClass() == STRING) {
         result =  (_Variable*)((_FString*)computedValue)->Dereference(ignore_context, theContext, true);
     }
-    
+
     if (!result) {
         theContext->ReportError( (_String ("Failed to dereference '") & _String ((_String*)toStr()) & "' in the " & (ignore_context ? "global" : "local") & " context"));
     }
-    
+
     return result;
 }
 
@@ -1339,8 +1339,8 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
         scrap_here = &theStack;
     } else {
         bool wellDone = true;
-      
-      
+
+
         if (call_count++) {
           scrap_here = new _Stack;
         } else {
@@ -1349,19 +1349,19 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
               theStack.Reset();
           }
         }
-      
-      
-      
+
+
+
         /*ticker++;
         if (ticker >= 1462440) {
           printf ("\n_Formula::Compute (%x, %d)  %ld terms, stack depth %ld\n", this, ticker, theFormula.lLength, theStack.theStack.lLength);
         }*/
-      
+
         if (startAt == 0 && resultCache && resultCache->lLength) {
-            long cacheID     = 0;     
+            long cacheID     = 0;
                 // where in the cache are we currently looking
-            bool cacheUpdated = false; 
-                // whether or not a cached result was used 
+            bool cacheUpdated = false;
+                // whether or not a cached result was used
 
             for (unsigned long i=0; i<theFormula.lLength; i++) {
                 _Operation* thisOp ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
@@ -1381,7 +1381,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                         if (cachedArg->ObjectClass() == MATRIX) {
                             diff =  (_Matrix*)cachedArg->SubObj(currentArg);
                         }
-                        
+
                         bool    no_difference = diff && diff->MaxElement() <= 1e-12;
 
                         if (no_difference || (additionalCacheArguments && additionalCacheArguments->lLength && nextOp->CanResultsBeCached(thisOp,true))) {
@@ -1389,11 +1389,11 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                             if (no_difference) {
                                 scrap_here->Push ((_PMathObj)(*resultCache)(cacheID+1));
                             } else {
- 
+
                                 scrap_here->Push ((_PMathObj)additionalCacheArguments->GetItem (0));
                                 resultCache->Replace(cacheID,scrap_here->Pop(false),true);
                                 resultCache->Replace(cacheID+1,(_PMathObj)additionalCacheArguments->GetItem (0),false);
-                                additionalCacheArguments->Delete (0, false);                              
+                                additionalCacheArguments->Delete (0, false);
                                 //printf ("_Formula::Compute additional arguments %ld\n", additionalCacheArguments->lLength);
                            }
                             cacheID += 2;
@@ -1418,22 +1418,22 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                 }
             }
         } else {
-          
+
             for (unsigned long i=startAt; i<theFormula.lLength; i++) {
                   _Operation * this_step =((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-              
-              
+
+
                   /*
                    if (ticker >= 1462435) {
                     printf ("[FORMULA %x] Step %ld, Stack %ld, Op %s (top stack %s)\n", this, i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
-                  } 
+                  }
                    */
-              
+
                   if (! this_step->Execute(*scrap_here, nameSpace, errMsg)) {
                       wellDone = false;
                       break;
                   }
-              
+
                   /*
                   if (ticker >= 1462435) {
                     printf ("[DONE %x] Step %ld, Stack %ld, top stack %s\n", this, i, theStack.theStack.lLength, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
@@ -1443,7 +1443,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
         }
         if (scrap_here->StackDepth() != 1L || !wellDone) {
             _String errorText = _String ("'") & _String((_String*)toStr()) & _String("' evaluated with errors.");
-          
+
             if (scrap_here->StackDepth() > 1 && wellDone) {
                 errorText = errorText & " Unconsumed values on the stack";
                 for (long stack_id = scrap_here->StackDepth()-1; stack_id >= 0; stack_id --) {
@@ -1451,7 +1451,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                 }
                 errorText & "\n------------------\n";
             }
-          
+
             if (errMsg) {
                 *errMsg = *errMsg & errorText;
             }
@@ -1463,16 +1463,16 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
          }
     }
 
-  
+
     _PMathObj return_value = scrap_here->Pop(false);
-  
+
     if (theFormula.lLength) {
          DeleteObject (recursion_calls);
          if (--call_count) {
           recursion_calls = return_value;
           return_value->AddAReference();
           delete scrap_here;
-          
+
         } else {
           recursion_calls = nil;
         }
@@ -1559,12 +1559,12 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
       }
     }
   }
-  
+
   for (int i=0; i<theFormula.lLength; i++) {
     _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-    
+
     _Matrix   * thisMatrix = nil;
-    
+
     if (thisOp->theNumber) {
       if (thisOp->theNumber->ObjectClass() == MATRIX) {
         thisMatrix = (_Matrix*)thisOp->theNumber;
@@ -1577,7 +1577,7 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
         }
       }
     }
-    
+
     if (thisMatrix) {
       if (makeComplex) {
         thisMatrix->MakeMeGeneral();
@@ -1592,13 +1592,13 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
 long _Formula::StackDepth (long from, long to) const {
   _SimpleList::NormalizeCoordinates(from, to, NumberOperations());
   long result = 0L;
-  
+
   for ( long i = from; i <= to; i++) {
      result += GetIthTerm (i)->StackDepth ();
   }
-  
+
   return result;
-  
+
 }
 
 
@@ -1772,7 +1772,7 @@ hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum
                       theFunc = (void(*)(hyPointer,hyFloat,hyFloat))thisOp->opCode;
                       if (stackTop != 2 || i != theFormula.lLength - 1) {
                         HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)", true);
-                        
+
                         return 0.0;
                       }
                       //stackTop = 0;
@@ -1787,7 +1787,7 @@ hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum
                         ++stackTop;
                     }
                   }
-                
+
                 }
             }
         }
@@ -1815,7 +1815,7 @@ _PMathObj _Formula::ConstructPolynomial (void) // compute the value of the formu
 {
     theStack.Reset();
     bool wellDone = true;
-    _String errMsg; 
+    _String errMsg;
 
     for (long i=0; i<theFormula.lLength; i++)
         if (!GetIthTerm(i)->ExecutePolynomial(theStack, nil, &errMsg)) {
@@ -1865,12 +1865,12 @@ bool _Formula::HasChanged (bool ingoreCats) {
 //__________________________________________________________________________________
 
 void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive) {
-  
-  
+
+
   auto handle_function_id = [&collection, recursive] (const long hbl_id) -> void {
     if (IsBFFunctionIndexValid(hbl_id)) {
       _String function_name = GetBFFunctionNameByIndex(hbl_id);
-      
+
       if (collection.Find(&function_name) < 0) {
         collection.Insert (new _String (function_name), HY_BL_HBL_FUNCTION, false, false);
         if (recursive) {
@@ -1879,26 +1879,26 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
       }
     }
   };
-  
+
   ConvertToTree();
-  
+
   if (theTree) {
-    
+
     InternalSimplify(theTree);
     node_iterator<long> ni (theTree, _HY_TREE_TRAVERSAL_PREORDER);
-    
+
     while (node<long>* iterator = ni.Next()) {
       _Operation *this_op = GetIthTerm(iterator->get_data());
-      
+
       long hbl_id = -1L;
-      
+
       if (this_op -> IsHBLFunctionCall()) {
         hbl_id = this_op -> GetHBLFunctionID();
       } else {
         if (this_op->opCode == HY_OP_CODE_CALL) {
           node <long>* function_to_call = iterator->go_down (1);
           _Operation * function_to_call_value = GetIthTerm (function_to_call->get_data());
-          
+
           if (function_to_call->get_num_nodes() == 0 && function_to_call_value -> IsConstantOfType(STRING)) {
               hbl_id = FindBFFunctionName (*((_FString*)function_to_call_value->theNumber->Compute())->theString);
           } else {
@@ -1921,11 +1921,11 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
           }
         }
       }
-      
+
       handle_function_id (hbl_id);
-      
-      
-      
+
+
+
     }
   }
 }
@@ -2188,17 +2188,17 @@ long _Formula::ParseFormula (_String const &s, _VariableContainer const* thePare
     resultCache = nil;
     recursion_calls = nil;
     call_count = 0UL;
-    
+
     _FormulaParsingContext fpc (reportErrors, theParent);
-    
+
     _String formula_copy (s);
-    
+
     long    return_value = Parse (this, formula_copy, fpc, nil);
-    
+
     if (return_value != HY_FORMULA_EXPRESSION) {
         Clear();
     }
-    
+
     return return_value;
 
 }
@@ -2208,11 +2208,11 @@ void    _Formula::ConvertToTree (bool err_msg) {
     if (!theTree && theFormula.lLength) { // work to do
         _SimpleList nodeStack;
         _Operation* currentOp;
-      
+
         for (unsigned long i=0UL; i<theFormula.lLength; i++) {
-          
+
             currentOp = GetIthTerm(i);
-          
+
             if (currentOp->theNumber || currentOp->theData >= 0L || currentOp->theData < -2L) { // a data bit
                 node<long>* leafNode = new node<long>;
                 leafNode->init(i);
@@ -2247,8 +2247,8 @@ void    _Formula::ConvertToTree (bool err_msg) {
         } else {
             theTree = (node<long>*)nodeStack(0);
         }
-      
-      
+
+
     }
 }
 //__________________________________________________________________________________
@@ -2257,11 +2257,11 @@ void    _Formula::ConvertFromTree (void)
     if (theTree) { // work to do
         _SimpleList termOrder;
         node_iterator<long> ni (theTree, _HY_TREE_TRAVERSAL_POSTORDER);
-      
+
       while (node<long>* iterator = ni.Next()) {
             termOrder<<iterator->get_data();
         }
-      
+
         if (termOrder.lLength!=theFormula.lLength) { // something has changed
             _List newFormula;
             for (long i=0; i<termOrder.lLength; i++) {
@@ -2303,11 +2303,11 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
     switch (op->opCode) {
     case HY_OP_CODE_MUL: {
-        
+
         /**
             d (X*Y) = X*dY + Y*dX
          */
-      
+
         node<long>* dX = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
                   * dY = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
 
@@ -2321,20 +2321,20 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
             }
             return nil;
         }
-        
+
 
         _Operation*       plus_op  = new _Operation ("+",2),
                 *         mult_op  = new _Operation ("*" ,2);
-      
+
         node<long>*       XtimesDY = new node<long>;
         node<long>*       YtimesDX = new node<long>;
 
         YtimesDX->add_node (*dX,*DuplicateFormula (currentSubExpression->go_down(2),tgt));
         XtimesDY->add_node (*dY,*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-        
+
         newNode->add_node  (*YtimesDX,*XtimesDY);
 
-        
+
         YtimesDX->in_object = tgt.theFormula.lLength;
         tgt.theFormula.AppendNewInstance (mult_op);
         XtimesDY->in_object = tgt.theFormula.lLength;
@@ -2348,9 +2348,9 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
     case HY_OP_CODE_ADD: // +
     case HY_OP_CODE_SUB: { // -
-        
+
         // TODO SLKP 20170426: clean up the rest of the function
-        
+
         node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
                     * b2 = nil;
 
@@ -2410,7 +2410,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         *         newOp5 = new _Operation (opC  ,2),
         *         newOp6 = new _Operation (new _Constant (2.0));
 
- 
+
         node<long>*       newNode2 = new node<long>;
         node<long>*       newNode3 = new node<long>;
         node<long>*       newNode4 = new node<long>;
@@ -2425,8 +2425,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         newNode->add_node  (*newNode4,*newNode2);
 
         newNode6->in_object = tgt.theFormula.lLength;
-      
-      
+
+
         tgt.theFormula.AppendNewInstance(newOp5);
         newNode5->in_object = tgt.theFormula.lLength;
         tgt.theFormula.AppendNewInstance(newOp4);
@@ -2517,7 +2517,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         tgt.theFormula << newOp2;
         newNode->in_object = tgt.theFormula.lLength;
         tgt.theFormula << newOp;
-        
+
         BatchDelete(newOp,newOp2,newOp3);
 
         return          newNode;
@@ -2603,7 +2603,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         _Operation*       newOp  = new _Operation (opC  ,2),
         *         newOp2 = new _Operation (opC2 ,1);
 
- 
+
         node<long>*       newNode2 = new node<long>;
 
         newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
@@ -2732,7 +2732,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
             newNode->delete_tree(true);
             return nil;
         }
-        
+
         long opCodes[7] = {HY_OP_CODE_MUL, HY_OP_CODE_POWER, HY_OP_CODE_ADD, HY_OP_CODE_DIV, HY_OP_CODE_MUL, HY_OP_CODE_MUL, HY_OP_CODE_LOG};
         long opArgs [7] = {2,2,2,2,2,2,1};
 
@@ -2750,11 +2750,11 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
         newNodes[1]->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt),*DuplicateFormula (currentSubExpression->go_down(2),tgt));
 
         newNode->add_node  (*newNodes[1],*newNodes[2]);
-        
+
         for (long k = 6; k >=0 ; k--) {
             newNodes[k]->in_object = tgt.theFormula.lLength;
             tgt.theFormula .AppendNewInstance (new _Operation (opCodes[k], opArgs[k]));
-        } 
+        }
 
         return          newNode;
     }
