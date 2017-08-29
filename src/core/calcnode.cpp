@@ -2798,8 +2798,10 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
 
     node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
 
-    while (node<long>* iterator = ni.Next() && !iterator->is_root()) {
-        if (iterator->is_leaf()) {
+    while (node<long>* iterator = ni.Next()) {
+        if(iterator->is_root()) {
+            break;
+        } else if (iterator->is_leaf()) {
             addressToIndexMap.Insert ((BaseRef)iterator, leafCount++);
         } else {
             branchCount++;
