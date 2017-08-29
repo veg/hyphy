@@ -1270,12 +1270,11 @@ void    _TreeTopology::PostTreeConstructor (bool dupMe) {
   if (theRoot->get_num_nodes() == 2) { // rooted tree - check
     if (acceptRTs<0.1) {
       int  i = 1;
-      long node_index = 0;
+      long node_index = theRoot->get_data();
       for (; i<=2; i++) {
         node<long> *node_temp = theRoot->go_down(i);
         if (node_temp->get_num_nodes()) { // an internal node - make it a root
           node_temp->detach_parent();
-          node_index = node_temp->get_data();
           if (i==1) {
             node_temp->add_node(*theRoot->go_down(2));
             delete theRoot;
@@ -2800,7 +2799,9 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p) {
     node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
 
     while (node<long>* iterator = ni.Next()) {
-        if (iterator->is_leaf()) {
+        if(iterator->is_root()) {
+            break;
+        } else if (iterator->is_leaf()) {
             addressToIndexMap.Insert ((BaseRef)iterator, leafCount++);
         } else {
             branchCount++;
