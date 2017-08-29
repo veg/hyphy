@@ -2,10 +2,7 @@ LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
-
-//GLOBAL_FPRINTF_REDIRECT = "/dev/null";
 LoadFunctionLibrary ("SelectionAnalyses/SLAC.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "All", "3": "100", "4": "0.1"});
-//GLOBAL_FPRINTF_REDIRECT = "";
 
 
 margin_of_error = .05;
