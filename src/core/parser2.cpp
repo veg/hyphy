@@ -1362,7 +1362,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         }
                       
                       
-                        if (expressionProcessor.IsConstant()) {
+                        if (expressionProcessor.IsConstant(true)) {
                           _PMathObj constant_literal = expressionProcessor.Compute (0, nil, nil, nil, STRING);
                           if (constant_literal) {
                             (*literal) << *((_FString*)constant_literal)->theString;

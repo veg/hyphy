@@ -2113,10 +2113,10 @@ bool _Formula::IsAConstant (void)
 }
 
 //__________________________________________________________________________________
-bool _Formula::IsConstant (void)
+bool _Formula::IsConstant (bool strict)
 {
     for (unsigned long i = 0; i<theFormula.lLength; i++)
-        if (((_Operation*)((BaseRef**)theFormula.lData)[i])->IsConstant() == false) {
+        if (((_Operation*)((BaseRef**)theFormula.lData)[i])->IsConstant(strict) == false) {
             return false;
         }
 

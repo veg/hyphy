@@ -262,7 +262,7 @@ public:
 
     long        SequenceCount           (long);
     unsigned long        SiteCount               (void) const;
-    void        Rebuild                 (void);
+    void        Rebuild                 (bool rescan_parameters = false);
     void        SerializeLF             (_String&, char=0, _SimpleList* = nil, _SimpleList* = nil);
     _Formula*   HasComputingTemplate    (void) const{
         return computingTemplate;

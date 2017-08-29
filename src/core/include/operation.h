@@ -97,7 +97,7 @@ public:
         return opCode;
     }
     virtual  bool           IsAVariable         (bool = true) ; // is this object a variable or not?
-    virtual  bool           IsConstant          (void);         // does this object depend on any independent variables or not?
+    virtual  bool           IsConstant          (bool strict = false);         // does this object depend on any independent variables or not?
     virtual  bool           IsHBLFunctionCall   (void) const;
     virtual  long           GetHBLFunctionID    (void) const;
   

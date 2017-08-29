@@ -1833,8 +1833,10 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
           }
           long partition_id, likelihood_function_id = ((_TheTree*)parent_tree->Compute())->IsLinkedToALF(partition_id);
           if (likelihood_function_id>=0){
-            throw(parent_tree->GetName()->Enquote() & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, likelihood_function_id) &") and cannot be modified ");
-            return false;
+            //throw(parent_tree->GetName()->Enquote() & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, likelihood_function_id) &") and cannot be modified ");
+            //return false;
+            ((_LikelihoodFunction*)likeFuncList (likelihood_function_id))->Rebuild(true);
+            
           }
           
           tree_node->ReplaceModel (model_name, parent_tree);

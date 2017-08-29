@@ -281,7 +281,7 @@ long _Operation::GetHBLFunctionID (void) const {
 
 
 //__________________________________________________________________________________
-bool _Operation::IsConstant (void)
+bool _Operation::IsConstant (bool strict)
 {
     if (theData==-1) {
         if (theNumber) {
@@ -289,6 +289,9 @@ bool _Operation::IsConstant (void)
         }
 
         return !(opCode == HY_OP_CODE_BRANCHLENGTH||opCode == HY_OP_CODE_RANDOM||opCode == HY_OP_CODE_TIME);
+    }
+    if (strict) {
+      return false;
     }
     return LocateVar(GetAVariable())->IsConstant();
 

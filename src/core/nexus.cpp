@@ -219,6 +219,7 @@ bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
         }
 
     }
+    // TODO 20170821: SLKP, this needs to be case sensitive
     blank = blank.ChangeCase(kStringUpperCase);
     if (newPos<CurrentLine.length()) {
         CurrentLine.Trim (newPos,kStringEnd);

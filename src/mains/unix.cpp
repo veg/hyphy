@@ -44,6 +44,7 @@ using namespace hy_global;
 #else
     #include <termios.h>
     #include <signal.h>
+    #include <unistd.h>
     #define __HYPHY_HANDLE_TERM_SIGNAL__
 
 #endif
@@ -526,12 +527,13 @@ void    SetStatusLine               (_String s) {
 }
 
 //__________________________________________________________________________________
-void    SetStatusLineUser   (_String const s)
-{
+void    SetStatusLineUser   (_String const s) {
+  if (isatty (STDERR_FILENO)) { // only print to terminal devices
     setvbuf(stderr, NULL, _IONBF, 0);
     BufferToConsole("\33[2K\r", stderr);
     StringToConsole(s, stderr);
-    hy_need_extra_nl = true;
+    needExtraNL = true;
+  }
 }
 
 //__________________________________________________________________________________

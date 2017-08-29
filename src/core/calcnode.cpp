@@ -490,11 +490,35 @@ void _CalcNode::RemoveModel (void)
 
 //__________________________________________________________________________________
 
-void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* theConext)
-{
-    RemoveModel    ();
-    DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
-    InitializeCN   (modelName, 0 , theConext);
+void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* parent_tree) {
+  RemoveModel    ();
+  
+  _TheTree * parent_tree_object = (_TheTree*)parent_tree;
+  
+  long index_in_parent = parent_tree_object->flatCLeaves._SimpleList::Find ((long)this);
+  _List * container_object = nil;
+  
+  if (index_in_parent >= 0) {
+    parent_tree_object->flatCLeaves.Replace (index_in_parent, nil, false);
+    container_object = &parent_tree_object->flatCLeaves;
+  } else {
+    index_in_parent = parent_tree_object->flatTree._SimpleList::Find ((long)this);
+    if (index_in_parent >= 0) {
+      parent_tree_object->flatTree.Replace (index_in_parent, nil, false);
+      container_object = &parent_tree_object->flatTree;
+    }
+  }
+  
+  long my_var_index = theIndex;
+  
+  DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
+  InitializeCN   (modelName, 0 , parent_tree);
+  
+  if (container_object) {
+    _Variable * new_node = LocateVar(my_var_index);
+    container_object->Replace (index_in_parent, new_node, false);
+    new_node->AddAReference();
+  }
 }
 
 //_______________________________________________________________________________________________

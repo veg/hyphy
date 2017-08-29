@@ -157,7 +157,7 @@ public:
     bool        HasChangedSimple    (_SimpleList&);
     bool        EqualFormula        (_Formula*);
     bool        IsAConstant         (void); //  does this formula include variables, or is it just a constant?
-    bool        IsConstant          (void); //  does this formula depend on something other that constants and fixed parameters?
+    bool        IsConstant          (bool strict = false); //  does this formula depend on something other that constants and fixed parameters?
     bool        DependsOnVariable   (long);
     bool        IsArrayAccess       (void); // check to see if this formula performs a matrix access
     /*
