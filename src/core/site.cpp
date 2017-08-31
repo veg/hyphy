@@ -5501,7 +5501,7 @@ long    _DataSetFilter::GetOriginalToShortMap(long index)
 
 //_________________________________________________________
 
-_String const &_DataSetFilter::GenerateConsensusString (_SimpleList* majority) const {
+_String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) const {
   
     if (unitLength > 3) {
         return emptyString;
