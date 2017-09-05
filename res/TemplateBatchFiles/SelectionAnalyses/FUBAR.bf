@@ -1,4 +1,4 @@
-RequireVersion  ("2.31");
+RequireVersion  ("2.3.3");
 
 LoadFunctionLibrary("libv3/all-terms.bf");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
@@ -442,6 +442,7 @@ namespace fubar {
 
     table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "N.eff", "Posterior prob for positive selection"}};
 
+    s = 0; // reset to ensure good re-entrant behavior
     report.positive_site = {{"" + (1+filter_info[s]),
                                         partition_index + 1,
                                         Format(partition_results[s][0],10,3),
@@ -872,7 +873,7 @@ lfunction fubar.ComputeOnGrid (lf_id, grid, handler, callback) {
     scores = {};
 
     queue  = mpi.CreateQueue ({^"terms.mpi.LikelihoodFunctions": {{lf_id}},
-                               ^"terms.mpi.Headers" : utility.GetListOfLoadedModules ()});
+                               ^"terms.mpi.Headers" : utility.GetListOfLoadedModules ("libv3/")});
 
     for (i = 1; i < Abs (jobs); i += 1) {
         mpi.QueueJob (queue, handler, {"0" : lf_id,

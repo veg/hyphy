@@ -851,10 +851,14 @@ lfunction utility.BinByValue (obj) {
 
 /**
  * Returns the list of modules loaded with `LoadFunctionLibrary`
+ * param: {String} filter, if provided, will filter the list of library paths via a regexp
  * @returns a string matrix with (absolute) file paths for loaded modules
  */
-lfunction utility.GetListOfLoadedModules () {
+lfunction utility.GetListOfLoadedModules (filter) {
     GetString (res, LIST_OF_LOADED_LIBRARIES, -1);
+    if (None != filter) {
+        return utility.Values (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
+    }
     return res;
 }
 
