@@ -20,6 +20,7 @@ env:
   - METHOD_TEST=tests/hbltests/libv3/SLAC-partitioned.wbf
   - METHOD_TEST=tests/hbltests/libv3/FEL.wbf
   - METHOD_TEST=tests/hbltests/libv3/MEME.wbf
+  - METHOD_TEST=tests/hbltests/libv3/FUBAR.wbf
 
 language: c++
 compiler: 

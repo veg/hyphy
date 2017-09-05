@@ -35,4 +35,4 @@ gmon.out
 **/data/*.samples*
 messages.log
 errors.log
-tests/hbltests/libv3/data/CD2.nex.ABSREL.json
+tests/hbltests/libv3/data/CD2.nex.*.json
