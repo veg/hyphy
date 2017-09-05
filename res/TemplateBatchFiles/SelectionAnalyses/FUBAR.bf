@@ -80,8 +80,8 @@ fubar.analysis_description = {terms.io.info :
     directory as the original alignment. HyPhy needs to have write
     privileges to this directory. For example if the original file is in
     /home/sergei/FUBAR/data/pol.nex then at the end of a FUBAR run, there
-    will also exist FUBAR-generated files /home/sergei/FUBAR/data/pol.nex.fubar.json,
-    /home/sergei/FUBAR/data/pol.nex.fubrarcache. They also
+    will also exist FUBAR-generated files /home/sergei/FUBAR/data/pol.nex.FUBAR.json,
+    /home/sergei/FUBAR/data/pol.nex.fubrar.cache. They also
     provide checkpointing so that a partially completed analysis can be
     restarted.",
 
