@@ -77,6 +77,8 @@ function parameters.DeclareGlobal(id, cache) {
             }
         }
     }
+
+    return cache;
 }
 
 /**
@@ -407,6 +409,22 @@ function parameters.SetConstraint(id, value, global_tag) {
                     value[parameters.SetConstraint.k],
                     global_tag);
             }
+        }
+    }
+}
+
+/**
+ * constrain x to be x := C * (current value of x)
+ * @name parameters.SetProprtionalConstraint
+ * @param {String} id of parameter(s) to set constraint on
+ * @param {String} scaler variable - the ID of the 'C' scaler variable above; could also be an expression
+ * @returns nothing
+ */
+function parameters.SetProprtionalConstraint(id, scaler) {
+    if (Type(id) == "String") {
+        if (Abs(id)) {
+            //console.log ("`id` => " + Eval (id));
+            ExecuteCommands("`id` := (`scaler`)*"  + Eval (id));
         }
     }
 }

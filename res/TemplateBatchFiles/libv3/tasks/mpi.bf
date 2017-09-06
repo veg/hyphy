@@ -11,9 +11,57 @@ LoadFunctionLibrary ("../all-terms.bf");
 namespace mpi {
     job_id = 0;
 
+    function NodeCount () {
+        return utility.GetEnvVariable ("MPI_NODE_COUNT");
+    }
+
+    function IsMasterNode () {
+        return utility.GetEnvVariable ("MPI_NODE_ID") == 0;
+    }
+
     function get_next_job_id () {
         job_id += 1;
         return job_id;
+    }
+
+    /** Partition a list of tasks into approximately (+/- 1) equal subtasks
+     * @name mpi.PartitionIntoBlocks
+     * @param  {Dict} object
+     *      key -> task specification
+     * @return {Dict}
+            node -> list of task specifications
+     */
+
+    lfunction PartitionIntoBlocks (object) {
+        if (Type (object) == "AssociativeList") {
+            mpi_node_count = utility.GetEnvVariable ("MPI_NODE_COUNT");
+            if (mpi_node_count > 1) {
+                return_object = {};
+                task_count = utility.Array1D (object);
+                task_keys  = utility.Keys (object);
+                slice_size = Max (1, task_count $ mpi_node_count);
+                roundoff   = Max (0, task_count - mpi_node_count * slice_size);
+                current_index = 0;
+
+                for (n = 0; n < mpi_node_count; n += 1) {
+                    node_tasks = {};
+                    if (current_index < task_count) {
+                        for (i = 0; i < slice_size; i+=1) {
+                            node_tasks[task_keys[current_index]] = object [task_keys[current_index]];
+                            current_index += 1;
+                        }
+                        if (n < roundoff) {
+                            node_tasks[task_keys[current_index]] = object [task_keys[current_index]];
+                            current_index += 1;
+                        }
+                    }
+                    return_object [n] = node_tasks;
+                }
+                return return_object;
+            }
+            return { "0" : object};
+        }
+        return object;
     }
 
 
@@ -33,7 +81,6 @@ namespace mpi {
         queue = {};
         send_to_nodes = "";
         if (mpi_node_count > 1) {
-
 
             if (None != nodesetup) {
                 if (Abs (nodesetup)) {
@@ -125,7 +172,7 @@ namespace mpi {
             }
 
             if (Abs (send_to_nodes)) {
-            	
+
                 for (k = 1; k < mpi_node_count; k += 1) {
                    MPISend (k, send_to_nodes);
                 }
@@ -174,7 +221,7 @@ namespace mpi {
              MPISend (node, complete_function_dump + "; return " + job + '(' + Join (",",utility.Map (arguments,"_value_", "utility.convertToArgumentString (_value_)")) + ')');
 
         } else {
-        
+
             //console.log(job);
             //console.log(arguments);
             //console.log(result_callback);
