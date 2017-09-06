@@ -75,6 +75,12 @@ slac.json = {
     /**
         The dictionary of results to be written to JSON at the end of the run
     */
+    
+slac.display_orders =   {terms.original_name: -1,
+                        terms.json.nucleotide_gtr: 0,
+                        terms.json.global_mg94xrev: 1
+                       };
+                       
 
 selection.io.startTimer (slac.json [terms.json.timers], "Total time", 0);
 
@@ -134,20 +140,21 @@ namespace slac {
 
 selection.io.stopTimer (slac.json [terms.json.timers], "Model fitting");
 
-
-selection.io.json_store_lf(
-    slac.json,
-    terms.json.global_mg94xrev,
-    slac.partitioned_mg_results[terms.fit.log_likelihood],
-    slac.partitioned_mg_results[terms.parameters],
-    slac.sample_size,
-    utility.ArrayToDict (utility.Map (slac.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}"))
-);
+slac.global_dnds = selection.io.extract_global_MLE_re (slac.partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 
 
+//Store MG94 to JSON
+selection.io.json_store_lf_GTR_MG94 (slac.json,
+                            terms.json.global_mg94xrev,
+                            slac.partitioned_mg_results[terms.fit.log_likelihood],
+                            slac.partitioned_mg_results[terms.parameters],
+                            slac.sample_size,
+                            utility.ArrayToDict (utility.Map (slac.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}")),
+                            (slac.partitioned_mg_results[terms.efv_estimate])["VALUEINDEXORDER"][0],
+                            slac.display_orders[terms.json.global_mg94xrev]);
 
 utility.ForEachPair (slac.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(slac.json, utility.getGlobalValue("terms.json.global_mg94xrev"), terms.branch_length, 0,
+    'selection.io.json_store_branch_attribute(slac.json, terms.json.global_mg94xrev, terms.branch_length, slac.display_orders[terms.json.global_mg94xrev],
                                              _key_,
                                              selection.io.extract_branch_info((slac.partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 
@@ -257,11 +264,13 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
     }
 
     slac.branch_attributes = selection.substitution_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info[terms.code]);
-
+    
+    /*
     selection.io.json_store_branch_attribute(slac.json, terms.original_name, terms.json.node_label, 0,
                                              slac.i,
                                              slac.name_mapping);
-
+    */
+    
     selection.io.json_store_branch_attribute(slac.json, terms.codon, terms.json.node_label, 0,
                                              slac.i,
                                              slac.branch_attributes[terms.codon]);
