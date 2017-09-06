@@ -225,6 +225,8 @@ namespace terms{
         log_likelihood        = "Log Likelihood";
         AICc                  = "AIC-c";
         global_mg94xrev       = "Global MG94xREV";
+        nucleotide_gtr        = "Nucleotide GTR";
+        frequencies           = "Equilibrium frequencies";
         model                 = "model"; // TODO: change string to "model name"
        // global                = "Global model fit"; // Defined at the top of file
         attribute             = "attributes";
