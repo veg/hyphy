@@ -209,6 +209,13 @@ function load_file (prefix) {
                                                          filter_specification);
      trees = utility.Map (partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
      filter_names = utility.Map (filter_specification, "_partition_", '_partition_[terms.data.name]');
+
+     /* Store original name mapping */
+    for (partition_index = 0; partition_index < partition_count; partition_index += 1) {
+        selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.original_name"), utility.getGlobalValue ("terms.json.node_label"), display_orders[utility.getGlobalValue ("terms.original_name")],
+                                         partition_index,
+                                         name_mapping);
+    }
 }
 
 
@@ -238,6 +245,39 @@ function doGTR (prefix) {
                                          gtr_results);
 
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* " + selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
+
+
+
+    /* Store nucleotide fit */
+    gtr_rates = utility.Map( 
+                    utility.Map (gtr_results[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
+                    "_value_",
+                    "_value_[terms.fit.MLE]");
+    efv = (gtr_results[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0];
+    selection.io.json_store_lf_GTR_MG94 (json,
+                                utility.getGlobalValue ("terms.json.nucleotide_gtr"),
+                                gtr_results[utility.getGlobalValue ("terms.fit.log_likelihood")],
+                                gtr_results[utility.getGlobalValue ("terms.parameters")] ,
+                                codon_data_info[utility.getGlobalValue ("terms.data.sample_size")],
+                                gtr_rates, 
+                                efv,
+                                display_orders[utility.getGlobalValue ("terms.json.nucleotide_gtr")]);
+
+    
+    /* TODO: Why does this not work here? */
+    /*
+    utility.ForEachPair (filter_specification, "_key_", "_value_",
+        'selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.json.nucleotide_gtr"), utility.getGlobalValue ("terms.branch_length"), display_orders[terms.json.nucleotide_gtr],
+                                         _key_,
+                                         selection.io.extract_branch_info((gtr_results[utility.getGlobalValue ("terms.branch_length")])[_key_], "selection.io.branch.length"));');
+    */
+    
+    /* Store branch lengths */
+    for (partition_index = 0; partition_index < Abs(filter_specification); partition_index += 1) {
+        selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.json.nucleotide_gtr"), utility.getGlobalValue ("terms.branch_length"), display_orders[terms.json.nucleotide_gtr],
+                                         partition_index,
+                                         selection.io.extract_branch_info((gtr_results[utility.getGlobalValue ("terms.branch_length")])[partition_index], "selection.io.branch.length"));
+        }
 
 }
 
