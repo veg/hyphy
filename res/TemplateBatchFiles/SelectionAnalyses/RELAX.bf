@@ -38,7 +38,7 @@ relax.json    = { terms.json.input: {},
 
 relax.relaxation_parameter        = "relax.K";
 relax.rate_classes     = 3;
-relax.MG94_name = "MG94xREV with separate rates for branch sets";
+relax.MG94_name = terms.json.mg94xrev_sep_rates;
 relax.general_descriptive_name = "General descriptive";
 relax.alternative_name = "RELAX alternative";
 relax.null_name = "RELAX null";
@@ -56,6 +56,16 @@ relax.p_threshold = 0.05;
 relax.test_branches_name = "Test";
 relax.reference_branches_name = "Reference";
 relax.unclassified_branches_name = "Unclassified";
+
+relax.display_orders = {terms.original_name: -1,
+                        terms.json.nucleotide_gtr: 0,
+                        relax.MG94_name: 1,
+                        relax.general_descriptive_name: 4,
+                        relax.alternative_name: 2,
+                        relax.null_name: 3,
+                        relax.partitioned_descriptive_name: 5
+                       };
+
 
 /*------------------------------------------------------------------------------*/
 
@@ -138,17 +148,25 @@ utility.ForEach (relax.global_dnds, "_value_", '
     relax.report_dnds [(regexp.FindSubexpressions (_value_[terms.description], "^" + terms.parameters.omega_ratio + ".+\\*(.+)\\*$"))[1]] = {"0" : {terms.json.omega_ratio : _value_[terms.fit.MLE], terms.json.proportion : 1}};
 ');
 
-selection.io.json_store_branch_attribute(relax.json, terms.original_name, terms.json.node_label, 0,
-                                         0,
-                                         relax.name_mapping);
 
 
-selection.io.json_store_lf (relax.json,
+
+//Store MG94 to JSON
+selection.io.json_store_lf_GTR_MG94 (relax.json,
                             relax.MG94_name,
                             relax.final_partitioned_mg_results[terms.fit.log_likelihood],
-                            relax.final_partitioned_mg_results[terms.parameters] ,
-                            relax.codon_data_info[terms.data.sample_size],
-                            relax.report_dnds);
+                            relax.final_partitioned_mg_results[terms.parameters],
+                            relax.sample_size,
+                            utility.ArrayToDict (utility.Map (relax.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}")),
+                            (relax.final_partitioned_mg_results[terms.efv_estimate])["VALUEINDEXORDER"][0],
+                            relax.display_orders[relax.MG94_name]);
+//single partition only for relax, but can't hurt .
+utility.ForEachPair (relax.filter_specification, "_key_", "_value_",
+    'selection.io.json_store_branch_attribute(relax.json,relax.MG94_name, terms.branch_length, relax.display_orders[relax.MG94_name],
+                                             _key_,
+                                             selection.io.extract_branch_info((relax.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
+
+
 
 
 selection.io.stopTimer (relax.json [terms.json.timers], "Preliminary model fitting");
@@ -208,10 +226,11 @@ if (relax.model_set == "All") { // run all the models
                                 relax.general_descriptive.fit[terms.fit.log_likelihood],
                                 relax.general_descriptive.fit[terms.parameters] + 9 , // +9 comes from CF3x4
                                 relax.codon_data_info[terms.data.sample_size],
-                                relax.distribution_for_json
+                                relax.distribution_for_json,
+                                relax.display_orders[relax.general_descriptive_name]
                             );
 
-    selection.io.json_store_branch_attribute(relax.json, relax.general_descriptive_name, terms.branch_length, 1,
+    selection.io.json_store_branch_attribute(relax.json, relax.general_descriptive_name, terms.branch_length, relax.display_orders[relax.general_descriptive_name],
                                                  0,
                                                  selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
@@ -223,7 +242,7 @@ if (relax.model_set == "All") { // run all the models
                                                  Format (relax.k_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (relax.k_stats[terms.math._2.5], 5,2) + " - " + Format (relax.k_stats[terms.math._97.5], 5,2));
 
 
-    selection.io.json_store_branch_attribute(relax.json, "k (general descriptive)", terms.json.branch_label, 1,
+    selection.io.json_store_branch_attribute(relax.json, "k (general descriptive)", terms.json.branch_label, relax.display_orders[relax.general_descriptive_name],
                                                  0,
                                                  relax.k_estimates);
 
@@ -347,10 +366,11 @@ selection.io.json_store_lf (relax.json,
                             relax.alternative_model.fit[terms.fit.log_likelihood],
                             relax.alternative_model.fit[terms.parameters] + 9 , // +9 comes from CF3x4
                             relax.codon_data_info[terms.data.sample_size],
-                            relax.distribution_for_json
+                            relax.distribution_for_json,
+                            relax.display_orders[relax.alternative_name]
                         );
 
-selection.io.json_store_branch_attribute(relax.json, relax.alternative_name, terms.branch_length, 2,
+selection.io.json_store_branch_attribute(relax.json, relax.alternative_name, terms.branch_length, relax.display_orders[relax.alternative_name],
                                              0,
                                              selection.io.extract_branch_info((relax.alternative_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
@@ -383,10 +403,11 @@ selection.io.json_store_lf (relax.json,
                             relax.null_model.fit[terms.fit.log_likelihood],
                             relax.null_model.fit[terms.parameters] + 9 , // +9 comes from CF3x4
                             relax.codon_data_info[terms.data.sample_size],
-                            relax.distribution_for_json
+                            relax.distribution_for_json,
+                            relax.display_orders[relax.null_name]
                         );
 
-selection.io.json_store_branch_attribute(relax.json, relax.null_name, terms.branch_length, 3,
+selection.io.json_store_branch_attribute(relax.json, relax.null_name, terms.branch_length, relax.display_orders[relax.null_name],
                                              0,
                                              selection.io.extract_branch_info((relax.null_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
@@ -444,10 +465,11 @@ if (relax.model_set == "All") {
                                 relax.pe.fit[terms.fit.log_likelihood],
                                 relax.pe.fit[terms.parameters] + 9 , // +9 comes from CF3x4
                                 relax.codon_data_info[terms.data.sample_size],
-                                relax.distribution_for_json
+                                relax.distribution_for_json,
+                                relax.display_orders[relax.partitioned_descriptive_name]
                             );
 
-    selection.io.json_store_branch_attribute(relax.json, relax.partitioned_descriptive_name, terms.branch_length, 4,
+    selection.io.json_store_branch_attribute(relax.json, relax.partitioned_descriptive_name, terms.branch_length, relax.display_orders[relax.partitioned_descriptive_name],
                                                  0,
                                                  selection.io.extract_branch_info((relax.pe.fit[terms.branch_length])[0], "selection.io.branch.length"));
 

@@ -49,6 +49,20 @@ absrel.full_adaptive_model  = "Full adaptive model";
 absrel.rate_classes         = "Rate classes";
 absrel.per_branch_omega     = "Per-branch omega";
 
+absrel.display_orders = {terms.original_name: -1,
+                         terms.json.nucleotide_gtr: 0,
+                              absrel.baseline_mg94xrev: 1,
+                              absrel.baseline_omega_ratio: 1, 
+                              absrel.full_adaptive_model: 2,
+                              absrel.rate_classes: 2,
+                              terms.json.rate_distribution: 3,
+                              terms.LRT: 4,
+                              terms.json.uncorrected_pvalue: 5,
+                              terms.json.corrected_pvalue: 6                             
+                             };
+
+                       
+
 /*------------------------------------------------------------------------------*/
 
 
@@ -111,9 +125,6 @@ io.ReportProgressMessageMD("absrel", "base", "* " + selection.io.report_fit (abs
 
 
 
-selection.io.json_store_branch_attribute(absrel.json, terms.original_name, terms.json.node_label, 0,
-                                         0,
-                                         absrel.name_mapping);
 
 absrel.baseline.branch_lengths = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "selection.io.branch.length");
 absrel.baseline.omegas = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "absrel.local.omega");
@@ -124,13 +135,6 @@ io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.o
                                              Format (absrel.omega_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (absrel.omega_stats[terms.math._2.5], 5,2) + " - " + Format (absrel.omega_stats[terms.math._97.5], 5,2));
 
 
-selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_mg94xrev, terms.branch_length, 1,
-                                                      0,
-                                                      absrel.baseline.branch_lengths);
-
-selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_omega_ratio, terms.json.branch_label, 1,
-                                                      0,
-                                                      absrel.baseline.omegas);
 
 selection.io.stopTimer (absrel.json [terms.json.timers], "Baseline model fitting");
 
@@ -157,13 +161,29 @@ absrel.distribution_for_json = {absrel.per_branch_omega :
                                     terms.math._97.5 : absrel.omega_stats[terms.math._97.5]}
                                };
 
-selection.io.json_store_lf (absrel.json,
-                            absrel.baseline_mg94xrev,
-                            absrel.base.results[terms.fit.log_likelihood],
-                            absrel.base.results[terms.parameters] ,
-                            absrel.codon_data_info[terms.data.sample_size],
-                            absrel.distribution_for_json);
 
+
+//Store MG94 to JSON
+selection.io.json_store_lf_GTR_MG94 (absrel.json,
+                                     absrel.baseline_mg94xrev,
+                                     absrel.base.results[terms.fit.log_likelihood],
+                                     absrel.base.results[terms.parameters] ,
+                                     absrel.codon_data_info[terms.data.sample_size],
+                                     absrel.distribution_for_json,
+                                     (absrel.base.results[terms.efv_estimate])["VALUEINDEXORDER"][0],
+                                     absrel.display_orders[absrel.baseline_mg94xrev]);
+
+
+selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_mg94xrev, terms.branch_length, absrel.display_orders[absrel.baseline_mg94xrev],
+                                                      0,
+                                                      absrel.baseline.branch_lengths);
+
+selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_omega_ratio, terms.json.branch_label, absrel.display_orders[absrel.baseline_omega_ratio],
+                                                      0,
+                                                      absrel.baseline.omegas);
+                        
+         
+                
 // define BS-REL models with up to N rate classes
 
 absrel.model_defintions = {};
@@ -295,7 +315,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
 
 }
 
-selection.io.json_store_branch_attribute(absrel.json, absrel.rate_classes, terms.json.branch_label, 2,
+selection.io.json_store_branch_attribute(absrel.json, absrel.rate_classes, terms.json.branch_label, absrel.display_orders[absrel.rate_classes],
                                                       0,
                                                       absrel.branch.complexity);
 
@@ -320,16 +340,17 @@ io.ReportProgressMessageMD("absrel", "Full adaptive model", "* " + selection.io.
 
 selection.io.stopTimer (absrel.json [terms.json.timers], "Full adaptive model fitting");
 
-selection.io.json_store_branch_attribute(absrel.json, absrel.full_adaptive_model, terms.branch_length, 2,
+selection.io.json_store_branch_attribute(absrel.json, absrel.full_adaptive_model, terms.branch_length, absrel.display_orders[absrel.full_adaptive_model],
                                              0,
                                              selection.io.extract_branch_info((absrel.full_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
 
 absrel.branch.rate_distributions = selection.io.extract_branch_info((absrel.full_model.fit[terms.branch_length])[0], "absrel.GetRateDistribution");
 
 
-selection.io.json_store_branch_attribute(absrel.json, terms.json.rate_distribution, terms.json.branch_label, 3,
+selection.io.json_store_branch_attribute(absrel.json, terms.json.rate_distribution, terms.json.branch_label, absrel.display_orders[terms.json.rate_distribution],
                                                       0,
                                                       absrel.branch.rate_distributions);
+
 
 
 selection.io.json_store_lf (absrel.json,
@@ -337,8 +358,8 @@ selection.io.json_store_lf (absrel.json,
                             absrel.full_model.fit[terms.fit.log_likelihood],
                             absrel.full_model.fit[terms.parameters] + 9 ,
                             absrel.codon_data_info[terms.data.sample_size],
-                            {});
-
+                            {},
+                            absrel.display_orders[absrel.full_adaptive_model]);
 
 /***
     Testing individual branches for selection
@@ -401,17 +422,17 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.testing_table.settings));
 }
 
-selection.io.json_store_branch_attribute(absrel.json, terms.LRT, terms.json.branch_label, 4,
+selection.io.json_store_branch_attribute(absrel.json, terms.LRT, terms.json.branch_label, absrel.display_orders[terms.LRT],
                                                       0,
                                                        absrel.branch.lrt);
 
-selection.io.json_store_branch_attribute(absrel.json, terms.json.uncorrected_pvalue, terms.json.branch_label, 5,
+selection.io.json_store_branch_attribute(absrel.json, terms.json.uncorrected_pvalue, terms.json.branch_label, absrel.display_orders[terms.json.uncorrected_pvalue],
                                                       0,
                                                        absrel.branch.p_values);
 
 absrel.branch.p_values.corrected = math.HolmBonferroniCorrection (absrel.branch.p_values);
 
-selection.io.json_store_branch_attribute (absrel.json, terms.json.corrected_pvalue, terms.json.branch_label, 6,
+selection.io.json_store_branch_attribute (absrel.json, terms.json.corrected_pvalue, terms.json.branch_label,  absrel.display_orders[terms.json.corrected_pvalue],
                                                        0,
                                                        absrel.branch.p_values.corrected);
 

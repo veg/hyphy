@@ -74,6 +74,11 @@ fel.json = {
     terms.json.timers: {},
 };
 
+fel.display_orders =   {terms.original_name: -1,
+                        terms.json.nucleotide_gtr: 0,
+                        terms.json.global_mg94xrev: 1
+                       };
+
 
 
 selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
@@ -104,13 +109,13 @@ namespace fel {
 
 
 /* Prompt for one-rate or two-rate analysis */
-fel.tworate = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS := 1 at each site)."}},
+fel.srv = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS := 1 at each site)."}},
                                   "Use synonymous rate variation? Strongly recommended YES for selection inference.");
-console.log(fel.tworate);
-if (fel.tworate == "Yes"){
-    fel.tworate = TRUE
+console.log(fel.srv);
+if (fel.srv == "Yes"){
+    fel.srv = TRUE
 } else {
-    fel.tworate = FALSE
+    fel.srv = FALSE
 }
 /* Prompt for p value threshold */
 fel.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",0.1,0,1,FALSE);
@@ -152,6 +157,9 @@ fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.tr
 
 
 
+
+
+
 io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
 fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
@@ -160,20 +168,24 @@ utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel",
 
 estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_partitioned_mg_results[terms.global]);
 
-selection.io.json_store_lf(
-    fel.json,
-    terms.json.global_mg94xrev,
-    fel.final_partitioned_mg_results[terms.fit.log_likelihood],
-    fel.final_partitioned_mg_results[terms.parameters],
-    fel.sample_size,
-    utility.ArrayToDict (utility.Map (fel.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}"))
-);
 
+//Store MG94 to JSON
+selection.io.json_store_lf_GTR_MG94 (fel.json,
+                            terms.json.global_mg94xrev,
+                            fel.final_partitioned_mg_results[terms.fit.log_likelihood],
+                            fel.final_partitioned_mg_results[terms.parameters],
+                            fel.sample_size,
+                            utility.ArrayToDict (utility.Map (fel.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}")),
+                            (fel.final_partitioned_mg_results[terms.efv_estimate])["VALUEINDEXORDER"][0],
+                            fel.display_orders[terms.json.global_mg94xrev]);
 
 utility.ForEachPair (fel.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(fel.json, utility.getGlobalValue("terms.json.global_mg94xrev"), terms.branch_length, 0,
+    'selection.io.json_store_branch_attribute(fel.json, terms.json.global_mg94xrev, terms.branch_length, fel.display_orders[terms.json.global_mg94xrev],
                                              _key_,
                                              selection.io.extract_branch_info((fel.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
+
+
+
 
 selection.io.stopTimer (fel.json [terms.json.timers], "Model fitting");
 
@@ -232,7 +244,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
 
-    if (^"fel.tworate"){
+    if (^"fel.srv"){
         ^"fel.alpha_scaler" = 1;
     } else
     {
@@ -414,7 +426,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                    "Models" : {{"fel.site.mg_rev"}},
                                    "Headers" : {{"libv3/all-terms.bf"}},
-                                   "Variables" : {{"fel.tworate"}}
+                                   "Variables" : {{"fel.srv"}}
                                  });
 
 

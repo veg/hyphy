@@ -48,6 +48,9 @@ fubar.json = {
                     terms.fubar.posterior  :      {}
                 };
 
+fubar.display_orders = {terms.original_name: -1,
+                        terms.json.nucleotide_gtr: 0
+                        };
 
 
 fubar.prompts = {
@@ -109,7 +112,7 @@ fubar.cache = io.LoadCacheFromFile (fubar.path.cache);
 
 fubar.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
 
-console.log ( "> FUBAR will write cache and result files to _`fubar.path.base`.cache_ and _`fubar.path.base`.json_, respectively \n\n");
+console.log ( "> FUBAR will write cache and result files to _`fubar.path.base`.FUBAR.cache_ and _`fubar.path.base`.FUBAR.json_, respectively \n\n");
 
 //----------------------------------------------------------------------------
 // PHASE 1: nucleotide fit
@@ -130,6 +133,28 @@ selection.io.startTimer (fubar.json [terms.json.timers], "Nucleotide Fit", 1);
 if (utility.Has (fubar.cache, terms.fubar.cache.gtr, "AssociativeList")) {
      fubar.gtr_results = fubar.cache[terms.fubar.cache.gtr];
      io.ReportProgressMessageMD("fubar", "nuc-fit", "_Loaded cached GTR fit_ " + selection.io.report_fit (fubar.gtr_results, 0, fubar.codon_data_info[terms.data.sample_size]));
+    
+    /* Add nucleotide fit to the JSON */
+    gtr_rates = utility.Map( 
+                    utility.Map (fubar.gtr_results[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
+                    "_value_",
+                    "_value_[terms.fit.MLE]");
+    efv = (fubar.gtr_results[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0];
+    selection.io.json_store_lf_GTR_MG94 (fubar.json,
+                                utility.getGlobalValue ("terms.json.nucleotide_gtr"),
+                                fubar.gtr_results[utility.getGlobalValue ("terms.fit.log_likelihood")],
+                                fubar.gtr_results[utility.getGlobalValue ("terms.parameters")] ,
+                                fubar.codon_data_info[utility.getGlobalValue ("terms.data.sample_size")],
+                                gtr_rates, 
+                                efv,
+                                fubar.display_orders[utility.getGlobalValue ("terms.json.nucleotide_gtr")]);
+
+    utility.ForEachPair (fubar.filter_specification, "_key_", "_value_",
+        'selection.io.json_store_branch_attribute(fubar.json, terms.json.nucleotide_gtr, terms.branch_length, fubar.display_orders[terms.json.nucleotide_gtr],
+                                         _key_,
+                                         selection.io.extract_branch_info((fubar.gtr_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
+  
+
 }
 else {
     fubar.RunPrompts (fubar.prompts);
@@ -139,29 +164,6 @@ else {
     fubar.cache [terms.fubar.cache.gtr] = fubar.gtr_results;
     io.WriteCacheToFile (fubar.path.cache, fubar.cache);
 }
-
-
-selection.io.json_store_lf (fubar.json,
-                            "Nucleotide GTR",
-                            fubar.gtr_results[terms.fit.log_likelihood],
-                            fubar.gtr_results[terms.parameters] , //
-                            fubar.codon_data_info[terms.data.sample_size],
-                            None);
-
-utility.ForEachPair (fubar.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(fubar.json, "Nucleotide GTR", terms.branch_length, 0,
-                                             _key_,
-                                             selection.io.extract_branch_info((fubar.gtr_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
-
-utility.ForEachPair (fubar.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(fubar.json, "Nucleotide GTR", terms.branch_length, 0,
-                                             _key_,
-                                             selection.io.extract_branch_info((fubar.gtr_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
-
-utility.ForEachPair (fubar.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(fubar.json, terms.original_name, terms.json.node_label, 0,
-                                             fubar.partition_index,
-                                             fubar.name_mapping)');
 
 
 utility.ForEachPair (fubar.gtr_results [terms.branch_length], "_key_", "_value_",
