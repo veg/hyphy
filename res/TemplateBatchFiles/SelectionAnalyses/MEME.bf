@@ -306,11 +306,11 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
     estimators.ApplyExistingEstimates ("meme.site_likelihood_bsrel", meme.site_model_mapping, meme.final_partitioned_mg_results,
                                         "globals only");
 
-    meme.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"meme.site_likelihood","meme.site_likelihood_bsrel"}},
-                                   "Models" : {{"meme.site.background_fel","meme.site.bsrel"}},
-                                   "Headers" : utility.GetListOfLoadedModules (),
-                                   "Variables" : {{"meme.selected_branches","meme.branch_mixture","meme.pairwise_counts","meme.codon_data_info"}},
-                                   "Functions" : {{"meme.compute_branch_EBF"}}
+    meme.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"meme.site_likelihood","meme.site_likelihood_bsrel"}},
+                                   terms.mpi.Models : {{"meme.site.background_fel","meme.site.bsrel"}},
+                                   terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
+                                   terms.mpi.Variables : {{"meme.selected_branches","meme.branch_mixture","meme.pairwise_counts","meme.codon_data_info"}},
+                                   terms.mpi.Functions : {{"meme.compute_branch_EBF"}}
                                  });
 
 
@@ -604,12 +604,14 @@ lfunction meme.store_results (node, result, arguments) {
         // SW 20170505 Removing use of utility.Filter until we can lock the stack
         //filtered_ebf = utility.Filter (ebf, "_value_", "_value_>=100");
 
-        filtered_ebf = {};
-        ebf_keys = Rows(ebf);
+        ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
 
-        for(i=0; i<Abs(ebf);i=i+1) {
-            if(ebf[i] >= 100) {
-                filtered_ebf[ebf_keys[i]] = ebf[ebf_keys[i]];
+        filtered_ebf = {};
+        branch_names = utility.Keys (ebf);
+
+        for(i=0; i<Abs(ebf); i+=1) {
+            if(ebf[branch_names[i]] >= 100) {
+                filtered_ebf[branch_names[i]] = ebf[branch_names[i]];
             }
         }
 
