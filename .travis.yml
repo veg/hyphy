@@ -3,6 +3,7 @@ dist: trusty
 sudo : false
 
 notifications:
+    slack: veg-igem:rqQd95zjTuZoRNElekQx2CLf
     email:
         recipients:
             - spond@temple.edu
@@ -13,7 +14,6 @@ notifications:
 branches:
   only:
     - master
-    - develop
 
 env:
   - METHOD_TEST=tests/hbltests/libv3/SLAC.wbf
