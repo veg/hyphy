@@ -20,9 +20,9 @@ macro(PCL_CHECK_FOR_SSE3)
   include(CheckCXXSourceRuns)
   set(CMAKE_REQUIRED_FLAGS)
 
-  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
       set(CMAKE_REQUIRED_FLAGS "-msse3")
-  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
 
   check_cxx_source_runs("
       #include <pmmintrin.h>
@@ -46,9 +46,9 @@ macro(PCL_CHECK_FOR_AVX)
   include(CheckCXXSourceRuns)
   set(CMAKE_REQUIRED_FLAGS)
 
-  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-     set(CMAKE_REQUIRED_FLAGS "-mavx")
-  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+      set(CMAKE_REQUIRED_FLAGS "-march=corei7-avx -mtune=corei7-avx")
+  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
 
   check_cxx_source_runs("
       #include <immintrin.h>
@@ -75,7 +75,6 @@ set(HYPHY_VERSION 2.1)
 # setup the files we'll be using
 #-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
-file(GLOB SRC_CONTRIB src/contrib/*.cpp src/contrib/*.c)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 
@@ -84,7 +83,7 @@ set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_CONTRIB} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 
 
 #-------------------------------------------------------------------------------
@@ -92,7 +91,7 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_CONTRIB} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS}
 #-------------------------------------------------------------------------------
 
 set(DEFAULT_WARNING_FLAGS "-w")
-set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare ")
+set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     execute_process(
@@ -120,7 +119,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     else(NOAVX)
        PCL_CHECK_FOR_AVX()
        if(${HAVE_AVX_EXTENSIONS})
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mavx")
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
             add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
         else(${HAVE_AVX_EXTENSIONS})
             PCL_CHECK_FOR_SSE3()
@@ -139,7 +138,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
     PCL_CHECK_FOR_AVX()
     if(${HAVE_AVX_EXTENSIONS})
-        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mavx")
+        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
         add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
     else(${HAVE_AVX_EXTENSIONS})
         PCL_CHECK_FOR_SSE3()
@@ -150,7 +149,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     endif (${HAVE_AVX_EXTENSIONS})
 
     set_property(
-     SOURCE ${SRC_COMMON} ${SRC_CONTRIB} ${SRC_NEW} ${SRC_UTILS} ${SRC_UNIXMAIN}
+     SOURCE ${SRC_CORE}
      APPEND_STRING PROPERTY  COMPILE_FLAGS " -std=c++14 "
     )
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -235,11 +234,6 @@ set_property(
 )
 
 set_property(
-    SOURCE src/contrib/regex.cpp
-    APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-char-subscripts"
-)
-
-set_property(
     SOURCE src/core/calcnode2.cpp
     APPEND_STRING PROPERTY COMPILE_FLAGS " -fstrict-aliasing -funroll-loops"
 )
@@ -260,9 +254,7 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 include_directories(
     src/core/include
-    src/contrib
-    src/lib/Link
-    src/new/include
+    src/lib/Link src/new/include
     contrib/SQLite-3.8.2 # SQLite
     contrib/gtest-1.7.0/include
     tests/gtests
@@ -372,8 +364,8 @@ if(${MPI_FOUND})
     set_target_properties(
         HYPHYMPI
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
     )
 endif(${MPI_FOUND})
 
