@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
  Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
- 
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,7 +34,7 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
 #ifndef     __FORMULAS__
@@ -64,22 +64,22 @@ class _FormulaParsingContext {
     bool                 is_volatile;
     bool                 in_assignment;
     bool                 build_complex_objects;
-        /* 
+        /*
             this controls whether or not
             [matrix, TBD] and dictionary constant are built in place (default)
             or deferred (is false)
-         
+
         */
     _String            * err_msg;
     _VariableContainer const * formula_scope;
-    
+
     public:
         _FormulaParsingContext (_String* = nil, _VariableContainer const* = nil);
         bool&       isVolatile (void)                   { return is_volatile; }
         bool&       inAssignment (void)                 { return in_assignment;}
         bool&       buildComplexObjects (void)          { return build_complex_objects;}
         long&       assignmentRefID (void)              { return assignment_ref_id; }
-        char&       assignmentRefType (void)            { return assignment_ref_type;} 
+        char&       assignmentRefType (void)            { return assignment_ref_type;}
         _String*    errMsg (void)                       { return err_msg; }
         _VariableContainer const* formulaScope (void)         { return formula_scope; }
         void        setScope (_String const* scope);
@@ -109,9 +109,9 @@ public:
     bool        IsEmpty             (void) const; // is there anything in the formula
     long        NumberOperations    (void) const; // how many ops in the formula?
 
-    friend  long        Parse               (_Formula*, _String&, _FormulaParsingContext&, _Formula*); 
+    friend  long        Parse               (_Formula*, _String&, _FormulaParsingContext&, _Formula*);
     // the main expression parser
-    
+
     friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer*, char);
     // the execution block for "compiled formulae
     /*
@@ -171,23 +171,23 @@ public:
         given an index (i) as the argument, the function retrieves
         the i-th term of the formula
     */
-  
+
     unsigned long Length            (void) const {return theFormula.lLength;}
-  
+
     void        Clear               (void);
     _PMathObj   GetTheMatrix        (void);
-  
+
     void        PushTerm            (BaseRef);
-  
+
     /* 20151008: if the argument is a _List, then treat as a list of _Operations and push them onto this formula (increment reference counters as well)
                  otherwise assume it's a MathObject and push it to this forumla (+1 reference counter)
                  dynamic_cast is used to determine what type of object this is
-     
+
     */
-  
+
     bool        AmISimple           (long& stackDepth, _SimpleList& variableIndex);
     long        StackDepth          (long start_at = 0L, long end_at = -1L) const;
-      /** 
+      /**
         starting at operation 'start_at', counting up to 'end_at' (-1 == the end),
         evaluate how many values would be on the stack after the execution of these commands
        */
@@ -216,15 +216,15 @@ public:
     void        LocalizeFormula           (_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
     void        ConvertMatrixArgumentsToSimpleOrComplexForm (bool);
     long        ExtractMatrixExpArguments        (_List*);
-    
+
     virtual     _Formula operator + (const _Formula&);
     virtual     _Formula operator - (const _Formula&);
     virtual     _Formula operator * (const _Formula&);
     virtual     _Formula operator / (const _Formula&);
     virtual     _Formula operator ^ (const _Formula&);
-    
+
     _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
-  
+
     void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive);
 
 
@@ -241,9 +241,9 @@ protected:
 
     _Stack      theStack;
     _PMathObj   recursion_calls;
-  
+
     unsigned    long call_count;
-  
+
     node<long>* theTree; // this formula converted to a tree for operation purposes
     // such as simplification, differentiation and printing.
     // trees store numbers referencing operations inside

@@ -566,6 +566,10 @@ function utility.PopulateDict (from, to, value, lambda) {
  */
 function utility.ForEachPair(object, key_name, value_name, transform) {
 
+    io.CheckAssertion ("!utility.ForEachPair.warn_non_rentrant", "utility.ForEachPair is non re-entrant");
+
+    utility.ForEachPair.warn_non_rentrant = TRUE;
+
     Eval ("`key_name` = None");
     Eval ("`value_name` = None");
 
@@ -576,6 +580,7 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
         for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {
             ExecuteCommands (transform, enclosing_namespace);
         }
+        utility.ForEachPair.warn_non_rentrant = FALSE;
         return;
     }
     if (Type (object) == "Matrix") {
@@ -595,6 +600,7 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
             }
         }
     }
+    utility.ForEachPair.warn_non_rentrant = FALSE;
 
 }
 
@@ -667,7 +673,7 @@ lfunction utility.EnsureKey (dict, key) {
  * if the value is a matrix, checks for [key[0]][key[1]][...][key[N]] nested keys
  * type check is performed on the last level
  * @param {String/None} type - if specified will further check if the object has the right type
- * @returns value mapped to the key or None
+ * @returns T/F
  */
 lfunction utility.Has (d, key, type) {
 
@@ -708,6 +714,62 @@ lfunction utility.Has (d, key, type) {
         }
     }
     return FALSE;
+}
+
+/**
+ * Ensures a key exists in a dictionary
+ * @name utility.GetByKey
+ * @param {Dictionary} d - the object to return keys from
+ * @param {String/Matrix} key - check to see if key is in the dictionary
+ * if the value is a matrix, checks for [key[0]][key[1]][...][key[N]] nested keys
+ * type check is performed on the last level
+ * @param {String/None} type - if specified will further check if the object has the right type
+ * @returns value mapped to the key or None
+ */
+lfunction utility.GetByKey (d, key, type) {
+
+    if (Type (d) == "AssociativeList") {
+        if (Type (key) == "String") {
+            if (d/key) {
+                if (type == None) {
+                    return d[key];
+                }
+                if (Type (d[key]) == type) {
+                    return d[key];
+                }
+            }
+            return None;
+        }
+
+        if (Type (key) == "Matrix") {
+            depth = utility.Array1D (key);
+            current_check = &d;
+            current_key   = key[0];
+
+            for (i = 1; i < depth; i += 1) {
+                 if (Eval ("`current_check`/'`current_key`'")) {
+                    current_check = "(" + current_check + ")['`current_key`']";
+                    if (Eval ("Type(`current_check`)") != "AssociativeList") {
+                        return FALSE;
+                    }
+                    current_key = key[i];
+                } else {
+                    return FALSE;
+                }
+            }
+
+            if ( Eval ("`current_check`/'`current_key`'") ) {
+                return_value = Eval ("(`current_check`)['`current_key`']");
+                if (type == None) {
+                    return return_value;
+                }
+                if (Type (return_value) == type) {
+                    return return_value;
+                }
+             }
+        }
+    }
+    return None;
 }
 
 /**
@@ -789,10 +851,14 @@ lfunction utility.BinByValue (obj) {
 
 /**
  * Returns the list of modules loaded with `LoadFunctionLibrary`
+ * param: {String} filter, if provided, will filter the list of library paths via a regexp
  * @returns a string matrix with (absolute) file paths for loaded modules
  */
-lfunction utility.GetListOfLoadedModules () {
+lfunction utility.GetListOfLoadedModules (filter) {
     GetString (res, LIST_OF_LOADED_LIBRARIES, -1);
+    if (None != filter) {
+        return utility.Values (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
+    }
     return res;
 }
 

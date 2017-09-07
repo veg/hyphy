@@ -2,7 +2,7 @@
 "MEME","Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).","SelectionAnalyses/MEME.bf";
 "FEL","Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).","SelectionAnalyses/FEL.bf";
 "SLAC","Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).","SelectionAnalyses/SLAC.bf";
-"FUBAR","Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).","FUBAR.bf";
+"FUBAR","Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).","SelectionAnalyses/FUBAR.bf";
 "BUSTED","Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED.bf";
 "aBSREL","Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
 "RELAX","Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";

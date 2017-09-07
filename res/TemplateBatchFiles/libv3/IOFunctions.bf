@@ -213,8 +213,23 @@ lfunction io.ReportStatsMD(_label, _stats) {
  * @param analysis
  * @param text
  */
+
+io.ReportProgressBar._line_width = 0;
+
 lfunction io.ReportProgressBar(analysis, text) {
-    SetParameter(STATUS_BAR_STATUS_STRING, io._reportMessageHelper(analysis, text), 0);
+    str = io._reportMessageHelper(analysis, text);
+    SetParameter(STATUS_BAR_STATUS_STRING, str, 0);
+    utility.ExecuteInGlobalNamespace ("io.ReportProgressBar._line_width = " + Abs (str));
+}
+
+lfunction io.ClearProgressBar() {
+    eraser = ""; eraser * (^"io.ReportProgressBar._line_width" + 1);
+    for (k = 0; k < ^"io.ReportProgressBar._line_width"; k+=1) {
+        eraser * " ";
+    }
+    eraser * 0;
+    SetParameter(STATUS_BAR_STATUS_STRING, eraser, 0);
+    SetParameter(STATUS_BAR_STATUS_STRING, "", 0);
 }
 
 /**

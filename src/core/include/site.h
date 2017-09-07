@@ -539,7 +539,7 @@ public:
 
     void     FindAllSitesLikeThisOne (long, _SimpleList&);
 
-    _String const&  GenerateConsensusString (_SimpleList* =nil) const;
+    _String const  GenerateConsensusString (_SimpleList* =nil) const;
 
     void     GrabSite (unsigned long,unsigned long,_String&);
     void     GrabSite (unsigned long,unsigned long,char*);

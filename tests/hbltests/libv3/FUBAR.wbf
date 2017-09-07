@@ -1,0 +1,10 @@
+LoadFunctionLibrary("SelectionAnalyses/FUBAR.bf", {
+    "0": "Universal",
+    "1": PATH_TO_CURRENT_BF + "data/CD2.nex",
+    "2": "20",
+    "3": "5",
+    "4": "2000000",
+    "5": "1000000",
+    "6": "100",
+    "7": "0.5",
+});

@@ -139,7 +139,8 @@ BaseRef _Formula::makeDynamic (void) const {
 }
 //__________________________________________________________________________________
 
-_Formula::~_Formula (void){
+_Formula::~_Formula (void) {
+  
     Clear();
 }
 
@@ -1152,6 +1153,7 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
     }
 
     hyFloat       localPrecisionFactor;
+
     long             localIntegrationLoops;
 
     checkParameter (intPrecFact,localPrecisionFactor,integrationPrecisionFactor);
@@ -2225,7 +2227,7 @@ void    _Formula::ConvertToTree (bool err_msg) {
 
                 if (nTerms>nodeStack.lLength) {
                     if (err_msg) {
-                        HandleApplicationError (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()));
+                        HandleApplicationError (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()) & " while converting " & _String ((_String*)toStr()).Enquote() & " to a parse tree");
                     }
                     theTree = nil;
                     return;
@@ -2303,7 +2305,6 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
     switch (op->opCode) {
     case HY_OP_CODE_MUL: {
-
         /**
             d (X*Y) = X*dY + Y*dX
          */

@@ -55,6 +55,7 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 	__rate_variation = model.generic.get_rate_variation (modelSpec);
 
 	__global_cache = {};
+	
 
 	if (None != __rate_variation) {
 
