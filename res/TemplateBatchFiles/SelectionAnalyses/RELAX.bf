@@ -417,9 +417,9 @@ console.log ( "Likelihood ratio test **p = " + Format (relax.LRT[terms.p_value],
 
 if (relax.LRT[terms.p_value] <= relax.p_threshold) {
     if (relax.fitted.K > 1) {
-        console.log (">Evidence for relaxation of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
-    } else {
         console.log (">Evidence for intensification of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
+    } else {
+        console.log (">Evidence for relaxation of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
     }
 } else {
     console.log (">No significant evidence for relaxation (or intensification) of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
