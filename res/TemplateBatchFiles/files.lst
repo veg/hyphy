@@ -7,6 +7,9 @@
 "aBSREL","Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
 "RELAX","Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";
 
+"","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
+"FEL-Contrast","Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/FEL-contrast.bf";
+
 "","Perform a maximum likelihood analysis on a single file given a single tree.","!Basic Analyses";
 "ACD","Analyse codon data with a variery of standard models using given tree.","AnalyzeCodonData.bf";
 "AD","Analyse nucleotide or aminoacid data with a variery of standard models using given tree.","AnalyzeNucProtData.bf";

@@ -196,6 +196,7 @@ namespace terms{
         authors      = "authors";
         contact      = "contact";
         version      = "version";
+        help         = "help";
 
         //ReadDelimitedFile
         header       = "header";

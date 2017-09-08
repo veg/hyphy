@@ -421,6 +421,10 @@ lfunction io.DisplayAnalysisBanner(analysis_info) {
         io.PrintAndUnderline("Analysis Description", "-");
         fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.info")], 72), "\n");
     }
+    if (io.HasStringKey(utility.getGlobalValue("terms.io.help"), analysis_info)) {
+        fprintf(stdout, "\n- __Additional information__: ");
+        fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.help")], 72), "\n");
+    }
     if (io.HasStringKey(utility.getGlobalValue("terms.io.requirements"), analysis_info)) {
         fprintf(stdout, "\n- __Requirements__: ");
         fprintf(stdout, io.FormatLongStringToWidth(analysis_info[utility.getGlobalValue("terms.io.requirements")], 72), "\n");
