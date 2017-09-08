@@ -313,6 +313,15 @@ _String*    MPIRecvString       (long senderT, long& senderID)
 
     MPI_Status  status;
 
+    // nonagressive polling mode
+  
+    int message_received = 0;
+    while (! message_received) {
+      MPI_Iprobe (senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &message_received, MPI_STATUS_IGNORE);
+      usleep (100);
+    }
+
+  
     ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD,&status),false);
 
     if (messageLength < 0) {

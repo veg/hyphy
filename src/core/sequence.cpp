@@ -73,7 +73,7 @@ void    initFullAlphabet (void)
 _CString::_CString (void)
 {
     allocatedSpace = 0;
-    if (FullAlphabet.sLength==0) {
+    if (FullAlphabet.empty()) {
         initFullAlphabet();
     }
     compressionType = NOCOMPRESSION;
