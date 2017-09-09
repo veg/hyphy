@@ -3,21 +3,12 @@ RequireVersion ("2.3.3");
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
 
-// namespace 'utility' for convenience functions
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
-
-// namespace 'io' for interactive/datamonkey i/o functions
 LoadFunctionLibrary("libv3/IOFunctions.bf");
-
 LoadFunctionLibrary ("libv3/models/codon/MG_REV.bf");
-
-// namespace 'estimators' for various estimator related functions
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
-
-// namespace 'estimators' for various estimator related functions
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
-
-// namespace 'estimators' for various estimator related functions
+LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
@@ -52,16 +43,16 @@ absrel.per_branch_omega     = "Per-branch omega";
 absrel.display_orders = {terms.original_name: -1,
                          terms.json.nucleotide_gtr: 0,
                               absrel.baseline_mg94xrev: 1,
-                              absrel.baseline_omega_ratio: 1, 
+                              absrel.baseline_omega_ratio: 1,
                               absrel.full_adaptive_model: 2,
                               absrel.rate_classes: 2,
                               terms.json.rate_distribution: 3,
                               terms.LRT: 4,
                               terms.json.uncorrected_pvalue: 5,
-                              terms.json.corrected_pvalue: 6                             
+                              terms.json.corrected_pvalue: 6
                              };
 
-                       
+
 
 /*------------------------------------------------------------------------------*/
 
@@ -181,9 +172,9 @@ selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_mg94xrev, 
 selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_omega_ratio, terms.json.branch_label, absrel.display_orders[absrel.baseline_omega_ratio],
                                                       0,
                                                       absrel.baseline.omegas);
-                        
-         
-                
+
+
+
 // define BS-REL models with up to N rate classes
 
 absrel.model_defintions = {};
