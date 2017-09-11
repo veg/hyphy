@@ -591,8 +591,8 @@ inline void BacktrackAlignCodon( signed char * const edit_ops
 
 //____________________________________________________________________________________
 
-inline void MatchScore( char * r_str
-                      , char * q_str
+inline void MatchScore( char const * r_str
+                      , char const * q_str
                       , const long r
                       , const long q
                       , long * char_map

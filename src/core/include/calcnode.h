@@ -42,6 +42,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "parser.h"
 #include "classes.h"
+#include "dataset_filter.h"
+#include "dataset_filter_numeric.h"
 #include "site.h"
 
 

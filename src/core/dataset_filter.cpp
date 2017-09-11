@@ -37,72 +37,24 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef _GENSITE_
-#define _GENSITE_
-//#pragma once
+#include "dataset_filter.h"
 
-#include "avllist.h"
-#include "avllistx.h"
-#include "avllistxl.h"
-#include "list.h"
-#include "parser.h"
-#include "simplelist.h"
-#include "stdlib.h"
-#include "translation_table.h"
-
-#define HY_TRANSLATION_TABLE_DNA 0x01
-#define HY_TRANSLATION_TABLE_RNA 0x02
-#define HY_TRANSLATION_TABLE_BINARY 0x04
-#define HY_TRANSLATION_TABLE_PROTEIN 0x08
-
-// data set file state data struct
-struct FileState {
-
-  _TranslationTable *translationTable;
-  long curSpecies, totalSpeciesRead, totalSitesRead, totalSpeciesExpected,
-      totalSitesExpected, curSite, maxStringLength, pInSrc;
-  bool acceptingCommands, allSpeciesDefined, interleaved, autoDetect,
-      isSkippingInNEXUS;
-  int fileType, baseLength;
-  char repeat, skip;
-
-  _String *theSource, *theNamespace;
-
-  _SimpleList rawLinesFormat;
-
-};
+//_________________________________________________________
+// Data Set Filter/Numeric
 //_________________________________________________________
 
-class _Site : public _String 
-{
+_DataSetFilter::_DataSetFilter(void) {
+  unitLength = 0;
+  theData = NULL;
+  accessCache = nil;
+}
+//_________________________________________________________
+_DataSetFilter::_DataSetFilter(_DataSet *ds, char, _String &) {
+  theData = ds;
+  accessCache = nil;
+}
+//_________________________________________________________
+_DataSetFilter::~_DataSetFilter(void) { DeleteObject(accessCache); }
 
-public:
 
-  // does nothing
-  _Site(void);
-
-  // data constructor
-  _Site(_String &);
-
-  // data constructor
-  _Site(char);
-
-  // reference constructor
-  _Site(long);
-
-  // destructor
-  virtual ~_Site(void);
-
-  void Complete(void); // mark this site as complete and compress it
-
-  long GetRefNo(void) { return refNo < 0 ? -refNo - 2 : refNo - 2; }
-  bool IsComplete(void) { return refNo < 0; }
-  void SetRefNo(long r) { refNo = -r - 2; }
-
-private:
-  long refNo; // if this site contains a reference to another one
-  // if refNo is negative, then shows whether the definition of this datatype
-  // has been completed
-};
-
-#endif
+void printDSFilter(_DataSetFilter *d);

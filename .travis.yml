@@ -13,7 +13,6 @@ notifications:
 branches:
   only:
     - master
-    - develop
 
 env:
   - METHOD_TEST=tests/hbltests/libv3/SLAC.wbf
