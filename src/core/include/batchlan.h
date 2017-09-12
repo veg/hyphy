@@ -116,6 +116,9 @@ public:
     _String*    GetNameSpace                (void);
     _String const    AddNameSpaceToID            (_String const&, _String const * = nil);
     _String     TrimNameSpaceFromID         (_String&);
+  
+    bool        has_stdin_redirect         (void) const {return stdinRedirect != nil;}
+  
     _String*    FetchFromStdinRedirect      (void);
     _ElementaryCommand* FetchLastCommand (void) {
         if (currentCommand - 1 < lLength && currentCommand > 0) {
@@ -214,7 +217,6 @@ public:
     void      ExecuteDataFilterCases (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
-    void      ExecuteCase25  (_ExecutionList&, bool = false); // fscanf
     void      ExecuteCase31  (_ExecutionList&); // model construction
     void      ExecuteCase32  (_ExecutionList&); // list selection handler
     void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
@@ -223,7 +225,6 @@ public:
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
     void      ExecuteCase54  (_ExecutionList&); // Topology
-    void      ExecuteCase57  (_ExecutionList&); // GetNeutralNull
     void      ExecuteCase58  (_ExecutionList&); // Profile Code
     void      ExecuteCase61  (_ExecutionList&); // SCFG
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
@@ -255,6 +256,7 @@ public:
     bool      HandleMPIReceive                      (_ExecutionList&);
     bool      HandleExecuteCommandsCases            (_ExecutionList&, bool do_load_from_file = false, bool do_load_library = false);
     bool      HandleDoSQL                           (_ExecutionList&);
+    bool      HandleFscanf                          (_ExecutionList&, bool is_sscanf = false);
   
     long      get_code                              (void) const { return code; };
     unsigned  long parameter_count                  (void) const { return parameters.countitems();}
@@ -343,23 +345,17 @@ public:
 
     static  bool      ConstructStateCounter (_String&, _ExecutionList&);
 
-    static  bool      ConstructGetNeutralNull
-    (_String&, _ExecutionList&);
-
+  
     static  bool      ConstructProfileStatement
     (_String&, _ExecutionList&);
 
-    static  bool      ConstructDeleteObject
-    (_String&, _ExecutionList&);
-
+ 
     static  bool      ConstructSCFG         (_String&, _ExecutionList&);
 
     static  bool      ConstructBGM          (_String&, _ExecutionList&);
 
-    static  bool      ConstructAssert       (_String&, _ExecutionList&);
-
-    static  bool      SelectTemplateModel   (_String&, _ExecutionList&);
-
+  
+ 
     static  bool      MakeGeneralizedLoop      (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
   
     bool              DecompileFormulae        (void);
@@ -413,6 +409,8 @@ protected:  // data members
     _List       parameters;        // a list of parameters
     _SimpleList simpleParameters;  // a list of numeric parameters
     int         code;              // code describing this command
+    static      const _List        fscanf_allowed_formats;
+  
 
 };
 
@@ -498,7 +496,6 @@ useLastFString                  ,
 getFString                      ,
 defFileString                   ,
 VerbosityLevelString            ,
-hasEndBeenReached               ,
 clearFile                       ,
 keepFileOpen                    ,
 closeFile                       ,

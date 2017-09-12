@@ -164,9 +164,10 @@ namespace hy_env {
           last_model_parameter_list,
           kGetStringFromUser,
           get_data_info_returns_only_the_index,
-          defer_constrain_assignment
+          defer_constrain_assignment,
+          end_of_file
   
     ;
   
-    
+  
 };

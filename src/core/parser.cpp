@@ -533,6 +533,18 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
     }
 
     long    f = LocateVarByName (*name);
+
+    if (f>=0L) {
+      _Variable * existing = FetchVar (f);
+      if (existing->ObjectClass() == TREE) {
+        DeleteVariable (*existing->GetName());
+        f = -1L;
+      }
+      else {
+        return existing;
+      }
+    }
+
     if ( f<0L ) {
         _Variable dummy (*name, isGlobal);
         f = LocateVarByName (*name);
@@ -549,6 +561,17 @@ _Variable* CheckReceptacleCommandIDException (_String const* name, const long id
    }
   
   long    f = LocateVarByName (*name);
+  
+  if (f>=0L) {
+    _Variable * existing = FetchVar (f);
+    if (existing->ObjectClass() == TREE) {
+      DeleteVariable (*existing->GetName());
+      f = -1L;
+    }
+    else {
+      return existing;
+    }
+  }
   
   if (f<0L) {
     _Variable (*name, isGlobal);

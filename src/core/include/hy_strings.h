@@ -666,6 +666,15 @@ public:
        ]
      */
     const _List  Tokenize (_String const& splitter) const;
+    /**
+     * Returns a list from a string split by a any of the valid chars
+     * @param splitter a look table of characters
+     * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
+     *  Revision history
+     -SLKP 20170912 initial impementation
+     
+     */
+    const _List  Tokenize (const bool splitter[256]) const;
   
 
     /**
@@ -747,7 +756,8 @@ public:
      */
  
      long    FindBackwards (const _String& pattern, long start = 0L, long end = kStringEnd) const;
-     /**
+
+    /**
      * Find first occurence of the character between "start" and "end" (inclusive)
      * Uses a sentinel linear search
      * \n\n \b Example: \code _String ("AABBCC").Find('B')\endcode
@@ -761,6 +771,20 @@ public:
      */
     long    Find(const char p, long start = 0L, long to = kStringEnd) const ;
 
+    /**
+     * Find first occurence of the any of the characters marked in the lookup buffer (0/1) between "start" and "end" (inclusive)
+     * Uses a sentinel linear search
+     * \n\n \b Example: \code _String ("AABBCC").Find('B')\endcode
+     * @param lookup The lookup table whioch marks which characters are value
+     * @param start The 0-based index to start searching from
+     * @param end   The 0-based index to search to (inclusive); -1 : end of string
+     * @return Returns the index of the first instance of the pattern, kNotFound (<0) if not found. 2 in the example
+     
+     *  Revision history
+     - SLKP 20170912 introduced
+     */
+  
+    long    Find (const bool lookup[256] , long start = 0L, long to = kStringEnd) const ;
   
      /**
      * Find first occurence of the string between "start" and "end" (inclusive)

@@ -708,6 +708,26 @@ const _List _String::Tokenize(const _String& splitter) const {
   return tokenized;
 }
 
+  //=============================================================
+
+const _List _String::Tokenize(bool const splitter[256]) const {
+  _List tokenized;
+  
+  long cp = 0L, cpp;
+  while ((cpp = Find(splitter, cp)) != kNotFound) {
+    if (cpp > cp) {
+      tokenized < new _String(*this, cp, cpp - 1L);
+    } else {
+      tokenized < new _String;
+    }
+    
+    cp = cpp + 1;
+  }
+  
+  tokenized < new _String(*this, cp);
+  return tokenized;
+}
+
 //=============================================================
 
 const _String _String::Enquote (char quote_char) const {
@@ -825,6 +845,25 @@ long _String::Find(const char p, long start, long end) const {
   
   return kNotFound;
 }
+
+  //=============================================================
+
+long _String::Find(const bool lookup[256], long start, long end) const {
+  if (s_length) {
+    long span = NormalizeRange(start, end);
+    if (span > 0L) {
+      
+      for (unsigned long index = start; index <= end; index ++ ) {
+        if (lookup [s_data[index]]) {
+          return index;
+        }
+      }
+    }
+  }
+  
+  return kNotFound;
+}
+
 
 //=============================================================
 long _String::FindAnyCase (const _String& pattern, long start, long end) const {

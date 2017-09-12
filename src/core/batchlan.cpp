@@ -71,7 +71,6 @@ likeFuncList,   // list of all datasets
 likeFuncNamesList, // list of all dataset filters
 pathNames,
 theModelList,
-allowedFormats,
 batchLanguageFunctions,
 batchLanguageFunctionNames,
 batchLanguageFunctionParameterLists,
@@ -109,7 +108,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 multByFrequencies               ("MULTIPLY_BY_FREQUENCIES"),
                                 defFileString                   ("DEFAULT_FILE_SAVE_NAME"),
                                 VerbosityLevelString            ("VERBOSITY_LEVEL"),
-                                hasEndBeenReached               ("END_OF_FILE"),
                                 useLastDefinedMatrix            ("USE_LAST_DEFINED_MATRIX"),
                                 selectionStrings                ("SELECTION_STRINGS"),
                                 dataPanelSourcePath             ("DATA_PANEL_SOURCE_PATH"),
@@ -217,7 +215,6 @@ _hy_nested_check  isInFunction = _HY_NO_FUNCTION;
 hyFloat  explicitFormMatrixExponential = 0.0,
             messageLogFlag                = 1.0;
 
-long        scanfLastReadPosition         = 0;
 
 extern      _String             MATRIX_AGREEMENT,
             ANAL_COMP_FLAG;
@@ -231,6 +228,14 @@ _AVLList    loadedLibraryPaths  (&loadedLibraryPathsBackend);
 _ExecutionList
 *currentExecutionList = nil;
 
+_List const _ElementaryCommand::fscanf_allowed_formats (new _String ("Number"),
+                                                        new _String ("Matrix"),
+                                                        new _String ("Tree"),
+                                                        new _String ("String"),
+                                                        new _String ("NMatrix"),
+                                                        new _String ("Raw"),
+                                                        new _String ("Lines")
+                                                        );
 
 //____________________________________________________________________________________
 // Function prototypes
@@ -1947,7 +1952,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_EXECUTE_COMMANDS :
         case HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY :
         case HY_HBL_COMMAND_DO_SQL:
-        {
+        case HY_HBL_COMMAND_SIMULATE_DATA_SET: {
             (*string_form) << procedure (code);
         }
 
@@ -1966,11 +1971,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         }
         break;
 
-        case 12: { // data set simulation
-            (*string_form) << procedure (HY_HBL_COMMAND_SIMULATE_DATA_SET);
-        }
-        break;
-
+ 
         case 13: { // a function
             (*string_form) << "function "
                         << parameter_to_string(0)
@@ -2018,7 +2019,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
                 if (theFormat < 0) {
                     (*string_form) << "REWIND";
                 } else {
-                    (*string_form) << ((_String*)allowedFormats (theFormat))->Enquote('(',')');
+                    (*string_form) << ((_String*)_ElementaryCommand::fscanf_allowed_formats.GetItem (theFormat))->Enquote('(',')');
                 }
                 if (p) {
                     (*string_form) << ", ";
@@ -2068,11 +2069,6 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         }
         break;
 
-
-        case 57: { //neutral null
-            (*string_form) << procedure (HY_HBL_COMMAND_GET_NEUTRAL_NULL);
-        }
-        break;
 
         case 58: {
             (*string_form) << hash_pragma (HY_HBL_COMMAND_PROFILE);
@@ -2674,274 +2670,7 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
 
 
 
-//____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf) {
-
-
-    chain.currentCommand++;
-    // first of all obtain the string to be parsed
-    // either read the file into a string or get a string from standard input
-    _String     currentParameter = *(_String*)parameters(0),
-                *data = nil;
-
-    long        p,
-                p2 = 0,
-                r,
-                q,
-                v,
-                t,
-                shifter = simpleParameters.lData[0] < 0;
-
-    bool        skipDataDelete = false;
-
-    _Variable*  iseof          = CheckReceptacle (&hasEndBeenReached,kEmptyString,false);
-
-
-    if (currentParameter==_String("stdin")) { //
-        if (chain.stdinRedirect) {
-            data = chain.FetchFromStdinRedirect ();
-            // echo the input if there is no fprintf redirect in effect
-            _FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
-            if (! (redirect && redirect->theString->nonempty())) {
-              StringToConsole (*data); NLToConsole();
-            }
-
-        } else {
-            if (!CheckEqual(iseof->Compute()->Value(),0) && currentParameter.Equal (&hy_scanf_last_file_path)) {
-                HandleApplicationError ("Ran out of standard input\n");
-                return;
-            }
-            data = new _String (StringFromConsole());
-        }
-    } else {
-        if (issscanf) {
-            currentParameter = chain.AddNameSpaceToID(currentParameter);
-            _FString * sscanfData = (_FString*)FetchObjectFromVariableByType(&currentParameter,STRING);
-            if (!sscanfData) {
-                HandleApplicationError         (currentParameter& " does not refer to a string variable in call to sscanf");
-                return;
-            }
-            data = sscanfData->theString;
-            skipDataDelete = true;
-
-            if (iseof->Compute()->Value() > 0.) {
-                hy_scanf_last_file_path = kEmptyString;
-            }
-
-            if (!currentParameter.Equal (&hy_scanf_last_file_path) || shifter) {
-                hy_scanf_last_file_path     = currentParameter;
-                p = scanfLastReadPosition = 0;
-            } else {
-                p = p2 = scanfLastReadPosition;
-                if (p>=data->length()) {
-                    iseof->SetValue (new _Constant (1.0), false);
-                    return;
-                }
-            }
-        } else {
-            FILE*   inputBuffer;
-            currentParameter = GetStringFromFormula (&currentParameter,chain.nameSpacePrefix);
-            ProcessFileName(currentParameter, false,false,(hyPointer)chain.nameSpacePrefix);
-            if (terminate_execution) {
-                return;
-            }
-            inputBuffer = doFileOpen (currentParameter.get_str(), "rb");
-            if (!inputBuffer) {
-                HandleApplicationError         (currentParameter& " could not be opened for reading by fscanf. Path stack:\n\t" & GetPathStack("\n\t"));
-                return;
-            }
-
-            if (iseof->Compute()->Value()>0) {
-                hy_scanf_last_file_path = kEmptyString;
-            }
-
-            if (!currentParameter.Equal (&hy_scanf_last_file_path) || shifter) {
-                hy_scanf_last_file_path = currentParameter;
-                scanfLastReadPosition = 0;
-            }
-
-            fseek (inputBuffer,0,SEEK_END);
-            p    = ftell (inputBuffer);
-            p   -= scanfLastReadPosition;
-
-            if (p<=0) {
-                iseof->SetValue (new _Constant (1.0), false);
-                fclose(inputBuffer);
-                return;
-            }
-
-            ;
-            rewind (inputBuffer);
-            fseek  (inputBuffer, scanfLastReadPosition, SEEK_SET);
-            data = new _String (inputBuffer, p);
-            fclose (inputBuffer);
-        }
-    }
-    // now that the string has been read in, read in all the terms, ignoring all the characters in between
-    if (!skipDataDelete) {
-        p = 0;    // will be used to keep track of the position in the string
-    }
-
-    r = shifter;
-
-    while (r<simpleParameters.lLength && p<data->length ()) {
-        _String *currentParameter = ProcessCommandArgument((_String*)parameters(r+1-shifter)); // name of the receptacle
-        if (!currentParameter) {
-            DeleteObject (data);
-            return;
-        }
-        if (!currentParameter->IsValidIdentifier(fIDAllowCompound)) {
-            HandleApplicationError (_String ('\\') & *currentParameter & "\" is not a valid identifier in call to fscanf.");
-            DeleteObject (data);
-            return;
-        }
-        _String namespacedParameter (chain.AddNameSpaceToID(*currentParameter));
-
-        v = LocateVarByName (namespacedParameter);
-        if (v<0) {
-            if (simpleParameters.lData[r]!=2) {
-                v = CheckReceptacle(&namespacedParameter,kEmptyString,false)->GetAVariable();
-            }
-        } else {
-            if (simpleParameters.lData[r]==2)
-                if (FetchVar(v)->ObjectClass()==TREE) {
-                    DeleteVariable(*FetchVar(v)->GetName());
-                }
-        }
-
-
-        _Variable * theReceptacle = FetchVar(v); //this will return nil for TREE
-
-        if (simpleParameters.lData[r]==0) { // number
-            q = p;
-
-            // TODO: 20170623 SLKP CHANGE: use a reg-exp to match numbers
-
-
-            _SimpleList numerical_match (data->RegExpMatch(hy_float_regex, q));
-
-            if (numerical_match.empty()) {
-              break;
-            }
-
-            theReceptacle->SetValue (new _Constant (data->Cut (numerical_match(0), numerical_match(1)).to_float ()), false);
-            q = data->FirstNonSpaceIndex(numerical_match (1) + 1, kStringEnd);
-
-
-        } else {
-            if (simpleParameters.lData[r]==3) { // string
-                q=0;
-                bool  startFound=false;
-                while (q+p<data->length ()) {
-                    char c = data->char_at (q+p);
-                    if (!startFound) {
-                        if (!isspace(c)) {
-                            p+=q;
-                            startFound = true;
-                            q=0;
-                        }
-                    } else if (c=='\n' || c=='\r' || c=='\t') {
-                        break;
-                    }
-                    q++;
-                }
-                if (startFound) {
-                    theReceptacle->SetValue (new _FString (new _String(*data,p,q+p-1)),false);
-                } else {
-                    theReceptacle->SetValue (new _FString, false);
-                }
-
-                p+=q;
-                r++;
-                continue;
-            } else if (simpleParameters.lData[r]==5) { // raw
-                theReceptacle->SetValue (new _FString (new _String (*data,p,kStringEnd)), false);
-                p = data->length();
-                r++;
-                continue;
-            } else {
-                if (simpleParameters.lData[r]==6) { // lines
-                    _String  inData  (*data,p,-1);
-
-                    _List     lines;
-
-                    long      lastP = 0,
-                              loopP = 0;
-
-                    for (loopP = 0; loopP < inData.length(); loopP ++) {
-                        if (inData.char_at (loopP) == '\r' || inData.char_at (loopP) == '\n') {
-                            if (lastP<loopP) {
-                                lines.AppendNewInstance (new _String (inData,lastP, loopP-1));
-                            } else {
-                                lines.AppendNewInstance (new _String);
-                            }
-
-                            lastP = loopP+1;
-
-
-                            if (lastP < inData.length () && (inData.char_at (lastP) == '\r' || inData.char_at (lastP) == '\n') && (inData.char_at (lastP) != inData.char_at (lastP-1))) {
-                                lastP++;
-                            }
-
-                            loopP = lastP-1;
-                        }
-                    }
-
-                    if (lastP < inData.length () && lastP<loopP) {
-                        lines.AppendNewInstance (new _String (inData,lastP, loopP-1));
-                    } else if (lines.lLength == 0) {
-                        lines.AppendNewInstance(new _String);
-                    }
-
-                    theReceptacle->SetValue (new _Matrix (lines), false);
-                    p = data->length();
-                    r++;
-                    continue;
-                } else {
-
-                    // TODO: 20170623 SLKP CHANGE: use expression extractor
-
-                    q = data->ExtractEnclosedExpression(p, (simpleParameters.lData[r]==2)?'(':'{', (simpleParameters.lData[r]==2)?')':'}', fExtractRespectQuote | fExtractRespectEscape);
-
-                    if (q == kNotFound) {
-                        p = data->length ();
-                        break;
-                    }
-
-                    _String object_data (*data, p, q);
-
-                    if (simpleParameters.lData[r] != 2) { // matrix
-                        _Matrix *newMatrixValue = new _Matrix (object_data,simpleParameters.lData[r]==4);
-                        theReceptacle->SetValue (newMatrixValue, false);
-                    } else {
-                        long  varID = LocateVarByName (namespacedParameter);
-                        if (varID>=0 && FetchVar(varID)->ObjectClass()==TREE) {
-                              DeleteVariable(*FetchVar(varID)->GetName());
-                        }
-                        _TheTree (namespacedParameter, object_data);
-                    }
-                }
-            }
-        }
-        p = q+1;
-        r++;
-    }
-
-    if (r<simpleParameters.lLength) {
-        HandleApplicationError ("fscanf could not read all the parameters requested.");
-        iseof->SetValue (new _Constant (1.0), false);
-    } else {
-        iseof->SetValue (new _Constant (0.0), false);
-    }
-
-    if (skipDataDelete) {
-        scanfLastReadPosition += p-p2;
-    } else {
-        scanfLastReadPosition += p;
-        DeleteObject (data);
-    }
-}
 //____________________________________________________________________________________
 
 void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
@@ -4142,7 +3871,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
     case 25: // fscanf
     case 56: // sscanf
 
-        ExecuteCase25 (chain,code == 56);
+        HandleFscanf (chain,code == 56);
         break;
 
     case HY_HBL_COMMAND_USE_MODEL:
@@ -4229,9 +3958,6 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         return HandleAlignSequences (chain);
         break;
 
-    case 57:
-        ExecuteCase57 (chain);
-        break;
 
     case 58:
         ExecuteCase58 (chain);
@@ -5260,42 +4986,6 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
 
 //____________________________________________________________________________________
 
-/*bool    _ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target)
-
-{
-
-    _ElementaryCommand  *fpr = (_ElementaryCommand*)checkPointer(new _ElementaryCommand (8));
-
-    long     lastStart = 8;
-    bool     done      = false;
-
-    _String  comma (",");
-
-    while (!done) {
-        long lastEnd = source.FindTerminator(lastStart,comma);
-        if (lastEnd < 0) {
-            lastEnd = source.sLength-2;
-            done = true;
-        }
-        _String *thisArgument = new _String (source, lastStart, lastEnd-1);
-
-        if (fpr->parameters.lLength && thisArgument->IsALiteralArgument(true)) {
-            fpr->simpleParameters << fpr->parameters.lLength;
-            _FString converted (*thisArgument, true);
-            fpr->parameters << converted.theString;
-            DeleteObject (thisArgument);
-        } else {
-            fpr->parameters.AppendNewInstance (thisArgument);
-        }
-        lastStart = lastEnd + 1;
-    }
-
-    fpr->addAndClean(target, nil, 0);
-    return true;
-}*/
-
-//____________________________________________________________________________________
-
 bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&target)
 // syntax:
 // fscanf (stdin or "file name" or PROMPT_FOR_FILE, "argument descriptor", list of arguments to be read);
@@ -5304,16 +4994,6 @@ bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&targ
 // list of arguments to be read specifies which variables will receive the values
 
 {
-    if (!allowedFormats.lLength) {
-        allowedFormats.AppendNewInstance (new _String ("Number"));
-        allowedFormats.AppendNewInstance (new _String ("Matrix"));
-        allowedFormats.AppendNewInstance (new _String ("Tree"));
-        allowedFormats.AppendNewInstance (new _String ("String"));
-        allowedFormats.AppendNewInstance (new _String ("NMatrix"));
-        allowedFormats.AppendNewInstance (new _String ("Raw"));
-        allowedFormats.AppendNewInstance (new _String ("Lines"));
-    }
-
     _ElementaryCommand  *fscan = new _ElementaryCommand (source.BeginsWith (blsscanf)?56:25);
     _List               arguments, argDesc;
     long                f,p, shifter = 0;
@@ -5337,7 +5017,7 @@ bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&targ
     ExtractConditions   (*((_String*)arguments(1+shifter)),0,argDesc,',');
 
     for (f = 0; f<argDesc.lLength; f++) {
-        p = allowedFormats.FindObject(argDesc(f));
+        p = _ElementaryCommand::fscanf_allowed_formats.FindObject(argDesc(f));
         if (p==-1) {
             HandleApplicationError ( *((_String*)argDesc(f))&" is not a valid type descriptor for fscanf. Allowed ones are:"& _String((_String*)allowedFormats.toStr()));
             DeleteObject (fscan);

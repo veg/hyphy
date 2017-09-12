@@ -58,7 +58,6 @@ using     namespace hy_env;
 
 extern _SimpleList freeSlots;
 extern  hyTreeDefinitionPhase       isDefiningATree;
-extern  _String                         hy_scanf_last_file_path;
 
 
 /*bool        terminate_execution  = false;
