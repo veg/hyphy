@@ -37,9 +37,13 @@ io.DisplayAnalysisBanner({
 protein_gtr.filename_to_index = terms.data.filename_to_index;
 protein_gtr.logl = terms.fit.log_likelihood;
 protein_gtr.phase = terms.fit.phase;
-
+protein_gtr.json.information = "information";
 protein_gtr.baseline_phase = "Baseline Phase";
 
+protein_gtr.options.convergence_type = "convergence type";
+protein_gtr.options.tolerance        = "tolerance";
+protein_gtr.options.baseline_model   = "baseline model";
+protein_gtr.options.rate_variation   = "use rate variation";
 
 /********************************************** MENU PROMPTS ********************************************************/
 /********************************************************************************************************************/
@@ -48,7 +52,9 @@ protein_gtr.baseline_phase = "Baseline Phase";
 
 SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
 fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
-protein_gtr.cache_file = utility.getGlobalValue("LAST_FILE_PATH") + ".cache";
+protein_gtr.listfile = utility.getGlobalValue("LAST_FILE_PATH");
+protein_gtr.cache_file = protein_gtr.listfile  + ".cache";
+protein_gtr.json_file = protein_gtr.listfile  + ".json";
 protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
 protein_gtr.file_list_count = Abs (protein_gtr.file_list);
 
@@ -146,7 +152,6 @@ for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) 
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                                     "Dispatching file '" + cached_file);
 
-        // Four category Gamma
          mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitBaselineToFile", {"0" : protein_gtr.file_list[file_index]},
                                                             "protein_gtr.handle_baseline_callback");
 
@@ -161,6 +166,8 @@ protein_gtr.baseline_fit_logL = math.Sum (utility.Map (utility.Filter (protein_g
 io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                             "Overall Log(L) = " + protein_gtr.baseline_fit_logL);
 
+
+//io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
 
 
 /*************************** STEP TWO ***************************
@@ -270,6 +277,6 @@ if (utility.Has (protein_gtr.analysis_results, result_key, None)) {
 }
 
 
-
-
-
+/* Save the JSON */
+loaded_cache = io.LoadCacheFromFile(protein_gtr.cache_file);
+io.SpoolJSON(loaded_cache, protein_gtr.json_file);
