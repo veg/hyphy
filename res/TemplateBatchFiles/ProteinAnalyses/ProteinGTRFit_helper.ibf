@@ -227,7 +227,7 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
         }
         // fit the model
         protein_gtr.rev.mle = estimators.FitSingleModel_Ext (
-                                            utility.Map (filter_info, "_value_", "_value_['name']"),
+                                            utility.Map (filter_info, "_value_", "_value_[terms.data.name]"),
                                             trees,
                                             protein_gtr.rev_model_branch_lengths,
                                             initial_values,
@@ -329,7 +329,7 @@ function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
 function protein_gtr.run_gtr_iteration_branch_lengths () {
     protein_gtr.fit_phase += 1;
 
-    protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules () ,
+    protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules ("libv3/") ,
                                             "Functions" :
                                             {
                                                 {"protein_gtr.REV.ModelDescription",

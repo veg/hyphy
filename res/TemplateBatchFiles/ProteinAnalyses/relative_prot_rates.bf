@@ -1,9 +1,19 @@
-RequireVersion("2.31");
-LoadFunctionLibrary("libv3/function-loader.bf");
+RequireVersion("2.3.3");
+
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+LoadFunctionLibrary("libv3/stats.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
+
+LoadFunctionLibrary("libv3/tasks/ancestral.bf");
+LoadFunctionLibrary("libv3/tasks/alignments.bf");
+LoadFunctionLibrary("libv3/tasks/estimators.bf");
+LoadFunctionLibrary("libv3/tasks/trees.bf");
+LoadFunctionLibrary("libv3/tasks/mpi.bf");
+LoadFunctionLibrary("libv3/convenience/math.bf");
 
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
 LoadFunctionLibrary("libv3/models/protein/REV.bf");
-
 LoadFunctionLibrary("plusF_helper.ibf");
 
 /*------------------------------------------------------------------------------*/
@@ -28,9 +38,15 @@ SetDialogPrompt ("Specify a protein multiple sequence alignment file");
 
 
 relative_prot_rates.alignment_info       = alignments.ReadNucleotideDataSet ("relative_prot_rates.dataset", None);
-relative_prot_rates.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relative_prot_rates.alignment_info[utility.getGlobalValue("terms.data.partitions")], None);
-relative_prot_rates.partition_count = Abs (relative_prot_rates.partitions_and_trees);
 
+name_mapping = relative_prot_rates.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
+if (None == name_mapping) {  
+    name_mapping = {};
+    utility.ForEach (alignments.GetSequenceNames (relative_prot_rates.alignment_info), "_value_", "`&name_mapping`[_value_] = _value_");
+} 
+relative_prot_rates.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relative_prot_rates.alignment_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+
+relative_prot_rates.partition_count      = Abs (relative_prot_rates.partitions_and_trees);
 io.CheckAssertion ("relative_prot_rates.partition_count==1", "This analysis can only handle a single partition");
 
 
@@ -38,6 +54,7 @@ io.ReportProgressMessageMD ("relative_prot_rates", "Data", "Input alignment desc
 io.ReportProgressMessageMD ("relative_prot_rates", "Data", "Loaded **" +
                             relative_prot_rates.alignment_info [terms.data.sequences] + "** sequences, **" +
                             relative_prot_rates.alignment_info [terms.data.sites] + "** sites, and **" + relative_prot_rates.partition_count + "** partitions from \`" + relative_prot_rates.alignment_info [terms.data.file] + "\`");
+
 
 relative_prot_rates.filter_specification = alignments.DefineFiltersForPartitions (relative_prot_rates.partitions_and_trees, "relative_prot_rates.dataset" , "relative_prot_rates.filter.", relative_prot_rates.alignment_info);
 /**********************************************************************************************************************************************/
@@ -193,7 +210,7 @@ estimators.ApplyExistingEstimates ("relative_prot_rates.site_likelihood", relati
 
 relative_prot_rates.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"relative_prot_rates.site_likelihood"}},
 								    terms.mpi.Models : {{"relative_prot_rates.site_model"}},
-								    terms.mpi.Headers : utility.GetListOfLoadedModules (),
+								    terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
 								    terms.mpi.Variables : {{"relative_prot_rates.site_model_scaler_name"}}
 							 });
 
@@ -334,6 +351,5 @@ lfunction relative_prot_rates.store_results (node, result, arguments) {
 	return rate_statistics;
 
 }
-
 
 
