@@ -23,13 +23,6 @@ utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 
 /*------------------------------------------------------------------------------*/
 
-absrel.json    = {
-                    terms.json.input: {},
-                    terms.json.fits : {},
-                    terms.json.timers : {},
-                    terms.json.test_results : {}
-                  };
-
 absrel.max_rate_classes  = 5;
 absrel.p_threshold = 0.05;
 
@@ -68,7 +61,17 @@ absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site ran
                            terms.io.requirements : "in-frame codon alignment and a phylogenetic tree"
                           };
 
+
 io.DisplayAnalysisBanner ( absrel.analysis_description );
+
+absrel.json    = {
+                    terms.json.analysis: absrel.analysis_description, 
+                    terms.json.input: {},
+                    terms.json.fits : {},
+                    terms.json.timers : {},
+                    terms.json.test_results : {}
+                  };
+                  
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Overall", 0);
 
