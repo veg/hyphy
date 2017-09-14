@@ -93,11 +93,17 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 set(DEFAULT_WARNING_FLAGS "-w")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
+
+
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     execute_process(
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
         OUTPUT_VARIABLE GCC_VERSION
     )
+
+    if (${GCC_VERSION} VERSION_LESS 4.9)
+        message(FATAL_ERROR "Require at least gcc-4.9")
+    endif()
 
     if(${GCC_VERSION} VERSION_LESS 6.0)
       set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
