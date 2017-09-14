@@ -112,16 +112,6 @@ utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BU
 selection.io.stopTimer (busted.json [terms.json.timers], "Preliminary model fitting");
 
 
-
-selection.io.json_store_lf (busted.json,
-                            busted.MG94,
-                            busted.final_partitioned_mg_results[terms.fit.log_likelihood],
-                            busted.final_partitioned_mg_results[terms.parameters] ,
-                            busted.codon_data_info[terms.data.sample_size],
-                            busted.report_dnds, 
-                            busted.display_orders[busted.MG94]);
-
-
 //Store MG94 to JSON
 selection.io.json_store_lf_GTR_MG94 (busted.json,
                             busted.MG94,
