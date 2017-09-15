@@ -173,8 +173,6 @@ function protein_gtr.fitBaselineToFile (filename) {
 
     protein_gtr.normalized_qij = plusF_helper.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.baseline_Rij, models.protein.alphabet);
 
-    fprintf ("/tmp/hyphy", CLEAR_FILE, Call(protein_gtr.final_baseline_model,"") );
-
     protein_gtr.baseline_mle = estimators.FitSingleModel_Ext(protein_gtr.full_data_filter,
                                                         protein_gtr.full_trees,
                                                         protein_gtr.final_baseline_model,
