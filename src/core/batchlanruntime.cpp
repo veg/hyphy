@@ -2766,7 +2766,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     long     current_stream_position = 0L,
              started_here_position   = 0L;
     
-    unsigned long      has_rewind  = simpleParameters.Element(0L) < 0 ? 1UL : 0UL;
+    unsigned long      has_rewind  = simpleParameters.Element(-1L) < 0 ? 1UL : 0UL;
     
     _String * input_data = nil;
     
@@ -2845,9 +2845,10 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
       }
     }
       
-    unsigned long argument_index = has_rewind ? 1UL : 0L;
+    unsigned long argument_index = 0UL,
+                  upper_bound = has_rewind ? simpleParameters.countitems() - 1L : simpleParameters.countitems();
     
-    while (argument_index < simpleParameters.countitems() && current_stream_position < input_data->length()) {
+    while (argument_index < upper_bound && current_stream_position < input_data->length()) {
       _Variable * store_here = _ValidateStorageVariable (current_program, argument_index + 1UL - has_rewind);
      
       long   lookahead = current_stream_position;
@@ -2899,13 +2900,44 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
         
         case 6L: { // Lines
           
+          
+          
           _String   line_block  (*input_data,current_stream_position,kStringEnd);
-          bool      splitter[256];
-          InitializeArray(splitter, 256, false);
-          splitter [(unsigned char)'\n]'] = true;
-          splitter [(unsigned char)'\r]'] = true;
+          
+            // break the line block by any of the three platform line breaks
+            // \r, \n or \r\n
+          _List lines;
+          long  last_break = 0L;
+          
+          auto add_buffer = [&] (long s, long e) -> void {
+            if (e > s) {
+              lines.AppendNewInstance(new _String (line_block, s, e-1));
+            } else {
+              lines.AppendNewInstance(new _String (kEmptyString));
+            }
+          };
+          
+          for (long i = 0UL; i < line_block.length(); i++) {
+              char current_char = line_block.char_at(i);
+              if (current_char == '\n') {
+                add_buffer (last_break, i);
+                last_break = i + 1L;
+              } else {
+                if (current_char == '\r') {
+                  add_buffer (last_break, i);
+                  if (line_block.char_at(i + 1L) == '\n') {
+                    i ++;
+                  }
+                  last_break = i + 1L;
+                }
+              }
+          }
+          
+          if (last_break < line_block.length()) {
+            add_buffer (last_break, line_block.length () - 1UL);
+          }
         
-          store_here->SetValue (new _Matrix (line_block.Tokenize(splitter)), false);
+          store_here->SetValue (new _Matrix (lines, false), false);
           lookahead = input_data->length();
           
         }
@@ -2955,6 +2987,120 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
   
 }
 
+  //____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program) {
+  
+  auto   handle_exclusions = [] (long count, _SimpleList & excluded) -> const _SimpleList {
+    _SimpleList lfids;
+    lfids.Subtract(_SimpleList(likeFuncNamesList.countitems(), 0L, 1L), excluded);
+    return lfids;
+  };
+  
+  static const _String kSkipNone ("SKIP_NONE"),
+                       kLikelihoodFunctions ("LikelihoodFunction");
+  
+  current_program.advance();
+  
+  _Variable * receptacle = nil;
+
+  _List   local_dynamic_manager;
+  
+
+  try {
+  
+    receptacle = _ValidateStorageVariable (current_program);
+  
+    long    number_of_choices = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2UL),current_program.nameSpacePrefix);
+    _String dialog_title      = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program),
+            exclusions        = *GetIthParameter(3UL);
+  
+    _SimpleList selections,
+                excluded;
+  
+  
+    if (exclusions != kSkipNone) {
+      try {
+        _PMathObj exlcusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
+        if (exlcusion_argument->ObjectClass() == NUMBER) {
+          excluded << exlcusion_argument->Compute ()->Value();
+        } else {
+          ((_Matrix*)exlcusion_argument)->ConvertToSimpleList (excluded);
+          excluded.Sort();
+        }
+      } catch (_String const & e) {
+          // no exclusions, so do nothing
+      }
+    }
+    
+    _List  * available_choices = nil;
+    
+    if (simpleParameters.Element(0UL)) {
+        // dynamically generated list of options
+        _String const choices_parameter = *GetIthParameter(4UL);
+        local_dynamic_manager < (available_choices = new _List);
+    
+        if (choices_parameter == kLikelihoodFunctions) {
+            // the list consists of all defined likelihood function objects
+            
+            handle_exclusions (likeFuncNamesList.countitems(), excluded).Each([&] (long value) -> void {
+              if (likeFuncList.GetItem(value)) {
+                _String const * lf_name = (_String*) likeFuncNamesList (value);
+                (*available_choices) < new _List (new _String (*lf_name), new _String ( _String ("Likelihood Function ") & *lf_name & "."));
+              }
+            });
+        } else {
+            // see if the argument is a reference to one of the standard HBL objects
+            const _String source_name   = AppendContainerName (choices_parameter, current_program.nameSpacePrefix);
+          
+            long          object_type = HY_BL_DATASET_FILTER | HY_BL_DATASET | HY_BL_MODEL,
+                          object_index;
+          
+          
+            try {
+              BaseRefConst       source_object = _GetHBLObjectByType (source_name, object_type, &object_index);
+              switch (object_type) {
+                case HY_BL_DATASET: {
+                  _DataSet const *ds = (_DataSet const*) source_object;
+                  handle_exclusions (ds->NoOfSpecies(), excluded).Each (
+                      [&] (long value) -> void {
+                        _String const * sequence_name = ds->GetSequenceName(value);
+                        (*available_choices) < new _List (new _String (*sequence_name), new _String ( _String ("Taxon ") & (value + 1L) & sequence_name->Enquote('(', ')') & "."));
+                      }
+                  );
+                  break;
+                }
+                case HY_BL_DATASET_FILTER: {
+                  _DataSetFilter const *df = (_DataSetFilter const*) source_object;
+                  handle_exclusions (df->NumberSpecies(), excluded).Each (
+                        [&] (long value) -> void {
+                          _String const * sequence_name = df->GetSequenceName(value);
+                          (*available_choices) < new _List (new _String (*sequence_name), new _String ( _String ("Taxon ") & (value + 1L) & sequence_name->Enquote('(', ')') & "."));
+                        }
+                  );
+                  break;
+                }
+              }
+            } catch (_String const & e) {
+                // not an object
+              
+            }
+
+        }
+      
+    } else {
+      available_choices = (_List*)parameters.GetItem(4UL);
+    }
+    
+  
+    
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (receptacle, error, current_program);
+  }
+  
+  return true;
+  
+}
 
 
 

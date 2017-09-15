@@ -172,8 +172,6 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("ExecuteCommands(",                     HY_HBL_COMMAND_EXECUTE_COMMANDS);
     _HY_ValidHBLExpressions.Insert ("ExecuteAFile(",                        HY_HBL_COMMAND_EXECUTE_A_FILE);
     _HY_ValidHBLExpressions.Insert ("LoadFunctionLibrary(",					HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY);
-    _HY_ValidHBLExpressions.Insert ("OpenWindow(",                          HY_HBL_COMMAND_OPEN_WINDOW);
-    _HY_ValidHBLExpressions.Insert ("SpawnLikelihoodFunction(",				HY_HBL_COMMAND_SPAWN_LIKELIHOOD_FUNCTION);
     _HY_ValidHBLExpressions.Insert ("FindRoot(",                            HY_HBL_COMMAND_FIND_ROOT);
     _HY_ValidHBLExpressions.Insert ("MPIReceive(",                          HY_HBL_COMMAND_MPI_RECEIVE);
     _HY_ValidHBLExpressions.Insert ("MPISend(",                             HY_HBL_COMMAND_MPI_SEND);
@@ -385,6 +383,22 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 -2, 
                                                                 "MolecularClock(tree or tree node, local variable 1 [optional ,<local variable 2>, ..., <local variable N>])",','));
 
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FSCANF,
+                                  (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("fscanf(", HY_HBL_COMMAND_FSCANF,false),
+                                                              -3,
+                                                              _String ("fscanf(file path (string),<optional 'REWIND'>,'type 1 (") & _String ((_String*)_ElementaryCommand::fscanf_allowed_formats.Join('|')) & ")[optional , <type 2>, ... <type N>]', var1 [optional , <var 2>, ... <var N>])",','));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SSCANF,
+                                  (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("sscanf(", HY_HBL_COMMAND_SSCANF,false),
+                                                              -3,
+                                                              _String ("sscanf(string,<optional 'REWIND'>,'type 1 (") & _String ((_String*)_ElementaryCommand::fscanf_allowed_formats.Join('|')) & ")[optional , <type 2>, ... <type N>]', var1 [optional , <var 2>, ... <var N>])",','));
+  
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CHOICE_LIST,
+                                  (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ChoiceList(", HY_HBL_COMMAND_CHOICE_LIST,false),
+                                                              -5,
+                                                              _String ("ChoiceList(store_here {ID}, title {String}, how many choices (0 for any number >= 1) {Integer}, [SKIP_NODE | list of indices not to show as options], [source object | comma separated list of 'key', 'description' pairs]"),
+                                                              ','));
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FPRINTF,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("fprintf(", HY_HBL_COMMAND_FPRINTF,false),

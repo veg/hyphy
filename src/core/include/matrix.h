@@ -118,7 +118,7 @@ public:
     // to make a matrix with C elements per row
     // if <= 0 - a row matrix is returned
 
-    _Matrix ( _List const &);                         //make string matrix from a list
+    _Matrix ( _List const &, bool parse_escapes = true);                         //make string matrix from a list
 
     _Matrix (hyFloat *, unsigned long, unsigned long);
     /*

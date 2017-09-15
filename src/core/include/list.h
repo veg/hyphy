@@ -333,7 +333,7 @@ class _List:public _SimpleList {
         * @return A pointer to the new string 
         * @sa Find()
         */
-        BaseRef Join(_String const& spacer, long startAt = 0, long endAt = -1) const;
+        _String* Join(_String const& spacer, long startAt = 0, long endAt = -1) const;
 
         /**
         * Identical to << operator. Places new value at the end of the list.

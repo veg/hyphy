@@ -554,9 +554,9 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
 }
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacleCommandIDException (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
-{
-  if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
+_Variable* CheckReceptacleCommandIDException (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context) {
+    // TODO: allow ^name and such to constitute valid run-time references
+   if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
     throw  (name->Enquote('\'') & " is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.');
    }
   

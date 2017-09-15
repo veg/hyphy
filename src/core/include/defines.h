@@ -291,8 +291,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_EXECUTE_COMMANDS                               538L
 #define   HY_HBL_COMMAND_EXECUTE_A_FILE                                 539L
 #define   HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY                          541L
-#define   HY_HBL_COMMAND_OPEN_WINDOW                                    542L
-#define   HY_HBL_COMMAND_SPAWN_LIKELIHOOD_FUNCTION                      543L
 #define   HY_HBL_COMMAND_DIFFERENTIATE                                  544L
 #define   HY_HBL_COMMAND_FIND_ROOT                                      545L
 #define   HY_HBL_COMMAND_MPI_RECEIVE                                    546L

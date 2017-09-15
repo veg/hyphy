@@ -284,7 +284,7 @@ _List& _List::operator << (_List const& source) {
 
 _List& _List::operator < (_List const& source) {
   for (unsigned long k=0UL; k<source.lLength; k++) {
-    (*this) << ((BaseRef*)source.lData)[k];
+    (*this) < ((BaseRef*)source.lData)[k];
   }
   return *this;
 }
@@ -543,7 +543,7 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
     }
 }
 
-BaseRef  _List::Join (_String const & spacer, long startAt, long endAt) const {
+_String*  _List::Join (_String const & spacer, long startAt, long endAt) const {
     _StringBuffer *joined = new _StringBuffer (256L);
     if (endAt < 0) { 
         endAt = lLength; 

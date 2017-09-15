@@ -188,6 +188,12 @@ public:
     _Matrix                         *profileCounter;
 
     _CELInternals                   *cli;
+  
+    protected:
+        void       BuildExecuteCommandInstruction (_List * pieces, long code);
+        void       BuildFscanf                    (_List * pieces, long code);
+        void       BuildChoiceList                (_List * pieces, long code);
+
 
 };
 
@@ -218,8 +224,6 @@ public:
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
     void      ExecuteCase31  (_ExecutionList&); // model construction
-    void      ExecuteCase32  (_ExecutionList&); // list selection handler
-    void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
     void      ExecuteCase52  (_ExecutionList&); // Simulate
@@ -257,6 +261,7 @@ public:
     bool      HandleExecuteCommandsCases            (_ExecutionList&, bool do_load_from_file = false, bool do_load_library = false);
     bool      HandleDoSQL                           (_ExecutionList&);
     bool      HandleFscanf                          (_ExecutionList&, bool is_sscanf = false);
+    bool      HandleChoiceList                      (_ExecutionList&);
   
     long      get_code                              (void) const { return code; };
     unsigned  long parameter_count                  (void) const { return parameters.countitems();}
@@ -318,13 +323,8 @@ public:
     static  bool      ConstructTree         (_String&, _ExecutionList&);
     // construct a tree
 
-    static  bool      ConstructFscanf       (_String&, _ExecutionList&);
-    // construct a fscanf command
 
-    static  bool      ConstructExecuteCommands
-    (_String&, _ExecutionList&);
-    // construct a fscanf command
-
+ 
     static  bool      ConstructLF           (_String&, _ExecutionList&);
     // construct a likelihood function
 
@@ -371,6 +371,8 @@ public:
      as well.
      
      */
+  
+     static      const _List        fscanf_allowed_formats;
 
 
 protected:
@@ -391,7 +393,7 @@ protected:
     // to build a jump command
     // with two branches
     // and a condition
-
+  
     void       addAndClean            (_ExecutionList&, _List* = nil, long = 0);
     void       appendCompiledFormulae (_Formula *, _Formula* = nil);
 
@@ -400,7 +402,8 @@ protected:
     friend  void      DeleteVariable     (long, bool);
     friend  void      UpdateChangingFlas (long);
     friend  void      UpdateChangingFlas (_SimpleList&);
-    
+
+
 private:
     _Variable* _ValidateStorageVariable (_ExecutionList& program, unsigned long argument_index = 0UL) const;
 
@@ -409,7 +412,6 @@ protected:  // data members
     _List       parameters;        // a list of parameters
     _SimpleList simpleParameters;  // a list of numeric parameters
     int         code;              // code describing this command
-    static      const _List        fscanf_allowed_formats;
   
 
 };

@@ -134,8 +134,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 gdiDFAtomSize                   ("ATOM_SIZE"),
                                 marginalAncestors               ("MARGINAL"),
                                 doLeavesAncestors               ("DOLEAVES"),
-                                blScanfRewind                   ("REWIND"),
-                                dialogPrompt,
+                                 dialogPrompt,
                                 hy_scanf_last_file_path,
                                 defFileNameValue;
 
@@ -180,7 +179,6 @@ blGetInformation           ("GetInformation("),
 blExecuteCommands      ("ExecuteCommands("),
 blExecuteAFile         ("ExecuteAFile("),
 blLoadFunctionLibrary      ("LoadFunctionLibrary("),
-blOpenWindow               ("OpenWindow("),
 blDifferentiate            ("Differentiate("),
 blFindRoot             ("FindRoot("),
 blMPIReceive               ("MPIReceive("),
@@ -1499,22 +1497,129 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID) {
     return theID;
 }
 
+  //____________________________________________________________________________________
 
-/*
+void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
+  _ElementaryCommand * choice_list = new _ElementaryCommand (code);
+  
+  choice_list->parameters << pieces->GetItem(0L)
+                          << pieces->GetItem(1L)
+                          << pieces->GetItem(2L)
+                          << pieces->GetItem(3L);
+  
+  if (pieces->countitems() > 5UL) { // expliit list of choices
+    
+    if (pieces->countitems() % 2 > 0) {
+      DeleteObject(choice_list);
+      throw ("Must have an even number of arguments for explicitly enumerated choice - description pairs");
+    }
+    
+    _List * choices = new _List;
+    
+    for (unsigned long k = 4UL; k < pieces->countitems(); k+=2) {
+        _String * selector    = new _String (*(_String*)pieces->GetItem(k)),
+                * desription  = new _String (*(_String*)pieces->GetItem(k+1));
+        selector->StripQuotes(); desription->StripQuotes();
+        choices < new _List (selector,desription);
+    }
+    
+    choice_list->simpleParameters << 0L;
+  } else {
+    choice_list->parameters << pieces->GetItem(4L);
+    choice_list->simpleParameters << 1L;
+  }
+  
+  choice_list->addAndClean (*this);
 
-  holds all the expressions that require that spaces between them and the next expressions be
-  maintained, like
+}
 
-  return expr
-  DataSet expr =
-  DateSetFilter expr =
+  //____________________________________________________________________________________
 
-  if (expr) is an identifier, then the spaces will be maintained, otherwise they will
-  be squished, causing incorrect behavior (like DataSet(expr) will gets parsed as a formula)
+void  _ExecutionList::BuildExecuteCommandInstruction (_List * pieces, long code) {
 
-  initialized in _HBL_Init_Const_Arrays
+  _ElementaryCommand * run_source = new _ElementaryCommand (code);
+  run_source->parameters<<pieces->GetItem(0);
+  
+  if (PeekFilePath()) {
+    run_source->parameters && *PeekFilePath();
+  } else {
+    run_source->parameters.AppendNewInstance(new _String);
+  }
+  
+  if (pieces->countitems() > 1UL) {
+    if (*(_String*)pieces->GetItem (1UL) == _String("compiled")) {
+      run_source->simpleParameters << 1;
+    } else {
+      if (*(_String*)pieces->GetItem (1UL) == _String("enclosing_namespace")) {
+        run_source->parameters.Delete(1UL);
+        run_source->parameters < new _String;
+      } else {
+        run_source->parameters << pieces->GetItem(1UL);
+      }
+    }
+    
+    if (pieces->countitems () > 2UL) {
+      run_source->parameters << pieces->GetItem(2UL);
+    }
+  }
+  run_source->addAndClean (*this);
 
-*/
+}
+
+  //____________________________________________________________________________________
+
+void  _ExecutionList::BuildFscanf(_List * pieces, long code) {
+
+    static _String kFscanfRewind ("REWIND");
+
+    long    names_vs_types_offset = 0L;
+  
+    _List   local_object_manager;
+
+
+    _ElementaryCommand * scanf = new _ElementaryCommand (code);
+    scanf->parameters << pieces->GetItem(0);
+
+    bool                 has_rewind = *(_String*) pieces->GetItem (1) == kFscanfRewind;
+
+
+      // process argument types
+
+    local_object_manager < scanf;
+    _List     argument_types;
+    _String*  argument_type_spec = (_String*)pieces->GetItem(has_rewind ? 2L : 1L);
+    argument_type_spec->StripQuotes();
+    _ElementaryCommand::ExtractConditions(*argument_type_spec, 0, argument_types, ',');
+
+    argument_types.ForEach ([&] (BaseRefConst t) -> void {
+      long argument_type = _ElementaryCommand :: fscanf_allowed_formats.FindObject(t);
+      if (argument_type == kNotFound) {
+        throw (((_String*)t)->Enquote() & " is not one of the supported argument types: " & _ElementaryCommand :: fscanf_allowed_formats.Join (", "));
+      }
+      scanf->simpleParameters << argument_type;
+    }
+                            );
+
+    for (unsigned long index = has_rewind ? 3L : 2L; index < pieces->countitems(); index ++) {
+      scanf->parameters << pieces->GetItem(index);
+    }
+
+    if (scanf->parameters.countitems() + 1UL != scanf->simpleParameters.countitems()) {
+      throw (_String("The numbers of parameter type descriptors (")& _String((long)scanf->simpleParameters.countitems()) &") and arguments ("
+             &_String((long)(scanf->parameters.countitems() - 1UL))& ") did not match");
+    }
+
+    if (has_rewind) {
+      scanf->simpleParameters << -1L;
+    }
+
+    local_object_manager.Pop();
+    scanf->addAndClean (*this);
+}
+
+  //____________________________________________________________________________________
+
+
 bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed, bool empty_is_success) {
     if (terminate_execution) {
         return false;
@@ -1523,256 +1628,236 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
   //char const * savePointer = s.get_str();
 
     _SimpleList          triePath;
+    _List                local_object_manager;
+  
+    try {
 
-    while (s.nonempty ()) { // repeat while there is stuff left in the buffer
-        _String currentLine (_ElementaryCommand::FindNextCommand (s));
+      while (s.nonempty ()) { // repeat while there is stuff left in the buffer
+          _String currentLine (_ElementaryCommand::FindNextCommand (s));
 
-        if (currentLine.get_char(0)=='}') {
-            currentLine.Trim(1,-1);
-        }
+          if (currentLine.get_char(0)=='}') {
+              currentLine.Trim(1,kStringEnd);
+          }
 
-        if (currentLine.nonempty()) {
-            continue;
-        }
+          if (currentLine.nonempty()) {
+              continue;
+          }
 
-        triePath.Clear(false);
-        long prefixTreeCode = _HY_ValidHBLExpressions.FindKey (currentLine, &triePath, true);
+          triePath.Clear(false);
+          long prefixTreeCode = _HY_ValidHBLExpressions.FindKey (currentLine, &triePath, true);
 
-        _List *pieces = nil;
-        _HBLCommandExtras *commandExtraInfo = nil;
+          _List *pieces = nil;
+          _HBLCommandExtras *commandExtraInfo = nil;
 
-        if (prefixTreeCode != kNotFound) {
-            prefixTreeCode = _HY_ValidHBLExpressions.GetValue(prefixTreeCode);
-            long commandExtra = _HY_HBLCommandHelper.FindLong (prefixTreeCode);
-            if (commandExtra >= 0) { // pre-trim all strings as needed
-                commandExtraInfo = (_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra (commandExtra);
-                if (commandExtraInfo->extract_conditions.lLength > 0) {
-                    pieces = new _List;
-                    long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces,commandExtraInfo->extract_condition_separator),
-                         condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
-                    if (condition_index_match < 0) {
-                        // try to see if the command accepts a variable number of arguments (at least X)
-                       _String parseFail;
-                       if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
-                            if (pieces->lLength < -commandExtraInfo->extract_conditions.lData[0]) {
-                                 parseFail = _String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ";
-                             }
-                        } else {
-                            parseFail = _String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ";
-                        }
-                        if (parseFail.nonempty()) {
-                            if (currentExecutionList) {
-                                currentExecutionList->ReportAnExecutionError(parseFail, false, true);
-                            } else {
-                                HandleApplicationError(parseFail);
-                            }
-                            DeleteObject (pieces);
-                            return false;
-                        }
-                    }
-                    if (commandExtraInfo->do_trim) {
-                        currentLine.Trim (upto, -1);
-                    }
-                }
-            }
-        }
-
-        bool handled = false;
-
-        switch (prefixTreeCode) {
-            case HY_HBL_COMMAND_FOR:
-                _ElementaryCommand::BuildFor (currentLine, *this, pieces);
-                handled = true;
-                break;
-            case HY_HBL_COMMAND_WHILE:
-                _ElementaryCommand::BuildWhile (currentLine, *this, pieces);
-                handled = true;
-                break;
-            case HY_HBL_COMMAND_BREAK:
-            case HY_HBL_COMMAND_CONTINUE:
-                if (bc) {
-                    AppendNewInstance(new _ElementaryCommand);
-                    (*bc) << ((prefixTreeCode == HY_HBL_COMMAND_BREAK) ? (countitems()-1) : (-(long)countitems()+1));
-                } else {
-                    HandleApplicationError (currentLine & " only makes sense in the context of a loop.");
-                    return false;
-                }
-                handled = true;
-                break;
-            case HY_HBL_COMMAND_SET_DIALOG_PROMPT:
-            case HY_HBL_COMMAND_HARVEST_FREQUENCIES:
-            case HY_HBL_COMMAND_OPTIMIZE:
-            case HY_HBL_COMMAND_COVARIANCE_MATRIX:
-            case HY_HBL_COMMAND_LFCOMPUTE:
-            case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
-            case HY_HBL_COMMAND_USE_MODEL:
-            case HY_HBL_COMMAND_SET_PARAMETER:
-            case HY_HBL_COMMAND_ASSERT:
-            case HY_HBL_COMMAND_REQUIRE_VERSION:
-            case HY_HBL_COMMAND_DELETE_OBJECT:
-            case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:
-            case HY_HBL_COMMAND_MOLECULAR_CLOCK:
-            case HY_HBL_COMMAND_GET_URL:
-            case HY_HBL_COMMAND_GET_STRING:
-            case HY_HBL_COMMAND_EXPORT:
-            case HY_HBL_COMMAND_DIFFERENTIATE:
-            case HY_HBL_COMMAND_FPRINTF:
-            case HY_HBL_COMMAND_GET_DATA_INFO:
-            case HY_HBL_COMMAND_GET_INFORMATION:
-            case HY_HBL_COMMAND_REPLICATE_CONSTRAINT:
-            case HY_HBL_COMMAND_MPI_SEND:
-            case HY_HBL_COMMAND_MPI_RECEIVE:
-            case HY_HBL_COMMAND_FIND_ROOT:
-            case HY_HBL_COMMAND_ALIGN_SEQUENCES:
-            case HY_HBL_COMMAND_DO_SQL:
-            {
-                  _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
-                  handled = true;
-                  break;
-            }
-            case HY_HBL_COMMAND_EXECUTE_A_FILE:
-            case HY_HBL_COMMAND_EXECUTE_COMMANDS:
-            case HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY: {
-              _ElementaryCommand * run_source = new _ElementaryCommand (prefixTreeCode);
-              run_source->parameters<<pieces->GetItem(0);
-
-              if (PeekFilePath()) {
-                run_source->parameters && *PeekFilePath();
-              } else {
-                run_source->parameters.AppendNewInstance(new _String);
-              }
-
-              if (pieces->countitems() > 1UL) {
-                if (*(_String*)pieces->GetItem (1UL) == _String("compiled")) {
-                  run_source->simpleParameters << 1;
-                } else {
-                  if (*(_String*)pieces->GetItem (1UL) == _String("enclosing_namespace")) {
-                    run_source->parameters.Delete(1);
-                    run_source->parameters < new _String;
-                  } else {
-                    run_source->parameters << pieces->GetItem(1UL);
-                    if (pieces->countitems () > 2UL) {
-                      run_source->parameters << pieces->GetItem(2UL);
-                    }
+          if (prefixTreeCode != kNotFound) {
+              prefixTreeCode = _HY_ValidHBLExpressions.GetValue(prefixTreeCode);
+              long commandExtra = _HY_HBLCommandHelper.FindLong (prefixTreeCode);
+              if (commandExtra >= 0) { // pre-trim all strings as needed
+                  commandExtraInfo = (_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra (commandExtra);
+                  if (!commandExtraInfo->extract_conditions.empty()) {
+                      local_object_manager < (pieces = new _List);
+                    
+                      long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces,commandExtraInfo->extract_condition_separator),
+                           condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
+                      if (condition_index_match < 0) {
+                          // try to see if the command accepts a variable number of arguments (at least X)
+                         if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
+                              if (pieces->lLength < -commandExtraInfo->extract_conditions.lData[0]) {
+                                   throw (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                              } else {
+                                   throw (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                              }
+  
+                         }
+                      }
+                    
+                      if (commandExtraInfo->do_trim) {
+                          currentLine.Trim (upto, kStringEnd);
+                      }
                   }
-                }
               }
-              run_source->addAndClean (*this);
-            }
-            break;
+          }
+
+          bool handled = true;
+
+          switch (prefixTreeCode) {
+              case HY_HBL_COMMAND_FOR:
+                  _ElementaryCommand::BuildFor (currentLine, *this, pieces);
+                 break;
+              case HY_HBL_COMMAND_WHILE:
+                  _ElementaryCommand::BuildWhile (currentLine, *this, pieces);
+                  break;
+              case HY_HBL_COMMAND_BREAK:
+              case HY_HBL_COMMAND_CONTINUE:
+                  if (bc) {
+                      AppendNewInstance(new _ElementaryCommand);
+                      (*bc) << ((prefixTreeCode == HY_HBL_COMMAND_BREAK) ? (countitems()-1) : (-(long)countitems()+1));
+                  } else {
+                      throw (currentLine.Enquote() & " only makes sense in the context of a loop.");
+                   }
+                  break;
+              case HY_HBL_COMMAND_SET_DIALOG_PROMPT:
+              case HY_HBL_COMMAND_HARVEST_FREQUENCIES:
+              case HY_HBL_COMMAND_OPTIMIZE:
+              case HY_HBL_COMMAND_COVARIANCE_MATRIX:
+              case HY_HBL_COMMAND_LFCOMPUTE:
+              case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
+              case HY_HBL_COMMAND_USE_MODEL:
+              case HY_HBL_COMMAND_SET_PARAMETER:
+              case HY_HBL_COMMAND_ASSERT:
+              case HY_HBL_COMMAND_REQUIRE_VERSION:
+              case HY_HBL_COMMAND_DELETE_OBJECT:
+              case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:
+              case HY_HBL_COMMAND_MOLECULAR_CLOCK:
+              case HY_HBL_COMMAND_GET_URL:
+              case HY_HBL_COMMAND_GET_STRING:
+              case HY_HBL_COMMAND_EXPORT:
+              case HY_HBL_COMMAND_DIFFERENTIATE:
+              case HY_HBL_COMMAND_FPRINTF:
+              case HY_HBL_COMMAND_GET_DATA_INFO:
+              case HY_HBL_COMMAND_GET_INFORMATION:
+              case HY_HBL_COMMAND_REPLICATE_CONSTRAINT:
+              case HY_HBL_COMMAND_MPI_SEND:
+              case HY_HBL_COMMAND_MPI_RECEIVE:
+              case HY_HBL_COMMAND_FIND_ROOT:
+              case HY_HBL_COMMAND_ALIGN_SEQUENCES:
+              case HY_HBL_COMMAND_DO_SQL:
+              {
+                    _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
+                    break;
+              }
+              case HY_HBL_COMMAND_EXECUTE_A_FILE:
+              case HY_HBL_COMMAND_EXECUTE_COMMANDS:
+              case HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY: {
+                  BuildExecuteCommandInstruction (pieces, prefixTreeCode);
+               }
+              break;
+              
+              case HY_HBL_COMMAND_FSCANF:
+              case HY_HBL_COMMAND_SSCANF: {
+                BuildFscanf (pieces, prefixTreeCode);
+              }
+              break;
+              
+              case HY_HBL_COMMAND_CHOICE_LIST: {
+                BuildChoiceList(pieces, HY_HBL_COMMAND_CHOICE_LIST);
+              }
+              break;
+              
+              default :
+                handled = false;
+
+          }
 
 
-        }
+          // TODO 20111212: this horrendous switch statement should be replaced with a
+          // prefix tree lookup
 
-        if (handled)
-            DeleteObject (pieces);
+          if (!handled) {
+              if (currentLine.BeginsWith (blFunction)||currentLine.BeginsWith (blFFunction)||currentLine.BeginsWith (blLFunction) || currentLine.BeginsWith (blNameSpace)) { // function declaration
+                  _ElementaryCommand::ConstructFunction (currentLine, *this);
+              } else if (currentLine.BeginsWithAndIsNotAnIdent (blReturnPrefix)) { // function return statement
+                                                                            //StringToConsole(currentLine); NLToConsole();
+                  _ElementaryCommand::ConstructReturn (currentLine, *this);
+              } else if (currentLine.BeginsWith (blIf)) { // if-then-else statement
+                  _ElementaryCommand::BuildIfThenElse (currentLine, *this, bc);
+              } else if (currentLine.BeginsWith (blElse)) { // else clause of an if-then-else statement
+                  if (lastif.countitems()) {
+                      long    temp = countitems(),
+                              lc   = lastif.countitems(),
+                              lif  = lastif.lData[lc-1];
 
-        // TODO 20111212: this horrendous switch statement should be replaced with a
-        // prefix tree lookup
+                      _ElementaryCommand      * stuff = new _ElementaryCommand ();
+                      stuff->MakeJumpCommand  (nil,0,0,*this);
+                      AppendNewInstance       (stuff);
+                      currentLine.Trim        (4,-1);
 
-        if (!handled) {
-            if (currentLine.BeginsWith (blFunction)||currentLine.BeginsWith (blFFunction)||currentLine.BeginsWith (blLFunction) || currentLine.BeginsWith (blNameSpace)) { // function declaration
-                _ElementaryCommand::ConstructFunction (currentLine, *this);
-            } else if (currentLine.BeginsWithAndIsNotAnIdent (blReturnPrefix)) { // function return statement
-                                                                          //StringToConsole(currentLine); NLToConsole();
-                _ElementaryCommand::ConstructReturn (currentLine, *this);
-            } else if (currentLine.BeginsWith (blIf)) { // if-then-else statement
-                _ElementaryCommand::BuildIfThenElse (currentLine, *this, bc);
-            } else if (currentLine.BeginsWith (blElse)) { // else clause of an if-then-else statement
-                if (lastif.countitems()) {
-                    long    temp = countitems(),
-                            lc   = lastif.countitems(),
-                            lif  = lastif.lData[lc-1];
+                      long  index         = currentLine.length ()-1L,
+                            scopeIn     = 0;
 
-                    _ElementaryCommand      * stuff = new _ElementaryCommand ();
-                    stuff->MakeJumpCommand  (nil,0,0,*this);
-                    AppendNewInstance       (stuff);
-                    currentLine.Trim        (4,-1);
+                      while (currentLine.char_at (scopeIn) =='{' && currentLine.char_at (index)=='}') {
+                          scopeIn++;
+                          index--;
+                      }
 
-                    long  index         = currentLine.length ()-1L,
-                          scopeIn     = 0;
+                      if (scopeIn) {
+                          currentLine.Trim (scopeIn,index);
+                      }
 
-                    while (currentLine.char_at (scopeIn) =='{' && currentLine.char_at (index)=='}') {
-                        scopeIn++;
-                        index--;
-                    }
+                      BuildList (currentLine,bc,true);
 
-                    if (scopeIn) {
-                        currentLine.Trim (scopeIn,index);
-                    }
+                      if (lif<0 || lif>=lLength) {
+                          throw ("'else' w/o an if to latch on to...");
+                      }
 
-                    BuildList (currentLine,bc,true);
+                    
+                      ((_ElementaryCommand*)((*this)(lif)))->MakeJumpCommand(nil,-1,temp+1,*this);
+                      ((_ElementaryCommand*)(*this)(temp))->simpleParameters[0]=countitems();
 
-                    if (lif<0 || lif>=lLength) {
-                        HandleApplicationError ("'else' w/o an if to latch on to...");
-                        return false;
-                    }
+                      while (lastif.countitems()>=lc) {
+                          lastif.Delete(lastif.countitems()-1);
+                      }
+                  } else {
+                      throw ("'else' w/o an if to latch on to...");
+                  }
 
-                    ((_ElementaryCommand*)((*this)(lif)))->MakeJumpCommand(nil,-1,temp+1,*this);
-                    ((_ElementaryCommand*)(*this)(temp))->simpleParameters[0]=countitems();
-
-                    while (lastif.countitems()>=lc) {
-                        lastif.Delete(lastif.countitems()-1);
-                    }
-                } else {
-                    HandleApplicationError ("'else' w/o an if to latch on to...");
-                    return false;
-                }
-
-            } else if (currentLine.BeginsWith (blDo)) { // do {} while statement
-                _ElementaryCommand::BuildDoWhile (currentLine, *this);
-            }  else if (currentLine.BeginsWith (blInclude)) { // #include
-                _ElementaryCommand::ProcessInclude (currentLine, *this);
-            } else if (currentLine.BeginsWith (blDataSet)) { // data set definition
-                _ElementaryCommand::ConstructDataSet (currentLine, *this);
-            } else if (currentLine.BeginsWith (blDataSetFilter)) { // data set filter definition
-                _ElementaryCommand::ConstructDataSetFilter (currentLine, *this);
-            } else if (currentLine.BeginsWith (blTree) || currentLine.BeginsWith (blTopology)) { // tree definition
-                _ElementaryCommand::ConstructTree (currentLine, *this);
-            } else if (currentLine.BeginsWith (blLF) || currentLine.BeginsWith (blLF3)) { // LF definition
-                _ElementaryCommand::ConstructLF (currentLine, *this);
-            } else if (currentLine.BeginsWith (blfscanf) || currentLine.BeginsWith (blsscanf)) { // fscanf call
-                _ElementaryCommand::ConstructFscanf (currentLine, *this);
-             } else if (currentLine.BeginsWith (blCategory)) { // category variable declaration
-                _ElementaryCommand::ConstructCategory (currentLine, *this);
-            } else if (currentLine.BeginsWith (blGetNeutralNull)) { // select a template model
-                _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
-            } else if (currentLine.BeginsWith (blModel)) { // Model declaration
-                _ElementaryCommand::ConstructModel (currentLine, *this);
-            } else if (currentLine.BeginsWith (blChoiceList)) { // choice list
-                _ElementaryCommand::ConstructChoiceList (currentLine, *this);
-            } else if (currentLine.BeginsWith (blStateCounter)) { // Get Data Info
-                _ElementaryCommand::ConstructStateCounter (currentLine, *this);
-            } else if (currentLine.BeginsWith (blHBLProfile)) { // #profile
-                _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
-            } else if (currentLine.BeginsWith (blSCFG)) { // SCFG definition
-                _ElementaryCommand::ConstructSCFG (currentLine, *this);
-            } else if (currentLine.BeginsWith (blBGM)) {    // Bayesian Graphical Model definition
-                _ElementaryCommand::ConstructBGM (currentLine, *this);
-            }
-            // plain ol' formula - parse it as such!
-            else {
-                _String checker (currentLine);
-                if (_ElementaryCommand::FindNextCommand (checker).length ()==currentLine.length()) {
-                    if (currentLine.length()>1)
-                        while (currentLine (-1L) ==';') {
-                            currentLine.Trim (0,currentLine.length()-2);
-                        }
-                    else {
-                        continue;
-                    }
-                    _ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
-                    oddCommand->code = 0;
-                    oddCommand->parameters&&(&currentLine);
-                    AppendNewInstance (oddCommand);
-                } else {
-                    while (currentLine.nonempty()) {
-                        _String part (_ElementaryCommand::FindNextCommand (currentLine));
-                        BuildList (part,bc,processed);
-                    }
-                }
-            }
-         }
+              } else if (currentLine.BeginsWith (blDo)) { // do {} while statement
+                  _ElementaryCommand::BuildDoWhile (currentLine, *this);
+              } else if (currentLine.BeginsWith (blInclude)) { // #include
+                  _ElementaryCommand::ProcessInclude (currentLine, *this);
+              } else if (currentLine.BeginsWith (blDataSet)) { // data set definition
+                  _ElementaryCommand::ConstructDataSet (currentLine, *this);
+              } else if (currentLine.BeginsWith (blDataSetFilter)) { // data set filter definition
+                  _ElementaryCommand::ConstructDataSetFilter (currentLine, *this);
+              } else if (currentLine.BeginsWith (blTree) || currentLine.BeginsWith (blTopology)) { // tree definition
+                  _ElementaryCommand::ConstructTree (currentLine, *this);
+              } else if (currentLine.BeginsWith (blLF) || currentLine.BeginsWith (blLF3)) { // LF definition
+                  _ElementaryCommand::ConstructLF (currentLine, *this);
+              }  else if (currentLine.BeginsWith (blCategory)) { // category variable declaration
+                  _ElementaryCommand::ConstructCategory (currentLine, *this);
+              } else if (currentLine.BeginsWith (blModel)) { // Model declaration
+                  _ElementaryCommand::ConstructModel (currentLine, *this);
+              } else if (currentLine.BeginsWith (blChoiceList)) { // choice list
+                  _ElementaryCommand::ConstructChoiceList (currentLine, *this);
+              } else if (currentLine.BeginsWith (blStateCounter)) { // Get Data Info
+                  _ElementaryCommand::ConstructStateCounter (currentLine, *this);
+              } else if (currentLine.BeginsWith (blHBLProfile)) { // #profile
+                  _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
+              } else if (currentLine.BeginsWith (blSCFG)) { // SCFG definition
+                  _ElementaryCommand::ConstructSCFG (currentLine, *this);
+              } else if (currentLine.BeginsWith (blBGM)) {    // Bayesian Graphical Model definition
+                  _ElementaryCommand::ConstructBGM (currentLine, *this);
+              }
+              // plain ol' formula - parse it as such!
+              else {
+                  _String checker (currentLine);
+                  if (_ElementaryCommand::FindNextCommand (checker).length ()==currentLine.length()) {
+                      if (currentLine.length()>1)
+                          while (currentLine (-1L) ==';') {
+                              currentLine.Trim (0,currentLine.length()-2);
+                          }
+                      else {
+                          continue;
+                      }
+                      _ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
+                      oddCommand->code = 0;
+                      oddCommand->parameters&&(&currentLine);
+                      AppendNewInstance (oddCommand);
+                  } else {
+                      while (currentLine.nonempty()) {
+                          _String part (_ElementaryCommand::FindNextCommand (currentLine));
+                          BuildList (part,bc,processed);
+                      }
+                  }
+              }
+           }
+      }
+    } catch (_String const & error) {
+      if (currentExecutionList) {
+        currentExecutionList->ReportAnExecutionError(error, false, true);
+      } else {
+        HandleApplicationError(error);
+      }
     }
   //  s.sData = savePointer;
   // TODO: SLKP 20170623 why is this here? 20170704 ; for the "soft trim" situation, which we won't be using any more
@@ -1952,6 +2037,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_EXECUTE_COMMANDS :
         case HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY :
         case HY_HBL_COMMAND_DO_SQL:
+        case HY_HBL_COMMAND_CHOICE_LIST:
         case HY_HBL_COMMAND_SIMULATE_DATA_SET: {
             (*string_form) << procedure (code);
         }
@@ -2007,13 +2093,14 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         }
         break;
 
-        case 25: // fscanf
-        case 56: { // sscanf
-            (*string_form) << (code == 25 ? "fscanf" : "sscanf")
+        case HY_HBL_COMMAND_FSCANF: // fscanf
+        case HY_HBL_COMMAND_SSCANF: { // sscanf
+            (*string_form) << (code == HY_HBL_COMMAND_FSCANF ? "fscanf" : "sscanf")
                         << parameter_to_string (0)
                         << ",\"";
 
             long shift = 1L;
+          
             for (long p = 0; p<simpleParameters.lLength; p++) {
                 long theFormat = simpleParameters(p);
                 if (theFormat < 0) {
@@ -2044,11 +2131,6 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
         case 31: { // define a model
             (*string_form) << procedure (HY_HBL_COMMAND_MODEL);
-        }
-        break;
-
-        case 32: { // choice list
-            (*string_form) << procedure (HY_HBL_COMMAND_CHOICE_LIST);
         }
         break;
 
@@ -3868,11 +3950,14 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
     case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL: // prompt for a model file
         return HandleSelectTemplateModel(chain);
 
-    case 25: // fscanf
-    case 56: // sscanf
+    case HY_HBL_COMMAND_FSCANF: // fscanf
+      HandleFscanf (chain,false);
+      break;
+      
+    case HY_HBL_COMMAND_SSCANF: // fscanf
+      HandleFscanf (chain,true);
+      break;
 
-        HandleFscanf (chain,code == 56);
-        break;
 
     case HY_HBL_COMMAND_USE_MODEL:
         return HandleUseModel(chain);
@@ -3881,8 +3966,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         ExecuteCase31 (chain);
         break;
 
-    case 32:
-        ExecuteCase32 (chain);
+    case HY_HBL_COMMAND_CHOICE_LIST:
+        HandleChoiceList (chain);
         break;
 
     case HY_HBL_COMMAND_GET_STRING:
@@ -3946,9 +4031,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         ExecuteCase52 (chain);
         break;
 
-    case 53:
-        ExecuteCase53 (chain);
-        break;
+    case HY_HBL_COMMAND_DO_SQL:
+        return HandleDoSQL(chain);
 
     case 54:
         ExecuteCase54 (chain);
@@ -4576,14 +4660,14 @@ _ElementaryCommand* makeNewCommand (long ccode) {
 
 //____________________________________________________________________________________
 
-void _ElementaryCommand::addAndClean (_ExecutionList&target,_List* parList, long parFrom)
-{
-    if (parList)
-        for (long k = parFrom; k<parList->lLength; k++) {
-            parameters && (*parList) (k);
+void _ElementaryCommand::addAndClean (_ExecutionList&target,_List* parameter_list, long start_at) {
+    if (parList) {
+        // TODO 20170913 SLKP : check that << works as well
+        for (long i = start_at; i < parameter_list->countitems(); i++) {
+          parameters << parameter_list->GetItem(i);
         }
-    target << this;
-    DeleteObject (this);
+    }
+    target.AppendNewInstance(this);
 }
 
 //____________________________________________________________________________________
@@ -4983,71 +5067,6 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
 
 }
 
-
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&target)
-// syntax:
-// fscanf (stdin or "file name" or PROMPT_FOR_FILE, "argument descriptor", list of arguments to be read);
-// argument descriptor is a comma separated list of one of the three constants
-// "number", "matrix", "tree"
-// list of arguments to be read specifies which variables will receive the values
-
-{
-    _ElementaryCommand  *fscan = new _ElementaryCommand (source.BeginsWith (blsscanf)?56:25);
-    _List               arguments, argDesc;
-    long                f,p, shifter = 0;
-
-
-    ExtractConditions   (source,7,arguments,',');
-    if (arguments.lLength<3) {
-        HandleApplicationError ("Too few arguments in call to fscanf or sscanf");
-        DeleteObject (fscan);
-        return false;
-    }
-    fscan->parameters<<arguments(0);
-
-
-    if (((_String*)arguments(1))->Equal (&blScanfRewind)) {
-        fscan->simpleParameters << -1;
-        shifter = 1;
-    }
-
-    ((_String*)arguments(1+shifter))->StripQuotes();
-    ExtractConditions   (*((_String*)arguments(1+shifter)),0,argDesc,',');
-
-    for (f = 0; f<argDesc.lLength; f++) {
-        p = _ElementaryCommand::fscanf_allowed_formats.FindObject(argDesc(f));
-        if (p==-1) {
-            HandleApplicationError ( *((_String*)argDesc(f))&" is not a valid type descriptor for fscanf. Allowed ones are:"& _String((_String*)allowedFormats.toStr()));
-            DeleteObject (fscan);
-            return false;
-        } else {
-            fscan->simpleParameters<<p;
-        }
-    }
-
-    if (arguments.lLength!=fscan->simpleParameters.lLength+2) {
-        HandleApplicationError (_String("fscanf passed ")&_String((long)(fscan->simpleParameters.lLength-shifter))&" parameter type descriptors and "
-                   &_String((long)(arguments.lLength-2-shifter))& " actual arguments");
-        DeleteObject (fscan);
-        return false;
-    }
-
-    for (f = 2+shifter; f<arguments.lLength; f++) {
-        _String* thisArg = (_String*)arguments(f);
-        if (thisArg->IsValidIdentifier(fIDAllowCompound)) {
-            fscan->parameters<< thisArg;
-        } else {
-            HandleApplicationError (_String("fscanf passed an invalid variable identifier: ")&*thisArg);
-            DeleteObject (fscan);
-            return false;
-        }
-    }
-
-    fscan->addAndClean(target,nil,0);
-    return true;
-}
 
 //____________________________________________________________________________________
 
