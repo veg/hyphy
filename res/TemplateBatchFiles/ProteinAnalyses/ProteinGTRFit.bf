@@ -113,9 +113,13 @@ protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedMod
                                         {
                                             {"protein_gtr.REV.ModelDescription",
                                              "protein_gtr.REV.ModelDescription.withGamma",
-                                             "protein_gtr.REV.ModelDescription.freqs"
+                                             "protein_gtr.REV.ModelDescription.freqs",
+                                             "protein_gtr.plusF.ModelDescription",
+                                             "protein_gtr.plusF._GenerateRate",
+                                             "protein_gtr.plusF.frequencies"
                                             }
                                         },
+
                                         "Variables" : {{
                                             "protein_gtr.shared_EFV",
                                             "protein_gtr.final_baseline_model",
@@ -151,6 +155,7 @@ for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) 
     } else {
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                                     "Dispatching file '" + cached_file);
+
 
          mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitBaselineToFile", {"0" : protein_gtr.file_list[file_index]},
                                                             "protein_gtr.handle_baseline_callback");

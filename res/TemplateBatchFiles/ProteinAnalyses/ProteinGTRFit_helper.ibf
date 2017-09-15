@@ -30,10 +30,10 @@ function protein_gtr.save_options() {
                                                                                   utility.getGlobalValue("protein_gtr.options.tolerance"): protein_gtr.tolerance,
                                                                                   utility.getGlobalValue("protein_gtr.options.baseline_model"): protein_gtr.baseline_model,
                                                                                   utility.getGlobalValue("protein_gtr.options.rate_variation") : protein_gtr.use_rate_variation};
-    
+
     protein_gtr.analysis_results[utility.getGlobalValue("terms.json.input")] = {utility.getGlobalValue("terms.json.file"): protein_gtr.listfile,
                                                                                 "number of datasets": protein_gtr.file_list_count};
-                                                                                
+
     io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
     return 0;
 }
@@ -133,36 +133,34 @@ function protein_gtr.fitBaselineToFile (filename) {
     ExecuteCommands ('protein_gtr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (protein_gtr.file_info[terms.data.partitions], protein_gtr.name_mapping)',
                      {"0" : "Y"});
     utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", None);
-    
+
     protein_gtr.partition_count      = Abs (protein_gtr.partitions_and_trees);
     io.CheckAssertion ("protein_gtr.partition_count==1", "This analysis can only handle a single partition");
 
-    
+
     /*********** Store dataset information *************/
     protein_gtr.output_data_info = { utility.getGlobalValue("terms.original_name"): {},
                                      utility.getGlobalValue("terms.json.sequences"): protein_gtr.file_info[utility.getGlobalValue("terms.data.sequences")],
                                      utility.getGlobalValue("terms.json.sites"): protein_gtr.file_info[utility.getGlobalValue("terms.data.sites")]
                                    };
 
- 
+
 
     utility.ForEach (utility.Keys (protein_gtr.name_mapping), "branch_name",
                              "utility.EnsureKey (protein_gtr.output_data_info[terms.original_name], branch_name)");
 
     utility.ForEach (utility.Keys (protein_gtr.name_mapping), "branch_name",
                              "(protein_gtr.output_data_info[terms.original_name])[branch_name] = protein_gtr.name_mapping[branch_name]");
-  
-    
-    utility.EnsureKey(protein_gtr.analysis_results, filename);
-    (protein_gtr.analysis_results[filename])[protein_gtr.json.information] = protein_gtr.output_data_info;
+
+
     /*****************************************************/
-    
+
     protein_gtr.filter_specification = alignments.DefineFiltersForPartitions (protein_gtr.partitions_and_trees,
                                                                             "protein_gtr.msa" ,
                                                                             "protein_gtr.filter.",
                                                                             protein_gtr.file_info);
 
-    
+
     protein_gtr.full_trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_[terms.data.tree]');
     protein_gtr.full_data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_[terms.data.name]");
 
@@ -175,12 +173,14 @@ function protein_gtr.fitBaselineToFile (filename) {
 
     protein_gtr.normalized_qij = plusF_helper.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.baseline_Rij, models.protein.alphabet);
 
+    fprintf ("/tmp/hyphy", CLEAR_FILE, Call(protein_gtr.final_baseline_model,"") );
+
     protein_gtr.baseline_mle = estimators.FitSingleModel_Ext(protein_gtr.full_data_filter,
                                                         protein_gtr.full_trees,
                                                         protein_gtr.final_baseline_model,
                                                         None,
                                                         None);
-    
+
     protein_gtr.baseline_mle - terms.global; // delete empty key
     return protein_gtr.baseline_mle;
 }
@@ -233,7 +233,7 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
         }
     }
 
-    utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 0);
+    utility.SetEnvVariable ("VERBOSITY_LEVEL", 1);
     utility.ToggleEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1);
     utility.ToggleEnvVariable ("OPTIMIZATION_METHOD", 0);
 
@@ -283,7 +283,8 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
     (^"protein_gtr.analysis_results")[phase] = protein_gtr.rev.mle;
     io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
 
-    utility.ToggleEnvVariable ("VERBOSITY_LEVEL", None);
+    console.log (""); // clear past the optimization progress line
+    utility.SetEnvVariable ("VERBOSITY_LEVEL", 0);
     utility.ToggleEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", None);
     utility.ToggleEnvVariable ("OPTIMIZATION_METHOD", None);
 
@@ -329,7 +330,7 @@ function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
 
     protein_gtr.rev_file_mle [terms.branch_length] = { "0" : branch_lengths };
 
-    utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 1);
+    utility.SetEnvVariable ("VERBOSITY_LEVEL", 1);
     protein_gtr.rev_file_mle = estimators.FitSingleModel_Ext (
                                         utility.Map (protein_gtr.filter_specification, "_value_", "_value_[terms.data.name]"), // value => value['name']
                                         utility.Map (protein_gtr.partitions_and_trees, "_value_", "_value_[terms.data.tree]"), // value => value['tree']
@@ -337,6 +338,8 @@ function protein_gtr.fitGTRtoFile (filename, rates, branch_lengths) {
                                         protein_gtr.rev_file_mle,
                                         None
                                    );
+   utility.SetEnvVariable ("VERBOSITY_LEVEL", 0);
+   console.log (""); // clear past the optimization progress line
 
     protein_gtr.rev_file_mle - terms.global; // delete redundant keys
 
