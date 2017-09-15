@@ -317,9 +317,7 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
     }
 
 
-#ifndef _SLKP_LFENGINE_REWRITE_
-    long                   stash1 = siteEvalCount;
-#endif
+    
 #ifdef  _OPENMP
     lf->SetThreadCount (1);
 #endif
@@ -328,10 +326,13 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
     lf->Compute           ();
 
 
-#ifdef _SLKP_LFENGINE_REWRITE_
     _Parameter            tdiff = timer.TimeSinceStart();
 #ifdef  _OPENMP
+#ifdef  __HYPHYMPI__ 
+    if (systemCPUCount > 1 && _hy_mpi_node_rank == 0) {
+#else
     if (systemCPUCount > 1) {
+#endif
         _Parameter          minDiff = tdiff;
         long                bestTC  = 1;
 
@@ -356,9 +357,6 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
         divideBy              = MAX(1.0, 0.5 / tdiff);
     ReportWarning       (_String("Set GUI update interval to every ") & divideBy & "-th LF evaluation.");
 
-#else
-    divideBy              = (siteEvalCount-stash1) * 0.5 / TimerDifferenceFunction(true);
-#endif
 
 }
 
@@ -535,6 +533,11 @@ void _LikelihoodFunction::Init (void)
   
 #ifdef  _OPENMP
     lfThreadCount       = 1L;
+#ifdef  __HYPHYMPI__
+    if (_hy_mpi_node_rank > 0)
+        SetThreadCount      (1L);
+    else
+#endif
     SetThreadCount      (systemCPUCount);
 #endif
 
@@ -796,7 +799,12 @@ void     _LikelihoodFunction::Clear (void)
     treeTraversalMasks.Clear();
     canUseReversibleSpeedups.Clear();
 #ifdef  _OPENMP
-    SetThreadCount      (systemCPUCount);
+#ifdef  __HYPHYMPI__
+    if (_hy_mpi_node_rank > 0)
+        SetThreadCount      (1L);
+    else
+#endif
+        SetThreadCount      (systemCPUCount);
 #endif
 }
 

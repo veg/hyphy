@@ -1,4 +1,5 @@
 LoadFunctionLibrary ("../all-terms.bf");
+LoadFunctionLibrary ("../models/parameters.bf");
 
 /** @module mpi
         Functions for creating, populating, and manipulating

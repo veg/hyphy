@@ -109,6 +109,8 @@ long        matrixExpCount = 0,
             non0count = 0;
 
 extern      _String         printDigitsSpec;
+extern          int       _hy_mpi_node_rank;
+
 
 _Trie        _HY_MatrixRandomValidPDFs;
 
@@ -3831,12 +3833,16 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
             {   
 #define _HY_MATRIX_CACHE_BLOCK 128
                  if (vDim >= 256) {
+                     long nt = 1;
 #ifdef _OPENMP
                       #define GCC_VERSION (__GNUC__ * 10000 \
                                + __GNUC_MINOR__ * 100 \
                                + __GNUC_PATCHLEVEL__)
-                
-                     long nt           = MIN(omp_get_max_threads(),secondArg.vDim / _HY_MATRIX_CACHE_BLOCK + 1);
+#ifdef __HYPHYMPI__
+                     if (_hy_mpi_node_rank == 0)
+                         
+#endif
+                     nt           = MIN(omp_get_max_threads(),secondArg.vDim / _HY_MATRIX_CACHE_BLOCK + 1);
 #endif
                      for (long r = 0; r < hDim; r ++) {
 #ifdef _OPENMP                     

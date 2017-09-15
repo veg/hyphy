@@ -81,6 +81,12 @@ meme.json = {
     terms.json.timers: {},
 };
 
+meme.display_orders =   {terms.original_name: -1,
+                        terms.json.nucleotide_gtr: 0,
+                        terms.json.global_mg94xrev: 1
+                       };
+
+
 selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
 meme.scaler_prefix = "MEME.scaler";
 
@@ -152,19 +158,21 @@ utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME
 
 estimators.fixSubsetOfEstimates(meme.final_partitioned_mg_results, meme.final_partitioned_mg_results[terms.global]);
 
-selection.io.json_store_lf(
-    meme.json,
-    terms.json.global_mg94xrev,
-    meme.final_partitioned_mg_results[terms.fit.log_likelihood],
-    meme.final_partitioned_mg_results[terms.parameters],
-    meme.sample_size,
-    utility.ArrayToDict (utility.Map (meme.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}"))
-);
+//Store MG94 to JSON
+selection.io.json_store_lf_GTR_MG94 (meme.json,
+                            terms.json.global_mg94xrev,
+                            meme.final_partitioned_mg_results[terms.fit.log_likelihood],
+                            meme.final_partitioned_mg_results[terms.parameters],
+                            meme.sample_size,
+                            utility.ArrayToDict (utility.Map (meme.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}")),
+                            (meme.final_partitioned_mg_results[terms.efv_estimate])["VALUEINDEXORDER"][0],
+                            meme.display_orders[terms.json.global_mg94xrev]);
 
 utility.ForEachPair (meme.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(meme.json, utility.getGlobalValue("terms.json.global_mg94xrev"), terms.branch_length, 0,
+    'selection.io.json_store_branch_attribute(meme.json, terms.json.global_mg94xrev, terms.branch_length, meme.display_orders[terms.json.global_mg94xrev],
                                              _key_,
                                              selection.io.extract_branch_info((meme.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
+
 
 selection.io.stopTimer (meme.json [terms.json.timers], "Model fitting");
 
