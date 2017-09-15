@@ -42,7 +42,7 @@ relative_prot_rates.alignment_info       = alignments.ReadNucleotideDataSet ("re
 name_mapping = relative_prot_rates.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
 if (None == name_mapping) {  
     name_mapping = {};
-    utility.ForEach (alignments.GetSequenceNames (relative_prot_rates.alignment_info), "_value_", "`&name_mapping`[_value_] = _value_");
+    utility.ForEach (alignments.GetSequenceNames ("relative_prot_rates.dataset"), "_value_", "`&name_mapping`[_value_] = _value_");
 } 
 relative_prot_rates.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relative_prot_rates.alignment_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
 
