@@ -194,9 +194,7 @@ public:
 
     void        UpdateIndependent (long,bool,_SimpleList* = nil,_SimpleList* = nil);
     void        UpdateDependent (long);
-    _AssociativeList*
-    SimulateCodonNeutral (_Matrix*, _Matrix*, long);
-
+ 
     bool        PreCompute      (void);
     void        PostCompute     (void);
     virtual
@@ -383,7 +381,6 @@ protected:
 
     void            BuildLeafProbs        (node<long>& , unsigned long*, unsigned long, _DataSet&, _TheTree*, unsigned long&, bool, long, _DataSetFilter const*, long, _DataSet* = nil) const;
     bool            SingleBuildLeafProbs  (node<long>&, long, _SimpleList&, _SimpleList&, _TheTree*, bool,_DataSetFilter const*, _SimpleList* = nil) const;
-    void            CodonNeutralSimulate  (node<long>&, long, bool,_Matrix*,_Matrix*, hyFloat&, hyFloat&);
 
     bool            HasBlockChanged       (long) const;
     long            BlockLength           (long) const;

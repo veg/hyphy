@@ -118,6 +118,7 @@ namespace hy_env {
                               .PushPairCopyKey (print_float_digits, new _Constant (0.))
                               .PushPairCopyKey (mpi_node_count, new _Constant (1.))
                               .PushPairCopyKey (always_reload_libraries, new HY_CONSTANT_FALSE)
+                              .PushPairCopyKey (end_of_file, new HY_CONSTANT_FALSE)
 
       ;
     }
@@ -149,6 +150,9 @@ _String const
         // if set to TRUE, then constraint application will be done in a single batch
         // this is helpful when many x := expr statements are strung together to avoid
         // checking the entire namespace for dependancies
+    end_of_file                                     ("END_OF_FILE"),
+        // set by IO operations, like fscanf to indicate whetehr the end of the input stream has
+        // been reached
     error_report_format_expression                  ("ERROR_REPORT_FORMAT_EXPRESSION"),
         // if provided, this expression (assumed string valued), will be used to format the error
         // message, with special placeholder variables (see below) will be replaced with the

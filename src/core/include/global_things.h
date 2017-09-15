@@ -291,7 +291,8 @@ namespace hy_global {
   hy_lib_directory,
   hy_messages_log_name,
   hy_standard_library_directory,
-  hy_standard_model_directory;
+  hy_standard_model_directory,
+  hy_scanf_last_file_path;
   
   extern _Variable * hy_x_variable, * hy_n_variable;
   

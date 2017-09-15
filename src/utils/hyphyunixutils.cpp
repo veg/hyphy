@@ -166,7 +166,7 @@ _String *    StringFromConsole   () {
     int       readAChar;
     while    ((readAChar = getc(stdin)) != '\n') {
         if (readAChar == EOF) {
-            CheckReceptacleAndStore (&hasEndBeenReached,kEmptyString,false,new _Constant (1.), false);
+            hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
             break;
         }
         *returnme << (char)readAChar;
