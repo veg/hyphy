@@ -522,7 +522,7 @@ bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _Executio
 {
 
     _List pieces;
-    ExtractConditions (source,blHBLProfile.sLength+1,pieces,';');
+    ExtractConditions (source,blHBLProfile.length()+1,pieces,';');
     if (pieces.lLength!=2) {
         HandleApplicationError (_String ("Expected syntax:")& blHBLProfile &" START|PAUSE|RESUME|where to store)");
         return false;
@@ -652,7 +652,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
                     }
 
                 }
-                if (errCode.sLength) {
+                if (errCode.nonempty()) {
                     HandleApplicationError(errCode);
                     return;
                 }
@@ -695,7 +695,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     if (!isFilter) {
         dataset = (_DataSet*)dataSetList(dsID);
         dataset -> ProcessPartition (hSpecs,hL,false, nil, nil, chain.GetNameSpace());
-        if (code!=6 && vSpecs.sLength==0) {
+        if (code!=6 && vSpecs.empty()==0) {
             vSpecs = _String("0-")&_String(dataset->NoOfColumns()-1);
         }
         dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
@@ -704,7 +704,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
         const _DataSetFilter * dataset1 = GetDataFilter (dsID);
         dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
 
-        if (code!=6 && vSpecs.sLength==0) {
+        if (code!=6 && vSpecs.empty()==0) {
             vSpecs = _String("0-")&_String(dataset1->GetSiteCount()-1);
         }
 
@@ -770,8 +770,8 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
   
     _AssociativeList* mapping = (_AssociativeList*)FetchObjectFromVariableByType(&treeNodeNameMapping, ASSOCIATIVE_LIST);
 
-    if (treeSpec->sLength) {
-        if (treeSpec->sData[0]!='(') {
+    if (treeSpec->nonempty()) {
+        if (treeSpec->char_at (0)!='(') {
             _Variable* testTree = FetchVar(LocateVarByName (AppendContainerName(*treeSpec,chain.nameSpacePrefix)));
             if (testTree && testTree->ObjectClass () == TREE) {
                 tr = new _TreeTopology ((_TheTree*)testTree);
@@ -794,25 +794,6 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
     }
 }
 
-
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructGetNeutralNull (_String&source, _ExecutionList&target)
-// syntax: GetNeutralNull (result, likelihood function, syn sub count matrix, non-syn sub count matrix, iterations per root state)
-{
-    _List pieces;
-    ExtractConditions (source,blGetNeutralNull.sLength,pieces,',');
-    if (pieces.lLength!=5) {
-        HandleApplicationError ("Expected syntax: GetNeutralNull (result, likelihood function, syn sub count matrix, non-syn sub count matrix, iterations per root state);");
-        return false;
-    }
-
-    _ElementaryCommand * gnn = new _ElementaryCommand (57);
-    gnn->addAndClean(target,&pieces,0);
-    return true;
-}
-
-//____________________________________________________________________________________
 
 
 //____________________________________________________________________________________
@@ -956,69 +937,6 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase57 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String errStr;
-
-    _Variable * storeResultIn = CheckReceptacle (&AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix), blGetNeutralNull, true),
-                *   sv            = FetchVar(LocateVarByName (AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix))),
-                    *  nsv           = FetchVar(LocateVarByName (AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix)));
-
-    hyFloat itCountV       = ProcessNumericArgument ((_String*)parameters(4),chain.nameSpacePrefix);
-
-    _String   * lfName        = (_String*)parameters(1);
-
-    long        f = FindLikeFuncName(AppendContainerName(*lfName,chain.nameSpacePrefix));
-
-    if (f>=0) {
-        if (sv && sv->ObjectClass () == MATRIX) {
-            if (nsv && nsv->ObjectClass () == MATRIX) {
-                _Matrix * sMatrix  = (_Matrix*)((_Matrix*)sv->Compute())->ComputeNumeric();
-                _Matrix * nsMatrix = (_Matrix*)((_Matrix*)nsv->Compute())->ComputeNumeric();
-
-                sMatrix->CheckIfSparseEnough (true);
-                nsMatrix->CheckIfSparseEnough (true);
-
-                if (   sMatrix->GetHDim()  == sMatrix->GetVDim() &&
-                        nsMatrix->GetHDim() == nsMatrix->GetVDim() &&
-                        sMatrix->GetHDim()  ==  nsMatrix->GetVDim() ) {
-                    _LikelihoodFunction * theLF = (_LikelihoodFunction*)likeFuncList (f);
-
-                    if (theLF->GetIthFilter(0)->GetDimension (true) == sMatrix->GetHDim()) {
-                        long itCount = itCountV;
-                        if (itCount>0) {
-                            _AssociativeList * res = theLF->SimulateCodonNeutral ((_Matrix*)sMatrix, (_Matrix*)nsMatrix, itCount);
-                            storeResultIn->SetValue (res,false);
-                        } else {
-                            errStr = "Invalid iterations per character state";
-                        }
-                    } else {
-                        errStr = "Incompatible data and cost matrices";
-                    }
-
-                } else {
-                    errStr = "Incompatible syn and non-syn cost matrix dimensions";
-                }
-            } else {
-                errStr = "Invalid non-syn cost matrix argument";
-            }
-        } else {
-            errStr = "Invalid syn cost matrix argument";
-        }
-
-    } else {
-        errStr = _String("Likelihood function ") & *lfName & " has not been defined";
-    }
-
-    if (errStr.sLength) {
-        HandleApplicationError (errStr & " in call to " & blGetNeutralNull);
-    }
-}
-
-//____________________________________________________________________________________
-
 void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
 {
     chain.currentCommand++;
@@ -1099,7 +1017,7 @@ void      _ElementaryCommand::ExecuteCase61 (_ExecutionList& chain)
 
         if (f==-1) {
             for (f=0; f<scfgNamesList.lLength; f++)
-                if (((_String*)scfgNamesList(f))->sLength==0) {
+                if (((_String*)scfgNamesList(f))->empty()) {
                     break;
                 }
 
@@ -1186,7 +1104,7 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
         if (bgmIndex == -1) {   // not found
             for (bgmIndex = 0; bgmIndex < bgmNamesList.lLength; bgmIndex++) {
                 // locate empty strings in name list
-                if (((_String *)bgmNamesList(bgmIndex))->sLength == 0) {
+                if (((_String *)bgmNamesList(bgmIndex))->empty() == 0) {
                     break;
                 }
             }
@@ -1518,7 +1436,7 @@ BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long
 
     if (type & HY_BL_MODEL) {
         loc = FindModelName(name);
-        if (loc < 0 && (name.Equal (&last_model_parameter_list) || name.Equal (&use_last_model))) {
+        if (loc < 0 && name == last_model_parameter_list || name == hy_env::use_last_model) {
             loc = lastMatrixDeclared;
         }
         if (loc >= 0) {
