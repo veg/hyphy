@@ -228,6 +228,15 @@ class _List:public _SimpleList {
         */
         virtual long BinaryFindObject (BaseObj const *, long startAt = 0) const;
 
+        template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
+            for (unsigned long i = startAt; i<lLength; i++) {
+                if ( condition (((BaseRefConst*)(lData))[i]) ) {
+                    return i;
+                }
+            }
+            return kNotFound;
+        }
+
         /**
         * Insert an element into the sorted list preserving the sortedness
         */

@@ -117,6 +117,7 @@ template <typename AGGREGARTOR> _SimpleList const PopulateAndSort (AGGREGARTOR a
   _SimpleList     indexer;
   _AVLList        avl (&indexer);
   agg (avl);
+  avl.ReorderList();
   return indexer;
 }
 

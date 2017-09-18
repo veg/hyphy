@@ -562,22 +562,19 @@ bool      _ElementaryCommand::HandleGetInformation (_ExecutionList& current_prog
                 }
                 break;
                 case HY_BL_MODEL: {
-                    _SimpleList modelParms;
-                    _AVLList    modelParmsA (&modelParms);
-
-                     if (IsModelOfExplicitForm (object_index)) {
-                        ((_Formula const*)source_object)->ScanFForVariables(modelParmsA,false);
-                    } else {
-                        ((_Variable const*)source_object)->ScanForVariables(modelParmsA,false);
-
-
-                    }
+                    
                     _List       modelPNames;
-
-                    for (unsigned long vi=0; vi<modelParms.lLength; vi++) {
-                        modelPNames << LocateVar(modelParms.lData[vi])->GetName();
-                    }
-
+                 
+                    PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
+                         if (IsModelOfExplicitForm (object_index)) {
+                             ((_Formula const*)source_object)->ScanFForVariables(parameter_list,false);
+                         } else {
+                             ((_Variable const*)source_object)->ScanForVariables(parameter_list,false);
+                         }
+                    }).Each ([&] (unsigned long value) -> void {
+                        modelPNames << LocateVar(value)->GetName();
+                    });
+                   
                     result = new _Matrix (modelPNames);
                 }
                 break;
@@ -2990,116 +2987,198 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
   //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program) {
-  
-  auto   handle_exclusions = [] (long count, _SimpleList & excluded) -> const _SimpleList {
-    _SimpleList lfids;
-    lfids.Subtract(_SimpleList(likeFuncNamesList.countitems(), 0L, 1L), excluded);
-    return lfids;
-  };
-  
-  static const _String kSkipNone ("SKIP_NONE"),
-                       kLikelihoodFunctions ("LikelihoodFunction");
-  
-  current_program.advance();
-  
-  _Variable * receptacle = nil;
-
-  _List   local_dynamic_manager;
-  
-
-  try {
-  
-    receptacle = _ValidateStorageVariable (current_program);
-  
-    long    number_of_choices = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2UL),current_program.nameSpacePrefix);
-    _String dialog_title      = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program),
-            exclusions        = *GetIthParameter(3UL);
-  
-    _SimpleList selections,
-                excluded;
-  
-  
-    if (exclusions != kSkipNone) {
-      try {
-        _PMathObj exlcusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
-        if (exlcusion_argument->ObjectClass() == NUMBER) {
-          excluded << exlcusion_argument->Compute ()->Value();
-        } else {
-          ((_Matrix*)exlcusion_argument)->ConvertToSimpleList (excluded);
-          excluded.Sort();
-        }
-      } catch (_String const & e) {
-          // no exclusions, so do nothing
-      }
-    }
     
-    _List  * available_choices = nil;
+    auto   handle_exclusions = [] (long count, _SimpleList & excluded) -> const _SimpleList {
+        _SimpleList lfids;
+        lfids.Subtract(_SimpleList(likeFuncNamesList.countitems(), 0L, 1L), excluded);
+        return lfids;
+    };
     
-    if (simpleParameters.Element(0UL)) {
-        // dynamically generated list of options
-        _String const choices_parameter = *GetIthParameter(4UL);
-        local_dynamic_manager < (available_choices = new _List);
+    static const _String kSkipNone ("SKIP_NONE"),
+    kLikelihoodFunctions ("LikelihoodFunction");
     
-        if (choices_parameter == kLikelihoodFunctions) {
-            // the list consists of all defined likelihood function objects
-            
-            handle_exclusions (likeFuncNamesList.countitems(), excluded).Each([&] (long value) -> void {
-              if (likeFuncList.GetItem(value)) {
-                _String const * lf_name = (_String*) likeFuncNamesList (value);
-                (*available_choices) < new _List (new _String (*lf_name), new _String ( _String ("Likelihood Function ") & *lf_name & "."));
-              }
-            });
-        } else {
-            // see if the argument is a reference to one of the standard HBL objects
-            const _String source_name   = AppendContainerName (choices_parameter, current_program.nameSpacePrefix);
-          
-            long          object_type = HY_BL_DATASET_FILTER | HY_BL_DATASET | HY_BL_MODEL,
-                          object_index;
-          
-          
+    current_program.advance();
+    
+    _Variable * receptacle = nil;
+    
+    _List   local_dynamic_manager;
+    
+    
+    try {
+        
+        receptacle = _ValidateStorageVariable (current_program);
+        
+        long    number_of_choices = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2UL),current_program.nameSpacePrefix);
+        _String dialog_title      = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program),
+        exclusions        = *GetIthParameter(3UL);
+        
+        _SimpleList selections,
+        excluded;
+        
+        bool        variable_number = number_of_choices < 0,
+                    do_markdown     = hy_env :: EnvVariableTrue(hy_env :: produce_markdown_output);
+        
+        
+        if (exclusions != kSkipNone) {
             try {
-              BaseRefConst       source_object = _GetHBLObjectByType (source_name, object_type, &object_index);
-              switch (object_type) {
-                case HY_BL_DATASET: {
-                  _DataSet const *ds = (_DataSet const*) source_object;
-                  handle_exclusions (ds->NoOfSpecies(), excluded).Each (
-                      [&] (long value) -> void {
-                        _String const * sequence_name = ds->GetSequenceName(value);
-                        (*available_choices) < new _List (new _String (*sequence_name), new _String ( _String ("Taxon ") & (value + 1L) & sequence_name->Enquote('(', ')') & "."));
-                      }
-                  );
-                  break;
+                _PMathObj exlcusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
+                if (exlcusion_argument->ObjectClass() == NUMBER) {
+                    excluded << exlcusion_argument->Compute ()->Value();
+                } else {
+                    ((_Matrix*)exlcusion_argument)->ConvertToSimpleList (excluded);
+                    excluded.Sort();
                 }
-                case HY_BL_DATASET_FILTER: {
-                  _DataSetFilter const *df = (_DataSetFilter const*) source_object;
-                  handle_exclusions (df->NumberSpecies(), excluded).Each (
-                        [&] (long value) -> void {
-                          _String const * sequence_name = df->GetSequenceName(value);
-                          (*available_choices) < new _List (new _String (*sequence_name), new _String ( _String ("Taxon ") & (value + 1L) & sequence_name->Enquote('(', ')') & "."));
-                        }
-                  );
-                  break;
-                }
-              }
             } catch (_String const & e) {
-                // not an object
-              
+                // no exclusions, so do nothing
             }
-
         }
-      
-    } else {
-      available_choices = (_List*)parameters.GetItem(4UL);
+        
+        _List  * available_choices = nil;
+        
+        if (simpleParameters.Element(0UL)) {
+            // dynamically generated list of options
+            _String const choices_parameter = *GetIthParameter(4UL);
+            local_dynamic_manager < (available_choices = new _List);
+            
+            if (choices_parameter == kLikelihoodFunctions) {
+                // the list consists of all defined likelihood function objects
+                
+                handle_exclusions (likeFuncNamesList.countitems(), excluded).Each([&] (long value) -> void {
+                    if (likeFuncList.GetItem(value)) {
+                        _String const * lf_name = (_String*) likeFuncNamesList (value);
+                        (*available_choices) < new _List (new _String (*lf_name), new _String ( _String ("Likelihood Function ") & *lf_name & "."));
+                    }
+                });
+            } else {
+                // see if the argument is a reference to one of the standard HBL objects
+                const _String source_name   = AppendContainerName (choices_parameter, current_program.nameSpacePrefix);
+                
+                long          object_type = HY_BL_DATASET_FILTER | HY_BL_DATASET | HY_BL_MODEL,
+                object_index;
+                
+                
+                try {
+                    BaseRefConst       source_object = _GetHBLObjectByType (source_name, object_type, &object_index);
+                    // this wil also handle USE_LAST_MODEL
+                    switch (object_type) {
+                        case HY_BL_DATASET: {
+                            _DataSet const *ds = (_DataSet const*) source_object;
+                            handle_exclusions (ds->NoOfSpecies(), excluded).Each (
+                                                                                  [&] (long value) -> void {
+                                                                                      _String const * sequence_name = ds->GetSequenceName(value);
+                                                                                      (*available_choices) < new _List (new _String (*sequence_name), new _String ( _String ("Taxon ") & (value + 1L) & sequence_name->Enquote('(', ')') & "."));
+                                                                                  }
+                                                                                  );
+                            break;
+                        }
+                        case HY_BL_DATASET_FILTER: {
+                            _DataSetFilter const *df = (_DataSetFilter const*) source_object;
+                            handle_exclusions (df->NumberSpecies(), excluded).Each (
+                                                                                    [&] (long value) -> void {
+                                                                                        _String const * sequence_name = df->GetSequenceName(value);
+                                                                                        (*available_choices) < new _List (new _String (*sequence_name), new _String ( _String ("Taxon ") & (value + 1L) & sequence_name->Enquote('(', ')') & "."));
+                                                                                    }
+                                                                                    );
+                            break;
+                        }
+                        case HY_BL_MODEL: {
+                            (*available_choices) < new _List (new _String("All Parameters"), new _String("All local model parameters are constrained"));
+                            
+                            _SimpleList model_indices = PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
+                                if (IsModelOfExplicitForm (object_index)) {
+                                    ((_Formula const*)source_object)->ScanFForVariables(parameter_list,false);
+                                } else {
+                                    ((_Variable const*)source_object)->ScanForVariables(parameter_list,false);
+                                }
+                            });
+                            handle_exclusions (model_indices.countitems(), excluded).Each (
+                                                                                           [&] (long value) -> void {
+                                                                                               _String const * parameter_name = LocateVar(value)->GetName();
+                                                                                               (*available_choices) < new _List (new _String (*parameter_name),
+                                                                                                                                 new _String (_String ("Constrain parameter ") & *parameter_name & '.'));
+                                                                                           }
+                                                                                           );
+                        }
+                            break;
+                    }
+                } catch (_String const & e) {
+                    // not an object
+                    try {
+                        _Matrix * target_variable = (_Matrix*)_ProcessAnArgumentByType(choices_parameter, MATRIX, current_program, &local_dynamic_manager);
+                        if (!target_variable->IsAStringMatrix()) {
+                            throw (choices_parameter.Enquote() & " is not a matrix of strings");
+                        }
+                        if (!target_variable->GetVDim() != 2) {
+                            throw (choices_parameter.Enquote() & " is not a matrix with two columns");
+                        }
+                        _List choices;
+                        target_variable->FillInList(choices, false);
+                        choices.bumpNInst();
+                        for (unsigned long k = 0UL; k < choices.countitems(); k+=2) {
+                            (*available_choices) < new _List (choices.GetItem(k), choices.GetItem(k+1));
+                        }
+                    }   catch (_String const& e2) {
+                        throw (choices_parameter.Enquote() & " is not a supported object/literal for the list of choices");
+                    }
+                    
+                }
+                
+            }
+            
+        } else {
+            available_choices = (_List*)parameters.GetItem(4UL);
+        }
+        
+        if (available_choices->empty()) {
+            throw ("The list of choices is empty");
+        }
+        
+        if ((long) available_choices->countitems() < number_of_choices) {
+            throw (_String ("The list of choices hasd " ) & (long) available_choices->countitems() & " elements, but " & number_of_choices & " are required");
+        }
+        
+        auto validate_choice = [&] (_String const& user_choice) -> long {
+            return available_choices->FindOnCondition([&] (BaseRefConst item) -> bool {
+                return user_choice == *(_String*)((_List*)item)->GetItem (0);
+            });
+        };
+        
+        long required = variable_number ? available_choices->countitems() : number_of_choices;
+
+        if (current_program.has_stdin_redirect()) {
+            while (selections.countitems() < required) {
+                _String user_choice (current_program.FetchFromStdinRedirect());
+                if (variable_number && user_choice.empty()) {
+                    break;
+                }
+                long    match_found = validate_choice (user_choice);
+                if (match_found == kNotFound) {
+                    throw (user_choice.Enquote() & " is not a valid choice passed to '" & dialog_title & "' ChoiceList using redirected stdin input");
+                }
+                selections << match_found;
+            }
+        } else {
+#ifdef  __HEADLESS__
+            throw ("Unhandled request for data from standard input (headless HyPhy)");
+#endif
+            if (do_markdown) {
+                printf ("\n\n####%s\n", dialog_title.get_str());
+            } else {
+                printf ("\n\n\t\t\t+%s+\n\t\t\t|%s|\n\t\t\t+%s+\n\n",
+                        _String ('-', dialog_title.length()).get_str(),
+                        dialog_title.get_str(),
+                        _String ('-', dialog_title.length()).get_str());
+            }
+        }
+        
+        
+        
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
     }
     
-  
+    return true;
     
-  } catch (const _String& error) {
-    return  _DefaultExceptionHandler (receptacle, error, current_program);
-  }
-  
-  return true;
-  
 }
 
 

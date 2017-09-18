@@ -165,7 +165,8 @@ namespace hy_env {
           kGetStringFromUser,
           get_data_info_returns_only_the_index,
           defer_constrain_assignment,
-          end_of_file
+          end_of_file,
+          produce_markdown_output
   
     ;
   
