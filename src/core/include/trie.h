@@ -96,7 +96,7 @@ class _Trie: public _List
          virtual void Initialize (const _String* alphabet);
     
     
-        template <typename KEY, typename PAYLOAD, typename... values>  long  Insert (KEY key, PAYLOAD payload, values... data) {
+        template <typename... values>  long  Insert (const _String& key, long payload, values... data) {
             Insert (key, payload);
             Insert (data...);
         }
