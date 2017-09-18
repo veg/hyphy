@@ -343,9 +343,7 @@ public:
 
     static  bool      ConstructModel        (_String&, _ExecutionList&);
 
-    static  bool      ConstructStateCounter (_String&, _ExecutionList&);
-
-  
+   
     static  bool      ConstructProfileStatement
     (_String&, _ExecutionList&);
 
@@ -625,7 +623,7 @@ ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionLi
 const _String GetStringFromFormula         (_String const*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);
 
-void    SerializeModel               (_String&,long,_AVLList* = nil, bool = false);
+void    SerializeModel               (_StringBuffer &,long,_AVLList* = nil, bool = false);
 bool    Get_a_URL                    (_String&,_String* = nil);
 
 long    AddDataSetToList             (_String&,_DataSet*);

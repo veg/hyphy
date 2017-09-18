@@ -97,7 +97,6 @@ modelFrequenciesIndices,
 listOfCompiledFormulae;
 
 _String
-markdownOutput                  ("MARKDOWN_OUTPUT"),
 globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 enforceGlobalPolynomialCap      ("ENFORCE_GLOBAL_POLYNOMIAL_CAP"),
                                 dropPolynomialTerms             ("DROP_POLYNOMIAL_TERMS"),
@@ -109,7 +108,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 defFileString                   ("DEFAULT_FILE_SAVE_NAME"),
                                 VerbosityLevelString            ("VERBOSITY_LEVEL"),
                                 useLastDefinedMatrix            ("USE_LAST_DEFINED_MATRIX"),
-                                selectionStrings                ("SELECTION_STRINGS"),
                                 dataPanelSourcePath             ("DATA_PANEL_SOURCE_PATH"),
                                 windowTypeTree                  ("TREEWINDOW"),
                                 windowTypeClose                 ("CLOSEWINDOW"),
@@ -1819,8 +1817,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                   _ElementaryCommand::ConstructModel (currentLine, *this);
               } else if (currentLine.BeginsWith (blChoiceList)) { // choice list
                   _ElementaryCommand::ConstructChoiceList (currentLine, *this);
-              } else if (currentLine.BeginsWith (blStateCounter)) { // Get Data Info
-                  _ElementaryCommand::ConstructStateCounter (currentLine, *this);
               } else if (currentLine.BeginsWith (blHBLProfile)) { // #profile
                   _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
               } else if (currentLine.BeginsWith (blSCFG)) { // SCFG definition
@@ -2703,670 +2699,11 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
     }
 }
 
-//____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
-{
-    chain.currentCommand++;
-    SetStatusLine ("Reconstructing Ancestors");
 
-    _String *likef          = (_String*)parameters(1),
-             tempString      = ProcessStringArgument (likef),
-             errMsg;
 
-    if (tempString.nonempty()) {
-        likef = &tempString;
-    }
 
-    _String name2lookup = AppendContainerName(*likef,chain.nameSpacePrefix);
-    long    objectID    = FindLikeFuncName (name2lookup);
-    if (objectID >= 0) {
-        _DataSet     * ds               = new _DataSet;
-        _String      * dsName           = new _String (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix));
-        _LikelihoodFunction *lf         = ((_LikelihoodFunction*)likeFuncList(objectID));
 
-        _Matrix * partitionList         = nil;
-        if (parameters.lLength>2) {
-            _String  secondArg = *(_String*)parameters(2);
-            partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
-        }
-        _SimpleList                     partsToDo;
-        if (lf->ProcessPartitionList(partsToDo, partitionList, " ancestral reconstruction")) {
-            lf->ReconstructAncestors(*ds, partsToDo, *dsName,  sample, simpleParameters.Find(-1) >= 0, simpleParameters.Find(-2) >= 0 );
-        }
-        StoreADataSet  (ds, dsName);
-        DeleteObject   (dsName);
-        DeleteObject   (partitionList);
-    } else {
-        objectID    =   FindSCFGName       (name2lookup);
-        if (objectID>=0)
-            /* reconstruct best parse tree for corpus using SCFG */
-        {
-            CheckReceptacleAndStore (&AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix)," ReconstructAncestors (SCFG)", true, new _FString( ((Scfg*)scfgList (objectID))->BestParseTree() ), false);
-        } else {
-            HandleApplicationError (_String("Likelihood Function/SCFG") & *likef & _String(" has not been initialized"));
-            return ;
-        }
-    }
-}
-
-
-
-
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
-// 20100312 SLKP: added matrix-expression based model
-// definitions
-{
-    chain.currentCommand++;
-    // first check to see if matrix parameters here are valid
-
-    bool     usingLastDefMatrix = false,
-             doExpressionBased  = false;
-
-    _Formula *isExpressionBased  = nil;
-
-    _String* parameterName,
-             errMsg,
-             arg0 = chain.AddNameSpaceToID(*(_String*)parameters(0));
-
-    long     f,
-             f2=-1L,
-             matrixDim,
-             f3,
-             multFreqs = 1;
-
-
-
-    if (parameters.lLength>3) {
-        parameterName = (_String*)parameters.lData[3];
-        if (parameterName->Equal(&explicitFormMExp)) {
-            doExpressionBased = true;
-            multFreqs         = 0;
-        } else {
-            multFreqs = ProcessNumericArgument (parameterName,chain.nameSpacePrefix);
-        }
-    }
-
-    _Matrix*  checkMatrix = nil;
-
-    parameterName = (_String*)parameters.lData[1];
-
-    if (parameterName->Equal (&useLastDefinedMatrix)) {
-        if (lastMatrixDeclared<0) {
-            errMsg = "First Call to Model. USE_LAST_DEFINED_MATRIX is meaningless.";
-            acknError (errMsg);
-            return;
-        }
-        f3 = lastMatrixDeclared;
-        f  = modelMatrixIndices[f3];
-        usingLastDefMatrix = true;
-    }
-
-
-    if (doExpressionBased) {
-        _String matrixExpression (ProcessLiteralArgument((_String*)parameters.lData[1],chain.nameSpacePrefix)),
-                defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment") & ':' & matrixExpression;
-        // try to parse the expression, confirm that it is a square  matrix,
-        // and that it is a valid transition matrix
-        isExpressionBased = new _Formula;
-        _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
-        matrixExpression =  _ElementaryCommand::FindNextCommand (matrixExpression);
-        long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
-        if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
-            WarnError (defErrMsg & " parse code = " & parseCode & " " & (parseCode == HY_FORMULA_EXPRESSION ? (_String(", object type code ") & _String((long) isExpressionBased->ObjectClass())) : emptyString ));
-            return;
-        }
-
-        //for (unsigned long k = 0; k < isExpressionBased
-
-        checkMatrix = (_Matrix*)isExpressionBased->Compute();
-
-
-    } else {
-        parameterName = (_String*)parameters.lData[1];
-
-        _String augName (chain.AddNameSpaceToID(*parameterName));
-        f = LocateVarByName (augName);
-
-        if (f<0) {
-            WarnError (*parameterName & " has not been defined prior to the call to Model = ...");
-            return;
-        }
-
-        _Variable* checkVar = usingLastDefMatrix?LocateVar(f):FetchVar (f);
-        if (checkVar->ObjectClass()!=MATRIX) {
-            WarnError (*parameterName & " must refer to a matrix in the call to Model = ...");
-            return;
-        }
-        checkMatrix = (_Matrix*)checkVar->GetValue();
-    }
-
-
-
-    // so far so good
-    matrixDim = checkMatrix->GetHDim();
-    if ( matrixDim!=checkMatrix->GetVDim() || matrixDim<2 ) {
-      WarnError (*parameterName & " must be a square matrix of dimension>=2 in the call to Model = ...");
-      return;
-    }
-
-    parameterName = (_String*)parameters.lData[2]; // this is the frequency matrix (if there is one!)
-    _String         freqNameTag (chain.AddNameSpaceToID(*parameterName));
-
-    f2 = LocateVarByName (freqNameTag);
-    if (f2<0) {
-        WarnError(*parameterName & " has not been defined prior to the call to Model = ...");
-        return;
-    }
-    _Variable * checkVar = FetchVar (f2);
-    if (checkVar->ObjectClass()!=MATRIX) {
-        WarnError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
-        return;
-    }
-
-    checkMatrix = (_Matrix*)checkVar->GetValue();
-
-   if (checkMatrix->GetVDim()==1UL) {
-        if (checkMatrix->GetHDim()!=matrixDim) {
-            WarnError (*parameterName & " must be a column vector of the same dimension as the model matrix in the call to Model = ...");
-            return;
-        }
-    } else if (checkMatrix->GetHDim()==1UL) {
-        if (checkMatrix->GetVDim()!=matrixDim) {
-            WarnError ( *parameterName & " must be a row vector of the same dimension as the model matrix in the call to Model = ...");
-            return;
-        }
-        errMsg = *parameterName & " has been transposed to the default column vector setting ";
-        checkMatrix->Transpose();
-        ReportWarning (errMsg);
-    } else {
-        WarnError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
-        return;
-    }
-
-    if (usingLastDefMatrix) {
-        if (modelFrequenciesIndices[f3]<0) {
-            f2 = -f2-1;
-        }
-    } else if (multFreqs == 0) { // optional flag present
-        f2 = -f2-1;
-    }
-
-    long existingIndex = modelNames.FindObject(&arg0);
-
-    if (existingIndex == -1) { // name not found
-        lastMatrixDeclared = modelNames.FindObject (&emptyString);
-
-        if (lastMatrixDeclared>=0) {
-            modelNames.Replace (lastMatrixDeclared,&arg0,true);
-            modelTypeList.lData[lastMatrixDeclared] = isExpressionBased?matrixDim:0;
-            if (isExpressionBased) {
-                modelMatrixIndices.lData[lastMatrixDeclared] = (long)isExpressionBased;
-            } else {
-                modelMatrixIndices.lData[lastMatrixDeclared] = (usingLastDefMatrix?f:variableNames.GetXtra(f));
-            }
-
-            if (f2>=0) {
-                modelFrequenciesIndices.lData[lastMatrixDeclared] = variableNames.GetXtra(f2);
-            } else {
-                modelFrequenciesIndices.lData[lastMatrixDeclared] = -variableNames.GetXtra(-f2-1)-1;
-            }
-        } else {
-            modelNames && & arg0;
-            modelTypeList << (isExpressionBased?matrixDim:0);
-            if (isExpressionBased) {
-                modelMatrixIndices << (long)isExpressionBased;
-            } else {
-                modelMatrixIndices << (usingLastDefMatrix?f:variableNames.GetXtra(f));
-            }
-            if (f2>=0) {
-                modelFrequenciesIndices << variableNames.GetXtra(f2);
-            } else {
-                modelFrequenciesIndices << -variableNames.GetXtra(-f2-1)-1;
-            }
-            lastMatrixDeclared = modelNames.lLength-1;
-        }
-    } else {
-        modelNames.Replace(existingIndex,&arg0,true);
-        if (modelTypeList.lData[existingIndex]) {
-            delete ((_Formula*)modelMatrixIndices[existingIndex]);
-        }
-
-        modelTypeList.lData[existingIndex] = isExpressionBased?matrixDim:0;
-        if (isExpressionBased) {
-            modelMatrixIndices[existingIndex] = (long)isExpressionBased;
-        } else {
-            modelMatrixIndices[existingIndex] = usingLastDefMatrix?f:variableNames.GetXtra(f);
-        }
-
-
-        if (f2>=0) {
-            modelFrequenciesIndices[existingIndex] = variableNames.GetXtra(f2);
-        } else {
-            modelFrequenciesIndices[existingIndex] = -variableNames.GetXtra(-f2-1)-1;
-        }
-
-        lastMatrixDeclared = existingIndex;
-    }
-}
-
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    // first check to see if matrix parameters here are valid
-    long        f = LocateVarByName (AppendContainerName(*(_String*)parameters (3),chain.nameSpacePrefix)),
-                fixedLength = ProcessNumericArgument((_String*)parameters(2),chain.nameSpacePrefix);
-
-
-    _String     saveTheArg,
-                dialog_title (ProcessLiteralArgument((_String*)parameters(1),chain.nameSpacePrefix));
-    _SimpleList sel,
-                exclusions;
-
-    long         do_markdown;
-    checkParameter (markdownOutput,do_markdown,0L);
-
-    _Variable* holder;
-
-    if (fixedLength<0) {
-        fixedLength = 1;
-        saveTheArg = *(_String*)parameters(2) & " should represent a non-negative integer in call to ChoiceList. The value was reset to 1";
-        ReportWarning (saveTheArg);
-    }
-
-    if (f>=0) {
-        holder = FetchVar(f);
-        if (holder->ObjectClass()==NUMBER) {
-            if ((f = holder->Value())>=0) {
-                exclusions<<f;
-            }
-        } else if (holder->ObjectClass()==MATRIX) {
-            _Matrix* theExcl = (_Matrix*)holder->GetValue()->Compute();
-            for (long k=theExcl->GetHDim()*theExcl->GetVDim()-1; k>=0; k--) {
-                f = (*theExcl)[k];
-                if (f>=0) {
-                    exclusions<<f;
-                }
-            }
-            exclusions.Sort();
-        }
-    }
-
-    holder = CheckReceptacle (&AppendContainerName(*(_String*)parameters (0),chain.nameSpacePrefix), "Choice List", true);
-    holder->SetBounds (-2.0, holder->GetUpperBound());
-
-    bool    validChoices = simpleParameters.lData[0] == 0;
-
-    if (simpleParameters.lData[0])
-        // some data structure present - process accordingly
-    {
-        saveTheArg = *(_String*)parameters(4);
-        // see if there is a "standard argument"
-        _List choices;
-        if (saveTheArg == _String("LikelihoodFunction")) {
-            parameters.Delete(4);
-            for (f=0; f<likeFuncList.lLength; f++) {
-                if (exclusions.BinaryFind(f)>=0) {
-                    continue;
-                }
-
-                if (likeFuncList.lData[f]) {
-                    _List thisPair;
-                    thisPair << likeFuncNamesList(f);
-                    _String likeFuncDesc ("Likelihood Function \"");
-                    likeFuncDesc = likeFuncDesc&*(_String*)likeFuncNamesList(f)&("\".");
-
-                    thisPair && &likeFuncDesc;
-                    choices&& &thisPair;
-                }
-            }
-            validChoices = true;
-            parameters&& & choices;
-        } else {
-            _String nmspName = AppendContainerName(saveTheArg,chain.nameSpacePrefix);
-            f = FindDataFilter (nmspName);
-            if (f>=0) {
-                parameters.Delete(4);
-
-                _DataSetFilter const *theFilter = GetDataFilter (f);
-                _DataSet *linked_set = theFilter->GetData();
-
-                for (unsigned long species_index  = 0; species_index < theFilter->NumberSpecies(); species_index ++) {
-                    if (exclusions.BinaryFind(species_index) >= 0) {
-                        continue;
-                    }
-
-                  choices < &((*new _List)
-                              << linked_set->GetSequenceName(species_index)
-                              < new _String (_String ("Taxon ") & (species_index + 1) & '(' & *linked_set->GetSequenceName(species_index) & ')'));
-                }
-
-                validChoices = true;
-                parameters&& & choices;
-            } else {
-                f = FindDataSetName (nmspName);
-                if (f>=0) {
-                    parameters.Delete(4);
-                    _DataSet *linked_set = (_DataSet*)dataSetList (f);
-                    for (unsigned long species_index  = 0; species_index < linked_set->NoOfSpecies(); species_index ++) {
-                        if (exclusions.BinaryFind(species_index) >= 0) {
-                            continue;
-                        }
-
-                        choices < &((*new _List)
-                                  << linked_set->GetSequenceName(species_index)
-                                  < new _String (_String ("Taxon ") & (species_index + 1) & '(' & *linked_set->GetSequenceName(species_index) & ')'));
-
-                     }
-
-                    validChoices = true;
-                    parameters&& & choices;
-                } else {
-                    if (saveTheArg==lastModelParameterList) {
-                        f = lastMatrixDeclared;
-                    } else {
-                        f = modelNames.FindObject(&nmspName);
-                    }
-
-                    if (f>=0) {
-                        parameters.Delete(4);
-
-                        _Variable *theSet = LocateVar (modelMatrixIndices.lData[f]);
-                        _SimpleList modelParms;
-
-                        choices << &((*new _List) < "All Parameters" < "All local model parameters are constrained");
-
-                        _AVLList modelParmsA (&modelParms);
-                        theSet->ScanForVariables(modelParmsA,false);
-                        modelParmsA.ReorderList();
-                        for (f = 0; f<modelParms.lLength; f++) {
-                            if (exclusions.BinaryFind(f)>=0) {
-                                continue;
-                            }
-
-                            choices << &((*new _List)
-                                         << LocateVar(modelParms.lData[f])->GetName()
-                                         < new _String (_String ("Constrain parameter ") & *LocateVar(modelParms.lData[f])->GetName()));
-
-                        }
-                        validChoices = true;
-                        parameters&& & choices;
-                    } else {
-                        f = LocateVarByName (nmspName);
-                        if (f>=0) {
-                            _Variable * theV = FetchVar(f);
-                            if (theV->ObjectClass() == MATRIX) {
-                                _Matrix * vM = (_Matrix*)theV->GetValue();
-                                if (vM->IsAStringMatrix() && (vM->GetVDim () == 2)) {
-                                    parameters.Delete(4);
-                                    for (f = 0; f<vM->GetHDim(); f++) {
-                                        if (exclusions.BinaryFind (f) < 0) {
-                                            _Formula   *f1 = vM->GetFormula (f,0),
-                                                        *f2 = vM->GetFormula (f,1);
-
-                                            if (f1&&f2) {
-                                                _PMathObj p1 = f1->Compute(),
-                                                          p2 = f2->Compute();
-
-                                                if (p1&&p2&&(p1->ObjectClass() == STRING)&&(p2->ObjectClass() == STRING)) {
-                                                    _List thisPair;
-                                                    thisPair << ((_FString*)p1)->theString;
-                                                    thisPair << ((_FString*)p2)->theString;
-                                                    choices&& &thisPair;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    validChoices = true;
-                                    parameters&& & choices;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (validChoices) {
-        long choice = -1;
-        _List* theChoices = (_List*)parameters(4);
-        if (fixedLength>theChoices->lLength) {
-            _String e = "List of selections is too short in ChoiceList";
-            acknError (e);
-        } else {
-            if (chain.stdinRedirect) {
-                if (fixedLength == 1) {
-                    _String buffer (chain.FetchFromStdinRedirect());
-                    for (choice = 0; choice<theChoices->lLength; choice++) {
-                        if (buffer.Equal ((_String*)(*(_List*)(*theChoices)(choice))(0))) {
-                            break;
-                        }
-                    }
-                    if (choice == theChoices->lLength) {
-                        WarnError (_String("Not a valid option: '") & buffer & "' passed to Choice List '" & dialog_title & "' using redirected stdin input");
-                        return;
-                    }
-                } else {
-                    if (fixedLength>0) {
-                        while (sel.lLength<fixedLength) {
-                            _String buffer (chain.FetchFromStdinRedirect());
-                            for (choice = 0; choice<theChoices->lLength; choice++)
-                                if (buffer.Equal ((_String*)(*(_List*)(*theChoices)(choice))(0))) {
-                                    break;
-                                }
-                            if (choice<theChoices->lLength && sel.Find(choice)==-1) {
-                                sel<<choice-1;
-                            } else {
-                                break;
-                            }
-                        }
-                        if (sel.lLength<fixedLength) {
-                            WarnError ("Failed to make the required number of choices in ChoiceList using redirected stdin input.");
-                            return;
-                        }
-                    } else
-                        while (1) {
-                            _String buffer (chain.FetchFromStdinRedirect());
-                            if (buffer.sLength) {
-                                for (choice = 0; choice<theChoices->lLength; choice++) {
-                                    if (buffer.Equal((_String*)(*(_List*)(*theChoices)(choice))(0))) {
-                                        break;
-                                    }
-                                }
-                                if (choice<theChoices->lLength && sel.Find(choice)==-1) {
-                                    sel<<choice;
-                                } else {
-                                    WarnError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to ChoiceList (with multiple selections) '" & dialog_title & "' using redirected stdin input");
-                                    return;
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                }
-            } else {
-#ifdef  __HEADLESS__
-                WarnError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
-                return;
-#else
-
-
-
-                if (do_markdown) {
-                  printf ("\n\n####%s\n", dialog_title.getStr());
-                } else {
-
-                  printf ("\n\n\t\t\t+");
-
-                  for (f = 1; f<dialog_title.sLength+1; f++) {
-                      printf ("-");
-                  }
-
-                  printf ("+\n\t\t\t|%s|\n\t\t\t+",(const char*)dialog_title);
-
-                  for (f = 1; f<dialog_title.sLength+1; f++) {
-                      printf ("-");
-                  }
-
-                  printf ("+\n\n");
-                }
-
-
-                long  loopits = 1;
-
-                if (fixedLength == 1) {
-                    while (choice == -1) {
-                        for (choice = 0; choice<theChoices->lLength; choice++) {
-                          if (do_markdown) {
-                            printf ("\n%ld. [**%s**] %s", choice+1, ((_String*)(*(_List*)(*theChoices)(choice))(0))->getStr(),((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
-                          } else {
-                            printf ("\n\t(%ld):[%s] %s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(0))->getStr(),((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
-                          }
-                        }
-
-                        printf ("\n\n%sPlease choose an option (or press q to cancel selection):", do_markdown ? ">" : "");
-                        _String buffer (StringFromConsole());
-                        if (buffer.sData[0] == 'q' || buffer.sData[0] =='Q') {
-                            choice = -1;
-                            break;
-                        }
-                        choice = buffer.toNum();
-                        if (choice<1 || choice>theChoices->lLength) {
-                            choice = -1;
-                            if (loopits++ > 10) {
-                                FlagError ("Failed to make a valid selection in ChoiceList after 10 tries");
-                                return;
-                            }
-                        } else {
-                            choice--;
-                        }
-                    }
-                } else {
-                    if (fixedLength>0)
-                        while (sel.lLength<fixedLength) {
-                            for (choice = 0; choice<theChoices->lLength; choice++) {
-                                if (sel.Find(choice)==-1) {
-                                    printf ("\n\t(%ld):%s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
-                                }
-                            }
-                            printf ("\n\n%sPlease choose option %ld of %ld (or press q to cancel selection):",do_markdown ? ">" : "", sel.lLength+1,fixedLength);
-                            _String buffer (StringFromConsole());
-                            if (buffer.sData[0] == 'q' || buffer.sData[0] =='Q') {
-                                choice = -1;
-                                break;
-                            }
-                            choice = buffer.toNum();
-                            if ((choice>=1)&&(choice<=theChoices->lLength)) {
-                                if (sel.Find(choice)==-1) {
-                                    sel<<choice-1;
-                                }
-                            } else {
-                                if (loopits++ > 10) {
-                                    FlagError ("Failed to make a valid selection in ChoiceList after 10 tries");
-                                    return;
-                                }
-                            }
-                        }
-                    else
-                        while (1) {
-                            for (choice = 0; choice<theChoices->lLength; choice++) {
-                                if (sel.Find(choice)==-1) {
-                                    printf ("\n\t(%ld):[%s] %s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(0))->getStr(),((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
-                                }
-                            }
-                            printf ("\n\n%sPlease choose option %ld, enter d to complete selection, enter q to cancel:",do_markdown ? ">" : "",sel.lLength+1);
-                            _String buffer (StringFromConsole());
-                            if (buffer.sData[0] == 'q' || buffer.sData[0] =='Q') {
-                                choice = -1;
-                                break;
-                            }
-                            if (buffer.sData[0] == 'd' || buffer.sData[0] =='D') {
-                                break;
-                            }
-
-                            choice = buffer.toNum();
-                            if ((choice>=1)&&(choice<=theChoices->lLength)) {
-                                if (sel.Find(choice)==-1) {
-                                    sel<<choice-1;
-                                }
-                            } else {
-                                if (loopits++ > 10) {
-                                    FlagError ("Failed to make a valid selection in ChoiceList after 10 tries");
-                                    return;
-                                }
-                            }
-                        }
-                }
-#endif
-            }
-
-            _Variable* sStrV = CheckReceptacle(&selectionStrings,emptyString,false);
-
-            if (fixedLength == 1) {
-                if (choice>=0) {
-                    _FString  choiceString (*(_String*) ((_List*)(*theChoices)(choice))->lData[0]);
-                    sStrV->SetValue (&choiceString);
-                    for (long k=0; k<exclusions.lLength; k++) {
-                        if (choice>=exclusions.lData[k]) {
-                            choice++;
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                holder->SetValue (new _Constant (choice), false);
-            } else {
-                if (fixedLength == 0) {
-                    fixedLength = sel.lLength;
-                    if (fixedLength == 0) {
-                        fixedLength = 1;
-                    }
-                }
-                sel.Sort();
-                _Matrix   selVector (1,fixedLength,false,true);
-                _Matrix   selMatrix (1,fixedLength,false,true);
-                if (choice == -1) {
-                    selVector[0]=-1;
-                } else {
-                    for (f=0; f<fixedLength; f++) {
-                        choice=sel.lData[f];
-
-                        _FString  *choiceString = new _FString ((*(_String*) ((_List*)(*theChoices)(choice))->lData[0]));
-                        _Formula  sf (choiceString);
-                        selMatrix.MStore(0,f,sf);
-                        for (long k=0; k<exclusions.lLength; k++) {
-                            if (choice>=exclusions.lData[k]) {
-                                choice++;
-                            } else {
-                                break;
-                            }
-                        }
-                        selVector[f]=choice;
-                        //DeleteObject (choiceString);
-                    }
-                    sStrV->SetValue (&selMatrix);
-                }
-                holder->SetValue (&selVector);
-            }
-
-            if (choice<0) {
-                terminateExecution = true;
-            }
-        }
-    } else {
-        WarnError  ("List of selections is invalid in ChoiceList");
-    }
-
-    if (simpleParameters.lData[0]) {
-        parameters.Delete(4);
-        parameters&& &saveTheArg;
-    }
-}
 
 
 
@@ -4607,10 +3944,10 @@ bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionL
     long upto = source.FindBackwards(_String('}'), 0, -1);
     if (upto >= 0) {
         _String clipped (source, upto+1, -1);
-        if (clipped.beginswith (blWhile)) {
-            source.Trim (blDo.sLength,upto);
+        if (clipped.BeginsWith (blWhile)) {
+            source.Trim (blDo.length(),upto);
             _List pieces;
-            ExtractConditions (clipped,blWhile.sLength,pieces);
+            ExtractConditions (clipped,blWhile.length(),pieces);
             if (pieces.lLength != 1) {
                 HandleApplicationError ("Malformed while clause in a do-while loop");
                 return false;
@@ -4633,14 +3970,9 @@ bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionL
 bool    _ElementaryCommand::ProcessInclude      (_String&source, _ExecutionList&target)
 {
 
-    _String         fileName (source,blInclude.sLength,source.sLength-2);
-    fileName = ProcessLiteralArgument (&fileName,target.nameSpacePrefix);
-    if (fileName.sLength == 0) {
-        HandleApplicationError (_String("#include missing a meaningful filename. Check that there is a ';' at the end of the statement. Had ")& source.Cut(8,source.sLength-2).Enquote());
-        return false;
-    }
-
-    fileName.ProcessFileName(false,false,(hyPointer)target.nameSpacePrefix);
+    _String         fileName (source, blInclude.length (),(long)source.length () - 2L);
+  
+    ProcessFileName(fileName, false,false,(hyPointer)target.nameSpacePrefix);
     if (terminate_execution) {
         return false;
     }
@@ -4661,7 +3993,7 @@ _ElementaryCommand* makeNewCommand (long ccode) {
 //____________________________________________________________________________________
 
 void _ElementaryCommand::addAndClean (_ExecutionList&target,_List* parameter_list, long start_at) {
-    if (parList) {
+    if (parameter_list) {
         // TODO 20170913 SLKP : check that << works as well
         for (long i = start_at; i < parameter_list->countitems(); i++) {
           parameters << parameter_list->GetItem(i);
@@ -4842,12 +4174,12 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
 // category <id> = (number of int, weights, method for representation, density, cumulative, left bound, right bound);
 {
 
-    long    mark1 = source.FirstSpaceIndex  (0,-1,1),
+    long    mark1 = source.FirstSpaceIndex  (0,kStringEnd,kStringDirectionForward),
             mark2 = source.Find             ('=', mark1, -1);
 
     _String catID (source,mark1+1,mark2-1);
 
-    if (mark1==-1 || mark2==-1 || catID.Length()==0 ) {
+    if (mark1==-1 || mark2==-1 || catID.empty () ) {
         HandleApplicationError("Category variable declaration missing a valid identifier");
         return false;
     }
@@ -4874,28 +4206,13 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
     return false;
 }
 
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructStateCounter (_String&source, _ExecutionList&target)
-// UseMatrix (matrixIdent)
-{
-    _List args;
-    ExtractConditions (source,blStateCounter.sLength,args,',');
-    if (args.lLength!=2) {
-        HandleApplicationError ("Expected: StateCounter(likefuncID, callback function ID)");
-        return false;
-    }
-    (new _ElementaryCommand(47))->addAndClean (target,&args,0);
-    return true;
-}
-
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&target) {
     _List args;
 
 
-    ExtractConditions (source,blChoiceList.sLength,args,',');
+    ExtractConditions (source,blChoiceList.length(),args,',');
     if (args.lLength<5UL) {
         HandleApplicationError  ("ChoiceList needs at least 5 arguments");
         return false;
@@ -4936,7 +4253,7 @@ bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&t
 bool    _ElementaryCommand::ConstructTree (_String&source, _ExecutionList&target)
 // Tree   treeid = (...) or Topology = (...);
 {
-    long    mark1 = source.FirstSpaceIndex(0,-1,1);
+    long    mark1 = source.FirstSpaceIndex(0,-1,kStringDirectionForward);
     if (mark1 > 0) {
       mark1 = source.FirstNonSpaceIndex (mark1 + 1, -1);
     }
@@ -4981,13 +4298,13 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionLi
 {
     // first we must segment out the data set name
 
-    long  mark1 = source.FirstNonSpaceFollowingSpace (0,-1,1),
+    long  mark1 = source.FirstNonSpaceFollowingSpace (0,-1,kStringDirectionForward),
           mark2 = source.FindTerminator(mark1+1, "=");
 
     _String dsID    (source,mark1,mark2-1),
             command;
 
-    if ( mark1==-1 || mark2==-1 || dsID.Length()==0) {
+    if ( mark1==-1 || mark2==-1 || dsID.empty()) {
         HandleApplicationError ("DataSetFilter declaration missing a valid identifier");
         return false;
     }
@@ -5035,7 +4352,7 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
 {
     // first we must segment out the data set name
 
-    long    mark1 = source.FirstSpaceIndex(0,-1,1),
+    long    mark1 = source.FirstSpaceIndex(0,-1,kStringDirectionForward),
             mark2 = source.Find ('=', mark1, -1);
 
     _String modelID (source,mark1+1,mark2-1);
@@ -5151,9 +4468,9 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 {
 
 
-    bool    isFFunction = source.beginswith (blFFunction),
-            isLFunction = source.beginswith (blLFunction),
-            isNameSpace = source.beginswith (blNameSpace);
+    bool    isFFunction = source.BeginsWith (blFFunction),
+            isLFunction = ! isFFunction && source.BeginsWith (blLFunction),
+            isNameSpace = ! isFFunction && ! isLFunction && source.BeginsWith (blNameSpace);
 
     if (!isNameSpace) {
       if (isInFunction == _HY_FUNCTION) {
@@ -5165,7 +4482,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
 
 
-    long    mark1 = source.FirstNonSpaceIndex(isNameSpace ? blNameSpace.sLength: ((isFFunction||isLFunction)?blFFunction.sLength:blFunction.sLength),-1,1),
+    long    mark1 = source.FirstNonSpaceIndex(isNameSpace ? blNameSpace.length(): ((isFFunction||isLFunction)?blFFunction.length():blFunction.length() ),-1,kStringDirectionForward),
             mark2 = source.Find (isNameSpace ? '{' : '(', mark1, -1);
 
 
@@ -5201,7 +4518,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       long upto = ExtractConditions (source,mark2+1,arguments,',',false);
 
 
-      if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}') {
+      if (upto==source.length() || source[upto]!='{' || source (-1)!='}') {
           HandleApplicationError (_String("Function declaration is missing a valid function body."));
           isInFunction= _HY_NO_FUNCTION;
           return false;
@@ -5214,8 +4531,8 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       for (long k = 0UL; k < arguments.lLength; k++) {
 
           _String*   namespaced = new _String(chain.AddNameSpaceToID (*(_String*)arguments(k), & extraNamespace));
-          if (namespaced->get_char(namespaced->sLength - 1L) == '&') {
-            namespaced->Trim(0,namespaced->sLength-2);
+          if ((*namespaced)(-1L) == '&') {
+            namespaced->Trim(0,namespaced->length() -2);
             argument_types << kBLFunctionArgumentReference;
           } else {
             argument_types << kBLFunctionArgumentNormal;
@@ -5224,7 +4541,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       }
 
 
-      _String          sfunctionBody (source, upto+1,source.Length()-2);
+      _String          sfunctionBody (source, upto+1,source.length ()-2);
       _ExecutionList * functionBody;
 
       if (isLFunction) {
@@ -5263,12 +4580,12 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
           batchLanguageFunctionClassification <<(isLFunction ? kBLFunctionLocal :( isFFunction? kBLFunctionSkipUpdate :  kBLFunctionAlwaysUpdate));
       }
     } else {
-      if (mark2 == source.sLength || source[mark2]!='{' || source[source.sLength-1]!='}') {
+      if (mark2 == source.length () || source[mark2]!='{' || source (-1L) !='}') {
         HandleApplicationError (_String("Namespace declaration is missing a body."));
         isInFunction= _HY_NO_FUNCTION;
         return false;
       }
-      _String          namespace_text (source, mark2+1,source.Length()-2);
+      _String          namespace_text (source, mark2+1,source.length()-2);
       bool             success = false;
 
 
@@ -5293,7 +4610,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&target) {
 // syntax: return <statement>
-    long    mark1 = source.FirstNonSpaceIndex(blReturn.sLength,-1,1);
+    long    mark1 = source.FirstNonSpaceIndex(blReturn.length(),-1,kStringDirectionForward);
 
     _ElementaryCommand ret;
 
@@ -5301,8 +4618,8 @@ bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&targ
 
     if (mark1!=-1) {
         _String cut_s;
-        if (source.sData[source.sLength-1]==';') {
-            cut_s = source.Cut (mark1,source.sLength-2);
+        if (source (-1) ==';') {
+            cut_s = source.Cut (mark1,source.length () - 2L);
         } else {
             cut_s = source.Cut (mark1,-1);
         }
@@ -5328,7 +4645,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
 // read/parse a file into an execution list
 // THE function!!!
 
-    fName.ProcessFileName(target.nameSpacePrefix);
+    ProcessFileName(fName, target.nameSpacePrefix);
 
     if (terminate_execution) {
         return;
@@ -5339,14 +4656,14 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
         FetchVar(LocateVarByName (optimizationPrecision))->SetValue(&precvalue);
     #endif*/
 
-    FILE            *f = doFileOpen (fName.getStr(), "rb");
+    FILE            *f = doFileOpen (fName.get_str (), "rb");
     SetStatusLine   ("Parsing File");
     if (!f) {
         HandleApplicationError (_String("Could not read batch file '") & fName & "'.\nPath stack:\n\t" & GetPathStack("\n\t"));
     } else {
         _String source_file (f);
 
-        if (source_file.beginswith("#NEXUS",false)) {
+        if (source_file.BeginsWith ("#NEXUS",false)) {
             ReadDataSetFile (f,1,nil,&fName, nil, &defaultTranslationTable, &target);
         } else {
             target.BuildList (source_file);
@@ -5359,7 +4676,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
 
 
 //____________________________________________________________________________________
-void    SerializeModel  (_String& rec, long theModel, _AVLList* alreadyDone, bool completeExport)
+void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDone, bool completeExport)
 {
     bool        mByF = true,
                 do2  = false;
@@ -5428,15 +4745,12 @@ void    SerializeModel  (_String& rec, long theModel, _AVLList* alreadyDone, boo
         vlst.ReorderList ();
         SplitVariablesIntoClasses (vl,ind,dep,cat);
 
-        _String glVars (128L, true),
-                locVars(128L, true);
+        _StringBuffer glVars (128L),
+                locVars(128L);
 
         ExportIndVariables (glVars,locVars, &ind);
         ExportDepVariables (glVars,locVars, &dep);
-        glVars.Finalize();
-        locVars.Finalize();
-        rec<<glVars;
-        rec<<locVars;
+        rec << glVars <<locVars;
         ExportCatVariables (rec,&cat);
     }
 
@@ -5452,21 +4766,17 @@ void    SerializeModel  (_String& rec, long theModel, _AVLList* alreadyDone, boo
         ((_Matrix*)   tV2->GetValue())->Serialize (rec,*tV2->GetName());
     }
 
-    rec << "\nModel ";
-    rec << *((_String*)modelNames (theModel));
-    rec << "=(";
+    rec << "\nModel "
+     << *((_String*)modelNames (theModel))
+     << "=(";
     if (theExp) {
-        rec << '"';
-        rec << _String((_String*)(theExp->toStr()));
-        rec << '"';
-    } else {
+        rec << _String((_String*)(theExp->toStr())).Enquote();
+     } else {
         rec << *tV->GetName();
     }
-    rec << ',';
-    rec << *tV2->GetName();
+    rec << ',' << *tV2->GetName();
     if (theExp) {
-        rec << ',';
-        rec << explicitFormMExp;
+        rec << ',' << explicitFormMExp;
     } else if (!mByF) {
         rec << ",0";
     }

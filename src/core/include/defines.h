@@ -217,7 +217,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_INVALID_RETURN_VALUE                        NAN
 #define  HY_CONSTANT_FALSE                              _Constant (0.0)
 #define  HY_CONSTANT_TRUE                               _Constant (1.0)
-
+#define  HY_NULL_RETURN                                 _MathObject ()
 
 //!  Batch Language 'Object' type codes
 /*!

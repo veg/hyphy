@@ -44,6 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "list.h"
 #include "avllistx.h"
 #include "hy_strings.h"
+#include "hy_string_buffer.h"
 #include "stdio.h"
 #include "classes.h"
 
@@ -59,6 +60,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "variablecontainer.h"
 #include "trie.h"
 #include "hbl_env.h"
+
 
 //End parser specific includes
 
@@ -151,11 +153,11 @@ void        FinishDeferredSF(void);
 
 void        SetupOperationLists (void);
 void        ExportIndVariables
-(_String&, _String&, _SimpleList*);
+(_StringBuffer&, _String&, _SimpleList*);
 void        ExportDepVariables
-(_String&, _String&, _SimpleList*);
+(_StringBuffer&, _String&, _SimpleList*);
 void        ExportCatVariables
-(_String&, _SimpleList*);
+(_StringBuffer&, _SimpleList*);
 
 void        SplitVariablesIntoClasses
 (_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);

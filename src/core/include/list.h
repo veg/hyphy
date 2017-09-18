@@ -187,7 +187,7 @@ class _List:public _SimpleList {
         bool operator == (_List const&) const;
   
   
-        template <typename ARG_TYPE, typename... Args>
+        template <typename... Args>
         void AppendObjectsToList (BaseRef const& first, const Args&... args) {
           AppendNewInstance (first);
           AppendObjectsToList (args...);

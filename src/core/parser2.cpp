@@ -1914,8 +1914,7 @@ void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarL
 
 //__________________________________________________________________________________
 
-void ExportCatVariables (_String& rec, _SimpleList* catVarList)
-{
+void ExportCatVariables (_StringBuffer & rec, _SimpleList* catVarList) {
     _SimpleList     nonInd;
 
     for (long idx = 0; idx < catVarList->lLength; idx++)

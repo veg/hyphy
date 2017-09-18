@@ -289,8 +289,7 @@ bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matr
         partsToDo.FilterRange (-1, partCount);
         if (partsToDo.lLength == 0) {
             throw (_String("An invalid likelihood function partition specification"));
-            return false;
-        }
+         }
     } else {
       partsToDo.Populate (partCount, 0, 1);
     }

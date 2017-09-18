@@ -3321,5 +3321,199 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
 }
 
 
+  //____________________________________________________________________________________
+
+void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
+    // 20100312 SLKP: added matrix-expression based model
+    // definitions
+  chain.advance();
+  
+  try {
+      // first check to see if matrix parameters here are valid
+    
+    bool     usingLastDefMatrix = false,
+    doExpressionBased  = false;
+    
+    _Formula *isExpressionBased  = nil;
+    
+    _String* parameterName,
+    errMsg,
+    arg0 = chain.AddNameSpaceToID(*(_String*)parameters(0));
+    
+    long     f,
+    f2=-1L,
+    matrixDim,
+    f3,
+    multFreqs = 1;
+    
+    
+    
+    if (parameters.lLength>3) {
+      parameterName = (_String*)parameters.lData[3];
+      if (parameterName->Equal(&explicitFormMExp)) {
+        doExpressionBased = true;
+        multFreqs         = 0;
+      } else {
+        multFreqs = ProcessNumericArgument (parameterName,chain.nameSpacePrefix);
+      }
+    }
+    
+    _Matrix*  checkMatrix = nil;
+    
+    parameterName = (_String*)parameters.lData[1];
+    
+    if (parameterName->Equal (&useLastDefinedMatrix)) {
+      if (lastMatrixDeclared<0) {
+        throw "First Call to Model. USE_LAST_DEFINED_MATRIX is meaningless.";
+      }
+      f3 = lastMatrixDeclared;
+      f  = modelMatrixIndices[f3];
+      usingLastDefMatrix = true;
+    }
+    
+    
+    if (doExpressionBased) {
+      _String matrixExpression (ProcessLiteralArgument((_String*)parameters.lData[1],chain.nameSpacePrefix)),
+      defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment") & ':' & matrixExpression;
+        // try to parse the expression, confirm that it is a square  matrix,
+        // and that it is a valid transition matrix
+      isExpressionBased = new _Formula;
+      _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+      matrixExpression =  _ElementaryCommand::FindNextCommand (matrixExpression);
+      long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
+      if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
+        throw (defErrMsg & " parse code = " & parseCode & " " & (parseCode == HY_FORMULA_EXPRESSION ? (_String(", object type code ") & _String((long) isExpressionBased->ObjectClass())) : kEmptyString ));
+      }
+      
+        //for (unsigned long k = 0; k < isExpressionBased
+      
+      checkMatrix = (_Matrix*)isExpressionBased->Compute();
+      
+      
+    } else {
+      parameterName = (_String*)parameters.lData[1];
+      
+      _String augName (chain.AddNameSpaceToID(*parameterName));
+      f = LocateVarByName (augName);
+      
+      if (f<0) {
+        throw (*parameterName & " has not been defined prior to the call to Model = ...");
+      }
+      
+      _Variable* checkVar = usingLastDefMatrix?LocateVar(f):FetchVar (f);
+      if (checkVar->ObjectClass()!=MATRIX) {
+        throw (*parameterName & " must refer to a matrix in the call to Model = ...");
+      }
+      checkMatrix = (_Matrix*)checkVar->GetValue();
+    }
+    
+    
+    
+      // so far so good
+    matrixDim = checkMatrix->GetHDim();
+    if ( matrixDim!=checkMatrix->GetVDim() || matrixDim<2 ) {
+      throw (*parameterName & " must be a square matrix of dimension>=2 in the call to Model = ...");
+    }
+    
+    parameterName = (_String*)parameters.lData[2]; // this is the frequency matrix (if there is one!)
+    _String         freqNameTag (chain.AddNameSpaceToID(*parameterName));
+    
+    f2 = LocateVarByName (freqNameTag);
+    if (f2<0) {
+      throw(*parameterName & " has not been defined prior to the call to Model = ...");
+    }
+    _Variable * checkVar = FetchVar (f2);
+    if (checkVar->ObjectClass()!=MATRIX) {
+      throw (*parameterName & " must refer to a column/row vector in the call to Model = ...");
+     }
+    
+    checkMatrix = (_Matrix*)checkVar->GetValue();
+    
+    if (checkMatrix->GetVDim()==1UL) {
+      if (checkMatrix->GetHDim()!=matrixDim) {
+        throw (*parameterName & " must be a column vector of the same dimension as the model matrix in the call to Model = ...");
+      }
+    } else if (checkMatrix->GetHDim()==1UL) {
+      if (checkMatrix->GetVDim()!=matrixDim) {
+        throw ( *parameterName & " must be a row vector of the same dimension as the model matrix in the call to Model = ...");
+      }
+      errMsg = *parameterName & " has been transposed to the default column vector setting ";
+      checkMatrix->Transpose();
+      ReportWarning (errMsg);
+    } else {
+      throw (*parameterName & " must refer to a column/row vector in the call to Model = ...");
+    }
+    
+    if (usingLastDefMatrix) {
+      if (modelFrequenciesIndices[f3]<0) {
+        f2 = -f2-1;
+      }
+    } else if (multFreqs == 0) { // optional flag present
+      f2 = -f2-1;
+    }
+    
+    long existingIndex = modelNames.FindObject(&arg0);
+    
+    if (existingIndex == -1) { // name not found
+      lastMatrixDeclared = modelNames.FindObject (&kEmptyString);
+      
+      if (lastMatrixDeclared>=0) {
+        modelNames.Replace (lastMatrixDeclared,&arg0,true);
+        modelTypeList.lData[lastMatrixDeclared] = isExpressionBased?matrixDim:0;
+        if (isExpressionBased) {
+          modelMatrixIndices.lData[lastMatrixDeclared] = (long)isExpressionBased;
+        } else {
+          modelMatrixIndices.lData[lastMatrixDeclared] = (usingLastDefMatrix?f:variableNames.GetXtra(f));
+        }
+        
+        if (f2>=0) {
+          modelFrequenciesIndices.lData[lastMatrixDeclared] = variableNames.GetXtra(f2);
+        } else {
+          modelFrequenciesIndices.lData[lastMatrixDeclared] = -variableNames.GetXtra(-f2-1)-1;
+        }
+      } else {
+        modelNames && & arg0;
+        modelTypeList << (isExpressionBased?matrixDim:0);
+        if (isExpressionBased) {
+          modelMatrixIndices << (long)isExpressionBased;
+        } else {
+          modelMatrixIndices << (usingLastDefMatrix?f:variableNames.GetXtra(f));
+        }
+        if (f2>=0) {
+          modelFrequenciesIndices << variableNames.GetXtra(f2);
+        } else {
+          modelFrequenciesIndices << -variableNames.GetXtra(-f2-1)-1;
+        }
+        lastMatrixDeclared = modelNames.lLength-1;
+      }
+    } else {
+      modelNames.Replace(existingIndex,&arg0,true);
+      if (modelTypeList.lData[existingIndex]) {
+        delete ((_Formula*)modelMatrixIndices[existingIndex]);
+      }
+      
+      modelTypeList.lData[existingIndex] = isExpressionBased?matrixDim:0;
+      if (isExpressionBased) {
+        modelMatrixIndices[existingIndex] = (long)isExpressionBased;
+      } else {
+        modelMatrixIndices[existingIndex] = usingLastDefMatrix?f:variableNames.GetXtra(f);
+      }
+      
+      
+      if (f2>=0) {
+        modelFrequenciesIndices[existingIndex] = variableNames.GetXtra(f2);
+      } else {
+        modelFrequenciesIndices[existingIndex] = -variableNames.GetXtra(-f2-1)-1;
+      }
+      
+      lastMatrixDeclared = existingIndex;
+    }
+  } catch (const _String& error) {
+    _DefaultExceptionHandler (nil, error, chain);
+  }
+}
+
+
+
 
 

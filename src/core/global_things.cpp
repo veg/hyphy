@@ -313,7 +313,7 @@ namespace hy_global {
             hy_n_variable = nil;
             pathNames.Clear();
         }
-        ::hy_scanf_last_file_path = kEmptyString;
+        hy_scanf_last_file_path = kEmptyString;
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
         isInFunction        = _HY_NO_FUNCTION;
         isDefiningATree     = kTreeNotBeingDefined;
