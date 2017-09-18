@@ -93,7 +93,7 @@ class _Trie: public _List
          * @return Nothing. 
          */
     
-         virtual void Initialize (const _String* alphabet);
+         virtual void InitializeTrie (const _String* alphabet);
     
     
         template <typename... values>  long  Insert (const _String& key, long payload, values... data) {
@@ -102,7 +102,7 @@ class _Trie: public _List
         }
  
         template <typename... values> _Trie (values... data) {
-            Initialize (nil);
+            InitializeTrie (nil);
             Insert (data...);
         }
        
