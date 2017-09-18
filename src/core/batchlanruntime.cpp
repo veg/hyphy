@@ -224,10 +224,10 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& current_progra
     _CheckExpressionForCorrectness (parsed_expression, expression, current_program);
 
     long times = 1L;
-    if (parameter_count() >= 4) {
+    if (parameter_count() >= 4UL) {
       times = _ProcessNumericArgumentWithExceptions (*GetIthParameter(3),current_program.nameSpacePrefix);
       if (times <= 0L) {
-        throw (GetIthParameter(3)->Enquote() & " (the number of times to differentiate) must be a non-negative integer");
+        throw (GetIthParameter(3UL)->Enquote() & " (the number of times to differentiate) must be a non-negative integer");
       }
     }
 
@@ -237,9 +237,10 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& current_progra
       delete derivative;
       derivative = temp;
     }
-
-    receptacle->SetFormula(*derivative);
-    delete derivative;
+    if (derivative) {
+      receptacle->SetFormula(*derivative);
+      delete derivative;
+    }
 
   } catch (const _String& error) {
       return  _DefaultExceptionHandler (receptacle, error, current_program);
@@ -1014,7 +1015,8 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 result2->Flip ();
                 pairwise_alignment->MStore ("1", new _FString(result1), false);
                 pairwise_alignment->MStore ("2", new _FString(result2), false);
-            } else { // not linear
+                pairwise_alignment->MStore ("0", new _Constant (score), false);
+           } else { // not linear
                 char * str1r = nil,
                      * str2r = nil;
 
@@ -1135,7 +1137,6 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                         _SimpleList variable_ids;
                         if (covariance_parameters->ObjectClass () == ASSOCIATIVE_LIST) {
                             // a list of variables stored as keys in an associative array
-                            restrictor = new _SimpleList;
                             _List*  restricted_variables = ((_AssociativeList*)covariance_parameters)->GetKeys();
                             for (unsigned long iid = 0; iid < restricted_variables->lLength; iid++) {
                                 variable_ids << LocateVarByName (current_program.AddNameSpaceToID(*(_String*)(*restricted_variables)(iid)));
@@ -2201,7 +2202,6 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
           if ((source_file = doFileOpen (file_path.get_str (), "rb")) == nil) {
             throw (_String("Could not read command file from '") &
                    original_path & "' (expanded to '" & file_path & "')");
-            return;
           }
         }
 
@@ -2669,6 +2669,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
                 _StringBuffer *serialized_bgm = new _StringBuffer (1024L);
                 this_bgm -> SerializeBGM (*serialized_bgm);
                 return_value = new _FString (serialized_bgm);
+                break;
               }
               default: {
                 throw _String ("Unrecognized index ") & index1 & " for a BGM object";
@@ -2894,6 +2895,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
           store_here->SetValue (new _FString (new _String (*input_data,current_stream_position,kStringEnd)), false);
           lookahead = input_data->length();
         }
+        break;
         
         case 6L: { // Lines
           
@@ -2996,7 +2998,9 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
     
     static const _String kSkipNone ("SKIP_NONE"),
     kLikelihoodFunctions ("LikelihoodFunction");
-    
+  
+    static const unsigned long maximum_wrong_choices = 10UL;
+  
     current_program.advance();
     
     _Variable * receptacle = nil;
@@ -3010,7 +3014,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         
         long    number_of_choices = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2UL),current_program.nameSpacePrefix);
         _String dialog_title      = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program),
-        exclusions        = *GetIthParameter(3UL);
+                exclusions        = *GetIthParameter(3UL);
         
         _SimpleList selections,
         excluded;
@@ -3134,7 +3138,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         }
         
         if ((long) available_choices->countitems() < number_of_choices) {
-            throw (_String ("The list of choices hasd " ) & (long) available_choices->countitems() & " elements, but " & number_of_choices & " are required");
+            throw (_String ("The list of choices has " ) & (long) available_choices->countitems() & " elements, but " & number_of_choices & " choices are required");
         }
         
         auto validate_choice = [&] (_String const& user_choice) -> long {
@@ -3164,13 +3168,93 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
             if (do_markdown) {
                 printf ("\n\n####%s\n", dialog_title.get_str());
             } else {
+                const _String spacer ('-', dialog_title.length());
                 printf ("\n\n\t\t\t+%s+\n\t\t\t|%s|\n\t\t\t+%s+\n\n",
-                        _String ('-', dialog_title.length()).get_str(),
-                        dialog_title.get_str(),
-                        _String ('-', dialog_title.length()).get_str());
+                         spacer.get_str(),
+                         dialog_title.get_str(),
+                         spacer.get_str());
             }
+          
+            unsigned long wrong_selections = 0UL;
+          
+            _AVLList      selection_tree   (&selections);
+          
+          
+            while (selections.countitems() < required) {
+              
+              for (unsigned long option = 0UL; option < available_choices->countitems(); option ++) {
+                  if (selection_tree.FindLong (option) == kNotFound) {
+                    printf (do_markdown ? "\n%ld. [**%s**] %s" : "\n\t(%ld):[%s] %s", option+1UL, ((_String*)available_choices->GetItem (option, 0))->get_str(), ((_String*)available_choices->GetItem (option, 1))->get_str());
+                  }
+                
+               }
+              
+               if (variable_number) {
+                  printf ("\n\n%sPlease choose option %ld, enter d to complete selection, enter q to cancel:", do_markdown ? ">" : "",selections.countitems() + 1UL);
+               } else {
+                if (number_of_choices > 1L) {
+                  printf ("\n\n%sPlease choose option %ld of %ld (or press q to cancel selection):",do_markdown ? ">" : "", selections.countitems() + 1UL ,number_of_choices);
+                } else {
+                  printf ("\n\n%sPlease choose an option (or press q to cancel selection):", do_markdown ? ">" : "");
+                 }
+               }
+              
+               _String user_choice (StringFromConsole());
+               if (user_choice.length () == 1UL && toupper(user_choice.char_at(0L)) == 'Q') {
+                 selections.Clear();
+                 selections << -1L;
+                 break;
+               } else {
+                 if (variable_number && user_choice.length () == 1UL && toupper(user_choice.char_at(0L)) == 'D') {
+                   if (selections.empty()) {
+                     selections << -1L;
+                   }
+                   break;
+                 }
+               }
+              
+               long integer_choice = user_choice.to_long();
+              
+               if   (integer_choice > 0L && integer_choice <= available_choices->countitems()) {
+                 selection_tree.Insert((BaseRef)integer_choice);
+               } else {
+                 ++ wrong_selections;
+               }
+             
+               if (wrong_selections > maximum_wrong_choices) {
+                throw ("Too many invalid imputs");
+               }
+            }
+          
+            selection_tree.ReorderList();
+          
+            if (selections.empty () || selections.GetElement(0UL) < 0) {
+                // failed selection
+              hy_env::EnvVariableSet(hy_env::selection_strings, new HY_NULL_RETURN, false);
+              if (number_of_choices == 1L) {
+                receptacle->SetValue (new _Constant (-1.), false);
+              } else {
+                receptacle->SetValue (new _Matrix (_SimpleList (1UL,-1L,0)), false);
+              }
+              terminate_execution = true;
+            } else {
+              if (number_of_choices > 1L) {
+                _SimpleList corrected_for_exclusions;
+                _List       chosen_strings;
+                for (unsigned long i = 0UL; i < selections.countitems(); i++) {
+                  corrected_for_exclusions << excluded.SkipCorrect(selections.Element(i));
+                  chosen_strings < new _FString (*(_String*)available_choices->GetItem(selections.Element(i), 0),false);
+                }
+                receptacle->SetValue (new _Matrix (corrected_for_exclusions), false);
+              } else {
+                receptacle->SetValue (new _Constant (excluded.SkipCorrect (selections.Element(0UL))), false);
+                hy_env::EnvVariableSet(hy_env::selection_strings, new _FString (*(_String*)available_choices->GetItem(selections.Element(0UL), 0),false), false);
+              }
+            }
+          
         }
-        
+      
+      
         
         
     } catch (const _String& error) {
