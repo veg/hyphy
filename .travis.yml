@@ -22,6 +22,8 @@ env:
   - METHOD_TEST=tests/hbltests/libv3/MEME.wbf
   - METHOD_TEST=tests/hbltests/libv3/FUBAR.wbf
   - METHOD_TEST=tests/hbltests/libv3/RELAX.wbf
+  - METHOD_TEST=tests/hbltests/libv3/aBSREL.wbf
+  - METHOD_TEST=tests/hbltests/libv3/BUSTED.wbf
 
 language: c++
 compiler: 
