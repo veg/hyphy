@@ -1,4 +1,4 @@
-RequireVersion("2.3");
+RequireVersion("2.3.3");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -609,19 +609,7 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [5] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [6] = lrt [utility.getGlobalValue("terms.p_value")];
 
-        // SW 20170505 Removing use of utility.Filter until we can lock the stack
-        //filtered_ebf = utility.Filter (ebf, "_value_", "_value_>=100");
-
-        ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
-
-        filtered_ebf = {};
-        branch_names = utility.Keys (ebf);
-
-        for(i=0; i<Abs(ebf); i+=1) {
-            if(ebf[branch_names[i]] >= 100) {
-                filtered_ebf[branch_names[i]] = ebf[branch_names[i]];
-            }
-        }
+        filtered_ebf = utility.Filter (ebf, "_value_", "_value_>=100");
 
         if(None != filtered_ebf) {
             result_row [7] = utility.Array1D(filtered_ebf);
