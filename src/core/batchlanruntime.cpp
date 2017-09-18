@@ -3264,7 +3264,61 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
     return true;
     
 }
+  //____________________________________________________________________________________
+  // REQUIRES CODE REVIEW FROM THIS POINT ON
+  //____________________________________________________________________________________
 
+void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
+{
+  chain.currentCommand++;
+  
+  _List local_object_manager;
+  
+  _String *likef          = (_String*)parameters(1),
+  tempString      = ProcessStringArgument (likef),
+  errMsg;
+  
+  if (tempString.nonempty()) {
+    likef = &tempString;
+  }
+  
+  _String name2lookup = AppendContainerName(*likef,chain.nameSpacePrefix);
+  long    objectID    = FindLikeFuncName (name2lookup);
+  try {
+    if (objectID >= 0) {
+      _DataSet     * ds               = new _DataSet;
+      _String      * dsName           = new _String (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix));
+      _LikelihoodFunction *lf         = ((_LikelihoodFunction*)likeFuncList(objectID));
+      
+      local_object_manager < ds;
+      local_object_manager < dsName;
+      
+      _Matrix * partitionList         = nil;
+      if (parameters.lLength>2) {
+        _String  secondArg = *(_String*)parameters(2);
+        partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
+      }
+      _SimpleList                     partsToDo;
+      
+      if (lf->ProcessPartitionList(partsToDo, partitionList)) {
+        lf->ReconstructAncestors(*ds, partsToDo, *dsName,  sample, simpleParameters.Find(-1) >= 0, simpleParameters.Find(-2) >= 0 );
+      }
+      
+      StoreADataSet  (ds, dsName);
+    } else {
+      objectID    =   FindSCFGName       (name2lookup);
+      if (objectID>=0)
+      /* reconstruct best parse tree for corpus using SCFG */
+      {
+        CheckReceptacleAndStore (&AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix)," ReconstructAncestors (SCFG)", true, new _FString( ((Scfg*)scfgList (objectID))->BestParseTree() ), false);
+      } else {
+        throw  (_String("Likelihood Function/SCFG") & *likef & _String(" has not been initialized"));
+      }
+    }
+  } catch (const _String& error) {
+    _DefaultExceptionHandler (nil, error, chain);
+  }
+}
 
 
 
