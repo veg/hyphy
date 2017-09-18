@@ -428,7 +428,7 @@ long    DisplayListOfChoices (void)
                     printf ("\n\t(%ld) %s",choice-start+1,((_String*)(*(_List*)availableTemplateFiles(choice))(1))->getStr());
                 }
 
-                printf ("\n\n Please select the file you want to use (or press ENTER to return to the list of analysis types):");
+                printf ("\n\n Please select the analysis you would like execute (or press ENTER to return to the list of analysis types):");
 
                 fileAbbr = *StringFromConsole ();
 
