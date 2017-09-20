@@ -119,7 +119,7 @@ namespace slac {
 
 
 slac.samples = io.PromptUser ("\n>Select the number of samples used to assess ancestral reconstruction uncertainty [select 0 to skip]",100,0,100000,TRUE);
-slac.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",0.1,0,1,FALSE);
+slac.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
 
 io.ReportProgressMessageMD('SLAC',  'selector', 'Branches to include in the SLAC analysis');
 

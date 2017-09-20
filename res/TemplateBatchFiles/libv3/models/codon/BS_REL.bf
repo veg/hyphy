@@ -150,7 +150,7 @@ lfunction models.codon.BS_REL.ExtractMixtureDistributionFromFit (bs_rel, fit) {
         }
     }
 
-    return {"rates" : rates, "weights" : weights };
+    return {utility.getGlobalValue ("terms.parameters.rates") : rates, utility.getGlobalValue ("terms.parameters.weights") : weights };
 }
 
 /**
@@ -173,7 +173,7 @@ lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
     mixture = {};
 
 
-    for (component = 1; component <= bs_rel["components"]; component += 1) {
+    for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
        key = "component_" + component;
        ExecuteCommands ("
         function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
@@ -184,7 +184,7 @@ lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
             }"
        );
 
-       if ( component < bs_rel["components"]) {
+       if ( component < bs_rel[utility.getGlobalValue("terms.model.components")]) {
             model.generic.AddGlobal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
             parameters.DeclareGlobalWithRanges (_aux[component-1], 0.5, 0, 1);
        }

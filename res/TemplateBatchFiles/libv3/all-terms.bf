@@ -370,6 +370,7 @@ namespace terms{
         omega                         = "omega";
         weights                       = "weights";
         weight                        = "weight";
+        rates                         = "rates";
         freqs                         = "f";
     }
 
