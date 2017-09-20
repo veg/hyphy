@@ -115,7 +115,7 @@ namespace meme {
     load_file ("meme");
 }
 
-meme.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",meme.pvalue,0,1,FALSE);
+meme.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",meme.pvalue,0,1,FALSE);
 io.ReportProgressMessageMD('MEME',  'selector', 'Branches to include in the MEME analysis');
 
 utility.ForEachPair (meme.selected_branches, "_partition_", "_selection_",
