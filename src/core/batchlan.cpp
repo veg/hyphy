@@ -1706,6 +1706,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                     WarnError (currentLine & " only makes sense in the context of a loop.");
                     return false;
                 }
+                currentLine = emptyString;
                 handled = true;
                 break;
             case HY_HBL_COMMAND_SET_DIALOG_PROMPT:
@@ -1732,8 +1733,12 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 
         }
         
-        if (handled)
-            DeleteObject (pieces);
+        if (handled) {
+              DeleteObject (pieces);
+              if (currentLine.Length() > 1UL) {
+                WarnError (currentLine.Enquote() & " contained syntax errors, possibly a missing semicolon. " & s.Enquote());
+              }
+        }
         
         // 20111212: this horrendous switch statement should be replaced with a 
         // prefix tree lookup 
