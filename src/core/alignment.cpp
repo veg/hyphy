@@ -1205,8 +1205,8 @@ double AlignStrings( char const * r_str
 
 //____________________________________________________________________________________
 
-hyFloat   CostOnly   (_String * s1,               // first string
-                         _String * s2,               // second string
+hyFloat   CostOnly   (_String const * s1,               // first string
+                         _String const * s2,               // second string
                          long from1,            // start here in string1
                          long from2,            // start here in string2
                          long to1,              // up to here in string1 // not inclusive
@@ -1510,8 +1510,8 @@ hyFloat   CostOnly   (_String * s1,               // first string
 
 //____________________________________________________________________________________
 
-hyFloat      LinearSpaceAlign (_String *s1,                  // first string
-                                  _String *s2,                      // second string
+hyFloat      LinearSpaceAlign (_String const *s1,                  // first string
+                                  _String const *s2,                      // second string
                                   long * cmap,                // char -> position in scoring matrix mapper
                                   _Matrix*    ccost,                // NxN matrix of edit distances on characters
                                   hyFloat gopen,                 // the cost of opening a gap in sequence 1

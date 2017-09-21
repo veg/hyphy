@@ -135,6 +135,12 @@ _StringBuffer::_StringBuffer(const _StringBuffer &s): _String () {
   this->Duplicate (&s);
 }
 
+  //=============================================================
+_StringBuffer::_StringBuffer(_String* buffer): _String (buffer) {
+  sa_length = s_length;
+}
+
+
 /*
 ==============================================================
 Cloners and Copiers
@@ -240,27 +246,30 @@ _StringBuffer& _StringBuffer::AppendSubstring(const _String& source, long start,
   (*this) << _String (source, start, end);
 }
 
+ 
 
 //=============================================================
 
-void _StringBuffer::SanitizeForSQLAndAppend(const char c) {
+_StringBuffer& _StringBuffer::SanitizeForSQLAndAppend(const char c) {
   this->PushChar(c);
   if (c == '\'') {
     this->PushChar(c);
   }
+  return *this;
 }
 
-void _StringBuffer::SanitizeForSQLAndAppend(const _String& s) {
+_StringBuffer& _StringBuffer::SanitizeForSQLAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
     this->SanitizeForSQLAndAppend(s.get_char(i));
   }
+  return *this;
 }
 
 // MDS 20140722: modified this quite a bit, previously the switch
 // would fall through to the generic sanitize. Not sure if that was intended.
 // If so, call sanitize and append instead of pushChar as default
-void _StringBuffer::SanitizeForPostScriptAndAppend(const char c) {
+_StringBuffer& _StringBuffer::SanitizeForPostScriptAndAppend(const char c) {
   switch (c) {
     case '(':
     case ')':
@@ -271,16 +280,17 @@ void _StringBuffer::SanitizeForPostScriptAndAppend(const char c) {
     default:
       this->PushChar(c);
   }
+  return *this;
 }
 
-void _StringBuffer::SanitizeForPostScriptAndAppend(const _String& s) {
+_StringBuffer& _StringBuffer::SanitizeForPostScriptAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
     this->SanitizeForPostScriptAndAppend(s.get_char(i));
   }
 }
 
-void _StringBuffer::SanitizeForHTMLAndAppend(const char c) {
+_StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const char c) {
   switch (c) {
     case '"':
       (*this) << "&quot;";
@@ -300,16 +310,18 @@ void _StringBuffer::SanitizeForHTMLAndAppend(const char c) {
     default:
       this->PushChar(c);
   }
+  return *this;
 }
 
-void _StringBuffer::SanitizeForHTMLAndAppend(const _String& s) {
+_StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
     this->SanitizeForHTMLAndAppend(s.get_char(i));
   }
+  return *this;
 }
 
-void _StringBuffer::SanitizeForRegExAndAppend(const char c) {
+_StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const char c) {
   switch (c) {
     case '[':
     case '^':
@@ -330,16 +342,18 @@ void _StringBuffer::SanitizeForRegExAndAppend(const char c) {
     default:
       this->PushChar(c);
   }
+  return *this;
 }
 
-void _StringBuffer::SanitizeForRegExAndAppend(const _String& s) {
+_StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
     this->SanitizeForHTMLAndAppend(s.get_char(i));
   }
+  return *this;
 }
 
-void _StringBuffer::SanitizeAndAppend(const char c) {
+_StringBuffer& _StringBuffer::SanitizeAndAppend(const char c) {
   switch (c) {
     case '\n':
     case '\t':
@@ -351,13 +365,15 @@ void _StringBuffer::SanitizeAndAppend(const char c) {
     default:
       this->PushChar(c);
   }
+  return *this;
 }
 
-void _StringBuffer::SanitizeAndAppend(const _String& s) {
+_StringBuffer& _StringBuffer::SanitizeAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
     this->SanitizeAndAppend(s.get_char(i));
   }
+  return *this;
 }
 
 
@@ -410,7 +426,7 @@ void _StringBuffer::AppendVariableValueAVL (_String const* id, _SimpleList const
           break;
         case STRING:
           (*this) << '"';
-          SanitizeAndAppend (*((_FString*)varValue)->theString);
+          SanitizeAndAppend (((_FString*)varValue)->get_str());
           (*this) << '"';
           break;
         default:

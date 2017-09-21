@@ -137,7 +137,7 @@ BaseRef _Constant::toStr(unsigned long) {
 //__________________________________________________________________________________
 _PMathObj _Constant::Add (_PMathObj theObj) {
     if (theObj->ObjectClass() == STRING) {
-        return new _Constant (theValue+((_FString*)theObj)->theString->to_float());
+        return new _Constant (theValue+((_FString*)theObj)->get_str().to_float());
     } else {
         return new _Constant (theValue+((_Constant*)theObj)->theValue);
     }

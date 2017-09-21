@@ -781,7 +781,7 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
                 _PMathObj formRes = nameForm.Compute();
                 if (formRes&&formRes->ObjectClass () == STRING)
                     tr = new _TreeTopology (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix),
-                                            *((_FString*)formRes)->theString,
+                                            ((_FString*)formRes)->get_str(),
                                             false, mapping);
             }
         } else

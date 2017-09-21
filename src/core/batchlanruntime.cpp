@@ -136,7 +136,7 @@ _PMathObj   _ProcessAnArgumentByType (_String const& expression, long desired_ty
 const _String _ProcessALiteralArgument (_String const& expression, _ExecutionList& program) {
     _PMathObj the_string = _ProcessAnArgumentByType (expression, STRING, program, nil);
 
-    _String result (*((_FString*)the_string)->theString);
+    _String result (((_FString*)the_string)->get_str());
     DeleteObject (the_string);
     return result;
 }
@@ -824,8 +824,8 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
         unsigned          long     char_count = 0UL;
         long              character_map_to_integers [256] = {-1L};
 
-        for (unsigned long cc = 0UL; cc < char_vector->theString->length(); cc++) {
-            unsigned char this_char = char_vector->theString->get_uchar(cc);
+        for (unsigned long cc = 0UL; cc < char_vector->get_str().length(); cc++) {
+            unsigned char this_char = char_vector->get_str().get_uchar(cc);
             if (character_map_to_integers [this_char]>=0) {
                 throw (_String ("Duplicate character ") & _String ((char)this_char).Enquote('\'') & " in " & kCharacterMap);
             } else {
@@ -886,10 +886,10 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
 
         char        gap_character = '-';
         if (_FString    *gap_c = (_FString*)alignment_options->GetByKey (kGapChar, STRING)) {
-            if (gap_c->theString->length () != 1UL) {
-                throw (_String ("Invalid gap character specification ") &  *gap_c->theString);
+            if (gap_c->get_str().length () != 1UL) {
+                throw (_String ("Invalid gap character specification ") &  gap_c->get_str());
             }
-            gap_character = gap_c->theString->char_at(0UL);
+            gap_character = gap_c->get_str().char_at(0UL);
         }
 
         hyFloat  gap_open       = _NumericValueFromKey (alignment_options, kGapOpen,15.),
@@ -915,11 +915,11 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
         }
 
         _AssociativeList *aligned_strings = new _AssociativeList;
-        _String * reference_sequence = ((_FString*)input_seqs->GetFormula(0,0)->Compute())->theString;
+        _String const * reference_sequence = & ((_FString*)input_seqs->GetFormula(0,0)->Compute())->get_str();
 
 
         for (unsigned long index2 = 1UL; index2 < input_seq_count; index2++) {
-            _String * sequence2 = ((_FString*)input_seqs->GetFormula(0,index2)->Compute())->theString;
+            _String const * sequence2 = & ((_FString*)input_seqs->GetFormula(0,index2)->Compute())->get_str();
             _AssociativeList * pairwise_alignment = new _AssociativeList;
             hyFloat    score = 0.0;
             if (do_linear) {
@@ -1143,7 +1143,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                             }
                             DeleteObject (restricted_variables);
                         } else { // STRING
-                            variable_ids << LocateVarByName (current_program.AddNameSpaceToID(*((_FString*)covariance_parameters)->theString));
+                            variable_ids << LocateVarByName (current_program.AddNameSpaceToID(((_FString*)covariance_parameters)->get_str()));
                         }
                         if (!variable_ids.empty()) {
                             restrictor = new _SimpleList ();
@@ -2022,8 +2022,8 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
     if (destination == kFprintfStdout) {
       _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
-      if (redirect && redirect->theString->nonempty()) {
-        destination         = redirect->theString->get_str();
+      if (redirect->has_data()) {
+        destination         = redirect->get_str();
         if (destination == kFprintfDevNull) {
           return true; // "print" to /dev/null
         } else {
@@ -2703,7 +2703,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
           else {  // formula string
 
             if (index1 == -3) {
-              _String local, global;
+              _StringBuffer local, global;
               _SimpleList var_index;
               var_index << var->GetAVariable ();
               if (var->IsIndependent()) {
@@ -2766,30 +2766,32 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     
     unsigned long      has_rewind  = simpleParameters.Element(-1L) < 0 ? 1UL : 0UL;
     
-    _String * input_data = nil;
+    _String const * input_data = nil;
     
     _String source_name = *GetIthParameter(0UL);
     if (source_name == kFscanfStdin) {
       if (current_program.has_stdin_redirect ()) {
-        input_data = current_program.FetchFromStdinRedirect();
-        
+        _String * redirected = current_program.FetchFromStdinRedirect();
+        input_data = redirected;
         // echo the input if there is no fprintf redirect in effect
 
         _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
-        if (redirect && redirect->theString->nonempty()) {
+        if (redirect->has_data()) {
           StringToConsole (*input_data); NLToConsole();
         }
+        dynamic_reference_manager < redirected;
       } else { // read from stdin
         if (hy_env::EnvVariableTrue(hy_env::end_of_file) == false && source_name == hy_scanf_last_file_path)  {
           throw ("Ran out of standard input");
         }
-        input_data = new _String (StringFromConsole());
-        dynamic_reference_manager < input_data;
+        _String * console_data = new _String (StringFromConsole());
+        dynamic_reference_manager < console_data;
+        input_data = console_data;
       }
     } else { // not stdin
       _FString * source_string = (_FString*)_ProcessAnArgumentByType(source_name,STRING,current_program,&dynamic_reference_manager);
       if (is_sscanf) {
-        input_data = source_string->theString;
+        input_data = & source_string->get_str();
         if (hy_env::EnvVariableTrue(hy_env::end_of_file)) { // reset path
           hy_scanf_last_file_path = kEmptyString;
         }
@@ -2836,9 +2838,10 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
         
         rewind (input_stream);
         fseek  (input_stream, last_call_stream_position, SEEK_SET);
-        input_data = new _String (input_stream, current_stream_position);
+        _String * file_data = new _String (input_stream, current_stream_position);
         fclose (input_stream);
-        dynamic_reference_manager < input_data;
+        dynamic_reference_manager < file_data;
+        input_data = file_data;
         current_stream_position = 0L;
       }
     }

@@ -153,9 +153,9 @@ void        FinishDeferredSF(void);
 
 void        SetupOperationLists (void);
 void        ExportIndVariables
-(_StringBuffer&, _String&, _SimpleList*);
+(_StringBuffer&, _StringBuffer&, _SimpleList*);
 void        ExportDepVariables
-(_StringBuffer&, _String&, _SimpleList*);
+(_StringBuffer&, _StringBuffer&, _SimpleList*);
 void        ExportCatVariables
 (_StringBuffer&, _SimpleList*);
 

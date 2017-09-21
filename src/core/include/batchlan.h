@@ -689,6 +689,7 @@ _HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _
 extern  bool                        numericalParameterSuccessFlag;
 extern  hyFloat                  messageLogFlag;
 
+
 extern enum       _hy_nested_check {
   _HY_NO_FUNCTION,
   _HY_FUNCTION,

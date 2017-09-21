@@ -131,6 +131,44 @@ void _Formula::DuplicateReference  (const _Formula* f)
     }
 }
 
+  //__________________________________________________________________________________
+
+_PMathObj _Formula::ParseAndCompute (_String const& expression, bool use_exceptions, long type, _hyExecutionContext * context) {
+  
+  _String error_message;
+  _Formula f;
+  
+  long parse_result = f.ParseFormula (expression, context ? context -> GetContext() : nil , &error_message);
+  
+  try {
+    if (error_message.nonempty()) {
+      throw (_String ("Failed to parse ") & expression.Enquote () & " with the following error: " & error_message);
+    }
+    if (parse_result != HY_FORMULA_EXPRESSION) {
+      throw (expression.Enquote () & " did not parse to a simple expression");
+    }
+    if (f.IsEmpty ()) {
+      throw (expression.Enquote () & " parsed to an empty expression");
+    }
+    if (!(type == HY_ANY_OBJECT || f.ObjectClass() == type)) {
+        // TODO SLKP 20170704: ObjectClass will compute the expression with current values which may fail
+      throw (expression.Enquote () & " did not evaluate to a " & FetchObjectNameFromType (type));
+    }
+  } catch (_String const & e) {
+    if (use_exceptions) {
+      throw (e);
+    } else {
+      HandleApplicationError (e);
+      return nil;
+    }
+  }
+  
+  _PMathObj result = f.Compute();
+  result->AddAReference();
+  return result;
+}
+
+
 //__________________________________________________________________________________
 BaseRef _Formula::makeDynamic (void) const {
     _Formula * res = new _Formula;
@@ -2764,7 +2802,6 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
     delete (newNode);
     return nil;
 }
-
 
 
 //__________________________________________________________________________________

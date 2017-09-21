@@ -338,7 +338,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
         // get the cumulative probability
 
         param = (_String*)parameters(4);
-        if (!param->Length()) { // no cumul. dist'n specified - integration is yet to be implemented
+        if (param->empty ()) { // no cumul. dist'n specified - integration is yet to be implemented
             ReportWarning (errorMsg & _String("Runtime integration of probability density can be _very_ slow - please provide the analytic form for cumulative distribution if known."));
         } else {
             if(check) {

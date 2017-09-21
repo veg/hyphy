@@ -69,9 +69,10 @@ enum hyTreeDefinitionPhase {
 };
 
 enum hyComparisonType {
-    kCompareLess = -1,
-    kCompareEqual = 0,
-    kCompareGreater = 1
+    kCompareLess    = -1,
+    kCompareEqual   = 0,
+    kCompareGreater = 1,
+    kCompareUndefined      = 0xff
 };
 
 

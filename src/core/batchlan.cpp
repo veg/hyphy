@@ -1690,6 +1690,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                   if (bc) {
                       AppendNewInstance(new _ElementaryCommand);
                       (*bc) << ((prefixTreeCode == HY_HBL_COMMAND_BREAK) ? (countitems()-1) : (-(long)countitems()+1));
+                      currentLine = kEmptyString;
                   } else {
                       throw (currentLine.Enquote() & " only makes sense in the context of a loop.");
                    }
@@ -1750,8 +1751,10 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
 
           // TODO 20111212: this horrendous switch statement should be replaced with a
           // prefix tree lookup
-
-          if (!handled) {
+          if (handled) {
+            if (currentLine.length() > 1UL) {
+              throw (currentLine.Enquote() & " contained syntax errors, possibly a missing semicolon. " );
+          } else {
               if (currentLine.BeginsWith (blFunction)||currentLine.BeginsWith (blFFunction)||currentLine.BeginsWith (blLFunction) || currentLine.BeginsWith (blNameSpace)) { // function declaration
                   _ElementaryCommand::ConstructFunction (currentLine, *this);
               } else if (currentLine.BeginsWithAndIsNotAnIdent (blReturnPrefix)) { // function return statement

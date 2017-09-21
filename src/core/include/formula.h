@@ -226,6 +226,23 @@ public:
     _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
 
     void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive);
+  
+  
+    /** A compute and forget utility function.
+        Parse an expression, optionally check to see that it's of the right type and return the value
+        
+      @param expression : the string to parse
+      @param use_exceptions : if true, throw const _String exceptions, otherwise handle errors directly 
+      @param requested_type: return nil if the computed value is not of this type
+      @param formula parsing contrext
+     
+      @return expression value or nil; the value needs to be managed by the caller
+      Revision history
+          20170921 : SLKP initial implementation 
+     
+    */
+     
+    static      _PMathObj          ParseAndCompute (_String const& expression, bool use_exceptions = false, long requested_type = HY_ANY_OBJECT, _hyExecutionContext * context = nil);
 
 
 protected:

@@ -347,7 +347,7 @@ class _TreeTopology: public _CalcNode {
 protected:
 
     virtual void            PreTreeConstructor                  (bool);
-    virtual bool            MainTreeConstructor                 (_String&,bool = true, _AssociativeList* mapping = nil);
+    virtual bool            MainTreeConstructor                 (_String const&,bool = true, _AssociativeList* mapping = nil);
     virtual void            PostTreeConstructor                 (bool);
     node<long>*     prepTree4Comparison                 (_List&, _SimpleList&, node<long>* = nil) const;
     void            destroyCompTree                     (node<long>*) const;
@@ -394,7 +394,7 @@ public:
     void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_String&, long  = -1, bool = false) const;
 
     _TreeTopology                       (void);
-    _TreeTopology                       (_String, _String&, bool = true, _AssociativeList* mapping = nil);
+    _TreeTopology                       (_String, _String const&, bool = true, _AssociativeList* mapping = nil);
     _TreeTopology                       (_String*);
     _TreeTopology                       (_TheTree*);
 
@@ -561,7 +561,7 @@ class _TheTree: public _TreeTopology
 public:
 
     _TheTree ();                                                // default constructor - doesn't do much
-    _TheTree (_String name, _String& parms, bool = true);       // builds a tree from a string
+    _TheTree (_String name, _String const& parms, bool = true);       // builds a tree from a string
     _TheTree (_String name, _TreeTopology*);                    // builds a tree from a tree topology
     _TheTree (_String name, _TheTree*);                    // builds a tree from another tree
 

@@ -1780,10 +1780,10 @@ void  setParameter (_String const& name, _PMathObj def, _String* namespc, bool d
 
 //__________________________________________________________________________________
 
-void ExportIndVariables (_String& glVars, _String& locVars, _SimpleList* indepVarList)
+void ExportIndVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleList* indepVarList)
 {
-    _String * stIn,
-              str;
+    _StringBuffer * stIn;
+    _String str;
 
     for (unsigned long   i=0; i<indepVarList->lLength; i++) {
         _Variable *thisVar = LocateVar(indepVarList->lData[i]);
@@ -1808,13 +1808,13 @@ void ExportIndVariables (_String& glVars, _String& locVars, _SimpleList* indepVa
 
 //__________________________________________________________________________________
 
-void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarList)
+void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleList* depVarList)
 {
     if (depVarList->lLength) {
-        _String * stIn,
-                  str;
+        _StringBuffer * stIn;
+        _String str;
 
-        /* first we have to reorder global variables, so that dependent global variables which depend
+      /* first we have to reorder global variables, so that dependent global variables which depend
            on other dependent global variables are written afterwards (lest they be implicitly declared
            as local).
            The algorithm is very ugly, but since there are only a few global dependent variables (in general...) */

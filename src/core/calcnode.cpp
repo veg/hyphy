@@ -1332,7 +1332,7 @@ void    _TreeTopology::PostTreeConstructor (bool dupMe) {
 
 
 //_______________________________________________________________________________________________
-_TheTree::_TheTree              (_String name, _String& parms, bool dupMe):_TreeTopology (&name)
+_TheTree::_TheTree              (_String name, _String const & parms, bool dupMe):_TreeTopology (&name)
 {
     PreTreeConstructor   (dupMe);
     if (MainTreeConstructor  (parms)) {
@@ -1459,7 +1459,7 @@ bool _MainTreeConstructor_error (const _String& error, const _String& tree_strin
 }
 
 //_______________________________________________________________________________________________
-bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames, _AssociativeList* mapping) {
+bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNames, _AssociativeList* mapping) {
     long i,
          nodeCount=0,
          lastNode;

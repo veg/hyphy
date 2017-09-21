@@ -144,6 +144,15 @@ public:
   _StringBuffer(const _String& buffer);
 
   /**
+   * A constructor that moves data from a standard string.
+   * @param buffer This string will be deleted upon return
+   
+   *  Revision history
+   - SLKP 20170920 initial implementation
+   */
+  _StringBuffer(_String* buffer);
+
+  /**
    *  Default constructor initializer
    *  Revision history
    - SLKP 20170613 reviewed while porting from v3 branch
@@ -252,6 +261,8 @@ public:
    */
   _StringBuffer& AppendSubstring(_String const& source, long start, long end);
 
+  
+  
   /**
    A suite of functions useful for escaping specific characters and pushing them
    onto a buffer, either a single character at a time, or an entire string at a time
@@ -260,16 +271,16 @@ public:
    - SLKP 20170614 reviewed while porting from v2.3 branch
    [CHANGE-NOTE SLKP 20170614 return *this for chaining]
   */
-  void SanitizeForSQLAndAppend(const char);
-  void SanitizeForSQLAndAppend(const _String&);
-  void SanitizeForHTMLAndAppend(const char);
-  void SanitizeForHTMLAndAppend(const _String&);
-  void SanitizeAndAppend(const char);
-  void SanitizeAndAppend(const _String&);
-  void SanitizeForPostScriptAndAppend(const char);
-  void SanitizeForPostScriptAndAppend(const _String&);
-  void SanitizeForRegExAndAppend(const char);
-  void SanitizeForRegExAndAppend(const _String&);
+  _StringBuffer& SanitizeForSQLAndAppend(const char);
+  _StringBuffer& SanitizeForSQLAndAppend(const _String&);
+  _StringBuffer& SanitizeForHTMLAndAppend(const char);
+  _StringBuffer& SanitizeForHTMLAndAppend(const _String&);
+  _StringBuffer& SanitizeAndAppend(const char);
+  _StringBuffer& SanitizeAndAppend(const _String&);
+  _StringBuffer& SanitizeForPostScriptAndAppend(const char);
+  _StringBuffer& SanitizeForPostScriptAndAppend(const _String&);
+  _StringBuffer& SanitizeForRegExAndAppend(const char);
+  _StringBuffer& SanitizeForRegExAndAppend(const _String&);
 
   /**
    * A utility function to append a statement of the form

@@ -66,8 +66,8 @@ double AlignStrings( char const * r_str
                    , const bool do_true_local = false
                    );
 
-hyFloat LinearSpaceAlign( _String * s1           // first string
-                           , _String * s2           // second string
+hyFloat LinearSpaceAlign( _String const * s1           // first string
+                           , _String const * s2           // second string
                            , long*  cmap     // char -> position in scoring matrix mapper
                            , _Matrix * ccost        // NxN matrix of edit distances on characters
                            , hyFloat gopen       // the cost of opening a gap in sequence 1
