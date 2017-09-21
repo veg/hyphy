@@ -11,6 +11,8 @@ LoadFunctionLibrary("libv3/tasks/trees.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
 
+LoadFunctionLibrary("libv3/models/rate_variation.bf");
+
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
 LoadFunctionLibrary("libv3/models/protein/REV.bf");
 LoadFunctionLibrary("plusF_helper.ibf");
