@@ -273,6 +273,7 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
     }
 
 
+
 #ifdef  _OPENMP
     lf->SetThreadCount (1);
 #endif
@@ -281,13 +282,15 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
     lf->Compute           ();
 
 
-    hyFloat            tdiff = timer.TimeSinceStart();
+
+hyFloat            tdiff = timer.TimeSinceStart();
 #ifdef  _OPENMP
 #ifdef  __HYPHYMPI__ 
     if (systemCPUCount > 1 && _hy_mpi_node_rank == 0) {
 #else
     if (systemCPUCount > 1) {
 #endif
+
         hyFloat          minDiff = tdiff;
         long                bestTC  = 1;
 
@@ -516,7 +519,8 @@ void _LikelihoodFunction::Init (void)
         SetThreadCount      (1L);
     else
 #endif
-    SetThreadCount      (system_CPU_count);
+
+ SetThreadCount      (system_CPU_count);
 #endif
 
 }
@@ -782,7 +786,9 @@ void     _LikelihoodFunction::Clear (void)
         SetThreadCount      (1L);
     else
 #endif
+
     SetThreadCount      (system_CPU_count);
+
 #endif
 }
 

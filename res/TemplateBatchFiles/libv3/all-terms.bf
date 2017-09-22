@@ -196,6 +196,7 @@ namespace terms{
         authors      = "authors";
         contact      = "contact";
         version      = "version";
+        help         = "help";
 
         //ReadDelimitedFile
         header       = "header";
@@ -225,6 +226,9 @@ namespace terms{
         log_likelihood        = "Log Likelihood";
         AICc                  = "AIC-c";
         global_mg94xrev       = "Global MG94xREV";
+        mg94xrev_sep_rates    = "MG94xREV with separate rates for branch sets";
+        nucleotide_gtr        = "Nucleotide GTR";
+        frequencies           = "Equilibrium frequencies";
         model                 = "model"; // TODO: change string to "model name"
        // global                = "Global model fit"; // Defined at the top of file
         attribute             = "attributes";
@@ -366,6 +370,7 @@ namespace terms{
         omega                         = "omega";
         weights                       = "weights";
         weight                        = "weight";
+        rates                         = "rates";
         freqs                         = "f";
     }
 

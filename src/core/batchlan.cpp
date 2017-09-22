@@ -299,8 +299,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 }
 
 //____________________________________________________________________________________
-_String*    MPIRecvString       (long senderT, long& senderID)
-{
+_String*    MPIRecvString       (long senderT, long& senderID) {
     _String*    theMessage = nil;
     long        messageLength = 0,
                 transferCount = 0;
@@ -313,6 +312,14 @@ _String*    MPIRecvString       (long senderT, long& senderID)
     }
 
     MPI_Status  status;
+  
+    // nonagressive polling mode
+  
+    int message_received = 0;
+    while (! message_received) {
+      MPI_Iprobe (senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &message_received, MPI_STATUS_IGNORE);
+      usleep (100);
+    }
 
     // nonagressive polling mode
   
@@ -1566,7 +1573,7 @@ void  _ExecutionList::BuildExecuteCommandInstruction (_List * pieces, long code)
 
   //____________________________________________________________________________________
 
-void  _ExecutionList::BuildFscanf(_List * pieces, long code) {
+void  _ExecutionList::BuildFscanf(_List * pieces, long code) {  
 
     static _String kFscanfRewind ("REWIND");
 
