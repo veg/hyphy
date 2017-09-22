@@ -36,7 +36,7 @@ function models.binary.generic.DefineQMatrix (modelSpec, namespace) {
 
 	__rate_matrix = {models.binary.dimensions, models.binary.dimensions};
 	__rate_matrix [0][0] = "";
-
+	
 	__rate_variation = model.generic.get_rate_variation (modelSpec);
 
 
@@ -54,7 +54,9 @@ function models.binary.generic.DefineQMatrix (modelSpec, namespace) {
 	} 
 
 	for (_rowChar = 0; _rowChar < models.binary.dimensions; _rowChar +=1 ){
+		__rate_matrix [_rowChar][_rowChar] = "";
 		for (_colChar = _rowChar + 1; _colChar < models.binary.dimensions; _colChar += 1) {
+			
 			__rp = Call (__rate_function, __alphabet[_rowChar],
 															__alphabet[_colChar],
 															 namespace,
@@ -83,6 +85,7 @@ function models.binary.generic.DefineQMatrix (modelSpec, namespace) {
 	}
 
 	__rp = Call (__time_function, __modelType);
+	
 
 	if (Abs (__rp)) {
 		((modelSpec[terms.parameters])[terms.local])[terms.timeParameter ()] = __rp;
