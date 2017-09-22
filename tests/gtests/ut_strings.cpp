@@ -195,11 +195,11 @@ TEST_F(StringTest,getCharTest)
 
     empty.Initialize();
 
-    EXPECT_EQ('e', test.getChar(5));
+    EXPECT_EQ('e', test.get_char(5));
 
     //Default return is 0
     _String test2 = empty;
-    EXPECT_EQ(0, test2.getChar(5));
+    EXPECT_EQ(0, test2.get_char(5));
 
 }
 
@@ -213,13 +213,13 @@ TEST_F(StringTest,setCharTest)
 
     empty.Initialize();
 
-    test.setChar(5,'d');
-    EXPECT_EQ('d', test.getChar(5));
+    test.set_char(5,'d');
+    EXPECT_EQ('d', test.get_char(5));
 
     //Should be 0
     _String test2 = empty;
-    test2.setChar(5,'d');
-    EXPECT_EQ('\0', test2.getChar(5));
+    test2.set_char(5,'d');
+    EXPECT_EQ('\0', test2.get_char(5));
 }
 
 /******************************************/
@@ -793,7 +793,7 @@ TEST_F(StringTest,containsTest)
 
 TEST_F(StringTest,beginswithTest)
 {
-    //Why not have an overloaded function instead of beginsWith and startswith?
+    //Why not have an overloaded function instead of beginsWith and BeginsWith?
     _String test = _String ("household");
     _String t = _String ("house");
     EXPECT_EQ(true, test.beginswith(t, true));
@@ -822,41 +822,41 @@ TEST_F(StringTest,beginswithTest)
 
 TEST_F(StringTest,startswithTest)
 {
-    //Why not have an overloaded function instead of beginsWith and startswith?
+    //Why not have an overloaded function instead of beginsWith and BeginsWith?
     _String result = _String ("household");
     _String substr = _String ("house");
-    EXPECT_EQ(true, result.startswith(substr));
+    EXPECT_EQ(true, result.BeginsWith(substr));
 
     result = _String ("household");
     substr = _String ("louse");
-    EXPECT_EQ(false, result.startswith(substr));
+    EXPECT_EQ(false, result.BeginsWith(substr));
 
     result = _String ("house");
     substr = _String ("household");
-    EXPECT_EQ(false, result.startswith(substr));
+    EXPECT_EQ(false, result.BeginsWith(substr));
 }
 
 TEST_F(StringTest,endswithTest)
 {
     _String result = _String ("household");
     _String r2 = _String ("hold");
-    EXPECT_EQ(true, result.endswith(r2));
+    EXPECT_EQ(true, result.EndsWith(r2));
 
     result = _String ("household");
     r2 = _String ("HOLD");
-    EXPECT_EQ(true, result.endswith(r2, false));
+    EXPECT_EQ(true, result.EndsWith(r2, false));
 
     result = _String ("household");
     r2 = _String ("HlLD");
-    EXPECT_EQ(false, result.endswith(r2, false));
+    EXPECT_EQ(false, result.EndsWith(r2, false));
 
     result = _String ("household");
     r2 = _String ("HOLD");
-    EXPECT_EQ(false, result.endswith(r2));
+    EXPECT_EQ(false, result.EndsWith(r2));
 
     result = _String ("hold");
     r2 = _String ("household");
-    EXPECT_EQ(false, result.endswith(r2));
+    EXPECT_EQ(false, result.EndsWith(r2));
 }
 
 TEST_F(StringTest,FormatTimeStringTest)
@@ -1181,7 +1181,7 @@ TEST_F(StringTest,RegExpMatchAllTest)
     _SimpleList matched_pairs;
     int errNo = 0;
 
-    Ptr regex = PrepRegExp (pattern, errNo, false);
+    hyPointer regex = PrepRegExp (pattern, errNo, false);
     initial.RegExpMatchAll(regex, matched_pairs);
 
     EXPECT_EQ(2,matched_pairs.lData[0]);

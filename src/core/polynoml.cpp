@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,18 +37,17 @@
  
  */
 
-#include "string.h"
-#include "math.h"
-#include "stdlib.h"
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+
 #include "polynoml.h"
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include "global_things.h"
+
+using namespace hy_global;
 
 
-//_String polyBOperations ("+-*^"), polyUOperations ("-");
-
-_Parameter dropPrecision        = log(1e-9),
+hyFloat dropPrecision        = log(1e-9),
            drop2Precision      = log(1e-18),
            topPolyCap           = 5.0,
            dropTerms          = 1.0,
@@ -66,8 +65,7 @@ bool       checkReset         = true;
 
 
 //__________________________________________________________________________________
-_PolynomialData::_PolynomialData (void)
-{
+_PolynomialData::_PolynomialData (void) : BaseObj(){
     theCoeff = nil;
     thePowers = nil;
     numberVars = 0;
@@ -79,7 +77,7 @@ _PolynomialData::_PolynomialData (void)
 _PolynomialData::_PolynomialData (long vars)
 {
     numberVars = vars>=0?vars:0;
-    theCoeff = (_Parameter*)MemAllocate (sizeof(_Parameter)*POLY_DATA_INCREMENT);
+    theCoeff = (hyFloat*)MemAllocate (sizeof(hyFloat)*POLY_DATA_INCREMENT);
     if (numberVars) {
         thePowers =  (long*)MemAllocate (sizeof(long)*POLY_DATA_INCREMENT*vars);
     } else {
@@ -96,20 +94,20 @@ _PolynomialData::_PolynomialData (_PolynomialData& source)
 }
 
 //__________________________________________________________________________________
-_PolynomialData::_PolynomialData (long vars, long terms, _Parameter* theCoeffs)
+_PolynomialData::_PolynomialData (long vars, long terms, hyFloat* theCoeffs)
 {
     numberVars = vars>=0?vars:0;
     allocTerms = (terms/POLY_DATA_INCREMENT+1)*POLY_DATA_INCREMENT;
     actTerms = terms;
-    theCoeff = (_Parameter*)MemAllocate (sizeof(_Parameter)*allocTerms);
-    memcpy (theCoeff,theCoeffs,sizeof(_Parameter)*terms);
+    theCoeff = (hyFloat*)MemAllocate (sizeof(hyFloat)*allocTerms);
+    memcpy (theCoeff,theCoeffs,sizeof(hyFloat)*terms);
     thePowers = nil;
 }
 
 //__________________________________________________________________________________
 _PolynomialData::~_PolynomialData (void)
 {
-    if (nInstances<=1) {
+    if (CanFreeMe()) {
         if (theCoeff) {
             free (theCoeff);
         }
@@ -122,11 +120,8 @@ _PolynomialData::~_PolynomialData (void)
 }
 
 //__________________________________________________________________________________
-BaseRef _PolynomialData::makeDynamic (void)
-{
+BaseRef _PolynomialData::makeDynamic (void) const {
     _PolynomialData *ret = new _PolynomialData;
-    checkPointer(ret);
-    nInstances++;
     ret->allocTerms = allocTerms;
     ret->actTerms = actTerms;
     ret->numberVars = numberVars;
@@ -136,16 +131,15 @@ BaseRef _PolynomialData::makeDynamic (void)
 }
 
 //__________________________________________________________________________________
-void _PolynomialData::Duplicate (BaseRef source)
+void _PolynomialData::Duplicate (BaseRefConst source)
 {
-    _PolynomialData *s = (_PolynomialData*)source;
-    nInstances=1;
+    _PolynomialData const *s = (_PolynomialData const*)source;
     allocTerms = s->allocTerms;
     actTerms = s->actTerms;
     numberVars = s->numberVars;
     if (actTerms) {
-        theCoeff = (_Parameter*)MemAllocate (sizeof(_Parameter)*allocTerms);
-        memcpy (theCoeff, s->theCoeff, sizeof (_Parameter)*actTerms);
+        theCoeff = (hyFloat*)MemAllocate (sizeof(hyFloat)*allocTerms);
+        memcpy (theCoeff, s->theCoeff, sizeof (hyFloat)*actTerms);
         if (numberVars) {
             thePowers = (long*)MemAllocate (sizeof(long)*allocTerms*numberVars);
             memcpy (thePowers, s->thePowers, sizeof(long)*actTerms*numberVars);
@@ -168,7 +162,7 @@ bool    _PolynomialData::checkMe (void)
         for (long i=1; i<actTerms; i++) {
             t2 = GetTerm(i);
             if (CompareTerms (t1,t2)>=0) {
-                WarnError ("\n Internal polynomial error!");
+                HandleApplicationError ("Internal polynomial error!", false);
                 return false;
             }
             t1 = t2;
@@ -183,14 +177,14 @@ long*   _PolynomialData::GetTerm (long index)
 }
 
 //__________________________________________________________________________________
-void    _PolynomialData::AddTerm (long * theTerm, _Parameter theC)
+void    _PolynomialData::AddTerm (long * theTerm, hyFloat theC)
 {
     if (!(allocTerms-actTerms)) { // no space left - reallocate
         allocTerms+=POLY_DATA_INCREMENT;
         if (theCoeff) {
-            theCoeff = (_Parameter*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(_Parameter));
+            theCoeff = (hyFloat*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(hyFloat));
         } else {
-            theCoeff = (_Parameter*)MemAllocate (allocTerms*sizeof(_Parameter));
+            theCoeff = (hyFloat*)MemAllocate (allocTerms*sizeof(hyFloat));
         }
         if (numberVars) {
             if (thePowers) {
@@ -241,14 +235,14 @@ void    _PolynomialData::WriteTerm (long * theTerm, long index)
 }
 
 //__________________________________________________________________________________
-void    _PolynomialData::AddTerm (long * theTerm, _Parameter theC, long* reindexer, long actLength)
+void    _PolynomialData::AddTerm (long * theTerm, hyFloat theC, long* reindexer, long actLength)
 {
     if (!(allocTerms-actTerms)) { // no space left - reallocate
         allocTerms+=POLY_DATA_INCREMENT;
         if (theCoeff) {
-            theCoeff = (_Parameter*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(_Parameter));
+            theCoeff = (hyFloat*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(hyFloat));
         } else {
-            theCoeff = (_Parameter*)MemAllocate (allocTerms*sizeof(_Parameter));
+            theCoeff = (hyFloat*)MemAllocate (allocTerms*sizeof(hyFloat));
         }
         if (numberVars) {
             if (thePowers) {
@@ -279,7 +273,7 @@ void    _PolynomialData::AddTerm (long * theTerm, _Parameter theC, long* reindex
 }
 
 //__________________________________________________________________________________
-void    _PolynomialData::AddTerm (_Parameter theC)
+void    _PolynomialData::AddTerm (hyFloat theC)
 {
     if (numberVars==0) {
         AddTerm (nil,0);
@@ -287,9 +281,9 @@ void    _PolynomialData::AddTerm (_Parameter theC)
         if (!(allocTerms-actTerms)) { // no space left - reallocate
             allocTerms+=POLY_DATA_INCREMENT;
             if (theCoeff) {
-                theCoeff = (_Parameter*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(_Parameter));
+                theCoeff = (hyFloat*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(hyFloat));
             } else {
-                theCoeff = (_Parameter*)MemAllocate (allocTerms*sizeof(_Parameter));
+                theCoeff = (hyFloat*)MemAllocate (allocTerms*sizeof(hyFloat));
             }
             if (numberVars) {
                 if (thePowers) {
@@ -300,7 +294,7 @@ void    _PolynomialData::AddTerm (_Parameter theC)
             }
         }
         memmove (thePowers+numberVars,thePowers, numberVars*actTerms*sizeof(long));
-        memmove (theCoeff+1,theCoeff,sizeof(_Parameter)*actTerms);
+        memmove (theCoeff+1,theCoeff,sizeof(hyFloat)*actTerms);
         *theCoeff = theC;
         for (long i=0; i<numberVars; *thePowers=0,i++,thePowers++) {}
         thePowers-=numberVars;
@@ -316,14 +310,14 @@ void    _PolynomialData::DeleteTerm (long index)
 {
     actTerms--;
     if (index!=actTerms) { // shift stuff
-        memmove ((void*)(theCoeff+index), (void*)(theCoeff+index+1), (actTerms-index)*sizeof(_Parameter));
+        memmove ((void*)(theCoeff+index), (void*)(theCoeff+index+1), (actTerms-index)*sizeof(hyFloat));
         if (numberVars)
             memmove ((void*)(thePowers+index*numberVars), (void*)(thePowers+(1+index)*numberVars),
                      (actTerms-index)*numberVars*sizeof(long));
     }
     if (allocTerms-actTerms>POLY_DATA_INCREMENT) {
         allocTerms-=POLY_DATA_INCREMENT;
-        theCoeff = (_Parameter*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(_Parameter));
+        theCoeff = (hyFloat*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(hyFloat));
         if (numberVars) {
             thePowers = (long*)MemReallocate ((char*)thePowers, allocTerms*sizeof(long)*numberVars);
         }
@@ -344,12 +338,12 @@ long    _PolynomialData::SumOfPowers (long index)
 }
 
 //__________________________________________________________________________________
-long    _PolynomialData::WeightedSumOfPowers (long index, _Parameter* w)
+long    _PolynomialData::WeightedSumOfPowers (long index, hyFloat* w)
 {
     if (numberVars) {
         long* theTerm = GetTerm (index), res = 0;
         for (long i=0; i<numberVars; i++, theTerm++, w++) {
-            res+=((_Parameter)*theTerm)**w;
+            res+=((hyFloat)*theTerm)**w;
         }
         return res;
     }
@@ -386,9 +380,9 @@ void    _PolynomialData::RaiseTerm (long* target, long power)
 }
 
 //__________________________________________________________________________________
-_Parameter  _PolynomialData::BinaryRaise (_Parameter base, long pwr)
+hyFloat  _PolynomialData::BinaryRaise (hyFloat base, long pwr)
 {
-    _Parameter result = 1;
+    hyFloat result = 1;
     char bits[sizeof(long)*8];
     unsigned char nLength = 0;
     while (pwr) {
@@ -445,7 +439,7 @@ void    _PolynomialData::ResortTerms (long* reIndex)
 {
     long i,j,*source,*target, deleted = 0;
 
-    _Parameter* newCoeff = (_Parameter*)MemAllocate (allocTerms*sizeof(_Parameter));
+    hyFloat* newCoeff = (hyFloat*)MemAllocate (allocTerms*sizeof(hyFloat));
     long*       newPowers = (long*)MemAllocate(allocTerms*numberVars*sizeof(long));
 
     // pass 1 to check for deletions
@@ -481,7 +475,7 @@ void    _PolynomialData::ResortTerms (long* reIndex)
     if (allocTerms-actTerms>POLY_DATA_INCREMENT) {
         long theCut = ((allocTerms-actTerms)/POLY_DATA_INCREMENT)*POLY_DATA_INCREMENT;
         allocTerms-=theCut;
-        theCoeff = (_Parameter*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(_Parameter));
+        theCoeff = (hyFloat*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(hyFloat));
         if (numberVars) {
             thePowers = (long*)MemReallocate ((char*)thePowers, allocTerms*sizeof(long)*numberVars);
         }
@@ -497,7 +491,7 @@ void    _PolynomialData::ChopTerms (void)
     } else {
         _SimpleList terms, index;
         long i,*qa,k,j;
-        _Parameter  logTop = log(topPolyCap),*qc;
+        hyFloat  logTop = log(topPolyCap),*qc;
         for (i = 0; i<actTerms; i++,theCoeff++) {
             index<<i;
             terms<<(long)(log(fabs(*theCoeff))+logTop*SumOfPowers(i));
@@ -511,7 +505,7 @@ void    _PolynomialData::ChopTerms (void)
         }
 
         allocTerms = (maxAllowedTerms/POLY_DATA_INCREMENT+1)*POLY_DATA_INCREMENT;
-        _Parameter* newCoeff = (_Parameter*)MemAllocate (allocTerms*sizeof(_Parameter)),*nP = newCoeff;
+        hyFloat* newCoeff = (hyFloat*)MemAllocate (allocTerms*sizeof(hyFloat)),*nP = newCoeff;
         long*       newPowers = (long*)MemAllocate(allocTerms*numberVars*sizeof(long)), *target, *source;
 
         target = newPowers;
@@ -701,7 +695,7 @@ char    _PolynomialData::CompareTerms (long* s1, long* s2, long* firstReindex, l
 }
 
 //__________________________________________________________________________________
-bool        _PolynomialData::checkTerm (_Parameter myCoeff, long myIndex)
+bool        _PolynomialData::checkTerm (hyFloat myCoeff, long myIndex)
 {
     if (myCoeff==0.0) { // delete in any case
         return false;
@@ -728,7 +722,7 @@ bool        _PolynomialData::checkTerm (_Parameter myCoeff, long myIndex)
     }
     if (dropTerms) {
         if (enforcePolyCap) {
-            if (log(fabs(myCoeff))+log(topPolyCap)*(_Parameter)(SumOfPowers(myIndex))<dropThreshold) {
+            if (log(fabs(myCoeff))+log(topPolyCap)*(hyFloat)(SumOfPowers(myIndex))<dropThreshold) {
                 return false;
             }
         } else if (enforcePolyCap) {
@@ -742,28 +736,22 @@ bool        _PolynomialData::checkTerm (_Parameter myCoeff, long myIndex)
 
 //__________________________________________________________________________________
 
-_Polynomial::_Polynomial (void)
-{
+_Polynomial::_Polynomial (void) {
     theTerms = new _PolynomialData;
-    checkPointer(theTerms);
 }
 
 //__________________________________________________________________________________
 
-_Polynomial::_Polynomial (_SimpleList& vars)
-{
+_Polynomial::_Polynomial (_SimpleList& vars) {
     variableIndex.Duplicate (&vars);
     theTerms = new _PolynomialData (vars.countitems());
-    checkPointer(theTerms);
 }
 
 //__________________________________________________________________________________
 
-_Polynomial::_Polynomial (_Parameter value)
+_Polynomial::_Polynomial (hyFloat value) {
 // a constant polynomial
-{
     theTerms = new _PolynomialData;
-    checkPointer(theTerms);
     theTerms->AddTerm (nil, value);
 }
 
@@ -774,7 +762,6 @@ _Polynomial::_Polynomial (_Variable& v)
 {
     variableIndex<<v.GetIndex();
     theTerms = new _PolynomialData (1);
-    checkPointer(theTerms);
     long  vIndex = 1;
     theTerms->AddTerm (&vIndex,1.0);
 }
@@ -785,7 +772,6 @@ _Polynomial::_Polynomial (_Polynomial& p)
 {
     variableIndex.Duplicate (&p.variableIndex);
     theTerms = new _PolynomialData;
-    checkPointer(theTerms);
     if (p.theTerms) {
         theTerms->Duplicate (p.theTerms);
     } else {
@@ -806,11 +792,9 @@ _Polynomial::~_Polynomial ()
 
 //__________________________________________________________________________________
 
-BaseObj*    _Polynomial::makeDynamic(void)
-{
+BaseObj*    _Polynomial::makeDynamic(void) const{
     _Polynomial* res = new _Polynomial;
-    checkPointer(res);
-
+ 
     res->variableIndex.Duplicate (&variableIndex);
     res->compList1.Duplicate (&compList1);
     res->compList2.Duplicate (&compList2);
@@ -826,9 +810,8 @@ BaseObj*    _Polynomial::makeDynamic(void)
 
 //__________________________________________________________________________________
 
-void    _Polynomial::Duplicate  (BaseRef tp)
-{
-    _Polynomial* p = (_Polynomial*)tp;
+void    _Polynomial::Duplicate  (BaseRefConst tp) {
+    _Polynomial const* p = (_Polynomial const*)tp;
     variableIndex.Clear();
     variableIndex.Duplicate (&p->variableIndex);
     compList1.Duplicate (&p->compList1);
@@ -836,7 +819,6 @@ void    _Polynomial::Duplicate  (BaseRef tp)
     DeleteObject(theTerms);
     if (p->theTerms) {
         theTerms =  new _PolynomialData (*(p->theTerms));
-        checkPointer(theTerms);
     }
 }
 //__________________________________________________________________________________
@@ -928,8 +910,8 @@ void    ResetPolynomialCheck (_Polynomial* p)
                     free (varCheckArray);
                 }
                 varCheckAllocated=p->variableIndex.countitems();
-                varCheckArray = (_Parameter*)MemAllocate (varCheckAllocated*sizeof(_Parameter));
-                _Parameter lb, ub;
+                varCheckArray = (hyFloat*)MemAllocate (varCheckAllocated*sizeof(hyFloat));
+                hyFloat lb, ub;
                 for (long j=varCheckAllocated-1; j>=0; j--) {
                     _Variable* theV = LocateVar(p->variableIndex(j));
                     lb = fabs(theV->GetLowerBound());
@@ -947,7 +929,7 @@ void    ResetPolynomialCheck (_Polynomial* p)
 void _Polynomial::CheckTerm (void)
 {
     long myIndex = theTerms->actTerms-1;
-    _Parameter myCoeff = theTerms->GetCoeff(myIndex);
+    hyFloat myCoeff = theTerms->GetCoeff(myIndex);
     if (!theTerms->checkTerm (myCoeff,myIndex)) {
         theTerms->DeleteTerm(myIndex);
     }
@@ -985,8 +967,7 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
     if (objectT==1) { // a number
         Convert2OperationForm();
         _Polynomial* result = new _Polynomial (*this);
-        checkPointer(result);
-        _Parameter mV = subtract?-m->Value():m->Value();
+        hyFloat mV = subtract?-m->Value():m->Value();
 
         if (!variableIndex.lLength) { // constant poly
             if (theTerms->NumberOfTerms()) {
@@ -1030,7 +1011,7 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
                     return p2->Plus (&coef1,false);
                 } else {
                     _Polynomial *ppp = (_Polynomial*)p2->Plus (&coef1,true);
-                    _Parameter  *invC = ppp->theTerms->theCoeff;
+                    hyFloat  *invC = ppp->theTerms->theCoeff;
                     for (long inv = 0; inv<ppp->theTerms->actTerms; inv++, invC++) {
                         (*invC) *= -1.0;
                     }
@@ -1041,8 +1022,7 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
                     return new _Polynomial(*p2);
                 } else {
                     _Polynomial* ppp = new _Polynomial (*p2);
-                    checkPointer(ppp);
-                    _Parameter *invC = ppp->theTerms->theCoeff;
+                    hyFloat *invC = ppp->theTerms->theCoeff;
                     for (long inv = 0; inv<ppp->theTerms->actTerms; inv++, invC++) {
                         (*invC)*=(-1.0);
                     }
@@ -1061,8 +1041,7 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
                     return new _Polynomial(*this);
                 } else {
                     _Polynomial* ppp = new _Polynomial (*this);
-                    checkPointer(ppp);
-                    _Parameter *invC = ppp->theTerms->theCoeff;
+                    hyFloat *invC = ppp->theTerms->theCoeff;
                     for (long inv = 0; inv<ppp->theTerms->actTerms; inv++, invC++) {
                         (*invC)*=(-1.0);
                     }
@@ -1084,7 +1063,7 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
         char c          = 0,
              advancing  = -1;
 
-        _Parameter * coeff1 = theTerms->GetCoeff(),
+        hyFloat * coeff1 = theTerms->GetCoeff(),
                      *coeff2 = p2->theTerms->GetCoeff();
 
         _Polynomial* res;
@@ -1093,7 +1072,6 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
             // same variable arrays - proceed to the operation directly
         {
             res = new _Polynomial (variableIndex); // create a blank new result holder
-            checkPointer        (res);
             ResetPolynomialCheck(res);
             while (1) { // stuff left to do
                 if (advancing == 0) { // advancing in the 1st polynomial
@@ -1439,7 +1417,6 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
                         rl2 = merge2.countitems() ;
 
                 res = new _Polynomial (mergedVariables); // create a blank new result holder
-                checkPointer(res);
                 ResetPolynomialCheck(res);
 
                 while (1) { // stuff left to do
@@ -1610,20 +1587,17 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
         return res;
     }
 
-    _String errMsg ("An incompatible operand was supplied to polynomial addition/subtraction");
-    FlagError (&errMsg);
+    HandleApplicationError ("An incompatible operand was supplied to polynomial addition/subtraction");
     return nil;
 }
 
 //__________________________________________________________________________________
-_MathObject* _Polynomial::Sub (_MathObject* m)
-{
+_MathObject* _Polynomial::Sub (_MathObject* m) {
     return Plus (m,true);
 }
 
 //__________________________________________________________________________________
-_MathObject* _Polynomial::Minus (void)
-{
+_MathObject* _Polynomial::Minus (void) {
     _Constant min (-1.0);
     return Mult (&min);
 }
@@ -1635,13 +1609,12 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
 
     if (objectT==NUMBER) { // a number or a monomial
         Convert2OperationForm();
-        _Parameter nb = ((_Constant*)m)->Value();
+        hyFloat nb = ((_Constant*)m)->Value();
         if (nb==0.0) {
             return new _Polynomial;
         }
 
         _Polynomial* result = new _Polynomial (*this);
-        checkPointer(result);
         for (long i = theTerms->NumberOfTerms()-1; i>=0; i--) {
             result->theTerms->GetCoeff(i)*=nb;
         }
@@ -1754,8 +1727,8 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
                     holder2 = (long*)MemAllocate (resVars*sizeof(long));
                     holder3 = (long*)MemAllocate (resVars*sizeof(long));
 
-                    _Parameter *tempCoeff = (_Parameter*)MemAllocate (theTerms->NumberOfTerms()*sizeof(_Parameter));
-                    memcpy (tempCoeff, theTerms->GetCoeff(), theTerms->NumberOfTerms()*sizeof(_Parameter));
+                    hyFloat *tempCoeff = (hyFloat*)MemAllocate (theTerms->NumberOfTerms()*sizeof(hyFloat));
+                    memcpy (tempCoeff, theTerms->GetCoeff(), theTerms->NumberOfTerms()*sizeof(hyFloat));
 
 
                     res->theTerms->MultiplyTerms    (holder1, terms1, terms2); // add the first term
@@ -1776,7 +1749,7 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
                                 if (csp==nt1)
                                 {
                                     long i = positionArray[csp]+1;
-                                    _Parameter coe = theTerms->GetCoeff (csp);
+                                    hyFloat coe = theTerms->GetCoeff (csp);
                                     while (i<=nt2)
                                     {
                                         res->theTerms->MultiplyTerms (holder1, theTerms->GetTerm(csp), p2->theTerms->GetTerm(i));
@@ -1797,7 +1770,7 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
                                 if (csp==nt1)
                                 {
                                     long i = positionArray[csp]+1;
-                                    _Parameter coe = theTerms->GetCoeff (csp);
+                                    hyFloat coe = theTerms->GetCoeff (csp);
                                     while (i<=nt2)
                                     {
                                         res->theTerms->MultiplyTerms (holder1, theTerms->GetTerm(csp), p2->theTerms->GetTerm(i));
@@ -2032,7 +2005,7 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
         {
             _SimpleList  index;
             long i;
-            _Parameter  logTop = log(topPolyCap), *theCoeff = theTerms->GetCoeff();
+            hyFloat  logTop = log(topPolyCap), *theCoeff = theTerms->GetCoeff();
             for (i = 0; i<nt1; i++,theCoeff++) {
                 index<<i;
                 terms1<<(long)(log(fabs(*theCoeff))+logTop*theTerms->SumOfPowers(i));
@@ -2067,13 +2040,11 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
         if (!terms1.countitems()) {
             if (variableIndex.Equal(p2->variableIndex)) { // same variable arrays - proceed to the operation directly
                 res = new _Polynomial (variableIndex);
-                checkPointer(res);
                 ResetPolynomialCheck(res);
                 long* newTerm = new long[res->variableIndex.countitems()],*term1,f;
-                checkPointer(newTerm);
                 for (long i=0; i<nt1; i++) {
                     ref = 0;
-                    _Parameter c1 = theTerms->GetCoeff(i);
+                    hyFloat c1 = theTerms->GetCoeff(i);
                     term1 = theTerms->GetTerm(i);
                     for (long j=0; j<nt2; j++) {
                         res->theTerms->MultiplyTerms (newTerm, term1, p2->theTerms->GetTerm(j));
@@ -2094,22 +2065,18 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
                 _SimpleList merge1, merge2, joint;
                 joint.Merge (variableIndex, p2->variableIndex,&merge1,&merge2);
                 res = new _Polynomial (joint);
-                checkPointer(res);
                 ResetPolynomialCheck(res);
                 long  f,nv = res->variableIndex.countitems(),* scratch1 = new long[nv],
                 * scratch3,k,* scratch2;
-                checkPointer(scratch1);
                 bool do1 = merge1.countitems()!=0, do2 = merge2.countitems()!=0;
                 if (do1) {
                     scratch2 = new long[nv];
-                    checkPointer(scratch2);
                 }
                 if (do2) {
                     scratch3 = new long[nv];
-                    checkPointer(scratch3);
                 }
                 for (long i=0; i<nt1; i++) {
-                    _Parameter c1 = theTerms->GetCoeff(i);
+                    hyFloat c1 = theTerms->GetCoeff(i);
                     ref = 0;
                     if (do1) {
                         for (k=0; k<nv; k++,scratch2++) {
@@ -2165,16 +2132,14 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
             onOff++;
             if (variableIndex.Equal(p2->variableIndex)) { // same variable arrays - proceed to the operation directly
                 res = new _Polynomial (variableIndex);
-                checkPointer(res);
                 ResetPolynomialCheck(res);
                 long* newTerm = new long[res->variableIndex.countitems()],*term1,f;
-                checkPointer(newTerm);
                 for (long i=0; i<nt1; i++) {
                     if (terms1.BinaryFind(i)<0) {
                         continue;
                     }
                     ref = 0;
-                    _Parameter c1 = theTerms->GetCoeff(i);
+                    hyFloat c1 = theTerms->GetCoeff(i);
                     term1 = theTerms->GetTerm(i);
                     for (long j=0; j<nt2; j++) {
                         if (onOff[j]==0) {
@@ -2198,22 +2163,18 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
                 _SimpleList merge1, merge2, joint;
                 joint.Merge (variableIndex, p2->variableIndex,&merge1,&merge2);
                 res = new _Polynomial (joint);
-                checkPointer(res);
                 ResetPolynomialCheck(res);
                 long  f,nv = res->variableIndex.countitems(),* scratch1 = new long[nv],
                 * scratch3,k,* scratch2;
-                checkPointer(scratch1);
                 bool do1 = merge1.countitems()!=0, do2 = merge2.countitems()!=0;
                 if (do1) {
                     scratch2 = new long[nv];
-                    checkPointer(scratch2);
                 }
                 if (do2) {
                     scratch3 = new long[nv];
-                    checkPointer(scratch3);
                 }
                 for (long i=0; i<nt1; i++) {
-                    _Parameter c1 = theTerms->GetCoeff(i);
+                    hyFloat c1 = theTerms->GetCoeff(i);
                     ref = 0;
                     if (do1) {
                         for (k=0; k<nv; k++,scratch2++) {
@@ -2264,8 +2225,7 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
 
     }
 
-    _String errMsg ("An incompatible operand was supplied to polynomial multiplication");
-    FlagError (&errMsg);
+    HandleApplicationError ("An incompatible operand was supplied to polynomial multiplication");
     return nil;
 }
 
@@ -2289,7 +2249,6 @@ _MathObject* _Polynomial::Raise (_MathObject* m)
         if (theTerms->NumberOfTerms()==1) { // just a monomial
             long power = (long)m->Value();
             result = new _Polynomial (*this);
-            checkPointer(result);
             result->theTerms->RaiseTerm (result->theTerms->GetTerm(0),power);
             result->theTerms->GetCoeff(0)=_PolynomialData::BinaryRaise(result->theTerms->GetCoeff(0),power);
 
@@ -2323,8 +2282,7 @@ _MathObject* _Polynomial::Raise (_MathObject* m)
         }
         return result;
     }
-    _String errMsg ("An incompatible operand was supplied to polynomial raise to power");
-    FlagError (&errMsg);
+    HandleApplicationError ("An incompatible operand was supplied to polynomial raise to power");
     return nil;
 }
 //__________________________________________________________________________________
@@ -2386,7 +2344,6 @@ void    _Polynomial::Convert2ComputationForm(_SimpleList* c1, _SimpleList* c2, _
         }
         i++;
         long* powerDiff = new long[n+2];
-        checkPointer(powerDiff);
         for (; i<l; i++) { // even more stuff to do
 
             long* cM = theTerms->GetTerm(vi[i]),
@@ -2506,7 +2463,6 @@ void _Polynomial::Convert2OperationForm (void)
         if (n>1) {
             theTerms->thePowers = (long*)MemAllocate (theTerms->allocTerms*sizeof(long)*(n-1));
             scratch = new long [n-1];
-            checkPointer(scratch);
             memset (scratch,0,sizeof(long)*(n-1));
             memset (theTerms->thePowers,0,theTerms->allocTerms*sizeof(long)*(n-1));
         }
@@ -2585,27 +2541,25 @@ _MathObject* _Polynomial::Compute (void)
 }
 
 //__________________________________________________________________________________
-_Parameter _Polynomial::ComputePolynomial (void)
+hyFloat _Polynomial::ComputePolynomial (void)
 //assumed that the poly is already in the comp form
 {
     Convert2ComputationForm();
     long n = variableIndex.countitems()+1;
-    _Parameter * varValues = new _Parameter[n];
-    checkPointer(varValues);
+    hyFloat * varValues = new hyFloat[n];
     for (long i=0; i<n-1; i++) {
         varValues[i]=LocateVar(variableIndex(i))->Compute()->Value();
     }
-    _Parameter result = ComputeP (varValues, theTerms->GetCoeff(),n,compList1.countitems(),
+    hyFloat result = ComputeP (varValues, theTerms->GetCoeff(),n,compList1.countitems(),
                                   compList1.quickArrayAccess(), compList2.quickArrayAccess());
     delete [] varValues;
     return result;
 }
 //__________________________________________________________________________________
 
-_Parameter      _Polynomial::ComputeP (_Parameter* varValues, _Parameter* compCoeff, long n, long m, long* c1, long* c2)
+hyFloat      _Polynomial::ComputeP (hyFloat* varValues, hyFloat* compCoeff, long n, long m, long* c1, long* c2)
 {
-    _Parameter * holder = new _Parameter[n],term=1,result = 0,lv;
-    checkPointer(holder);
+    hyFloat * holder = new hyFloat[n],term=1,result = 0,lv;
     long  i1,i2,i,lp=n-2;
     for (i=0; i<n-1; i++) {
         holder[i]=1;
@@ -2640,7 +2594,7 @@ _Parameter      _Polynomial::ComputeP (_Parameter* varValues, _Parameter* compCo
                     holder[i1]*=varValues[i1];
                     term*=varValues[i1];
                 } else {
-                    _Parameter p2 = _PolynomialData::BinaryRaise(varValues[i1],i2);
+                    hyFloat p2 = _PolynomialData::BinaryRaise(varValues[i1],i2);
                     holder[i1]*=p2;
                     term*=p2;
                 }
@@ -2686,7 +2640,7 @@ _Parameter      _Polynomial::ComputeP (_Parameter* varValues, _Parameter* compCo
 void    _Polynomial::RankTerms(_SimpleList* receptacle)
 {
     receptacle->Clear();
-    _Parameter  logTop = log(topPolyCap), *theCoeff = theTerms->GetCoeff();
+    hyFloat  logTop = log(topPolyCap), *theCoeff = theTerms->GetCoeff();
 
     for (long i = 0; i<theTerms->actTerms; i++,theCoeff++) {
         (*receptacle)<<(long)(log(fabs(*theCoeff))+logTop*theTerms->SumOfPowers(i));
@@ -2708,7 +2662,7 @@ BaseObj* _Polynomial::toStr (unsigned long padding) {
     for (i=0; i<theTerms->NumberOfTerms(); i++) {
       char        number [100];
       
-      _Parameter  coeff = theTerms->GetCoeff(i);
+      hyFloat  coeff = theTerms->GetCoeff(i);
       
       bool print_coeff = false;
       
@@ -2857,9 +2811,9 @@ bool    _Polynomial::HasChanged (bool)
 }
 
 //__________________________________________________________________________________
-bool    _Polynomial::IsMaxElement (_Parameter bench)
+bool    _Polynomial::IsMaxElement (hyFloat bench)
 {
-    _Parameter* tc = theTerms->GetCoeff();
+    hyFloat* tc = theTerms->GetCoeff();
     for (long k=0; k<theTerms->actTerms; k++, tc++) {
         if (fabs(*tc)>=bench) {
             return true;

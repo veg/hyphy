@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,10 +37,6 @@
  
  */
 
-#include "list.h"
-#include "hy_strings.h"
-#include "errorfns.h"
-#include "parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -49,9 +45,12 @@
 #include <limits.h>
 #include <stdarg.h>
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include "list.h"
+#include "hy_strings.h"
+#include "hy_string_buffer.h"
+#include "parser.h"
+
+using namespace hy_global;
 
 
 /*
@@ -61,8 +60,7 @@ Constructors
 */
 
 // Does nothing
-_List::_List ()
-{
+_List::_List () {
 }
 
 // Length constructor
@@ -90,7 +88,7 @@ _List::_List (const _List& l, long from, long to)
 _List::_List (BaseRef ss, char sep)
 {
     _String* s = (_String*)ss;
-    if (s->Length()!=0) {
+    if (s->empty() == false) {
         long cp=0,cpp;
         while ((cpp = s->Find(sep,cp,-1))!=-1) {
             if (cpp>cp) {
@@ -109,23 +107,24 @@ _List::_List (BaseRef ss, char sep)
 _List::_List (BaseRef br) {
     lLength = 1;
     laLength = MEMORYSTEP;
-    lData = (long*)MemAllocate (laLength * sizeof(Ptr));
+    lData = (long*)MemAllocate (laLength * sizeof(hyPointer));
     BaseRef   object_copy = br->makeDynamic();
     ((BaseRef*)lData)[0]= object_copy;
 }
 
 
 //Destructor
-_List::~_List(void)
-{
-    if (nInstances<=1) {
-        for (unsigned long i = 0; i<lLength; i++) {
-            BaseRef t = ((BaseRef*)lData)[i];
-            if (t) {
-                if (t->nInstances<=1) {
-                    DeleteObject(t);
+_List::~_List(void) {
+    if (CanFreeMe()) {
+        BaseRef * references =(BaseRef*)lData;
+    
+        for (unsigned long i = 0UL; i<lLength; i++) {
+            BaseRef an_object = references[i];
+            if (an_object) {
+                if (an_object->CanFreeMe()) {
+                    DeleteObject(an_object);
                 } else {
-                    t->nInstances--;
+                    an_object->RemoveAReference();
                 }
             }
         }
@@ -141,13 +140,13 @@ Operator Overloads
 */
 
 // Element location functions (0,llength - 1)
-BaseRef& _List::operator [] (long i)
-{
-    BaseRef t = BaseRef(_SimpleList::operator[] (i));
-    if (t)
-        if (t->nInstances>1) {
-            t->nInstances--;
-            ((BaseRef*)(lData))[i]=t->makeDynamic();
+BaseRef& _List::operator [] (long i) {
+    // TODO 20170426: SLKP, maybe deprecate
+    BaseRef ith_object = GetItem(i);
+    if (ith_object)
+        if (!ith_object->CanFreeMe()) {
+            ith_object->RemoveAReference();
+            ((BaseRef*)(lData))[i]=ith_object->makeDynamic();
         }
 
     return ((BaseRef*)(lData))[i];
@@ -159,10 +158,6 @@ BaseRef _List::operator () (const unsigned long i)
     return ((BaseRef*)lData)[i];
 }
 
-// Element location functions (0,llength - 1)
-BaseRef _List::GetItem (const unsigned long i) const {
-    return ((BaseRef*)lData)[i];
-}
 
   // Element location functions (0,llength - 1)
 BaseRef _List::GetItemRangeCheck(const unsigned long i) const {
@@ -265,9 +260,9 @@ _List& _List::operator < (BaseRef br) {
     laLength+=incBy;
     
     if (lData) {
-      checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
+      lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*));
     } else {
-      checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
+      lData = (long*)MemAllocate(laLength*sizeof(void*));
     }
   }
   
@@ -289,7 +284,7 @@ _List& _List::operator << (_List const& source) {
 
 _List& _List::operator < (_List const& source) {
   for (unsigned long k=0UL; k<source.lLength; k++) {
-    (*this) << ((BaseRef*)source.lData)[k];
+    (*this) < ((BaseRef*)source.lData)[k];
   }
   return *this;
 }
@@ -310,7 +305,7 @@ void _List::AppendNewInstance (BaseRef br) {
         (*this)<<br;
         br->RemoveAReference();
     } else {
-        checkPointer (br);
+        HandleApplicationError(_String ("Passed a null reference to ") & __PRETTY_FUNCTION__);
     }
 }
 
@@ -331,12 +326,12 @@ long  _List::BinaryFindObject (BaseObj const * s, long startAt) const {
         middle = (top+bottom)/2;
         _String* stp = (_String*)(((BaseRef*)lData)[middle]->toStr());
 
-        int      cres = st->Compare (stp);
+        hyComparisonType      cres = st->Compare (stp);
         DeleteObject (stp);
 
-        if (cres < 0) {
+        if (cres == kCompareLess) {
             top = middle==top?top-1:middle;
-        } else if (cres == 0) {
+        } else if (cres == kCompareEqual) {
             return middle;
         } else {
             bottom = middle==bottom?bottom+1:middle;
@@ -376,38 +371,36 @@ long  _List::BinaryInsert (BaseRef s)
 
 }
 
-void    _List::bumpNInst (void)
-{
-    for (unsigned long i = 0; i<lLength; i++) {
-        ((BaseRef*)lData)[i]->nInstances++;
+void    _List::bumpNInst (void) {
+    for (unsigned long i = 0UL; i<lLength; i++) {
+        ((BaseRef*)lData)[i]->AddAReference();
     }
 }
 
-void  _List::Clear (bool completeClear)
-{
-    if (nInstances<=1) {
+void  _List::Clear (bool completeClear) {
+    if (CanFreeMe()) {
         for (unsigned long i = 0UL; i<lLength; i++) {
             DeleteObject (((BaseRef*)lData)[i]);
         }
         _SimpleList::Clear(completeClear);
 
     } else {
-        nInstances--;
+        RemoveAReference();
     }
 }
 
-long  _List::Compare (long i, long j) const {
+hyComparisonType  _List::Compare (long i, long j) const {
     _String             *si = (_String*)lData[i],
                          *sj = (_String*)lData[j];
 
-    return  si->Compare(sj);
+    return  si->Compare(*sj);
 }
 
-long  _List::Compare (BaseObj const * i, long j) const {
+hyComparisonType  _List::Compare (BaseObj const * i, long j) const {
     _String const       *sj = (_String const*)lData[j],
                         *si = (_String const*)i;
 
-    return  si->Compare(sj);
+    return  si->Compare(*sj);
 }
 
 unsigned long _List::Count()
@@ -427,12 +420,12 @@ void  _List::Delete (long index, bool delete_object)
             for (unsigned long i = index; i < lLength; i++) {
                 lData[i] = lData[i+1];
             }
-        //memcpy ((Ptr)lData+sizeof(BaseRef)*(index),(Ptr)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
+        //memcpy ((hyPointer)lData+sizeof(BaseRef)*(index),(hyPointer)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
     }
     if (laLength-lLength>MEMORYSTEP) {
         laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
         if (laLength > 0)
-          lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+          lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hyPointer));
         else {
           free (lData); lData = nil;
         }
@@ -458,7 +451,7 @@ void  _List::DeleteList (const _SimpleList& toDelete)
         if (laLength-lLength>MEMORYSTEP) {
             laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
             if (laLength > 0)
-              lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+              lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hyPointer));
             else {
               free (lData); lData = nil;
             }
@@ -466,15 +459,15 @@ void  _List::DeleteList (const _SimpleList& toDelete)
     }
 }
 
-void    _List::Duplicate (const BaseRef theRef)
-{
+void    _List::Duplicate (BaseRefConst theRef) {
     _SimpleList::Duplicate (theRef);
-    if (lData)
-        for (unsigned long i = 0; i<lLength; i++) {
+    if (lData) {
+        for (unsigned long i = 0UL; i<lLength; i++) {
             if (((BaseRef*)lData)[i]) {
-                (((BaseRef*)lData)[i])->nInstances++;
+                (((BaseRef*)lData)[i])->AddAReference();
             }
         }
+    }
 }
 
 bool _List::Equal(_List const & l2) const
@@ -505,45 +498,6 @@ long  _List::FindObject (BaseRefConst s, long startat) const {
     return -1;
 }
 
-long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
-{
-    char * s1, *s2;
-    long t = ((_String*)s)->sLength;
-
-    if (upTo < 0 || upTo >= lLength) {
-        upTo = lLength-1;
-    }
-
-    for (long i = startat; i<= upTo; i++) {
-        s1 = ((_String*)s)->sData;
-        if (((_String*)(((BaseRef*)lData)[i]))->sLength==t) {
-            s2 = ((_String*)(((BaseRef*)lData)[i]))->sData;
-            long j = 0;
-            if (caseSensitive)
-                for (j=0; (*s1==*s2)&&(j<t); j++,s1++,s2++) ;
-            else
-                for (j=0; (toupper(*s1)==toupper(*s2))&&(j<t); j++,s1++,s2++) ;
-
-            if (j==t) {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
-
-long  _List::FreeUpMemory (long requestedBytes)
-{
-    long freed = 0;
-    for (unsigned long i = 0; i<lLength; i++) {
-        BaseRef t = ((BaseRef*)lData)[i];
-        freed+=t->FreeUpMemory(requestedBytes-freed);
-        if (freed>=requestedBytes) {
-            return freed;
-        }
-    }
-    return freed;
-}
 
 // Append & store operator
 void _List::InsertElement (BaseRef br, long insertAt, bool store, bool pointer) {
@@ -562,7 +516,7 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
           c2 = 0;
 
     while (c1<l1.lLength && c2<l2.lLength) {
-        while (c1<l1.lLength && ((_String*)l1(c1))->Compare((_String*)l2(c2))<0) {
+        while (c1<l1.lLength && ((_String*)l1(c1))->Compare((_String*)l2(c2)) == kCompareLess) {
             c1++;
         }
         if (c1==l1.lLength) {
@@ -583,14 +537,14 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
         if (c1==l1.lLength || c2==l2.lLength) {
             break;
         }
-        while (c2<l2.lLength && ((_String*)l2(c2))->Compare((_String*)l1(c1))<0) {
+        while (c2<l2.lLength && ((_String*)l2(c2))->Compare((_String*)l1(c1)) == kCompareLess) {
             c2++;
         }
     }
 }
 
-BaseRef  _List::Join (BaseRefConst spacer, long startAt, long endAt) {
-    _String *joined = new _String (256L,true);
+_String*  _List::Join (_String const & spacer, long startAt, long endAt) const {
+    _StringBuffer *joined = new _StringBuffer (256L);
     if (endAt < 0) { 
         endAt = lLength; 
     } else if (endAt > lLength) {
@@ -599,12 +553,11 @@ BaseRef  _List::Join (BaseRefConst spacer, long startAt, long endAt) {
 
     for (unsigned long k = MAX(0L,startAt); k < endAt; k++) {
         if (k) {
-            (*joined) << *(_String const*)spacer;
+            (*joined) << spacer;
         }
         joined->AppendNewInstance((_String*) ((BaseRef*)lData)[k]->toStr());
     }
 
-    joined->Finalize();
     return joined;
 }
 
@@ -615,22 +568,17 @@ void _List::Place (BaseRef br)
     if (lLength>laLength) {
         laLength+=MEMORYSTEP;
         if (lData) {
-            checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
+           lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*));
         } else {
-            checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
+           lData = (long*)MemAllocate(laLength*sizeof(void*));
         }
     }
     ((BaseRef*)lData)[lLength-1]=br;
 }
 
 //TODO: makeDynamic should be MakeDynamic to follow convention.
-BaseRef _List::makeDynamic(void)
-{
+BaseRef _List::makeDynamic(void) const {
     _List * Res = new _List;
-    checkPointer(Res);
-    //lData = nil;
-    memcpy ((char*)Res, (char*)this, sizeof (_List));
-    Res->nInstances = 1;
     Res->lData = nil;
     Res->Duplicate (this);
     return Res;
@@ -663,7 +611,7 @@ void _List::toFileStr(FILE* dest, unsigned long)
 // Char* conversion
 //TODO: toFileStr should be ToStr to follow convention.
 BaseRef _List::toStr(unsigned long) {
-    _String * s = new _String((unsigned long)20*(lLength+1),true);
+    _StringBuffer * s = new _StringBuffer((unsigned long)20*(lLength+1));
 
     (*s)<<'{';
   
@@ -676,7 +624,6 @@ BaseRef _List::toStr(unsigned long) {
     }
   
     (*s)<<'}';
-    s->Finalize();
     return s;
 }
 

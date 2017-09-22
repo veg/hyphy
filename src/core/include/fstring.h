@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -41,6 +41,7 @@
 #define     __FSTRING__
 
 #include "mathobj.h"
+#include "hy_string_buffer.h"
 #include "_hyExecutionContext.h"
 
 //__________________________________________________________________________________
@@ -57,8 +58,8 @@ public:
     virtual  ~_FString ();
 //  ~_Constant (void);
 
-    virtual BaseRef   makeDynamic       (void);
-    virtual void      Duplicate         (BaseRef);
+    virtual BaseRef   makeDynamic       (void) const;
+    virtual void      Duplicate         (BaseRefConst);
     virtual _PMathObj Add               (_PMathObj);
     virtual long      AddOn             (_PMathObj);
     virtual _PMathObj AreEqual          (_PMathObj);
@@ -101,14 +102,22 @@ public:
     virtual bool      HasChanged        (bool = false) {
         return true;
     }
+  
+    bool              has_data          (void) const {return the_string && the_string->nonempty();}
+  
+    hyComparisonType  Compare           (_PMathObj, bool convert_non_strings = true);
+  
+    _StringBuffer const&    get_str           (void) const {return *the_string;}
 
-    virtual bool      IsEmpty           (void) {
-        return !theString || theString->sLength == 0;
+    virtual bool      empty           (void) const {
+        return !the_string || the_string->empty();
     }
     // SLKP 20100907: a simple utility function to check if the object is an empty string
 
-    _String*          theString;
-
+protected:
+  
+    _StringBuffer*          the_string;
+  
 };
 
 #endif

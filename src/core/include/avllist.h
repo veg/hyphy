@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -64,10 +64,12 @@ class _AVLList: public BaseObj {
         virtual ~_AVLList(void){}
         virtual void Clear(bool = false);
         virtual bool HasData(long);
+        virtual BaseRef makeDynamic (void) const;
+        virtual void Duplicate (BaseRefConst);
 
         virtual void ReorderList(_SimpleList* = nil);
         virtual long InsertData(BaseRef, long, bool);
-        virtual BaseRef toStr(unsigned long padding = 0UL);
+        virtual BaseRef toStr(unsigned long = 0UL);
         virtual long Traverser(_SimpleList&, long &, long = -1) const;
         virtual long GetRoot(void) const {return root;}
         virtual void DeleteXtra(long){};
@@ -110,5 +112,13 @@ class _AVLList: public BaseObj {
         const _List Keys (void) const;
 
 };
+
+template <typename AGGREGARTOR> _SimpleList const PopulateAndSort (AGGREGARTOR agg) {
+  _SimpleList     indexer;
+  _AVLList        avl (&indexer);
+  agg (avl);
+  avl.ReorderList();
+  return indexer;
+}
 
 #endif

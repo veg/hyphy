@@ -58,6 +58,7 @@ function runTest ()
 	Tree  T = ((a:0.1,b:0.2):0.4,c:0.15,d:0.33);
 
 	assert 	   (BranchLength (T,0) == 0.136, "Retrieve a branch length by a valid index, when there is a valid (HKY85) model attached to the node");
+	
 	assert 	   (BranchLength (T,"a;EXPECTED_NUMBER_OF_SUBSTITUTIONS") == "0.48*t+0.22*kappa*t",
 								  "Retrieve the branch length expression for a valid node name; no BRANCH_LENGTH_STENCIL");
 

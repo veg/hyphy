@@ -4,7 +4,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,14 +37,209 @@
 
 #include "hbl_env.h"
 
-//_________________________________________________________
+/**
+    HBL environment variables and constants go here,
+    Getter/setter functions are also here
+*/
 
-_String           dataFileTree             ("IS_TREE_PRESENT_IN_DATA"),
-                  dataFileTreeString       ("DATAFILE_TREE"),
-                  nexusFileTreeMatrix      ("NEXUS_FILE_TREE_MATRIX"),
-                  dataFilePartitionMatrix  ("DATA_FILE_PARTITION_MATRIX"),
-                  useTraversalHeuristic    ("USE_TRAVERSAL_HEURISTIC"),
-                  normalizeSequenceNames   ("NORMALIZE_SEQUENCE_NAMES"),
-                  defaultLargeFileCutoff   ("USE_MEMORY_SAVING_DATA_STRUCTURES")
-;
+
+namespace hy_env {
+    
+    _List           _hy_env_default_values_aux;
+    
+    _AVLListXL      _hy_env_default_values (&_hy_env_default_values_aux);
+ 
+    /*********************************************************************************/
+    _PMathObj       EnvVariableGetDefault (_String const& name, unsigned long type) {
+        _PMathObj default_value = (_PMathObj)_hy_env_default_values.GetDataByKey (&name);
+        if (default_value) {
+            if (type == HY_ANY_OBJECT || (type | default_value->ObjectClass())) {
+                return default_value;
+            }
+        }
+        return nil;
+    }
+
+    /*********************************************************************************/
+    hyFloat       EnvVariableGetDefaultNumber (_String const& name) {
+        _PMathObj default_value = (_PMathObj)EnvVariableGetDefault (name, NUMBER);
+        if (default_value) {
+            return default_value->Value();
+        }
+        return HY_INVALID_RETURN_VALUE;
+    }
+
+    /*********************************************************************************/
+    bool       EnvVariableTrue (_String const& name) {
+        _PMathObj value = (_PMathObj)EnvVariableGet (name, NUMBER);
+        if (value) {
+            return fabs (value->Value()) > 1e-10;
+        }
+        return false;
+    }
+
+    /*********************************************************************************/
+    _PMathObj       EnvVariableGet (_String const& name, unsigned long type) {
+        _PMathObj current_value = (_PMathObj)FetchObjectFromVariableByType(&name, type);
+        if (current_value) {
+            if (type == HY_BL_ANY || (type | current_value->ObjectClass())) {
+                return current_value;
+            }
+        }
+        return EnvVariableGetDefault (name, type);
+    }
+
+    /*********************************************************************************/
+    void       EnvVariableSet (_String const& name, _PMathObj value, bool copy) {
+        EnvVariableSetNamespace (name, value, nil, copy);
+    }
+
+    /*********************************************************************************/
+    void       EnvVariableSetNamespace (_String const& name, _PMathObj value, _String* nmspace, bool copy) {
+        setParameter(name, value, nmspace, copy);
+    }
+    /**
+        arrange variables alphabetically by C++ ID for easier scanning;
+        defaut  values are stored can be obtained by calling
+            EnvVariableGetDefault
+     
+     */
+    
+
+    /*********************************************************************************/
+    
+    void        SetupEnvDefaults (void) {
+        _hy_env_default_values.PushPairCopyKey (use_traversal_heuristic,  new HY_CONSTANT_TRUE)
+                              .PushPairCopyKey (normalize_sequence_names, new HY_CONSTANT_TRUE)
+                              .PushPairCopyKey(message_logging, new HY_CONSTANT_TRUE)
+                              .PushPairCopyKey (dataset_save_memory_size, new _Constant (100000.))
+                              .PushPairCopyKey (harvest_frequencies_gap_options, new HY_CONSTANT_TRUE)
+                              .PushPairCopyKey(assertion_behavior, new HY_CONSTANT_FALSE)
+                              .PushPairCopyKey (print_float_digits, new _Constant (0.))
+                              .PushPairCopyKey (mpi_node_count, new _Constant (1.))
+                              .PushPairCopyKey (always_reload_libraries, new HY_CONSTANT_FALSE)
+                              .PushPairCopyKey (end_of_file, new HY_CONSTANT_FALSE)
+                              .PushPairCopyKey (produce_markdown_output, new HY_CONSTANT_FALSE)
+
+      ;
+    }
+  
+_String const
+    always_reload_libraries                         ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
+        // if TRUE, reparse and re-execute source code for each call to LoadFunctionLibrary,
+        // otherwise load function libraries only once
+    assertion_behavior                              ("ASSERTION_BEHAVIOR"),
+        // if set to TRUE, then assertions that fail skip to the end of the current script
+        // otherwise they terminate the program
+    base_directory                                  ("HYPHY_BASE_DIRECTORY"),
+        // is set to the base directory for local path names; can be set via a CL argument (BASEPATH)
+    blockwise_matrix                                ("BLOCK_LIKELIHOOD"),
+        // this _template_ variable is used to define likelihood function evaluator templates
+    covariance_parameter                            ("COVARIANCE_PARAMETER"),
+        // used to control the behavior of CovarianceMatrix
+    data_file_partition_matrix                      ("DATA_FILE_PARTITION_MATRIX"),
+        // the string of data partitions read from the last valid NEXUS CHARSET block
+    data_file_tree                                  ("IS_TREE_PRESENT_IN_DATA"),
+        // set to TRUE if the last data load call yielded a Newick trees
+    data_file_tree_string                           ("DATAFILE_TREE"),
+        // the last tree loaded by via a sequence file read
+    dataset_save_memory_size                        ("USE_MEMORY_SAVING_DATA_STRUCTURES"),
+        // sets the maximum dimension of a data filter for generating .site_map, .site_freqs, .sequence_map
+    directory_separator_char                        ("DIRECTORY_SEPARATOR"),
+        // is set to the platform directory separator (e.g. '/')
+    defer_constrain_assignment                        ("DEFER_CONSTRAINT_APPLICATION"),
+        // if set to TRUE, then constraint application will be done in a single batch
+        // this is helpful when many x := expr statements are strung together to avoid
+        // checking the entire namespace for dependancies
+    end_of_file                                     ("END_OF_FILE"),
+        // set by IO operations, like fscanf to indicate whetehr the end of the input stream has
+        // been reached
+    error_report_format_expression                  ("ERROR_REPORT_FORMAT_EXPRESSION"),
+        // if provided, this expression (assumed string valued), will be used to format the error
+        // message, with special placeholder variables (see below) will be replaced with the
+        // error related data
+    error_report_format_expression_stack            ("_ERROR_CALL_STACK_"),
+        // the current HBL call stack, formatted as a list
+    error_report_format_expression_stdin           ("_ERROR_CALL_STDIN_"),
+        // the current HBL standard input buffer, formatted as a list
+    error_report_format_expression_string           ("_ERROR_TEXT_"),
+    // the text message explaining the error
+    execution_mode                                  ("HBL_EXECUTION_ERROR_HANDLING"),
+    // sets HyPhy exception handling
+    // FALSE - bail out on errors
+    // TRUE  - return from the current execution list, but keep the program running (e.g. to allow for HBL testing of error handling)
+
+    get_data_info_returns_only_the_index            ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
+    // instead of returing {0,0,1,0} for a 'G' character in GetDataInfo (r, filter, species, pattern)
+    // return only the index of 'G', e.g. 2 in this case. -1 is returned for ambigs
+    false_const                                     ("FALSE"),
+        // the FALSE (0.0) constant
+    fprintf_redirect                                ("GLOBAL_FPRINTF_REDIRECT"),
+        // if set to a string path, then all stdout will go to the file at the path  (or /dev/null) instead of to stdout
+
+    harvest_frequencies_gap_options                 ("COUNT_GAPS_IN_FREQUENCIES"),
+    /* 
+        if set to `harvest_frequencies_gap_options` to TRUE, then N-fold ambigs will add 1/N to each character count in HarvestFrequencies,
+        otherwise N-folds are ignored in counting
+     */
+
+  
+    kGetStringFromUser                              ("PROMPT_FOR_STRING"),
+        // [LEGACY] placeholder for prompting the user for a string value
+    last_file_path                                  ("LAST_FILE_PATH"),
+        // is set by various file read/write commands (fscanf, fprintf, dialog prompts)
+        // to contain the **absolute** path to the last file interacted with
+    last_model_parameter_list          (            "LAST_MODEL_PARAMETER_LIST"),
+        // a stand-in for the list of model parameters for the last
+        // declared model
+    
+    lib_directory                                   ("HYPHY_LIB_DIRECTORY"),
+        // is set to the library directory for standard library searchers; can be set via a CL argument (LIBPATH)
+    matrix_element_column                           ("_MATRIX_ELEMENT_COLUMN_"),
+    matrix_element_row                              ("_MATRIX_ELEMENT_ROW_"),
+    matrix_element_value                            ("_MATRIX_ELEMENT_VALUE_"),
+        // the last three variables are used as _template_ variable for conditional / iterated matrix operations, e.g.,
+        // matrix ["_MATRIX_ELEMENT_ROW_+_MATRIX_ELEMENT_COLUMN_"]
+    message_logging                                 ("MESSAGE_LOGGING"),
+        // if set, then diagnostic messages will be logged
+    mpi_node_id                                     ("MPI_NODE_ID"),
+        // [MPI only] the ID (0 = master, etc) for teh current process
+    mpi_node_count                                  ("MPI_NODE_COUNT"),
+        // [MPI only] the count of MPI nodes (master + slaves)
+    mpi_last_sent_message                           ("MPI_LAST_SENT_MSG"),
+        // [MPI only] the contents of the last message sent by the current node
+    nexus_file_tree_matrix                          ("NEXUS_FILE_TREE_MATRIX"),
+        // the tree matrix read from the last valid NEXUS TREE block
+    normalize_sequence_names                        ("NORMALIZE_SEQUENCE_NAMES"),
+        // if set, will trigger automatic renaming of sequence names from files to valid
+        // HyPhy IDs, e.g. "awesome monkey!" -> "awesome_monkey_"
+        // the mapping will go into dataset_id.mapping
+    path_to_current_bf                              ("PATH_TO_CURRENT_BF"),
+        // is set to the absolute path for the currently executed batch file (assuming it has one)
+    print_float_digits                              ("PRINT_DIGITS"),
+        // controls how many decimal places are generated by fprintf and various number->string conversions
+    produce_markdown_output                         ("MARKDOWN_OUTPUT"),
+        // controls if certain stdout output is formatted as MarkDown (default is not)
+    random_seed                                     ("RANDOM_SEED"),
+        // the seed used for the Mersenne Twister random number generator
+    selection_strings                               ("SELECTION_STRINGS"),
+        // populated by a successful call to 'ChoiceList', @see ExecuteCase32
+    sitewise_matrix                                 ("SITE_LIKELIHOOD"),
+        // this _template_ variable is used to define likelihood function evaluator templates
+    status_bar_update_string                        ("STATUS_BAR_STATUS_STRING"),
+        // used to set the progress message displayed to the user
+    true_const                                      ("TRUE"),
+        // the TRUE (1.0) constant
+    use_last_model                                  ("USE_LAST_MODEL"),
+        // a stand-in for the last declared model
+    use_traversal_heuristic                         ("USE_TRAVERSAL_HEURISTIC")
+        // TODO (20170413): don't remember what this does; , see @ _DataSetFilter::MatchStartNEnd
+        // #DEPRECATE
+    ;
+    
+ 
+/** default values get set up in hy_global:: */
+    
+    
+}
 

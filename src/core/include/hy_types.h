@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -40,17 +40,41 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef     __HY_TYPES__
 #define     __HY_TYPES__
 
-#include    "defines.h"
+/**
+    Put application-wide typedefs and enums here
+*/
 
-enum _HY_BL_FUNCTION_TYPE  {
-  BL_FUNCTION_ALWAYS_UPDATE,
-  BL_FUNCTION_SKIP_UPDATE,
-  BL_FUNCTION_LOCAL
+typedef     void*        hyPointer;
+    // generic pointer
+typedef     double       hyFloat;
+    // standard floating type
+
+
+
+enum hyBLFunctionType  {
+  kBLFunctionAlwaysUpdate,
+  kBLFunctionSkipUpdate,
+  kBLFunctionLocal
 };
 
-enum _HY_BL_FUNCTION_ARGUMENT_TYPE {
-  BL_FUNCTION_ARGUMENT_NORMAL,
-  BL_FUNCTION_ARGUMENT_REFERENCE
+enum hyBLFunctionArgumentType {
+  kBLFunctionArgumentNormal,
+  kBLFunctionArgumentReference
 };
+
+enum hyTreeDefinitionPhase {
+  kTreeNotBeingDefined,
+  kTreeIsBeingParsed,
+  kTreeNodeBeingCreated
+};
+
+enum hyComparisonType {
+    kCompareLess    = -1,
+    kCompareEqual   = 0,
+    kCompareGreater = 1,
+    kCompareUndefined      = 0xff
+};
+
+
 
 #endif

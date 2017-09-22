@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "list.h"
 #include "avllistx.h"
 #include "hy_strings.h"
-#include "errorfns.h"
+#include "hy_string_buffer.h"
 #include "stdio.h"
 #include "classes.h"
 
@@ -59,6 +59,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "variable.h"
 #include "variablecontainer.h"
 #include "trie.h"
+#include "hbl_env.h"
+
 
 //End parser specific includes
 
@@ -100,7 +102,6 @@ extern      long            lastMatrixDeclared,
 
 long        LocateVarByName (_String const&);
 _Variable*  LocateVar       (long index);
-_Variable*  FetchVar        (long index);
 _PMathObj   FetchObjectFromVariableByType       (_String const*, const unsigned long, long = -1, _String* = nil);
 _PMathObj   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
 _PMathObj   FetchObjectFromFormulaByType         (_Formula&, const unsigned long, long = -1, _String* = nil);
@@ -117,8 +118,8 @@ void        DeleteTreeVariable
 
 
 
-void        stashParameter  (_String const& name, _Parameter  newVal, bool);
-void        setParameter    (_String const& name, _Parameter def, _String* = nil);
+void        stashParameter  (_String const& name, hyFloat  newVal, bool);
+void        setParameter    (_String const& name, hyFloat def, _String* = nil);
 void        setParameter    (_String const& name, _PMathObj  def, _String* = nil, bool = true);
 
 long        VerbosityLevel (void);
@@ -139,6 +140,9 @@ bool        CheckReceptacleAndStore
 bool        CheckReceptacleAndStore
 (_String,_String, bool, _PMathObj, bool = true);
 
+_Variable*  CheckReceptacleCommandIDException
+(_String const* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
+
 _Variable*  CheckReceptacleCommandID
 (_String const* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
 
@@ -149,15 +153,15 @@ void        FinishDeferredSF(void);
 
 void        SetupOperationLists (void);
 void        ExportIndVariables
-(_String&, _String&, _SimpleList*);
+(_StringBuffer&, _StringBuffer&, _SimpleList*);
 void        ExportDepVariables
-(_String&, _String&, _SimpleList*);
+(_StringBuffer&, _StringBuffer&, _SimpleList*);
 void        ExportCatVariables
-(_String&, _SimpleList*);
+(_StringBuffer&, _SimpleList*);
 
 void        SplitVariablesIntoClasses
 (_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);
-bool        CheckEqual      (_Parameter,_Parameter);
+bool        CheckEqual      (hyFloat,hyFloat);
 
 extern      _AVLListX       _hyApplicationGlobals;
 
@@ -171,33 +175,33 @@ extern      _AVLListX       _hyApplicationGlobals;
 */
 void        SplitVariableIDsIntoLocalAndGlobal (const _SimpleList& inList, _List& outList);
 
-_Parameter  AddNumbers  (_Parameter, _Parameter);
-_Parameter  SubNumbers  (_Parameter, _Parameter);
-_Parameter  MultNumbers (_Parameter, _Parameter);
-_Parameter  AndNumbers  (_Parameter, _Parameter);
-_Parameter  DivNumbers  (_Parameter, _Parameter);
-_Parameter  EqualNumbers(_Parameter, _Parameter);
-_Parameter  LessThan    (_Parameter, _Parameter);
-_Parameter  GreaterThan (_Parameter, _Parameter);
-_Parameter  LessThanE   (_Parameter, _Parameter);
-_Parameter  GreaterThanE(_Parameter, _Parameter);
-_Parameter  Power       (_Parameter, _Parameter);
-_Parameter  RandomNumber(_Parameter, _Parameter);
-_Parameter  ExpNumbers  (_Parameter);
-_Parameter  LogNumbers  (_Parameter);
-_Parameter  AbsNumber   (_Parameter);
-_Parameter  MinusNumber (_Parameter);
-_Parameter  MaxNumbers  (_Parameter, _Parameter);
-_Parameter  MinNumbers  (_Parameter, _Parameter);
-_Parameter  FastMxAccess(Ptr, _Parameter);
-void        FastMxWrite (Ptr, _Parameter, _Parameter);
+hyFloat  AddNumbers  (hyFloat, hyFloat);
+hyFloat  SubNumbers  (hyFloat, hyFloat);
+hyFloat  MultNumbers (hyFloat, hyFloat);
+hyFloat  AndNumbers  (hyFloat, hyFloat);
+hyFloat  DivNumbers  (hyFloat, hyFloat);
+hyFloat  EqualNumbers(hyFloat, hyFloat);
+hyFloat  LessThan    (hyFloat, hyFloat);
+hyFloat  GreaterThan (hyFloat, hyFloat);
+hyFloat  LessThanE   (hyFloat, hyFloat);
+hyFloat  GreaterThanE(hyFloat, hyFloat);
+hyFloat  Power       (hyFloat, hyFloat);
+hyFloat  RandomNumber(hyFloat, hyFloat);
+hyFloat  ExpNumbers  (hyFloat);
+hyFloat  LogNumbers  (hyFloat);
+hyFloat  AbsNumber   (hyFloat);
+hyFloat  MinusNumber (hyFloat);
+hyFloat  MaxNumbers  (hyFloat, hyFloat);
+hyFloat  MinNumbers  (hyFloat, hyFloat);
+hyFloat  FastMxAccess(hyPointer, hyFloat);
+void        FastMxWrite (hyPointer, hyFloat, hyFloat);
 
-BaseRef parameterToString       (_Parameter);
-void    parameterToCharBuffer   (_Parameter, char*, long, bool json = false);
+BaseRef parameterToString       (hyFloat);
+void    parameterToCharBuffer   (hyFloat, char*, long, bool json = false);
 
-_Parameter  InterpolateValue        (_Parameter*, _Parameter*, long, _Parameter*, _Parameter*, _Parameter, _Parameter&);
-_Parameter  TrapezoidLevelK         (_Formula&, _Variable*, _Parameter, _Parameter, long);
-_Parameter  TrapezoidLevelKSimple   (_Formula&, _Variable*, _Parameter, _Parameter, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
+hyFloat  InterpolateValue        (hyFloat*, hyFloat*, long, hyFloat*, hyFloat*, hyFloat, hyFloat&);
+hyFloat  TrapezoidLevelK         (_Formula&, _Variable*, hyFloat, hyFloat, long);
+hyFloat  TrapezoidLevelKSimple   (_Formula&, _Variable*, hyFloat, hyFloat, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
 
 
 void        PopulateArraysForASimpleFormula
@@ -206,7 +210,7 @@ void        PopulateArraysForASimpleFormula
 void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
 void        WarnWrongNumberOfArguments (_PMathObj, long, _hyExecutionContext*, _List *);
   
-extern      _Parameter  pi_const;
+extern      hyFloat  pi_const;
 extern      bool        useGlobalUpdateFlag;
 extern      _String     noneToken;
 

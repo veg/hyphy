@@ -33,8 +33,6 @@
  
  */
 
-#include "errorfns.h"
-
   // iterator implementation
 
 template <class node_data> node_iterator<node_data>::node_iterator(

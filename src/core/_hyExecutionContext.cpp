@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -40,6 +40,9 @@
 #include "_hyExecutionContext.h"
 #include "variablecontainer.h"
 #include "hy_strings.h"
+#include "global_things.h"
+
+using namespace hy_global;
 
 _hyExecutionContext _hyDefaultExecutionContextAux (nil, nil),
                     *_hyDefaultExecutionContext = &_hyDefaultExecutionContextAux;
@@ -69,7 +72,7 @@ void _hyExecutionContext::ReportError (_String errText) {
     if (errMsg) {
         *errMsg = *errMsg & errText & ".\n";
     } else {
-        WarnError (errText);
+        HandleApplicationError (errText);
     }
     
 }
