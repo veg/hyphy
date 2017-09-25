@@ -6,7 +6,7 @@ function InitializeDistances ()
 	HarvestFrequencies (_dNucFreq,filteredData,1,1,0);
 	_d_fR = _dNucFreq[0]+_dNucFreq[2];
 	_d_fY = _dNucFreq[1]+_dNucFreq[3];
-	
+
 	if (_dNucFreq[0] == 0 || _dNucFreq[1] == 0 || _dNucFreq[2] == 0 || _dNucFreq[3] == 0)
 	{
 		_useK2P = 1;
@@ -18,8 +18,8 @@ function InitializeDistances ()
 		_d_TN_K3 = 2*(_d_fR*_d_fY-_dNucFreq[0]*_dNucFreq[2]*_d_fY/_d_fR-_dNucFreq[1]*_dNucFreq[3]*_d_fR/_d_fY);
 		_useK2P = 0;
 	}
-	
-	
+
+
 
 	return 0;
 }
@@ -33,37 +33,37 @@ function ComputeDistanceFormulaFromDiffMx (siteDifferenceCount)
     {
         _dTransitionCounts 	 =    siteDifferenceCount[0][2]+siteDifferenceCount[2][0]  /* A-G and G-A */
                                  +siteDifferenceCount[1][3]+siteDifferenceCount[3][1]; /* C-T and T-C */
-                            
+
         _dTransversionCounts = (siteDifferenceCount[0][0]+siteDifferenceCount[1][1]+siteDifferenceCount[2][2]+siteDifferenceCount[3][3])+_dTransitionCounts;
-        
+
         _dTransitionCounts	 = _dTransitionCounts/totalSitesCompared;
         _dTransversionCounts = 1-_dTransversionCounts/totalSitesCompared;
-        
+
         _d1C = 1-2*_dTransitionCounts-_dTransversionCounts;
         _d2C = 1-2*_dTransversionCounts;
-        
+
         if (_d1C>0 && _d2C>0)
         {
-            return -(0.5*Log(_d1C)+.25*Log(_d2C));	
+            return -(0.5*Log(_d1C)+.25*Log(_d2C));
         }
     }
     else
     {
         _dAGCounts 	 =    siteDifferenceCount[0][2]+siteDifferenceCount[2][0]  /* A-G and G-A */;
         _dCTCounts	 = 	  siteDifferenceCount[1][3]+siteDifferenceCount[3][1]; /* C-T and T-C */
-                            
+
         _dTransversionCounts = (siteDifferenceCount[0][0]+siteDifferenceCount[1][1]+siteDifferenceCount[2][2]+
                                 siteDifferenceCount[3][3])+_dAGCounts+_dCTCounts;
-        
+
         _dAGCounts	 = _dAGCounts/totalSitesCompared;
         _dCTCounts	 = _dCTCounts/totalSitesCompared;
-        
+
         _dTransversionCounts = 1-_dTransversionCounts/totalSitesCompared;
-        
+
         _d1C = 1-_dAGCounts/_d_TN_K1-0.5*_dTransversionCounts/_d_fR;
         _d2C = 1-_dCTCounts/_d_TN_K2-0.5*_dTransversionCounts/_d_fY;
         _d3C = 1-0.5*_dTransversionCounts/_d_fY/_d_fR;
-        
+
         if ((_d1C>0)&&(_d2C>0)&&(_d3C>0))
         {
             return -_d_TN_K1*Log(_d1C)-_d_TN_K2*Log(_d2C)-_d_TN_K3*Log(_d3C);
@@ -74,9 +74,8 @@ function ComputeDistanceFormulaFromDiffMx (siteDifferenceCount)
 
 /* ________________________________________________________________________________________________*/
 
-function ComputeDistanceFormula (s1,s2)
-{
-	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DIST);
+function ComputeDistanceFormula (s1,s2) {
+	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, RESOLVE_AMBIGUITIES);
 	return ComputeDistanceFormulaFromDiffMx(siteDifferenceCount);
 }
 
@@ -92,7 +91,7 @@ function TreeMatrix2TreeStringGen (treeNodes,leafCount,leafNames,doLengths)
 	treeString*(Rows(treeNodes)*25);
 
 	while (m)
-	{	
+	{
 		if (m>p)
 		{
 			if (p)
@@ -112,11 +111,11 @@ function TreeMatrix2TreeStringGen (treeNodes,leafCount,leafNames,doLengths)
 				{
 					treeString*")";
 				}
-			}	
+			}
 			else
 			{
 				treeString*",";
-			}	
+			}
 		}
 		if (n<leafCount)
 		{
@@ -130,13 +129,13 @@ function TreeMatrix2TreeStringGen (treeNodes,leafCount,leafNames,doLengths)
 			}
 			treeString*nodeName;
 		}
-		
+
 		if (doLengths>.5)
 		{
 			nodeName = ":"+treeNodes[k][2];
 			treeString*nodeName;
 		}
-		
+
 		k=k+1;
 		p=m;
 		n=treeNodes[k][0];
@@ -147,7 +146,7 @@ function TreeMatrix2TreeStringGen (treeNodes,leafCount,leafNames,doLengths)
 	{
 		treeString*")";
 	}
-	
+
 	treeString*0;
 	return treeString;
 }
@@ -165,7 +164,7 @@ function InferTreeTopologyFromMatrixGen (distanceMatrix, leafNames, distancesFla
 {
 	MESSAGE_LOGGING 		 	= 1;
 	cladesMade 					= 1;
-	
+
 	leafCount= Abs(leafNames);
 	if (leafCount == 0)
 	{
@@ -178,7 +177,7 @@ function InferTreeTopologyFromMatrixGen (distanceMatrix, leafNames, distancesFla
 		treeNodes = {{0,1,d1__},
 					 {1,1,d1__},
 					 {2,0,0}};
-					 
+
 		cladesInfo = {{2,0}};
 	}
 	else
@@ -192,16 +191,16 @@ function InferTreeTopologyFromMatrixGen (distanceMatrix, leafNames, distancesFla
 						 {1,1,d2__},
 						 {2,1,d3__}
 						 {3,0,0}};
-						 
-			cladesInfo = {{3,0}};		
+
+			cladesInfo = {{3,0}};
 		}
 		else
-		{	
+		{
 			njm = (distanceMatrix > methodIndex)>=leafCount;
-				
+
 			treeNodes 		= {2*(leafCount+1),3};
 			cladesInfo	    = {leafCount-1,2};
-			
+
 			for (i=Rows(treeNodes)-1; i>=0; i=i-1)
 			{
 				treeNodes[i][0] = njm[i][0];
@@ -214,13 +213,13 @@ function InferTreeTopologyFromMatrixGen (distanceMatrix, leafNames, distancesFla
 				cladesInfo[i][0] = njm[i][3];
 				cladesInfo[i][1] = njm[i][4];
 			}
-			
+
 			njm = 0;
 		}
 	}
-	
+
 	distanceMatrix = 0;
-	
+
 	return TreeMatrix2TreeStringGen (treeNodes, leafCount, leafNames, distancesFlag);
 }
 
@@ -240,11 +239,9 @@ function InferTreeTopology(distancesFlag)
 {
 	InitializeDistances ();
 	distanceMatrix = {filteredData.species,filteredData.species};
-		
-	for (i = 0; i<filteredData.species; i=i+1)
-	{
-		for (j = i+1; j<filteredData.species; j = j+1)
-		{
+
+	for (i = 0; i<filteredData.species; i += 1) {
+		for (j = i+1; j<filteredData.species; j += 1) {
 			distanceMatrix[i][j] = ComputeDistanceFormula (i,j);
 		}
 	}

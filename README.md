@@ -5,6 +5,12 @@ Introduction
 ------------
 HyPhy is an open-source software package for the analysis of genetic sequences using techniques in phylogenetics, molecular evolution, and machine learning. It features a complete graphical user interface (GUI) and a rich scripting language for limitless customization of analyses. Additionally, HyPhy features support for parallel computing environments (via message passing interface (MPI)) and it can be compiled as a shared library and called from other programming environments such as Python and R. 
 
+Requirements
+------------
+* cmake >= 3.0
+* gcc >= 4.9
+* libcurl
+
 Installation
 ------------
 

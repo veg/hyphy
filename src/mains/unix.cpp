@@ -50,7 +50,38 @@ using namespace hy_global;
 #endif
 
 
+const char hy_usage[] =
+"usage: HYPHYMP or HYPHYMPI [-h] "
+"[-c] "
+"[-d] "
+"[-p] "
+"[BASEPATH=directory path] "
+"[CPU=integer] "
+"[LIBPATH=library path] "
+"[USEPATH=library path] "
+"[path to hyphy batch file [analysis arguments]]\n";
 
+
+const char hy_help_message [] =
+"Execute a HyPhy analysis, either interactively, or in batch mode"
+"\n"
+"optional flags:\n"
+"  -h                       show this help message and exit\n"
+"  -c                       calculator mode; causes HyPhy to drop into an expression evaluation until 'exit' is typed\n"
+"  -d                       debug mode; causes HyPhy to drop into an expression evaluation mode upon script error\n"
+"  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
+"                           upon analysis completion\n\n"
+"optional keyword arguments:\n"
+"  BASEPATH=directory path  defines the base directory for all most path operations (default is pwd)\n"
+"  CPU=integer              if compiled with OpenMP multithreading support, requests this many threads; HyPhy could use fewer than this\n"
+"                           but never more; default is the number of CPU cores (as computed by OpenMP) on the system\n"
+"  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
+"                           or as configured during CMake installation\n"
+"  USEPATH=directory path   specifies the optional working and relative path directory (default is BASEPATH)\n\n"
+"optional positional arguments (must follow flags and keywords)\n"
+"  batch file to run        if specified, execute this file, otherwise drop into an interactive mode\n"
+"  analysis arguments       if batch file is present, all remaining positional arguments are interpreted as inputs to analysis prompts\n"
+;
 
 #ifdef _MINGW32_MEGA_
   #include <Windows.h>
@@ -72,6 +103,7 @@ using namespace hy_global;
 #ifdef  __HYPHYCURL__
 #include <curl/curl.h>
 #endif
+
 
 #ifdef _OPENMP
 #include "omp.h"
@@ -398,7 +430,7 @@ long    DisplayListOfChoices (void) {
                     printf ("\n\t(%ld) %s",choice-start+1,access_choice_item (choice, 1)->get_str());
                 }
 
-                printf ("\n\n Please select the file you want to use (or press ENTER to return to the list of analysis types):");
+                printf ("\n\n Please select the analysis you would like to perform (or press ENTER to return to the list of analysis types):");
 
                 _String user_input = StringFromConsole();
               
@@ -456,6 +488,56 @@ long    DisplayListOfPostChoices (void) {
 
 
 //__________________________________________________________________________________
+
+void    ProcessConfigStr (_String& conf)
+{
+    _String errMsg;
+    for (long i=1; i<conf.sLength; i++) {
+        switch (conf.sData[i]) {
+        case 'h':
+        case 'H': {
+            fprintf( stderr, "%s\n%s", hy_usage, hy_help_message );
+            exit (0);
+        }
+
+        case 'p':
+        case 'P': {
+            usePostProcessors = true;
+            break;
+        }
+        case 'c':
+        case 'C': {
+            calculatorMode = true;
+            break;
+        }
+        case 'd':
+        case 'D': {
+            dropIntoDebugMode = true;
+            break;
+        }
+        case 'u':
+        case 'U': {
+            updateMode = true;
+            break;
+        }
+        case 'l':
+        case 'L': {
+            logInputMode = true;
+            break;
+        }
+        //case 'i':
+        //case 'I':
+        //{
+        //pipeMode = true;
+        //break;
+        //}
+        default: {
+            errMsg = "Option ";
+            errMsg = errMsg & conf.sData[i] & " is not valid and is ignored";
+            ReportWarning (errMsg);
+        }
+
+            
 void    ProcessConfigStr (_String const & conf) {
     for (unsigned long i=1UL; i<conf.length(); i++) {
         switch (char c = conf.char_at (i)) {

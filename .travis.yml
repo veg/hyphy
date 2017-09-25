@@ -3,6 +3,7 @@ dist: trusty
 sudo : false
 
 notifications:
+    slack: veg-igem:rqQd95zjTuZoRNElekQx2CLf
     email:
         recipients:
             - spond@temple.edu
@@ -13,14 +14,17 @@ notifications:
 branches:
   only:
     - master
-    - develop
 
 env:
   - METHOD_TEST=tests/hbltests/libv3/SLAC.wbf
   - METHOD_TEST=tests/hbltests/libv3/SLAC-partitioned.wbf
   - METHOD_TEST=tests/hbltests/libv3/FEL.wbf
   - METHOD_TEST=tests/hbltests/libv3/MEME.wbf
+  - METHOD_TEST=tests/hbltests/libv3/MEME-partitioned.wbf
   - METHOD_TEST=tests/hbltests/libv3/FUBAR.wbf
+  - METHOD_TEST=tests/hbltests/libv3/RELAX.wbf
+  - METHOD_TEST=tests/hbltests/libv3/aBSREL.wbf
+  - METHOD_TEST=tests/hbltests/libv3/BUSTED.wbf
 
 language: c++
 compiler: 
