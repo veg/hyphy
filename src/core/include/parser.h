@@ -210,7 +210,9 @@ void        PopulateArraysForASimpleFormula
 void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
 void        WarnWrongNumberOfArguments (_PMathObj, long, _hyExecutionContext*, _List *);
   
-extern      hyFloat  pi_const;
+extern      hyFloat  pi_const, machineEps, tolerance;
+
+
 extern      bool        useGlobalUpdateFlag;
 extern      _String     noneToken;
 

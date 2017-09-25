@@ -310,6 +310,13 @@ public:
    */
   
    void    AppendVariableValueAVL (_String const*, _SimpleList const&);
+
+    /**
+     *  Trim the buffer allocation to space used. 
+     *  Revision history
+     -  SLKP 20170923 initial implementation
+     */
+    virtual void TrimSpace (void);
 };
 
 #endif

@@ -89,6 +89,14 @@ void _StringBuffer::Initialize(bool) {
 
 //=============================================================
 
+void _StringBuffer::TrimSpace (void) {
+    if (sa_length > s_length) {
+        AllocateBufferSpace (s_length);
+    }
+}
+
+//=============================================================
+
 void _StringBuffer::Clear() {
   _String::Clear();
   sa_length = 0UL;

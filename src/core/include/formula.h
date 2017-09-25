@@ -46,6 +46,7 @@
 #include "avllistxl.h"
 #include "stack.h"
 #include "operation.h"
+#include "hy_string_buffer.h"
 
 class _Variable;
 class _VariableContainer;
@@ -207,9 +208,9 @@ public:
 
     hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool inifinite = false);
     hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool inifinite = false);
-    _Formula*   Differentiate       (_String, bool = true, bool convert_from_tree = true);
+    _Formula*   Differentiate       (_String const&, bool = true, bool convert_from_tree = true);
     node<long>* InternalDifferentiate
-    (node<long>*, long,_SimpleList&, _SimpleList&, _Formula&);
+    (node<long>*, long,_SimpleList const &, _Formula  * const *, _Formula&);
 
     bool        InternalSimplify    (node<long>*);
 
@@ -247,11 +248,11 @@ public:
 
 protected:
 
-    void        internalToStr       (_String& result,node<long>*, char opLevel, _List* matchNames, _Operation* = nil);
+    void        internalToStr       (_StringBuffer & result, node<long>* top_node, unsigned char op_level, _List* match_names, _Operation* = nil);
     void        ConvertToTree       (bool err_msg = true);
     void        ConvertFromTree     (void);
     bool        CheckSimpleTerm     (_PMathObj);
-    node<long>* DuplicateFormula    (node<long>*,_Formula&);
+    node<long>* DuplicateFormula    (node<long>*,_Formula&) const;
 
     _List       theFormula,
                 *resultCache;

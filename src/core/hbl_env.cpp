@@ -120,6 +120,9 @@ namespace hy_env {
                               .PushPairCopyKey (always_reload_libraries, new HY_CONSTANT_FALSE)
                               .PushPairCopyKey (end_of_file, new HY_CONSTANT_FALSE)
                               .PushPairCopyKey (produce_markdown_output, new HY_CONSTANT_FALSE)
+                              .PushPairCopyKey (integration_maximum_iterations, new _Constant (8.))
+                              .PushPairCopyKey (integration_precision_factor, new _Constant (1.e-5))
+
 
       ;
     }
@@ -183,6 +186,9 @@ _String const
         otherwise N-folds are ignored in counting
      */
 
+    integration_precision_factor                    ("INTEGRATION_PRECISION_FACTOR"),
+    integration_maximum_iterations                  ("INTEGRATION_MAX_ITERATES"),
+    // used to control integration in _Formula::Integrate
   
     kGetStringFromUser                              ("PROMPT_FOR_STRING"),
         // [LEGACY] placeholder for prompting the user for a string value

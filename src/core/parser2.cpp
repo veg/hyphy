@@ -74,17 +74,13 @@ extern    _List         FunctionNameList;
 extern    _AVLListX     _HY_GetStringGlobalTypes;
 
 extern    hyFloat    tolerance,
-          sqrtPi,
           maxRombergSteps,
           integrationPrecisionFactor,
           machineEps;
 
-extern    _String       intPrecFact ,
-          intMaxIter;
 
 long      verbosityLevel = 0L;
 
-extern hyFloat twoOverSqrtPi;
 
 _SimpleList simpleOperationCodes,
             simpleOperationFunctions;

@@ -106,14 +106,7 @@ long_max = (hyFloat)LONG_MAX;
 hyFloat  machineEps = 2.*DBL_EPSILON,
             tolerance  = DBL_EPSILON;
 
-//Used in formula
-_String         intPrecFact ("INTEGRATION_PRECISION_FACTOR"),
-                intMaxIter  ("INTEGRATION_MAX_ITERATES");
 
-
-//Used in parser2 and formula
-hyFloat sqrtPi = 1.77245385090551603;
-hyFloat twoOverSqrtPi = 2./sqrtPi;
 
 /*********************************/
 /*          End Globals         */
