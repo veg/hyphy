@@ -1242,9 +1242,12 @@ long        _ExecutionList::ExecuteAndClean     (long g, _String* fName)        
 
 bool        _ExecutionList::TryToMakeSimple     (void)
 {
-    _SimpleList     varList,
+    _SimpleList     varListAux,
                     formulaeToConvert,
                     parseCodes;
+  
+  
+    _AVLList        varList (&varListAux);
 
     long            stackDepth  = 0;
 
@@ -1305,9 +1308,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
 
                         if (parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
-                            if (varList.Find (fpc.assignmentRefID()) < 0) {
-                              varList << fpc.assignmentRefID();
-                            }
+                            varList.InsertNumber(fpc.assignmentRefID());
                             parseCodes        << fpc.assignmentRefID();
                         } else {
                             parseCodes        << -1;
@@ -1358,7 +1359,8 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
     if (status) {
         cli = new _CELInternals;
-        cli->values = new _SimpleFormulaDatum[varList.lLength+1];
+        varList.ReorderList();
+        cli->values = new _SimpleFormulaDatum[varList.countitems()+1];
         cli->stack  = new _SimpleFormulaDatum[stackDepth+1];
 
         _SimpleList  avlData;
@@ -1368,8 +1370,8 @@ bool        _ExecutionList::TryToMakeSimple     (void)
             ((_Formula*)formulaeToConvert(fi))->ConvertToSimple (varList);
         }
 
-        for (unsigned long vi = 0; vi < varList.lLength; vi++) {
-            avlList.Insert ((BaseRef)varList.lData[vi], vi);
+        for (unsigned long vi = 0; vi < varListAux.countitems(); vi++) {
+            avlList.Insert ((BaseRef)varListAux.lData[vi], vi);
         }
 
         for (unsigned long ri = 0; ri<parseCodes.lLength; ri++) {
@@ -2301,9 +2303,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
               // printf ("\n*** %s\n", ((_String*)result->toStr())->sData);
 
             if (terminate_execution && !result) {
-                  subNumericValues = 2;
-                  _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr();
-                  subNumericValues = 0;
+                  _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionSubstiteValues);
                   errMsg  = new _String(_String("Failed while evaluating: ") & _String((_String*)((_Formula*)simpleParameters(2))->toStr()) & " which expanded to  " & s);
                   throw (1);
                }

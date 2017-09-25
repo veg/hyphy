@@ -5361,9 +5361,7 @@ void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode)
             if (opCode == HY_OP_CODE_ADD) {
                 _Formula * addOn = GetFormula(ind1,ind2);
                 if (addOn) {
-                    _Formula f_joint;
-                    addOn->PatchFormulasTogether(f_joint, f, HY_OP_CODE_ADD);
-                    StoreFormula (ind1,ind2,f_joint);
+                    StoreFormula (ind1,ind2,*_Formula::PatchFormulasTogether(*addOn, f, HY_OP_CODE_ADD),false);
                     return;
                 }
             } 

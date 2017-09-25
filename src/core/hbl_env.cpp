@@ -90,6 +90,12 @@ namespace hy_env {
     }
 
     /*********************************************************************************/
+    hyFloat       EnvVariableGetNumber (_String const& name) {
+      _PMathObj current_value = EnvVariableGet (name, NUMBER);
+      return current_value ? current_value -> Value() : HY_INVALID_RETURN_VALUE;
+    }
+
+  /*********************************************************************************/
     void       EnvVariableSet (_String const& name, _PMathObj value, bool copy) {
         EnvVariableSetNamespace (name, value, nil, copy);
     }

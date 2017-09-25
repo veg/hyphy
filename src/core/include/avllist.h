@@ -103,8 +103,14 @@ class _AVLList: public BaseObj {
         // the 2nd bool flag (if the first flag is false) if set to true,
         // will cause failed inserts (key already exists) to delete the key
         long Insert(BaseRef,long = 0,bool=true,bool=false);
+  
+        long InsertNumber (long v) {
+          return Insert ((BaseRef)v);
+        }
+        
 
-        BaseRef Retrieve(long) const;
+        BaseRef Retrieve        (long) const;
+        long    RetrieveLong    (long) const;
 
         void Delete(BaseRef,bool=false);
         void ConsistencyCheck(void);

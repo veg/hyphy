@@ -2635,11 +2635,9 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
     if (ohWell) {
         cornholio              = LocateVar(badConstraint);
 
-        subNumericValues = 3;
-        _String         * cStr = (_String*)cornholio->GetFormulaString(),
+        _String         * cStr = (_String*)cornholio->GetFormulaString(kFormulaStringConversionReportRanges),
                           badX   = (*cornholio->GetName()) & ":=" & *cStr & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".";
 
-        subNumericValues = 0;
         DeleteObject             (cStr);
 
         HandleApplicationError(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")

@@ -91,6 +91,16 @@ namespace hy_env {
      
      */
 
+    hyFloat       EnvVariableGetNumber (_String const& name);
+    /**
+     Look up the numeric value for a given env variable,
+    
+     @param name the name of the env variable (in HBL)
+     
+     @return current value if set and of the correct type, otherwise default value if available and of the correct type, otherwise invalid return value
+     
+     */
+
     void            EnvVariableSet (_String const& name, _PMathObj value, bool copy );
     /**
      Set the value for a env variable (global scope)

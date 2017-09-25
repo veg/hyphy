@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
- Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon42@uwo.ca)
- Steven Weaver (sweaver@ucsd.edu)
- 
+ Steven Weaver (sweaver@temple.edu)
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,38 +34,37 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
-#ifndef     __STACK__
-#define     __STACK__
-
-#include "mathobj.h"
+#include "formula_parsing_context.h"
+#include "variablecontainer.h"
 
 //__________________________________________________________________________________
-class   _Stack   //computational stack
-{
+_FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer const* scope) {
+    assignment_ref_id   = -1;
+    assignment_ref_type = kStringDirectReference;
+    is_volatile = false;
+    in_assignment = false;
+    build_complex_objects = true;
+    err_msg = err;
+    formula_scope = scope;
+}
 
-    friend class _Formula;
-    friend class _Operation;
-    friend class _Variable;
+//__________________________________________________________________________________
+_String const _FormulaParsingContext::contextualizeRef (_String& ref) {
+    if (formula_scope) {
+        return *formula_scope->GetName () & '.' & ref;
+    }
+    return ref;
+}
 
-public:
-
-    _Stack (void);
-    virtual ~_Stack (void);
-
-    bool      Push (_PMathObj, bool = true);     // push object onto the stack
-    _PMathObj Pop (bool del = true);            // pop object from the top of the stack
-    long      StackDepth (void) const;    // returns the depth of the stack
-    void      Reset (void);         // clear the stack
-
-    virtual   void    Initialize (void);
-    virtual   void    Duplicate (BaseRefConst);
-
-protected:
-
-    _List  theStack;
-};
-
-#endif
+//__________________________________________________________________________________
+void _FormulaParsingContext::setScope(const _String *scope) {
+  if (scope && scope->nonempty()) {
+    _VariableContainer vc (*scope);
+    formula_scope = (_VariableContainer*)FetchVar(vc.GetAVariable());
+  } else {
+    formula_scope = nil;
+  }
+}

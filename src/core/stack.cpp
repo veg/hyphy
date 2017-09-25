@@ -81,7 +81,7 @@ _PMathObj _Stack::Pop (bool del)        // pop object from the top of the stack
 }
 
 //__________________________________________________________________________________
-long _Stack::StackDepth (void)  // returns the depth of the stack
+long _Stack::StackDepth (void) const  // returns the depth of the stack
 {
     return theStack.lLength;
 }

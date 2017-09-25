@@ -246,3 +246,14 @@ void BatchDelete (ARG_TYPE first, const Args&... args) {
     BatchDelete (args...);
 }
 
+template <typename ARG_TYPE>
+void BatchDeleteArray (ARG_TYPE first) {
+  delete [] first;
+}
+
+template <typename ARG_TYPE, typename... Args>
+void BatchDeleteArray (ARG_TYPE first, const Args&... args) {
+  delete [] first;
+  BatchDeleteArray (args...);
+}
+

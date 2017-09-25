@@ -46,7 +46,9 @@
 #include "avllistxl.h"
 #include "stack.h"
 #include "operation.h"
+
 #include "hy_string_buffer.h"
+#include "formula_parsing_context.h"
 
 class _Variable;
 class _VariableContainer;
@@ -58,35 +60,11 @@ union       _SimpleFormulaDatum {
 };
 
 
-class _FormulaParsingContext {
-
-    long                 assignment_ref_id;
-    char                 assignment_ref_type;
-    bool                 is_volatile;
-    bool                 in_assignment;
-    bool                 build_complex_objects;
-        /*
-            this controls whether or not
-            [matrix, TBD] and dictionary constant are built in place (default)
-            or deferred (is false)
-
-        */
-    _String            * err_msg;
-    _VariableContainer const * formula_scope;
-
-    public:
-        _FormulaParsingContext (_String* = nil, _VariableContainer const* = nil);
-        bool&       isVolatile (void)                   { return is_volatile; }
-        bool&       inAssignment (void)                 { return in_assignment;}
-        bool&       buildComplexObjects (void)          { return build_complex_objects;}
-        long&       assignmentRefID (void)              { return assignment_ref_id; }
-        char&       assignmentRefType (void)            { return assignment_ref_type;}
-        _String*    errMsg (void)                       { return err_msg; }
-        _VariableContainer const* formulaScope (void)         { return formula_scope; }
-        void        setScope (_String const* scope);
-        _String const     contextualizeRef (_String&);
+enum _hyFormulaStringConversionMode  {
+  kFormulaStringConversionNormal = 0L,
+  kFormulaStringConversionSubstiteValues = 2L,
+  kFormulaStringConversionReportRanges = 3L
 };
-
 
 class   _Formula {
 
@@ -138,7 +116,7 @@ public:
     virtual void        Duplicate           (_Formula const *);
     void        DuplicateReference          (const _Formula*);
     virtual BaseRef     makeDynamic         (void) const;
-    virtual BaseRef     toStr               (_List* matchNames = nil, bool = false);
+    virtual BaseRef     toStr               (_hyFormulaStringConversionMode mode, _List* matchNames = nil, bool = false);
 
     virtual long        ObjectClass         (void);
 
@@ -173,6 +151,11 @@ public:
         the i-th term of the formula
     */
 
+    _Operation* ItemAt          (long) const;
+    /*
+     Same as GetIthTerm, but no range checking
+     */
+
     unsigned long Length            (void) const {return theFormula.lLength;}
 
     void        Clear               (void);
@@ -186,14 +169,14 @@ public:
 
     */
 
-    bool        AmISimple           (long& stackDepth, _SimpleList& variableIndex);
+    bool        AmISimple           (long& stack_depth, _AVLList& variable_index);
     long        StackDepth          (long start_at = 0L, long end_at = -1L) const;
       /**
         starting at operation 'start_at', counting up to 'end_at' (-1 == the end),
         evaluate how many values would be on the stack after the execution of these commands
        */
-    bool        ConvertToSimple     (_SimpleList& variableIndex);
-    void        ConvertFromSimple   (_SimpleList& variableIndex);
+    bool        ConvertToSimple     (_AVLList& variableIndex);
+    void        ConvertFromSimple   (_AVLList& variableIndex);
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
@@ -218,13 +201,13 @@ public:
     void        ConvertMatrixArgumentsToSimpleOrComplexForm (bool);
     long        ExtractMatrixExpArguments        (_List*);
 
-    virtual     _Formula operator + (const _Formula&);
-    virtual     _Formula operator - (const _Formula&);
-    virtual     _Formula operator * (const _Formula&);
-    virtual     _Formula operator / (const _Formula&);
-    virtual     _Formula operator ^ (const _Formula&);
+    virtual     _Formula const operator + (const _Formula&);
+    virtual     _Formula const operator - (const _Formula&);
+    virtual     _Formula const operator * (const _Formula&);
+    virtual     _Formula const operator / (const _Formula&);
+    virtual     _Formula const operator ^ (const _Formula&);
 
-    _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
+    static      _Formula*        PatchFormulasTogether (const _Formula& op1, const _Formula& op2, const char op_code);
 
     void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive);
   
@@ -248,7 +231,7 @@ public:
 
 protected:
 
-    void        internalToStr       (_StringBuffer & result, node<long>* top_node, unsigned char op_level, _List* match_names, _Operation* = nil);
+    void        SubtreeToString     (_StringBuffer & result, node<long>* top_node, unsigned char op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal);
     void        ConvertToTree       (bool err_msg = true);
     void        ConvertFromTree     (void);
     bool        CheckSimpleTerm     (_PMathObj);

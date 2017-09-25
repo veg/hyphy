@@ -495,7 +495,7 @@ long  _List::FindObject (BaseRefConst s, long startat) const {
         }
         DeleteObject(sp);
     }
-    return -1;
+    return kNotFound;
 }
 
 

@@ -480,6 +480,12 @@ BaseRef _AVLList::Retrieve (long idx) const {
     return ((BaseRef*)dataList->lData)[idx];
 }
 
+  //______________________________________________________________
+
+BaseRef _AVLList::RetrieveLong(long idx) const {
+  return ((long*)dataList->lData)[idx];
+}
+
 //______________________________________________________________
 
 void _AVLList::Clear (bool cL)

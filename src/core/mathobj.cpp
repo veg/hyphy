@@ -464,44 +464,46 @@ BaseRef _MathObject::makeDynamic (void) const {
 void _MathObject::Duplicate (BaseRefConst) {
 }
 
+
+
 //__________________________________________________________________________________
 
-//SW: Why do we need a string for the type?
+  //SW: Why do we need a string for the type?
 _PMathObj _MathObject::Type (void) {
-    _FString * ts = new _FString();
-    switch (ObjectClass()) {
-
+  
+  const _FString kNumber ("Number");
+  const _FString kMatrix ("Matrix");
+  const _FString kContainer ("Container");
+  const _FString kTreeNode ("TreeNode");
+  const _FString kTree ("Tree");
+  const _FString kString ("String");
+  const _FString kAssociativeList ("AssociativeList");
+  const _FString kTopology ("Topology");
+  const _FString kPolynomial ("Polynomial");
+  const _FString kUnknown ("Unknown");
+  
+  switch (ObjectClass()) {
+      
     case NUMBER:
-        *(ts->theString)="Number";
-        break;
+      return new _FString (kNumber);
     case MATRIX:
-        *(ts->theString)="Matrix";
-        break;
+      return new _FString (kMatrix);
     case CONTAINER:
-        *(ts->theString)="Container";
-        break;
+      return new _FString (kContainer);
     case TREE_NODE:
-        *(ts->theString)="TreeNode";
-        break;
+      return new _FString (kTreeNode);
     case TREE:
-        *(ts->theString)="Tree";
-        break;
+      return new _FString (kTree);
     case STRING:
-        *(ts->theString)="String";
-        break;
+      return new _FString (kString);
     case ASSOCIATIVE_LIST:
-        *(ts->theString)="AssociativeList";
-        break;
+      return new _FString (kAssociativeList);
     case TOPOLOGY:
-        *(ts->theString)="Topology";
-        break;
+      return new _FString (kTopology);
     case POLYNOMIAL:
-        *(ts->theString)="Polynomial";
-        break;
-    default:
-        *(ts->theString) = "Unknown";
-
-    }
-
-    return ts;
+      return new _FString (kPolynomial);
+      
+  }
+  
+  return new _FString (kUnknown);
 }

@@ -349,7 +349,7 @@ _PMathObj _FString::Differentiate (_PMathObj p) {
     if (Parse (&F,copyMe, fpc, nil) == HY_FORMULA_EXPRESSION) {
         _Formula *DF = F.Differentiate (*X,true);
         if (DF) {
-            DFDX = (_String*)DF->toStr();
+            DFDX = (_String*)DF->toStr(kFormulaStringConversionNormal);
         }
     }
 
@@ -500,7 +500,7 @@ _PMathObj _FString::SubstituteAndSimplify(_PMathObj arguments) {
       }
       
       evaluator.SimplifyConstants();
-      return new _FString ((_String*)evaluator.toStr());
+      return new _FString ((_String*)evaluator.toStr(kFormulaStringConversionNormal));
     }
   }
   return new _MathObject;
