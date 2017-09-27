@@ -482,7 +482,7 @@ BaseRef _AVLList::Retrieve (long idx) const {
 
   //______________________________________________________________
 
-BaseRef _AVLList::RetrieveLong(long idx) const {
+long _AVLList::RetrieveLong(long idx) const {
   return ((long*)dataList->lData)[idx];
 }
 

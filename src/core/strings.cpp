@@ -51,8 +51,6 @@
 #include "hy_string_buffer.h"
 
 
-#define MOD_ADLER 65521
-
 _String   compileDate = __DATE__,
           __HYPHY__VERSION__ = _String ("2.3.4") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
@@ -1287,7 +1285,7 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
         plain_name = *context & '.' & plain_name;
       }
       _FString * dereferenced_value = (_FString*)FetchObjectFromVariableByType(&plain_name, STRING);
-      if (dereferenced_value && dereferenced_value->theString->ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
+      if (dereferenced_value && dereferenced_value->get_str().ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
         if (!is_global_ref && context) {
           referenced_object = *context & '.' & referenced_object;
         }
@@ -1465,7 +1463,7 @@ Methods
 // Implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
 long _String::Adler32(void) const {
   
-  const static unsigned long  MOD_ADLER = 65521;
+  const static unsigned long  MOD_ADLER = 65521UL;
 
   unsigned long len = s_length,
   a = 1UL,

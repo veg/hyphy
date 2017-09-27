@@ -41,10 +41,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __BATCHLANGUAGE__
 
 
+#include "global_things.h"
 #include "parser.h"
 #include "site.h"
+#include "dataset.h"
 #include "trie.h"
-#include "global_things.h"
 
 #include <stdio.h>
 

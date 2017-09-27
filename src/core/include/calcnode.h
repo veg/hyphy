@@ -42,6 +42,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "parser.h"
 #include "classes.h"
+#include "dataset_filter.h"
+#include "dataset_filter_numeric.h"
 #include "site.h"
 
 
@@ -394,7 +396,7 @@ public:
     void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_String&, long  = -1, bool = false) const;
 
     _TreeTopology                       (void);
-    _TreeTopology                       (_String, _String const&, bool = true, _AssociativeList* mapping = nil);
+    _TreeTopology                       (_String const, _String const&, bool = true, _AssociativeList* mapping = nil);
     _TreeTopology                       (_String*);
     _TreeTopology                       (_TheTree*);
 

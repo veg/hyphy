@@ -107,7 +107,7 @@ public:
   
     hyComparisonType  Compare           (_PMathObj, bool convert_non_strings = true);
   
-    _StringBuffer const&    get_str           (void) const {return *the_string;}
+    inline _StringBuffer const&    get_str           (void) const {return *the_string;}
 
     virtual bool      empty           (void) const {
         return !the_string || the_string->empty();

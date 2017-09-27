@@ -385,26 +385,10 @@ const _String GetStringFromFormula (_String const* data,_VariableContainer* theP
     _PMathObj formRes = nameForm.Compute();
 
     if (formRes&& formRes->ObjectClass()==STRING) {
-        return *((_FString*)formRes)->theString;
+        return ((_FString*)formRes)->get_str();
     }
 
     return *data;
-}
-
-//____________________________________________________________________________________
-
-_String*    ProcessCommandArgument (_String* data) {
-    if ( data->length () >1 && (*data)(-1L) == '&' ) {
-        _String argName    (*data,0,data->length()-2);
-        _FString* theVar = (_FString*)FetchObjectFromVariableByType(&argName,STRING);
-        if (theVar) {
-            return theVar->theString;
-        }
-
-        HandleApplicationError (_String("Reference argument \"")&*data &"\" is not a valid string variable.");
-        return nil;
-    }
-    return (_String*)data;
 }
 
 //____________________________________________________________________________________
@@ -484,7 +468,7 @@ const _String ProcessLiteralArgument (_String const* data, _VariableContainer co
    _PMathObj getString = ProcessAnArgumentByType (data, theP, STRING, currentProgram);
 
     if (getString) {
-      _String result (*((_FString*)getString)->theString);
+      _String result (((_FString*)getString)->get_str());
       DeleteObject(getString);
       return result;
     }
@@ -1090,7 +1074,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
             if (appendToExisting) {
               _FString * existing = (_FString*) FetchObjectFromVariableByType(&_hyLastExecutionError, STRING);
               if (existing) {
-                errMsg = *existing->theString & '\n' & errMsg;
+                errMsg = existing->get_str() & '\n' & errMsg;
               }
             }
             setParameter(_hyLastExecutionError, new _FString (errMsg, false), nil, false);
@@ -1763,6 +1747,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
           if (handled) {
             if (currentLine.length() > 1UL) {
               throw (currentLine.Enquote() & " contained syntax errors, possibly a missing semicolon. " );
+            }
           } else {
               if (currentLine.BeginsWith (blFunction)||currentLine.BeginsWith (blFFunction)||currentLine.BeginsWith (blLFunction) || currentLine.BeginsWith (blNameSpace)) { // function declaration
                   _ElementaryCommand::ConstructFunction (currentLine, *this);
@@ -2304,7 +2289,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
 
             if (terminate_execution && !result) {
                   _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionSubstiteValues);
-                  errMsg  = new _String(_String("Failed while evaluating: ") & _String((_String*)((_Formula*)simpleParameters(2))->toStr()) & " which expanded to  " & s);
+                  errMsg  = new _String(_String("Failed while evaluating: ") & _String((_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionNormal)) & " which expanded to  " & s);
                   throw (1);
                }
 
@@ -2315,7 +2300,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
                     conditionFalse = result->Value()==0.0;
                     break;
                 case STRING:
-                    conditionFalse = ((_FString*)result)->IsEmpty();
+                    conditionFalse = ((_FString*)result)->empty();
                     break;
                 case HY_UNDEFINED:
                     conditionFalse = true;
@@ -2472,7 +2457,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                      *tree   = (_String*)(*likelihoodFunctionSpec)(i+1),
                       *freq    = explicitFreqs?(_String*)(*likelihoodFunctionSpec)(i+2):nil;
 
-        if(GetDataFilter (AppendContainerName(*dataset,chain.nameSpacePrefix)) >= 0) {
+        if(GetDataFilter (AppendContainerName(*dataset,chain.nameSpacePrefix))) {
             _TheTree*   thisTree = (_TheTree*)FetchObjectFromVariableByType(&AppendContainerName(*tree,chain.nameSpacePrefix),TREE);
             if (thisTree) {
                 _TreeIterator ti (thisTree, _HY_TREE_TRAVERSAL_POSTORDER);
@@ -2798,8 +2783,8 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         for (unsigned long k=0UL; k < alphabet_matrix->GetVDim (); k++) {
             _FString * a_state = (_FString*)alphabet_matrix->GetFormula(0,k)->Compute();
             if (a_state) {
-                if (a_state->theString->length() == 1UL) {
-                    char c = a_state->theString->char_at(0UL);
+                if (a_state->get_str().length() == 1UL) {
+                    char c = a_state->get_str().char_at(0UL);
                     if (base_set.Find(c) == -1) {
                         base_set = base_set & c;
                     } else {
@@ -2817,7 +2802,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
             throw ("The alphabet is mis-specified; it either has redundant characters or multi-character/non-string entries");
         }
 
-        long unit_size = ((_FString*)alphabet_matrix->GetFormula(1,0)->Compute())->theString->to_long();
+        long unit_size = ((_FString*)alphabet_matrix->GetFormula(1,0)->Compute())->get_str().to_long();
 
         if (unit_size < 1L) {
             throw ("The evolutionary unit size in the alphabet matrix is mis-specified");
@@ -2827,7 +2812,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         _String const* the_exclusions = &kEmptyString;
 
         if (exclusion_formula) {
-            the_exclusions = ((_FString*)exclusion_formula->Compute())->theString;
+            the_exclusions = &((_FString*)exclusion_formula->Compute())->get_str();
         }
 
         _TheTree * spawning_tree = (_TheTree*)tree_var;
@@ -3036,7 +3021,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             _PMathObj formRes = nameForm.Compute();
             if (formRes) {
                 if (formRes->ObjectClass () == STRING) {
-                    tr = new _TheTree (treeIdent,*((_FString*)formRes)->theString,false);
+                    tr = new _TheTree (treeIdent,((_FString*)formRes)->get_str(),false);
                 } else if (formRes->ObjectClass () == TOPOLOGY) {
                     tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
                 } else if (formRes->ObjectClass () == TREE) {
@@ -4780,7 +4765,7 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
      << *((_String*)modelNames (theModel))
      << "=(";
     if (theExp) {
-        rec << _String((_String*)(theExp->toStr())).Enquote();
+        rec << _String((_String*)(theExp->toStr(kFormulaStringConversionNormal))).Enquote();
      } else {
         rec << *tV->GetName();
     }

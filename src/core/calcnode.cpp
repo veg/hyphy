@@ -205,7 +205,7 @@ _String const&  getINodePrefix (void) {
   iNodePrefix = "Node";
   _PMathObj iv = FetchObjectFromVariableByType(&internalNodePrefix,STRING);
   if (iv) {
-    iNodePrefix = *((_FString*)iv)->theString;
+    iNodePrefix = ((_FString*)iv)->get_str();
   }
   checkParameter(ignoreUserINames, ignoringInternalNames, 0.0);
   return iNodePrefix;
@@ -234,7 +234,7 @@ _CalcNode::_CalcNode    (_String name, _String parms, int codeBase, _VariableCon
 _CalcNode::_CalcNode    (_CalcNode* sourceNode, _VariableContainer* theP):_VariableContainer (sourceNode->ContextFreeName(), "", theP) {
     _String model = *sourceNode->GetModelName();
     InitializeCN (model, 0, theP);
-    if (model.sLength) { // copy model parameter values
+    if (model.nonempty()) { // copy model parameter values
         CopyMatrixParameters(sourceNode, true);
     }
 }
@@ -257,7 +257,7 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
 
     InitializeVarCont (kEmptyString, matrixName, theP, aCache);
 
-    if (GetModelIndex() == HY_NO_MODEL && parms.Length()) {
+    if (GetModelIndex() == HY_NO_MODEL && parms.nonempty()) {
         f = 0;
     }
 
@@ -544,7 +544,7 @@ hyFloat  _CalcNode::ComputeBranchLength (void)
     {
       _FString   *stencil = (_FString*)FetchObjectFromVariableByType (&BRANCH_LENGTH_STENCIL,STRING);
 
-      if (stencil && stencil->theString->Equal (&stringSuppliedLengths)) {
+      if (stencil && stencil->get_str() == stringSuppliedLengths) {
           return Value();
       }
     }
@@ -632,9 +632,8 @@ hyFloat& _CalcNode::operator[] (unsigned long i)
 
 //_______________________________________________________________________________________________
 
-BaseRef _CalcNode::toStr (unsigned long)
-{
-    _String * res = new _String (16L, true);
+BaseRef _CalcNode::toStr (unsigned long) {
+    _StringBuffer * res = new _StringBuffer (64L);
     (*res) << theName << '(';
 
     if (iVariables) {
@@ -652,7 +651,7 @@ BaseRef _CalcNode::toStr (unsigned long)
     }
 
     (*res) << ')';
-    res->Finalize();
+    res->TrimSpace();
     return res;
 }
 
@@ -1428,7 +1427,7 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), kEmptyS
 }
 
 //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology    (_String name, _String& parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,kEmptyString)
+_TreeTopology::_TreeTopology    (_String const name, _String const & parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,kEmptyString)
 // builds a tree from a string
 {
     PreTreeConstructor   (dupMe);
@@ -1451,8 +1450,8 @@ bool _MainTreeConstructor_error (const _String& error, const _String& tree_strin
   isDefiningATree = kTreeNotBeingDefined;
   HandleApplicationError (   error & ", in the following string context " &
                 tree_string.Cut(index>31L?index-32L:0L,index)&
-                "<ERROR HERE>"&
-                tree_string.Cut(index+1L,tree_string.sLength-index>32L?index+32L:-1L)
+                " <ERROR HERE> "&
+                tree_string.Cut(index+1L,tree_string.length()-index>32L?index+32L:-1L)
              );
 
   return false;
@@ -1490,7 +1489,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNam
 
     isDefiningATree         = kTreeIsBeingParsed;
 
-    for (i=0; i<parms.sLength; i++) {
+    for (i=0; i<parms.length(); i++) {
         switch (parms[i]) {
         case '(': { // creating a new internal node one level down
             // a new node
@@ -1537,7 +1536,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNam
             if (mapping) {
               _FString * mapped_name = (_FString*)mapping->GetByKey (nodeName, STRING);
               if (mapped_name) {
-                nodeName = *mapped_name->theString;
+                nodeName = mapped_name->get_str();
               }
             }
             FinalizeNode (parentNode, nodeNumbers(lastNode), nodeName, nodeParameters, nodeValue, &nodeComment);
@@ -1584,15 +1583,15 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNam
             char c = parms[lastNode];
 
             while ( isspace (c) )
-                if (lastNode<parms.sLength) {
+                if (lastNode<parms.length()) {
                     c = parms[++lastNode];
                 } else {
                     break;
                 }
 
-            if ( lastNode<parms.sLength )
+            if ( lastNode<parms.length() )
                 while ( (c<='9' && c>='0') || c=='.' ||c=='-' ||c=='+' || c=='e' || c=='E') {
-                    if (lastNode<parms.sLength) {
+                    if (lastNode<parms.length()) {
                         c = parms[++lastNode];
                     } else {
                         break;
@@ -1629,7 +1628,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNam
 
             if (checkNames)
                 while (isalnum(c)||c=='_')
-                    if (lastNode<parms.sLength) {
+                    if (lastNode<parms.length()) {
                         lastNode++;
                         c = parms[lastNode];
                     } else {
@@ -1637,7 +1636,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNam
                     }
             else
                 while (isInLiteral || !(c==',' || c==':' || c==')' || c=='(' || c=='{' ||c== '}' || isspace(c)))
-                    if (lastNode<parms.sLength) {
+                    if (lastNode<parms.length()) {
                         lastNode++;
                         c = parms[lastNode];
                         if (c == '\'') {
@@ -1684,7 +1683,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNam
         if (mapping) {
           _FString * mapped_name = (_FString*)mapping->GetByKey (nodeName, STRING);
           if (mapped_name) {
-            nodeName = *mapped_name->theString;
+            nodeName = mapped_name->get_str();
           }
         }
         FinalizeNode (parentNode, nodeNumbers(lastNode), nodeName, nodeParameters, nodeValue, &nodeComment);
@@ -1701,7 +1700,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNam
 
 bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeName, _String const& nodeParameters, _String& nodeValue, _String* nodeComment)
 {
-    bool isAutoGenerated = (nodeName.sLength == 0 || (!CheckEqual(ignoringInternalNames,0.0) && nodie->get_num_nodes()>0));
+    bool isAutoGenerated = (nodeName.empty() || (!CheckEqual(ignoringInternalNames,0.0) && nodie->get_num_nodes()>0));
     if (isAutoGenerated) {
         nodeName = iNodePrefix & number;
     } else {
@@ -1719,11 +1718,11 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
         node_parameters = kEmptyString;
         nodeValue      = kEmptyString;
     } else {
-        if (!node_parameters.sLength && lastMatrixDeclared!=-1) {
+        if (!node_parameters.nonempty() && lastMatrixDeclared!=-1) {
             node_parameters=*(((_String**)modelNames.lData)[lastMatrixDeclared]);
         }
 
-        if (node_parameters.sLength) {
+        if (node_parameters.nonempty()) {
             ReportWarning ((_String("Model ")&node_parameters&_String(" assigned to ")& nodeName));
         } else {
             ReportWarning (_String("No nodel was assigned to ")& nodeName);
@@ -1740,7 +1739,7 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
 
     _Constant val (ProcessTreeBranchLength(nodeValue));
 
-    if (nodeValue.Length() && takeBranchLengths) {
+    if (nodeValue.nonempty() && takeBranchLengths) {
         if (cNt.iVariables && cNt.iVariables->lLength == 2) { // can assign default values
             bool setDef = true;
             if (autoSolveBranchLengths) {
@@ -1753,7 +1752,7 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
                         bool         mByF;
                         RetrieveModelComponents (nodeModelID, tV, tV2, mByF);
                         _String * result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
-                        if (result->sLength) {
+                        if (result->nonempty()) {
                             expressionToSolveFor = new _Formula (*result);
                             for (unsigned long cc = 0; cc < cNt.categoryVariables.lLength; cc++) {
                                 _CategoryVariable * thisCC = (_CategoryVariable *)LocateVar(cNt.categoryVariables.lData[cc]);
@@ -1794,7 +1793,7 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
     nodeName       = kEmptyString;
     node_parameters = kEmptyString;
     nodeValue      = kEmptyString;
-    if (nodeComment && nodeComment->sLength)
+    if (nodeComment && nodeComment->nonempty())
     {
         _String commentName = *nodeVar->GetName() & "._comment";
         CheckReceptacleAndStore(&commentName, kEmptyString, false, new _FString (*nodeComment));
@@ -1813,7 +1812,7 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
 
 bool    _TreeTopology::FinalizeNode (node<long>* nodie, long number , _String nodeName, _String const& nodeParameters, _String& nodeValue, _String* nodeComment)
 {
-    if (!nodeName.sLength || (!CheckEqual(ignoringInternalNames,0.0) && nodie->get_num_nodes()>0)) {
+    if (!nodeName.nonempty() || (!CheckEqual(ignoringInternalNames,0.0) && nodie->get_num_nodes()>0)) {
         nodeName = iNodePrefix & number;
     }
 
@@ -1860,7 +1859,7 @@ void    _TreeTopology::RemoveANode (_PMathObj nodeName) {
     if (nodeName->ObjectClass () == STRING) {
         _FString         * removeMe     = (_FString*)nodeName;
 
-        node<long>* removeThisNode = FindNodeByName (removeMe->theString),
+        node<long>* removeThisNode = FindNodeByName (&removeMe->get_str()),
                   * parentOfRemoved;
 
         if (!removeThisNode || ( parentOfRemoved = removeThisNode->get_parent()) == nil) {
@@ -2128,7 +2127,7 @@ node<long>*  _TheTree::DuplicateTreeStructure (node <long>* theNode, _String* re
                 _Variable dummyVar (newNodeName);
                 sourceNode->dVariables->lData[i] = variableNames.GetXtra(LocateVarByName (newNodeName));
 
-                _String* newFormula = LocateVar(sourceNode->dVariables->lData[i])->GetFormulaString();
+                _String* newFormula = LocateVar(sourceNode->dVariables->lData[i])->GetFormulaString(kFormulaStringConversionNormal);
                 *newFormula = newFormula->Replace(replacedName,*replacementName,true);
                 _Formula dummyF (*newFormula);
                 LocateVar(sourceNode->dVariables->lData[i])->SetFormula(dummyF);
@@ -2239,7 +2238,7 @@ _String const  _TreeTopology::GetNodeStringForTree                (node<long> * 
 
   if (flags & kGetNodeStringForTreeModel) {
     _String const *mSpec = GetNodeModel (n);
-    if (mSpec->sLength) {
+    if (mSpec->nonempty()) {
       node_desc = node_desc & '{' & *mSpec & '}';
     }
   }
@@ -2249,7 +2248,7 @@ _String const  _TreeTopology::GetNodeStringForTree                (node<long> * 
   //_______________________________________________________________________________________________
 
 BaseRef     _TreeTopology::toStr (unsigned long) {
-  _String     * res = new _String((unsigned long)128,true),
+  _StringBuffer     * res = new _StringBuffer((unsigned long)128),
   num;
 
   hyFloat    skipILabels,
@@ -2271,8 +2270,8 @@ BaseRef     _TreeTopology::toStr (unsigned long) {
     (*res)<<'(';
 
     while (node<long>* iterator = ni.Next()) {
-      (*res) << GetNodeStringForTree (iterator,  leaf_flag );
-      (*res)<< (iterator->is_root() ? ')' : ',');
+      (*res) << GetNodeStringForTree (iterator,  leaf_flag )
+             << (iterator->is_root() ? ')' : ',');
     }
   } else {
 
@@ -2313,7 +2312,7 @@ BaseRef     _TreeTopology::toStr (unsigned long) {
     res->AppendNCopies(')', lastLevel-level);
   }
   (*res)<<';';
-  res->Finalize();
+  res->TrimSpace();
   return res;
 }
 

@@ -2610,7 +2610,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
                   _Variable*      rate_matrix = (_Variable*)source_object;
                   _Formula * cell = ((_Matrix*)rate_matrix->GetValue())->GetFormula (index1,index2);
                   if (cell) {
-                    return_value = make_fstring_pointer ((_String*)cell->toStr());
+                    return_value = make_fstring_pointer ((_String*)cell->toStr(kFormulaStringConversionNormal));
                   } else {
                     throw ("Invalid rate matrix cell index");
                   }
@@ -2720,10 +2720,10 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
               if (formula_matrix) {
                 _Formula* cell = formula_matrix->GetFormula(index1, index2);
                 if (cell) {
-                  return_value = make_fstring_pointer ((_String*) cell->toStr());
+                  return_value = make_fstring_pointer ((_String*) cell->toStr(kFormulaStringConversionNormal));
                 }
               } else {
-                return_value = make_fstring_pointer ((_String*)var->GetFormulaString ());
+                return_value = make_fstring_pointer ((_String*)var->GetFormulaString (kFormulaStringConversionNormal));
               }
             }
           }

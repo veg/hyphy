@@ -505,7 +505,7 @@ namespace hy_global {
         
         if (error_formatting_expression) {
             _Formula expression;
-            _String  expr (*error_formatting_expression->theString),
+            _String  expr (error_formatting_expression->get_str()),
             errMsgLocal;
             _FormulaParsingContext fpc (&errMsgLocal, nil);
             
@@ -516,7 +516,7 @@ namespace hy_global {
                 
                 _PMathObj expr = expression.Compute();
                 if (!terminate_execution && expr && expr->ObjectClass() == STRING) {
-                    (*error_message) << ((_FString*)expr)->theString;
+                    (*error_message) << ((_FString*)expr)->get_str();
                     doDefault = false;
                 }
             }
