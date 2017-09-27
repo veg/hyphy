@@ -13,10 +13,10 @@ models.protein.alphabet = {{"A","C","D","E","F","G","H","I","K","L","M","N","P",
 models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067"},
                                    {"WAG", "Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
                                    {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
-                                   {"JC", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."}};
+                                   {"JC69", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."}};
 
 
-
+models.protein.dimensions = 20;
 
 /**
  * @name models.protein.generic.DefineQMatrix
@@ -26,7 +26,7 @@ models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution
 function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 
 	__alphabet = modelSpec [terms.alphabet];
-	assert (Type (__alphabet) == "Matrix" && Columns (__alphabet) == 20, "Unsupported or missing alphabet '" + __alphabet + "'");
+	assert (Type (__alphabet) == "Matrix" && Columns (__alphabet) == models.protein.dimensions, "Unsupported or missing alphabet '" + __alphabet + "'");
 
 	__modelType = modelSpec[terms.model.type];
 	if (Type (__modelType) == "None" || Type (__modelType) == "Number") {
@@ -42,7 +42,7 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 	assert (utility.IsFunction (__time_function), "Missing time callback in model specification");
 
 
-	__rate_matrix = {20,20};
+	__rate_matrix = {models.protein.dimensions,models.protein.dimensions};
 	__rate_matrix [0][0] = "";
 
 	__rate_variation = model.generic.get_rate_variation (modelSpec);
@@ -61,8 +61,8 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
         parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 	} 
 
-	for (_rowChar = 0; _rowChar < 20; _rowChar +=1 ){
-		for (_colChar = _rowChar + 1; _colChar < 20; _colChar += 1) {
+	for (_rowChar = 0; _rowChar < models.protein.dimensions; _rowChar +=1 ){
+		for (_colChar = _rowChar + 1; _colChar < models.protein.dimensions; _colChar += 1) {
 			__rp = Call (__rate_function, __alphabet[_rowChar],
 															__alphabet[_colChar],
 															 namespace,

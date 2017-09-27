@@ -65,13 +65,12 @@ relative_prot_rates.filter_specification = alignments.DefineFiltersForPartitions
 /***************************************** SELECT MODEL, +F **********************************************************/
 /** NOTE: there is no rate variation option here ever. This must be discouraged. **/
 
-// "WAG", "LG", "JTT", "JC"
 relative_prot_rates.model_name  = io.SelectAnOption (models.protein.empirical_models,
-                                                     "Select an empirical protein model for fitting rates (we recommend JC to avoid matrix-induced biases in inferred rates):");
+                                                     "Select an empirical protein model for fitting rates (we recommend JC69 to avoid matrix-induced biases in inferred rates):");
 
 // "Yes", "No"
 relative_prot_rates.plusF       = io.SelectAnOption ({{"Yes", "Use empirical (+F) amino-acid frequencies ."}, {"No", "Use default amino-acid frequencies."}},
-                                                     "Use a +F model for initial bl optimization? (recommended no for a simple JC model)");
+                                                     "Use a +F model for initial bl optimization? (recommended no for a simple JC69 model)");
 
 
 lfunction relative_prot_rates.plusF.ModelDescription(type) {
