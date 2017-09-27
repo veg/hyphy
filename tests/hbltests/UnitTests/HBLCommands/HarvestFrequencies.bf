@@ -30,7 +30,7 @@ function runTest () {
 {    0.219696969697}
 }) < 1e-8, "Checking nucleotide frequency counts");
 
-    assert (runCommandWithSoftErrors ("HarvestFrequencies (cornholio,filteredData,3,2,1)","Atom must divide unit"), "Failed error checking for an invalid unit/atom specification");
+    assert (runCommandWithSoftErrors ("HarvestFrequencies (cornholio,filteredData,3,2,1)","Atom should divide unit"), "Failed error checking for an invalid unit/atom specification");
     
     HarvestFrequencies (nucFreqsFromDS, ds, 1, 1, 1);
     assert (Abs (nucFreqs-nucFreqsFromDS) < 1e-8, "Checking nucleotide frequency counts collected from the DataSet object");

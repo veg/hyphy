@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -46,7 +46,7 @@ class _Constant : public _MathObject {
 
 public:
 
-    _Constant (hyFloat);
+    _Constant (_Parameter);
     _Constant (_String&);
     _Constant (void);
     ~_Constant (void) {}
@@ -94,7 +94,7 @@ public:
     virtual _PMathObj LOr           (_PMathObj);
     virtual _PMathObj LNot          ();
     virtual _PMathObj Random        (_PMathObj);
-    virtual hyFloat
+    virtual _Parameter
     Value       (void);
     virtual _PMathObj FormatNumberString
     (_PMathObj,_PMathObj);
@@ -103,18 +103,18 @@ public:
     };
 
     virtual   void    Initialize            (bool = false);
-    virtual   void    Duplicate             (BaseRefConst);
-    virtual   BaseRef makeDynamic           (void) const;
+    virtual   void    Duplicate             (BaseRef);
+    virtual   BaseRef makeDynamic           (void);
     virtual   BaseRef toStr                 (unsigned long = 0UL);
     virtual   unsigned long    ObjectClass           (void) {
         return NUMBER;
     }
-    virtual   void    SetValue              (hyFloat pl) {
+    virtual   void    SetValue              (_Parameter pl) {
         theValue = pl;
     }
 
 public:
-    hyFloat theValue;
+    _Parameter theValue;
 };
 
 #endif

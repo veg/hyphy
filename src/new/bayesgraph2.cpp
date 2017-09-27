@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -40,15 +40,12 @@
 
 #include "bayesgraph.h"
 #include "function_templates.h"
-#include "global_things.h"
-
-using namespace hy_global;
 
 extern _String      _HYBgm_IMPUTE_MAXSTEPS,
        _HYBgm_IMPUTE_BURNIN,
        _HYBgm_IMPUTE_SAMPLES;
 
-extern hyFloat   lnGamma (hyFloat),
+extern _Parameter   lnGamma (_Parameter),
        gaussDeviate (void),
        LogSumExpo (_GrowingVector *);
 
@@ -154,7 +151,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
                 _SimpleList     multipliers ((long)1),
                                 n_ij, pa_indexing;
 
-                hyFloat      rho_prior   = prior_sample_size (node, 0) > 0 ? (prior_sample_size (node, 0) / num_parent_combos) : 1.0,
+                _Parameter      rho_prior   = prior_sample_size (node, 0) > 0 ? (prior_sample_size (node, 0) / num_parent_combos) : 1.0,
                                 phi_prior = prior_scale (node, 0);
 
                 _Matrix         mu_prior (k+1, 1, false, true),
@@ -255,7 +252,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 
 					DeleteObject (tauinv);
 					
-                    hyFloat  rho = rho_prior + n_ij.lData[pa],
+                    _Parameter  rho = rho_prior + n_ij.lData[pa],
                                 phi = phi_prior;
 
                     temp = zbpa;
@@ -296,7 +293,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
             rec << "}};\n"; // end matrix entry of conditional PDFs.
         }
     } else {
-        HandleApplicationError (_String("Cannot export network parameters, this _BayesianGraphicalModel object has no data!"));
+        WarnError (_String("Cannot export network parameters, this _BayesianGraphicalModel object has no data!"));
     }
 }
 
@@ -350,7 +347,7 @@ bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import)
         }
 
         if (errMsg) {
-            HandleApplicationError (errMsg);
+            WarnError (errMsg);
             return false;
         }
     }
@@ -400,7 +397,7 @@ bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
 
         return TRUE;
     } else {
-        HandleApplicationError (_String ("Unable to export node score cache, no cache exists!"));
+        WarnError (_String ("Unable to export node score cache, no cache exists!"));
         return FALSE;
     }
 }
@@ -410,7 +407,7 @@ bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
 
 //___________________________________________________________________________________________
 // #define _DEBUG_CCS_
-hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id)
+_Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id)
 {
     _SimpleList parents;
 
@@ -425,7 +422,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id)
 }
 
 
-hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Matrix &dag)
+_Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Matrix &dag)
 {
     _SimpleList     parents;
 
@@ -441,7 +438,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Matrix &
 
 //___________________________________________________________________________________________
 
-hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleList & parents)
+_Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleList & parents)
 {
     /* ---------------------------------------------------------------------------
         ComputeContinuousScore()
@@ -454,7 +451,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
 
 
     long            k;
-    hyFloat      log_score = 0.;
+    _Parameter      log_score = 0.;
     _SimpleList     c_parents, d_parents;
 
 
@@ -464,10 +461,10 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
 
         if (parents.lLength == 0) {
             _Constant *     orphan_score = (_Constant *) scores->lData[0];
-            return (hyFloat) orphan_score->Value();
+            return (_Parameter) orphan_score->Value();
         } else if (parents.lLength == 1) {
             _Matrix *   single_parent_scores = (_Matrix *) scores->lData[1];
-            return (hyFloat) (*single_parent_scores) (parents.lData[0], 0);
+            return (_Parameter) (*single_parent_scores) (parents.lData[0], 0);
         } else {
             _NTupleStorage *    family_scores   = (_NTupleStorage *) scores->lData[parents.lLength];
             _SimpleList         nktuple;
@@ -479,13 +476,13 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
                 }
                 nktuple << par;
             }
-            return (hyFloat) family_scores->Retrieve (nktuple);  // using nk-tuple
+            return (_Parameter) family_scores->Retrieve (nktuple);  // using nk-tuple
         }
     }
 
 
     if (theData.GetHDim() == 0) {
-        HandleApplicationError (_String ("Uh-oh, there's no node score cache nor is there any data matrix to compute scores from!"));
+        WarnError (_String ("Uh-oh, there's no node score cache nor is there any data matrix to compute scores from!"));
         return 0.;
     }
 
@@ -554,7 +551,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
 	_Matrix     tau (k+1, k+1, false, true),
 				mu (k+1, 1, false, true);
 
-	hyFloat  rho     = prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0,
+	_Parameter  rho     = prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0,
 				phi      = prior_scale (node_id, 0);
 
 	for (long row = 0; row < k+1; row++) {
@@ -615,7 +612,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
 
 //___________________________________________________________________________________________________
 
-hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _Matrix & tau, _Matrix & mu, hyFloat rho, hyFloat phi, long batch_size)
+_Parameter  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _Matrix & tau, _Matrix & mu, _Parameter rho, _Parameter phi, long batch_size)
 {
     /* -------------------------------------------------------------------------------
      Compute the conditional Gaussian network score of node [c] according to
@@ -681,7 +678,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _
     //ReportWarning (_String("... %*% zbpa^T = ") & (_String *) temp_mat.toStr());
 
     for (long row = 0; row < temp_mat.GetHDim(); row++) {
-        temp_mat.Store (row, row, temp_mat(row,row)+(hyFloat)1.);    // add identity matrix
+        temp_mat.Store (row, row, temp_mat(row,row)+(_Parameter)1.);    // add identity matrix
     }
 
     //ReportWarning (_String("... + I = ") & (_String *) temp_mat.toStr());
@@ -692,23 +689,23 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _
     //ReportWarning (_String("scale = ") & (_String *) scale.toStr());
 
     // calculate the determinant of scale parameter matrix
-    hyFloat      pi_const = 3.141592653589793;
+    _Parameter      pi_const = 3.141592653589793;
 
     temp_mat = scale;
-    temp_mat *= (hyFloat) (pi_const * rho);
+    temp_mat *= (_Parameter) (pi_const * rho);
 	
 	//ReportWarning (_String("BottcherScore() calling Eigensystem on matrix ") & (_String *) temp_mat.toStr() );
 	
     _AssociativeList *  eigen       = (_AssociativeList *) temp_mat.Eigensystem();
 	
 	// sometimes the eigendecomposition fails
-	if ( eigen->countitems() == 0 ) {
-		HandleApplicationError (_String("Eigendecomposition failed in bayesgraph2.cpp BottcherScore()."));
+	if ( (eigen->GetKeys())->lLength == 0 ) {
+		WarnError (_String("Eigendecomposition failed in bayesgraph2.cpp BottcherScore()."));
 		return -A_LARGE_NUMBER;
 	}
 	
     _Matrix *           eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
-    hyFloat          log_det         = 0.;   // compute determinant on log scale to avoid overflow
+    _Parameter          log_det         = 0.;   // compute determinant on log scale to avoid overflow
 
     // determinant is product of eigenvalues (should be > 0 for positive definite matrices)
     for (long i = 0; i < eigenvalues->GetHDim(); i++) {
@@ -720,7 +717,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _
     //ReportWarning (_String("log(det) = ") & log_det);
 
     // calculate first term of score
-    hyFloat  pa_log_score = 0.;
+    _Parameter  pa_log_score = 0.;
 
     pa_log_score += lnGamma((rho + batch_size)/2.);
     pa_log_score -= lnGamma(rho/2.) + 0.5 * log_det;
@@ -744,9 +741,9 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _
 	
     next_mat.Transpose();
     temp_mat *= next_mat;
-    temp_mat *= (hyFloat) 1./rho;
+    temp_mat *= (_Parameter) 1./rho;
 
-    //ReportWarning (_String ("2nd term = ") & (hyFloat) temp_mat(0,0));
+    //ReportWarning (_String ("2nd term = ") & (_Parameter) temp_mat(0,0));
 
     pa_log_score += -(rho + batch_size)/2. * log(1. + temp_mat(0,0));
 
@@ -759,7 +756,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _
 
 
 //___________________________________________________________________________________________________
-hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleList & parents)
+_Parameter _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleList & parents)
 {
     /* ---------------------------------------------------------------------------------------
 	 ImputeDiscreteNodeScore
@@ -791,7 +788,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
 					* reassign_probs    = new _GrowingVector();
     
 	
-	hyFloat      log_score           = 0,
+	_Parameter      log_score           = 0,
   denom, this_prob;
   
 	long				impute_maxsteps, impute_burnin, impute_samples; // HBL settings
@@ -806,7 +803,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_samples, 0L);
 	
     if (impute_maxsteps <= 0 || impute_burnin < 0 || impute_samples <= 0 || impute_samples > impute_maxsteps) {
-        HandleApplicationError (_String("ERROR: Invalid IMPUTE setting(s) in ImputeNodeScore()"));
+        WarnError (_String("ERROR: Invalid IMPUTE setting(s) in ImputeNodeScore()"));
         return 0.;
     }
 
@@ -897,7 +894,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
 		} else {
 			// normalize counts to get empirical distribution
 			for (long lev = 0; lev < family_nlevels.lData[findex]; lev++) {
-				observed_values.Store (findex, lev, observed_values(findex, lev) / (hyFloat) obs_total);
+				observed_values.Store (findex, lev, observed_values(findex, lev) / (_Parameter) obs_total);
 			}
 		}
     }
@@ -914,7 +911,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
 		
 		for (long level = 0; level < family_nlevels.lData[col]; level++) {
 			if (urn < observed_values (col, level)) {
-				data_deep_copy.Store (row, col, (hyFloat) level);
+				data_deep_copy.Store (row, col, (_Parameter) level);
 				break;
 			} else {
 				urn -= observed_values (col, level);
@@ -1072,7 +1069,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
 
 
 //___________________________________________________________________________________________________
-hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & parents)
+_Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & parents)
 {
     /* ---------------------------------------------------------------------------------------
         ImputeNodeScore ()
@@ -1116,7 +1113,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
     _GrowingVector  * vector_of_scores  = new _GrowingVector(),     // store scores sampled during imputation
 					* reassign_probs    = new _GrowingVector();
 
-    hyFloat      log_score           = 0,
+    _Parameter      log_score           = 0,
 
  
                     parent_state, child_state = 0.0,
@@ -1139,7 +1136,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
 	phi_mx.Store(0, 0, phi);
 	
 	_Matrix * iw_ptr;
-	hyFloat iw_deviate;
+	_Parameter iw_deviate;
 	
 
     // set Gibbs sampler parameters from batch language definitions
@@ -1148,7 +1145,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
     checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_samples, 0L);
 
     if (impute_maxsteps <= 0 || impute_burnin < 0 || impute_samples <= 0 || impute_samples > impute_maxsteps) {
-        HandleApplicationError (_String("ERROR: Invalid IMPUTE setting(s) in ImputeNodeScore()"));
+        WarnError (_String("ERROR: Invalid IMPUTE setting(s) in ImputeNodeScore()"));
         return 0.;
     }
 
@@ -1212,7 +1209,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
         // findex = family-wise index
         for (long fnode, findex = 0; findex < family_size; findex++) {
             fnode = (findex == 0) ? node_id : parents.lData[findex-1];  // parent node, get network-wide index
-            hyFloat fstate = theData (row, fnode);
+            _Parameter fstate = theData (row, fnode);
             data_deep_copy.Store (row, findex, fstate);
 
             if (node_type.lData[fnode] == 0) {  // discrete node
@@ -1275,7 +1272,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
             } else {
 				// normalize counts to get empirical distribution
                 for (long lev = 0; lev < family_nlevels.lData[findex]; lev++) {
-                    observed_values.Store (findex, lev, observed_values(findex, lev) / (hyFloat) obs_total);
+                    observed_values.Store (findex, lev, observed_values(findex, lev) / (_Parameter) obs_total);
                 }
             }
         } else {
@@ -1323,7 +1320,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
 
             for (long level = 0; level < family_nlevels.lData[col]; level++) {
                 if (urn < observed_values (col, level)) {
-                    data_deep_copy.Store (row, col, (hyFloat) level);
+                    data_deep_copy.Store (row, col, (_Parameter) level);
                     break;
                 } else {
                     urn -= observed_values (col, level);
@@ -1340,7 +1337,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
 	long            k           = cparents.lLength,
 					pa_index;
 
-	hyFloat      lk_ratio,
+	_Parameter      lk_ratio,
 					next_log_score;     // log-likelihood of the proposed step
 
 	_Matrix         log_scores_by_pa (num_parent_combos, 1, false, true),   // track separately to make updating easier
@@ -1725,7 +1722,7 @@ void _BayesianGraphicalModel::ComputeParameters(_Matrix * structure)
         if (parents.lLength == 0) {
             if (node_type.lData[node] == 0) {   /* discrete node */
                 long            a_ijk   = (prior_sample_size(node,0) == 0) ? 1 : prior_sample_size(node,0);
-                hyFloat      n_i     = 0;
+                _Parameter      n_i     = 0;
 
 
                 // tally Dirichlet hyperparameters

@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon42@uwo.ca)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -37,7 +37,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "mersenne_twister.h"
 
 template <typename ARG_TYPE>
 void        checkParameter  (_String const& name, ARG_TYPE& dest, const ARG_TYPE def, const _VariableContainer* theP = nil) {
@@ -133,7 +132,7 @@ bool      ListAny (_SimpleList& list, LAMBDA&& condition) {
 template <typename ARG_TYPE, typename LAMBDA>
 void      ArrayForEach (ARG_TYPE* array, unsigned long dimension, LAMBDA&& transform) {
   for (unsigned long i = 0UL; i < dimension; i++) {
-    array[i] = transform (array[i], i);
+    transform (array[i], i);
   }
 }
 
@@ -143,20 +142,6 @@ void InitializeArray (ARG_TYPE* array, unsigned long dimension, ARG_TYPE&& value
   for (unsigned long i = 0UL; i < dimension; i++) {
      array[i] = value;
   }
-}
-
-template <typename ARG_TYPE>
-void CopyArray (ARG_TYPE* to, ARG_TYPE const* from, unsigned long dimension) {
-    for (unsigned long i = 0UL; i < dimension; i++) {
-        to[i] = from[i];
-    }
-}
-
-template <typename ARG_TYPE>
-void CopyArrayWithOffset (ARG_TYPE* to, ARG_TYPE const* from, unsigned long dimension, long offset) {
-    for (unsigned long i = 0UL; i < dimension; i++) {
-        to[i] = from[i+offset];
-    }
 }
 
 template <typename ARG_TYPE>
@@ -233,7 +218,6 @@ unsigned long DrawFromDiscrete (ARG_TYPE const * cdf, unsigned long dimension) {
   
   return index;
 }
-
 
 template <typename ARG_TYPE>
 void BatchDelete (ARG_TYPE first) {

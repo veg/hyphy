@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@ucsd.edu)
 
  Module Developers:
@@ -44,7 +44,6 @@
 #include "list.h"
 #include "hy_strings.h"
 #include "mathobj.h"
-#include "global_things.h"
 
 extern  _List BuiltInFunctions;
 
@@ -54,7 +53,7 @@ class _VariableContainer;
 class _Variable;
 class _Formula;
 
-_Variable * FetchVar (long, unsigned long = HY_ANY_OBJECT);
+_Variable * FetchVar (long);
 
 //__________________________________________________________________________________
 class   _Operation : public BaseObj
@@ -70,7 +69,6 @@ public:
     // construct the operation by its symbol and, if relevant -
     // number of operands
     _Operation  (const long,const long);
-    _Operation  (const _Operation&);
 
     _Operation  (bool, _String&, bool isG = false, _VariableContainer const*  = nil, bool take_a_reference = false);
     // store a variable or a constant
@@ -79,8 +77,7 @@ public:
 
     virtual ~_Operation (void);
 
-    virtual   BaseObj*      makeDynamic         (void) const;
-    virtual   void          Duplicate           (BaseRefConst);
+    virtual   BaseObj*      makeDynamic         (void);
 
     bool            Execute             (_Stack&, _VariableContainer const* = nil, _String* errMsg = nil); //execute this operation
     // see the commend for _Formula::ExecuteFormula for the second argument
@@ -90,8 +87,9 @@ public:
     virtual   BaseObj*      toStr               (unsigned long = 0UL);    //convert the op to string
 
     virtual   void          Initialize          (bool = false);
-    const _String&    GetCode             (void) {
-        return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode): hy_global::kEmptyString;
+    virtual   void          Duplicate           (BaseRef);
+    _String&    GetCode             (void) {
+        return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):emptyString;
     }
     long&       TheCode             (void) {
         return opCode;

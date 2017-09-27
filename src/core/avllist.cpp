@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,23 +37,19 @@
  
  */
 
-
+#include "avllist.h"
+#include "hy_strings.h"
+#include "errorfns.h"
+#include "parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
-
-#include "avllist.h"
-#include "hy_strings.h"
-#include "hy_string_buffer.h"
-#include "parser.h"
-
-#include "global_things.h"
-
-using namespace hy_global;
-
+#ifdef    __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
 
 //______________________________________________________________
 // AVL Lists
@@ -63,19 +59,6 @@ _AVLList::_AVLList (_SimpleList* d)
 {
     dataList = d;
     root     = -1;
-}
-
-//______________________________________________________________
-
-BaseRef _AVLList::makeDynamic (void) const {
-    HandleApplicationError("Called _AVLList::makeDynamic:  method stub that is not implemented");
-}
-
-//______________________________________________________________
-
-void _AVLList::Duplicate (BaseRefConst) {
-    HandleApplicationError("Called _AVLList::Duplicate:  method stub that is not implemented");
-    
 }
 
 //______________________________________________________________
@@ -95,7 +78,7 @@ long  _AVLList::Find (BaseRefConst obj) const {
         }
     }
 
-    return kNotFound;
+    return -1;
 }
 
 //______________________________________________________________
@@ -115,7 +98,7 @@ long  _AVLList::FindLong (long obj) const {
         }
     }
 
-    return kNotFound;
+    return -1;
 }
 
 //______________________________________________________________
@@ -355,33 +338,33 @@ void  _AVLList::ConsistencyCheck (void)
             nodeStack << curNode;
             curNode = leftChild.lData[curNode];
             if (curNode >= (long)dataList->lLength) {
-                hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                WarnError ("Failed Constistency Check in _AVLList");
                 return;
             }
 
         }
         if (long h = nodeStack.lLength) {
             if (h>3*log (1.+countitems())) {
-                hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                WarnError ("Failed Constistency Check in _AVLList");
                 return;
             }
             h--;
             curNode = nodeStack.lData[h];
             if (lastNode >= 0 && curNode >= 0) {
                 if (dataList->Compare (Retrieve (lastNode), curNode) >= 0) {
-                    hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                    WarnError ("Failed Constistency Check in _AVLList");
                     return;
                 }
                 checkCount++;
             }
             if ((balanceFactor.lData[curNode] < -1)||(balanceFactor.lData[curNode] > 1)) {
-                hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                WarnError ("Failed Constistency Check in _AVLList");
                 return;
             }
             lastNode = curNode;
             curNode = rightChild.lData[curNode];
             if (curNode >= (long)dataList->lLength) {
-                hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                WarnError ("Failed Constistency Check in _AVLList");
                 return;
             }
             nodeStack.Delete (h, false);
@@ -391,7 +374,7 @@ void  _AVLList::ConsistencyCheck (void)
     }
 
     if (dataList->lLength && (dataList->lLength > checkCount + 1 + emptySlots.lLength)) {
-        hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+        WarnError ("Failed Constistency Check in _AVLList");
         return;
     }
 
@@ -424,7 +407,7 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r) const {
 //______________________________________________________________
 
 BaseRef  _AVLList::toStr (unsigned long) {
-    _StringBuffer * str = new _StringBuffer (128L);
+    _String * str = new _String (128L, true);
  
     if (countitems() == 0) {
         (*str) << "()";
@@ -451,6 +434,7 @@ BaseRef  _AVLList::toStr (unsigned long) {
         (*str) << ')';
     }
 
+    str->Finalize();
     return str;
 }
 

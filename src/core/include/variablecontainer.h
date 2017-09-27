@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -66,7 +66,7 @@ public:
     // name, matrix constructor, the parent (if there is one)
     virtual ~_VariableContainer(void);
 
-    void                    InitializeVarCont       (_String const&, _String&, _VariableContainer*, _AVLListXL* = nil);
+    void                    InitializeVarCont       (_String&, _String&, _VariableContainer*, _AVLListXL* = nil);
     void                    ScanModelBasedVariables (_String&, _AVLListXL*);
     virtual     void        SetModel                (long,_AVLListXL*);
 
@@ -89,8 +89,8 @@ public:
 
     virtual     bool        IsModelVar                  (long);
     virtual     bool        IsConstant                  (void);
-    virtual     BaseRef     makeDynamic                 (void) const;
-    virtual     void        Duplicate                   (BaseRefConst);
+    virtual     BaseRef     makeDynamic                 (void);
+    virtual     void        Duplicate                   (BaseRef);
 
     virtual     BaseRef     toStr                       (unsigned long);
 

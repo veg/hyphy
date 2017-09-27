@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon42@uwo.ca)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -44,8 +44,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "parser.h"
 #include "site.h"
 #include "trie.h"
-#include "global_things.h"
-
 #include <stdio.h>
 
 
@@ -88,13 +86,13 @@ public:
     ~_ExecutionList (void);
 
     virtual
-    BaseRef     makeDynamic (void) const;
+    BaseRef     makeDynamic (void);
 
     virtual
     BaseRef     toStr (unsigned long = 0UL);
 
     virtual
-    void        Duplicate                   (BaseRefConst);
+    void        Duplicate                   (BaseRef);
     bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
 
     _PMathObj   Execute                     (_ExecutionList* parent = nil);
@@ -110,15 +108,12 @@ public:
 
     void        ResetFormulae               (void);             // decompile formulas (for reference functions)
     void        ResetNameSpace              (void);
-    void        SetNameSpace                (_String const &);
+    void        SetNameSpace                (_String);
     _String const
                 GetFileName                 (void) const;
     _String*    GetNameSpace                (void);
-    _String const    AddNameSpaceToID            (_String const&, _String const * = nil);
+    _String     AddNameSpaceToID            (_String&, _String * = nil);
     _String     TrimNameSpaceFromID         (_String&);
-  
-    bool        has_stdin_redirect         (void) const {return stdinRedirect != nil;}
-  
     _String*    FetchFromStdinRedirect      (void);
     _ElementaryCommand* FetchLastCommand (void) {
         if (currentCommand - 1 < lLength && currentCommand > 0) {
@@ -126,9 +121,7 @@ public:
         }
         return nil;
     }
-    _ElementaryCommand* GetIthCommand       (long i) const {
-        return (_ElementaryCommand*) GetItem (i);
-    }
+  
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
@@ -159,9 +152,7 @@ public:
      
     */
 
-    /** Advance program counter */
-    void      advance (void) {currentCommand ++;}
-  
+
     // data fields
     // _____________________________________________________________
 
@@ -188,12 +179,6 @@ public:
     _Matrix                         *profileCounter;
 
     _CELInternals                   *cli;
-  
-    protected:
-        void       BuildExecuteCommandInstruction (_List * pieces, long code);
-        void       BuildFscanf                    (_List * pieces, long code);
-        void       BuildChoiceList                (_List * pieces, long code);
-
 
 };
 
@@ -212,8 +197,8 @@ public:
     // starting at a given position
     virtual                  ~_ElementaryCommand (void);
 
-    virtual   BaseRef        makeDynamic (void) const;
-    virtual   void           Duplicate (BaseRefConst);
+    virtual   BaseRef        makeDynamic (void);
+    virtual   void           Duplicate (BaseRef);
     virtual   BaseRef        toStr (unsigned long = 0UL);
 
     bool      Execute        (_ExecutionList&); // perform this command in a given list
@@ -223,22 +208,33 @@ public:
     void      ExecuteDataFilterCases (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
+    void      ExecuteCase21  (_ExecutionList&);
+    void      ExecuteCase25  (_ExecutionList&, bool = false); // fscanf
+    void      ExecuteCase26  (_ExecutionList&); // ReplicateConstraint
     void      ExecuteCase31  (_ExecutionList&); // model construction
+    void      ExecuteCase32  (_ExecutionList&); // list selection handler
+    void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
+    void      ExecuteCase36  (_ExecutionList&); // OpenDataPanel
+    void      ExecuteCase37  (_ExecutionList&); // GetInformation
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
+    void      ExecuteCase39  (_ExecutionList&); // Execute Commands
+    void      ExecuteCase40  (_ExecutionList&); // Open Window
+    void      ExecuteCase41  (_ExecutionList&); // Spawn LF
+    void      ExecuteCase43  (_ExecutionList&); // FindRoot
+    void      ExecuteCase44  (_ExecutionList&); // MPISend
+    void      ExecuteCase45  (_ExecutionList&); // MPIReceive
+    void      ExecuteCase46  (_ExecutionList&); // GetDataInfo
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
     void      ExecuteCase54  (_ExecutionList&); // Topology
+    void      ExecuteCase55  (_ExecutionList&); // AlignSequences
+    void      ExecuteCase57  (_ExecutionList&); // GetNeutralNull
     void      ExecuteCase58  (_ExecutionList&); // Profile Code
     void      ExecuteCase61  (_ExecutionList&); // SCFG
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
     void      ExecuteCase64  (_ExecutionList&); // BGM
     
-    bool      HandleReplicateConstraint             (_ExecutionList&);
-    bool      HandleAlignSequences                  (_ExecutionList&);
-    bool      HandleConstructCategoryMatrix         (_ExecutionList&);
-    bool      HandleGetDataInfo                     (_ExecutionList&);
-    bool      HandleGetInformation                  (_ExecutionList&);
     bool      HandleFprintf                         (_ExecutionList&);
     bool      HandleHarvestFrequencies              (_ExecutionList&);
     bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
@@ -255,18 +251,9 @@ public:
     bool      HandleGetString                       (_ExecutionList&);
     bool      HandleExport                          (_ExecutionList&);
     bool      HandleDifferentiate                   (_ExecutionList&);
-    bool      HandleFindRootOrIntegrate             (_ExecutionList&, bool do_integrate = false);
-    bool      HandleMPISend                         (_ExecutionList&);
-    bool      HandleMPIReceive                      (_ExecutionList&);
-    bool      HandleExecuteCommandsCases            (_ExecutionList&, bool do_load_from_file = false, bool do_load_library = false);
-    bool      HandleDoSQL                           (_ExecutionList&);
-    bool      HandleFscanf                          (_ExecutionList&, bool is_sscanf = false);
-    bool      HandleChoiceList                      (_ExecutionList&);
-  
-    long      get_code                              (void) const { return code; };
-    unsigned  long parameter_count                  (void) const { return parameters.countitems();}
+    long      GetCode                               (void) { return code; };
     
-    static  const _String   FindNextCommand       (_String&);
+    static  const _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
     // chops the input to remove the newly found line
 
@@ -316,6 +303,11 @@ public:
     static  bool      ConstructDataSet      (_String&, _ExecutionList&);
     // construct a dataset from the string
 
+    static  bool      ConstructExport       (_String&, _ExecutionList&);
+    // construct a matrix export command
+
+    static  bool      ConstructGetString    (_String&, _ExecutionList&);
+    // construct a matrix import command
 
     static  bool      ConstructDataSetFilter(_String&, _ExecutionList&);
     // construct a dataset filter from the string
@@ -323,8 +315,17 @@ public:
     static  bool      ConstructTree         (_String&, _ExecutionList&);
     // construct a tree
 
+    static  bool      ConstructFscanf       (_String&, _ExecutionList&);
+    // construct a fscanf command
 
- 
+    static  bool      ConstructExecuteCommands
+    (_String&, _ExecutionList&);
+    // construct a fscanf command
+
+    static  bool      ConstructReplicateConstraint
+    (_String&, _ExecutionList&);
+    // construct a replicate constraint command
+
     static  bool      ConstructLF           (_String&, _ExecutionList&);
     // construct a likelihood function
 
@@ -335,25 +336,62 @@ public:
     static  bool      ConstructReturn       (_String&, _ExecutionList&);
     // construct a fprintf command
 
+    static  bool      ConstructSetParameter (_String&, _ExecutionList&);
+    // construct a set parameter clause
+
     static  bool      ConstructCategory     (_String&, _ExecutionList&);
     // construct a category variable
 
     static  bool      ConstructChoiceList   (_String&, _ExecutionList&);
     // construct a category variable
 
+    static  bool      ConstructCategoryMatrix (_String&, _ExecutionList&);
+    // construct a category matrix for the optimized like func
+
+    static  bool      ConstructOpenDataPanel (_String&, _ExecutionList&);
+    // open data panel with given settings
+
+    static  bool      ConstructOpenWindow   (_String&, _ExecutionList&);
+
+    static  bool      ConstructSpawnLF      (_String&, _ExecutionList&);
+
+    static  bool      ConstructFindRoot     (_String&, _ExecutionList&);
+
+    static  bool      ConstructGetInformation
+    (_String&, _ExecutionList&);
+
     static  bool      ConstructModel        (_String&, _ExecutionList&);
 
-   
+    static  bool      ConstructMPISend      (_String&, _ExecutionList&);
+
+    static  bool      ConstructMPIReceive   (_String&, _ExecutionList&);
+
+    static  bool      ConstructGetDataInfo  (_String&, _ExecutionList&);
+
+    static  bool      ConstructStateCounter (_String&, _ExecutionList&);
+
+    static  bool      ConstructDoSQL        (_String&, _ExecutionList&);
+
+    static  bool      ConstructAlignSequences
+    (_String&, _ExecutionList&);
+
+    static  bool      ConstructGetNeutralNull
+    (_String&, _ExecutionList&);
+
     static  bool      ConstructProfileStatement
     (_String&, _ExecutionList&);
 
- 
+    static  bool      ConstructDeleteObject
+    (_String&, _ExecutionList&);
+
     static  bool      ConstructSCFG         (_String&, _ExecutionList&);
 
     static  bool      ConstructBGM          (_String&, _ExecutionList&);
 
-  
- 
+    static  bool      ConstructAssert       (_String&, _ExecutionList&);
+
+    static  bool      SelectTemplateModel   (_String&, _ExecutionList&);
+
     static  bool      MakeGeneralizedLoop      (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
   
     bool              DecompileFormulae        (void);
@@ -369,21 +407,11 @@ public:
      as well.
      
      */
-  
-     static      const _List        fscanf_allowed_formats;
 
 
 protected:
   
     static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList&, bool, _AVLListX& );
-
-    _String  *   GetIthParameter       (unsigned long i, bool range_check = true) const {
-        BaseRef p = parameters.GetItemRangeCheck(i);
-        if (!p && range_check) {
-            hy_global::HandleApplicationError("Internal error in ElemenaryCommand::GetIthParameter", true);
-        }
-        return (_String *)p;
-    }
 
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
@@ -391,7 +419,7 @@ protected:
     // to build a jump command
     // with two branches
     // and a condition
-  
+
     void       addAndClean            (_ExecutionList&, _List* = nil, long = 0);
     void       appendCompiledFormulae (_Formula *, _Formula* = nil);
 
@@ -401,16 +429,11 @@ protected:
     friend  void      UpdateChangingFlas (long);
     friend  void      UpdateChangingFlas (_SimpleList&);
 
-
-private:
-    _Variable* _ValidateStorageVariable (_ExecutionList& program, unsigned long argument_index = 0UL) const;
-
 protected:  // data members
 
     _List       parameters;        // a list of parameters
     _SimpleList simpleParameters;  // a list of numeric parameters
     int         code;              // code describing this command
-  
 
 };
 
@@ -423,6 +446,8 @@ _ElementaryCommand               * makeNewCommand       (long);
 #ifdef __HYPHYMPI__
 #include <mpi.h>
 
+extern   _String                mpiNodeID,
+         mpiNodeCount;
 
 #define  HYPHY_MPI_SIZE_TAG     111
 #define  HYPHY_MPI_STRING_TAG   112
@@ -434,7 +459,7 @@ _ElementaryCommand               * makeNewCommand       (long);
 
 
 void     ReportMPIError         (int, bool);
-void     MPISendString          (_String const&,long,bool=false);
+void     MPISendString          (_String&,long,bool=false);
 _String* MPIRecvString          (long,long&);
 
 #endif
@@ -472,9 +497,17 @@ listOfCompiledFormulae;
 
 extern  _String
 
+getDString,
+getFString,
+tempFString,
+baseDirectory,
+libDirectory,
 useLastFString,
 mpiMLELFValue,
 lf2SendBack,
+hyphyBaseDirectory,
+hyphyLibDirectory,
+platformDirectorySeparator,
 defFileNameValue,
 defFileString,
 blConstructCM,
@@ -495,7 +528,9 @@ getDString                      ,
 useLastFString                  ,
 getFString                      ,
 defFileString                   ,
+useLastModel                    ,
 VerbosityLevelString            ,
+hasEndBeenReached               ,
 clearFile                       ,
 keepFileOpen                    ,
 closeFile                       ,
@@ -505,6 +540,7 @@ selectionStrings                ,
 useNoModel                      ,
 stdoutDestination               ,
 messageLogDestination           ,
+lastModelParameterList          ,
 dataPanelSourcePath             ,
 windowTypeTree                  ,
 windowTypeClose                 ,
@@ -516,6 +552,9 @@ screenHeightVar                 ,
 useNexusFileData                ,
 mpiMLELFValue                   ,
 lf2SendBack                     ,
+pcAmbiguitiesResolve            ,
+pcAmbiguitiesAverage            ,
+pcAmbiguitiesSkip               ,
 lfStartCompute                  ,
 lfDoneCompute                   ,
 getURLFileFlag                  ,
@@ -532,17 +571,23 @@ platformDirectorySeparator      ,
 covarianceParameterList         ,
 matrixEvalCount                 ,
 scfgCorpus                      ,
+bgmData                         ,
+bgmWeights                      ,
 pathToCurrentBF                 ,
+statusBarUpdateString           ,
+statusBarProgressValue          ,
 errorReportFormatExpression     ,
 errorReportFormatExpressionStr  ,
 errorReportFormatExpressionStack,
 errorReportFormatExpressionStdin,
 lastModelUsed                   ,
 deferConstrainAssignment        ,
-kBGMData                        ,
+bgmData                         ,
+bgmScores                       ,
+bgmGraph                        ,
+bgmNodeOrder                    ,
 bgmConstraintMx                 ,
 bgmParameters                   ,
-bgmWeights                      ,
 assertionBehavior               ,
 dialogPrompt                    ,
 _hyLastExecutionError           ,
@@ -554,7 +599,13 @@ blLF                            ,
 blLF3                           ,
 blTree                          ,
 blTopology                      ,
-blSCFG                          ;
+blSCFG                          ,
+#ifdef      __HYPHYMPI__
+mpiNodeID                       ,
+mpiNodeCount                    ,
+mpiLastSentMsg                  ,
+#endif
+hfCountGap                      ;
 
 extern  _ExecutionList              *currentExecutionList;
 
@@ -567,7 +618,8 @@ extern  _Trie                       _HY_ValidHBLExpressions,
                                     _HY_HBL_Namespaces,
                                     _HY_HBL_KeywordsPreserveSpaces;
 
-extern  long                        matrixExpCount;
+extern  long                        globalRandSeed,
+                                    matrixExpCount;
  
 
 long      FindDataSetName                 (_String const&);
@@ -584,7 +636,7 @@ const _String&  GetBFFunctionNameByIndex        (long);
 long      GetBFFunctionArgumentCount  (long);
 _List&    GetBFFunctionArgumentList   (long);
 _SimpleList&    GetBFFunctionArgumentTypes   (long);
-hyBLFunctionType
+_HY_BL_FUNCTION_TYPE
          GetBFFunctionType            (long);
 _ExecutionList&
           GetBFFunctionBody           (long);
@@ -609,21 +661,16 @@ _String ReturnDialogInput            (bool dispPath = false);
 _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
-
-
-hyFloat
-_ProcessNumericArgumentWithExceptions (_String&,_VariableContainer const*);
-
-hyFloat
-ProcessNumericArgument                (_String*,_VariableContainer const*, _ExecutionList* = nil);
+_Parameter
+ProcessNumericArgument               (_String*,_VariableContainer const*, _ExecutionList* = nil);
 const _String ProcessLiteralArgument (_String const*,_VariableContainer const*, _ExecutionList* = nil);
 _AssociativeList*
 ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
-const _String GetStringFromFormula         (_String const*,_VariableContainer*);
+const _String GetStringFromFormula         (_String*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);
 
-void    SerializeModel               (_StringBuffer &,long,_AVLList* = nil, bool = false);
+void    SerializeModel               (_String&,long,_AVLList* = nil, bool = false);
 bool    Get_a_URL                    (_String&,_String* = nil);
 
 long    AddDataSetToList             (_String&,_DataSet*);
@@ -634,8 +681,11 @@ void    KillExplicitModelFormulae    (void);
 bool    PushFilePath                 (_String&, bool = true, bool process = true);
 _String const    PopFilePath         (void);
 _String const *  PeekFilePath        (void);
-_String const    GetPathStack        (const _String& spacer = ",");
+_String const    GetPathStack        (const _String spacer = ",");
 
+_Matrix*CheckMatrixArg               (_String const*, bool);
+_AssociativeList *
+CheckAssociativeListArg      (_String const*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
@@ -652,43 +702,43 @@ ProcessAnArgumentByType      (_String const*, _VariableContainer const*, long, _
 
 void    _HBL_Init_Const_Arrays       (void);
 
+void    ReturnCurrentCallStack       (_List&, _List&);
+
+/**
+    An accessor function which attempts to retrieve a reference to a HyPhy Batch Language Object
+    by name. A list of acceptable object classes can be specified in the type parameter. Note that
+    types will be searched in the following order:
+
+        HY_BL_DATASET,HY_BL_DATASET_FILTER,HY_BL_LIKELIHOOD_FUNCTION,HY_BL_SCFG,HY_BL_BGM,HY_BL_MODEL,HY_BL_HBL_FUNCTION
+
+    i.e. if there is a dataset named 'foo' and a likelihood function named 'foo', then the dataset
+    will be returned.
 
 
+
+    @param   name provides a string with the name of the object to be retrieved.
+    @param   type [in] which types of objects will be searched.
+                 [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
+    @param   index (if not nil) will receive the index of the found object in the corresponding array
+    @param   errMsg if set to True, will cause the function to report an error if no object of corresponding type could be found
+    @param   tryLiteralLookup if set to True, will cause the function to, upon a failed lookup, to also try interpreting name as a string variable ID
+    @return  pointer to the retrieved object or nil if not found
+    @author  SLKP
+    @version 20120324
+*/
 
 BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
-/**
- An accessor function which attempts to retrieve a reference to a HyPhy Batch Language Object
- by name. A list of acceptable object classes can be specified in the type parameter. Note that
- types will be searched in the following order:
- 
- HY_BL_DATASET,HY_BL_DATASET_FILTER,HY_BL_LIKELIHOOD_FUNCTION,HY_BL_SCFG,HY_BL_BGM,HY_BL_MODEL,HY_BL_HBL_FUNCTION
- 
- i.e. if there is a dataset named 'foo' and a likelihood function named 'foo', then the dataset
- will be returned.
- 
- 
- 
- @param   name provides a string with the name of the object to be retrieved.
- @param   type [in] which types of objects will be searched.
- [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
- @param   index (if not nil) will receive the index of the found object in the corresponding array
- @param   errMsg if set to True, will cause the function to report an error if no object of corresponding type could be found
- @param   tryLiteralLookup if set to True, will cause the function to, upon a failed lookup, to also try interpreting name as a string variable ID
- @return  pointer to the retrieved object or nil if not found
- @author  SLKP
- @version 20120324
- */
 
 BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 
-_String const _HYHBLTypeToText                (long type);
+_String _HYHBLTypeToText                (long type);
+_String _HYStandardDirectory            (const unsigned long);
 
-_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String& = hy_global::kEmptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = emptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 
 
 extern  bool                        numericalParameterSuccessFlag;
-extern  hyFloat                  messageLogFlag;
-
+extern  _Parameter                  messageLogFlag;
 
 extern enum       _hy_nested_check {
   _HY_NO_FUNCTION,

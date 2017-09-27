@@ -4,7 +4,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -35,28 +35,65 @@
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
  */
 
-#include      <ctype.h>
-
 #include      "alignment.h"
-#include      "hy_string_buffer.h"
-#include      "global_things.h"
 #include      "trie.h"
 #include      "likefunc.h"
 #include      "scfg.h"
+#include      <ctype.h>
 #include      "function_templates.h"
 #include      "global_object_lists.h"
 
 #include      "bayesgraph.h"
 
+#ifndef __HYPHY_NO_SQLITE__
+#include "sqlite3.h"
+#endif
 
+#if !defined __HEADLESS__ && !defined __UNIX__
+#include      "HYUtils.h"
+#endif
+
+#ifdef    __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
 
 using namespace hyphy_global_objects;
-using namespace hy_global;
 
 //____________________________________________________________________________________
 // global variables
 
-_String     lastSetOfConstraints    ("LAST_SET_OF_CONSTRAINTS"),
+_String     sqlOpen                 ("SQL_OPEN"),
+            sqlClose                ("SQL_CLOSE"),
+            sqlRowData              ("SQL_ROW_DATA"),
+            sqlColNames             ("SQL_COLUMN_NAMES"),
+            seqAlignMap             ("SEQ_ALIGN_CHARACTER_MAP"),
+            seqAlignScore           ("SEQ_ALIGN_SCORE_MATRIX"),
+            seqAlignScoreCodon2     ("SEQ_ALIGN_SCORE_MATRIX_PARTIAL_CODON_2"),
+            seqAlignScoreCodon1     ("SEQ_ALIGN_SCORE_MATRIX_PARTIAL_CODON_1"),
+            seqAlignGapChar         ("SEQ_ALIGN_GAP_CHARACTER"),
+            seqAlignGapOpen         ("SEQ_ALIGN_GAP_OPEN"),
+            seqAlignGapExtend       ("SEQ_ALIGN_GAP_EXTEND"),
+            seqAlignGapOpen2        ("SEQ_ALIGN_GAP_OPEN2"),
+            seqAlignGapExtend2      ("SEQ_ALIGN_GAP_EXTEND2"),
+            seqAlignFrameShift      ("SEQ_ALIGN_FRAMESHIFT"),
+            seqAlignGapLocal        ("SEQ_ALIGN_NO_TP"),
+            seqAlignGapAffine       ("SEQ_ALIGN_AFFINE"),
+            seqAlignCodonAlign      ("SEQ_ALIGN_CODON_ALIGN"),
+            seqAlignGapLinearSpace  ("SEQ_ALIGN_LINEAR_SPACE"),
+            seqAlignGapCodon3x1     ("SEQ_ALIGN_PARTIAL_3x1_SCORES"),
+            seqAlignGapCodon3x2     ("SEQ_ALIGN_PARTIAL_3x2_SCORES"),
+            seqAlignGapCodon3x4     ("SEQ_ALIGN_PARTIAL_3x4_SCORES"),
+            seqAlignGapCodon3x5     ("SEQ_ALIGN_PARTIAL_3x5_SCORES"),
+            seqAlignDoLocal         ("SEQ_ALIGN_LOCAL_ALIGNMENT"),
+            completeFlag            ("COMPLETE"),
+            conditionalWeights      ("WEIGHTS"),
+            siteProbabilities       ("SITE_LOG_LIKELIHOODS"),
+            lastSetOfConstraints    ("LAST_SET_OF_CONSTRAINTS"),
+            deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION"),
+            assertionBehavior       ("ASSERTION_BEHAVIOR"),
+            _hyStatusConditionProbsMatrix
+            ("Constructing Conditional Probabilities Matrix"),
+
             isDynamicGraph          ("BGM_DYNAMIC"),
             treeNodeNameMapping     ("TREE_NODE_NAME_MAPPING");
 
@@ -66,12 +103,15 @@ extern      _String                 blDoSQL,
             blGetNeutralNull,
             blHBLProfile,
             blDeleteObject,
-            last_model_parameter_list,
+            timeStamp,
+            versionString,
+            lastModelParameterList,
             blGetString,
             blRequireVersion,
             blAssert;
 
-_SimpleList _HY_HBLCommandHelperAux;
+_SimpleList sqlDatabases,
+            _HY_HBLCommandHelperAux;
             
 _List        scfgList,
              scfgNamesList,
@@ -94,7 +134,7 @@ bool         RecurseDownTheTree                 (_SimpleList&, _List&, _List&, _
 
 //____________________________________________________________________________________
 
-_HBLCommandExtras* _hyInitCommandExtras (const long cut, const long conditions, _String const& commandInvocation, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb, _SimpleList * conditionList) {
+_HBLCommandExtras* _hyInitCommandExtras (const long cut, const long conditions, _String commandInvocation, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb, _SimpleList * conditionList) {
     
     struct _HBLCommandExtras * commandInfo           = new _HBLCommandExtras();
     commandInfo->cut_string                          = cut;
@@ -106,7 +146,7 @@ _HBLCommandExtras* _hyInitCommandExtras (const long cut, const long conditions, 
     commandInfo->do_trim                             = doTrim;
     commandInfo->is_assignment                       = isAssignment;
     commandInfo->needs_verb                          = needsVerb;
-    commandInfo->command_invocation                  < new _String (commandInvocation);
+    commandInfo->command_invocation                  && & commandInvocation;
 
     return                                             commandInfo;
     
@@ -121,7 +161,8 @@ bool      _ElementaryCommand::ExtractValidateAddHBLCommand (_String& current_str
         // TBA
     } else {
         // by default push all of the 'pieces' arguments to the "argument" list
-        (new _ElementaryCommand (command_code))->addAndClean  (command_list, pieces, 0);
+        _ElementaryCommand *cv = new _ElementaryCommand (command_code);
+        cv->addAndClean  (command_list, pieces, 0);        
     }
     
     return true;
@@ -167,11 +208,14 @@ void        _HBL_Init_Const_Arrays  (void)
     //_HY_ValidHBLExpressions.Insert ("Import(",                              HY_HBL_COMMAND_IMPORT);
     _HY_ValidHBLExpressions.Insert ("category ",                            HY_HBL_COMMAND_CATEGORY);
     _HY_ValidHBLExpressions.Insert ("Model ",                               HY_HBL_COMMAND_MODEL);
-    _HY_ValidHBLExpressions.Insert ("ChoiceList(",                          HY_HBL_COMMAND_CHOICE_LIST);
+    _HY_ValidHBLExpressions.Insert ("ChoiceList(",                          HY_HBL_COMMAND_SET_CHOICE_LIST);
+    _HY_ValidHBLExpressions.Insert ("OpenDataPanel(",                       HY_HBL_COMMAND_OPEN_DATA_PANEL);
     _HY_ValidHBLExpressions.Insert ("GetInformation(",                      HY_HBL_COMMAND_GET_INFORMATION);
     _HY_ValidHBLExpressions.Insert ("ExecuteCommands(",                     HY_HBL_COMMAND_EXECUTE_COMMANDS);
     _HY_ValidHBLExpressions.Insert ("ExecuteAFile(",                        HY_HBL_COMMAND_EXECUTE_A_FILE);
     _HY_ValidHBLExpressions.Insert ("LoadFunctionLibrary(",					HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY);
+    _HY_ValidHBLExpressions.Insert ("OpenWindow(",                          HY_HBL_COMMAND_OPEN_WINDOW);
+    _HY_ValidHBLExpressions.Insert ("SpawnLikelihoodFunction(",				HY_HBL_COMMAND_SPAWN_LIKELIHOOD_FUNCTION);
     _HY_ValidHBLExpressions.Insert ("FindRoot(",                            HY_HBL_COMMAND_FIND_ROOT);
     _HY_ValidHBLExpressions.Insert ("MPIReceive(",                          HY_HBL_COMMAND_MPI_RECEIVE);
     _HY_ValidHBLExpressions.Insert ("MPISend(",                             HY_HBL_COMMAND_MPI_SEND);
@@ -181,6 +225,7 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("DoSQL(",                               HY_HBL_COMMAND_DO_SQL);
     _HY_ValidHBLExpressions.Insert ("Topology ",                            HY_HBL_COMMAND_TOPOLOGY);
     _HY_ValidHBLExpressions.Insert ("AlignSequences(",                      HY_HBL_COMMAND_ALIGN_SEQUENCES);
+    _HY_ValidHBLExpressions.Insert ("GetNeutralNull(",                      HY_HBL_COMMAND_GET_NEUTRAL_NULL);
     _HY_ValidHBLExpressions.Insert ("#profile",                             HY_HBL_COMMAND_PROFILE);
     _HY_ValidHBLExpressions.Insert ("SCFG ",                                HY_HBL_COMMAND_SCFG);
     _HY_ValidHBLExpressions.Insert ("NeuralNet ",                           HY_HBL_COMMAND_NEURAL_NET);
@@ -191,7 +236,6 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
 */
 
     _SimpleList lengthOptions;
-    
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FOR, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("for(", HY_HBL_COMMAND_FOR,false),3, "for (<initialization>;<condition>;<increment>) {loop body}"));
 
@@ -203,44 +247,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SetDialogPrompt(", HY_HBL_COMMAND_SET_DIALOG_PROMPT,false),
                                     1, 
                                     "SetDialogPrompt(<prompt string>);"));
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_REPLICATE_CONSTRAINT,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ReplicateConstraint(", HY_HBL_COMMAND_REPLICATE_CONSTRAINT,false),
-                                                                -2,
-                                                                "ReplicateConstraint(<constraint pattern in terms of 'this1', 'this2',...>, <an argument to replace 'this*', for each 'thisN' in the pattern);"));
-
-
-    lengthOptions.Clear();lengthOptions.Populate (3,1,1);
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_EXECUTE_COMMANDS,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ExecuteCommands(", HY_HBL_COMMAND_EXECUTE_COMMANDS,false),
-                                                                -1,
-                                                                "ExecuteCommands(<source code>, [optional <'compiled' | (input redirect , [optional <namespace>]) ])",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_EXECUTE_A_FILE,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ExecuteAFile(", HY_HBL_COMMAND_EXECUTE_A_FILE,false),
-                                                                -1,
-                                                                "ExecuteAFile(<file path>, [optional <'compiled' | (input redirect , [optional <namespace>]) ])",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("LoadFunctionLibrary(", HY_HBL_COMMAND_EXECUTE_A_FILE,false),
-                                                                -1,
-                                                                "LoadFunctionLibrary(<file path | library name>, [optional <'compiled' | (input redirect , [optional <namespace>]) ])",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
-
+    
     lengthOptions.Clear();lengthOptions.Populate (3,5,1);
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_HARVEST_FREQUENCIES, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("HarvestFrequencies(", HY_HBL_COMMAND_HARVEST_FREQUENCIES,false),
@@ -252,75 +259,15 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                         false,
                                         &lengthOptions));
     
-
-    lengthOptions.Clear();lengthOptions.Populate (3,5,1);
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_INFORMATION,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetInformation(", HY_HBL_COMMAND_GET_INFORMATION,false),
-                                                                -1,
-                                                                "HarvestFrequencies(<receptacle>, <DataSet or DataSetFilter>, <atom INTEGER>, <unit INTEGER <= atom>, <position aware 0 or 1>, [optional site partion], [optional sequence partition] (only for DataSetArguments)",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
-
-    lengthOptions.Clear();lengthOptions.Populate (3,2,1); // 2, 3, 4
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_DATA_INFO,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetDataInfo(", HY_HBL_COMMAND_GET_DATA_INFO,false),
-                                                                -1,
-                                                                "GetDataInfo(<receptacle>, <DataSet or DataSetFilter>, [optional <sequence ref, site ref | sequence 1 , sequence 2, DISTANCES>])",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
-
-    lengthOptions.Clear();lengthOptions.Populate (2,2,1); // 2, 3
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_MPI_SEND,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MPISend(", HY_HBL_COMMAND_MPI_SEND,false),
-                                                                -1,
-                                                                "MPISend(<node id>, <string | likelihood function ID | filename [in conjuction with argument 3]>, [if specified, treat the second argument as a script path, and use the dict supplied here as input options to the script])",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
-
-  _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ConstructCategoryMatrix(", HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,false),
-                                                                -1,
-                                                                "ConstructCategoryMatrix(<receptacle>, <Likelihood Function|Tree>, [optional <COMPLETE|SHORT|WEIGHTS|CLASSES (default = COMPLETE)> , matrix argument with partitions to include (defaut = all)>])",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FIND_ROOT,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("FindRoot(", HY_HBL_COMMAND_FIND_ROOT,false),
-                                                                5,
-                                                                "FindRoot (<receptacle>, <expression>, <variable to solve for>,<left bound>,<right bound>)",','));
-
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_INTEGRATE,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Integrate(", HY_HBL_COMMAND_INTEGRATE,false),
-                                                                5,
-                                                                "FindRoot (<receptacle>, <expression>, <variable to solve for>,<left bound>,<right bound>)",','));
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_OPTIMIZE,
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_OPTIMIZE, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Optimize(", HY_HBL_COMMAND_OPTIMIZE,false),
                                                                 2, 
                                                                 "Optimize (<receptacle>, <likelihood function/scfg/bgm>)",','));
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_MPI_RECEIVE,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MPIReceive(", HY_HBL_COMMAND_MPI_RECEIVE,false),
-                                                                3,
-                                                                "MPIReceive (<from node; or -1 to receive from any>, <message storage>, <sender index storage>)",','));
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_LFCOMPUTE,
-                                      (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("LFCompute(", HY_HBL_COMMAND_LFCOMPUTE,false),
-                                                                  2, 
-                                                                  "LFCompute (<likelihood function/scfg/bgm>,<LF_START_COMPUTE|LF_DONE_COMPUTE|receptacle>)",','));
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_LFCOMPUTE, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("LFCompute(", HY_HBL_COMMAND_LFCOMPUTE,false),
+                                                                2, 
+                                                                "LFCompute (<likelihood function/scfg/bgm>,<LF_START_COMPUTE|LF_DONE_COMPUTE|receptacle>)",','));
 
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_COVARIANCE_MATRIX, 
@@ -328,13 +275,8 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 2, 
                                                                 "CovarianceMatrix (<receptacle>, <likelihood function/scfg/bgm>)",','));
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_DO_SQL,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("DoSQL(", HY_HBL_COMMAND_DO_SQL,false),
-                                                                3,
-                                                                "DoSQL (<dbID | SQL_OPEN | SQL_CLOSE>, <transaction string | file name>, <ID here | result here>)",','));
-
-  
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL,
+     
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SelectTemplateModel(", HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL,false),
                                     1, 
                                     "SelectTemplateModel(<DataSetFilter>);"));
@@ -383,22 +325,6 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 -2, 
                                                                 "MolecularClock(tree or tree node, local variable 1 [optional ,<local variable 2>, ..., <local variable N>])",','));
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FSCANF,
-                                  (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("fscanf(", HY_HBL_COMMAND_FSCANF,false),
-                                                              -3,
-                                                              _String ("fscanf(file path (string),<optional 'REWIND'>,'type 1 (") & _String ((_String*)_ElementaryCommand::fscanf_allowed_formats.Join('|')) & ")[optional , <type 2>, ... <type N>]', var1 [optional , <var 2>, ... <var N>])",','));
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SSCANF,
-                                  (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("sscanf(", HY_HBL_COMMAND_SSCANF,false),
-                                                              -3,
-                                                              _String ("sscanf(string,<optional 'REWIND'>,'type 1 (") & _String ((_String*)_ElementaryCommand::fscanf_allowed_formats.Join('|')) & ")[optional , <type 2>, ... <type N>]', var1 [optional , <var 2>, ... <var N>])",','));
-  
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CHOICE_LIST,
-                                  (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ChoiceList(", HY_HBL_COMMAND_CHOICE_LIST,false),
-                                                              -5,
-                                                              _String ("ChoiceList(store_here {ID}, title {String}, how many choices (0 for any number >= 1) {Integer}, [SKIP_NODE | list of indices not to show as options], [source object | comma separated list of 'key', 'description' pairs]"),
-                                                              ','));
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FPRINTF,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("fprintf(", HY_HBL_COMMAND_FPRINTF,false),
@@ -468,7 +394,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
   
   for (long key = 0; key < keywords.lLength; key++) {
     _String* key_string = (_String*)keywords.GetItem (key);
-    _HY_HBL_KeywordsPreserveSpaces.Insert (key_string->Reverse().Cut (1,kStringEnd), key_string->length()-1);
+    _HY_HBL_KeywordsPreserveSpaces.Insert (key_string->Reverse().Cut (1,-1), key_string->Length()-1);
   }
   
 }
@@ -515,6 +441,51 @@ void         InsertStringListIntoAVL    (_AssociativeList* theList , _String con
     theList->MStore (&arrayKey,mxEntry,false);
 }
 
+
+//____________________________________________________________________________________
+
+_Matrix *   CheckMatrixArg          (_String const* mxName, bool onlyStrings)
+{
+    _Variable * mVar = FetchVar (LocateVarByName (*mxName));
+    if (mVar && mVar->ObjectClass() == MATRIX) {
+        _Matrix * mx = (_Matrix*)mVar->GetValue();
+        if (onlyStrings && (!mx->IsAStringMatrix())) {
+            return nil;
+        }
+        return mx;
+    }
+    return nil;
+}
+
+//____________________________________________________________________________________
+
+_AssociativeList *   CheckAssociativeListArg (_String const* mxName)
+{
+    _Variable * mVar = FetchVar (LocateVarByName (*mxName));
+    if (mVar && mVar->ObjectClass() == ASSOCIATIVE_LIST) {
+        return (_AssociativeList*)mVar->GetValue();
+    }
+    return nil;
+}
+
+
+//____________________________________________________________________________________
+
+bool    _ElementaryCommand::ConstructDoSQL (_String&source, _ExecutionList&target)
+// syntax: DoSQL (dbID,action string|file name,<callback ID>)
+{
+    _List pieces;
+    ExtractConditions (source,blDoSQL.sLength,pieces,',');
+    if (pieces.lLength!=3) {
+        WarnError (_String ("Expected syntax:")& blDoSQL &"(dbID|" & sqlOpen & '|' & sqlClose & ",transaction string|file name,callback ID for an SQL transaction|where to store DB numeric ID)");
+        return false;
+    }
+
+    _ElementaryCommand * dsql = new _ElementaryCommand (53);
+    dsql->addAndClean(target,&pieces,0);
+    return true;
+}
+
 //____________________________________________________________________________________
 
 bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _ExecutionList&target)
@@ -522,9 +493,9 @@ bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _Executio
 {
 
     _List pieces;
-    ExtractConditions (source,blHBLProfile.length()+1,pieces,';');
+    ExtractConditions (source,blHBLProfile.sLength+1,pieces,';');
     if (pieces.lLength!=2) {
-        HandleApplicationError (_String ("Expected syntax:")& blHBLProfile &" START|PAUSE|RESUME|where to store)");
+        WarnError (_String ("Expected syntax:")& blHBLProfile &" START|PAUSE|RESUME|where to store)");
         return false;
     }
 
@@ -534,6 +505,50 @@ bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _Executio
 }
 
 
+//____________________________________________________________________________________
+
+int  _HYSQLCallBack (void* exL,int cc, char** rd, char** cn)
+{
+    _ExecutionList * exList = (_ExecutionList *)exL;
+
+    if (!terminateExecution)
+        if (exList && cc && exList->lLength) {
+            _List     rowData,
+                      columnNames;
+
+            for (long cnt = 0; cnt < cc; cnt++) {
+                if (rd[cnt]) {
+                    rowData.AppendNewInstance (new _String (rd[cnt]));
+                } else {
+                    rowData.AppendNewInstance (new _String);
+                }
+
+                if (cn[cnt]) {
+                    columnNames.AppendNewInstance (new _String (cn[cnt]));
+                } else {
+                    columnNames.AppendNewInstance (new _String);
+                }
+            }
+
+
+            _Matrix * rowDataM     = new _Matrix (rowData),
+            * columnNamesM = new _Matrix (columnNames);
+
+            if (!(rowDataM && columnNamesM)) {
+                checkPointer (nil);
+            }
+
+            _Variable* rdv = CheckReceptacle (&sqlRowData, blDoSQL,false),
+                       * cnv = CheckReceptacle (&sqlColNames, blDoSQL,false);
+
+            rdv->SetValue (rowDataM,false);
+            cnv->SetValue (columnNamesM,false);
+
+            exList->Execute();
+
+        }
+    return 0;
+}
 
 //____________________________________________________________________________________
 /*
@@ -652,13 +667,14 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
                     }
 
                 }
-                if (errCode.nonempty()) {
-                    HandleApplicationError(errCode);
+                if (errCode.sLength) {
+                    WarnError(errCode);
                     return;
                 }
 
             }
-            HandleApplicationError (((_String)("DataSet(Filter)/Associative Array ")&dataObjectID&_String(" has not been properly initialized")));
+            _String errMsg = (((_String)("DataSet(Filter)/Associative Array ")&dataObjectID&_String(" has not been properly initialized")));
+            WarnError (errMsg);
             return;
         }
         isFilter = true;
@@ -681,7 +697,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     if (parameters.lLength>4) {
         hSpecs = *(_String*)parameters(4);
     } else {
-        hSpecs = kEmptyString;
+        hSpecs = emptyString;
     }
 
     _DataSet            *dataset;
@@ -695,7 +711,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     if (!isFilter) {
         dataset = (_DataSet*)dataSetList(dsID);
         dataset -> ProcessPartition (hSpecs,hL,false, nil, nil, chain.GetNameSpace());
-        if (code!=6 && vSpecs.empty()==0) {
+        if (code!=6 && vSpecs.sLength==0) {
             vSpecs = _String("0-")&_String(dataset->NoOfColumns()-1);
         }
         dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
@@ -704,7 +720,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
         const _DataSetFilter * dataset1 = GetDataFilter (dsID);
         dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
 
-        if (code!=6 && vSpecs.empty()==0) {
+        if (code!=6 && vSpecs.sLength==0) {
             vSpecs = _String("0-")&_String(dataset1->GetSiteCount()-1);
         }
 
@@ -756,7 +772,186 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     StoreDataFilter(dataFilterID, thedf, true);
 }
 
+//____________________________________________________________________________________
 
+void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
+{
+    chain.currentCommand++;
+
+    SetStatusLine (_hyStatusConditionProbsMatrix);
+    _String errMsg,
+            objectName    =     chain.AddNameSpaceToID(*(_String*)parameters(1)),
+            resultID      =     chain.AddNameSpaceToID(*(_String*)parameters(0));
+
+    long objectID         =     FindLikeFuncName (objectName, true);
+    _PMathObj ob          =     nil;
+
+    if (objectID >=0) { // likelihood function
+        _Matrix * partitionList         = nil;
+        if (parameters.lLength>3) {
+            _String  secondArg = *(_String*)parameters(3);
+            partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
+        }
+        _SimpleList                     partsToDo;
+        _LikelihoodFunction*            lf = (_LikelihoodFunction*)likeFuncList(objectID);
+        if (lf->ProcessPartitionList(partsToDo, partitionList, _hyStatusConditionProbsMatrix)) {
+            char runMode = _hyphyLFConstructCategoryMatrixConditionals;
+            if (parameters.lLength > 2) {
+                if (((_String*)parameters(2))->Equal(&completeFlag)) {
+                    runMode = _hyphyLFConstructCategoryMatrixConditionals;
+                } else if (((_String*)parameters(2))->Equal(&conditionalWeights)) {
+                    runMode = _hyphyLFConstructCategoryMatrixWeights;
+                } else if (((_String*)parameters(2))->Equal(&siteProbabilities)) {
+                    runMode = _hyphyLFConstructCategoryMatrixSiteProbabilities;
+                } else {
+                    runMode = _hyphyLFConstructCategoryMatrixClasses;
+                }
+            }
+            ob = lf->ConstructCategoryMatrix(partsToDo,runMode,true, &resultID);
+        }
+        DeleteObject (partitionList);
+    } else {
+        _TheTree * testTree = (_TheTree*) FetchObjectFromVariableByType (&objectName, TREE);
+        if (testTree) {
+            long    pid = 0;
+            objectID = testTree->IsLinkedToALF (pid);
+            if (objectID >= 0) {
+                _LikelihoodFunction * anLF      = (_LikelihoodFunction*) likeFuncList (objectID);
+                const _DataSetFilter      * dsf       = anLF->GetIthFilter (pid);
+                anLF->PrepareToCompute();
+                anLF->Compute         ();
+                long patterns                         = dsf->GetPatternCount();
+
+                _Matrix             *condMx     = new _Matrix   (2*patterns*(testTree->GetLeafCount()
+                        + testTree->GetINodeCount()) * testTree->categoryCount,
+                        testTree->GetCodeBase(),
+                        false, true);
+              
+                _List               leafNames,
+                                    inodeNames;
+              
+              
+                _TreeIterator ti (testTree, _HY_TREE_TRAVERSAL_POSTORDER);
+              
+                while (_CalcNode * iterator = ti.Next()) {
+                    if (ti.IsAtLeaf()) {
+                        leafNames.AppendNewInstance (new _String(iterator->ContextFreeName()));
+                    } else {
+                        inodeNames.AppendNewInstance (new _String(iterator->ContextFreeName()));
+                    }
+                }
+
+                leafNames << inodeNames;
+
+                _Matrix  *nodeNames = new _Matrix (leafNames);
+
+                for (unsigned long siteC = 0UL; siteC < patterns; siteC ++) {
+                    testTree->RecoverNodeSupportStates (dsf,siteC,*condMx);
+                }
+
+                anLF->DoneComputing   ();
+                _AssociativeList *retMe = new _AssociativeList;
+                retMe->MStore ("Nodes", nodeNames,false);
+                retMe->MStore ("Values",condMx,   false);
+                ob = retMe;
+            }
+        }
+    }
+
+    if (ob) {
+        CheckReceptacleAndStore (&resultID, blConstructCM, true, ob, false);
+    } else {
+        WarnError (objectName & " must be either a likelihood function or a tree variable tied to a likelihood function.");
+    }
+
+}
+
+
+//____________________________________________________________________________________
+
+void      _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
+{
+    chain.currentCommand++;
+
+#ifdef __HYPHY_NO_SQLITE__
+    _String errStr ("SQLite commands can not be used in a HyPhy version built with the __HYPHY_NO_SQLITE__ flag");
+    WarnError (errStr);
+#else
+
+    _String arg1  (*(_String*)parameters(0));
+
+    char  * errMsg = nil;
+    _String errStr;
+
+    if (arg1.Equal (&sqlOpen)) {
+        _Variable * dbVar = CheckReceptacle ((_String*)parameters(2), blDoSQL);
+
+        if (dbVar) {
+            _String arg2 (*(_String*)parameters(1));
+            arg2.ProcessFileName(true,true,(Ptr)chain.nameSpacePrefix);
+            int errCode  = SQLITE_OK;
+            sqlite3 *aDB = nil;
+#ifdef __HYPHYXCODE__
+            errCode = sqlite3_open (DoMacToPOSIX(arg2).getStr(),&aDB);
+#else
+            errCode = sqlite3_open (arg2.sData,&aDB);
+#endif
+            if (errCode == SQLITE_OK) {
+                errCode = sqlite3_exec(aDB, "SELECT COUNT(*) FROM sqlite_master", _HYSQLCallBack, nil, nil);
+            }
+            if (errCode != SQLITE_OK) {
+                WarnError (sqlite3_errmsg(aDB));
+                sqlite3_close(aDB);
+                return;
+            } else {
+                long f = sqlDatabases.Find (0);
+                if (f<0) {
+                    f = sqlDatabases.lLength;
+                    sqlDatabases << (long)aDB;
+                } else {
+                    sqlDatabases.lData[f] = (long)aDB;
+                }
+
+                sqlite3_busy_timeout (aDB, 5000);
+
+                dbVar->SetValue (new _Constant (f), false);
+            }
+        }
+    } else {
+        bool doClose =  arg1.Equal (&sqlClose);
+
+        long dbIdx = ProcessNumericArgument (doClose?(_String*)parameters(2):&arg1,chain.nameSpacePrefix);
+
+        if (dbIdx<0 || dbIdx >= sqlDatabases.lLength || sqlDatabases.lData[dbIdx] == 0) {
+            errStr = _String(dbIdx) & " is an invalid database index";
+        } else {
+            if (doClose) {
+                sqlite3_close ((sqlite3*)sqlDatabases.lData[dbIdx]);
+                sqlDatabases.lData[dbIdx] = 0;
+            } else {
+                _String arg3 (ProcessLiteralArgument((_String*)parameters(2),chain.nameSpacePrefix));
+
+                _ExecutionList sqlProcessor (arg3,chain.nameSpacePrefix?(chain.nameSpacePrefix->GetName()):nil);
+                if (!terminateExecution) {
+                    _String arg2 (ProcessLiteralArgument ((_String*)parameters(1),chain.nameSpacePrefix));
+
+                    if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbIdx], arg2.sData, _HYSQLCallBack, (Ptr)&sqlProcessor, &errMsg) != SQLITE_OK) {
+                        WarnError (sqlite3_errmsg((sqlite3*)sqlDatabases.lData[dbIdx]));
+                        return;
+                    }
+                }
+            }
+        }
+
+    }
+
+    if (errStr.sLength) {
+        errStr = errStr & " in call to DoSQL";
+        WarnError (errStr);
+    }
+
+#endif
+}
 
 //____________________________________________________________________________________
 
@@ -766,12 +961,13 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
     SetStatusLine (_String("Constructing Topology ")&*(_String*)parameters(0));
 
     _String  *treeSpec = ((_String*)parameters(1));
+    treeSpec->ProcessParameter();
     _TreeTopology * tr = nil;
   
     _AssociativeList* mapping = (_AssociativeList*)FetchObjectFromVariableByType(&treeNodeNameMapping, ASSOCIATIVE_LIST);
 
-    if (treeSpec->nonempty()) {
-        if (treeSpec->char_at (0)!='(') {
+    if (treeSpec->sLength) {
+        if (treeSpec->sData[0]!='(') {
             _Variable* testTree = FetchVar(LocateVarByName (AppendContainerName(*treeSpec,chain.nameSpacePrefix)));
             if (testTree && testTree->ObjectClass () == TREE) {
                 tr = new _TreeTopology ((_TheTree*)testTree);
@@ -781,7 +977,7 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
                 _PMathObj formRes = nameForm.Compute();
                 if (formRes&&formRes->ObjectClass () == STRING)
                     tr = new _TreeTopology (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix),
-                                            ((_FString*)formRes)->get_str(),
+                                            *((_FString*)formRes)->theString,
                                             false, mapping);
             }
         } else
@@ -790,11 +986,516 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
     }
 
     if (!tr) {
-        HandleApplicationError ("Illegal right hand side in call to Topology id = ...; it must be a string, a Newick tree spec or a topology");
+        WarnError ("Illegal right hand side in call to Topology id = ...; it must be a string, a Newick tree spec or a topology");
     }
 }
 
 
+//____________________________________________________________________________________
+
+bool    _ElementaryCommand::ConstructAlignSequences (_String&source, _ExecutionList&target)
+// syntax: AlignSequences (result, input string matrix,  options matrix)
+{
+    _List pieces;
+    ExtractConditions (source,blAlignSequences.sLength,pieces,',');
+    if (pieces.lLength!=3) {
+        WarnError ("Expected syntax: AlignSequences(result, input string matrix, options list);");
+        return false;
+    }
+
+    _ElementaryCommand * as = new _ElementaryCommand (55);
+    as->addAndClean(target,&pieces,0);
+    return true;
+}
+
+//____________________________________________________________________________________
+
+bool    _ElementaryCommand::ConstructGetNeutralNull (_String&source, _ExecutionList&target)
+// syntax: GetNeutralNull (result, likelihood function, syn sub count matrix, non-syn sub count matrix, iterations per root state)
+{
+    _List pieces;
+    ExtractConditions (source,blGetNeutralNull.sLength,pieces,',');
+    if (pieces.lLength!=5) {
+        WarnError ("Expected syntax: GetNeutralNull (result, likelihood function, syn sub count matrix, non-syn sub count matrix, iterations per root state);");
+        return false;
+    }
+
+    _ElementaryCommand * gnn = new _ElementaryCommand (57);
+    gnn->addAndClean(target,&pieces,0);
+    return true;
+}
+
+//____________________________________________________________________________________
+
+void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
+{
+    chain.currentCommand++;
+
+    _String errStr;
+
+    _Variable * storeResultIn = CheckReceptacle (&AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix), blAlignSequences, true);
+
+    if (storeResultIn) {
+        _Matrix * inStrings = CheckMatrixArg (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix),true);
+        if (inStrings && (inStrings->GetHDim()==1||inStrings->GetVDim()==1)) {
+            _AssociativeList * mappingTable = CheckAssociativeListArg (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix));
+            if (mappingTable) {
+                // check for required parameters
+
+                _FString * charVector = (_FString*)mappingTable->GetByKey (seqAlignMap, STRING);
+
+                long       charCount = 0;
+
+                _SimpleList ccount (256,-1,0);
+
+                if (charVector) {
+                    for (long cc = 0; cc < charVector->theString->sLength; cc++)
+                        if (ccount.lData[charVector->theString->getUChar(cc)]>=0) {
+                            charCount = 0; // this is an error condition for
+                            // duplicate characters in the string
+                            break;
+                        } else {
+                            ccount.lData[charVector->theString->getUChar(cc)] = cc;
+                            charCount ++;
+                        }
+                }
+
+                if (charVector && charCount) {
+                    // now check that all characters
+                    bool        doLocal      = false,
+                                doAffine     = false,
+                                doLinear     = true,
+                                doCodon      = false,
+                                doFullLocal  = false;
+
+
+                    long        codonCount = charCount*charCount*charCount;
+
+                    _PMathObj   c = mappingTable->GetByKey (seqAlignCodonAlign, NUMBER);
+                    if (c) {
+                        doCodon = c->Compute()->Value() > 0.5;
+                    }
+
+
+                    _Matrix * scoreMatrix = (_Matrix*)mappingTable->GetByKey (seqAlignScore, MATRIX);
+                    if (scoreMatrix && scoreMatrix->GetHDim () == (doCodon?codonCount+1:charCount) && scoreMatrix->GetVDim () == scoreMatrix->GetHDim ()) {
+                        scoreMatrix = (_Matrix*)scoreMatrix->ComputeNumeric();
+                        scoreMatrix->CheckIfSparseEnough(true);
+
+                        char        gapCharacter = '-';
+                        _FString    *gapC = (_FString*)mappingTable->GetByKey (seqAlignGapChar, STRING);
+
+                        _Matrix     *codon3x5 = nil,
+                                    *codon3x4 = nil,
+                                    *codon3x2 = nil,
+                                    *codon3x1 = nil;
+
+                        if (doCodon) {
+                            codon3x5 = (_Matrix*)mappingTable->GetByKey (seqAlignGapCodon3x5, MATRIX);
+                            codon3x4 = (_Matrix*)mappingTable->GetByKey (seqAlignGapCodon3x4, MATRIX);
+                            codon3x2 = (_Matrix*)mappingTable->GetByKey (seqAlignGapCodon3x2, MATRIX);
+                            codon3x1 = (_Matrix*)mappingTable->GetByKey (seqAlignGapCodon3x1, MATRIX);
+                            if ( codon3x5 && codon3x4 && codon3x2 && codon3x1
+                              && codon3x5->GetHDim() == codonCount+1
+                              && codon3x4->GetHDim() == codonCount+1
+                              && codon3x2->GetHDim() == codonCount+1
+                              && codon3x1->GetHDim() == codonCount+1
+                              && codon3x5->GetVDim() == charCount*charCount*charCount*10
+                              && codon3x4->GetVDim() == charCount*charCount*charCount*4
+                              && codon3x2->GetVDim() == charCount*charCount*3
+                              && codon3x1->GetVDim() == charCount*3) {
+                                codon3x5 = (_Matrix*)codon3x5->ComputeNumeric();
+                                codon3x5 -> CheckIfSparseEnough(true);
+                                codon3x4 = (_Matrix*)codon3x4->ComputeNumeric();
+                                codon3x4 -> CheckIfSparseEnough(true);
+                                codon3x2 = (_Matrix*)codon3x2->ComputeNumeric();
+                                codon3x2 -> CheckIfSparseEnough(true);
+                                codon3x1 = (_Matrix*)codon3x1->ComputeNumeric();
+                                codon3x1-> CheckIfSparseEnough(true);
+                            } else {
+                                errStr = ( seqAlignGapCodon3x5 & ", "
+                                         & seqAlignGapCodon3x4 & ", "
+                                         & seqAlignGapCodon3x2 & ", or "
+                                         & seqAlignGapCodon3x1 & " matrices are missing or have incorrect dimensions" );
+                            }
+
+                        }
+
+                        if (errStr.sLength == 0) {
+                            _Parameter  gapOpen       = 15.,
+                            gapOpen2      = 15.,
+                            gapExtend     = 1.,
+                            gapExtend2    = 1.,
+                            gapFrameshift = 50.;
+                           _String     settingReport (128L,true);
+
+                            settingReport << "Running sequence alignment with the following options:";
+
+                            if (gapC && gapC->theString->sLength == 1) {
+                                gapCharacter = gapC->theString->sData[0];
+                            }
+
+                            settingReport << "\n\tGap character:";
+                            settingReport << gapCharacter;
+
+ 
+
+
+
+                            c = mappingTable->GetByKey (seqAlignGapOpen, NUMBER);
+                            if (c) {
+                                gapOpen = c->Compute()->Value();
+                            }
+
+                            settingReport << "\n\tGap open cost:";
+                            settingReport << _String (gapOpen);
+
+                            gapOpen2 = gapOpen;
+                            c = mappingTable->GetByKey (seqAlignGapOpen2, NUMBER);
+                            if (c) {
+                                gapOpen2 = c->Compute()->Value();
+                            }
+
+                            settingReport << "\n\tGap open cost 2:";
+                            settingReport << _String (gapOpen2);
+
+                            c = mappingTable->GetByKey (seqAlignGapExtend, NUMBER);
+                            if (c) {
+                                gapExtend = c->Compute()->Value();
+                            }
+
+                            settingReport << "\n\tGap extend cost:";
+                            settingReport << _String (gapExtend);
+
+                            gapExtend2 = gapExtend;
+                            c = mappingTable->GetByKey (seqAlignGapExtend2, NUMBER);
+                            if (c) {
+                                gapExtend2 = c->Compute()->Value();
+                            }
+
+                            settingReport << "\n\tGap extend cost 2:";
+                            settingReport << _String (gapExtend2);
+
+                            c = mappingTable->GetByKey (seqAlignFrameShift, NUMBER);
+                            if (c) {
+                                gapFrameshift = c->Compute()->Value();
+                            }
+
+                            settingReport << "\n\tCodon frameshift cost:";
+                            settingReport << _String (gapFrameshift);
+
+
+                            c = mappingTable->GetByKey (seqAlignGapLocal, NUMBER);
+                            if (c) {
+                                doLocal = c->Compute()->Value() > 0.5;
+                            }
+
+                            settingReport << "\n\tIgnore terminal gaps: ";
+                            settingReport << (doLocal?"Yes":"No");
+
+                            settingReport << "\n\tUse codon alignment with frameshift routines: ";
+                            if (doCodon) {
+                                for (long i = 0; i < 256; i++)
+                                    if (ccount.lData[i] < 0) {
+                                        ccount.lData[i] = -codonCount - 1;
+                                    }
+                                settingReport << "Yes";
+                                doLinear = false;
+
+                                settingReport << "\n\t Linear space routines  are not implemented";
+                            } else {
+                                settingReport << "No";
+                            }
+                            
+                            c = mappingTable->GetByKey (seqAlignDoLocal, NUMBER);
+                            if (c) {
+                                doFullLocal = c->Compute()->Value ()>0.5;
+                            }
+                            settingReport << "\n\tLocal alignment: ";
+                            settingReport << (doFullLocal?"Yes":"No");
+                            if (!doCodon && doFullLocal) {
+                                 settingReport << "\n\t Local alignment is currently available for the codon aligner only.";                           
+                            }
+
+                            c = mappingTable->GetByKey (seqAlignGapAffine, NUMBER);
+                            if (c) {
+                                doAffine = c->Compute()->Value() > 0.5;
+                            }
+                            settingReport << "\n\tAffine gap costs: ";
+                            settingReport << (doAffine?"Yes":"No");
+
+                            c = mappingTable->GetByKey (seqAlignGapLinearSpace, NUMBER);
+                            if (c) {
+                                doLinear = c->Compute()->Value() > 0.5;
+                            }
+
+                            settingReport << "\n\tUse linear space routines: ";
+                            settingReport << (doLinear?"Yes":"No");
+
+                            settingReport.Finalize();
+                            //ReportWarning (settingReport);
+
+                            long stringCount = inStrings->GetHDim() * inStrings->GetVDim();
+
+                            _AssociativeList *alignedStrings = new _AssociativeList;
+
+
+                            for (long s1 = 0; s1 < stringCount; s1++) {
+                                _String*  str1 = ((_FString*)inStrings->GetFormula(0,s1)->Compute())->theString;
+                                if (!str1) {
+                                    errStr = _String("The ") & (s1+1) & "-th argument is not a string";
+                                    break;
+                                }
+                                for (long s2 = s1+1; s2 < stringCount; s2++) {
+                                    _String       *string2 = ((_FString*)inStrings->GetFormula(0,s2)->Compute())->theString;
+                                    if (!string2) {
+                                        errStr = _String("The ") & (s2+1) & "-th argument is not a string";
+                                        break;
+                                    }
+                                    _AssociativeList * pairwiseComp = new _AssociativeList;
+                                    checkPointer (pairwiseComp);
+
+                                    _Parameter    score = 0.0;
+
+                                    if (doLinear == false) {
+                                        char * str1r = NULL,
+                                             * str2r = NULL;
+                                        _List         store;
+                                        score = AlignStrings (str1->sData,string2->sData,str1r,str2r,ccount.lData,scoreMatrix->theData,scoreMatrix->GetVDim(),
+                                                              gapCharacter,gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,
+                                                              charCount, codon3x5->theData, codon3x4->theData, codon3x2->theData, codon3x1->theData, doFullLocal);
+
+                                        if ( str1r && str2r ) {
+                                            _String * r_res = ( _String * ) checkPointer( new _String( str1r ) ),
+                                                    * q_res = ( _String * ) checkPointer( new _String( str2r ) );
+                                            delete [] str1r;
+                                            delete [] str2r;
+                                            r_res->Finalize();
+                                            q_res->Finalize();
+                                            store.AppendNewInstance( r_res );
+                                            store.AppendNewInstance( q_res );
+                                        } else
+                                            WarnError( "Internal Error in AlignStrings" );
+
+                                        store.bumpNInst();
+
+                                        if (store.lLength == 0) {
+                                            errStr = "Unspecified error in AlignStrings";
+                                            DeleteObject (pairwiseComp);
+                                            s1 = stringCount;
+                                            break;
+                                        } else {
+                                            pairwiseComp->MStore ("1", new _FString((_String*)store(0)), false);
+                                            pairwiseComp->MStore ("2", new _FString((_String*)store(1)), false);
+                                        }
+                                    } else {
+                                        _Matrix       scoreM        (string2->sLength+1,1,false,true),
+                                                      scoreM2       (string2->sLength+1,1,false,true),
+                                                      gap1Matrix    (string2->sLength+1,1,false,true),
+                                                      gap2Matrix    (string2->sLength+1,1,false,true),
+                                                      gap1Matrix2   (string2->sLength+1,1,false,true),
+                                                      gap2Matrix2   (string2->sLength+1,1,false,true),
+                                                      *buffers[6];
+
+                                        char          *alignmentRoute = new char[2*(string2->sLength+1)];
+
+                                        alignmentRoute[0] = alignmentRoute[string2->sLength+1] = 0;
+                                        buffers[0] = &scoreM;
+                                        buffers[1] = &gap1Matrix;
+                                        buffers[2] = &gap2Matrix;
+                                        buffers[3] = &scoreM2;
+                                        buffers[4] = &gap1Matrix2;
+                                        buffers[5] = &gap2Matrix2;
+                                        _SimpleList ops (str1->sLength+2,-2,0);
+                                        ops.lData[str1->sLength+1] = string2->sLength;
+                                        ops.lData[0]               = -1;
+
+                                        score = LinearSpaceAlign(str1,string2,ccount,scoreMatrix,
+                                                                 gapOpen,gapExtend,gapOpen2,gapExtend2,
+                                                                 doLocal,doAffine,ops,score,0,
+                                                                 str1->sLength,0,string2->sLength,buffers,0,alignmentRoute);
+
+                                        delete[]    alignmentRoute;
+
+                                        _String     *result1 = new _String (str1->sLength+1, true),
+                                        *result2 = new _String (string2->sLength+1, true);
+
+                                        long        last_column     = ops.lData[ops.lLength-1];
+
+                                        for (long position = str1->sLength-1; position>=0; position--) {
+                                            long current_column     = ops.lData[position+1];
+
+                                            if (current_column<0) {
+                                                if (current_column == -2 /*|| (current_column == -3 && last_column == string2->sLength)*/) {
+                                                    current_column = last_column;
+                                                } else if (current_column == -3) {
+                                                    // find the next matched char or a -1
+                                                    long    p   = position,
+                                                            s2p;
+                                                    while ((ops.lData[p+1]) < -1) {
+                                                        p--;
+                                                    }
+
+                                                    s2p = ops.lData[p+1];
+                                                    //if (last_column == string2->sLength)
+                                                    //  last_column = string2->sLength-1;
+
+                                                    //if (s2p < 0)
+                                                    //  s2p = 0;
+
+                                                    for (long j = last_column-1; j>s2p;) {
+                                                        (*result1) << gapCharacter;
+                                                        (*result2) << string2->sData[j--];
+                                                    }
+
+                                                    last_column     = s2p+1;
+
+                                                    for (; position>p; position--) {
+                                                        (*result2) << gapCharacter;
+                                                        (*result1) << str1->sData[position];
+                                                    }
+                                                    position ++;
+                                                    continue;
+                                                } else {
+                                                    for (last_column--; last_column >=0; last_column--) {
+                                                        (*result1) << gapCharacter;
+                                                        (*result2) << string2->sData[last_column];
+                                                    }
+                                                    while (position>=0) {
+                                                        (*result1) << str1->sData[position--];
+                                                        (*result2) << gapCharacter;
+                                                    }
+                                                    break;
+                                                }
+                                            }
+
+                                            if (current_column == last_column) { // insert in sequence 2
+                                                (*result1) << str1->sData[position];
+                                                (*result2) << gapCharacter;
+                                            } else {
+                                                last_column--;
+
+                                                for (; last_column > current_column; last_column--) { // insert in column 1
+                                                    (*result2) << string2->sData[last_column];
+                                                    (*result1) << gapCharacter;
+                                                }
+                                                (*result1) << str1->sData[position];
+                                                (*result2) << string2->sData[current_column];
+                                            }
+                                            //printf ("%s\n%s\n", result1->sData, result2->sData);
+                                        }
+
+                                        for (last_column--; last_column >=0; last_column--) {
+                                            (*result1) << gapCharacter;
+                                            (*result2) << string2->sData[last_column];
+                                        }
+
+                                        result1->Finalize();
+                                        result1->Flip ();
+                                        result2->Finalize();
+                                        result2->Flip ();
+                                        pairwiseComp->MStore ("1", new _FString(result1), false);
+                                        pairwiseComp->MStore ("2", new _FString(result2), false);
+                                    }
+                                    /*
+                                    long gap1c = 0,
+                                         gap2c = 0;
+
+                                     _Parameter scoreCheck = 0.;
+
+                                     for (long sp = 0; sp<result1->sLength; sp++)
+                                     {
+                                         char cs1 = result1->sData[sp],
+                                              cs2 = result2->sData[sp];
+
+                                         if (cs1 == gapCharacter)
+                                         {
+                                             if (gap1c && doAffine)
+                                                 scoreCheck -= gapExtend;
+                                             else
+                                                 scoreCheck -= gapOpen;
+                                             gap2c = 0;
+                                             gap1c++;
+                                         }
+                                         else
+                                         if (cs2 == gapCharacter)
+                                         {
+                                             if (gap2c && doAffine)
+                                                 scoreCheck -= gapExtend2;
+                                             else
+                                                 scoreCheck -= gapOpen2;
+                                             gap1c = 0;
+                                             gap2c++;
+                                         }
+                                         else
+                                         {
+                                             gap1c = 0;
+                                             gap2c = 0;
+                                             long code1 = ccount.lData[cs1],
+                                                  code2 = ccount.lData[cs2];
+
+                                             if (code1 >=0 && code2 >=0 )
+                                                 scoreCheck += (*scoreMatrix)(code1,code2);
+                                         }
+                                     }
+                                     if (doLocal)
+                                     {
+                                        for (long k = 0; result1->sData[k] == gapCharacter; k++)
+                                            if (doAffine)
+                                                scoreCheck += k?gapExtend:gapOpen;
+                                            else
+                                                scoreCheck += gapOpen;
+                                         for (long k = 0; result2->sData[k] == gapCharacter; k++)
+                                             if (doAffine)
+                                                 scoreCheck += k?gapExtend2:gapOpen2;
+                                             else
+                                                 scoreCheck += gapOpen2;
+                                         for (long k = result1->sLength-1; result1->sData[k] == gapCharacter; k--)
+                                             if (doAffine)
+                                                 scoreCheck += k==result1->sLength-1?gapOpen:gapExtend;
+                                             else
+                                                 scoreCheck += gapOpen;
+                                         for (long k = result2->sLength-1; result2->sData[k] == gapCharacter; k--)
+                                             if (doAffine)
+                                                 scoreCheck += k==result2->sLength-1?gapOpen2:gapExtend2;
+                                             else
+                                                 scoreCheck += gapOpen2;
+                                     }*/
+
+
+
+                                    pairwiseComp->MStore ("0", new _Constant (score), false);
+                                    /*pairwiseComp->MStore ("3", new _Constant (score2), false);
+                                    pairwiseComp->MStore ("4", new _FString(result1), false);
+                                    pairwiseComp->MStore ("5", new _FString(result2), false);
+                                    pairwiseComp->MStore ("6", new _FString((_String*)ops.toStr()), false);
+                                    pairwiseComp->MStore ("7", new _Constant (scoreCheck), false);*/
+                                    alignedStrings->MStore (_String(s1), pairwiseComp, false);
+                                }
+                            }
+
+                            storeResultIn->SetValue (alignedStrings, false);
+                        }
+
+                    } else {
+                        errStr = seqAlignScore & " is a required option, which must be a square matrix with dimension matching the size of " & seqAlignMap;
+                    }
+                } else {
+                    errStr = seqAlignMap & " is a required option, which must be a non-empty string without repeating characters ";
+                }
+            } else {
+                errStr = *(_String*)parameters(2) & " was expected to be an associative array of alignment options";
+            }
+        } else {
+            errStr = *(_String*)parameters(1) & " was expected to be a vector of strings";
+        }
+    }
+
+    if (errStr.sLength) {
+        errStr = errStr & " in call to " & blAlignSequences;
+        WarnError (errStr);
+    }
+}
 
 //____________________________________________________________________________________
 
@@ -851,7 +1552,7 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
         while ((firstVar=firstCNode->GetIthIndependent(ind))) {
             for (index = 0; index<partIndex.lLength; index++) {
                 if (partIndex.lData[index]==0) {
-                    if (!firstVar->GetName()->EqualWithWildChar(*(_String*)theParts.lData[index],'?')) {
+                    if (!firstVar->GetName()->EqualWithWildChar((_String*)theParts.lData[index],'?')) {
                         break;
                     }
                 }
@@ -882,7 +1583,7 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
 
                 for (; j<avVars.lLength; j++) {
                     firstVar = firstCNode->GetIthParameter(avVars.lData[j]);
-                    if (firstVar->GetName()->EqualWithWildChar(*(_String*)theParts.lData[k],'?')) {
+                    if (firstVar->GetName()->EqualWithWildChar((_String*)theParts.lData[k],'?')) {
                         (*(_SimpleList*)(otherGoodVars(i-1))) << avVars.lData[j];
                         avVars.Delete (j);
                         found1 = true;
@@ -925,8 +1626,9 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
     }
 
     if (!good) {
-        HandleApplicationError (*(LocateVar(firstNode->get_data())->GetName())& " is incompatible with "&
-                                (*LocateVar(((node<long>*)theNodes(index-1))->get_data())->GetName()) & " in call to ReplicateConstraint");
+        _String errMsg (*(LocateVar(firstNode->get_data())->GetName())& " is incompatible with "&
+                        (*LocateVar(((node<long>*)theNodes(index-1))->get_data())->GetName()) & " in call to ReplicateConstraint");
+        WarnError (errMsg);
         return false;
     }
 
@@ -934,6 +1636,208 @@ bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theCon
 
 }
 
+//____________________________________________________________________________________
+
+void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
+{
+    chain.currentCommand++;
+    // we have to build a list of _CalcNodes to deal with
+    // all of the trees/nodes in ReplicateConstraint must be of the same topology
+    // the constraint will be processed by trying all of the subnodes of the given node
+    // and within each - trying all of the variables to see if the constraint is matched
+    // exactly the same operation will be repeated on each of the other parameters
+
+    _String *       replicateSource,
+            thisS,
+            prStr = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix);
+
+    replicateSource = &prStr;
+
+    _List           parts,
+                    theConstraints;
+
+    _SimpleList     thisIndex,
+                    thisArgs;
+
+    long            ind1    =   replicateSource->Find("this"),
+                    ind2,
+                    ind3,
+                    ind4;
+
+    if (ind1<0) {
+        WarnError (*(_String*)parameters(0)&" has no 'this' references in call to ReplicateConstraint!");
+        return ;
+    }
+
+    _SimpleList thisHits (parameters.lLength-1,0,0);
+
+    while (ind1>=0) { // references to 'this' still exist
+        ind2 = ind1+4; // look forward to the number of 'this'
+        while ('0'<=replicateSource->sData[ind2] && replicateSource->sData[ind2]<='9') {
+            ind2++;
+        }
+
+        ind3  = replicateSource->Cut(ind1+4,ind2-1).toNum();
+        ind2  = replicateSource->FindEndOfIdent (ind1,-1,'?');
+        // now ind1-ind2 contains a reference with this...
+        _String newS  (*replicateSource,ind1,ind2);
+        thisS = _String("this")&_String(ind3);
+        if ((ind4 = ((_String*)parameters(ind3))->Find('.'))>=0) { // branch argument
+            newS = newS.Replace (thisS,((_String*)parameters(ind3))->Cut(0,ind4-1), true);
+        } else { // non-branch argument
+            newS = newS.Replace (thisS,*((_String*)parameters(ind3)), true);
+        }
+        parts&& &newS;
+        ind3--;
+        thisIndex<<ind3; // sequence of references to this
+
+        if (ind3<0 || ind3 >= thisHits.lLength) {
+            WarnError (_String("Invalid reference to ") & thisS & " in the constraint specification");
+            return ;
+        }
+        thisHits.lData[ind3] = 1;
+
+        if (ind2>=replicateSource->sLength-1) {
+            break;
+        }
+        ind1 = replicateSource->Find("this",ind2+1,-1);
+        if (ind1==-1) {
+            newS = replicateSource->Cut(ind2+1,-1);
+        } else {
+            newS = replicateSource->Cut(ind2+1,ind1-1);
+        }
+        parts&& &newS;
+        thisIndex<<-1;
+    }
+    // now that the string is conveniently partritioned into blocks
+    // we will check the arguments and store references
+
+    for (ind1 = 1; ind1<parameters.lLength; ind1++) {
+        if (thisHits.lData[ind1-1] == 0) {
+            WarnError (_String("Unused ") & ind1 & "-th reference variable: " & *(_String*)parameters(ind1));
+            return ;
+        }
+
+        _String namespaced = chain.AddNameSpaceToID(*(_String*)parameters(ind1));
+        ind2 = LocateVarByName (namespaced);
+        if (ind2<0) {
+            _String newS = namespaced & " is undefined in call to ReplicateConstraint.";
+            acknError (newS);
+            return  ;
+        }
+
+        _Variable* thisNode = FetchVar (ind2);
+        if (thisNode->ObjectClass()==TREE_NODE) {
+            thisArgs<< (long)((_CalcNode*)thisNode)->LocateMeInTree();
+        } else if (thisNode->ObjectClass()==TREE) {
+            thisArgs<< (long)&((_TheTree*)thisNode)->GetRoot();
+        } else {
+            WarnError (*(_String*)parameters(ind1) & " is neither a tree nor a tree node in call to ReplicateConstraint.");
+            return ;
+        }
+    }
+
+    // now with this list ready we can recurse down the tree and produce the contsraints
+    if (RecurseDownTheTree(thisArgs, parameters, theConstraints, parts, thisIndex)) {
+        if (theConstraints.lLength) {
+            ReportWarning  (_String("\nReplicateConstraint generated the following contsraints:"));
+            _Parameter      doDeferSet;
+            checkParameter (deferConstrainAssignment,doDeferSet,0.0);
+            bool            applyNow = CheckEqual(doDeferSet,0.0);
+            _String         *constraintAccumulator = (_String*)checkPointer(new _String(128L,true));
+
+            if (applyNow) {
+                deferSetFormula = new _SimpleList;
+                checkPointer (deferSetFormula);
+            }
+
+            for (ind1 = 0; ind1 < theConstraints.lLength; ind1++) {
+                replicateSource = (_String*)(theConstraints(ind1)->toStr());
+                if (applyNow) {
+                    _Formula rhs, lhs;
+                    _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+                    ind2 = Parse (&rhs,*replicateSource,fpc,&lhs);
+                    ExecuteFormula(&rhs,&lhs,ind2,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
+                }
+                (*constraintAccumulator) << replicateSource;
+                (*constraintAccumulator) << ';';
+                (*constraintAccumulator) << '\n';
+                //ReportWarning (*replicateSource);
+                DeleteObject (replicateSource);
+            }
+            constraintAccumulator->Finalize();
+            ReportWarning (*constraintAccumulator);
+            CheckReceptacleAndStore (&lastSetOfConstraints,"ReplicateConstraint",false,new _FString(constraintAccumulator),false);
+            if (applyNow) {
+                FinishDeferredSF();
+            }
+        }
+    }
+}
+
+//____________________________________________________________________________________
+
+void      _ElementaryCommand::ExecuteCase57 (_ExecutionList& chain)
+{
+    chain.currentCommand++;
+
+    _String errStr;
+
+    _Variable * storeResultIn = CheckReceptacle (&AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix), blGetNeutralNull, true),
+                *   sv            = FetchVar(LocateVarByName (AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix))),
+                    *  nsv           = FetchVar(LocateVarByName (AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix)));
+
+    _Parameter itCountV       = ProcessNumericArgument ((_String*)parameters(4),chain.nameSpacePrefix);
+
+    _String   * lfName        = (_String*)parameters(1);
+
+    long        f = FindLikeFuncName(AppendContainerName(*lfName,chain.nameSpacePrefix));
+
+    if (f>=0) {
+        if (sv && sv->ObjectClass () == MATRIX) {
+            if (nsv && nsv->ObjectClass () == MATRIX) {
+                _Matrix * sMatrix  = (_Matrix*)((_Matrix*)sv->Compute())->ComputeNumeric();
+                _Matrix * nsMatrix = (_Matrix*)((_Matrix*)nsv->Compute())->ComputeNumeric();
+
+                sMatrix->CheckIfSparseEnough (true);
+                nsMatrix->CheckIfSparseEnough (true);
+
+                if (   sMatrix->GetHDim()  == sMatrix->GetVDim() &&
+                        nsMatrix->GetHDim() == nsMatrix->GetVDim() &&
+                        sMatrix->GetHDim()  ==  nsMatrix->GetVDim() ) {
+                    _LikelihoodFunction * theLF = (_LikelihoodFunction*)likeFuncList (f);
+
+                    if (theLF->GetIthFilter(0)->GetDimension (true) == sMatrix->GetHDim()) {
+                        long itCount = itCountV;
+                        if (itCount>0) {
+                            _AssociativeList * res = theLF->SimulateCodonNeutral ((_Matrix*)sMatrix, (_Matrix*)nsMatrix, itCount);
+                            storeResultIn->SetValue (res,false);
+                        } else {
+                            errStr = "Invalid iterations per character state";
+                        }
+                    } else {
+                        errStr = "Incompatible data and cost matrices";
+                    }
+
+                } else {
+                    errStr = "Incompatible syn and non-syn cost matrix dimensions";
+                }
+            } else {
+                errStr = "Invalid non-syn cost matrix argument";
+            }
+        } else {
+            errStr = "Invalid syn cost matrix argument";
+        }
+
+    } else {
+        errStr = _String("Likelihood function ") & *lfName & " has not been defined";
+    }
+
+    if (errStr.sLength) {
+        errStr = errStr & " in call to " & blGetNeutralNull;
+        WarnError (errStr);
+    }
+}
 
 //____________________________________________________________________________________
 
@@ -1009,7 +1913,7 @@ void      _ElementaryCommand::ExecuteCase61 (_ExecutionList& chain)
                         start   = parameters.lLength>3?FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix),NUMBER):nil;
 
     if (! (avl1 && avl2)) {
-        HandleApplicationError (_String ("Both arguments (") & *(_String*)parameters(1) & " and " & *(_String*)parameters(2) & " in a call to SCFG = ... must be evaluate to associative arrays");
+        WarnError (_String ("Both arguments (") & *(_String*)parameters(1) & " and " & *(_String*)parameters(2) & " in a call to SCFG = ... must be evaluate to associative arrays");
     } else {
         Scfg    * scfg      = new Scfg ((_AssociativeList*)avl1,(_AssociativeList*)avl2,start?start->Value():0);
         _String scfgName    = AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix);
@@ -1017,7 +1921,7 @@ void      _ElementaryCommand::ExecuteCase61 (_ExecutionList& chain)
 
         if (f==-1) {
             for (f=0; f<scfgNamesList.lLength; f++)
-                if (((_String*)scfgNamesList(f))->empty()) {
+                if (((_String*)scfgNamesList(f))->sLength==0) {
                     break;
                 }
 
@@ -1094,7 +1998,7 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
     _PMathObj   avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 
     if (! (avl1)) {
-        HandleApplicationError (_String ("Argument (") & *(_String*)parameters(1) & " in call to BGM = ... must evaluate to associative array");
+        WarnError (_String ("Argument (") & *(_String*)parameters(1) & " in call to BGM = ... must evaluate to associative array");
     } else {
         _BayesianGraphicalModel * bgm   = new _BayesianGraphicalModel ((_AssociativeList *) avl1);
 
@@ -1104,7 +2008,7 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
         if (bgmIndex == -1) {   // not found
             for (bgmIndex = 0; bgmIndex < bgmNamesList.lLength; bgmIndex++) {
                 // locate empty strings in name list
-                if (((_String *)bgmNamesList(bgmIndex))->empty() == 0) {
+                if (((_String *)bgmNamesList(bgmIndex))->sLength == 0) {
                     break;
                 }
             }
@@ -1200,7 +2104,7 @@ bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target
 
  
     if ( mark1==-1 || mark2==-1 || mark1+1 > mark2  ) {
-        HandleApplicationError ("SCFG declaration missing a valid identifier");
+        WarnError ("SCFG declaration missing a valid identifier");
         return false;
     }
 
@@ -1208,12 +2112,12 @@ bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target
  
     _List pieces;
     mark2 ++;
-    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
+    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', true, true);
 
     ExtractConditions (source,mark2+1,pieces,',');
  
     if ( mark1==-1 || mark2==-1 || mark1<mark2 || (pieces.lLength != 2 && pieces.lLength != 3)) {
-        HandleApplicationError ("Expected: SCFG ident = (Rules1, Rules2 <,start>)");
+        WarnError ("Expected: SCFG ident = (Rules1, Rules2 <,start>)");
         return false;
     }
 
@@ -1236,7 +2140,7 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
     // assign ident to _String variable
 
     if ( mark1==-1 || mark2==-1 || mark1+1 > mark2  ) {
-        HandleApplicationError ("BGM declaration missing a valid identifier");
+        WarnError ("BGM declaration missing a valid identifier");
         return false;
     }
 
@@ -1244,12 +2148,12 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 
     _List pieces;
     mark2 ++;
-    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
+    mark1 = source.ExtractEnclosedExpression(mark2, '(', ')', true, true);
     
     ExtractConditions (source,mark2+1,pieces,',');
 
     if ( mark1==-1 || mark2==-1 || mark1<mark2 || (pieces.lLength != 1)) {
-        HandleApplicationError ("Expected: BGM ident = (<nodes>)");
+        WarnError ("Expected: BGM ident = (<nodes>)");
         return false;
     }
 
@@ -1338,8 +2242,8 @@ void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, boo
 
 //____________________________________________________________________________________
 
-_String const _HYHBLTypeToText (long type) {
-    _StringBuffer result (128L);
+_String _HYHBLTypeToText (long type) {
+    _String result (128L,true);
     if (type & HY_BL_DATASET) {
         result << "DataSet|";
     }
@@ -1368,7 +2272,8 @@ _String const _HYHBLTypeToText (long type) {
         result << "function|";
     }
     
-    result.Trim (0,result.length()-2L);
+    result.Finalize();
+    result.Trim (0,result.sLength-2);
     return result;
 }
 
@@ -1436,7 +2341,7 @@ BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long
 
     if (type & HY_BL_MODEL) {
         loc = FindModelName(name);
-        if (loc < 0 && name == last_model_parameter_list || name == hy_env::use_last_model) {
+        if (loc < 0 && (name.Equal (&lastModelParameterList) || name.Equal (&useLastModel))) {
             loc = lastMatrixDeclared;
         }
         if (loc >= 0) {
@@ -1462,20 +2367,13 @@ BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long
         }
     }
     
-    if (type & HY_BL_TREE) {
-        _Variable* tree_var = FetchVar (LocateVarByName(name));
-        if (tree_var->ObjectClass() == TREE) {
-            return tree_var;
-        }
-    }
-
     if (tryLiteralLookup) {
         _String nameIDRef = ProcessLiteralArgument(&name, nil);
         return _HYRetrieveBLObjectByName (nameIDRef, type, index, errMsg, false);
     }
 
     if (errMsg) {
-        HandleApplicationError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
+        WarnError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
     }
     type = HY_BL_NOT_DEFINED;
     return nil;
@@ -1484,109 +2382,102 @@ BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long
 //____________________________________________________________________________________
 
 BaseRef _HYRetrieveBLObjectByNameMutable    (_String const& name, long& type, long *index, bool errMsg, bool tryLiteralLookup) {
-    using namespace hyphy_global_objects;
-    
-    long loc = -1;
-    if (type & HY_BL_DATASET) {
-        loc = FindDataSetName (name);
-        if (loc >= 0) {
-            type = HY_BL_DATASET;
-            if (index) {
-                *index = loc;
-            }
-            return dataSetList (loc);
-        }
+  using namespace hyphy_global_objects;
+  
+  long loc = -1;
+  if (type & HY_BL_DATASET) {
+    loc = FindDataSetName (name);
+    if (loc >= 0) {
+      type = HY_BL_DATASET;
+      if (index) {
+        *index = loc;
+      }
+      return dataSetList (loc);
     }
-    
-    if (type & HY_BL_DATASET_FILTER) {
-        loc = FindDataFilter (name);
-        if (loc >= 0) {
-            type = HY_BL_DATASET_FILTER;
-            if (index) {
-                *index = loc;
-            }
-            return ExclusiveLockDataFilter (loc);
-        }
+  }
+  
+  if (type & HY_BL_DATASET_FILTER) {
+    loc = FindDataFilter (name);
+    if (loc >= 0) {
+      type = HY_BL_DATASET_FILTER;
+      if (index) {
+        *index = loc;
+      }
+      return ExclusiveLockDataFilter (loc);
     }
-    
-    if (type & HY_BL_LIKELIHOOD_FUNCTION) {
-        loc = FindLikeFuncName (name);
-        if (loc >= 0) {
-            type = HY_BL_LIKELIHOOD_FUNCTION;
-            if (index) {
-                *index = loc;
-            }
-            return likeFuncList (loc);
-        }
+  }
+  
+  if (type & HY_BL_LIKELIHOOD_FUNCTION) {
+    loc = FindLikeFuncName (name);
+    if (loc >= 0) {
+      type = HY_BL_LIKELIHOOD_FUNCTION;
+      if (index) {
+        *index = loc;
+      }
+      return likeFuncList (loc);
     }
-    
-    if (type & HY_BL_SCFG) {
-        loc = FindSCFGName (name);
-        if (loc >= 0) {
-            type = HY_BL_SCFG;
-            if (index) {
-                *index = loc;
-            }
-            return scfgList (loc);
-        }
+  }
+  
+  if (type & HY_BL_SCFG) {
+    loc = FindSCFGName (name);
+    if (loc >= 0) {
+      type = HY_BL_SCFG;
+      if (index) {
+        *index = loc;
+      }
+      return scfgList (loc);
     }
-    
-    if (type & HY_BL_BGM) {
-        loc = FindBgmName (name);
-        if (loc >= 0) {
-            type = HY_BL_BGM;
-            if (index) {
-                *index = loc;
-            }
-            return bgmList (loc);
-        }
+  }
+  
+  if (type & HY_BL_BGM) {
+    loc = FindBgmName (name);
+    if (loc >= 0) {
+      type = HY_BL_BGM;
+      if (index) {
+        *index = loc;
+      }
+      return bgmList (loc);
     }
-    
-    if (type & HY_BL_MODEL) {
-        loc = FindModelName(name);
-        if (loc < 0 && (name == last_model_parameter_list || name == hy_env::use_last_model)) {
-            loc = lastMatrixDeclared;
-        }
-        if (loc >= 0) {
-            type = HY_BL_MODEL;
-            if (index) {
-                *index = loc;
-            }
-            if (IsModelOfExplicitForm(loc)) {
-                return (BaseRef)modelMatrixIndices.lData[loc];
-            }
-            return LocateVar (modelMatrixIndices.lData[loc]);
-        }
+  }
+  
+  if (type & HY_BL_MODEL) {
+    loc = FindModelName(name);
+    if (loc < 0 && (name.Equal (&lastModelParameterList) || name.Equal (&useLastModel))) {
+      loc = lastMatrixDeclared;
     }
-    
-    if (type & HY_BL_HBL_FUNCTION) {
-        loc = FindBFFunctionName(name);
-        if (loc >= 0) {
-            type = HY_BL_HBL_FUNCTION;
-            if (index) {
-                *index = loc;
-            }
-            return &GetBFFunctionBody (loc);
-        }
+    if (loc >= 0) {
+      type = HY_BL_MODEL;
+      if (index) {
+        *index = loc;
+      }
+      if (IsModelOfExplicitForm(loc)) {
+        return (BaseRef)modelMatrixIndices.lData[loc];
+      }
+      return LocateVar (modelMatrixIndices.lData[loc]);
     }
-    
-    if (type & HY_BL_TREE) {
-        _Variable* tree_var = FetchVar (LocateVarByName(name));
-        if (tree_var && tree_var->ObjectClass() == TREE) {
-            return tree_var;
-        }
+  }
+  
+  if (type & HY_BL_HBL_FUNCTION) {
+    loc = FindBFFunctionName(name);
+    if (loc >= 0) {
+      type = HY_BL_HBL_FUNCTION;
+      if (index) {
+        *index = loc;
+      }
+      return &GetBFFunctionBody (loc);
     }
-    
-    if (tryLiteralLookup) {
-        _String nameIDRef = ProcessLiteralArgument(&name, nil);
-        return _HYRetrieveBLObjectByNameMutable (nameIDRef, type, index, errMsg, false);
-    }
-    
-    if (errMsg) {
-        HandleApplicationError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
-    }
-    type = HY_BL_NOT_DEFINED;
-    return nil;
+  }
+  
+  if (tryLiteralLookup) {
+    _String nameIDRef = ProcessLiteralArgument(&name, nil);
+    return _HYRetrieveBLObjectByNameMutable (nameIDRef, type, index, errMsg, false);
+  }
+  
+  if (errMsg) {
+    WarnError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
+  }
+  type = HY_BL_NOT_DEFINED;
+  return nil;
 }
 
 //____________________________________________________________________________________

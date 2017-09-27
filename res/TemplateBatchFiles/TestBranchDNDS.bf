@@ -2,11 +2,6 @@ ModelMatrixDimension = 0;
 _DO_TREE_REBALANCE_ = 0;
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
-lfunction numberFormat (d) {
-	return Format (d, 8, 4);
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
 function BuildCodonFrequencies (obsF)
 {
@@ -330,9 +325,6 @@ MG94custom = 0;
 MULTIPLY_BY_FREQS = PopulateModelMatrix ("MG94custom", observedFreq);
 vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
 Model MG94customModel = (MG94custom,vectorOfFrequencies,0);
-
-Export (MS, MG94customModel);
-
 USE_POSITION_SPECIFIC_FREQS = 1;
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -401,11 +393,11 @@ if (paramSpec[0]<0)
 
 LikelihoodFunction lf = (filteredData, givenTree);
 
-fprintf (stdout, "\n1. Working on the null hypothesis [equal mean dN/dS on all lineages].\n");
+fprintf (stdout, "\n1. Working on the null hypothesis.\n");
 Optimize (res_null, lf);
 fprintf (stdout, lf);
 
-fprintf (stdout, "\n\n2. Working on the alternative hypothesis [different mean dN/dS on each selected lineage] .\n");
+fprintf (stdout, "\n\n2. Working on the alternative hypothesis.\n");
 
 for (h=0; h<Columns(bOption)*Rows(bOption); h=h+1)
 {
@@ -422,52 +414,33 @@ sulr = USE_LAST_RESULTS;
 OPTIMIZATION_METHOD = 0;
 USE_LAST_RESULTS = 1;
 Optimize (res_alt, lf);
-
-report_results (TRUE);
-
-fprintf (stdout, "\n\n3. Working on the second null hypothesis [dN/dS = 1 each selected lineage].\n");
-
-for (h=0; h<Columns(bOption)*Rows(bOption); h += 1) {
-	v = bOption[h];
-	for (bc=0; bc<Columns(paramSpec)*Rows(paramSpec); bc += 1) {
-		ExecuteCommands ("givenTree."+choiceMatrix[v][0]+".nsClass"+nsRateClasses[paramSpec[bc]]+":=1;");
-	}
-}
-
-
-Optimize (res_null, lf);
-report_results (FALSE);
-
-
+fprintf (stdout, lf);
 OPTIMIZATION_METHOD = som;
 USE_LAST_RESULTS = sulr;
 
-function report_results (rates) {
-	fprintf (stdout, lf);
-	if (rates) {
-		fprintf (stdout, "\nBranch parameter estimates\n\n");
+fprintf (stdout, "\nBranch parameter estimates\n\n");
 
-		for (h=0; h<Columns(bOption)*Rows(bOption); h=h+1)
-		{
-			v = bOption[h];
-			for (bc=0; bc<Columns(paramSpec)*Rows(paramSpec); bc=bc+1)
-			{
-				k = paramSpec[bc];
-				paramName = "givenTree."+choiceMatrix[v][0]+".nsClass"+nsRateClasses[k];
-				COVARIANCE_PRECISION = 0.95;
-				COVARIANCE_PARAMETER = paramName;
-				CovarianceMatrix (cmx, lf);
-				fprintf (stdout, "\t", paramName, " = ", numberFormat (cmx[1]), ", 95% CI: ", numberFormat(cmx[0]), "-", numberFormat(cmx[2]), "\n");
-			}
-		}
+for (h=0; h<Columns(bOption)*Rows(bOption); h=h+1)
+{
+	v = bOption[h];
+	for (bc=0; bc<Columns(paramSpec)*Rows(paramSpec); bc=bc+1)
+	{
+		k = paramSpec[bc];
+		paramName = "givenTree."+choiceMatrix[v][0]+".nsClass"+nsRateClasses[k];
+		COVARIANCE_PRECISION = 0.95;
+		COVARIANCE_PARAMETER = paramName;
+		CovarianceMatrix (cmx, lf);
+		fprintf (stdout, paramName, " = ", cmx[1], ", 95% CI: ", cmx[0], "-", cmx[2], "\n");
 	}
-
-	lnLikDiff = -2(res_null[1][0]-res_alt[1][0]);
-	degFDiff = res_alt[1][1]-res_null[1][1];
-
-	fprintf (stdout, "\n\n-2(Ln Likelihood Difference)=",lnLikDiff,"\n","Difference in number of parameters:",Format(degFDiff,0,0));
-	fprintf (stdout, "\np-value:",1-CChi2(lnLikDiff,degFDiff));
 }
+
+lnLikDiff = -2(res_null[1][0]-res_alt[1][0]);
+degFDiff = res_alt[1][1]-res_null[1][1];
+
+fprintf (stdout, "\n\n-2(Ln Likelihood Difference)=",lnLikDiff,"\n","Difference in number of parameters:",Format(degFDiff,0,0));
+fprintf (stdout, "\np-value:",1-CChi2(lnLikDiff,degFDiff));
+
+
 
 
 

@@ -260,7 +260,6 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 include_directories(
     src/core/include
-    src/contrib
     src/lib/Link src/new/include
     contrib/SQLite-3.8.2 # SQLite
     contrib/gtest-1.7.0/include

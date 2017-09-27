@@ -18,14 +18,12 @@ Function prototype is declared in matrix.h
 
 */
 
+#include "hy_strings.h"
 #include <stdlib.h>
 #include <math.h>
-
-#include "global_things.h"
-#include "hy_strings.h"
-
-using namespace hy_global;
-
+#ifdef    __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
 
 /* ----------------------------------------------------------------------- */
 // Function Prototypes
@@ -201,7 +199,8 @@ L30:
         ++m;
         goto L10;
     } else {
-        HandleApplicationError ("Internal error in shell sort");
+        _String errorMsg ("Internal error in shell sort");
+        WarnError (errorMsg);
     }
     /*                                  Use another segment */
 L40:
@@ -870,7 +869,8 @@ int f5xact_(double *pastp, double *tol, long *kval, long *key, long *ldkey, long
             /* L20: */
         }
         /*                                  Return if KEY array is full */
-        HandleApplicationError("Fisher Exact:LDKEY is too small for this problem.  It is not possible to estimate the value of LDKEY required, but twice the current value may be sufficient.");
+        errMsg = "Fisher Exact:LDKEY is too small for this problem.  It is not possible to estimate the value of LDKEY required, but twice the current value may be sufficient.";
+        WarnError (errMsg);
         return 0;
         /*                                  Update KEY */
 L30:
@@ -879,7 +879,8 @@ L30:
         ipoin[itp] = *itop;
         /*                                  Return if STP array full */
         if (*itop > *ldstp) {
-            HandleApplicationError("Fisher Exact: LDSTP is too small for this problem.  It is not possible to estimate the value of LDSTP required, but twice the current value may be sufficient.");
+            errMsg = "Fisher Exact: LDSTP is too small for this problem.  It is not possible to estimate the value of LDSTP required, but twice the current value may be sufficient.";
+            WarnError (errMsg);
             return 0;
         }
         /*                                  Update STP, etc. */
@@ -914,7 +915,8 @@ L50:
     /*                                  Return if STP array full */
     ++(*itop);
     if (*itop > *ldstp) {
-        HandleApplicationError ("Fisher Exact: LDSTP is too small for this problem.  It is not possible to estimate the value of LDSTP required, but twice the current value may be sufficient.");
+        errMsg = "Fisher Exact: LDSTP is too small for this problem.  It is not possible to estimate the value of LDSTP required, but twice the current value may be sufficient.";
+        WarnError (errMsg);
         goto L9000;
     }
     /*                                  Find location to add value */
@@ -1773,7 +1775,8 @@ int f2xact_(long *nrow, long *ncol, double *table,
         return 0;
      }*/
     if (*ncol <= 1) {
-        HandleApplicationError( errMsg & "NCOL must be greater than 1.0");
+        errMsg = errMsg & "NCOL must be greater than 1.0";
+        WarnError (errMsg);
         return 0;
     }
     /*                                  Compute row marginals and total */
@@ -1784,7 +1787,8 @@ int f2xact_(long *nrow, long *ncol, double *table,
         i__2 = *ncol;
         for (j = 1; j <= i__2; ++j) {
             if (table[i__ + j * table_dim1] < -1e-4) {
-                HandleApplicationError (errMsg & "All elements of TABLE must be positive.");
+                errMsg = errMsg & "All elements of TABLE must be positive.";
+                WarnError (errMsg);
                 return 0;
             }
             iro[i__] += i_dnnt(&table[i__ + j * table_dim1]);
@@ -2328,7 +2332,8 @@ int fexact_(long nrow, long ncol, double *table, double expect, double percnt, d
     ntot = 0;
     for (long i = 0; i<ncol*nrow; i++) {
         if (table[i] < 0.) {
-            HandleApplicationError  (errMsg &  "All elements of TABLE must be non-negative.");
+            errMsg = errMsg &  "All elements of TABLE must be non-negative.";
+            WarnError(errMsg);
             return 0;
         }
         ntot += (long)(table[i]+0.5);
@@ -2336,7 +2341,8 @@ int fexact_(long nrow, long ncol, double *table, double expect, double percnt, d
 
 
     if (ntot == 0) {
-        ReportWarning(errMsg & "All elements of TABLE are zero.  PRT and PRE are set to missing values (NaN, not a number).");
+        errMsg = errMsg & "All elements of TABLE are zero.  PRT and PRE are set to missing values (NaN, not a number).";
+        ReportWarning(errMsg);
         *prt = -1.;
         *pre = -1.;
         return 0;

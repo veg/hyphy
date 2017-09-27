@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon42@uwo.ca)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -58,17 +58,17 @@ public:
     _PolynomialData (void);
     _PolynomialData (long);
     _PolynomialData (_PolynomialData&);
-    _PolynomialData (long,long, hyFloat*);
+    _PolynomialData (long,long, _Parameter*);
 
     virtual ~_PolynomialData ();
 
-    virtual BaseObj*    makeDynamic(void) const;
-    virtual void        Duplicate  (BaseRefConst);
+    virtual BaseObj*    makeDynamic(void);
+    virtual void        Duplicate  (BaseRef);
 
-    inline  hyFloat*         GetCoeff (void) {
+    inline  _Parameter*         GetCoeff (void) {
         return theCoeff;
     }
-    inline  hyFloat&         GetCoeff (long index) {
+    inline  _Parameter&         GetCoeff (long index) {
         return theCoeff[index];
     }
 
@@ -76,9 +76,9 @@ public:
     long                GetNoTerms (void) {
         return actTerms;
     }
-    void                AddTerm (long*, hyFloat);
-    void                AddTerm (long*, hyFloat, long*, long);
-    void                AddTerm (hyFloat);
+    void                AddTerm (long*, _Parameter);
+    void                AddTerm (long*, _Parameter, long*, long);
+    void                AddTerm (_Parameter);
     void                WriteTerm (long*,long);
     void                DeleteTerm (long);
     bool                IsFirstANumber (void);
@@ -86,7 +86,7 @@ public:
         return actTerms;
     }
     long                SumOfPowers (long);
-    long                WeightedSumOfPowers (long,hyFloat*);
+    long                WeightedSumOfPowers (long,_Parameter*);
 
     // temp!
 
@@ -96,7 +96,7 @@ public:
 
     void                MultiplyTerms (long*, long*, long*);
     void                RaiseTerm     (long*, long);
-    static  hyFloat  BinaryRaise   (hyFloat, long);
+    static  _Parameter  BinaryRaise   (_Parameter, long);
     static  void        RearrangeTerm (long*, long*, long*,long);
     char                CompareTerms  (long*, long*);
     char                CompareTerms  (long*, long*, long*, long);
@@ -104,12 +104,12 @@ public:
     long                FindTerm      (long*, long*, long start = 0);
     void                ResortTerms   (long*);
     void                ChopTerms     (void);
-    bool                checkTerm     (hyFloat, long);
+    bool                checkTerm     (_Parameter, long);
 
 
 protected:
 
-    hyFloat*     theCoeff;
+    _Parameter*     theCoeff;
     long*           thePowers;
     long            numberVars, actTerms, allocTerms;
 
@@ -125,13 +125,13 @@ public:
     _Polynomial             (void);
     _Polynomial             (_SimpleList&);
     _Polynomial             (_Polynomial&);
-    _Polynomial             (hyFloat);
+    _Polynomial             (_Parameter);
     _Polynomial             (_Variable&);
     virtual                 ~_Polynomial ();
     virtual                 _MathObject* ExecuteSingleOp (long opCode, _List *arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);   // execute this operation with the list of Args
 
-    virtual BaseObj*        makeDynamic(void) const;
-    virtual void            Duplicate  (BaseRefConst);
+    virtual BaseObj*        makeDynamic(void);
+    virtual void            Duplicate  (BaseRef);
 
     virtual _MathObject*    Add                 (_MathObject*);
     virtual _MathObject*    Plus                (_MathObject*, bool subtract = false);
@@ -141,16 +141,16 @@ public:
     virtual _MathObject*    Mult                (_MathObject*);
     virtual _MathObject*    Compute             (void);
     virtual bool            Equal               (_MathObject*);
-    hyFloat              ComputePolynomial   (void);
+    _Parameter              ComputePolynomial   (void);
 
-    hyFloat              ComputeP            (hyFloat* , hyFloat* , long , long, long*, long*);
+    _Parameter              ComputeP            (_Parameter* , _Parameter* , long , long, long*, long*);
     _MathObject*            IsANumber           (bool = false);
     virtual  bool           IsObjectEmpty       (void);
 
     virtual unsigned long            ObjectClass (void) {
         return POLYNOMIAL;
     }
-    virtual hyFloat      Value (void) {
+    virtual _Parameter      Value (void) {
         return ComputePolynomial();
     }
 
@@ -179,7 +179,7 @@ public:
     long                    ComputationalSize (void) {
         return compList1.countitems();
     }
-    bool                    IsMaxElement    (hyFloat);
+    bool                    IsMaxElement    (_Parameter);
     void                    Convert2ComputationForm
     (_SimpleList *c1 = nil, _SimpleList *c2 = nil, _SimpleList* termsToInclude = nil);
     void                    RankTerms       (_SimpleList*);
@@ -197,7 +197,7 @@ protected:
 
 };
 
-extern hyFloat dropPrecision, topPolyCap, dropTerms, enforcePolyCap,
+extern _Parameter dropPrecision, topPolyCap, dropTerms, enforcePolyCap,
        maximumPolyTermsPerVariable, maxPolynomialExpIterates,polynomialExpPrecision;
 void    SetPolyTermCap (long);
 #endif

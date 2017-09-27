@@ -29,11 +29,7 @@ Prefix variables that are meant to be private or auxiliary with an underscore, a
 
 ### Functions, classes  
 
-Capital case, as in `ComputeExpression()` or `VariableContainer` (class). Prefix the names of *auxiliary* classes and types with an `_`.
-
-### Simple types
-
-Types such as enums, structs, and typedefs should prefixed with `hy` and followed by capital case identifiers, e.g. `hyFloat`
+Capital case, as in `ComputeExpression()` or `VariableContainer` (class). 
 
 #### Cheap functions
 
@@ -42,10 +38,6 @@ If a function is *cheap* to call (i.e. don't worry about caching the result), na
 ### Constants, enums (C++ only)
 
 Capital case prefixed with a lower case `k`, as in `kHarvestFrequenciesResolveAmbiguities`
-
-### Bit-flags 
-
-Capital case prefixed with `f`, as in `fSearchCaseSensitive`
 
 ### Environment variables (HBL only)
 

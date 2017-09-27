@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
    Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
-   Art FY Poon    (apoon42@uwo.ca)
+   Art FY Poon    (apoon@cfenet.ubc.ca)
    Steven Weaver (sweaver@temple.edu)
    
 Module Developers:
@@ -79,13 +79,12 @@ public:
             free (checkTable);
         }
     }
-    virtual BaseRef         makeDynamic            (void) const;
-    virtual void            Duplicate              (BaseRefConst);
+    virtual BaseRef  makeDynamic            (void);
 
     long    TokenCode                       (char) const;
     char    AmbigToLetter                    (long*, unsigned long ) const;
 
-    void    AddBaseSet                      (_String const&);
+    void    AddBaseSet                      (_String&);
     void    SplitTokenCode                  (long, long*) const;
 
     long    TokenResolutions                (char token, long * buffer, bool gap_to_one = true) const;
@@ -129,13 +128,13 @@ public:
     const _String ConvertCodeToLetters            (long, unsigned char) const;
     long    LengthOfAlphabet                (void) const;
     bool    IsStandardBinary                (void) const {
-        return baseLength==2 && baseSet.length () ==0;
+        return baseLength==2 && baseSet.sLength==0;
     }
     bool    IsStandardNucleotide            (void) const {
-        return baseLength==4 && baseSet.length () ==0;
+        return baseLength==4 && baseSet.sLength==0;
     }
     bool    IsStandardAA                    (void) const {
-        return baseLength==20&& baseSet.length ()==0;
+        return baseLength==20&& baseSet.sLength==0;
     }
   
     const _String&   ExpandToken            (char token) const;
@@ -229,8 +228,8 @@ public:
 
     void    Complete (void); // mark this site as complete and compress it
 
-    virtual     BaseRef makeDynamic(void) const;
-    virtual     void    Duplicate  (BaseRefConst);
+    virtual     BaseRef makeDynamic(void);
+    virtual     void    Duplicate  (BaseRef);
     virtual     void    Clear  (void);
 
     void    PrepareToUse (void); // decompress the site preparing for intensive use
@@ -266,6 +265,7 @@ struct _DSHelper {
 
     _DSHelper(void) {
         incompletePatterns = new _AVLListX (&incompletePatternStorage);
+        checkPointer (incompletePatterns);
     }
     ~_DSHelper(void) {
         DeleteObject (incompletePatterns);
@@ -284,7 +284,7 @@ public:
     // with estimated number of sites per file
     virtual             ~_DataSet               (void);
 
-    virtual  BaseRef    makeDynamic             (void) const;
+    virtual  BaseRef    makeDynamic             (void);
 
     void        AddSite                 (char);
 
@@ -408,7 +408,7 @@ public:
     GetTT                   (void) const {
         return theTT;
     }
-    hyFloat   CheckAlphabetConsistency
+    _Parameter   CheckAlphabetConsistency
     (void);
 
     void         SetNoSpecies           (unsigned long n) {
@@ -457,16 +457,15 @@ public:
     virtual  BaseRef            toStr           (unsigned long = 0UL);  // convert to string
     virtual  void               toFileStr       (FILE*, unsigned long = 0UL); // convert to string
 
-    virtual  BaseRef            makeDynamic     (void) const;
-    virtual  void               Duplicate       (BaseRefConst);
+    virtual  BaseRef            makeDynamic     (void);
     virtual  long               FreeUpMemory    (long);
     virtual  bool               IsNormalFilter  (void) const {
         return true;
     }
 
-    void     CopyFilter         (_DataSetFilter const*);
+    void     CopyFilter         (_DataSetFilter*);
     void     SetFilter          (_DataSet const*, unsigned char, _SimpleList&, _SimpleList&, bool isFilteredAlready = false);
-    void     SetExclusions      (_String const*, bool = true);
+    void     SetExclusions      (_String*, bool = true);
 
     _String* GetExclusions      (void) const;
 
@@ -547,13 +546,13 @@ public:
     virtual  char      GetChar(unsigned long site, unsigned long pos);
     long       SiteFrequency  (unsigned long site);
     bool       HasDeletions   (unsigned long site, _AVLList* = nil);
-    long       HasExclusions  (unsigned long site, _SimpleList* theExc, hyFloat *buffer);
+    long       HasExclusions  (unsigned long site, _SimpleList* theExc, _Parameter *buffer);
     bool       IsConstant     (unsigned long site,  bool relaxedDeletions = true);
 
-    long     Translate2Frequencies (_String const&, hyFloat*, bool) const;
+    long     Translate2Frequencies (_String const&, _Parameter*, bool) const;
     long     MapStringToCharIndex  (_String&) const;
-    //long   Translate2Frequencies (char*,    hyFloat*, bool = true);
-    long     Translate2Frequencies (char,     hyFloat*, bool) const;
+    //long   Translate2Frequencies (char*,    _Parameter*, bool = true);
+    long     Translate2Frequencies (char,     _Parameter*, bool) const;
 
     _Matrix* HarvestFrequencies (char unit, char atom, bool posSpec, bool = true) const;
 
@@ -618,12 +617,12 @@ public:
     long                            FindSpeciesName             (_List&, _SimpleList&) const;
     _DataSetFilter*                 PairFilter                  (long, long, _DataSetFilter*);
     void                            SetDimensions               ();
-    long                            LookupConversion            (char c, hyFloat* receptacle) const;
+    long                            LookupConversion            (char c, _Parameter* receptacle) const;
     void                            SetupConversion             (void);
     bool                            ConfirmConversionCache      (void) const;
     void                            FilterDeletions             (_SimpleList* theExc = nil);
     _Matrix*                        GetFilterCharacters         (bool = false) const;
-    _SimpleList*                    CountAndResolve             (long, hyFloat* = nil, bool = false);
+    _SimpleList*                    CountAndResolve             (long, _Parameter* = nil, bool = false);
     _Matrix*                        PairwiseCompare             (_SimpleList*, _SimpleList*, _List* = nil);
 
     _List*                          ComputePatternToSiteMap     (void) const;
@@ -638,9 +637,9 @@ public:
         20090325: SLKP
         a function that takes per pattern values (source, argument 1)
         and maps them onto sites into target (argument 2)
-        the third argument is 0 to treat the pointers as hyFloat*
+        the third argument is 0 to treat the pointers as _Parameter*
         1 to treat them as long*
-        2 and to treat them as hyFloat* and long*, respetively
+        2 and to treat them as _Parameter* and long*, respetively
         20090929: SLKP
         the fourth argument is used to speficy a padding-size,
             all values from the filter size up to that value are set to 1 (for mode 0) and 0 (for mode 1)
@@ -656,7 +655,7 @@ public:
     duplicateMap;
 
     char const*    GetColumn (long index) const {
-        return (const char*)(*(_Site*)(((BaseRef*)theData->lData)[theData->theMap.lData[theMap.lData[index]]]));
+        return ((_Site*)(((BaseRef*)theData->lData)[theData->theMap.lData[theMap.lData[index]]]))->sData;
     }
 
     _SimpleList     conversionCache;
@@ -696,12 +695,12 @@ public:
     }
 
 
-    virtual  BaseRef                                    makeDynamic             (void) const;
+    virtual  BaseRef                                    makeDynamic             (void);
     virtual  unsigned long                              GetDimension            (bool) const{
         return dimension;
     }
 
-    hyFloat*                 getProbabilityVector    (long,long,long = 0);
+    _Parameter*                 getProbabilityVector    (long,long,long = 0);
     virtual  bool               CompareTwoSites         (unsigned long, unsigned long,unsigned long) const;
 
     long                    shifter,

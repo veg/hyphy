@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
 
  Module Developers:
@@ -45,10 +45,6 @@
 #include "polynoml.h"
 #include "batchlan.h"
 #include "parser.h"
-#include "global_things.h"
-
-using namespace hy_global;
-
 
 extern _SimpleList BinOps,
        opPrecedence,
@@ -57,9 +53,13 @@ extern _SimpleList BinOps,
 
 //__________________________________________________________________________________
 
-_Operation::_Operation  (void) {
-    Initialize();
- }
+_Operation::_Operation  (void)
+{
+    numberOfTerms = 0;
+    theData = -1;
+    theNumber = nil;
+    opCode = -1;
+}
 
 //__________________________________________________________________________________
 void    _Operation::Initialize(bool)
@@ -71,28 +71,18 @@ void    _Operation::Initialize(bool)
 }
 
 //__________________________________________________________________________________
-BaseRef _Operation::makeDynamic (void) const {
+BaseRef _Operation::makeDynamic (void)
+{
     _Operation * res = new _Operation;
+    //memcpy ((char*)res, (char*)this, sizeof (_Operation));
     res->Duplicate(this);
     return res;
 }
 
 //__________________________________________________________________________________
-
-_Operation::_Operation (_Operation const& rhs) {
-    numberOfTerms  = rhs.numberOfTerms;
-    theData        = rhs.theData;
-    theNumber      = rhs.theNumber;
-    opCode         = rhs.opCode;
-    if (theNumber) {
-        theNumber->AddAReference();
-    }
-}
-
-
-//__________________________________________________________________________________
-void    _Operation::Duplicate(BaseRefConst r) {
-    _Operation const * o = (_Operation const*)r;
+void    _Operation::Duplicate(BaseRef r)
+{
+    _Operation * o = (_Operation*)r;
     numberOfTerms  = o->numberOfTerms;
     theData        = o->theData;
     theNumber      = o->theNumber;
@@ -146,8 +136,8 @@ _Operation::_Operation  (_String const& opc, const long opNo = 2) {
         opCode = -opNo-1;
     }
 
-    if (opCode<0L) {
-        HandleApplicationError (_String ("Operation: ") & opc.Enquote() &" is not defined." );
+    if (opCode<0) {
+        WarnError(_String ("Operation: '") & opc &"' is not defined." );
         opCode = 0;
     }
 
@@ -327,9 +317,9 @@ bool        _Operation::EqualOp (_Operation* otherOp)
 
 long     _Operation::BinOpCode           (_String const & op_token, long index) {
   if (index >= 0)
-    return BinOps.Find (op_token.get_char(index-1L) * 256L + op_token.get_char (index));
-  
-  return BinOps.Find (op_token.length () == 2 ? op_token.get_char(0) * 256L + op_token.get_char (1) : op_token.get_char (0));
+    return BinOps.Find (op_token.getChar(index-1L) * 256L + op_token.getChar (index));
+
+  return BinOps.Find (op_token.sLength == 2 ? op_token.getChar(0) * 256L + op_token.getChar (1) : op_token.getChar (0));
 }
 
 
@@ -341,7 +331,7 @@ bool        _Operation::ReportOperationExecutionError(_String text, _String * er
     if (errMsg) {
         *errMsg = theError;
     } else {
-        HandleApplicationError (theError);
+        WarnError (theError);
     }
 
     return false;
@@ -409,8 +399,8 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
       //printf ("***** Calling %s\n", GetBFFunctionNameByIndex (opCode).sData);
 
       for (long k = arguments-1L; k >= 0; k--) {
-        bool            isRefVar = (funcVarTypes->Element (k) == kBLFunctionArgumentReference);
-        
+        bool            isRefVar = (funcVarTypes->Element (k) == BL_FUNCTION_ARGUMENT_REFERENCE);
+
         _String         *argument_k = (_String*)funcVarList->Element(k);
         _PMathObj       nthterm = theScrap.Pop();
 
@@ -431,9 +421,9 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             return ReportOperationExecutionError (errText, errMsg);
           }
         }
-        
-        _Variable* argument_var = CheckReceptacle (argument_k, kEmptyString, false, false);
-        
+
+        _Variable* argument_var = CheckReceptacle (argument_k, emptyString, false, false);
+
         if (!isRefVar) {
           if (argument_var->IsIndependent()) {
             // if the variable exists and is independent then
@@ -468,9 +458,9 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
           if (nameSpace) {
             *refArgName = AppendContainerName (*refArgName, nameSpace);
           }
-          
-          _Variable* reference_var = CheckReceptacle (refArgName, kEmptyString, false, false);
-          
+
+          _Variable* reference_var = CheckReceptacle (refArgName, emptyString, false, false);
+
           variableNames.SetXtra (new_index, reference_var->GetAVariable());
 
           DeleteObject (nthterm);
@@ -492,8 +482,8 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
 
       function_body -> stdinRedirect    = nil;
       function_body -> stdinRedirectAux = nil;
-      
-      if (terminate_execution) {
+
+      if (terminateExecution) {
         theScrap.Push (new _Constant (0.0));
         return true;
       }
@@ -588,11 +578,11 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
 
     _Polynomial*p = nil;
     if (theNumber) {
-        p= new _Polynomial(theNumber->Value());
+        p= (_Polynomial*)checkPointer(new _Polynomial(theNumber->Value()));
     }
 
     if (theData>-1) {
-        p=  new _Polynomial(*LocateVar(theData>-1?theData:-theData-2));
+        p= (_Polynomial*)checkPointer(new _Polynomial(*LocateVar(theData>-1?theData:-theData-2)));
     }
 
     if (p) {

@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -47,30 +47,33 @@
 #include "batchlan.h"
 
 #include "global_object_lists.h"
-#include "global_things.h"
 
-
-using namespace hy_global;
 using namespace hyphy_global_objects;
 
 
 //__________________________________________________________________________________
 
-_VariableContainer::_VariableContainer (void) : theParent(nil), theModel (-1L), iVariables(nil), dVariables(nil), gVariables(nil){
- }
+_VariableContainer::_VariableContainer (void) {
+    theParent = nil;
+    theModel = -1;
+    iVariables = nil;
+    dVariables = nil;
+    gVariables = nil;
+}
 
 //__________________________________________________________________________________
 
-void    _VariableContainer::Duplicate (BaseRefConst theO) {
+void    _VariableContainer::Duplicate (BaseRef theO)
+{
     _Variable::Duplicate (theO);
-    _VariableContainer const *theVC = (_VariableContainer const*)theO;
+    _VariableContainer *theVC = (_VariableContainer*)theO;
     theParent= theVC->theParent;
     theModel = theVC->theModel;
     if (theVC->iVariables) {
         if (iVariables) {
             iVariables->Clear();
         } else {
-            iVariables = new _SimpleList;
+            checkPointer(iVariables = new _SimpleList);
         }
         iVariables->Duplicate (theVC->iVariables);
     } else {
@@ -83,7 +86,7 @@ void    _VariableContainer::Duplicate (BaseRefConst theO) {
         if (dVariables) {
             dVariables->Clear();
         } else {
-            dVariables = new _SimpleList;
+            checkPointer(dVariables = new _SimpleList);
         }
         dVariables->Duplicate (theVC->dVariables);
     } else {
@@ -96,7 +99,7 @@ void    _VariableContainer::Duplicate (BaseRefConst theO) {
         if (gVariables) {
             gVariables->Clear();
         } else {
-            gVariables = new _SimpleList;
+            checkPointer (gVariables = new _SimpleList);
         }
         gVariables->Duplicate (theVC->gVariables);
     } else {
@@ -110,19 +113,26 @@ void    _VariableContainer::Duplicate (BaseRefConst theO) {
 
 //__________________________________________________________________________________
 
-void    _VariableContainer::TrimMemory () {
-    _SimpleList* var_arrays [3] = {iVariables,dVariables,gVariables};
-    for (_SimpleList* an_array : var_arrays) {
-        if (an_array) {
-            an_array->TrimMemory();
-        }
+void    _VariableContainer::TrimMemory ()
+{
+    if (iVariables) {
+        iVariables->TrimMemory();
+    }
+    if (dVariables) {
+        dVariables->TrimMemory();
+    }
+    if (gVariables) {
+        gVariables->TrimMemory();
     }
 }
 
 //__________________________________________________________________________________
 
-BaseRef _VariableContainer::makeDynamic (void) const {
+BaseRef _VariableContainer::makeDynamic (void)
+{
     _VariableContainer * res = new _VariableContainer;
+    checkPointer(res);
+    memcpy ((char*)res, (char*)this, sizeof (_VariableContainer)); // ???
     res->Duplicate(this);
     return res;
 }
@@ -133,26 +143,36 @@ BaseRef _VariableContainer::toStr (unsigned long)
 {
     _String * res = new _String (128L,true);
 
-    (*res) << "Container Class:" << theName << ":{ Independent Variables:";
+    (*res) << "Container Class:";
+    (*res) << theName;
+    (*res) << ":{ Independent Variables:";
 
     if (iVariables)
-        for (long i = 0L; i<iVariables->lLength; i+=2L) {
-            res->AppendNewInstance ((_String*)variablePtrs(iVariables->lData[i])->toStr());
-
-            if (i<iVariables->lLength-2) {
+        for (long i = 0; i<iVariables->lLength; i+=2) {
+            _String* s = (_String*)variablePtrs(iVariables->lData[i])->toStr();
+            (*res) << s;
+#ifndef USE_POINTER_VC
+            if (i<independentVars.lLength-1)
+#else
+            if (i<iVariables->lLength-2)
+#endif
                 (*res) << ',';
-            }
-            
+            DeleteObject(s);
         }
 
     (*res) << "; Dependent Variables:";
 
     if (dVariables)
-        for (long i2 = 0L; i2<dVariables->lLength; i2+=2L) {
-            res->AppendNewInstance ((_String*)variablePtrs(dVariables->lData[i2])->toStr());
-            if (i2<dVariables->lLength-2) {
+        for (long i2 = 0; i2<dVariables->lLength; i2+=2) {
+            _String* s = (_String*)variablePtrs(dVariables->lData[i2])->toStr();
+            (*res) << s;
+#ifndef USE_POINTER_VC
+            if (i2<independentVars.lLength-1)
+#else
+            if (i2<dVariables->lLength-2)
+#endif
                 (*res) << ',';
-            }
+            DeleteObject(s);
         }
 
     (*res) << '}';
@@ -162,14 +182,18 @@ BaseRef _VariableContainer::toStr (unsigned long)
 
 //__________________________________________________________________________________
 
-_VariableContainer::_VariableContainer (_String theName, _String theTmplt, _VariableContainer* theP) : iVariables(nil), dVariables(nil), gVariables(nil) {
+_VariableContainer::_VariableContainer (_String theName, _String theTmplt, _VariableContainer* theP)
+{
+    iVariables = nil;
+    dVariables = nil;
+    gVariables = nil;
     InitializeVarCont (theName, theTmplt,theP);
 }
 
 //__________________________________________________________________________________
 
 bool _VariableContainer::HasExplicitFormModel (void) const {
-    if (theModel == -1L) {
+    if (theModel == -1) {
         return false;
     }
     return (modelTypeList.lData[theModel]);
@@ -194,7 +218,7 @@ _String const* _VariableContainer::GetModelName (void)  const{
     if (res) {
         return res;
     }
-    return &kEmptyString;
+    return &emptyString;
 }
 
 //__________________________________________________________________________________
@@ -337,7 +361,7 @@ void    _VariableContainer::SetModel (long modelID, _AVLListXL* varCache)
 }
 
 //__________________________________________________________________________________
-void    _VariableContainer::InitializeVarCont (_String const& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache) {
+void    _VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache) {
     
     theParent = theP;
 
@@ -386,7 +410,7 @@ void _VariableContainer::ScanAndAttachVariables (void)
     for (f = variableNames.Next (f, travcache); f>=0; f = variableNames.Next (f, travcache)) {
         curVar = FetchVar (f);
 
-        if (curVar->theName->BeginsWith(theNameAndADot)) {
+        if (curVar->theName->startswith(theNameAndADot)) {
             //printf ("[ScanAndAttachVariables %s]\n", curVar->GetName()->getStr());
             if (!curVar->IsContainer()) {
                 long   vix = variableNames.GetXtra (f);
@@ -394,16 +418,18 @@ void _VariableContainer::ScanAndAttachVariables (void)
                 if (curVar->IsIndependent()) {
                     if ( ((!iVariables)||iVariables->FindStepping(vix,2)==-1) && ((!dVariables)||dVariables->FindStepping(vix,2)==-1)) {
                         if (!iVariables) {
-                            iVariables = new _SimpleList;
+                            checkPointer (iVariables = new _SimpleList);
                         }
-                        (*iVariables) << vix <<-1;
+                        (*iVariables)<<vix;
+                        (*iVariables)<<-1;
                     }
                 } else {
                     if ( ((!iVariables)||iVariables->FindStepping(vix,2)==-1) && ((!dVariables)||dVariables->FindStepping(vix,2)==-1)) {
                         if (!dVariables) {
-                            dVariables = new _SimpleList;
+                            checkPointer (dVariables = new _SimpleList);
                         }
-                        (*dVariables) << vix << -1;
+                        (*dVariables)<<vix;
+                        (*dVariables)<<-1;
                     }
                 }
             }
@@ -611,7 +637,7 @@ bool      _VariableContainer::RemoveDependance (long varIndex)
             long insPos = 0;
 
             if (!iVariables) {
-               iVariables = new _SimpleList;
+                checkPointer (iVariables = new _SimpleList);
             }
 
             while (insPos<iVariables->lLength && (thisName->Greater (LocateVar (iVariables->lData[insPos])->GetName()))) {
@@ -671,7 +697,7 @@ long      _VariableContainer::CheckAndAddUserExpression (_String& pName, long st
     k =  newVar.GetAVariable();
 
     if (!dVariables) {
-        dVariables = new _SimpleList;
+        checkPointer (dVariables = new _SimpleList);
     }
     (*dVariables) << k;
     (*dVariables) << -1;
@@ -794,13 +820,13 @@ long      _VariableContainer::SetDependance (long varIndex)
         long    insPos = 0;
 
         if (!dVariables) {
-            dVariables = new _SimpleList;
+            checkPointer (dVariables = new _SimpleList);
         }
 
         while (insPos<dVariables->lLength) {
             _Variable *dVar = LocateVar (dVariables->lData[insPos]);
             if (!dVar) {
-                HandleApplicationError ("Internal error in SetDependance()", false);
+                FlagError ("Internal error in SetDependance()");
                 return -1;
             }
             if (!thisName->Greater (dVar->GetName())) {
@@ -891,16 +917,23 @@ bool      _VariableContainer::IsModelVar  (long i)
 
 //__________________________________________________________________________________
 
-_String*    _VariableContainer::GetSaveableListOfUserParameters (void) {
+_String*    _VariableContainer::GetSaveableListOfUserParameters (void)
+{
     _String * result = new _String (64L, true);
+    checkPointer (result);
 
     if (dVariables)
         for (long i=0; i<dVariables->lLength; i+=2)
             if (dVariables->lData[i+1]<0) {
                 _Variable * userParm  = (_Variable*) LocateVar (dVariables->lData[i]);
-                *result << userParm->GetName() << ':' << '=';
-                result->AppendNewInstance((_String*)userParm->GetFormulaString());
-                *result << ';' << '\n';
+                _String   * varString = (_String*)userParm->GetFormulaString();
+                *result << userParm->GetName();
+                *result << ':';
+                *result << '=';
+                *result << varString;
+                DeleteObject (varString);
+                *result << ';';
+                *result << '\n';
             }
 
     result->Finalize();
@@ -908,7 +941,8 @@ _String*    _VariableContainer::GetSaveableListOfUserParameters (void) {
 }
 
 //__________________________________________________________________________________
-void      _VariableContainer::ClearConstraints(void) {
+void      _VariableContainer::ClearConstraints(void)
+{
     while (dVariables) {
         LocateVar(dVariables->lData[0])->ClearConstraints();
     }
@@ -968,7 +1002,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             if (!indOnly) {
                 if (dVariables) {
                     for (j=0; j<dVariables->lLength; j+=2)
-                        if (LocateVar(dVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
+                        if (LocateVar(dVariables->lData[j])->GetName()->endswith (*(_String*)suffixes.lData[i])) {
                             break;
                         }
 
@@ -979,7 +1013,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             }
             if (iVariables) {
                 for (j=0; j<iVariables->lLength; j+=2) {
-                    if (LocateVar(iVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
+                    if (LocateVar(iVariables->lData[j])->GetName()->endswith (*(_String*)suffixes.lData[i])) {
                         break;
                     }
                 }
@@ -996,7 +1030,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             if (dVariables) {
                 for (j=0; j<dVariables->lLength; j+=2) {
                     if (dVariables->lData[j+1]<0) {
-                        if (LocateVar(dVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
+                        if (LocateVar(dVariables->lData[j])->GetName()->endswith (*(_String*)suffixes.lData[i])) {
                             break;
                         }
                     }

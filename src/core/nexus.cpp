@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,24 +37,21 @@
  
  */
 
-#include <math.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-
-#include "hy_string_buffer.h"
 #include "site.h"
+#include "string.h"
+#include "ctype.h"
+#include "stdlib.h"
 #include "list.h"
 #include "batchlan.h"
 #include "hbl_env.h"
 #include "global_object_lists.h"
-#include "global_things.h"
 
-
-using namespace hy_global;
 using namespace hyphy_global_objects;
 
-
+#include "math.h"
+#ifdef    __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
 //_________________________________________________________
 
 _DataSet* lastNexusDataMatrix = nil;
@@ -77,22 +74,19 @@ void    ProcessNexusTaxa            (FileState&,long, FILE*, _String&, _DataSet&
 void    ProcessNexusTrees           (FileState&, long, FILE*, _String&, _DataSet&);
 bool    FindNextNexusToken          (FileState& fState, FILE* f, _String& CurrentLine, long pos);
 bool    SkipUntilNexusBlockEnd      (FileState& fState, FILE* f, _String& CurrentLine, long pos);
-bool    ReadNextNexusStatement      (FileState&, FILE* , _String&, long, _StringBuffer&, bool, bool = true, bool = true, bool = false, bool = false, bool = false);
+bool    ReadNextNexusStatement      (FileState&, FILE* , _String&, long, _String&, bool, bool = true, bool = true, bool = false, bool = false, bool = false);
 long    ReadNextNexusEquate         (FileState&, FILE* , _String&, long, _String&, bool = false, bool = true);
 void    NexusParseEqualStatement    (_String&);
 
-static auto  error_conext = [] (_String const& buffer, long position) -> const _String & {return (buffer.Cut (0,position) & " <=? " & buffer.Cut (position+1,kStringEnd)).Enquote();};
 
 //_________________________________________________________
 
-
-//_________________________________________________________
-
-bool    FindNextNexusToken (FileState& fState, FILE* f, _String& CurrentLine, long pos) {
-    pos = CurrentLine.FirstNonSpaceIndex (pos,-1,kStringDirectionForward);
+bool    FindNextNexusToken (FileState& fState, FILE* f, _String& CurrentLine, long pos)
+{
+    pos = CurrentLine.FirstNonSpaceIndex (pos,-1,1);
     if (pos==-1) {
-        ReadNextLine(f,&CurrentLine,&fState,false);
-        pos = CurrentLine.FirstNonSpaceIndex (0,-1,kStringDirectionForward);
+        ReadNextLine(f,&CurrentLine,&fState,false, false);
+        pos = CurrentLine.FirstNonSpaceIndex (0,-1,1);
         if (pos==-1) {
             return false;
         }
@@ -104,25 +98,27 @@ bool    FindNextNexusToken (FileState& fState, FILE* f, _String& CurrentLine, lo
 
 //_________________________________________________________
 
-bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _String& CurrentLine, long pos) {
-    static const _String endMark ("END");
-    pos = CurrentLine.Find (endMark,pos+1,kStringEnd);
-    while (pos == kNotFound) {
-        ReadNextLine(file,&CurrentLine,&fState,false);
-        if (CurrentLine.empty()) {
+bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _String& CurrentLine, long pos)
+{
+    static _String endMark ("END");
+    pos = CurrentLine.Find (endMark,pos+1,-1);
+    while (pos<0) {
+        ReadNextLine(file,&CurrentLine,&fState,false, false);
+        if (!CurrentLine.sLength) {
             return false;
         }
-        pos = CurrentLine.Find (endMark,0,kStringEnd);
-        if (pos != kNotFound) {
-            pos = CurrentLine.Find (';',pos+endMark.length(),kStringEnd);
-            if (pos != kNotFound) {
-                CurrentLine.Trim (pos+endMark.length(), kStringEnd);
-                if (CurrentLine.empty()) {
-                    ReadNextLine(file,&CurrentLine,&fState,false);
+        pos = CurrentLine.Find (endMark,0,-1);
+        if (pos>=0) {
+            pos = CurrentLine.Find (';',pos+endMark.sLength,-1);
+            if (pos>=0) {
+                CurrentLine.Trim (pos+endMark.sLength, -1);
+                if (!CurrentLine.sLength) {
+                    ReadNextLine(file,&CurrentLine,&fState,false, false);
                 }
             } else {
-                ReportWarning ("Found END w/o a trailing semicolon. Assuming end of block and skipping the rest of the line.");
-                ReadNextLine(file,&CurrentLine,&fState,false);
+                _String errMsg ("Found END w/o a trailing semicolon. Assuming end of block and skipping the rest of the line.");
+                ReportWarning (errMsg);
+                ReadNextLine(file,&CurrentLine,&fState,false, false);
             }
             return true;
         }
@@ -133,19 +129,19 @@ bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _String& CurrentL
 void    NexusParseEqualStatement (_String& source)
 {
     long f = source.Find('=');
-    if (f != kNotFound) {
-        f = source.FirstNonSpaceIndex (f+1,kStringEnd);
-        if (f != kNotFound) {
-            source.Trim (f,kStringEnd);
+    if (f>=0) {
+        f = source.FirstNonSpaceIndex (f+1,-1);
+        if (f>=0) {
+            source.Trim (f,-1);
             return;
         }
     }
-    source.Clear();
+    source = "";
 
 }
 //_________________________________________________________
 
-bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _StringBuffer & blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes) {
+bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _String& blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes) {
     bool done          = false,
          insideLiteral = false,
          startedReading = false;
@@ -154,8 +150,8 @@ bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
     char c = '\0';
 
     while (1) {
-        while (newPos<CurrentLine.length()) {
-            c = CurrentLine.char_at (newPos);
+        while (newPos<CurrentLine.sLength) {
+            c = CurrentLine.sData[newPos];
             if (isspace(c)) {
                 if (stopOnSpace && startedReading && (!insideLiteral) && (!NLonly || (NLonly && (c=='\r' || c=='\n')))) {
                     done = true;
@@ -176,10 +172,10 @@ bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
                     break;
                 } else if (! preserveQuotes && (c=='\'' || c=='"') ) {
                     if (c=='\'') {
-                        if (newPos+1<CurrentLine.length())
+                        if (newPos+1<CurrentLine.sLength)
                             // check for a double quote
                         {
-                            c = CurrentLine.char_at (newPos+1);
+                            c = CurrentLine.sData[newPos+1];
                             if (c=='\'') {
                                 newPos += 2;
                                 blank<<c;
@@ -205,12 +201,12 @@ bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
             newPos++;
         }
         if (!done) {
-            if (NLonly&&(blank.FirstNonSpaceIndex(0,kStringEnd,kStringDirectionForward)>=0)) {
+            if (NLonly&&(blank.FirstNonSpaceIndex(0,-1,1)>=0)) {
                 break;
             }
-            ReadNextLine(f,&CurrentLine,&fState,false);
+            ReadNextLine(f,&CurrentLine,&fState,false, false);
             newPos = 0;
-            if (CurrentLine.empty()) {
+            if (!CurrentLine.sLength) {
                 c=';';
                 break;
             }
@@ -219,43 +215,44 @@ bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
         }
 
     }
-    // TODO 20170821: SLKP, this needs to be case sensitive
-    blank = blank.ChangeCase(kStringUpperCase);
-    if (newPos<CurrentLine.length()) {
-        CurrentLine.Trim (newPos,kStringEnd);
+    blank.Finalize();
+    blank.UpCase();
+    if (newPos<CurrentLine.sLength) {
+        CurrentLine.Trim (newPos,-1);
     } else {
-        CurrentLine.Clear();
+        CurrentLine = "";
     }
     return c==';';
 }
 
 //_________________________________________________________
 
-long    ReadNextNexusEquate (FileState& fState, FILE* f, _String& CurrentLine, long pos2, _String& blank, bool resetP, bool demandSemicolon) {
+long    ReadNextNexusEquate (FileState& fState, FILE* f, _String& CurrentLine, long pos2, _String& blank, bool resetP, bool demandSemicolon)
+{
     long pos = blank.Find ('=',pos2,-1), res;
     if (pos>=0) {
-        if (pos<blank.length()-1) {
+        if (pos<blank.sLength-1) {
             blank.Trim (pos+1,-1);
             return 1;
         } else {
-            _StringBuffer buffer (128UL);
-            res = ReadNextNexusStatement (fState, f, CurrentLine, resetP?0:pos, buffer, true, true, false,false,false);
-            if (!buffer.empty()) {
-                blank = buffer;
+            _String blank2 ((unsigned long)10, true);
+            res = ReadNextNexusStatement (fState, f, CurrentLine, resetP?0:pos, blank2, true, true, false,false,false);
+            if (blank2.sLength) {
+                blank = blank2;
                 return res?2:1;
             }
         }
         return 0;
     } else {
-        _StringBuffer buffer (128UL);
-        res = ReadNextNexusStatement (fState, f, CurrentLine, pos2, buffer, true, true, false,false,false)?2:1;
+        _String blank2 ((unsigned long)10, true);
+        res = ReadNextNexusStatement (fState, f, CurrentLine, pos2, blank2, true, true, false,false,false)?2:1;
         if (res!=2 && demandSemicolon) {
-            if((res=ReadNextNexusEquate (fState, f, CurrentLine, 0, buffer))) {
-                blank = buffer;
+            if((res=ReadNextNexusEquate (fState, f, CurrentLine, 0, blank2))) {
+                blank = blank2;
                 return res;
             }
-        } else if((res = ReadNextNexusEquate (fState, f, CurrentLine, 0, buffer, resetP, false))) {
-            blank = buffer;
+        } else if((res = ReadNextNexusEquate (fState, f, CurrentLine, 0, blank2, resetP, false))) {
+            blank = blank2;
             return res;
         } else {
             return 0;
@@ -265,8 +262,9 @@ long    ReadNextNexusEquate (FileState& fState, FILE* f, _String& CurrentLine, l
 }
 
 //_________________________________________________________
-void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result) {
-    static const _String key1 = "DIMENSIONS", key2 = "NTAX", key3 = "TAXLABELS", keyEnd = "END";
+void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result)
+{
+    _String key1 = "DIMENSIONS", key2 = "NTAX", key3 = "TAXLABELS", keyEnd = "END";
 
     bool    done = false;
 
@@ -278,61 +276,64 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
         }
         // now that we've got stuff to work with see what it is
 
-        if (CurrentLine.BeginsWith (keyEnd, false)) {
+        if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
         }
 
-        if (CurrentLine.BeginsWith (key1, false)) {
+        if (CurrentLine.beginswith (key1, false)) {
             if (result.GetNames().lLength) { // check the number of dimensions
                 // some data already present
-                ReportWarning ("Only one taxa definition per NEXUS file is recognized, the others will be ignored.");
+                key1 = "Only one taxa definition per NEXUS file is recognized, the others will be ignored.";
+                ReportWarning (key1);
                 SkipUntilNexusBlockEnd (fState, f,CurrentLine, pos);
                 break;
             } else {
-                _StringBuffer buffer (128UL);
-                ReadNextNexusStatement (fState, f, CurrentLine, key1.length(), buffer, false,true, true,false,false);
+                _String blank ((unsigned long)10, true);
+                ReadNextNexusStatement (fState, f, CurrentLine, key1.sLength, blank, false,true, true,false,false);
                 // this will actually return '= number'
-                NexusParseEqualStatement (buffer);
-                speciesExpected = buffer.to_long();
+                NexusParseEqualStatement (blank);
+                speciesExpected = blank.toNum();
             }
-        } else if (CurrentLine.BeginsWith (key3, false)) {
+        } else if (CurrentLine.beginswith (key3, false)) {
             if (speciesExpected == -1) {
-                ReportWarning ("TAXLABELS must be preceded by a valid NTAX statement. Skipping the entire TAXA block.");
+                key1 = "TAXLABELS must be preceded by a valid NTAX statement. Skipping the entire TAXA block.";
+                ReportWarning (key1);
                 SkipUntilNexusBlockEnd (fState, f,CurrentLine, pos);
                 break;
             } else {
-                offset = key3.length();
+                offset = key3.sLength;
                 do {
-                    _StringBuffer buffer (128UL);
-                    if (ReadNextNexusStatement (fState, f, CurrentLine,offset, buffer, true,true,true,false,false)) {
-                        if (buffer.nonempty()) {
-                          result.AddName(buffer);
+                    _String blank ((unsigned long)10, true);
+                    if (ReadNextNexusStatement (fState, f, CurrentLine,offset, blank, true,true,true,false,false)) {
+                        if (blank.sLength) {
+                          result.AddName(blank);
                         }
                         break;
                     } else {
-                        if (buffer.nonempty()) {
-                          result.AddName(buffer);;
+                        if (blank.sLength) {
+                          result.AddName(blank);;
                         }
                     }
                     offset = 0;
 
                 } while (1);
                 if (result.GetNames().lLength!=speciesExpected) {
-                    ReportWarning ( _String ("TAXALABELS provided ") &
-                                    _String ((long)result.GetNames().lLength) &" species, whereas the NTAX statement promised:" &
-                                    _String (speciesExpected) & ". HYPHY will use TAXALABELS count.");
-                     (key1);
+                    key1 = "TAXALABELS provided ";
+                    key1 = key1& _String ((long)result.GetNames().lLength) &" species, whereas the NTAX statement promised:";
+                    key1 = key1& _String (speciesExpected) & ". HYPHY will use TAXALABELS count.";
+                    ReportWarning (key1);
                 }
                 done = true;
             }
         } else {
             long offSet;
 
-            ReportWarning (CurrentLine.Cut (0, offSet = CurrentLine.FirstSpaceIndex(1,kStringEnd)) & " is not used by HYPHY");
+            _String errMsg = CurrentLine.Cut (0, offSet = CurrentLine.FirstSpaceIndex(1,-1)) & " is not used by HYPHY";
+            ReportWarning (errMsg);
             while (!done) {
-                _StringBuffer buffer (128UL);
-                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, false, false,true,false,false);
+                _String blank ((unsigned long)10, true);
+                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, blank, false, false,true,false,false);
             }
             done = false;
         }
@@ -340,6 +341,11 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
         if (!done) {
             pos = 0;
         }
+
+        //if (!done)
+        //{
+        //  ReadNextLine(f,&CurrentLine,&fState,false);
+        //}
     }
 
     SkipUntilNexusBlockEnd (fState, f,CurrentLine, pos);
@@ -347,9 +353,11 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
 
 //_________________________________________________________
 
-void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet&) {
-    static const _String key1 = "CHARSET", keyEnd = "END";
- 
+void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet&)
+{
+    _String key1 = "CHARSET", keyEnd = "END",
+            errMsg;
+
     bool    done = false;
 
     _List   charSetIDs,
@@ -361,35 +369,37 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
         }
         // now that we've got stuff to work with see what it is
 
-        if (CurrentLine.BeginsWith (keyEnd, false)) {
+        if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
         }
 
-        if (CurrentLine.BeginsWith (key1, false)) { // actual tree strings & idents
-            _StringBuffer buffer (128UL);
-            if (!ReadNextNexusStatement (fState, f, CurrentLine, key1.length(), buffer, false, false, false,false,true)) {
-                ReportWarning ("CHARSET construct not followed by ';'.");
+        if (CurrentLine.beginswith (key1, false)) { // actual tree strings & idents
+            _String blank ((unsigned long)10, true);
+            if (!ReadNextNexusStatement (fState, f, CurrentLine, key1.sLength, blank, false, false, false,false,true)) {
+                errMsg = _String("CHARSET construct not followed by ';'.");
+                ReportWarning (errMsg);
                 break;
             } else {
-                pos = buffer.Find ('=',1,kStringEnd);
+                pos = blank.Find ('=',1,-1);
                 if (pos==-1) {
-                    ReportWarning (buffer.Enquote() & " is not of the form Charset ID = specification of the partition.");
+                    errMsg = blank&": is not of the form Charset ID = specification of the partition.";
+                    ReportWarning (errMsg);
                 } else {
-                    long pos2 = buffer.FirstNonSpaceIndex (0,pos-1,kStringDirectionBackward);
-                    if (pos2 != kNotFound) {
-                        long j = buffer.FirstNonSpaceIndex (0,pos2-1,kStringDirectionForward);
-                        if (j != kNotFound) {
-                            if (buffer.char_at (j) == '*') {
-                                j = buffer.FirstNonSpaceIndex (j+1,pos2-1,kStringDirectionForward);
+                    long pos2 = blank.FirstNonSpaceIndex (0,pos-1,-1);
+                    if (pos2>=0) {
+                        long j = blank.FirstNonSpaceIndex (0,pos2-1,1);
+                        if (j>=0) {
+                            if (blank.sData[j]=='*') {
+                                j = blank.FirstNonSpaceIndex (j+1,pos2-1,1);
                             }
 
-                            if (j != kNotFound) {
-                                _String nexus_name (buffer,j,pos2),
+                            if (j>=0) {
+                                _String nexus_name (blank,j,pos2),
                                         charset_id (nexus_name);
 
-                                if (!nexus_name.IsValidIdentifier(fIDAllowCompound)) {
-                                    charset_id = nexus_name.ConvertToAnIdent();
+                                if (!nexus_name.IsValidIdentifier()) {
+                                    charset_id.ConvertToAnIdent();
                                 }
                               
                                 charset_id = charSetIDs.GenerateUniqueNameForList(GenerateUniqueObjectIDByType (nexus_name, HY_BL_DATASET_FILTER), false);
@@ -400,14 +410,14 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                 
 
                                 //  now get the rest of the tree string
-                                pos2 = buffer.FirstNonSpaceIndex(pos+1,kStringEnd);
-                                pos  = buffer.FirstNonSpaceIndex(pos2,kStringEnd,kStringDirectionBackward);
-                                buffer.Trim (pos2,pos);
-                                buffer  = buffer.CompressSpaces () & " ";
+                                pos2 = blank.FirstNonSpaceIndex(pos+1,-1);
+                                pos  = blank.FirstNonSpaceIndex(pos2,-1,-1);
+                                blank.Trim (pos2,pos);
+                                blank.CompressSpaces ();
+                                blank = blank & " ";
 
-                                _StringBuffer hpSpec (buffer.length()+1UL);
-                              
-                                _String numberOne,
+                                _String hpSpec (blank.sLength+1, true),
+                                        numberOne,
                                         numberTwo,
                                         numberThree;
 
@@ -416,8 +426,8 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                         okFlag         = true,
                                         firstFlag  = true;
 
-                                for (long k=0; k<buffer.length(); k++) {
-                                    char ch = buffer.char_at(k);
+                                for (long k=0; k<blank.sLength; k++) {
+                                    char ch = blank.sData[k];
 
                                     if ((ch>='0' && ch<='9') || ch=='.') {
                                         if (spoolInto2nd) {
@@ -430,18 +440,20 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                     }
 
                                     if (ch==' ') {
-                                        if (numberTwo.length() == 1 && numberTwo.char_at (0) == '.') {
+                                        if (numberTwo.sLength == 1 && numberTwo.sData[0] == '.') {
                                             numberTwo = (long)fState.totalSitesRead;
                                         }
 
                                         if (spoolInto3rd) {
                                             spoolInto3rd = false;
                                             // handle 'every' n-th
- 
+                                            //if (!firstFlag)
+                                            //hpSpec << ',';
 
-                                            long    from = numberOne.to_long()-1,
-                                                    upto = numberTwo.to_long()-1,
-                                                    step = numberThree.to_long();
+
+                                            long    from = numberOne.toNum()-1,
+                                                    upto = numberTwo.toNum()-1,
+                                                    step = numberThree.toNum();
 
                                             if ((upto>=from)&&(step>0)) {
                                                 if (!firstFlag) {
@@ -449,15 +461,16 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                 }
                                                 hpSpec << _String(from);
                                                 for (long kk = from+step; kk<=upto; kk+=step) {
-                                                    hpSpec << ',' << (_String)(kk);
+                                                    hpSpec << ',';
+                                                    hpSpec << (_String)(kk);
                                                 }
 
-                                                numberOne.Clear();
-                                                numberTwo.Clear();
-                                                numberThree.Clear();
-                                              
+                                                numberOne   = emptyString;
+                                                numberTwo   = emptyString;
+                                                numberThree = emptyString;
                                             } else {
-                                                 ReportWarning (_String("Invalid from-to\\step specification: ") & error_conext (buffer, k));
+                                                errMsg = _String("Invalid from-to\\step specification: ") & blank.Cut (0,k) & " <=? " & blank.Cut (k+1,-1);
+                                                ReportWarning (errMsg);
                                                 okFlag = false;
                                                 break;
                                             }
@@ -470,25 +483,24 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                     hpSpec << ',';
                                                 }
 
-                                                numberOne = numberOne.to_long ()-1;
+                                                numberOne = numberOne.toNum()-1;
                                                 hpSpec << numberOne;
                                                 numberOne = ch;
                                                 hpSpec << '-';
-                                                numberTwo = numberTwo.to_long()-1;
+                                                numberTwo = numberTwo.toNum()-1;
                                                 hpSpec << numberTwo;
-                                                numberTwo.Clear();
+                                                numberTwo = emptyString;
                                                 firstFlag = false;
 
                                             } else {
-                                              long n1;
-                                                if (numberOne.nonempty() && (n1 = numberOne.to_long() > 0)) {
-                                                    numberOne = n1-1;
+                                                if (numberOne.sLength && numberOne.toNum() > 0) {
+                                                    numberOne = numberOne.toNum()-1;
                                                     if (!firstFlag) {
                                                         hpSpec << ',';
                                                     }
                                                     hpSpec << numberOne;
                                                 }
-                                                numberOne.Clear();
+                                                numberOne = emptyString;
                                                 firstFlag = false;
                                             }
                                         }
@@ -496,14 +508,16 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                       
                                     } else if (ch=='-') {
                                         if (spoolInto2nd||spoolInto3rd) {
-                                            ReportWarning (_String("Misplaced '-' in CHARSET specification: ") & error_conext (buffer, k));
+                                            errMsg = _String("Misplaced '-' in CHARSET specification: ") & blank.Cut (0,k) & " <=? " & blank.Cut (k+1,-1);
+                                            ReportWarning (errMsg);
                                             okFlag = false;
                                             break;
                                         }
                                         spoolInto2nd = true;
                                     } else if (ch=='\\') {
                                         if ((!spoolInto2nd)||spoolInto3rd) {
-                                            ReportWarning (_String("Misplaced '\\' in CHARSET specification: ") & buffer.Enquote());
+                                            errMsg = _String("Misplaced '\\' in CHARSET specification: ") & blank;
+                                            ReportWarning (errMsg);
                                             okFlag = false;
                                             break;
                                         }
@@ -512,6 +526,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                     }
                                 }
 
+                                hpSpec.Finalize();
 
                                 if (okFlag) {
                                     charSetIDs  && & charset_id;
@@ -520,20 +535,23 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                             }
                         }
                         if (j<0) {
-                            ReportWarning (_String("Could not find a charset identifier in: ")& buffer.Enquote());
+                            errMsg = _String("Could not find a charset identifier in:")&blank;
+                            ReportWarning (errMsg);
                         }
                     } else {
-                        ReportWarning (buffer.Enquote() &" is not of the form CharSetID = char set string");
+                        errMsg = blank&" is not of the form CharSetID = char set string";
+                        ReportWarning (errMsg);
                     }
                 }
             }
         } else {
             long offSet;
 
-            ReportWarning (CurrentLine.Cut (0, offSet = CurrentLine.FirstSpaceIndex(1,-1)) & " is not used by HYPHY");
+            _String errMsg = CurrentLine.Cut (0, offSet = CurrentLine.FirstSpaceIndex(1,-1)) & " is not used by HYPHY";
+            ReportWarning (errMsg);
             while (!done) {
-                _StringBuffer buffer (128UL);
-                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, false, false,true,false,false);
+                _String blank ((unsigned long)10, true);
+                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, blank, false, false,true,false,false);
             }
             done = false;
         }
@@ -545,27 +563,31 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
     }
 
     if (charSetIDs.lLength) {
-        _StringBuffer defineCharsets (256UL);
+        _String defineCharsets (128L, true);
 
-        defineCharsets << hy_env::data_file_partition_matrix << "={2," << _String ((long)charSetIDs.lLength) << "};\n";
+        defineCharsets << dataFilePartitionMatrix;
+        defineCharsets << "={2,";
+        defineCharsets << _String ((long)charSetIDs.lLength);
+        defineCharsets << "};\n";
 
         for (long id = 0; id < charSetIDs.lLength; id++) {
-            defineCharsets << hy_env::data_file_partition_matrix
-             << "[0]["
-             << _String (id)
-             << "]:=\""
-             << (_String*)charSetIDs(id)
-             << "\";\n"
-             << hy_env::data_file_partition_matrix
-             << "[1]["
-             << _String (id)
-             << "]:=\""
-             << (_String*)charSetSpec(id)
-             << "\";\n";
+            defineCharsets << dataFilePartitionMatrix;
+            defineCharsets << "[0][";
+            defineCharsets << _String (id);
+            defineCharsets << "]:=\"";
+            defineCharsets << (_String*)charSetIDs(id);
+            defineCharsets << "\";\n";
+            defineCharsets << dataFilePartitionMatrix;
+            defineCharsets << "[1][";
+            defineCharsets << _String (id);
+            defineCharsets << "]:=\"";
+            defineCharsets << (_String*)charSetSpec(id);
+            defineCharsets << "\";\n";
         }
-         _ExecutionList defMx (defineCharsets);
+        defineCharsets.Finalize();
+        _ExecutionList defMx (defineCharsets);
         defMx.Execute();
-        terminate_execution = false;
+        terminateExecution = false;
     }
 
     SkipUntilNexusBlockEnd (fState, f,CurrentLine, pos);
@@ -574,7 +596,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
 //_________________________________________________________
 
 void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result) {
-    static _String const key1 = "TRANSLATE", key2 = "TREE", errMsg, keyEnd = "END";
+    _String key1 = "TRANSLATE", key2 = "TREE", errMsg, keyEnd = "END";
 
     bool    done = false, readResult, good;
     _List   translationsFrom, translationsTo;
@@ -586,70 +608,74 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
             break;
         }
         // now that we've got stuff to work with see what it is
-
-        if (CurrentLine.BeginsWith (keyEnd, false)) {
+      
+        if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
         }
 
-        if (CurrentLine.BeginsWith (key1, false)) {
+        if (CurrentLine.beginswith (key1, false)) {
             // set up translations between nodes and data labels
-            long offset = key1.length();
+            long offset = key1.sLength;
             do {
-                _StringBuffer buffer (128UL);
-                readResult = ReadNextNexusStatement (fState, f, CurrentLine, offset, buffer, true, true,true,false,false);
-                if (buffer.nonempty()) {
+                _String blank ((unsigned long)10, true);
+                readResult = ReadNextNexusStatement (fState, f, CurrentLine, offset, blank, true, true,true,false,false);
+                if (blank.sLength) {
                     if (translationsTo.lLength<translationsFrom.lLength) {
-                        good = (result.GetNames().FindObject(&buffer)>=0);
+                        good = (result.GetNames().FindObject(&blank)>=0);
                         if (good) {
-                            translationsTo.InsertElement (&buffer, insertPos);
+                            translationsTo.InsertElement (&blank, insertPos);
                         } else {
-                            ReportWarning (buffer.Enquote() & " is not a valid taxon name for TRANSLATE" );
+                            errMsg = blank & " is not a valid taxon name for TRANSLATE";
+                            ReportWarning (errMsg);
                             translationsFrom.Delete (insertPos);
                         }
 
                     } else {
                         if (!readResult) {
-                            insertPos = translationsFrom.BinaryInsert (&buffer);
+                            //translationsFrom && & blank;
+                            insertPos = translationsFrom.BinaryInsert (&blank);
                         }
                     }
                 }
                 if (readResult) {
                     break;
                 }
-                if  ((f&&feof(f))||(fState.theSource&&(fState.theSource->length()<=fState.pInSrc))) {
+                if  ((f&&feof(f))||(fState.theSource&&(fState.theSource->sLength<=fState.pInSrc))) {
                     break;
                 }
                 offset = 0;
 
             } while (1);
-        } else if (CurrentLine.BeginsWith (key2, false)) { // actual tree strings & idents
-            _StringBuffer buffer (128UL);
-            if (!ReadNextNexusStatement (fState, f, CurrentLine, key2.length(), buffer, false, false, false,false,false, true)) {
-                ReportWarning ("TREE construct not followed by ';'.");
+        } else if (CurrentLine.beginswith (key2, false)) { // actual tree strings & idents
+            _String blank ((unsigned long)10, true);
+            if (!ReadNextNexusStatement (fState, f, CurrentLine, key2.sLength, blank, false, false, false,false,false, true)) {
+                errMsg = _String("TREE construct not followed by ';'.");
+                ReportWarning (errMsg);
                 break;
             } else {
                 // here goes the tree string in the form: treeID = treeString
                 // pull the ID out first - check if it is a valid one
                 // next crudely parse the tree string, extracting species names and
-                pos = buffer.Find ('=',1,kStringEnd);
-                if (pos==kNotFound) {
-                    ReportWarning (buffer.Enquote () &" is not of the form TreeID = TreeString");
+                pos = blank.Find ('=',1,-1);
+                if (pos==-1) {
+                    errMsg = blank&": is not of the form Tree Name = Tree String";
+                    ReportWarning (errMsg);
                 } else {
-                    long pos2 = buffer.FirstNonSpaceIndex (0,pos-1,kStringDirectionBackward);
-                    if (pos2 != kNotFound) {
-                        long j = buffer.FirstNonSpaceIndex (0,pos2-1,kStringDirectionForward);
-                        if (j != kNotFound ) {
-                            if (buffer.char_at (j) == '*') {
-                                j = buffer.FirstNonSpaceIndex (j+1,pos2-1,kStringDirectionForward);
+                    long pos2 = blank.FirstNonSpaceIndex (0,pos-1,-1);
+                    if (pos2>=0) {
+                        long j = blank.FirstNonSpaceIndex (0,pos2-1,1);
+                        if (j>=0) {
+                            if (blank.sData[j]=='*') {
+                                j = blank.FirstNonSpaceIndex (j+1,pos2-1,1);
                                 treeSelected = treeIdents.lLength;
                             }
-                            if (j != kNotFound) {
-                                _String nexus_tree_id (buffer,j,pos2),
+                            if (j>=0) {
+                                _String nexus_tree_id (blank,j,pos2),
                                         tree_id (nexus_tree_id);
                               
-                                if (!nexus_tree_id.IsValidIdentifier(fIDAllowCompound)) {
-                                  tree_id = nexus_tree_id.ConvertToAnIdent();
+                                if (!nexus_tree_id.IsValidIdentifier()) {
+                                  tree_id.ConvertToAnIdent();
                                 }
                                 
                                 tree_id = treeIdents.GenerateUniqueNameForList(GenerateUniqueObjectIDByType (nexus_tree_id, HY_BL_TREE) ,false);
@@ -661,28 +687,31 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                               
                                 treeIdents && & tree_id;
                                 //  now get the rest of the tree string
-                                pos2 = buffer.FirstNonSpaceIndex(pos+1,kStringDirectionBackward);
-                                buffer.Trim (pos2,kStringEnd);
-                                treeStrings && & buffer;
+                                pos2 = blank.FirstNonSpaceIndex(pos+1,-1);
+                                blank.Trim (pos2,-1);
+                                treeStrings && & blank;
                             }
                         }
-                        if (j == kNotFound) {
-                             ReportWarning (_String("Could not find a tree identifier in:") & buffer.Enquote());
+                        if (j<0) {
+                            errMsg = _String("Could not find a tree identifier in:")&blank;
+                            ReportWarning (errMsg);
                         }
                     } else {
-                        ReportWarning (buffer.Enquote () &" is not of the form TreeID = TreeString");
+                        errMsg = blank&" is not of the form TreeID = TreeString";
+                        ReportWarning (errMsg);
                     }
                 }
 
             }
         } else {
 
-            long offSet = 0L;
+            long offSet = 0;
 
-            ReportWarning (CurrentLine.Cut (0, offSet = CurrentLine.FirstSpaceIndex(1,kStringEnd)) & " is not used by HYPHY in TREES block");
+            _String errMsg = CurrentLine.Cut (0,CurrentLine.FirstSpaceIndex(1,-1)) & " is not used by HYPHY in TREES block";
+            ReportWarning (errMsg);
             while (!done) {
-                _StringBuffer buffer (128UL);
-                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, false, false,true,false,false);
+                _String blank ((unsigned long)10, true);
+                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, blank, false, false,true,false,false);
             }
             done = false;
         }
@@ -695,122 +724,120 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
 
     // now we shall check the string and match up node names with those present in the file
 
-    for (long id = 0L; id<treeStrings.lLength; id++) {
-        _String const * file_tree_string = (_String const *) treeStrings (id);
-        long    treeLevel = 0L,
-                lastNode,
-                i = 0L;
-      
-        _StringBuffer revisedTreeString (128L);
-      
-      // TODO SLKP 20170621: looks like this is a generic Newick parser; why duplicate it here?
-        for (long i=0; i<file_tree_string->length(); ++i) {
-            char    cc = file_tree_string->char_at (i);
+    for (long id = 0; id<treeStrings.lLength; id++) {
+        key1 = *((_String*)treeStrings.lData[id]);
+        long    treeLevel = 0, lastNode, i;
+        _String revisedTreeString ((unsigned long)10, true);
+        char    c;
+        for (i=0; i<key1.sLength; i++) {
+            switch (key1.sData[i]) {
+            case '(': { // creating a new internal node one level down
+                treeLevel++;
+                revisedTreeString<<'(';
+                break;
+            }
 
-            switch (cc) {
-                case '(': { // creating a new internal node one level down
-                  treeLevel++;
-                  revisedTreeString<<'(';
-                  break;
-                }
-                  
-                case ',':
-                case ')': { // creating a new node on the same level and finishes updating the list of parameters
-                  if (cc==')') { // also create a new node on the same level
+            case ',':
+            case ')': { // creating a new node on the same level and finishes updating the list of parameters
+                if (key1.sData[i]==')') { // also create a new node on the same level
                     treeLevel--;
-                  }
-                  revisedTreeString<<cc;
-                  break;
                 }
-                  
-                case ':' : { // tree branch definition
-                  lastNode = i+1;
-                  revisedTreeString<<':';
-                  char c = file_tree_string->char_at (lastNode);
-                  
-                  while (isnumber (c) || c=='.' || c=='-' || c=='e' || c=='E') {
-                    if (lastNode<file_tree_string->length()) {
-                      lastNode++;
-                      revisedTreeString<<c;
-                      c = file_tree_string->char_at (lastNode);
+                revisedTreeString<<key1.sData[i];
+                break;
+            }
+
+            case ':' : { // tree branch definition
+                lastNode = i+1;
+                revisedTreeString<<':';
+                c = key1.sData[lastNode];
+                while (((c<='9')&&(c>='0'))||(c=='.')||(c=='-')||(c=='e')||(c=='E')) {
+                    if (lastNode<key1.sLength) {
+                        lastNode++;
+                        revisedTreeString<<c;
+                        c = key1.sData[lastNode];
                     } else {
-                      break;
+                        break;
                     }
-                  }
-                  i = lastNode-1;
-                  break;
                 }
-                  
-                default: { // node name
-                  lastNode = i;
-                  char c = file_tree_string->char_at (lastNode);
-                  if (isspace (c)) {
+                i = lastNode-1;
+                break;
+            }
+
+            default: { // node name
+                lastNode = i;
+                c = key1.sData[lastNode];
+                if (isspace (c)) {
                     break;
-                  }
-                  if (!(isalnum(c)||(c=='_'))) {
-                    ReportWarning (_String("Node names should begin with a letter, a number, or an underscore: ") & error_conext (key1, i) );
-                    i = file_tree_string->length() +2;
+                }
+                if (!(isalnum(c)||(c=='_'))) {
+                    errMsg = ((_String("Node names should begin with a letter, a number, or an underscore")&key1.Cut(0,i)&"?"&key1.Cut(i+1,-1)));
+                    ReportWarning (errMsg);
+                    i = key1.sLength+2;
                     break;
-                  }
-                  while (isalnum(c)||(c=='_')) {
-                    if (lastNode<file_tree_string->length()) {
-                      lastNode++;
-                      c = key1.char_at (lastNode);
+                }
+                while (isalnum(c)||(c=='_')) {
+                    if (lastNode<key1.Length()) {
+                        lastNode++;
+                        c = key1.sData[lastNode];
                     } else {
-                      break;
+                        break;
                     }
-                  }
-                  _String node_name (*file_tree_string, i, lastNode-1);
-                  i = lastNode-1;
-                  lastNode = translationsFrom.BinaryFindObject (&node_name);
-                  if (lastNode != kNotFound) {
+                }
+                key2 = key1.Cut(i,lastNode-1);
+                i = lastNode-1;
+                lastNode = translationsFrom.BinaryFindObject (&key2);
+              
+                if (lastNode>=0) {
                     revisedTreeString<< (_String*)translationsTo.lData[lastNode];
-                  } else {
+                } else {
                     revisedTreeString<< &key2;
-                  }
-                  break;
                 }
-          }
+                break;
+            }
+            }
         }
+        revisedTreeString.Finalize();
         if (treeLevel) {
-            ReportWarning (_String("Unbalanced '(,)' in the tree string:") & revisedTreeString.Enquote());
-        } else if (i==file_tree_string->length()) {
-            *((_String*)treeStrings.lData[id]) = revisedTreeString;
+            errMsg = _String("Unbalanced '(,)' in the tree string:") & revisedTreeString;
+            ReportWarning (errMsg);
+        } else if (i==key1.sLength) {
+            ((_String*)treeStrings.lData[id])->DuplicateErasing(&revisedTreeString);
         }
     }
 
     if (treeSelected < treeStrings.lLength) {
-        hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree, new HY_CONSTANT_TRUE,fState.theNamespace, false);
-        hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree_string, new _FString(*(_String*)treeStrings.lData[treeSelected], false),fState.theNamespace, false);
-     }
+        setParameter (dataFileTree,1.0,fState.theNamespace);
+        setParameter (dataFileTreeString, new _FString((*(_String*)treeStrings.lData[treeSelected])),fState.theNamespace, false);
+    }
 
     if (treeStrings.lLength) {
-        _StringBuffer initTreeMatrix (1024UL);
+        _String initTreeMatrix (1024L, true);
 
-        initTreeMatrix   << hy_env::nexus_file_tree_matrix
-                         << "={"
-                         << _String ((long)treeStrings.lLength)
-                         << ",2};\n";
+        initTreeMatrix << nexusFileTreeMatrix;
+        initTreeMatrix << "={";
+        initTreeMatrix << _String ((long)treeStrings.lLength);
+        initTreeMatrix << ",2};\n";
 
 
         for (long id = 0; id < treeStrings.lLength; id++) {
-            initTreeMatrix   << hy_env::nexus_file_tree_matrix
-                             << '['
-                             << _String (id)
-                             << "][0]=\""
-                             << (_String*)treeIdents(id)
-                             << "\";\n"
-                             << hy_env::nexus_file_tree_matrix
-                             << '['
-                             << _String (id)
-                             << "][1]=\""
-                             << (_String*)treeStrings(id)
-                             << "\";\n";
+            initTreeMatrix << nexusFileTreeMatrix;
+            initTreeMatrix << '[';
+            initTreeMatrix << _String (id);
+            initTreeMatrix << "][0]=\"";
+            initTreeMatrix << (_String*)treeIdents(id);
+            initTreeMatrix << "\";\n";
+            initTreeMatrix << nexusFileTreeMatrix;
+            initTreeMatrix << '[';
+            initTreeMatrix << _String (id);
+            initTreeMatrix << "][1]=\"";
+            initTreeMatrix << (_String*)treeStrings(id);
+            initTreeMatrix << "\";\n";
         }
+        initTreeMatrix.Finalize();
 
         _ExecutionList el (initTreeMatrix);
         el.Execute();
-        terminate_execution = false;
+        terminateExecution = false;
     }
     SkipUntilNexusBlockEnd (fState, f,CurrentLine, pos);
 }
@@ -818,33 +845,33 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
 //_________________________________________________________
 
 void    ProcessNexusHYPHY (FileState& fState, long pos, FILE*file, _String& CurrentLine, _DataSet&) {
-    static _String const endMark ("END;");
-    _StringBuffer bfBody  (128UL);
+    _String endMark ("END;"),
+            bfBody  (128L,true);
 
     long      p2 = pos;
-    pos = CurrentLine.FindAnyCase (endMark,pos+1,kStringEnd);
+    pos = CurrentLine.FindAnyCase (endMark,pos+1,-1);
 
     fState.fileType = 0;
 
-    if (pos != kNotFound) {
+    if (pos>=0) {
         bfBody << CurrentLine.Cut (p2,pos-1);
-        CurrentLine.Trim(pos+endMark.length(),-1);
+        CurrentLine.Trim(pos+endMark.sLength,-1);
     } else {
         bfBody << CurrentLine.Cut (p2,-1);
-        while (pos == kNotFound) {
+        while (pos<0) {
             ReadNextLine(file,&CurrentLine,&fState,false,false);
-            if (CurrentLine.empty()) {
+            if (!CurrentLine.sLength) {
                 break;
             }
 
-            pos = CurrentLine.FindAnyCase (endMark,0,kStringEnd);
-            if (pos != kNotFound) {
-                if (pos > 0) {
+            pos = CurrentLine.FindAnyCase (endMark,0,-1);
+            if (pos>=0) {
+                if (pos>0) {
                     bfBody << CurrentLine.Cut (0,pos-1);
                 }
 
-                CurrentLine.Trim (pos+endMark.length(), -1);
-                if (CurrentLine.empty()) {
+                CurrentLine.Trim (pos+endMark.sLength, -1);
+                if (!CurrentLine.sLength) {
                     ReadNextLine(file,&CurrentLine,&fState,false,false);
                 }
 
@@ -855,22 +882,24 @@ void    ProcessNexusHYPHY (FileState& fState, long pos, FILE*file, _String& Curr
 
         }
     }
-     nexusBFBody = bfBody;
+    bfBody.Finalize();
+
+    nexusBFBody = bfBody;
 
     fState.fileType = 3;
 
-    CurrentLine = CurrentLine.ChangeCase(kStringUpperCase);
+    CurrentLine.UpCase();
 
 }
 
 //_________________________________________________________
 
-bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result) {
-    static const _String key1 ("DIMENSIONS"), key11 ("NTAX"), key12 ("NCHAR"),
+bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result)
+{
+    _String key1 ("DIMENSIONS"), key11 ("NTAX"), key12 ("NCHAR"),
             key2 ("FORMAT"),key21 ("DATATYPE"), key22 ("MISSING"), key23 ("GAP"), key24 ("SYMBOLS"),
-            key25 ("EQUATE"), key26 ("MATCHCHAR"), key27 ("NOLABELS"), key28 ("INTERLEAVE"), key3 ("MATRIX"), keyEnd ("END");
-  
-    _String newAlph;
+            key25 ("EQUATE"), key26 ("MATCHCHAR"), key27 ("NOLABELS"), key28 ("INTERLEAVE"), key3 ("MATRIX"), keyEnd ("END"),
+            errMsg, newAlph;
 
     bool    done = false,
             labels = true;
@@ -887,77 +916,81 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
             break;
         }
 
-        if (CurrentLine.BeginsWith (keyEnd, false)) {
+        if (CurrentLine.beginswith (keyEnd, false)) {
             pos = -1;
             break;
         }
 
-        if (CurrentLine.BeginsWith (key1, false)) {
-          // DIMENSIONS
-            offSet = key1.length ();
+        if (CurrentLine.beginswith (key1, false)) {
+            offSet = key1.sLength;
             while (!done) {
-                _StringBuffer buffer (128UL);
-                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, true, true,true,false,false);
+                _String blank ((unsigned long)10, true);
+                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, blank, true, true,true,false,false);
 
-                if (buffer.BeginsWith(key11, false)) {
+                if (blank.beginswith(key11, false)) {
                     if (result.GetNames().lLength) {
-                        ReportWarning ("NTAX will override the definition of taxa names from the TAXA block");
+                        errMsg = "NTAX will override the definition of taxa names from the TAXA block";
+                        ReportWarning (errMsg);
                     }
-                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,buffer))) {
-                        ReportWarning ("NTAX is not followed by '= number-of-taxa'");
+                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,blank))) {
+                        errMsg = "NTAX is not followed by '= number-of-taxa'";
+                        ReportWarning (errMsg);
                         done = true;
                     } else {
                         done = done||(count>1);
-                        spExp = buffer.to_long();
-                        if(spExp<=0L) {
-                            ReportWarning ("NTAX must be a positive number");
+                        spExp = blank.toNum();
+                        if(spExp<=0) {
+                            errMsg = "NTAX must be a positive number";
+                            ReportWarning (errMsg);
                             done = true;
                             spExp = result.GetNames().lLength?result.GetNames().lLength:1;
                         }
                     }
-                } else if (buffer.BeginsWith(key12, false)) {
-                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,buffer))) {
-                        ReportWarning ("NCHAR is not followed by '= number-of-charaters'");
+                } else if (blank.beginswith(key12, false)) {
+                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,blank))) {
+                        errMsg = "NCHAR is not followed by '= number-of-charaters'";
+                        ReportWarning (errMsg);
                         done = true;
                     } else {
                         done = done||(count>1);
-                        sitesExp = buffer.to_long();
+                        sitesExp = blank.toNum();
                     }
                 }
-                offSet = 0L;
+                offSet = 0;
             }
             done = false;
-        } else if (CurrentLine.BeginsWith (key2, false)) {
-            // FORMAT
-            offSet = key2.length();
+        } else if (CurrentLine.beginswith (key2, false)) { // format instruction
+            offSet = key2.sLength;
             while (!done) {
                 charSwitcher = 0;
-                _StringBuffer buffer (128UL);
-                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, true, true,true,false,false);
-                offSet = 0L;
-                buffer.Trim (buffer.FirstNonSpaceIndex(),kStringEnd);
-                if (buffer.BeginsWith(key21)) { // datatype
-                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,buffer))) {
-                        ReportWarning ("DATATYPE is not followed by '= DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY'");
+                _String blank ((unsigned long)10, true);
+                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, blank, true, true,true,false,false);
+                offSet = 0;
+                blank.Trim (blank.FirstNonSpaceIndex(),-1);
+                if (blank.beginswith(key21)) { // datatype
+                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,blank))) {
+                        errMsg = "DATATYPE is not followed by '= DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY'";
+                        ReportWarning (errMsg);
                         done = true;
                     } else {
                         done = done||(count>1);
-                        if ( buffer == _String("DNA") || buffer == _String("RNA") || buffer ==  _String("NUCLEOTIDE" )) {
-                            if (newAlph.nonempty()) {
-                               ReportWarning (_String("DNA|RNA|NUCLEOTIDE datatype directive will over-ride the custom symbols definition: ") & newAlph.Enquote());
-                              newAlph.Clear();
+                        if ((blank==_String("DNA"))||(blank==_String("RNA"))||(blank==_String("NUCLEOTIDE"))) {
+                            if (newAlph.sLength) {
+                                errMsg = _String("DNA|RNA|NUCLEOTIDE datatype directive will over-ride the custom symbols definition: ") & newAlph;
+                                newAlph = emptyString;
+                                ReportWarning (errMsg);
                             }
                             if (done) {
                                 done = false;
                                 break;
                             }
                             continue;
-                        } else if (buffer==_String("PROTEIN") || buffer == _String ("BINARY")) {
-                            charState = 1+(buffer==_String("BINARY"));
-                            if (newAlph.nonempty()) {
-                                 newAlph = kEmptyString;
-                                 ReportWarning (_String("PROTEIN|BINARY datatype directive will override the custom symbols definition: ") & newAlph.Enquote());
-                                newAlph.Clear();
+                        } else if (blank==_String("PROTEIN") || blank == _String ("BINARY")) {
+                            charState = 1+(blank==_String("BINARY"));
+                            if (newAlph.sLength) {
+                                errMsg = _String("PROTEIN|BINARY datatype directive will override the custom symbols definition: ") & newAlph;
+                                newAlph = emptyString;
+                                ReportWarning (errMsg);
                             }
                             if (done) {
                                 done = false;
@@ -965,137 +998,167 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                             }
                             continue;
                         } else {
-                            ReportWarning (buffer.Enquote() &" is not a recognized data type (DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY are allowed).");
+                            errMsg = blank&" is not a recognized data type (DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY are allowed).";
+                            ReportWarning (errMsg);
                             done = false;
                         }
                     }
-                } else if (buffer.BeginsWith (key22, false)) { // MISSING
+                } else if (blank.beginswith(key22, false)) { // MISSING
                     charSwitcher = 1;
-                } else if (buffer.BeginsWith (key23, false)) { // GAP
+                } else if (blank.beginswith(key23, false)) { // GAP
                     charSwitcher = 2;
-                } else if (buffer.BeginsWith (key26, false)) { // MATCHCHAR
+                } else if (blank.beginswith(key26, false)) { // MATCHCHAR
                     charSwitcher = 3;
-                } else if (buffer.BeginsWith (key27, false)) { // NOLABELS
+                } else if (blank.beginswith(key27, false)) { // NOLABELS
                     labels = false;
-                } else if (buffer.BeginsWith (key28, false)) { // INTERLEAVE
+                } else if (blank.beginswith(key28, false)) { // INTERLEAVE
                     fState.interleaved = true;
-                } else if (buffer.BeginsWith(key24, false)) { // SYMBOLS
-                    count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,buffer, true,false);
-                    if (buffer.empty()) {
-                        ReportWarning (buffer.Enquote() & _String("is not of the form SYMBOLS = \"sym1 sym2 ...\". The entire block is ignored."));
+                } else if (blank.beginswith(key24, false)) { // SYMBOLS
+                    count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,blank, true,false);
+                    if (blank.sLength == 0) {
+                        errMsg = blank& _String("is not of the form SYMBOLS = \"sym1 sym2 ...\". The entire block is ignored.");
+                        ReportWarning (errMsg);
                         done = true;
                         break;
                     }
-                    _StringBuffer tempNewAlpha (128UL);
-                    for (long pos1 = 0; pos1<buffer.length (); pos1++) {
-                        charSwitcher = buffer.char_at (pos1);
-                        if (!isspace(charSwitcher)) {
+                    _String tempNewAlpha ((unsigned long)10, true);
+                    //bool  mult = false;
+                    for (long pos1 = 0; pos1<blank.sLength; pos1++) {
+                        charSwitcher = blank.sData[pos1];
+                        if (!isspace(charSwitcher))
+                            //{
+                            //if (!mult)
+                            //{
+                        {
                             tempNewAlpha<<charSwitcher;
                         }
- 
+                        //mult = true;
+                        //}
+                        //else
+                        //{
+                        //done = true;
+                        //errMsg = "Multicharacter symbols are not supported by HYPHY kernel. Skipping the entire data block";
+                        //break;
+                        //}
+                        //}
+                        //else
+                        //mult = false;
                     }
                     if (done) {
                         break;
                     }
+                    tempNewAlpha.Finalize();
                     newAlph = tempNewAlpha;
                     charSwitcher = 0;
                     done = done||(count>1);
-                } else if (buffer.BeginsWith(key25, false)) { // EQUATE
-                    buffer.Trim(key25.length(),kStringEnd);
-                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0,buffer,true,false))) {
-                        ReportWarning (buffer.Enquote ()&" is not followed by '=char'");
+                } else if (blank.beginswith(key25, false)) { // EQUATE
+                    blank.Trim(key25.sLength,-1);
+                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0,blank,true,false))) {
+                        errMsg = errMsg&" is not followed by '=char'";
+                        ReportWarning (errMsg);
                         done = true;
                     }
                     done = done||(count>1);
                     // blank now contains a full list of the form token=(token)
                     _String symbol, meaning;
                     bool    symbolDefined = false, meaningDefined = false;
-                    for (count=0; count<buffer.length(); count++) {
-                        charSwitcher = buffer.char_at (count);
+                    for (count=0; count<blank.sLength; count++) {
+                        charSwitcher = blank.sData[count];
                         if (isspace(charSwitcher)) {
+                            /*if (meaningDefined)
+                            {
+                                translations&& &symbol;
+                                translations&& &meaning;
+                                symbol = "";
+                                meaning = "";
+                                symbolDefined = false;
+                                meaningDefined = false;
+                            }   */
                             continue;
                         } else if (charSwitcher == '=') {
                             if (symbolDefined&&!meaningDefined) {
                                 meaningDefined = true;
                             }
                         } else
+                            //if (((charSwitcher>='A')&&(charSwitcher<='Z'))||((charSwitcher>='0')&&(charSwitcher<='9')))
+                        {
                             if (!symbolDefined) {
                                 symbolDefined = true;
                                 symbol = charSwitcher;
                                 continue;
                             }
                             if (!meaningDefined) {
-                                ReportWarning("EQUATE can only be used to define single-character tokens. Ignoring the EQUATE command.");
+                                errMsg = "EQUATE can only be used to define single-character tokens. Ignoring the EQUATE command.";
                                 translations.Clear();
                                 break;
                             }
                             meaning = meaning & charSwitcher;
-                     }
-                    if (symbol.length () && meaning.length () ) {
-                        translations < new _String (symbol);
-                        translations < new _String (meaning);
+                        }
+                    }
+                    if (symbol.sLength&&meaning.sLength) {
+                        translations&& &symbol;
+                        translations&& &meaning;
                     }
                     charSwitcher = 0;
-                  buffer.Clear();
+                    blank = emptyString;
                 }
 
                 offSet = 0;
-              
-                _String built_in;
-              
                 if (charSwitcher) {
                     switch (charSwitcher) {
-                      case 1:
-                          built_in = "MISSING";
-                          break;
-                      case 2:
-                          built_in = "GAP";
-                          break;
-                      case 3:
-                          built_in = "MATCHCHAR";
-                          break;
+                    case 1:
+                        errMsg = "MISSING";
+                        break;
+                    case 2:
+                        errMsg = "GAP";
+                        break;
+                    case 3:
+                        errMsg = "MATCHCHAR";
+                        break;
                     }
-                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,buffer, true))) {
-                        ReportWarning (buffer.Enquote() & " is not followed by '=char'");
+                    if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,blank, true))) {
+                        errMsg = errMsg&" is not followed by '=char'";
+                        ReportWarning (errMsg);
                         done = true;
                     } else {
                         done = done||(count>1);
-                        if (buffer.length () !=1) {
-                            ReportWarning (buffer.Enquote() &" is not a valid " & built_in &" character.");
+                        if (blank.sLength!=1) {
+                            errMsg = blank&" is not a valid "&errMsg&" character.";
+                            ReportWarning (errMsg);
                         }
                     }
                     switch (charSwitcher) {
-                      case 1:
-                          missing = buffer.char_at (0);
-                          if (gap == missing) {
-                              gap = 0;
-                          }
-                          if (repeat == missing) {
-                              repeat = 0;
-                          }
+                    case 1:
+                        missing = blank.getChar(0);
+                        if (gap == missing) {
+                            gap = 0;
+                        }
+                        if (repeat == missing) {
+                            repeat = 0;
+                        }
 
-                          break;
-                      case 2:
-                          gap = buffer.char_at (0);
-                          if (missing == gap) {
-                              missing = 0;
-                          }
-                          if (repeat == gap) {
-                              repeat= 0;
-                          }
+                        break;
+                    case 2:
+                        gap = blank.getChar(0);
+                        if (missing == gap) {
+                            missing = 0;
+                        }
+                        if (repeat == gap) {
+                            repeat= 0;
+                        }
 
-                          break;
-                      case 3:
-                          repeat = buffer.char_at(0);
-                          if (missing == repeat) {
-                              missing = 0;
-                          }
-                          if (repeat == gap) {
-                              gap = 0;
-                          }
+                        break;
+                    case 3:
+                        repeat = blank.getChar(0);
+                        if (missing == repeat) {
+                            missing = 0;
+                        }
+                        if (repeat == gap) {
+                            gap = 0;
+                        }
 
-                          break;
-                      }
+                        break;
+                    }
                 }
 
                 if (done) {
@@ -1104,10 +1167,10 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                 }
                 done = false;
             }
-        } else if (CurrentLine.BeginsWith (key3, false)) { // matrix instruction
+        } else if (CurrentLine.beginswith (key3, false)) { // matrix instruction
             // if needed, set up a new symbol set
-            offSet = key3.length();
-            if (newAlph.length()>1) { // a valid new alphabet set
+            offSet = key3.sLength;
+            if (newAlph.sLength>1) { // a valid new alphabet set
                 checkTTStatus (&fState);
                 fState.translationTable->AddBaseSet (newAlph);
             } else {
@@ -1130,7 +1193,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
             }
 
             for (long k = 0; k<translations.lLength; k+=2) {
-                char c = ((_String*)translations(k))->char_at (0);
+                char c = ((_String*)translations(k))->sData[0];
                 fState.translationTable->AddTokenCode (c,*((_String*)translations(k+1)));
             }
 
@@ -1163,40 +1226,45 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
 
 
             while (1) {
-              
-              _StringBuffer buffer   (128L),
-                            buffer_2 (128L),
-                            * source;
-              
-                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet?offSet+1:0, buffer, true, true,true,!labels,false);
+                _String  blank  ((unsigned long)10, true),
+                         blank2 ((unsigned long)10, true),
+                         *source;
+
+                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet?offSet+1:0, blank, true, true,true,!labels,false);
                 offSet = 0;
                 // in each line that should produce first the name of the taxon
                 // and then the data string for the taxon
 
                 if (labels) {
                     if (result.GetNames().lLength<spExp) {
-                        if (spExp>0 && buffer.nonempty ()) {
-                            ReportWarning (_String("Could not find NTAX taxon names in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.");
+                        if ((spExp>0)&&(blank.sLength==0)) {
+                            errMsg = _String("Could not find NTAX taxon names in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.";
+                            ReportWarning (errMsg);
+                            blank2.Finalize(); // dmalloc fix 06162005
                             break;
                         }
 
                         if (!(sitesExp&&fState.curSite&&(fState.curSite<sitesExp)&&(!fState.interleaved))) {
-                            result.AddName(buffer);
+                            result.AddName(blank);
                             fState.totalSpeciesExpected++;
                         }
                     } else {
                         if (done) {
+                            blank2.Finalize();  // dmalloc fix 06162005
                             break;
                         }
                     }
 
                     if (!(sitesExp&&fState.curSite&&(fState.curSite<sitesExp)&&(!fState.interleaved))) {
-                        done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer_2, true, true,true,true,false);
-                        source = &buffer_2;
+                        done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, blank2, true, true,true,true,false);
+                        source = &blank2;
                     } else {
-                        source = &buffer;
+                        blank2.Finalize();  // dmalloc fix 06162005
+                        source = &blank;
                     }
                 } else {
+                    blank2.Finalize();  // dmalloc fix 06162005
+
                     if (loopIterations<spExp) {
                         if (!(sitesExp&&fState.curSite&&(fState.curSite<sitesExp)&&(!fState.interleaved))) {
                             fState.totalSpeciesExpected++;
@@ -1204,10 +1272,10 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                             loopIterations --;
                         }
                     }
-                    source = &buffer;
+                    source = &blank;
                 }
 
-                if (source->nonempty()) {
+                if (source->sLength==0) {
                     ReportWarning (_String("Could not find NTAX data strings in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.");
                     break;
                 }
@@ -1219,36 +1287,40 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                         break;    // finished reading
                     }
 
-                if  ((f&&feof(f))||(fState.theSource&&(fState.theSource->length()<=fState.pInSrc))) {
+                if  ((f&&feof(f))||(fState.theSource&&(fState.theSource->sLength<=fState.pInSrc))) {
                     break;
                 }
             }
 
 
             if (result.GetNames().lLength!=spExp) {
-                ReportWarning(_String ("Expected ")&spExp&" taxa, but found "&(long)result.GetNames().lLength);
+                errMsg = _String ("Expected ")&spExp&" taxa, but found "&(long)result.GetNames().lLength;
+                ReportWarning(errMsg);
             }
             if (result.lLength!=sitesExp && result.InternalStorageMode() == 0) {
-                ReportWarning(_String ("Expected ")&sitesExp&" sites, but found "&(long)result.lLength);
+                errMsg = _String ("Expected ")&sitesExp&" sites, but found "&(long)result.lLength;
+                ReportWarning(errMsg);
             }
             if (spExp && loopIterations%spExp) {
-                ReportWarning(_String ("There is an inconsistency between NTAX and the number of data strings in the matrix"));
+                errMsg = _String ("There is an inconsistency between NTAX and the number of data strings in the matrix");
+                ReportWarning(errMsg);
             }
             done = true;
         } else {
-            ReportWarning (CurrentLine.Cut (0, CurrentLine.FirstSpaceIndex(1,kStringEnd)) & " is not used by HYPHY");
+            errMsg = CurrentLine.Cut (0, CurrentLine.FirstSpaceIndex(1,-1)) & " is not used by HYPHY";
+            ReportWarning (errMsg);
             while (!done) {
-                _StringBuffer buffer (128L);
-                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, true, false,true,false,false);
+                _String blank ((unsigned long)10, true);
+                done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, blank, true, false,true,false,false);
             }
             done = false;
         }
         if (!done) {
-            if (CurrentLine.empty ()) {
-                ReadNextLine(f,&CurrentLine,&fState,false);
+            if (CurrentLine.sLength == 0) {
+                ReadNextLine(f,&CurrentLine,&fState,false,false);
             }
             pos = 0;
-            if (CurrentLine.empty () ) {
+            if (CurrentLine.sLength==0) {
                 done = true;
             }
         }
@@ -1266,23 +1338,22 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
     long   f,g;
 
     fState.fileType = 3; // NEXUS
-    static const _String beginMark ("BEGIN"), endMark ("END"), data ("DATA"), chars ("CHARACTERS"),
+    _String CurrentLine, beginMark ("BEGIN"), endMark ("END"), blockName, data ("DATA"), chars ("CHARACTERS"),
             taxa ("TAXA"), trees ("TREES"), assumptions ("ASSUMPTIONS"), hyphy ("HYPHY"), sets ("SETS");
-  
-    _String CurrentLine, blockName;
 
-    ReadNextLine(file,&CurrentLine,&fState,false);
-    while (CurrentLine.nonempty()) {
+    ReadNextLine(file,&CurrentLine,&fState,false, false);
+    while (CurrentLine.sLength) {
         f = 0;
         while ((f = CurrentLine.FindAnyCase(beginMark,f,-1 ))>=0) {
-            f = CurrentLine.FirstNonSpaceIndex (f+beginMark.length(),-1,kStringDirectionForward);
+            f = CurrentLine.FirstNonSpaceIndex (f+beginMark.sLength,-1,1);
             if (f!=-1) { // process
                 g = CurrentLine.Find (';', f, -1);
-                if (g!=kNotFound) {
+                if (g!=-1) {
                     blockName = CurrentLine.Cut (f,g-1);
                     // dispatch to block readers
-                    if (blockName.EqualIgnoringCase(data)) {
-                        ReportWarning (blockName.Enquote() & " block is now deprecated in NEXUS and should not be used.");
+                    if (blockName.iEqual(&data)) {
+                        blockName = blockName &" block is now deprecated in NEXUS and should not be used.";
+                        ReportWarning (blockName);
 
                         if (!dataRead) {
                             dataRead = ProcessNexusData (fState, g+1, file, CurrentLine, result);
@@ -1290,28 +1361,32 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
                         //SkipUntilNexusBlockEnd (fState,file,CurrentLine,f);
 
                         else {
-                            ReportWarning ("Only one data set per NEXUS file is read by ReadDataSet - the 1st valid one.");
+                            blockName = "Only one data set per NEXUS file is read by ReadDataSet - the 1st valid one.";
+                            ReportWarning (blockName);
                         }
-                    } else if (blockName.EqualIgnoringCase(taxa)) {
+                    } else if (blockName.iEqual(&taxa)) {
                         if (!dataRead) {
                             ProcessNexusTaxa (fState, g+1, file, CurrentLine, result);
                         } else {
-                            ReportWarning ("The TAXA block was encountered after CHARACTER had been read and will be ignored.");
+                            blockName = "The TAXA block was encountered after CHARACTER had been read and will be ignored.";
+                            ReportWarning (blockName);
                         }
-                    } else if (blockName.EqualIgnoringCase(trees)) {
+                    } else if (blockName.iEqual(&trees)) {
                         ProcessNexusTrees (fState, g+1, file, CurrentLine, result);
-                    } else if (blockName.EqualIgnoringCase(chars)) {
+                    } else if (blockName.iEqual(&chars)) {
                         if (!dataRead) {
                             dataRead = ProcessNexusData (fState, g+1, file, CurrentLine, result);
                         } else {
-                            ReportWarning ("Only one data set per NEXUS file is read by ReadDataSet - the 1st valid one.");
+                            blockName = "Only one data set per NEXUS file is read by ReadDataSet - the 1st valid one.";
+                            ReportWarning (blockName);
                         }
-                    } else if (blockName.EqualIgnoringCase(assumptions)||blockName.EqualIgnoringCase(sets)) {
+                    } else if (blockName.iEqual(&assumptions)||blockName.iEqual(&sets)) {
                         ProcessNexusAssumptions (fState, g+1, file, CurrentLine, result);
-                    } else if (blockName.EqualIgnoringCase(hyphy)) {
+                    } else if (blockName.iEqual(&hyphy)) {
                         ProcessNexusHYPHY (fState, g+1, file, CurrentLine, result);
                     } else {
-                        ReportWarning (_String("NEXUS blocks ")&blockName.Enquote()&(" are not used by HYPHY."));
+                        blockName = _String("NEXUS blocks ")&blockName&(" are not used by HYPHY.");
+                        ReportWarning (blockName);
                         lookForEnd = true;
                         break;
                         // now look for the end of this block
@@ -1321,7 +1396,8 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
                     break;
                 }
             } else {
-                ReportWarning (_String ("NEXUS BEGIN must be followed by the name of the block. Skipping until next BEGIN statement."));
+                blockName = _String ("NEXUS BEGIN must be followed by the name of the block. Skipping until next BEGIN statement.");
+                ReportWarning (blockName);
                 break;
             }
         }
@@ -1330,7 +1406,7 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
             lookForEnd = false;
             SkipUntilNexusBlockEnd (fState,file,CurrentLine,f);
         } else {
-            ReadNextLine(file,&CurrentLine,&fState,false);
+            ReadNextLine(file,&CurrentLine,&fState,false, false);
         }
 
     }
