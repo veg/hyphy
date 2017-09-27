@@ -2,12 +2,12 @@
 plusF_helper.empirical_model_generators = {"LG": "models.protein.LG.ModelDescription",
                                            "WAG": "models.protein.WAG.ModelDescription",
                                            "JTT": "models.protein.JTT.ModelDescription",
-                                           "JC": "models.protein.JC.ModelDescription"};
+                                           "JC69": "models.protein.JC69.ModelDescription"};
 
 plusF_helper.Rij_options = {"LG":  models.protein.empirical.LG.empirical_R,
                             "WAG": models.protein.empirical.WAG.empirical_R,
                             "JTT": models.protein.empirical.JTT.empirical_R,
-                            "JC":  models.protein.empirical.JC.empirical_R};
+                            "JC69":  models.protein.empirical.JC69.empirical_R};
 
 
 // This code is elegant and I will hear nothing to the contrary.

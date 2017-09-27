@@ -5,9 +5,11 @@ LoadFunctionLibrary ("libv3/all-terms.bf");
 /** @module models.DNA */
 
 models.DNA.models = {{"GTR", "General time reversible model"}, 
-                     {"HKY85", "Hasegawa Kishino Yano 85 (HKY85) model"}};
+                     {"HKY85", "Hasegawa Kishino Yano 85 (HKY85) model"},
+                     {"JC69", "Jukes-Cantor 69 (JC69) model"}};
 
 models.DNA.alphabet = {{"A","C","G","T"}};
+models.DNA.dimensions = 4;
 
 /**
  * @name models.DNA.generic.DefineQMatrix

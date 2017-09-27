@@ -1,9 +1,22 @@
-RequireVersion("2.31");
-LoadFunctionLibrary("libv3/function-loader.bf");
+RequireVersion("2.3.4");
+
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+LoadFunctionLibrary("libv3/stats.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
+
+LoadFunctionLibrary("libv3/tasks/ancestral.bf");
+LoadFunctionLibrary("libv3/tasks/alignments.bf");
+LoadFunctionLibrary("libv3/tasks/estimators.bf");
+LoadFunctionLibrary("libv3/tasks/trees.bf");
+LoadFunctionLibrary("libv3/tasks/mpi.bf");
+LoadFunctionLibrary("libv3/convenience/math.bf");
+
 
 LoadFunctionLibrary("libv3/models/DNA.bf");
 LoadFunctionLibrary("libv3/models/DNA/GTR.bf");
-
+LoadFunctionLibrary("libv3/models/DNA/HKY85.bf");
+LoadFunctionLibrary("libv3/models/DNA/JC69.bf");
 
 /*------------------------------------------------------------------------------*/
 
@@ -27,9 +40,14 @@ SetDialogPrompt ("Specify a nucleotide multiple sequence alignment file");
 
 
 relative_nuc_rates.alignment_info       = alignments.ReadNucleotideDataSet ("relative_nuc_rates.dataset", None);
-relative_nuc_rates.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relative_nuc_rates.alignment_info[utility.getGlobalValue("terms.data.partitions")], None);
-relative_nuc_rates.partition_count = Abs (relative_nuc_rates.partitions_and_trees);
 
+name_mapping = relative_nuc_rates.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
+if (None == name_mapping) {  
+    name_mapping = {};
+    utility.ForEach (alignments.GetSequenceNames ("relative_nuc_rates.dataset"), "_value_", "`&name_mapping`[_value_] = _value_");
+} 
+relative_nuc_rates.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (relative_nuc_rates.alignment_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+relative_nuc_rates.partition_count = Abs (relative_nuc_rates.partitions_and_trees);
 
 io.CheckAssertion ("relative_nuc_rates.partition_count==1", "This analysis can only handle a single partition");
 
@@ -51,7 +69,8 @@ relative_nuc_rates.model_name  = io.SelectAnOption (models.DNA.models,
 
 // TODO: Add more nucleotide models, once more are added to the models/DNA/...
 relative_nuc_rates.model_generators = {"GTR": "models.DNA.GTR.ModelDescription",
-                                       "HKY85": "models.DNA.HKY85.ModelDescription"};
+                                       "HKY85": "models.DNA.HKY85.ModelDescription",
+                                       "JC69": "models.DNA.JC69.ModelDescription"};
 
 relative_nuc_rates.model_generator = relative_nuc_rates.model_generators[relative_nuc_rates.model_name];
 
@@ -85,23 +104,7 @@ relative_nuc_rates.table_output_options = {terms.table_options.header : TRUE, te
 
 relative_nuc_rates.site_patterns = alignments.Extract_site_patterns (relative_nuc_rates.filter_names[0]);
 
-/**
-	relative_nuc_rates.site_patterns  maps a unique site pattern (by index) to 
-		-- the list of sites that match the pattern
-		-- whether or not it is constant (invariable)
-	
-
-	{
-	 "0":{
-	   "sites":{
-		 "0":0
-		},
-	   "is_constant":0
-	  },
-*/
-
 // set-up model for site-level fitting in the next couple of lines
-
 relative_nuc_rates.site_model = model.generic.DefineModel(relative_nuc_rates.model_generator,
         "relative_nuc_rates_site_model_instance", {
             "0": parameters.Quote(terms.global),
@@ -114,13 +117,11 @@ relative_nuc_rates.site_model_mapping = {"relative_nuc_rates_site_model_instance
         
 // relative_nuc_rates.site_tree is created from the information in  relative_nuc_rates.trees[0]
 // and populated with (the default) model        
-        
 model.ApplyModelToTree( "relative_nuc_rates.site_tree", relative_nuc_rates.trees[0], {terms.default : relative_nuc_rates.site_model}, None);
 
 // create a site filter; this is an ugly hack for the time being
 // alignments.serialize_site_filter returns HBL code as string in 
 // which the function `__make_filter` is defined.
- 
 ExecuteCommands (alignments.serialize_site_filter (
 								   relative_nuc_rates.filter_names[0],
 								   ((relative_nuc_rates.site_patterns[0])[terms.data.sites])[0]));
@@ -144,10 +145,10 @@ estimators.ApplyExistingEstimates ("relative_nuc_rates.site_likelihood", relativ
 									);
 					
 
-relative_nuc_rates.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"relative_nuc_rates.site_likelihood"}},
-								    "Models" : {{"relative_nuc_rates.site_model"}},
-								    "Headers" : utility.GetListOfLoadedModules (),
-								    "Variables" : {{"relative_nuc_rates.site_model_scaler_name"}}
+relative_nuc_rates.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"relative_nuc_rates.site_likelihood"}},
+								    terms.mpi.Models : {{"relative_nuc_rates.site_model"}},
+								    terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
+								    terms.mpi.Variables : {{"relative_nuc_rates.site_model_scaler_name"}}
 							 });
 
 /* run the main loop over all unique site pattern combinations */

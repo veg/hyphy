@@ -28,7 +28,9 @@ function frequencies.empirical.binary(model, namespace, datafilter) {
  * @returns {Dictionary} updated model
  */
 function frequencies.equal(model, namespace, datafilter) {
-    __N = Abs(model[terms.alphabet]);
+    
+    
+    __N = utility.Array1D(model[terms.alphabet]);
     model[terms.efv_estimate] = {
         __N,
         1
