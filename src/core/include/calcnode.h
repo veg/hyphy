@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon42@uwo.ca)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -81,7 +81,7 @@ private:
 public:
 	void init(		long esiteCount,
 						long ealphabetDimension,
-						hyFloat* eiNodeCache);
+						_Parameter* eiNodeCache);
 
 
 	double launchmdsocl(	_SimpleList& updateNodes,
@@ -90,7 +90,7 @@ public:
 							_SimpleList& flatCLeaves,
 							_SimpleList& flatLeaves,
 							_SimpleList& flatTree,
-							hyFloat* theProbs,
+							_Parameter* theProbs,
 							_SimpleList& theFrequencies,
 							long* lNodeFlags,
 							_SimpleList& taggedInternals,
@@ -132,19 +132,19 @@ public:
         return TREE_NODE;
     }
 
-    virtual void        Duplicate       (BaseRefConst);
+    virtual void        Duplicate       (BaseRef);
 
     virtual long        FreeUpMemory    (long);
 
     void                InitializeCN    ( _String&, int, _VariableContainer*, _AVLListXL * = nil);
 
-    virtual BaseRef     makeDynamic     (void) const;
+    virtual BaseRef     makeDynamic     (void);
     // creates a dynamic copy of this object
 
     virtual BaseRef     toStr           (unsigned long = 0UL);
     // converts this object to string
 
-    hyFloat&         operator[]      (unsigned long);
+    _Parameter&         operator[]      (unsigned long);
     // access the i-th element of the
     // probabilities (i = 0..codeBase-1)
 
@@ -182,10 +182,10 @@ public:
         }
     }
 
-    hyFloat          GetProbs        (long k) {
+    _Parameter          GetProbs        (long k) {
         return theProbs[k];
     }
-    hyFloat*         GetProbs        (void) {
+    _Parameter*         GetProbs        (void) {
         return theProbs;
     }
 
@@ -199,7 +199,7 @@ public:
         return cBase;
     }
 
-    hyFloat          ComputeBranchLength    (void);
+    _Parameter          ComputeBranchLength    (void);
     virtual long        SetDependance   (long);
 
     node<long>*         LocateMeInTree  (void) const;
@@ -243,23 +243,9 @@ public:
      */
 
     friend  class       _TheTree;
-  
-    /**
-     * Converts a string of form ":[\d\.]\+" into a double
-     * \n SLKP 20100831: a utility function to handle the
-     * conversion of branch length strings to parameters
-     * \n\n \b Example: string = ":3.14" returns 3.14
-     * \n If it is not of correct form, it will return 1e-10
-     * @param branch_length the branch length specifier
-     * @return the parsed branch length or default "small" value (or -1 when an empty string is passed)
-     * Revision history
-      - SLKP 20170616 moved from _String v2.3, changed from being a member of _String
-     */
-    static hyFloat    ProcessTreeBranchLength (_String const& branch_length);
-
 
 public:
-    hyFloat*     theProbs;       // list of transitional probabilities
+    _Parameter*     theProbs;       // list of transitional probabilities
     long            lastState;
 
 protected:
@@ -307,7 +293,7 @@ protected:
 class      nodeCoord {
 
 public:
-    hyFloat  h,
+    _Parameter  h,
                 v,
                 auxD,
                 bL,
@@ -330,7 +316,7 @@ public:
 
 //_______________________________________________________________________________________________
 
-typedef bool _HYTopologyTraversalFunction (node<long>*, hyPointer);
+typedef bool _HYTopologyTraversalFunction (node<long>*, Ptr);
 
 //_______________________________________________________________________________________________
 
@@ -347,7 +333,7 @@ class _TreeTopology: public _CalcNode {
 protected:
 
     virtual void            PreTreeConstructor                  (bool);
-    virtual bool            MainTreeConstructor                 (_String const&,bool = true, _AssociativeList* mapping = nil);
+    virtual bool            MainTreeConstructor                 (_String&,bool = true, _AssociativeList* mapping = nil);
     virtual void            PostTreeConstructor                 (bool);
     node<long>*     prepTree4Comparison                 (_List&, _SimpleList&, node<long>* = nil) const;
     void            destroyCompTree                     (node<long>*) const;
@@ -355,8 +341,8 @@ protected:
     char            internalTreeCompare                 (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology const*, bool = false) const;
     char            internalNodeCompare                 (node<long>*, node<long>*, _SimpleList&, _SimpleList*, bool, long, node<long>*, _TreeTopology const*, bool = false) const;
     virtual _PMathObj       FlatRepresentation                  (void);
-    void            FindCOTHelper                       (node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, hyFloat);
-    void            FindCOTHelper2                      (node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, hyFloat);
+    void            FindCOTHelper                       (node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, _Parameter);
+    void            FindCOTHelper2                      (node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, _Parameter);
     void            AddANode                            (_PMathObj);
     /*
 
@@ -394,16 +380,16 @@ public:
     void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_String&, long  = -1, bool = false) const;
 
     _TreeTopology                       (void);
-    _TreeTopology                       (_String, _String const&, bool = true, _AssociativeList* mapping = nil);
+    _TreeTopology                       (_String, _String&, bool = true, _AssociativeList* mapping = nil);
     _TreeTopology                       (_String*);
     _TreeTopology                       (_TheTree*);
 
     virtual                 ~_TreeTopology                      (void);
 
     virtual  _FString*      Compare                             (_PMathObj);
-    virtual  BaseRef        makeDynamic                         (void) const;
-    node<long>* CopyTreeStructure                   (node<long>*, bool) const;
-    virtual  bool           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _String* = NULL);
+    virtual  BaseRef        makeDynamic                         (void);
+    node<long>* CopyTreeStructure                   (node<long>*, bool);
+    virtual  bool           FinalizeNode                        (node<long>*, long, _String, _String&, _String&, _String* = NULL);
 
 
     virtual _PMathObj       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
@@ -435,10 +421,10 @@ public:
      */
 
     /*
-    void            DepthWiseT                          (bool = false, _HYTopologyTraversalFunction* = nil, hyPointer = nil);
+    void            DepthWiseT                          (bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil);
     void            DepthWiseTRight                     (bool = false);
     void            DepthWiseTLevel                     (long& level, bool = false);
-    void            StepWiseT                           (bool = false, _HYTopologyTraversalFunction* = nil, hyPointer = nil);
+    void            StepWiseT                           (bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil);
     void            StepWiseTLevel                      (long&, bool = false);
     void            LeafWiseT                           (bool = false);
     */
@@ -453,11 +439,11 @@ public:
     //               just the numeric value (if false)
 
 
-    virtual hyFloat      GetBranchLength                     (node<long> *) const;
+    virtual _Parameter      GetBranchLength                     (node<long> *) const;
     virtual void            GetBranchValue                      (node<long> *, _String&) const;
     virtual void            GetBranchVarValue                   (node<long> *, _String&, long) const;
     virtual _String const  GetNodeStringForTree                (node<long> *, int flags) const;
-    virtual void            PasteBranchLength                   (node<long> *, _String&, long, hyFloat factor = 1.) const;
+    virtual void            PasteBranchLength                   (node<long> *, _String&, long, _Parameter factor = 1.) const;
 
     node<long>&     GetRoot                             (void) const {
       return  *theRoot;
@@ -547,7 +533,7 @@ public:
 
 
 #if USE_SCALING_TO_FIX_UNDERFLOW
-extern hyFloat scalingLogConstant;
+extern _Parameter scalingLogConstant;
 #endif
 
 //_______________________________________________________________________________________________
@@ -561,7 +547,7 @@ class _TheTree: public _TreeTopology
 public:
 
     _TheTree ();                                                // default constructor - doesn't do much
-    _TheTree (_String name, _String const& parms, bool = true);       // builds a tree from a string
+    _TheTree (_String name, _String& parms, bool = true);       // builds a tree from a string
     _TheTree (_String name, _TreeTopology*);                    // builds a tree from a tree topology
     _TheTree (_String name, _TheTree*);                    // builds a tree from another tree
 
@@ -589,8 +575,8 @@ public:
     //iterate through the leaves (left-to-right)
      */
 
-    virtual  bool           FinalizeNode                (node<long>*, long, _String, _String const&, _String&, _String* = NULL);
-    virtual  BaseRef        makeDynamic                 (void) const;
+    virtual  bool           FinalizeNode                (node<long>*, long, _String, _String&, _String&, _String* = NULL);
+    virtual  BaseRef        makeDynamic                 (void);
 
     virtual  BaseRef        makeDynamicCopy             (_String*);
     node<long>* DuplicateTreeStructure      (node<long>*, _String*, bool);
@@ -605,7 +591,7 @@ public:
 
     virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
     virtual  void           GetBranchLength             (node<long> *, _String&, bool = false) const;
-    virtual  hyFloat     GetBranchLength             (node<long> *) const ;
+    virtual  _Parameter     GetBranchLength             (node<long> *) const ;
     virtual  void           GetBranchValue              (node<long> *, _String&) const ;
     virtual  void           GetBranchVarValue           (node<long> *, _String&, long) const ;
     virtual _String const*        GetNodeModel                (node<long> *) const;
@@ -613,13 +599,13 @@ public:
     void            InitializeTreeFrequencies   (_Matrix *, bool = false);
 
 
-    hyFloat      Process3TaxonNumericFilter  (_DataSetFilterNumeric*, long = 0);
+    _Parameter      Process3TaxonNumericFilter  (_DataSetFilterNumeric*, long = 0);
 
 
 
-    _List*      RecoverAncestralSequences       (_DataSetFilter const*, _SimpleList const&, _List const&, hyFloat *, hyFloat const*, long, long*, _GrowingVector*, bool = false);
+    _List*      RecoverAncestralSequences       (_DataSetFilter const*, _SimpleList const&, _List const&, _Parameter *, _Parameter const*, long, long*, _GrowingVector*, bool = false);
     void        RecoverNodeSupportStates        (_DataSetFilter const*, long, _Matrix&);
-    void        RecoverNodeSupportStates2       (node<long>*,hyFloat*,hyFloat*,long);
+    void        RecoverNodeSupportStates2       (node<long>*,_Parameter*,_Parameter*,long);
     _List*      SampleAncestors                 (_DataSetFilter*, node<long>*);
     void        PurgeTree                       (void);
 
@@ -670,15 +656,15 @@ public:
     ScaledBranchMapping             (node<nodeCoord>* , _String*, long, long&, char) const;
 
     node<nodeCoord>*
-    RadialBranchMapping             (node<long>* , node<nodeCoord>*, _String*, hyFloat, long&, hyFloat&, char);
+    RadialBranchMapping             (node<long>* , node<nodeCoord>*, _String*, _Parameter, long&, _Parameter&, char);
 
-    void        ScaledBranchReMapping           (node<nodeCoord>*, hyFloat) const;
+    void        ScaledBranchReMapping           (node<nodeCoord>*, _Parameter) const;
     char&       RootedFlag                      (void) {
         return rooted;
     }
 
-    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_String&,hyFloat,hyFloat,long,long) const;
-    void        TreePSRecurse                   (node<nodeCoord>*,_String&,hyFloat,hyFloat,long,long,long,long,_AssociativeList* = nil, char = 0, hyFloat* = nil) const;
+    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long) const;
+    void        TreePSRecurse                   (node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long,long,long,_AssociativeList* = nil, char = 0, _Parameter* = nil) const;
 
     bool        AllBranchesHaveModels           (long) const;
     void        ScanSubtreeVars                 (_List&, char, _CalcNode*) const;
@@ -704,9 +690,9 @@ public:
   
     void        AddNodeNamesToDS                (_DataSet*, bool, bool, char) const;
     // if the
-    hyFloat  PSStringWidth                   (_String&);
+    _Parameter  PSStringWidth                   (_String&);
 
-    hyFloat  DetermineBranchLengthGivenScalingParameter (long, _String&, char) const;
+    _Parameter  DetermineBranchLengthGivenScalingParameter (long, _String&, char) const;
 
     _AVLListX*  ConstructNodeToIndexMap         (bool) const;
     // 20090206: SLKP
@@ -742,36 +728,36 @@ public:
 
     const _CalcNode * GetNodeFromFlatIndex (long index) const;
   
-    hyFloat  VerySimpleLikelihoodEvaluator   (_SimpleList&            updateNodes,
+    _Parameter  VerySimpleLikelihoodEvaluator   (_SimpleList&            updateNodes,
             _DataSetFilter*      theFilter,
-            hyFloat*          iNodeCache,
+            _Parameter*          iNodeCache,
             long       *             lNodeFlags,
             _GrowingVector*      lNodeResolutions);
 
 #ifdef MDSOCL
-			hyFloat OCLLikelihoodEvaluator (			_SimpleList&	     updateNodes, 
+			_Parameter OCLLikelihoodEvaluator (			_SimpleList&	     updateNodes, 
                                                         _DataSetFilter*		 theFilter,
-                                                        hyFloat*			 iNodeCache,
+                                                        _Parameter*			 iNodeCache,
                                                          long	   *		 lNodeFlags,
                                                         _GrowingVector*		 lNodeResolutions,
 														_OCLEvaluator& OCLEval);
 #endif
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
-    void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, hyFloat const*, _List&, _SimpleList*, _List&, hyFloat const*, long);
+    void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, _Parameter const*, _List&, _SimpleList*, _List&, _Parameter const*, long);
 
-    hyFloat      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, hyFloat*, long*, hyFloat*, _GrowingVector*, long&, long, long, long = -1, hyFloat* = nil, long* = nil, long = -1, long * = nil);
+    _Parameter      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
     long            DetermineNodesForUpdate         (_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true);
     void            ExponentiateMatrices            (_List&, long, long = -1);
-    void            FillInConditionals              (_DataSetFilter const*, hyFloat*,  _SimpleList*);
+    void            FillInConditionals              (_DataSetFilter const*, _Parameter*,  _SimpleList*);
 
     void            ComputeBranchCache              ( _SimpleList&,
             long nodeID,
-            hyFloat*         cache,
-            hyFloat*         iNodeCache,
+            _Parameter*         cache,
+            _Parameter*         iNodeCache,
             _DataSetFilter const*     theFilter,
             long           *        lNodeFlags,
-            hyFloat*         scalingAdjustments,
+            _Parameter*         scalingAdjustments,
             long*                   siteCorrectionCounts,
             _GrowingVector*     lNodeResolutions,
             long&                   overallScaler,
@@ -779,21 +765,21 @@ public:
             long                    siteTo,
             long                    catID,
             _SimpleList*            = nil,
-            hyFloat*         = nil
+            _Parameter*         = nil
                                                     );
 
-    hyFloat          ComputeLLWithBranchCache         (
+    _Parameter          ComputeLLWithBranchCache         (
         _SimpleList&            siteOrdering,
         long                    brID,
-        hyFloat*         cache,
+        _Parameter*         cache,
         _DataSetFilter const*     theFilter,
         long                    siteFrom,
         long                    siteTo,
         long                    catID,
-        hyFloat*         storageVec = nil
+        _Parameter*         storageVec = nil
     );
 
-    hyFloat          ComputeTwoSequenceLikelihood    (
+    _Parameter          ComputeTwoSequenceLikelihood    (
         _SimpleList&            siteOrdering,
         _DataSetFilter const*     theFilter,
         long           *        lNodeFlags,
@@ -801,7 +787,7 @@ public:
         long siteFrom,
         long siteTo,
         long catID,
-        hyFloat* storageVec = nil);
+        _Parameter* storageVec = nil);
 #endif
 
     // --------------------------
@@ -810,7 +796,7 @@ public:
     long      * nodeStates;
     char      * nodeMarkers;
 
-    hyFloat* rootIChildrenCache,
+    _Parameter* rootIChildrenCache,
                 * marginalLikelihoodCache;
 
     _AVLListXL* aCache;
@@ -879,8 +865,7 @@ template <class data_type> _CalcNode* map_node_to_calcnode (node<data_type>* n) 
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-extern hyTreeDefinitionPhase     isDefiningATree;
-
+extern char     isDefiningATree;
 extern _String  expectedNumberOfSubs,
        stringSuppliedLengths,
        includeModelSpecs,

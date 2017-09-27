@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
-  Art FY Poon    (apoon42@uwo.ca)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
@@ -37,16 +37,17 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#ifdef    __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
+
+#include "likefunc.h"
+#include "function_templates.h"
 
 #include <math.h>
 
 
-#include "likefunc.h"
-#include "function_templates.h"
-#include "global_things.h"
-
-using namespace hy_global;
-
+#ifdef  _SLKP_LFENGINE_REWRITE_
 
 _String _hyMarginalSupportMatrix ("marginal_support_matrix");
 
@@ -62,7 +63,7 @@ void    _LikelihoodFunction::DetermineLocalUpdatePolicy (void)
 
         computedLocalUpdatePolicy.AppendNewInstance (new _SimpleList (catCount,0,0));
         
-        for (unsigned long l = 0UL; l < catCount; l++) {
+        for (unsigned long l = 0; l < catCount; l++) {
             lup->AppendNewInstance (new _SimpleList);
             mte->AppendNewInstance (new _List);
         }
@@ -80,13 +81,13 @@ void    _LikelihoodFunction::ComputeParameterPenalty (void){
   if (smoothingTerm > 0.0) {
       //printf ("\n_LikelihoodFunction::ComputeParameterPenalty\n");
       for (unsigned long k = 0; k < indexInd.lLength; k ++) {
-        hyFloat lb = GetIthIndependentBound(k, true),
+        _Parameter lb = GetIthIndependentBound(k, true),
                    ub = GetIthIndependentBound(k, false),
                    mp = 0.5*(lb+ub),
                    span = ub-lb,
                    v  = GetIthIndependent(k);
                    
-       hyFloat term = exp (50*log (2.*fabs (v-mp)/span));
+       _Parameter term = exp (50*log (2.*fabs (v-mp)/span));
        /*if (term > 0.0) {
         printf ("\n[_LikelihoodFunction::ComputeParameterPenalty %lu: %g %g %g %g]\n", k, lb, ub, v, term); 
        }*/
@@ -251,7 +252,7 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
             }
             catch (const _String error) {
                 BatchDelete (catVarReferences,catVarCounts,catVarOffsets,hmmAndCOP,varType,container);
-                HandleApplicationError (error);
+                WarnError (error);
                 return;
                 
             }
@@ -280,7 +281,7 @@ void    _LikelihoodFunction::RestoreScalingFactors (long index, long branchID, l
 
 /*--------------------------------------------------------------------------------------------------*/
 
-bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList) const {
+bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList, _String const & caller) const {
     long    partCount = CountObjects(kLFCountPartitions);
   
     if (partitionList) {
@@ -288,8 +289,9 @@ bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matr
         partsToDo.Sort();
         partsToDo.FilterRange (-1, partCount);
         if (partsToDo.lLength == 0) {
-            throw (_String("An invalid likelihood function partition specification"));
-         }
+            WarnError (_String("An invalid partition specification in call to ") & caller);
+            return false;
+        }
     } else {
       partsToDo.Populate (partCount, 0, 1);
     }
@@ -327,11 +329,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
     // check if we need to deal with rate variation
     _Matrix         *rateAssignments = nil;
     if  (!doMarginal && indexCat.lLength>0) {
-        rateAssignments = ConstructCategoryMatrix(doTheseOnes,_hyphyLFConstructCategoryMatrixClasses,false);
-        if (!rateAssignments) {
-            HandleApplicationError (_String ("Failed to construct a category matrix in ") & __PRETTY_FUNCTION__);
-            return;
-        }
+        rateAssignments = (_Matrix*)checkPointer(ConstructCategoryMatrix(doTheseOnes,_hyphyLFConstructCategoryMatrixClasses,false));
     } else {
         Compute();    // need to do this to populate rate matrices
     }
@@ -453,7 +451,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
 
 //_______________________________________________________________________________________________
 
-void            _LikelihoodFunction::PopulateConditionalProbabilities   (long index, char runMode, hyFloat* buffer, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues)
+void            _LikelihoodFunction::PopulateConditionalProbabilities   (long index, char runMode, _Parameter* buffer, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues)
 // this function computes site probabilties for each rate class (or something else that involves iterating over rate classes)
 // see run options below
 
@@ -559,7 +557,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
             // setting each category variable to its appropriate value
 
-            hyFloat       currentRateWeight = 1.;
+            _Parameter       currentRateWeight = 1.;
             if (pass == 0) {
                 if (!isTrivial) {
                     long remainder = currentRateCombo % categoryCounts->lData[catCount];
@@ -639,7 +637,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
             if (runMode == _hyphyLFConditionProbsRawMatrixMode || runMode == _hyphyLFConditionProbsScaledMatrixMode)
                 // populate the matrix of conditionals and scaling factors
             {
-                hyFloat  _hprestrict_ *bufferForThisCategory = buffer + indexShifter;
+                _Parameter  _hprestrict_ *bufferForThisCategory = buffer + indexShifter;
 
                 ComputeBlock    (index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
                 if (usedCachedResults) {
@@ -673,7 +671,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                                     // this class is a smaller scaling factor, i.e. its the biggest among all those
                                     // considered so far; all other classes need to be scaled down
                                 {
-                                    hyFloat scaled = acquireScalerMultiplier (-scalerDifference);
+                                    _Parameter scaled = acquireScalerMultiplier (-scalerDifference);
                                     for (long z = indexShifter+r1-blockLength; z >= 0; z-=blockLength) {
                                         buffer[z] *= scaled;
                                     }
@@ -747,7 +745,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                                      diff = scv - scalers.lData[r3];
 
                                 if (diff<0) { // this has a _smaller_ scaling factor
-                                    hyFloat scaled = buffer[r1]*acquireScalerMultiplier (diff);
+                                    _Parameter scaled = buffer[r1]*acquireScalerMultiplier (diff);
                                     if (buffer[r2] > scaled) {
                                         doChange = true;
                                     } else {
@@ -789,7 +787,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
 //_______________________________________________________________________________________________
 
-void            _LikelihoodFunction::ComputeSiteLikelihoodsForABlock    (long index, hyFloat* results, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues, char mpiRunMode)
+void            _LikelihoodFunction::ComputeSiteLikelihoodsForABlock    (long index, _Parameter* results, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues, char mpiRunMode)
 // assumes that results is at least blockLength slots long
 {
     if (blockDependancies.lData[index]) {
@@ -829,8 +827,8 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                     siteCount                        = dsf->GetSiteCount         (),
                     shiftForTheNode                 = patternCount * alphabetDimension;
 
-    hyFloat      *siteLikelihoods                = new hyFloat [2*patternCount],
-    *siteLikelihoodsSpecState       = new hyFloat [2*patternCount];
+    _Parameter      *siteLikelihoods                = new _Parameter [2*patternCount],
+    *siteLikelihoodsSpecState       = new _Parameter [2*patternCount];
 
     _SimpleList     scalersBaseline,
                     scalersSpecState,
@@ -854,7 +852,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                                                  branchID+iNodeCount, &branchValues);
                 for (long siteID = 0; siteID < patternCount; siteID++) {
                     long scaleDiff = (scalersSpecState.lData[siteID]-scalersBaseline.lData[siteID]);
-                    hyFloat ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
+                    _Parameter ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
 
                     if (scaleDiff > 0) {
                         ratio *= acquireScalerMultiplier(scaleDiff);
@@ -876,7 +874,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                 ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID, &branchValues);
                 for (long siteID = 0; siteID < patternCount; siteID++) {
                     long scaleDiff = (scalersSpecState.lData[siteID]-scalersBaseline.lData[siteID]);
-                    hyFloat ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
+                    _Parameter ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
                     if (scaleDiff > 0) {
                         ratio *= acquireScalerMultiplier(scaleDiff);
                     }
@@ -900,7 +898,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
         for  (long nodeID = 0; nodeID < matrixSize ; nodeID++) {
             long            mappedNodeID = postToIn.lData[nodeID];
-            hyFloat      max_lik     = 0.,
+            _Parameter      max_lik     = 0.,
                             sum         = 0.,
                             *scores       = supportValues.theData + shiftForTheNode*mappedNodeID +  siteID*alphabetDimension;
             long            max_idx     = 0;
@@ -957,7 +955,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
 //__________________________________________________________________________________
 
-hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * patternLikelihoods, _Matrix& hmm, _Matrix& hmf, _SimpleList const * duplicateMap, const _SimpleList* scalers, long bl) {
+_Parameter          _LikelihoodFunction::SumUpHiddenMarkov (const _Parameter * patternLikelihoods, _Matrix& hmm, _Matrix& hmf, _SimpleList const * duplicateMap, const _SimpleList* scalers, long bl) {
     long               ni           = hmm.GetHDim(),
                        mi           = duplicateMap?duplicateMap->lData[duplicateMap->lLength-1]:bl-1,
                        siteScaler    = duplicateMap?scalers->lData[mi]:((_SimpleList*)((_List*)scalers)->lData[0])->lData[mi];
@@ -965,12 +963,12 @@ hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * pattern
     _Matrix            temp  (ni,1,false,true),
                        temp2 (ni,1,false,true);
 
-    hyFloat         correctionFactor = 0; // correction factor
+    _Parameter         correctionFactor = 0; // correction factor
 
     for (long m=0, mi2 = mi; m<ni; m++,mi2 += bl) {
         long currentScaler = duplicateMap?scalers->lData[mi2]:((_SimpleList*)((_List*)scalers)->lData[m])->lData[mi];
         if (currentScaler < siteScaler) { // this class has a _smaller_ scaling factor
-            hyFloat upby = acquireScalerMultiplier (siteScaler - currentScaler);
+            _Parameter upby = acquireScalerMultiplier (siteScaler - currentScaler);
             for (long rescale = 0; rescale < m; rescale ++) {
                 temp2.theData[rescale] *= upby;
             }
@@ -987,13 +985,13 @@ hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * pattern
     }
 
     for (long i=duplicateMap?duplicateMap->lLength-2:bl-2; i>=0; i--) {
-        hyFloat max        = 0.;
+        _Parameter max        = 0.;
         long       siteScaler = duplicateMap?
                                 scalers->lData[duplicateMap->lData[i]]:
                                 ((_SimpleList*)((_List*)scalers)->lData[0])->lData[i];
 
         for (long k=0; k<ni; k++) {
-            hyFloat scrap = 0.;
+            _Parameter scrap = 0.;
 
             mi    = duplicateMap?duplicateMap->lData[i]:i;
 
@@ -1003,7 +1001,7 @@ hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * pattern
                                      ((_SimpleList*)((_List*)scalers)->lData[m])->lData[i];
 
                 if (currentScaler < siteScaler) { // this class has a _smaller_ scaling factor
-                    hyFloat upby = acquireScalerMultiplier (siteScaler - currentScaler);
+                    _Parameter upby = acquireScalerMultiplier (siteScaler - currentScaler);
                     for (long rescale = 0; rescale < k; rescale ++) {
                         temp.theData[rescale] *= upby;
                     }
@@ -1044,7 +1042,7 @@ hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * pattern
         EXCHANGE(temp.theData, temp2.theData);
     }
 
-    hyFloat scrap = 0.0;
+    _Parameter scrap = 0.0;
 
     for (long k=0; k<ni; k++) {
         scrap += temp2.theData[k] * hmf.theData[k];
@@ -1055,7 +1053,7 @@ hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * pattern
 
 //__________________________________________________________________________________
 
-void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 const hyFloat * patternLikelihoods,
+void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 const _Parameter * patternLikelihoods,
         _Matrix & hmm,                  _Matrix& hmf,
         _SimpleList const * duplicateMap,       const _SimpleList* scalers,
         long bl )
@@ -1083,7 +1081,7 @@ void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 
                                                         ((_SimpleList*)((_List*)scalers)->lData[0])->lData[site];
 
 
-                hyFloat      bestValue = log(patternLikelihoods[mi]*hmm.theData[parentState*ni]) + temp.theData[0];
+                _Parameter      bestValue = log(patternLikelihoods[mi]*hmm.theData[parentState*ni]) + temp.theData[0];
                 mi           += bl;
 
                 if (currentScaler) {
@@ -1095,7 +1093,7 @@ void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 
                                     scalers->lData[mi]:
                                     ((_SimpleList*)((_List*)scalers)->lData[currentState])->lData[site];
 
-                    hyFloat      currentValue = log(patternLikelihoods[mi]*hmm.theData[parentState*ni + currentState]) +
+                    _Parameter      currentValue = log(patternLikelihoods[mi]*hmm.theData[parentState*ni + currentState]) +
                                                    temp.theData[currentState];
                     if (currentScaler) {
                         currentValue -= currentScaler * _logLFScaler;
@@ -1111,7 +1109,7 @@ void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 
                 //if (parentState != bestState && parentState == 1)
                 //  printf ("%d %d -> %d\n", site, parentState, bestState);
             }
-            hyFloat* swap = temp.theData;
+            _Parameter* swap = temp.theData;
             temp.theData     = temp2.theData;
             temp2.theData    = swap;
         }
@@ -1125,7 +1123,7 @@ void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 
     long            mi        = duplicateMap?duplicateMap->lData[0]:0,
                     bestState = 0;
 
-    hyFloat      bestValue     = log(patternLikelihoods [mi]*hmf.theData[0]) + temp.theData[0] +
+    _Parameter      bestValue     = log(patternLikelihoods [mi]*hmf.theData[0]) + temp.theData[0] +
                                     (duplicateMap?scalers->lData[mi]:((_SimpleList*)((_List*)scalers)->lData[0])->lData[0])*_logLFScaler;
 
     mi+=bl;
@@ -1134,7 +1132,7 @@ void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 
     for (long initState = 1; initState < ni; initState ++, mi += bl) {
         long currentScaler = duplicateMap?scalers->lData[mi]:((_SimpleList*)((_List*)scalers)->lData[initState])->lData[0];
 
-        hyFloat      currentValue = log(patternLikelihoods[mi]*hmf.theData[initState]) +
+        _Parameter      currentValue = log(patternLikelihoods[mi]*hmf.theData[initState]) +
                                        temp.theData[initState];
         if (currentScaler) {
             currentValue -= currentScaler * _logLFScaler;
@@ -1158,7 +1156,7 @@ void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 
 //_______________________________________________________________________________________________
 
 
-hyFloat mapParameterToInverval (hyFloat in, char type, bool inverse)
+_Parameter mapParameterToInverval (_Parameter in, char type, bool inverse)
 {
     switch (type) {
     case _hyphyIntervalMapExpit:
@@ -1200,7 +1198,7 @@ void _LikelihoodFunction::SetupParameterMapping (void)
 
     for (unsigned long pIndex = 0; pIndex < indexInd.lLength; pIndex++) {
         _Variable* cv        = GetIthIndependentVar(pIndex);
-        hyFloat thisLB    = cv->GetLowerBound(),
+        _Parameter thisLB    = cv->GetLowerBound(),
                    thisUB    = cv->GetUpperBound(),
                    thisValue = cv->Compute()->Value();
 
@@ -1237,14 +1235,14 @@ void _LikelihoodFunction::CleanupParameterMapping (void)
 
 //_______________________________________________________________________________________________
 
-hyFloat _LikelihoodFunction::SumUpSiteLikelihoods (long index, const hyFloat * patternLikelihoods, const _SimpleList& patternScalers) {
+_Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Parameter * patternLikelihoods, const _SimpleList& patternScalers) {
 /*
  compute the likelihood of a partition (index), corrected for scaling,
  by summing pattern likelihoods from patternLikelihoods, weighted by pattern frequencies
  and corrected for scaling factors from patternScalers
 */
 
-    hyFloat       logL             = 0.;
+    _Parameter       logL             = 0.;
     _SimpleList      *catVarType      = (_SimpleList*)((*(_List*)categoryTraversalTemplate(index))(4));
     long             cumulativeScaler = 0,
                      categoryType     = catVarType->Element (-1);
@@ -1269,7 +1267,7 @@ hyFloat _LikelihoodFunction::SumUpSiteLikelihoods (long index, const hyFloat * p
                                            );
     } else {
         if (categoryType & _hyphyCategoryCOP) {
-            HandleApplicationError ("Constant-on-partition categories are currently not supported by the evaluation engine");
+            WarnError ("Constant-on-partition categories are currently not supported by the evaluation engine");
         } else {
             for (unsigned long patternID = 0UL; patternID < pattern_count; patternID++) {
                 long patternFrequency = index_filter->GetFrequency(patternID);;
@@ -1360,7 +1358,7 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
 
 //_______________________________________________________________________________________________
 
-void _LikelihoodFunction::UpdateBlockResult (long index, hyFloat new_value) {
+void _LikelihoodFunction::UpdateBlockResult (long index, _Parameter new_value) {
     while (computationalResults.GetUsed() <= index) {
         computationalResults.Store (0.0);
     }
@@ -1392,7 +1390,7 @@ void MPISwitchNodesToMPIMode (long totalNodeCount)
         long fromNode = ni;
         _String t (MPIRecvString (ni,fromNode));
         if (!t.Equal (&mpiLoopSwitchToOptimize)) {
-            HandleApplicationError (_String("[MPI] Failed to confirm MPI mode switch at node ") & ni);
+            WarnError (_String("[MPI] Failed to confirm MPI mode switch at node ") & ni);
             return;
         } else {
             ReportWarning (_String("[MPI] Successful mode switch to mode ") & hyphyMPIOptimizerMode & " confirmed from node " & ni);
@@ -1400,4 +1398,5 @@ void MPISwitchNodesToMPIMode (long totalNodeCount)
     }
 }
 
+#endif
 #endif

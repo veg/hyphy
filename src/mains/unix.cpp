@@ -29,14 +29,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-
-#include "global_things.h"
-
-using namespace hy_global;
-
 #include "batchlan.h"
 #include "calcnode.h"
+#include <unistd.h>
 #include "polynoml.h"
 
 #if defined __MINGW32__
@@ -44,7 +39,6 @@ using namespace hy_global;
 #else
     #include <termios.h>
     #include <signal.h>
-    #include <unistd.h>
     #define __HYPHY_HANDLE_TERM_SIGNAL__
 
 #endif
@@ -94,6 +88,9 @@ const char hy_help_message [] =
 #include "ut_strings.h"
 #endif
 
+#if defined   __MP2__ || defined __MP__
+#include <pthread.h>
+#endif
 #include "likefunc.h"
 
 #ifndef __HYPHY_NO_CURL__
@@ -132,11 +129,22 @@ _String baseArgDir,
 
 void    ReadInTemplateFiles         (void);
 long    DisplayListOfChoices        (void);
-void    ProcessConfigStr            (_String const&);
+void    ProcessConfigStr            (_String&);
 void    ReadInPostFiles             (void);
 long    DisplayListOfPostChoices    (void);
 _String getLibraryPath              (void);
 
+
+extern  long
+systemCPUCount;
+
+extern  _String         VerbosityLevelString,
+        errorFileName,
+        messageFileName,
+        baseDirectory,
+        libDirectory,
+        shortMPIReturn,
+        dialogPrompt;
 
 long    mainArgCount = 0;
 
@@ -144,10 +152,14 @@ bool    usePostProcessors = false,
         calculatorMode    = false,
         updateMode       = false,
         pipeMode         = false,
-        logInputMode   = false;
+        dropIntoDebugMode = false,
+        logInputMode   = false,
+        needExtraNL    = false;
+
 char    prefFileName[] = ".hyphyinit";
 
 #ifdef  __HYPHYMPI__
+extern int          _hy_mpi_node_rank;
 
 void            mpiNormalLoop    (int, int, _String &);
 void            mpiOptimizerLoop (int, int);
@@ -157,12 +169,14 @@ void            mpiOptimizerLoop (int, int);
 #ifdef     __HYPHY_HANDLE_TERM_SIGNAL__
     volatile sig_atomic_t hyphy_sigterm_in_progress = 0;
      
-    void    hyphy_sigterm_handler (int sig) {
+    void    hyphy_sigterm_handler (int sig)
+    {
        if (hyphy_sigterm_in_progress)
            raise (sig);
            
        hyphy_sigterm_in_progress = 1;
-       HandleApplicationError (_String("HyPhy killed by signal ") & (long)sig);
+     
+       WarnError (_String("HyPhy killed by signal ") & (long)sig);
        
        signal (sig, SIG_DFL);
        raise  (sig);
@@ -170,7 +184,7 @@ void            mpiOptimizerLoop (int, int);
      
 #endif  
 
-//bool  terminate_execution = false;
+//bool  terminateExecution = false;
 
 //____________________________________________________________________________________
 
@@ -178,7 +192,7 @@ void            mpiOptimizerLoop (int, int);
 #define _HYPHY_MAX_PATH_LENGTH 8192L
 
 _String getLibraryPath() {
-  char    dirSlash = get_platform_directory_char();
+  char    dirSlash = GetPlatformDirectoryChar();
 
 #ifdef __MINGW32__
   TCHAR buffer[_HYPHY_MAX_PATH_LENGTH];
@@ -192,14 +206,14 @@ _String getLibraryPath() {
     _String baseDir (curWd);
 #endif
 
-    if (baseDir.get_char (baseDir.length()-1) != dirSlash) {
+    if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
     }
 
 #if defined _HYPHY_LIBDIRECTORY_
     _String libDir (_HYPHY_LIBDIRECTORY_);
 
-    if (libDir.get_char (libDir.length()-1) != dirSlash) {
+    if (libDir.getChar (libDir.sLength-1) != dirSlash) {
         libDir=libDir & dirSlash;
     }
 
@@ -214,7 +228,7 @@ _String getLibraryPath() {
     char* hyphyEnv = getenv("HYPHY_PATH");
     if(hyphyEnv) {
       _String hyphyPath(hyphyEnv);
-      if(hyphyPath.length() != 0) {
+      if(hyphyPath.sLength != 0) {
         libDir = hyphyPath;
       }
     }
@@ -234,14 +248,15 @@ void   _helper_clear_screen (void) {
 }
 
 //__________________________________________________________________________________
-void    ReadInTemplateFiles(void) {
-    _String dir_sep (get_platform_directory_char()),
-            fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & "files.lst";
+void    ReadInTemplateFiles(void)
+{
+    _String dir_sep (GetPlatformDirectoryChar()),
+            fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles" & dir_sep & "files.lst";
   
-    FILE* modelList = fopen (fileIndex.get_str(),"r");
+    FILE* modelList = fopen (fileIndex.getStr(),"r");
     if (!modelList) {
-        fileIndex = baseArgDir& hy_standard_library_directory & dir_sep & "files.lst";
-        modelList = fopen (fileIndex.get_str(),"r");
+        fileIndex = baseArgDir&"TemplateBatchFiles" & dir_sep & "files.lst";
+        modelList = fopen (fileIndex.getStr(),"r");
         if (!modelList) {
             return;
         }
@@ -252,7 +267,7 @@ void    ReadInTemplateFiles(void) {
     _String theData (modelList);
     fclose (modelList);
     
-    if (theData.length()) {
+    if (theData.sLength) {
         _ElementaryCommand::ExtractConditions(theData,0,availableTemplateFiles);
         for (long i = 0; i<availableTemplateFiles.countitems(); i++) {
             _String* thisString = (_String*)availableTemplateFiles(i);
@@ -278,10 +293,10 @@ void    ReadInPostFiles(void)
     //if (!likeFuncList.lLength)
     //  return;
  
-    _String dir_sep (get_platform_directory_char());
+    _String dir_sep (GetPlatformDirectoryChar());
   
-    _String fileIndex = libArgDir & hy_standard_library_directory & dir_sep & "postprocessors.lst";
-    FILE*  modelList = fopen (fileIndex.get_str(),"r");
+    _String fileIndex = libArgDir & "TemplateBatchFiles" & dir_sep & "postprocessors.lst";
+    FILE*  modelList = fopen (fileIndex.getStr(),"r");
     
     if (!modelList) {
         return;
@@ -290,7 +305,7 @@ void    ReadInPostFiles(void)
     _String theData (modelList);
     fclose (modelList);
     
-    if (theData.length()) {
+    if (theData.sLength) {
         _ElementaryCommand::ExtractConditions(theData,0,availablePostProcessors);
       
         for (unsigned long i = 0; i<availablePostProcessors.countitems(); i++) {
@@ -306,16 +321,17 @@ void    ReadInPostFiles(void)
                 ((_String*)thisFile(j))->StripQuotes();
             }
             if (*(_String*)thisFile(0)!=_String("SEPARATOR")) {
-                fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & *(_String*)thisFile(1);
+                fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles" & dir_sep & *(_String*)thisFile(1);
+                //printf ("%s\n", fileIndex.sData);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
-                    fileIndex =libArgDir& hy_standard_library_directory & dir_sep & *(_String*)thisFile(1);
+                    fileIndex =libArgDir&"TemplateBatchFiles"& dir_sep & *(_String*)thisFile(1);
                     dummyFile = fopen (fileIndex,"r");
                 }
                 if (dummyFile) {
                     fclose (dummyFile);
                     _String* condition = (_String*)thisFile(2);
-                    if (condition->nonempty()) {
+                    if (condition->sLength) {
                         _Formula condCheck (*condition,nil);
                         _PMathObj condCheckRes = condCheck.Compute();
                         if ((!condCheckRes)||(condCheckRes->Value()<.5)) {
@@ -337,27 +353,28 @@ void    ReadInPostFiles(void)
 }
 
 //__________________________________________________________________________________
-long    DisplayListOfChoices (void) {
+long    DisplayListOfChoices (void)
+{
     ReadInTemplateFiles();
-  
-    auto access_choice_item = [&] (long cat, long item) -> const _String * {return (_String*)(*(_List*)availableTemplateFiles(cat))(item);};
 
     if (!availableTemplateFiles.lLength) {
         return -1;
     }
 
-    long        choice = -1L;
-  
+    long        choice = -1;
+    char        buffer[2048];
+    _String     fileAbbr,
+                *thisLine;
     _SimpleList categoryDelimiters;
     _List       categoryHeadings;
 
     for (choice = 0; choice< availableTemplateFiles.lLength; choice++) {
-        _String const * this_line = access_choice_item (2, choice);
-        if ( this_line->get_char (0) == '!') {
+        thisLine = (_String*)(*(_List*)availableTemplateFiles(choice))(2);
+        if (thisLine->sData[0]=='!') {
             categoryDelimiters<<choice;
-            _String * category_heading = new _String (*this_line);
-            category_heading->Trim (1,kStringEnd);
-            categoryHeadings < category_heading;
+            fileAbbr = *thisLine;
+            fileAbbr.Trim (1,-1);
+            categoryHeadings && &fileAbbr;
         }
     }
 
@@ -365,22 +382,22 @@ long    DisplayListOfChoices (void) {
     if (categoryDelimiters.lLength==0) {
         while (choice == -1) {
             for (choice = 0; choice<availableTemplateFiles.lLength; choice++) {
-                printf ("\n\t(%s):%s", access_choice_item (choice, 0)->get_str() , access_choice_item (choice, 1) -> get_str());
+                printf ("\n\t(%s):%s",((_String*)(*(_List*)availableTemplateFiles(choice))(0))->getStr(),
+                        ((_String*)(*(_List*)availableTemplateFiles(choice))(1))->getStr());
             }
             printf ("\n\n Please type in the abbreviation for the file you want to use (or press ENTER to process custom batch file):");
-          
-            _String user_input = _String (StringFromConsole()).ChangeCase(kStringUpperCase);
-          
-            if (user_input.FirstNonSpaceIndex() == kNotFound) {
+            fgets (buffer,2048,stdin);
+            fgets (buffer,2048,stdin);
+            fileAbbr = buffer;
+            if (fileAbbr.FirstNonSpaceIndex()<0) {
                 return -1;
             }
-          
+            fileAbbr.UpCase();
             for (choice = 0; choice<availableTemplateFiles.lLength; choice++) {
-                if (user_input == *access_choice_item (choice, 0)) {
+                if (fileAbbr.Equal((_String*)(*(_List*)availableTemplateFiles(choice))(0))) {
                     break;
                 }
             }
-          
             if (choice==availableTemplateFiles.lLength) {
                 choice=-1;
             }
@@ -390,59 +407,68 @@ long    DisplayListOfChoices (void) {
         while (choice==-1) {
             if (categNumber<0) {
                 _String   header ("***************** TYPES OF STANDARD ANALYSES *****************"),
-                          verString (GetVersionString().get_str());
+                          verString (GetVersionString().getStr());
 
-                if ( verString.length() + 2 < header.length()) {
-                    _String    padder (_String (' '), MAX (1, (header.length()-2-verString.length())/2));
+                if (verString.sLength<header.sLength-2) {
+                    _String padder (128,true);
+                    long    poop = (header.sLength-2-verString.sLength)/2;
+                    if (!poop) {
+                        poop = 1;
+                    }
+                    for (choice=0; choice<poop; choice++) {
+                        padder << ' ';
+                    }
+                    padder.Finalize();
                     verString = padder & '/' & verString & "\\" & padder;
                 }
                 _helper_clear_screen ();
-                printf ("%s\n%s\n\n",verString.get_str(), header.get_str());
+                printf ("%s\n%s\n\n",verString.getStr(), header.getStr());
                 for (choice = 0; choice<categoryHeadings.lLength; choice++) {
-                    printf ("\n\t(%ld) %s",choice+1,((_String*)categoryHeadings(choice))->get_str());
+                    printf ("\n\t(%ld) %s",choice+1,((_String*)categoryHeadings(choice))->getStr());
                 }
 
                 printf ("\n\n Please select type of analyses you want to list (or press ENTER to process custom batch file):");
 
 
-                _String user_input = StringFromConsole();
+                fgets (buffer,2048,stdin);
+                fileAbbr = buffer;
 
                 if (logInputMode) {
-                    loggedUserInputs && & user_input;
+                    loggedUserInputs && & fileAbbr;
                 }
 
-                if (user_input.FirstNonSpaceIndex() == kNotFound) {
+                if (fileAbbr.FirstNonSpaceIndex()<0) {
                     return -1;
                 }
 
-                choice = user_input.to_long();
+                choice = fileAbbr.toLong();
 
                 if ( choice>0 && choice<=categoryHeadings.lLength) {
                     categNumber = choice-1;
                 }
             } else {
                 _helper_clear_screen ();
-                printf ("***************** FILES IN '%s' ***************** \n\n",((_String*)categoryHeadings(categNumber))->get_str());
+                printf ("***************** FILES IN '%s' ***************** \n\n",((_String*)categoryHeadings(categNumber))->getStr());
                 long start = categoryDelimiters.lData[categNumber]+1,
                      end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.lData[categNumber+1];
 
                 for (choice = start; choice<end; choice++) {
-                    printf ("\n\t(%ld) %s",choice-start+1,access_choice_item (choice, 1)->get_str());
+                    printf ("\n\t(%ld) %s",choice-start+1,((_String*)(*(_List*)availableTemplateFiles(choice))(1))->getStr());
                 }
 
                 printf ("\n\n Please select the analysis you would like to perform (or press ENTER to return to the list of analysis types):");
 
-                _String user_input = StringFromConsole();
-              
+                fileAbbr = *StringFromConsole ();
+
                 if (logInputMode) {
-                    loggedUserInputs && & user_input;
+                    loggedUserInputs && & fileAbbr;
                 }
 
-                if (user_input.FirstNonSpaceIndex() == kNotFound) {
+                if (fileAbbr.FirstNonSpaceIndex()<0) {
                     categNumber = -1;
                 } else {
-                    choice = user_input.to_long();
-                    if ( choice>0 && choice<=end-start) {
+                    choice = fileAbbr.toLong();
+                    if ((choice>0 && choice<=end-start)) {
                         return start+choice-1;
                     }
                 }
@@ -455,28 +481,28 @@ long    DisplayListOfChoices (void) {
 }
 
 //__________________________________________________________________________________
-long    DisplayListOfPostChoices (void) {
+long    DisplayListOfPostChoices (void)
+{
     long choice = -1;
-  
     if (availablePostProcessors.lLength) {
+        _String fileAbbr;
         _helper_clear_screen ();
         printf ("\n\t Available Result Processing Tools\n\t ---------------------------------\n\n");
         while (choice == -1) {
             for (choice = 0; choice<availablePostProcessors.lLength; choice++) {
                 printf ("\n\t(%ld):%s",choice+1,
-                        ((_String*)(*(_List*)availablePostProcessors(choice))(0))->get_str());
+                        ((_String*)(*(_List*)availablePostProcessors(choice))(0))->getStr());
             }
             printf ("\n\n Please type in the abbreviation for the tool you want to use (or press q to exit):");
-            _String user_input = _String(StringFromConsole()).ChangeCase (kStringUpperCase);
-          
+            fileAbbr = *StringFromConsole();
+            fileAbbr.UpCase();
             if (logInputMode) {
-                loggedUserInputs && & user_input;
+                loggedUserInputs && & fileAbbr;
             }
-          
-            if (user_input.empty () || user_input == 'Q') {
+            if (!fileAbbr.sLength||((fileAbbr.sLength==1)&&(fileAbbr.sData[0]=='Q'))) {
                 return -1;
             }
-            choice = user_input.to_long();
+            choice = fileAbbr.toLong();
 
             if (choice<=0 || choice>availablePostProcessors.lLength) {
                 choice = -1;
@@ -488,7 +514,6 @@ long    DisplayListOfPostChoices (void) {
 
 
 //__________________________________________________________________________________
-
 void    ProcessConfigStr (_String& conf)
 {
     _String errMsg;
@@ -536,45 +561,6 @@ void    ProcessConfigStr (_String& conf)
             errMsg = errMsg & conf.sData[i] & " is not valid and is ignored";
             ReportWarning (errMsg);
         }
-
-            
-void    ProcessConfigStr (_String const & conf) {
-    for (unsigned long i=1UL; i<conf.length(); i++) {
-        switch (char c = conf.char_at (i)) {
-          case 'p':
-          case 'P': {
-              usePostProcessors = true;
-              break;
-          }
-          case 'c':
-          case 'C': {
-              calculatorMode = true;
-              break;
-          }
-          case 'd':
-          case 'D': {
-              hy_drop_into_debug_mode = true;
-              break;
-          }
-          case 'u':
-          case 'U': {
-              updateMode = true;
-              break;
-          }
-          case 'l':
-          case 'L': {
-              logInputMode = true;
-              break;
-          }
-          //case 'i':
-          //case 'I':
-          //{
-          //pipeMode = true;
-          //break;
-          //}
-          default: {
-              ReportWarning (_String ("Option" ) & _String (c).Enquote() & " is not valid command line option and will be ignored");
-          }
         }
     }
 }
@@ -582,13 +568,14 @@ void    ProcessConfigStr (_String const & conf) {
 
 //__________________________________________________________________________________
 
-void hyphyBreak (int signo) {
-    //terminate_execution = false;
+void hyphyBreak (int signo)
+{
+    //terminateExecution = false;
     printf ("\nInterrupt received %d. HYPHY will break into calculator mode at the earliest possibility...\n", signo);
 }
 
 //__________________________________________________________________________________
-void    SetStatusBarValue           (long,hyFloat,hyFloat){
+void    SetStatusBarValue           (long,_Parameter,_Parameter){
 
 }
 //__________________________________________________________________________________
@@ -596,7 +583,7 @@ void    SetStatusLine               (_String s) {
 #ifdef  _MINGW32_MEGA_
     if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE) {
         DWORD bytesWritten = 0;
-        if (WriteFile (_HY_MEGA_Pipe,(LPCVOID)s.sData,s.length(),&bytesWritten,NULL) == FALSE || bytesWritten != s.length()) {
+        if (WriteFile (_HY_MEGA_Pipe,(LPCVOID)s.sData,s.sLength,&bytesWritten,NULL) == FALSE || bytesWritten != s.sLength) {
             _String errMsg ("Failed to write the entire status update to a named MEGA pipe");
             StringToConsole (errMsg);
         }
@@ -609,13 +596,12 @@ void    SetStatusLine               (_String s) {
 }
 
 //__________________________________________________________________________________
-void    SetStatusLineUser   (_String const s) {
-  if (isatty (STDERR_FILENO)) { // only print to terminal devices
+void    SetStatusLineUser   (_String const s)
+{
     setvbuf(stderr, NULL, _IONBF, 0);
     BufferToConsole("\33[2K\r", stderr);
     StringToConsole(s, stderr);
     needExtraNL = true;
-  }
 }
 
 //__________________________________________________________________________________
@@ -637,11 +623,9 @@ int main (int argc, char* argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    hy_env :: EnvVariableSet (hy_env::mpi_node_id, new _Constant (rank), false);
-    hy_env :: EnvVariableSet (hy_env::mpi_node_count, new _Constant (size), false);
-    
-    hy_mpi_node_rank  = rank;
-    hy_mpi_node_count = size;
+    setParameter  (mpiNodeID,    (_Parameter)rank);
+    setParameter    (mpiNodeCount, (_Parameter)size);
+    _hy_mpi_node_rank = rank;
 
     if (rank == 0) {
         mpiNodesThatCantSwitch.Populate (size,1,0);
@@ -668,13 +652,13 @@ int main (int argc, char* argv[])
 #endif
   
     char    curWd[4096],
-            dirSlash = get_platform_directory_char();
+            dirSlash = GetPlatformDirectoryChar();
     getcwd (curWd,4096);
   
     _String baseDir (curWd);
   
 
-    if (baseDir.get_char (baseDir.length()-1) != dirSlash) {
+    if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
     }
   
@@ -689,13 +673,13 @@ int main (int argc, char* argv[])
     _String argFile;
   
 
-    hy_lib_directory  = libDir;
-    libArgDir     = hy_lib_directory;
-    hy_base_directory = baseDir;
-    baseArgDir    = hy_base_directory;
+    libDirectory  = libDir;
+    libArgDir     = libDirectory;
+    baseDirectory = baseDir;
+    baseArgDir    = baseDirectory;
     
 #ifdef _OPENMP
-    system_CPU_count = omp_get_max_threads();
+    systemCPUCount = omp_get_max_threads();
 #endif
 
 #ifdef _MINGW32_MEGA_
@@ -722,46 +706,50 @@ int main (int argc, char* argv[])
 #endif
 
     _List positional_arguments;
-  
-    {
     
-      const _String path_consts [] = {"BASEPATH=", "LIBPATH=", "USEPATH="};
-      
-      for (unsigned long i=1UL; i<argc; i++) {
-          _String thisArg (argv[i]);
-        
-          if (thisArg.get_char(0)=='-') { // -[LETTER] arguments
-              ProcessConfigStr (thisArg);
-          } else if (thisArg.BeginsWith (path_consts[0])) { // BASEPATH
-              baseArgDir = thisArg.Cut(path_consts[0].length(),-1);
-              if (baseArgDir.length()) {
-                  if (baseArgDir (-1L) != dirSlash) {
-                      baseArgDir = baseArgDir & dirSlash;
-                  }
-                  hy_base_directory = baseArgDir;
-                  pathNames.Delete    (0);
-                  pathNames&&         &hy_base_directory;
-             }
-          } else if (thisArg.BeginsWith (path_consts[1])) { // LIBPATH
-              libArgDir = thisArg.Cut(path_consts[1].length(),-1);
-              if (libArgDir.length()) {
-                  if (libArgDir (-1L) != dirSlash) {
-                      libArgDir = libArgDir & dirSlash;
-                  }
-                  hy_lib_directory = libArgDir;
-                  pathNames.Delete    (0);
-                  pathNames&&         &hy_lib_directory;
-             }
-          } else if (thisArg.BeginsWith (path_consts[2])) {
-              baseDir                      = thisArg.Cut(path_consts[2].length(),-1);
-              hy_error_log_name            = baseDir & hy_error_log_name;
-              hy_messages_log_name         = baseDir & hy_messages_log_name;
-              pathNames.Delete    (0);
-              pathNames&&         &baseDir;
-          } else
-          //argFile = thisArg;
-          positional_arguments && &thisArg;
-      }
+    for (unsigned long i=1UL; i<argc; i++) {
+        _String thisArg (argv[i]);
+        if (thisArg.sData[0]=='-') {
+            ProcessConfigStr (thisArg);
+        } else if (thisArg.beginswith ("BASEPATH=")) {
+            baseArgDir = thisArg.Cut(9,-1);
+            if (baseArgDir.sLength) {
+                if (baseArgDir.sData[baseArgDir.sLength-1]!=dirSlash) {
+                    baseArgDir = baseArgDir&dirSlash;
+                }
+                baseDirectory = baseArgDir;
+                pathNames.Delete    (0);
+                pathNames&&         &baseDirectory;
+           }
+        } else if (thisArg.beginswith ("LIBPATH=")) {
+            libArgDir = thisArg.Cut(8,-1);
+            if (libArgDir.sLength) {
+                if (libArgDir.sData[libArgDir.sLength-1] != dirSlash) {
+                    libArgDir = libArgDir & dirSlash;
+                }
+                libDirectory = libArgDir;
+                pathNames.Delete    (0);
+                pathNames&&         &libDirectory;
+           }
+        } else if (thisArg.beginswith ("USEPATH=")) {
+            baseDir             = thisArg.Cut(8,-1);
+            errorFileName       = baseDir & errorFileName;
+            messageFileName     = baseDir & messageFileName;
+            pathNames.Delete    (0);
+            pathNames&&         &baseDir;
+        } else
+#ifdef __MP__
+            if (thisArg.beginswith ("CPU=")) {
+                _String cpus = thisArg.Cut(4,-1);
+                systemCPUCount = cpus.toLong();
+                if (systemCPUCount<1) {
+                    systemCPUCount = 1;
+                }
+                pthread_setconcurrency ((int)systemCPUCount+1);
+            } else
+#endif
+        //argFile = thisArg;
+        positional_arguments && &thisArg;
     }
 
     GlobalStartup();
@@ -776,7 +764,7 @@ int main (int argc, char* argv[])
   
   
     if (calculatorMode) {
-        if (argFile.length()) {
+        if (argFile.sLength) {
           PushFilePath  (argFile);
           ReadBatchFile (argFile,ex);
           ex.Execute();
@@ -797,10 +785,10 @@ int main (int argc, char* argv[])
     // try to read the preferences
     _String     prefFile (curWd);
     prefFile = prefFile & '/' & prefFileName;
-    FILE     * testPrefFile = fopen (prefFile.get_str(),"r");
+    FILE     * testPrefFile = fopen (prefFile.sData,"r");
     if (!testPrefFile) {
         prefFile = baseArgDir & prefFileName;
-        testPrefFile = fopen (prefFile.get_str(),"r");
+        testPrefFile = fopen (prefFile.sData,"r");
     }
     if (testPrefFile) {
         fclose(testPrefFile);
@@ -820,7 +808,7 @@ int main (int argc, char* argv[])
         MPISendString (argFile, senderID);*/
     } else {
 #endif
-        if (!argFile.length()) {
+        if (!argFile.sLength) {
             long selection = -2;
             if (!updateMode) {
                 selection = DisplayListOfChoices();
@@ -840,9 +828,9 @@ int main (int argc, char* argv[])
                 _String templ;
 
                 if (selection >= 0) {
-                    templ = baseArgDir & hy_standard_library_directory & dirSlash;
+                    templ = baseArgDir &"TemplateBatchFiles" & dirSlash;
                 } else {
-                    templ = baseArgDir & hy_standard_library_directory & dirSlash & "WebUpdate.bf";
+                    templ = baseArgDir & "TemplateBatchFiles" & dirSlash & "WebUpdate.bf";
                 }
 
                 if (selection >= 0) {
@@ -866,12 +854,12 @@ int main (int argc, char* argv[])
 
             
 #ifndef __MINGW32__
-            if (argFile.char_at (0) != '/') {
-                argFile       = hy_base_directory & argFile;
+            if (argFile.sData[0] != '/') {
+                argFile       = baseDirectory & argFile;
             }
 #else
-            if (argFile.char_at (1) != ':') { // not an absolute path
-                argFile       = hy_base_directory & argFile;
+            if (argFile.sData[1] != ':') { // not an absolute path
+                argFile       = baseDirectory & argFile;
             }
 #endif
             PushFilePath  (argFile);
@@ -892,7 +880,7 @@ int main (int argc, char* argv[])
                 loggedUserInputs && & c_str;
             }
 
-            if (c_str.get_char(0) !='n' && c_str.get_char(0)!='N' ) {
+            if (c_str.getChar(0) !='n' && c_str.getChar(0)!='N' ) {
                 long choice = DisplayListOfPostChoices();
                 while (choice != -1) {
                     _ExecutionList postEx;
@@ -908,7 +896,7 @@ int main (int argc, char* argv[])
                         loggedUserInputs && & c_str;
                     }
 
-                    if (c_str.get_char(0)=='n' || c_str.get_char(0)=='N' ) {
+                    if (c_str.getChar(0)=='n' || c_str.getChar(0)=='N' ) {
                         break;
                     }
 
@@ -939,7 +927,6 @@ int main (int argc, char* argv[])
     
     PurgeAll                    (true);
     GlobalShutdown              ();
-
 
 #ifdef __MINGW32__
   fflush (stdout);

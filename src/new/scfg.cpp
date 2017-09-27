@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -39,13 +39,11 @@
 
 #include    "scfg.h"
 #include "function_templates.h"
-#include "global_things.h"
-
-using namespace hy_global;
 
 
+#ifdef      _USE_HYPHY_HOOKS_
 
-#include    <math.h>
+#include    "math.h"
 
 _String     _HYSCFG_TERM_KEY_T  ("T"),
             _HYSCFG_KEY_P       ("P"),
@@ -78,12 +76,16 @@ _addSCFGInfoStats           ("STATISTICS"),
                             useJeffreysPrior            ("USE_JEFFREYS_PRIOR"),     // added Nov. 28, 2006 by afyp
                             scfgOptimizationMethod      ("SCFG_OPTIMIZATION_METHOD");
 
-
-
-_String kSCFGCorpus        ("SCFG_STRING_CORPUS"),
+extern _String  scfgCorpus;
 
 
 
+#else
+
+#define     MAX_WARNINGS        3
+#define     MAX_LINE_LEN        10000
+
+#endif
 
 /*          ================                                                        */
 /* ========| SCFG FUNCTIONS |====================================================== */
@@ -124,7 +126,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 
         // build a prefix parse tree as we go along
         // begin by allocating memory for the root data structure
-        parseTree = new node<long>* [256];
+        checkPointer (parseTree = new node<long>* [256]);
 
         for (long it = 0; it < 256; it++) {
             parseTree [it] = (node<long>*)nil;
@@ -147,17 +149,17 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                     if  (index>=0) // new terminal; added to list
                         // now we process the terminal into the parse tree
                     {
-                        literal->theString->AddAReference(); // increase reference counter for the string object
+                        literal->theString->nInstances++; // increase reference counter for the string object
                         // add    the literal to the parse tree
                         // handle the first character separately
 
-                        unsigned char        currentCharacter = literal->theString->get_char(0);
+                        unsigned char        currentCharacter = literal->theString->getChar(0);
                         node<long>* currentTreeNode  = parseTree[currentCharacter];
 
                         bool        addedRootStub    = false;
 
                         if (currentTreeNode == nil) {
-                            currentTreeNode = new node<long>;
+                            checkPointer (currentTreeNode = new node<long>);
                             currentTreeNode->init(0);
                             parseTree[currentCharacter] = currentTreeNode;
                             addedRootStub = true;
@@ -166,7 +168,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         long charP = 1;
 
                         for  (; charP < literal->theString->sLength; charP++) {
-                            currentCharacter        = literal->theString->get_char(charP);
+                            currentCharacter        = literal->theString->getChar(charP);
 
                             long   availableNodes   = currentTreeNode->get_num_nodes (),
                                    nodeCounter      = (availableNodes>0);
@@ -199,7 +201,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                                     // and no matching child node has been found
                                 {
                                     // insert the new child
-                                    node<long> *    addANode = new node<long>;
+                                    node<long> *    addANode = (node<long>*) checkPointer(new node<long>);
                                     addANode->init ((long)currentCharacter);
                                     currentTreeNode->add_node (*addANode);
                                     currentTreeNode = addANode;
@@ -242,7 +244,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                             errorMessage = _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
                         } else {
                             // create a new record for the rule of the form [nt index] -> [t index]
-                            _SimpleList *goodTRule = new _SimpleList ((long)nt_index);
+                            _SimpleList *goodTRule = (_SimpleList*) checkPointer (new _SimpleList ((long)nt_index));
                             (*goodTRule) << index;
                             rules.AppendNewInstance (goodTRule); // append the new rule to the list of existing rules
 
@@ -512,7 +514,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
     }
 
     if (errorMessage.sLength) {
-        HandleApplicationError      (errorMessage);
+        WarnError      (errorMessage);
         ClearParseTree ();
     } else {
         ScanAllVariables   ();
@@ -552,7 +554,7 @@ void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities,
 {
     _Formula *aFormula ;
     if (expression) { // probabilistic rule
-        aFormula = new _Formula;
+        checkPointer (aFormula = new _Formula);
 
         _String  anExpression = *expression->theString;
 
@@ -565,7 +567,7 @@ void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities,
             ruleProbabilities << expression->theString;
         }
     } else { // determininstic rule (prob = 1.0)
-        aFormula = new _Formula (new _Constant (1.0), false); // constant 1.0
+        checkPointer (aFormula = new _Formula (new _Constant (1.0), false)); // constant 1.0
         ruleProbabilities && & _HYSCFG_NT_KEY_1;
     }
 
@@ -644,7 +646,7 @@ _String*    Scfg::VerifyValues  (void)
 {
     _Matrix * probValues = (_Matrix*)probabilities.Compute(); // initialize all the probability values
     for (long k=0; k<rules.lLength; k++) { // check that all probabilities are in [0,1]
-        hyFloat  aValue = (*probValues)(k,0);
+        _Parameter  aValue = (*probValues)(k,0);
         /*
         _SimpleList *   r = (_SimpleList*)rules(k);
         char buf [256];
@@ -664,7 +666,7 @@ _String*    Scfg::VerifyValues  (void)
     // now check that for each non-terminal, the sum of all probabilities is 1
     {
         for (long k=0; k<byNT2.lLength; k++) {
-            hyFloat    p_sum = 0.0;
+            _Parameter    p_sum = 0.0;
             _SimpleList * l2 = (_SimpleList*)byNT2(k),
                           * l3 = (_SimpleList*)byNT3(k);
 
@@ -694,7 +696,7 @@ void    Scfg::RandomSampleVerify  (long samples)
     if (samples>0) {
         _String *   errMsg     = nil;
         long        paramCount = GetIndependentVars().lLength;
-        hyFloat  stepFactor = 1./samples;
+        _Parameter  stepFactor = 1./samples;
 
         if (paramCount > 0) { // some adjustable parameters
             _Matrix parameterBounds (paramCount,3,false,true); // used to store the lower parameter bound
@@ -733,9 +735,42 @@ void    Scfg::RandomSampleVerify  (long samples)
         }
 
         if (errMsg) {
-            HandleApplicationError (_String(errMsg));
+            WarnError (_String(errMsg));
         }
     }
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------------*/
+
+void    Scfg::SetStringCorpus  (_String* varID)
+{
+
+
+    _PMathObj    theMatrix  = FetchObjectFromVariableByType (varID, MATRIX),
+                 theString  = nil;
+
+    if (!theMatrix) {   // if the variable is not a matrix, then try treating it as a string
+        theString = FetchObjectFromVariableByType (varID, STRING);
+    }
+
+    if (theMatrix && ((_Matrix*)theMatrix)->IsAStringMatrix ()) {
+        SetStringCorpus ((_Matrix*)theMatrix);
+        return;
+    } else if (theString) {
+        _List t;
+        t << ((_FString*)theString)->theString;
+#ifdef _NEVER_DEFINED_
+        char buf [255];     // DEBUG
+        snprintf (buf, sizeof(buf), "\nSetStringCorpus() string = %s\n", (const char *) *((_FString*)theString)->theString);
+        BufferToConsole (buf);
+#endif
+        _Matrix wrapper (t);
+        SetStringCorpus (&wrapper);
+        return;
+    }
+
+    _String    errMsg = *varID & " must refer either to a matrix of strings or to a single string when setting the corpus for a SCFG.";
+    WarnError (errMsg);
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
@@ -750,18 +785,35 @@ void    Scfg::SetStringCorpus  (_Matrix* stringMatrix)
         for (long stringColumn = 0; stringColumn < stringMatrix->GetVDim(); stringColumn++) {
             _FString    * aString   = (_FString *)stringMatrix->GetFormula (stringRow,stringColumn)->Compute();
             _SimpleList * tokenized = new _SimpleList;
+            checkPointer (tokenized);
             _String      * errMsg   = TokenizeString (*aString->theString, *tokenized);
             if (errMsg) {
-                HandleApplicationError (_String(errMsg));
+                WarnError (_String(errMsg));
                 return;
             }
             corpusChar << aString->theString;
             corpusInt  << tokenized;
 
+            /*for (long nt=0; nt < byNT2.lLength; nt++)
+                for (long start = 0; start < aString->theString->sLength; start++)
+                    for (long end = start; end < aString->theString->sLength; end++)
+                    {
+                        char buf [255];
+                        snprintf (buf, sizeof(buf), "%2d %2d %2d => %4d\n", start, end, nt, scfgIndexIntoAnArray (start,end,nt,aString->theString->sLength));
+                        BufferToConsole (buf);
+                    }*/
             DeleteObject (tokenized);
         }
 
     }
+    /*
+    char buf [255];
+    for (long c = 0; c < corpusChar.lLength; c++)
+    {
+        snprintf (buf, sizeof(buf), "string %d in corpusChar = %s\n", c, (const char *) *((_String *) corpusChar.lData[c]));
+        BufferToConsole (buf);
+    }
+    */
     InitComputeStructures();
 }
 
@@ -783,7 +835,7 @@ _String*    Scfg::TokenizeString    (_String& inString, _SimpleList& outTokens)
     long        stringIndex     = 0;
 
     for (; stringIndex < inString.sLength; stringIndex++) {
-        unsigned char currentChar  = inString.get_char (stringIndex);
+        unsigned char currentChar  = inString.getChar (stringIndex);
         if (currentTreeNode == nil) { // root of the tree
             if   (!(currentTreeNode = parseTree[currentChar])) {
                 break;
@@ -891,12 +943,12 @@ void        Scfg::DumpComputeStructures (void)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-hyFloat      Scfg::Compute (void)
+_Parameter      Scfg::Compute (void)
 {
 
     bool first = computeFlagsI.lLength;
 
-    hyFloat  res = 0.0,
+    _Parameter  res = 0.0,
                 ip,
                 useJP;
 
@@ -921,7 +973,7 @@ hyFloat      Scfg::Compute (void)
         BufferToConsole (buf);
         */
 
-        hyFloat  temp = ComputeInsideProb (0,((_String*)corpusChar(stringID))->sLength-1,stringID,startSymbol, first);
+        _Parameter  temp = ComputeInsideProb (0,((_String*)corpusChar(stringID))->sLength-1,stringID,startSymbol, first);
         if (temp == 0.) {
             ReportWarning (_String("Underflow detected for string ") & stringID & ". Spiking optimizer to avoid this region of parameter space.");
             return (-A_LARGE_NUMBER);
@@ -981,13 +1033,13 @@ hyFloat      Scfg::Compute (void)
 
 
         _Matrix *           eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
-        hyFloat          logdet      = 0.0,      // avoid overflow from large determinants
+        _Parameter          logdet      = 0.0,      // avoid overflow from large determinants
                             checkzero   = 0.0;
 
 
         for (long i = 0; i < eigenvalues->GetHDim(); i++) { // display eigenvalues
             for (long j = 0; j < eigenvalues->GetVDim(); j++) {
-                hyFloat      temp = (*eigenvalues) (i,j);
+                _Parameter      temp = (*eigenvalues) (i,j);
 
                 checkzero += temp;
 
@@ -1025,7 +1077,7 @@ hyFloat      Scfg::Compute (void)
         BufferToConsole (buf);
         */
 
-        hyFloat  jp  = 0.5 * logdet;     // this is Jeffrey's (1946) invariant prior applied to log-likelihood
+        _Parameter  jp  = 0.5 * logdet;     // this is Jeffrey's (1946) invariant prior applied to log-likelihood
 
         return res + jp;    // else
 
@@ -1036,7 +1088,7 @@ hyFloat      Scfg::Compute (void)
 
         for (long i = 0; i < ludFisher->GetHDim(); i++) {   // display matrix
             for (long j = 0; j < ludFisher->GetVDim(); j++) {
-                hyFloat  temp = (*ludFisher) (i,j);
+                _Parameter  temp = (*ludFisher) (i,j);
                 snprintf (buf, sizeof(buf), "%5.3lf\t", temp);
                 BufferToConsole (buf);
             }
@@ -1047,10 +1099,10 @@ hyFloat      Scfg::Compute (void)
         snprintf (buf, sizeof(buf), "\n");
         BufferToConsole (buf);
 
-        hyFloat  trace       = 1.0;
+        _Parameter  trace       = 1.0;
 
         for (long diag = 0; diag < ludFisher->GetHDim(); diag++) {          // diagonal of LU contains the eigenvalues
-            hyFloat  temp = (*ludFisher) (diag,diag);
+            _Parameter  temp = (*ludFisher) (diag,diag);
             snprintf (buf, sizeof(buf), "%5.3lf\t", temp);
             BufferToConsole (buf);
 
@@ -1158,7 +1210,7 @@ bool    getIndexBit             (long start,long end,long nt,long stringLength,_
 
 /* ---- SCFG:  Inside Probability -------------------------- */
 
-hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntIndex, bool firstPass)
+_Parameter   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntIndex, bool firstPass)
 {
 
     // static long insideCalls = 0;
@@ -1207,7 +1259,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
         if (matrixIndex < 0) { // identically 1
             return 1.0;
         } else { // have we already computed this?
-            hyFloat currentValue = ((_GrowingVector**)storedInsideP.lData)[stringIndex]->theData[matrixIndex];
+            _Parameter currentValue = ((_GrowingVector**)storedInsideP.lData)[stringIndex]->theData[matrixIndex];
             if (currentValue >= 0.0) {
                 return currentValue;
             }
@@ -1217,7 +1269,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
 
     /* have to compute stuff */
 
-    hyFloat      insideProbValue = 0.0;
+    _Parameter      insideProbValue = 0.0;
 
     if (to == from) { // single terminal substring; direct lookup
         long ruleIndex = ntToTerminalMap.lData[indexNT_T(ntIndex,((_SimpleList**)corpusInt.lData)[stringIndex]->lData[to])];
@@ -1243,7 +1295,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
 
         for (long ruleIdx = 0; ruleIdx < myNTNTRules->lLength; ruleIdx++) { // loop over all NT-> NT NT rules
             long          currentRuleIndex = myNTNTRules->lData[ruleIdx];
-            hyFloat    ruleProb = LookUpRuleProbability(currentRuleIndex);
+            _Parameter    ruleProb = LookUpRuleProbability(currentRuleIndex);
 
             if (ruleProb > 0.0) {
                 _SimpleList * currentRule = ((_SimpleList **)rules.lData)[currentRuleIndex];
@@ -1253,7 +1305,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
 
                 {
                     for (long bp = from+1; bp <= halfway; bp++) { // now loop over all breakpoints
-                        hyFloat t = ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass);
+                        _Parameter t = ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass);
                         if (t>0.0) {
                             insideProbValue += t*
                                                ComputeInsideProb (bp,to,stringIndex,nt2,firstPass)*
@@ -1270,7 +1322,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
 
 
                 for (long bp = halfway+1; bp <= to; bp++) { // now loop over all breakpoints
-                    hyFloat t = ComputeInsideProb (bp,to,stringIndex,nt2,firstPass);
+                    _Parameter t = ComputeInsideProb (bp,to,stringIndex,nt2,firstPass);
                     if (t > 0.0) {
 
                         insideProbValue += t *
@@ -1335,7 +1387,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
 void        Scfg::AddSCFGInfo (_AssociativeList* theList)
 {
     _SimpleList indexer (corpusChar.lLength, 0, 1);
-    InsertStringListIntoAVL (theList, kSCFGCorpus, indexer, corpusChar);
+    InsertStringListIntoAVL (theList, scfgCorpus, indexer, corpusChar);
     _List       ruleStrings;
     for (long i=0; i<rules.lLength; i++) {
         ruleStrings.AppendNewInstance(GetRuleString (i));
@@ -1347,13 +1399,14 @@ void        Scfg::AddSCFGInfo (_AssociativeList* theList)
     InsertStringListIntoAVL (theList, _addSCFGInfoTerminals, indexer, terminals);
 
     _Matrix * stats = new _Matrix (corpusChar.lLength,3,false,true);
+    checkPointer (stats);
 
     for (long k=0; k<corpusChar.lLength; k++) {
         long       strL    = ((_String*)corpusChar(k))->sLength,
                    pNot0   = ((_AVLListX*)insideProbs(k))->dataList->lLength,
                    p01     = ((_GrowingVector*)storedInsideP(k))->GetUsed();
 
-        hyFloat totalPR = strL*(strL+1.)*0.5*byNT2.lLength;
+        _Parameter totalPR = strL*(strL+1.)*0.5*byNT2.lLength;
         stats->Store (k,0,totalPR); // total number of tuples (i,j,v)
         stats->Store (k,1,pNot0-p01);   // number of tuples with probability = 1
         stats->Store (k,2,p01);     // number of tuples with probability in interval (0,1)
@@ -1366,7 +1419,7 @@ void        Scfg::AddSCFGInfo (_AssociativeList* theList)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long ntIndex, bool firstOutside, bool firstInside)
+_Parameter   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long ntIndex, bool firstOutside, bool firstInside)
 {
 
     /* _String nyi ("This function is under development - AFYP");
@@ -1446,7 +1499,7 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
         if (matrixIndex < 0) {  // identically 1
             return 1.0;
         } else { // have we already computed this?
-            hyFloat currentValue = ((_GrowingVector**)storedOutsideP.lData)[stringIndex]->theData[matrixIndex];
+            _Parameter currentValue = ((_GrowingVector**)storedOutsideP.lData)[stringIndex]->theData[matrixIndex];
             if (currentValue >= 0.0) {
                 return currentValue;
             }
@@ -1468,13 +1521,13 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
         }
     }
 
-    hyFloat      outsideProbValue = 0.0;
+    _Parameter      outsideProbValue = 0.0;
 
     /* loop over all j->ki productions */
     _SimpleList *   myNTNTRules = ((_SimpleList**)byRightNT2.lData)[ntIndex];
     for (long ruleIdx = 0; ruleIdx < myNTNTRules->lLength; ruleIdx++) {
         long        currentRuleIndex = myNTNTRules->lData[ruleIdx];
-        hyFloat  ruleProb = LookUpRuleProbability(currentRuleIndex);     // Pr(j->ki)
+        _Parameter  ruleProb = LookUpRuleProbability(currentRuleIndex);     // Pr(j->ki)
 
         if (ruleProb > 0.0) {
             _SimpleList *   currentRule = ((_SimpleList **)rules.lData)[currentRuleIndex];  // rule = list of three integers
@@ -1482,7 +1535,7 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
                             k           = currentRule->lData[1];
 
             for (long leftBisect = 0; leftBisect < from; leftBisect++) {
-                hyFloat  t = ComputeInsideProb(leftBisect,from-1,stringIndex,k,firstInside);
+                _Parameter  t = ComputeInsideProb(leftBisect,from-1,stringIndex,k,firstInside);
                 if (t > 0.0)
                     outsideProbValue += t *
                                         ComputeOutsideProb(leftBisect,to,stringIndex,j,firstOutside,firstInside) *
@@ -1496,7 +1549,7 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
     {
         for (long ruleIdx = 0; ruleIdx < myNTNTRules->lLength; ruleIdx++) {
             long        currentRuleIndex = myNTNTRules->lData[ruleIdx];
-            hyFloat  ruleProb = LookUpRuleProbability(currentRuleIndex);     // Pr(j->ik)
+            _Parameter  ruleProb = LookUpRuleProbability(currentRuleIndex);     // Pr(j->ik)
 
             if (ruleProb > 0.0) {
                 _SimpleList *   currentRule = ((_SimpleList **)rules.lData)[currentRuleIndex];
@@ -1504,7 +1557,7 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
                                 k           = currentRule->lData[2];
 
                 for (long rightBisect = to+1; rightBisect < stringL; rightBisect++) {
-                    hyFloat  t = ComputeInsideProb(to+1,rightBisect,stringIndex,k,firstInside);
+                    _Parameter  t = ComputeInsideProb(to+1,rightBisect,stringIndex,k,firstInside);
                     if (t > 0.0)
                         outsideProbValue += t *
                                             ComputeOutsideProb(from,rightBisect,stringIndex,j,firstOutside,firstInside) *
@@ -1551,7 +1604,7 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
 
 _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 {
-    hyFloat  useJP,
+    _Parameter  useJP,
                 sOM;
 
     checkParameter (useJeffreysPrior, useJP, 0.0);
@@ -1611,7 +1664,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
 
     /* calculate current corpus log-likelihood */
-    hyFloat  newLk = Compute(),
+    _Parameter  newLk = Compute(),
                 oldLk;
   
     long        rep = 0;
@@ -1636,7 +1689,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
             long    stringL     = ((_String**)corpusChar.lData)[stringID]->sLength,
                     countNT      = byNT2.lLength;
 
-            hyFloat  denom       = 0,
+            _Parameter  denom       = 0,
                         stringProb = ComputeInsideProb(0, stringL-1, stringID, startSymbol, firstInside);
             // by calculating this, firstInside should be reset to FALSE
 
@@ -1680,7 +1733,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                                     if (matrixIndex > -1)   // skip productions with Pr identically 1, don't train.
                                                             //  This also applies to node censoring -- afyp, Aug 30, 2006
                                     {
-                                        hyFloat  ip  = ((_GrowingVector**)storedInsideP.lData)[stringID]->theData[matrixIndex],
+                                        _Parameter  ip  = ((_GrowingVector**)storedInsideP.lData)[stringID]->theData[matrixIndex],
                                         op  = ComputeOutsideProb(from,to,stringID,ntIndex,firstOutside,FALSE);
                                         if (op > 0)
                                         {
@@ -1704,11 +1757,11 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                         _SimpleList *   imRules = ((_SimpleList**)byNT2.lData)[ntIndex];
 
                         for (long rC = 0; rC < imRules->lLength; rC++) {
-                            hyFloat      numer       = 0.;
+                            _Parameter      numer       = 0.;
                             long            ruleIndex   = imRules->lData[rC];
                             _SimpleList *   currentRule = ((_SimpleList**)rules.lData)[ruleIndex];
                             long            termIndex   = currentRule->lData[1];
-                            hyFloat      ruleProb    = LookUpRuleProbability (ruleIndex);
+                            _Parameter      ruleProb    = LookUpRuleProbability (ruleIndex);
 
                             if (ruleProb == 1.0 || ruleProb == 0.0) {
                                 continue;
@@ -1719,7 +1772,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                             for (long from = 0; from < stringL; from++) {
                                 long    thisSymbol = thisString[from];
                                 if (thisSymbol == termIndex) {
-                                    hyFloat  tryProb = ComputeInsideProb(from,from,stringID,ntIndex,FALSE);
+                                    _Parameter  tryProb = ComputeInsideProb(from,from,stringID,ntIndex,FALSE);
                                     if (tryProb > 0.0) {
                                         numer += tryProb *
                                                  ComputeOutsideProb(from,from,stringID,ntIndex,firstOutside,FALSE) /
@@ -1750,7 +1803,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                         {
                             for (long rC = 0; rC < ijkRules->lLength; rC++) {
                                 long            ruleIndex   = ijkRules->lData[rC];
-                                hyFloat      ruleProb    = LookUpRuleProbability (ruleIndex),
+                                _Parameter      ruleProb    = LookUpRuleProbability (ruleIndex),
                                                 numer        = 0.;
 
                                 _SimpleList *   currentRule = ((_SimpleList**)rules.lData)[ruleIndex];
@@ -1785,7 +1838,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                                         }
 
 
-                                        hyFloat  op  = ComputeOutsideProb(from,to,stringID,ntIndex,firstOutside,FALSE);
+                                        _Parameter  op  = ComputeOutsideProb(from,to,stringID,ntIndex,firstOutside,FALSE);
 
                                         if (op == 0) {
                                             continue;    // yet another short-cut
@@ -1793,7 +1846,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
 
                                         for (long bisect = from; bisect < to; bisect++) {
-                                            hyFloat ip = ComputeInsideProb(from,bisect,stringID,jIndex,FALSE);
+                                            _Parameter ip = ComputeInsideProb(from,bisect,stringID,jIndex,FALSE);
                                             if (ip > 0.) {
                                                 numer += ruleProb * ip *
                                                          ComputeInsideProb(bisect+1,to,stringID,kIndex,FALSE) * op /
@@ -1855,7 +1908,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
         for (long linkIndex = 0; linkIndex < links.lLength; linkIndex++) {
             _SimpleList *   thisLink    = (_SimpleList*)links.lData[linkIndex];
-            hyFloat      linkNumer   = 0.,
+            _Parameter      linkNumer   = 0.,
                             linkDenom = 0.;
             /*
             snprintf (buf, sizeof(buf), "Link %d contains ", linkIndex);
@@ -1963,9 +2016,10 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
 {
     if (ntIndex < 0) {
-        storageString = new _SimpleList;
+        checkPointer (storageString = new _SimpleList);
         SpawnRandomString (startSymbol, storageString);
         _String      *backString = new _String (storageString->lLength, true);
+        checkPointer (backString);
         for (long k=0; k<storageString->lLength; k++) {
             (*backString) << (_String*)terminals (storageString->lData[k]);
         }
@@ -1974,7 +2028,7 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
         return backString;
     }
 
-    hyFloat      randomValue = genrand_real2 (),
+    _Parameter      randomValue = genrand_real2 (),
                     sum         = 0.;
 
     long            ruleIndex   = 0;
@@ -2006,7 +2060,7 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
         _String oops ("SCFG::SpawnRandomString() randomValue ");
         oops = oops & randomValue & " exceeded sum " & sum;
         oops = oops & ": nt=" & ntIndex & " stor=" & (_String *) storageString->toStr();
-        HandleApplicationError(oops);
+        WarnError (oops);
     }
 
     return nil;
@@ -2034,19 +2088,19 @@ _String *   Scfg::BestParseTree(void)
         _SimpleList     triplets;
         _AVLListX *     theAVL;
 
-        theAVL = new _AVLListX (&triplets);
+        checkPointer (theAVL = new _AVLListX (&triplets));
 
         _SimpleList             argMaxYZK;      // stores (y,z,k) keyed by argmax(i,j,v) in AVL
         _GrowingVector  *theMatrix;     // stores likelihood for subtree (i,j,v)
 
-        theMatrix = new _GrowingVector;
+        checkPointer (theMatrix = new _GrowingVector);
 
         {
             for (long from = 0; from < stringL; from++) {   // initialization
                 for (long ntIndex = 0; ntIndex < countNT; ntIndex++) {
                     long        tripletIndex    = scfgIndexIntoAnArray (from,from,ntIndex,stringL),
                                 mxID         = -1;
-                    hyFloat  lk = ComputeInsideProb(from,from,stringIndex,ntIndex,firstPass);
+                    _Parameter  lk = ComputeInsideProb(from,from,stringIndex,ntIndex,firstPass);
 
                     if (lk > 0.) {
                         mxID = theMatrix->Store (lk);
@@ -2062,7 +2116,7 @@ _String *   Scfg::BestParseTree(void)
         for (long from = 0; from < stringL-1; from++) { // iterate over all substrings and non-terminals
             for (long to = from+1; to < stringL; to++) {
                 for (long ntIndex = 0; ntIndex < countNT; ntIndex++) {
-                    hyFloat      maxLk = 0.;
+                    _Parameter      maxLk = 0.;
                   
                     long            maxLeft    = -1L,
                                     maxRight   = -1L,
@@ -2073,15 +2127,15 @@ _String *   Scfg::BestParseTree(void)
                     for (unsigned long ruleIdx = 0UL; ruleIdx < itsRules->lLength; ruleIdx++) {    // iterate over all productions
                         long            currentRuleIndex    = itsRules->lData[ruleIdx];
                         _SimpleList *   currentRule         = ((_SimpleList**)rules.lData)[currentRuleIndex];
-                        hyFloat      ruleProb            = LookUpRuleProbability(currentRuleIndex);
+                        _Parameter      ruleProb            = LookUpRuleProbability(currentRuleIndex);
                         long            leftNT              = currentRule->lData[1],
                                         rightNT             = currentRule->lData[2];
 
                         if (ruleProb > 0.) {
                             for (long bisect = from; bisect < to; bisect++) {       // iterate over all bisects of substring
-                                hyFloat  tryProb = ComputeInsideProb(from,bisect,stringIndex,leftNT,firstPass);
+                                _Parameter  tryProb = ComputeInsideProb(from,bisect,stringIndex,leftNT,firstPass);
                                 if (tryProb > 0.) {
-                                    hyFloat  lk  = ruleProb * tryProb *
+                                    _Parameter  lk  = ruleProb * tryProb *
                                                       ComputeInsideProb(bisect+1,to,stringIndex,rightNT,firstPass);
                                     if (lk > maxLk) {
                                         maxLk = lk;

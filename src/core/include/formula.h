@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@ucsd.edu)
 
  Module Developers:
@@ -52,8 +52,8 @@ class _VariableContainer;
 
 
 union       _SimpleFormulaDatum {
-    hyFloat value;
-    hyPointer        reference;
+    _Parameter value;
+    Ptr        reference;
 };
 
 
@@ -87,7 +87,8 @@ class _FormulaParsingContext {
 };
 
 
-class   _Formula {
+class   _Formula   // a computational formula
+{
 
     friend class _Variable;
     friend class _VariableContainer;
@@ -95,11 +96,7 @@ class   _Formula {
 public:
     _Formula (void);
     _Formula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
-    
-    long     ParseFormula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
-    
     _Formula (_PMathObj, bool isAVar = false);
-    _Formula (_Formula const & rhs);
     virtual ~_Formula (void);
     _PMathObj   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
     // compute the value of the formula
@@ -134,15 +131,15 @@ public:
     _MathObject*ConstructPolynomial (void);
 
     virtual void        Initialize          (void);
-    virtual void        Duplicate           (_Formula const *);
-    void        DuplicateReference          (const _Formula*);
-    virtual BaseRef     makeDynamic         (void) const;
+    virtual void        Duplicate           (BaseRef);
+    void        DuplicateReference  (const _Formula*);
+    virtual BaseRef     makeDynamic         (void);
     virtual BaseRef     toStr               (_List* matchNames = nil, bool = false);
 
     virtual long        ObjectClass         (void);
 
 
-    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0) const;
+    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0);
     virtual void        ScanFForType        (_SimpleList&,  int);
     /* SLKP 20100716:
             A simple utility function to retrieve all variables of a given type
@@ -196,17 +193,17 @@ public:
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
-    hyFloat  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
+    _Parameter  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
 
-    hyFloat  Newton              (_Formula&, _Variable*,  hyFloat, hyFloat, hyFloat);
-    hyFloat  Newton              (_Formula&, hyFloat, hyFloat, hyFloat, _Variable*);
-    hyFloat  Newton              (_Variable*,  hyFloat, hyFloat, hyFloat, hyFloat);
-    hyFloat  Newton              (_Variable*,hyFloat, hyFloat, hyFloat);
+    _Parameter  Newton              (_Formula&, _Variable*,  _Parameter, _Parameter, _Parameter);
+    _Parameter  Newton              (_Formula&, _Parameter, _Parameter, _Parameter, _Variable*);
+    _Parameter  Newton              (_Variable*,  _Parameter, _Parameter, _Parameter, _Parameter);
+    _Parameter  Newton              (_Variable*,_Parameter, _Parameter, _Parameter);
 
-    hyFloat  Brent               (_Variable*, hyFloat, hyFloat, hyFloat = 1.e-7, _List* = nil, hyFloat = 0.);
+    _Parameter  Brent               (_Variable*, _Parameter, _Parameter, _Parameter = 1.e-7, _List* = nil, _Parameter = 0.);
 
-    hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool inifinite = false);
-    hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool inifinite = false);
+    _Parameter  Integral            (_Variable*,_Parameter, _Parameter, bool inifinite = false);
+    _Parameter  MeanIntegral        (_Variable*,_Parameter, _Parameter, bool inifinite = false);
     _Formula*   Differentiate       (_String, bool = true, bool convert_from_tree = true);
     node<long>* InternalDifferentiate
     (node<long>*, long,_SimpleList&, _SimpleList&, _Formula&);
@@ -226,23 +223,6 @@ public:
     _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
 
     void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive);
-  
-  
-    /** A compute and forget utility function.
-        Parse an expression, optionally check to see that it's of the right type and return the value
-        
-      @param expression : the string to parse
-      @param use_exceptions : if true, throw const _String exceptions, otherwise handle errors directly 
-      @param requested_type: return nil if the computed value is not of this type
-      @param formula parsing contrext
-     
-      @return expression value or nil; the value needs to be managed by the caller
-      Revision history
-          20170921 : SLKP initial implementation 
-     
-    */
-     
-    static      _PMathObj          ParseAndCompute (_String const& expression, bool use_exceptions = false, long requested_type = HY_ANY_OBJECT, _hyExecutionContext * context = nil);
 
 
 protected:

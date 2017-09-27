@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -39,15 +39,17 @@
 
 #include "avllistx.h"
 #include "hy_strings.h"
-#include "hy_string_buffer.h"
+#include "errorfns.h"
 #include "parser.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
+#ifdef    __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
 
 //______________________________________________________________
 
@@ -79,8 +81,10 @@ void _AVLListX::Clear (bool cL)
 
 //______________________________________________________________
 
-BaseRef _AVLListX::toStr (unsigned long) {
-    _StringBuffer * str = new _StringBuffer (128L);
+BaseRef _AVLListX::toStr (unsigned long)
+{
+    _String * str = new _String (128L, true);
+    checkPointer (str);
 
     if (countitems() == 0) {
         (*str) << "Empty Associative List";
@@ -92,15 +96,15 @@ BaseRef _AVLListX::toStr (unsigned long) {
 
         while (cn>=0) {
             _String * keyVal = (_String*)Retrieve (cn);
-            (*str)  << keyVal
-                    << " : "
-                    << _String(GetXtra (cn))
-                    << '\n';
-          
+            (*str) << keyVal;
+            (*str) << " : ";
+            (*str) << _String(GetXtra (cn));
+            (*str) << '\n';
             cn = Traverser (hist,ls);
         }
     }
 
+    str->Finalize();
     return str;
 }
 

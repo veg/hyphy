@@ -126,6 +126,8 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
     models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
 
+
+
     if (Type(value) == "AssociativeList") {
         if (value[terms.model.branch_length_scaler] == terms.model.branch_length_constrain) {
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
@@ -142,6 +144,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                     model[terms.parameters.nonsynonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
                 }
 
+                //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
 
                 parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.parameters.synonymous_rate] + "))/(" + model[terms.parameters.nonsynonymous_rate] + ")", "");
                 return 1;

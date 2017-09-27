@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -43,7 +43,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <math.h>
 
 
 #include "site.h"
@@ -53,23 +52,40 @@
 #include "avllistxl_iterator.h"
 
 
+#include "math.h"
 #include "string_file_wrapper.h"
 
 #include "global_object_lists.h"
-#include "global_things.h"
-#include "hbl_env.h"
 
 using namespace hyphy_global_objects;
-using namespace hy_global;
 
 
+#ifdef __MAC__
+extern bool handleGUI(bool);
+#endif
+
+#if !defined  __UNIX__ && !defined __HEADLESS__
+#include "HYDataPanel.h"
+#endif
+
+#if !defined  __UNIX__ || defined __HEADLESS__
+#include "preferences.h"
+#endif
+
+#ifdef    __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
+
+#ifdef    __HYPHYMPI__
+extern int _hy_mpi_node_rank;
+#endif
 
 
 _TranslationTable      defaultTranslationTable;
 
 //_________________________________________________________
 
-extern hyFloat dFPrintFormat,
+extern _Parameter dFPrintFormat,
        dFDefaultWidth;
 
 //_________________________________________________________
@@ -114,7 +130,7 @@ const _String& _TranslationTable::GetDefaultTable(long tableType) {
       return *(_String*)_list_of_default_tables (0);
   }
   
-  return kEmptyString;
+  return emptyString;
   
 }
 
@@ -149,29 +165,18 @@ _TranslationTable::_TranslationTable (_String& alphabet) {
 }
 
 //_________________________________________________________
-BaseRef     _TranslationTable::makeDynamic (void) const {
+BaseRef     _TranslationTable::makeDynamic (void) {
     _TranslationTable * r = new _TranslationTable;
+    checkPointer(r);
 
+    memcpy ((char*)r, (char*)this, sizeof (_TranslationTable));
+    r->nInstances = 1;
     r->tokensAdded.Duplicate (&tokensAdded);
     r->baseSet.Duplicate (&baseSet);
     r->translationsAdded.Duplicate (&translationsAdded);
     r->checkTable = NULL;
     return r;
 }
-
-//_________________________________________________________
-void     _TranslationTable::Duplicate (BaseRefConst source) {
-    _TranslationTable const * s = (_TranslationTable const *) source;
-    tokensAdded.Duplicate (&s->tokensAdded);
-    baseSet.Duplicate (&s->baseSet);
-    translationsAdded.Duplicate (&s->translationsAdded);
-    if (checkTable) {
-        free (checkTable);
-    };
-    checkTable = NULL;
-    
-}
-
 
 //_________________________________________________________
 long    _TranslationTable::TokenCode (char token) const
@@ -283,7 +288,7 @@ const _String&   _TranslationTable::ExpandToken            (char token) const {
 long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* receptacle, bool gapToOnes) const {
 
   if (tokens.sLength == 1UL) {
-    return TokenResolutions (tokens.get_char(0UL), receptacle, gapToOnes);
+    return TokenResolutions (tokens.getChar(0UL), receptacle, gapToOnes);
   } else {
   
     long * large_store,
@@ -332,7 +337,7 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
         // handle cases of 2 and 3 characters separately since they are the most common
         
         if (resolution_count > HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
-          HandleApplicationError ((_String ("Too many ambiguous states in call to ") & _String (__PRETTY_FUNCTION__).Enquote()));
+          FlagError(_String ("Too many ambiguous states in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
           return -1L;
         }
         
@@ -363,7 +368,7 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
           } else { // more than 3 tokens [rare!]
             
             if (tokens.sLength >= 32) {
-              HandleApplicationError(_String ("The token string is too long in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
+              FlagError(_String ("The token string is too long in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
               return -1L;
             }
             
@@ -724,11 +729,13 @@ long    _TranslationTable::TokenResolutions (char token, long* receptacle, bool 
 //_________________________________________________________
 void    _TranslationTable::PrepareForChecks (void) {
     if (checkTable == NULL) {
-        checkTable = (char *)MemAllocate (256);
+        checkTable = MemAllocate (256);
     }
 
-    InitializeArray(checkTable, 256, (char) 0);
-    
+    for (long i2=0; i2<256; i2++) {
+        checkTable[i2]=0;
+    }
+
     _String checkSymbols;
 //  if (baseLength == 4)
 //      checkSymbols = _String("ACGTUYRWSKMBDHVXN?O-.")&tokensAdded;
@@ -741,7 +748,7 @@ void    _TranslationTable::PrepareForChecks (void) {
     }
 
     for (long i=0; i<checkSymbols.sLength; i++) {
-        checkTable[(unsigned char)checkSymbols(i)] = (char) 1;
+        checkTable[(unsigned char)checkSymbols(i)] = 1;
     }
 }
 
@@ -767,7 +774,7 @@ const _String& _TranslationTable::GetAlphabetString (void) const {
     return _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_BINARY);
   }
   
-  return kEmptyString;
+  return emptyString;
 
 }
 
@@ -803,7 +810,7 @@ void    _TranslationTable::AddTokenCode (char token, _String& code) {
 
     f = baseSet.Find (token);
     if (killBS) {
-        baseSet = kEmptyString;
+        baseSet = emptyString;
     }
     if (f>=0) {
         return;
@@ -825,17 +832,19 @@ void    _TranslationTable::AddTokenCode (char token, _String& code) {
 
 //_________________________________________________________
 
-void    _TranslationTable::AddBaseSet (_String const& code)
+void    _TranslationTable::AddBaseSet (_String& code)
 {
     baseSet         = code;
     baseSet.StripQuotes();
     baseLength      = baseSet.sLength;
-    if (baseLength > HY_WIDTH_OF_LONG) {
+    if (baseLength > HY_WIDTH_OF_LONG)
         // longer than the bit size of 'long'
         // can't handle those
-        HandleApplicationError (_String ("Alphabets with more than ")
-                   & HY_WIDTH_OF_LONG &
-                   " characters are not supported");
+    {
+        _String err = _String ("Alphabets with more than ")
+                      & HY_WIDTH_OF_LONG &
+                      " characters are not supported";
+        WarnError (err);
     }
 
 }
@@ -996,7 +1005,8 @@ _Site::_Site (_String& s):_CString (s.sLength, true)
 }
 
 //_________________________________________________________
-_Site::_Site (char s):_CString (16, true) {
+_Site::_Site (char s):_CString (16, true)
+{
     refNo = -1;
     (*this)<<s;
 }
@@ -1013,7 +1023,8 @@ _Site::~_Site (void)
 {}
 
 //_________________________________________________________
-void    _Site::Complete (void) {
+void    _Site::Complete (void)
+{
     if (refNo==-1) {
         _String::Finalize();
     }
@@ -1021,16 +1032,21 @@ void    _Site::Complete (void) {
     refNo = refNo<0?-refNo:refNo;
 }
 //_________________________________________________________
-BaseRef _Site::makeDynamic(void) const{
+BaseRef _Site::makeDynamic(void)
+{
     _Site * r = new _Site;
-    r->_CString::Duplicate (this);
-    r->refNo = -1;
+    checkPointer(r);
+
+    memcpy ((char*)r, (char*)this, sizeof (_Site));
+    r->nInstances = 1;
+    nInstances++;
     return r;
 }
 
 //_______________________________________________________________________
-void    _Site::Duplicate (BaseRefConst ref) {
-    _Site const * s = (_Site const*)ref;
+void    _Site::Duplicate (BaseRef ref)
+{
+    _Site * s = (_Site*)ref;
     sLength = s->sLength;
     if (sData) {
         free(sData);
@@ -1039,10 +1055,15 @@ void    _Site::Duplicate (BaseRefConst ref) {
     allocatedSpace = s->allocatedSpace;
     //nInstances = ref->nInstances;
     if (sData) {
+        /*long theLength = sLength/storageIncrement;
+        if (!sLength||sLength%storageIncrement) theLength++;
+        theLength*=storageIncrement;
+        checkPointer (sData = (char*)MemAllocate (theLength));
+        memcpy (sData, s->sData, sLength);*/
         if (allocatedSpace) {
-            sData = (char*)MemAllocate (allocatedSpace*sizeof(char));
+            checkPointer (sData = (char*)MemAllocate (allocatedSpace*sizeof(char)));
         } else {
-            sData = (char*)MemAllocate (sLength*sizeof(char));
+            checkPointer (sData = (char*)MemAllocate (sLength*sizeof(char)));
         }
         memcpy (sData, s->sData, sLength);
     }
@@ -1066,7 +1087,7 @@ void    _Site::PrepareToUse (void)
 {
     if (IsCompressed()) {
         _String * s = Decompress();
-        DuplicateErasing(s);
+        DuplicateErasing(s);;
         DeleteObject (s);
         SetDecompressed();
     }
@@ -1147,17 +1168,20 @@ void _DataSet::Clear (bool )
 
 //_______________________________________________________________________
 
-BaseRef _DataSet::makeDynamic (void) const {
+BaseRef _DataSet::makeDynamic (void)
+{
     _DataSet * r = new _DataSet;
+    checkPointer(r);
+    memcpy ((char*)r, (char*)this, sizeof (_DataSet));
+    r->nInstances = 1;
     r->theMap.Duplicate (&theMap);
     r->theFrequencies.Duplicate (&theFrequencies);
     if (theTT!=&defaultTranslationTable) {
-        r->theTT->AddAReference();
+        r->theTT->nInstances++;
     }
     r->theNames.Duplicate (&theNames);
     r->streamThrough = streamThrough;
-    // 20170507: SLKP TODO why do we need an additional reference here?
-    // nInstances++;
+    nInstances++;
     r->dsh = nil;
     r->useHorizontalRep      = false;
     return r;
@@ -1186,17 +1210,19 @@ void     _DataSet::ConvertRepresentations (void)
             _Site * aSite = (_Site*)lData[0];
 
             for (long str = 0; str < aSite->sLength; str++) {
-                horStrings < new _String (DATA_SET_SWITCH_THRESHOLD,true);
+                _String * aString = new _String (DATA_SET_SWITCH_THRESHOLD,true);
+                horStrings << aString;
+                aString->nInstances --;
             }
 
             for  (long s = 0; s < lLength; s++) {
                 _Site * aSite = (_Site*)lData[s];
                 if (aSite->sLength>horStrings.lLength || aSite->GetRefNo() != -1) {
-                    HandleApplicationError ("Irrecoverable internal error in _DataSet::ConvertRepresentations. Sorry about that.", true);
+                    FlagError ("Irrecoverable internal error in _DataSet::ConvertRepresentations. Sorry about that.");
                     return;
                 }
                 aSite->Finalize();
-                for (long s2 = 0L; s2 < aSite->sLength; s2++) {
+                for (long s2 = 0; s2 < aSite->sLength; s2++) {
                     (*(_String*)horStrings.lData[s2]) << aSite->sData[s2];
                 }
             }
@@ -1225,14 +1251,14 @@ void     _DataSet::AddSite (char c)
                 } else {
                     fprintf (streamThrough,">Sequence 1\n");
                 }
-                AppendNewInstance (new _String (kEmptyString));
+                (*this) && & emptyString;
             }
 
             theMap.lData[1]++;
             theMap.lData[2]++;
             fputc (c,streamThrough);
         } else {
-            HandleApplicationError ("Can't add more sites to a file based data set, when more that one sequence has been written!", true);
+            WarnError ("Can't add more sites to a file based data set, when more that one sequence has been written!");
         }
     } else {
         if (useHorizontalRep == false) {
@@ -1291,11 +1317,11 @@ void     _DataSet::Write2Site (long index, char c)
 
                 theMap.lData[1] = 0;
             } else {
-                HandleApplicationError ("Can't write sequences of unequal lengths to a file based data set.");
+                WarnError ("Can't write sequences of unequal lengths to a file based data set.");
                 return;
             }
         } else if (index != theMap.lData[1]) {
-            HandleApplicationError ("Can't write sites which are not consecutive to a file based data set.");
+            WarnError ("Can't write sites which are not consecutive to a file based data set.");
             return;
         }
 
@@ -1312,13 +1338,14 @@ void     _DataSet::Write2Site (long index, char c)
             long     currentWritten = ((_String*)lData[0])->sLength;
 
             if (index>=currentWritten) {
-                HandleApplicationError ("Internal Error in 'Write2Site' - index is too high (using compact representation)");
+                WarnError ("Internal Error in 'Write2Site' - index is too high (using compact representation)");
                 return;
             } else {
                 if (index == 0) {
                     _String * newString = new _String (currentWritten,true);
                     (*newString) << c;
-                    (*this) < newString;
+                    (*this) << newString;
+                    newString->nInstances --;
                 } else {
                     long s = 1;
                     for (; s<lLength; s++) {
@@ -1329,14 +1356,14 @@ void     _DataSet::Write2Site (long index, char c)
                         }
                     }
                     if (s == lLength) {
-                        HandleApplicationError ("Internal Error in 'Write2Site' - no appropriate  string to write too (compact representation)");
+                        WarnError ("Internal Error in 'Write2Site' - no appropriate  string to write too (compact representation)");
                         return;
                     }
                 }
             }
         } else {
             if (index>=lLength) {
-                HandleApplicationError ("Internal Error in 'Write2Site' - index is too high");
+                WarnError ("Internal Error in 'Write2Site' - index is too high");
                 return;
             }
             _Site* s = (_Site*)lData[index];
@@ -1382,12 +1409,12 @@ void     _DataSet::Write2Site (long index, char c)
 void     _DataSet::CheckMapping (long index)
 {
     if (index>=lLength) {
-        HandleApplicationError ("Internal Error in 'CheckMapping' - index is too high", true);
+        FlagError ("Internal Error in 'CheckMapping' - index is too high");
     }
 
     _Site* s = (_Site*)lData[index];
 
-    for (long k = 0L; k < index; k ++) {
+    for (long k = 0; k < index; k ++) {
         _Site* ss = (_Site*)lData[k];
         if (ss->GetRefNo() == -1) {
             if (s->Equal(ss)) {
@@ -1455,7 +1482,7 @@ void    _DataSet::Finalize (void)
 
             if (!good) {
                 Clear();
-                HandleApplicationError ("Internal Error in _DataSet::Finalize. Unequal sequence lengths in compact representation", true);
+                WarnError ("Internal Error in _DataSet::Finalize. Unequal sequence lengths in compact representation");
                 return;
             }
 
@@ -1465,10 +1492,11 @@ void    _DataSet::Finalize (void)
 
             long  siteCounter = ((_String*)lData[0])->sLength;
 
-            for (long i1 = 0L; i1<siteCounter; i1++) {
+            for (long i1 = 0; i1<siteCounter; i1++) {
                 _Site * tC = new _Site ();
+                checkPointer (tC);
 
-                for (long i2 = 0L; i2 < lLength; i2++) {
+                for (long i2 = 0; i2 < lLength; i2++) {
                     (*tC) << ((_String*)lData[i2])->sData[i1];
                 }
 
@@ -1536,7 +1564,7 @@ void    _DataSet::Finalize (void)
                 if (k>=0) {
                     j = refs.lData[k];
                     if (j<0) {
-                        HandleApplicationError ( kErrorStringDatasetRefIndexError );
+                        warnError (-171);
                     } else {
                         refs.lData[i2]=j;
                     }
@@ -1565,7 +1593,7 @@ void    _DataSet::Finalize (void)
 void    _DataSet::Compact (long index)
 {
     if (useHorizontalRep) {
-        HandleApplicationError ("Internal Error: _DataSet::Compact called with compact represntation", true);
+        WarnError ("Internal Error: _DataSet::Compact called with compact represntation");
         return;
     }
 
@@ -1627,7 +1655,7 @@ long _DataSet::ComputeSize(void)
 }
 
 //_________________________________________________________
-hyFloat _DataSet::CheckAlphabetConsistency(void)
+_Parameter _DataSet::CheckAlphabetConsistency(void)
 {
     long        charsIn = 0,
                 gaps    = 0,
@@ -1674,7 +1702,7 @@ hyFloat _DataSet::CheckAlphabetConsistency(void)
         total += w*thisColumn->sLength;
     }
 
-    return (hyFloat)charsIn/(total-gaps+1.);
+    return (_Parameter)charsIn/(total-gaps+1.);
 
 }
 
@@ -1685,15 +1713,18 @@ BaseRef _DataSet::toStr (unsigned long)
     _String * s = new _String(NoOfSpecies()*30, true),
     *str;
 
-    (*s) << _String ((long)NoOfSpecies())
-         << " species:";
+    checkPointer (s);
+    (*s) << _String ((long)NoOfSpecies());
+    (*s) << " species:";
 
-    s->AppendNewInstance((_String*)theNames.toStr());
+    str = (_String*)theNames.toStr();
+    (*s) << *str;
+    DeleteObject(str);
 
-    (*s) << ";\nTotal Sites:"
-         << _String((long)GetNoTypes())
-         << ";\nDistinct Sites:"
-         << _String((long)theFrequencies.lLength);
+    (*s) << ";\nTotal Sites:";
+    (*s) << _String((long)GetNoTypes());
+    (*s) << ";\nDistinct Sites:";
+    (*s) << _String((long)theFrequencies.lLength);
 
     s->Finalize();
 
@@ -1743,12 +1774,12 @@ void    _DataSet::InsertName (_String const& name, long where ) {
 void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert, long limit, _String const* scope) const {
     _String     varName  = isVert ? "siteIndex" : "speciesIndex";
     varName = AppendContainerName(varName, scope);
-    _Variable   *v       = CheckReceptacle (&varName, kEmptyString, false);
+    _Variable   *v       = CheckReceptacle (&varName, emptyString, false);
   
     //fprintf (stderr, "\n_DataSet::MatchIndices %d %s [%s] %s\n", isVert, scope ? scope->sData : "none", varName.sData, ((_String*)f.toStr())->sData);
 
     for (long i=0L; i<limit; i++) {
-        v->SetValue (new _Constant((hyFloat)i), nil);
+        v->SetValue (new _Constant((_Parameter)i), nil);
         _PMathObj res = f.Compute();
         //fprintf (stderr, "%ld %g\n", i, res->Compute()->Value());
         if (res && !CheckEqual(res->Value(),0.0)) {
@@ -1807,7 +1838,7 @@ _TranslationTable*      _DataSet::CheckCompatibility (_SimpleList const & ref, c
             }
             warningMessage = warningMessage & ((_String*)dataSetNamesList(ref.Element (k)))->Enquote();
         }
-        HandleApplicationError (warningMessage);
+        WarnError (warningMessage);
         DeleteObject (tryMe);
         DeleteObject (theEnd);
         return nil;
@@ -1835,6 +1866,7 @@ _DataSet*   _DataSet::Concatenate (_SimpleList const & ref)
   
   
     _DataSet           * bigDataSet = new _DataSet;
+    checkPointer(bigDataSet);
 
     bigDataSet->theTT = jointTable;
 
@@ -1991,7 +2023,7 @@ _DataSetFilterNumeric::~_DataSetFilterNumeric (void) {
   if (ds_id >= 0) {
     KillDataSetRecord(ds_id);
   } else {
-    HandleApplicationError ("Internal error in ~_DataSetFilterNumeric", true);
+    WarnError ("Internal error in ~_DataSetFilterNumeric");
   }
 }
 
@@ -2019,7 +2051,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
 
     /*CreateMatrix (&probabilityVectors, theNodeMap.lLength, shifter,false,true, false);
 
-    hyFloat   *storeHere = probabilityVectors.theData;
+    _Parameter   *storeHere = probabilityVectors.theData;
     for (long spec = 0; spec < theNodeMap.lLength; spec++)
     {
         _Matrix * specMatrix = (_Matrix*)values(spec);
@@ -2039,7 +2071,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
     char buffer[255];
 
     for (long site =0; site <baseFreqs.lLength; site++) {
-        hyFloat      testV = 0.0;
+        _Parameter      testV = 0.0;
 
         for (long k=0; k<theNodeMap.lLength; k++) // sweep down the columns
             for (long state = 0; state < dimension; state++) {
@@ -2080,9 +2112,10 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
         }
         if (f==-1) {
             if (!sameScore) {
-                sameScore = new _SimpleList;
+                checkPointer        (sameScore = new _SimpleList);
                 if (siteIndices.Insert  (testS.makeDynamic(),(long)sameScore,false) < 0) {
-                    HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__, true);
+                    _String eh ("WTF?");
+                    StringToConsole(eh);
                 }
             }
 
@@ -2099,7 +2132,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
     categoryShifter = shifter*theNodeMap.lLength;
 
     CreateMatrix (&probabilityVectors, theNodeMap.lLength, shifter*categoryCount,false,true, false);
-    hyFloat   *storeHere    = probabilityVectors.theData;
+    _Parameter   *storeHere    = probabilityVectors.theData;
 
     long      refShifter = 0;
     for (long cc = 0; cc < categoryCount; cc++, refShifter += theOriginalOrder.lLength * dimension) {
@@ -2116,44 +2149,38 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
 
 //_______________________________________________________________________
 
-void _DataSetFilter::CopyFilter (_DataSetFilter const * copyFrom) {
+void _DataSetFilter::CopyFilter (_DataSetFilter *copyFrom) {
+    memcpy ((char*)this, (char*)copyFrom, sizeof (_DataSetFilter));
 
-    BaseObj:: Initialize (); // reset reference counter
-    
     theFrequencies.Duplicate        (&copyFrom->theFrequencies);
     theNodeMap.Duplicate            (&copyFrom->theNodeMap);
     theMap.Duplicate                (&copyFrom->theMap);
     theOriginalOrder.Duplicate      (&copyFrom->theOriginalOrder);
     conversionCache.Duplicate       (&copyFrom->conversionCache);
     duplicateMap.Duplicate          (&copyFrom->duplicateMap);
-    conversionCache.Duplicate       (&copyFrom->conversionCache);
 
+    nInstances              = 1;
     dimension               = copyFrom->dimension;
     undimension             = copyFrom->undimension;
     unitLength              = copyFrom->unitLength;
     accessCache             = nil;
-    theData                 = copyFrom->theData;
 
 }
 
 
 //_______________________________________________________________________
 
-BaseRef _DataSetFilter::makeDynamic (void) const {
+BaseRef _DataSetFilter::makeDynamic (void) {
     _DataSetFilter * r = new _DataSetFilter;
     r->CopyFilter   (this);
+
     return r;
 }
 
-//_______________________________________________________________________
-
-void    _DataSetFilter::Duplicate (BaseRefConst source) {
-    CopyFilter ((_DataSetFilter const * )source);
-}
 
 //_______________________________________________________________________
 
-BaseRef _DataSetFilterNumeric::makeDynamic (void)  const{
+BaseRef _DataSetFilterNumeric::makeDynamic (void) {
     _DataSetFilterNumeric * r = new _DataSetFilterNumeric();
     r->CopyFilter           (this);
     r->probabilityVectors.Duplicate(&probabilityVectors);
@@ -2162,7 +2189,7 @@ BaseRef _DataSetFilterNumeric::makeDynamic (void)  const{
 
 //_______________________________________________________________________
 
-hyFloat * _DataSetFilterNumeric::getProbabilityVector (long spec, long site, long categoryID) {
+_Parameter * _DataSetFilterNumeric::getProbabilityVector (long spec, long site, long categoryID) {
     return probabilityVectors.theData + categoryID * categoryShifter + spec * shifter + site * dimension;
 }
 
@@ -2235,7 +2262,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
             }
             if (f==-1) { // fit failed or unique site
                 if (!sameScore) {
-                    sameScore = new _SimpleList;
+                    sameScore = (_SimpleList*)checkPointer(new _SimpleList);
                     sequenceHashes.Insert ((BaseRef)sequenceHash,(long)sameScore,false);
                 }
                 
@@ -2250,8 +2277,8 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
     else{
         long             vd  = GetDimension(true);
         
-        hyFloat      *translatedVector = new hyFloat [vd],
-        *translatedVector2= new hyFloat [vd];
+        _Parameter      *translatedVector = (_Parameter*)checkPointer(new _Parameter [vd]),
+        *translatedVector2= (_Parameter*)checkPointer(new _Parameter [vd]);
         
         _String         state1 (unit,false),
         state2 (unit,false);
@@ -2374,7 +2401,7 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
 
     _DataSetFilter* firstOne = nil;
     if (isFilteredAlready) {
-        if ((hyPointer)this == (hyPointer)ds) {
+        if ((Ptr)this == (Ptr)ds) {
             firstOne = (_DataSetFilter*)makeDynamic();
             copiedSelf = true;
         } else {
@@ -2399,7 +2426,7 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
 
      // security checks
     if (horizontalList.empty() || verticalList.lLength<unit) {
-        ReportWarning (_String("Row and/or column partition is kEmptyString. All the data will be used by default."));
+        ReportWarning (_String("Row and/or column partition is emptyString. All the data will be used by default."));
         if (horizontalList.empty()) {
             horizontalList.Populate (isFilteredAlready ? firstOne->theNodeMap.lLength : ds->NoOfSpecies(),0,1);
         }
@@ -2526,7 +2553,7 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
         }
         if (f==-1) { // fit failed or unique site
             if (!sameScore) {
-                sameScore = new _SimpleList;
+                sameScore = (_SimpleList*)checkPointer(new _SimpleList);
                 siteIndices.Insert ((BaseRef)colIndex,(long)sameScore,false);
              }
 
@@ -2586,7 +2613,7 @@ extern _String skipOmissions;
 
 void    _DataSetFilter::FilterDeletions(_SimpleList *theExc)
 {
-    hyFloat      skipo;
+    _Parameter      skipo;
     checkParameter (skipOmissions,skipo,0.0);
 
     if (skipo>.5 || theExc ) { // delete omissions
@@ -2598,14 +2625,16 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc)
                     sitesWithDeletions<<i;
                 }
         } else {
-            hyFloat   *store_vec = new hyFloat [GetDimension(false)];
+            _Parameter   *store_vec = (_Parameter*)checkPointer(new _Parameter [GetDimension(false)]);
 
             for (long i=0; i<theFrequencies.lLength; i++) {
                 long pos = HasExclusions(i,theExc,store_vec);
                 if  (pos != -1) {
                     sitesWithDeletions<<i;
-                    ReportWarning ((*this)(i,pos).Enquote() & " was encountered in sequence "& *GetSequenceName (pos) & " at site pattern " & i
-                                   & ". All corresponding alignment columns will be removed from subsequent analyses.");
+                    _String warnMsg ((*this)(i,pos));
+                    warnMsg = warnMsg & " was encountered in sequence "& *GetSequenceName (pos) & " at site pattern " & i
+                              & ". All corresponding alignment columns will be removed from subsequent analyses.";
+                    ReportWarning (warnMsg);
                 }
             }
 
@@ -2613,7 +2642,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc)
         }
 
         if (sitesWithDeletions.lLength==theFrequencies.lLength) {
-            _String errMsg ("All the sites in the datafilter have deletions and removing them creates an kEmptyString filter");
+            _String errMsg ("All the sites in the datafilter have deletions and removing them creates an emptyString filter");
             ReportWarning(errMsg);
         }
 
@@ -2695,7 +2724,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc)
             for (long k=0; k<theMap.lLength; k++)
                 if (theMap.lData[k] < 0) {
                     saveMap.DeleteList (dupDeletes);
-                    HandleApplicationError ("Internal Error in _DataSetFilter::FilterDeletions", true);
+                    WarnError ("Internal Error in _DataSetFilter::FilterDeletions");
                 }
         }
     }
@@ -2726,7 +2755,8 @@ void    _DataSetFilter::MatchStartNEnd (_SimpleList& order, _SimpleList& positio
 
     long p0 = order.lData[0];
 
-    hyFloat uth = hy_env::EnvVariableGetDefaultNumber (hy_env::use_traversal_heuristic);
+    _Parameter uth;
+    checkParameter (useTraversalHeuristic,uth,1.0);
 
     if (uth>.5) {
         if (parent)
@@ -2775,33 +2805,31 @@ void    _DataSetFilter::MatchStartNEnd (_SimpleList& order, _SimpleList& positio
 
 //_______________________________________________________________________
 
-void    _DataSetFilter::SetExclusions (_String const* theList, bool filter)
+void    _DataSetFilter::SetExclusions (_String* theList, bool filter)
 {
 
     theExclusions.Clear();
-    
-    _String exclusion_list = *theList;
-    exclusion_list.StripQuotes();
+    theList->StripQuotes();
 
-    if (exclusion_list.sLength == 0) {
+    if (theList->sLength == 0) {
         return;
     }
 
-    _List        tokens (exclusion_list.Tokenize(','));
+    _List        tokens (theList->Tokenize(','));
     _SimpleList  holder;
     _AVLList     exclusions (&holder);
 
-    for (long k = 0L; k < tokens.lLength; k++) {
+    for (long k = 0; k < tokens.lLength; k++) {
       
         _String* kth_token = (_String*)tokens.GetItem(k);
       
         long posMarker = MapStringToCharIndex(*kth_token);
 
         if (posMarker < 0) {
-            ReportWarning (_String("Exclusion request for ") & kth_token->Enquote() &" does not represent a unique state and will therefore be ignored.");
+            ReportWarning (_String("Exclusion request for '") & *kth_token &"' does not represent a unique state and will therefore be ignored.");
         } else {
             if (exclusions.Insert((BaseRef)posMarker) < 0) {
-                ReportWarning (_String("Exclusion symbol for ") & kth_token->Enquote() &" is included more than once.");
+                ReportWarning (_String("Exclusion symbol for '") & *kth_token &"' is included more than once.");
             }
         }
     }
@@ -2867,7 +2895,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
         long     outcome = Parse (&fmla, input, fpc,&lhs);
 
         if (outcome!=HY_FORMULA_EXPRESSION) {
-            HandleApplicationError (input & _String(" is an invalid partition specification"));
+            WarnError (input & _String(" is an invalid partition specification"));
             return;
         }
         _PMathObj   fV = fmla.Compute();
@@ -2882,14 +2910,14 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
             _DataSet::MatchIndices (fmla, target, isVertical, totalLength, scope);
         }
     } else { // an explicit enumeration or a regular expression
-        if (input.get_char(0)=='/' && input.get_char(input.sLength-1)=='/')
+        if (input.getChar(0)=='/' && input.getChar(input.sLength-1)=='/')
             // a regular expression
         {
             input.Trim(1,input.sLength-2);
             int   errCode;
-            regex_t*   regex = PrepRegExp (input, errCode, true);
+            Ptr   regex = PrepRegExp (&input, errCode, true);
             if (errCode) {
-                HandleApplicationError(_String::GetRegExpError(errCode));
+                WarnError(GetRegExpError(errCode));
                 return;
             }
             // now set do the matching
@@ -2904,20 +2932,22 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
 
                     if (otherDimension)
                         for (long seqSlider = 0L; seqSlider < otherDimension->lLength; seqSlider ++) {
-                            pattern.sData[seqSlider] =  GetSite(otherDimension->Element(seqSlider))->get_char (seqPos);
+                            pattern.sData[seqSlider] =  GetSite(otherDimension->Element(seqSlider))->getChar (seqPos);
                         }
                     else
                         for (long seqSlider = 0L; seqSlider < theMap.lLength; seqSlider ++) {
-                            pattern.sData[seqSlider] =  GetSite(seqSlider)->get_char(seqPos);
+                            pattern.sData[seqSlider] =  GetSite(seqSlider)->getChar(seqPos);
                         }
 
-                    matches = pattern.RegExpMatch (regex);
+                    matches.Clear();
+                    pattern.RegExpMatch (regex, matches);
                     if (matches.lLength) {
                         target << specCount;
                     }
                 }
             } else {
                 bool         *eligibleMarks = new bool[lLength];
+                checkPointer (eligibleMarks);
 
                 for (long fillerID = 0; fillerID < lLength; fillerID++) {
                     eligibleMarks [fillerID] = false;
@@ -2946,9 +2976,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                             for (long tc = 0; tc < otherDimension->lLength; tc++) {
                                 tempString->sData[tc] = aSite->sData[otherDimension->lData[tc]];
                             }
-                            matches = tempString->RegExpMatch (regex);
+                            tempString->RegExpMatch (regex, matches);
                         } else {
-                            matches = ((_Site**)lData)[siteCounter]->RegExpMatch (regex);
+                            ((_Site**)lData)[siteCounter]->RegExpMatch (regex, matches);
                         }
                         if (matches.lLength == 0) {
                             eligibleMarks[siteCounter] = false;
@@ -2970,9 +3000,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                 }
                 delete eligibleMarks;
             }
-            _String::FlushRegExp (regex);
+            FlushRegExp (regex);
         } else {
-            input = input.KillSpaces ();
+            input.KillSpaces (input);
             // now process the string
             long count = 0,anchor,k;
 
@@ -3135,6 +3165,7 @@ void    _DataSetFilter::FindAllSitesLikeThisOne (long index, _SimpleList& recept
         delete [] matchMap;
     } else {
         char ** matchMap = (char**)MemAllocate (sizeof (char*) * unitLength);
+        checkPointer (matchMap);
 
         for (m=0; m<unitLength; m++) {
             matchMap[m] = ((_Site*)(((BaseRef*)theData->lData)[theData->theMap.lData[oindex+m]]))->sData;
@@ -3255,19 +3286,21 @@ void _DataSetFilter::GrabSite (unsigned long site, unsigned long pos, char * s)
 
 //_______________________________________________________________________
 
-_SimpleList* _DataSetFilter::CountAndResolve (long pattern, hyFloat * storage, bool randomly)
+_SimpleList* _DataSetFilter::CountAndResolve (long pattern, _Parameter * storage, bool randomly)
 // last cell in the list contains the count of distinct characters in the column
 {
     _SimpleList* resList = new _SimpleList (theNodeMap.lLength+1,0,0),
     counts (dimension,0,0);
 
+    checkPointer (resList);
+
     _List        ambStates;
     _String      aState  (unitLength, false);
 
-    hyFloat*  freqStorage = storage;
+    _Parameter*  freqStorage = storage;
 
     if (!freqStorage) {
-        freqStorage = new hyFloat [undimension];
+        freqStorage = new _Parameter [undimension];
     }
 
     long    normalizingSum = 0,
@@ -3280,7 +3313,7 @@ _SimpleList* _DataSetFilter::CountAndResolve (long pattern, hyFloat * storage, b
             resList->lData[k] = characterRes;
 
             if (characterRes >= dimension) {
-                HandleApplicationError (_String("Internal error in ") & __PRETTY_FUNCTION__ );
+                WarnError (_String("Internal error in _DataSetFilter::CountAndResolve\n"));
             }
 
             if ((counts.lData[characterRes]++) == 0) {
@@ -3290,6 +3323,9 @@ _SimpleList* _DataSetFilter::CountAndResolve (long pattern, hyFloat * storage, b
             charCount ++;
         } else {
             _SimpleList * possibleResolutions = new _SimpleList;
+            if (!possibleResolutions) {
+                checkPointer (possibleResolutions);
+            }
 
             (*possibleResolutions) << k;
 
@@ -3401,6 +3437,8 @@ _Matrix* _DataSetFilter::PairwiseCompare (_SimpleList* s1, _SimpleList *s2, _Lis
             lbl1 = new _SimpleList;
             lbl2 = new _SimpleList;
 
+            checkPointer (lbl1);
+            checkPointer (lbl2);
 
             (*labels) << lbl1;
             (*labels) << lbl2;
@@ -3443,6 +3481,8 @@ _Matrix* _DataSetFilter::PairwiseCompare (_SimpleList* s1, _SimpleList *s2, _Lis
 
         delete [] sort1;
         delete [] sort2;
+    } else {
+        checkPointer (nil);
     }
 
     return res;
@@ -3545,7 +3585,7 @@ long    _DataSetFilter::SiteFrequency (unsigned long site)
 bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
 {
     long        loopDim  = GetDimension();
-    hyFloat* store    = new hyFloat [loopDim];
+    _Parameter* store    = new _Parameter [loopDim];
 
     long j,
          upTo = theNodeMap.lLength?theNodeMap.lLength:theData->NoOfSpecies();
@@ -3584,8 +3624,8 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage)
 //_______________________________________________________________________
 bool    _DataSetFilter::IsConstant (unsigned long site,bool relaxedDeletions)
 {
-    hyFloat *store = new hyFloat [GetDimension()],
-               *store2 = new hyFloat [GetDimension()];
+    _Parameter *store = new _Parameter [GetDimension()],
+               *store2 = new _Parameter [GetDimension()];
 
     unsigned long j,
          upTo = theNodeMap.lLength?theNodeMap.lLength:theData->NoOfSpecies(),
@@ -3686,7 +3726,7 @@ _String*        _DataSet::GetSequenceCharacters (long seqID)  const{
   
   if (seqID >= 0 && seqID < noOfSpecies) {
     for (unsigned long k2=0UL; k2<upTo; k2++) {
-      (*aSequence) << GetSite (k2)->get_char (seqID);
+      (*aSequence) << GetSite (k2)->getChar (seqID);
     }
   }
   aSequence->Finalize();
@@ -3695,7 +3735,7 @@ _String*        _DataSet::GetSequenceCharacters (long seqID)  const{
 
 
 //_______________________________________________________________________
-long    _DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, hyFloat*store )
+long    _DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, _Parameter*store )
 {
     long   filterDim = GetDimension(false);
 
@@ -3754,8 +3794,8 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
     
     _Matrix     *res   = new _Matrix  (mxDim,mxDim,false,true);
     
-    hyFloat  *sm1   = new hyFloat[mxDim],
-    *sm2   = new hyFloat[mxDim];
+    _Parameter  *sm1   = new _Parameter[mxDim],
+    *sm2   = new _Parameter[mxDim];
     
     
     
@@ -3764,7 +3804,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
     
     
     if (conversionCache.lLength == 0) {
-      throw _String ("ComputePairwiseDifferences called on a filter with kEmptyString conversionCache");
+      throw _String ("ComputePairwiseDifferences called on a filter with emptyString conversionCache");
     }
     
     long        *tcodes  = conversionCache.lData+89,
@@ -3884,7 +3924,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
             
             if (freqsAtSite) {
               if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
-                hyFloat totalW = 0.0;
+                _Parameter totalW = 0.0;
                 
                 for  (long m=0; m<mxDim; m++)
                   if (sm1[m]>0.0) {
@@ -3901,12 +3941,12 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 }
                 
               } else {
-                hyFloat maxW   = 0.0;
+                _Parameter maxW   = 0.0;
                 long       maxIdx = -1;
                 
                 for  (long m=0; m<mxDim; m++) {
                   if (sm1[m]>0.0) {
-                    hyFloat myWeight = freqsAtSite->theData[m];
+                    _Parameter myWeight = freqsAtSite->theData[m];
                     if (myWeight > maxW) {
                       maxW = myWeight;
                       maxIdx = m;
@@ -3936,7 +3976,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 
                 s1 *= mxDim;
                 
-                hyFloat addFac = theFrequencies.lData[site_pattern]/(hyFloat)ambCount;
+                _Parameter addFac = theFrequencies.lData[site_pattern]/(_Parameter)ambCount;
                 
                 for  (long m=0; m<mxDim; m++,s1++)
                   if (sm1[m]>0.0) {
@@ -3956,7 +3996,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
               
               if (freqsAtSite) {
                 if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
-                  hyFloat totalW = 0.0;
+                  _Parameter totalW = 0.0;
                   
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0.0) {
@@ -3971,12 +4011,12 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                   }
                   
                 } else {
-                  hyFloat maxW   = 0.0;
+                  _Parameter maxW   = 0.0;
                   long       maxIdx = -1;
                   
                   for  (long m=0; m<mxDim; m++) {
                     if (sm1[m]>0.0) {
-                      hyFloat myWeight = freqsAtSite->theData[m];
+                      _Parameter myWeight = freqsAtSite->theData[m];
                       if (myWeight > maxW) {
                         maxW = myWeight;
                         maxIdx = m;
@@ -3998,7 +4038,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                       ambCount ++;
                     }
                   
-                  hyFloat addFac = theFrequencies.lData[site_pattern]/(hyFloat)ambCount;
+                  _Parameter addFac = theFrequencies.lData[site_pattern]/(_Parameter)ambCount;
                   {
                     for  (long m=0; m<mxDim; m++,s2+=mxDim)
                       if (sm1[m]>0.0) {
@@ -4020,7 +4060,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
               
               if (freqsAtSite) {
                 if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
-                  hyFloat totalW = 0.0;
+                  _Parameter totalW = 0.0;
                   
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0)
@@ -4039,7 +4079,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                   }
                   
                 } else {
-                  hyFloat maxW   = 0.0;
+                  _Parameter maxW   = 0.0;
                   long       maxIdx  = -1,
                   maxIdx2 = -1;
                   
@@ -4047,7 +4087,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                     if (sm1[m]>0)
                       for  (long m2=0; m2<mxDim; m2++)
                         if (sm2[m2]>0) {
-                          hyFloat myWeight = freqsAtSite->theData[m]*freqsAtSite->theData[m2];
+                          _Parameter myWeight = freqsAtSite->theData[m]*freqsAtSite->theData[m2];
                           if (myWeight > maxW) {
                             maxW = myWeight;
                             maxIdx  = m;
@@ -4077,7 +4117,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 }
                 
                 if (m==mxDim) {
-                  hyFloat addFac = theFrequencies.lData[site_pattern]/(hyFloat)(ambCount*ambCount2);
+                  _Parameter addFac = theFrequencies.lData[site_pattern]/(_Parameter)(ambCount*ambCount2);
                   
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0)
@@ -4100,7 +4140,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
     return res;
   }
   catch (const _String error) {
-    HandleApplicationError (error);
+    WarnError (error);
     return    new _Matrix (1,1,false,true);
     
   }
@@ -4209,7 +4249,7 @@ long    _DataSetFilter::GetVectorCode(long site,long seq)
 void    _DataSetFilter::ProduceSymbolVector(bool smear)
 {
     // compute the size of the vector cells
-    hyFloat cellSize=log((hyFloat)theData->theTT->LengthOfAlphabet())*hyFloat(unitLength)/log(128.0);
+    _Parameter cellSize=log((_Parameter)theData->theTT->LengthOfAlphabet())*_Parameter(unitLength)/log(128.0);
     if (cellSize>2.0)
     {
         _String errMsg ("DataSetFilter has more than 32767 states, which is currently unsupported");
@@ -4302,7 +4342,7 @@ long    _DataSetFilter::CorrectCode (long code) const {
 
 
 //_______________________________________________________________________
-long    _DataSetFilter::Translate2Frequencies (_String const& str, hyFloat* parvect, bool smear) const {
+long    _DataSetFilter::Translate2Frequencies (_String const& str, _Parameter* parvect, bool smear) const {
     long  store      [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
           resolution_count  = -1L;
 
@@ -4358,7 +4398,7 @@ long    _DataSetFilter::MapStringToCharIndex (_String& str) const {
 
 
 //_______________________________________________________________________
-long    _DataSetFilter::Translate2Frequencies (char s, hyFloat* parvect, bool smear) const {
+long    _DataSetFilter::Translate2Frequencies (char s, _Parameter* parvect, bool smear) const {
   long  store      [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
   resolution_count  = theData->theTT->TokenResolutions (s,store,smear);
   
@@ -4381,7 +4421,7 @@ long    _DataSetFilter::Translate2Frequencies (char s, hyFloat* parvect, bool sm
 }
 
 //_______________________________________________________________________
-long    _DataSetFilter::LookupConversion (char s, hyFloat* parvect) const
+long    _DataSetFilter::LookupConversion (char s, _Parameter* parvect) const
 {
     if (undimension==4) {
         long* cCache = conversionCache.lData+(s-40)*5;
@@ -4411,7 +4451,7 @@ void    _DataSetFilter::SetupConversion (void)
 
     if ( unitLength==1 ) { // do stuff
         char c = 40;
-        hyFloat *temp    = new hyFloat [undimension+1UL];
+        _Parameter *temp    = new _Parameter [undimension+1UL];
 
         while(c<127) {
             //InitializeArray(temp, undimension + 1UL, 0.0);
@@ -4576,7 +4616,7 @@ void    processCommand (_String*s, FileState*fs)
             if (*s!=_String("BASE20")) {
                 fs->translationTable->AddBaseSet (*s);
             } else {
-                fs->translationTable->AddBaseSet (kEmptyString);
+                fs->translationTable->AddBaseSet (emptyString);
                 fs->translationTable->baseLength = 20;
             }
             break;
@@ -4597,7 +4637,7 @@ void    processCommand (_String*s, FileState*fs)
             break;
 
         case 3: // REPEAT CHAR
-            fs->repeat = s->get_char(0);
+            fs->repeat = s->getChar(0);
             break;
 
         case 2: // RAWLINE template e.g 1,-1 skips one word at the beginning and one word at the end
@@ -4692,8 +4732,8 @@ void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine)
         ReportWarning (errMsg);
     } else {
         treeString.Finalize();
-        hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree, new HY_CONSTANT_TRUE,fState->theNamespace, false);
-        hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree_string, new _FString(treeString),fState->theNamespace, false);
+        setParameter (dataFileTree,1.0,fState->theNamespace);
+        setParameter (dataFileTreeString, new _FString (treeString), nil, false);
     }
 
 }
@@ -4703,8 +4743,6 @@ void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine)
 long    ProcessLine (_String&s , FileState *fs, _DataSet& ds)
 {
     long sitesAttached = 0,sL=s.Length();
-    
-    _String gap_char (fs->skip);
 
     for (long l = 0; l<sL; l++) {
         // see if it is a legal char
@@ -4722,17 +4760,20 @@ long    ProcessLine (_String&s , FileState *fs, _DataSet& ds)
                         return sitesAttached;
                     }
 
-                    c = ((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->get_char(0);
+                    c = ((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->getChar(0);
                     if (c==0)
                         c = ((_Site*)(ds._List::operator ()
-                                      (((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->GetRefNo())))->get_char(0);
+                                      (((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->GetRefNo())))->getChar(0);
                 }
 
                 if (fs->curSite+sitesAttached+1>fs->totalSitesRead) {
                     // pad previous species to full length
                     _Site * newS = new _Site (fs->skip);
-                    
-                    newS->AppendNCopies(gap_char, fs->curSpecies-1);
+                    checkPointer (newS);
+
+                    for (long j = 1; j<fs->curSpecies; j++) {
+                        (*newS) << fs->skip;
+                    }
 
                     (*newS) << c;
 
@@ -4752,7 +4793,8 @@ long    ProcessLine (_String&s , FileState *fs, _DataSet& ds)
                     newS->SetRefNo(-1);
                     //}
 
-                    ds < newS;
+                    ds << newS;
+                    newS->nInstances --;
 
                     fs->totalSitesRead++;
                 } else {
@@ -4931,10 +4973,10 @@ void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase)
             return;
         }
 
-    if (s->CanFreeMe() == false) {
+    if (s->nInstances > 1) {
         *s = tempBuffer;
     } else {
-        char*         saveData = s->sData;
+        Ptr         saveData = s->sData;
         s->sData    = tempBuffer.sData;
         tempBuffer.sData = saveData;
 
@@ -4956,7 +4998,7 @@ void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds)
          space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
     
     // hack for PAML support
-    if (space2 > fNS && isspace(CurrentLine.get_char (space2+1))) {
+    if (space2 > fNS && isspace(CurrentLine.getChar (space2+1))) {
         _String     sequence_name (CurrentLine,fNS, space2);
         CurrentLine.Trim(space2+2,-1); // chop out the name
         ds.AddName(sequence_name);        
@@ -4977,20 +5019,20 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     _DataSet* result = new _DataSet;
 
 
-    _String         CurrentLine = hy_env::dataset_save_memory_size & "={{}};",
+    _String         CurrentLine = dataFilePartitionMatrix & "={{}};",
                     savedLine;
 
     if (1) {
         _ExecutionList reset (CurrentLine);
         reset.Execute();
 #ifdef __HYPHYMPI__
-        if (hy_mpi_node_rank == 0)
+        if (_hy_mpi_node_rank == 0)
 #endif
-            terminate_execution = false;
+            terminateExecution = false;
     }
 
     // initialize the instance of a file state variable
-    setParameter(hy_env::data_file_tree, 0.0);
+    setParameter(dataFileTree, 0.0);
     FileState   fState;
     fState.translationTable =  dT;
     fState.curSpecies =
@@ -5014,7 +5056,8 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     fState.theNamespace      = namespaceID;
 
     if (!(f||theS)) {
-         HandleApplicationError( "ReadDataSetFile received null file AND string references. At least one must be specified");
+        CurrentLine = "ReadDataSetFile received null file AND string references. At least one must be specified";
+        warnError     (CurrentLine);
     }
     // done initializing
 
@@ -5023,7 +5066,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
              cDone;
 
 #ifdef __HYPHYMPI__
-    if (hy_mpi_node_rank == 0) {
+    if (_hy_mpi_node_rank == 0) {
 #endif
         if       (f) {
             fseek    (f,0,SEEK_END);
@@ -5042,11 +5085,12 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     //if (f==NULL) return (_DataSet*)result.makeDynamic();
     // nothing to do
 
-    CurrentLine = kEmptyString;
+    CurrentLine = emptyString;
 
     ReadNextLine (f,&CurrentLine,&fState);
     if (!CurrentLine.sLength) {
-        HandleApplicationError ("Empty file encountered by ReadDataSet.");
+        CurrentLine = "emptyString File Encountered By ReadDataSet.";
+        WarnError (CurrentLine);
         return result;
     } else {
         if (CurrentLine.beginswith ("#NEXUS",false)) {
@@ -5058,7 +5102,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             while (CurrentLine.sLength) { // stuff to do
                 // check if the line has a command in it
 #ifdef __HYPHYMPI__
-                if (hy_mpi_node_rank == 0) {
+                if (_hy_mpi_node_rank == 0) {
 #endif
                     if (f) {
                         cDone = ftell (f)*100./fileLength;
@@ -5291,7 +5335,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
 
 
 #ifdef __HYPHYMPI__
-    if (hy_mpi_node_rank == 0) {
+    if (_hy_mpi_node_rank == 0) {
 #endif
         SetStatusBarValue (-1,1,0);
 #ifdef __MAC__
@@ -5311,7 +5355,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     // check to see if result may be an amino-acid data
     if (doAlphaConsistencyCheck && result->theTT == &defaultTranslationTable) {
         if (result->GetNoTypes() == 0)
-            // kEmptyString data set
+            // emptyString data set
             // try binary data
         {
             _TranslationTable *trialTable = new _TranslationTable (defaultTranslationTable);
@@ -5359,7 +5403,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
 
 #ifndef __UNIX__
 #ifdef __HYPHYMPI__
-            if (hy_mpi_node_rank == 0)
+            if (_hy_mpi_node_rank == 0)
 #endif
                 ApplyPreferences();
 #endif
@@ -5370,9 +5414,9 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             } else {
                 ex->Clear();
             }
-            nexusBFBody         = kEmptyString;
+            nexusBFBody         = emptyString;
         } else if (execBF == 0) {
-            nexusBFBody         = kEmptyString;
+            nexusBFBody         = emptyString;
         }
     }
 
@@ -5398,8 +5442,8 @@ void    _DataSetFilter::PatternToSiteMapper (void* source, void* target, char mo
   
   switch (mode) {
     case 0: {
-      hyFloat * target_array = (hyFloat*) target,
-                 * source_array = (hyFloat*) source;
+      _Parameter * target_array = (_Parameter*) target,
+                 * source_array = (_Parameter*) source;
       
       for (unsigned site = 0UL; site < site_count; site++ ) {
         target_array [site] = source_array [duplicateMap.lData[site]];
@@ -5425,7 +5469,7 @@ void    _DataSetFilter::PatternToSiteMapper (void* source, void* target, char mo
     }
     case 2: {
       long * target_array = (long*) target;
-      hyFloat       * source_array = (hyFloat*) source;
+      _Parameter       * source_array = (_Parameter*) source;
       
       for (unsigned site = 0UL; site < site_count; site++ ) {
         target_array [site] = source_array [duplicateMap.lData[site]];
@@ -5460,7 +5504,7 @@ long    _DataSetFilter::GetOriginalToShortMap(long index)
 _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) const {
   
     if (unitLength > 3) {
-        return kEmptyString;
+        return emptyString;
     }
 
     _String     result ((unsigned long)theOriginalOrder.lLength),
@@ -5469,7 +5513,7 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
     long        char_states         = GetDimension(false),
                 *translation_buffer = new long [char_states];
  
-    hyFloat* count_buffer = new hyFloat [char_states];
+    _Parameter* count_buffer = new _Parameter [char_states];
   
      for (unsigned long site_pattern = 0UL; site_pattern<theFrequencies.lLength; site_pattern ++) {
         long    index_in_dataset = theMap.lData[site_pattern];
@@ -5481,7 +5525,7 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
           
           
             if (resolution_count>1L) {
-                hyFloat equal_weight = 1./resolution_count;
+                _Parameter equal_weight = 1./resolution_count;
                 for (long resolution_index = 0L; resolution_index < resolution_count; resolution_index++) {
                   count_buffer [translation_buffer[resolution_index]] += equal_weight;
                 }
@@ -5494,7 +5538,7 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
 
         // find the residue with the highest frequency
        
-        hyFloat       max_weight      = -1.;
+        _Parameter       max_weight      = -1.;
         InitializeArray (translation_buffer, char_states, 0L);
        long             max_char_count  = 0L;
        
@@ -5581,7 +5625,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
   // write out the file with this dataset filter
   checkParameter (dataFilePrintFormat,dFPrintFormat,6.0);
   checkParameter (dataFileDefaultWidth,dFDefaultWidth,50.0);
-  hyFloat  gW;
+  _Parameter  gW;
   
   long outputFormat = dFPrintFormat,
   printWidth   = dFDefaultWidth,
@@ -5784,10 +5828,10 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           
           write_here << "\t\tSYMBOLS = \"";
           for (unsigned long bc = 0UL; bc < alphabet_length-1; bc++) {
-            write_here << theData->theTT->baseSet.get_char (bc)
+            write_here << theData->theTT->baseSet.getChar (bc)
             << ' ';
           }
-          write_here << theData->theTT->baseSet.get_char (alphabet_length-1)
+          write_here << theData->theTT->baseSet.getChar (alphabet_length-1)
           << "\"\n";
           
           if (theData->theTT->tokensAdded.sLength)
@@ -5917,9 +5961,12 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
   }
   
   if (outputFormat != 8) {
-    if (hy_env :: EnvVariableTrue (hy_env::data_file_tree)) {
-      _FString* treeString = (_FString*) hy_env :: EnvVariableGet(hy_env::data_file_tree, STRING);
-      if (treeString) {
+    _Parameter  treeDefined;
+    checkParameter (dataFileTree, treeDefined,0.0);
+    if (treeDefined) {
+      _Variable *treeVar = FetchVar(LocateVarByName (dataFileTreeString));
+      if (treeVar) {
+        _String* treeString = (_String*)(treeVar->Compute())->toStr();
         switch (outputFormat) {
           case 0:
           case 1:
@@ -5927,20 +5974,21 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           case 10: {
             write_here << kStringFileWrapperNewLine
             << kStringFileWrapperNewLine
-            << treeString->get_str();
+            << *treeString;
             break;
           }
           case 2:
           case 3: {
-            write_here << "\n1\n" << treeString->get_str();
+            write_here << "\n1\n" << *treeString;
             break;
           }
           default: {
             write_here << "\n\nBEGIN TREES;\n\tTREE tree = "
-              << treeString->get_str()
-              << ";\nEND;";
+            << *treeString
+            << ";\nEND;";
           }
         }
+        DeleteObject (treeString);
       }
     }
   }
@@ -5949,8 +5997,8 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
 //_________________________________________________________
 
 bool    StoreADataSet (_DataSet* ds, _String* setName) {
-    if (!setName->IsValidIdentifier (fIDAllowCompound)) {
-        HandleApplicationError (setName->Enquote() & " is not a valid identifier while constructing a DataSet");
+    if (!setName->IsValidIdentifier (true)) {
+        WarnError (*setName & " is not a valid identifier while constructing a DataSet");
         return false;
     }
 
@@ -5962,7 +6010,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
     } else {
 #if !defined __UNIX__ && ! defined __HEADLESS__
         if (!RequestDataSetReplace (pos)) {
-            terminate_execution = true;
+            terminateExecution = true;
             DeleteObject (ds);
             return false;
         }
@@ -5992,8 +6040,10 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
         dataSetList.Replace(pos,ds,false);
     }
   
-    hyFloat normalizeSeqNames = hy_env::EnvVariableGetDefaultNumber(hy_env::normalize_sequence_names);
-    CheckReceptacleAndStore (*setName&".mapping",kEmptyString,false, new _MathObject, false);
+    _Parameter normalizeSeqNames = 1.;
+    checkParameter (normalizeSequenceNames, normalizeSeqNames, 1.0);
+  
+    CheckReceptacleAndStore (*setName&".mapping",emptyString,false, new _MathObject, false);
     if (normalizeSeqNames > 0.1) {
       _List _id_mapping;
       _AVLListXL id_mapping (&_id_mapping);
@@ -6001,8 +6051,8 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
       
       for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
         _String * old_name = new _String (*ds->GetSequenceName (i));
-        if (! old_name->IsValidIdentifier(fIDAllowFirstNumeric) ) {
-          *ds->GetSequenceName (i) = old_name->ConvertToAnIdent(fIDAllowFirstNumeric);
+        if (! old_name->IsValidIdentifier(false) ) {
+          ds->GetSequenceName (i)->ConvertToAnIdent(false);
           did_something = true;
         }
         if (id_mapping.Find (ds->GetSequenceName (i)) >= 0) {
@@ -6031,13 +6081,13 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
           current_index = id_mapping.Traverser(history, t);
         }
         
-        CheckReceptacleAndStore (*setName&".mapping",kEmptyString,false, mapping, false);
+        CheckReceptacleAndStore (*setName&".mapping",emptyString,false, mapping, false);
      }
     }
 
-    CheckReceptacleAndStore (*setName&".species",kEmptyString,false, new _Constant (ds->NoOfSpecies()), false);
-    CheckReceptacleAndStore (*setName&".sites",kEmptyString,false, new _Constant (ds->NoOfColumns()), false);
-    CheckReceptacleAndStore (*setName&".unique_sites",kEmptyString,false, new _Constant (ds->NoOfUniqueColumns()), false);
+    CheckReceptacleAndStore (*setName&".species",emptyString,false, new _Constant (ds->NoOfSpecies()), false);
+    CheckReceptacleAndStore (*setName&".sites",emptyString,false, new _Constant (ds->NoOfColumns()), false);
+    CheckReceptacleAndStore (*setName&".unique_sites",emptyString,false, new _Constant (ds->NoOfUniqueColumns()), false);
 
     return true;
 }
@@ -6059,7 +6109,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
     }
 
     if (unit%atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
-        HandleApplicationError (_String("Atom must divide unit in ") & _String (__PRETTY_FUNCTION__).Enquote() &" call");
+        WarnError (_String("Atom should divide unit in ") & _String (__PRETTY_FUNCTION__).Enquote() &" call");
         return new _Matrix (1,1);
     }
 
@@ -6093,14 +6143,14 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
                 // build atomic probabilities
               
                 for (unsigned long m = 0; m<atom; m++ ) {
-                  unit_for_counting.set_char(m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
+                  unit_for_counting.setChar(m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
                 }
               
                 long resolution_count = theTT->MultiTokenResolutions(unit_for_counting, static_store, countGaps);
               
                 if (resolution_count > 0UL) {
           
-                  hyFloat    normalized = 1./resolution_count;
+                  _Parameter    normalized = 1./resolution_count;
 
                   for (long resolution_index = 0UL; resolution_index < resolution_count; resolution_index ++) {
                     out->theData[posSpec? static_store[resolution_index]*positions+index_in_pattern: static_store[resolution_index]] += normalized;
@@ -6116,7 +6166,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
                   column_count = out->GetVDim();
   
     for (unsigned long column =0UL; column < column_count; column++) { // normalize each _column_ to sum to 1.
-        hyFloat sum = 0.0;
+        _Parameter sum = 0.0;
 
         for (unsigned long row = 0UL; row < row_count; row++) {
           sum += out->theData [row*column_count + column];

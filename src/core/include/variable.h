@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -62,8 +62,8 @@ public:
     virtual ~_Variable (void);
 
     virtual   void          Initialize (bool = false);
-    virtual   void          Duplicate (BaseRefConst);
-    virtual   BaseRef       makeDynamic(void) const;
+    virtual   void          Duplicate (BaseRef);
+    virtual   BaseRef       makeDynamic(void);
     virtual   BaseRef       toStr (unsigned long = 0UL);
     virtual    void         toFileStr (FILE*, unsigned long = 0UL);
 
@@ -80,9 +80,9 @@ public:
     }
     virtual     bool        IsConstant (void);
     void        SetValue (_PMathObj, bool = true); // set the value of the variable
-    void        SetValue (hyFloat); // set the value of the variable
-    void        SetNumericValue (hyFloat);
-    void        CheckAndSet (hyFloat, bool = false);
+    void        SetValue (_Parameter); // set the value of the variable
+    void        SetNumericValue (_Parameter);
+    void        CheckAndSet (_Parameter, bool = false);
     // set the value of the variable
     // bool flag is used to indicate that out of bounds values should be rejected
 
@@ -112,20 +112,20 @@ public:
     long        GetIndex (void) {
         return theIndex;
     }
-    void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0) const;
+    void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
     virtual     bool        IsContainer (void) {
         return false;
     }
 
-    void        SetBounds (hyFloat lb, hyFloat ub);
+    void        SetBounds (_Parameter lb, _Parameter ub);
     void        EnsureTheValueIsInBounds (void);
-    bool        IsValueInBounds (hyFloat v)
+    bool        IsValueInBounds (_Parameter v)
                            { return v >= lowerBound && v <= upperBound; }
 
-    hyFloat  GetLowerBound (void) {
+    _Parameter  GetLowerBound (void) {
         return lowerBound;
     }
-    hyFloat  GetUpperBound (void) {
+    _Parameter  GetUpperBound (void) {
         return upperBound;
     }
 
@@ -163,7 +163,7 @@ public:
     // the class of this variable - i.e global, local, category or random
     int       varFlags;
 
-    hyFloat lowerBound,
+    _Parameter lowerBound,
                upperBound;
     // dynamic lower and upper bounds here
 

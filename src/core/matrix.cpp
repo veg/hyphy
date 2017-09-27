@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -54,15 +54,18 @@
 #include "avllistxl.h"
 
 #include "function_templates.h"
-#include "mersenne_twister.h"
-#include "global_things.h"
 
+#ifdef    __HYPHYDMALLOC__
+    #include "dmalloc.h"
+#endif
 
-
+/*SLKP 20110209; include progress report updates */
+#if !defined __UNIX__ && !defined __HEADLESS__
+#include "HYConsoleWindow.h"
+#endif
+/*SLKP*/
 
 //#include "profiler.h"
-
-using namespace hy_global;
 
 #define MEMORYERROR "Out of Memory"
 #define ZEROOBJECT  0.0
@@ -84,11 +87,11 @@ int _Matrix::storageIncrement = 16;
 //  percent of total size (reasonable values divide 100)
 int _Matrix::switchThreshold = 40;
 
-hyFloat  _Matrix::truncPrecision = 1e-13;
+_Parameter  _Matrix::truncPrecision = 1e-13;
 #define     MatrixMemAllocate(X) MemAllocate(X)
 #define     MatrixMemFree(X)     free(X)
 
-hyFloat  analMatrixTolerance = 1e-6,
+_Parameter  analMatrixTolerance = 1e-6,
             zero = 0,
             AUTO_PAD_DIAGONAL = 1,
             toPolyOrNot=0.0,
@@ -108,6 +111,7 @@ long        matrixExpCount = 0,
 extern      _String         printDigitsSpec;
 extern          int       _hy_mpi_node_rank;
 
+
 _Trie        _HY_MatrixRandomValidPDFs;
 
 
@@ -119,7 +123,7 @@ void        MatrixIndexError        (long, long, long, long);
 
 
 // function prototypes
-hyFloat  lnGamma (hyFloat),
+_Parameter  lnGamma (_Parameter),
             gammaDeviate (double, double = 1.);
 
 
@@ -133,16 +137,17 @@ hyFloat  lnGamma (hyFloat),
 
 
 //__________________________________________________________________________________________________________
-hyFloat  lnGamma(hyFloat theValue)
+_Parameter  lnGamma(_Parameter theValue)
 {
     //  Returns Log(gamma(x))
     if (theValue <= 0) {
-        HandleApplicationError ("ERROR (matrix.cpp): Requested lnGamma(x) for x <= 0.");
+        _String oops ("ERROR (matrix.cpp): Requested lnGamma(x) for x <= 0.");
+        WarnError (oops);
 
         return 0.;
     }
 
-    static hyFloat lngammaCoeff [6] = {   76.18009172947146,
+    static _Parameter lngammaCoeff [6] = {   76.18009172947146,
                                          -86.50532032941677,
                                          24.01409824083091,
                                          -1.231739572450155,
@@ -150,7 +155,7 @@ hyFloat  lnGamma(hyFloat theValue)
                                          -0.5395239384953e-5
                                          };
 
-    static hyFloat lookUpTable [20] = {   0.       ,  0.       ,  0.6931472,  1.7917595,  3.1780538,
+    static _Parameter lookUpTable [20] = {   0.       ,  0.       ,  0.6931472,  1.7917595,  3.1780538,
                                          4.7874917,  6.5792512,  8.5251614, 10.6046029, 12.8018275,
                                          15.1044126, 17.5023078, 19.9872145, 22.5521639, 25.1912212,
                                          27.8992714, 30.6718601, 33.5050735, 36.3954452, 39.3398842
@@ -162,7 +167,7 @@ hyFloat  lnGamma(hyFloat theValue)
     }
 
     // else do it the hard way
-    hyFloat  x, y, tmp, ser;
+    _Parameter  x, y, tmp, ser;
 
     y = x = theValue;
     tmp = x + 5.5;
@@ -178,7 +183,7 @@ hyFloat  lnGamma(hyFloat theValue)
 
 
 //___________________________________________________________________________________________
-hyFloat  gaussDeviate (void)
+_Parameter  gaussDeviate (void)
 {
     /*
      Use Box-Muller transform to generate random deviates from Gaussian distribution with
@@ -200,16 +205,16 @@ hyFloat  gaussDeviate (void)
         gset = v1 * fac;
         iset = 1;           // set flag to indicate second deviate available
 
-        return (hyFloat) (v2 * fac);
+        return (_Parameter) (v2 * fac);
     } else {
         iset = 0;
-        return (hyFloat) gset;       // use second deviate
+        return (_Parameter) gset;       // use second deviate
     }
 }
 
 
 //__________________________________________________________________________________________________________
-hyFloat  exponDeviate (void)
+_Parameter  exponDeviate (void)
 {
     return -log(1.0-genrand_real2());   // uniform random number on interval (0,1]
 }
@@ -217,7 +222,7 @@ hyFloat  exponDeviate (void)
 
 
 //__________________________________________________________________________________________________________
-hyFloat  gammaDeviate (double a, double scale)
+_Parameter  gammaDeviate (double a, double scale)
 {
     /* -----------------------------------------
      GS algorithm from GNU GPL rgamma.c
@@ -296,10 +301,10 @@ hyFloat  gammaDeviate (double a, double scale)
 
 
 //__________________________________________________________________________________
-hyFloat  chisqDeviate (double df)
+_Parameter  chisqDeviate (double df)
 {
     if (df < 0.0) {
-        HandleApplicationError (_String("ERROR in chisqDeviate(): require positive degrees of freedom"));
+        WarnError (_String("ERROR in chisqDeviate(): require positive degrees of freedom"));
         return 0;
     }
 
@@ -310,23 +315,27 @@ hyFloat  chisqDeviate (double df)
 
 //__________________________________________________________________________________
 
-void    MatrixIndexError (long hPos, long vPos, long hDim, long vDim) {
-    HandleApplicationError (
-                            _String  ("Invalid Matrix Index [") &  _String ((long)hPos) & "][" & _String ((long)vPos) &
-                            "] in a " &_String (hDim) & " by " &_String (vDim) & " matrix.");
+void    MatrixIndexError (long hPos, long vPos, long hDim, long vDim)
+{
+    _String errMsg ("Invalid Matrix Index [");
+    errMsg = errMsg & _String ((long)hPos) & "][" & _String ((long)vPos) &
+             "] in a " &_String (hDim) & " by " &_String (vDim) & " matrix.";
+    WarnError (errMsg);
 }
 
 
 
 //_____________________________________________________________________________________________
 
-inline  bool    _Matrix::IsNonEmpty  (long logicalIndex) const {
+inline  bool    _Matrix::IsNonEmpty  (long logicalIndex)
+{
     return  (theIndex?theIndex [logicalIndex]!=-1:(storageType!=1?GetMatrixObject(logicalIndex)!=ZEROPOINTER:true));
 }
 
 //__________________________________________________________________________________
 
-bool        _Matrix::HasChanged(bool) {
+bool        _Matrix::HasChanged(bool)
+{
     if (storageType == 2) {
         _Formula* theF, **theFormulae = (_Formula**)theData;
         if (theIndex) {
@@ -384,7 +393,7 @@ bool        _Matrix::HasChanged(bool) {
 //__________________________________________________________________________________
 
 
-inline static void ROTATE(hyFloat * a, long i, long j, long k, long l, hyFloat & g, hyFloat & h, hyFloat s, hyFloat tau, long hDim)
+inline static void ROTATE(_Parameter * a, long i, long j, long k, long l, _Parameter & g, _Parameter & h, _Parameter s, _Parameter tau, long hDim)
 {
     g = a[i*hDim + j];
     h = a[k*hDim + l];
@@ -396,11 +405,12 @@ inline static void ROTATE(hyFloat * a, long i, long j, long k, long l, hyFloat &
 void        _Matrix::Balance (void)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        HandleApplicationError ("Balance only works with numerical non-empty square dense matrices");
+        _String errorMsg ("Balance only works with numerical non-emptyString square dense matrices");
+        WarnError (errorMsg);
         return;
     }
 
-    hyFloat       Squared_Radix = 2.0 * 2.0;
+    _Parameter       Squared_Radix = 2.0 * 2.0;
 
     bool             done = false;
 
@@ -408,7 +418,7 @@ void        _Matrix::Balance (void)
         done = true;
 
         for (long i = 0; i < hDim; i++) {
-            hyFloat r = 0.0,
+            _Parameter r = 0.0,
                        c = 0.0;
 
             for (long j = 0; j < vDim; j++)
@@ -418,7 +428,7 @@ void        _Matrix::Balance (void)
                 }
 
             if (r > 0.0 && c > 0.0) {
-                hyFloat g = r / Squared_Radix,
+                _Parameter g = r / Squared_Radix,
                            f = 1.,
                            s = c+r;
 
@@ -452,12 +462,13 @@ void        _Matrix::Balance (void)
 void        _Matrix::Schur (void)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        HandleApplicationError ("Schur decomposition only works with numerical non-empty square dense matrices");
+        _String errorMsg ("Hessenberg only works with numerical non-emptyString square dense matrices");
+        WarnError (errorMsg);
         return;
     }
 
     for (long m = 1; m < hDim-1; m++) {
-        hyFloat x = 0.0;
+        _Parameter x = 0.0;
         long       i = m;
 
         for (long j = m; j < hDim; j++)
@@ -468,13 +479,13 @@ void        _Matrix::Schur (void)
 
         if (i!=m) {
             for (long j=m-1; j<hDim; j++) {
-                hyFloat t = theData[i*vDim + j];
+                _Parameter t = theData[i*vDim + j];
                 theData[i*vDim + j] = theData[m*vDim + j];
                 theData[m*vDim + j] = t;
             }
             {
                 for (long j=0; j<hDim; j++) {
-                    hyFloat t = theData[j*vDim + i];
+                    _Parameter t = theData[j*vDim + i];
                     theData[j*vDim + i] = theData[j*vDim + m];
                     theData[j*vDim + m] = t;
                 }
@@ -483,7 +494,7 @@ void        _Matrix::Schur (void)
 
         if (x)
             for (long i = m+1; i < hDim; i++) {
-                hyFloat y = theData[i*vDim + m -1];
+                _Parameter y = theData[i*vDim + m -1];
                 if (y != 0.0) {
                     y /= x;
                     theData[i*vDim + m -1] = y;
@@ -514,11 +525,12 @@ void        _Matrix::Schur (void)
 void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
 {
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        HandleApplicationError ("EigenDecomp only works with numerical non-empty square dense matrices");
+        _String errorMsg ("EigenDecomp only works with numerical non-emptyString square dense matrices");
+        WarnError (errorMsg);
         return;
     }
 
-    hyFloat anorm = 0.0;
+    _Parameter anorm = 0.0;
 
     for (long k = 0; k < hDim; k++)
         for (long k2 = k?k-1:0; k2 < hDim; k2++) {
@@ -526,7 +538,7 @@ void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
         }
 
     long        nn = hDim - 1;
-    hyFloat  t  = 0;
+    _Parameter  t  = 0;
 
     CreateMatrix (&real, hDim, 1, false, true, false);
     CreateMatrix (&imag, hDim, 1, false, true, false);
@@ -536,7 +548,7 @@ void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
              l   = 0;
         do {
             for (l = nn; l>=1; l--) {
-                hyFloat s = fabs (MX_ACCESS(l-1,l-1)) + fabs (MX_ACCESS(l,l));
+                _Parameter s = fabs (MX_ACCESS(l-1,l-1)) + fabs (MX_ACCESS(l,l));
                 if (s == 0.0) {
                     s = anorm;
                 }
@@ -546,16 +558,16 @@ void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
                 }
             }
 
-            hyFloat x = MX_ACCESS(nn,nn);
+            _Parameter x = MX_ACCESS(nn,nn);
             if (l  == nn) { // one root
                 real.theData[nn]   = x + t;
                 imag.theData[nn--] = 0.0;
             } else {
-                hyFloat y = MX_ACCESS(nn-1,nn-1),
+                _Parameter y = MX_ACCESS(nn-1,nn-1),
                            w = MX_ACCESS(nn,nn-1)*MX_ACCESS(nn-1,nn);
 
                 if ( l == nn - 1) { // two roots
-                    hyFloat p = 0.5 * (y-x),
+                    _Parameter p = 0.5 * (y-x),
                                q = p*p + w,
                                z = sqrt (fabs(q));
 
@@ -575,10 +587,11 @@ void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
                     nn -= 2;
                 } else { // no roots; continue iteration
 
-                    hyFloat p,q,r,z,s;
+                    _Parameter p,q,r,z,s;
 
                     if (its == 30) {
-                        HandleApplicationError ("Too many QR iterations in EigenDecomp");
+                        _String errMsg ("Too many QR iterations in EigenDecomp");
+                        WarnError (errMsg);
                         return;
                     }
 
@@ -587,7 +600,7 @@ void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
                         for (long i=0; i<hDim; i++) {
                             MX_ACCESS(i,i) -= x;
                         }
-                        hyFloat s = fabs(MX_ACCESS(nn,nn-1)) + fabs (MX_ACCESS(nn-1,nn-2));
+                        _Parameter s = fabs(MX_ACCESS(nn,nn-1)) + fabs (MX_ACCESS(nn-1,nn-2));
                         y = x = 0.75 * s;
                         w = -0.4375*s*s;
                     }
@@ -612,7 +625,7 @@ void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
                             break;
                         }
 
-                        hyFloat u = fabs (MX_ACCESS(m,m-1)) * (fabs (q) + fabs (r)),
+                        _Parameter u = fabs (MX_ACCESS(m,m-1)) * (fabs (q) + fabs (r)),
                                    v = fabs (p) * (fabs (MX_ACCESS(m-1,m-1)) + fabs(z) + fabs(MX_ACCESS(m+1,m+1)));
 
                         if (u+v == v) {
@@ -695,36 +708,6 @@ void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
 
 }
 
-//_____________________________________________________________________________________________
-bool        _Matrix::ValidateFormulaEntries (bool callback (long, long, _Formula*)) {
-    if (storageType == _FORMULA_TYPE) {
-        _Formula ** formula_entires = (_Formula**)theData;
-        
-        unsigned long direct_index = 0UL;
-        for (unsigned long row = 0UL; row < hDim ; row++) {
-            for (unsigned long col = 0UL; col < vDim ; col++) {
-                _Formula * this_cell;
-                if (is_dense()) {
-                    this_cell = formula_entires[direct_index++];
-                } else {
-                    direct_index = Hash (row,col);
-                    if (direct_index >= 0) {
-                        this_cell = formula_entires[direct_index++];
-                    } else {
-                        this_cell = nil;
-                    }
-                }
-                if (! callback (row, col, this_cell)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-
 //__________________________________________________________________________________
 _PMathObj   _Matrix::Eigensystem (void)
 {
@@ -734,7 +717,8 @@ _PMathObj   _Matrix::Eigensystem (void)
     // a square matrix where columns are the corresponding eigenvalues
 
     if ((storageType!=1)||(hDim!=vDim)||(hDim==0)) { // only works for numerical matrices at this stage
-        HandleApplicationError ("Eigensystem only works with numerical non-empty square matrices");
+        _String errorMsg ("Eigensystem only works with numerical non-emptyString square matrices");
+        WarnError (errorMsg);
         return    new _AssociativeList();
     }
 
@@ -760,6 +744,7 @@ _PMathObj   _Matrix::Eigensystem (void)
 
                 cpy->CheckIfSparseEnough(true);
 
+                checkPointer (cpy);
                 cpy->Balance ();
                 cpy->Schur   ();
                 cpy->EigenDecomp (*rl,*im);
@@ -783,11 +768,13 @@ _PMathObj   _Matrix::Eigensystem (void)
     _Matrix a (*this);
     a.CheckIfSparseEnough (true);
 
-    hyFloat* b = new hyFloat[hDim],
-    *   z = new hyFloat[hDim];
+    _Parameter* b = new _Parameter[hDim],
+    *   z = new _Parameter[hDim];
 
     _Matrix * d = new _Matrix(hDim,1,false, true),
     * v = new _Matrix(hDim,hDim,false,true);
+
+    checkPointer ((Ptr)(b && z && d && v));
 
     for (long cnt = 0, diagIndex=0; cnt < hDim; cnt ++, diagIndex+=hDim+1) {
         v->theData[diagIndex] = 1.;
@@ -796,7 +783,7 @@ _PMathObj   _Matrix::Eigensystem (void)
     }
 
     for (long pass = 0; pass < 50; pass ++) {
-        hyFloat sm = 0.,
+        _Parameter sm = 0.,
                    tresh = 0.;
 
         {
@@ -818,7 +805,7 @@ _PMathObj   _Matrix::Eigensystem (void)
             for (long ec2=ec+1; ec2 < hDim; ec2++) {
                 long       midx = ec*hDim+ec2;
 
-                hyFloat mel = a.theData[midx],
+                _Parameter mel = a.theData[midx],
                            g   = 100. * fabs (mel),
                            t   = fabs (d->theData[ec]),
                            c   = fabs (d->theData[ec2]);
@@ -826,11 +813,11 @@ _PMathObj   _Matrix::Eigensystem (void)
                 if (pass>3 && t+g == t && c+g == c) {
                     a.theData[midx] = 0.;
                 } else if (fabs(mel) > tresh) {
-                    hyFloat h = d->theData[ec2]-d->theData[ec];
+                    _Parameter h = d->theData[ec2]-d->theData[ec];
                     if (fabs (h) + g == fabs (h)) {
                         t = mel/h;
                     } else {
-                        hyFloat theta = 0.5*h/mel;
+                        _Parameter theta = 0.5*h/mel;
                         t = 1./(fabs(theta)+sqrt(1.+theta*theta));
                         if (theta<0.0) {
                             t = -t;
@@ -839,8 +826,8 @@ _PMathObj   _Matrix::Eigensystem (void)
 
                     c = 1.0/sqrt(1.0+t*t);
 
-                    hyFloat s    = t*c;
-                    hyFloat tau  = s/(1.0+c);
+                    _Parameter s    = t*c;
+                    _Parameter tau  = s/(1.0+c);
 
                     h = t*mel;
 
@@ -910,6 +897,7 @@ _PMathObj   _Matrix::Eigensystem (void)
     }
 
     _AssociativeList * res = new _AssociativeList ();
+    checkPointer (res);
 
     _String            key ("0");
 
@@ -946,15 +934,18 @@ _PMathObj   _Matrix::LUDecompose (void)
     // the return object is an nx(n+1) matrix which contains the LU decomposition followed
     // by a vector of row interchanges
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        HandleApplicationError ("LUDecompose only works with numerical non-empty square matrices");
+        _String errorMsg ("LUDecompose only works with numerical non-emptyString square matrices");
+        WarnError (errorMsg);
         return    new _Matrix();
     }
 
-    hyFloat *        scalings = new hyFloat[hDim];
+    _Parameter *        scalings = new _Parameter[hDim];
+    checkPointer        (scalings);
 
     long perRow = vDim+1;
     _Matrix * result = new _Matrix (hDim,perRow,false,true);
 
+    checkPointer (result);
     // duplicate the original matrix into result
     if (theIndex) //matrix is sparse
         for (long i=0; i<lDim; i++) {
@@ -973,7 +964,7 @@ _PMathObj   _Matrix::LUDecompose (void)
 
     // produce the scaling vector used in interchanging the rows
     for (long i=0; i<vDim; i++) {
-        hyFloat rowMax = 0.0,
+        _Parameter rowMax = 0.0,
                    cell;
 
         for (long j=i*perRow; j<(i+1)*perRow-1; j++)
@@ -982,7 +973,8 @@ _PMathObj   _Matrix::LUDecompose (void)
             }
 
         if (rowMax==0.0) {
-            HandleApplicationError (_String("LUDecompose doesn't work on singular matrices (row ") & i & ')');
+            _String errorMsg = _String("LUDecompose doesn't work on singular matrices (row ") & i & ')';
+            WarnError (errorMsg);
             return    nil;
         }
         scalings[i]=1.0/rowMax;
@@ -993,7 +985,7 @@ _PMathObj   _Matrix::LUDecompose (void)
         {
             for (long i=0; i<j; i++) {
                 // fill in superdiagonal elements (U) in column j
-                hyFloat sum = result->theData[i*perRow+j];
+                _Parameter sum = result->theData[i*perRow+j];
                 for (long k=0; k<i; k++) {
                     sum -= result->theData[i*perRow+k]*result->theData[k*perRow+j];
                 }
@@ -1001,12 +993,12 @@ _PMathObj   _Matrix::LUDecompose (void)
             }
         }
         long       maxRow = 0;
-        hyFloat rowMax = 0.0,
+        _Parameter rowMax = 0.0,
                    cell;
 
         for (long i=j; i<hDim; i++) {
             // calculate the unscaled version of elements of L and the diagonal
-            hyFloat sum = result->theData[i*perRow+j];
+            _Parameter sum = result->theData[i*perRow+j];
 
             for (long k=0; k<j; k++) {
                 sum -= result->theData[i*perRow+k]*result->theData[k*perRow+j];
@@ -1054,13 +1046,14 @@ _PMathObj   _Matrix::LUSolve (_PMathObj p)
 {
 
     if ((storageType!=1)||(hDim+1!=vDim)||(vDim<=0)) { // only works for numerical matrices at this stage
-        HandleApplicationError ("LUSolve only works with numerical non-empty matrices of dimension nx(n+1) returned by LUDecompose.");
-        return  nil;
+        _String errorMsg ("LUSolve only works with numerical non-emptyString matrices of dimension nx(n+1) returned by LUDecompose.");
+        WarnError (errorMsg);
+        return    nil;
     }
     if (p->ObjectClass()==MATRIX) {
         _Matrix *b=(_Matrix*)p;
         if (!((b->hDim!=hDim)||(b->vDim!=1)||(b->storageType!=1))) {
-            hyFloat sum;
+            _Parameter sum;
             _Matrix result (*b);
             result.CheckIfSparseEnough(true);
             long i,j,trueI, firstI = -1;
@@ -1092,7 +1085,8 @@ _PMathObj   _Matrix::LUSolve (_PMathObj p)
             }
         }
     }
-    HandleApplicationError ("LUSolve expects the 2nd parameter to be a column vector defining the right hand side of LUx=b");
+    _String errorMsg ("LUSolve expects the 2nd parameter to be a column vector defining the right hand side of LUx=b");
+    WarnError (errorMsg);
     return new _Matrix(1,1,false,true);
 
 }
@@ -1113,13 +1107,16 @@ _PMathObj   _Matrix::CholeskyDecompose (void)
        --------------------------------------------------- */
 
     if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical square matrices at this stage
-        HandleApplicationError("CholeskyDecompose only works with numerical non-empty square matrices");
+        _String errorMsg ("CholeskyDecompose only works with numerical non-emptyString square matrices");
+        WarnError (errorMsg);
         return    new _Matrix();
     }
 
     long        n           = GetHDim();
-    hyFloat  sum;
+    _Parameter  sum;
     _Matrix *   lowerTri    = new _Matrix ((_Matrix &)*this);   // duplication constructor
+
+    checkPointer (lowerTri);
 
     for (long i = 0; i < n; i++) {
         for (long j = i; j < n; j++) {
@@ -1131,7 +1128,7 @@ _PMathObj   _Matrix::CholeskyDecompose (void)
 
             if (i==j) {
                 if (sum <= 0.0) {   // matrix is not positive-definite
-                    HandleApplicationError (_String("In CholeskyDecompose(): matrix not positive definite, (row ") & i & ')');
+                    WarnError(_String("In CholeskyDecompose(): matrix not positive definite, (row ") & i & ')');
                     return nil;
                 }
 
@@ -1163,6 +1160,7 @@ _PMathObj   _Matrix::Log (void)
 {
     if (storageType==1) {
         _Matrix* res = new _Matrix;
+        checkPointer (res);
         res->Duplicate (this);
         if (theIndex) {
             for (long k=0; k<lDim; k++)
@@ -1176,7 +1174,7 @@ _PMathObj   _Matrix::Log (void)
         }
         return res;
     }
-    HandleApplicationError ("Can't apply logs to non-numeric matrices.");
+    WarnError ("Can't apply logs to non-numeric matrices.");
     return new _Matrix(1,1,false,true);
 }
 
@@ -1184,7 +1182,8 @@ _PMathObj   _Matrix::Log (void)
 _PMathObj   _Matrix::Inverse (void)
 {
     if ((storageType!=1)||(hDim!=vDim)||(hDim==0)) {
-        HandleApplicationError ("Inverse only works with numerical non-kEmptyString square matrices.");
+        _String errorMsg ("Inverse only works with numerical non-emptyString square matrices.");
+        WarnError (errorMsg);
         return    nil;
     }
     _Matrix * LUdec = (_Matrix*)LUDecompose();
@@ -1237,9 +1236,9 @@ _PMathObj   _Matrix::MultByFreqs (long freqID)
 
         if (theIndex) {
             _Matrix*    vm = (_Matrix*) value;
-            hyFloat *dp = vm ->theData;
+            _Parameter *dp = vm ->theData;
 
-            hyFloat *tempDiags = new hyFloat [hDim];
+            _Parameter *tempDiags = new _Parameter [hDim];
 
             for (long i=0; i<hDim; i++) {
                 tempDiags[i] = 0.0;
@@ -1274,7 +1273,7 @@ _PMathObj   _Matrix::MultByFreqs (long freqID)
 
             delete [] tempDiags;
         } else {
-            hyFloat * theMatrix = ((_Matrix*)value)->theData;
+            _Parameter * theMatrix = ((_Matrix*)value)->theData;
 
             if (freqMatrix) {
                 if (freqMatrix->theIndex) {
@@ -1283,7 +1282,7 @@ _PMathObj   _Matrix::MultByFreqs (long freqID)
                     }
                 } else {
                     for (unsigned long column=0UL; column<vDim; column++) {
-                      const hyFloat freq_i = freqMatrix->theData[column];
+                      const _Parameter freq_i = freqMatrix->theData[column];
                       unsigned long entry = column;
                       for (;entry < lDim - vDim; entry += vDim) {
                         theMatrix[entry] *= freq_i;
@@ -1482,7 +1481,7 @@ _PMathObj _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionC
         if (arg0->ObjectClass()==NUMBER) {
           if (CheckEqual (arg0->Value(), 1)) {
             long index = 0L;
-            hyFloat v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (0,&index):MinElement(0,&index),0.0};
+            _Parameter v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (0,&index):MinElement(0,&index),0.0};
             v[1] = index;
             return new _Matrix (v,1,2);
           }
@@ -1568,10 +1567,12 @@ void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool s
                 return;
             }
             if (!(theMatrix->theIndex = (long*)MatrixMemAllocate(sizeof(long)*theMatrix->lDim))) { // allocate element index storage
-                HandleApplicationError ( kErrorStringMemoryFail , true);
+                warnError(-108);
                 return;
             } else {
-                InitializeArray(theMatrix->theIndex, theMatrix->lDim, -1L);
+                for (i = 0; i<theMatrix->lDim; i++) {
+                    theMatrix->theIndex[i] = -1;
+                }
             }
 
         } else {
@@ -1582,26 +1583,30 @@ void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool s
         if (!allocateStorage)
             // matrix will store pointers to elements
         {
-            if (!(theMatrix->theData =(hyFloat*)MatrixMemAllocate(theMatrix->lDim*sizeof(void*)))) { // allocate element index storage
-                HandleApplicationError ( kErrorStringMemoryFail );
+            if (!(theMatrix->theData =(_Parameter*)MatrixMemAllocate(theMatrix->lDim*sizeof(void*)))) { // allocate element index storage
+                warnError(-108);
                 return;
             } else {
-                if (isFla) {
-                    InitializeArray ((_Formula**)theMatrix->theData,    theMatrix->lDim, (_Formula*)ZEROPOINTER);
-                } else {
-                    InitializeArray ((_MathObject**)theMatrix->theData, theMatrix->lDim, (_PMathObj)ZEROPOINTER);
-                }
+                // populate with zero data pointers
+                if (!isFla)
+                    for (i = 0; i<theMatrix->lDim; i++) {
+                        ((_MathObject**)theMatrix->theData)[i] = ZEROPOINTER;
+                    }
+                else
+                    for (i = 0; i<theMatrix->lDim; i++) {
+                        ((_Formula**)theMatrix->theData)[i]    = ZEROPOINTER;
+                    }
             }
 
         } else {
-            if (!(theMatrix->theData =(hyFloat*)MatrixMemAllocate (sizeof(hyFloat)*theMatrix->lDim))) { // allocate element index storage
-                HandleApplicationError ( kErrorStringMemoryFail );
+            if (!(theMatrix->theData =(_Parameter*)MatrixMemAllocate (sizeof(_Parameter)*theMatrix->lDim))) { // allocate element index storage
+                warnError(-108);
                 return;
             }
 
             else {
                 // populate with zero data objects
-                memset (theMatrix->theData, 0, theMatrix->lDim*sizeof(hyFloat));
+                memset (theMatrix->theData, 0, theMatrix->lDim*sizeof(_Parameter));
             }
         }
     } else {
@@ -1639,7 +1644,7 @@ bool    _Matrix::AmISparse(void)
     }
 
 
-    if ((hyFloat(k)/lDim*100.)<=_Matrix::switchThreshold) {
+    if ((_Parameter(k)/lDim*100.)<=_Matrix::switchThreshold) {
         // we indeed are sparse enough
         _Matrix sparseMe (hDim,vDim,true,storageType==1);
         if (storageType==1) {
@@ -1653,7 +1658,7 @@ bool    _Matrix::AmISparse(void)
                 if ((GetMatrixObject(i)!=ZEROPOINTER)&&(!GetMatrixObject(i)->IsObjectEmpty())) {
                     sparseMe.StoreObject(i,GetMatrixObject(i));
                 }
-                GetMatrixObject(i)->AddAReference();
+                GetMatrixObject(i)->nInstances++;
             }
         }
 
@@ -1688,14 +1693,14 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo)
             k = 1L;
         }
 
-       hyFloat *          newData  = (hyFloat*)MatrixMemAllocate (k*sizeof(hyFloat));
+       _Parameter *          newData  = (_Parameter*)MatrixMemAllocate (k*sizeof(_Parameter));
         if (whereTo.theIndex) {
             free (whereTo.theIndex);
         }
         whereTo.theIndex               = (long*)MemAllocate (k*sizeof(long));
 
-        if (! newData&&whereTo.theIndex) {
-            HandleApplicationError ( kErrorStringMemoryFail );
+        if (!(newData&&whereTo.theIndex)) {
+            warnError (-108);
             return false;
         }
 
@@ -1750,7 +1755,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs)
                                     if (freqs->GetFormula(r,0)) {
                                         tr = freqs->GetFormula(r,0)->ConstructPolynomial();
                                         if (tr) {
-                                            tr->AddAReference();
+                                            tr->nInstances++;
                                         } else {
                                             return false;
                                         }
@@ -1758,7 +1763,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs)
                                     if (freqs->GetFormula(c,0)) {
                                         tc = freqs->GetFormula(c,0)->ConstructPolynomial();
                                         if (tc) {
-                                            tc->AddAReference();
+                                            tc->nInstances++;
                                         } else {
                                             DeleteObject (tr);
                                             return false;
@@ -1859,8 +1864,8 @@ void    _Matrix::CheckIfSparseEnough(bool force)
         {
             long* tempData;
 
-            if (!(tempData = (long*) MatrixMemAllocate(hDim*vDim*sizeof(hyPointer)))) {
-                HandleApplicationError ( kErrorStringMemoryFail );
+            if (!(tempData = (long*) MatrixMemAllocate(hDim*vDim*sizeof(Ptr)))) {
+                warnError(-108);
             } else {
                 for (i = 0; i<hDim*vDim; i++) {
                     tempData[i]=0;
@@ -1871,14 +1876,14 @@ void    _Matrix::CheckIfSparseEnough(bool force)
                     }
                 }
                 MatrixMemFree (theData);
-                theData = (hyFloat*)tempData;
+                theData = (_Parameter*)tempData;
             }
         } else
             //objects
         {
-            hyFloat* tempData;
-            if (!(tempData =  (hyFloat*)MatrixMemAllocate (sizeof(hyFloat)*hDim*vDim))) {
-                HandleApplicationError ( kErrorStringMemoryFail );
+            _Parameter* tempData;
+            if (!(tempData =  (_Parameter*)MatrixMemAllocate (sizeof(_Parameter)*hDim*vDim))) {
+                warnError(-108);
             } else {
                 for (i = 0; i<hDim*vDim; i++) {
                     tempData [i] = ZEROOBJECT;
@@ -1886,7 +1891,7 @@ void    _Matrix::CheckIfSparseEnough(bool force)
                 for (i = 0; i<lDim; i++) {
                     long k = theIndex[i];
                     if (k!=-1) {
-                        tempData [k] = ((hyFloat*)theData) [i];
+                        tempData [k] = ((_Parameter*)theData) [i];
                     }
                 }
                 MatrixMemFree( theData);
@@ -1909,7 +1914,7 @@ bool    _Matrix::IncreaseStorage    (void)
     long* tempIndex, i;
 
     if (!(tempIndex = (long*)MatrixMemAllocate(lDim*sizeof(long)))) {
-        HandleApplicationError ( kErrorStringMemoryFail );
+        warnError(-108);
     } else {
         memcpy (tempIndex, theIndex, (lDim-allocationBlock)*sizeof(long));
         MatrixMemFree( theIndex);
@@ -1925,27 +1930,27 @@ bool    _Matrix::IncreaseStorage    (void)
     {
         _MathObject** tempData;
         if (!(tempData = (_MathObject**) MatrixMemAllocate(sizeof( char)* lDim*sizeof(void*)))) {
-            HandleApplicationError ( kErrorStringMemoryFail );
+            warnError(-108);
         } else {
             memcpy (tempData, theData, (lDim-allocationBlock)*sizeof(void*));
             MatrixMemFree (theData);
             for (i = lDim-1; i>=lDim-allocationBlock; i--) {
                 tempData [i] = ZEROPOINTER;
             }
-            theData = (hyFloat*)tempData;
+            theData = (_Parameter*)tempData;
         }
     } else
         //objects
     {
-        hyFloat* tempData;
-        if (!(tempData =  (hyFloat*)MatrixMemAllocate(sizeof(hyFloat)* lDim))) {
-            HandleApplicationError ( kErrorStringMemoryFail );
+        _Parameter* tempData;
+        if (!(tempData =  (_Parameter*)MatrixMemAllocate(sizeof(_Parameter)* lDim))) {
+            warnError(-108);
         } else {
             for (i = lDim-1; i>=lDim-allocationBlock; i--) {
                 tempData [i] = ZEROOBJECT;
             }
             for (; i>=0; i--) {
-                tempData [i] = ((hyFloat*)theData) [i];
+                tempData [i] = ((_Parameter*)theData) [i];
             }
             MatrixMemFree( theData);
             theData = tempData;
@@ -1956,7 +1961,8 @@ bool    _Matrix::IncreaseStorage    (void)
 }
 
 //_____________________________________________________________________________________________
-void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
+void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix* sourceMatrix)
+{
     if (targetMatrix==sourceMatrix) {
         return;
     }
@@ -1971,7 +1977,7 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
 
     if (sourceMatrix->theIndex) {
         if (!(targetMatrix->theIndex = (long*)MatrixMemAllocate(sizeof(long) *sourceMatrix->lDim))) { // allocate element index storage
-            HandleApplicationError ( kErrorStringMemoryFail );
+            warnError(-108);
         } else {
             memcpy ((void*)targetMatrix->theIndex,(void*)sourceMatrix->theIndex,sourceMatrix->lDim*sizeof(long));
         }
@@ -1987,20 +1993,20 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
             // matrix will store pointers to elements
         {
             if (targetMatrix->lDim) {
-                if (!(targetMatrix->theData = (hyFloat*)MatrixMemAllocate(sizeof( char)*sourceMatrix->lDim*sizeof(void*)))) { // allocate element index storage
-                    HandleApplicationError ( kErrorStringMemoryFail );
+                if (!(targetMatrix->theData = (_Parameter*)MatrixMemAllocate(sizeof( char)*sourceMatrix->lDim*sizeof(void*)))) { // allocate element index storage
+                    warnError(-108);
                 } else {
                     memcpy ((void*)targetMatrix->theData,(void*)sourceMatrix->theData,sourceMatrix->lDim*sizeof(void*));
                     if (!sourceMatrix->theIndex) { // non-sparse matrix
                         for (long i=0; i<sourceMatrix->lDim; i++)
                             if (sourceMatrix->GetMatrixObject(i)) {
-                                (sourceMatrix->GetMatrixObject(i))->AddAReference();
+                                (sourceMatrix->GetMatrixObject(i))->nInstances++;
                             }
                     } else
                         for (long i=0; i<sourceMatrix->lDim; i++) {
                             _MathObject* theO = (sourceMatrix->GetMatrixObject(i));
                             if (theO!=ZEROPOINTER) {
-                                theO->AddAReference();
+                                theO->nInstances++;
                             }
                         }
 
@@ -2008,7 +2014,7 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
             }
         } else if (sourceMatrix->storageType==2) {
             if (targetMatrix->lDim) {
-                targetMatrix->theData = (hyFloat*)MatrixMemAllocate(sourceMatrix->lDim*sizeof(void*));
+                targetMatrix->theData = (_Parameter*)MatrixMemAllocate(sourceMatrix->lDim*sizeof(void*));
                 _Formula ** theFormulas = (_Formula**)(sourceMatrix->theData), **newFormulas =
                                               (_Formula**)(targetMatrix->theData);
                 if (sourceMatrix->theIndex) {
@@ -2026,10 +2032,10 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
             }
         } else {
             if (targetMatrix->lDim) {
-                if (!(targetMatrix->theData =(hyFloat*)MatrixMemAllocate(sizeof( hyFloat)*targetMatrix->lDim))) { // allocate element index storage
-                    HandleApplicationError ( kErrorStringMemoryFail );
+                if (!(targetMatrix->theData =(_Parameter*)MatrixMemAllocate(sizeof( _Parameter)*targetMatrix->lDim))) { // allocate element index storage
+                    warnError(-108);
                 } else {
-                    memcpy ((hyPointer)targetMatrix->theData,(hyPointer)sourceMatrix->theData,sizeof(hyFloat)*sourceMatrix->lDim);
+                    memcpy ((Ptr)targetMatrix->theData,(Ptr)sourceMatrix->theData,sizeof(_Parameter)*sourceMatrix->lDim);
                 }
             }
         }
@@ -2040,7 +2046,8 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
 
 }
 //_____________________________________________________________________________________________
-BaseRef _Matrix::makeDynamic (void) const {
+BaseRef _Matrix::makeDynamic (void)
+{
     _Matrix * result = new _Matrix;
     DuplicateMatrix (result, this);
 
@@ -2048,15 +2055,18 @@ BaseRef _Matrix::makeDynamic (void) const {
 }
 
 //_____________________________________________________________________________________________
-void _Matrix::Duplicate (BaseRefConst obj) {
-     Clear();
-    DuplicateMatrix (this,(_Matrix const*)obj);
+void _Matrix::Duplicate (BaseRef obj)
+{
+
+    _Matrix* m = (_Matrix*)obj;
+    Clear();
+    DuplicateMatrix (this,m);
 }
 
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)    // create an kEmptyString matrix of given dimensions;
+_Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)    // create an emptyString matrix of given dimensions;
 // the flag specifies whether it is sparse or not
 
 {
@@ -2073,22 +2083,22 @@ void    _Matrix::Convert2Formulas (void)
         _Formula** tempData = (_Formula**)MatrixMemAllocate (sizeof(void*)*lDim);
         if (!theIndex) {
             for (long i = 0; i<lDim; i++) {
-                tempData[i] = new _Formula (new _Constant (((hyFloat*)theData)[i]));
+                tempData[i] = new _Formula (new _Constant (((_Parameter*)theData)[i]));
             }
         } else
             for (long i = 0; i<lDim; i++) {
                 if (IsNonEmpty(i)) {
-                    //_Constant c (((hyFloat*)theData)[i]);
+                    //_Constant c (((_Parameter*)theData)[i]);
                     //_Formula f((_PMathObj)c.makeDynamic());
                     //tempData[i] = (_Formula*)f.makeDynamic();
-                    tempData[i] = new _Formula (new _Constant (((hyFloat*)theData)[i]));
+                    tempData[i] = new _Formula (new _Constant (((_Parameter*)theData)[i]));
                 } else {
                     tempData[i]=nil;
                 }
             }
 
         MatrixMemFree (theData);
-        theData = (hyFloat*)tempData;
+        theData = (_Parameter*)tempData;
     }
 }
 
@@ -2115,7 +2125,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
     _String terminators (",}");
 
-    if (j>i && s.sLength>4) { // non-kEmptyString string
+    if (j>i && s.sLength>4) { // non-emptyString string
         _String term;
         if (s.sData[i]=='{' && s.sData[j]=='{') { // first type
             i = j+1;
@@ -2124,7 +2134,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
             while (i<s.sLength) {
                 i = s.FindTerminator (i, terminators);
                 if (i < 0) {
-                    HandleApplicationError ("Unterminated matrix definition");
+                    WarnError ("Unterminated matrix definition");
                     return;
                 }
                 cc = s.sData[i];
@@ -2143,7 +2153,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
             hDim = 1;
 
             for (i = i + 1; i<s.sLength-1; i++) {
-                i = s.ExtractEnclosedExpression (i,'{','}',fExtractRespectQuote | fExtractRespectEscape);
+                i = s.ExtractEnclosedExpression (i,'{','}',true, true);
                 if (i < 0) {
                     break;
                 }
@@ -2169,7 +2179,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
                         j = s.FindTerminator (i, terminators);
 
                         if (j<0) {
-                            HandleApplicationError ("Unterminated matrix definition");
+                            WarnError ("Unterminated matrix definition");
                             return;
                         }
 
@@ -2179,13 +2189,13 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
                         if (isNumeric) {
                             if (lterm.sLength == 1 && lterm.sData[0]=='*') {
-                                lterm = kEmptyString;    // dummy element in probability matrix
+                                lterm = emptyString;    // dummy element in probability matrix
                             }
 
                             theData[vDim*hPos+vPos] = lterm.toNum();
                         } else {
                             if (lterm.sLength == 1 && lterm.sData[0]=='*') {
-                                lterm = kEmptyString;    // dummy element in probability matrix
+                                lterm = emptyString;    // dummy element in probability matrix
                             }
 
                             _Formula*  theTerm = new _Formula (lterm, theP);
@@ -2204,7 +2214,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
                         vPos++;
                         if (vPos>vDim) {
-                            HandleApplicationError ("Rows of unequal lengths in matrix definition");
+                            WarnError ("Rows of unequal lengths in matrix definition");
                             return;
                         }
 
@@ -2213,19 +2223,19 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
                 }
                 if (s[i]=='}') {
                     if (vPos!=vDim) {
-                        HandleApplicationError ( kErrorStringBadMatrixDefinition );
+                        warnError(-104);
                         return;
                     }
                     hPos++;
                     vPos = 0;
                     if (hPos>hDim) {
-                        HandleApplicationError ( kErrorStringBadMatrixDefinition );
+                        warnError(-104);
                         return;
                     }
                 }
             }
             if (hPos!=hDim) {
-                HandleApplicationError ( kErrorStringBadMatrixDefinition );
+                warnError(-104);
                 return;
             }
         } else { // second type of input
@@ -2271,14 +2281,14 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
                         j = s.FindTerminator (j, terminators);
 
                         if (j<0) {
-                            HandleApplicationError ("Unterminated matrix definition");
+                            WarnError ("Unterminated matrix definition");
                             return;
                         }
 
                         if (s.sData[j]==',') {
                             term = s.Cut (s.FirstNonSpaceIndex(k,j-1,1),j-1);
                             _Formula coordF (term,theP);
-                            hyFloat coordV = coordF.Compute()->Value();
+                            _Parameter coordV = coordF.Compute()->Value();
                             if (hPos == -1) {
                                 hPos = coordV;
                             } else {
@@ -2301,7 +2311,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
                     if (isNumeric) {
                         if ((term.sLength == 1) && (term.sData[0]=='*')) {
-                            term = kEmptyString;    // dummy element in probability matrix
+                            term = emptyString;    // dummy element in probability matrix
                         }
 
                         (*this)[vDim*hPos+vPos];
@@ -2309,7 +2319,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
                         theData[k]=term.toNum();
                     } else {
                         if ((term.sLength == 1) && (term.sData[0]=='*')) {
-                            term = kEmptyString;    // dummy element in probability matrix
+                            term = emptyString;    // dummy element in probability matrix
                         }
 
                         _Formula * theTerm = new _Formula (term,theP);
@@ -2367,7 +2377,7 @@ _Matrix::_Matrix (_SimpleList const& sl, long colArg) {
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (hyFloat* inList, unsigned long rows, unsigned long columns)
+_Matrix::_Matrix (_Parameter* inList, unsigned long rows, unsigned long columns)
 {
     CreateMatrix (this, rows, columns, false, true, false);
     for (unsigned long k = 0; k < rows*columns; k++) {
@@ -2378,24 +2388,15 @@ _Matrix::_Matrix (hyFloat* inList, unsigned long rows, unsigned long columns)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_List const& sl, bool parse_escapes)
+_Matrix::_Matrix (_List const& sl)
 // list of strings
 {
     if (sl.lLength) {
         CreateMatrix     (this, 1, sl.lLength,  false, true, false);
         Convert2Formulas();
  
-        if (parse_escapes) {
-          for (unsigned long k=0UL; k<sl.lLength; k++) {
-               StoreFormula (0L,k,*new _Formula (new _FString (*(_String*) sl.GetItem(k))), false, false);
-          }
-        } else {
-          for (unsigned long k=0UL; k<sl.lLength; k++) {
-            _String* entry_k = (_String*) sl.GetItem(k);
-            entry_k -> AddAReference();
-            StoreFormula (0L,k,*new _Formula (new _FString (entry_k)), false, false);
-          }
-          
+        for (unsigned long k=0UL; k<sl.lLength; k++) {
+             StoreFormula (0L,k,*new _Formula (new _FString (*(_String*) sl.GetItem(k))), false, false);
         }
     } else {
         Initialize();
@@ -2449,6 +2450,7 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
                     a2.ReorderList();
 
                     cachedValues = new _Matrix (2,sl2.lLength,false,true);
+                    checkPointer (cachedValues);
 
                     for (unsigned long k=0; k<sl1.lLength; k++) {
                         cachedValues->theData[k] = sl1.lData[k];
@@ -2783,7 +2785,8 @@ void        _Matrix::MakeMeSimple (void)
             cmd->varValues              = (_SimpleFormulaDatum*)MatrixMemAllocate ((cmd->varIndex.lLength>0?varList.lLength:1)*sizeof(_SimpleFormulaDatum));
             cmd->formulaRefs            = references.lData;
             references.lData            = nil;
-            cmd->formulaValues          = new hyFloat [newFormulas.lLength];
+            cmd->formulaValues          = new _Parameter [newFormulas.lLength];
+            checkPointer (cmd->formulaValues);
             cmd->formulasToEval.Duplicate (&newFormulas);
         }
 
@@ -2834,7 +2837,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
                 for (long i = 0; i<hDim; i++) {
                     long k = Hash(i,i);
                     if ((k>=0)&&theFormulas[k]->IsEmpty()) {
-                        hyFloat *st = &result[k];
+                        _Parameter *st = &result[k];
                         *st=0;
                         for (long j = 0; j<vDim; j++) {
                             if (j==i) {
@@ -2843,7 +2846,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
                             *st-=result(i,j);
                         }
                     } else if (k<0) {
-                        hyFloat *st = &result[i*vDim+i];
+                        _Parameter *st = &result[i*vDim+i];
                         *st=0;
                         for (long j = 0; j<vDim; j++) {
                             if (j==i) {
@@ -2871,7 +2874,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
                 for (long i = 0; i<lDim; i+=vDim+1) {
                     if (theFormulas[i]!=(_Formula*)ZEROPOINTER) {
                         if (theFormulas[i]->IsEmpty()) {
-                            hyFloat st = 0;
+                            _Parameter st = 0;
                             long k = i/vDim,j;
                             for (j = k*vDim; j<k*vDim+k; j++) {
                                 st-=result.theData[j];
@@ -3005,6 +3008,7 @@ _PMathObj   _Matrix::EvaluateSimple (void)
 // evaluate the matrix  overwriting the old one
 {
     _Matrix * result = new _Matrix (hDim, vDim, bool (theIndex), true);
+    checkPointer (result);
 
 
     if (cmd->varIndex.lLength) {
@@ -3017,7 +3021,7 @@ _PMathObj   _Matrix::EvaluateSimple (void)
                     cmd->varValues[i].value = LocateVar (cmd->varIndex.lData[i])->Compute()->Value();
                 }
             } else {
-                cmd->varValues[i].reference = (hyPointer)((_Matrix*)LocateVar (cmd->varIndex.lData[i])->Compute())->theData;
+                cmd->varValues[i].reference = (Ptr)((_Matrix*)LocateVar (cmd->varIndex.lData[i])->Compute())->theData;
             }
         }
     }
@@ -3025,7 +3029,7 @@ _PMathObj   _Matrix::EvaluateSimple (void)
 
     for (long f = 0; f < cmd->formulasToEval.lLength; f++) {
         cmd->formulaValues [f] = ((_Formula*)cmd->formulasToEval.lData[f])->ComputeSimple(cmd->theStack, cmd->varValues);
-        /*if (terminate_execution)
+        /*if (terminateExecution)
         {
             ((_Formula*)cmd->formulasToEval.lData[f])->ConvertFromSimple(cmd->varIndex);
             _String * s = (_String*)((_Formula*)cmd->formulasToEval.lData[f])->toStr();
@@ -3042,8 +3046,8 @@ _PMathObj   _Matrix::EvaluateSimple (void)
         result->bufferPerRow = bufferPerRow;
         result->overflowBuffer = overflowBuffer;
         result->allocationBlock = allocationBlock;
-        result->theIndex = (long*)MemReallocate((hyPointer)result->theIndex,sizeof(long)*lDim);
-        result->theData = (hyFloat*)MemReallocate ((hyPointer)result->theData,sizeof(hyFloat)*lDim);
+        result->theIndex = (long*)MemReallocate((Ptr)result->theIndex,sizeof(long)*lDim);
+        result->theData = (_Parameter*)MemReallocate ((Ptr)result->theData,sizeof(_Parameter)*lDim);
 
         /*memcpy (result->theIndex,theIndex,sizeof(long)*lDim);*/
 
@@ -3070,7 +3074,8 @@ _PMathObj   _Matrix::EvaluateSimple (void)
         } */
 
         if (hDim==vDim) {
-            hyFloat* diagStorage = new hyFloat [hDim];
+            _Parameter* diagStorage = new _Parameter [hDim];
+            checkPointer ((Ptr)diagStorage);
             {
                 for (long i = 0; i<hDim; i++) {
                     diagStorage[i] = 0.0;
@@ -3112,7 +3117,7 @@ _PMathObj   _Matrix::EvaluateSimple (void)
                 if (fidx[i] < 0) { // mod Aug 2 2005
                     //if (theFormulas[i]->IsEmpty())
                     //{
-                    hyFloat st = 0;
+                    _Parameter st = 0;
                     long k = i/vDim,j;
                     for (j = k*vDim; j<k*vDim+k; j++) {
                         st-=result->theData[j];
@@ -3198,9 +3203,9 @@ void    _Matrix::Resize (long newH)
         lDim = newH*vDim;
 
         if (theData) {
-            theData = (hyFloat*) MemReallocate ((hyPointer)theData,sizeof (hyFloat)*lDim);
+            theData = (_Parameter*) MemReallocate ((Ptr)theData,sizeof (_Parameter)*lDim);
         } else {
-            theData = (hyFloat*) MemAllocate (sizeof (hyFloat)*lDim);
+            theData = (_Parameter*) MemAllocate (sizeof (_Parameter)*lDim);
         }
 
     }
@@ -3231,10 +3236,10 @@ void    _Matrix::operator = (_Matrix* m)
 
 
 //_____________________________________________________________________________________________
-hyFloat _Matrix::AbsValue (void)
+_Parameter _Matrix::AbsValue (void)
 {
     if (storageType == 1 && (hDim==1 || vDim == 1)) {
-        hyFloat norm = 0.;
+        _Parameter norm = 0.;
         if (theIndex) {
             for (long k = 0; k<lDim; k++)
                 if (long i = theIndex[k] >= 0) {
@@ -3274,8 +3279,10 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
 
     // check matrix dimensions to ensure that they are addable
     if (!((hDim==secondArg.hDim)&&(storage.hDim==secondArg.hDim)&&(vDim==secondArg.vDim)&&(storage.vDim==secondArg.vDim))) {
-        HandleApplicationError  (_String ("Incompatible dimensions when trying to add or subtract matrices: first argument was a ") & _String (hDim) & 'x'
-                          & _String (vDim) & " matrix and the second was a "& _String (secondArg.hDim) & 'x'  & _String (secondArg.vDim) & " matrix.");
+        _String  errMsg = _String ("Incompatible dimensions when trying to add or subtract matrices: first argument was a ") & _String (hDim) & 'x'
+                          & _String (vDim) & " matrix and the second was a "& _String (secondArg.hDim) & 'x'  & _String (secondArg.vDim) & " matrix.";
+        WarnError (errMsg);
+        /*warnError( -103);*/
         return;
     }
 
@@ -3290,7 +3297,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                     }
                 }
             } else { // dense matrix
-                memcpy (storage.theData, theData, sizeof (hyFloat)*lDim);
+                memcpy (storage.theData, theData, sizeof (_Parameter)*lDim);
             }
         }
 
@@ -3330,8 +3337,8 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             }
 
         } else {
-            hyFloat _hprestrict_ * argData = secondArg.theData;
-            hyFloat _hprestrict_ * stData  = storage.theData;
+            _Parameter _hprestrict_ * argData = secondArg.theData;
+            _Parameter _hprestrict_ * stData  = storage.theData;
             
             long    upto = secondArg.lDim - secondArg.lDim%4;
                        
@@ -3384,7 +3391,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                         for (i = 0; i<secondArg.lDim; i++)
                             if (secondArg.IsNonEmpty(i)) {
                                 long hb =secondArg.HashBack (i), h = Hash (hb/vDim, hb%vDim);
-                                if (h<0) { // kEmptyString slot in matrix 1
+                                if (h<0) { // emptyString slot in matrix 1
                                     storage.StoreObject (hb,secondArg.GetMatrixObject(i)->Minus());
                                 } else {
                                     storage.StoreObject (hb, GetMatrixObject(h)->Sub (secondArg.GetMatrixObject(i)));
@@ -3394,7 +3401,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                         for (i = 0; i<secondArg.lDim; i++)
                             if (secondArg.IsNonEmpty(i)) {
                                 long hb =secondArg.HashBack (i), h = Hash (hb/vDim, hb%vDim);
-                                if (h<0) { // kEmptyString slot in matrix 1
+                                if (h<0) { // emptyString slot in matrix 1
                                     storage.StoreObject (hb,secondArg.GetMatrixObject(i),true);
                                 } else {
                                     storage.StoreObject (hb,GetMatrixObject(h)->Add (secondArg.GetMatrixObject(i)));
@@ -3493,7 +3500,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
 
 //_____________________________________________________________________________________________
 
-bool    _Matrix::AddWithThreshold  (_Matrix& secondArg, hyFloat prec)
+bool    _Matrix::AddWithThreshold  (_Matrix& secondArg, _Parameter prec)
 {
     bool res = true;
     if (secondArg.theIndex) { //sparse matrix
@@ -3514,7 +3521,7 @@ bool    _Matrix::AddWithThreshold  (_Matrix& secondArg, hyFloat prec)
             }
         }
     } else {
-        hyFloat* argData = secondArg.theData, *stData = theData,
+        _Parameter* argData = secondArg.theData, *stData = theData,
                     *bound = theData+lDim;
         for (; res&&(stData!=bound); argData++, stData++) {
             if (*argData/ *stData> prec) {
@@ -3541,14 +3548,14 @@ void    _Matrix::Subtract  (_Matrix& storage, _Matrix& secondArg)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
+void    _Matrix::Multiply  (_Matrix& storage, _Parameter c)
 // multiply a matrix by a scalar
 // internal function
 
 {
     if (storageType == 1) { // numbers
-        hyFloat _hprestrict_ * destination = storage.theData;
-        hyFloat _hprestrict_           * source      = theData;
+        _Parameter _hprestrict_ * destination = storage.theData;
+        _Parameter _hprestrict_           * source      = theData;
             
         if (theIndex) {
             for (long k = 0; k < lDim; k++)
@@ -3563,12 +3570,15 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
             
     } else {
         _Constant * cc = new _Constant (c);
+        checkPointer (cc);
 
         if (storageType == 2) {
             _String    star ('*');
             _Operation * cOp = new _Operation (cc),
             * mOp = new _Operation (star,2);
 
+            checkPointer (cOp);
+            checkPointer (mOp);
             for (long i=0; i<lDim; i++)
                 if (IsNonEmpty (i)) {
                     long h       = HashBack (i);
@@ -3642,8 +3652,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                               column_shift3 = secondArg.vDim * 3,
                               column_shift4 = secondArg.vDim * 4;
 
-                const hyFloat * row = theData;
-                hyFloat  * dest = storage.theData;
+                const _Parameter * row = theData;
+                _Parameter  * dest = storage.theData;
               
 
 #ifndef _SLKP_SSE_VECTORIZATION_
@@ -3660,7 +3670,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 
               for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
                 for (unsigned long j=0; j<secondArg.vDim; j++) {
-                  hyFloat resCell  = 0.0;
+                  _Parameter resCell  = 0.0;
                   
            
                   unsigned long k = 0,
@@ -3708,7 +3718,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                     
                     __m256d __attribute__ ((aligned (32))) col_buffer[5];
                     
-                    hyFloat col[4] __attribute__ ((aligned (32)));
+                    _Parameter col[4] __attribute__ ((aligned (32)));
                      unsigned long col_index = c;
                      for (unsigned long quad = 0UL; quad < 5UL; quad ++) {
                        for (unsigned long i = 0UL; i < 4UL; i++, col_index += 20UL) {
@@ -3718,7 +3728,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                      }
                   
                     
-                    hyFloat const * p = theData;
+                    _Parameter const * p = theData;
                     for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
                       
                       __m256d r0 = _mm256_mul_pd(_mm256_loadu_pd(p), col_buffer[0]);
@@ -3753,7 +3763,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                    */
                   
                    for (unsigned long i = 0UL, vector_index = c; i < secondArg.hDim; i += 4UL, vector_index += column_shift4) {
-                      hyFloat c0 = secondArg.theData[vector_index],
+                      _Parameter c0 = secondArg.theData[vector_index],
                                  c1 = secondArg.theData[vector_index+secondArg.vDim],
                                  c2 = secondArg.theData[vector_index+column_shift2],
                                  c3 = secondArg.theData[vector_index+column_shift3];
@@ -3762,7 +3772,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                         
                         unsigned long element = r*vDim + i;
                         
-                        hyFloat r0 = theData[element]   * c0,
+                        _Parameter r0 = theData[element]   * c0,
                                    r1 = theData[element+1] * c1,
                                    r2 = theData[element+2] * c2,
                                    r3 = theData[element+3] * c3;
@@ -3777,14 +3787,14 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
               } else {
                   for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
                       for (unsigned long j=0UL; j<secondArg.vDim; j++) {
-                          hyFloat resCell  = 0.0;
+                          _Parameter resCell  = 0.0;
 
                           unsigned long k = 0UL,
                                        column = j;
                         
                           
                           for (; k < dimm4; k+=4, column += column_shift4) {
-                              hyFloat pr1 = row[k]   * secondArg.theData [column],                         
+                              _Parameter pr1 = row[k]   * secondArg.theData [column],                         
                                          pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
                                          pr3 = row[k+2] * secondArg.theData [column + column_shift2],
                                          pr4 = row[k+3] * secondArg.theData [column + column_shift3];
@@ -3808,7 +3818,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                 secondArg.Transpose();
                 for (long i=0; i<hDim; i++, row += vDim) {
                     for (long j=0; j<hDim; j++) {
-                        hyFloat resCell  = 0.0;
+                        _Parameter resCell  = 0.0;
                         for (long k = 0, column = j*hDim; k < vDim; k++, column ++) {
                             resCell += row[k] * secondArg.theData [column];
                         }
@@ -3843,7 +3853,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 #endif
 #endif
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
-                             hyFloat cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
+                             _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
                              const long upto_p = (secondArg.vDim-c>=_HY_MATRIX_CACHE_BLOCK)?_HY_MATRIX_CACHE_BLOCK:(secondArg.vDim-c);
                              for (long r2 = 0; r2 < secondArg.hDim; r2+= _HY_MATRIX_CACHE_BLOCK) {
                                  const long upto_p2 = (secondArg.hDim-r2)>=_HY_MATRIX_CACHE_BLOCK?_HY_MATRIX_CACHE_BLOCK:(secondArg.hDim-r2);
@@ -3854,9 +3864,9 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                                  }
                                  if (upto_p2 % 4 == 0) {
                                      for (long p = 0; p < upto_p; p++) {
-                                         hyFloat updater = 0.;
+                                         _Parameter updater = 0.;
                                          for (long p2 = 0; p2 < upto_p2; p2+=4) {
-                                             hyFloat pr1 = theData[r*vDim + r2 + p2]*cacheBlockInMatrix2[p][p2],
+                                             _Parameter pr1 = theData[r*vDim + r2 + p2]*cacheBlockInMatrix2[p][p2],
                                                         pr2 = theData[r*vDim + r2 + p2+1]*cacheBlockInMatrix2[p][p2+1],
                                                         pr3 = theData[r*vDim + r2 + p2+2]*cacheBlockInMatrix2[p][p2+2],
                                                         pr4 = theData[r*vDim + r2 + p2+3]*cacheBlockInMatrix2[p][p2+3];
@@ -3868,7 +3878,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                                      } 
                                  } else
                                      for (long p = 0; p < upto_p; p++) {
-                                         hyFloat updater = 0.;
+                                         _Parameter updater = 0.;
                                          for (long p2 = 0; p2 < upto_p2; p2++) {
                                              updater += theData[r*vDim + r2 + p2]*cacheBlockInMatrix2[p][p2];
                                          }
@@ -3885,7 +3895,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                         long mod4 = vDim-vDim%4;
                         for (long i=0; i<hDim; i++) {
                             for (long j=0; j<secondArg.vDim; j++) {
-                                hyFloat resCell = 0.0;
+                                _Parameter resCell = 0.0;
                                 long k = 0;
                                 for (; k < mod4; k+=4) {
                                     resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j] +
@@ -3903,7 +3913,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                     } else {
                         for (long i=0; i<hDim; i++) {
                             for (long j=0; j<secondArg.vDim; j++) {
-                                hyFloat resCell = 0.0;
+                                _Parameter resCell = 0.0;
                                 for (long k = 0; k < vDim; k+=4) {
                                     resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j] +
                                     theData[i*vDim + k + 1] * secondArg.theData[(k+1)*secondArg.vDim + j] +
@@ -3935,9 +3945,9 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                     long i = m%61;
                   
                   
-                    hyFloat  value                           = theData[k];
-                    hyFloat  _hprestrict_ *res               = storage.theData    + (m-i);
-                    hyFloat  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                    _Parameter  value                           = theData[k];
+                    _Parameter  _hprestrict_ *res               = storage.theData    + (m-i);
+                    _Parameter  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
                     
   #ifdef  _SLKP_USE_AVX_INTRINSICS
                       __m256d  value_op = _mm256_set1_pd (value);
@@ -3970,9 +3980,9 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                           // this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
                           // in the form of A_rc * B_cc'
 
-                          hyFloat  value                           = theData[k];
-                          hyFloat  _hprestrict_ *res               = storage.theData    + (m-i);
-                          hyFloat  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                          _Parameter  value                           = theData[k];
+                          _Parameter  _hprestrict_ *res               = storage.theData    + (m-i);
+                          _Parameter  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
 
                           for (unsigned long i = 0UL; i < loopBound; i+=4) {
                               res[i]   += value * secArg[i];
@@ -3993,8 +4003,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                     if (m!=-1) {
                         long i = m/vDim;
                         long j = m%vDim;
-                        hyFloat c = theData[k];
-                        hyFloat* stData = storage.theData+i*secondArg.vDim,
+                        _Parameter c = theData[k];
+                        _Parameter* stData = storage.theData+i*secondArg.vDim,
                                     * secArgData=secondArg.theData+j*secondArg.vDim,
                                       * stopper = secArgData+secondArg.vDim;
                         for (; secArgData!=stopper; stData++,secArgData++) {
@@ -4041,7 +4051,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                         // a non-zero b_kj will contribute a_ik * b_kj to the a_ij cell of the result
                         // loop over i...
 
-                        hyFloat c = secondArg.theData[k];
+                        _Parameter c = secondArg.theData[k];
 
                         for (long cell = m%secondArg.vDim, secondCell = m/secondArg.vDim; cell < lDim; cell += vDim, secondCell += vDim) {
                             storage.theData[cell] += c * theData[secondCell];
@@ -4055,8 +4065,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                     if (m!=-1) {
                         long i = m/secondArg.vDim;
                         long j = m%secondArg.vDim;
-                        hyFloat c = secondArg.theData[k];
-                        hyFloat *stData = storage.theData+j,
+                        _Parameter c = secondArg.theData[k];
+                        _Parameter *stData = storage.theData+j,
                                     *secData = theData+i,
                                      *stopper = theData+lDim;
                         for (; secData<stopper; secData+=vDim, stData+=secondArg.vDim) {
@@ -4106,7 +4116,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
         indexVector = (long*)MatrixMemAllocate( sizeof(long)*secondArg.hDim);
 
         if (!(indexTable&&indexTable2&&indexVector)) {
-            HandleApplicationError ( kErrorStringMemoryFail );
+            warnError (-108);
             return;
         }
 
@@ -4128,7 +4138,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                 if ((t=theIndex[k])!=-1) {
                     long i = t/vDim;
                     long j = t%vDim;
-                    hyFloat c = theData[k];
+                    _Parameter c = theData[k];
                     long n = j*dd;
                     long m = i*secondArg.vDim;
                     for (long l=n; l<n+indexVector[j]; l++) {
@@ -4188,11 +4198,11 @@ long    _Matrix::HashBack  (long logicalIndex)
 
 //_____________________________________________________________________________________________
 
-hyFloat  _Matrix::MaxElement  (char runMode, long* indexStore)
+_Parameter  _Matrix::MaxElement  (char runMode, long* indexStore)
 // returns matrix's largest abs value element
 {
     if (storageType == 1) {
-        hyFloat max  = 0.0,
+        _Parameter max  = 0.0,
                    temp;
 
         bool doAbsValue = runMode != 1 && runMode != 3,
@@ -4254,7 +4264,7 @@ hyFloat  _Matrix::MaxElement  (char runMode, long* indexStore)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
+void    _Matrix::RowAndColumnMax  (_Parameter& r, _Parameter &c, _Parameter * cache)
 
 // returns the maximum row sum / column sum
 // the cache must be big enough to hold hDim + vDim
@@ -4264,15 +4274,17 @@ void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
     r = c = 10.;
 
     if (storageType == 1) { // numeric matrix
-        hyFloat  *maxScratch = cache;
+        _Parameter  *maxScratch = cache;
         r = c = 0.;
 
         if (maxScratch == nil) {
-            maxScratch = (hyFloat*)MemAllocate ((hDim+vDim)*sizeof(hyFloat), true);
+            checkPointer (maxScratch = (_Parameter*)calloc (hDim+vDim,sizeof(_Parameter)));
         } else
-            InitializeArray(maxScratch, hDim + vDim, 0.0);
+            for (long k = 0; k < hDim + vDim; k++) {
+                maxScratch[k] = .0;
+            }
 
-        hyFloat * rowMax = maxScratch,
+        _Parameter * rowMax = maxScratch,
                      * colMax = maxScratch + hDim;
 
         if (theIndex)
@@ -4280,7 +4292,7 @@ void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
             for (long i = 0; i<lDim; i++) {
                 long k = theIndex[i];
                 if  (k!=-1) {
-                    hyFloat temp = theData[i];
+                    _Parameter temp = theData[i];
 
                     if (temp<0.0) {
                         rowMax[k/vDim] -= temp;
@@ -4295,7 +4307,7 @@ void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
             // dense matrix
             for (long i = 0, k=0; i<hDim; i++) {
                 for (long j=0; j<vDim; j++, k++) {
-                    hyFloat temp = theData[k];
+                    _Parameter temp = theData[k];
                     if (temp<0.0) {
                         rowMax[i] -= temp;
                         colMax[j] -= temp;
@@ -4321,11 +4333,11 @@ void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
 
 //_____________________________________________________________________________________________
 
-bool    _Matrix::IsMaxElement  (hyFloat bench)
+bool    _Matrix::IsMaxElement  (_Parameter bench)
 // returns matrix's largest abs value element
 {
     if (storageType == 1) {
-        hyFloat t,
+        _Parameter t,
                    mBench = -bench;
         for (long i = 0; i<lDim; i++) {
             t = theData[i];
@@ -4348,11 +4360,11 @@ bool    _Matrix::IsMaxElement  (hyFloat bench)
 
 //_____________________________________________________________________________________________
 
-hyFloat  _Matrix::MaxRelError  (_Matrix& compMx)
+_Parameter  _Matrix::MaxRelError  (_Matrix& compMx)
 // returns matrix's largest abs value element
 {
     if (storageType == 1) {
-        hyFloat max = 0, temp;
+        _Parameter max = 0, temp;
         for (long i = 0; i<lDim; i++) {
             temp = theData[i]/compMx.theData[i];
             if (temp<0.0) {
@@ -4369,29 +4381,24 @@ hyFloat  _Matrix::MaxRelError  (_Matrix& compMx)
 
 //_____________________________________________________________________________________________
 
-bool    _Matrix::is_row(void) const {
-    return GetHDim() == 1;
-}
-
-bool    _Matrix::is_column(void) const {
-    return GetVDim() == 1;
-}
-
-bool    _Matrix::is_square(void) const {
-    return GetHDim() == GetVDim();
-}
-
-bool    _Matrix::is_dense (void) const {
-    return theIndex == nil;
+bool    _Matrix::IsAVector  (char type)
+{
+    if (GetHDim() == 1) {
+        return type != HY_MATRIX_COLUMN_VECTOR;
+    }
+    if (GetVDim() == 1) {
+        return (type != HY_MATRIX_ROW_VECTOR);
+    }
+    return false;
 }
 
 //_____________________________________________________________________________________________
 
-hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
+_Parameter  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
 // returns matrix's smalles non-zero abs value element
 {
     if (storageType == 1) {
-        hyFloat min = DBL_MAX;
+        _Parameter min = DBL_MAX;
 
         if (theIndex)
             for (long i = 0; i<lDim; i++) {
@@ -4399,7 +4406,7 @@ hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
                     continue;
                 }
 
-                hyFloat temp = theData[i];
+                _Parameter temp = theData[i];
 
                 if (temp < 0.0 && doAbsValue) {
                     temp = -temp;
@@ -4415,7 +4422,7 @@ hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
             }
         else
             for (long i = 0; i<lDim; i++) {
-                hyFloat temp = theData[i];
+                _Parameter temp = theData[i];
 
                 if (temp < 0.0 && doAbsValue) {
                     temp = -temp;
@@ -4443,7 +4450,7 @@ void    _Matrix::Transpose (void)
             if (!theIndex) { // non-sparse
                 for (long i = 0; i<hDim; i++)
                     for (long j = i+1; j<vDim; j++) {
-                        hyFloat z      = theData[i*vDim+j];
+                        _Parameter z      = theData[i*vDim+j];
                         theData[i*vDim+j] = theData[j*vDim+i];
                         theData[j*vDim+i] = z;
                     }
@@ -4456,7 +4463,7 @@ void    _Matrix::Transpose (void)
 
                         if (l!=k) { // off - diag
                             p            = Hash (l,k);
-                            hyFloat z = theData[i];
+                            _Parameter z = theData[i];
                             if (p>=0) {
                                 theData[i] = theData[p];
                                 theData[p] = z;
@@ -4487,15 +4494,15 @@ void    _Matrix::Transpose (void)
             *this = result;
         }
     } else { // polynomial entries
-        hyPointer z;
+        Ptr z;
         if (hDim == vDim) {
             if (!theIndex) { // non-sparse
                 for (long i = 0; i<hDim; i++)
                     for (long j = i+1; j<vDim; j++) {
                         if (storageType==2) {
-                            z = (hyPointer)GetFormula(i,j);
+                            z = (Ptr)GetFormula(i,j);
                         } else {
-                            z = (hyPointer)GetMatrixObject(i*vDim+j);
+                            z = (Ptr)GetMatrixObject(i*vDim+j);
                         }
 
                         if (storageType==2) {
@@ -4504,7 +4511,7 @@ void    _Matrix::Transpose (void)
                             ((_PMathObj*)theData)[i*vDim+j] = GetMatrixObject(j*vDim+i);
                         }
 
-                        ((hyPointer*)theData)[j*vDim+i] = z;
+                        ((Ptr*)theData)[j*vDim+i] = z;
                     }
             } else { // sparse
                 long i,k,l,p;
@@ -4516,9 +4523,9 @@ void    _Matrix::Transpose (void)
                             p = Hash (l,k);
 
                             if (storageType==2) {
-                                z = (hyPointer)GetFormula(k,l);
+                                z = (Ptr)GetFormula(k,l);
                             } else {
-                                z = (hyPointer)GetMatrixObject(i);
+                                z = (Ptr)GetMatrixObject(i);
                             }
 
                             if (p>=0) {
@@ -4528,7 +4535,7 @@ void    _Matrix::Transpose (void)
                                     ((_MathObject**)theData)[i] = GetMatrixObject(p);
                                 }
 
-                                ((hyPointer*)theData)[p] = z;
+                                ((Ptr*)theData)[p] = z;
                             } else {
                                 theIndex[i]=-1;
                                 if (storageType==2) {
@@ -4552,9 +4559,9 @@ void    _Matrix::Transpose (void)
                         if (storageType == 2) {
                             result.StoreFormula(j,i,*GetFormula(i,j),true,false);
                         } else {
-                            z =   (hyPointer)GetMatrixObject (i*vDim+j);
+                            z =   (Ptr)GetMatrixObject (i*vDim+j);
                             result.StoreObject(j*hDim+i,(_PMathObj)z);
-                            ((_PMathObj)z)->AddAReference();
+                            ((_PMathObj)z)->nInstances++;
                         }
                     }
             } else {
@@ -4566,9 +4573,9 @@ void    _Matrix::Transpose (void)
                         if (storageType == 2) {
                             result.StoreFormula(c,r,*GetFormula(r,c),true,false);
                         } else {
-                            z =   (hyPointer)GetMatrixObject (i);
+                            z =   (Ptr)GetMatrixObject (i);
                             result.StoreObject(c*hDim+r,(_PMathObj)z);
-                            ((_PMathObj)z)->AddAReference();
+                            ((_PMathObj)z)->nInstances++;
                         }
                     }
             }
@@ -4580,7 +4587,7 @@ void    _Matrix::Transpose (void)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash)
+void    _Matrix::CompressSparseMatrix (bool transpose, _Parameter * stash)
 {
     if (theIndex) {
         _SimpleList sortedIndex  ((unsigned long)lDim)
@@ -4640,17 +4647,17 @@ _Matrix*    _Matrix::Exponentiate (void)
     matrixExpCount++;
 #endif
 
-    hyFloat max     = 1.0,
-               *stash  = new hyFloat[hDim*(1+vDim)];
+    _Parameter max     = 1.0,
+               *stash  = new _Parameter[hDim*(1+vDim)];
 
     if (storageType) {
-        hyFloat t;
+        _Parameter t;
         RowAndColumnMax (max, t, stash);
         max *= t;
         if (max > .1) {
             max             = sqrt (10.*max);
-            power2          = (long)((log (max)/log ((hyFloat)2.0)))+1;
-            max             = exp (power2 * log ((hyFloat)2.0));
+            power2          = (long)((log (max)/log ((_Parameter)2.0)))+1;
+            max             = exp (power2 * log ((_Parameter)2.0));
             (*this)         *= 1.0/max;
         } else {
             power2 = 0;
@@ -4669,6 +4676,7 @@ _Matrix*    _Matrix::Exponentiate (void)
     _Matrix *result = new _Matrix(hDim, vDim , !storageType, storageType),
     temp    (*this);
 
+    checkPointer (result);
     // put ones on the diagonal
 
     if (storageType) {
@@ -4714,7 +4722,7 @@ _Matrix*    _Matrix::Exponentiate (void)
             }
         }
     } else {
-        hyFloat tMax = MAX(MinElement()*sqrt ((hyFloat)hDim),truncPrecision);
+        _Parameter tMax = MAX(MinElement()*sqrt ((_Parameter)hDim),truncPrecision);
 
         i=2;
 
@@ -4831,7 +4839,7 @@ long    _Matrix::Hash  (long i, long j)
 }
 
 //_____________________________________________________________________________________________
-hyFloat      _Matrix::operator () (long i, long j)
+_Parameter      _Matrix::operator () (long i, long j)
 {
     long lIndex = Hash (i,j);
     if (lIndex<0) {
@@ -4846,6 +4854,7 @@ _Matrix*        _Matrix::ExtractElementsByEnumeration (_SimpleList*h, _SimpleLis
 {
     if (storageType && h->lLength == v->lLength && h->lLength > 0) {
         _Matrix * result = new _Matrix (column?h->lLength:1,column?1:h->lLength,false,true);
+        checkPointer (result);
 
         if (storageType == 2) // formulae
             for (long k=0; k<h->lLength; k++) {
@@ -4866,7 +4875,7 @@ _Matrix*        _Matrix::ExtractElementsByEnumeration (_SimpleList*h, _SimpleLis
 //_____________________________________________________________________________________________
 _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
   if (!p) {
-    HandleApplicationError ( kErrorStringInvalidMatrixIndex );
+    warnError(-106);
     return new _Constant (0.0);
   }
   
@@ -4926,6 +4935,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
             
             if (hL.lLength) {
               _Matrix * result = new _Matrix (hDim,hL.lLength,false,true);
+              checkPointer (result);
               long k = 0;
               for (long c=0; c<hDim; c++)
                 for (long r=0; r<hL.lLength; r++,k++) {
@@ -4983,17 +4993,20 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
       if (!f.IsEmpty()) {
         /* check formula validity */
         
+        _String cell_value ("_MATRIX_ELEMENT_VALUE_"),
+        cell_row   ("_MATRIX_ELEMENT_ROW_"),
+        cell_column("_MATRIX_ELEMENT_COLUMN_");
         
-          _Variable * cv = CheckReceptacle(&hy_env::matrix_element_value, kEmptyString, false),
-                    * cr = CheckReceptacle(&hy_env::matrix_element_row, kEmptyString, false),
-                    * cc = CheckReceptacle(&hy_env::matrix_element_column, kEmptyString, false);
+        _Variable * cv = CheckReceptacle(&cell_value, emptyString, false),
+        * cr = CheckReceptacle(&cell_row, emptyString, false),
+        * cc = CheckReceptacle(&cell_column, emptyString, false);
         
         cv->CheckAndSet (0.0);
         cr->CheckAndSet (0.0);
         cc->CheckAndSet (0.0);
         
         f.Compute();
-        if (terminate_execution) {
+        if (terminateExecution) {
           return new _Matrix ();
         } else {
           
@@ -5007,7 +5020,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
             }
             
             conditionalCheck->Compute();
-            if (terminate_execution) {
+            if (terminateExecution) {
               delete conditionalCheck;
               return new _Matrix ();
             }
@@ -5023,7 +5036,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
             * varValues = new _SimpleFormulaDatum [vIndex.lLength];
             
             bool                constantValue = false;
-            hyFloat          constantV     = f.Compute()->Value();
+            _Parameter          constantV     = f.Compute()->Value();
             
             if (f.IsConstant()) {
               constantValue = true;
@@ -5267,7 +5280,7 @@ _PMathObj _Matrix::MCoord (_PMathObj p, _PMathObj p2)
          ind2 = -1L;
 
     if (!p) {
-        HandleApplicationError ( kErrorStringInvalidMatrixIndex );
+        warnError( -106);
         return new _MathObject;
     }
 
@@ -5309,7 +5322,7 @@ bool _Matrix::MResolve (_PMathObj p, _PMathObj p2, long& ind1, long& ind2)
     ind2 = -1;
 
     if (!p) {
-        HandleApplicationError ( kErrorStringInvalidMatrixIndex );
+        warnError(-106);
         return false;
     }
 
@@ -5374,7 +5387,7 @@ void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode)
                 StoreFormula (ind1,ind2,f);
             } else {
                 _PMathObj res = f.Compute();
-                hyFloat toStore = res->Value();
+                _Parameter toStore = res->Value();
                 if (opCode == HY_OP_CODE_ADD) {
                     toStore += (*this)(ind1,ind2);
                 }
@@ -5426,7 +5439,7 @@ void _Matrix::MStore (long ind1, long ind2, _PMathObj poly)
 
 
 //_____________________________________________________________________________________________
-hyFloat&     _Matrix::operator [] (long i)
+_Parameter&     _Matrix::operator [] (long i)
 {
     long lIndex = Hash (i/vDim, i%vDim);
     if (lIndex == -1) {
@@ -5435,14 +5448,14 @@ hyFloat&     _Matrix::operator [] (long i)
     }
     if (lIndex<0) {
         theIndex[-lIndex-2] = i;
-        return ((hyFloat*)theData)[-lIndex-2];
+        return ((_Parameter*)theData)[-lIndex-2];
     } else {
-        return ((hyFloat*)theData)[lIndex];
+        return ((_Parameter*)theData)[lIndex];
     }
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::Store (long i, long j, hyFloat value)
+void        _Matrix::Store (long i, long j, _Parameter value)
 {
     if (storageType!=1) {
         return;
@@ -5463,9 +5476,9 @@ void        _Matrix::Store (long i, long j, hyFloat value)
 
     if (lIndex<0) {
         theIndex[-lIndex-2] = i*vDim+j;
-        ((hyFloat*)theData)[-lIndex-2] = value;
+        ((_Parameter*)theData)[-lIndex-2] = value;
     } else {
-        ((hyFloat*)theData)[lIndex] = value;
+        ((_Parameter*)theData)[lIndex] = value;
     }
 
 }
@@ -5565,7 +5578,7 @@ void        _Matrix::Swap (_Matrix& m)
     long         *tIndex,
                  t;
 
-    hyFloat   *tData;
+    _Parameter   *tData;
     _PMathObj    tObj;
     _CompiledMatrixData *tCmd;
 
@@ -5583,8 +5596,174 @@ void        _Matrix::Swap (_Matrix& m)
 }
 
 //_____________________________________________________________________________________________
+/*_Matrix       IterateStrassen (_Matrix& source1, _Matrix& source2)
+// square the matrix
+{
 
-void        _Matrix::AplusBx (_Matrix& B, hyFloat x)
+    if ((source1.storageType!=1)||(source2.storageType!=1)) warnError (-111);
+    long iterationDim = source1.hDim, i;
+
+    if (iterationDim>2)
+    {
+        // create four quadrants of each matrix and temporary storage
+        _Matrix a11 (iterationDim/2, iterationDim/2, (bool)false, true),
+                a12 (iterationDim/2, iterationDim/2, (bool)false, true),
+                a21 (iterationDim/2, iterationDim/2, (bool)false, true),
+                a22 (iterationDim/2, iterationDim/2, (bool)false, true),
+                b11 (iterationDim/2, iterationDim/2, (bool)false, true),
+                b12 (iterationDim/2, iterationDim/2, (bool)false, true),
+                b21 (iterationDim/2, iterationDim/2, (bool)false, true),
+                b22 (iterationDim/2, iterationDim/2, (bool)false, true),
+                s1 (iterationDim/2, iterationDim/2, (bool)false, true),
+                s2 (iterationDim/2, iterationDim/2, (bool)false, true),
+                s3 (iterationDim/2, iterationDim/2, (bool)false, true),
+                s4 (iterationDim/2, iterationDim/2, (bool)false, true),
+                s5 (iterationDim/2, iterationDim/2, (bool)false, true),
+                s6 (iterationDim/2, iterationDim/2, (bool)false, true),
+                t1 (iterationDim/2, iterationDim/2, (bool)false, true),
+                t2 (iterationDim/2, iterationDim/2, (bool)false, true),
+                c11 (iterationDim/2, iterationDim/2, (bool)false, true),
+                c12 (iterationDim/2, iterationDim/2, (bool)false, true),
+                c21 (iterationDim/2, iterationDim/2, (bool)false, true),
+                c22 (iterationDim/2, iterationDim/2, (bool)false, true);
+
+        // copy data to quadrants
+
+        iterationDim/=2;
+        for (i=0;i<iterationDim;i++)
+        {
+            memcpy ((_Parameter*)a11.theData+i*iterationDim, (_Parameter*)source1.theData+i*source1.hDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)a12.theData+i*iterationDim, (_Parameter*)source1.theData+i*source1.hDim+iterationDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)a21.theData+i*iterationDim, (_Parameter*)source1.theData+(i+iterationDim)*source1.hDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)a22.theData+i*iterationDim, (_Parameter*)source1.theData+(i+iterationDim)*source1.hDim+iterationDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)b11.theData+i*iterationDim, (_Parameter*)source2.theData+i*source2.hDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)b12.theData+i*iterationDim, (_Parameter*)source2.theData+i*source2.hDim+iterationDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)b21.theData+i*iterationDim, (_Parameter*)source2.theData+(i+iterationDim)*source2.hDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)b22.theData+i*iterationDim, (_Parameter*)source2.theData+(i+iterationDim)*source2.hDim+iterationDim, iterationDim*sizeof (_Parameter));
+        }
+
+        // compute strassen blocks
+
+        t1=a12;
+        t1-=a22;
+        t2=b21;
+        t2+=b22;
+        s1=IterateStrassen (t1,t2);
+
+        t1=a11;
+        t1+=a22;
+        t2=b11;
+        t2+=b22;
+        s2=IterateStrassen (t1,t2);
+
+        t1=a11;
+        t1-=a21;
+        t2=b11;
+        t2+=b12;
+        s3=IterateStrassen (t1,t2);
+
+        t1=a11;
+        t1+=a12;
+        s4=IterateStrassen (t1,b22);
+
+        t1=b12;
+        t1-=b22;
+        s5=IterateStrassen (a11,t1);
+
+        t1=b21;
+        t1-=b11;
+        s6=IterateStrassen (a22,t1);
+
+        c11 = s1;
+        c11 += s2;
+        c11 -= s4;
+        c11 += s6;
+
+        c12 = s4;
+        c12 += s5;
+
+        t1=a21;
+        t1+=a22;
+        s1=IterateStrassen (t1,b11);
+
+        c21 = s6;
+        c21 += s1;
+
+        c22 = s2;
+        c22 -= s3;
+        c22 += s5;
+        c22 -= s1;
+
+        _Matrix result (source1.hDim, source1.hDim, (bool)false, true);
+
+        // copy the results from four resultant quadrants c11..c22
+
+
+        for (i=0;i<iterationDim;i++)
+        {
+            memcpy ((_Parameter*)result.theData+i*source1.hDim,(_Parameter*)c11.theData+i*iterationDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)result.theData+i*source1.hDim+iterationDim,(_Parameter*)c12.theData+i*iterationDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)result.theData+(i+iterationDim)*source1.hDim,(_Parameter*)c21.theData+i*iterationDim, iterationDim*sizeof (_Parameter));
+            memcpy ((_Parameter*)result.theData+(i+iterationDim)*source1.hDim+iterationDim,(_Parameter*)c22.theData+i*iterationDim, iterationDim*sizeof (_Parameter));
+        }
+
+        return result;
+    }
+    else
+        return source1*source2;
+}
+
+
+//_____________________________________________________________________________________________
+void        _Matrix::SqrStrassen (void)
+// square the matrix
+// the matrix is assumed to be a non-pointer matrix
+{
+    if (hDim!=vDim) return;
+    // a non-square matrix
+
+    if (theIndex)
+    // sparse matrix - multiply directly at better speed
+    {
+        _Matrix temp (hDim, vDim, (bool)false, true);
+        Multiply (temp, *this);
+        Swap(temp);
+    }
+    else
+    {
+        // pad the matrix with zeros to make the dimension a power of two;
+        long newDim = 2,i;
+        while (newDim<hDim) newDim*=2;
+
+
+        // copies the entries of the original to the padded matrix
+
+        if (newDim != hDim)
+        {
+            _Matrix paddedMatrix (newDim, newDim, (bool)false, true);
+            for (i=0; i<hDim; i++)
+                memcpy ((_Parameter*)paddedMatrix.theData+i*newDim, (_Parameter*)theData+i*hDim, hDim*sizeof (_Parameter));
+
+            // call Strassen iteration function
+
+
+            paddedMatrix .Swap( IterateStrassen (paddedMatrix,paddedMatrix));
+
+            // strip unneeded elements and copy them back into the original;
+
+            for (i=0; i<hDim; i++)
+                memcpy ((_Parameter*)theData+i*hDim,(_Parameter*)paddedMatrix.theData+i*newDim, hDim*sizeof (_Parameter));
+        }
+        else
+            Swap( IterateStrassen (*this,*this));
+
+    }
+}
+*/
+
+//_____________________________________________________________________________________________
+
+void        _Matrix::AplusBx (_Matrix& B, _Parameter x)
 {
     _Matrix temp (B);
     temp *= x;
@@ -5594,7 +5773,7 @@ void        _Matrix::AplusBx (_Matrix& B, hyFloat x)
 //#define _SLKP_USE_SSE_INTRINSICS
 
 //_____________________________________________________________________________________________
-void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
+void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
 {
     if (hDim!=vDim) {
         return;
@@ -5613,8 +5792,8 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
         {
             for (unsigned long i=0UL, k = 0UL; i<16; i+=4) {
                 for (unsigned long j=0UL; j<4UL; j++, k++) {
-                  hyFloat p1 = theData[i]   * theData [j];
-                  hyFloat p2 = theData[i+1] * theData [j+4];
+                  _Parameter p1 = theData[i]   * theData [j];
+                  _Parameter p2 = theData[i+1] * theData [j+4];
                    p1 += theData[i+2] * theData [j+8];
                    p2 += theData[i+3] * theData [j+12];
                   
@@ -5628,8 +5807,8 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
             // loop interchange rocks!
 
           
-            hyFloat  _hprestrict_ * column = stash+lDim;
-            hyFloat const  _hprestrict_ * source = theData;
+            _Parameter  _hprestrict_ * column = stash+lDim;
+            _Parameter const  _hprestrict_ * source = theData;
 
             for (long j = 0; j < vDim; j++) {
                 for (long c = 0; c < vDim; c++) {
@@ -5639,7 +5818,7 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
 #ifdef _SLKP_USE_AVX_INTRINSICS
                 if (vDim == 61UL) {
                   for (unsigned long i = 0; i < lDim; i += 61) {
-                    hyFloat * row = theData + i;
+                    _Parameter * row = theData + i;
                     
                     
                     __m256d   sum256 = _mm256_setzero_pd();
@@ -5662,7 +5841,7 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
                   
                 } else {
                   for (unsigned long i = 0; i < lDim; i += vDim) {
-                      hyFloat * row = theData + i;
+                      _Parameter * row = theData + i;
                       
                       
                       __m256d   sum256 = _mm256_setzero_pd();
@@ -5673,7 +5852,7 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
                           sum256 = _mm256_add_pd (_mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k)), sum256);
                       }
                     
-                      hyFloat result = _avx_sum_4(sum256);
+                      _Parameter result = _avx_sum_4(sum256);
                     
                       for (; k < vDim; k++) {
                           result += row[k] * column [k];
@@ -5686,7 +5865,7 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
 
 #else
                 for (long i = 0; i < lDim; i += vDim) {
-                    hyFloat * row    = theData + i,
+                    _Parameter * row    = theData + i,
                                  buffer [4] = {0.,0.,0.,0.};
 
 
@@ -5709,7 +5888,7 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
            }
         }
         
-        memcpy (theData, stash, lDim * sizeof (hyFloat));
+        memcpy (theData, stash, lDim * sizeof (_Parameter));
 
         /*for (long s = 0; s < lDim; s++) {
             theData[s] = stash[s];
@@ -5770,7 +5949,7 @@ void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
                 _PMathObj polyCell = ((_Formula**)theData)[i]->ConstructPolynomial();
                 if (polyCell) { // valid polynomial conversion
                     tempStorage[i] = (_PMathObj)polyCell;
-                    polyCell->AddAReference();
+                    polyCell->nInstances++;
                 } else {
                     conversionFlag = false;
                     break;
@@ -5810,7 +5989,7 @@ void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
             _PMathObj polyCell = f->ConstructPolynomial();
             if (polyCell) { // valid polynomial conversion
                 tempStorage[i] = (_PMathObj)polyCell;
-                polyCell->AddAReference();
+                polyCell->nInstances++;
             } else {
                 conversionFlag = false;
                 break;
@@ -5840,7 +6019,7 @@ void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
     if (conversionFlag) { // successful conversion
         ClearFormulae();
         MatrixMemFree (theData);
-        theData = (hyFloat*) tempStorage;
+        theData = (_Parameter*) tempStorage;
         storageType = 0;
         if (!theIndex) {
             _Polynomial zero;
@@ -5878,7 +6057,7 @@ void        _Matrix::ConvertNumbers2Poly (void)
             }
     }
     MatrixMemFree (theData);
-    theData = (hyFloat*) tempStorage;
+    theData = (_Parameter*) tempStorage;
     storageType = 0;
 }
 
@@ -5897,7 +6076,7 @@ void        _Matrix::operator += (_Matrix& m)
 
 long    _Matrix::CompareRows (const long row1, const long row2) {
     for (long column_id = 0; column_id < vDim; column_id ++) {
-        hyFloat v1 = theData[row1*vDim+column_id],
+        _Parameter v1 = theData[row1*vDim+column_id],
                    v2 = theData[row2*vDim+column_id];
         if (!CheckEqual (v1,v2)) {
             return (v1 < v2)?-1L:1L;
@@ -5912,7 +6091,7 @@ void    _Matrix::SwapRows (const long row1, const long row2) {
     long idx1 = row1*vDim,
          idx2 = row2*vDim;
     for (long column_id = 0; column_id < vDim; column_id ++) {
-        hyFloat t = theData[idx1];
+        _Parameter t = theData[idx1];
         theData[idx1++] = theData[idx2];
         theData[idx2++] = t;
     }
@@ -6020,7 +6199,7 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
 _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
 {
     if (storageType!=1) {
-        HandleApplicationError  ("Only numeric matrices can be sorted");
+        WarnError  ("Only numeric matrices can be sorted");
         return new _MathObject();
     }
 
@@ -6040,7 +6219,7 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
             for (long k=0; k<sortBy; k=k+1) {
                 long idx = (*sortOnM)[k];
                 if (idx < 0 || idx >= maxColumnID) {
-                    HandleApplicationError (_String("Invalid column index to sort on in call to ") & __PRETTY_FUNCTION__ & " : " & idx);
+                    WarnError (_String("Invalid column index to sort on in call to ") & __func__ & " : " & idx); 
                     return new _MathObject();               
                 }
                 sortOn << idx;
@@ -6048,14 +6227,16 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
             goodMe = sortOn.lLength;
         }
         if (!goodMe) {
-            HandleApplicationError  (_String ("Invalid column index to sort the matrix on:") & _String((_String*)mp->toStr()).Enquote());
+            _String    errMsg ("Invalid column index to sort the matrix on:");
+            errMsg = errMsg & _String((_String*)mp->toStr());
+            WarnError  (errMsg);
             return new _MathObject;
         }
     } else {
         sortOn << mp->Value();
     }
 
-    // TODO SLKP 20111109 -- replace with a generic sort function
+    // SLKP 20111109 -- replace with a generic sort function
                      // the code below is BROKEN
     
     _SimpleList             idx (hDim,0,1);
@@ -6101,6 +6282,9 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
             }
         }
 
+    if (!result) {
+        checkPointer (result);
+    }
 
     return result;
 }
@@ -6109,21 +6293,25 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
 _PMathObj       _Matrix::PoissonLL (_PMathObj mp)
 {
     if (storageType!=1) {
-        HandleApplicationError ("Only numeric matrices can be passed to Poisson Log-Likelihood");
-        return new _MathObject;
+        _String    errMsg ("Only numeric matrices can be passed to Poisson Log-Likelihood");
+        WarnError  (errMsg);
+        return new _Constant (0.0);
     }
 
     if (mp->ObjectClass () != NUMBER || mp->Value() < 0.0) {
-        HandleApplicationError  (_String ("Invalid Poisson distribution parameter") & (_String((_String*)mp->toStr())).Enquote());
-        return new _MathObject;
+        _String    errMsg ("Invalid Poisson distribution parameter");
+        errMsg = errMsg & _String((_String*)mp->toStr());
+        WarnError  (errMsg);
+        return new _Constant (0.0);
     }
 
-    hyFloat     loglik = 0.0,
-                   *logFactorials = new hyFloat [101],
+    _Parameter     loglik = 0.0,
+                   *logFactorials = new _Parameter [101],
     lambda        = mp->Value(),
     logLambda     = log (lambda),
     log2p         = log (sqrt(8.*atan(1.)));
 
+    checkPointer (logFactorials);
 
     logFactorials[0] = 0.;
     logFactorials[1] = 0.;
@@ -6149,14 +6337,14 @@ _PMathObj       _Matrix::PoissonLL (_PMathObj mp)
             } else {
                 if (cellValue<=100) {
                     for (long idx2 = maxFactorialDone+1; idx2 <= cellValue; idx2++) {
-                        logFactorials[idx2] = logFactorials[idx2-1]+log((hyFloat)idx2);
+                        logFactorials[idx2] = logFactorials[idx2-1]+log((_Parameter)idx2);
                     }
                     loglik += logLambda * cellValue - lambda - logFactorials [cellValue];
                     maxFactorialDone = cellValue;
                 } else
                     // use Stirling's formula
                 {
-                    loglik += logLambda * cellValue - lambda + cellValue - (cellValue+0.5)*log((hyFloat)cellValue)-log2p;
+                    loglik += logLambda * cellValue - lambda + cellValue - (cellValue+0.5)*log((_Parameter)cellValue)-log2p;
                 }
             }
         }
@@ -6182,29 +6370,30 @@ _PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp)
         if (mp->ObjectClass () == MATRIX) {
             m = (_Matrix*)mp->Compute();
             if (m->GetHDim() == m->GetVDim()) {
-                errMsg = kEmptyString;
+                errMsg = emptyString;
             }
         }
     }
 
     if (errMsg.sLength) {
-        HandleApplicationError  (errMsg);
+        WarnError  (errMsg);
         return new _MathObject;
     }
 
     CheckIfSparseEnough     (true);
 
-    hyFloat              res     = 0.0;
+    _Parameter              res     = 0.0;
     long                    maxDim  = m->GetHDim();
 
     for (long step = 0; step < vDim; step++) {
         long       i1 = theData[step],
                    i2 = theData[vDim+step];
 
-        hyFloat t  = theData[2*vDim+step];
+        _Parameter t  = theData[2*vDim+step];
 
         if (i1<0 || i2 < 0 || i1 >= maxDim || i2 >= maxDim || t<0.0) {
-            HandleApplicationError(_String ("An invalid transition in step ") & (step+1) & " of the chain: " & i1 & " to " & i2 & " in time " & t);
+            errMsg = _String ("An invalid transition in step ") & (step+1) & " of the chain: " & i1 & " to " & i2 & " in time " & t;
+            WarnError  (errMsg);
             return new _Constant (0.);
         }
 
@@ -6233,7 +6422,7 @@ _PMathObj       _Matrix::pFDR (_PMathObj classes)
                     steps     = 20,
                     iterCount = 500;
 
-    hyFloat      pVal = 0.0,
+    _Parameter      pVal = 0.0,
                     maxLambda = 0.0;
 
 
@@ -6250,7 +6439,7 @@ _PMathObj       _Matrix::pFDR (_PMathObj classes)
             errMsg = _String ("Invalid baseline p-value (must be in (0,1)):") & _String((_String*)classes->toStr());
         } else {
             for (long i=1; i<lDim; i++) {
-                hyFloat pCount = theData[i];
+                _Parameter pCount = theData[i];
                 if (pCount < 0.0 || pCount > 1.0) {
                     errMsg = _String ("Invalid p-value entry in matrix passed to pFDR (must be a positive integer):");
                 }
@@ -6263,14 +6452,14 @@ _PMathObj       _Matrix::pFDR (_PMathObj classes)
 
 
     if (errMsg.sLength) {
-        HandleApplicationError  (errMsg);
+        WarnError  (errMsg);
         return new _Constant (0.0);
     }
 
     _Matrix        lamdbaRange (steps,1,false,true),
                    pFDRs       (steps,1,false,true);
 
-    hyFloat     anLamdba           = 0.0,
+    _Parameter     anLamdba           = 0.0,
                    minPFDR          = 5.0,
                    uberPFDR        = 0.0,
                    uberPFDRUpperLimit = 0.0,
@@ -6291,7 +6480,7 @@ _PMathObj       _Matrix::pFDR (_PMathObj classes)
     }
 
     for (k=0; k<steps; k++) {
-        hyFloat mse    = 0.0;
+        _Parameter mse    = 0.0;
         _Matrix    ITpDFR (iterCount,1,false,true);
 
         for (long it = 0; it < iterCount; it = it+1) {
@@ -6321,6 +6510,7 @@ _PMathObj       _Matrix::pFDR (_PMathObj classes)
     }
 
     _Matrix * resMx = new _Matrix(2,1,false,true);
+    checkPointer (resMx);
     resMx->theData[0] = uberPFDR;
     resMx->theData[1] = uberPFDRUpperLimit;
 
@@ -6328,7 +6518,7 @@ _PMathObj       _Matrix::pFDR (_PMathObj classes)
 }
 
 //_____________________________________________________________________________________________
-hyFloat      _Matrix::computePFDR (hyFloat lambda, hyFloat gamma)
+_Parameter      _Matrix::computePFDR (_Parameter lambda, _Parameter gamma)
 // assumes a non-sparse row/column matrix
 {
     long        rejected    = 0,
@@ -6344,13 +6534,13 @@ hyFloat      _Matrix::computePFDR (hyFloat lambda, hyFloat gamma)
     }
 
     if (null) {
-        hyFloat pi_0 = null/(lDim*(1.-lambda)),
+        _Parameter pi_0 = null/(lDim*(1.-lambda)),
                    pr_p = 0;
 
         if (rejected) {
-            pr_p = rejected/(hyFloat)lDim;
+            pr_p = rejected/(_Parameter)lDim;
         } else {
-            pr_p = 1./(hyFloat)lDim;
+            pr_p = 1./(_Parameter)lDim;
         }
 
         return pi_0 * gamma / (pr_p /** (1.-exp(log(1.-gamma)*lDim))*/);
@@ -6384,6 +6574,7 @@ _PMathObj _Matrix::Random (_PMathObj kind)
 
         if (storageType==1) {   // numeric matrix
             _Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,true);
+            checkPointer (res);
 
             if (!theIndex)
                 for (unsigned long vv = 0; vv<lDim; vv+=myVDim)
@@ -6403,6 +6594,7 @@ _PMathObj _Matrix::Random (_PMathObj kind)
         } else {            // formula matrix
             if (storageType==2) {
                 _Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,false);
+                checkPointer (res);
 
                 for (unsigned long vv = 0; vv<myHDim; vv++)
                     for (unsigned long k=0; k<remapped.lLength; k++) {
@@ -6428,7 +6620,7 @@ _PMathObj _Matrix::Random (_PMathObj kind)
         _List               * keys      = pdfArgs->GetKeys();
         _String             pdfkey      ("PDF"),
                             * arg0      = (_String *)(*keys)(0);
-        DeleteObject (keys);
+
         if (arg0->Equal(&pdfkey)) {
             _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
                         arg ("ARG0");
@@ -6477,7 +6669,7 @@ _PMathObj _Matrix::Random (_PMathObj kind)
     }
 
     // error handling
-    HandleApplicationError (errMsg);
+    WarnError (errMsg);
     return new _Matrix (1,1);
 }
 
@@ -6519,14 +6711,15 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes)
 
 
     if (errMsg.sLength) {
-        HandleApplicationError  (errMsg);
+        WarnError  (errMsg);
         return new _Matrix (1,1);
     }
 
     _Matrix * res = new _Matrix (2, clusterCount, false, true);
+    checkPointer (res);
 
     if (clusterCount == 1) {
-        hyFloat sampleMean    = 0.,
+        _Parameter sampleMean    = 0.,
                    errorEstimate = 0.;
 
         for (long c1=0, c2=1; c1 < 2*hDim; c1+=2, c2+=2) {
@@ -6537,7 +6730,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes)
 
         {
             for (long c1=0, c2=1; c1 < 2*hDim; c1+=2, c2+=2) {
-                hyFloat locErr = theData[c1] - sampleMean;
+                _Parameter locErr = theData[c1] - sampleMean;
                 //if (locErr > 0.0)
                 errorEstimate += locErr*locErr*theData[c2];
                 //else
@@ -6552,7 +6745,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes)
                     lastClusterBreaks   (clusterCount,1,false,true),
                     clusterMeans        (clusterCount,2,false,true);
 
-        hyFloat  minError    = 1.e100;
+        _Parameter  minError    = 1.e100;
         long        hitMinError,
                     toggle      = 0;
 
@@ -6598,7 +6791,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes)
                 }
             }
 
-            hyFloat            lastErrorEstimate = 1.e100,
+            _Parameter            lastErrorEstimate = 1.e100,
                                   errorEstimate = 0.;
 
             for (long cIters = 0; cIters < 250; cIters = cIters + 1) {
@@ -6612,7 +6805,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes)
                                 kp1 = 1;
 
                         for (; k<clusterCount-1 && breakPoint < hDim; k=k+1, kp1++) {
-                            hyFloat cm4 = clusterMeans.theData[toggle+k],
+                            _Parameter cm4 = clusterMeans.theData[toggle+k],
                                        cm2 = clusterMeans.theData[toggle+kp1],
                                        cm3 = theData[2*breakPoint];
 
@@ -6633,7 +6826,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes)
                     long        currentStart = 0;
 
                     for (long cm1 = 0; cm1 < clusterCount && currentStart < hDim-1; cm1 = cm1+1) {
-                        hyFloat  cm2 = 0.;
+                        _Parameter  cm2 = 0.;
 
 
                         long        k,
@@ -6652,7 +6845,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes)
                             clusterMeans.theData[cm1+toggle] = cm2;
 
                             for (long k=currentStart; k<clusterBreaks.theData[cm1]; k=k+1) {
-                                hyFloat locError = theData[2*k] - cm2;
+                                _Parameter locError = theData[2*k] - cm2;
                                 //if (locError < 0.0)
                                 //  errorEstimate -= locError*theData[2*k+1];
                                 //else
@@ -6694,7 +6887,7 @@ _PMathObj       _Matrix::ProfileMeanFit (_PMathObj classes)
     _Matrix     *   arg;
     long            weightClasses;
 
-    hyFloat      dataPoints = 0.;
+    _Parameter      dataPoints = 0.;
 
     if (theIndex) {
         CheckIfSparseEnough (true);
@@ -6727,14 +6920,15 @@ _PMathObj       _Matrix::ProfileMeanFit (_PMathObj classes)
 
 
     if (errMsg.sLength) {
-        HandleApplicationError  (errMsg);
+        WarnError  (errMsg);
         return new _Matrix (1,1);
     }
 
     _Matrix * res           = new _Matrix (4, weightClasses, false, true);
     //_SimpleList               splitRuns (weightClasses,0,0);
+    checkPointer (res);
 
-    hyFloat      runningSum      = 0.,
+    _Parameter      runningSum      = 0.,
                     targetSum        = arg->theData[0],
                     valueSum      = 0.,
                     logLikelihood   = 0.,
@@ -6788,13 +6982,13 @@ _PMathObj       _Matrix::ProfileMeanFit (_PMathObj classes)
 
     while (currentSlider < weightClasses) {
         long        classSize   = res->theData[weightClasses+currentSlider];
-        hyFloat  classWeight = arg->theData[currentSlider];//splitRuns.lData[currentSlider]/dataPoints;
+        _Parameter  classWeight = arg->theData[currentSlider];//splitRuns.lData[currentSlider]/dataPoints;
 
         if (classWeight > 0.0) {
             if (classSize == 1) {
                 logLikelihood += theData[vDim+runningOffset] * log (classWeight);
             } else {
-                hyFloat      classMean       = res->theData[2*weightClasses+currentSlider],
+                _Parameter      classMean       = res->theData[2*weightClasses+currentSlider],
                                 //classNorm         = 0.,
                                 classVar        = (fabs(classMean)>0.05)?0.5/(varMult*fabs(classMean)):0.5/(varMult*0.025);
 
@@ -6829,7 +7023,7 @@ _PMathObj       _Matrix::ProfileMeanFit (_PMathObj classes)
 }
 
 //_____________________________________________________________________________________________
-void            _Matrix::PopulateConstantMatrix (const hyFloat v)
+void            _Matrix::PopulateConstantMatrix (const _Parameter v)
 {
     if (storageType == 1)
         for (long r=0; r<lDim; r++) {
@@ -6844,6 +7038,7 @@ _PMathObj       _Matrix::AddObj (_PMathObj mp)
         if (mp->ObjectClass () == STRING) {
             _Matrix * convMatrix = new _Matrix (*((_FString*)mp)->theString),
             * res;
+            checkPointer (convMatrix);
             res = (_Matrix*)AddObj (convMatrix);
             DeleteObject (convMatrix);
             return res;
@@ -6852,7 +7047,8 @@ _PMathObj       _Matrix::AddObj (_PMathObj mp)
             _Matrix* aNum = (_Matrix*)ComputeNumeric ();
             if (aNum->storageType == 1) {
                 _Matrix * plusStuff = new _Matrix (hDim,vDim,false,true);
-                hyFloat plusValue = mp->Value();
+                checkPointer (plusStuff);
+                _Parameter plusValue = mp->Value();
 
                 if (theIndex) {
                     for (long k=0; k<hDim*vDim; k++) {
@@ -6874,13 +7070,16 @@ _PMathObj       _Matrix::AddObj (_PMathObj mp)
             }
         }
 
-        HandleApplicationError ( kErrorStringIncompatibleOperands );
+        warnError( -101);
         return new _Matrix (1,1);
     }
 
     _Matrix * m = (_Matrix*)mp;
     AgreeObjects (*m);
-    _Matrix * result = new _Matrix (hDim, vDim, theIndex && m->theIndex , storageType);
+    _Matrix * result = new _Matrix (hDim, vDim, bool((theIndex!=nil)&&(m->theIndex!=nil)), storageType);
+    if (!result) {
+        checkPointer (result);
+    }
     AddMatrix (*result,*m);
     return result;
 }
@@ -6952,26 +7151,28 @@ bool       _Matrix::Equal(_PMathObj mp)
 _PMathObj       _Matrix::SubObj (_PMathObj mp)
 {
     if (mp->ObjectClass()!=ObjectClass()) {
-        HandleApplicationError ( kErrorStringIncompatibleOperands );
+        warnError( -101);
         return new _Matrix (1,1);
     }
 
     _Matrix * m = (_Matrix*)mp;
     AgreeObjects (*m);
     _Matrix * result = new _Matrix (hDim, vDim, bool( theIndex && m->theIndex ), storageType);
-    
+    if (!result) {
+        checkPointer (result);
+    }
     Subtract (*result,*m);
     return result;
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::operator *= (hyFloat c)
+void        _Matrix::operator *= (_Parameter c)
 {
     Multiply (*this,c);
 }
 
 //_____________________________________________________________________________________________
-_Matrix     _Matrix::operator * (hyFloat c)
+_Matrix     _Matrix::operator * (_Parameter c)
 {
     _Matrix result (*this);
     Multiply (result,c);
@@ -6994,7 +7195,7 @@ void        _Matrix::operator *= (_Matrix& m)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage, hyFloat* stash)
+void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage, _Parameter* stash)
 {
     _Matrix * result = nil;
     if (!externalStorage) {
@@ -7023,7 +7224,7 @@ void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalSt
         DeleteObject (result);
     } else {
         externalStorage->CheckIfSparseEnough (true);
-        memset (externalStorage->theData, 0, sizeof (hyFloat)*externalStorage->lDim);
+        memset (externalStorage->theData, 0, sizeof (_Parameter)*externalStorage->lDim);
         //for (long s = 0; s < externalStorage->lDim; s++) externalStorage->theData[s] = 0.0;
     }
 }
@@ -7034,10 +7235,10 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
   
   if (mp->ObjectClass()!=ObjectClass()) {
     if (mp->ObjectClass()!=NUMBER) {
-      HandleApplicationError ( kErrorStringIncompatibleOperands );
+      warnError(-101);
       return new _Matrix (1,1);
     } else {
-      hyFloat theV = mp->Value();
+      _Parameter theV = mp->Value();
       return (_PMathObj)((*this)*theV).makeDynamic();
     }
   }
@@ -7047,6 +7248,7 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
   AgreeObjects    (*m);
   
   _Matrix*      result = new _Matrix (hDim, m->vDim, false, storageType);
+  checkPointer  (result);
   
   Multiply      (*result,*m);
   return        result;
@@ -7054,26 +7256,28 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::MultElements (_PMathObj mp, bool elementWiseDivide) {
+_PMathObj       _Matrix::MultElements (_PMathObj mp, bool elementWiseDivide)
+{
 
     if (mp->ObjectClass()!=ObjectClass()) {
-        HandleApplicationError ( kErrorStringIncompatibleOperands );
+        warnError(-101);
         return new _Matrix (1,1);
     }
 
     _Matrix* m = (_Matrix*)mp;
 
     if ((GetHDim()!=m->GetHDim()) || (GetVDim()!=m->GetVDim())) {
-        HandleApplicationError ("Element-wise multiplication/division requires matrixes of the same dimension.");
+        WarnError ("Element-wise multiplication/division requires matrixes of the same dimension.");
         return new _Matrix (1,1);
     }
 
     if ((storageType!=1)||(m->storageType != 1)) {
-        HandleApplicationError ("Element-wise multiplication/division only works on numeric matrices");
+        WarnError ("Element-wise multiplication/division only works on numeric matrices");
         return new _Matrix (1,1);
     }
 
     _Matrix*      result = new _Matrix (hDim, vDim, false, true);
+    checkPointer  (result);
 
     if (elementWiseDivide) {
         if (theIndex) {
@@ -7146,15 +7350,16 @@ _PMathObj       _Matrix::MultElements (_PMathObj mp, bool elementWiseDivide) {
 }
 
 //_____________________________________________________________________________________________
-bool    _Matrix::CheckDimensions (_Matrix& secondArg) const {
+bool    _Matrix::CheckDimensions (_Matrix& secondArg)
 // check matrix dimensions to ensure that they are multipliable
+{
     if (vDim!=secondArg.hDim) {
         if (hDim == 1 && secondArg.hDim==1 && vDim == secondArg.vDim) { // handle scalar product separately
             secondArg.Transpose();
         } else {
             char str[255];
             snprintf (str, sizeof(str),"Incompatible matrix dimensions in call to CheckDimension: %ldx%ld and %ldx%ld\n",hDim,vDim,secondArg.hDim,secondArg.vDim);
-            HandleApplicationError (str);
+            WarnError (str);
             return false;
         }
     }
@@ -7204,7 +7409,7 @@ BaseRef _Matrix::toStr(unsigned long padding) {
   _String *result  = new _String (2048L,true),
           padder  (" ", padding);
   
-  print_digit_specification = hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
+  checkParameter (printDigitsSpec,printDigits,0L);
   
   char number_buffer [256];
   
@@ -7213,7 +7418,7 @@ BaseRef _Matrix::toStr(unsigned long padding) {
     if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
       bool printStrings = storageType != 1;
  
-      hyFloat useJSON = 0.0;
+      _Parameter useJSON = 0.0;
        checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
       
       bool doJSON = !CheckEqual(useJSON, 0.0);
@@ -7343,7 +7548,7 @@ void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
     long digs         = -1;
     
     char number_buffer [256];
-    hyFloat useJSON = 0.0;
+    _Parameter useJSON = 0.0;
     checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
     
     bool doJSON = !CheckEqual(useJSON, 0.0);
@@ -7352,7 +7557,8 @@ void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
          closeBracket = doJSON ? ']' : '}';
     
     if (!printStrings) {
-      digs = print_digit_specification = hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
+      checkParameter (printDigitsSpec,printDigits,0L);
+      digs =  printDigits;
     }
     
     if (!printStrings && digs != -1) {
@@ -7448,7 +7654,7 @@ void    SetIncrement (int m)
     _Matrix::storageIncrement = m;
 }
 //_____________________________________________________________________________________________
-void    _Matrix::InitMxVar (_SimpleList& mxVariables, hyFloat glValue)
+void    _Matrix::InitMxVar (_SimpleList& mxVariables, _Parameter glValue)
 {
     _Constant gv (glValue);
     for (long k=0; k<mxVariables.countitems(); k++) {
@@ -7486,7 +7692,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource)
             buffer [i] = 0;
             _String varName (buffer);
 
-            _Variable * ppv = CheckReceptacle (&varName, kEmptyString, true);
+            _Variable * ppv = CheckReceptacle (&varName, emptyString, true);
             varList << ppv->GetAVariable();
             i = 0;
         } else {
@@ -7509,6 +7715,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource)
     while (k<mDim*mDim) {
         i = 0;
         _Polynomial* thisCell = new _Polynomial (varList);
+        checkPointer(thisCell);
         while (fc!='{') {
             fc = fgetc (theSource);
             buffer[i] = fc;
@@ -7518,7 +7725,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource)
             }
         }
         m = atol (buffer);
-        hyFloat* theCoeffs = (hyFloat*)MatrixMemAllocate(m*sizeof(hyFloat));
+        _Parameter* theCoeffs = (_Parameter*)MatrixMemAllocate(m*sizeof(_Parameter));
         j = 0;
         while (fc!='}') {
             i = 0;
@@ -7537,6 +7744,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource)
             }
         }
         _PolynomialData *pd = new _PolynomialData (varList.countitems(),j,theCoeffs);
+        checkPointer(pd);
         MatrixMemFree (theCoeffs);
         fc = fgetc(theSource);
         if (fc != '{') {
@@ -7597,7 +7805,7 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
 {
     // write out the preliminaries
     if (storageType!=0) {
-        HandleApplicationError ( kErrorStringMatrixExportError );
+        warnError(-200);
         return;
     }
     fprintf (theDump,"%ld,",hDim);
@@ -7610,7 +7818,7 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
 
 
     long k, i=0;
-    hyFloat* varPool = (hyFloat*)MatrixMemAllocate (mxVariables.countitems()*sizeof(hyFloat));
+    _Parameter* varPool = (_Parameter*)MatrixMemAllocate (mxVariables.countitems()*sizeof(_Parameter));
     for (k=0; k<mxVariables.countitems(); k++) {
         fprintf (theDump,"%s",LocateVar(mxVariables(k))->GetName()->sData);
         if (k<mxVariables.countitems()-1) {
@@ -7639,7 +7847,7 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
         _Polynomial* thisCell = ((_Polynomial**)theData)[k];
         long nTerms = thisCell->GetTheTerms()->NumberOfTerms(),
              step = nTerms/10+1, upTo = step, tup,j;
-        hyFloat* coeffHolder =  (hyFloat*)MatrixMemAllocate (nTerms*sizeof(hyFloat)), error, bestError = 1;
+        _Parameter* coeffHolder =  (_Parameter*)MatrixMemAllocate (nTerms*sizeof(_Parameter)), error, bestError = 1;
 
         thisCell->RankTerms(&termRank);
         for (i=0; i<nTerms; i++) {
@@ -7713,12 +7921,12 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
         }
 
         // divide the number of terms in 10 subgroups and compute the absolute error, then try for the maxcap
-        hyFloat  stdCap = 0.0;
+        _Parameter  stdCap = 0.0;
         if (enforcePolyCap)
             stdCap = topPolyCap;
         else
         {
-            hyFloat ub,lb;
+            _Parameter ub,lb;
             for (k=0;k<mxVariables.countitems(); k++)
             {
                 _Variable* theV = LocateVar(mxVariables(k));
@@ -7735,7 +7943,7 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
 
         long  partitionSize = maxterms/10+1, currentSize = maxterms-partitionSize;
         _Matrix     *polym, *numm, *numm1, *errMx;
-        hyFloat  error =0.0 ,step = stdCap/10, tryCap = stdCap+step, stdError;
+        _Parameter  error =0.0 ,step = stdCap/10, tryCap = stdCap+step, stdError;
         InitMxVar (mxVariables,stdCap);
         numm = (_Matrix*)theBase->Evaluate(false);
         // first run the precision analysis on the max terms setting
@@ -7820,18 +8028,19 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
 
 //_____________________________________________________________________________________________
 
-hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
+_Parameter  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
 {
     if (storageType!=1 || freqs->storageType!=1 || hDim!=vDim) {
         return 0.0;
     }
 
-    hyFloat      result      =   0.0;
+    _Parameter      result      =   0.0;
     _Matrix         *nf         =   nil,
                      *stencil =   branchLengthStencil();
 
     if (freqs->theIndex) {
         nf = new _Matrix (*freqs);
+        checkPointer (nf);
         nf->CheckIfSparseEnough (true);
     } else {
         nf = freqs;
@@ -7839,7 +8048,8 @@ hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
 
 
     if (theIndex) {
-        hyFloat*   diags = new hyFloat[hDim];
+        _Parameter*   diags = new _Parameter[hDim];
+        checkPointer (diags);
         for (long k=0; k<hDim; k++) {
             diags[k] = 0.0;
         }
@@ -7880,7 +8090,7 @@ hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
             for (long k=0; k<hDim; k++) {
                 long i,j;
 
-                hyFloat diag = 0.;
+                _Parameter diag = 0.;
                 for (j=k*vDim,i=0; j<k*(vDim+1); j++,i++)
                     if (!stencil || stencil->theData[j] > 0.0) {
                         diag += theData[j]*nf->theData[i];
@@ -7898,7 +8108,7 @@ hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
         } else {
             for (long k=0; k<hDim; k++) {
                 long j;
-                hyFloat diag = 0.;
+                _Parameter diag = 0.;
 
                 for (j=k*vDim; j<k*(vDim+1); j++)
                     if (!stencil || stencil->theData[j] > 0.0) {
@@ -7934,15 +8144,18 @@ _List*      _Matrix::ComputeRowAndColSums (void)
         _Matrix     *rowSums     = new _Matrix (hDim,1,false,true),
         *columnSums  = new _Matrix (vDim,1,false,true);
 
-       
-        hyFloat totals = 0.0;
+        if (!(rowSums && columnSums && resList)) {
+            checkPointer (nil);
+        }
+
+        _Parameter totals = 0.0;
 
         if (theIndex) {
             for (long item = 0; item < lDim; item ++) {
                 long idx = theIndex[item];
                 if (idx>=0) {
 
-                    hyFloat      v = theData[idx];
+                    _Parameter      v = theData[idx];
 
                     rowSums->theData[idx/vDim] += v;
                     columnSums->theData[idx%vDim] += v;
@@ -7951,7 +8164,7 @@ _List*      _Matrix::ComputeRowAndColSums (void)
             }
         } else {
             for (long rows = 0; rows < hDim; rows++) {
-                hyFloat rowSum = 0.;
+                _Parameter rowSum = 0.;
 
                 for (long columns = 0; columns < vDim; columns ++) {
                     rowSum += theData[rows*vDim+columns];
@@ -7962,7 +8175,7 @@ _List*      _Matrix::ComputeRowAndColSums (void)
             }
 
             for (long columns = 0; columns < vDim; columns++) {
-                hyFloat colSum = 0.;
+                _Parameter colSum = 0.;
 
                 for (long rows = 0; rows < hDim; rows ++) {
                     colSum += theData[rows*vDim+columns];
@@ -7996,7 +8209,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
     long          specCount = GetHDim();
 
     if (storageType != 1 ||  specCount!= GetVDim() || specCount < 4) {
-        HandleApplicationError ("NeigborJoin needs a square numeric matrix of dimension >= 4");
+        WarnError ("NeigborJoin needs a square numeric matrix of dimension >= 4");
         return    new _Matrix;
     }
 
@@ -8008,9 +8221,12 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 
     _Matrix*             res = new _Matrix         ((specCount+1)*2,3,false,true);
 
+    checkPointer         (res);
+
+
     for (long k=0; k<specCount ; k=k+1) {
         for (long j=0; j<k; j=j+1) {
-            hyFloat d = theData[j*specCount+k];
+            _Parameter d = theData[j*specCount+k];
 
             netDivergence.theData[k] += d;
             netDivergence.theData[j] += d;
@@ -8022,7 +8238,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
     long   cladesMade = 1;
 
     while (cladesMade < specCount) {
-        hyFloat      min = 1.e100;
+        _Parameter      min = 1.e100;
 
         long            minIndex  = -1,
                         minIndex2 = -1,
@@ -8030,12 +8246,12 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
                         minIndexC = -1,
                         k = specCount-1-cladesMade;
 
-        hyFloat      recRemaining = 1./k;
+        _Parameter      recRemaining = 1./k;
 
         if (cladesMade == specCount-1) {
             minIndex = useColumn.lData[1];
 
-            hyFloat d = theData[minIndex];
+            _Parameter d = theData[minIndex];
 
             if ((d<0)&&methodIndex) {
                 d = 0;
@@ -8066,7 +8282,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
                 //if (c2>=c1)
                 //break;
 
-                hyFloat d = theData[c2*specCount+c1]-(netDivergence.theData[c1]+netDivergence.theData[c2])*recRemaining;
+                _Parameter d = theData[c2*specCount+c1]-(netDivergence.theData[c1]+netDivergence.theData[c2])*recRemaining;
 
                 if (d<min) {
                     min         = d;
@@ -8079,16 +8295,17 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
         }
 
         if (minIndex < 0 || minIndex2 < 0 || minIndexR < 0 || minIndexC < 0) {
-            _String err = _String ("Invalid distance matrix passed to NeighborJoin. Matrices written onto ") & hy_messages_log_name;
-            ReportWarning ((_String*)toStr());
+            _String err ("Invalid distance matrix passed to NeighborJoin. Matrices written onto messages.log"),
+                    invalidMx ((_String*)toStr());
+            ReportWarning (invalidMx);
             ReportWarning (_String((_String*)netDivergence.toStr()));
             ReportWarning (_String((_String*)useColumn.toStr()));
-            HandleApplicationError (err);
+            WarnError (err);
             DeleteObject (res);
             return new _Matrix;
         }
 
-        hyFloat      D  = theData[minIndex*specCount+minIndex2],
+        _Parameter      D  = theData[minIndex*specCount+minIndex2],
                         d  = (D - (netDivergence.theData[minIndex2]-netDivergence.theData[minIndex])*recRemaining)*0.5,
                         d2 = D - d;
 
@@ -8137,7 +8354,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
                 break;
             }
 
-            hyFloat d2 = theData[k2*specCount+minIndex]+theData[k2*specCount+minIndex2],
+            _Parameter d2 = theData[k2*specCount+minIndex]+theData[k2*specCount+minIndex2],
                        t  =  (d2-d)*.5;
 
             netDivergence.theData  [k2]               += t-d2;
@@ -8155,7 +8372,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
                 break;
             }
 
-            hyFloat  d2 = theData[minIndex*specCount+k2]+theData[k2*specCount+minIndex2],
+            _Parameter  d2 = theData[minIndex*specCount+k2]+theData[k2*specCount+minIndex2],
                         t =  (d2-d)*.5;
 
             netDivergence.theData [k2]                  += t-d2;
@@ -8168,7 +8385,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
         for (; k<useColumn.lLength; k++) {
             long  k2 = useColumn.lData[k];
 
-            hyFloat  d2 = theData[minIndex*specCount+k2]+theData[minIndex2*specCount+k2],
+            _Parameter  d2 = theData[minIndex*specCount+k2]+theData[minIndex2*specCount+k2],
                         t =  (d2-d)*.5;
 
             netDivergence.theData [k2]                   += t-d2;
@@ -8206,13 +8423,15 @@ _Matrix*        _Matrix::MakeTreeFromParent (long specCount)
     }
 
     if(specCount<0) {
-        HandleApplicationError (_String ("Parameter to ") & __PRETTY_FUNCTION__ & " must be greater than or equal to 0");
+        _String errMsg = "Parameter must be greater than or equal to 0";
+        WarnError (errMsg);
         return new _Matrix (1,1,false,true);
     }
 
     _Matrix     *tree = new _Matrix (2*(specCount+1),5,false,true),
     CI  (2*(specCount+1),1,false,true);
 
+    checkPointer (tree);
 
     for (long kk = 0; kk < specCount-1; kk++) {
         tree->theData[kk*5+4] = -1;
@@ -8319,7 +8538,7 @@ _Matrix*        _Matrix::MakeTreeFromParent (long specCount)
 
 
 //_____________________________________________________________________________________________
-hyFloat      _Matrix::FisherExact (hyFloat p1, hyFloat p2, hyFloat p3)
+_Parameter      _Matrix::FisherExact (_Parameter p1, _Parameter p2, _Parameter p3)
 {
     if ((hDim>=1)&&(vDim>=1)&&(hDim+vDim>2)) {
         if (vDim<hDim) {
@@ -8335,6 +8554,7 @@ hyFloat      _Matrix::FisherExact (hyFloat p1, hyFloat p2, hyFloat p3)
         numericMx->CheckIfSparseEnough (true);
 
         double        *tempArray = new double [numericMx->lDim];
+        checkPointer (tempArray);
 
         for (long i=0; i<hDim; i++)
             for (long j=0; j<vDim; j++) {
@@ -8351,7 +8571,7 @@ hyFloat      _Matrix::FisherExact (hyFloat p1, hyFloat p2, hyFloat p3)
 
 //_____________________________________________________________________________________________
 
-void        _Matrix::SimplexHelper1 (long rowIndex, _SimpleList& columnList, long columnCount, bool useAbsValue, long& maxIndex, hyFloat& maxValue)
+void        _Matrix::SimplexHelper1 (long rowIndex, _SimpleList& columnList, long columnCount, bool useAbsValue, long& maxIndex, _Parameter& maxValue)
 // find the maximum element (using absolute value of not) in row rowIndex+1 of this matrix,
 // over first columnCount columns indexed by columnList
 //  column indexing is offset by + 1 to account for the first column not being eligible for pivoting
@@ -8363,7 +8583,7 @@ void        _Matrix::SimplexHelper1 (long rowIndex, _SimpleList& columnList, lon
         maxIndex = columnList.lData[0];
         maxValue = theData[rowIndex+maxIndex+1];
         for (long k=1; k<columnCount; k++) {
-            hyFloat t = useAbsValue?
+            _Parameter t = useAbsValue?
                            (fabs(theData[rowIndex+columnList.lData[k]+1])-fabs(maxValue))
                            :(theData[rowIndex+columnList.lData[k]+1]-maxValue);
             if (t>0.) {
@@ -8376,13 +8596,13 @@ void        _Matrix::SimplexHelper1 (long rowIndex, _SimpleList& columnList, lon
 
 //_____________________________________________________________________________________________
 
-void        _Matrix::SimplexHelper2 (long& pivotIndex, long columnToExamine, hyFloat eps)
+void        _Matrix::SimplexHelper2 (long& pivotIndex, long columnToExamine, _Parameter eps)
 {
     long            m = hDim-2,
                     n = vDim-1,
                     i = 0;
 
-    hyFloat      q1,
+    _Parameter      q1,
                     q;
 
     pivotIndex = -1;
@@ -8402,7 +8622,7 @@ void        _Matrix::SimplexHelper2 (long& pivotIndex, long columnToExamine, hyF
                 pivotIndex = i;
                 q1         = q;
             } else {
-                hyFloat q0, qp;
+                _Parameter q0, qp;
                 if (q==q1) { // degeneracy
                     for (long k=0; k<n; k++) {
                         qp = -theData[(pivotIndex+1)*vDim + k + 1]/theData[(pivotIndex+1)*vDim+columnToExamine+1];
@@ -8425,7 +8645,7 @@ void        _Matrix::SimplexHelper2 (long& pivotIndex, long columnToExamine, hyF
 
 void        _Matrix::SimplexHelper3 (long i1, long k1, long ip, long kp)
 {
-    hyFloat piv = 1./theData[(ip+1)*vDim+kp+1];
+    _Parameter piv = 1./theData[(ip+1)*vDim+kp+1];
     for (long i=0; i<=i1+1; i++)
         if (i-1 != ip) { // not the pivot row
             theData[i*vDim+kp+1] *= piv;
@@ -8442,7 +8662,7 @@ void        _Matrix::SimplexHelper3 (long i1, long k1, long ip, long kp)
 }
 
 //_____________________________________________________________________________________________
-_Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision )
+_Matrix*    _Matrix::SimplexSolve (_Parameter desiredPrecision )
 // this function is adapted from the Num. Recipes in C version; but with 0 indexing
 // hyphy primitives
 // and without goto labels
@@ -8468,7 +8688,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision )
 // upon return, will contain a row matrix of either C-1 cells:
 // extreme value of the objective function in the first cell
 // variable values in the same order as originally supplied
-// if an kEmptyString matrix is returned - no feasible solution could be found
+// if an emptyString matrix is returned - no feasible solution could be found
 // if a 1x1 matrix is returned - the objective function is unbounded
 
 {
@@ -8498,7 +8718,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision )
 
             {
                 for (long i=1; i<=m; i++) {
-                    hyFloat t = (*this)(i,n+1);
+                    _Parameter t = (*this)(i,n+1);
                     if (t<0.0) {
                         m1++;
                     } else if (t>0.0) {
@@ -8520,7 +8740,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision )
             // copy coefficients into the temp matrix, sorting the constraints in the <=, >= and == order
             {
                 for (long i=1, t1=0, t2=0, t3=0; i<=m; i++) {
-                    hyFloat t   = (*this)(i,n+1);
+                    _Parameter t   = (*this)(i,n+1);
                     long       idx;
                     if (t<0.0) {
                         idx=1+t1++;
@@ -8547,7 +8767,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision )
             if (m2+m3) { // >= and == constraints exist; origin is not a feasible solution
                 for (long i=0; i<m2; l3.lData[i] = 1,i++) ; // slack variables in the list of 'basis' variables
                 for (long k=0; k<=n; k++) { // compute the auxiliary objective function
-                    hyFloat q = 0.;
+                    _Parameter q = 0.;
                     for (long k2 = m1+1; k2<=m; k2++) {
                         q += tempMatrix(k2,k);
                     }
@@ -8556,7 +8776,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision )
                 while (1) { // initial artifical construct
                     long        pivotColumn,
                                 ip;
-                    hyFloat  pivotValue;
+                    _Parameter  pivotValue;
 
                     tempMatrix.SimplexHelper1 (m,l1,nl1,false,pivotColumn, pivotValue);
                     if (pivotValue <= desiredPrecision && tempMatrix(m+1,0) < -desiredPrecision)
@@ -8622,12 +8842,13 @@ one:
             while (1) {
                 long            pivotColumn,
                                 pivotRow;
-                hyFloat      pivotValue;
+                _Parameter      pivotValue;
 
                 tempMatrix.SimplexHelper1 (-1,l1,nl1,false,pivotColumn,pivotValue);
                 if (pivotValue < desiredPrecision) { // done!
                     // produce the final solution
                     _Matrix * resMatrix = new _Matrix (1,n+1,false,true);
+                    checkPointer (resMatrix);
                     resMatrix->Store(0,0,doMaximize?tempMatrix(0,0):-tempMatrix(0,0));
                     for (long k=0; k<iposv.lLength; k++)
                         if (iposv.lData[k]<n) {
@@ -8650,7 +8871,7 @@ one:
         errMsg = "SimplexSolve requires a numeric matrix with > 1 row and > 2 columns";
     }
 
-    HandleApplicationError (errMsg);
+    WarnError (errMsg);
     return new _Matrix;
 }
 
@@ -8690,7 +8911,7 @@ _PMathObj   _Matrix::DirichletDeviate (void)
 
     long        dim;
 
-    hyFloat  denom   = 0.;
+    _Parameter  denom   = 0.;
 
     _Matrix     res (1, dim = GetHDim()*GetVDim(), false, true);    // row vector
 
@@ -8699,11 +8920,11 @@ _PMathObj   _Matrix::DirichletDeviate (void)
         errMsg = "Only numeric vectors can be passed to <= (DirichletDeviate)";
     }
 
-    if (is_row || is_column ()) {
+    if (IsAVector()) {
         // generate a random deviate from gamma distribution for each hyperparameter
         for (long i = 0; i < dim; i++) {
             if (theData[i] < 0) {
-                HandleApplicationError (_String("Dirichlet not defined for negative parameter values."));
+                WarnError (_String("Dirichlet not defined for negative parameter values."));
                 return new _Matrix (1,1,false,true);
             }
 
@@ -8721,7 +8942,7 @@ _PMathObj   _Matrix::DirichletDeviate (void)
         errMsg = "Argument must be a row- or column-vector.";
     }
 
-    HandleApplicationError (errMsg);
+    WarnError (errMsg);
     return new _Matrix (1,1,false,true);
 }
 
@@ -8746,7 +8967,7 @@ _PMathObj   _Matrix::GaussianDeviate (_Matrix & cov)
     _String     errMsg;
 
     if (storageType != 1 || GetHDim() > 1) {
-        HandleApplicationError (_String("ERROR in _Matrix::GaussianDeviate(), expecting to be called on numeric row vector matrix, current dimensions: ") & GetHDim() & "x" & GetVDim());
+        WarnError (_String("ERROR in _Matrix::GaussianDeviate(), expecting to be called on numeric row vector matrix, current dimensions: ") & GetHDim() & "x" & GetVDim());
         return new _Matrix;
     }
 
@@ -8777,7 +8998,7 @@ _PMathObj   _Matrix::GaussianDeviate (_Matrix & cov)
         return (_PMathObj) gaussvec.makeDynamic();
     }
 
-    HandleApplicationError (_String("Error in _Matrix::GaussianDeviate(), incompatible dimensions in covariance matrix: ") & cov.GetHDim() & "x" & cov.GetVDim());
+    WarnError (_String("Error in _Matrix::GaussianDeviate(), incompatible dimensions in covariance matrix: ") & cov.GetHDim() & "x" & cov.GetVDim());
     return new _Matrix;
 }
 
@@ -8802,10 +9023,10 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
         sorted = (_Matrix*) eval->SortMatrixOnColumn(&one);
 
 
-        hyFloat      sum = 0.;
+        _Parameter      sum = 0.;
 
         for (long n = 1; n < 2*values; n+=2) {
-            hyFloat v = sorted->theData[n];
+            _Parameter v = sorted->theData[n];
             if (v < 0.) {
                 sum = 0.;
                 break;
@@ -8836,16 +9057,16 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
 #if !defined __UNIX__ || defined __HEADLESS__
             TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
 #if !defined __HEADLESS__
-            SetStatusLine     (kEmptyString,_HYMultinomialStatus, kEmptyString, 0, HY_SL_TASK|HY_SL_PERCENT);
+            SetStatusLine     (emptyString,_HYMultinomialStatus, emptyString, 0, HY_SL_TASK|HY_SL_PERCENT);
 #else
             SetStatusLine     (_HYMultinomialStatus);
 #endif
-            hyFloat  seconds_accumulator = .0,
+            _Parameter  seconds_accumulator = .0,
                         temp;
 #endif
 
             for (unsigned long it = 0; it < samples; it++) {
-                hyFloat randomValue = genrand_real2(),
+                _Parameter randomValue = genrand_real2(),
                            sum   = normalized->theData[0];
                 long       index = 0;
 
@@ -8859,18 +9080,18 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
                 if ((it % 1000 == 0) && (temp=TimerDifferenceFunction(true))>1.0) { // time to update
                     seconds_accumulator += temp;
 
-                    _String statusLine = _HYMultinomialStatus & " " & (hyFloat)(it+1) & "/" & (hyFloat)samples
+                    _String statusLine = _HYMultinomialStatus & " " & (_Parameter)(it+1) & "/" & (_Parameter)samples
                                          & " samples drawn (" & (1.0+it)/seconds_accumulator & "/second)";
 
 #if defined __HEADLESS__
                     SetStatusLine (statusLine);
 #else
-                    SetStatusLine (kEmptyString,statusLine,kEmptyString,100*(float)it/(samples),HY_SL_TASK|HY_SL_PERCENT);
+                    SetStatusLine (emptyString,statusLine,emptyString,100*(float)it/(samples),HY_SL_TASK|HY_SL_PERCENT);
 #endif
                     TimerDifferenceFunction (false); // reset timer for the next second
                     yieldCPUTime (); // let the GUI handle user actions
 
-                    if (terminate_execution) { // user wants to cancel the analysis
+                    if (terminateExecution) { // user wants to cancel the analysis
                         break;
                     }
                 }
@@ -8893,7 +9114,7 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
 
     DeleteObject (sorted);
     if (errMsg.sLength) {
-        HandleApplicationError (_String("Error in _Matrix::MultinomialSample(). ") & errMsg);
+        WarnError (_String("Error in _Matrix::MultinomialSample(). ") & errMsg);
         DeleteObject (result);
         return new _Matrix;
     }
@@ -8936,7 +9157,7 @@ _PMathObj   _Matrix::InverseWishartDeviate (_Matrix & df)
 
 
 
-    HandleApplicationError (_String ("ERROR in _Matrix::InverseWishartDeviate, ") & errMsg);
+    WarnError (_String ("ERROR in _Matrix::InverseWishartDeviate, ") & errMsg);
     return new _Matrix;
 }
 
@@ -8973,17 +9194,17 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
                 rd_transpose;
 
 
-    if (!(df.is_row () || df.is_column())) {
-        HandleApplicationError ("ERROR in _Matrix::WishartDeviate(), expecting row vector for degrees of freedom argument.");
+    if (!df.IsAVector(0)) {
+        WarnError (_String ("ERROR in _Matrix::WishartDeviate(), expecting row vector for degrees of freedom argument."));
         return new _Matrix (1,1,false,true);
-    } else if (df.is_column()) {
+    } else if (df.IsAVector(1)) {
         df.Transpose(); // convert column vector to row vector
     }
 
 
     if (decomp.GetHDim() == 0) {    // no second argument, perform Cholesky decomposition
         if (storageType != 1 || GetHDim() != GetVDim()) {
-            HandleApplicationError (_String ("ERROR in _Matrix::WishartDeviate(), expecting square numeric matrix."));
+            WarnError (_String ("ERROR in _Matrix::WishartDeviate(), expecting square numeric matrix."));
             return new _Matrix (1,1,false,true);
         } else {
             _Matrix     * cholesky = (_Matrix *) CholeskyDecompose();
@@ -9000,7 +9221,7 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
 
                 DeleteObject (cholesky);
             } else {
-                return (cholesky);  // kEmptyString _Matrix from error in CholeskyDecompose()
+                return (cholesky);  // emptyString _Matrix from error in CholeskyDecompose()
             }
         }
     }
@@ -9050,7 +9271,8 @@ _AssociativeList::_AssociativeList (void):avl(&theData)
 
 //_____________________________________________________________________________________________
 
-BaseRef _AssociativeList::makeDynamic (void) const {
+BaseRef _AssociativeList::makeDynamic (void)
+{
     _AssociativeList * newAL = new _AssociativeList ();
     newAL->Duplicate (this);
     return newAL;
@@ -9084,14 +9306,14 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, _Form
                 MStore (key, valueC, compute_keys_values);
             } else {
                 if (doErrors) {
-                    HandleApplicationError (((_String*)aPair(1))->Enquote() & " could not be evaluated");
+                    WarnError (*(_String*)aPair(1) & " could not be evaluated");
                 }
                 return false;
 
             }
         } else {
             if (doErrors) {
-                HandleApplicationError (((_String*)splitKeys(k))->Enquote() & " does not appear to specify a valid key:value pair");
+                WarnError (*(_String*)splitKeys(k) & " does not appear to specify a valid key:value pair");
             }
             return false;
         }
@@ -9107,11 +9329,10 @@ BaseRef _AssociativeList::toStr (unsigned long padding) {
 
 //_____________________________________________________________________________________________
 
-void _AssociativeList::Duplicate (BaseRefConst br) {
-    if (!SingleReference ()) {
-        HandleApplicationError(_String (__PRETTY_FUNCTION__).Enquote() & " called from an object with multiple references");
-    }
-    _AssociativeList const * copyMe = (_AssociativeList const*)br;
+void _AssociativeList::Duplicate (BaseRef br)
+{
+    nInstances = 1;
+    _AssociativeList * copyMe = (_AssociativeList*)br;
     theData.Duplicate (&copyMe->theData);
     avl.leftChild.Duplicate (&copyMe->avl.leftChild);
     avl.rightChild.Duplicate (&copyMe->avl.rightChild);
@@ -9141,7 +9362,7 @@ _PMathObj _AssociativeList::MAccess (_PMathObj p)
     }
     if (f>=0) {
         _PMathObj res = (_PMathObj)avl.GetXtra (f);
-        res->AddAReference();
+        res->nInstances++;
         return res;
     } else {
         return new _Constant (0.0);
@@ -9166,21 +9387,22 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
                     fID2 = FindBFFunctionName (*s2);
 
             if (fID < 0 || GetBFFunctionArgumentCount(fID) != 2L) {
-                HandleApplicationError ("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)");
+                WarnError ("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)");
             } else {
                 if (fID2 >= 0 && GetBFFunctionArgumentCount (fID2) != 1L) {
-                    HandleApplicationError ("The second argument in an iterator call for Associative Arrays must be either kEmptyString or a valid identifier of a function taking a single argument");
+                    WarnError ("The second argument in an iterator call for Associative Arrays must be either emptyString or a valid identifier of a function taking a single argument");
                 }
 
                 _Formula      testFormula,
                               actionFormula;
 
-                actionFormula.GetList() < new _Operation()
-                                        < new _Operation()
-                                        < new _Operation(kEmptyString,-fID-1);
+                actionFormula.GetList().AppendNewInstance(new _Operation());
+                actionFormula.GetList().AppendNewInstance(new _Operation());
+                actionFormula.GetList().AppendNewInstance(new _Operation(emptyString,-fID-1));
 
                 if (fID2 >= 0) {
-                    testFormula.GetList() < new _Operation() < new _Operation(kEmptyString,-fID2-1);
+                    testFormula.GetList().AppendNewInstance(new _Operation());
+                    testFormula.GetList().AppendNewInstance(new _Operation(emptyString,-fID2-1));
                 }
 
 
@@ -9195,26 +9417,25 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
                         DeleteObject (fKey->theString);
                         fKey->theString = (_String*)aKey->toStr();
                         if (fID2 >= 0) {
-                            testFormula.GetIthTerm(0)->SetNumber(fKey);
+                            ((_Operation**)testFormula.GetList().lData)[0]->SetNumber(fKey);
                             if (CheckEqual(testFormula.Compute()->Value(),0.0)) {
                                 cn = avl.Traverser (hist,ls);
                                 continue;
                             }
                         }
-                        actionFormula.GetIthTerm(0)->SetNumber(fKey);
-                        actionFormula.GetIthTerm(1)->SetNumber((_PMathObj)avl.GetXtra (cn));
+                        ((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(fKey);
+                        ((_Operation**)actionFormula.GetList().lData)[1]->SetNumber((_PMathObj)avl.GetXtra (cn));
                         actionFormula.Compute();
                         done ++;
                     }
                     cn = avl.Traverser (hist,ls);
                 }
                 DeleteObject (fKey);
-                
-                actionFormula.GetIthTerm(0)->SetNumber(nil);
-                actionFormula.GetIthTerm(1)->SetNumber(nil);
 
+                ((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(nil);
+                ((_Operation**)actionFormula.GetList().lData)[1]->SetNumber(nil);
                 if (fID2 >= 0) {
-                    testFormula.GetIthTerm(0)->SetNumber(nil);
+                    ((_Operation**)testFormula.GetList().lData)[0]->SetNumber(nil);
                 }
 
             }
@@ -9231,7 +9452,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
             if (index >= 0) {
               result = s->Equal (&AVL_ITERATOR_ORDER)? (new _FString(*((_String**)avl.dataList->lData)[index],false)): ((_PMathObj)avl.GetXtra (index)->makeDynamic());
             } else {
-                HandleApplicationError ("Index out of bounds in call to AVL iterator (by index)");
+                WarnError ("Index out of bounds in call to AVL iterator (by index)");
             }
         }
       
@@ -9239,7 +9460,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
         if (result)
           return result;
     } else {
-        HandleApplicationError ("Both arguments must be Strings (or a String Literal and a number) in an iterator call for Associative Arrays");
+        WarnError ("Both arguments must be Strings (or a String Literal and a number) in an iterator call for Associative Arrays");
     }
     return new _Constant (done);
 }
@@ -9280,7 +9501,6 @@ void _AssociativeList::DeleteByKey (_PMathObj p)
             for (long ki = 0; ki < keys2remove->lLength; ki++) {
                 avl.Delete ((_String*)(*keys2remove)(ki),true);
             }
-            DeleteObject (keys2remove);
         } else {
             _String * s = (_String*)p->toStr();
             avl.Delete (s,true);
@@ -9403,14 +9623,10 @@ _String* _AssociativeList::Serialize (unsigned long padding)  {
             doComma = true;
         }
     }
-    
-    DeleteObject (meKeys);
-    
     (*outString) << '\n';
     (*outString) << padder;
     (*outString) << "}";
     outString->Finalize ();
-    
     return outString;
 }
 
@@ -9422,21 +9638,8 @@ _PMathObj _AssociativeList::Compute (void)
 }
 
 //__________________________________________________________________________________
-_List* _AssociativeList::GetKeys (void) const {
-    
-    _List * keys = new _List;
-    
-    _SimpleList  hist;
-    long         ls,
-    cn = avl.Traverser (hist,ls,avl.GetRoot());
-    
-    while (cn >= 0) {
-        keys << theData (cn);
-        cn = avl.Traverser (hist,ls);
-    }
-    
-    return keys;
-    
+_List* _AssociativeList::GetKeys (void)  {
+    return (_List*)avl.dataList;
 }
 
 //_____________________________________________________________________________________________
@@ -9510,14 +9713,14 @@ void        _AssociativeList::Merge (_PMathObj p)
       }
     }
     else {
-        HandleApplicationError ("Associative list merge operation requires an associative list argument.");
+        WarnError ("Associative list merge operation requires an associative list argument.");
     }
 }
 
   //_____________________________________________________________________________________________
 _PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
   _String const * best_key = nil;
-  hyFloat best_value = do_mimimum ? INFINITY : -INFINITY;
+  _Parameter best_value = do_mimimum ? INFINITY : -INFINITY;
   
   if (avl.countitems()) {
   
@@ -9529,7 +9732,7 @@ _PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
       _PMathObj value = (_PMathObj)avl.GetXtra (cn);
       switch (value->ObjectClass()){
         case NUMBER:
-          hyFloat number = ((_Constant*)value)->Value();
+          _Parameter number = ((_Constant*)value)->Value();
           if (do_mimimum) {
             if (number < best_value) {
               best_value = number;
@@ -9556,7 +9759,7 @@ _PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
 
 //_____________________________________________________________________________________________
 _PMathObj        _AssociativeList::Sum (void) {
-    hyFloat sum = 0.;
+    _Parameter sum = 0.;
         
     _SimpleList  hist;
     long         ls,
@@ -9737,9 +9940,9 @@ void _GrowingVector::Trim (void) {
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-BaseRef     _GrowingVector::makeDynamic (void) const
+BaseRef     _GrowingVector::makeDynamic (void)
 {
-    _GrowingVector * result = new _GrowingVector;
+    _GrowingVector * result = (_GrowingVector*)checkPointer(new _GrowingVector);
     result->_Matrix::Duplicate (this);
     result->used = used;
     result->isColumn = isColumn;
@@ -9748,7 +9951,8 @@ BaseRef     _GrowingVector::makeDynamic (void) const
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-long        _GrowingVector::Store (hyFloat toStore) {
+long        _GrowingVector::Store (_Parameter toStore)
+{
     if (used < hDim) {
         theData[used++] = toStore;  // increment AFTER argument is sent to function
         return used-1UL;
@@ -9788,7 +9992,7 @@ void        _GrowingVector::Clear (void)
 }
 
 //_____________________________________________________________________________________________
-void _GrowingVector::Duplicate (BaseRefConst obj)
+void _GrowingVector::Duplicate (BaseRef obj)
 {
     _Matrix::Duplicate (obj);
     used = ((_GrowingVector*)obj)->used;
@@ -9809,7 +10013,7 @@ _NTupleStorage::_NTupleStorage (unsigned long N, unsigned long K)
     // now compute what dimension of the matrix will be required
     // handle the special cases first
 
-    if (storageK) { // not just the kEmptyString set
+    if (storageK) { // not just the emptyString set
         // populate C_NK_Lookup
         for (long i2=0; i2<=storageN; i2++) {
             C_NK_Lookup << 1;    // N choose 0 is always 1 for every N
@@ -9839,8 +10043,10 @@ _NTupleStorage::_NTupleStorage (unsigned long N, unsigned long K)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-BaseRef _NTupleStorage::makeDynamic (void) const {
+BaseRef _NTupleStorage::makeDynamic (void)
+{
     _NTupleStorage* copy = new _NTupleStorage;
+    checkPointer (copy);
     copy->_Matrix::Duplicate (this);
     copy->storageN = storageN;
     copy->storageK = storageK;
@@ -9880,14 +10086,14 @@ unsigned long   _NTupleStorage::Index (_SimpleList& kTuple)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-hyFloat  _NTupleStorage::DirectIndex (unsigned long directIndex)
+_Parameter  _NTupleStorage::DirectIndex (unsigned long directIndex)
 {
     return theData[directIndex];
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-unsigned long   _NTupleStorage::Store (hyFloat value, _SimpleList& kTuple)
+unsigned long   _NTupleStorage::Store (_Parameter value, _SimpleList& kTuple)
 {
     unsigned long myIndex = Index (kTuple);
     theData[myIndex] = value;
@@ -9896,7 +10102,7 @@ unsigned long   _NTupleStorage::Store (hyFloat value, _SimpleList& kTuple)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-hyFloat  _NTupleStorage::Retrieve (_SimpleList& kTuple)
+_Parameter  _NTupleStorage::Retrieve (_SimpleList& kTuple)
 {
     unsigned long myIndex = Index (kTuple);
     return theData[myIndex];

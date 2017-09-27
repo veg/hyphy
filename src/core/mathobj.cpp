@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon42@uwo.ca)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -39,236 +39,9 @@
 
 #include "parser.h"
 #include "mathobj.h"
-#include "global_things.h"
-
-using namespace hy_global;
 
 
 _MathObject  default_null_argument;
-
-_MathObject* _MathObject:: Add        (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand); 
-    return this;
-}
-_MathObject* _MathObject:: Sub        (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Minus      (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Sum        (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Mult       (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Div        (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: lDiv       (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: longDiv    (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Raise      (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-void _MathObject::         Assign     (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-}
-bool _MathObject::         Equal      (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return false;
-}
-_MathObject* _MathObject:: Abs        (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Sin        (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Cos        (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Tan        (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Exp        (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Log        (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Sqrt       (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Gamma      (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Erf        (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: LnGamma    (void)             {
-    HandleApplicationError (kErrorStringNullOperand);    // <-- added by afyp, February 7, 2007
-    return this;
-}
-_MathObject* _MathObject:: Beta       (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: IGamma     (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: CChi2      (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: IBeta      (_MathObject*,_MathObject*) {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Simplex    (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-
-_MathObject* _MathObject:: Simplify    (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-
-_MathObject* _MathObject:: Min        (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Max        (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: InvChi2    (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: ZCDF       (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Time       (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Arctan     (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Less       (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Random     (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: Greater    (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: LessEq     (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: GreaterEq  (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: AreEqual   (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: NotEqual   (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: LAnd       (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: LOr        (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: GammaDist  (_MathObject*,_MathObject*) {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: CGammaDist (_MathObject*,_MathObject*) {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: LNot       (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: TipCount   (void)             {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: BranchCount (void)            {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: TipName     (_MathObject*)    {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: BranchName  (_MathObject*)    {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: BranchLength(_MathObject*)    {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: RerootTree  (_MathObject*)    {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: TEXTreeString(_MathObject*) const {
-    HandleApplicationError (kErrorStringNullOperand);
-    return new _MathObject;
-}
-
-_MathObject* _MathObject:: PlainTreeString(_MathObject*,_MathObject*) {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-_MathObject* _MathObject:: FormatNumberString (_MathObject*,_MathObject*) {
-    HandleApplicationError (kErrorStringNullOperand);
-    return this;
-}
-hyFloat _MathObject::   Value (void)              {
-    HandleApplicationError (kErrorStringNullOperand);
-    return 0.0;
-}
-
 
 _MathObject* _MathObject:: _extract_argument (_List * arguments, unsigned long index, bool fill_in) const {
   if (arguments && index < arguments->lLength) {
@@ -455,16 +228,10 @@ _PMathObj _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
 
 //__________________________________________________________________________________
 
-BaseRef _MathObject::makeDynamic (void) const {
-    return new _MathObject;
+BaseRef _MathObject::makeDynamic (void)
+{
+    return(_PMathObj)checkPointer(new _MathObject);
 }
-
-//__________________________________________________________________________________
-
-void _MathObject::Duplicate (BaseRefConst) {
-}
-
-//__________________________________________________________________________________
 
 //SW: Why do we need a string for the type?
 _PMathObj _MathObject::Type (void) {

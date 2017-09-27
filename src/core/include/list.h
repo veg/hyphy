@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon42@uwo.ca)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -51,7 +51,8 @@ class _String;
 
 //_____________________________________________________________________________
 
-class _List:public _SimpleList {
+class _List:public _SimpleList
+{
 
     public:
 
@@ -67,17 +68,6 @@ class _List:public _SimpleList {
         * @param sL Length of the string
         */
         _List(unsigned long);
-
-  
-        /**
-          variadic initializer
-         
-         */
-        template <typename... T>
-        _List (const BaseRef& first, const T&... args) {
-          AppendObjectsToList(first);
-          AppendObjectsToList (args...);
-        };
 
 
         /**
@@ -118,7 +108,12 @@ class _List:public _SimpleList {
         */
         BaseRef operator () (const unsigned long);
 
-  
+        /**
+        * Element location functions - read only
+        * used to avoid (*list)(3) which are hard to read
+        */
+        virtual BaseRef GetItem     (const unsigned long) const;
+
         /**
          * Element location functions - read only
          * used to avoid (*list)(3) which are hard to read
@@ -131,11 +126,6 @@ class _List:public _SimpleList {
         */
         virtual const _List operator = (const _List&);
 
-        template <typename MAPPER> void ForEach (MAPPER mapper, long startAt = 0) const {
-          for (unsigned long i = startAt; i<lLength; i++) {
-            mapper ( ((BaseRef*)(lData))[i] );
-          }
-        }
 
         /**
         * Append operator
@@ -185,18 +175,6 @@ class _List:public _SimpleList {
         * @sa Equal()
         */
         bool operator == (_List const&) const;
-  
-  
-        template <typename... Args>
-        void AppendObjectsToList (BaseRef const& first, const Args&... args) {
-          AppendNewInstance (first);
-          AppendObjectsToList (args...);
-        }
-  
-        void AppendObjectsToList (BaseRef const& first) {
-          AppendNewInstance ((BaseRef)first);
-        }
-
 
         /**
         * Append reference to *this
@@ -228,15 +206,6 @@ class _List:public _SimpleList {
         */
         virtual long BinaryFindObject (BaseObj const *, long startAt = 0) const;
 
-        template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
-            for (unsigned long i = startAt; i<lLength; i++) {
-                if ( condition (((BaseRefConst*)(lData))[i]) ) {
-                    return i;
-                }
-            }
-            return kNotFound;
-        }
-
         /**
         * Insert an element into the sorted list preserving the sortedness
         */
@@ -248,11 +217,11 @@ class _List:public _SimpleList {
 
         /**
         */
-        virtual hyComparisonType Compare(long,long) const;
+        virtual long Compare(long,long) const;
 
         /**
         */
-        virtual hyComparisonType Compare(BaseObj const *,long) const;
+        virtual long Compare(BaseObj const *,long) const;
 
         /**
         * Return number of elements 
@@ -271,7 +240,7 @@ class _List:public _SimpleList {
 
         /**
         */
-        virtual void Duplicate(BaseRefConst);
+        virtual void Duplicate(const BaseRef);
 
         /**
         * Delete the item at a given poisiton
@@ -300,22 +269,29 @@ class _List:public _SimpleList {
         /**
         */
         virtual long FindPointer(BaseRef b, long startat = 0) {
-            return _SimpleList::Find((long)b, startat);
-       }
 
-        /**
-         * Element location functions - read only
-         * used to avoid (*list)(3) which are hard to read
-         */
-        template <typename INDEX> BaseRef GetItem     (INDEX index) const {
-          return ((BaseRef*)lData)[index];
+            return _SimpleList::Find((long)b, startat);
+
         }
 
-        template<typename INDEX, typename ...INDICES> BaseRef GetItem (INDEX i0, INDICES... rest) const {
-           return ((_List*)GetItem (i0))->GetItem (rest...);
-         }
- 
- 
+        /**
+        * Find the position of a search string in the list of strings (ONLY)
+        * \n Faster than the Find(), since it assumes string entries
+        * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
+        * @param s The substring to find
+        * @param startat The index to start searching from
+        * @param caseSensitive Pass true for a case sensitive search 
+        * @param upTo Upper limit for search index. 
+        * @return -1 if not found, the index if it is found.
+        * @sa Find()
+        * @sa BinaryFind()
+        */
+        virtual long FindString(BaseRef,long startat=0,bool caseSensitive=true,long upTo=-1);
+
+        /**
+        */
+        virtual long FreeUpMemory(long);
+
 
         /**
         * Populate a Simple List with integers incrementally.
@@ -342,7 +318,7 @@ class _List:public _SimpleList {
         * @return A pointer to the new string 
         * @sa Find()
         */
-        _String* Join(_String const& spacer, long startAt = 0, long endAt = -1) const;
+        BaseRef Join(BaseRefConst spacer, long startAt = 0, long endAt = -1);
 
         /**
         * Identical to << operator. Places new value at the end of the list.
@@ -365,7 +341,7 @@ class _List:public _SimpleList {
 
         /**
         */
-        virtual BaseRef makeDynamic(void) const;
+        virtual BaseRef makeDynamic(void);
 
         /**
         * Replace an item
