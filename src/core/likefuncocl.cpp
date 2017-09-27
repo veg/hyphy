@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -165,7 +165,7 @@ _SimpleList     updateNodes,
                 flatLeaves,
                 flatTree,
                 theFrequencies;
-_Parameter      *iNodeCache,
+hyFloat      *iNodeCache,
                 *theProbs;
 _SimpleList taggedInternals;
 _GrowingVector* lNodeResolutions;
@@ -175,7 +175,7 @@ void *node_cache, *nodRes_cache, *nodFlag_cache, *scalings_cache, *prob_cache, *
 
 void _OCLEvaluator::init(   long esiteCount,
                                     long ealphabetDimension,
-                                    _Parameter* eiNodeCache)
+                                    hyFloat* eiNodeCache)
 {
     clean = false;
     contextSet = false;
@@ -695,7 +695,7 @@ double _OCLEvaluator::oclmain(void)
 */
     long nodeCode, parentCode;
     bool isLeaf;
-    _Parameter* tMatrix;
+    hyFloat* tMatrix;
     int a1, a2;
     //printf("updateNodes.lLength: %i", updateNodes.lLength);
     //#pragma omp parallel for default(none) shared(updateNodes, flatParents, flatLeaves, flatCLeaves, flatTree, alphabetDimension, model, roundCharacters) private(nodeCode, parentCode, isLeaf, tMatrix, a1, a2)
@@ -1046,7 +1046,7 @@ double _OCLEvaluator::launchmdsocl( _SimpleList& eupdateNodes,
                                     _SimpleList& eflatCLeaves,
                                     _SimpleList& eflatLeaves,
                                     _SimpleList& eflatTree,
-                                    _Parameter* etheProbs,
+                                    hyFloat* etheProbs,
                                     _SimpleList& etheFrequencies,
                                     long* elNodeFlags,
                                     _SimpleList& etaggedInternals,

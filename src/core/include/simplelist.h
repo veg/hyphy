@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -160,8 +160,8 @@ class _SimpleList:public BaseObj {
         * @param j The second index to compare
         * @return -1 if i<j, 0 if i==j, or 1 if i>j 
         */
-        virtual long Compare(long,long) const;
-        virtual long Compare(BaseObj const*,long) const;
+        virtual hyComparisonType Compare(long,long) const;
+        virtual hyComparisonType Compare(BaseObj const*,long) const;
 
         long CountCommonElements(_SimpleList const&, bool=false) const;
 
@@ -190,7 +190,7 @@ class _SimpleList:public BaseObj {
         // delete the item at a given poisiton
         void Delete(long, bool=true);
 
-        virtual void Duplicate(BaseRef);
+        virtual void Duplicate(BaseRefConst);
 
         /**
         * Delete all duplicates in a sorted list
@@ -264,7 +264,7 @@ class _SimpleList:public BaseObj {
          * @param index Which item you want.
          * @return A long
          */
-        inline const long Get (long index) const {return lData[index];}
+        inline const long get (long index) const {return lData[index];}
 
         /**
         * Checks if list is identical to other list
@@ -291,8 +291,23 @@ class _SimpleList:public BaseObj {
         */
         virtual long Find(long, long startAt = 0) const;
 
+        template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
+          for (unsigned long i = startAt; i<lLength; i++) {
+            if ( condition (((long*)(lData))[i]) ) {
+              return i;
+            }
+          }
+          return kNotFound;
+        }
+
+        template <typename MAPPER> void Each (MAPPER mapper, long startAt = 0) const {
+          for (unsigned long i = startAt; i<lLength; i++) {
+            mapper ( ((long*)(lData))[i] );
+          }
+        }
+
         /**
-        * Same as find, but steps over indices 
+        * Same as find, but steps over indices
         * Example: SimpleList(1,3,5,7).Find(3,3) = -1 
         * @param s The integer to find
         * @param step The number to skip between searches 
@@ -325,7 +340,7 @@ class _SimpleList:public BaseObj {
 
         BaseRef ListToPartitionString(void) const;
 
-        virtual BaseRef makeDynamic(void);
+        virtual BaseRef makeDynamic(void) const;
 
         /**
         * SLKP: 20090508
@@ -466,7 +481,7 @@ class _SimpleList:public BaseObj {
         */
         void RequestSpace(long);
 
-        void Subtract(_SimpleList&, _SimpleList&);
+        void Subtract(_SimpleList const &, _SimpleList const&);
 
         /**
         * Swaps two positions  

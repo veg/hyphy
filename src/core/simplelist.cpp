@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,11 +37,6 @@
  
 */
 
-#include "hy_strings.h"
-#include "errorfns.h" 
-#include "list.h"
-#include "simplelist.h"
-#include "parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -50,9 +45,15 @@
 #include <limits.h>
 #include <stdarg.h>
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include "global_things.h"
+#include "hy_strings.h"
+#include "hy_string_buffer.h"
+#include "list.h"
+#include "simplelist.h"
+#include "parser.h"
+#include "mersenne_twister.h"
+
+using namespace hy_global;
 
 
 /*
@@ -62,17 +63,15 @@ Constructors
 */
 
 // Does nothing
-_SimpleList::_SimpleList ()
-{
+_SimpleList::_SimpleList () {
     Initialize(false);
 }
 
 //Data constructor (1 member list)
-_SimpleList::_SimpleList (long br)
-{
+_SimpleList::_SimpleList (long br) {
     lLength = 1;
     laLength = MEMORYSTEP;
-    lData = (long*)MemAllocate (laLength * sizeof(Ptr));
+    lData = (long*)MemAllocate (laLength * sizeof(hyPointer));
     ((long*)lData)[0]= br;
 }
 
@@ -88,8 +87,8 @@ _SimpleList::_SimpleList (unsigned long l)
 {
     lLength = 0;
     laLength = (l/MEMORYSTEP + 1)*MEMORYSTEP;
-    lData = (long*)MemAllocate (laLength * sizeof(Ptr));
-    memset (lData,0,laLength * sizeof(Ptr));
+    lData = (long*)MemAllocate (laLength * sizeof(hyPointer));
+    memset (lData,0,laLength * sizeof(hyPointer));
 }
 
 //Stack copy contructor
@@ -128,12 +127,12 @@ _SimpleList::_SimpleList (const long value1, const unsigned long number, ...)
 //Destructor
 _SimpleList::~_SimpleList(void)
 {
-    if (nInstances<=1) {
+    if (CanFreeMe()) {
         if (lData) {
             free (lData);
         }
     } else {
-        nInstances--;
+        RemoveAReference();
     }
 
 
@@ -167,7 +166,7 @@ long _SimpleList::operator () (const unsigned long i) const {
     if(i < lLength) {
         return lData[i];
     }
-    warnError("List index out of range");
+    HandleApplicationError ("List index out of range");
     return -1;
 }
 
@@ -178,9 +177,9 @@ const _SimpleList& _SimpleList::operator = (_SimpleList const &l)
     lLength  = l.lLength;
     laLength = l.laLength;
     if (laLength) {
-        checkPointer (lData = (long*)MemAllocate (laLength*sizeof (Ptr)));
+        lData = (long*)MemAllocate (laLength*sizeof (hyPointer));
         if (lLength) {
-            memcpy (lData,l.lData,lLength*sizeof (Ptr));
+            memcpy (lData,l.lData,lLength*sizeof (hyPointer));
         }
     }
 
@@ -247,7 +246,7 @@ long _SimpleList::GetElement (const long index) const {
     if ((const unsigned long) (-index) <= lLength) {
         return lData[lLength + index];
     }
-    warnError(_String("List index '") & (long)((const unsigned long) (-index)) & "' out of range in _SimpleList::GetElement on list of length " & long (lLength));    
+    HandleApplicationError (_String("List index '") & (long)((const unsigned long) (-index)) & "' out of range in _SimpleList::GetElement on list of length " & long (lLength));
     return 0;
 }
 
@@ -320,34 +319,34 @@ long _SimpleList::Sum (void) const{
     return sum;
 }
 
-long  _SimpleList::Compare (long i, long j) const {
+hyComparisonType  _SimpleList::Compare (long i, long j) const {
     long    v1 = ((long*)lData)[i],
             v2 = ((long*)lData)[j];
 
 
     if (v1<v2) {
-        return -1;
+        return kCompareLess;
     } else if (v1==v2) {
-        return 0;
+        return kCompareEqual;
     } else {
-        return 1;
+        return kCompareGreater;
     }
 
 
     //return ((long*)lData)[i]-((long*)lData)[j];
 }
 
-long  _SimpleList::Compare (BaseObj const *i, long j) const {
+hyComparisonType  _SimpleList::Compare (BaseObj const *i, long j) const {
     long    v1 = (long)i,
             v2 = ((long*)lData)[j];
 
 
     if (v1<v2) {
-        return -1;
+        return kCompareLess;
     } else if (v1==v2) {
-        return 0;
+        return kCompareEqual;
     } else {
-        return 1;
+        return kCompareGreater;
     }
 
     //return (long)i-((long*)lData)[j];
@@ -436,7 +435,7 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
 
 void  _SimpleList::Clear (bool completeClear)
 {
-    if (nInstances<=1L) {
+    if (CanFreeMe()) {
         lLength = 0UL;
         if (completeClear) {
             laLength = 0UL;
@@ -447,7 +446,7 @@ void  _SimpleList::Clear (bool completeClear)
             
         }
     } else {
-        nInstances--;
+        RemoveAReference();
     }
 }
 
@@ -458,7 +457,7 @@ void _SimpleList::DebugVarList(void)
         if (lData[e] >= 0) {
             _Variable * theV = LocateVar (lData[e]);
             if (theV) {
-                printf ("[%s]\n", theV->GetName()->getStr());
+                printf ("[%s]\n", theV->GetName()->get_str());
                 continue;
             }
         }
@@ -467,18 +466,20 @@ void _SimpleList::DebugVarList(void)
 }
 
 //Delete item at index (>=0)
-void  _SimpleList::Delete (long index, bool compact)
-{
+void  _SimpleList::Delete (long index, bool compact) {
     if (index>=0 && index<lLength) {
         lLength--;
         if (lLength-index) {
-            memmove ((Ptr)lData+sizeof(BaseRef)*(index),(Ptr)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
+            for (unsigned long k = index; k < lLength; k++) {
+                lData[k] = lData[k+1];
+            }
+            //memmove ((hyPointer)lData+sizeof(BaseRef)*(index),(hyPointer)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
         }
     }
     if (compact && laLength-lLength>MEMORYSTEP) {
         laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
         if (laLength) {
-            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hyPointer));
         } else {
             free (lData);
             lData = nil;
@@ -528,7 +529,7 @@ void  _SimpleList::DeleteList (const _SimpleList& toDelete)
     if (laLength-lLength>MEMORYSTEP) {
         laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
         if (laLength) {
-            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+            lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hyPointer));
         } else {
             free (lData);
             lData = nil;
@@ -625,15 +626,15 @@ void  _SimpleList::Displace (long start, long end, long delta)
     }
 }
 
-void _SimpleList::Duplicate(BaseRef theRef)
+void _SimpleList::Duplicate(BaseRefConst theRef)
 {
-    _SimpleList* l  = (_SimpleList*)theRef;
+    _SimpleList const* l  = (_SimpleList const*)theRef;
     lLength         = l->lLength;
     laLength        = l->laLength;
     lData           = l->lData;
     if (lData) {
-        checkPointer (lData = (long*)MemAllocate (laLength*sizeof (Ptr)));
-        memcpy ((char*)lData, (char*)l->lData, lLength*sizeof (Ptr));
+        lData = (long*)MemAllocate (laLength*sizeof (hyPointer));
+        memcpy ((char*)lData, (char*)l->lData, lLength*sizeof (hyPointer));
     }
 }
 
@@ -712,7 +713,7 @@ void _SimpleList::Initialize(bool doMemAlloc)
     lLength = 0UL;
     if (doMemAlloc) {
         laLength = MEMORYSTEP;
-        lData = (long*)MemAllocate (laLength * sizeof(Ptr));
+        lData = (long*)MemAllocate (laLength * sizeof(hyPointer));
     } else {
         laLength = 0;
         lData    = nil;
@@ -728,7 +729,7 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
 
         laLength+=incBy;
 
-        //memAlloc += sizeof(Ptr)*incBy;
+        //memAlloc += sizeof(hyPointer)*incBy;
 
         if (lData) {
             lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*));
@@ -763,7 +764,7 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
     } else {
       ((BaseRef*)lData)[insertAt]=br;
       if (pointer) {
-        br->nInstances++;
+        br->AddAReference();
       }
     }
 
@@ -772,7 +773,7 @@ void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool poi
 
 //Convert a list into a partition style string
 BaseRef _SimpleList::ListToPartitionString () const {
-    _String *result = new _String ((unsigned long)64,true);
+    _StringBuffer *result = new _StringBuffer ((unsigned long)64);
   
     for (unsigned long k=0UL; k<lLength; k++) {
         unsigned long m;
@@ -796,16 +797,11 @@ BaseRef _SimpleList::ListToPartitionString () const {
             }
         }
     }
-    result->Finalize();
     return result;
 }
 
-BaseRef _SimpleList::makeDynamic(void)
-{
+BaseRef _SimpleList::makeDynamic(void) const {
     _SimpleList * Res = new _SimpleList;
-    checkPointer(Res);
-    memcpy ((char*)Res, (char*)this, sizeof (_SimpleList));
-    Res->nInstances = 1;
     Res->lData = nil;
     Res->Duplicate (this);
     return Res;
@@ -813,7 +809,7 @@ BaseRef _SimpleList::makeDynamic(void)
 
 long _SimpleList::Max(void) const{
     long res = LONG_MIN;
-    for  (long e = 0; e < lLength; e++)
+    for  (long e = 0L; e < lLength; e++)
         if (lData[e] > res) {
             res = lData[e];
         }
@@ -1146,8 +1142,7 @@ _SimpleList* _SimpleList::Subset (unsigned long size, bool replacement)
 }
 
 // Create a permutation of the list's elements
-void  _SimpleList::Permute (long blockLength)
-{
+void  _SimpleList::Permute (long blockLength) {
     unsigned long blockCount = lLength/blockLength;
 
     if (blockLength>1) {
@@ -1249,18 +1244,18 @@ void _SimpleList::RecursiveIndexSort (long from, long to, _SimpleList* index)
          bottommove = 1, topmove = 1, temp,i, imiddleV = (*index)(middle);
     long *idata = (*index).quickArrayAccess();
     if (middle)
-        while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle)>=0)) {
+        while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle) != kCompareLess)) {
             bottommove++;
         }
 
     if (from<to)
-        while ((middle+topmove<=to)&&(Compare(middle+topmove,middle)<=0)) {
+        while ((middle+topmove<=to)&&(Compare(middle+topmove,middle) != kCompareGreater)) {
             topmove++;
         }
 
     // now shuffle
     for (i=from; i<middle-bottommove; i++) {
-        if (Compare(i,middle)>=0) {
+        if (Compare(i,middle) != kCompareLess) {
             temp = lData[middle-bottommove];
             lData[middle-bottommove] = lData[i];
             lData[i]=temp;
@@ -1268,14 +1263,14 @@ void _SimpleList::RecursiveIndexSort (long from, long to, _SimpleList* index)
             idata[middle-bottommove] = idata[i];
             idata[i]=temp;
             bottommove++;
-            while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle)>=0)) {
+            while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle)!= kCompareLess)) {
                 bottommove++;
             }
         }
     }
 
     for (i=middle+topmove+1; i<=to; i++) {
-        if (Compare(i,middle)<=0) {
+        if (Compare(i,middle)!= kCompareGreater) {
             temp = lData[middle+topmove];
             lData[middle+topmove] = lData[i];
             lData[i]=temp;
@@ -1283,7 +1278,7 @@ void _SimpleList::RecursiveIndexSort (long from, long to, _SimpleList* index)
             idata[middle+topmove] = idata[i];
             idata[i]=temp;
             topmove++;
-            while ((middle+topmove<=to)&&(Compare(middle+topmove,middle)<=0)) {
+            while ((middle+topmove<=to)&&(Compare(middle+topmove,middle)!= kCompareGreater)) {
                 topmove++;
             }
         }
@@ -1347,16 +1342,16 @@ void _SimpleList::RequestSpace (long slots)
     if (slots>laLength) {
         laLength=(slots/MEMORYSTEP+1)*MEMORYSTEP;
         if (lData) {
-            checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
+            lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*));
         } else {
-            checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
+            lData = (long*)MemAllocate(laLength*sizeof(void*));
         }
     }
 }
 
 // Compute the union of two sorted lists
 // Each repeat appears exactly once
-void    _SimpleList::Subtract (_SimpleList& l1, _SimpleList& l2)
+void    _SimpleList::Subtract (_SimpleList const& l1, _SimpleList const& l2)
 {
     if (lLength) {
         Clear();
@@ -1401,33 +1396,22 @@ void _SimpleList::Swap (long i, long j)
 }
 
 //Char* conversion
-BaseRef _SimpleList::toStr(unsigned long)
-{
+BaseRef _SimpleList::toStr(unsigned long) {
     if (lLength) {
-        unsigned long ssi = _String::storageIncrement,
-                      ma  = lLength*(1+log10((double)lLength));
+        unsigned long ma  = lLength*(1+log10((double)lLength));
 
-        if ( ma > ssi) {
-            _String::storageIncrement = ma;
-        }
-
-        _String * s = new _String (10L, true);
+        _StringBuffer * s = new _StringBuffer (MAX(32UL,ma));
 
         (*s) << "{";
 
         char c[32];
-        for (unsigned long i = 0UL; i<lLength; i++) {
+        for (unsigned long i = 0UL; i<lLength-1L; i++) {
             snprintf (c, sizeof(c),"%ld",lData[i]);
-            (*s) << c;
-            if (i<lLength-1L) {
-                (*s) << ',';
-            }
+            (*s) << c << ',';
         }
+        snprintf (c, sizeof(c),"%ld",lData[lLength-1L]);
+        (*s) << c << '}';
 
-        (*s) << '}';
-
-        s->Finalize();
-        _String::storageIncrement = ssi;
         return s;
     } else {
         return new _String ("{}");
@@ -1442,12 +1426,9 @@ void  _SimpleList::TrimMemory (void)
         laLength = lLength;
         if (laLength) {
             if (lData) {
-                lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(Ptr));
+                lData = (long*)MemReallocate ((char*)lData, laLength*sizeof(hyPointer));
             } else {
-                lData = (long*)MemAllocate (laLength*sizeof(Ptr));
-            }
-            if (!lData) {
-                checkPointer (lData);
+                lData = (long*)MemAllocate (laLength*sizeof(hyPointer));
             }
         } else {
             if (lData) {
@@ -1464,37 +1445,31 @@ Sort Methods
 ==============================================================
 */
 
-void  _SimpleList::Sort (bool ascending)
-{
-    if (lLength<10) { // use bubble sort
-        BubbleSort();
-    } else {
-        QuickSort(0,lLength-1);
-    }
+void  _SimpleList::Sort (bool ascending) {
+    if (lLength > 0UL) {
+      if (lLength<10UL) { // use bubble sort
+          BubbleSort();
+      } else {
+          QuickSort(0UL,lLength-1UL);
+      }
 
-    if (!ascending) {
-        long swap,i,j;
-        for (i=0, j=lLength-1; i<j; i++,j--) {
-            swap = ((long*)lData)[i];
-            ((long*)lData)[i]=((long*)lData)[j];
-            ((long*)lData)[j]=swap;
-        }
+      if (!ascending) {
+          for (unsigned long i=0UL, j = lLength - 1UL; i<j; i++,j--) {
+              EXCHANGE (((long*)lData)[i], ((long*)lData)[j]);
+          }
+      }
     }
 }
 
-void  _SimpleList::BubbleSort (void)
-{
-    bool done = false;
-    long swap,i,j;
+void  _SimpleList::BubbleSort (void) {
+    bool done = lLength == 0UL;
     while (!done) {
         done = true;
-        for (i=lLength-1,j=i-1; i>0; i--,j--) {
-            if (Compare(i,j)<0) {
+        for (unsigned long i=lLength-1UL,j=0UL; i>0UL; i--,j++) {
+            if (Compare(i,j) == kCompareLess) {
                 done = false;
-                swap = ((long*)lData)[i];
-                ((long*)lData)[i]=((long*)lData)[j];
-                ((long*)lData)[j]=swap;
-            }
+                EXCHANGE (((long*)lData)[i], ((long*)lData)[j]);
+             }
         }
     }
 }
@@ -1506,44 +1481,39 @@ void  _SimpleList::QuickSort (long from, long to)
          top = to,
          bottommove = 1,
          topmove = 1,
-         temp,
-         i;
+          i;
 
     if (middle)
         //while ((middle-bottommove>=from)&&(((long*)lData)[middle-bottommove]>middleV))
-        while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle)>0)) {
+        while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle) == kCompareGreater)) {
             bottommove++;
         }
 
     if (from<to)
         //while ((middle+topmove<=to)&&(((long*)lData)[middle+topmove]<middleV))
-        while ((middle+topmove<=to)&&(Compare(middle+topmove,middle)<0)) {
+        while ((middle+topmove<=to)&&(Compare(middle+topmove,middle) == kCompareLess)) {
             topmove++;
         }
     // now shuffle
     for (i=from; i<middle-bottommove; i++) {
-        if (Compare(i,middle)>0) {
-            temp = ((long*)lData)[middle-bottommove];
-            ((long*)lData)[middle-bottommove] = ((long*)lData)[i];
-            ((long*)lData)[i]=temp;
+        if (Compare(i,middle) == kCompareGreater) {
+            EXCHANGE (((long*)lData)[middle-bottommove],((long*)lData)[i]);
             bottommove++;
 
             //while ((middle-bottommove>=from)&&(((long*)lData)[middle-bottommove]>middleV))
-            while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle)>0)) {
+            while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle) == kCompareGreater)) {
                 bottommove++;
             }
         }
     }
 
     for (i=middle+topmove+1; i<=top; i++) {
-        if (Compare(i,middle)<0) {
-            temp = ((long*)lData)[middle+topmove];
-            ((long*)lData)[middle+topmove] = ((long*)lData)[i];
-            ((long*)lData)[i]=temp;
+        if (Compare(i,middle) == kCompareLess) {
+            EXCHANGE (((long*)lData)[middle+topmove], ((long*)lData)[i]);
             topmove++;
 
             //while ((middle+topmove<=to)&&(((long*)lData)[middle+topmove]<middleV))
-            while ((middle+topmove<=to)&&(Compare(middle+topmove,middle)<0)) {
+            while ((middle+topmove<=to)&&(Compare(middle+topmove,middle) == kCompareLess)) {
                 topmove++;
             }
         }
@@ -1551,16 +1521,12 @@ void  _SimpleList::QuickSort (long from, long to)
 
     if (topmove==bottommove) {
         for (i=1; i<bottommove; i++) {
-            temp = ((long*)lData)[middle+i];
-            ((long*)lData)[middle+i] = ((long*)lData)[middle-i];
-            ((long*)lData)[middle-i]=temp;
+            EXCHANGE (((long*)lData)[middle+i], ((long*)lData)[middle-i]);
         }
     } else if (topmove>bottommove) {
         long shift = topmove-bottommove;
         for (i=1; i<bottommove; i++) {
-            temp = ((long*)lData)[middle+i+shift];
-            ((long*)lData)[middle+i+shift] = ((long*)lData)[middle-i];
-            ((long*)lData)[middle-i]=temp;
+          EXCHANGE (((long*)lData)[middle+i+shift], ((long*)lData)[middle-i]);
         }
         for (i=0; i<shift; i++) {
             ((long*)lData)[middle+i]=((long*)lData)[middle+i+1];
@@ -1570,9 +1536,7 @@ void  _SimpleList::QuickSort (long from, long to)
     } else {
         long shift = bottommove-topmove;
         for (i=1; i<topmove; i++) {
-            temp = ((long*)lData)[middle-i-shift];
-            ((long*)lData)[middle-i-shift] = ((long*)lData)[middle+i];
-            ((long*)lData)[middle+i]=temp;
+          EXCHANGE (((long*)lData)[middle-i-shift], ((long*)lData)[middle+i]);
         }
         for (i=0; i<shift; i++) {
             ((long*)lData)[middle-i]=((long*)lData)[middle-i-1];
@@ -1589,32 +1553,29 @@ void  _SimpleList::QuickSort (long from, long to)
 }
 
 //TODO: This is a global. Should it be here?
-void SortLists (_SimpleList* ref, _SimpleList* index)
-{
-    if ((*ref).lLength!=index->lLength) {
-        return;
-    }
-    if ((*ref).lLength<=10) {
-        bool done = false;
+void SortLists (_SimpleList* ref, _SimpleList* index) {
+  if (ref->lLength > 0UL) {
+      if (ref->lLength!=index->lLength) {
+          return;
+      }
+      if ((*ref).lLength<=10UL) {
+          bool done = false;
 
-        while (!done) {
-            done = true;
-            for (long i=1; i<(*ref).lLength; i++) {
-                if (ref->Compare(i-1,i)>0) {
-                    long swap;
-                    swap = ((long*)ref->lData)[i];
-                    ((long*)ref->lData)[i]=((long*)ref->lData)[i-1];
-                    ((long*)ref->lData)[i-1]=swap;
-                    swap = ((long*)index->lData)[i];
-                    ((long*)index->lData)[i]=((long*)index->lData)[i-1];
-                    ((long*)index->lData)[i-1]=swap;
-                    done = false;
+ 
+          while (!done) {
+              done = true;
+              for (unsigned long i=ref->lLength-1UL,j=0UL; i>0UL; i--,j++) {
+                if (ref->Compare(i,j) == kCompareLess) {
+                  done = false;
+                  EXCHANGE (((long*)ref->lData)[i],((long*)ref->lData)[j]);
+                  EXCHANGE (((long*)index->lData)[i],((long*)index->lData)[j]);
                 }
-            }
-        }
-    } else {
-        (*ref).RecursiveIndexSort (0, (*ref).lLength-1,index);
-    }
+              }
+          }
+      } else {
+          (*ref).RecursiveIndexSort (0, (*ref).lLength-1UL,index);
+      }
+  }
 }
 
 /*

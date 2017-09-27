@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
- 
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,7 +34,7 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
   //#define _UBER_VERBOSE_LF_DEBUG
@@ -52,9 +52,12 @@
 #include "category.h"
 #include "function_templates.h"
 #include "global_object_lists.h"
+#include "global_things.h"
 #include "time_difference.h"
+#include "scfg.h"
 
 using namespace hyphy_global_objects;
+using namespace hy_global;
 
   //#define _UBER_VERBOSE_LF_DEBUG 1
 
@@ -73,19 +76,7 @@ using namespace hyphy_global_objects;
 #endif
 
 
-#ifdef __WINDOZE__
-#include     "windows.h"
-#endif
 
-#ifdef __MAC__
-#include     "timer.h"
-extern bool handleGUI(bool);
-#endif
-
-
-#ifdef  _SLKP_LFENGINE_REWRITE_
-#include "scfg.h"
-#endif
 
 void    DecideOnDivideBy (_LikelihoodFunction*);
 
@@ -93,39 +84,12 @@ long         siteEvalCount  =   0,
              divideBy      =   10000000;
 
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-    #if !defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
-        #include     "HYTreePanel.h"
-        extern       _HYTreePanel*  feedbackTreePanel;
-    #endif
 
-
-#endif
 
 #ifdef MDSOCL
 	_OCLEvaluator *OCLEval;
 #endif
 
-#ifdef __MP__
-    #include <pthread.h>
-    struct   WancReleafTask {
-        _TheTree    *tree;
-
-        long        startAt,
-                    endAt,
-                    *doneSites,
-                    *lastDone,
-                    totalUniqueSites,
-                    threadIndex;
-
-        _DataSetFilter*
-        dsf;
-
-        _List      *dupList;
-        _Formula   *fla;
-
-    };
-#endif
 
 
 
@@ -140,14 +104,13 @@ long            MPICategoryCount,
                 transferrableVars,
                 hyphyMPIOptimizerMode = _hyphyLFMPIModeNone;
 
-extern          int       _hy_mpi_node_rank;
 
 _String         mpiLoopSwitchToOptimize ("_CONTEXT_SWITCH_MPIPARTITIONS_"),
                 mpiLoopSwitchToBGM      ("_BGM_SWITCH_");
 
 #endif
 
-extern  _Parameter  machineEps;
+extern  hyFloat  machineEps;
 
 #define     SQR(A) (A)*(A)
 #define     GOLDEN_RATIO 1.618034
@@ -162,14 +125,11 @@ extern  _Parameter  machineEps;
 #define   PERTURBATION_OF_ZERO    0.0
 
 long      likeFuncEvalCallCount = 0L,
-          systemCPUCount        = 1L,
           lockedLFID         = -1L;
 
 #define  STD_GRAD_STEP 1.0e-6
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+
 
 
 // some string constants
@@ -197,16 +157,12 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 dataFileGapWidth                ("DATA_FILE_GAP_WIDTH"),
                                 categorySimulationMethod        ("CATEGORY_SIMULATION_METHOD"),
                                 useInitialDistanceGuess         ("USE_DISTANCES"),
-                                randomSeed                      ("RANDOM_SEED"),
-                                assignedSeed                    ("ASSIGNED_SEED"),
                                 covariancePrecision             ("COVARIANCE_PRECISION"),
                                 cacheSubtrees                   ("CACHE_SUBTREES"),
                                 likeFuncCountVar                ("LF_CALL_COUNT"),
                                 doShuffleOrder                  ("SHUFFLE_ORDER_OF_PARAMETERS"),
                                 forceDistanceEstimates          ("FORCE_DISTANCE_ESTIMATES"),
                                 useDuplicateMatrixCaching       ("USE_DUPLICATE_MATRIX_CACHING"),
-                                siteWiseMatrix                  ("SITE_LIKELIHOOD"),
-                                blockWiseMatrix                 ("BLOCK_LIKELIHOOD"),
                                 useFullMST                      ("USE_MST_HEURISTIC"),
                                 stateCountMatrix                ("STATE_COUNT_MATRIX"),
                                 wStateCountMatrix               ("WSTATE_COUNT_MATRIX"),
@@ -243,7 +199,7 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 addLFSmoothing                  ("LF_SMOOTHING_SCALER"),
                                 reduceLFSmoothing               ("LF_SMOOTHING_REDUCTION");
 
-    
+
 extern _String useNexusFileData,
        VerbosityLevelString,
        acceptRootedTrees;
@@ -259,7 +215,7 @@ _SimpleList Fibonacci;
 
 
 
-_Parameter  precision,
+hyFloat  precision,
             optimizationPrecMethod,
             maxItersPerVar,
             dFPrintFormat,
@@ -288,8 +244,8 @@ extern      _List
 dataSetList,
 likeFuncList;
 
-bool        CheckOneDStep   (_Parameter&,_Parameter,_Parameter);
-bool        CheckEqual      (_Parameter, _Parameter);
+bool        CheckOneDStep   (hyFloat&,hyFloat,hyFloat);
+bool        CheckEqual      (hyFloat, hyFloat);
 
 _Variable*  siteWiseVar     = nil,
             *  blockWiseVar = nil;
@@ -298,7 +254,7 @@ _Variable*  siteWiseVar     = nil,
 _String  *  progressFileString = nil;
 
 node<long>* DepthWiseStepTraverserLevel  (long&, node<long>* root);
-_Parameter  myLog (_Parameter);
+hyFloat  myLog (hyFloat);
 
 
 //__________________________________________________________________________________
@@ -317,7 +273,7 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
     }
 
 
-    
+
 #ifdef  _OPENMP
     lf->SetThreadCount (1);
 #endif
@@ -326,17 +282,19 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
     lf->Compute           ();
 
 
-    _Parameter            tdiff = timer.TimeSinceStart();
+
+hyFloat            tdiff = timer.TimeSinceStart();
 #ifdef  _OPENMP
 #ifdef  __HYPHYMPI__ 
     if (systemCPUCount > 1 && _hy_mpi_node_rank == 0) {
 #else
     if (systemCPUCount > 1) {
 #endif
-        _Parameter          minDiff = tdiff;
+
+        hyFloat          minDiff = tdiff;
         long                bestTC  = 1;
 
-        for (long k = 2; k <= systemCPUCount; k++) {
+        for (long k = 2; k <= system_CPU_count; k++) {
             lf->SetThreadCount              (k);
             TimeDifference timer;
             lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex));
@@ -363,16 +321,40 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
 
 #if defined  __UNIX__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
 
-void        UpdateOptimizationStatus (_Parameter, long, char, bool, _String * fileName = nil);
+void        UpdateOptimizationStatus (hyFloat, long, char, bool, _String * fileName = nil);
+
+//_______________________________________________________________________________________
+
+_CustomFunction::_CustomFunction (_String const & arg, _VariableContainer const * context ) {
+    _String body        (arg),
+            error ;
+
+    _FormulaParsingContext fpc (&error, context);
+
+    if (Parse (&myBody, body, fpc, nil) == HY_FORMULA_EXPRESSION) {
+        _SimpleList myVars;
+        _AVLList al (&myVars);
+        myBody.ScanFForVariables(al,true,false,false);
+        al.ReorderList();
+
+        for (unsigned long k=0UL; k<myVars.lLength; k++) {
+            if (LocateVar(myVars.lData[k])->IsIndependent()) {
+                indexInd << myVars.lData[k];
+            }
+        }
+    } else {
+        throw (_String ("Error while parsing ") & arg.Enquote() & " in CustomFunction " & error);
+    }
+}
 
 //__________________________________________________________________________________
 
-void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, bool optimization, _String* fileName)
+void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool optimization, _String* fileName)
 {
     static long     lCount;
     static long     lastDone;
     static double   elapsed_time = 0.0;
-    static _Parameter
+    static hyFloat
     update_quantum = 0.0;
     static _String  userReportString;
     static _String  userStatusString;
@@ -382,7 +364,7 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
     _FString*       t;
 
     static          TimeDifference timer;
-  
+
     if (init==0) {
         lCount          = likeFuncEvalCallCount;
         timer.Start();
@@ -393,9 +375,9 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
         userTimeStart   = clock();
         checkParameter   (optimizationStringQuantum, update_quantum, 0.0);
         t = (_FString*)FetchObjectFromVariableByType (&optimizationStringTemplate,STRING);
-        userReportString = t?*t->theString:emptyString;
+        userReportString = t?*t->theString:kEmptyString;
         t = (_FString*)FetchObjectFromVariableByType (&optimizationStringStatus,STRING);
-        userStatusString = t?*t->theString:emptyString;
+        userStatusString = t?*t->theString:kEmptyString;
         elapsed_time     = 0.0;
     } else if (init==1) {
         double timeDiff = timer.TimeSinceStart();
@@ -423,20 +405,19 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
                 snprintf (buffer, sizeof(buffer), "%15.10g", (double)max);
                 reportString = reportString.Replace ("$2", buffer, true);
             } else {
-                reportString = reportString.Replace ("$2", emptyString, true);
+                reportString = reportString.Replace ("$2", kEmptyString, true);
             }
             reportString = reportString.Replace ("$3", _String(pdone), true);
-            _String       tStamp;
-            tStamp.FormatTimeString(elapsed_time);
+            _String       tStamp (FormatTimeString(elapsed_time));
             reportString = reportString.Replace ("$4",tStamp, true);
             if (elapsed_time) {
-                snprintf (buffer,sizeof(buffer),"%8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*(elapsed_time)));
+                snprintf (buffer,sizeof(buffer),"%8.4g", (clock()-userTimeStart)/((hyFloat)CLOCKS_PER_SEC*(elapsed_time)));
                 reportString = reportString.Replace ("$6", buffer, true);
                 snprintf (buffer, sizeof(buffer), "%8.4g", (likeFuncEvalCallCount-lCount)/elapsed_time);
                 reportString = reportString.Replace ("$5", buffer, true);
             } else {
-                reportString = reportString.Replace ("$5", emptyString, true);
-                reportString = reportString.Replace ("$6", emptyString, true);
+                reportString = reportString.Replace ("$5", kEmptyString, true);
+                reportString = reportString.Replace ("$6", kEmptyString, true);
             }
 
             if (outFile) {
@@ -457,7 +438,7 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
                     long written = snprintf (buffer,1024,"Current Max: %-14.8g (%ld %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, (likeFuncEvalCallCount-lCount)/elapsed_time);
 
                     if (elapsed_time) {
-                        snprintf (buffer+written,1024-written, "CPU Load: %-8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*elapsed_time));
+                        snprintf (buffer+written,1024-written, "CPU Load: %-8.4g", (clock()-userTimeStart)/((hyFloat)CLOCKS_PER_SEC*elapsed_time));
                     }
                 }
             } else {
@@ -494,7 +475,7 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
 
 //__________________________________________________________________________________
 
-_Parameter myLog (_Parameter arg)
+hyFloat myLog (hyFloat arg)
 {
     return (arg>0.0)?log(arg):-1000000.;
 }
@@ -530,7 +511,7 @@ void _LikelihoodFunction::Init (void)
     branchCaches                            = nil;
     parameterValuesAndRanges                = nil;
     optimizatonHistory                      = nil;
-  
+
 #ifdef  _OPENMP
     lfThreadCount       = 1L;
 #ifdef  __HYPHYMPI__
@@ -538,7 +519,8 @@ void _LikelihoodFunction::Init (void)
         SetThreadCount      (1L);
     else
 #endif
-    SetThreadCount      (systemCPUCount);
+
+ SetThreadCount      (system_CPU_count);
 #endif
 
 }
@@ -605,9 +587,9 @@ _String const * _LikelihoodFunction::GetIthFrequenciesName (long f) const {
 bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, bool leafScan) // from triplets
 {
     _TheTree*       t = GetIthTree(f);
-  
+
     _TreeIterator   ti (t, _HY_TREE_TRAVERSAL_POSTORDER | _HY_TREE_TRAVERSAL_SKIP_ROOT);
-  
+
     _DataSetFilter  * df = GetIthFilterMutable (f);
     long            dfDim = df->GetDimension(true);
 
@@ -618,21 +600,21 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
             tips.AppendNewInstance (new _String (iterator->ContextFreeName ()));
         }
         if (iterator->GetModelIndex () == HY_NO_MODEL) {
-            WarnOrStoreError (errorMessage, _String ("Model is not associated with the node:") & iterator->ContextFreeName());
+            HandleOrStoreApplicationError (errorMessage, _String ("Model is not associated with the node:") & iterator->ContextFreeName());
             return false;
         } else if (iterator->GetModelDimension() != dfDim) {
             _String warnMsg ("The dimension of the transition matrix at node ");
             warnMsg = warnMsg & iterator->ContextFreeName ()
                       &" is not equal to the state count in the data filter associated with the tree.";
-            WarnOrStoreError (errorMessage, warnMsg);
+            HandleOrStoreApplicationError (errorMessage, warnMsg);
             return false;
         }
     }
-  
+
     // now that "tips" contains all the names of tree tips we can
     // scan thru the names in the datafilter and check whether there is a 1-1 match
     if ((t->IsDegenerate()?2:tips.lLength)!=df->NumberSpecies()) {
-        WarnOrStoreError (errorMessage,_String("The number of tree tips in ")&*t->GetName()& " (" & _String((long)tips.lLength)
+        HandleOrStoreApplicationError (errorMessage,_String("The number of tree tips in ")&*t->GetName()& " (" & _String((long)tips.lLength)
                    & ") is not equal to the number of species in the data filter associated with the tree " &
                    '(' & _String((long)df->NumberSpecies()) & ")." );
         return false;
@@ -648,14 +630,14 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
         j = df->FindSpeciesName (tips, tipMatches);
 
         if (j != tips.lLength) { // try numeric match
-            _Parameter      doNum = 0.0;
+            hyFloat      doNum = 0.0;
             checkParameter (tryNumericSequenceMatch, doNum, 0.0);
             if (doNum>0.5) {
-            
+
                 try {
                     tipMatches.Clear();
-                
-                    
+
+
                     for (j=0L; j<tips.lLength; j++) {
                         _String *thisName = (_String*)tips(j);
                         long numeric_value = atol (thisName->sData);
@@ -665,19 +647,19 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
                             throw (j);
                         }
                     }
-                
+
                     if (j==tips.lLength) {
                         if (tipMatches.Find(0L) < 0) // map to indexing from 0
                             tipMatches.Offset (-1L);
 
                         _SimpleList const *dfMap = (_SimpleList const*)df->GetMap();
-                    
+
                         if (dfMap) {
                             for (unsigned long k = 0UL; k < tips.lLength; k++) {
                                 tipMatches.lData[k] = dfMap->lData[tipMatches.lData[k]];
                             }
                         }
-                    } 
+                    }
                 } catch (unsigned long i) {
                     j = -1L;
                 }
@@ -694,7 +676,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
                 for (unsigned long lfID = 0UL; lfID < likeFuncList.lLength; lfID++) {
                     _LikelihoodFunction* lfp = (_LikelihoodFunction*)likeFuncList(lfID);
                     if (lfp && lfp != this && lfp->DependOnDF (theDataFilters.lData[f])) {
-                        WarnOrStoreError (errorMessage, _String ("Cannot reuse the filter '") & *GetObjectNameByType (HY_BL_DATASET_FILTER, theDataFilters.lData[f], false) &
+                        HandleOrStoreApplicationError (errorMessage, _String ("Cannot reuse the filter '") & *GetObjectNameByType (HY_BL_DATASET_FILTER, theDataFilters.lData[f], false) &
                                    "' because it is already being used by likelihood function '" &
                                    *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID, false) & "', and the two likelihood functions impose different leaf-to-sequence mapping. " &
                                    "Create a copy the filter and pass it to the second likelihood function to resolve this issue.");
@@ -708,10 +690,10 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
         } else {
             _String warnMsg = _String ("The leaf of the tree:") & *t->GetName() &" labeled " &*(_String*)tips(j)
                               &" had no match in the data. Please make sure that all leaf names correspond to a sequence name in the data file.";
-            _Parameter asmm = 0.0;
+            hyFloat asmm = 0.0;
             checkParameter (allowSequenceMismatch, asmm, 0.0);
             if (asmm<.5) {
-                WarnError (warnMsg);
+                HandleApplicationError (warnMsg);
                 return false;
             }
             ReportWarning (warnMsg);
@@ -756,15 +738,15 @@ void     _LikelihoodFunction::Rebuild (bool rescan_parameters) {
 void     _LikelihoodFunction::Clear (void)
 {
     DeleteCaches  ();
-  
+
     unsigned long partition_count = CountObjects(kLFCountPartitions);
-  
+
     theTrees.Clear();
-  
+
     for (unsigned long i = 0UL; i < partition_count; i++) {
         UnregisterChangeListenerForDataFilter(theDataFilters.GetElement(i), this);
     }
-  
+
     theDataFilters.Clear();
     theProbabilities.Clear();
     indexInd.Clear();
@@ -790,7 +772,7 @@ void     _LikelihoodFunction::Clear (void)
         delete (mstCache);
         mstCache = nil;
     }
-  
+
     if (optimizatonHistory) {
       DeleteObject(optimizatonHistory);
       optimizatonHistory = nil;
@@ -804,7 +786,9 @@ void     _LikelihoodFunction::Clear (void)
         SetThreadCount      (1L);
     else
 #endif
-        SetThreadCount      (systemCPUCount);
+
+    SetThreadCount      (system_CPU_count);
+
 #endif
 }
 
@@ -814,15 +798,15 @@ void     _LikelihoodFunction::Clear (void)
 void     _LikelihoodFunction::AllocateTemplateCaches (void) {
   partScalingCache.Clear();
   DeleteObject(bySiteResults);
-  
+
   if (templateKind < 0 || templateKind == _hyphyLFComputationalTemplateBySite) {
-    
+
     long max_filter_size = 0L;
     for (unsigned long f=0UL; f<theDataFilters.lLength; f++) {
       StoreIfGreater(max_filter_size, GetIthFilter (f)->GetSiteCountInUnits());
     }
 
-    
+
 #ifdef __HYPHYMPI__
     bySiteResults = new _Matrix    (theTrees.lLength+3,max_filter_size,false,true);
 #else
@@ -839,25 +823,25 @@ void     _LikelihoodFunction::AllocateTemplateCaches (void) {
 
 bool     _LikelihoodFunction::CheckIthPartition(unsigned long partition, _String * errorString, _String const * df, _String const * tree, _String const * efv) {
   _DataSetFilter const*     filter = GetIthFilter (partition);
-  
+
   long filter_dimension          = filter->GetDimension(true),
        freq_dimension           = GetIthFrequencies(partition)->GetHDim ();
-  
+
   if (freq_dimension  != filter_dimension) {
-   
+
     if (df && efv) {
-      WarnOrStoreError(errorString,_String("The dimension of the equilibrium frequencies vector ") &
+      HandleOrStoreApplicationError(errorString,_String("The dimension of the equilibrium frequencies vector ") &
                efv->Enquote() & " (" & freq_dimension & ") doesn't match the number of states in the dataset filter (" & filter_dimension & ") " & df->Enquote());
     }
     else {
-      WarnOrStoreError (errorString, _String ("Incompatible dimensions between the filter (") & filter_dimension & ") and the frequencies matrix (" & freq_dimension & ")");
+      HandleOrStoreApplicationError (errorString, _String ("Incompatible dimensions between the filter (") & filter_dimension & ") and the frequencies matrix (" & freq_dimension & ")");
     }
     return false;
   }
-  
+
   if (filter->IsNormalFilter() == false) { // do checks for the numeric filter
     if (filter->NumberSpecies() != 3UL || filter_dimension != 4L) {
-          WarnOrStoreError(errorString,_String ("Datafilters with numerical probability vectors must contain exactly three sequences and contain nucleotide data. Had ") & (long) filter->NumberSpecies() & " sequences on alphabet of dimension " & (long) filter_dimension & '.');
+          HandleOrStoreApplicationError(errorString,_String ("Datafilters with numerical probability vectors must contain exactly three sequences and contain nucleotide data. Had ") & (long) filter->NumberSpecies() & " sequences on alphabet of dimension " & (long) filter_dimension & '.');
       return false;
     }
   }
@@ -880,7 +864,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
 
     Clear ();
     long i = 0L;
-  
+
     for (; i< (long)triplets.lLength-2L; i+=3L) {
         _String  object_name;
         long     objectID;
@@ -888,15 +872,15 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
         // add datasetfilter
         object_name = AppendContainerName (*(_String*)triplets(i), theP);
         objectID   = FindDataFilter (object_name);
-      
+
       //printf ("[_LikelihoodFunction::Construct] %s / %s\n", object_name.sData, GetFilterName(objectID)->sData);
-      
+
         if (objectID < 0) {
-            WarnError (_String("Could not locate a datafilter ")& object_name.Enquote());
+            HandleApplicationError (_String("Could not locate a datafilter ")& object_name.Enquote());
             return false;
         } else {
           if (!RegisterChangeListenerForDataFilter(objectID,this)) {
-            WarnError (_String("Could register likelihood function as listener for ")& object_name.Enquote());
+            HandleApplicationError (_String("Could register likelihood function as listener for ")& object_name.Enquote());
             return false;
           }
           theDataFilters<<objectID;
@@ -906,7 +890,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
         object_name = AppendContainerName (*(_String*)triplets(i+1), theP);
         _TheTree   * treeVar = (_TheTree*)FetchObjectFromVariableByType (&object_name, TREE);
         if (!treeVar) {
-            WarnError (_String("Could not locate a tree variable named ")& object_name.Enquote());
+            HandleApplicationError (_String("Could not locate a tree variable named ")& object_name.Enquote());
             return false;
         } else {
             theTrees<<treeVar->GetAVariable();
@@ -917,31 +901,31 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
         objectID   = LocateVarByName(object_name);
         _Matrix*   efv              = (_Matrix*)FetchObjectFromVariableByTypeIndex(objectID, MATRIX);
         if (!efv) {
-            WarnError (_String("Could not locate a frequencies matrix named ") & object_name.Enquote());
+            HandleApplicationError (_String("Could not locate a frequencies matrix named ") & object_name.Enquote());
             return false;
         } else {
             theProbabilities<<variableNames.GetXtra(objectID);
         }
-    
+
       if (!CheckIthPartition (theTrees.lLength-1L, nil, (_String*)triplets.GetItem(i), (_String*)triplets.GetItem(i+1), (_String*)triplets.GetItem(i+2))) {
         return false;
       }
- 
+
     }
     if (i && i == triplets.lLength-1) {
         _String templateFormulaString (ProcessLiteralArgument((_String*)triplets(i),theP));
 
         if (templateFormulaString.sLength) {
-            siteWiseVar  = CheckReceptacle (&siteWiseMatrix,emptyString),
-            blockWiseVar = CheckReceptacle (&blockWiseMatrix,emptyString);
+            siteWiseVar  = CheckReceptacle (&hy_env::sitewise_matrix,kEmptyString),
+            blockWiseVar = CheckReceptacle (&hy_env::blockwise_matrix,kEmptyString);
 
             _String    copyString         (templateFormulaString);
             // do this because _Formula constructor will consume the string parameter
             _Formula   templateFormula    (templateFormulaString,theP);
 
 
-            if (templateFormula.IsEmpty()|| terminateExecution) {
-                WarnError (copyString  & " is not a valid formula specification in call to LikelihoodFunction");
+            if (templateFormula.IsEmpty()|| terminate_execution) {
+                HandleApplicationError (copyString.Enquote()  & " is not a valid formula specification in call to LikelihoodFunction");
                 Clear     ();
                 return    false;
             }
@@ -976,7 +960,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                 if (templateKind == _hyphyLFComputationalTemplateNone)
                     // error condition here
                 {
-                    WarnError ( copyString & " must depend either on " & siteWiseMatrix & " or " & blockWiseMatrix & " (but not on both). Alternatively, it could be a reference to a HM category variable or a user defined BL function." );
+                    HandleApplicationError ( copyString & " must depend either on " & hy_env::sitewise_matrix.Enquote() & " or " & hy_env::blockwise_matrix.Enquote() & " (but not on both). Alternatively, it could be a reference to a HM category variable or a user defined BL function." );
                     Clear     ();
                     return false;
                 }
@@ -1000,11 +984,11 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
             if (templateKind==_hyphyLFComputationalTemplateBySite || templateKind==_hyphyLFComputationalTemplateByPartition) {
                 _Matrix         testMx  (theTrees.lLength,1,false,true),
                                 testMx2 (theTrees.lLength,1,false,true);
-                                
+
                 for (long testCount = 0; testCount<25; testCount++) {
                     for (unsigned long di = 0; di < theTrees.lLength; di++) {
-                        testMx.theData[di]  = genrand_int32 ()/(_Parameter)RAND_MAX_32;
-                        testMx2.theData[di] = (genrand_int32 ()/(_Parameter)RAND_MAX_32)*(-1.);
+                        testMx.theData[di]  = genrand_real1 ();
+                        testMx2.theData[di] = -genrand_real1 ();
                     }
 
                     siteWiseVar->SetValue  (&testMx);
@@ -1012,7 +996,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
 
                     _PMathObj    testResult = templateFormula.Compute();
                     _String     errMessage;
-                    if (!testResult || terminateExecution) {
+                    if (!testResult || terminate_execution) {
                         errMessage = _String ("Failed to evaluate computation template formula (")& copyString & ") in LikelihoodFunction constructor.";
                     } else {
                         if (testResult->ObjectClass() == NUMBER) {
@@ -1025,7 +1009,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                     }
 
                     if (errMessage.sLength) {
-                        WarnError (errMessage);
+                        HandleApplicationError (errMessage);
                         Clear ();
                         return false;
                     }
@@ -1042,13 +1026,13 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
         checkDupTreeIDs.Sort ();
         for (long i=1; i<checkDupTreeIDs.lLength; i++)
             if (checkDupTreeIDs.lData[i] == checkDupTreeIDs.lData[i-1]) {
-                WarnError (_String("The same tree - ")&*LocateVar(checkDupTreeIDs.lData[i])->GetName() &
+                HandleApplicationError (_String("The same tree - ")&*LocateVar(checkDupTreeIDs.lData[i])->GetName() &
                            " - can't be used in multiple partitions in the same likelihood function. You should create an independent tree for each partition, and constrain the parameters instead.");
                 return false;
             }
     } else {
         if (theTrees.lLength == 0) {
-            WarnError ("Too few arguments in call to _LikelihoodFunction::Construct");
+            HandleApplicationError ("Too few arguments in call to _LikelihoodFunction::Construct");
             Clear ();
             return false;
 
@@ -1084,7 +1068,7 @@ _LikelihoodFunction::_LikelihoodFunction (_LikelihoodFunction& lf) // stack copy
 
 //_______________________________________________________________________________________
 
-BaseRef _LikelihoodFunction::makeDynamic (void)  // dynamic copy of this object
+BaseRef _LikelihoodFunction::makeDynamic (void) const  // dynamic copy of this object
 {
     _LikelihoodFunction * res = new _LikelihoodFunction;
     res->Duplicate(this);
@@ -1093,9 +1077,9 @@ BaseRef _LikelihoodFunction::makeDynamic (void)  // dynamic copy of this object
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::Duplicate (BaseRef obj) // duplicate an object into this one
+void    _LikelihoodFunction::Duplicate (BaseRefConst obj) // duplicate an object into this one
 {
-    _LikelihoodFunction* lf = (_LikelihoodFunction*)obj;
+    _LikelihoodFunction const* lf = (_LikelihoodFunction const*)obj;
     theTrees.Duplicate(&lf->theTrees);
     theProbabilities.Duplicate(&lf->theProbabilities);
     theDataFilters.Duplicate(&lf->theDataFilters);
@@ -1109,14 +1093,14 @@ void    _LikelihoodFunction::Duplicate (BaseRef obj) // duplicate an object into
     optimalOrders.Duplicate(&lf->optimalOrders);
     leafSkips.Duplicate (&lf->leafSkips);
     templateKind        = lf->templateKind;
-  
+
     if (lf->optimizatonHistory) {
       optimizatonHistory = new _AssociativeList;
       optimizatonHistory->Duplicate (lf->optimizatonHistory);
     } else {
       optimizatonHistory  = nil;
     }
-  
+
     if (lf->computingTemplate) {
         computingTemplate   = (_Formula*)lf->computingTemplate->makeDynamic();
     } else {
@@ -1125,7 +1109,6 @@ void    _LikelihoodFunction::Duplicate (BaseRef obj) // duplicate an object into
 
     if (lf->mstCache) {
         mstCache = new MSTCache;
-        checkPointer (mstCache);
 
         mstCache->computingOrder.Duplicate(&lf->mstCache->computingOrder);
         mstCache->storageOrder.Duplicate  (&lf->mstCache->storageOrder);
@@ -1185,16 +1168,16 @@ void    _LikelihoodFunction::GetGlobalVars (_SimpleList& rec) const {
 }
 
 //_______________________________________________________________________________________
-_Parameter  _LikelihoodFunction::GetIthIndependent (long index) const {
-    _Parameter return_value;
-  
+hyFloat  _LikelihoodFunction::GetIthIndependent (long index) const {
+    hyFloat return_value;
+
     if (parameterValuesAndRanges) {
         return_value = (*parameterValuesAndRanges)(index,1);
     } else {
-      return_value = ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
+        return_value = ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
     }
     if (isnan(return_value)) {
-      FlagError (*GetIthIndependentName (index) & " evaluated to a NaN; this can cause all kinds of odd behavior downstream, therefore it is safer to quit now");
+        HandleApplicationError(*GetIthIndependentName (index) & " evaluated to a NaN; this can cause all kinds of odd behavior downstream, therefore it is safer to quit now");
     }
     return return_value;
 }
@@ -1207,7 +1190,7 @@ const _String*  _LikelihoodFunction::GetIthIndependentName  (long index) const {
 
 //_______________________________________________________________________________________
 
-_Parameter  _LikelihoodFunction::GetIthIndependentBound      (long index, bool isLower) const{
+hyFloat  _LikelihoodFunction::GetIthIndependentBound      (long index, bool isLower) const{
     if (parameterValuesAndRanges) {
         return (*parameterValuesAndRanges)(index,isLower?2:3);
     }
@@ -1218,7 +1201,7 @@ _Parameter  _LikelihoodFunction::GetIthIndependentBound      (long index, bool i
 
 }
 //_______________________________________________________________________________________
-_Parameter  _LikelihoodFunction::GetIthDependent (long index) const {
+hyFloat  _LikelihoodFunction::GetIthDependent (long index) const {
     return ((_Constant*) LocateVar (indexDep.lData[index])->Compute())->Value();
 }
 
@@ -1237,7 +1220,7 @@ _Variable*  _LikelihoodFunction::GetIthDependentVar (long index) const {
     return LocateVar (indexDep.lData[index]);
 }
 //_______________________________________________________________________________________
-void    _LikelihoodFunction::SetIthIndependent (long index, _Parameter p) {
+void    _LikelihoodFunction::SetIthIndependent (long index, hyFloat p) {
     if (parameterValuesAndRanges) {
         parameterValuesAndRanges->Store(index,1,p);
         p = mapParameterToInverval(p,parameterTransformationFunction.Element(index),true);
@@ -1256,7 +1239,7 @@ bool    _LikelihoodFunction::IsIthParameterGlobal (long index) const {
 
 
 //_______________________________________________________________________________________
-bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p)
+bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p)
 {
     _Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
 
@@ -1268,7 +1251,7 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p
         parameterValuesAndRanges->Store(index,0,p);
     }
 
-    _Parameter oldValue = v->Value();
+    hyFloat oldValue = v->Value();
 
     if (p!=0.0) {
         set = (fabs((oldValue-p)/p))>machineEps;
@@ -1284,7 +1267,7 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p
 }
 
 //_______________________________________________________________________________________
-void    _LikelihoodFunction::SetIthDependent (long index, _Parameter p)
+void    _LikelihoodFunction::SetIthDependent (long index, hyFloat p)
 {
     _Variable * v =(_Variable*) LocateVar (indexDep.lData[index]);
     v->SetValue (new _Constant (p),false);
@@ -1313,7 +1296,7 @@ _Matrix*    _LikelihoodFunction::RemapMatrix(_Matrix* source, const _SimpleList&
         vDim += GetIthFilter (partsToDo.lData[i])->GetSiteCountInUnits();
     }
 
-    _Matrix* res = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
+    _Matrix* res = new _Matrix (hDim,vDim,false,true);
 
     for (long aPart = 0; aPart<partsToDo.lLength; aPart++) {
         long partIndex = partsToDo.lData[aPart];
@@ -1359,13 +1342,13 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
     }
 
     _Matrix       variableStash (indexInd.lLength,1,false,true);
-    _Parameter    siteLL = 0.;
+    hyFloat    siteLL = 0.;
 
     MPI_Status    status;
     //ReportWarning (_String ("Waiting on:") & (long) indexInd.lLength & " MPI_DOUBLES");
     ReportMPIError(MPI_Recv(variableStash.theData, indexInd.lLength, MPI_DOUBLE, senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD,&status),false);
 
-    //printf ("[ENTER NODE] %d\n", _hy_mpi_node_rank);
+    //printf ("[ENTER NODE] %d\n", hy_mpi_node_rank);
 
     while (variableStash.theData[0]>=-1e100)
         // variableStash.theData[0] < -1e100 terminates the computation
@@ -1383,7 +1366,7 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
         if (doSomething) {
             if (partMode) {
                 siteLL = Compute();
-                /*if (_hy_mpi_node_rank == 1) {
+                /*if (hy_mpi_node_rank == 1) {
                     printf ("\033\015 Node %ld, value %g", siteLL);
                 }*/
             } else {
@@ -1396,20 +1379,20 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
                     // dependant condition failed
                 {
                     siteResults->PopulateConstantMatrix (1e-100);
-                    //printf ("[PWNED] %d\n", _hy_mpi_node_rank);
+                    //printf ("[PWNED] %d\n", hy_mpi_node_rank);
                 }
 
                 for (long k = 0; k < siteScalerBuffer.lLength; k++) {
                     siteResults->theData[siteScalerBuffer.lLength+k] = siteScalerBuffer.lData[k];
-                    //printf ("%d %d => %g %g\n", _hy_mpi_node_rank, k, siteResults->theData[k], siteResults->theData[siteScalerBuffer.lLength+k]);
+                    //printf ("%d %d => %g %g\n", hy_mpi_node_rank, k, siteResults->theData[k], siteResults->theData[siteScalerBuffer.lLength+k]);
                 }
             }
 
         }
         //else
-        //  printf ("%d : NOTHING TO DO!\n", _hy_mpi_node_rank);
+        //  printf ("%d : NOTHING TO DO!\n", hy_mpi_node_rank);
 
-        //printf ("%d [mode = %d] %d/%d\n", _hy_mpi_node_rank, partMode, siteResults->GetSize(), siteScalerBuffer.lLength);
+        //printf ("%d [mode = %d] %d/%d\n", hy_mpi_node_rank, partMode, siteResults->GetSize(), siteScalerBuffer.lLength);
 
         if (partMode) {
             ReportMPIError(MPI_Send(&siteLL, 1, MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD),true);
@@ -1427,8 +1410,7 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
 
 
 //_______________________________________________________________________________________
-_Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichParts, char runMode, bool remap, _String* storageID)
-{
+_Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichParts, CategoryConstructionOptions::CategoryConstructionOptions runMode, bool remap, _String* storageID) {
     long                        hDim = 1,
                                 vDim = 0,
                                 currentOffset = 0;
@@ -1463,7 +1445,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
     }
 
     // compute the number of columns in the matrix
-  
+
     if (templateKind < 0) {
         vDim    =   GetIthFilter(whichParts.lData[0])->GetSiteCountInUnits();
     } else
@@ -1483,7 +1465,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
     if (runMode == _hyphyLFConstructCategoryMatrixClasses || runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities)
         // just return the maximum conditional likelihood category
     {
-        _Matrix      *result = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true)),
+        _Matrix      *result = new _Matrix (hDim,vDim,false,true),
                       *cache     = nil;
         _SimpleList  *scalerCache = nil;
 
@@ -1491,8 +1473,8 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
 
         if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities) {
             long bufferL = PartitionLengths (0, &whichParts);
-            cache        = (_Matrix*)checkPointer (new _Matrix (bufferL,2,false,true));
-            scalerCache  = (_SimpleList*)checkPointer (new _SimpleList (bufferL,0,0));
+            cache        = new _Matrix (bufferL,2,false,true);
+            scalerCache  = new _SimpleList (bufferL,0,0);
         } else {
             if (templateKind < 0) { // HMM
                 _CategoryVariable*hmmVar = (_CategoryVariable*)FetchVar (-templateKind-1);
@@ -1572,7 +1554,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
                             _SimpleList scalers (blockSize, 0, 0);
                             // allocate a vector of 3*blockSize
 
-                            _Parameter  * likelihoodBuffer = new _Parameter[3*blockSize];
+                            hyFloat  * likelihoodBuffer = new hyFloat[3*blockSize];
                             PopulateConditionalProbabilities (i,_hyphyLFConditionProbsMaxProbClass,likelihoodBuffer,scalers);
 
                             for (long i = 0; i < blockSize; i++) {
@@ -1581,7 +1563,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
 
                             delete       [] likelihoodBuffer;
                         } else {
-                            WarnError ("This feature has not yet been implemented in the new LF engine framework");
+                            HandleApplicationError ("This feature has not yet been implemented in the new LF engine framework");
                             return result;
 
                             long    mxDim = 1,
@@ -1604,7 +1586,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
                                 FindMaxCategory(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], ff+1, currentOffset, result);
                             */
 
-                            _Parameter maxValue = -1.e300;
+                            hyFloat maxValue = -1.e300;
                             long       mxIndex  = -1;
 
                             for (j=0; j<mxDim; j++)
@@ -1674,9 +1656,9 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
             if (storageID) {
                 _Matrix * remappedCorrections = RemapMatrix(&allScalers, whichParts);
                 _String   scalerID            = (*storageID) & categoryMatrixScalers;
-                CheckReceptacleAndStore (&scalerID, emptyString, false, remappedCorrections, false);
+                CheckReceptacleAndStore (&scalerID, kEmptyString, false, remappedCorrections, false);
                 scalerID = (*storageID) & categoryLogMultiplier;
-                CheckReceptacleAndStore (&scalerID, emptyString, false, new _Constant(_logLFScaler), false);
+                CheckReceptacleAndStore (&scalerID, kEmptyString, false, new _Constant(_logLFScaler), false);
             }
 
             holder          = RemapMatrix(result, whichParts);
@@ -1713,7 +1695,7 @@ void    _LikelihoodFunction::AllocateSiteResults        (void)
     long dim            = PartitionLengths(0),
          catSpan       = TotalRateClassesForAPartition(-1,1) + 1;
 
-    siteResults         = (_Matrix*)checkPointer(new _Matrix (dim,catSpan,false,true));
+    siteResults         = new _Matrix (dim,catSpan,false,true);
     siteScalerBuffer.Populate (dim,0,0);
 }
 
@@ -1739,10 +1721,10 @@ bool      _LikelihoodFunction::SendOffToMPI       (long)
 #else
 bool      _LikelihoodFunction::SendOffToMPI       (long index) {
 // dispatch an MPI task to node 'index+1'
-    
+
 /* 20170404 SLKP Need to check if the decision to recompute a partition is made correctly.
  In particular, need to confirm that changes to category variables are handled correctly (e.g. HaveParametersChanged, vs has changed */
- 
+
     bool                sendToSlave = (computationalResults.GetSize() < parallelOptimizerTasks.lLength);
     _SimpleList     *   slaveParams = (_SimpleList*)parallelOptimizerTasks(index);
 
@@ -1827,7 +1809,7 @@ void    _LikelihoodFunction::PostCompute        (void) {
 void    _LikelihoodFunction::ComputeBlockForTemplate        (long i, bool force)
 {
     long          blockWidth = bySiteResults->GetVDim();
-    _Parameter   * resStore  = bySiteResults->theData+i*blockWidth;
+    hyFloat   * resStore  = bySiteResults->theData+i*blockWidth;
 
     ComputeSiteLikelihoodsForABlock (i,bySiteResults->theData+i*blockWidth,*(_SimpleList*)partScalingCache(i));
     if (! usedCachedResults) {
@@ -1848,7 +1830,7 @@ void    _LikelihoodFunction::ComputeBlockForTemplate        (long i, bool force)
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ComputeBlockForTemplate2       (long i, _Parameter* resTo, _Parameter* resFrom, long blockWidth)
+void    _LikelihoodFunction::ComputeBlockForTemplate2       (long i, hyFloat* resTo, hyFloat* resFrom, long blockWidth)
 {
     _DataSetFilter    const   *df = GetIthFilter(i);
     long*               dupMap = df->duplicateMap.lData,
@@ -1880,7 +1862,7 @@ void    _LikelihoodFunction::ComputeBlockForTemplate2       (long i, _Parameter*
 
 //_______________________________________________________________________________________
 
-_Parameter  _LikelihoodFunction::Compute        (void)
+hyFloat  _LikelihoodFunction::Compute        (void)
 /*
     code cleanup SLKP: 20090317
 
@@ -1892,7 +1874,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
 */
 {
 
-    _Parameter result = 0.;
+    hyFloat result = 0.;
 
     if (!PreCompute()) {
         return -A_LARGE_NUMBER;
@@ -1947,7 +1929,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
     }
 
 #ifdef __HYPHYMPI__
-    if ((hyphyMPIOptimizerMode ==  _hyphyLFMPIModePartitions || hyphyMPIOptimizerMode ==  _hyphyLFMPIModeAuto) &&   _hy_mpi_node_rank == 0) {
+    if ((hyphyMPIOptimizerMode ==  _hyphyLFMPIModePartitions || hyphyMPIOptimizerMode ==  _hyphyLFMPIModeAuto) &&   hy_mpi_node_rank == 0) {
         computeMode = 4;
     }
 #endif
@@ -1982,7 +1964,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
                     */
 
 #ifdef __HYPHYMPI__
-                    if (_hy_mpi_node_rank == 0) {
+                    if (hy_mpi_node_rank == 0) {
                         ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer, -1, nil, hyphyMPIOptimizerMode);
                     } else
 #endif
@@ -1991,7 +1973,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
 #ifdef _UBER_VERBOSE_LF_DEBUG
                     fprintf (stderr, "Did compute %g\n", result);
 #endif
-                    _Parameter                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
+                    hyFloat                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
                     UpdateBlockResult               (partID, blockResult);
                     if (blockMatrix) {
                         blockMatrix->theData[partID] = blockResult;
@@ -2006,7 +1988,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
                     }
                 }
             } else {
-                _Parameter  blockResult =  ComputeBlock (partID);
+                hyFloat  blockResult =  ComputeBlock (partID);
                 if (blockMatrix) {
                     blockMatrix->theData[partID] = blockResult;
                 } else {
@@ -2026,7 +2008,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
         long    blockWidth = bySiteResults->GetVDim();
 
 #ifdef __HYPHYMPI__
-        if (hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate && _hy_mpi_node_rank == 0) {
+        if (hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate && hy_mpi_node_rank == 0) {
             long    totalSent = 0,
                     blockPatternSize = PartitionLengths (0);
             for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++) {
@@ -2119,7 +2101,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
     } else {
         if (computeMode == 4) {
 #ifdef __HYPHYMPI__
-            if (_hy_mpi_node_rank == 0) {
+            if (hy_mpi_node_rank == 0) {
                 long    totalSent = 0;
                 for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++) {
                     bool sendToSlave = SendOffToMPI (blockID);
@@ -2132,7 +2114,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
 
                 while (totalSent) {
                     MPI_Status      status;
-                    _Parameter      blockRes;
+                    hyFloat      blockRes;
                     ReportMPIError(MPI_Recv (&blockRes, 1, MPI_DOUBLE, MPI_ANY_SOURCE , HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD,&status),true);
                     //printf ("Got %g from block %d \n", blockRes, status.MPI_SOURCE-1);
 
@@ -2151,7 +2133,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
     }
 
     if (done) {
-        
+
         likeFuncEvalCallCount ++;
         evalsSinceLastSetup   ++;
         PostCompute ();
@@ -2162,14 +2144,14 @@ _Parameter  _LikelihoodFunction::Compute        (void)
             ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
             return -A_LARGE_NUMBER;
         }
-        
+
         ComputeParameterPenalty ();
-        
-        _Parameter regularized_value = result - smoothingPenalty;
+
+        hyFloat regularized_value = result - smoothingPenalty;
         return regularized_value;
     }
 
-    WarnError ("Sorry; this likelihood feature has not yet been ported to the v2.0 LF engine in HyPhy");
+    HandleApplicationError ("Sorry; this likelihood feature has not yet been ported to the v2.0 LF engine in HyPhy");
     return -A_LARGE_NUMBER;
 
 
@@ -2187,10 +2169,10 @@ bool        _LikelihoodFunction::HasBlockChanged(long index) const {
 
 //_______________________________________________________________________________________
 
-void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependance, long highestIndex, _Parameter weight, _Matrix& cache)
+void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependance, long highestIndex, hyFloat weight, _Matrix& cache)
 {
     _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
-  
+
     if (index<highestIndex) {
         if ((!CheckNthBit(dependance,index))||thisC->IsHiddenMarkov()) {
             RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight);
@@ -2215,7 +2197,7 @@ void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long
 
         thisC->Refresh();
 
-        _Parameter* site_results     = siteResults->fastIndex();
+        hyFloat* site_results     = siteResults->fastIndex();
         _Matrix*    category_weights = thisC->GetWeights();
 
         _DataSetFilter const * data_filter = GetIthFilter(blockIndex);
@@ -2235,11 +2217,11 @@ void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long
                 ComputeBlock (blockIndex,site_results);
             }
 
-            _Parameter log_sum  = 0.0;
+            hyFloat log_sum  = 0.0;
             for   (long kk = 0; kk<current_index_offset; kk++,site_results++) {
               log_sum +=  myLog (*site_results)*data_filter->GetFrequency(kk);
             }
-          
+
             log_sum += myLog (category_weights->theData[category_index]*weight);
             cache.theData[categID] = log_sum;
 
@@ -2255,9 +2237,9 @@ void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long
 
 //_______________________________________________________________________________________
 
-void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, _Parameter weight
+void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, hyFloat weight
 #ifdef _SLKP_LFENGINE_REWRITE_
-        ,_SimpleList* siteMultipliers, char runMode, _Parameter *runStorage,
+        ,_SimpleList* siteMultipliers, char runMode, hyFloat *runStorage,
         long branchIndex,              _SimpleList* branchValues
 #endif
                                               )
@@ -2300,7 +2282,7 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
 
             thisC->Refresh();
 
-            _Parameter* sR  = siteResults->fastIndex();
+            hyFloat* sR  = siteResults->fastIndex();
             _Matrix*    cws = thisC->GetWeights();
 
 #ifdef _SLKP_LFENGINE_REWRITE_
@@ -2312,7 +2294,7 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
             for (long k = 0; k<nI; k++) {
                 thisC->SetIntervalValue     (k,!k);
                 ComputeBlock                (blockIndex,sR+hDim);
-                _Parameter                  localWeight = cws->theData[k]*weight ;
+                hyFloat                  localWeight = cws->theData[k]*weight ;
 #ifdef _SLKP_LFENGINE_REWRITE_
                 if (runMode == 1)
                     // decide what is the most likely category assignment
@@ -2323,7 +2305,7 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
                             long scv = *siteCorrectors;
 
                             if (scv < siteMultipliers->lData[r1]) { // this has a _smaller_ scaling factor
-                                _Parameter scaled = sR[r1]*acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+                                hyFloat scaled = sR[r1]*acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
                                 if (sR[r2] > scaled) {
                                     doChange = true;
                                 } else {
@@ -2358,7 +2340,7 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
                                 long scv = *siteCorrectors;
                                 if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
                                 {
-                                    _Parameter scaled = acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+                                    hyFloat scaled = acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
                                     for (long z = r3-(hDim+columnShift); z >= 0; z-=(hDim+columnShift))
                                         runStorage[z] *= scaled;
                                     siteMultipliers->lData[r1] = scv;
@@ -2421,29 +2403,14 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
 }
 
 //_______________________________________________________________________________________
-void        _LikelihoodFunction::RandomizeList (_SimpleList& orderList, long elements)
-{
-    long divisor = RAND_MAX_32/elements-1,i,n;
-    if (divisor<=0) {
-        divisor = 1;
-    }
+void        _LikelihoodFunction::RandomizeList (_SimpleList& orderList, long elements) {
     orderList.Clear();
-    for (i=0; i<elements; i++) {
-        orderList<<-1;
-    }
-    for (i=0; i<elements; i++) {
-        do {
-            n = genrand_int32()/divisor;
-            if (n>elements) {
-                n = elements;
-            }
-        } while (orderList(n)>=0);
-        orderList[n]=i;
-    }
+    orderList.Populate (elements, 0, 1);
+    orderList.Permute(0);
 }
 
 //_______________________________________________________________________________________
-void        _LikelihoodFunction::CheckFibonacci (_Parameter shrinkFactor)
+void        _LikelihoodFunction::CheckFibonacci (hyFloat shrinkFactor)
 {
     long n=Fibonacci.lLength-1;
     if (n<0) {
@@ -2459,11 +2426,11 @@ void        _LikelihoodFunction::CheckFibonacci (_Parameter shrinkFactor)
 //_______________________________________________________________________________________
 
 void    _LikelihoodFunction::CheckDependentBounds (void) {
-/* 
+/*
    this function makes sure that a constrained optimization starts within the domain
    of allowed parameter values
 */
-    
+
     if  (!indexDep.lLength) { // nothing to do here
         return;
     }
@@ -2518,11 +2485,11 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         // -1 -> monotone decrease
 
         for (index = 0; index<indexInd.lLength; index++) {
-            _Parameter          temp = GetIthIndependent(index);
+            hyFloat          temp = GetIthIndependent(index);
             SetIthIndependent  (index,temp*1.000000000001);
 
             for (j=indexDep.lLength-1; j>-1; j--) {
-                _Parameter temp1 = GetIthDependent(j);
+                hyFloat temp1 = GetIthDependent(j);
                 if (temp1>currentValues[j]) {
                     dependancies.Store(j,index,1.0);
                 } else if (temp1<currentValues[j]) {
@@ -2536,7 +2503,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         // and attempt to move them back in.
         for (index = badIndices.lLength-1; index>-1; index--) {
             long       badVarIndex      = badIndices.lData[index];
-            _Parameter temp             = GetIthDependent(badVarIndex);
+            hyFloat temp             = GetIthDependent(badVarIndex);
 
             currentValues[badVarIndex]  = temp;
 
@@ -2547,12 +2514,12 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             // this is equivalent to searching for the matrix of dependancies for a column w/o negative
             // entries,such that row "index" has "1" in it
 
-            _Parameter correlation = 0.;
+            hyFloat correlation = 0.;
 
             for (j = indexInd.lLength-1; j>-1; j--) {
                 if (correlation == dependancies(badVarIndex,j)) {
                     for (i=0; i<badIndices.lLength; i++) {
-                        _Parameter depIJ = dependancies(badIndices.lData[i],j);
+                        hyFloat depIJ = dependancies(badIndices.lData[i],j);
                         if (depIJ && depIJ != correlation) {
                             break;
                         }
@@ -2572,7 +2539,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             // until var badVarIndex is within limits again
             // try this by a trivial bisection
 
-            _Parameter left         ,
+            hyFloat left         ,
                        right      ,
                        middle,
                        lb         = tooLow?lowerBounds[badVarIndex]:upperBounds[badVarIndex];
@@ -2595,7 +2562,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             while (right-left>temp) {
                 middle                  = (left+right)/2.0;
                 SetIthIndependent         (j,middle);
-                _Parameter                adjusted = GetIthDependent          (badVarIndex);
+                hyFloat                adjusted = GetIthDependent          (badVarIndex);
                 if ((tooLow && adjusted > lb) || (!tooLow && adjusted < lb)) { // in range
                     if (decrement) {
                         left = middle;
@@ -2675,13 +2642,13 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         subNumericValues = 0;
         DeleteObject             (cStr);
 
-        WarnError(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
-                  & badX);
+        HandleApplicationError(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
+                  & badX.Enquote());
 
     }
 }
 //_______________________________________________________________________________________
-inline _Parameter sqr (_Parameter x)
+inline hyFloat sqr (hyFloat x)
 {
     return x*x;
 }
@@ -2695,24 +2662,24 @@ inline _Parameter sqr (_Parameter x)
       _TheTree      * tree         = GetIthTree  (partition_index);
       _Matrix       * eq_freqs     = GetIthFrequencies(partition_index);
       unsigned long tip_count      = filter->NumberSpecies();
-      
+
       if (filter->GetData()->GetTT()->IsStandardNucleotide() && filter->IsNormalFilter() && tip_count<150 && eq_freqs->IsIndependent()) {
           // if not - use distance estimates
-        
+
         if (tree->IsDegenerate()) {
           continue;
         }
-        
+
         unsigned  long  inode_count = 0UL;
-        
+
         _TreeIterator ti (tree, _HY_TREE_TRAVERSAL_PREORDER | _HY_TREE_TRAVERSAL_SKIP_ROOT);
-        
+
         _SimpleList node_to_index_support ;
         _AVLListX node_to_index (&node_to_index_support);
         _List    root_paths;
-        
+
         bool two = false;
-        
+
         while (_CalcNode* iterator = ti.Next()) {
            if (ti.IsAtLeaf()) {
             _SimpleList * indexed_path = new _SimpleList;
@@ -2729,24 +2696,24 @@ inline _Parameter sqr (_Parameter x)
           } else {
             node_to_index.Insert ((BaseRef)ti.GetNode(), inode_count++);
           }
-          
+
           _SimpleList avl_storage;
           _AVLList node_variables (&avl_storage);
           iterator->ScanContainerForVariables(node_variables,node_variables);
-          
+
           if (node_variables.countitems()>=2) {
             two = true;
           }
         }
-        
+
           // first of all, construct the matrix of branch sums,
           // which will be topology dependent
           // the branches are associated with the node they terminate with
-        
+
         _Matrix  theSystem  ((tip_count-1)*tip_count/2,inode_count+tip_count,true,true);
-        
+
         unsigned long eq_index = 0UL;
-        
+
         for (unsigned long row = 0UL; row < tip_count-1 ; row++) {
           for (unsigned long column = row + 1UL; column < tip_count; column++, eq_index++) {
             theSystem.Store(eq_index,row,1.0);
@@ -2758,12 +2725,12 @@ inline _Parameter sqr (_Parameter x)
             }
           }
         }
-        
+
          _Matrix transversions (theSystem.GetHDim(),1,false,true),
                  transitions   (theSystem.GetHDim(),1,false,true),
                  jc (theSystem.GetHDim(),1,false,true),
                  transpose(theSystem);
-        
+
         transpose.Transpose();
         _Matrix AAst (transpose);
         AAst*=theSystem;
@@ -2781,26 +2748,26 @@ inline _Parameter sqr (_Parameter x)
         } else {
           freq = filter->HarvestFrequencies (1,1,false);
         }
-        
+
         _Matrix diffs (1,7,false,true);
-        
+
           // compute the universal frequency weights
-        _Parameter tmp,t2,
+        hyFloat tmp,t2,
         cR = (*freq)[0]+(*freq)[2],
         cY = (*freq)[1]+(*freq)[3],
         c1=2*(*freq)[0]*(*freq)[2]/cR,
         c2=2*(*freq)[1]*(*freq)[3]/cY,
         c3=2*((*freq)[0]*(*freq)[2]*cY/cR
               +(*freq)[1]*(*freq)[3]*cR/cY), comps, fP = 1.0-sqr((*freq)[0])-sqr((*freq)[1])-sqr((*freq)[2])-sqr((*freq)[3]);
-        
+
         DeleteObject(freq);
-        
+
         eq_index = 0UL;
         for (unsigned long row = 0UL; row <tip_count - 1; row++)
           for (unsigned long column = row +1UL; column<tip_count; column++, eq_index++) {
               // Tamura - Nei distance formula
             filter->ComputePairwiseDifferences (diffs,row,column) ;
-            _Parameter Q = diffs.theData[1]+diffs.theData[3]+
+            hyFloat Q = diffs.theData[1]+diffs.theData[3]+
             diffs.theData[4]+diffs.theData[6],P1=diffs.theData[2],
             P2=diffs.theData[5];
             comps = Q+P1+P2+diffs.theData[0];
@@ -2817,31 +2784,31 @@ inline _Parameter sqr (_Parameter x)
               } else {
                 transversions[eq_index] = 200*cR*cY;
               }
-              
+
               tmp = 1.0-1.0/c1*P1-.5/cR*Q;
               if (tmp>0.0) {
                 t2 = -c1*log(tmp);
               } else {
                 t2 = c1*100;
               }
-              
+
               tmp = 1.0-1.0/c2*P2-.5/cY*Q;
               if (tmp>0.0) {
                 t2 -= c2*log(tmp);
               } else {
                 t2 += c2*100;
               }
-              
+
               tmp = 1-.5/(cR*cY)*Q;
               if (tmp>0.0) {
                 t2 += c3*log(tmp);
               } else {
                 t2 += c3*100;
               }
-              
+
               transitions[eq_index]= t2;
             }
-            _Parameter P = (Q+P1+P2)/comps;
+            hyFloat P = (Q+P1+P2)/comps;
             P = 1.0-P/fP;
             if (P>0) {
               jc[eq_index]=-fP*log(P);
@@ -2849,11 +2816,11 @@ inline _Parameter sqr (_Parameter x)
               jc[eq_index]=20.0;
             }
           }
-        
+
         _Matrix *trstEst=nil,
         *trvrEst=nil,
         *jcEst=nil;
-        
+
         theSystem=transpose;
         theSystem*=jc;
         jc.Clear();
@@ -2877,22 +2844,22 @@ inline _Parameter sqr (_Parameter x)
           // if two parameters present - set first one to transition and the 2nd one to transversion
           // for the third parameter and afterwards use the average of the two
           // produce a list of depthwise traversed nodes
-        
+
         ti.Reset();
         ti.Next(); // skip the root
-        
+
         unsigned long tip_index   = 0UL,
                       inode_index = 0UL;
-        
+
         while (_CalcNode* iterator = ti.Next()) {
           _SimpleList   independent_vars_l,
                         dependent_vars_l;
- 
+
           _AVLList independent_vars (&independent_vars_l),
                     dependent_vars  (&dependent_vars_l);
-            
+
           iterator->ScanContainerForVariables(independent_vars,dependent_vars);
-          
+
           independent_vars.ReorderList();
           dependent_vars.ReorderList();
 
@@ -2928,19 +2895,19 @@ inline _Parameter sqr (_Parameter x)
             }
           }
         }
-        
+
         DeleteObject(trstEst);
         DeleteObject(trvrEst);
         DeleteObject(jcEst);
       } else {
-        _Parameter      initValue = 0.1;
+        hyFloat      initValue = 0.1;
         checkParameter  (globalStartingPoint, initValue, 0.1);
-        
+
         _SimpleList     indeps;
         _AVLList        iavl (&indeps);
-        
+
         tree->ScanContainerForVariables (iavl, iavl);
-        
+
         for (long vc = 0; vc < indeps.lLength; vc++) {
             //char buf[512];
           _Variable * localVar = LocateVar(indeps.lData[vc]);
@@ -2952,15 +2919,15 @@ inline _Parameter sqr (_Parameter x)
             //  snprintf (buf, sizeof(buf),"[PRESET]%s = %g\n", localVar->GetName()->sData, localVar->Compute()->Value());
             //BufferToConsole(buf);
         }
-        
-        
+
+
       }
     }
   }
 //_______________________________________________________________________________________
 
 void        _LikelihoodFunction::SetReferenceNodes (void) {
-    _Parameter          cv;
+    hyFloat          cv;
 
     checkParameter      (useDuplicateMatrixCaching, cv, 0.);
 
@@ -3008,7 +2975,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
     transferrableVars  = 0;
 
     int                      totalNodeCount = RetrieveMPICount (0);
-    _Parameter               aplf = 0.0;
+    hyFloat               aplf = 0.0;
     checkParameter           (autoParalellizeLF,aplf,0.0);
     hyphyMPIOptimizerMode  = round(aplf);
 
@@ -3081,7 +3048,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                 _String * searchTerm = catVar->GetName();
                 long f = slaveNodeMap.Find (searchTerm);
                 if (f<0) {
-                    WarnError (_String ("[MPI] InitMPIOptimizer failed to map category var ") & *searchTerm & " for MPI node " & i &".\nHad the following variables\n" & _String((_String*)slaveNodeMap.toStr()));
+                    HandleApplicationError (_String ("[MPI] InitMPIOptimizer failed to map category var ") & *searchTerm & " for MPI node " & i &".\nHad the following variables\n" & _String((_String*)slaveNodeMap.toStr()));
                     return ;
                 }
                 varMap << slaveNodeMap.GetXtra(f);
@@ -3095,7 +3062,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                 _String  *  searchTerm = indepVar->GetName();
                 long    f = slaveNodeMap.Find (searchTerm);
                 if (f<0 && !indepVar->IsGlobal()) {
-                    WarnError (_String ("[MPI] InitMPIOptimizer failed to map independent variable ") & *searchTerm & " for MPI node " & i &".\nHad the following variables\n" & _String((_String*)slaveNodeMap.toStr()));
+                    HandleApplicationError (_String ("[MPI] InitMPIOptimizer failed to map independent variable ") & *searchTerm & " for MPI node " & i &".\nHad the following variables\n" & _String((_String*)slaveNodeMap.toStr()));
                     return;
                 } else if (f>0) {
                     f = slaveNodeMap.GetXtra(f);
@@ -3119,7 +3086,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
             if (transferrableVars > 0) {
                 if (transferrableVars != mappedVariables->lLength) {
-                    FlagError (_String ("[MPI] InitMPIOptimizer failed: inconsistent variable counts between spawned instances."));
+                    HandleApplicationError (_String ("[MPI] InitMPIOptimizer failed: inconsistent variable counts between spawned instances."));
                 }
             } else {
                 transferrableVars = mappedVariables->lLength;
@@ -3178,7 +3145,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                     _SimpleList    * optimalOrder = (_SimpleList*)(optimalOrders (0));
                     _DataSetFilter const * aDSF   = GetIthFilter(0L);
 
-                    _Parameter    minPatternsPerNode = 0.;
+                    hyFloat    minPatternsPerNode = 0.;
                     checkParameter (minimumSitesForAutoParallelize, minPatternsPerNode, 50.);
 
                     // adjust slaveNodes as needed
@@ -3266,7 +3233,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                     MPISwitchNodesToMPIMode (slaveNodes);
                     for (long i = 1L; i<totalNodeCount; i++) {
                         toPart = perNode;
-                        
+
                         if (overFlow) {
                             toPart++;
                             overFlow--;
@@ -3299,10 +3266,10 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                     for (long i2 = 0; i2 < varNames.lLength; i2++) {
                         long vi2    = masterNodeMap.Find(varNames.GetItem(i2));
                         if (vi2 < 0)
-                            FlagError (_String ("[MPI] InitMPIOptimizer: Failed to map independent variable ")
-                                       & *(_String*)varNames.GetItem(i2)
+                            HandleApplicationError (_String ("[MPI] InitMPIOptimizer: Failed to map independent variable ")
+                                       & ((_String*)varNames.GetItem(i2))->Enquote()
                                        & " for MPI node " & senderID &". Had variable string:"
-                                       & *mapString);
+                                       & mapString->Enquote());
 
 
                         (*indexedSlaveV) << masterNodeMap.GetXtra(vi2);
@@ -3334,7 +3301,7 @@ void    _LikelihoodFunction::CleanupMPIOptimizer (void)
 
         for (long i=0; i<parallelOptimizerTasks.lLength; i++) {
             ReportMPIError(MPI_Send(varTransferMatrix.theData, ((_SimpleList*)parallelOptimizerTasks(i))->lLength , MPI_DOUBLE, i+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD),true);
-            MPISendString (emptyString, i+1);
+            MPISendString (kEmptyString, i+1);
         }
 
         if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL) {
@@ -3353,9 +3320,9 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
     // large trees short alignments
     // an acceptable cache size etc
     categID = 0;
-    conditionalInternalNodeLikelihoodCaches = new _Parameter*   [theTrees.lLength];
-    branchCaches                            = new _Parameter*   [theTrees.lLength];
-    siteScalingFactors                      = new _Parameter*   [theTrees.lLength];
+    conditionalInternalNodeLikelihoodCaches = new hyFloat*   [theTrees.lLength];
+    branchCaches                            = new hyFloat*   [theTrees.lLength];
+    siteScalingFactors                      = new hyFloat*   [theTrees.lLength];
     conditionalTerminalNodeStateFlag        = new long*         [theTrees.lLength];
     overallScalingFactors.Populate                        (theTrees.lLength, 0,0);
     overallScalingFactorsBackup.Populate                  (theTrees.lLength, 0,0);
@@ -3388,15 +3355,15 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
              leafCount      = cT->GetLeafCount(),
              iNodeCount        = cT->GetINodeCount(),
              atomSize      = theFilter->GetUnitLength();
-      
+
         long ambig_resolution_count = 1L;
 
         if (leafCount > 1UL) {
-            conditionalInternalNodeLikelihoodCaches[i] = new _Parameter [patternCount*stateSpaceDim*iNodeCount*cT->categoryCount];
-            branchCaches[i]                            = new _Parameter [2*patternCount*stateSpaceDim*cT->categoryCount];
+            conditionalInternalNodeLikelihoodCaches[i] = new hyFloat [patternCount*stateSpaceDim*iNodeCount*cT->categoryCount];
+            branchCaches[i]                            = new hyFloat [2*patternCount*stateSpaceDim*cT->categoryCount];
         }
 
-        siteScalingFactors[i]                          = new _Parameter [patternCount*iNodeCount*cT->categoryCount];
+        siteScalingFactors[i]                          = new hyFloat [patternCount*iNodeCount*cT->categoryCount];
         conditionalTerminalNodeStateFlag[i]            = new long       [patternCount*MAX(2,leafCount)];
 
         cachedBranches < new _SimpleList (cT->categoryCount,-1,0);
@@ -3409,7 +3376,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
         }
 
         InitializeArray(siteScalingFactors[i] , patternCount*iNodeCount*cT->categoryCount, 1.);
-      
+
         // now process filter characters by site / column
 
         _List        foundCharactersAux;
@@ -3417,7 +3384,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
         _String      aState ((unsigned long)atomSize);
 
         char  const ** columnBlock      = new char const*[atomSize];
-        _Parameter      * translationCache  = new _Parameter [stateSpaceDim];
+        hyFloat      * translationCache  = new hyFloat [stateSpaceDim];
         _GrowingVector  * ambigs            = new _GrowingVector();
 
         for (unsigned long siteID = 0UL; siteID < patternCount; siteID ++) {
@@ -3465,10 +3432,10 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 //extern long marginalLFEvals, marginalLFEvalsAmb;
 
 //_______________________________________________________________________________________
-  
-void        _LikelihoodFunction::LoggerLogL (_Parameter logL) {
+
+void        _LikelihoodFunction::LoggerLogL (hyFloat logL) {
   if (optimizatonHistory) {
-      
+
     #ifdef  _COMPARATIVE_LF_DEBUG_CHECK
           if (_comparative_lf_debug_matrix && fabs ((*_comparative_lf_debug_matrix)[_comparative_lf_index] - logL) > 0.001) {
               char buffer [512];
@@ -3479,7 +3446,7 @@ void        _LikelihoodFunction::LoggerLogL (_Parameter logL) {
                   StringToConsole (_String (" = ") & GetIthIndependent(var_id));
                   NLToConsole();
               }
-              
+
               raise(SIGTRAP);
           }
           _comparative_lf_index++;
@@ -3489,29 +3456,29 @@ void        _LikelihoodFunction::LoggerLogL (_Parameter logL) {
               (*_comparative_lf_debug_matrix) << logL;
           }
     #endif
-      
-      
+
+
     *((_GrowingVector*) this->optimizatonHistory->GetByKey("LogL")) << logL
     << ((_AssociativeList*)this->optimizatonHistory->GetByKey("Phases"))->Length();
   }
 }
-  
+
 //_______________________________________________________________________________________
-  
-void        _LikelihoodFunction::LoggerAddGradientPhase (_Parameter precision) {
+
+void        _LikelihoodFunction::LoggerAddGradientPhase (hyFloat precision) {
   if (optimizatonHistory) {
     _AssociativeList* new_phase = new _AssociativeList;
     (*new_phase) < (_associative_list_key_value){"type", new _FString ("Gradient descent")}
                  < (_associative_list_key_value){"precision", new _Constant (precision)};
-    
-    
+
+
      *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
   }
 }
-  
+
 //_______________________________________________________________________________________
-  
-void        _LikelihoodFunction::LoggerAddCoordinatewisePhase (_Parameter shrinkage, char convergence_mode) {
+
+void        _LikelihoodFunction::LoggerAddCoordinatewisePhase (hyFloat shrinkage, char convergence_mode) {
   if (optimizatonHistory) {
     _String phase_kind;
     switch (convergence_mode) {
@@ -3528,19 +3495,19 @@ void        _LikelihoodFunction::LoggerAddCoordinatewisePhase (_Parameter shrink
         phase_kind = "Very slow convergence";
         break;
     }
-    
+
     _AssociativeList* new_phase = new _AssociativeList;
     (*new_phase) < (_associative_list_key_value){"type", new _FString ("Directional pass")}
     < (_associative_list_key_value){"shrinkage", new _Constant (shrinkage)}
     < (_associative_list_key_value){"mode", new _FString(phase_kind)};
-    
-    
+
+
     *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
   }
 }
-  
+
 //_______________________________________________________________________________________
-  
+
 void        _LikelihoodFunction::LoggerAllVariables (void) {
   if (optimizatonHistory) {
     _AssociativeList* variables = ((_AssociativeList*)this->optimizatonHistory->GetByKey("Parameters"));
@@ -3549,11 +3516,11 @@ void        _LikelihoodFunction::LoggerAllVariables (void) {
     }
   }
 }
-  
+
 //_______________________________________________________________________________________
-  
-void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long index, _Parameter logL, _Parameter bracket_precision, _Parameter brent_precision, _Parameter bracket_width, unsigned long bracket_evals, unsigned long brent_evals) {
-  
+
+void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, unsigned long bracket_evals, unsigned long brent_evals) {
+
   if (optimizatonHistory) {
     _AssociativeList* new_phase = new _AssociativeList;
     (*new_phase) < (_associative_list_key_value){"type", new _FString (*GetIthIndependentName(index))}
@@ -3563,9 +3530,9 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
                 < (_associative_list_key_value){"bracket evals", new _Constant (bracket_evals)}
                 < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)}
                 < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)};
-    
+
     *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
-    
+
     LoggerLogL (logL);
     *((_GrowingVector*) (((_AssociativeList*)this->optimizatonHistory->GetByKey("Parameters")))->GetByKey(*GetIthIndependentName(index))) << GetIthIndependent(index);
   }
@@ -3575,24 +3542,24 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
 
 _Matrix*        _LikelihoodFunction::Optimize () {
 
- 
+
     if (lockedLFID != -1) {
-        WarnError ("Optimize() could not be executed, because another optimization is already in progress.");
+        HandleApplicationError ("Optimize() could not be executed, because another optimization is already in progress.");
         return new _Matrix (1,1,false,true);
     }
 
     char           buffer [1024];
-  
+
     RescanAllVariables ();
-  
+
     if (optimizatonHistory) {
       DeleteObject (optimizatonHistory);
       optimizatonHistory = nil;
     }
-  
+
     bool         keepOptimizationLog;
     checkParameter(produceOptimizationLog, keepOptimizationLog, false);
-  
+
     if (keepOptimizationLog) {
       optimizatonHistory = new _AssociativeList;
       (*optimizatonHistory) < (_associative_list_key_value){"LogL", new _GrowingVector}
@@ -3603,18 +3570,18 @@ _Matrix*        _LikelihoodFunction::Optimize () {
       < (_associative_list_key_value){"Phases", new _AssociativeList};
       /*
        0 - N-1 indices
-       
-       
+
+
        */
     }
-  
-  
-  
+
+
+
 
     if (indexInd.empty()) {
         _Matrix * result = new _Matrix (2UL, Maximum(3UL,indexDep.lLength), false, true);
         PrepareToCompute();
-        _Parameter logL = Compute();
+        hyFloat logL = Compute();
         result->Store (1L,0L,logL);
         LoggerLogL    (logL);
         result->Store (1L,1L,0.);
@@ -3634,10 +3601,10 @@ _Matrix*        _LikelihoodFunction::Optimize () {
       }
     }
 
-  
-  
 
-    _Parameter  intermediateP,
+
+
+    hyFloat  intermediateP,
                 wobble              = 0.,
                 maxSoFar           = -A_LARGE_NUMBER,
                 bestVal,
@@ -3656,8 +3623,8 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
     TimeDifference timer;
 
-    _Parameter              hardLimitOnOptimizationValue;
-    checkParameter          (optimizationHardLimit, hardLimitOnOptimizationValue, (_Parameter) INFINITY);
+    hyFloat              hardLimitOnOptimizationValue;
+    checkParameter          (optimizationHardLimit, hardLimitOnOptimizationValue, (hyFloat) INFINITY);
 
     hardLimitOnOptimizationValue = MAX (hardLimitOnOptimizationValue, 0.0);
     if (hardLimitOnOptimizationValue != INFINITY) {
@@ -3672,9 +3639,9 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
 #if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
 #ifdef __HYPHYMPI__
-    if (_hy_mpi_node_rank == 0) {
+    if (hy_mpi_node_rank == 0) {
 #endif
-        _FString * pfs = (_FString*)CheckReceptacle (&optimizationStatusFile, emptyString, false)->ComputeMatchingType(STRING);
+        _FString * pfs = (_FString*)CheckReceptacle (&optimizationStatusFile, kEmptyString, false)->ComputeMatchingType(STRING);
         progressFileString = pfs ? pfs->theString : nil;
 
         if (verbosityLevel==1L) {
@@ -3695,7 +3662,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
 
 #ifdef __HYPHYMPI__
-    if (_hy_mpi_node_rank == 0) {
+    if (hy_mpi_node_rank == 0) {
         InitMPIOptimizer ();
         if (parallelOptimizerTasks.lLength == 0) {
             hyphyMPIOptimizerMode = _hyphyLFMPIModeNone;
@@ -3717,13 +3684,13 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
     computationalResults.Clear();
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__ 
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
     SetStatusBarValue (0,maxSoFar,0);
 #endif
 
 
 #ifdef __HYPHYMPI__
-    if (_hy_mpi_node_rank == 0) {
+    if (hy_mpi_node_rank == 0) {
 #endif
 
 DecideOnDivideBy (this);
@@ -3732,7 +3699,7 @@ DecideOnDivideBy (this);
 #ifdef __HYPHYMPI__
     }
 #endif
-    
+
 
     int            skipCG = 0;
     checkParameter (skipConjugateGradient,skipCG,0);
@@ -3749,7 +3716,7 @@ DecideOnDivideBy (this);
         }
       }
     }
-    
+
     if (!CheckEqual(precision, 0.0)) {
         GetInitialValues();
     }
@@ -3775,7 +3742,7 @@ DecideOnDivideBy (this);
             for (unsigned long i=0UL; i<indexInd.lLength; i++) {
                 _Variable *iv = GetIthIndependentVar (i);
                 if (!iv->HasChanged()) {
-                    _Parameter newV = precision*(1.0+genrand_int32()/(_Parameter)RAND_MAX_32);
+                    hyFloat newV = precision*(1.0+genrand_real1());
                     c.SetValue(newV);
                     iv->SetValue(&c);
                 }
@@ -3799,31 +3766,31 @@ DecideOnDivideBy (this);
                     "\n\t" & optimizationPrecision & " = " & precision &
                     "\n\t" & maximumIterationsPerVariable & " = " & maxItersPerVar
                     &"\n\nInitial parameter values\n");
-    
+
     for (unsigned long i = 0UL; i < indexInd.lLength; i++) {
-      
+
         ReportWarning (_String(LocateVar (indexInd.lData[i])->GetName()->sData) & " = " & GetIthIndependent (i));
     }
 
     maxItersPerVar *= indexInd.lLength;
- 
+
 #if !defined __UNIX__ || defined __HEADLESS__
 #ifdef __HYPHYMPI__
-    if (_hy_mpi_node_rank == 0)
+    if (hy_mpi_node_rank == 0)
 #endif
-        if (terminateExecution) {
+        if (terminate_execution) {
             CleanUpOptimize();
             return new _Matrix (1,1,false,true);
         }
 #endif
 
     int optMethod = optMethodP;
-  
+
     SetupParameterMapping   ();
     _Matrix variableValues;
     GetAllIndependent (variableValues);
-  
- 
+
+
     if (optMethod == 4L && indexInd.lLength == 1) {
         optMethod = 0L;
     }
@@ -3853,7 +3820,7 @@ DecideOnDivideBy (this);
         if (optMethod!=7) {
             ConjugateGradientDescent (0.5, bestSoFar, true, 10);
         } else {
-            _Parameter current_precision = MAX(1., precision);
+            hyFloat current_precision = MAX(1., precision);
             while (current_precision > precision) {
               ConjugateGradientDescent(current_precision, bestSoFar, true);
               current_precision *= 0.1;
@@ -3862,9 +3829,9 @@ DecideOnDivideBy (this);
         }
 #if !defined __UNIX__ || defined __HEADLESS__
 #ifdef __HYPHYMPI__
-        if (_hy_mpi_node_rank == 0) {
+        if (hy_mpi_node_rank == 0) {
 #endif
-            if (terminateExecution) {
+            if (terminate_execution) {
                 CleanUpOptimize();
                 return new _Matrix (1,1,false,true);
             }
@@ -3899,9 +3866,9 @@ DecideOnDivideBy (this);
         while (passesDone<totalPasses) {
             counterR++;
             RandomizeList (passOrder,indexInd.lLength);
-            _Parameter passThresh = (_Parameter)(genrand_int32())/RAND_MAX_32;
+            hyFloat passThresh = genrand_real2();
             if (passesDone>=indexInd.lLength) {
-                passThresh/=exp((_Parameter)indexInd.lLength*log((_Parameter)(passesDone+1)/(_Parameter)indexInd.lLength));
+                passThresh/=exp((hyFloat)indexInd.lLength*log((hyFloat)(passesDone+1)/(hyFloat)indexInd.lLength));
             }
             for (unsigned long j=0UL; j<indexInd.lLength; j++) {
                 if (optimizationStats(4,passOrder[j])>=passThresh) {
@@ -3909,7 +3876,7 @@ DecideOnDivideBy (this);
                     if (passOrder[j]==lastPassed) {
                         continue;
                     }
-                    _Parameter oldXValue = GetIthIndependent(passOrder[j]),
+                    hyFloat oldXValue = GetIthIndependent(passOrder[j]),
                                oldYValue = passesDone?lastMax:Compute();
                     if (!passesDone) {
                         maxSoFar = oldYValue;
@@ -3918,9 +3885,9 @@ DecideOnDivideBy (this);
                     lastMax = maxSoFar;
                     LocateTheBump (jj,optimizationStats(3,jj), maxSoFar, bestVal);
 #ifdef __HYPHYMPI__
-                    if (_hy_mpi_node_rank == 0)
+                    if (hy_mpi_node_rank == 0)
 #endif
-                        if (terminateExecution) {
+                        if (terminate_execution) {
                             CleanUpOptimize();
                             return new _Matrix (1,1,false,true);
                         }
@@ -3932,7 +3899,7 @@ DecideOnDivideBy (this);
                         BufferToConsole (buffer);
                     }
                     passesDone++;
-                    _Parameter currentThresh = optimizationStats(4,jj);
+                    hyFloat currentThresh = optimizationStats(4,jj);
                     if (optimizationStats(1,jj)&&(optimizationStats(1,jj)<fabs(oldXValue-GetIthIndependent(jj)))) {
                         currentThresh*=2;
                     }
@@ -3950,7 +3917,7 @@ DecideOnDivideBy (this);
                     optimizationStats.Store(1,jj,(optimizationStats(1,jj)*(optimizationStats(0,jj)-1)+fabs(oldXValue-GetIthIndependent(jj)))/optimizationStats(0,jj));
                     optimizationStats.Store(2,jj,(optimizationStats(1,jj)*(optimizationStats(0,jj)-1)+fabs(oldYValue-maxSoFar))/optimizationStats(0,jj));
                     optimizationStats.Store(4,jj,currentThresh);
-                    optimizationStats.Store(3,jj,currentPrecision/exp(log((_Parameter)10.0)*optimizationStats(0,jj)));
+                    optimizationStats.Store(3,jj,currentPrecision/exp(log((hyFloat)10.0)*optimizationStats(0,jj)));
                     lastPassed = jj;
 
                     break;
@@ -3977,7 +3944,7 @@ DecideOnDivideBy (this);
     if (optMethod == 0) {
         bool      forward = false;
 
-        _Parameter averageChange = 0,
+        hyFloat averageChange = 0,
                    divFactor     = -1.0 ,
                    oldAverage      = -1.0,
                    stdFactor   = 10,
@@ -4006,7 +3973,7 @@ DecideOnDivideBy (this);
 
         _List               *stepHistory = nil;
         _GrowingVector      logLHistory;
-        
+
         maxSoFar  = lastMaxValue = Compute();
 
         logLHistory.Store(maxSoFar);
@@ -4085,7 +4052,7 @@ DecideOnDivideBy (this);
                 }
             }
 
-            _Parameter diffs [5] = {0.,0.,0.,0.,0.};
+            hyFloat diffs [5] = {0.,0.,0.,0.,0.};
             char convergenceMode = 0;
             /* 0, normal
              * 1, accelerated (last cycle obtained a bigger LL drop than the one before)
@@ -4182,7 +4149,7 @@ DecideOnDivideBy (this);
             if (smoothingTerm > 0.) {
               smoothingTerm *= smoothingReduction;
             }
-            
+
             _SimpleList nc2;
 
             long        ncp = 0,
@@ -4203,7 +4170,7 @@ DecideOnDivideBy (this);
                 shuffledOrder.Flip();
             }
 
-            _Parameter stepScale = 1.;
+            hyFloat stepScale = 1.;
 
             if (useAdaptiveStep > 0.5) {
                 stepScale = 1/divFactor;
@@ -4215,7 +4182,7 @@ DecideOnDivideBy (this);
                     snprintf (buffer, sizeof(buffer),"\n[Unchanged variables = %ld]", noChange.lLength);
                     BufferToConsole (buffer);
                 }
-                
+
                 if (hardLimitOnOptimizationValue < INFINITY && timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
                     ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
                     break;
@@ -4228,10 +4195,10 @@ DecideOnDivideBy (this);
                     }
                     _Matrix             bestMSoFar;
                     GetAllIndependent   (bestMSoFar);
-                    _Parameter prec = Minimum (diffs[0], diffs[1]);
+                    hyFloat prec = Minimum (diffs[0], diffs[1]);
 
                     prec = Minimum (Maximum (prec, precision), 1.);
-                    
+
                     if (gradientBlocks.lLength) {
                         for (long b = 0; b < gradientBlocks.lLength; b++) {
                             ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
@@ -4239,7 +4206,7 @@ DecideOnDivideBy (this);
                     } else {
                         ConjugateGradientDescent (prec, bestMSoFar,true,10,nil,maxSoFar);
                     }
-                    
+
                     GetAllIndependent   (bestMSoFar);
                     for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
                         ((_GrowingVector*)(*stepHistory)(k))->Store (bestMSoFar.theData[k]);
@@ -4249,22 +4216,22 @@ DecideOnDivideBy (this);
                     logLHistory.Store(maxSoFar);
                 }
             }
-          
+
             LoggerAddCoordinatewisePhase (divFactor, convergenceMode);
-          
+
             for (jjj=forward?0:indexInd.lLength-1; forward?(jjj<indexInd.lLength):jjj>=0; forward?jjj++:jjj--) {
                 if (hardLimitOnOptimizationValue < INFINITY && timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
                     break;
                 }
-              
+
                 unsigned long current_index = doShuffle > 0.1 ? shuffledOrder.lData[jjj] : jjj;
- 
+
                 bool amIGlobal = GetIthIndependentVar(current_index)->IsGlobal();
 
 #ifdef __HYPHYMPI__
-                if (_hy_mpi_node_rank == 0)
+                if (hy_mpi_node_rank == 0)
 #endif
-                    if (terminateExecution) {
+                    if (terminate_execution) {
                         CleanUpOptimize();
                         return new _Matrix (1,1,false,true);
                     }
@@ -4281,18 +4248,18 @@ DecideOnDivideBy (this);
                 }
 
                 _GrowingVector     *vH = nil;
-                _Parameter         precisionStep = 0.,
+                hyFloat         precisionStep = 0.,
                                    brackStep;
 
 
                 if (useAdaptiveStep>0.5) {
                     vH  = (_GrowingVector*)(*stepHistory)(current_index);
-                    //_Parameter    suggestedPrecision  = currentPrecision*(1.+198./(1.+exp(sqrt(loopCounter))));
+                    //hyFloat    suggestedPrecision  = currentPrecision*(1.+198./(1.+exp(sqrt(loopCounter))));
 
                     long stepsSoFar = vH->GetUsed();
 
                     if (stepsSoFar>1) {
-                        _Parameter  lastParameterValue          = vH->theData[stepsSoFar-1],
+                        hyFloat  lastParameterValue          = vH->theData[stepsSoFar-1],
                                     previousParameterValue       = vH->theData[stepsSoFar-2];
 
                         //stepScale   = 0.25;
@@ -4352,7 +4319,7 @@ DecideOnDivideBy (this);
                     if (precisionStep < 1e-6) {
                         precisionStep = 1e-6;
                     }*/
-                  
+
                 } else {
                     if (amIGlobal)
                         brackStep = pow(currentPrecision/**(bestVal>1.?pow(e,long(log(bestVal))):1.)*/,
@@ -4364,8 +4331,8 @@ DecideOnDivideBy (this);
 
                 long brackStepSave = bracketFCount,
                      oneDStepSave  = oneDFCount;
-              
-                _Parameter         lastLogL = maxSoFar;
+
+                hyFloat         lastLogL = maxSoFar;
 
                 if (useAdaptiveStep>0.5) {
                     if (convergenceMode < 2) {
@@ -4377,7 +4344,7 @@ DecideOnDivideBy (this);
                     LocateTheBump (current_index,brackStep, maxSoFar, bestVal);
                 }
 
-                _Parameter  cj = GetIthIndependent(current_index),
+                hyFloat  cj = GetIthIndependent(current_index),
                             ch = fabs(bestVal-cj);
 
 
@@ -4433,7 +4400,7 @@ DecideOnDivideBy (this);
 
             averageChange2/=indexInd.lLength;
             // mean of parameter values
-            averageChange/=(_Parameter)(indexInd.lLength-nc2.lLength+1);
+            averageChange/=(hyFloat)(indexInd.lLength-nc2.lLength+1);
             // mean of change in parameter values during the last step
 
             if (glVars.lLength == indexInd.lLength) {
@@ -4450,7 +4417,7 @@ DecideOnDivideBy (this);
 
 #if !defined __UNIX__ && ! defined __HEADLESS__
 #ifdef __HYPHYMPI__
-            if (_hy_mpi_node_rank == 0)
+            if (hy_mpi_node_rank == 0)
 #endif
                 if (feedbackTreePanel)
                     if (windowObjectRefs.Find ((long)feedbackTreePanel) >= 0) {
@@ -4575,7 +4542,7 @@ DecideOnDivideBy (this);
     //forceRecomputation = false;
     result.Store (1,1,indexInd.lLength);
     result.Store (1,2,CountObjects(kLFCountGlobalVariables));
-  
+
     _PMathObj pm;
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         result.Store(0,i,GetIthIndependent(i));
@@ -4584,11 +4551,11 @@ DecideOnDivideBy (this);
       result.Store(0,i+indexInd.lLength,GetIthDependent(i));
     }
 
- 
+
   if (keepOptimizationLog) {
     ((_GrowingVector*)optimizatonHistory->GetByKey("LogL"))->Trim();
     _AssociativeList* variable_traces = ((_AssociativeList*)optimizatonHistory->GetByKey("Parameters"));
-    
+
     for (unsigned long var_id = 0; var_id < indexInd.lLength; var_id++) {
       ((_GrowingVector*)variable_traces->GetByKey(*GetIthIndependentName(var_id)))->Trim();
     }
@@ -4600,7 +4567,7 @@ DecideOnDivideBy (this);
   #if !defined __UNIX__ || defined __HEADLESS__
     SetStatusBarValue (-1,maxSoFar,(likeFuncEvalCallCount-evalsIn)/TimerDifferenceFunction(true));
   #endif
- 
+
     return (_Matrix*)result.makeDynamic();
 }
 
@@ -4624,13 +4591,13 @@ void _LikelihoodFunction::CleanUpOptimize (void)
         DeleteCaches (false);
 
         if (mstCache) {
-            _Parameter      umst = 0.0;
+            hyFloat      umst = 0.0;
             checkParameter (useFullMST,umst,0.0);
             if (umst>.5)
                 for (long kk=0; kk<mstCache->cacheSize.lLength; kk++) {
                     long cS = mstCache->cacheSize.lData[kk];
                     if ((cS>0)&&(mstCache->resultCache[kk])) {
-                        _Parameter ** c1 = (_Parameter**)mstCache->resultCache[kk];
+                        hyFloat ** c1 = (hyFloat**)mstCache->resultCache[kk];
                         for (long k2 = 0; k2<cS; k2++) {
                             delete c1[k2];
                         }
@@ -4698,7 +4665,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 // implement a star decomposition type topology search returning the best tree and
 // optimization results for the best tree.
 
-inline  bool CheckOneDStep (_Parameter& val, _Parameter lB, _Parameter uB)
+inline  bool CheckOneDStep (hyFloat& val, hyFloat lB, hyFloat uB)
 {
     if (val<lB) {
         val = lB;
@@ -4709,7 +4676,7 @@ inline  bool CheckOneDStep (_Parameter& val, _Parameter lB, _Parameter uB)
 }
 
 //_______________________________________________________________________________________
-bool CheckEqual (_Parameter a, _Parameter b)
+bool CheckEqual (hyFloat a, hyFloat b)
 {
     if (a!=0.0) {
         a = (a>b)?(a-b)/a:(b-a)/a;
@@ -4719,13 +4686,13 @@ bool CheckEqual (_Parameter a, _Parameter b)
 }
 
 //_______________________________________________________________________________________
-_Parameter _LikelihoodFunction::SetParametersAndCompute (long index, _Parameter value, _Matrix* baseLine, _Matrix* direction)
+hyFloat _LikelihoodFunction::SetParametersAndCompute (long index, hyFloat value, _Matrix* baseLine, _Matrix* direction)
 {
     if (index >= 0) {
         SetIthIndependent (index,value);
     } else {
         if (value < 0) {
-            WarnError ("Internal error in gradient bracket function\n");
+            HandleApplicationError ("Internal error in gradient bracket function\n");
             return -A_LARGE_NUMBER;
         }
         _Matrix newValue (*baseLine);
@@ -4734,7 +4701,7 @@ _Parameter _LikelihoodFunction::SetParametersAndCompute (long index, _Parameter 
 
     }
 
-    _Parameter logL = Compute();
+    hyFloat logL = Compute();
     //if (index >=0)
     //  printf ("[SetParametersAndCompute %g = %g]\n", value, logL);
 
@@ -4755,7 +4722,7 @@ void _LikelihoodFunction::GetAllIndependent (_Matrix & storage) const {
 
 
 //_______________________________________________________________________________________
-long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& middle, _Parameter& right,  _Parameter& leftValue, _Parameter& middleValue, _Parameter& rightValue, _Parameter& initialStep, _Matrix* gradient)
+long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle, hyFloat& right,  hyFloat& leftValue, hyFloat& middleValue, hyFloat& rightValue, hyFloat& initialStep, _Matrix* gradient)
 {
     _Variable* curVar = index >= 0 ? GetIthIndependentVar (index) : nil;
 
@@ -4763,7 +4730,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
                first      = true;
 
 
-    _Parameter lowerBound = curVar?GetIthIndependentBound(index,true):0.,
+    hyFloat lowerBound = curVar?GetIthIndependentBound(index,true):0.,
                upperBound = curVar?GetIthIndependentBound(index,false):0.,
                practicalUB,
                magR = 2.,//1.61803,
@@ -4853,9 +4820,9 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
       SetIthIndependent(6L, GetIthIndependent(6L));
     }
     */
-    
+
     while (1) {
-      
+
         while (middle-leftStep < lowerBound) {
             if (verbosityLevel > 100) {
               char buf [512];
@@ -4901,7 +4868,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         }
 
 
-        
+
         if (CheckEqual(middle,saveL)) {
             middleValue = saveLV;
         } else if (CheckEqual(middle,saveR)) {
@@ -5014,12 +4981,12 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     if (curVar) {
         if (CheckAndSetIthIndependent(index,middle)) {
           CheckAndSetIthIndependent(index,left);
-          _Parameter lc = Compute();
+          hyFloat lc = Compute();
           CheckAndSetIthIndependent(index,right);
-          _Parameter rc = Compute();
+          hyFloat rc = Compute();
           CheckAndSetIthIndependent(index,middle);
            middleValue = Compute();
-          
+
            if (verbosityLevel > 100) {
               char buf [256];
               snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [%g/%g:%g%g]]", index, middle, middleValue, leftValue,lc, rightValue,rc);
@@ -5037,7 +5004,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET SUCCESSFUL: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
         BufferToConsole (buf);
     }
-  
+
 
     bracketFCount+=likeFuncEvalCallCount-funcCounts;
     bracketCount++;
@@ -5045,10 +5012,10 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 }
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::CheckStep (_Parameter& tryStep, _Matrix vect, _Matrix* selection) {
+void    _LikelihoodFunction::CheckStep (hyFloat& tryStep, _Matrix vect, _Matrix* selection) {
     for (unsigned long index = 0; index<indexInd.lLength; index++) {
 
-        _Parameter  Bound,
+        hyFloat  Bound,
                     currentValue,
                     locValue = vect.theData[index];
 
@@ -5099,7 +5066,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
         return nil;
     }
 
-    _Parameter  h = 1.e-5,//STD_GRAD_STEP,
+    hyFloat  h = 1.e-5,//STD_GRAD_STEP,
                 functionValue,
                 t1,
                 t2,
@@ -5130,11 +5097,9 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
 
         // find the appropriate significance level for chi2
 
-        {
-            _String xxc ("_xx_");
-            thisVar = CheckReceptacle (&xxc, emptyString);
-            thisVar->SetBounds (-1.e30,1.e30);
-        }
+        _String xxc ("_xx_");
+        thisVar = CheckReceptacle (&xxc, kEmptyString);
+        thisVar->SetBounds (-1.e30,1.e30);
 
         if (cm>0.0) {
 
@@ -5142,8 +5107,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
             _Formula    CChi2Fla (fString,nil);
             t1 = CChi2Fla.Brent (thisVar,0,0);
             if (fabs(CChi2Fla.Compute()->Value())>1.e-6) {
-                _String errMsg ("Failed to compute chi-square significance level in call to CovarianceMatrix");
-                WarnError (errMsg);
+                HandleApplicationError ("Failed to compute chi-square significance level in call to CovarianceMatrix");
                 DoneComputing();
                 return    (_PMathObj)sigLevels.makeDynamic();
             }
@@ -5151,15 +5115,14 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
             if (cm<0.0) {
                 t1 = -2.*cm;
             } else {
-                _String errMsg ("Must have a non-zero COVARIANCE_PRECISION in call to CovarianceMatrix.");
-                WarnError (errMsg);
+                HandleApplicationError ("Must have a non-zero COVARIANCE_PRECISION in call to CovarianceMatrix.");
                 DoneComputing();
                 return    (_PMathObj)sigLevels.makeDynamic();
             }
         }
 
 #if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-        _Parameter totalCount    = 2*parameterList->lLength;
+        hyFloat totalCount    = 2*parameterList->lLength;
 
         long       finishedCount = 0;
 
@@ -5187,7 +5150,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
         _String     fString     = _String("function _profileFit(_xxv_,_variableIndex){SetParameter(")&*myName&",_variableIndex,_xxv_);LFCompute("
                                   //    &*myName&(",_xxres);  fprintf (stdout,\"\\n\",_xxv_,\" \",_xxres);  return _xxres;}");
                                   &*myName&(",_xxres);return _xxres;}");
-                                  
+
 
 
         /* ___________________________________ ! NEW CODE BY AFYP ____________________________________ */
@@ -5229,7 +5192,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
                   sigLevels.Store (i,5,h);
                 }
            }
-            
+
             snprintf (buffer, sizeof(buffer),"%.14g",sigLevels (i,0));
             _String checkLFDIFF = _String("CChi2(2*(-_profileFit(") & buffer & "," & j & ")+(" & functionValue & ")),1)";
             _PMathObj lf_diff = (_PMathObj) _FString (checkLFDIFF, false).Evaluate(_hyDefaultExecutionContext);
@@ -5292,15 +5255,12 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
 
     _AssociativeList * mapMethod = nil;
 
-    _Parameter      uim = 0.0;
+    hyFloat      uim = 0.0;
     checkParameter  (useIntervalMapping, uim, 0.0);
 
     if (uim > 0.5) {
         iMap = new _Matrix (i,3,false,true);
         mapMethod = new _AssociativeList;
-
-        checkPointer (iMap);
-        checkPointer (mapMethod);
 
     }
     // y,x',x''
@@ -5311,13 +5271,13 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
         t1 = thisVar->Value();
         funcValues.Store (i,3,t1);
 
-        _Parameter locH = 1./131072.; //*(t1>10.?exp(log(10.)*((long)log(t1)/log(10.))):1.);
+        hyFloat locH = 1./131072.; //*(t1>10.?exp(log(10.)*((long)log(t1)/log(10.))):1.);
 
         if (locH<1e-7) {
             locH = 1e-7;
         }
 
-        /*_Parameter locH = 1./1024.,
+        /*hyFloat locH = 1./1024.,
                    tryH = locH * 0.25,
                    dv1,
                    dv2,
@@ -5336,7 +5296,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
             SetIthIndependent (dIndex, t1-tryH);
             dv2 += Compute ()-2.*functionValue;
             dv2 /= 4.*tryH*tryH;
-            _Parameter err = fabs (dv2-dv1) / MAX (fabs(dv2), fabs(dv1));
+            hyFloat err = fabs (dv2-dv1) / MAX (fabs(dv2), fabs(dv1));
             if (err > lastErr)
                 break;
             else
@@ -5356,7 +5316,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
         }
 
         if (uim > 0.5) {
-            _Parameter      lb  = thisVar->GetLowerBound(),
+            hyFloat      lb  = thisVar->GetLowerBound(),
                             ub  = thisVar->GetUpperBound(),
                             y ,
                             dy2,
@@ -5392,7 +5352,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
 
 
 #if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-    _Parameter totalCount    = 2*parameterList->lLength;
+    hyFloat totalCount    = 2*parameterList->lLength;
 
     long       finishedCount = 0;
 
@@ -5409,7 +5369,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
     for (i=0; i<parameterList->lLength; i++) {
         long              pIdx = useIndirectIndexing?parameterList->lData[i]:i;
 
-        _Parameter        pVal = GetIthIndependent (pIdx),
+        hyFloat        pVal = GetIthIndependent (pIdx),
                           d1,
                           locH = funcValues (i,4);
 
@@ -5450,13 +5410,13 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
         for (i=0; i<parameterList->lLength-1; i++) {
             long        iidx = useIndirectIndexing?parameterList->lData[i]:i;
 
-            _Parameter  ival  = GetIthIndependent(iidx),
+            hyFloat  ival  = GetIthIndependent(iidx),
                         locHi = 1/8192.;//funcValues (i,4);
 
             for (j=i+1; j<parameterList->lLength; j++) {
                 long        jidx = useIndirectIndexing?parameterList->lData[j]:j;
 
-                _Parameter  jval  = GetIthIndependent(jidx),
+                hyFloat  jval  = GetIthIndependent(jidx),
                             locHj = locHi, //funcValues (j,4),
                             a, // f (x+h,y+h)
                             b, // f (x+h,y-h)
@@ -5499,13 +5459,13 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
 
         if (CheckEqual(cm,1.)) {
             for (i=0; i<parameterList->lLength-1; i++) {
-                _Parameter t3 = GetIthIndependent(useIndirectIndexing?parameterList->lData[i]:i),
+                hyFloat t3 = GetIthIndependent(useIndirectIndexing?parameterList->lData[i]:i),
                            t5 = hessian(i,i),
                            t6 = funcValues(i,2);
 
                 SetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i,t3+h);
                 for (j=i+1; j<parameterList->lLength; j++) {
-                    _Parameter t4 = GetIthIndependent(useIndirectIndexing?parameterList->lData[j]:j);
+                    hyFloat t4 = GetIthIndependent(useIndirectIndexing?parameterList->lData[j]:j);
                     SetIthIndependent (useIndirectIndexing?parameterList->lData[j]:j,t4+h);
                     t1 = Compute();
                     t2 = (t1-functionValue-(t6+funcValues(j,2)-.5*(t5+hessian(j,j))*h)*h)/(h*h);
@@ -5547,7 +5507,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter& left, _Parameter& right, long * freezeCount)
+void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,hyFloat& left, hyFloat& right, long * freezeCount)
 {
     left = right = DEFAULTPARAMETERUBOUND;
 
@@ -5556,9 +5516,9 @@ void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter&
     }
 
     for (unsigned long i = 0; i < indexInd.lLength; i++) {
-        _Parameter directionalStep = gradient.theData[i];
+        hyFloat directionalStep = gradient.theData[i];
         if (directionalStep) {
-            _Parameter currentValue = GetIthIndependent (i),
+            hyFloat currentValue = GetIthIndependent (i),
                        ub                       = GetIthIndependentBound (i,false)-currentValue,
                        lb                       = currentValue-GetIthIndependentBound (i,true);
 
@@ -5596,9 +5556,9 @@ void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter&
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  _Parameter& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize)
+void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  hyFloat& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize)
 {
-    _Parameter funcValue;
+    hyFloat funcValue;
 
     //CheckStep     (gradientStep,unit,&values);
     /*if (order>1)
@@ -5617,7 +5577,7 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  
                 gradient[index]=0.;
             } else {
                 //_Variable  *cv            = GetIthIndependentVar (index);
-                _Parameter currentValue = GetIthIndependent(index),
+                hyFloat currentValue = GetIthIndependent(index),
                            ub           = GetIthIndependentBound(index,false)-currentValue,
                            lb            = currentValue-GetIthIndependentBound(index,true),
                            testStep    = MAX(currentValue * gradientStep,gradientStep);
@@ -5635,7 +5595,7 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  
                   }
                 }
 
-              
+
                 if (testStep) {
                     SetIthIndependent(index,currentValue+testStep);
                     gradient[index]=(Compute()-funcValue)/testStep;
@@ -5656,7 +5616,7 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  
                 gradient[index]=0.;
             } else {
                 SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
-                _Parameter temp = Compute();
+                hyFloat temp = Compute();
                 SetIthIndependent(index,GetIthIndependent(index)+2*gradientStep);
                 gradient[index]=(Compute()-temp)/gradientStep*0.5;
                 SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
@@ -5687,11 +5647,11 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  
 }
 //_______________________________________________________________________________________
 
-bool    _LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar, _Parameter& step)
+bool    _LikelihoodFunction::SniffAround (_Matrix& values, hyFloat& bestSoFar, hyFloat& step)
 {
     for (long index = 0; index<indexInd.lLength; index++) {
 
-        _Parameter lowerBound       = GetIthIndependentBound(index, true),
+        hyFloat lowerBound       = GetIthIndependentBound(index, true),
                    tryStep          = step,
                    funcValue,
                    upperBound       = GetIthIndependentBound(index, false),
@@ -5741,14 +5701,14 @@ bool    _LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters, _Parameter check_value) {
+void    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters, hyFloat check_value) {
 
-    _Parameter  gradientStep     = STD_GRAD_STEP,
+    hyFloat  gradientStep     = STD_GRAD_STEP,
                 temp,
                 maxSoFar          = Compute(),
                 initial_value     = maxSoFar,
                 currentPrecision = localOnly?precision:.01;
-  
+
     if (check_value != A_LARGE_NUMBER) {
         if (!CheckEqual(check_value, maxSoFar)) {
             _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]";
@@ -5757,13 +5717,13 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
                 if (optimizatonHistory) {
                     ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
                 }
-                WarnError (errorStr);
+                HandleApplicationError (errorStr);
                 return;
             }
             //return;
         }
     }
-    
+
 
     _SimpleList freeze;
 
@@ -5772,9 +5732,9 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
         _SimpleList all (indexInd.lLength,0,1);
         freeze.Intersect (all, *only_these_parameters);
     }
-            
-    
-    
+
+
+
     _Matrix     unit     (bestVal),
                 gradient (bestVal);
 
@@ -5793,7 +5753,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
                 H (bestVal),
                 S (bestVal);
 
-    _Parameter  gradL;
+    hyFloat  gradL;
 
     ComputeGradient     (gradient, unit, gradientStep, bestVal, freeze, 1, false);
 
@@ -5816,11 +5776,11 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
             S      = gradient;
             S     *= -1./gradient.AbsValue();
             GradientLocateTheBump(localOnly?precision:currentPrecision, maxSoFar, bestVal, S);
-          
+
             LoggerAddGradientPhase (localOnly?precision:currentPrecision);
             LoggerAllVariables ();
             LoggerLogL (maxSoFar);
-          
+
             if (vl>1) {
                 snprintf (buffer, sizeof(buffer),"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %15.12g\n",index+1,precision,gradientStep,maxSoFar);
                 BufferToConsole (buffer);
@@ -5842,7 +5802,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
             //gradL  = S.AbsValue();
             //S   *= 1.;
 
-            _Parameter      gg  = 0.,
+            hyFloat      gg  = 0.,
                             dgg = 0.;
 
             for (unsigned long k = 0; k < indexInd.lLength; k++) {
@@ -5862,7 +5822,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
                 gradient.theData[k] = H.theData[k] = G.theData[k] + dgg * H.theData[k];
             }
 
-            if (terminateExecution) {
+            if (terminate_execution) {
                 return;
             }
         }
@@ -5870,7 +5830,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
 
     SetAllIndependent (&bestVal);
     if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value) == false) {
-        WarnError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") & initial_value & " to " & maxSoFar);
+        HandleApplicationError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") & initial_value & " to " & maxSoFar);
     }
 
     if (vl>1) {
@@ -5881,10 +5841,10 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& bestVal)
+void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& bestVal)
 {
 
-    _Parameter      currentPrecision = 0.1,
+    hyFloat      currentPrecision = 0.1,
                     gradientStep     = STD_GRAD_STEP,
                     temp,
                     tryStep,
@@ -5908,7 +5868,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
     while (currentPrecision>=gPrecision && freeze.lLength<indexInd.lLength) {
 
         gradientStep = STD_GRAD_STEP;
-        if (terminateExecution) {
+        if (terminate_execution) {
             return;
         }
 
@@ -6026,50 +5986,50 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
 
 //_______________________________________________________________________________________
 
-  void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Parameter& maxSoFar, _Matrix& bestVal, _Matrix& gradient)
+  void    _LikelihoodFunction::GradientLocateTheBump (hyFloat gPrecision, hyFloat& maxSoFar, _Matrix& bestVal, _Matrix& gradient)
   {
     DetermineLocalUpdatePolicy           ();
-    _Parameter  leftValue   = maxSoFar,
+    hyFloat  leftValue   = maxSoFar,
     middleValue = maxSoFar,
     rightValue  = maxSoFar,
     initialValue = maxSoFar,
     bp          = gPrecision*0.1,
     lV = 0., rV = 0., ms = 0.;
-    
+
     _Matrix                     left        ;
     GetAllIndependent               (left);
     _Matrix         right           (left),
     middle          (left),
     newMiddle       (left);
-    
+
     // _GrowingVector brentHistory;
-    
-    
+
+
     middle = bestVal;
-    
+
     int  outcome = Bracket(-1, lV,ms,rV,leftValue, middleValue, rightValue,bp, &gradient);
     if (middleValue < initialValue) {
       SetAllIndependent (&bestVal);
       FlushLocalUpdatePolicy();
       return;
     }
-    
+
     if (outcome >=0 && (leftValue > middleValue || rightValue > middleValue)) {
-      WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue & " initial value = " & maxSoFar);
+      HandleApplicationError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue & " initial value = " & maxSoFar);
       return;
     }
-    
+
     //printf ("[LogL = %.20g GRADIENT BRACKET %g/%.20g, %g/%.20g, %g/%.20g; %d]\n",maxSoFar,lV,leftValue,ms,middleValue,rV,rightValue, outcome);
-    
+
     left.AplusBx   (gradient, lV);
     middle.AplusBx (gradient, ms);
     right.AplusBx  (gradient, rV);
-    
+
     bool reset = false;
-    
+
     if (outcome!=-1) { // successfull bracket
                        // set up left, right, middle
-      
+
       if (outcome == -2) {
         if (middleValue>maxSoFar) {
           maxSoFar = middleValue;
@@ -6081,13 +6041,13 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
         FlushLocalUpdatePolicy();
         return;
       }
-      
-      
-      
+
+
+
       if (outcome == indexInd.lLength) {
         reset = true;
       } else {
-        _Parameter U,V,W,X=ms,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
+        hyFloat U,V,W,X=ms,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
         _Matrix currentBestPoint (newMiddle);
         currentBestPoint.AplusBx(gradient, ms);
         W = .0;
@@ -6100,14 +6060,14 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
           // brentHistory.Store (-FX - initialValue);
           bool parabolic_step = false;
           XM = .5*(lV+rV);
-          
-          _Parameter tol1 = fabs (X) * MIN (gPrecision, 1e-4) + machineEps,
+
+          hyFloat tol1 = fabs (X) * MIN (gPrecision, 1e-4) + machineEps,
           tol2 = 2.*tol1;
-          
+
           if (fabs(X-XM) <= tol2) {
             break;
           }
-          
+
           if (fabs(E)>tol1) {
             R = (X-W)*(FX-FV);
             Q = (X-V)*(FX-FW);
@@ -6127,21 +6087,21 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
                 D = (XM - X >= 0.) ? tol1 : -tol1;
               }
             }
-            
+
           }
-          
+
 
           if (!parabolic_step) {
             E = (X >= XM ? lV : rV) - X;
             D = GOLDEN_RATIO_C * E;
           }
           U = fabs (D) >= tol1 ? X + D : X + (D > 0. ? tol1 : -tol1);
-          
+
           //for (index = 0; index < indexInd.lLength; index++)
           //  SetIthIndependent (index,middle.theData[index]+U*gradient.theData[index]);
           FU = -SetParametersAndCompute (-1,U,&newMiddle,&gradient);
           //printf ("\n%g\n", FU);
-          
+
           if (FU<=FX) { // accept the move
             currentBestPoint = newMiddle;
             currentBestPoint.AplusBx(gradient, U);
@@ -6179,18 +6139,18 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
                 FV = FU;
               }
             }
-            
+
           }
           outcome++;
-          
+
         }
-        
+
         middleValue = -FX;
         //brentHistory.Store (0.);
         if (middleValue <= maxSoFar || CheckEqual(maxSoFar, middleValue)) {
           //brentHistory.Store (-1.);
           //brentHistory.Store (middleValue-initialValue);
-          
+
           SetAllIndependent (&bestVal);
           maxSoFar = middleValue;
         } else {
@@ -6203,18 +6163,18 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
            brentHistory.Store (maxSoFar-initialValue);
            brentHistory.Store (-FX-initialValue);*/
         }
-        
+
         if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue)) {
-          WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & maxSoFar & " / " & initialValue & ".\n");// & _String ((_String*)brentHistory.toStr()));
+          HandleApplicationError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & maxSoFar & " / " & initialValue & ".\n");// & _String ((_String*)brentHistory.toStr()));
           return;
         }
-        
+
         //bestVal = middle;
         //maxSoFar = middleValue;
       }
       //middle = X;
     }
-    
+
     else {
       reset = true;
       if (verbosityLevel>1) {
@@ -6228,24 +6188,24 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
         middleValue = rightValue;
         middle = right;
       }
-      
+
       if (middleValue>maxSoFar) {
         SetAllIndependent (&middle);
         maxSoFar = middleValue;
         reset = false;
       }
     }
-    
+
     if (reset)
       SetAllIndependent (&bestVal);
-    
+
     FlushLocalUpdatePolicy();
   }
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Parameter& maxSoFar, _Parameter& bestVal, _Parameter bracketSetting) {
-    _Parameter left,
+void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFloat& maxSoFar, hyFloat& bestVal, hyFloat bracketSetting) {
+    hyFloat left,
                right,
                middle           = bestVal,
                leftValue,
@@ -6255,7 +6215,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
                brentPrec        = bracketSetting>0.?bracketSetting:gPrecision;
 
     DetermineLocalUpdatePolicy           ();
-    
+
     /*if (optimizatonHistory && ((_AssociativeList*)this->optimizatonHistory->GetByKey("Phases"))->Length() == 2171) {
         verbosityLevel = 1000;
     } else {
@@ -6265,37 +6225,37 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
     unsigned long        inCount = likeFuncEvalCallCount;
     int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp);
     unsigned long        bracketCount = likeFuncEvalCallCount - inCount;
-  
+
     if (outcome != -1) { // successfull bracket
-        _Parameter U,V,W,X=middle,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
+        hyFloat U,V,W,X=middle,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
         W       = middle;
         V       = middle;
         FX      = -middleValue;
         FV      = FX;
         FW      = FX;
         outcome = 0;
-        
-      
+
+
         while (outcome < 20) {
             XM = .5*(left+right);
-          
+
             bool parabolic_step = false;
-          
+
             if (verbosityLevel > 50) {
                 char buf [256];
                 snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) (current max = %15.12g) GOLDEN RATIO INTERVAL CHECK: %g <= %g (%g = %g) <= %g, span = %g]", index, bestVal, left, XM, X, fabs(X-XM), right, right-left);
                 BufferToConsole (buf);
             }
-          
+
             if (fabs(X-XM) <= brentPrec) {
               break;
             }
-          
-            _Parameter tol1 = fabs (X) * Minimum (brentPrec, 1e-7) + machineEps,
+
+            hyFloat tol1 = fabs (X) * Minimum (brentPrec, 1e-7) + machineEps,
                        tol2 = 2.*tol1;
 
-          
-          
+
+
             if (fabs(E)>tol1) {
                 R = (X-W)*(FX-FV);
                 Q = (X-V)*(FX-FW);
@@ -6316,25 +6276,25 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
                   }
                 }
             }
-            
-          
+
+
             if (!parabolic_step) {
               E = (X >= XM ? left : right) - X;
               D = GOLDEN_RATIO_C * E;
             }
-          
+
             U = fabs (D) >= tol1 ? X + D : X + (D > 0. ? tol1 : -tol1);
-          
+
           //U = X + D;
             SetIthIndependent (index,U);
             FU = -Compute();
-            
+
             if (verbosityLevel > 50) {
                 char buf [256];
                 snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO TRY: param %20.16g, log L %20.16g]", index, U, -FU);
                 BufferToConsole (buf);
             }
-            
+
             if (FU<=FX) { // value at U is the new minimum
                 if (verbosityLevel > 50) {
                     char buf [256];
@@ -6378,9 +6338,9 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
                 }
             }
             outcome++;
-            
+
         }
-        
+
         if (verbosityLevel > 50) {
             char buf [256];
             snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %15.12g/%15.12g ]\n\n", index, brentPrec, bestVal, X, -FX, maxSoFar);
@@ -6388,7 +6348,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
         }
         middleValue = -FX;
         middle      = X;
-         
+
         if (middleValue<maxSoFar) {
             if (verbosityLevel > 50) {
               char buf [256];
@@ -6418,7 +6378,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
     if (index >= 0) {
       LoggerSingleVariable (index, maxSoFar, bp, brentPrec, outcome != -1 ? right-left : -1., bracketCount, likeFuncEvalCallCount-inCount-bracketCount);
     }
-  
+
     oneDFCount += likeFuncEvalCallCount-inCount-bracketCount;
     oneDCount ++;
     FlushLocalUpdatePolicy            ();
@@ -6428,7 +6388,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
 bool        _LikelihoodFunction::checkPermissibility (_Matrix&m, long row)
 {
     for (unsigned long j=0; j<indexInd.lLength; j++) {
-        _Parameter junk = m (row,j);
+        hyFloat junk = m (row,j);
 
         _Variable *v = LocateVar (indexInd(j));
 
@@ -6443,7 +6403,7 @@ bool        _LikelihoodFunction::checkPermissibility (_Matrix&m, long row)
 }
 
 //_______________________________________________________________________________________
-_Parameter      _LikelihoodFunction::computeAtAPoint (_Matrix&m, long row)
+hyFloat      _LikelihoodFunction::computeAtAPoint (_Matrix&m, long row)
 {
 
     if (!checkPermissibility(m,row)) {
@@ -6458,7 +6418,7 @@ _Parameter      _LikelihoodFunction::computeAtAPoint (_Matrix&m, long row)
 }
 
 //_______________________________________________________________________________________
-_Parameter      _LikelihoodFunction::replaceAPoint (_Matrix&m, long row, _Matrix&p, _Parameter& nV, _Matrix& fv)
+hyFloat      _LikelihoodFunction::replaceAPoint (_Matrix&m, long row, _Matrix&p, hyFloat& nV, _Matrix& fv)
 {
     for (long k=0; k < indexInd.lLength; k++) {
         m.Store (row,k,p(0,k));
@@ -6469,7 +6429,7 @@ _Parameter      _LikelihoodFunction::replaceAPoint (_Matrix&m, long row, _Matrix
 
 
 //_______________________________________________________________________________________
-_Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
+hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision)
 {
     _Matrix     points (indexInd.lLength+1, indexInd.lLength, false, true), //the matrix of points
                 functionalEvaluations (1, indexInd.lLength+1,false, true),
@@ -6478,7 +6438,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
                 bestSoFar (1, indexInd.lLength+1,false, true),
                 temp;
 
-    _Parameter  lastBError      = 0.,
+    hyFloat  lastBError      = 0.,
                 lastError        = 0.0,
                 simplexAlpha     = 1.0,
                 simplexBeta    = 0.5,
@@ -6497,7 +6457,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
     for (k=0; k<indexInd.lLength; k++) {
         _Variable *v = LocateVar (indexInd (k));
 
-        _Parameter lowP     = v->GetLowerBound(),
+        hyFloat lowP     = v->GetLowerBound(),
                    highP     = v->GetUpperBound(),
                    span     = highP-lowP;
 
@@ -6531,7 +6491,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
                         indexMax = 0,
                         index2Min;
 
-        _Parameter      max  = -1e300,
+        hyFloat      max  = -1e300,
                         min  = 1e300,
                         min2 = 1e300,
                         error = 0;
@@ -6574,7 +6534,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
 
         // find the centroid of all the points excluding the worst!
         for (j=0; j<indexInd.lLength; j++) {
-            _Parameter junk = 0;
+            hyFloat junk = 0;
             for (k=0; k < indexMin; k++) {
                 junk+= points(k,j);
             }
@@ -6609,20 +6569,20 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
                     for (k=0; k<indexInd.lLength; k++) {
 
                         _Variable *v = LocateVar (indexInd (k));
-                        _Parameter lowP = v->GetLowerBound() , highP = v->GetUpperBound(), trial;
+                        hyFloat lowP = v->GetLowerBound() , highP = v->GetUpperBound(), trial;
 
                         if (fabs(lastBError-error)>gPrecision) {
                             bumpingFactor*=10;
                         } else {
                             bumpingFactor = 1;
                         }
-                        //trial = bestSoFar(0,k)+bumpingFactor*(genrand_int32()-RAND_MAX_32)/(_Parameter)RAND_MAX_32*error;
+                        //trial = bestSoFar(0,k)+bumpingFactor*(genrand_int32()-RAND_MAX_32)/(hyFloat)RAND_MAX_32*error;
 //                      else
-//                          trial = scratch1(0,k)+100*(genrand_int32()-RAND_MAX_32)/(_Parameter)RAND_MAX_32*error;
-                        trial = lowP+(highP-lowP)*(genrand_int32()-RAND_MAX_32)/(_Parameter)RAND_MAX_32*error;
+//                          trial = scratch1(0,k)+100*(genrand_int32()-RAND_MAX_32)/(hyFloat)RAND_MAX_32*error;
+                        trial = lowP+(highP-lowP)*genrand_real1()*error;
 
                         if ((trial<(lowP+gPrecision))||(trial>(highP-gPrecision))) {
-                            trial = lowP+ genrand_int32()*(highP-lowP)/RAND_MAX_32;
+                            trial = lowP+ genrand_real1 () * (highP-lowP);
                         }
                         scratch1.Store (0,k,trial);
                         lastBError = error;
@@ -6670,7 +6630,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
             scratch2*=simplexGamma;
             scratch1*=(1-simplexGamma);
             scratch2+=scratch1;
-            _Parameter testValue3 = computeAtAPoint (scratch2);
+            hyFloat testValue3 = computeAtAPoint (scratch2);
 
             if (testValue3>functionalEvaluations(0,index2Min)) {
                 replaceAPoint (points, index2Min, scratch2,testValue3, functionalEvaluations);
@@ -6684,7 +6644,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
             scratch1*=(1-simplexBeta);
             temp+=scratch1;
 
-            _Parameter testValue2 = computeAtAPoint (temp);
+            hyFloat testValue2 = computeAtAPoint (temp);
             if (testValue2>=testValue) {
                 replaceAPoint (points, indexMin, temp, testValue, functionalEvaluations);
             } else {
@@ -6707,11 +6667,11 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::Anneal (_Parameter&)
+void    _LikelihoodFunction::Anneal (hyFloat&)
 // simple simulated annealing approach
 {
-    /*_Parameter jumpMagnitude , decreaseRate, startingRate, currentValue = -1e300, trialValue, bestValue = -1e300;
-    _Parameter iterationsPerDecrease, decisionOnConvergence, terminateAfter;
+    /*hyFloat jumpMagnitude , decreaseRate, startingRate, currentValue = -1e300, trialValue, bestValue = -1e300;
+    hyFloat iterationsPerDecrease, decisionOnConvergence, terminateAfter;
     _Matrix jumpVector (1, indexInd.lLength,false, true),
             currentPoint (1, indexInd.lLength,false, true),
             trialPoint (1, indexInd.lLength,false, true),
@@ -6773,8 +6733,8 @@ void    _LikelihoodFunction::Anneal (_Parameter&)
         }
         else
         {
-            _Parameter decisionProb = exp((trialValue-currentValue)*startingRate);
-            if (((_Parameter)genrand_int32())/RAND_MAX_32<decisionProb)
+            hyFloat decisionProb = exp((trialValue-currentValue)*startingRate);
+            if (((hyFloat)genrand_int32())/RAND_MAX_32<decisionProb)
             {
                 currentValue = trialValue;
                 currentPoint = trialPoint;
@@ -6800,7 +6760,7 @@ void    _LikelihoodFunction::Anneal (_Parameter&)
         }
 
         // now generate a random jump
-        _Parameter distance = jumpMagnitude*genrand_int32()/(_Parameter)RAND_MAX_32, dist1 = 0;
+        hyFloat distance = jumpMagnitude*genrand_int32()/(hyFloat)RAND_MAX_32, dist1 = 0;
 
         // generate an arbitrary point in the allowed domain
 
@@ -6808,7 +6768,7 @@ void    _LikelihoodFunction::Anneal (_Parameter&)
         for (i=0; i<indexInd.lLength; i++)
         {
             _Variable*v = LocateVar (indexInd(i));
-            jumpVector.Store (0,i,v->GetLowerBound()+(v->GetUpperBound()-v->GetLowerBound())*genrand_int32()/(_Parameter)RAND_MAX_32-currentPoint(0,i));
+            jumpVector.Store (0,i,v->GetLowerBound()+(v->GetUpperBound()-v->GetLowerBound())*genrand_int32()/(hyFloat)RAND_MAX_32-currentPoint(0,i));
             dist1+=jumpVector(0,i)*jumpVector(0,i);
         }
 
@@ -6819,8 +6779,7 @@ void    _LikelihoodFunction::Anneal (_Parameter&)
 
 
     }       */
-    _String errMsg ("Simulated Annealing is yet to be implemented. Sorry about that.");
-    WarnError (errMsg);
+    HandleApplicationError("Simulated Annealing is yet to be implemented. Sorry about that.");
 }
 
 //_______________________________________________________________________________________
@@ -6846,9 +6805,9 @@ long    _LikelihoodFunction::DependOnTree (_String const & treeName) const {
 
 //_______________________________________________________________________________________
 long    _LikelihoodFunction::DependOnDS (long ID) const {
-  
+
     void * data_set_pointer = dataSetList.GetItem (ID);
-  
+
     for (long k = 0L; k<theDataFilters.lLength; k++) {
       if (GetIthFilter (k) -> GetData() == data_set_pointer) {
         return k;
@@ -6868,7 +6827,7 @@ long    _LikelihoodFunction::DependOnModel (_String const& modelTitle) const {
                     if (iterator->GetModelIndex() == modelIndex) {
                         return k;
                     }
-  
+
                 }
             }
         }
@@ -6894,8 +6853,8 @@ void    _LikelihoodFunction::ScanAllVariables (void)
                   cpCat,
                   treeSizes,
                   rankVariablesSupp;
-                  
-                   
+
+
     _AVLListX    rankVariables (&rankVariablesSupp);
 
 
@@ -6951,7 +6910,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
             ((_TheTree*)(LocateVar(theTrees(i))))->ScanAndAttachVariables ();
             ((_TheTree*)(LocateVar(theTrees(i))))->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (i) << 16);
         }
-        
+
         for (unsigned long i=0; i<theTrees.lLength; i++) {
             _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
             cT->ScanContainerForVariables  (iia, iid, &rankVariables, 1 + treeSizes.GetElement (i));
@@ -6997,7 +6956,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
 
 
     if ((haveHMM || haveConstantOnPartition) && templateKind != _hyphyLFComputationalTemplateNone && templateKind != _hyphyLFComputationalTemplateByPartition) {
-        WarnError ("Non-partition based computational templates in likelihood functions cannot be combined with dependence on HMM or constant-on-partition random variables.");
+        HandleApplicationError ("Non-partition based computational templates in likelihood functions cannot be combined with dependence on HMM or constant-on-partition random variables.");
         return;
     }
 
@@ -7005,7 +6964,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
     indexCat << covCat;
 
     if (indexCat.lLength>sizeof(long)*8) {
-        WarnError (_String ("The number of category variables exceeded ") &_String((long)sizeof(long)*8) );
+        HandleApplicationError (_String ("The number of category variables exceeded ") &_String((long)sizeof(long)*8) );
         return;
     }
 
@@ -7062,10 +7021,10 @@ void    _LikelihoodFunction::ScanAllVariables (void)
         }
     }
 
-    _Parameter l = DEFAULTLOWERBOUND*(1.0-machineEps),
+    hyFloat l = DEFAULTLOWERBOUND*(1.0-machineEps),
                u = DEFAULTUPPERBOUND*(1.0-machineEps);
-               
-    
+
+
 
     for (unsigned long i=0; i<indexInd.lLength; i++) {
         _Variable *_cv = GetIthIndependentVar(i);
@@ -7077,7 +7036,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
         }
         //printf ("%s -> %d\n", _cv->theName->sData, rankVariables.GetXtra(rankVariables.Find ((BaseRef)indexInd.lData[i])));
     }
-    
+
     for (unsigned  long i=0; i<indexDep.lLength; i++) {
         _Variable *_cv = GetIthDependentVar(i);
         if (_cv->GetLowerBound()<=l) {
@@ -7286,7 +7245,7 @@ void    _LikelihoodFunction::Cleanup (void) {
 
     Clear();
     DeleteObject (parameterValuesAndRanges);
-  
+
 #ifdef MDSOCL
 	for (int i = 0; i < theTrees.lLength; i++)
 	{
@@ -7359,12 +7318,12 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
 
 void    _LikelihoodFunction::Setup (bool check_reversibility)
 {
-    _Parameter kp       = 0.0;
+    hyFloat kp       = 0.0;
     //RankVariables();
     checkParameter      (useFullMST,kp,0.0);
 
     if (kp>.5 && !mstCache) {
-        checkPointer (mstCache = new MSTCache);
+        mstCache = new MSTCache;
     }
 
     if (theTrees.lLength==optimalOrders.lLength) {
@@ -7396,7 +7355,7 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
     leafSkips.Clear();
 
     treeTraversalMasks.Clear();
-    
+
     if (!check_reversibility) {
         if (canUseReversibleSpeedups.countitems() != theTrees.lLength) {
             check_reversibility = true;
@@ -7408,10 +7367,10 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
     _SimpleList alreadyDoneModelsL;
     _AVLListX   alreadyDoneModels (&alreadyDoneModelsL);
 
-    _Parameter assumeRev = 0.;
+    hyFloat assumeRev = 0.;
     checkParameter (assumeReversible,assumeRev,0.0);
 
-  
+
     for (unsigned long i=0UL; i<theTrees.lLength; i++) {
         _Matrix         *glFreqs = GetIthFrequencies(i);
         _DataSetFilter const* df      = GetIthFilter(i);
@@ -7465,14 +7424,14 @@ bool    _LikelihoodFunction::HasPartitionChanged (long index) {
                         return LocateVar(value)->HasChanged();
                        }
                     );
- 
+
 }
 
 //#define _HY_GPU_EXAMPLE_CALCULATOR
 
 //_______________________________________________________________________________________
 
-_Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, long currentRateClass, long branchIndex, _SimpleList * branchValues)
+hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long currentRateClass, long branchIndex, _SimpleList * branchValues)
 // compute likelihood over block index i
 /*
     to optimize
@@ -7598,9 +7557,9 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
 #ifdef MDSOCL
 
-        return t->OCLLikelihoodEvaluator (changedBranches, 
-              df, 
-              conditionalInternalNodeLikelihoodCaches[index],     
+        return t->OCLLikelihoodEvaluator (changedBranches,
+              df,
+              conditionalInternalNodeLikelihoodCaches[index],
               conditionalTerminalNodeStateFlag[index],
               (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
               OCLEval[index]);
@@ -7624,7 +7583,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
             _SimpleList         *tcc  = (_SimpleList*)treeTraversalMasks(index);
 
-            _Parameter          *inc  = (currentRateClass<1)?conditionalInternalNodeLikelihoodCaches[index]:
+            hyFloat          *inc  = (currentRateClass<1)?conditionalInternalNodeLikelihoodCaches[index]:
                                         conditionalInternalNodeLikelihoodCaches[index] + currentRateClass*df->GetDimension()*blockID,
                                 *ssf  = (currentRateClass<1)?siteScalingFactors[index]: siteScalingFactors[index] + currentRateClass*blockID,
                                 *bc   = (currentRateClass<1)?branchCaches[index]: (branchCaches[index] + currentRateClass*patternCnt*df->GetDimension()*2);
@@ -7663,7 +7622,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                     } else {
                         snID = t->DetermineNodesForUpdate          (*branches, matrices,catID,*cbid,canClear);
                     }
-                    
+
 #ifdef _UBER_VERBOSE_LF_DEBUG
                     fprintf (stderr, "\nCached %ld (%ld)/New %ld (%ld)\n", *cbid, nodeID, snID, matrices->lLength);
 #endif
@@ -7689,7 +7648,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 } else {
                     doCachedComp = nodeID;
                 }
-              
+
             } else {
                 RestoreScalingFactors       (index, *cbid, patternCnt, scc, sccb);
 
@@ -7726,8 +7685,8 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
 
 
-            _Parameter sum  = 0.;
-          
+            hyFloat sum  = 0.;
+
             if (doCachedComp >= 3) {
 #ifdef _UBER_VERBOSE_LF_DEBUG
                 fprintf (stderr, "CACHE compute branch %d\n",doCachedComp-3);
@@ -7753,8 +7712,8 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 #ifdef _UBER_VERBOSE_LF_DEBUG
                 fprintf (stderr, "NORMAL compute lf \n");
 #endif
-          
-            _Parameter* thread_results = new _Parameter[np];
+
+            hyFloat* thread_results = new hyFloat[np];
             #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
               for (blockID = 0; blockID < np; blockID ++) {
                 thread_results[blockID] = t->ComputeTreeBlockByBranch (*sl,
@@ -7774,23 +7733,23 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                     branchIndex,
                                                     branchIndex >= 0 ? branchValues->lData: nil);
               }
-         
-          
+
+
             if (np > 1) {
-              _Parameter correction = 0.;
+              hyFloat correction = 0.;
               for (blockID = 0; blockID < np; blockID ++)  {
                 thread_results[blockID] -= correction;
-                _Parameter temp_sum = sum +  thread_results[blockID];
+                hyFloat temp_sum = sum +  thread_results[blockID];
                 correction = (temp_sum - sum) - thread_results[blockID];
                 sum = temp_sum;
               }
-              
-              
+
+
             } else {
               sum = thread_results[0];
-              
+
             }
-          
+
             delete [] thread_results;
             /*
             #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum) if (np>1)
@@ -7821,18 +7780,18 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 doCachedComp = -doCachedComp-1;
                 //printf ("Set up %d\n", doCachedComp);
                 *cbid = doCachedComp;
-              
+
 
                 overallScalingFactorsBackup.lData[index] = overallScalingFactors.lData[index];
                 if (sccb)
                     for (long recoverIndex = 0; recoverIndex < patternCnt; recoverIndex++) {
                         sccb[recoverIndex] = scc[recoverIndex];
                     }
-              
+
                 /*for (unsigned long p_id = 0; p_id < indexInd.lLength; p_id++) {
                   printf ("%ld %s = %15.12g\n", p_id, GetIthIndependentVar(p_id)->GetName()->sData, (*parameterValuesAndRanges)(p_id,0));
                 }*/
-              
+
                  #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
                 for (blockID = 0; blockID < np; blockID ++) {
                     t->ComputeBranchCache (*sl,doCachedComp, bc, inc, df,
@@ -7845,11 +7804,11 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                            (1+blockID) * sitesPerP,
                                            catID,tcc,siteRes);
                 }
-              
+
                 // check results
 
                 if (sum > -A_LARGE_NUMBER) {
-                   _Parameter checksum = t->ComputeLLWithBranchCache (*sl,
+                   hyFloat checksum = t->ComputeLLWithBranchCache (*sl,
                                                      doCachedComp,
                                                      bc,
                                                      df,
@@ -7858,9 +7817,9 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                      catID,
                                                      siteRes)
                   - _logLFScaler * overallScalingFactors.lData[index];
-                
+
                   if (fabs ((checksum-sum)/sum) > 0.00001) {
-                    /*_Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
+                    /*hyFloat check2 = t->ComputeTreeBlockByBranch (*sl,
                                                                      *branches,
                                                                      tcc,
                                                                      df,
@@ -7879,15 +7838,14 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
                     _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName();
 
-                    
-                    WarnError (_String("Internal error in ComputeBranchCache (branch ") & *node_name &
-                                " ) reversible model cached likelihood = "& checksum & ", directly computed likelihood = " & sum & 
+
+                    HandleApplicationError (_String("Internal error in ComputeBranchCache (branch ") & *node_name &
+                                " ) reversible model cached likelihood = "& checksum & ", directly computed likelihood = " & sum &
                                ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
-                    WarnError ("Bailing");
                     return -A_LARGE_NUMBER;
                   }
                 }
-              
+
                 // need to update siteRes when computing cache and changing scaling factors!
             }
             return sum;
@@ -7920,7 +7878,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 #endif
 
     } else {
-        WarnError ("Dude -- lame! No cache. I can't compute like that with the new LF engine.");
+        HandleApplicationError ("Dude -- lame! No cache. I can't compute like that with the new LF engine.");
     }
 
     return 0.0;
@@ -8106,7 +8064,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
 
 
 
-    _Parameter      skipo = 1.0;
+    hyFloat      skipo = 1.0;
     _TheTree        *t = (_TheTree*)LocateVar(theTrees(index));
     checkParameter  (optimizeSummationOrder,skipo,1.0);
 
@@ -8265,10 +8223,10 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
 
             long        level,
                         nc          =   0;
-          
+
 
             node_iterator<long> ni (spanningTreeRoot, _HY_TREE_TRAVERSAL_POSTORDER);
-   
+
             while (node<long>* iterator = ni.Next()) {
               if (iterator != spanningTreeRoot) {
                 long maxLevel2 = 0L;
@@ -8423,7 +8381,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
 
 #endif
 
-    _Parameter strl = CostOfPath (df,t,straight),
+    hyFloat strl = CostOfPath (df,t,straight),
                optl = CostOfPath (df,t,sl,tcc);
 
     if (vLevel>500) {
@@ -8443,7 +8401,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
     if (mstCache) {
         long     memOverhead = mstCache->cacheSize.lData[mstCache->cacheSize.lLength-1];
         if (memOverhead) {
-            memOverhead *= (t->GetINodeCount()*(sizeof(_Parameter)*t->GetCodeBase()+sizeof(long)+sizeof (char))+t->GetLeafCount()*(sizeof(_Parameter)+sizeof(long)))/1024;
+            memOverhead *= (t->GetINodeCount()*(sizeof(hyFloat)*t->GetCodeBase()+sizeof(long)+sizeof (char))+t->GetLeafCount()*(sizeof(hyFloat)+sizeof(long)))/1024;
             snprintf (buffer, sizeof(buffer),"\nIf using full MST heurisitcs: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %ld KB memory overhead",globalLength,(long)strl,strl/(double)globalLength,optl/(double)globalLength,memOverhead);
             ReportWarning (buffer);
             if (vLevel>5) {
@@ -8511,7 +8469,7 @@ unsigned long    _LikelihoodFunction::CountObjects (_LikelihoodFunctionCountType
       case kLFCountCategoryVariables:
           return indexCat.lLength;
     }
-  
+
     return theTrees.lLength;
 }
 
@@ -8535,7 +8493,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
         if (partitionList->lLength == 0 ||
             partitionList->lLength > theDataFilters.lLength) {
             errMsg = "The partition list for sub-export passed to SerializeLF "
-                     "was either emptyString or too long";
+                     "was either kEmptyString or too long";
         } else {
             // check for duplicates and index overrun
             partitionList->Sort();
@@ -8556,7 +8514,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
         }
 
         if (errMsg.sLength) {
-            WarnError(errMsg);
+            HandleApplicationError(errMsg);
             return;
         }
     }
@@ -8606,8 +8564,8 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
         long tIdx = dataSetList._SimpleList::Find(
             (long)(GetDataFilter(redirector->Get(idx))
                        ->GetData()));
-    
-      
+
+
         tIdx = taggedDS.Insert((BaseRef) tIdx, taggedDS.countitems());
 
         if (tIdx < 0L) {
@@ -8619,13 +8577,11 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     }
 
     if (taggedDS.countitems() > 1 && exportPart) {
-        _String errMsg =
-            _String("Can't represent likelihood function ") &
-            *(_String *)likeFuncNamesList(
-                likeFuncList._SimpleList::Find((long) this)) &
-            " as a single file with a prespecified partition, because it "
-            "depends on multiple datasets. This is an internal error.";
-        WarnError(errMsg);
+        HandleApplicationError(_String("Can't represent likelihood function ") &
+                               ((_String *)likeFuncNamesList(
+                                                             likeFuncList._SimpleList::Find((long) this)))->Enquote() &
+                               " as a single file with a prespecified partition, because it "
+                               "depends on multiple datasets. This is an internal error.");
         return;
     }
 
@@ -8643,7 +8599,6 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     for (unsigned long idx3 = 0; idx3 < indexedDataSets.lLength; idx3++) {
         unique_sites << 0;
         _SimpleList *esl = new _SimpleList;
-        checkPointer(esl);
         avlSupport.AppendNewInstance(esl);
         involvedSites.AppendNewInstance(new _AVLListX(esl));
         dV.AppendNewInstance(new _SimpleList);
@@ -8694,7 +8649,6 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     for (unsigned long idx5 = 0; idx5 < indexedDataSets.lLength; idx5++) {
 
         _DataSetFilter *entireSet = new _DataSetFilter();
-        checkPointer(entireSet);
         _SimpleList dH;
         stashParameter(skipOmissions, 0.0, true);
         entireSet->SetFilter(
@@ -8730,7 +8684,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     }
 
     if (opt == _hyphyLFSerializeModeOptimize) {
-        _Parameter p1, p2;
+        hyFloat p1, p2;
         checkParameter(useLastResults, p1, 0.0);
         checkParameter(useInitialDistanceGuess, p2, 1.0);
         if (CheckEqual(p1, 0.0) && p2 > .1) {
@@ -8761,7 +8715,6 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
         depVarList = new _SimpleList;
         catVarList = new _SimpleList;
 
-        checkPointer((Ptr)(indepVarList && depVarList && catVarList));
         ScanAllVariablesOnPartition(*partitionList, *indepVarList, *depVarList,
                                     *catVarList);
     } else {
@@ -8796,7 +8749,6 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
 
     if (partitionList) {
         redirectorT = new _SimpleList;
-        checkPointer(redirectorT);
         for (long pidx = 0; pidx < partitionList->lLength; pidx = pidx + 1) {
             (*redirectorT) << theTrees.lData[partitionList->lData[pidx]];
         }
@@ -8830,7 +8782,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
 
 
     // write out all the trees, including model definitions if needed
-    _Parameter stashIM = 0.0;
+    hyFloat stashIM = 0.0;
     checkParameter(tryNumericSequenceMatch, stashIM, 0.0);
 
     rec.AppendAnAssignmentToBuffer(&tryNumericSequenceMatch,
@@ -8905,16 +8857,16 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
                     << ','
                     << _String((long) theDF->GetUnitLength())
                     << ',';
-          
+
             if (horPart) {
               rec << horPart->Enquote('"');
               DeleteObject(horPart);
             }
             horPart = (_String *)theDF->theNodeMap.ListToPartitionString();
-          
+
             rec << ','
                 << horPart->Enquote('"');
-          
+
             DeleteObject(horPart);
 
             horPart = theDF->GetExclusions();
@@ -8960,7 +8912,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
 
     if (opt == _hyphyLFSerializeModeOptimize) {
         rec << ");\n";
-        _Parameter pv;
+        hyFloat pv;
         checkParameter(optimizationPrecision, pv, 0.001);
         rec.AppendAnAssignmentToBuffer(&optimizationPrecision, new _String(pv));
         checkParameter(optimizationMethod, pv, 4.);
@@ -9026,7 +8978,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
 //_______________________________________________________________________________________
 
 BaseRef _LikelihoodFunction::toStr (unsigned long) {
-    _Parameter longOrShort,
+    hyFloat longOrShort,
                value = 0.0;
 
     checkParameter(likefuncOutput,longOrShort,2.0);
@@ -9057,7 +9009,7 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
             } else {
                 snprintf (str, sizeof(str), "\n%s=%.16g;", thisVar->GetName()->getStr(),(double)GetIthIndependent(i));
             }
-          
+
             res<<str;
 
             if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
@@ -9072,9 +9024,9 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
         if (indexDep.lLength>0) {
             for (long i=0; i<indexDep.lLength; i++) {
                 thisVar = LocateVar(indexDep.lData[i]);
-              
+
                 res.AppendAnAssignmentToBuffer(thisVar->GetName(), thisVar->GetFormulaString(), kAppendAnAssignmentToBufferFree | (thisVar->IsGlobal() ? kAppendAnAssignmentToBufferGlobal : 0));
-              
+
                 if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
                     snprintf (str, sizeof(str), "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
                     res<<str;
@@ -9147,15 +9099,15 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
             res<<currentTree->GetName();
             l1 = currentTree->GetName()->Length();
             res<<'=';
-          
+
             _TreeIterator ti (currentTree, _HY_TREE_TRAVERSAL_POSTORDER);
-          
+
             _CalcNode* currentNode=ti.Next(),
                      * nextNode;
-          
+
             level = ti.Depth();
             nextNode=ti.Next();
-          
+
             _SimpleList iV, dV2;
             // decide if we can use expected substituion measure
             bool    useExpectedSubstitutions = longOrShort<3;
@@ -9170,7 +9122,7 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
                         res<<',';
                     }
                     res.AppendNCopies('(', level-lastLevel);
-                  
+
                 } else if (level<lastLevel) {
                     res.AppendNCopies(')', lastLevel-level);
                 } else {
@@ -9226,8 +9178,8 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
                     if (!theMx) {
                         expSubStr = "NAN";
                     } else {
-                        _Parameter expSubs = currentNode->ComputeBranchLength();
-                        expSubStr = (_Parameter)fabs(expSubs);
+                        hyFloat expSubs = currentNode->ComputeBranchLength();
+                        expSubStr = (hyFloat)fabs(expSubs);
                     }
                     res<<&expSubStr;
 
@@ -9239,7 +9191,7 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
 
             }
             res.AppendNCopies(')', lastLevel - level);
-          
+
             res<<';';
         }
         res << '\n';
@@ -9278,37 +9230,37 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::StateCounter (long functionCallback) {
-  WarnError ("This feature has not yet been implemented in the new LF engine framework");
+void    _LikelihoodFunction::StateCounter (long functionCallback) const {
+  HandleApplicationError ("This feature has not yet been implemented in the new LF engine framework");
 }
-  
+
     //_______________________________________________________________________________________
-  
-  void    _LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Matrix* catValues, _Matrix* catNames, _Matrix* spawnValues, _String* storeIntermediates) const {
+
+  void    _LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Matrix* catValues, _Matrix* catNames, _Matrix* spawnValues, _String const* storeIntermediates) const {
       // will step thru multiple trees of the project and simulate  a dataset from the likelihood function
-    
+
     enum {
       kLFSimulateCategoriesNone,
       kLFSimulateCategoriesDiscrete,
       kLFSimulateCategoriesContinuous
     } category_simulation_mode = kLFSimulateCategoriesNone;
-    
+
       //char catSim = 0;
       // 0 - not at all
       // 1 - discrete,
       // 2 - continuous
-    
-    
+
+
     _SimpleList     continuous_category_variables,
     discrete_category_variables,
     HMM_category_variables,
     HMM_state;
-    
+
     bool            simulate_column_wise = false;
-    
+
     if (indexCat.lLength) {
       checkParameter (categorySimulationMethod,categorySimMethod,2.0);
-      
+
       if (categorySimMethod > 1.5) {
         category_simulation_mode = kLFSimulateCategoriesContinuous;
       } else {
@@ -9316,8 +9268,8 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
           category_simulation_mode = kLFSimulateCategoriesDiscrete;
         }
       }
-      
-      
+
+
       if (category_simulation_mode  == kLFSimulateCategoriesContinuous) {
         for (unsigned long cat_index = 0UL; cat_index < indexCat.lLength; cat_index ++) {
           _CategoryVariable* ith_category = GetIthCategoryVar(cat_index);
@@ -9339,77 +9291,77 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
           discrete_category_variables << cat_index;
         }
       }
-      
+
       if (catNames && indexCat.lLength) {
-        
+
         catNames->Clear();
         CreateMatrix (catNames,indexCat.lLength,1,false,true,false);
         catNames->Convert2Formulas();
-        
+
         _SimpleList* all_arrays[3] = { & HMM_category_variables, & discrete_category_variables, & continuous_category_variables };
-        
+
         unsigned long through_index = 0UL;
-        
+
         for (_SimpleList * array : all_arrays) {
           for (unsigned long i = 0UL; i < array->lLength; i++, through_index++) {
             catNames->StoreFormula (through_index,0L,*new _Formula (new _FString (*LocateVar (array->GetElement(i))->GetName())), false, false);
           }
         }
-        
+
       }
     }
-    
+
     _DataSetFilter const *first_filter = GetIthFilter(0);
-    
+
     unsigned long species_count = first_filter->NumberSpecies();
-    
+
     for (unsigned long sequence_index = 0UL; sequence_index < species_count; sequence_index ++) {
       target.AddName(*first_filter->GetSequenceName(sequence_index));
     }
-    
+
     unsigned long    internal_node_count = 0UL;
-    
+
     if (storeIntermediates && storeIntermediates->sLength == 0) {
       GetIthTree (0L)->AddNodeNamesToDS (&target,false,true,0); // only add internal node names
       internal_node_count = target.GetNames().lLength - species_count;
     }
     target.SetTranslationTable (first_filter->GetData());
-    
+
     unsigned long sequences_to_simulate = target.GetNames().lLength,
     site_offset_raw       = 0UL,
       // raw offset (e.g. in nucleotides for codon data
     site_offset          = 0UL,
     total_sites          = 0UL;
-    
+
     for (unsigned long i = 0UL; i<theTrees.lLength; i++) {
       total_sites += GetIthFilter(i)->GetSiteCountInUnits();
     }
-    
+
     if (catValues && indexCat.lLength) {
       catValues->Clear();
       CreateMatrix (catValues,indexCat.lLength,total_sites,false,true,false);
     }
-    
+
     TimeDifference timer;
-    
-    
+
+
     bool       column_wise  = false;
-    
-    
+
+
     for (unsigned long partition_index = 0UL; partition_index<theTrees.lLength; partition_index++) { // loop thru the trees one at a time
                                                                                                      // will propagate a complete column thru the tree
                                                                                                      // first generate a root sequence
       _SimpleList user_exclusions_numeric;
-      
+
       _DataSetFilter const * this_filter  = GetIthFilter(partition_index);
       if (this_filter->NumberSpecies()+internal_node_count != sequences_to_simulate) {
         ReportWarning (_String ("Ignoring partition ") & _String ((long) (partition_index + 1L)) & " of the likelihood function since it has a different number of sequences/tree than the first part.");
         continue;
       }
-      _Parameter * this_freqs = ((_Matrix*)GetIthFrequencies(partition_index)->ComputeNumeric())->fastIndex();
+      hyFloat * this_freqs = ((_Matrix*)GetIthFrequencies(partition_index)->ComputeNumeric())->fastIndex();
       _TheTree *this_tree = GetIthTree (partition_index);
-      
-      
+
+
       unsigned long    this_site_count  = this_filter->GetSiteCountInUnits(),
       leaf_count       = 0L,
       good_sites       = 0L,
@@ -9417,14 +9369,14 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
       sites_per_unit    = this_filter->GetUnitLength(),
       this_raw_site_count = this_filter->GetSiteCount();
 
-      
+
       if (theExclusions.lLength>partition_index) {
         _List*      user_exclusions = (_List*)theExclusions(partition_index);
-        
-        
+
+
         if (user_exclusions->countitems() > 0) {
           const _TranslationTable* this_translation_table = this_filter->GetTranslationTable();
-          
+
           for (unsigned long state = 0UL; state < user_exclusions->lLength; state++) {
             long resolved_state = this_translation_table->MultiTokenResolutions(*(_String*)user_exclusions->GetItem(state), NULL);
             if (resolved_state < 0L) {
@@ -9433,102 +9385,102 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
               user_exclusions_numeric << state;
             }
           }
-          
+
           column_wise = true;
         }
       }
-      
+
       if (category_simulation_mode != kLFSimulateCategoriesNone) {
         column_wise = true;
       }
-      
+
       if (column_wise) {
-        
+
         _TheTree * this_tree = GetIthTree (partition_index);
         this_tree->SetUpMatrices(1);
         while (good_sites < this_site_count) {
-          
+
           if (category_simulation_mode != kLFSimulateCategoriesNone ) {
-            
+
             for (unsigned long hmm_category_index =0UL;
                  hmm_category_index < HMM_category_variables.lLength;
                  hmm_category_index ++) { // deal with HMM
-              
+
               _CategoryVariable* hmm_cat = GetIthCategoryVar(HMM_category_variables(hmm_category_index));
-              
+
               _Matrix* category_weight_matrix = hmm_cat->GetWeights();
-              _Parameter* category_weights;
-              
+              hyFloat* category_weights;
+
               unsigned long category_count = hmm_cat->GetNumberOfIntervals();
-              
+
               if (good_sites == 0L) {
                 category_weights = category_weight_matrix->fastIndex();
               } else {
                 _Matrix * hmm = hmm_cat->ComputeHiddenMarkov();
                 category_weights = hmm->theData+hmm->GetVDim()* HMM_state(hmm_category_index);
               }
-              
+
               unsigned long root_state = DrawFromDiscrete(category_weights, category_count);
-              
+
               hmm_cat->SetIntervalValue(root_state);
               if (good_sites > 0L) {
                 HMM_state [hmm_category_index] = root_state;
               }
-              
+
               if (catValues) {
                 catValues->Store (hmm_category_index,site_offset+good_sites,hmm_cat->Compute()->Value());
               }
             }
-            
+
             for (unsigned long discrete_category_index = 0UL;
                  discrete_category_index < discrete_category_variables.lLength;
                  discrete_category_index++) {
-              
-              
+
+
               _CategoryVariable* discrete_cat = GetIthCategoryVar(discrete_category_variables(discrete_category_index));
-              
+
               unsigned long category_value = DrawFromDiscrete(discrete_cat->GetWeights()->fastIndex(), discrete_cat->GetNumberOfIntervals());
-              
+
               discrete_cat->SetIntervalValue(category_value);
-              
+
               if (catValues) {
                 catValues->Store (discrete_category_index+HMM_category_variables.lLength,site_offset+good_sites,discrete_cat->Compute()->Value());
               }
             }
-            
+
             for (unsigned long continuous_category_index = 0UL;
                  continuous_category_index < continuous_category_variables.lLength;
                  continuous_category_index++) { // use discrete values here
-              
+
               _CategoryVariable* continuous_cat_var = GetIthCategoryVar(continuous_category_variables(continuous_category_index));
-              
-              _Parameter  category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),_x_);
-              
+
+              hyFloat  category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),hy_x_variable);
+
               continuous_cat_var->SetValue(new _Constant (category_value), false);
               if (catValues) {
                 catValues->Store (continuous_category_index+discrete_category_variables.lLength+HMM_category_variables.lLength,site_offset+good_sites,category_value);
               }
             }
           } // end category initialization block
-          
+
           unsigned long root_state;
-          
+
           if (spawnValues) {
             root_state = spawnValues->theData[site_offset+good_sites];
           } else {
             root_state = DrawFromDiscrete(this_freqs, filter_dimension);
           }
-          
-          
+
+
           _SimpleList ancestral_values,
                       leaf_values;
-          
+
           if (SingleBuildLeafProbs    (this_tree->GetRoot(), root_state, leaf_values, user_exclusions_numeric,this_tree, true, this_filter, storeIntermediates?&ancestral_values:nil)) {
             good_sites++;
               //add this site to the simulated dataset
-            
-            
-            
+
+
+
             _String simulated_unit (this_filter->ConvertCodeToLetters(this_filter->CorrectCode(leaf_values(0)), sites_per_unit));
 
             for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
@@ -9543,12 +9495,12 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
               }
             }
 
-            
+
             target.ResetIHelper();
             for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
               target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
             }
-            
+
             if (storeIntermediates && storeIntermediates->sLength == 0UL) {
               for (unsigned long internal_node_index = 0UL; internal_node_index < internal_node_count; internal_node_index++) {
                 simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(ancestral_values(internal_node_index)), sites_per_unit);
@@ -9559,13 +9511,13 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
                 for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
                   target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
                 }
-                
+
               }
             }
           }
-          
-          _Parameter time_elapsed = timer.TimeSinceStart();
-          
+
+          hyFloat time_elapsed = timer.TimeSinceStart();
+
 
           if (time_elapsed > .25) {
 #if !defined __UNIX__ || defined __HEADLESS__
@@ -9577,12 +9529,12 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
         this_tree->CleanUpMatrices();
 
       } else {// end simulate column by column
-      
-        
+
+
         unsigned long *  simulated_sequence = new unsigned long [this_site_count];
-        
+
           // generate a random "spawning vector"
-        
+
         if (spawnValues) { // use supplied starting values
           for (unsigned long site_index = 0UL;  site_index < this_site_count; site_index++) {
             simulated_sequence[site_index] = spawnValues->theData[site_index+site_offset];
@@ -9592,17 +9544,17 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
             simulated_sequence[site_index] = DrawFromDiscrete(this_freqs, filter_dimension);
           }
         }
-        
+
           // now proceed down the tree branches to get the values of the probabilities at the leaves
           // this is done recursively
-        
+
         _DataSet * ancestral_sequences = nil;
-        
+
         if (storeIntermediates) {
           if (storeIntermediates->sLength) {
             FILE * file_for_ancestral_sequences = doFileOpen (storeIntermediates->sData,"w");
             if (!file_for_ancestral_sequences) {
-              WarnError (_String ("Failed to open ") & storeIntermediates->Enquote() & " for writing.");
+              HandleApplicationError (_String ("Failed to open ") & storeIntermediates->Enquote() & " for writing.");
               target.Finalize();
               return;
             } else {
@@ -9613,12 +9565,12 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
           } else {
             ancestral_sequences = new _DataSet (this_site_count);
           }
-          
+
           ancestral_sequences->SetTranslationTable (this_filter->GetData());
         }
-        
+
         BuildLeafProbs (this_tree->GetRoot(), simulated_sequence, this_site_count, target, this_tree, leaf_count, true, sites_per_unit, this_filter, site_offset_raw ,ancestral_sequences);
-        
+
         if (ancestral_sequences) {
           ancestral_sequences->Finalize();
           if (storeIntermediates->sLength == 0) {
@@ -9630,15 +9582,15 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) {
           }
           DeleteObject (ancestral_sequences);
         }
-        
+
         delete [] simulated_sequence;
       } // end over sequence-wise simulation
-      
+
       site_offset_raw   += this_raw_site_count;
       site_offset += this_site_count;
 
     } // end loop over partitions
-    
+
     target.Finalize();
     target.SetNoSpecies(target.GetNames().lLength);
   }
@@ -9665,7 +9617,7 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
             ccurNode->RecomputeMatrix(0,1);
         }
 
-        _Parameter * baseI = ccurNode->GetCompExp()->fastIndex();
+        hyFloat * baseI = ccurNode->GetCompExp()->fastIndex();
 
         m = ccurNode->GetCompExp()->GetVDim();
 
@@ -9745,35 +9697,35 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
 
 //_______________________________________________________________________________________
 
-  bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long parentState, _SimpleList& target, _SimpleList& theExc, _TheTree* curTree, bool isRoot, _DataSetFilter const* dsf, _SimpleList * iNodes) const {
-    
+bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long parentState, _SimpleList& target, _SimpleList& theExc, _TheTree* curTree, bool isRoot, _DataSetFilter const* dsf, _SimpleList * iNodes) const {
+
     long myState = parentState;
-    
+
     if (!isRoot) {
-      
+
       _CalcNode* ccurNode = (_CalcNode*)LocateVar (curNode.get_data());
-      
+
       if (ccurNode->NeedNewCategoryExponential(-1)) {
         ccurNode->RecomputeMatrix(0,1);
       }
-      
+
       unsigned long matrix_dimension = ccurNode->GetCompExp()->GetVDim();
-      
-      
+
+
       _Parameter* fastI = ccurNode->GetCompExp()->fastIndex()+parentState*matrix_dimension;
-      
+
       myState = DrawFromDiscrete(fastI, matrix_dimension);
 
       if (! curNode.is_leaf()) {
         if (iNodes) {
-          if (theExc.Find(myState)!=-1) {
+          if (theExc.Find(myState)!=kNotFound) {
             return false;
           }
           (*iNodes)<<myState;
           //return true;
         }
       } else {
-        if (theExc.Find(myState)!=-1) {
+        if (theExc.Find(myState)!=-kNotFound) {
           return false;
         }
         target<<myState;
@@ -9786,9 +9738,9 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
         (*iNodes)<<parentState;
       }
     }
-    
+
     // now scan the "children" and pass on the parameters as needed
-    
+
     for (long k = 1; k<=curNode.get_num_nodes(); k++) {
       if(!SingleBuildLeafProbs (*curNode.go_down(k), myState, target, theExc, curTree, false, dsf, iNodes)) {
         return false;
@@ -9797,240 +9749,6 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
     return true;
   }
 
-//_______________________________________________________________________________________
-
-_AssociativeList*   _LikelihoodFunction::SimulateCodonNeutral (_Matrix* synCost, _Matrix* nsCost, long countPerState)
-{
-    _AssociativeList * resList = new _AssociativeList;
-
-    if (indexCat.lLength || theTrees.lLength != 1) {
-        _String errMsg ("SimulateCodonNeutral works only with likelihood functions which do not include rate variation and contain exactly one partition.");
-        WarnError (errMsg);
-    } else {
-        PrepareToCompute ();
-        Compute();
-        _TheTree * tree = (_TheTree*)LocateVar(theTrees(0));
-
-        long       stateCount = nsCost->GetVDim();
-        _FString   aKey;
-
-        long       maxSubCount = 3*(tree->GetLeafCount()+tree->GetINodeCount()),
-                   mxDim       = 1+3*((1+maxSubCount)*maxSubCount);
-
-        SetStatusLine ("Simulating the null distribution");
-
-        long      doneCount     = 0;
-
-        for (long k=0; k<stateCount; k++) {
-            /*_Matrix              simmedSites (countPerState,2,false,true),
-                                   *sortedStates = nil;*/
-
-            _Matrix               simmedStates (mxDim,1,false,true);
-
-            for (long it = 0; it < countPerState; it++) {
-                _Parameter s  = 0.0,
-                           ns = 0.0;
-
-
-                doneCount++;
-
-
-                CodonNeutralSimulate    (tree->GetRoot(), k, true, synCost, nsCost, s, ns);
-
-#ifndef __BORLAND_HACK__
-                long nsi = round (s+ns);
-#else
-                long nsi = (long)(s+ns+0.5);
-#endif
-                if (ns <= maxSubCount) {
-                    if (nsi) {
-#ifndef __BORLAND_HACK__
-                        long si  = round(s*6.);
-#else
-                        long si  = (long)(s*6.+0.5);
-#endif
-
-                        simmedStates.theData[1+3*((nsi-1)*nsi)+si] += 1.0;
-                    } else {
-                        simmedStates.theData[0] += 1.0;
-                    }
-                }
-
-                /*simmedSites.theData[2*it]   = floor(s+ns);
-                simmedSites.theData[2*it+1] = s;*/
-            }
-
-            /* resort the matrix */
-
-            _AssociativeList      *stateAVL = new _AssociativeList;
-
-            for (long it2 = 0; it2 < maxSubCount; it2++) {
-                long    mxDim2 = it2?2+6*it2:2,
-                        offset = (it2>0)+3*((it2-1)*it2);
-
-                _Matrix * conditionalDistribution = new _Matrix (mxDim2,2,false,true);
-
-                _Parameter total = 0.0,
-                           mb    = 1./6.;
-
-                for (long idx2 = 0; idx2 < mxDim2-1; idx2++) {
-                    conditionalDistribution->theData[2*idx2+2] = idx2*mb;
-                    total += (conditionalDistribution->theData[2*idx2+3] = simmedStates.theData[offset+idx2]);
-                }
-
-                if (total>0.0) {
-                    conditionalDistribution->theData[0] = total;
-                    total = 1./total;
-                    conditionalDistribution->theData[3] *= total;
-                    for (long idx2 = 5; idx2 < 2*mxDim2; idx2+=2) {
-                        conditionalDistribution->theData[idx2] = conditionalDistribution->theData[idx2]*total+conditionalDistribution->theData[idx2-2];
-                    }
-
-                    *aKey.theString = it2;
-                    stateAVL->MStore (&aKey, conditionalDistribution, false);
-                } else {
-                    DeleteObject (conditionalDistribution);
-                }
-            }
-
-            *aKey.theString = k;
-            resList->MStore (&aKey, stateAVL, false);
-
-            /* now resort the values */
-
-            /*sortedStates = (_Matrix*)simmedSites.SortMatrixOnColumn (&_Constant (0.0));
-
-            _Parameter      lastV = sortedStates->theData[0];
-            long            lastI = 0,
-                            curI  = 0,
-                            mD    = 2*countPerState;
-
-            while (1)
-            {
-                while ( curI < mD && sortedStates->theData[curI] == lastV)
-                    curI += 2;
-
-                long        mxD = (curI - lastI)/2;
-
-                _Matrix     conditionalSample (mxD,1,false,true),
-                            * scs = nil;
-
-                for (long i2 = 0; i2 < mxD; i2++)
-                    conditionalSample.theData[i2] = sortedStates->theData[lastI+2*i2+1];
-
-
-                _Parameter      mxDI = 1./mxD;
-                scs = (_Matrix*)conditionalSample.SortMatrixOnColumn (&_Constant (0.0));
-
-                long    lastI2 = 0,
-                        curI2  = 0;
-
-                _Parameter lastV2 = scs->theData[0];
-
-                _AssociativeList condASL;
-
-                while (1)
-                {
-                    while (curI2 < mxD && scs->theData[curI2] == lastV2)
-                        curI2++;
-
-                    long mxD2 = curI2-lastI2;
-                    *aKey.theString = _String (lastV2);
-
-                    condASL.MStore (&aKey, new _Constant (mxD2*mxDI), false);
-                    lastI2 = curI2;
-
-                    if (curI2 < mxD)
-                        lastV2 = scs->theData[curI2];
-                    else
-                        break;
-                }
-
-                curI2 = condASL.avl.countitems();
-                _Matrix * condProbs = new _Matrix (curI2+1, 2, false, true);
-
-                condProbs->theData[0] = mxD;
-
-                _SimpleList tcache;
-
-                long        iv,
-                            k2 = condASL.avl.Traverser (tcache, iv, condASL.avl.GetRoot());
-
-                lastI2 = 2;
-                for (; k2>=0; k2 = condASL.avl.Traverser (tcache, iv))
-                {
-                    condProbs->theData[lastI2] = ((_String*)condASL.avl.Retrieve (k2))->toNum();
-                    condProbs->theData[lastI2+1] = ((_Constant*)condASL.avl.GetXtra (k2))->Value()+condProbs->theData[lastI2-1];
-                    lastI2+=2;
-                }
-
-                DeleteObject (scs);
-
-                *aKey.theString = lastV;
-                stateK->MStore (&aKey, condProbs, false);
-
-                lastI = curI;
-                if (curI < mD)
-                    lastV = sortedStates->theData[curI];
-                else
-                    break;
-
-            }
-
-            DeleteObject (sortedStates);
-            *aKey.theString = k;
-
-            resList->MStore (&aKey, stateK,false);*/
-
-        }
-        DoneComputing();
-    }
-    SetStatusLine ("Idle");
-    return resList;
-}
-
-//_______________________________________________________________________________________
-
-void    _LikelihoodFunction::CodonNeutralSimulate (node<long>& curNode, long parentState, bool isRoot, _Matrix* costMatrixS, _Matrix* costMatrixNS, _Parameter& synCount, _Parameter& nsCount)
-{
-    long myState = 0;
-
-    if (!isRoot) {
-        _CalcNode* ccurNode = (_CalcNode*)LocateVar (curNode.get_data());
-
-        _Matrix  * compExpMatrix = ccurNode->GetCompExp();
-
-        long   k=0,
-               n = compExpMatrix->GetVDim();
-
-        _Parameter* fastI = compExpMatrix->theData+parentState*n,
-                    randVal = genrand_int32()/(_Parameter)RAND_MAX_32,
-                    sumSoFar = 0.0;
-
-
-        while  ( randVal>sumSoFar && k<n) {
-            sumSoFar+=fastI[k];
-            k++;
-        }
-
-        if (k==0) {
-            myState = 0;
-        } else {
-            myState=k-1;
-        }
-
-        n = parentState * n + myState;
-        synCount += costMatrixS->theData[n];
-        nsCount  += costMatrixNS->theData[n];
-
-    }
-
-    // now scan the "children" and pass on the parameters as needed
-
-    for (long k = curNode.get_num_nodes(); k ; k--) {
-        CodonNeutralSimulate (*curNode.go_down(k), isRoot?parentState:myState, false, costMatrixS, costMatrixNS, synCount, nsCount);
-    }
-}
 
 //_______________________________________________________________________________________
 
@@ -10146,7 +9864,7 @@ long    _LikelihoodFunction::SequenceCount (long partID)
 //_______________________________________________________________________________________
 
 unsigned long    _LikelihoodFunction::SiteCount (void) const {
-  
+
     unsigned long res = 0UL;
 
     for (unsigned long i=0UL; i<theDataFilters.lLength; i++) {
@@ -10188,7 +9906,7 @@ void    _LikelihoodFunction::PrepareToCompute (bool disableClear) {
             hasBeenSetUp ++;
         }
         siteArrayPopulated = false;
- 
+
     } else {
         hasBeenSetUp++;
     }
@@ -10250,11 +9968,11 @@ void    _LikelihoodFunction::FillInConditionals(long partIndex) {
 //_______________________________________________________________________________________
 void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
 {
-    _SimpleList varRank (indexInd.lLength,0,0), 
+    _SimpleList varRank (indexInd.lLength,0,0),
                 holder;
-    
+
     gradientBlocks.Clear();
-    
+
     if (tagger) {
         for (unsigned long k=0; k<indexInd.lLength; k++) {
             long idx = tagger->Find((BaseRef)indexInd.lData[k]);
@@ -10290,37 +10008,37 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
             }
         }
     }
-    
+
     SortLists (&varRank,&indexInd);
     gradientBlocks.Clear();
-    
-    // enforce user provided rankings 
-    
+
+    // enforce user provided rankings
+
     _AssociativeList * variableGrouping = (_AssociativeList*)FetchObjectFromVariableByType(&userSuppliedVariableGrouping, ASSOCIATIVE_LIST);
     if (variableGrouping) {
-    
+
         _SimpleList  hist,
                      supportList;
-                      
+
         _AVLListX    existingRanking (&supportList);
-        
+
         long         ls,
-                     cn = variableGrouping->avl.Traverser (hist,ls,variableGrouping->avl.GetRoot());                     
-                     
+                     cn = variableGrouping->avl.Traverser (hist,ls,variableGrouping->avl.GetRoot());
+
         for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
             existingRanking.Insert((BaseRef)indexInd.lData[vi], vi, true);
-        }          
+        }
 
-        long  offset = 1; 
+        long  offset = 1;
         bool  re_sort = false;
-        
+
         while (cn >= 0) {
             _PMathObj anEntry = (_PMathObj)variableGrouping->avl.GetXtra (cn);
             if (anEntry->ObjectClass() == MATRIX) {
                 _Matrix *variableGroup = (_Matrix*) anEntry;
                 if (variableGroup -> IsAStringMatrix()) {
                     unsigned long dimension = variableGroup->GetHDim() * variableGroup->GetVDim ();
-                    
+
                     _SimpleList thisBlock;
                     for (unsigned long variable_id = 0; variable_id < dimension; variable_id ++) {
                         _String variableID ((_String*)variableGroup->GetFormula (variable_id,-1)->Compute()->toStr());
@@ -10342,25 +10060,25 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
         }
         if (re_sort) {
             _SimpleList new_ranks;
-            
+
             for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
                 new_ranks << existingRanking.GetXtra(existingRanking.Find ((BaseRef)indexInd.lData[vi]));
             }
             SortLists (&new_ranks,&indexInd);
 
-            
+
             if (gradientBlocks.lLength) {
                 _SimpleList  aux_list,
                              included (indexInd.lLength, 0,0),
                              not_listed;
-                
+
                 _AVLListX    indexIndToGlobalID (&aux_list);
-                
+
                 for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
                     indexIndToGlobalID.Insert((BaseRef)indexInd.lData[vi], vi, true);
                     //printf ("[%ld]\n",indexInd.lData[vi] );
                 }
-                
+
                 for (long b = 0; b < gradientBlocks.countitems(); b++) {
                     _SimpleList *a_block = (_SimpleList*)(gradientBlocks(b));
                     for (long i = 0; i < a_block->countitems(); i++){
@@ -10379,7 +10097,7 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
                         gradientBlocks.Delete(b--);
                     }
                 }
-                
+
                 if (gradientBlocks.lLength) {
                     for (long t = 0; t < included.lLength; t++) {
                         if (included.lData[t]==0) {
@@ -10390,52 +10108,29 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
                         gradientBlocks && & not_listed;
                     }
                 }
-                
+
                 /*for (long b = 0; b < gradientBlocks.lLength; b++) {
                     _SimpleList *a_block = (_SimpleList*)(gradientBlocks(b));
                     for (long i = 0; i < a_block->lLength; i++){
                         printf ("Block %ld variable %s\n", b, LocateVar(indexInd.lData[a_block->lData[i]])->GetName()->sData);
                     }
                 }*/
-                
+
             }
-            
+
         }
     }
-    
+
 }
+
 
 //_______________________________________________________________________________________
 
-_CustomFunction::_CustomFunction (_String* arg) {
-    _String body    (*arg),
-            errMsg ;
-
-    _FormulaParsingContext fpc (&errMsg, nil);
-
-    if (Parse (&myBody, body, fpc, nil) == HY_FORMULA_EXPRESSION) {
-        _SimpleList myVars;
-        _AVLList al (&myVars);
-        myBody.ScanFForVariables(al,true,false,false);
-        al.ReorderList();
-      
-        for (unsigned long k=0UL; k<myVars.lLength; k++) {
-              if (LocateVar(myVars.lData[k])->IsIndependent()) {
-                  indexInd << myVars.lData[k];
-              }
-        }
-    } else {
-        WarnError (_String ("An invalid expression supplied for formula-based custom LF: '") & errMsg & '\'');
-    }
-}
-
-//_______________________________________________________________________________________
-
-_Parameter _CustomFunction::Compute (void) {
+hyFloat _CustomFunction::Compute (void) {
     likeFuncEvalCallCount++;
     _SimpleList const * iv = &GetIndependentVars ();
     for (unsigned long i=0UL; i<iv->lLength; i++) {
-        _Parameter result = GetIthIndependent(i);
+        hyFloat result = GetIthIndependent(i);
 
         if (result<GetIthIndependentBound (i,true) || result>GetIthIndependentBound (i,false)) {
             return -A_LARGE_NUMBER;

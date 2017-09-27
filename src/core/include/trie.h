@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -44,13 +44,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "list.h"
 
-#define  HY_TRIE_NOTFOUND       -1L 
-#define  HY_TRIE_INVALID_LETTER -2L
+#define  kTrieInvalidLetter -2L
 
 /*_____________________________________________________________________________
     This is a simple class for representing prefix tries with integer values 
     attached to each string key.
 */
+
 
 //_____________________________________________________________________________
 class _Trie: public _List
@@ -92,6 +92,19 @@ class _Trie: public _List
          * @param alphabet -- a string listing all valid characters (e.g. "ACGT"). By default (or if an empty string is passed), all ASCII characters are allowed
          * @return Nothing. 
          */
+    
+         virtual void InitializeTrie (const _String* alphabet);
+    
+    
+        template <typename... values>  long  Insert (const _String& key, long payload, values... data) {
+            Insert (key, payload);
+            Insert (data...);
+        }
+ 
+        template <typename... values> _Trie (values... data) {
+            InitializeTrie (nil);
+            Insert (data...);
+        }
        
         virtual BaseRef toStr(unsigned long);
         /**
@@ -99,13 +112,13 @@ class _Trie: public _List
          * @return An dictionary representation of the trie, i.e. {"key1":"value1", "key2":"value2", ...} pairs
          */
         
-        virtual BaseRef makeDynamic(void);
+        virtual BaseRef makeDynamic(void) const;
         /**
          * Return a dynamic representation of this object
          * @return A _Trie reference created on the heap which is 'deep-copied' (i.e. all dynamic objects have a reference count of 1)
          */
        
-        virtual void    Duplicate(BaseRef storage);
+        virtual void    Duplicate(BaseRefConst storage);
         /**
          * Perform a deep copy of this object into storage (an allocated empty trie)
          * @param storage -- the _Trie object to copy this one into
@@ -132,7 +145,7 @@ class _Trie: public _List
          * @param  key      -- the string to search for
          * @param  path     -- store the indices for the trie traversal history (if supplied)
          * @param  prefixOK -- returns a match if a prefix of 'key' in the trie
-         * @return the index of the key in 'nodes' if found, HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise  
+         * @return the index of the key in 'nodes' if found, kNotFound/kTrieInvalidLetter otherwise  
          */
 
         long     FindKey (const char key, bool prefixOK = false) const;
@@ -140,14 +153,14 @@ class _Trie: public _List
          * Determine if 'key' is in the trie
          * @param  key      -- the character to search for
          * @param  prefixOK -- returns a match if a prefix of 'key' in the trie
-         * @return the index of the key in 'nodes' if found, HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise
+         * @return the index of the key in 'nodes' if found, kNotFound/kTrieInvalidLetter otherwise
          */
 
         long     GetValueFromString (const _String& key);
         /**
          * A convenience function which calls Find and then GetValue if teh key is found
          * @param  key      -- the string to search for
-         * @return the value associated with the key if found, HY_TRIE_NOTFOUND otherwise  
+         * @return the value associated with the key if found, kNotFound otherwise  
          */
 
         long    Insert (const _String& key, const long value);
@@ -155,7 +168,7 @@ class _Trie: public _List
          * Insert the key into the trie
          * @param key -- the string to insert
          * @param value -- the value to associate with the key
-         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER 
+         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise kNotFound/kTrieInvalidLetter 
          */
   
         _Trie&     operator < (const char * key);
@@ -172,7 +185,7 @@ class _Trie: public _List
          * @param key -- the string to insert
          * @param value -- the value to associate with the key
          * @param return_index - whether or not to return the index of the string in the trie (if true) or the length of the key (if false)
-         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER; if return_index == false, return strlen (key) if insert was successful
+         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise kNotFound/kTrieInvalidLetter; if return_index == false, return strlen (key) if insert was successful
          */
 
         void     UpdateValue (const long key, const long value);
@@ -219,7 +232,7 @@ class _Trie: public _List
          * @return the number of elements successfully deleted (including those not present)
          */
 
-        _String*          RetrieveStringFromPath (const _SimpleList& path, _String* alphabet);
+        _String*          RetrieveStringFromPath (const _SimpleList& path, _String const * alphabet);
          /**
          * Given a traversal path of the trie (and an optional cached alphabet), retrive the _String object spelling the path
          * @param path -- the traversal path (pairs of node index, character index)
@@ -233,7 +246,7 @@ class _Trie: public _List
          * @return The string containing all the letters allowed for strings in this trie. The ordering of the letters is ASCII-alphabetical. 
          */
 
-        _String  RetrieveKeyByPayload (const long key);
+        _String  const RetrieveKeyByPayload (const long key);
         /**
          * Return the string spelling the pay to the 'key'
          * @param key -- the key for which we fish to retrieve the path
@@ -248,14 +261,14 @@ class _Trie: public _List
          * Given a current position in the trie (current_index), try to walk down the next character
          * @param  letter -- the next letter
          * @param  current_index -- where in the trie are we currently located 
-         * @return A non-negative index (next position) in the trie; HY_TRIE_NOTFOUND/ if the letter were valid but no extension could be found, and HY_TRIE_INVALID_LETTER if the letter were invalid
+         * @return A non-negative index (next position) in the trie; kNotFound/ if the letter were valid but no extension could be found, and kTrieInvalidLetter if the letter were invalid
          */
         long InsertNextLetter     (const char letter, const unsigned long currentIndex);
         /**
          * Given a current position in the trie (current_index), insert the character (this assumes that the character is NOT present)
          * @param  letter -- the next letter
          * @param  current_index -- where in the trie are we currently located 
-         * @return A non-negative index (next position) in the trie; HY_TRIE_NOTFOUND/ if the letter were valid but no extension could be found, and HY_TRIE_INVALID_LETTER if the letter were invalid
+         * @return A non-negative index (next position) in the trie; kNotFound/ if the letter were valid but no extension could be found, and kTrieInvalidLetter if the letter were invalid
          */
          long FindNextUnusedIndex (bool alloc = TRUE);
          /**

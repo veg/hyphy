@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -51,8 +51,7 @@ void _Stack::Initialize (void)
 }
 
 //__________________________________________________________________________________
-void _Stack::Duplicate (BaseRef s)
-{
+void _Stack::Duplicate (BaseRefConst s) {
     theStack.Duplicate(&((_Stack*)s)->theStack);
 }
 

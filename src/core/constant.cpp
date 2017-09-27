@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -45,25 +45,29 @@
 #include "stdlib.h"
 #include "time.h"
 
+#include "mersenne_twister.h"
 #include "constant.h"
 
 //SW: This should be just helper functions
 #include "parser.h"
+#include "global_things.h"
+
+using namespace hy_global;
 
 _Formula *chi2 = nil,
          *derchi2 = nil;
 
 long randomCount = 0;
 
-extern _Parameter machineEps;
-extern _Parameter tolerance;
+extern hyFloat machineEps;
+extern hyFloat tolerance;
 
 long            lastMatrixDeclared = -1,
                 dummyVariable1,
                 dummyVariable2,
                 expressionsParsed = 0;
 
-_Parameter gammaCoeff [7] = {
+hyFloat gammaCoeff [7] = {
     2.50662827463100050,
     190.9551718944012,
     -216.8366818451899,
@@ -73,7 +77,7 @@ _Parameter gammaCoeff [7] = {
     -0.00001345152485367085
 };
 
-_Parameter lngammaCoeff [6] = {
+hyFloat lngammaCoeff [6] = {
     76.18009172947146,
     -86.50532032941677,
     24.01409824083091,
@@ -83,45 +87,38 @@ _Parameter lngammaCoeff [6] = {
 };
 
 //__________________________________________________________________________________
-_Constant::_Constant (_Parameter value)
-{
+_Constant::_Constant (hyFloat value) {
     theValue = value;
 }
 //__________________________________________________________________________________
 
-void _Constant::Initialize (bool)
-{
+void _Constant::Initialize (bool) {
     BaseObj::Initialize();
-    theValue = 0;
+    theValue = 0.;
 }
 //__________________________________________________________________________________
 
-void _Constant::Duplicate (BaseRef c)
-{
+void _Constant::Duplicate (BaseRefConst c) {
     BaseObj::Initialize();
-    theValue = ((_Constant*)c)->theValue;
+    theValue = ((_Constant const*)c)->theValue;
 }
 
 //__________________________________________________________________________________
 
-BaseRef _Constant::makeDynamic (void)
-{
-    _Constant * res = (_Constant*)checkPointer(new _Constant);
+BaseRef _Constant::makeDynamic (void) const{
+    _Constant * res = new _Constant;
     res->Duplicate(this);
     return res;
 }
 
 //__________________________________________________________________________________
 
-_Constant::_Constant (_String& s)
-{
-    theValue = atof (s.sData);
+_Constant::_Constant (_String& s) {
+    theValue = s.to_float();
 }
 
 //__________________________________________________________________________________
-_Constant::_Constant (void)
-{
-    theValue = 0;
+_Constant::_Constant (void) : theValue(0.0) {
 }
 
 //__________________________________________________________________________________
@@ -129,31 +126,27 @@ _Constant::_Constant (void)
 //}
 
 //__________________________________________________________________________________
-_Parameter    _Constant::Value (void)
-{
+hyFloat    _Constant::Value (void) {
     return theValue;
 }
 //__________________________________________________________________________________
-BaseRef _Constant::toStr(unsigned long)
-{
+BaseRef _Constant::toStr(unsigned long) {
     return parameterToString(Value());
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Add (_PMathObj theObj)
-{
+_PMathObj _Constant::Add (_PMathObj theObj) {
     if (theObj->ObjectClass() == STRING) {
-        return new _Constant ((theValue+((_FString*)theObj)->theString->toNum()));
+        return new _Constant (theValue+((_FString*)theObj)->get_str().to_float());
     } else {
-        return new _Constant ((theValue+((_Constant*)theObj)->theValue));
+        return new _Constant (theValue+((_Constant*)theObj)->theValue);
     }
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sub (_PMathObj theObj)
-{
+_PMathObj _Constant::Sub (_PMathObj theObj) {
     //if (theObj) return nil;
-    return new _Constant ((theValue-((_Constant*)theObj)->theValue));
+    return new _Constant (theValue-((_Constant*)theObj)->theValue);
     //else
     //  return  nil;
     //return       (_PMathObj)result.makeDynamic();
@@ -210,7 +203,7 @@ _PMathObj _Constant::Raise (_PMathObj theObj) {
     return nil;
   }
   
-  _Parameter    base  = Value(),
+  hyFloat    base  = Value(),
   expon = theObj->Value();
   
   if (base>0.0) {
@@ -220,8 +213,7 @@ _PMathObj _Constant::Raise (_PMathObj theObj) {
       if (CheckEqual (expon, (long)expon)) {
         return new _Constant (((((long)expon)%2)?-1:1)*exp (log(-base)*(expon)));
       } else {
-        _String errMsg ("An invalid base/exponent pair passed to ^");
-        WarnError (errMsg.sData);
+        HandleApplicationError( "An invalid base/exponent pair passed to ^");
       }
     }
     
@@ -235,15 +227,18 @@ _PMathObj _Constant::Raise (_PMathObj theObj) {
 //__________________________________________________________________________________
 _PMathObj _Constant::Random (_PMathObj upperB)
 {
-    if (randomCount == 0) {
+    if (randomCount == 0L) {
         randomCount++;
     }
-    _Parameter l = theValue, u=((_Constant*)upperB)->theValue,r = l;
+    
+    hyFloat l = theValue,
+             u = ((_Constant*)upperB)->theValue,
+             r = l;
+    
     if (u>l) {
-        r=genrand_int32();
-        r/=RAND_MAX_32;
-        r =l+(u-l)*r;
+        r = l + (u-l) * genrand_real1();
     }
+    
     return new _Constant (r);
 
 }
@@ -350,7 +345,7 @@ _PMathObj _Constant::Arctan (void)
 //__________________________________________________________________________________
 _PMathObj _Constant::Gamma (void)
 {
-    _Parameter theV = theValue>=1.0?theValue:2-theValue, result = gammaCoeff[0], temp = theV;
+    hyFloat theV = theValue>=1.0?theValue:2-theValue, result = gammaCoeff[0], temp = theV;
 
     for (long i=1; i<7; i++, temp+=1.0) {
         result+=gammaCoeff[i]/temp;
@@ -375,7 +370,7 @@ _PMathObj _Constant::Gamma (void)
 _PMathObj _Constant::LnGamma (void)
 {
     // obtained from Numerical Recipes in C, p. 214 by afyp, February 7, 2007
-    _Parameter  x, y, tmp, ser;
+    hyFloat  x, y, tmp, ser;
 
     y = x = theValue;
     tmp = x + 5.5;
@@ -393,7 +388,7 @@ _PMathObj _Constant::LnGamma (void)
 _PMathObj _Constant::Beta (_PMathObj arg)
 {
     if (arg->ObjectClass()!=NUMBER) {
-        WarnError ("A non-numerical argument passed to Beta(x,y)");
+        HandleApplicationError ("A non-numerical argument passed to Beta(x,y)");
         return    nil;
     }
     
@@ -434,8 +429,7 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
 
 
     if ((arg1->ObjectClass()!=NUMBER)||(arg2->ObjectClass()!=NUMBER)) {
-        _String     errMsg ("IBeta called with a non-scalar argument.");
-        WarnError   (errMsg);
+        HandleApplicationError ("IBeta called with a non-scalar argument.");
         return      nil;
     }
 
@@ -446,7 +440,7 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
         _Constant    *ac = (_Constant*)arg1,
                      *bc = (_Constant*)arg2;
 
-        _Parameter  a = ac->Value(),
+        hyFloat  a = ac->Value(),
                     b = bc->Value(),
                     x = theValue,
                     aa,
@@ -539,16 +533,14 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
 _PMathObj _Constant::IGamma (_PMathObj arg)
 {
     if (arg->ObjectClass()!=NUMBER) {
-        _String errMsg ("A non-numerical argument passed to IGamma(a,x)");
-        WarnError (errMsg);
+        HandleApplicationError ("A non-numerical argument passed to IGamma(a,x)");
         return new _Constant (0.0);
     }
-    _Parameter x = ((_Constant*)arg)->theValue, sum=0.0;
+    hyFloat x = ((_Constant*)arg)->theValue, sum=0.0;
     if (x>1e25) {
         x=1e25;
     } else if (x<0) {
-        _String errMsg ("The domain of x is {x>0} for IGamma (a,x)");
-        WarnError (errMsg);
+        HandleApplicationError ("The domain of x is {x>0} for IGamma (a,x)");
         return new _Constant (0.0);
     } else if (x==0.0) {
         return new _Constant (0.0);
@@ -558,7 +550,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
     if (x<=theValue+1) // use the series representation
         // IGamma (a,x)=exp(-x) x^a \sum_{n=0}^{\infty} \frac{\Gamma((a)}{\Gamma(a+1+n)} x^n
     {
-        _Parameter term = 1.0/theValue, den = theValue+1;
+        hyFloat term = 1.0/theValue, den = theValue+1;
         long count = 0;
         while ((fabs(term)>=fabs(sum)*machineEps)&&(count<500)) {
             sum+=term;
@@ -569,7 +561,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
     } else // use the continue fraction representation
         // IGamma (a,x)=exp(-x) x^a 1/x+/1-a/1+/1/x+/2-a/1+/2/x+...
     {
-        _Parameter lastTerm = 0, a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
+        hyFloat lastTerm = 0, a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
         for (long count = 1; count<500; count++) {
             an = count;
             ana = an - theValue;
@@ -600,7 +592,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
 //__________________________________________________________________________________
 _PMathObj _Constant::Erf (void)
 {
-    _Parameter lV = theValue;
+    hyFloat lV = theValue;
     _Constant  half (.5), sq = (lV*lV);
     _PMathObj  IG = half.IGamma(&sq);
     lV = ((_Constant*)IG)->theValue;
@@ -614,7 +606,7 @@ _PMathObj _Constant::Erf (void)
 //__________________________________________________________________________________
 _PMathObj _Constant::ZCDF (void)
 {
-    _Parameter lV = theValue;
+    hyFloat lV = theValue;
 
     _Constant  half (.5),
                sq (lV*lV/2);
@@ -635,10 +627,10 @@ _PMathObj _Constant::Time (void)
 {
     _Constant result;
     if (theValue<1.0) {
-        result.theValue = ((_Parameter)clock()/CLOCKS_PER_SEC);
+        result.theValue = ((hyFloat)clock()/CLOCKS_PER_SEC);
     } else {
         time_t tt;
-        result.theValue = ((_Parameter)time(&tt));
+        result.theValue = ((hyFloat)time(&tt));
     }
     return     (_PMathObj)result.makeDynamic();
 }
@@ -666,7 +658,7 @@ _PMathObj _Constant::Greater (_PMathObj theObj)
 //__________________________________________________________________________________
 _PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
 {
-    _Parameter x = theValue, a = ((_Constant*)alpha)->theValue,
+    hyFloat x = theValue, a = ((_Constant*)alpha)->theValue,
                b = ((_Constant*)beta)->theValue, gd = exp(a * log(b) -b*x +(a-1)*log(x));
     _Constant * c = (_Constant*)alpha->Gamma();
     gd/=c->theValue;
@@ -677,7 +669,7 @@ _PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
 //__________________________________________________________________________________
 _PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta)
 {
-    _Parameter     arg = theValue*((_Constant*)beta)->theValue;
+    hyFloat     arg = theValue*((_Constant*)beta)->theValue;
     /*if (arg==0)
     {
         _Constant zer (0);
@@ -706,15 +698,12 @@ _PMathObj _Constant::InvChi2 (_PMathObj n)
 // chi^2 n d.f. probability up to x
 {
     if (!chi2) {
-        _String fla ("IGamma(_n_,_x_)");
-        chi2 = new _Formula (fla, nil);
-        fla = "_x_^(_n_-1)/Gamma(_n_)/Exp(_x_)";
-        derchi2 = new _Formula (fla,nil);
+        chi2 = new _Formula (_String ("IGamma(") &  kNVariableName & "," & kXVariableName & ")", nil);
+        derchi2 = new _Formula (kXVariableName & "^(" & kNVariableName & "-1)/Gamma(" & kNVariableName & ")/Exp(" & kXVariableName & ")",nil);
     }
     _Constant halfn (((_Constant*)n)->theValue*.5);
-    if ((theValue<0)||(halfn.theValue<0)||(theValue>1.0)) {
-        _String warnMsg ("InvChi2(x,n) only makes sense for n positive, and x in [0,1]");
-        ReportWarning (warnMsg);
+    if (theValue<0. || halfn.theValue< 0.|| theValue> 1.0) {
+        ReportWarning ("InvChi2(x,n) is defined for n > 0, and x in [0,1]");
         return new _Constant (0.0);
     }
     LocateVar(dummyVariable2)->SetValue (&halfn);
@@ -748,7 +737,7 @@ _PMathObj _Constant::AreEqual (_PMathObj theObj)
         return nil;
     }
 
-    _Parameter a = theValue,
+    hyFloat a = theValue,
                b = ((_Constant*)theObj)->theValue;
 
     if (a==0.0) {
@@ -763,7 +752,7 @@ _PMathObj _Constant::NotEqual (_PMathObj theObj)
     if (!theObj) {
         return nil;
     }
-    _Parameter   a = theValue,
+    hyFloat   a = theValue,
                  b = ((_Constant*)theObj)->theValue;
 
     if (a==0.0) {

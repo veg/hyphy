@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -82,9 +82,9 @@ public:
         DeleteObject (weights);
     };
     virtual
-    BaseRef     makeDynamic             (void);
+    BaseRef     makeDynamic             (void) const;
     virtual
-    void        Duplicate               (BaseRef);
+    void        Duplicate               (BaseRefConst);
     virtual
     BaseRef     toStr                   (unsigned long = 0UL);
 
@@ -120,16 +120,16 @@ public:
         return representation;
     }
 
-    _Parameter  SetIntervalValue (long, bool recacl = true);
+    hyFloat  SetIntervalValue (long, bool recacl = true);
     // set interval value is returned
 
-    _Parameter  Mean (void);
+    hyFloat  Mean (void);
 
-    _Parameter  GetIntervalValue (long);
+    hyFloat  GetIntervalValue (long);
 
-    _Parameter  GetIntervalWeight(long);
+    hyFloat  GetIntervalWeight(long);
 
-    _Parameter* GetIntervalWeights(void) {
+    hyFloat* GetIntervalWeights(void) {
         return weights->fastIndex();
     }
 
@@ -157,10 +157,10 @@ public:
         return UpdateIntervalsAndValues(force);
     }
 
-    _Parameter  GetMinX (void)  {
+    hyFloat  GetMinX (void)  {
         return x_min;
     }
-    _Parameter  GetMaxX (void)  {
+    hyFloat  GetMaxX (void)  {
         return x_max;
     }
     bool        IsHiddenMarkov
@@ -214,7 +214,7 @@ private:
                 *weights,
                 *conditionalWeights;
 
-    _Parameter  x_min,
+    hyFloat  x_min,
                 x_max;      // distribution range
 
     _SimpleList parameterList;
@@ -227,6 +227,5 @@ private:
 //__________________________________________________________________________________
 
 extern  unsigned long  maxCategoryIntervals;
-extern  _Variable*  _x_, *_n_;
 
 #endif

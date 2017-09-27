@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -336,14 +336,13 @@ public:
     // draw a number of values using LHC sampling on parameter bounds
     // and check that they all define valid sets of probabilities
 
-    virtual void        SetStringCorpus         (_String*);
     virtual void        SetStringCorpus         (_Matrix*);
     // the strings to set SCFG string corpus
     // the first one does it from a HyPhy variable identifier, which is assumed
     // to reference either a string or a matrix of strings (it calls the second)
     // the second one does the work; lexing the input strings and converting
 
-    virtual _Parameter          Compute                 (void);
+    virtual hyFloat          Compute                 (void);
     // compute the derivation probability of the current corpus
     virtual _Matrix*            Optimize                ();
     // train the grammar using current corpus
@@ -673,13 +672,13 @@ protected:
     // initialize compute structures for a new corpus
     // by populating appropriate data structures with empties
 
-    _Parameter  ComputeInsideProb     (long, long, long, long, bool);
+    hyFloat  ComputeInsideProb     (long, long, long, long, bool);
     // compute the inside probability for substring from s (arg1) to t (arg2) - both zero based -
     // in corpus string j (arg3) derived from non-terminal i (arg4). The bool flag shows whether or
     // not this is the first call into a given corpus and that computeFlagsI should be consulted
     // during computation
 
-    _Parameter  ComputeOutsideProb    (long, long, long, long, bool, bool);
+    hyFloat  ComputeOutsideProb    (long, long, long, long, bool, bool);
     // compute the outside probability for substring from s (arg1) to t (arg2) - both zero based -
     // in corpus string j (arg3) derived from non-terminal i (arg4). The FIRST bool flag shows whether or
     // not this is the first call for outside probabilities into a given corpus and that computeFlagsO
@@ -689,7 +688,7 @@ protected:
     long        indexNT_T             (long, long);
     // index (nt, term) pairs into ntToTerminalMap
 
-    _Parameter  LookUpRuleProbability (long index) {
+    hyFloat  LookUpRuleProbability (long index) {
         return ((_Matrix*)probabilities.RetrieveNumeric())->theData[index];
     }
 
@@ -730,5 +729,6 @@ struct      bitMasks {
 };
 
 extern bitMasks bitMaskArray;
+extern _String  kSCFGCorpus;
 
 #endif

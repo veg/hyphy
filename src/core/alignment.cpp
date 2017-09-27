@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -40,7 +40,9 @@
 #include <cctype>
 #include <cstring>
 
+#include "global_things.h"
 #include "alignment.h"
+
 
 //____________________________________________________________________________________
 
@@ -196,6 +198,7 @@ long CodonAlignStringsStep( double * const score_matrix
 
         if ( r_codon < 0 ) {
             r_codon = cost_stride - 1;
+            printf ("*** NIL CODON *** %ld %ld %ld %ld\n", reference[ rpos - 3 ], reference[ rpos - 2], reference[ rpos - 1], r_codon);
         }
     }
 
@@ -588,8 +591,8 @@ inline void BacktrackAlignCodon( signed char * const edit_ops
 
 //____________________________________________________________________________________
 
-inline void MatchScore( char * r_str
-                      , char * q_str
+inline void MatchScore( char const * r_str
+                      , char const * q_str
                       , const long r
                       , const long q
                       , long * char_map
@@ -608,8 +611,8 @@ inline void MatchScore( char * r_str
 
 //____________________________________________________________________________________
 
-double AlignStrings( char * const r_str
-                   , char * const q_str
+double AlignStrings( char const * r_str
+                   , char const * q_str
                    , char * & r_res
                    , char * & q_res
                    , long * const char_map
@@ -643,7 +646,7 @@ double AlignStrings( char * const r_str
     double score = 0.;
 
     if ( do_codon && ( r_len % 3 != 0 ) ) {
-        WarnError( "Reference sequence length not divisible by 3 in AlignStrings (codon mode)" );
+        hy_global::HandleApplicationError ( "Reference sequence length not divisible by 3 in AlignStrings (codon mode)" );
         return -A_LARGE_NUMBER;
     }
 
@@ -1202,20 +1205,20 @@ double AlignStrings( char * const r_str
 
 //____________________________________________________________________________________
 
-_Parameter   CostOnly   (_String * s1,               // first string
-                         _String * s2,               // second string
+hyFloat   CostOnly   (_String const * s1,               // first string
+                         _String const * s2,               // second string
                          long from1,            // start here in string1
                          long from2,            // start here in string2
                          long to1,              // up to here in string1 // not inclusive
                          long to2,              // up to here in string2 // not inclusive
                          bool rev1,             // reverse string1
                          bool rev2,             // reverse string2
-                         _SimpleList & cmap,         // char -> position in scoring matrix mapper
+                         long*  cmap,         // char -> position in scoring matrix mapper
                          _Matrix * ccost,            // NxN matrix of edit distances on characters
-                         _Parameter gopen,          // the cost of opening a gap in sequence 1
-                         _Parameter gextend,        // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
-                         _Parameter gopen2,         // the cost of opening a gap in sequence 2
-                         _Parameter gextend2,       // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
+                         hyFloat gopen,          // the cost of opening a gap in sequence 1
+                         hyFloat gextend,        // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
+                         hyFloat gopen2,         // the cost of opening a gap in sequence 2
+                         hyFloat gextend2,       // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
                          bool doLocal,              // ignore prefix and suffix gaps
                          bool doAffine,             // use affine gap penalties
                          _Matrix & scoreMatrix,      // where to write the last row of the scoring matrix
@@ -1225,7 +1228,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                          char * howAchieved
                         )
 {
-    _Parameter   score    = 0.;
+    hyFloat   score    = 0.;
 
     long         s1Length = to1-from1,
     s2Length = to2-from2;
@@ -1238,21 +1241,21 @@ _Parameter   CostOnly   (_String * s1,               // first string
 
     if (doLocal) {
         if (rev1) {
-            doLocal1S = (to1==s1->sLength);
-            doLocal1E = from1 == 0;
+            doLocal1S = (to1==s1->length());
+            doLocal1E = from1 == 0L;
             //doLocal1 = (to1==s1->sLength)*_ALIGNMENT_LOCAL_START + (from1 == 0)*_ALIGNMENT_LOCAL_END;
         } else {
-            doLocal1E = (to1==s1->sLength);
-            doLocal1S = from1 == 0;
+            doLocal1E = (to1==s1->length());
+            doLocal1S = from1 == 0L;
             //doLocal1 = (from1==0)*_ALIGNMENT_LOCAL_START + (to1==s1->sLength)*_ALIGNMENT_LOCAL_END;
         }
         if (rev2) {
-            doLocal2E = from2 == 0;
-            doLocal2S = (to2==s2->sLength);
+            doLocal2E = from2 == 0L;
+            doLocal2S = (to2==s2->length());
             //doLocal2 = (to2==s2->sLength)*_ALIGNMENT_LOCAL_START + (from2 == 0)*_ALIGNMENT_LOCAL_END;
         } else {
-            doLocal2S = from2 == 0;
-            doLocal2E = (to2==s2->sLength);
+            doLocal2S = from2 == 0L;
+            doLocal2E = (to2==s2->length());
             //doLocal2 = (from2==0)*_ALIGNMENT_LOCAL_START + (to2==s2->sLength)*_ALIGNMENT_LOCAL_END;
         }
     }
@@ -1263,7 +1266,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
         if (s2Length)
             // second string not empty
         {
-            _Parameter          aux2;
+            hyFloat          aux2;
             long                colCount = s2Length+1;
 
             scoreMatrix.theData[0] = 0.;
@@ -1273,7 +1276,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
 
 
             if (doLocal1S == 0) {
-                _Parameter cost = -gopen;
+                hyFloat cost = -gopen;
                 if (doAffine) {
                     for (long k=1; k < colCount; k++, cost-=gextend) {
                         scoreMatrix.theData[k]  = cost;
@@ -1312,7 +1315,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                 from2 --;
                 from1 --;
                 for (long r=1; r<=s1Length; r++) { // iterate by rows
-                    long      c1 = cmap.lData[(unsigned char) s1->sData[rev1?(to1-r):(from1+r)]];
+                    long      c1 = cmap[s1->get_uchar (rev1?(to1-r):(from1+r))];
 
                     if (doLocal2S) {
                         aux2        = 0.;
@@ -1324,7 +1327,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                     }
 
                     for (long c=1; c<=s2Length; c++) { // iterate by columns
-                        _Parameter gscore1  ,           // gap in 2nd
+                        hyFloat gscore1  ,           // gap in 2nd
                         gscore2  ,           // gap in 1st
                         gscore3  = aux2,     // no gap
                         t;
@@ -1364,7 +1367,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                         // if this is the second row, then we start a gap in the second sequence -|
 
                         if (c1>=0) {
-                            long       c2 = cmap.lData[(unsigned char) s2->sData[rev2?(to2-c):(from2+c)]];
+                            long       c2 = cmap[s2->get_uchar (rev2?(to2-c):(from2+c))];
 
                             if (c2>=0) {
                                 gscore3 += ccost->theData[c1*mapL+c2];
@@ -1419,10 +1422,10 @@ _Parameter   CostOnly   (_String * s1,               // first string
                     }
 
                     //printf ("%d: %g\t", r, scoreMatrix.theData[0]);
-                    long      c1 = cmap.lData[(unsigned char) s1->sData[rev1?(to1-r):(from1+r-1)]];
+                    long      c1 = cmap[s1->get_uchar (rev1?(to1-r):(from1+r-1))];
 
                     for (long c=1; c<=s2Length; c++) {
-                        _Parameter score1 = scoreMatrix.theData[c], // gap in 2nd
+                        hyFloat score1 = scoreMatrix.theData[c], // gap in 2nd
                         score2 = scoreMatrix.theData[c-1],  // gap in 1st
                         score3 = aux2;
 
@@ -1434,7 +1437,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
                         }
 
                         if (c1>=0) {
-                            long       c2 = cmap.lData[(unsigned char) s2->sData[rev2?(to2-c):(from2+c-1)]];
+                            long       c2 = cmap[s2->get_uchar (rev2?(to2-c):(from2+c-1))];
 
                             if (c2>=0) {
                                 score3 += ccost->theData[c1*mapL+c2];
@@ -1507,18 +1510,18 @@ _Parameter   CostOnly   (_String * s1,               // first string
 
 //____________________________________________________________________________________
 
-_Parameter      LinearSpaceAlign (_String *s1,                  // first string
-                                  _String *s2,                      // second string
-                                  _SimpleList& cmap,                // char -> position in scoring matrix mapper
+hyFloat      LinearSpaceAlign (_String const *s1,                  // first string
+                                  _String const *s2,                      // second string
+                                  long * cmap,                // char -> position in scoring matrix mapper
                                   _Matrix*    ccost,                // NxN matrix of edit distances on characters
-                                  _Parameter gopen,                 // the cost of opening a gap in sequence 1
-                                  _Parameter gextend,               // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
-                                  _Parameter gopen2,                // the cost of opening a gap in sequence 2
-                                  _Parameter gextend2,              // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
+                                  hyFloat gopen,                 // the cost of opening a gap in sequence 1
+                                  hyFloat gextend,               // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
+                                  hyFloat gopen2,                // the cost of opening a gap in sequence 2
+                                  hyFloat gextend2,              // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
                                   bool doLocal,                     // ignore prefix and suffix gaps
                                   bool doAffine,                    // use affine gap penalties
                                   _SimpleList& ops,                 // edit operations for the optimal alignment
-                                  _Parameter   scoreCheck,          // check the score of the alignment
+                                  hyFloat   scoreCheck,          // check the score of the alignment
                                   long         from1,
                                   long         to1,
                                   long         from2,
@@ -1538,21 +1541,21 @@ _Parameter      LinearSpaceAlign (_String *s1,                  // first string
 
     if                      (span1 > 1) {
         CostOnly                (s1,s2,from1,from2,midpoint,to2,false,false,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,*(buffer[0]), buffer[1], buffer[2], parentGapLink>=2, ha);
-        CostOnly                (s1,s2,midpoint,from2,to1,to2,true,true,  cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,*(buffer[3]), buffer[4], buffer[5],   2*(parentGapLink%2), ha+s2->sLength+1);
+        CostOnly                (s1,s2,midpoint,from2,to1,to2,true,true,  cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,*(buffer[3]), buffer[4], buffer[5],   2*(parentGapLink%2), ha+s2->length()+1UL);
     } else {
         CostOnly                (s1,s2,from1,from2,to1,to2,false,false,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,*(buffer[0]), buffer[1], buffer[2], (parentGapLink>=2), ha);
     }
 
-    _Parameter maxScore = -1e100;
+    hyFloat maxScore = -1e100;
     long       maxIndex = 0;
     bool       gapLink  = false;
     char       alignmentKind    = 0;
 
-    _Parameter    gapOffsetScore   = gopen2-gextend2;
+    hyFloat    gapOffsetScore   = gopen2-gextend2;
     if (!doAffine) {
         if (span1 > 1) {
             for (long k = 0; k <= span; k++) {
-                _Parameter currentScore = buffer[0]->theData[k] + buffer[3]->theData[span-k];
+                hyFloat currentScore = buffer[0]->theData[k] + buffer[3]->theData[span-k];
                 if (currentScore > maxScore) {
                     maxScore = currentScore;
                     maxIndex = k;
@@ -1560,9 +1563,9 @@ _Parameter      LinearSpaceAlign (_String *s1,                  // first string
             }
         } else { // handle the case of a single row span correctly
             for (long k = 0; k <= span; k++) {
-                _Parameter currentScore     = buffer[0]->theData[k];
+                hyFloat currentScore     = buffer[0]->theData[k];
 
-                if (!doLocal || to1 != s1->sLength) {
+                if (!doLocal || to1 != s1->length()) {
                     currentScore -= gopen*(span-k);
                 }
 
@@ -1579,11 +1582,11 @@ _Parameter      LinearSpaceAlign (_String *s1,                  // first string
             // or gap-to-gap link
 
             for (long k = 0; k <= span; k++) {
-                _Parameter currentScoreNoGap    = buffer[0]->theData[k] + buffer[3]->theData[span-k],
+                hyFloat currentScoreNoGap    = buffer[0]->theData[k] + buffer[3]->theData[span-k],
                 currentScoreWithGap2  = buffer[2]->theData[k] + buffer[5]->theData[span-k] + gapOffsetScore;
 
 
-                if (doAffine && (((from1 == 0 || from2==0) && k == 0) || ((to1 == s1->sLength || to2 == s2->sLength) && k == span))) {
+                if (doAffine && (((from1 == 0 || from2==0) && k == 0) || ((to1 == s1->length() || to2 == s2->length()) && k == span))) {
                     currentScoreWithGap2 -= gapOffsetScore;
                 }
 
@@ -1610,10 +1613,10 @@ _Parameter      LinearSpaceAlign (_String *s1,                  // first string
                 alignmentKind = 1;
             } else {
                 for (long k = 0; k <= span; k++) {
-                    _Parameter currentScoreNoGap    = buffer[0]->theData[k],
+                    hyFloat currentScoreNoGap    = buffer[0]->theData[k],
                     currentScoreWithGap2  = buffer[2]->theData[k];
 
-                    if (!doLocal || to1 != s1->sLength) // indel in sequence 1
+                    if (!doLocal || to1 != s1->length()) // indel in sequence 1
                         if (span-k) {
                             currentScoreNoGap       -= gopen;
                             currentScoreWithGap2    -= gopen;
@@ -1650,7 +1653,7 @@ _Parameter      LinearSpaceAlign (_String *s1,                  // first string
         }
     } else {
 
-        _Parameter check1 = buffer[0]->theData[maxIndex],
+        hyFloat check1 = buffer[0]->theData[maxIndex],
         check2 = buffer[3]->theData[span-maxIndex];
 
         if (span1>1) {
