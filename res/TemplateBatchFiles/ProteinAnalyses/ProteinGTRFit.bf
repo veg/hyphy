@@ -15,7 +15,7 @@ LoadFunctionLibrary("libv3/models/rate_variation.bf");
 
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
 LoadFunctionLibrary("libv3/models/protein/REV.bf");
-LoadFunctionLibrary("plusF_helper.ibf");
+LoadFunctionLibrary("libv3/models/protein.bf");
 LoadFunctionLibrary("ProteinGTRFit_helper.ibf");
 
 
@@ -97,37 +97,33 @@ else {
 
 }
 
-
-
-protein_gtr.baseline_Rij = plusF_helper.Rij_options[protein_gtr.baseline_model]; // Defined in helper
 if (protein_gtr.use_rate_variation == "Yes"){
-    protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription.withGamma";
+    protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F, with Gamma rates";
+    protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription.withGamma";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription.withGamma";
 } else{
-    protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription";
+    protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F";
+    protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription";
 }
 /********************************************************************************************************************/
 
 
-protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules ("libv3/") ,
-                                        "Functions" :
+protein_gtr.queue = mpi.CreateQueue ({  terms.mpi.Headers   : utility.GetListOfLoadedModules ("libv3/") ,
+                                        terms.mpi.Functions :
                                         {
                                             {"protein_gtr.REV.ModelDescription",
                                              "protein_gtr.REV.ModelDescription.withGamma",
                                              "protein_gtr.REV.ModelDescription.freqs",
-                                             "protein_gtr.plusF.ModelDescription",
-                                             "protein_gtr.plusF._GenerateRate",
-                                             "protein_gtr.plusF.frequencies"
+                                             "protein_gtr.Baseline.ModelDescription.withGamma",
+                                             "protein_gtr.Baseline.ModelDescription",
                                             }
                                         },
 
-                                        "Variables" : {{
+                                        terms.mpi.Variables : {{
                                             "protein_gtr.shared_EFV",
-                                            "protein_gtr.final_baseline_model",
+                                            "protein_gtr.baseline_model_desc",
                                             "protein_gtr.rev_model_branch_lengths",
-                                            "protein_gtr.baseline_Rij"
-
                                         }}
                                      });
 
@@ -140,7 +136,7 @@ protein_gtr.phase_key = protein_gtr.baseline_phase;
 
 
 /*************************** STEP ONE ***************************
-Perform an initial fit of Baseline model+4G to the data (or load cached fit.)
+Perform an initial fit of Baseline model+F(+/-4G) to the data (or load cached fit.)
 *****************************************************************/
 console.log("\n\n[PHASE 1] Performing initial branch length optimization using " + protein_gtr.baseline_model);
 

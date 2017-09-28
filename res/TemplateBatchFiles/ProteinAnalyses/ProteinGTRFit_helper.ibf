@@ -8,9 +8,7 @@ function protein_gtr.load_cached_options() {
     protein_gtr.tolerance = (protein_gtr.analysis_results[utility.getGlobalValue("terms.json.options")])[utility.getGlobalValue("protein_gtr.options.tolerance")];
     protein_gtr.baseline_model = (protein_gtr.analysis_results[utility.getGlobalValue("terms.json.options")])[utility.getGlobalValue("protein_gtr.options.baseline_model")];
     protein_gtr.use_rate_variation = (protein_gtr.analysis_results[utility.getGlobalValue("terms.json.options")])[utility.getGlobalValue("protein_gtr.options.rate_variation")];
-
-
-
+    
 
     /*** Cache options can in theory be saved as numbers if options piped in, although not typically. Remap to strings. ****/
     if (Type(protein_gtr.convergence_type) == "Number"){
@@ -22,7 +20,6 @@ function protein_gtr.load_cached_options() {
     if (Type(protein_gtr.protein_gtr.use_rate_variation) == "Number"){
         protein_gtr.use_rate_variation = utility.SwapKeysAndValues(utility.MatrixToDict(protein_gtr.rate_variation_options))[protein_gtr.use_rate_variation*2];
     }
-    return 0;
 }
 
 function protein_gtr.save_options() {
@@ -35,18 +32,43 @@ function protein_gtr.save_options() {
                                                                                 "number of datasets": protein_gtr.file_list_count};
 
     io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
-    return 0;
 }
+
+
+
+
+
+
 
 
 /* Model definitions, in particular for models with rate variation */
 //------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * @name models.protein.Baseline.ModelDescription.withGamma
+ * @description Define baseline (standard matrix) model w/ +F and *no* four-category gamma rate variation
+ */
+function protein_gtr.Baseline.ModelDescription(type){
+    def = Call( models.protein.empirical.plusF_generators[protein_gtr.baseline_model], type);
+    return def;
+}
+/**
+ * @name models.protein.Baseline.ModelDescription.withGamma
+ * @description Define baseline (standard matrix) model w/ +F and *yes* four-category gamma rate variation
+ */
+function protein_gtr.Baseline.ModelDescription.withGamma(type){
+    def = protein_gtr.Baseline.ModelDescription(type);
+	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
+    return def;
+}
+
+
 /**
  * @name models.protein.REV.ModelDescription.withGamma
  * @description Define REV model with four-category gamma rate variation
  */
-lfunction models.protein.REV.ModelDescription.withGamma (options) {
-	def = models.protein.REV.ModelDescription (options);
+lfunction models.protein.REV.ModelDescription.withGamma (type) {
+	def = models.protein.REV.ModelDescription (type);
 	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
 	return def;
 };
@@ -83,32 +105,6 @@ function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
     return model;
 }
 
-
-lfunction protein_gtr.plusF.ModelDescription(type) {
-    models.protein.plusF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
-    models.protein.plusF.ModelDescription.model_definition [utility.getGlobalValue("terms.model.empirical_rates")] = utility.getGlobalValue("protein_gtr.normalized_qij");
-    models.protein.plusF.ModelDescription.model_definition [utility.getGlobalValue("terms.model.frequency_estimator")] = "protein_gtr.plusF.frequencies";
-    models.protein.plusF.ModelDescription.model_definition [utility.getGlobalValue("terms.parameters")] = {utility.getGlobalValue("terms.global"): {}, utility.getGlobalValue("terms.local"): {}, utility.getGlobalValue("terms.model.empirical"): 19};
-    models.protein.plusF.ModelDescription.model_definition [utility.getGlobalValue("terms.model.q_ij")] = "protein_gtr.plusF._GenerateRate";
-    return models.protein.plusF.ModelDescription.model_definition;
-}
-
-lfunction protein_gtr.plusF.ModelDescription.withGamma (options) {
-	def = protein_gtr.plusF.ModelDescription (options);
-	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
-	return def;
-};
-
-
-lfunction protein_gtr.plusF._GenerateRate (from,to,namespace,modelType) {
-    return models.protein.empirical._GenerateRate (utility.getGlobalValue("protein_gtr.normalized_qij") , from,to,namespace,modelType);
-}
-
-lfunction protein_gtr.plusF.frequencies (model, namespace, datafilter) {
-    model[utility.getGlobalValue("terms.efv_estimate")] = utility.getGlobalValue("protein_gtr.empirical_frequencies");
-    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
-    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 19;
-}
 //------------------------------------------------------------------------------------------------------------------------
 
 
@@ -164,21 +160,14 @@ function protein_gtr.fitBaselineToFile (filename) {
     protein_gtr.full_trees = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_[terms.data.tree]');
     protein_gtr.full_data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_[terms.data.name]");
 
-
-
-    /******************** NORMALIZE MATRIX WITH DATA FREQUENCIES HERE *************************/
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
-    protein_gtr.empirical_frequencies = frequencies._aux.empirical.collect_data(protein_gtr.full_data_filter, 1, 1, 1);
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
-
-    protein_gtr.normalized_qij = plusF_helper.BuildCustomNormalizedQ(protein_gtr.empirical_frequencies, protein_gtr.baseline_Rij, models.protein.alphabet);
-
+    
     protein_gtr.baseline_mle = estimators.FitSingleModel_Ext(protein_gtr.full_data_filter,
                                                         protein_gtr.full_trees,
-                                                        protein_gtr.final_baseline_model,
+                                                        protein_gtr.baseline_model_desc,
                                                         None,
                                                         None);
-
+                                                        //
+                                                        
     protein_gtr.baseline_mle - terms.global; // delete empty key
     return protein_gtr.baseline_mle;
 }
