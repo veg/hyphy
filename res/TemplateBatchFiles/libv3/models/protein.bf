@@ -9,7 +9,7 @@ LoadFunctionLibrary ("frequencies.bf");
 models.protein.alphabet = {{"A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"}};
 
 
-/* Array of available empirical models */
+/* Available empirical models */
 models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067"},
                                    {"WAG", "Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
                                    {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
@@ -18,11 +18,26 @@ models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution
 
 models.protein.dimensions = 20;
 
+
+/**
+ * @name models.protein.generic.Time
+ * @param option - does nothing
+ * @returns default time
+ */
+function models.protein.generic.Time (option) {
+	return terms.parameters.default_time;
+}
+
+
+
+
+
 /**
  * @name models.protein.generic.DefineQMatrix
  * @param {Dictionary} modelSpec
  * @param {String} namespace
  */
+ /*
 function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 
 	__alphabet = modelSpec [terms.alphabet];
@@ -48,7 +63,6 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 	__rate_variation = model.generic.get_rate_variation (modelSpec);
 
 
-
 	__global_cache = {};
 
 	if (None != __rate_variation) {
@@ -63,11 +77,12 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 
 	for (_rowChar = 0; _rowChar < models.protein.dimensions; _rowChar +=1 ){
 		for (_colChar = _rowChar + 1; _colChar < models.protein.dimensions; _colChar += 1) {
+		    
 			__rp = Call (__rate_function, __alphabet[_rowChar],
-															__alphabet[_colChar],
-															 namespace,
-															__modelType);
-
+															  __alphabet[_colChar],
+															   namespace,
+															  __modelType);
+  
 
 		 	if (None != __rate_variation) {
 				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier], 
@@ -100,15 +115,4 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 	}
 
 }
-
-/**
- * @name models.protein.generic.Time
- * @param option - does nothing
- * @returns default time
- */
-function models.protein.generic.Time (option) {
-	return terms.parameters.default_time;
-}
-
-
-
+*/

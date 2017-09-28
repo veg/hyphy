@@ -214,6 +214,16 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
 
 
+    // Define type of frequency estimator
+	if (estimator_type != None) {
+		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
+	}
+
+
+    // Set EFV field
+	Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
+													    id,
+													    data_filter);
 
     // Set Q field
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.defineQ], model.generic.DefineModel.model, id);
@@ -226,18 +236,6 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 
 
-    // Define type of frequency estimator
-	if (estimator_type != None) {
-		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
-	}
-
-
-    // Set EFV field
-	Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
-													    id,
-													    data_filter);
-
-
 	parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.matrix_id],model.generic.DefineModel.model[terms.model.rate_matrix]);
 	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 
@@ -248,7 +246,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
        Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
-
+    
 	return model.generic.DefineModel.model;
 }
 

@@ -13,8 +13,7 @@ LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
 
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
-LoadFunctionLibrary("libv3/models/protein/REV.bf");
-LoadFunctionLibrary("plusF_helper.ibf");
+LoadFunctionLibrary("libv3/models/protein.bf");
 
 /*------------------------------------------------------------------------------*/
 
@@ -65,31 +64,22 @@ relative_prot_rates.filter_specification = alignments.DefineFiltersForPartitions
 /***************************************** SELECT MODEL, +F **********************************************************/
 /** NOTE: there is no rate variation option here ever. This must be discouraged. **/
 
-relative_prot_rates.model_name  = io.SelectAnOption (models.protein.empirical_models,
+relative_prot_rates.baseline_model = io.SelectAnOption (models.protein.empirical_models,
                                                      "Select an empirical protein model for fitting rates (we recommend JC69 to avoid matrix-induced biases in inferred rates):");
 
 // "Yes", "No"
-relative_prot_rates.plusF       = io.SelectAnOption ({{"Yes", "Use empirical (+F) amino-acid frequencies ."}, {"No", "Use default amino-acid frequencies."}},
-                                                     "Use a +F model for initial bl optimization? (recommended no for a simple JC69 model)");
+relative_prot_rates.plusF          = io.SelectAnOption ({{"Yes", "Use empirical (+F) amino-acid frequencies ."}, {"No", "Use default amino-acid frequencies."}},                 
+                                                      "Use a +F model for initial bl optimization? (recommended no for a simple JC69 model)");
 
 
-lfunction relative_prot_rates.plusF.ModelDescription(type) {
-    models.protein.plusF.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
-    models.protein.plusF.ModelDescription.model_definition [utility.getGlobalValue("terms.model.empirical_rates")] = utility.getGlobalValue("relative_prot_rates.normalized_qij");
-    models.protein.plusF.ModelDescription.model_definition [utility.getGlobalValue("terms.model.frequency_estimator")] = "relative_prot_rates.plusF.frequencies";
-    models.protein.plusF.ModelDescription.model_definition [utility.getGlobalValue("terms.parameters")] = {utility.getGlobalValue("terms.global"): {}, utility.getGlobalValue("terms.local"): {}, utility.getGlobalValue("terms.model.empirical"): 19};
-    models.protein.plusF.ModelDescription.model_definition [utility.getGlobalValue("terms.model.q_ij")] = "relative_prot_rates.plusF._GenerateRate";
-    return models.protein.plusF.ModelDescription.model_definition;
+// Set up model generator and name as +F or not.
+if (relative_prot_rates.plusF == "Yes"){
+    relative_prot_rates.full_model_name  =  relative_prot_rates.baseline_model + "+F";
+    relative_prot_rates.model_generator = models.protein.empirical.plusF_generators[relative_prot_rates.baseline_model];
 }
-
-lfunction relative_prot_rates.plusF._GenerateRate (from,to,namespace,modelType) {
-    return models.protein.empirical._GenerateRate (utility.getGlobalValue("relative_prot_rates.normalized_qij") , from,to,namespace,modelType);
-}
-
-lfunction relative_prot_rates.plusF.frequencies (model, namespace, datafilter) {
-    model[utility.getGlobalValue("terms.efv_estimate")] = utility.getGlobalValue("relative_prot_rates.empirical_frequencies");
-    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
-   // (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+else {
+    relative_prot_rates.full_model_name  =  relative_prot_rates.baseline_model;
+    relative_prot_rates.model_generator = models.protein.empirical.default_generators[relative_prot_rates.baseline_model];
 }
 
 
@@ -97,25 +87,6 @@ lfunction relative_prot_rates.plusF.frequencies (model, namespace, datafilter) {
 relative_prot_rates.trees = utility.Map (relative_prot_rates.partitions_and_trees, "_value_", "_value_[terms.data.tree]"); // value => value['tree']
 relative_prot_rates.filter_names = utility.Map (relative_prot_rates.filter_specification, "_value_", "_value_[terms.data.name]"); // value => value['name']
 
-// Baseline exchangeability matrix
-relative_prot_rates.baseline_Rij = plusF_helper.Rij_options[relative_prot_rates.model_name];
-
-if (relative_prot_rates.plusF == "Yes"){
-
-    relative_prot_rates.data_filter = utility.Map (relative_prot_rates.filter_specification, "_value_", "_value_[terms.data.name]");
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
-    relative_prot_rates.empirical_frequencies = frequencies._aux.empirical.collect_data(relative_prot_rates.data_filter, 1, 1, 1);
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
-    relative_prot_rates.normalized_qij = plusF_helper.BuildCustomNormalizedQ(relative_prot_rates.empirical_frequencies, relative_prot_rates.baseline_Rij, models.protein.alphabet);
-  
-    
-    relative_prot_rates.model_generator = "relative_prot_rates.plusF.ModelDescription";    
-    relative_prot_rates.full_model_name = relative_prot_rates.model_name + "+F";
-} else {
-
-    relative_prot_rates.model_generator = plusF_helper.empirical_model_generators[relative_prot_rates.model_name];
-    relative_prot_rates.full_model_name = relative_prot_rates.model_name;
-}
 /*********************************************************************************************************************************************/
 
 
@@ -268,6 +239,7 @@ io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* [95% Range] "  + 
 
 
 
+
 tree_definition   = utility.Map (relative_prot_rates.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
 io.SpoolJSON ({ terms.json.input : {terms.json.file: relative_prot_rates.alignment_info[terms.data.file],
                           terms.json.sequences: relative_prot_rates.alignment_info[terms.data.sequences],
@@ -276,7 +248,7 @@ io.SpoolJSON ({ terms.json.input : {terms.json.file: relative_prot_rates.alignme
                 terms.json.analysis : relative_prot_rates.analysis_description,       
 				terms.json.relative_site_rates : relative_prot_rates.rate_estimates, 
 				terms.json.global: {terms.json.model: relative_prot_rates.full_model_name,
-				               //terms.json.branch_lengths: relative_prot_rates.alignment_wide_MLES[terms.branch_length],
+				               terms.efv_estimate: (relative_prot_rates.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0],
 				               terms.json.tree_string: (relative_prot_rates.alignment_wide_MLES[terms.fit.trees])[0],
 				               terms.json.log_likelihood: relative_prot_rates.alignment_wide_MLES[terms.fit.log_likelihood]}
 				},

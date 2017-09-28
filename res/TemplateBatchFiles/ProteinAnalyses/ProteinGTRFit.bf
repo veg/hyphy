@@ -15,7 +15,7 @@ LoadFunctionLibrary("libv3/models/rate_variation.bf");
 
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
 LoadFunctionLibrary("libv3/models/protein/REV.bf");
-LoadFunctionLibrary("plusF_helper.ibf");
+LoadFunctionLibrary("libv3/models/protein.bf");
 LoadFunctionLibrary("ProteinGTRFit_helper.ibf");
 
 
