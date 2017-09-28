@@ -78,6 +78,9 @@ lfunction models.protein.empirical._GenerateRate(rateDict, fromChar, toChar, nam
  */
 lfunction models.protein.empirical._DefineQ(model_dict, namespace) {
 
+    // Call frequencies here. Will be repeated in model.generic.DefineModel, but we are ok with that.
+    frequencies._aux.empirical.singlechar(model_dict, namespace, model_dict[utility.getGlobalValue("terms.model.data")]);
+
     models.protein.empirical._NormalizeEmpiricalRates(model_dict, namespace); 
     models.protein.empirical.DefineQMatrix (model_dict, namespace);    
     return model_dict;

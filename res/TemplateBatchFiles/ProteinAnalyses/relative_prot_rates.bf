@@ -240,7 +240,6 @@ io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* [95% Range] "  + 
 
 
 
-tree_definition   = utility.Map (relative_prot_rates.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
 io.SpoolJSON ({ terms.json.input : {terms.json.file: relative_prot_rates.alignment_info[terms.data.file],
                           terms.json.sequences: relative_prot_rates.alignment_info[terms.data.sequences],
                           terms.json.sites:     relative_prot_rates.alignment_info[terms.data.sites],
@@ -318,6 +317,8 @@ lfunction relative_prot_rates.store_results (node, result, arguments) {
 				io.FormatTableRow (result_row,relative_prot_rates.table_output_options));
 		"
     );
+
+
 
 	return rate_statistics;
 
