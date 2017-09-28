@@ -464,10 +464,10 @@ namespace fubar {
         partition_results    = {sites_in_partition, 8};
         partition_posteriors = {};
 
-
+        
 
         for (s = 0; s < sites_in_partition; s += 1) {
-            pp = posterior_mean_over_grid $ ((cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"])[-1][s];
+            pp = posterior_mean_over_grid $ ((cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"])[-1][i];
             partition_posteriors [s] = Transpose (pp * (1/(+pp)));
 
             partition_results[s][0] = fubar.ComputeRandNeff (
