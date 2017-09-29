@@ -1,12 +1,23 @@
-RequireVersion("2.31");
-LoadFunctionLibrary("libv3/function-loader.bf");
+RequireVersion("2.3.3");
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+LoadFunctionLibrary("libv3/stats.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
 
-// Protein models
+LoadFunctionLibrary("libv3/tasks/ancestral.bf");
+LoadFunctionLibrary("libv3/tasks/alignments.bf");
+LoadFunctionLibrary("libv3/tasks/estimators.bf");
+LoadFunctionLibrary("libv3/tasks/trees.bf");
+LoadFunctionLibrary("libv3/tasks/mpi.bf");
+LoadFunctionLibrary("libv3/convenience/math.bf");
+
+LoadFunctionLibrary("libv3/models/rate_variation.bf");
+
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
 LoadFunctionLibrary("libv3/models/protein/REV.bf");
+LoadFunctionLibrary("libv3/models/protein.bf");
+LoadFunctionLibrary("ProteinGTRFit_helper.ibf");
 
-LoadFunctionLibrary("ProteinGTRFit_helper.ibf"); // Moved all functions from this file into loaded file, for clarity.
-LoadFunctionLibrary("plusF_helper.ibf");
 
 /*------------------------------------------------------------------------------*/
 
@@ -27,8 +38,14 @@ io.DisplayAnalysisBanner({
 
 protein_gtr.filename_to_index = terms.data.filename_to_index;
 protein_gtr.logl = terms.fit.log_likelihood;
-protein_gtr.phase = terms.model.phase;
+protein_gtr.phase = terms.fit.phase;
+protein_gtr.json.information = "information";
+protein_gtr.baseline_phase = "Baseline Phase";
 
+protein_gtr.options.convergence_type = "convergence type";
+protein_gtr.options.tolerance        = "tolerance";
+protein_gtr.options.baseline_model   = "baseline model";
+protein_gtr.options.rate_variation   = "use rate variation";
 
 /********************************************** MENU PROMPTS ********************************************************/
 /********************************************************************************************************************/
@@ -37,14 +54,19 @@ protein_gtr.phase = terms.model.phase;
 
 SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
 fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
-protein_gtr.cache_file = utility.getGlobalValue("LAST_FILE_PATH") + ".cache";
+protein_gtr.listfile = utility.getGlobalValue("LAST_FILE_PATH");
+protein_gtr.cache_file = protein_gtr.listfile  + ".cache"; 
+protein_gtr.json_file = protein_gtr.listfile  + ".json";
 protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
 protein_gtr.file_list_count = Abs (protein_gtr.file_list);
 
 // Populate analysis_results and important variables from cache, or prompt for all variables.
+/*
 if (io.FileExists(protein_gtr.cache_file)) {
     protein_gtr.use_cache = io.SelectAnOption ({{"YES", "Resume analysis using the detected cache file."}, {"NO", "Launch a new analysis and *overwrite* the detected cache file."}}, "A cache file of a prior analysis on this list of files was detected. Would you like to use it?");
 }
+*/
+protein_gtr.use_cache = "NO";
 
 // Load all information from cache
 if (protein_gtr.use_cache == "YES" || protein_gtr.use_cache == 1){
@@ -72,39 +94,42 @@ else {
                                                      "Select an empirical protein model to use for optimizing the provided branch lengths (we recommend LG):");
 
     // Prompt for rate variation
-    protein_gtr.use_rate_variation = io.SelectAnOption( protein_gtr.rate_variation_options, "Would you like to optimize branch lengths with rate variation?");
+    protein_gtr.use_rate_variation = io.SelectAnOption( protein_gtr.rate_variation_options, "Would you like to optimize branch lengths with rate variation (uses a four-category gamma)?");
 
     protein_gtr.save_options();
 
 }
 
-
-
-protein_gtr.baseline_Rij = plusF_helper.Rij_options[protein_gtr.baseline_model]; // Defined in helper
 if (protein_gtr.use_rate_variation == "Yes"){
-    protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription.withGamma";
+    protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F, with Gamma rates";
+    protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription.withGamma";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription.withGamma";
 } else{
-    protein_gtr.final_baseline_model = "protein_gtr.plusF.ModelDescription";
+    protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F";
+    protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription";
 }
 /********************************************************************************************************************/
 
 
-protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules () ,
-                                        "Functions" :
+protein_gtr.queue = mpi.CreateQueue ({  utility.getGlobalValue("terms.mpi.Headers")   : utility.GetListOfLoadedModules ("libv3/") ,
+                                        utility.getGlobalValue("terms.mpi.Functions") :
                                         {
-                                            {"protein_gtr.REV.ModelDescription",
+                                            {"models.protein.REV.ModelDescription.withGamma",
+                                             "protein_gtr.REV.ModelDescription",
                                              "protein_gtr.REV.ModelDescription.withGamma",
-                                             "protein_gtr.REV.ModelDescription.freqs"
+                                             "protein_gtr.REV.ModelDescription.freqs",
+                                             "protein_gtr.Baseline.ModelDescription.withGamma",
+                                             "protein_gtr.Baseline.ModelDescription",
+                                             "protein_gtr.fitBaselineToFile"
                                             }
                                         },
-                                        "Variables" : {{
-                                            "protein_gtr.shared_EFV",
-                                            "protein_gtr.final_baseline_model",
-                                            "protein_gtr.rev_model_branch_lengths",
-                                            "protein_gtr.baseline_Rij"
 
+                                        utility.getGlobalValue("terms.mpi.Variables") : {{
+                                            "protein_gtr.shared_EFV",
+                                            "protein_gtr.baseline_model_desc",
+                                            "protein_gtr.rev_model_branch_lengths",
+                                            "protein_gtr.baseline_model"
                                         }}
                                      });
 
@@ -112,12 +137,12 @@ io.ReportProgressMessageMD ("Protein GTR Fitter", "Initial branch length fit", "
 
 protein_gtr.fit_phase = 0;
 protein_gtr.scores = {};
-protein_gtr.phase_key = "Baseline-Phase";
+protein_gtr.phase_key = protein_gtr.baseline_phase;
 
 
 
 /*************************** STEP ONE ***************************
-Perform an initial fit of Baseline model+4G to the data (or load cached fit.)
+Perform an initial fit of Baseline model+F(+/-4G) to the data (or load cached fit.)
 *****************************************************************/
 console.log("\n\n[PHASE 1] Performing initial branch length optimization using " + protein_gtr.baseline_model);
 
@@ -127,15 +152,15 @@ for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) 
 
     if (utility.Has (protein_gtr.analysis_results, {{ protein_gtr.file_list[file_index], protein_gtr.phase_key}}, None)) {
 
-        thisKey = (protein_gtr.analysis_results[protein_gtr.file_list[file_index]])["Baseline-Phase"];
+        thisKey = (protein_gtr.analysis_results[protein_gtr.file_list[file_index]])[protein_gtr.baseline_phase];
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
-                                    "Loaded cached results for '" + cached_file + ". Log(L) = " + thisKey["LogL"]);
+                                    "Loaded cached results for '" + cached_file + ". Log(L) = " + thisKey[terms.fit.log_likelihood]);
 
     } else {
         io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                                     "Dispatching file '" + cached_file);
 
-        // Four category Gamma
+
          mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitBaselineToFile", {"0" : protein_gtr.file_list[file_index]},
                                                             "protein_gtr.handle_baseline_callback");
 
@@ -150,6 +175,8 @@ protein_gtr.baseline_fit_logL = math.Sum (utility.Map (utility.Filter (protein_g
 io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                             "Overall Log(L) = " + protein_gtr.baseline_fit_logL);
 
+
+//io.WriteCacheToFile (^"protein_gtr.cache_file", ^"protein_gtr.analysis_results");
 
 
 /*************************** STEP TWO ***************************
@@ -189,19 +216,19 @@ for (;;) {
     protein_gtr.phase_results = protein_gtr.run_gtr_iteration_branch_lengths();
 
     // Commented out below because this is never actually used in the analysis, and it is always cached anyways
-    // protein_gtr.scores + protein_gtr.phase_results["LogL"];
+    // protein_gtr.scores + protein_gtr.phase_results[terms.fit.log_likelihood];
 
     result_key = "REV-Phase-" + protein_gtr.fit_phase;
 
     if (utility.Has (protein_gtr.analysis_results, result_key, None)) {
         io.ReportProgressMessageMD ("Protein GTR Fitter", result_key,
-                                    "Loaded cached results for '" + result_key + "'. Log(L) = " + (protein_gtr.analysis_results[result_key])["LogL"] );
+                                    "Loaded cached results for '" + result_key + "'. Log(L) = " + (protein_gtr.analysis_results[result_key])[terms.fit.log_likelihood] );
         protein_gtr.current_gtr_fit = protein_gtr.analysis_results [result_key];
     } else {
         protein_gtr.current_gtr_fit = protein_gtr.fitGTRtoFileList (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_results['phase']"), "_value_", "_value_[protein_gtr.phase_results['phase']]"), protein_gtr.current_gtr_fit, result_key, FALSE);
     }
 
-    protein_gtr.scores + (protein_gtr.analysis_results[result_key])["LogL"];
+    protein_gtr.scores + (protein_gtr.analysis_results[result_key])[terms.fit.log_likelihood];
 
     // LogL
     if (protein_gtr.convergence_type == "LogL"){
@@ -212,8 +239,8 @@ for (;;) {
     }
     // RMSE
     else {
-        previous_Q = (protein_gtr.analysis_results["REV-Phase-" + (protein_gtr.fit_phase-1)])["global"]; // isolate Q from previous phase
-        current_Q = (protein_gtr.analysis_results[result_key])["global"];                                // isolate Q from current phase
+        previous_Q = (protein_gtr.analysis_results["REV-Phase-" + (protein_gtr.fit_phase-1)])[terms.global]; // isolate Q from previous phase
+        current_Q = (protein_gtr.analysis_results[result_key])[terms.global];                                // isolate Q from current phase
 
         // Calculate RMSE between previous, current fitted Q's
         rmse = 0;
@@ -252,13 +279,13 @@ console.log("\n\n[PHASE 4] Convergence achieved. Optimizing final model.");
 result_key = "REV-Final";
 if (utility.Has (protein_gtr.analysis_results, result_key, None)) {
     io.ReportProgressMessageMD ("Protein GTR Fitter", result_key,
-                                "Loaded cached results for '" + result_key + "'. Log(L) = " + (protein_gtr.analysis_results[result_key])["LogL"] );
+                                "Loaded cached results for '" + result_key + "'. Log(L) = " + (protein_gtr.analysis_results[result_key])[terms.fit.log_likelihood] );
     protein_gtr.current_gtr_fit = protein_gtr.analysis_results [result_key];
 } else {
     protein_gtr.current_gtr_fit = protein_gtr.fitGTRtoFileList (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_results['phase']"), "_value_", "_value_[protein_gtr.phase_results['phase']]"), protein_gtr.current_gtr_fit, result_key, TRUE);
 }
 
 
-
-
-
+/* Save the JSON */
+loaded_cache = io.LoadCacheFromFile(protein_gtr.cache_file);
+io.SpoolJSON(loaded_cache, protein_gtr.json_file);

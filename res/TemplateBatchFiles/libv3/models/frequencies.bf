@@ -3,8 +3,21 @@ LoadFunctionLibrary("parameters.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 LoadFunctionLibrary("model_functions.bf");
 
-
 /** @module frequencies */
+
+/**
+ * Sets model's equilibrium frequency estimator to Binary chatacter 2x1 estimator
+ * @name frequencies.empirical.binary
+ * @param {Dictionary} model
+ * @param {String} namespace - does nothing
+ * @param {DataSetFilter} datafilter - does nothing
+ * @returns {Dictionary} updated model
+ */
+function frequencies.empirical.binary(model, namespace, datafilter) {
+    model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
+    model[terms.model.efv_estimate_name] = terms.frequencies.binary;
+    return model;
+}
 
 /**
  * Sets model's equilibrium frequency estimator to equal frequencies
@@ -15,7 +28,9 @@ LoadFunctionLibrary("model_functions.bf");
  * @returns {Dictionary} updated model
  */
 function frequencies.equal(model, namespace, datafilter) {
-    __N = Abs(model[terms.alphabet]);
+    
+    
+    __N = utility.Array1D(model[terms.alphabet]);
     model[terms.efv_estimate] = {
         __N,
         1

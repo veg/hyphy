@@ -1,4 +1,4 @@
-RequireVersion("2.3");
+RequireVersion("2.3.3");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -81,6 +81,12 @@ meme.json = {
     terms.json.timers: {},
 };
 
+meme.display_orders =   {terms.original_name: -1,
+                        terms.json.nucleotide_gtr: 0,
+                        terms.json.global_mg94xrev: 1
+                       };
+
+
 selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
 meme.scaler_prefix = "MEME.scaler";
 
@@ -109,7 +115,7 @@ namespace meme {
     load_file ("meme");
 }
 
-meme.pvalue  = io.PromptUser ("\n>Select the p-value used to for perform the test at",meme.pvalue,0,1,FALSE);
+meme.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",meme.pvalue,0,1,FALSE);
 io.ReportProgressMessageMD('MEME',  'selector', 'Branches to include in the MEME analysis');
 
 utility.ForEachPair (meme.selected_branches, "_partition_", "_selection_",
@@ -152,19 +158,21 @@ utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME
 
 estimators.fixSubsetOfEstimates(meme.final_partitioned_mg_results, meme.final_partitioned_mg_results[terms.global]);
 
-selection.io.json_store_lf(
-    meme.json,
-    terms.json.global_mg94xrev,
-    meme.final_partitioned_mg_results[terms.fit.log_likelihood],
-    meme.final_partitioned_mg_results[terms.parameters],
-    meme.sample_size,
-    utility.ArrayToDict (utility.Map (meme.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}"))
-);
+//Store MG94 to JSON
+selection.io.json_store_lf_GTR_MG94 (meme.json,
+                            terms.json.global_mg94xrev,
+                            meme.final_partitioned_mg_results[terms.fit.log_likelihood],
+                            meme.final_partitioned_mg_results[terms.parameters],
+                            meme.sample_size,
+                            utility.ArrayToDict (utility.Map (meme.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}")),
+                            (meme.final_partitioned_mg_results[terms.efv_estimate])["VALUEINDEXORDER"][0],
+                            meme.display_orders[terms.json.global_mg94xrev]);
 
 utility.ForEachPair (meme.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(meme.json, utility.getGlobalValue("terms.json.global_mg94xrev"), terms.branch_length, 0,
+    'selection.io.json_store_branch_attribute(meme.json, terms.json.global_mg94xrev, terms.branch_length, meme.display_orders[terms.json.global_mg94xrev],
                                              _key_,
                                              selection.io.extract_branch_info((meme.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
+
 
 selection.io.stopTimer (meme.json [terms.json.timers], "Model fitting");
 
@@ -601,19 +609,7 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [5] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [6] = lrt [utility.getGlobalValue("terms.p_value")];
 
-        // SW 20170505 Removing use of utility.Filter until we can lock the stack
-        //filtered_ebf = utility.Filter (ebf, "_value_", "_value_>=100");
-
-        ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
-
-        filtered_ebf = {};
-        branch_names = utility.Keys (ebf);
-
-        for(i=0; i<Abs(ebf); i+=1) {
-            if(ebf[branch_names[i]] >= 100) {
-                filtered_ebf[branch_names[i]] = ebf[branch_names[i]];
-            }
-        }
+        filtered_ebf = utility.Filter (ebf, "_value_", "_value_>=100");
 
         if(None != filtered_ebf) {
             result_row [7] = utility.Array1D(filtered_ebf);

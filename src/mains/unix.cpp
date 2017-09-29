@@ -44,7 +44,38 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 
+const char hy_usage[] =
+"usage: HYPHYMP or HYPHYMPI [-h] "
+"[-c] "
+"[-d] "
+"[-p] "
+"[BASEPATH=directory path] "
+"[CPU=integer] "
+"[LIBPATH=library path] "
+"[USEPATH=library path] "
+"[path to hyphy batch file [analysis arguments]]\n";
 
+
+const char hy_help_message [] =
+"Execute a HyPhy analysis, either interactively, or in batch mode"
+"\n"
+"optional flags:\n"
+"  -h                       show this help message and exit\n"
+"  -c                       calculator mode; causes HyPhy to drop into an expression evaluation until 'exit' is typed\n"
+"  -d                       debug mode; causes HyPhy to drop into an expression evaluation mode upon script error\n"
+"  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
+"                           upon analysis completion\n\n"
+"optional keyword arguments:\n"
+"  BASEPATH=directory path  defines the base directory for all most path operations (default is pwd)\n"
+"  CPU=integer              if compiled with OpenMP multithreading support, requests this many threads; HyPhy could use fewer than this\n"
+"                           but never more; default is the number of CPU cores (as computed by OpenMP) on the system\n"
+"  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
+"                           or as configured during CMake installation\n"
+"  USEPATH=directory path   specifies the optional working and relative path directory (default is BASEPATH)\n\n"
+"optional positional arguments (must follow flags and keywords)\n"
+"  batch file to run        if specified, execute this file, otherwise drop into an interactive mode\n"
+"  analysis arguments       if batch file is present, all remaining positional arguments are interpreted as inputs to analysis prompts\n"
+;
 
 #ifdef _MINGW32_MEGA_
   #include <Windows.h>
@@ -70,9 +101,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <curl/curl.h>
 #endif
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
 
 #ifdef _OPENMP
 #include "omp.h"
@@ -428,7 +456,7 @@ long    DisplayListOfChoices (void)
                     printf ("\n\t(%ld) %s",choice-start+1,((_String*)(*(_List*)availableTemplateFiles(choice))(1))->getStr());
                 }
 
-                printf ("\n\n Please select the file you want to use (or press ENTER to return to the list of analysis types):");
+                printf ("\n\n Please select the analysis you would like to perform (or press ENTER to return to the list of analysis types):");
 
                 fileAbbr = *StringFromConsole ();
 
@@ -491,6 +519,12 @@ void    ProcessConfigStr (_String& conf)
     _String errMsg;
     for (long i=1; i<conf.sLength; i++) {
         switch (conf.sData[i]) {
+        case 'h':
+        case 'H': {
+            fprintf( stderr, "%s\n%s", hy_usage, hy_help_message );
+            exit (0);
+        }
+
         case 'p':
         case 'P': {
             usePostProcessors = true;

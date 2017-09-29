@@ -207,23 +207,18 @@ lfunction model.generic.get_rate_variation (model_spec) {
  */
 function model.generic.DefineModel (model_spec, id, arguments, data_filter, estimator_type) {
 
+
     // Basic model definition
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
 
+
 	// Add data filter information to model description
 	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
-
+    
 
 
     // Set Q field
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.defineQ], model.generic.DefineModel.model, id);
-
-
-    // Define id's for frequencies, Q, and id
-	model.generic.DefineModel.model [terms.model.matrix_id] = "`id`_" + terms.model.rate_matrix;
-	model.generic.DefineModel.model [terms.model.efv_id] = "`id`_" + terms.model.efv_matrix;
-	model.generic.DefineModel.model [terms.id] = id;
-
 
 
     // Define type of frequency estimator
@@ -238,6 +233,14 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 													    data_filter);
 
 
+
+    // Define id's for frequencies, Q, and id
+	model.generic.DefineModel.model [terms.model.matrix_id] = "`id`_" + terms.model.rate_matrix;
+	model.generic.DefineModel.model [terms.model.efv_id] = "`id`_" + terms.model.efv_matrix;
+	model.generic.DefineModel.model [terms.id] = id;
+
+
+
 	parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.matrix_id],model.generic.DefineModel.model[terms.model.rate_matrix]);
 	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 
@@ -248,7 +251,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
        Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
-
+    
 	return model.generic.DefineModel.model;
 }
 
@@ -268,6 +271,7 @@ function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filte
 
     // for mixture models this will define the mixture components as well
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.defineQ], model.generic.DefineModel.model, id);
+
 
 	if (estimator_type != None) {
 		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
@@ -400,7 +404,8 @@ function models.generic.SetBranchLength (model, value, parameter) {
  * @returns 0
  */
 lfunction models.generic.AttachFilter (model, filter) {
-
+    
+    
     if (Type (filter) != "String") {
         utility.ForEach (filter, "_filter_", "models.generic.AttachFilter (`&model`, _filter_)");
         model[utility.getGlobalValue("terms.model.data")] = filter;

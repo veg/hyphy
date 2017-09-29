@@ -9,6 +9,7 @@ Requirements
 ------------
 * cmake >= 3.0
 * gcc >= 4.9
+* libcurl
 
 Installation
 ------------

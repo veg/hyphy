@@ -2,7 +2,7 @@
 
 // These terms must be defined in this manner in order to avoid conflicts w/ built-in functions global and Gamma
 terms.global               = "global";
-terms.json.global          = "Global model fit";
+terms.json.global          = "Global model fit"; // TODO: Kill
 terms.rate_variation.Gamma = "Gamma";
 
 
@@ -88,7 +88,10 @@ namespace terms{
         return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
     }
     function aminoacidRate(fromA, toA) {
-        return "Substitution rate from aminoacid " + fromA + " to aminoacid " + toA;
+        return "Substitution rate from amino-acid " + fromA + " to amino-acid " + toA;
+    }
+    function binaryRate(fromX, toX) {
+        return "Substitution rate from character " + fromX + " to character " + toX;    
     }
     function timeParameter() {
         return "Evolutionary time parameter";
@@ -170,6 +173,7 @@ namespace terms{
         CF3x4      = "Corrected 3x4 frequency estimator";
         _20x1      = "Protein 20x1 estimator";
         predefined = "Based on a training set";
+        binary     = "Binary character frequency estimator"; 
     }
 
     /* Terms accompanying tasks/genetic_code.bf */
@@ -196,6 +200,7 @@ namespace terms{
         authors      = "authors";
         contact      = "contact";
         version      = "version";
+        help         = "help";
 
         //ReadDelimitedFile
         header       = "header";
@@ -225,6 +230,9 @@ namespace terms{
         log_likelihood        = "Log Likelihood";
         AICc                  = "AIC-c";
         global_mg94xrev       = "Global MG94xREV";
+        mg94xrev_sep_rates    = "MG94xREV with separate rates for branch sets";
+        nucleotide_gtr        = "Nucleotide GTR";
+        frequencies           = "Equilibrium frequencies";
         model                 = "model"; // TODO: change string to "model name"
        // global                = "Global model fit"; // Defined at the top of file
         attribute             = "attributes";
@@ -366,6 +374,7 @@ namespace terms{
         omega                         = "omega";
         weights                       = "weights";
         weight                        = "weight";
+        rates                         = "rates";
         freqs                         = "f";
     }
 
