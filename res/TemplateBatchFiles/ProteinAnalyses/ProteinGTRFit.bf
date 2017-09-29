@@ -55,15 +55,18 @@ protein_gtr.options.rate_variation   = "use rate variation";
 SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
 fscanf (PROMPT_FOR_FILE, "Lines", protein_gtr.file_list);
 protein_gtr.listfile = utility.getGlobalValue("LAST_FILE_PATH");
-protein_gtr.cache_file = protein_gtr.listfile  + ".cache";
+protein_gtr.cache_file = protein_gtr.listfile  + ".cache"; 
 protein_gtr.json_file = protein_gtr.listfile  + ".json";
 protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
 protein_gtr.file_list_count = Abs (protein_gtr.file_list);
 
 // Populate analysis_results and important variables from cache, or prompt for all variables.
+/*
 if (io.FileExists(protein_gtr.cache_file)) {
     protein_gtr.use_cache = io.SelectAnOption ({{"YES", "Resume analysis using the detected cache file."}, {"NO", "Launch a new analysis and *overwrite* the detected cache file."}}, "A cache file of a prior analysis on this list of files was detected. Would you like to use it?");
 }
+*/
+protein_gtr.use_cache = "NO";
 
 // Load all information from cache
 if (protein_gtr.use_cache == "YES" || protein_gtr.use_cache == 1){
@@ -109,21 +112,24 @@ if (protein_gtr.use_rate_variation == "Yes"){
 /********************************************************************************************************************/
 
 
-protein_gtr.queue = mpi.CreateQueue ({  terms.mpi.Headers   : utility.GetListOfLoadedModules ("libv3/") ,
-                                        terms.mpi.Functions :
+protein_gtr.queue = mpi.CreateQueue ({  utility.getGlobalValue("terms.mpi.Headers")   : utility.GetListOfLoadedModules ("libv3/") ,
+                                        utility.getGlobalValue("terms.mpi.Functions") :
                                         {
-                                            {"protein_gtr.REV.ModelDescription",
+                                            {"models.protein.REV.ModelDescription.withGamma",
+                                             "protein_gtr.REV.ModelDescription",
                                              "protein_gtr.REV.ModelDescription.withGamma",
                                              "protein_gtr.REV.ModelDescription.freqs",
                                              "protein_gtr.Baseline.ModelDescription.withGamma",
                                              "protein_gtr.Baseline.ModelDescription",
+                                             "protein_gtr.fitBaselineToFile"
                                             }
                                         },
 
-                                        terms.mpi.Variables : {{
+                                        utility.getGlobalValue("terms.mpi.Variables") : {{
                                             "protein_gtr.shared_EFV",
                                             "protein_gtr.baseline_model_desc",
                                             "protein_gtr.rev_model_branch_lengths",
+                                            "protein_gtr.baseline_model"
                                         }}
                                      });
 
