@@ -37,7 +37,6 @@
 
  */
 
-#define HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
 #define DATA_SET_SWITCH_THRESHOLD 100000
 
 #include <ctype.h>

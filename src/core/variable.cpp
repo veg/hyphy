@@ -561,7 +561,7 @@ void  _Variable::SetFormula (_Formula& theF) {
     vA.ReorderList();
 
     if (vars.BinaryFind(theIndex)>=0) {
-        HandleApplicationError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr())&" because it would create a circular dependance."));
+        HandleApplicationError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr(kFormulaStringConversionNormal))&" because it would create a circular dependance."));
         if (&theF!=right_hand_side) {
             delete right_hand_side;
         }
@@ -728,7 +728,7 @@ _String const WrapInNamespace (_String const& name, _String const* context) {
 long    DereferenceString (_PMathObj v, _MathObject const * context, char reference_type){
     if (v && v->ObjectClass () == STRING) {
         _FString * value = (_FString*)v;
-        _String referencedVariable = *value->theString;
+        _String referencedVariable = value->get_str();
         if (reference_type == kStringLocalDeference && context) {
             referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer*)context);
         }

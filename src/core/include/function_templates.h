@@ -40,6 +40,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "mersenne_twister.h"
+#include "variablecontainer.h"
+#include "parser.h"
 
 template <typename ARG_TYPE>
 void checkParameter(_String const &name, ARG_TYPE &dest, const ARG_TYPE def,
@@ -72,6 +74,13 @@ ARG_TYPE Minimum(ARG_TYPE const a, ARG_TYPE const b) {
     return b;
   }
   return a;
+}
+
+template <typename ARG_TYPE>
+void Exchange (ARG_TYPE & a, ARG_TYPE & b) {
+    ARG_TYPE t = a;
+    a = b;
+    b = t;
 }
 
 template <typename ARG_TYPE>

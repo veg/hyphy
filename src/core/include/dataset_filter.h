@@ -64,7 +64,6 @@ public:
 
   virtual BaseRef makeDynamic(void) const;
   virtual void Duplicate(BaseRefConst);
-  virtual long FreeUpMemory(long);
   virtual bool IsNormalFilter(void) const { return true; }
 
   void CopyFilter(_DataSetFilter const *);
@@ -74,7 +73,7 @@ public:
 
   _String *GetExclusions(void) const;
 
-  void SetMap(_String &); // used to allow nonsequential maps to tree leaves
+  void SetMap(_String const&); // used to allow nonsequential maps to tree leaves
 
   void SetMap(_SimpleList &newMap) {
     theNodeMap.Clear(); // used to allow nonsequential maps to tree leaves
@@ -135,7 +134,7 @@ public:
    * @return the buffer string
    */
 
-  void FindAllSitesLikeThisOne(long, _SimpleList &);
+  void FindAllSitesLikeThisOne(long, _SimpleList &) const;
 
   _String const GenerateConsensusString(_SimpleList * = nil) const;
 
@@ -174,7 +173,7 @@ public:
     return theData->theTT->ConvertCodeToLetters(code, base);
   }
 
-  void ConvertCodeToLettersBuffered(long code, char base, char *,
+  void ConvertCodeToLettersBuffered(long code, char base, char const *,
                                     _AVLListXL *) const;
   // 20090212: SLKP
   // added this function to cache repeated character code -> string conversions

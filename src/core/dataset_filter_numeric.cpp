@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "global_things.h"
 #include "dataset_filter_numeric.h"
+#include "batchlan.h"
 
 //_________________________________________________________
 // Data Set Filter/Numeric

@@ -273,8 +273,8 @@ void    ReadInTemplateFiles(void) {
 }
 
 //__________________________________________________________________________________
-void    ReadInPostFiles(void)
-{
+void    ReadInPostFiles(void) {
+    static _String separator ("SEPARATOR");
     //if (!likeFuncList.lLength)
     //  return;
  
@@ -305,7 +305,7 @@ void    ReadInPostFiles(void)
             for (long j = 0; j<3; j++) {
                 ((_String*)thisFile(j))->StripQuotes();
             }
-            if (*(_String*)thisFile(0)!=_String("SEPARATOR")) {
+            if ( *(_String*)thisFile(0)!= separator) {
                 fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & *(_String*)thisFile(1);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
@@ -487,61 +487,18 @@ long    DisplayListOfPostChoices (void) {
 }
 
 
-//__________________________________________________________________________________
-
-void    ProcessConfigStr (_String& conf)
-{
-    _String errMsg;
-    for (long i=1; i<conf.sLength; i++) {
-        switch (conf.sData[i]) {
-        case 'h':
-        case 'H': {
-            fprintf( stderr, "%s\n%s", hy_usage, hy_help_message );
-            exit (0);
-        }
-
-        case 'p':
-        case 'P': {
-            usePostProcessors = true;
-            break;
-        }
-        case 'c':
-        case 'C': {
-            calculatorMode = true;
-            break;
-        }
-        case 'd':
-        case 'D': {
-            dropIntoDebugMode = true;
-            break;
-        }
-        case 'u':
-        case 'U': {
-            updateMode = true;
-            break;
-        }
-        case 'l':
-        case 'L': {
-            logInputMode = true;
-            break;
-        }
-        //case 'i':
-        //case 'I':
-        //{
-        //pipeMode = true;
-        //break;
-        //}
-        default: {
-            errMsg = "Option ";
-            errMsg = errMsg & conf.sData[i] & " is not valid and is ignored";
-            ReportWarning (errMsg);
-        }
 
             
 void    ProcessConfigStr (_String const & conf) {
     for (unsigned long i=1UL; i<conf.length(); i++) {
         switch (char c = conf.char_at (i)) {
-          case 'p':
+            case 'h':
+            case 'H': {
+                fprintf( stderr, "%s\n%s", hy_usage, hy_help_message );
+                exit (0);
+            }
+
+            case 'p':
           case 'P': {
               usePostProcessors = true;
               break;
@@ -614,7 +571,7 @@ void    SetStatusLineUser   (_String const s) {
     setvbuf(stderr, NULL, _IONBF, 0);
     BufferToConsole("\33[2K\r", stderr);
     StringToConsole(s, stderr);
-    needExtraNL = true;
+    hy_need_extra_nl = true;
   }
 }
 

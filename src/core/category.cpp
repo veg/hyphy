@@ -366,10 +366,10 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
 
         // get the bounds here
         param = (_String*)parameters(5);
-        x_min = param->toNum()+SLIGHT_SHIFT;
+        x_min = param->to_float()+SLIGHT_SHIFT;
 
         param = (_String*)parameters(6);
-        x_max = param->toNum()-SLIGHT_SHIFT;
+        x_max = param->to_float()-SLIGHT_SHIFT;
 
         if (x_max<=x_min) {
             HandleApplicationError (errorMsg & _String("Bad variable bounds. Had:")&*(_String*)parameters(5)&" and "&*param);
@@ -471,7 +471,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                 }
             }
         } else {
-            HandleApplicationError (errorMsg & ("Expected an explicit enumeration of category representatives in place of cumulative distribution. Had:") & _String((_String*)cumulative.toStr()) );
+            HandleApplicationError (errorMsg & ("Expected an explicit enumeration of category representatives in place of cumulative distribution: ") & ((_String*)cumulative.toStr(kFormulaStringConversionNormal))->Enquote() );
             return;
         }
     }
@@ -480,7 +480,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
     for (long i=0; i<scannedVarsList.lLength; i++) {
         _Variable * curVar = (_Variable*)variablePtrs (scannedVarsList.lData[i]);
         if (curVar->IsCategory()) {
-            HandleApplicationError (errorMsg & _String("Can't create a category variable that depends on another category variable (") & curVar->GetName()->Enquote());
+            HandleApplicationError (errorMsg & _String("Can't create a category variable that depends on another category variable, ") & curVar->GetName()->Enquote());
             return;
         }
     }
@@ -706,31 +706,31 @@ void    _CategoryVariable::Clear (void)
 BaseRef _CategoryVariable::toStr (unsigned long)
 {
     UpdateIntervalsAndValues(true);
-    _String result (32UL,true);
+    _StringBuffer * result  = new _StringBuffer (256UL);
     if (weights) {
-        result<< "\nClass weights are:";
+        *result<< "\nClass weights are:";
         _Matrix* cw =(_Matrix*)weights->ComputeNumeric();
         checkWeightMatrix(*cw);
-        result.AppendNewInstance((_String*)cw->toStr());
-        result<<'\n';
+        result->AppendNewInstance((_String*)cw->toStr());
+        *result<<'\n';
     }
     if (values) {
-        result<<"Classes represented by:";
-        result.AppendNewInstance((_String*)values->toStr());
+        *result<<"Classes represented by:";
+        result->AppendNewInstance((_String*)values->toStr());
     }
     if (intervalEnds) {
-        result<< "Interval ends:";
-        result.AppendNewInstance((_String*)intervalEnds->toStr());
+        *result<< "Interval ends:";
+        result->AppendNewInstance((_String*)intervalEnds->toStr());
     }
     if (!density.IsEmpty()) {
-        result << "\nSupported on [";
-        result << _String(x_min);
-        result << ',';
-        result << _String(x_max);
-        result << "]\n";
+        *result << "\nSupported on [";
+        *result << _String(x_min);
+        *result << ',';
+        *result << _String(x_max);
+        *result << "]\n";
     }
-    result.Finalize();
-    return result.makeDynamic();
+    result->TrimSpace ();
+    return result;
 }
 
 //___________________________________________________________________________________________
@@ -1145,11 +1145,10 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
 
 
 //___________________________________________________________________________________________
-void _CategoryVariable::SerializeCategory (_String& rec)
+void _CategoryVariable::SerializeCategory (_StringBuffer & rec)
 {
     _String     weightNames = *GetName()&'.'&"weights",
-                catNames    = *GetName()&'.'&"points",
-                *theFS;
+                catNames    = *GetName()&'.'&"points";
 
     if (intervalSplitter>=0) {
         ((_CategoryVariable*)LocateVar(intervalSplitter))->SerializeCategory(rec);
@@ -1181,7 +1180,7 @@ void _CategoryVariable::SerializeCategory (_String& rec)
     if (intervalSplitter==-1) {
         rec << weightNames;
     } else {
-        rec << LocateVar(intervalSplitter)->GetName();
+        rec << *LocateVar(intervalSplitter)->GetName();
     }
 
     rec << ',';
@@ -1198,13 +1197,9 @@ void _CategoryVariable::SerializeCategory (_String& rec)
     }
     rec << ',';
     if (hasDensity) {
-        theFS = (_String*)density.toStr();
-        rec << *theFS;
-        DeleteObject (theFS);
+        rec.AppendNewInstance((_String*)density.toStr(kFormulaStringConversionNormal));
         rec << ',';
-        theFS = (_String*)cumulative.toStr();
-        rec << *theFS;
-        DeleteObject (theFS);
+        rec.AppendNewInstance((_String*)cumulative.toStr(kFormulaStringConversionNormal));
     } else {
         if (IsUncorrelated()) {
             rec << ',';
@@ -1219,9 +1214,7 @@ void _CategoryVariable::SerializeCategory (_String& rec)
     rec << ',';
     rec << _String(x_max+SLIGHT_SHIFT);
     rec << ',';
-    theFS = (_String*)meanC.toStr();
-    rec << *theFS;
-    DeleteObject (theFS);
+    rec.AppendNewInstance ((_String*)meanC.toStr(kFormulaStringConversionNormal));
 
     if ((hiddenMarkovModel != HY_NO_MODEL)||(flags&CONSTANT_ON_PARTITION)) {
         rec << ',';

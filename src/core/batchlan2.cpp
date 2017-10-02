@@ -43,7 +43,6 @@
 #include      "trie.h"
 #include      "likefunc.h"
 #include      "scfg.h"
-#include      "function_templates.h"
 #include      "global_object_lists.h"
 
 #include      "bayesgraph.h"

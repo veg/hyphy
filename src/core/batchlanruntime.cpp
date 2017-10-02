@@ -44,11 +44,12 @@
 #include      "likefunc.h"
 #include      "bayesgraph.h"
 #include      "scfg.h"
-#include      "function_templates.h"
 #include      "global_object_lists.h"
 #include      "mersenne_twister.h"
 #include      "global_things.h"
 #include      "hy_string_buffer.h"
+
+#include      "function_templates.h"
 
 
 #ifndef __HYPHY_NO_SQLITE__

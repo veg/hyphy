@@ -38,8 +38,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "global_things.h"
-#include "site.h"
 #include "translation_table.h"
+#include "function_templates.h"
+
+#define HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
 
 using namespace hy_global;
 
@@ -207,7 +209,7 @@ const _String _TranslationTable::ExpandToken(char token) const {
 
   long resolution_count = TokenResolutions(token, buf);
   _String const *base_set = &GetAlphabetString();
-  _String expansion(base_set->length(), true);
+  _StringBuffer expansion(base_set->length());
 
   for (unsigned long tc = 0; tc < resolution_count; tc++) {
     expansion << base_set->char_at(buf[tc]);
@@ -832,13 +834,13 @@ char _TranslationTable::GetGapChar(void) const {
 const _String
 _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
 
-  _String res(base, false);
+  _StringBuffer res(base);
 
   if (code >= 0) {
     // OPTIMIZE FLAG; repeated memory allocation/deallocation
     if (baseSet.length())
       for (long k = 1; k <= base; k++, code /= baseLength) {
-        res.sData[base - k] = baseSet.get_char(code % baseLength);
+        res.set_char(base - k,baseSet.get_char(code % baseLength));
       }
     else if (baseLength == 4) {
       for (long k = 1; k <= base; k++, code /= baseLength) {
@@ -888,7 +890,7 @@ _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
   } else {
     char c = GetGapChar();
     for (long k = 0L; k < base; k++) {
-      res.sData[k] = c;
+      res.set_char(k,c);
     }
   }
   return res;
@@ -902,11 +904,11 @@ _TranslationTable::MergeTables(_TranslationTable const *table2) const
 // otherwise return nil
 {
   if (baseSet.length() == table2->baseSet.length()) {
-    if (baseSet.length() == 0) { // standard alphabet
+    if (baseSet.empty()) { // standard alphabet
       if (baseLength != table2->baseLength) {
         return nil;
       }
-    } else if (!(baseSet.Equal(&table2->baseSet))) {
+    } else if (baseSet != table2->baseSet) {
       return nil;
     }
 

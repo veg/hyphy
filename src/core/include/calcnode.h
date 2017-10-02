@@ -393,7 +393,7 @@ public:
 
     virtual void            toFileStr                           (FILE*, unsigned long);
     virtual BaseRef         toStr                               (unsigned long = 0UL);
-    void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_String&, long  = -1, bool = false) const;
+    void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_StringBuffer&, long  = -1, bool = false) const;
 
     _TreeTopology                       (void);
     _TreeTopology                       (_String const, _String const&, bool = true, _AssociativeList* mapping = nil);
@@ -459,7 +459,7 @@ public:
     virtual void            GetBranchValue                      (node<long> *, _String&) const;
     virtual void            GetBranchVarValue                   (node<long> *, _String&, long) const;
     virtual _String const  GetNodeStringForTree                (node<long> *, int flags) const;
-    virtual void            PasteBranchLength                   (node<long> *, _String&, long, hyFloat factor = 1.) const;
+    virtual void            PasteBranchLength                   (node<long> *, _StringBuffer &, long, hyFloat factor = 1.) const;
 
     node<long>&     GetRoot                             (void) const {
       return  *theRoot;
@@ -473,7 +473,7 @@ public:
     }*/
   
     const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
-    void            SubTreeString                       (node<long>* root, _String&, bool = false, long = -1, _AVLListXL* = nil) const;
+    void            SubTreeString                       (node<long>* root, _StringBuffer &, bool = false, long = -1, _AVLListXL* = nil) const;
 
     _String         CompareTrees                        (_TreeTopology*) const;
     const _String         MatchTreePattern                    (_TreeTopology const*) const;
@@ -679,8 +679,8 @@ public:
         return rooted;
     }
 
-    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_String&,hyFloat,hyFloat,long,long) const;
-    void        TreePSRecurse                   (node<nodeCoord>*,_String&,hyFloat,hyFloat,long,long,long,long,_AssociativeList* = nil, char = 0, hyFloat* = nil) const;
+    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long) const;
+    void        TreePSRecurse                   (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long,long,long,_AssociativeList* = nil, char = 0, hyFloat* = nil) const;
 
     bool        AllBranchesHaveModels           (long) const;
     void        ScanSubtreeVars                 (_List&, char, _CalcNode*) const;
@@ -706,7 +706,7 @@ public:
   
     void        AddNodeNamesToDS                (_DataSet*, bool, bool, char) const;
     // if the
-    hyFloat  PSStringWidth                   (_String&);
+    hyFloat  PSStringWidth                   (_String const&);
 
     hyFloat  DetermineBranchLengthGivenScalingParameter (long, _String&, char) const;
 

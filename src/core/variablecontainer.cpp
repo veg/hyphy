@@ -49,6 +49,8 @@
 #include "global_object_lists.h"
 #include "global_things.h"
 
+#include "function_templates.h"
+
 
 using namespace hy_global;
 using namespace hyphy_global_objects;
@@ -131,7 +133,7 @@ BaseRef _VariableContainer::makeDynamic (void) const {
 
 BaseRef _VariableContainer::toStr (unsigned long)
 {
-    _String * res = new _String (128L,true);
+    _StringBuffer * res = new _StringBuffer (128L);
 
     (*res) << "Container Class:" << theName << ":{ Independent Variables:";
 
@@ -156,7 +158,7 @@ BaseRef _VariableContainer::toStr (unsigned long)
         }
 
     (*res) << '}';
-    res->Finalize();
+    res->TrimSpace();
     return res;
 }
 
@@ -341,7 +343,7 @@ void    _VariableContainer::InitializeVarCont (_String const& aName, _String& th
     
     theParent = theP;
 
-    if (aName.sLength) {
+    if (aName.nonempty()) {
         /*
             SLKP
             this entire section may be deprecated, and may actuall
@@ -538,50 +540,37 @@ void      _VariableContainer::SortVars(void)
     // sort independents 1st
     // use dumb bubble sort
     bool        done = false;
-    long        t,
-                index;
-
+ 
     _String     *s1,
                 *s2;
 
-    if (iVariables && iVariables->lLength>2) {
+    if (iVariables && iVariables->countitems ()>2) {
         while (!done) {
             done = true;
             s1 = LocateVar(iVariables->lData[0])->GetName();
-            for (index = 2; index<iVariables->lLength; index+=2) {
+            for (long index = 2L; index<iVariables->countitems(); index+=2L) {
                 s2 = LocateVar(iVariables->lData[index])->GetName();
-                if (s2->Less (s1)) {
+                if (s2->Compare(*s1) == kCompareLess) {
                     done = false;
-                    t = iVariables->lData[index];
-                    iVariables->lData    [index] = iVariables->lData[index-2];
-                    iVariables->lData    [index-2] = t;
-
-                    t = iVariables->lData[index+1];
-                    iVariables->lData    [index+1] = iVariables->lData[index-1];
-                    iVariables->lData    [index-1] = t;
+                    Exchange (iVariables->lData    [index],   iVariables->lData    [index-2]);
+                    Exchange (iVariables->lData    [index+1], iVariables->lData    [index-1]);
                 }
 
             }
         }
     }
-    if (dVariables && dVariables->lLength>2) {
+    if (dVariables && dVariables->countitems()>2) {
         done = false;
         while (!done) {
             done = true;
             s1 = LocateVar(dVariables->lData[0])->GetName();
-            for (index = 2; index<dVariables->lLength; index+=2) {
+            for (long index = 2L; index<dVariables->countitems(); index+=2L) {
                 s2 = LocateVar(dVariables->lData[index])->GetName();
-                if (s2->Less (s1)) {
+                if (s2->Compare(*s1) == kCompareLess) {
                     done = false;
-                    t = dVariables->lData[index];
-                    dVariables->lData    [index] = dVariables->lData[index-2];
-                    dVariables->lData    [index-2] = t;
-
-                    t = dVariables->lData[index+1];
-                    dVariables->lData    [index+1] = dVariables->lData[index-1];
-                    dVariables->lData    [index-1] = t;
+                    Exchange (dVariables->lData    [index] , dVariables->lData    [index-2] );
+                    Exchange (dVariables->lData    [index+1] , dVariables->lData    [index-1] );
                 }
-
             }
         }
     }
@@ -594,27 +583,15 @@ bool      _VariableContainer::RemoveDependance (long varIndex)
 
         if (f!=-1) {
 
-            /*printf ("Moving dep->ind for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
-                  GetName()->sData);
-             */
-
-            /*if (dVariables->lData[f+1]>=0)
-            {
-              _Variable* checkVar = LocateVar(dVariables->lData[f+1]);
-               printf ("Local variable %s\n", checkVar->GetName()->sData);
-              //if (!checkVar->IsIndependent())
-                //  return false;
-            }*/
-
             _String* thisName = LocateVar (dVariables->lData[f])->GetName();
 
-            long insPos = 0;
+            long insPos = 0L;
 
             if (!iVariables) {
                iVariables = new _SimpleList;
             }
 
-            while (insPos<iVariables->lLength && (thisName->Greater (LocateVar (iVariables->lData[insPos])->GetName()))) {
+            while (insPos<iVariables->lLength && (thisName->Compare (*LocateVar (iVariables->lData[insPos])->GetName()) == kCompareGreater)) {
                 insPos+=2;
             }
 
@@ -622,7 +599,7 @@ bool      _VariableContainer::RemoveDependance (long varIndex)
             iVariables->InsertElement ((BaseRef)varIndex, insPos, false, false);
             iVariables->InsertElement ((BaseRef)dVariables->lData[f+1], insPos+1, false, false);
 
-            if (dVariables->lLength>2) {
+            if (dVariables->countitems() >2UL) {
                 dVariables->Delete(f);
                 dVariables->Delete(f);
                 dVariables->TrimMemory();
@@ -803,7 +780,7 @@ long      _VariableContainer::SetDependance (long varIndex)
                 HandleApplicationError ("Internal error in SetDependance()", false);
                 return -1;
             }
-            if (!thisName->Greater (dVar->GetName())) {
+            if (thisName->Compare (*dVar->GetName()) != kCompareGreater) {
                 break;
             }
             insPos+=2;
@@ -892,18 +869,18 @@ bool      _VariableContainer::IsModelVar  (long i)
 //__________________________________________________________________________________
 
 _String*    _VariableContainer::GetSaveableListOfUserParameters (void) {
-    _String * result = new _String (64L, true);
+    _StringBuffer * result = new _StringBuffer (64L);
 
     if (dVariables)
         for (long i=0; i<dVariables->lLength; i+=2)
-            if (dVariables->lData[i+1]<0) {
-                _Variable * userParm  = (_Variable*) LocateVar (dVariables->lData[i]);
+            if (dVariables->lData[i+1]<0) { // not a template variable
+                _Variable * userParm  = (_Variable*) LocateVar (dVariables->Element(i));
                 *result << userParm->GetName() << ':' << '=';
-                result->AppendNewInstance((_String*)userParm->GetFormulaString());
+                result->AppendNewInstance((_String*)userParm->GetFormulaString(kFormulaStringConversionNormal));
                 *result << ';' << '\n';
             }
 
-    result->Finalize();
+    result->TrimSpace ();
     return result;
 }
 

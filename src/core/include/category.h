@@ -177,7 +177,7 @@ public:
     // assumes a 'standard' category variable - i.e.
     // EQUAL freqs, and density/cumulative
 
-    void        SerializeCategory       (_String&);
+    void        SerializeCategory       (_StringBuffer &);
 
     long        GetCurrentState         (void);
     bool        IsUncorrelated          (void);

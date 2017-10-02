@@ -111,7 +111,7 @@ BaseRef _Operation::toStr (unsigned long) {
         return new _String (_String("Variable ")& *LocateVar(GetAVariable())->GetName());
     } else if (theNumber) {
         _FString * type = (_FString*)theNumber->Type();
-        _String res = _String("Constant (")& *type->theString & ")" & _String((_String*)theNumber->toStr());
+        _String res = _String("Constant (")& type->get_str() & ")" & _String((_String*)theNumber->toStr());
         DeleteObject(type);
         return new _String (res);
     } else {
@@ -424,7 +424,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             & GetBFFunctionNameByIndex(opCode)
             &"' expected a string for the reference variable '"
             & *argument_k
-            &"' but was passed a " & *type->theString
+            &"' but was passed a " & type->get_str()
             & " with the value of " & _String((_String*)nthterm->toStr());
 
             DeleteObject (type);
@@ -463,16 +463,18 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
           referenceArgs << argument_var->GetName();
           displacedReferences<<new_index;
 
-          _String * refArgName = ((_FString*)nthterm)->theString;
-
+          _String const * refArgName = &((_FString*)nthterm)->get_str();
+            
+          _Variable* reference_var;
+          // TODO SLKP 20170928 Check that this doesn't break reference variable calls
+          // used to write namespaced variable to nthterm
           if (nameSpace) {
-            *refArgName = AppendContainerName (*refArgName, nameSpace);
+              reference_var =  CheckReceptacle (&AppendContainerName (*refArgName, nameSpace), kEmptyString, false, false);
+          } else {
+              reference_var =  CheckReceptacle (refArgName, kEmptyString, false, false);
           }
           
-          _Variable* reference_var = CheckReceptacle (refArgName, kEmptyString, false, false);
-          
           variableNames.SetXtra (new_index, reference_var->GetAVariable());
-
           DeleteObject (nthterm);
         }
       }

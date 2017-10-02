@@ -143,7 +143,7 @@ void _DataSet::ConvertRepresentations(void) {
       _Site *aSite = (_Site *)lData[0];
 
       for (long str = 0; str < aSite->length(); str++) {
-        horStrings < new _String(DATA_SET_SWITCH_THRESHOLD, true);
+        horStrings < new _StringBuffer (DATA_SET_SWITCH_THRESHOLD);
       }
 
       for (long s = 0; s < lLength; s++) {
@@ -157,7 +157,7 @@ void _DataSet::ConvertRepresentations(void) {
         }
 
         for (long s2 = 0L; s2 < aSite->length(); s2++) {
-          (*(_String *)horStrings.lData[s2]) << aSite->get_char(s2);
+          (*(_StringBuffer *)horStrings.lData[s2]) << aSite->get_char(s2);
         }
       }
 
@@ -207,7 +207,7 @@ void _DataSet::AddSite(char c) {
       }
     }
 
-    (*((_String *)lData[0])) << c;
+    (*((_StringBuffer *)lData[0])) << c;
 
     /*long  f;
 
@@ -280,13 +280,13 @@ void _DataSet::Write2Site(long index, char c) {
         return;
       } else {
         if (index == 0) {
-          _String *newString = new _String(currentWritten, true);
+          _StringBuffer *newString = new _StringBuffer(currentWritten);
           (*newString) << c;
           (*this) < newString;
         } else {
           long s = 1;
           for (; s < lLength; s++) {
-            _String *aString = (_String *)lData[s];
+            _StringBuffer *aString = (_StringBuffer *)lData[s];
             if (aString->length() == index) {
               (*aString) << c;
               break;
@@ -635,7 +635,7 @@ hyFloat _DataSet::CheckAlphabetConsistency(void) {
 //___________________________________________________
 
 BaseRef _DataSet::toStr(unsigned long) {
-  _String *s = new _String(NoOfSpecies() * 30, true), *str;
+  _StringBuffer *s = new _StringBuffer(NoOfSpecies() * 30), *str;
 
   (*s) << _String((long)NoOfSpecies()) << " species:";
 

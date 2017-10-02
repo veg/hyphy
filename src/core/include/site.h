@@ -50,10 +50,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "stdlib.h"
 #include "translation_table.h"
 
-#define HY_TRANSLATION_TABLE_DNA 0x01
-#define HY_TRANSLATION_TABLE_RNA 0x02
-#define HY_TRANSLATION_TABLE_BINARY 0x04
-#define HY_TRANSLATION_TABLE_PROTEIN 0x08
 
 // data set file state data struct
 struct FileState {

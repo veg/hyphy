@@ -573,7 +573,7 @@ hyFloat  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          update
            in simple cases it is fixed for the duration of optimization, but for more
            complex models it may change from iteration to iteration
          */
-        result += log(accumulator) * theFilter->theFrequencies.Get (siteID);
+        result += log(accumulator) * theFilter->theFrequencies.get (siteID);
         // correct for the fact that identical alignment columns may appear more than once
     }
 
@@ -812,7 +812,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         parentConditionals [1]                             *= _lfScalerUpwards;
                         parentConditionals [2]                             *= _lfScalerUpwards;
                         parentConditionals [3]                             *= _lfScalerUpwards;
-                        localScalerChange                                  += theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
+                        localScalerChange                                  += theFilter->theFrequencies.get (siteOrdering.lData[siteID]);
                         scalingAdjustments [parentCode*siteCount + siteID]  = tryScale;
                         didScale                                            = 1;
                     }
@@ -823,7 +823,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         parentConditionals [1]                             *= _lfScalingFactorThreshold;
                         parentConditionals [2]                             *= _lfScalingFactorThreshold;
                         parentConditionals [3]                             *= _lfScalingFactorThreshold;
-                        localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
+                        localScalerChange                                  -= theFilter->theFrequencies.get (siteOrdering.lData[siteID]);
                         didScale                                            = -1;
                     }
                 }
@@ -983,7 +983,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                             parentConditionals [c] *= _lfScalerUpwards;
                         }
 
-                        localScalerChange                                      += theFilter->theFrequencies.Get(siteOrdering.lData[siteID]);
+                        localScalerChange                                      += theFilter->theFrequencies.get(siteOrdering.lData[siteID]);
                         didScale                                                = 1;
                     }
                 } else {
@@ -992,7 +992,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         for (long c = 0; c < alphabetDimension; c++) {
                             parentConditionals [c] *= _lfScalingFactorThreshold;
                         }
-                        localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
+                        localScalerChange                                  -= theFilter->theFrequencies.get (siteOrdering.lData[siteID]);
                         didScale                                            = -1;
                     }
                 }
@@ -1476,7 +1476,7 @@ void            _TheTree::ComputeBranchCache    (
                                 parentConditionals [c] *= _lfScalerUpwards;
                             }
 
-                            localScalerChange                                      += theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
+                            localScalerChange                                      += theFilter->theFrequencies.get (siteOrdering.lData[siteID]);
                             didScale                                                = 1;
                         }
                     } else {
@@ -1486,7 +1486,7 @@ void            _TheTree::ComputeBranchCache    (
                               parentConditionals [c] *= _lfScalingFactorThreshold;
                             }
 
-                            localScalerChange                                  -= theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
+                            localScalerChange                                  -= theFilter->theFrequencies.get (siteOrdering.lData[siteID]);
                             didScale                                            = -1;
                         }
                     }
@@ -1553,7 +1553,7 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
       }
 
       hyFloat term;
-      long       site_frequency = theFilter->theFrequencies.Get(direct_index);
+      long       site_frequency = theFilter->theFrequencies.get(direct_index);
       if ( site_frequency > 1L) {
         term =  log(accumulator) * site_frequency - correction;
       } else {
@@ -1944,7 +1944,7 @@ hyFloat      _TheTree::ComputeTwoSequenceLikelihood
                 return -A_LARGE_NUMBER;
             } else {
                 //printf ("%d: %g\n", siteID, sum);
-                result += log(sum) * theFilter->theFrequencies.Get (siteOrdering.lData[siteID]);
+                result += log(sum) * theFilter->theFrequencies.get (siteOrdering.lData[siteID]);
             }
         }
     }
@@ -2040,13 +2040,13 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter const* dsf, _Simple
         _SimpleList  conversion;
         _AVLListXL   conversionAVL (&conversion);
 
-        _String * sampledSequence = new _String (siteCount*unitLength, true);
+        _StringBuffer * sampledSequence = new _StringBuffer (siteCount*unitLength);
         _String  letterValue (unitLength,false);
         for (long charIndexer = 0; charIndexer < sampledStates.lLength; charIndexer++) {
-            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(sampledStates.lData[charIndexer]), unitLength, letterValue.sData, &conversionAVL);
+            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(sampledStates.lData[charIndexer]), unitLength, letterValue.get_str(), &conversionAVL);
             (*sampledSequence) << letterValue;
         }
-        sampledSequence->Finalize();
+        sampledSequence->TrimSpace();
         result.AppendNewInstance(sampledSequence);
         //printf ("%d: %s\n", nodeIndex, sampledSequence->sData);
 
@@ -2302,13 +2302,13 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         }
 
         for  (long nodeID = 0; nodeID < stateCacheDim ; nodeID++) {
-            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.lData[nodeID]), unitLength, codeBuffer.sData, &conversionAVL);
+            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.lData[nodeID]), unitLength, codeBuffer.get_str(), &conversionAVL);
             _String  *sequence   = (_String*) (*result)(nodeID<iNodeCount?postToIn.lData[nodeID]:nodeID);
 
             for (long site = 0; site < patternMap->lLength; site++) {
-                char* storeHere = sequence->sData + patternMap->lData[site]*unitLength;
+                unsigned long offset = patternMap->lData[site]*unitLength;
                 for (long charS = 0; charS < unitLength; charS ++) {
-                    storeHere[charS] = codeBuffer.sData[charS];
+                    sequence->set_char (offset + charS, codeBuffer.char_at(charS));
                 }
             }
         }
@@ -2491,7 +2491,7 @@ void        _TreeTopology::ComputeClusterTable (_SimpleList& result, _SimpleList
 //__________________________________________________________________________________
 _String*        _TreeTopology::ConvertFromPSW                       (_AVLListX& nodeMap,_SimpleList& pswRepresentation)
 {
-    _String * result = new _String (128L, true);
+    _StringBuffer * result = new _StringBuffer (128L);
     if (pswRepresentation.lLength > 4) {
         long leafCount = pswRepresentation.Element (-2);
         // traverse backwards
@@ -2518,7 +2518,7 @@ _String*        _TreeTopology::ConvertFromPSW                       (_AVLListX& 
             }
         }
     }
-    result->Finalize();
+    result->TrimSpace();
     result->Flip();
     return result;
 }
@@ -2602,7 +2602,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p) {
     _Matrix     * result = new _Matrix (2,1,false,true),
                   * result2 = nil;
 
-    _FString    * treeR  = new _FString();
+    _String    * tree_repr  = nil;
 
     _Constant * bc = (_Constant*) BranchCount ();
     result->theData[0] = bc->Value();
@@ -2707,7 +2707,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p) {
             result->theData[1] = matchCount;
 
 
-            *treeR->theString  = ConvertFromPSW (nameMap, psw2);
+            tree_repr  = ConvertFromPSW (nameMap, psw2);
 
             _List sharedNames;
             for (long k = 0; k < iNodesTouched.lLength; k++) {
@@ -2726,7 +2726,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p) {
     if (result2) {
         resultList->MStore ("NODES",    result2, false);
     }
-    resultList->MStore ("CONSENSUS", treeR, false);
+    resultList->MStore ("CONSENSUS", tree_repr ? new _FString (tree_repr) : new _FString(), false);
     return resultList;
 }
 

@@ -47,13 +47,13 @@
 #include "polynoml.h"
 #include "scfg.h"
 #include "bayesgraph.h"
-#include "function_templates.h"
 #include "avllistx.h"
 #include "global_object_lists.h"
 #include "global_things.h"
 #include "time_difference.h"
 #include "global_things.h"
 #include "hy_string_buffer.h"
+
 
 
 
