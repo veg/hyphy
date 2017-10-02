@@ -573,7 +573,7 @@ bool      _ElementaryCommand::HandleGetInformation (_ExecutionList& current_prog
                          } else {
                              ((_Variable const*)source_object)->ScanForVariables(parameter_list,false);
                          }
-                    }).Each ([&] (unsigned long value) -> void {
+                    }).Each ([&] (long value, unsigned long) -> void {
                         modelPNames << LocateVar(value)->GetName();
                     });
                    
@@ -2554,7 +2554,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
             } else {
               _List filter_seq_names;
               _List const * original_names = &data_filter->GetData()->GetNames();
-              data_filter->theNodeMap.Each ([&] (long value) -> void {
+              data_filter->theNodeMap.Each ([&] (long value, unsigned long) -> void {
                 filter_seq_names << original_names->GetItem (value);
               });
               return_value = new _Matrix (filter_seq_names);
@@ -3051,7 +3051,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
             if (choices_parameter == kLikelihoodFunctions) {
                 // the list consists of all defined likelihood function objects
                 
-                handle_exclusions (likeFuncNamesList.countitems(), excluded).Each([&] (long value) -> void {
+                handle_exclusions (likeFuncNamesList.countitems(), excluded).Each([&] (long value, unsigned long) -> void {
                     if (likeFuncList.GetItem(value)) {
                         _String const * lf_name = (_String*) likeFuncNamesList (value);
                         (*available_choices) < new _List (new _String (*lf_name), new _String ( _String ("Likelihood Function ") & *lf_name & "."));
@@ -3072,7 +3072,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                         case HY_BL_DATASET: {
                             _DataSet const *ds = (_DataSet const*) source_object;
                             handle_exclusions (ds->NoOfSpecies(), excluded).Each (
-                                                                                  [&] (long value) -> void {
+                                                                                  [&] (long value, unsigned long) -> void {
                                                                                       _String const * sequence_name = ds->GetSequenceName(value);
                                                                                       (*available_choices) < new _List (new _String (*sequence_name), new _String ( _String ("Taxon ") & (value + 1L) & sequence_name->Enquote('(', ')') & "."));
                                                                                   }
@@ -3082,7 +3082,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                         case HY_BL_DATASET_FILTER: {
                             _DataSetFilter const *df = (_DataSetFilter const*) source_object;
                             handle_exclusions (df->NumberSpecies(), excluded).Each (
-                                                                                    [&] (long value) -> void {
+                                                                                    [&] (long value, unsigned long) -> void {
                                                                                         _String const * sequence_name = df->GetSequenceName(value);
                                                                                         (*available_choices) < new _List (new _String (*sequence_name), new _String ( _String ("Taxon ") & (value + 1L) & sequence_name->Enquote('(', ')') & "."));
                                                                                     }
@@ -3100,7 +3100,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                                 }
                             });
                             handle_exclusions (model_indices.countitems(), excluded).Each (
-                                                                                           [&] (long value) -> void {
+                                                                                           [&] (long value, unsigned long) -> void {
                                                                                                _String const * parameter_name = LocateVar(value)->GetName();
                                                                                                (*available_choices) < new _List (new _String (*parameter_name),
                                                                                                                                  new _String (_String ("Constrain parameter ") & *parameter_name & '.'));

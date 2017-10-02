@@ -704,18 +704,6 @@ void _DataSet::MatchIndices(_Formula &f, _SimpleList &receptacle, bool isVert,
 
 //_________________________________________________________
 
-void _DataSet::FindAllSitesLikeThisOne(long index, _SimpleList &receptacle) {
-  if (index >= 0 && index < theMap.lLength) {
-    index = theMap.lData[index];
-    for (long k = 0; k < theMap.lLength; k++)
-      if (theMap.lData[k] == index) {
-        receptacle << k;
-      }
-  }
-}
-
-//_________________________________________________________
-
 _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
                                                 char concatOrCombine) {
   _DataSet *currentSet = (_DataSet *)dataSetList(ref.Element(0));
@@ -906,4 +894,20 @@ _DataSet *_DataSet::Combine(_SimpleList const &ref) {
   combined_data->Finalize();
   combined_data->SetNoSpecies(total_species_count);
   return combined_data;
+}
+
+  //_______________________________________________________________________
+
+_String*        _DataSet::GetSequenceCharacters (long seqID)  const{
+  
+  unsigned long        upTo = NoOfColumns();
+  _StringBuffer * aSequence = new _StringBuffer (upTo);
+  
+  if (seqID >= 0L && seqID < noOfSpecies) {
+    for (unsigned long k2=0UL; k2<upTo; k2++) {
+      (*aSequence) << GetSite (k2)->char_at(seqID);
+    }
+  }
+  aSequence->TrimSpace ();
+  return aSequence;
 }

@@ -128,8 +128,10 @@ namespace hy_env {
                               .PushPairCopyKey (produce_markdown_output, new HY_CONSTANT_FALSE)
                               .PushPairCopyKey (integration_maximum_iterations, new _Constant (8.))
                               .PushPairCopyKey (integration_precision_factor, new _Constant (1.e-5))
-
-
+                              .PushPairCopyKey (skip_omissions, new _Constant (HY_CONSTANT_TRUE))
+                              .PushPairCopyKey (data_file_print_format, new _Constant (6.0))
+                              .PushPairCopyKey (data_file_default_width, new _Constant (50.0))
+                              .PushPairCopyKey (data_file_gap_width, new _Constant (10.0))
       ;
     }
   
@@ -146,8 +148,16 @@ _String const
         // this _template_ variable is used to define likelihood function evaluator templates
     covariance_parameter                            ("COVARIANCE_PARAMETER"),
         // used to control the behavior of CovarianceMatrix
+    data_file_default_width                         ("DATA_FILE_DEFAULT_WIDTH"),
+      // for file formats with grouped alignment columns (e.g. PHYLIP), determines the width of a column
+    data_file_gap_width                             ("DATA_FILE_GAP_WIDTH"),
+      // for file formats with grouped alignment columns (e.g. PHYLIP), determines the width of the gap between
+      // column groups
     data_file_partition_matrix                      ("DATA_FILE_PARTITION_MATRIX"),
         // the string of data partitions read from the last valid NEXUS CHARSET block
+    data_file_print_format                          ("DATA_FILE_PRINT_FORMAT"),
+      // determines the file format for datasets and datafilters
+
     data_file_tree                                  ("IS_TREE_PRESENT_IN_DATA"),
         // set to TRUE if the last data load call yielded a Newick trees
     data_file_tree_string                           ("DATAFILE_TREE"),
@@ -238,6 +248,8 @@ _String const
         // populated by a successful call to 'ChoiceList', @see ExecuteCase32
     sitewise_matrix                                 ("SITE_LIKELIHOOD"),
         // this _template_ variable is used to define likelihood function evaluator templates
+    skip_omissions                                  ("SKIP_OMISSIONS"),
+        // if set, will cause data filters to _EXCLUDE_ sites with gaps or other N-fold redundancies
     status_bar_update_string                        ("STATUS_BAR_STATUS_STRING"),
         // used to set the progress message displayed to the user
     true_const                                      ("TRUE"),

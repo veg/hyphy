@@ -146,15 +146,11 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 bracketingPersistence           ("BRACKETING_PERSISTENCE"),
                                 intermediatePrecision           ("INTERMEDIATE_PRECISION"),
                                 keepOptimalOrder                ("KEEP_OPTIMAL_ORDER"),
-                                skipOmissions                   ("SKIP_OMISSIONS"),
                                 optimizeSummationOrder          ("OPTIMIZE_SUMMATION_ORDER"),
                                 optimizePartitionSize           ("OPTIMIZE_SUMMATION_ORDER_PARTITION"),
                                 maximumIterationsPerVariable    ("MAXIMUM_ITERATIONS_PER_VARIABLE"),
                                 optimizationPrecisionMethod     ("OPTIMIZATION_PRECISION_METHOD"),
                                 likefuncOutput                  ("LIKELIHOOD_FUNCTION_OUTPUT"),
-                                dataFilePrintFormat             ("DATA_FILE_PRINT_FORMAT"),
-                                dataFileDefaultWidth            ("DATA_FILE_DEFAULT_WIDTH"),
-                                dataFileGapWidth                ("DATA_FILE_GAP_WIDTH"),
                                 categorySimulationMethod        ("CATEGORY_SIMULATION_METHOD"),
                                 useInitialDistanceGuess         ("USE_DISTANCES"),
                                 covariancePrecision             ("COVARIANCE_PRECISION"),
@@ -8603,8 +8599,9 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
     }
 
     // create a dummy data filter and spool the data to a file
-    stashParameter(skipOmissions, 0.0, true);
-
+  
+  
+  
     if (partitionList || !exportPart) {
         for (unsigned long idx = 0; idx < redirector->lLength; idx++) {
 
@@ -8644,15 +8641,15 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
         ((_SimpleList *)dV(dataSetsByFilter(0)))->Duplicate(exportPart);
     }
 
+    bool stashed_nfold = hy_env::EnvVariableTrue(hy_env::skip_omissions);
+    hy_env::EnvVariableSet(hy_env::skip_omissions, new _Constant (HY_CONSTANT_FALSE), false);
     for (unsigned long idx5 = 0; idx5 < indexedDataSets.lLength; idx5++) {
 
         _DataSetFilter *entireSet = new _DataSetFilter();
         _SimpleList dH;
-        stashParameter(skipOmissions, 0.0, true);
         entireSet->SetFilter(
             (_DataSet *)dataSetList(indexedDataSets.lData[idx5]), 1, dH,
             *(_SimpleList *)dV(idx5));
-        stashParameter(skipOmissions, 0.0, false);
         if (idx5) {
             stashParameter(dataFilePrintFormat, 0.0, true);
         } else {
@@ -8676,7 +8673,8 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
         DeleteObject(entireSet);
         stashParameter(dataFilePrintFormat, 0.0, false);
     }
-
+    hy_env::EnvVariableSet(hy_env::skip_omissions, new _Constant (stashed_nfold ? HY_CONSTANT_TRUE : HY_CONSTANT_FALSE , false);
+  
     if (indexedDataSets.lLength == 1) {
         rec << "\n\nBEGIN HYPHY;\n\n";
     }

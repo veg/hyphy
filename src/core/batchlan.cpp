@@ -2866,7 +2866,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         _SimpleList     h,v;
 
         new_filter->SetFilter     (ds,unit_size,h,v,false);
-        new_filter->SetExclusions (the_exclusions,true);
+        new_filter->SetExclusions (*the_exclusions,true);
         new_filter->SetupConversion ();
 
         _Matrix*   root_states = nil;

@@ -178,8 +178,11 @@ namespace hy_env {
           end_of_file,
           produce_markdown_output,
           integration_precision_factor,
-          integration_maximum_iterations
-  
+          integration_maximum_iterations,
+          skip_omissions,
+          data_file_gap_width,
+          data_file_default_width,
+          data_file_print_format
     ;
   
   

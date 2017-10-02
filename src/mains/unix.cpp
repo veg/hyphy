@@ -340,7 +340,9 @@ void    ReadInPostFiles(void) {
 long    DisplayListOfChoices (void) {
     ReadInTemplateFiles();
   
-    auto access_choice_item = [&] (long cat, long item) -> const _String * {return (_String*)(*(_List*)availableTemplateFiles(cat))(item);};
+    auto access_choice_item = [&] (long cat, long item) -> const _String * {
+        return (_String*)(*(_List*)availableTemplateFiles(cat))(item);
+    };
 
     if (!availableTemplateFiles.lLength) {
         return -1;

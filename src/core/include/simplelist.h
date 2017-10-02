@@ -117,6 +117,7 @@ class _SimpleList:public BaseObj {
         virtual bool operator >> (long);
 
         virtual void operator << (_SimpleList const &);
+  
 
 
         /*
@@ -126,7 +127,7 @@ class _SimpleList:public BaseObj {
         */
 
         /**
-        * Retrieve the element in position index if index if positive or 
+        * Retrieve the element in position index if index if positive or
         * length + index if index is negative
         * Example: SimpleList(1,3,5,7).GetElement(1) = 3, SimpleList(1,3,5,7).GetElement(-1) = 7 
         * @param index The index of the elemnt to retrieve 
@@ -171,6 +172,17 @@ class _SimpleList:public BaseObj {
         * @return Unsigned long of item length    
         */
         inline unsigned long countitems(void) const {return lLength;}
+  
+  
+        /**
+         * Append a range to the current list
+         * @param how_many : the number of items in the range
+         * @param start: the first element
+         * @param step : step from i to i+1 element
+         
+         */
+  
+        void   AppendRange (unsigned long how_many, long start, long step);
 
         /**
          //Is the list empty
@@ -302,8 +314,18 @@ class _SimpleList:public BaseObj {
 
         template <typename MAPPER> void Each (MAPPER mapper, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {
-            mapper ( ((long*)(lData))[i] );
+            mapper ( ((long*)(lData))[i], i );
           }
+        }
+
+        template <typename FILTER> _SimpleList const FilterIndex (FILTER condition) const {
+          _SimpleList filtered;
+          for (unsigned long i = 0UL; i<lLength; i++) {
+            if (condition (((long*)(lData))[i] , i)) {
+              filtered << i;
+            }
+          }
+          return filtered;
         }
 
         /**

@@ -2650,7 +2650,7 @@ void    _Polynomial::RankTerms(_SimpleList* receptacle)
 //__________________________________________________________________________________
 
 BaseObj* _Polynomial::toStr (unsigned long padding) {
-  _String result (10, true);
+  _StringBuffer * result = new _StringBuffer (32UL);
   if (theTerms->NumberOfTerms()) {
     long i;
     _List _varNames;
@@ -2672,49 +2672,43 @@ BaseObj* _Polynomial::toStr (unsigned long padding) {
       
       snprintf (number, sizeof(number),PRINTF_FORMAT_STRING,coeff);
       if (i>0 && coeff >= 0.) {
-        result<<'+';
+        *result<<'+';
       }
       
       if (print_coeff) {
-        result<<number;
+        *result<<number;
       }
       
       if (i>0 || !firstN) {
         if (print_coeff) {
-          result<<'*';
+          *result<<'*';
         }
         long *cT = theTerms->GetTerm(i);
         bool      printedFirst = false;
         for (long k=0; k<variableIndex.countitems(); k++,cT++) {
           if (*cT>0) {
             if (printedFirst) {
-              result<<'*';
+              *result<<'*';
             } else {
               printedFirst = true;
             }
             
-            result<<(_String*)_varNames(k);
+            *result<<(_String*)_varNames(k);
             if (*cT>1) {
-              result<<'^';
-              _String st (*cT);
-              result<< *cT;
+              *result<<'^'<< _String(*cT);
             }
           }
         }
       }
     }
   } else {
-    _String*s = (_String*)compList1.toStr(padding);
-    result<<s;
-    result<<'\n';
-    DeleteObject(s);
-    s = (_String*)compList2.toStr(padding);
-    result<<s;
-    result<<'\n';
-    DeleteObject(s);
+    *result <<_String((_String*)compList1.toStr(padding))
+            <<'\n'
+            <<_String((_String*)compList2.toStr(padding))
+            <<'\n';
   }
-  result.Finalize();
-  return result.makeDynamic();
+  result->TrimSpace();
+  return result;
 }
 
 //__________________________________________________________________________________
@@ -2727,7 +2721,7 @@ void _Polynomial::toFileStr (FILE*f, unsigned long padding)
         long i;
         for (i=0; i<variableIndex.countitems(); i++) {
             _varNames<<LocateVar(variableIndex(i))->GetName();
-            fprintf(f,"%s",((_String*)_varNames(i))->sData);
+            fprintf(f,"%s",((_String*)_varNames(i))->get_str());
             if (i<variableIndex.countitems()-1) {
                 fprintf(f,",");
             }
@@ -2745,7 +2739,7 @@ void _Polynomial::toFileStr (FILE*f, unsigned long padding)
                 long *cT = theTerms->GetTerm(i);
                 for (long k=0; k<variableIndex.countitems(); k++,cT++) {
                     if (*cT>0) {
-                        fprintf(f,"%s",((_String*)_varNames(k))->sData);
+                        fprintf(f,"%s",((_String*)_varNames(k))->get_str());
                         if (*cT>1) {
                             fprintf(f,"^");;
                             fprintf(f,"%ld",*cT);

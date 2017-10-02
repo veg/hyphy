@@ -48,7 +48,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace hy_global;
 
-#define HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
+#define HYPHY_SITE_DEFAULT_BUFFER_SIZE 512
 #define DATA_SET_SWITCH_THRESHOLD 100000
 
 // data set file state data struct
@@ -161,8 +161,6 @@ public:
   _SimpleList &GetTheMap(void) { return theMap; }
 
   _SimpleList const &DuplicateMap(void) const { return theMap; }
-
-  void FindAllSitesLikeThisOne(long, _SimpleList &);
 
   friend class _DataSetFilter;
   friend _DataSet *ReadDataSetFile(FILE *, char, _String *, _String *,

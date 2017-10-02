@@ -212,8 +212,7 @@ _SimpleList& _SimpleList::operator << (long br) {
   return *this;
 }
 
-bool _SimpleList::operator >> (long br)
-{
+bool _SimpleList::operator >> (long br) {
     if (Find(br) == -1) {
         InsertElement ((BaseRef)br, -1, false, false);
         return true;
@@ -1236,6 +1235,15 @@ void _SimpleList::Populate (long l, long start, long step) {
         lData[k] = start;
     }
     lLength = l;
+}
+
+
+ void _SimpleList::AppendRange(unsigned long how_many, long start, long step)  {
+  RequestSpace (how_many + lLength);
+  for (unsigned long k = 0UL; k < how_many; k++, start+=step) {
+    lData [laLength + k] = start;
+  }
+  lLength = how_many + lLength;
 }
 
 void _SimpleList::RecursiveIndexSort (long from, long to, _SimpleList* index)

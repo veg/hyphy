@@ -42,6 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "list.h"
 #include "stdlib.h"
 #include "dataset.h"
+#include "string_file_wrapper.h"
 
 //_________________________________________________________
 enum _hy_dataset_filter_ambiguity_resolution {
@@ -69,7 +70,7 @@ public:
   void CopyFilter(_DataSetFilter const *);
   void SetFilter(_DataSet const *, unsigned char, _SimpleList &, _SimpleList &,
                  bool isFilteredAlready = false);
-  void SetExclusions(_String const *, bool = true);
+  void SetExclusions(_String const&, bool = true);
 
   _String *GetExclusions(void) const;
 
@@ -134,18 +135,12 @@ public:
    * @return the buffer string
    */
 
-  void FindAllSitesLikeThisOne(long, _SimpleList &) const;
-
   _String const GenerateConsensusString(_SimpleList * = nil) const;
 
-  void GrabSite(unsigned long, unsigned long, _String &);
-  void GrabSite(unsigned long, unsigned long, char *);
 
-  virtual char GetChar(unsigned long site, unsigned long pos);
-  long SiteFrequency(unsigned long site);
-  bool HasDeletions(unsigned long site, _AVLList * = nil);
-  long HasExclusions(unsigned long site, _SimpleList *theExc, hyFloat *buffer);
-  bool IsConstant(unsigned long site, bool relaxedDeletions = true);
+  long site_frequency (unsigned long site) const { return theFrequencies.get (site); }
+  bool HasDeletions(unsigned long site, _AVLList * = nil) const;
+  long HasExclusions(unsigned long site, _SimpleList *theExc, hyFloat *buffer) const;
 
   long Translate2Frequencies(_String const &, hyFloat *, bool) const;
   long MapStringToCharIndex(_String &) const;
@@ -155,9 +150,6 @@ public:
   _Matrix *HarvestFrequencies(char unit, char atom, bool posSpec,
                               bool = true) const;
 
-  void Freeze(long);
-
-  void UnFreeze(long);
 
   void MatchStartNEnd(_SimpleList &, _SimpleList &, _SimpleList * = nil) const;
 
@@ -173,7 +165,7 @@ public:
     return theData->theTT->ConvertCodeToLetters(code, base);
   }
 
-  void ConvertCodeToLettersBuffered(long code, char base, char const *,
+  void ConvertCodeToLettersBuffered(long code, unsigned char base, char *,
                                     _AVLListXL *) const;
   // 20090212: SLKP
   // added this function to cache repeated character code -> string conversions
@@ -212,7 +204,6 @@ public:
   long CorrectCode(long code) const;
   virtual bool CompareTwoSites(unsigned long, unsigned long,
                                unsigned long) const;
-  bool CompareTwoSitesChar(unsigned long, unsigned long, unsigned long) const;
   long FindSpeciesName(_List &, _SimpleList &) const;
   _DataSetFilter *PairFilter(long, long, _DataSetFilter *);
   void SetDimensions();
@@ -221,8 +212,6 @@ public:
   bool ConfirmConversionCache(void) const;
   void FilterDeletions(_SimpleList *theExc = nil);
   _Matrix *GetFilterCharacters(bool = false) const;
-  _SimpleList *CountAndResolve(long, hyFloat * = nil, bool = false);
-  _Matrix *PairwiseCompare(_SimpleList *, _SimpleList *, _List * = nil);
 
   _List *ComputePatternToSiteMap(void) const;
 
@@ -263,8 +252,13 @@ protected:
   long dimension;
 
 private:
-  void internalToStr(FILE *, _String &);
-  _String *accessCache;
+  void internalToStr(FILE *, _StringBuffer *);
+  
+  
+   void retrieve_individual_site_from_raw_coordinates (_String & store_here, unsigned long site, unsigned long sequence) const;
+   inline char direct_index_character (unsigned long site, unsigned long sequence) const;
+  
+   _String *accessCache;
 
   long undimension;
 

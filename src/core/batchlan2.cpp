@@ -740,7 +740,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
 
     if (parameters.lLength>5) {
         hSpecs = GetStringFromFormula((_String*)parameters(5),chain.nameSpacePrefix);
-        thedf->SetExclusions (&hSpecs);
+        thedf->SetExclusions (hSpecs);
     } else if ( code!=6 && isFilter ) {
         const _DataSetFilter * df1 = GetDataFilter (dsID);
         if (df1->theExclusions.lLength) {

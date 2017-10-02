@@ -200,3 +200,11 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
     }
   }
 }
+
+
+//_______________________________________________________________________
+
+bool     _DataSetFilterNumeric::CompareTwoSites (unsigned long, unsigned long, unsigned long) const {
+  return false;
+}
+

@@ -6541,15 +6541,6 @@ long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstInd
         } else if (traversalTags && orderIndex) {
             long theIndex = filterL * i + orderIndex;
             traversalTags->lData[theIndex/_HY_BITMASK_WIDTH_] |= bitMaskArray.masks[theIndex%_HY_BITMASK_WIDTH_];
-            /*printf ("%d %d %d %d %d %d\n", firstIndex, secondIndex, orderIndex, i, theIndex/_HY_BITMASK_WIDTH_, theIndex%_HY_BITMASK_WIDTH_);
-            char b[4]; b[3] = 0;
-            for (long k = 0; k < flatLeaves.lLength; k++)
-            {
-                dsf->GrabSite (firstIndex, dsf->theNodeMap.lData[k], b);
-                printf ("%s ", b);
-                dsf->GrabSite (secondIndex, dsf->theNodeMap.lData[k], b);
-                printf ("%s\n", b);
-            }*/
         }
     }
 
