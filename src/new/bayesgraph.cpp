@@ -327,7 +327,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
         if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_PRECISION, NUMBER)))) {
             prior_precision.Store (node, 0, (_Parameter) (avl_val->Value()));
 
-            if (avl_val <= 0) {
+            if (avl_val->Value() <= 0.) {
                 errorMessage = _String ("PriorPrecision must be greater than zero, received ") & prior_precision(node,0) & " for node " & node;
                 break;
             }
@@ -342,7 +342,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
         if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SCALE, NUMBER)))) {
             prior_scale.Store (node, 0, (_Parameter) (avl_val->Value()));
 
-            if (avl_val <= 0) {
+            if (avl_val->Value() <= 0.) {
                 errorMessage = _String ("PriorScale must be greater than zero, received ") & prior_scale(node,0) & " for node " & node;
                 break;
             }
