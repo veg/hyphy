@@ -2913,7 +2913,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                      *tree   = (_String*)(*likelihoodFunctionSpec)(i+1),
                       *freq    = explicitFreqs?(_String*)(*likelihoodFunctionSpec)(i+2):nil;
 
-        if(GetDataFilter (AppendContainerName(*dataset,chain.nameSpacePrefix)) >= 0) {
+        if(GetDataFilter (AppendContainerName(*dataset,chain.nameSpacePrefix)) != nil) {
             _TheTree*   thisTree = (_TheTree*)FetchObjectFromVariableByType(&AppendContainerName(*tree,chain.nameSpacePrefix),TREE);
             if (thisTree) {
                 _TreeIterator ti (thisTree, _HY_TREE_TRAVERSAL_POSTORDER);
