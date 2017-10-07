@@ -70,15 +70,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* conditional likelihood matrix reconstruction modes */
 
-namespace CategoryConstructionOptions {
-    enum      CategoryConstructionOptions {
-        kMatrixConditionals =  0,
-        kMatrixClasses      =  1,
-        kMatrixWeights      =  2,
-        kMatrixPosteriors   =  3,
-        kSiteProbabilities  =  4
-    };
-}
+#define   _hyphyLFConstructCategoryMatrixConditionals   0
+#define   _hyphyLFConstructCategoryMatrixClasses        1
+#define   _hyphyLFConstructCategoryMatrixWeights        2
+#define   _hyphyLFConstructCategoryMatrixPosteriors     3
+#define   _hyphyLFConstructCategoryMatrixSiteProbabilities      4
 
 /* likelihood seialization model */
 
@@ -176,6 +172,7 @@ public:
 
     hyFloat  GetIthIndependent           (long) const;     // get the value of i-th independent variable
     const _String*  GetIthIndependentName           (long) const;     // get the name of i-th independent variable
+    const _String*  GetIthDependentName           (long) const;     // get the name of i-th independent variable
     hyFloat  GetIthDependent             (long) const;     // get the value of i-th dependent variable
     void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix
     _Variable*  GetIthIndependentVar        (long) const;     // get the variable object of i-th independent variable
@@ -204,7 +201,7 @@ public:
     void        DoneComputing    (bool = false);
     virtual
     _Matrix*    Optimize ();
-    _Matrix*    ConstructCategoryMatrix     (const _SimpleList&, CategoryConstructionOptions::CategoryConstructionOptions, bool = true, _String* = nil);
+    _Matrix*    ConstructCategoryMatrix     (const _SimpleList&, unsigned, bool = true, _String* = nil);
 
     hyFloat  SimplexMethod               (hyFloat& precision);
     void        Anneal                      (hyFloat& precision);
@@ -261,7 +258,7 @@ public:
     long        SequenceCount           (long);
     unsigned long        SiteCount               (void) const;
     void        Rebuild                 (bool rescan_parameters = false);
-    void        SerializeLF             (_String&, char=0, _SimpleList* = nil, _SimpleList* = nil);
+    void        SerializeLF             (_StringBuffer&, char=0, _SimpleList* = nil, _SimpleList* = nil);
     _Formula*   HasComputingTemplate    (void) const{
         return computingTemplate;
     }

@@ -296,7 +296,7 @@ public:
    - SLKP 20170614 reviewed while porting from v3 branch
    [CHANGE-NOTE SLKP 20170614 added the kAppendAnAssignmentToBufferPlain option]
    */
-   void    AppendAnAssignmentToBuffer (_String* id , _String* value, unsigned long = kAppendAnAssignmentToBufferFree);
+   void    AppendAnAssignmentToBuffer (_String const* id , _String * value, unsigned long = kAppendAnAssignmentToBufferFree);
 
   /**
    * A utility function to append a statement of the form

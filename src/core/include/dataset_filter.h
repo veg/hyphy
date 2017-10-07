@@ -165,7 +165,7 @@ public:
     return theData->theTT->ConvertCodeToLetters(code, base);
   }
 
-  void ConvertCodeToLettersBuffered(long code, unsigned char base, char *,
+  void ConvertCodeToLettersBuffered(long code, unsigned char base, _String&,
                                     _AVLListXL *) const;
   // 20090212: SLKP
   // added this function to cache repeated character code -> string conversions

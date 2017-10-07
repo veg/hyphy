@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "dataset_filter.h"
+#include "avllistxl_iterator.h"
 
 //_________________________________________________________
 // Data Set Filter/Numeric
@@ -697,7 +698,7 @@ void    _DataSetFilter::SetExclusions (_String const& exclusion_string, bool fil
     
     _AVLList     exclusions (&theExclusions);
   
-    character_list.Tokenize(',').ForEach ([&] (BaseRefConst * exlcusion_character) -> void {
+    character_list.Tokenize(',').ForEach ([&] (BaseRefConst  exlcusion_character) -> void {
       _String* kth_token = (_String*)exlcusion_character;
       long character_index = MapStringToCharIndex(*kth_token);
       if (character_index < 0) {
@@ -2039,7 +2040,7 @@ void    _DataSetFilter::toFileStr (FILE*dest, unsigned long) {
 }
 
   //_________________________________________________________
-void    _DataSetFilter::ConvertCodeToLettersBuffered (long code, unsigned char unit, char* storage, _AVLListXL* lookup) const {
+void    _DataSetFilter::ConvertCodeToLettersBuffered (long code, unsigned char unit, _String& storage, _AVLListXL* lookup) const {
     // write out the file with this dataset filter
   long            lookupC     = lookup->FindLong (code);
   const char      *lookupV;
@@ -2052,10 +2053,10 @@ void    _DataSetFilter::ConvertCodeToLettersBuffered (long code, unsigned char u
   }
   
   if (unit == 1) {
-    storage[0] = lookupV[0];
+    storage.set_char (0, lookupV[0]);
   } else {
     for (unsigned long k = 0UL; k < unit; k++) {
-      storage[k] = lookupV[k];
+      storage.set_char (k,lookupV[k]);
     }
   }
 }
@@ -2102,12 +2103,12 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       << *bSet
       << "\"\n";
       
-      if (theData->theTT->tokensAdded.sLength) {
-        for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++) {
+      if (theData->theTT->tokensAdded.nonempty()) {
+        for (long at = 0; at < theData->theTT->tokensAdded.length(); at++) {
           write_here << "$TOKEN:\""
-          << theData->theTT->tokensAdded.sData[at]
+          << theData->theTT->tokensAdded.char_at(at)
           << "\" = \""
-          << theData->theTT->ExpandToken (theData->theTT->tokensAdded.sData[at])
+          << theData->theTT->ExpandToken (theData->theTT->tokensAdded.char_at(at))
           << "\"\n";
         }
       }
@@ -2271,22 +2272,22 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
         } else if (theData->theTT->IsStandardBinary()) {
           write_here << "DATATYPE = BINARY\n";
         } else {
-          long alphabet_length = theData->theTT->baseSet.sLength;
+          long alphabet_length = theData->theTT->baseSet.length();
           
           write_here << "\t\tSYMBOLS = \"";
           for (unsigned long bc = 0UL; bc < alphabet_length-1; bc++) {
-            write_here << theData->theTT->baseSet.getChar (bc)
+            write_here << theData->theTT->baseSet.char_at (bc)
             << ' ';
           }
-          write_here << theData->theTT->baseSet.getChar (alphabet_length-1)
+          write_here << theData->theTT->baseSet.char_at (alphabet_length-1)
           << "\"\n";
           
-          if (theData->theTT->tokensAdded.sLength)
-            for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++) {
+          if (theData->theTT->tokensAdded.nonempty())
+            for (long at = 0; at < theData->theTT->tokensAdded.length(); at++) {
               write_here << "\nEQUATE =\""
-              << theData->theTT->tokensAdded.sData[at]
+              << theData->theTT->tokensAdded.char_at(at)
               << " = "
-              << theData->theTT->ExpandToken(theData->theTT->tokensAdded.sData[at])
+              << theData->theTT->ExpandToken(theData->theTT->tokensAdded.char_at(at))
               << "\"";
             }
         }
@@ -2314,13 +2315,13 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       unsigned long max_length = 0UL;
       
       for (unsigned long i=0UL; i<sequence_count; i++) {
-        StoreIfGreater (max_length, GetSequenceName(i)->sLength);
+        StoreIfGreater (max_length, GetSequenceName(i)->length());
       }
       
       _SimpleList taxaNamesPadding;
       
       for (unsigned long i=0UL; i<sequence_count; i++) {
-        taxaNamesPadding <<  max_length - GetSequenceName(i)->sLength;
+        taxaNamesPadding <<  max_length - GetSequenceName(i)->length();
       }
       
       
@@ -2408,158 +2409,57 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
   }
   
   if (outputFormat != 8) {
-    hyFloat  treeDefined;
-    checkParameter (dataFileTree, treeDefined,0.0);
-    if (treeDefined) {
-      _Variable *treeVar = FetchVar(LocateVarByName (dataFileTreeString));
-      if (treeVar) {
-        _String* treeString = (_String*)(treeVar->Compute())->toStr();
-        switch (outputFormat) {
-          case 0:
-          case 1:
-          case 9:
-          case 10: {
-            write_here << kStringFileWrapperNewLine
-            << kStringFileWrapperNewLine
-            << *treeString;
-            break;
-          }
-          case 2:
-          case 3: {
-            write_here << "\n1\n" << *treeString;
-            break;
-          }
-          default: {
-            write_here << "\n\nBEGIN TREES;\n\tTREE tree = "
-            << *treeString
-            << ";\nEND;";
+      if (hy_env::EnvVariableTrue(hy_env::data_file_tree)) {
+          _PMathObj tree_var = hy_env::EnvVariableGet(hy_env::data_file_tree_string, HY_ANY_OBJECT);
+          if (tree_var) {
+            _String* treeString = (_String*)(tree_var->Compute())->toStr();
+            switch (outputFormat) {
+              case 0:
+              case 1:
+              case 9:
+              case 10: {
+                write_here << kStringFileWrapperNewLine
+                << kStringFileWrapperNewLine
+                << *treeString;
+                break;
+              }
+              case 2:
+              case 3: {
+                write_here << "\n1\n" << *treeString;
+                break;
+              }
+              default: {
+                write_here << "\n\nBEGIN TREES;\n\tTREE tree = "
+                << *treeString
+                << ";\nEND;";
+              }
+            }
+            DeleteObject (treeString);
           }
         }
-        DeleteObject (treeString);
-      }
-    }
   }
 }
 
-  //_________________________________________________________
 
-bool    StoreADataSet (_DataSet* ds, _String* setName) {
-  if (!setName->IsValidIdentifier (true)) {
-    WarnError (*setName & " is not a valid identifier while constructing a DataSet");
-    return false;
-  }
-  
-  long pos = FindDataSetName (*setName);
-  
-  if (pos==-1) {
-    dataSetNamesList << setName;
-    dataSetList < ds;
-  } else {
-#if !defined __UNIX__ && ! defined __HEADLESS__
-    if (!RequestDataSetReplace (pos)) {
-      terminateExecution = true;
-      DeleteObject (ds);
-      return false;
-    }
-#endif
-    
-    _DataSet* existingDS = (_DataSet*)dataSetList (pos);
-    
-    bool isDifferent = existingDS->NoOfSpecies () != ds->NoOfSpecies() ||
-    existingDS->NoOfColumns () != ds->NoOfColumns() ||
-    existingDS->NoOfUniqueColumns () != ds->NoOfUniqueColumns() ||
-    existingDS->GetTT () != ds->GetTT();
-    
-    
-    
-    for (AVLListXLIteratorKeyValue filter_key_value : ObjectIndexer (HY_BL_DATASET_FILTER)) {
-      _DataSetFilter * filter = (_DataSetFilter*) filter_key_value.get_object();
-      if (filter->GetData() == existingDS) {
-        if (isDifferent) {
-          ReportWarning (_String("Overwriting dataset '") & *setName & "' caused DataSetFilter " & GetFilterName(filter_key_value.get_index())->Enquote('\'') & " to be deleted");
-          DeleteDataFilter(filter_key_value.get_index());
-        } else {
-          filter->SetData(ds);
-        }
-      }
-    }
-    
-    dataSetList.Replace(pos,ds,false);
-  }
-  
-  hyFloat normalizeSeqNames = 1.;
-  checkParameter (normalizeSequenceNames, normalizeSeqNames, 1.0);
-  
-  CheckReceptacleAndStore (*setName&".mapping",emptyString,false, new _MathObject, false);
-  if (normalizeSeqNames > 0.1) {
-    _List _id_mapping;
-    _AVLListXL id_mapping (&_id_mapping);
-    bool       did_something = false;
-    
-    for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
-      _String * old_name = new _String (*ds->GetSequenceName (i));
-      if (! old_name->IsValidIdentifier(false) ) {
-        ds->GetSequenceName (i)->ConvertToAnIdent(false);
-        did_something = true;
-      }
-      if (id_mapping.Find (ds->GetSequenceName (i)) >= 0) {
-        _String new_name (*ds->GetSequenceName (i));
-        long suffix = 1L;
-        do {
-          new_name = *ds->GetSequenceName (i) & "_" & suffix++;
-        } while (id_mapping.Find (&new_name) >= 0);
-        *ds->GetSequenceName (i) = new_name;
-        did_something = true;
-      }
-      
-      ds->GetSequenceName (i)->AddAReference();
-      id_mapping.Insert (ds->GetSequenceName (i), (long)old_name, false, false);
-    }
-    
-    if (did_something) {
-      _AssociativeList * mapping = new _AssociativeList();
-      
-      _SimpleList history;
-      long t,
-      current_index = id_mapping.Traverser(history, t, id_mapping.GetRoot());
-      
-      while (current_index >= 0L) {
-        mapping->MStore(*(_String*)_id_mapping.GetItem (current_index), *(_String*)id_mapping.GetXtra(current_index));
-        current_index = id_mapping.Traverser(history, t);
-      }
-      
-      CheckReceptacleAndStore (*setName&".mapping",emptyString,false, mapping, false);
-    }
-  }
-  
-  CheckReceptacleAndStore (*setName&".species",emptyString,false, new _Constant (ds->NoOfSpecies()), false);
-  CheckReceptacleAndStore (*setName&".sites",emptyString,false, new _Constant (ds->NoOfColumns()), false);
-  CheckReceptacleAndStore (*setName&".unique_sites",emptyString,false, new _Constant (ds->NoOfUniqueColumns()), false);
-  
-  return true;
-}
 
   //_________________________________________________________
 
-_Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps) const
-{
+_Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps) const {
   
-  
-  if (hSegmentation.lLength == 0L || vSegmentation.lLength<unit) { // revert to default (all data)
-    if (hSegmentation.lLength==0) {
+  if (hSegmentation,empty () || vSegmentation.countitems() < unit) { // revert to default (all data)
+    if (hSegmentation.empty ()) {
       hSegmentation.Populate (NoOfSpecies(),0,1);
     }
-    if (vSegmentation.lLength<unit) {
+    if (vSegmentation.countitems () <unit) {
       vSegmentation.Clear();
       vSegmentation.Populate (GetNoTypes(),0,1);
     }
   }
   
   if (unit%atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
-    WarnError (_String("Atom should divide unit in ") & _String (__PRETTY_FUNCTION__).Enquote() &" call");
+    HandleApplicationError (_String("Atom should divide unit in ") & _String (__PRETTY_FUNCTION__).Enquote() &" call");
     return new _Matrix (1,1);
   }
-  
   
   _Matrix   *  out = new _Matrix (ComputePower (theTT->baseLength, atom),
                                   posSpec?unit/atom:1,
@@ -2569,8 +2469,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
   long     positions  =   unit/atom,
   static_store [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
   
-  
-  _String unit_for_counting (atom, false);
+  _String unit_for_counting ((unsigned long)atom);
   
   for (unsigned long site_pattern = 0UL; site_pattern <vSegmentation.lLength;  site_pattern +=unit) { // loop over the set of segments
                                                                                                       // make sure the partition is kosher
@@ -2589,8 +2488,8 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
         unsigned long mapped_sequence_index = hSegmentation.lData[sequence_index];
           // build atomic probabilities
         
-        for (unsigned long m = 0; m<atom; m++ ) {
-          unit_for_counting.setChar(m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
+        for (unsigned long m = 0UL; m<atom; m++ ) {
+          unit_for_counting.set_char (m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
         }
         
         long resolution_count = theTT->MultiTokenResolutions(unit_for_counting, static_store, countGaps);

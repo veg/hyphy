@@ -47,8 +47,10 @@
 #include "batchlan.h"
 #include "function_templates.h"
 #include "global_things.h"
+#include "global_object_lists.h"
 
 using namespace hy_global;
+using namespace hyphy_global_objects;
 
 //Constants
 hyFloat const sqrtPi = 1.77245385090551603,

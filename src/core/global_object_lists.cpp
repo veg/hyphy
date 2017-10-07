@@ -474,5 +474,160 @@ namespace hyphy_global_objects {
     }
     return nil;
   }
+    
+    //
+    
+    // SLATED for DEPRECATION
+    
+    //____________________________________________________________________________________
+    
+    BaseRef _HYRetrieveBLObjectByNameMutable    (_String const& name, long& type, long *index, bool errMsg, bool tryLiteralLookup) {
+        using namespace hyphy_global_objects;
+        
+        long loc = -1;
+        if (type & HY_BL_DATASET) {
+            loc = FindDataSetName (name);
+            if (loc >= 0) {
+                type = HY_BL_DATASET;
+                if (index) {
+                    *index = loc;
+                }
+                return dataSetList (loc);
+            }
+        }
+        
+        if (type & HY_BL_DATASET_FILTER) {
+            loc = FindDataFilter (name);
+            if (loc >= 0) {
+                type = HY_BL_DATASET_FILTER;
+                if (index) {
+                    *index = loc;
+                }
+                return ExclusiveLockDataFilter (loc);
+            }
+        }
+        
+        if (type & HY_BL_LIKELIHOOD_FUNCTION) {
+            loc = FindLikeFuncName (name);
+            if (loc >= 0) {
+                type = HY_BL_LIKELIHOOD_FUNCTION;
+                if (index) {
+                    *index = loc;
+                }
+                return likeFuncList (loc);
+            }
+        }
+        
+        if (type & HY_BL_SCFG) {
+            loc = FindSCFGName (name);
+            if (loc >= 0) {
+                type = HY_BL_SCFG;
+                if (index) {
+                    *index = loc;
+                }
+                return scfgList (loc);
+            }
+        }
+        
+        if (type & HY_BL_BGM) {
+            loc = FindBgmName (name);
+            if (loc >= 0) {
+                type = HY_BL_BGM;
+                if (index) {
+                    *index = loc;
+                }
+                return bgmList (loc);
+            }
+        }
+        
+        if (type & HY_BL_MODEL) {
+            loc = FindModelName(name);
+            if (loc < 0 && (name == hy_env::last_model_parameter_list || name == hy_env::use_last_model)) {
+                loc = lastMatrixDeclared;
+            }
+            if (loc >= 0) {
+                type = HY_BL_MODEL;
+                if (index) {
+                    *index = loc;
+                }
+                if (IsModelOfExplicitForm(loc)) {
+                    return (BaseRef)modelMatrixIndices.lData[loc];
+                }
+                return LocateVar (modelMatrixIndices.lData[loc]);
+            }
+        }
+        
+        if (type & HY_BL_HBL_FUNCTION) {
+            loc = FindBFFunctionName(name);
+            if (loc >= 0) {
+                type = HY_BL_HBL_FUNCTION;
+                if (index) {
+                    *index = loc;
+                }
+                return &GetBFFunctionBody (loc);
+            }
+        }
+        
+        if (type & HY_BL_TREE) {
+            _Variable* tree_var = FetchVar (LocateVarByName(name));
+            if (tree_var && tree_var->ObjectClass() == TREE) {
+                return tree_var;
+            }
+        }
+        
+        if (tryLiteralLookup) {
+            _String nameIDRef = ProcessLiteralArgument(&name, nil);
+            return _HYRetrieveBLObjectByNameMutable (nameIDRef, type, index, errMsg, false);
+        }
+        
+        if (errMsg) {
+            HandleApplicationError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
+        }
+        type = HY_BL_NOT_DEFINED;
+        return nil;
+    }
+    
+    //____________________________________________________________________________________
+    long    FindDataSetName (_String const&s) {
+        return dataSetNamesList.FindObject (&s);
+    }
+    
+    
+    //____________________________________________________________________________________
+    long    FindLikeFuncName (_String const&s, bool tryAsAString)
+    {
+        long try1 = likeFuncNamesList.FindObject (&s);
+        if (try1 < 0 && tryAsAString) {
+            _String s2 (ProcessLiteralArgument(&s, nil));
+            try1 = likeFuncNamesList.FindObject(&s2);
+        }
+        return try1;
+    }
+    
+    //____________________________________________________________________________________
+    long    FindModelName (_String const &s) {
+        if (s == hy_env::use_last_model) {
+            return lastMatrixDeclared;
+        }
+        
+        return modelNames.FindObject (&s);
+    }
+    
+    //____________________________________________________________________________________
+    _LikelihoodFunction*    FindLikeFuncByName (_String const&s)
+    {
+        long i = FindLikeFuncName(s);
+        if (i>=0) {
+            return (_LikelihoodFunction*)likeFuncList (i);
+        }
+        return nil;
+    }
+    
+    //____________________________________________________________________________________
+    long    FindSCFGName (_String const&s)
+    {
+        return scfgNamesList.FindObject (&s);
+    }
+
   
 }

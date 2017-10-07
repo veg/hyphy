@@ -671,10 +671,10 @@ bool      _ElementaryCommand::HandleGetInformation (_ExecutionList& current_prog
 bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& current_program) {
 
     static      _Trie        kRunOptions (
-                                            _String ("COMPLETE"), CategoryConstructionOptions::kMatrixConditionals,
-                                            _String ("WEIGHTS"), CategoryConstructionOptions::kMatrixWeights,
-                                            _String ("SITE_LOG_LIKELIHOODS"), CategoryConstructionOptions::kSiteProbabilities,
-                                            _String ("CLASSES"), CategoryConstructionOptions::kMatrixClasses
+                                            _String ("COMPLETE"),_hyphyLFConstructCategoryMatrixConditionals,
+                                            _String ("WEIGHTS"),_hyphyLFConstructCategoryMatrixWeights,
+                                            _String ("SITE_LOG_LIKELIHOODS"), _hyphyLFConstructCategoryMatrixSiteProbabilities,
+                                            _String ("CLASSES"), _hyphyLFConstructCategoryMatrixClasses
                                           );
 
 
@@ -702,12 +702,12 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
                 like_func->ProcessPartitionList(included_partitions, partition_list);
                 DeleteObject (partition_list);
 
-                CategoryConstructionOptions::CategoryConstructionOptions run_mode = CategoryConstructionOptions::kMatrixConditionals;
+                long run_mode = _hyphyLFConstructCategoryMatrixConditionals;
 
                 if (parameters.countitems () > 2) {
                     long run_mode_long = kRunOptions.GetValueFromString(*GetIthParameter(2));
                     if (run_mode_long != kNotFound) {
-                        run_mode = (CategoryConstructionOptions::CategoryConstructionOptions)run_mode_long;
+                        run_mode = run_mode_long;
                     }
                 }
 

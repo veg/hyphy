@@ -571,14 +571,6 @@ extern  _Trie                       _HY_ValidHBLExpressions,
 extern  long                        matrixExpCount;
  
 
-long      FindDataSetName                 (_String const&);
-long      FindSCFGName                    (_String const&);
-long      FindBFFunctionName              (_String const&, _VariableContainer const* = nil);
-long    FindBgmName                       (_String const&);
-// added by afyp, March 18, 2007
-
-long    FindLikeFuncName                  (_String const&, bool = false);
-long    FindModelName                     (_String const&);
 
 
 const _String&  GetBFFunctionNameByIndex        (long);
@@ -680,7 +672,6 @@ BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& 
  @version 20120324
  */
 
-BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 
 _String const _HYHBLTypeToText                (long type);
 

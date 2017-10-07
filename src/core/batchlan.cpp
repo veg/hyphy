@@ -486,49 +486,6 @@ _AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer
 
 
 //____________________________________________________________________________________
-long    FindDataSetName (_String const&s)
-{
-    return dataSetNamesList.FindObject (&s);
-}
-
-
-//____________________________________________________________________________________
-long    FindLikeFuncName (_String const&s, bool tryAsAString)
-{
-    long try1 = likeFuncNamesList.FindObject (&s);
-    if (try1 < 0 && tryAsAString) {
-        _String s2 (ProcessLiteralArgument(&s, nil));
-        try1 = likeFuncNamesList.FindObject(&s2);
-    }
-    return try1;
-}
-
-//____________________________________________________________________________________
-long    FindModelName (_String const &s) {
-    if (s == hy_env::use_last_model) {
-        return lastMatrixDeclared;
-    }
-
-    return modelNames.FindObject (&s);
-}
-
-//____________________________________________________________________________________
-_LikelihoodFunction*    FindLikeFuncByName (_String const&s)
-{
-    long i = FindLikeFuncName(s);
-    if (i>=0) {
-        return (_LikelihoodFunction*)likeFuncList (i);
-    }
-    return nil;
-}
-
-//____________________________________________________________________________________
-long    FindSCFGName (_String const&s)
-{
-    return scfgNamesList.FindObject (&s);
-}
-
-//____________________________________________________________________________________
 const _String&    GetBFFunctionNameByIndex  (long idx) {
   return *GetObjectNameByType (HY_BL_HBL_FUNCTION, idx, false);
 }

@@ -41,6 +41,10 @@
 #include "translation_table.h"
 #include "batchlan.h"
 #include "site.h"
+#include "global_object_lists.h"
+
+using namespace hyphy_global_objects;
+
 
 #define DATA_SET_SWITCH_THRESHOLD 100000
 
@@ -910,4 +914,94 @@ _String*        _DataSet::GetSequenceCharacters (long seqID)  const{
   }
   aSequence->TrimSpace ();
   return aSequence;
+}
+
+//_________________________________________________________
+
+bool    StoreADataSet (_DataSet* ds, _String* setName) {
+    if (!setName->IsValidIdentifier (true)) {
+        HandleApplicationError (setName->Enquote() & " is not a valid identifier while constructing a DataSet");
+        return false;
+    }
+    
+    long type = HY_BL_DATASET, index;
+    _DataSet * existing_ds = (_DataSet * )_HYRetrieveBLObjectByNameMutable (*setName, type, &index, false, false);
+    
+    
+    if (! existing_ds) {
+        dataSetNamesList << setName;
+        dataSetList < ds;
+    } else {
+        
+        
+        bool isDifferent = existing_ds->NoOfSpecies () != ds->NoOfSpecies() ||
+        existing_ds->NoOfColumns () != ds->NoOfColumns() ||
+        existing_ds->NoOfUniqueColumns () != ds->NoOfUniqueColumns() ||
+        existing_ds->GetTT () != ds->GetTT();
+        
+        
+        
+        for (AVLListXLIteratorKeyValue filter_key_value : ObjectIndexer (HY_BL_DATASET_FILTER)) {
+            _DataSetFilter * filter = (_DataSetFilter*) filter_key_value.get_object();
+            if (filter->GetData() == existing_ds) {
+                if (isDifferent) {
+                    ReportWarning (_String("Overwriting dataset '") & *setName & "' caused DataSetFilter " & GetFilterName(filter_key_value.get_index())->Enquote('\'') & " to be deleted");
+                    DeleteDataFilter(filter_key_value.get_index());
+                } else {
+                    filter->SetData(ds);
+                }
+            }
+        }
+        
+        dataSetList.Replace(index,ds,false);
+    }
+    
+    CheckReceptacleAndStore (*setName&".mapping",kEmptyString,false, new _MathObject, false);
+
+    if (hy_env::EnvVariableTrue(hy_env::normalize_sequence_names)) {
+        _List _id_mapping;
+        _AVLListXL id_mapping (&_id_mapping);
+        bool       did_something = false;
+        
+        for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
+            _String * old_name = new _String (*ds->GetSequenceName (i));
+            if (! old_name->IsValidIdentifier(false) ) {
+                ds->GetSequenceName (i)->ConvertToAnIdent(false);
+                did_something = true;
+            }
+            if (id_mapping.Find (ds->GetSequenceName (i)) >= 0) {
+                _String new_name (*ds->GetSequenceName (i));
+                long suffix = 1L;
+                do {
+                    new_name = *ds->GetSequenceName (i) & "_" & suffix++;
+                } while (id_mapping.Find (&new_name) >= 0);
+                *ds->GetSequenceName (i) = new_name;
+                did_something = true;
+            }
+            
+            ds->GetSequenceName (i)->AddAReference();
+            id_mapping.Insert (ds->GetSequenceName (i), (long)old_name, false, false);
+        }
+        
+        if (did_something) {
+            _AssociativeList * mapping = new _AssociativeList();
+            
+            _SimpleList history;
+            long t,
+            current_index = id_mapping.Traverser(history, t, id_mapping.GetRoot());
+            
+            while (current_index >= 0L) {
+                mapping->MStore(*(_String*)_id_mapping.GetItem (current_index), *(_String*)id_mapping.GetXtra(current_index));
+                current_index = id_mapping.Traverser(history, t);
+            }
+            
+            CheckReceptacleAndStore (*setName&".mapping",kEmptyString,false, mapping, false);
+        }
+    }
+    
+    CheckReceptacleAndStore (*setName&".species",kEmptyString,false, new _Constant (ds->NoOfSpecies()), false);
+    CheckReceptacleAndStore (*setName&".sites",kEmptyString,false, new _Constant (ds->NoOfColumns()), false);
+    CheckReceptacleAndStore (*setName&".unique_sites",kEmptyString,false, new _Constant (ds->NoOfUniqueColumns()), false);
+    
+    return true;
 }

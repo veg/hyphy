@@ -2041,16 +2041,16 @@ void     _TheTree::SampleAncestorsBySequence (_DataSetFilter const* dsf, _Simple
         _AVLListXL   conversionAVL (&conversion);
 
         _StringBuffer * sampledSequence = new _StringBuffer (siteCount*unitLength);
-        _String  letterValue (unitLength,false);
-        for (long charIndexer = 0; charIndexer < sampledStates.lLength; charIndexer++) {
-            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(sampledStates.lData[charIndexer]), unitLength, letterValue.get_str(), &conversionAVL);
+        _String  letterValue ((unsigned long) unitLength);
+        for (long charIndexer = 0; charIndexer < sampledStates.countitems(); charIndexer++) {
+            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(sampledStates.lData[charIndexer]), unitLength, letterValue, &conversionAVL);
             (*sampledSequence) << letterValue;
         }
         sampledSequence->TrimSpace();
         result.AppendNewInstance(sampledSequence);
         //printf ("%d: %s\n", nodeIndex, sampledSequence->sData);
 
-        for (long child = 1; child <= childrenCount; child ++) {
+        for (long child = 1L; child <= childrenCount; child ++) {
             SampleAncestorsBySequence (dsf, siteOrdering, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
         }
     }
@@ -2257,7 +2257,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     }
 
     _AVLListXL    conversionAVL (&conversion);
-    _String       codeBuffer    (unitLength, false);
+    _String       codeBuffer    ((unsigned long)unitLength);
 
     for (long siteID = 0; siteID < patternCount; siteID++, rootConditionals += alphabetDimension) {
         hyFloat max_lik = 0.;
@@ -2302,7 +2302,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         }
 
         for  (long nodeID = 0; nodeID < stateCacheDim ; nodeID++) {
-            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.lData[nodeID]), unitLength, codeBuffer.get_str(), &conversionAVL);
+            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.lData[nodeID]), unitLength, codeBuffer, &conversionAVL);
             _String  *sequence   = (_String*) (*result)(nodeID<iNodeCount?postToIn.lData[nodeID]:nodeID);
 
             for (long site = 0; site < patternMap->lLength; site++) {

@@ -42,8 +42,10 @@
 #include  "category.h"
 #include  "function_templates.h"
 #include  "global_things.h"
+#include  "global_object_lists.h"
 
 using namespace hy_global;
+using namespace hyphy_global_objects;
 
 
 //___________________________________________________________________________________________

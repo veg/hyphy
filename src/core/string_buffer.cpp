@@ -386,7 +386,7 @@ _StringBuffer& _StringBuffer::SanitizeAndAppend(const _String& s) {
 
 
 
-void _StringBuffer::AppendAnAssignmentToBuffer(_String* id, _String *value, unsigned long flags) {
+void _StringBuffer::AppendAnAssignmentToBuffer(_String const* id, _String *value, unsigned long flags) {
   
   if (flags & kAppendAnAssignmentToBufferGlobal) {
     (*this) << "global ";

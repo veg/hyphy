@@ -267,5 +267,19 @@ namespace hyphy_global_objects {
    @return a unique ID
    
    */
+    
+    // TODO: 20171005 SLKP, these will be deprecated
+    
+    long      FindDataSetName                 (_String const&);
+    long      FindSCFGName                    (_String const&);
+    long      FindBFFunctionName              (_String const&, _VariableContainer const* = nil);
+    long      FindBgmName                     (_String const&);
+    // added by afyp, March 18, 2007
+
+    long      FindLikeFuncName                (_String const&, bool = false);
+    long      FindModelName                   (_String const&);
+
+    BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+
   
 }
