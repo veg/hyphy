@@ -23,10 +23,10 @@ LoadFunctionLibrary("libv3/models/DNA/JC69.bf");
 utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 
 relative_nuc_rates.analysis_description = {
-    terms.io.info: "For a fixed **nucleotide** alignment and tree, infer **relative** site specific substitution rates,
+    terms.io.info: "RELnuc (RELative nucleotide rates) infers, for a fixed **nucleotide** alignment and tree, **relative** site specific substitution rates,
     by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler",
     terms.io.version: "0.1alpha",
-    terms.io.reference: "@TBD. Analysis based on Rate4Site method, extended for nucleotides: Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. relative_nuc_rates: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
+    terms.io.reference: "@TBD. Analysis based on Rate4Site method, extended for nucleotides: Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
     terms.io.authors: "Sergei L Kosakovsky Pond and Stephanie J Spielman",
     terms.io.contact: "{spond,stephanie.spielman}@temple.edu"
 };
