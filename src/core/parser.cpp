@@ -119,7 +119,7 @@ hyFloat  machineEps = 2.*DBL_EPSILON,
 void            DeleteTreeVariable      (long, _SimpleList &, bool);
 
 //__________________________________________________________________________________
-_Variable * LocateVar (long index) {
+inline _Variable * LocateVar (long index) {
     return (_Variable *)(((BaseRef*)variablePtrs.lData)[index]);
 }
 

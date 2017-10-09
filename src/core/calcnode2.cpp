@@ -51,7 +51,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#define _UBER_VERBOSE_DUMP 27
 
 extern  long likeFuncEvalCallCount,
-        matrixExpCount;
+        matrix_exp_count;
 
 #ifdef MDSOCL
 int launchmdsocl(long siteCount,
@@ -233,7 +233,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
 #ifdef _OPENMP
     unsigned long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
-    matrixExpCount += matrixQueue.lLength;
+    matrix_exp_count += matrixQueue.lLength;
 #endif
 
     #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)

@@ -1078,6 +1078,22 @@ public:
   METHODS
   ==============================================================
   */
+    
+  /** a by-character iterator
+   
+   
+   @param  cb : a void (char c, unsigned long index) callback argument
+   @param  start_at : start the iteration at this position in the string
+
+       - SLKP 20171008   introduced this function
+
+   */
+
+    template <typename CALLBACK> void Each (CALLBACK cb, unsigned long start_at = 0) const {
+        for (unsigned long i = start_at; i<s_length; i++) {
+            cb ( ((long*)(s_data))[i], i );
+        }
+    }
 
   /**
   * Compute Adler-32 CRC for a string

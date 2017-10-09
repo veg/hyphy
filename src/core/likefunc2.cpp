@@ -421,17 +421,14 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
         }
 
 
-        _String * sampledString = (_String*)thisSet->GetItem(0);
- 
-        for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
-            target.AddSite (sampledString->sData[siteIdx]);
-        }
+        ((_String*)thisSet->GetItem(0))->Each ([&] (char c, unsigned long) -> void {
+            target.AddSite (c);
+        });
 
         for (long seqIdx = 1; seqIdx < sequenceCount; seqIdx++) {
-            sampledString = (_String*)thisSet->GetItem(seqIdx);
-            for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
-                target.Write2Site (siteOffset + siteIdx, sampledString->sData[siteIdx]);
-            }
+            ((_String*)thisSet->GetItem(seqIdx))->Each ([&] (char c, unsigned long idx) -> void {
+                target.Write2Site (siteOffset + idx, c);
+            });
         }
         DeleteObject (thisSet);
         DeleteObject (expandedMap);
@@ -935,16 +932,13 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                 }
             }
 
-            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(max_idx), unitLength, codeBuffer.sData, &conversionAVL);
+            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(max_idx), unitLength, codeBuffer, &conversionAVL);
             _String  *sequence   = (_String*) (*result)(mappedNodeID);
 
-            for (long site = 0; site < patternMap->lLength; site++) {
-                //if (patternMap->lData[site] == 119)
-                //  printf ("%ld\n",
-                //          siteID);
-                char* storeHere = sequence->sData + patternMap->lData[site]*unitLength;
-                for (long charS = 0; charS < unitLength; charS ++) {
-                    storeHere[charS] = codeBuffer.sData[charS];
+            for (unsigned long site = 0UL; site < patternMap->countitems(); site++) {
+                //char* storeHere = sequence->sData + patternMap->lData[site]*unitLength;
+                for (unsigned long charS = 0UL; charS < unitLength; charS ++) {
+                    sequence->set_char (patternMap->get(site)*unitLength + charS, codeBuffer.char_at(charS));
                 }
             }
 
@@ -1353,7 +1347,7 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
     InsertStringListIntoAVL      (result, "Base frequencies", aux_list, frequency_list);
 
     _Formula        *computeT = HasComputingTemplate();
-    result->MStore (_String("Compute Template"), new _FString((_String*)(computeT?computeT->toStr():new _String)), false);
+    result->MStore (_String("Compute Template"), new _FString((_String*)(computeT?computeT->toStr(kFormulaStringConversionNormal):new _String)), false);
 
     return result;
 }

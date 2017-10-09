@@ -2755,8 +2755,7 @@ void _Polynomial::toFileStr (FILE*f, unsigned long padding)
 }
 
 //__________________________________________________________________________________
-void    _Polynomial::ScanForVariables (_AVLList&l, bool globals, _AVLListX* tagger, long weight)
-{
+void    _Polynomial::ScanForVariables (_AVLList&l, bool globals, _AVLListX* tagger, long weight) const {
     for (long i = 0; i<variableIndex.lLength; i++) {
         long vi = variableIndex(i);
 

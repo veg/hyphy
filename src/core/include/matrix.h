@@ -183,8 +183,8 @@ public:
     virtual _PMathObj   ComputeNumeric (bool = false);  // returns the numeric value of this matrix
     virtual _PMathObj   RetrieveNumeric (void); // returns the numeric value of this matrix
 
-    virtual void        ScanForVariables  (_AVLList&, bool inclG = false, _AVLListX* tagger = nil,long weight = 0);
-    virtual void        ScanForVariables2 (_AVLList&, bool inclG = false, long modelID = -1, bool inclCat = true, _AVLListX* tagger = nil,long weight = 0);
+    virtual void        ScanForVariables  (_AVLList&, bool inclG = false, _AVLListX* tagger = nil,long weight = 0) const;
+    virtual void        ScanForVariables2 (_AVLList&, bool inclG = false, long modelID = -1, bool inclCat = true, _AVLListX* tagger = nil,long weight = 0) const;
     // scans for all local independent variables on which the matrix depends
     // and stores them in the list passed as the parameter
 
@@ -438,6 +438,40 @@ public:
     bool              SparseDataStructure (void) {
         return theIndex;
     }
+    
+    template <typename CALLBACK, typename EXTRACTOR>  void ForEach (CALLBACK&& cbv, EXTRACTOR&& accessor) {
+        if (theIndex) {
+            for (unsigned long i=0UL; i<lDim; i++) {
+                if (theIndex[i] >= 0L) {
+                    cbv (accessor (i));
+                }
+            }
+        } else {
+            for (unsigned long i=0UL; i<lDim; i++) {
+                cbv (accessor);
+            }
+        }
+    }
+
+    template <typename CALLBACK, typename EXTRACTOR>  bool Any (CALLBACK&& cbv, EXTRACTOR&& accessor) {
+        if (theIndex) {
+            for (unsigned long i=0UL; i<lDim; i++) {
+                if (theIndex[i] >= 0L) {
+                    if (cbv (accessor (i))) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            for (unsigned long i=0UL; i<lDim; i++) {
+                if (cbv (accessor)) {
+                    return true;
+                }
+            }
+        }
+        return true;
+    }
+
     void              CheckIfSparseEnough (bool = false);       // check if matrix is sparse enough to justify
     void              Convert2Formulas      (void);     // converts a numeric matrix to formula-based mx
     // sparse storage
@@ -483,6 +517,8 @@ protected:
 
 private:
 
+    bool     is_square_numeric   (bool dense = true) const;
+    
     hyFloat  computePFDR         (hyFloat, hyFloat);
     void        InitMxVar           (_SimpleList&   , hyFloat);
     bool        ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);

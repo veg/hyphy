@@ -81,14 +81,15 @@ _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
 
 int _Matrix::precisionArg = 0;
 int _Matrix::storageIncrement = 16;
-//  percent of total size (reasonable values divide 100)
 int _Matrix::switchThreshold = 40;
 
 hyFloat  _Matrix::truncPrecision = 1e-13;
 #define     MatrixMemAllocate(X) MemAllocate(X)
 #define     MatrixMemFree(X)     free(X)
+#define     MX_ACCESS(a,b) theData[(a)*hDim+(b)]
 
-hyFloat  analMatrixTolerance = 1e-6,
+
+hyFloat     analMatrixTolerance = 1e-6,
             zero = 0,
             AUTO_PAD_DIAGONAL = 1,
             toPolyOrNot=0.0,
@@ -96,19 +97,7 @@ hyFloat  analMatrixTolerance = 1e-6,
 
 long        ANALYTIC_COMPUTATION_FLAG = 0;
 
-_List       builtInMatrixFunctions;
-
-_Matrix     *GlobalFrequenciesMatrix;
-
-long        matrixExpCount = 0,
-            taylorTermsCount = 0,
-            squaringsCount = 0,
-            non0count = 0;
-
-extern      _String         printDigitsSpec;
-extern          int       _hy_mpi_node_rank;
-
-_Trie        _HY_MatrixRandomValidPDFs;
+_Trie       _HY_MatrixRandomValidPDFs;
 
 
 
@@ -119,8 +108,8 @@ void        MatrixIndexError        (long, long, long, long);
 
 
 // function prototypes
-hyFloat  lnGamma (hyFloat),
-            gammaDeviate (double, double = 1.);
+hyFloat  lnGamma (hyFloat) ,
+         gammaDeviate (hyFloat, hyFloat = 1.);
 
 
 #ifdef _SLKP_USE_AVX_INTRINSICS
@@ -133,13 +122,11 @@ hyFloat  lnGamma (hyFloat),
 
 
 //__________________________________________________________________________________________________________
-hyFloat  lnGamma(hyFloat theValue)
-{
+hyFloat  lnGamma(hyFloat theValue) {
     //  Returns Log(gamma(x))
     if (theValue <= 0) {
         HandleApplicationError ("ERROR (matrix.cpp): Requested lnGamma(x) for x <= 0.");
-
-        return 0.;
+        return HY_INVALID_RETURN_VALUE;
     }
 
     static hyFloat lngammaCoeff [6] = {   76.18009172947146,
@@ -157,7 +144,7 @@ hyFloat  lnGamma(hyFloat theValue)
                                          };
 
     // use look-up table for small integer values
-    if (theValue <= 20 && (theValue - (long)theValue) == 0.) {
+    if (theValue <= 20. && (theValue - (long)theValue) == 0.) {
         return (lookUpTable [(long) theValue - 1]);
     }
 
@@ -169,7 +156,7 @@ hyFloat  lnGamma(hyFloat theValue)
     tmp -= (x+0.5) * log(tmp);
     ser = 1.000000000190015;
 
-    for (long j = 0; j <= 5; j++) {
+    for (int j = 0; j <= 5; j++) {
         ser += lngammaCoeff[j] / ++y;
     }
 
@@ -178,8 +165,7 @@ hyFloat  lnGamma(hyFloat theValue)
 
 
 //___________________________________________________________________________________________
-hyFloat  gaussDeviate (void)
-{
+hyFloat  gaussDeviate (void) {
     /*
      Use Box-Muller transform to generate random deviates from Gaussian distribution with
      zero mean and unit variance (Numerical Recipes).
@@ -209,16 +195,15 @@ hyFloat  gaussDeviate (void)
 
 
 //__________________________________________________________________________________________________________
-hyFloat  exponDeviate (void)
-{
+hyFloat  exponDeviate (void) {
     return -log(1.0-genrand_real2());   // uniform random number on interval (0,1]
 }
 
 
 
 //__________________________________________________________________________________________________________
-hyFloat  gammaDeviate (double a, double scale)
-{
+hyFloat  gammaDeviate (hyFloat a, hyFloat scale) {
+
     /* -----------------------------------------
      GS algorithm from GNU GPL rgamma.c
      *  Mathlib : A C Library of Special Functions
@@ -296,11 +281,10 @@ hyFloat  gammaDeviate (double a, double scale)
 
 
 //__________________________________________________________________________________
-hyFloat  chisqDeviate (double df)
-{
+hyFloat  chisqDeviate (double df) {
     if (df < 0.0) {
         HandleApplicationError (_String("ERROR in chisqDeviate(): require positive degrees of freedom"));
-        return 0;
+        return HY_INVALID_RETURN_VALUE;
     }
 
     return gammaDeviate(df/2.0, 2.0);   // chi-square distribution is special case of gamma
@@ -321,71 +305,46 @@ void    MatrixIndexError (long hPos, long vPos, long hDim, long vDim) {
 //_____________________________________________________________________________________________
 
 inline  bool    _Matrix::IsNonEmpty  (long logicalIndex) const {
-    return  (theIndex?theIndex [logicalIndex]!=-1:(storageType!=1?GetMatrixObject(logicalIndex)!=ZEROPOINTER:true));
+    if (theIndex) {
+        return theIndex[logicalIndex] != -1;
+    }
+    if (storageType == _NUMERICAL_TYPE) {
+        return true;
+    }
+    return GetMatrixObject(logicalIndex)!=ZEROPOINTER;
 }
 
 //__________________________________________________________________________________
 
 bool        _Matrix::HasChanged(bool) {
-    if (storageType == 2) {
-        _Formula* theF, **theFormulae = (_Formula**)theData;
-        if (theIndex) {
-            for (long i=0; i<lDim; i++) {
-                if (IsNonEmpty(i)) {
-                    theF = theFormulae[i];
-                    if (theF->HasChanged()) {
-                        return true;
-                    }
-                }
-            }
-        } else {
-            for (long i=0; i<lDim; i++) {
-                theF = theFormulae[i];
-                if ((theF!=(_Formula*)ZEROPOINTER)&&(theF->HasChanged())) {
-                    return true;
-                }
-            }
-        }
-
-    } else if (storageType == 0) {
-        _MathObject *theO, **objData=(_MathObject**)theData;
-        if (theIndex) {
-            for (long i=0; i<lDim; i++) {
-                if (IsNonEmpty(i)) {
-                    if (objData[i]->HasChanged()) {
-                        return true;
-                    }
-                }
-            }
-        } else {
-            for (long i=0; i<lDim; i++) {
-                theO = objData[i];
-                if (theO&&theO->HasChanged()) {
-                    return true;
-                }
-            }
-        }
-
-    } else if (storageType == 3) {
-        if (cmd->has_volatile_entries) return true;
     
-        for (unsigned long vid = 0; vid < cmd->varIndex.lLength; vid++) {
-            if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[cmd->varIndex.lData[vid]]))->HasChanged ())
-                return true;
+    switch (storageType) {
+        case _FORMULA_TYPE: {
+            return Any ([&] (_Formula * f) -> bool {if (f) return f->HasChanged(); return false;},
+                        [&] (unsigned long i) -> _Formula * {return ((_Formula**)theData)[i];});
         }
-        // SLKP 20120404 need to add a check for "volatile" formulae, i.e. Time and Random
-        /*for (long fid = 0; fid < cmd->formulasToEval.lLength; fid++)
-            if (((_Formula*)cmd->formulasToEval.lData[fid])->HasChangedSimple(cmd->varIndex)) {
-                return true;
-            }*/
+        break;
+        case _POLYNOMIAL_TYPE: {
+            return Any ([&] (_MathObject * f) -> bool {if (f) return f->HasChanged(); return false;},
+                        [&] (unsigned long i) -> _MathObject * {return ((_MathObject**)theData)[i];});
+        }
+        break;
+        case _SIMPLE_FORMULA_TYPE: {
+            if (cmd->has_volatile_entries) return true;
+            return cmd->varIndex.Any ([&] (long value, unsigned long) -> bool {
+                return LocateVar (value)->HasChanged();
+            });
+        }
+        break;
     }
+
     return false;
 }
 //__________________________________________________________________________________
 
 
-inline static void ROTATE(hyFloat * a, long i, long j, long k, long l, hyFloat & g, hyFloat & h, hyFloat s, hyFloat tau, long hDim)
-{
+inline static void ROTATE(hyFloat * a, long i, long j, long k, long l, hyFloat & g, hyFloat & h, hyFloat s, hyFloat tau, long hDim) {
+    // this is from NR
     g = a[i*hDim + j];
     h = a[k*hDim + l];
     a[i*hDim + j] = g - s*(h + g*tau);
@@ -393,25 +352,34 @@ inline static void ROTATE(hyFloat * a, long i, long j, long k, long l, hyFloat &
 }
 
 //__________________________________________________________________________________
-void        _Matrix::Balance (void)
-{
-    if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        HandleApplicationError ("Balance only works with numerical non-empty square dense matrices");
+
+bool        _Matrix::is_square_numeric(bool dense) const {
+    if (storageType!=_NUMERICAL_TYPE || hDim != vDim || hDim==0L){
+        HandleApplicationError ("Square numerical matrix required");
+    }
+    if (dense && theIndex) {
+        HandleApplicationError ("Square dense numerical matrix required");
+    }
+    return true;
+}
+
+//__________________________________________________________________________________
+void        _Matrix::Balance (void) {
+    if (!is_square_numeric (true)) {
         return;
     }
 
     hyFloat       Squared_Radix = 2.0 * 2.0;
-
-    bool             done = false;
+    bool          done = false;
 
     while (!done) {
         done = true;
 
-        for (long i = 0; i < hDim; i++) {
+        for (long i = 0L; i < hDim; i++) {
             hyFloat r = 0.0,
                        c = 0.0;
 
-            for (long j = 0; j < vDim; j++)
+            for (long j = 0L; j < vDim; j++)
                 if (i!=j) {
                     r += fabs (theData[i*vDim+j]);
                     c += fabs (theData[j*vDim+i]);
@@ -449,14 +417,12 @@ void        _Matrix::Balance (void)
 }
 
 //__________________________________________________________________________________
-void        _Matrix::Schur (void)
-{
-    if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        HandleApplicationError ("Schur decomposition only works with numerical non-empty square dense matrices");
+void        _Matrix::Schur (void) {
+    if (!is_square_numeric (true)) {
         return;
     }
 
-    for (long m = 1; m < hDim-1; m++) {
+    for (long m = 1L; m < hDim-1; m++) {
         hyFloat x = 0.0;
         long       i = m;
 
@@ -499,33 +465,27 @@ void        _Matrix::Schur (void)
             }
     }
 
-    for (long r = 2; r < hDim; r++)
-        for (long c = 0; c<r-1; c++) {
-            theData[r*hDim+c] = 0.0;
-        }
-
+    for (long r = 2L; r < hDim; r++)
+        InitializeArray(theData + r*hDim, r-1, 0.0);
 }
 
-//__________________________________________________________________________________
-
-#define MX_ACCESS(a,b) theData[(a)*hDim+(b)]
 
 //__________________________________________________________________________________
 void        _Matrix::EigenDecomp (_Matrix& real, _Matrix & imag)
 {
-    if (storageType!=1 || hDim!=vDim || hDim==0) { // only works for numerical matrices at this stage
-        HandleApplicationError ("EigenDecomp only works with numerical non-empty square dense matrices");
+    if (!is_square_numeric()) {
         return;
     }
 
     hyFloat anorm = 0.0;
 
-    for (long k = 0; k < hDim; k++)
+    for (long k = 0L; k < hDim; k++) {
         for (long k2 = k?k-1:0; k2 < hDim; k2++) {
             anorm += fabs (MX_ACCESS(k,k2));
         }
+    }
 
-    long        nn = hDim - 1;
+    long        nn = hDim - 1L;
     hyFloat  t  = 0;
 
     CreateMatrix (&real, hDim, 1, false, true, false);
@@ -732,12 +692,10 @@ _PMathObj   _Matrix::Eigensystem (void)
     // The original matrix is preserved.
     // returns an associative list with a sorted vector of eigenvalues and
     // a square matrix where columns are the corresponding eigenvalues
-
-    if ((storageType!=1)||(hDim!=vDim)||(hDim==0)) { // only works for numerical matrices at this stage
-        HandleApplicationError ("Eigensystem only works with numerical non-empty square matrices");
+    if (!is_square_numeric()) {
         return    new _AssociativeList();
     }
-
+    
     // check for symmetry
 
     for (long k=0; k<hDim; k++) {
@@ -763,6 +721,8 @@ _PMathObj   _Matrix::Eigensystem (void)
                 cpy->Balance ();
                 cpy->Schur   ();
                 cpy->EigenDecomp (*rl,*im);
+                
+                
 
                 key = "0";
                 {
@@ -2404,14 +2364,12 @@ _Matrix::_Matrix (_List const& sl, bool parse_escapes)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG, _AVLListX* tagger, long weights)
-{
+void    _Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG, _AVLListX* tagger, long weights) const {
     ScanForVariables2 (theReceptacle, inclG, -1, true, tagger, weights);
 }
 //_____________________________________________________________________________________________
 
-void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID, bool inclCat, _AVLListX* tagger, long weights)
-{
+void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID, bool inclCat, _AVLListX* tagger, long weights) const {
     if (storageType == 2) { // a formula based matrix, there is stuff to do
         if (modelID >= 0) {
             _AssociativeList*      definedCache = nil;
@@ -3829,7 +3787,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                                + __GNUC_MINOR__ * 100 \
                                + __GNUC_PATCHLEVEL__)
 #ifdef __HYPHYMPI__
-                     if (_hy_mpi_node_rank == 0)
+                     if (hy_mpi_node_rank == 0)
                          
 #endif
                      nt           = MIN(omp_get_max_threads(),secondArg.vDim / _HY_MATRIX_CACHE_BLOCK + 1);
@@ -4637,7 +4595,7 @@ _Matrix*    _Matrix::Exponentiate (void)
          power2 = 0;
 
 #ifndef _OPENMP
-    matrixExpCount++;
+    matrix_exp_count++;
 #endif
 
     hyFloat max     = 1.0,
@@ -4725,7 +4683,7 @@ _Matrix*    _Matrix::Exponentiate (void)
             (*result) += temp;
             i         ++;
 #ifndef _OPENMP
-            taylorTermsCount++;
+            taylor_terms_count++;
 #endif
         } while (temp.IsMaxElement(tMax*truncPrecision*i));
 
@@ -4771,7 +4729,7 @@ _Matrix*    _Matrix::Exponentiate (void)
 
     for (long s = 0; s<power2; s++) {
 #ifndef _OPENMP
-        squaringsCount++;
+        squarings_count++;
 #endif
         result->Sqr(stash);
     }

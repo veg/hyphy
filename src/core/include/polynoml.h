@@ -172,7 +172,7 @@ public:
         compList1.Duplicate(&c1);
         compList2.Duplicate(&c2);
     }
-    virtual void            ScanForVariables (_AVLList &l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
+    virtual void            ScanForVariables (_AVLList &l, bool globals = false, _AVLListX* tagger = nil, long weight = 0) const;
     virtual bool            HasChanged (bool = false);
     friend  void            ResetPolynomialCheck
     (_Polynomial*);

@@ -100,7 +100,7 @@ public:
     }
 
     virtual
-    void       ScanForVariables         (_AVLList&, bool = false, _AVLListX* tagger = nil, long weight = 0);
+    void       ScanForVariables         (_AVLList&, bool = false, _AVLListX* tagger = nil, long weight = 0) const;
 
     virtual
     void       ScanForGVariables        (_AVLList&);
@@ -141,8 +141,8 @@ public:
 
     _Matrix*    ComputeHiddenMarkov (void);
     _Matrix*    ComputeHiddenMarkovFreqs (void);
-    _Matrix*    GetHiddenMarkov (void);
-    _Matrix*    GetHiddenMarkovFreqs (void);
+    _Matrix*    GetHiddenMarkov (void) const;
+    _Matrix*    GetHiddenMarkovFreqs (void) const;
 
     _Formula&   GetDensity(void) {
         return density;

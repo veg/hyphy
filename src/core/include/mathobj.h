@@ -119,7 +119,7 @@ public:
     virtual _MathObject* Compute (void)            {
         return this;
     }
-    virtual void         ScanForVariables (_AVLList&,bool = false, _AVLListX* = nil, long = 0)
+    virtual void         ScanForVariables (_AVLList&,bool = false, _AVLListX* = nil, long = 0) const
     {}
 
     virtual      BaseRef makeDynamic               (void) const;

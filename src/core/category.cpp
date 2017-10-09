@@ -884,15 +884,13 @@ _Matrix*    _CategoryVariable::ComputeHiddenMarkovFreqs (void)
 }
 
 //___________________________________________________________________________________________
-_Matrix*    _CategoryVariable::GetHiddenMarkov (void)
-{
+_Matrix*    _CategoryVariable::GetHiddenMarkov (void) const {
     _Variable* theMX = LocateVar (modelMatrixIndices.lData[hiddenMarkovModel]);
     return (_Matrix*)theMX->GetValue();
 }
 
 //___________________________________________________________________________________________
-_Matrix*    _CategoryVariable::GetHiddenMarkovFreqs (void)
-{
+_Matrix*    _CategoryVariable::GetHiddenMarkovFreqs (void) const {
     long       fIndex = modelFrequenciesIndices.lData[hiddenMarkovModel];
     if (fIndex<0) {
         fIndex = -fIndex-1;
@@ -933,8 +931,7 @@ bool    _CategoryVariable::IsGlobal (void)
 }
 
 //___________________________________________________________________________________________
-void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals, _AVLListX * tagger, long weight)
-{
+void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals, _AVLListX * tagger, long weight) const {
     density.ScanFForVariables(l,true, false, true, false, tagger, weight);
     weights->ScanForVariables(l,true,tagger, weight);
     values->ScanForVariables(l,true,tagger, weight);

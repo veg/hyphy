@@ -231,16 +231,10 @@ long        bracketFCount   = 0,
             offsetCounter   = 1,
             go2Bound = 1;
 
-extern      long
-matrixExpCount,
-taylorTermsCount,
-squaringsCount;
-
 extern      _List
 dataSetList,
 likeFuncList;
 
-bool        CheckOneDStep   (hyFloat&,hyFloat,hyFloat);
 bool        CheckEqual      (hyFloat, hyFloat);
 
 _Variable*  siteWiseVar     = nil,
@@ -282,7 +276,7 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
 hyFloat            tdiff = timer.TimeSinceStart();
 #ifdef  _OPENMP
 #ifdef  __HYPHYMPI__ 
-    if (systemCPUCount > 1 && _hy_mpi_node_rank == 0) {
+    if (systemCPUCount > 1 && hy_mpi_node_rank == 0) {
 #else
     if (systemCPUCount > 1) {
 #endif
@@ -510,7 +504,7 @@ void _LikelihoodFunction::Init (void)
 #ifdef  _OPENMP
     lfThreadCount       = 1L;
 #ifdef  __HYPHYMPI__
-    if (_hy_mpi_node_rank > 0)
+    if (hy_mpi_node_rank > 0)
         SetThreadCount      (1L);
     else
 #endif
@@ -777,7 +771,7 @@ void     _LikelihoodFunction::Clear (void)
     canUseReversibleSpeedups.Clear();
 #ifdef  _OPENMP
 #ifdef  __HYPHYMPI__
-    if (_hy_mpi_node_rank > 0)
+    if (hy_mpi_node_rank > 0)
         SetThreadCount      (1L);
     else
 #endif
@@ -3614,7 +3608,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
     long        fnDim               = MaximumDimension(),
                 evalsIn             = likeFuncEvalCallCount,
-                exponentiationsIn   = matrixExpCount;
+                exponentiationsIn   = matrix_exp_count;
 
 
     TimeDifference timer;
@@ -4513,7 +4507,7 @@ DecideOnDivideBy (this);
 
         }
 
-        ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes.\n" & likeFuncEvalCallCount-evalsIn & " likelihood evaluation calls and " & matrixExpCount - exponentiationsIn & " matrix exponentiations calls were made\n");
+        ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes.\n" & likeFuncEvalCallCount-evalsIn & " likelihood evaluation calls and " & matrix_exp_count - exponentiationsIn & " matrix exponentiations calls were made\n");
 
         if (optMethod == 7) {
             _Matrix bestMSoFar (indexInd.lLength,1,false,true);
@@ -4573,7 +4567,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 
     categID = 0;
     CleanupParameterMapping ();
-    //printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrixExpCount);
+    //printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrix_exp_count);
 #ifdef __HYPHYMPI__
     if (hyphyMPIOptimizerMode==_hyphyLFMPIModeNone) {
 #endif
@@ -4633,7 +4627,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
         UpdateOptimizationStatus (0,0,2,true,progressFileString);
     }
 #endif
-    //printf ("\n%d\n",matrixExpCount);
+    //printf ("\n%d\n",matrix_exp_count);
     /*printf ("\nOptimization spool:\n");
      for (i=0; i<indexInd.lLength; i++)
      {
@@ -4656,19 +4650,6 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 
 //_______________________________________________________________________________________
 
-//_LikelihoodFunction*      _LikelihoodFunction::SearchTopologies ()
-// implement a star decomposition type topology search returning the best tree and
-// optimization results for the best tree.
-
-inline  bool CheckOneDStep (hyFloat& val, hyFloat lB, hyFloat uB)
-{
-    if (val<lB) {
-        val = lB;
-    } else if (val>uB) {
-        val = uB;
-    }
-    return true;
-}
 
 //_______________________________________________________________________________________
 bool CheckEqual (hyFloat a, hyFloat b)
@@ -7669,7 +7650,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 t->ExponentiateMatrices(*matrices, GetThreadCount(),catID);
             }
 
-            //printf ("%d %d\n",likeFuncEvalCallCount, matrixExpCount);
+            //printf ("%d %d\n",likeFuncEvalCallCount, matrix_exp_count);
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
             if (divideBy && (likeFuncEvalCallCount % divideBy == 0)) {
                 #pragma omp critical

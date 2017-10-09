@@ -454,11 +454,11 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
 // matrix global arrays
 
 
-    _HY_MatrixRandomValidPDFs.Insert ("Dirichlet", _HY_MATRIX_RANDOM_DIRICHLET);
-    _HY_MatrixRandomValidPDFs.Insert ("Gaussian", _HY_MATRIX_RANDOM_GAUSSIAN);
-    _HY_MatrixRandomValidPDFs.Insert ("Wishart", _HY_MATRIX_RANDOM_WISHART);
-    _HY_MatrixRandomValidPDFs.Insert ("InverseWishart", _HY_MATRIX_RANDOM_INVERSE_WISHART);
-    _HY_MatrixRandomValidPDFs.Insert ("Multinomial", _HY_MATRIX_RANDOM_MULTINOMIAL);
+    _HY_MatrixRandomValidPDFs.Insert ("Dirichlet", _HY_MATRIX_RANDOM_DIRICHLET,
+                                      "Gaussian", _HY_MATRIX_RANDOM_GAUSSIAN,
+                                      "Wishart", _HY_MATRIX_RANDOM_WISHART,
+                                      "InverseWishart", _HY_MATRIX_RANDOM_INVERSE_WISHART,
+                                      "Multinomial", _HY_MATRIX_RANDOM_MULTINOMIAL);
   
   
   _List keywords;

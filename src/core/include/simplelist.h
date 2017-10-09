@@ -312,10 +312,17 @@ class _SimpleList:public BaseObj {
           return kNotFound;
         }
 
-        template <typename MAPPER> void Each (MAPPER mapper, long startAt = 0) const {
+        template <typename MAPPER> void Each (MAPPER&& mapper, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {
             mapper ( ((long*)(lData))[i], i );
           }
+        }
+
+        template <typename MAPPER> bool Any (MAPPER&& mapper, long startAt = 0) const {
+            for (unsigned long i = startAt; i<lLength; i++) {
+                if (mapper ( ((long*)(lData))[i], i )) return true;
+            }
+            return false;
         }
 
         template <typename FILTER> _SimpleList const FilterIndex (FILTER condition) const {

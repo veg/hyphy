@@ -135,7 +135,11 @@ namespace hy_global {
   
     _Variable*       hy_x_variable = nil,
              *       hy_n_variable = nil;
-  
+
+    unsigned long    matrix_exp_count,
+                     taylor_terms_count,
+                     squarings_count;
+    
     int              hy_mpi_node_rank,
         // [MPI only] the MPI rank of the current node (0 = master, 1... = slaves)
                      hy_mpi_node_count;
