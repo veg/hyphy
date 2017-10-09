@@ -60,7 +60,6 @@ protein_gtr.json_file = protein_gtr.listfile  + ".json";
 protein_gtr.file_list = io.validate_a_list_of_files (protein_gtr.file_list);
 protein_gtr.file_list_count = Abs (protein_gtr.file_list);
 protein_gtr.index_to_filename = utility.SwapKeysAndValues(protein_gtr.file_list);
-
 /********* PROMPTS **********/
 protein_gtr.analysis_results = {};
 
@@ -88,7 +87,7 @@ if (protein_gtr.use_rate_variation == "Yes"){
     protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription";
 }
-
+//protein_gtr.shared_EFV = {20,1};
 /********************************************************************************************************************/
 
 
@@ -109,17 +108,19 @@ protein_gtr.queue = mpi.CreateQueue ({  utility.getGlobalValue("terms.mpi.Header
                                             "protein_gtr.shared_EFV",
                                             "protein_gtr.baseline_model_desc",
                                             "protein_gtr.rev_model_branch_lengths",
-                                            "protein_gtr.baseline_model"
+                                            "protein_gtr.baseline_model",
+                                            "protein_gtr.index_to_filename",
+                                            "protein_gtr.analysis_results",
+                                            "protein_gtr.baseline_phase"
                                         }}
                                      });
+  
 
+                        
 io.ReportProgressMessageMD ("Protein GTR Fitter", "Initial branch length fit", "Initial branch length fit");
 
 protein_gtr.fit_phase = 0;
 protein_gtr.scores = {};
-protein_gtr.phase_key = protein_gtr.baseline_phase;
-
-
 
 /*************************** STEP ONE ***************************
 Perform an initial fit of Baseline model+F(+/-4G) to the data (or load cached fit.)
@@ -128,31 +129,21 @@ console.log("\n\n[PHASE 1] Performing initial branch length optimization using "
 
 for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) {
 
-    cached_file = protein_gtr.file_list[file_index] + "' " + (file_index+1) + "/" + protein_gtr.file_list_count;
-
-    if (utility.Has (protein_gtr.analysis_results, {{ protein_gtr.file_list[file_index], protein_gtr.phase_key}}, None)) {
-
-        thisKey = (protein_gtr.analysis_results[protein_gtr.file_list[file_index]])[protein_gtr.baseline_phase];
-        io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
-                                    "Loaded cached results for '" + cached_file + ". Log(L) = " + thisKey[terms.fit.log_likelihood]);
-
-    } else {
-        io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
-                                    "Dispatching file '" + cached_file);
+     io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
+                                     "Dispatching file '" + protein_gtr.file_list[file_index]);
 
 
-         mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitBaselineToFile", {"0" : protein_gtr.file_list[file_index]},
+    mpi.QueueJob (protein_gtr.queue, "protein_gtr.fitBaselineToFile", {"0" : protein_gtr.file_list[file_index]},
                                                             "protein_gtr.handle_baseline_callback");
-
-    }
 }
 mpi.QueueComplete (protein_gtr.queue);
 
 
 // Sum of the logL from fitted baseline model across each data set
-protein_gtr.baseline_fit_logL = math.Sum (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.phase_key"), "_value_", "(_value_[protein_gtr.phase_key])[terms.fit.log_likelihood]"));
+protein_gtr.baseline_fit_logL = math.Sum (utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/protein_gtr.baseline_phase"), "_value_", "(_value_[protein_gtr.baseline_phase])[terms.fit.log_likelihood]"));
 io.ReportProgressMessageMD ("Protein GTR Fitter", " * Initial branch length fit",
                             "Overall Log(L) = " + protein_gtr.baseline_fit_logL);
+
 
 
 /*************************** STEP TWO ***************************
@@ -163,7 +154,7 @@ console.log("\n\n[PHASE 2] Performing initial REV fit to the data");
 result_key = protein_gtr.rev_phase_prefix + protein_gtr.fit_phase;
 
 
-current = utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/'" + protein_gtr.phase_key + "'"), "_value_", "_value_['" + protein_gtr.phase_key + "']");
+current = utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", "_value_/'" + protein_gtr.baseline_phase + "'"), "_value_", "_value_['" + protein_gtr.baseline_phase + "']");
 // console.log(utility.Keys(protein_gtr.analysis_results));
 // {
 // {"options", "input", "0", "1"}
@@ -181,6 +172,7 @@ current = utility.Map (utility.Filter (protein_gtr.analysis_results, "_value_", 
 /// logl
 ///parameters
 // 1: ....
+
 protein_gtr.current_gtr_fit = protein_gtr.fitGTRtoFileList (current, None, result_key, FALSE); // last is bool argument, finalphase
 
 

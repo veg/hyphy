@@ -10,7 +10,57 @@ function protein_gtr.save_options() {
 
     protein_gtr.analysis_results[utility.getGlobalValue("terms.json.input")] = {utility.getGlobalValue("terms.json.file"): protein_gtr.listfile,
                                                                                 "number of datasets": protein_gtr.file_list_count};
+
+    /* Temporarily, we save input file information here in a highly redundant fashion, but doesn't seem possible to do in MPI...? */
+    for (file_index = 0; file_index < protein_gtr.file_list_count; file_index += 1) {
+    
+        filename = protein_gtr.file_list[file_index];
+        utility.EnsureKey(protein_gtr.analysis_results, file_index);  
+    
+        protein_gtr.file_info = alignments.ReadNucleotideDataSet ("protein_gtr.msa",
+                                                                      filename);
+        protein_gtr.name_mapping = protein_gtr.file_info[utility.getGlobalValue("terms.data.name_mapping")];
+        if (None == protein_gtr.name_mapping) { /** create a 1-1 mapping if nothing was done */
+            protein_gtr.name_mapping = {};
+            utility.ForEach (alignments.GetSequenceNames ("protein_gtr.msa"), "_value_", "`&protein_gtr.name_mapping`[_value_] = _value_");
+        }
+        utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", "/dev/null");
+        ExecuteCommands ('protein_gtr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (protein_gtr.file_info[terms.data.partitions], protein_gtr.name_mapping)',
+                          {"0" : "Y"});
+        utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", None);
+
+
+        protein_gtr.filter_specification = alignments.DefineFiltersForPartitions (protein_gtr.partitions_and_trees,
+                                                                                    "protein_gtr.msa" ,
+                                                                                    "protein_gtr.filter.",
+                                                                                    protein_gtr.file_info);
+        protein_gtr.tree = utility.Map (protein_gtr.partitions_and_trees, "_value_", '_value_[terms.data.tree]');
+
+
+        protein_gtr.output_data_info = { utility.getGlobalValue("terms.json.sequences"): protein_gtr.file_info[utility.getGlobalValue("terms.data.sequences")],
+                                         utility.getGlobalValue("terms.json.sites"): protein_gtr.file_info[utility.getGlobalValue("terms.data.sites")],
+                                         utility.getGlobalValue("terms.json.trees"): (protein_gtr.tree["0"])[utility.getGlobalValue("terms.trees.newick_with_lengths")],
+                                         utility.getGlobalValue("terms.json.file"): filename,
+                                         utility.getGlobalValue("terms.original_name"): {}
+                                       };
+        
+        
+        //In case there were no branch lengths
+        if (  Abs( (protein_gtr.tree["0"])[utility.getGlobalValue("terms.branch_length")] ) == 0 ){
+            protein_gtr.output_data_info[ utility.getGlobalValue("terms.json.trees") ] = (protein_gtr.full_trees["0"])[utility.getGlobalValue("terms.trees.newick")];
+        }
+        utility.ForEach (utility.Keys (protein_gtr.name_mapping), "branch_name",
+                                 "utility.EnsureKey (protein_gtr.output_data_info[terms.original_name], branch_name)");
+        
+        utility.ForEach (utility.Keys (protein_gtr.name_mapping), "branch_name",
+                                 "(protein_gtr.output_data_info[terms.original_name])[branch_name] = protein_gtr.name_mapping[branch_name]");
+        
+        
+        (protein_gtr.analysis_results[file_index])[utility.getGlobalValue("terms.json.input")] = protein_gtr.output_data_info;   
+    }
 }
+
+
 
 
 
@@ -91,6 +141,10 @@ function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
  * @return the fitted MLE
  */
 function protein_gtr.fitBaselineToFile (filename) {
+    
+    
+    utility.EnsureKey(protein_gtr.analysis_results, protein_gtr.index_to_filename[filename]);  
+    
     protein_gtr.file_info = alignments.ReadNucleotideDataSet ("protein_gtr.msa",
                                                               filename);
     protein_gtr.name_mapping = protein_gtr.file_info[utility.getGlobalValue("terms.data.name_mapping")];
@@ -102,6 +156,8 @@ function protein_gtr.fitBaselineToFile (filename) {
     ExecuteCommands ('protein_gtr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (protein_gtr.file_info[terms.data.partitions], protein_gtr.name_mapping)',
                      {"0" : "Y"});
     utility.ToggleEnvVariable ("GLOBAL_FPRINTF_REDIRECT", None);
+
+
 
     protein_gtr.partition_count      = Abs (protein_gtr.partitions_and_trees);
     io.CheckAssertion ("protein_gtr.partition_count==1", "This analysis can only handle a single partition");
@@ -118,30 +174,30 @@ function protein_gtr.fitBaselineToFile (filename) {
     protein_gtr.full_data_filter = utility.Map (protein_gtr.filter_specification, "_value_", "_value_[terms.data.name]");
 
 
-    /*********** Store dataset information *************/
-    protein_gtr.output_data_info = { utility.getGlobalValue("terms.json.sequences"): protein_gtr.file_info[utility.getGlobalValue("terms.data.sequences")],
-                                     utility.getGlobalValue("terms.json.sites"): protein_gtr.file_info[utility.getGlobalValue("terms.data.sites")],
-                                     utility.getGlobalValue("terms.json.trees"): (protein_gtr.full_trees["0"])[utility.getGlobalValue("terms.trees.newick_with_lengths")],
-                                     utility.getGlobalValue("terms.json.file"): filename,
-                                     utility.getGlobalValue("terms.original_name"): {}
-                                   };
-
-
+    /********** Store dataset information *************/
+    /* CURRENTLY DOESN'T WORK IN MPI FOR REASONS TBD */
+//     protein_gtr.output_data_info = { utility.getGlobalValue("terms.json.sequences"): protein_gtr.file_info[utility.getGlobalValue("terms.data.sequences")],
+//                                      utility.getGlobalValue("terms.json.sites"): protein_gtr.file_info[utility.getGlobalValue("terms.data.sites")],
+//                                      utility.getGlobalValue("terms.json.trees"): (protein_gtr.full_trees["0"])[utility.getGlobalValue("terms.trees.newick_with_lengths")],
+//                                      utility.getGlobalValue("terms.json.file"): filename
+//                                    };
+// 
+// 
     // In case there were no branch lengths
-    if (Abs((protein_gtr.full_trees["0"])[utility.getGlobalValue("terms.branch_length")]) == 0){
-        utility.getGlobalValue("terms.json.trees"): (protein_gtr.full_trees["0"])[utility.getGlobalValue("terms.trees.newick")],
-    }
-    utility.ForEach (utility.Keys (protein_gtr.name_mapping), "branch_name",
-                             "utility.EnsureKey (protein_gtr.output_data_info[terms.original_name], branch_name)");
-
-    utility.ForEach (utility.Keys (protein_gtr.name_mapping), "branch_name",
-                             "(protein_gtr.output_data_info[terms.original_name])[branch_name] = protein_gtr.name_mapping[branch_name]");
-
-    cachekey = protein_gtr.index_to_filename[filename];
-    protein_gtr.analysis_results[cachekey] = {};
-    (protein_gtr.analysis_results[cachekey])[utility.getGlobalValue("terms.json.input")] = protein_gtr.output_data_info;
-    /*****************************************************/
-
+//     if (  Abs( (protein_gtr.full_trees["0"])[utility.getGlobalValue("terms.branch_length")] ) == 0 ){
+//         protein_gtr.output_data_info[ utility.getGlobalValue("terms.json.trees") ] = (protein_gtr.full_trees["0"])[utility.getGlobalValue("terms.trees.newick")];
+//     }
+//     utility.ForEach (utility.Keys (protein_gtr.name_mapping), "branch_name",
+//                              "utility.EnsureKey (protein_gtr.output_data_info[terms.original_name], branch_name)");
+// 
+//     utility.ForEach (utility.Keys (protein_gtr.name_mapping), "branch_name",
+//                              "(protein_gtr.output_data_info[terms.original_name])[branch_name] = protein_gtr.name_mapping[branch_name]");
+// 
+// 
+//     (protein_gtr.analysis_results[protein_gtr.index_to_filename[filename]])[utility.getGlobalValue("terms.json.input")] = protein_gtr.output_data_info;
+// 
+//     
+    /****************************************************/
 
     
     protein_gtr.baseline_mle = estimators.FitSingleModel_Ext(protein_gtr.full_data_filter,
@@ -332,12 +388,12 @@ function protein_gtr.run_gtr_iteration_branch_lengths () {
                                             {
                                                 {"protein_gtr.REV.ModelDescription",
                                                  "protein_gtr.REV.ModelDescription.withGamma",
-                                                 "protein_gtr.REV.ModelDescription.freqs"
+                                                 "protein_gtr.REV.ModelDescription.freqs",
+                                                 "models.protein.REV.ModelDescription.withGamma"
                                                 }
                                             },
                                             "Variables" : {{
                                                 "protein_gtr.shared_EFV",
-                                                "protein_gtr.final_baseline_model",
                                                 "protein_gtr.rev_model_branch_lengths",
                                                 "protein_gtr.filename_to_index"
                                             }}
@@ -411,10 +467,12 @@ function protein_gtr.handle_branch_length_callback (node, result, arguments) {
  */
 function protein_gtr.handle_baseline_callback (node, result, arguments) {
 
-    cachekey = protein_gtr.index_to_filename[arguments[0]];
-
-    (protein_gtr.analysis_results[cachekey])[utility.getGlobalValue("protein_gtr.phase_key")] = result;
+    savekey = protein_gtr.index_to_filename[arguments[0]];
     
+    utility.EnsureKey(protein_gtr.analysis_results, savekey);
+    utility.EnsureKey(protein_gtr.analysis_results[savekey], protein_gtr.baseline_phase);
+    (protein_gtr.analysis_results[savekey])[protein_gtr.baseline_phase] = result;
+     
     io.ReportProgressMessageMD ("Protein GTR Fitter", "Initial branch length fit",
                                 "Received file '" + arguments[0] + "' from node " + node + ". LogL = " + result[terms.fit.log_likelihood]);
 }
