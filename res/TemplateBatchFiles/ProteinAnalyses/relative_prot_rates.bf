@@ -1,4 +1,4 @@
-RequireVersion("2.3.3");
+RequireVersion("2.3.4");
 
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
@@ -31,6 +31,8 @@ relative_prot_rates.analysis_description = {
 io.DisplayAnalysisBanner(relative_prot_rates.analysis_description);
 
 
+console.log("**WARNING**: This analysis will be ported to a new batchfile in a future HyPhy release. Please consider executing the batchfile \`relative_rates_scaler.bf\` instead.");
+console.log("");
 
 /***************************************** LOAD DATASET **********************************************************/
 SetDialogPrompt ("Specify a protein multiple sequence alignment file");
