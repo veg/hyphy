@@ -24,7 +24,7 @@ LoadFunctionLibrary("ProteinGTRFit_helper.ibf");
 utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", 1); 
 
-utility.ToggleEnvVariable ("OPTIMIZATION_PRECISION", 1); // Uncomment for testing to make it all run faster.
+//utility.ToggleEnvVariable ("OPTIMIZATION_PRECISION", 1); // Uncomment for testing to make it all run faster.
 
 
 
