@@ -1,6 +1,9 @@
 /*************** Functions used in ProteinGTRFit.bf ******************/
 protein_gtr.convergence_options = {{"LogL", "Assess REV fit convergence by comparing log likelihood scores"}, {"RMSE", "[Recommended] Assess REV fit convergence by comparing RMSE between fitted matrices."}};
-protein_gtr.rate_variation_options = {{"Yes", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, {"No", "Do not consider rate variation when optimizing branch lengths."}};
+protein_gtr.rate_variation_options = {{"Gamma", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, 
+                                      {"GDD", "Use a four-category general discrete distribution when optimizing branch lengths."}, 
+                                      {"No", "Do not consider rate variation when optimizing branch lengths."}
+                                     };
 
 function protein_gtr.save_options() {
     protein_gtr.analysis_results[utility.getGlobalValue("terms.json.options")] = {utility.getGlobalValue("protein_gtr.options.convergence_type"): protein_gtr.convergence_type,
@@ -100,38 +103,16 @@ function protein_gtr.Baseline.ModelDescription.withGamma(type){
     return def;
 }
 
+/**
+ * @name models.protein.Baseline.ModelDescription.withGD4
+ * @description Define baseline (standard matrix) model and 4bin General discrete rate variation
+ */
+function protein_gtr.Baseline.ModelDescription.withGDD4(type){
+    def = protein_gtr.Baseline.ModelDescription(type);
+	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory ({utility.getGlobalValue("terms.rate_variation.bins"): 4});
+    return def;
+}
 
-/**
- * @name models.protein.REV.ModelDescription.withGamma
- * @description Define REV model with four-category gamma rate variation
- */
-lfunction models.protein.REV.ModelDescription.withGamma (type) {
-	def = models.protein.REV.ModelDescription (type);
-	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
-	return def;
-};
-/**
- * @name protein_gtr.REV.ModelDescription.withGamma
- * @description Define a REV model with Gamma rate variation
- */
-function protein_gtr.REV.ModelDescription.withGamma (type) {
-    result = models.protein.REV.ModelDescription.withGamma(type);
-    if (Type (protein_gtr.shared_EFV) == "Matrix") {
-        result [terms.model.frequency_estimator] = "protein_gtr.REV.ModelDescription.freqs";
-    }
-    return result;
-}
-/**
- * @name protein_gtr.REV.ModelDescription
- * @description Define a REV model with constant site rates
- */
-function protein_gtr.REV.ModelDescription (type) {
-    result = models.protein.REV.ModelDescription(type);
-    if (Type (protein_gtr.shared_EFV) == "Matrix") {
-        result [terms.model.frequency_estimator] = "protein_gtr.REV.ModelDescription.freqs";
-    }
-    return result;
-}
 /**
  * @name protein_gtr.REV.ModelDescription.freqs
  * @description Define REV model frequencies as empirical
@@ -143,6 +124,37 @@ function protein_gtr.REV.ModelDescription.freqs (model, namespace, datafilter) {
     return model;
 }
 
+/**
+ * @name protein_gtr.REV.ModelDescription
+ * @description Define a REV model with constant site rates
+ */
+function protein_gtr.REV.ModelDescription (type) {
+    def = models.protein.REV.ModelDescription(type);
+    if (Type (protein_gtr.shared_EFV) == "Matrix") {
+        def [terms.model.frequency_estimator] = "protein_gtr.REV.ModelDescription.freqs";
+    }
+    return def;
+}
+
+/**
+ * @name protein_gtr.REV.ModelDescription.withGamma
+ * @description Define a REV model with Gamma rate variation
+ */
+function protein_gtr.REV.ModelDescription.withGamma (type) {
+    def = models.protein.REV.ModelDescription(type);
+    def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins"): 4});
+    return def;
+}
+
+/**
+ * @name models.protein.REV.ModelDescription.withGD4
+ * @description Define a REV model with 4bin General discrete rate variation
+ */
+function protein_gtr.REV.ModelDescription.withGDD4(type){
+    def = models.protein.REV.ModelDescription.withGDD4(type);
+    def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory ({utility.getGlobalValue("terms.rate_variation.bins"): 4});
+    return def;
+}
 //------------------------------------------------------------------------------------------------------------------------
 
 

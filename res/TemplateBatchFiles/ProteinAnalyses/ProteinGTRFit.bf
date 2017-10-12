@@ -24,7 +24,7 @@ LoadFunctionLibrary("ProteinGTRFit_helper.ibf");
 utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 utility.ToggleEnvVariable ("PRODUCE_OPTIMIZATION_LOG", 1); 
 
-//utility.ToggleEnvVariable ("OPTIMIZATION_PRECISION", 1); // Uncomment for testing to make it all run faster.
+utility.ToggleEnvVariable ("OPTIMIZATION_PRECISION", 1); // Uncomment for testing to make it all run faster.
 
 
 
@@ -86,21 +86,28 @@ protein_gtr.tolerance = io.PromptUser ("\n>Provide a tolerance level for converg
 protein_gtr.baseline_model  = io.SelectAnOption (models.protein.empirical_models,
                                                  "Select an empirical protein model to use for optimizing the provided branch lengths (we recommend LG):");
 // Prompt for rate variation
-protein_gtr.use_rate_variation = io.SelectAnOption( protein_gtr.rate_variation_options, "Would you like to optimize branch lengths with rate variation (uses a four-category gamma)?");
+protein_gtr.use_rate_variation = io.SelectAnOption( protein_gtr.rate_variation_options, "Would you like to optimize branch lengths with rate variation?");
 
 protein_gtr.save_options();
 
 
-if (protein_gtr.use_rate_variation == "Yes"){
-    protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F, with Gamma rates";
+if (protein_gtr.use_rate_variation == "Gamma"){
+    protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F, with 4 category Gamma rates";
     protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription.withGamma";
     protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription.withGamma";
-} else{
-    protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F";
-    protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription";
-    protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription";
+}  
+else {
+    if (protein_gtr.use_rate_variation == "GDD"){
+        protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F, with 4 category GDD rates";
+        protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription.withGDD4";
+        protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription.withGDD4";
+    } 
+    else {
+        protein_gtr.baseline_model_name      = protein_gtr.baseline_model + "+F";
+        protein_gtr.baseline_model_desc      = "protein_gtr.Baseline.ModelDescription";
+        protein_gtr.rev_model_branch_lengths = "protein_gtr.REV.ModelDescription";
+    }
 }
-//protein_gtr.shared_EFV = {20,1};
 /********************************************************************************************************************/
 
 
@@ -112,15 +119,17 @@ protein_gtr.queue = mpi.CreateQueue ({  utility.getGlobalValue("terms.mpi.Header
                                         utility.getGlobalValue("terms.mpi.Functions") :
                                         {
                                             {"models.protein.REV.ModelDescription.withGamma",
+                                             "models.protein.REV.ModelDescription.withGDD4",
                                              "protein_gtr.REV.ModelDescription",
                                              "protein_gtr.REV.ModelDescription.withGamma",
+                                             "protein_gtr.REV.ModelDescription.withGDD4",
                                              "protein_gtr.REV.ModelDescription.freqs",
                                              "protein_gtr.Baseline.ModelDescription.withGamma",
+                                             "protein_gtr.Baseline.ModelDescription.withGDD4",
                                              "protein_gtr.Baseline.ModelDescription",
                                              "protein_gtr.fitBaselineToFile"
                                             }
                                         },
-
                                         utility.getGlobalValue("terms.mpi.Variables") : {{
                                             "protein_gtr.shared_EFV",
                                             "protein_gtr.baseline_model_desc",
