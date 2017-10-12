@@ -176,7 +176,8 @@ public:
         evaluate how many values would be on the stack after the execution of these commands
        */
     bool        ConvertToSimple     (_AVLList& variableIndex);
-    void        ConvertFromSimple   (_AVLList& variableIndex);
+    void        ConvertFromSimple   (_AVLList const& variableIndex);
+    void        ConvertFromSimple   (_SimpleList const& variableIndex);
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 

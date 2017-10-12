@@ -111,7 +111,7 @@ public:
     // where the third parameter specifies the percentage of 0 entries and
     // the first flag indicates how to store the matrix: as spars or usual
 
-    _Matrix ( _Matrix&);                       //duplicator
+    _Matrix ( _Matrix const &);                       //duplicator
 
     _Matrix ( _SimpleList const &, long = -1);        // make matrix from simple list
     // the optional argument C (if > 0) tells HyPhy
@@ -255,24 +255,24 @@ public:
     _Matrix*    Exponentiate (void);                // exponent of a matrix
     void        Transpose (void);                   // transpose a matrix
     _Matrix     Gauss   (void);                     // Gaussian Triangularization process
-    _PMathObj   LUDecompose (void);
-    _PMathObj   CholeskyDecompose (void);
+    _PMathObj   LUDecompose (void) const;
+    _PMathObj   CholeskyDecompose (void) const;
     // added by afyp July 6, 2009
-    _PMathObj   Eigensystem (void);
-    _PMathObj   LUSolve (_PMathObj);
+    _PMathObj   Eigensystem (void) const;
+    _PMathObj   LUSolve (_PMathObj) const;
     _PMathObj   Inverse (void);
     _PMathObj   Abs (void);                     // returns the norm of a matrix
     // if it is a vector - returns the Euclidean length
     // otherwise returns the largest element
 
-    hyFloat  AbsValue                        (void);
+    hyFloat  AbsValue                        (void) const;
     virtual     _PMathObj Log                   (void);
     // return the matrix of logs of every matrix element
     
     void        SwapRows (const long, const long);
     long        CompareRows (const long, const long);
 
-    hyFloat  operator () (long, long);       // read access to an element in a matrix
+    hyFloat  operator () (long, long) const;       // read access to an element in a matrix
     hyFloat& operator [] (long);             // read/write access to an element in a matrix
 
     void        Store               (long, long, hyFloat);                       // write access to an element in a matrix
@@ -294,7 +294,7 @@ public:
     // an auxiliary function which duplicates a matrix
 
 
-    hyFloat          MaxElement      (char doSum = 0, long * = nil);
+    hyFloat          MaxElement      (char doSum = 0, long * = nil) const;
     // SLKP 20101022: added an option to return the sum of all elements as an option (doSum = 1) or
     // the sum of all absolute values (doSum == 2)
     // returns the largest element's abs value for given matrix
@@ -443,12 +443,12 @@ public:
         if (theIndex) {
             for (unsigned long i=0UL; i<lDim; i++) {
                 if (theIndex[i] >= 0L) {
-                    cbv (accessor (i));
+                    cbv (accessor (i), theIndex[i], i);
                 }
             }
         } else {
             for (unsigned long i=0UL; i<lDim; i++) {
-                cbv (accessor);
+                cbv (accessor (i), i, i);
             }
         }
     }
@@ -457,14 +457,14 @@ public:
         if (theIndex) {
             for (unsigned long i=0UL; i<lDim; i++) {
                 if (theIndex[i] >= 0L) {
-                    if (cbv (accessor (i))) {
+                    if (cbv (accessor (i), theIndex[i])) {
                         return true;
                     }
                 }
             }
         } else {
             for (unsigned long i=0UL; i<lDim; i++) {
-                if (cbv (accessor)) {
+                if (cbv (accessor (i), i)) {
                     return true;
                 }
             }
@@ -477,6 +477,14 @@ public:
     // sparse storage
 
     void              Resize                (long);     // resize a dense numeric matrix to have more rows
+  
+    inline            hyFloat    get        (long const row, long const column) const {
+      return theData [row * vDim + column];
+    }
+  
+    inline            hyFloat&    set        (long const row, long const column)  {
+      return theData [row * vDim + column];
+    }
 
     _String*          BranchLengthExpression(_Matrix*, bool);
 
@@ -521,7 +529,7 @@ private:
     
     hyFloat  computePFDR         (hyFloat, hyFloat);
     void        InitMxVar           (_SimpleList&   , hyFloat);
-    bool        ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);
+    bool        ProcessFormulas     (long&, _AVLList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);
 
     _PMathObj   PathLogLikelihood   (_PMathObj);
     /* SLKP: 20100812
@@ -536,7 +544,7 @@ private:
 
     _PMathObj   ProfileMeanFit      (_PMathObj);
 
-    _Matrix*    branchLengthStencil (void);
+    _Matrix*    BranchLengthStencil (void) const;
 
     //bool      IsAStringMatrix     (void);
     void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
@@ -550,7 +558,7 @@ private:
     // checks to see if the i-th position in the storage is non-empty
     bool        CheckDimensions     (_Matrix&) const;
     // compare dims of 2 matrices to see if they can be multiplied
-    long        HashBack            (long);
+    long        HashBack            (long) const;
     // hashing function, which finds matrix
     // physical element given local storage
     void        MultbyS             (_Matrix&,bool,_Matrix* = nil, hyFloat* = nil);
@@ -562,7 +570,7 @@ private:
     void        Schur               (void);  // reduce the matrix to Hessenberg form preserving eigenvalues
     // lifted from elmhes function in NR
 
-    void        EigenDecomp         (_Matrix&,_Matrix&);  // find the eigenvalues of a real matrix
+    void        EigenDecomp         (_Matrix&,_Matrix&) const;  // find the eigenvalues of a real matrix
     // return real and imaginary parts
     // lifted from hqr in NR
 

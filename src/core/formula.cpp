@@ -2242,32 +2242,37 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
 }
 
 //__________________________________________________________________________________
-void _Formula::ConvertFromSimple (_AVLList& variableIndex) {
-    if (theFormula.empty()) {
-        return;
-    }
+void _Formula::ConvertFromSimple (_AVLList const& variableIndex) {
+  ConvertToSimple(&variableIndex.dataList);
+}
 
-    for (unsigned long i=0UL; i<theFormula.countitems(); i++) {
-        _Operation* this_op = ItemAt (i);
-        if (this_op->theNumber) {
-            continue;
+//__________________________________________________________________________________
+void _Formula::ConvertFromSimple (_SimpleList const& variableIndex) {
+  if (theFormula.empty()) {
+    return;
+  }
+  
+  for (unsigned long i=0UL; i<theFormula.countitems(); i++) {
+    _Operation* this_op = ItemAt (i);
+    if (this_op->theNumber) {
+      continue;
+    } else {
+      if (this_op->theData>-1) {
+        this_op->theData = variableIndex.get (this_op->theData);
+      } else if (this_op->opCode == (long)MinusNumber) {
+        this_op->opCode = HY_OP_CODE_SUB;
+      } else {
+        if (this_op->opCode == (long)FastMxAccess) {
+          this_op->numberOfTerms = 2;
         } else {
-            if (this_op->theData>-1) {
-                this_op->theData = variableIndex.RetrieveLong (this_op->theData);
-            } else if (this_op->opCode == (long)MinusNumber) {
-                this_op->opCode = HY_OP_CODE_SUB;
-            } else {
-                if (this_op->opCode == (long)FastMxAccess) {
-                    this_op->numberOfTerms = 2;
-                } else {
-                  if (this_op->opCode == (long)FastMxWrite) {
-                    this_op->numberOfTerms = 2;
-                  }
-                }
-                this_op->opCode = simpleOperationCodes(simpleOperationFunctions.Find(this_op->opCode));
-            }
+          if (this_op->opCode == (long)FastMxWrite) {
+            this_op->numberOfTerms = 2;
+          }
         }
+        this_op->opCode = simpleOperationCodes(simpleOperationFunctions.Find(this_op->opCode));
+      }
     }
+  }
 }
 
 //__________________________________________________________________________________
