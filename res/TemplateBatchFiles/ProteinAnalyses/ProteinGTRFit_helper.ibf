@@ -64,6 +64,21 @@ function protein_gtr.save_options() {
 
 
 
+lfunction protein_gtr.startTimer(timers, key) {
+    timers[key] = {
+        utility.getGlobalValue("terms.timers.timer"): Time(1),
+    };
+
+}
+lfunction protein_gtr.stopTimer(timers, key) {
+    (timers[key])[utility.getGlobalValue("terms.timers.timer")] = Time(1) - (timers[key])[utility.getGlobalValue("terms.timers.timer")];
+}
+
+
+
+
+
+
 /* Model definitions, in particular for models with rate variation */
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -293,8 +308,14 @@ function protein_gtr.fitGTRtoFileList (current_results, previous_values, phase, 
                                         trees,
                                         protein_gtr.rev_model_branch_lengths,
                                         previous_values,
-                                        None
+                                         {terms.run_options.retain_lf_object : TRUE}
                                    );
+                                   
+                                   
+        lf_id = protein_gtr.rev.mle[terms.likelihood_function];
+        Export(protein_gtr.finalphase_LF, ^lf_id);
+        protein_gtr.rev.mle - terms.likelihood_function;
+        fprintf(protein_gtr.final_likelihood_function, protein_gtr.finalphase_LF);
 
     }
 
@@ -381,7 +402,6 @@ function protein_gtr.UpdateBLWithREV (filename, rates, branch_lengths) {
  * @return Dictionary containing summed LogL values from branch length optimizations and the phase index for this iteration
  */
 function protein_gtr.run_gtr_iteration_branch_lengths () {
-    protein_gtr.fit_phase += 1;
 
     protein_gtr.queue = mpi.CreateQueue ({  "Headers"   : utility.GetListOfLoadedModules ("libv3/") ,
                                             "Functions" :
@@ -395,7 +415,8 @@ function protein_gtr.run_gtr_iteration_branch_lengths () {
                                             "Variables" : {{
                                                 "protein_gtr.shared_EFV",
                                                 "protein_gtr.rev_model_branch_lengths",
-                                                "protein_gtr.filename_to_index"
+                                                "protein_gtr.filename_to_index",
+                                                "protein_gtr.phase_key"
                                             }}
                                          });
 
@@ -413,8 +434,6 @@ function protein_gtr.run_gtr_iteration_branch_lengths () {
 // parameters 
 
 
-
-    protein_gtr.phase_key = protein_gtr.bl_phase_prefix  + protein_gtr.fit_phase;
 
     io.ReportProgressMessageMD ("Protein GTR Fitter", protein_gtr.phase_key, "Retuning branch lengths (" + protein_gtr.phase_key + ")");
 
