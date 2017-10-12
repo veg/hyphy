@@ -609,7 +609,7 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [5] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [6] = lrt [utility.getGlobalValue("terms.p_value")];
 
-        filtered_ebf = utility.Filter (ebf, "_value_", "_value_>=100");
+        filtered_ebf = utility.Filter (result[utility.getGlobalValue("terms.empirical_bayes_factor")], "_value_", "_value_>=100");
 
         if(None != filtered_ebf) {
             result_row [7] = utility.Array1D(filtered_ebf);
