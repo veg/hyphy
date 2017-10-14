@@ -1,8 +1,8 @@
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 
-OPTIMIZATION_TIME_HARD_LIMIT=1;
-
+utility.ToggleEnvVariable ("OPTIMIZATION_PRECISION", 1);
+utility.ToggleEnvVariable ("OPTIMIZATION_TIME_HARD_LIMIT", 1);
 
 function ensureFullPath (path) {
     if ((path $ "/")[0]!= 0){
@@ -29,12 +29,12 @@ fprintf(list_path_final, CLEAR_FILE, "");
 utility.ForEach(file_list2, "_value_", "writeNewPath(_value_)");
 
 
-LoadFunctionLibrary("ProteinAnalyses/ProteinGTRFit.bf", {
+LoadFunctionLibrary("ProteinGTRFit.bf", {
     "0":  PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines.txt",
     "1": "LogL", // use logL convergence
     "2": "0.1", // stopping
     "3": "WAG", // use WAG for baseline
-    "4": "Yes", // use a gamma for rate variation
+    "4": "Gamma", // use a gamma for rate variation
 });
 
 
