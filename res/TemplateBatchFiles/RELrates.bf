@@ -163,7 +163,7 @@ relative_rates.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           None,
                                                           None);
        
-       
+    
                                                           
 estimators.fixSubsetOfEstimates(relative_rates.alignment_wide_MLES, relative_rates.alignment_wide_MLES[terms.global]);
 
@@ -179,14 +179,15 @@ relative_rates.table_output_options = {terms.table_options.header : TRUE, terms.
 
 relative_rates.site_patterns = alignments.Extract_site_patterns (relative_rates.filter_names[0]);
 
-// set-up model for site-level fitting in the next couple of lines
-relative_rates.site_model = model.generic.DefineModel(relative_rates.baseline_model_desc,
+// set-up model for site-level fitting in the next couple of lines, where rv turned off
+relative_rates.site_model = model.generic.DefineModel("relative_rates.Baseline.ModelDescription",
         "relative_rates_site_model_instance", {
             "0": parameters.Quote(terms.global),
         },
         relative_rates.filter_names[0],
         None);
-        
+ 
+ 
 
 relative_rates.site_model_mapping = {"relative_rates_site_model_instance" : relative_rates.site_model};
         
@@ -251,6 +252,15 @@ io.ReportProgressMessageMD ("relative_rates", "Stats", "* **Median**: "  + Forma
 io.ReportProgressMessageMD ("relative_rates", "Stats", "* **Std.Dev**: "  + Format (relative_rates.stats[terms.math.stddev], 6, 2));
 io.ReportProgressMessageMD ("relative_rates", "Stats", "* **95% Range**: ["  + Format (relative_rates.stats[terms.math._2.5], 5,2) + "," + Format (relative_rates.stats[terms.math._97.5], 5,2) + "]");
 
+   
+if (relative_rates.use_rate_variation == "No"){
+    relative_rates.storerv = "None";
+} else {
+    relative_rates.storerv = utility.Map( 
+                    utility.Map (relative_rates.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
+                    "_value_",
+                    "_value_[terms.fit.MLE]");
+}
 
 tree_definition   = utility.Map (relative_rates.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
 io.SpoolJSON ({ terms.json.input : {terms.json.file: relative_rates.alignment_info[terms.data.file],
@@ -260,7 +270,8 @@ io.SpoolJSON ({ terms.json.input : {terms.json.file: relative_rates.alignment_in
                 terms.json.analysis : relative_rates.analysis_description,       
 				terms.json.relative_site_rates : relative_rates.rate_estimates, 
 				terms.json.global: {terms.json.model: relative_rates.baseline_model_name,
-				               //terms.json.branch_lengths: relative_rates.alignment_wide_MLES[terms.branch_length],
+				               terms.model.rate_variation: relative_rates.storerv,
+				               terms.efv_estimate: (relative_rates.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0],
 				               terms.json.tree_string: (relative_rates.alignment_wide_MLES[terms.fit.trees])[0],
 				               terms.json.log_likelihood: relative_rates.alignment_wide_MLES[terms.fit.log_likelihood]}
 				},
