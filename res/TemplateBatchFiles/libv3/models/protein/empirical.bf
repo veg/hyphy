@@ -143,7 +143,6 @@ lfunction models.protein.empirical._NormalizeEmpiricalRates(model_dict, namespac
             Q[i][j] = Q[i][j] / norm;
         }
     }   
-
     // Now convert it BACK TO hyphy dictionary with frequencies divided out. //
     // ************** This sets the new empirical rates. ************** //
     
@@ -152,11 +151,16 @@ lfunction models.protein.empirical._NormalizeEmpiricalRates(model_dict, namespac
         new_empirical_rates[alphabet[l1]] = {};
 
         for (l2 = l1 + 1; l2 < dim; l2 += 1) {
-            nof_rate =  Q [l1][l2] / EFV[l2];
+            
+            if (EFV[l2] == 0){
+                nof_rate = 0.;
+            }
+            else {
+                nof_rate =  Q [l1][l2] / EFV[l2];
+            }
             (new_empirical_rates[alphabet[l1]])[alphabet[l2]] = nof_rate;
         }
     }
-
     model_dict[ utility.getGlobalValue("terms.model.empirical_rates")] = new_empirical_rates;
 
     return model_dict;
@@ -198,7 +202,9 @@ function models.protein.empirical.DefineQMatrix (modelSpec, namespace) {
     // ADDED FOR EMPIRICAL MODELS
     __empirical_rates = modelSpec[terms.model.empirical_rates];
 
-
+    
+    
+    
 	__global_cache = {};
 
 	if (None != __rate_variation) {

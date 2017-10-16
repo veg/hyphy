@@ -73,7 +73,26 @@ lfunction models.protein.REV._DefineQ(model_dict, namespace) {
     return model_dict;
 }
 
+/**
+ * @name models.protein.REV.ModelDescription.withGamma
+ * @description Define REV model with four-category gamma rate variation
+ */
+lfunction models.protein.REV.ModelDescription.withGamma (type) {
+	def = models.protein.REV.ModelDescription (type);
+	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
+	return def;
+};
 
+
+/**
+ * @name models.protein.REV.ModelDescription.withGD4
+ * @description Define REV model with 4bin General discrete rate variation
+ */
+lfunction models.protein.REV.ModelDescription.withGDD4 (type) {
+	def = models.protein.REV.ModelDescription (type);
+	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory ({utility.getGlobalValue("terms.rate_variation.bins") : 4});
+	return def;
+};
 
 /**
  * @name models.protein.REV.DefineQMatrix

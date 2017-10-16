@@ -11,7 +11,7 @@
 "FEL-Contrast","Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/FEL-contrast.bf";
 
 "","Evolutionary rates on non-coding data.","!Relative evolutionary rate inference";
-"Relative rates","Infer relative evolutionary rates on a nucleotide or protein alignment, in the spirit of Rate4Site (PMID: 12169533).","relative_rates_scaler.bf";
+"RELrates","Infer relative evolutionary rates on a nucleotide or protein alignment, in the spirit of Rate4Site (PMID: 12169533).","RELrates.bf";
 
 "","Perform a maximum likelihood analysis on a single file given a single tree.","!Basic Analyses";
 "ACD","Analyse codon data with a variery of standard models using given tree.","AnalyzeCodonData.bf";
