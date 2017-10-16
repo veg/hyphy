@@ -31,10 +31,10 @@ utility.ForEach(file_list2, "_value_", "writeNewPath(_value_)");
 
 LoadFunctionLibrary("ProteinGTRFit.bf", {
     "0":  PATH_TO_CURRENT_BF + "data/protgtr_fitter_lines.txt",
-    "1": "LogL", // use logL convergence
-    "2": "0.1", // stopping
+    "1": "RMSE", // use rmse convergence
+    "2": "1", // stopping
     "3": "WAG", // use WAG for baseline
-    "4": "Gamma", // use a gamma for rate variation
+    "4": "No", // use no rate variation
 });
 
 
