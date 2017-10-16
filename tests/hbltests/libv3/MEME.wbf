@@ -1,2 +1,9 @@
-ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "SelectionAnalyses" + DIRECTORY_SEPARATOR + "MEME.bf", 
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/convenience/math.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
+
+utility.ToggleEnvVariable ("OPTIMIZATION_TIME_HARD_LIMIT", 1);
+
+LoadFunctionLibrary(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "SelectionAnalyses" + DIRECTORY_SEPARATOR + "MEME.bf", 
 			 {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "All", "3": "0.1"});
+
