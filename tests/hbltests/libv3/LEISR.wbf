@@ -3,7 +3,7 @@ utility.ToggleEnvVariable ("OPTIMIZATION_PRECISION", 1);
 utility.ToggleEnvVariable ("OPTIMIZATION_TIME_HARD_LIMIT", 1);
 
 
-LoadFunctionLibrary("RELrates.bf", {
+LoadFunctionLibrary("LEISR.bf", {
     "0": "Protein",
     "1": "WAG",
     "2": "Gamma",
@@ -13,7 +13,7 @@ LoadFunctionLibrary("RELrates.bf", {
 });
 
 
-LoadFunctionLibrary("RELrates.bf", {
+LoadFunctionLibrary("LEISR.bf", {
     "0": "Protein",
     "1": "WAG",
     "2": "GDD",
@@ -23,7 +23,7 @@ LoadFunctionLibrary("RELrates.bf", {
 });
 
 
-LoadFunctionLibrary("RELrates.bf", {
+LoadFunctionLibrary("LEISR.bf", {
     "0": "Protein",
     "1": "WAG",
     "2": "No",
@@ -32,7 +32,7 @@ LoadFunctionLibrary("RELrates.bf", {
     "5": "Y"
 });
 
-LoadFunctionLibrary("RELrates.bf", {
+LoadFunctionLibrary("LEISR.bf", {
     "0": "Nucleotide",
     "1": "GTR",
     "2": "Gamma",
@@ -40,7 +40,7 @@ LoadFunctionLibrary("RELrates.bf", {
     "4": "Y"
 });
 
-LoadFunctionLibrary("RELrates.bf", {
+LoadFunctionLibrary("LEISR.bf", {
     "0": "Nucleotide",
     "1": "GTR",
     "2": "No",
