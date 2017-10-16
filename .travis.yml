@@ -26,6 +26,8 @@ env:
   - METHOD_TEST=tests/hbltests/libv3/RELAX.wbf
   - METHOD_TEST=tests/hbltests/libv3/aBSREL.wbf
   - METHOD_TEST=tests/hbltests/libv3/BUSTED.wbf
+  - METHOD_TEST=tests/hbltests/libv3/ProteinGTRFit.wbf
+  - METHOD_TEST=tests/hbltests/libv3/LEISR.wbf
 
 language: c++
 compiler: 
