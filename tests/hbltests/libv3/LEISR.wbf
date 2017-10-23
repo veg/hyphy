@@ -1,0 +1,49 @@
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+utility.ToggleEnvVariable ("OPTIMIZATION_PRECISION", 1);
+utility.ToggleEnvVariable ("OPTIMIZATION_TIME_HARD_LIMIT", 1);
+
+
+LoadFunctionLibrary("LEISR.bf", {
+    "0": "Protein",
+    "1": "WAG",
+    "2": "Gamma",
+    "3": "Yes",
+    "4": PATH_TO_CURRENT_BF + "data/dat.prot",
+    "5": "Y"
+});
+
+
+LoadFunctionLibrary("LEISR.bf", {
+    "0": "Protein",
+    "1": "WAG",
+    "2": "GDD",
+    "3": "No",
+    "4": PATH_TO_CURRENT_BF + "data/dat.prot",
+    "5": "Y"
+});
+
+
+LoadFunctionLibrary("LEISR.bf", {
+    "0": "Protein",
+    "1": "WAG",
+    "2": "No",
+    "3": "No",
+    "4": PATH_TO_CURRENT_BF + "data/dat.prot",
+    "5": "Y"
+});
+
+LoadFunctionLibrary("LEISR.bf", {
+    "0": "Nucleotide",
+    "1": "GTR",
+    "2": "Gamma",
+    "3": PATH_TO_CURRENT_BF + "data/dat.nuc",
+    "4": "Y"
+});
+
+LoadFunctionLibrary("LEISR.bf", {
+    "0": "Nucleotide",
+    "1": "GTR",
+    "2": "No",
+    "3": PATH_TO_CURRENT_BF + "data/dat.nuc",
+    "4": "Y"
+});

@@ -1,4 +1,4 @@
-RequireVersion("2.3.3");
+RequireVersion("2.3.4");
 
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
@@ -20,10 +20,10 @@ LoadFunctionLibrary("libv3/models/protein.bf");
 utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 
 relative_prot_rates.analysis_description = {
-    terms.io.info: "For a fixed alignment and tree, infer **relative** site specific substitution rates,
+    terms.io.info: "RELprot (RELative protein rates) infers, for a fixed alignment and tree, **relative** site specific substitution rates,
     by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler",
     terms.io.version: "0.1alpha",
-    terms.io.reference: "@TBD. Analysis based on Rate4Site method: Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. relative_prot_rates: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
+    terms.io.reference: "@TBD. Analysis based on Rate4Site method: Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
     terms.io.authors: "Sergei L Kosakovsky Pond and Stephanie J Spielman",
     terms.io.contact: "{spond,stephanie.spielman}@temple.edu"
 };
@@ -31,6 +31,8 @@ relative_prot_rates.analysis_description = {
 io.DisplayAnalysisBanner(relative_prot_rates.analysis_description);
 
 
+console.log("**WARNING**: This analysis will be ported to a new batchfile in a future HyPhy release. Please consider executing the batchfile \`relative_rates_scaler.bf\` instead.");
+console.log("");
 
 /***************************************** LOAD DATASET **********************************************************/
 SetDialogPrompt ("Specify a protein multiple sequence alignment file");
@@ -239,6 +241,7 @@ io.ReportProgressMessageMD ("relative_prot_rates", "Stats", "* [95% Range] "  + 
 
 
 
+tree_definition   = utility.Map (relative_prot_rates.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
 
 io.SpoolJSON ({ terms.json.input : {terms.json.file: relative_prot_rates.alignment_info[terms.data.file],
                           terms.json.sequences: relative_prot_rates.alignment_info[terms.data.sequences],

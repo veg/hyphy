@@ -8,6 +8,11 @@ models.DNA.models = {{"GTR", "General time reversible model"},
                      {"HKY85", "Hasegawa Kishino Yano 85 (HKY85) model"},
                      {"JC69", "Jukes-Cantor 69 (JC69) model"}};
 
+models.DNA.generators ={"GTR": "models.DNA.GTR.ModelDescription",
+                        "HKY85": "models.DNA.HKY85.ModelDescription",
+                        "JC69": "models.DNA.JC69.ModelDescription"};
+                                       
+
 models.DNA.alphabet = {{"A","C","G","T"}};
 models.DNA.dimensions = 4;
 
