@@ -1,3 +1,0 @@
-tests/hbltests/libv3/data/protgtr_fitter_alignments/aa1.fasta
-tests/hbltests/libv3/data/protgtr_fitter_alignments/aa2.fasta
-tests/hbltests/libv3/data/protgtr_fitter_alignments/aa3.fasta
