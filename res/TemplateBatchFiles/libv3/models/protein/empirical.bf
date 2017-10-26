@@ -295,6 +295,19 @@ function models.protein.WAGF.ModelDescription(type) {
     return models.protein.WAGF.ModelDescription.model_definition;
 }
 
+/**
+ * @name models.protein.WAGML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the WAG+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.WAGML.ModelDescription(type) {
+    models.protein.WAGF.ModelDescription.model_definition = models.protein.WAG.ModelDescription(type);
+    models.protein.WAGF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.WAGF.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.WAGF.ModelDescription.model_definition;
+}
+
 
 
 
