@@ -275,7 +275,7 @@ io.SpoolJSON ({ terms.json.input : {terms.json.file: leisr.alignment_info[terms.
 				               terms.json.tree_string: (leisr.alignment_wide_MLES[terms.fit.trees])[0],
 				               terms.json.log_likelihood: leisr.alignment_wide_MLES[terms.fit.log_likelihood]}
 				},
-				leisr.alignment_info[terms.data.file] + ".site-rates.json");
+				leisr.alignment_info[terms.data.file] + ".LEISR.json");
 
 
 //----------------------------------------------------------------------------------------
