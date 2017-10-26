@@ -62,7 +62,7 @@ const char hy_help_message [] =
 "\n"
 "optional flags:\n"
 "  -h                       show this help message and exit\n"
-"  -v                       reveal HyPhy version and exit\n"
+"  -v                       print HyPhy version\n"
 "  -c                       calculator mode; causes HyPhy to drop into an expression evaluation until 'exit' is typed\n"
 "  -d                       debug mode; causes HyPhy to drop into an expression evaluation mode upon script error\n"
 "  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
