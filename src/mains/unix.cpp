@@ -520,8 +520,6 @@ long    DisplayListOfPostChoices (void)
 void    ProcessConfigStr (_String& conf)
 {
     _String errMsg;
-    _String  verString (GetVersionString().getStr());
-    const char * hy_version = verString;
     for (long i=1; i<conf.sLength; i++) {
         switch (conf.sData[i]) {
         case 'h':
@@ -532,7 +530,7 @@ void    ProcessConfigStr (_String& conf)
 
         case 'v':
         case 'V': {
-            fprintf(stderr, "\n%s\n", hy_version );
+            fprintf(stderr, "\n%s\n",  GetVersionString().getStr() );
             exit (0);
         }
         
