@@ -46,6 +46,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const char hy_usage[] =
 "usage: HYPHYMP or HYPHYMPI [-h] "
+"[-v] "
 "[-c] "
 "[-d] "
 "[-p] "
@@ -61,6 +62,7 @@ const char hy_help_message [] =
 "\n"
 "optional flags:\n"
 "  -h                       show this help message and exit\n"
+"  -v                       reveal HyPhy version\n"
 "  -c                       calculator mode; causes HyPhy to drop into an expression evaluation until 'exit' is typed\n"
 "  -d                       debug mode; causes HyPhy to drop into an expression evaluation mode upon script error\n"
 "  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
@@ -76,6 +78,7 @@ const char hy_help_message [] =
 "  batch file to run        if specified, execute this file, otherwise drop into an interactive mode\n"
 "  analysis arguments       if batch file is present, all remaining positional arguments are interpreted as inputs to analysis prompts\n"
 ;
+
 
 #ifdef _MINGW32_MEGA_
   #include <Windows.h>
@@ -517,6 +520,8 @@ long    DisplayListOfPostChoices (void)
 void    ProcessConfigStr (_String& conf)
 {
     _String errMsg;
+    _String  verString (GetVersionString().getStr());
+    const char * hy_version = verString;
     for (long i=1; i<conf.sLength; i++) {
         switch (conf.sData[i]) {
         case 'h':
@@ -525,6 +530,12 @@ void    ProcessConfigStr (_String& conf)
             exit (0);
         }
 
+        case 'v':
+        case 'V': {
+            fprintf(stderr, "\n%s\n", hy_version );
+            exit (0);
+        }
+        
         case 'p':
         case 'P': {
             usePostProcessors = true;
