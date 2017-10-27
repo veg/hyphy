@@ -163,8 +163,7 @@ leisr.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           None,
                                                           None);
        
-    
-                                                          
+                                              
 estimators.fixSubsetOfEstimates(leisr.alignment_wide_MLES, leisr.alignment_wide_MLES[terms.global]);
 
 io.ReportProgressMessageMD ("relative_rates", "overall", ">Fitted an alignment-wide model. **Log-L = " + leisr.alignment_wide_MLES [terms.fit.log_likelihood] + "**.");
@@ -253,29 +252,25 @@ io.ReportProgressMessageMD ("relative_rates", "Stats", "* **Std.Dev**: "  + Form
 io.ReportProgressMessageMD ("relative_rates", "Stats", "* **95% Range**: ["  + Format (leisr.stats[terms.math._2.5], 5,2) + "," + Format (leisr.stats[terms.math._97.5], 5,2) + "]");
 
    
-if (leisr.use_rate_variation == "No"){
-    leisr.storerv = "None";
-} else {
-    leisr.storerv = utility.Map( 
-                    utility.Map (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
-                    "_value_",
-                    "_value_[terms.fit.MLE]");
-}
-
+leisr.store_global = utility.Map( 
+                        utility.Map (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
+                        "_value_",
+                        "_value_[terms.fit.MLE]");
 tree_definition   = utility.Map (leisr.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
-io.SpoolJSON ({ terms.json.input : {terms.json.file: leisr.alignment_info[terms.data.file],
+leisr.json_content = { terms.json.input : {terms.json.file: leisr.alignment_info[terms.data.file],
                           terms.json.sequences: leisr.alignment_info[terms.data.sequences],
                           terms.json.sites:     leisr.alignment_info[terms.data.sites],
                           terms.json.tree_string: (tree_definition[0])[terms.trees.newick_with_lengths]},
-                terms.json.analysis : leisr.analysis_description,       
-				terms.json.relative_site_rates : leisr.rate_estimates, 
-				terms.json.global: {terms.json.model: leisr.baseline_model_name,
-				               terms.model.rate_variation: leisr.storerv,
+                        terms.json.analysis : leisr.analysis_description,       
+				        terms.json.relative_site_rates : leisr.rate_estimates, 
+				        terms.json.global: {terms.json.model: leisr.baseline_model_name,
+				               terms.json.rate_distribution: leisr.store_global,
 				               terms.efv_estimate: (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0],
 				               terms.json.tree_string: (leisr.alignment_wide_MLES[terms.fit.trees])[0],
-				               terms.json.log_likelihood: leisr.alignment_wide_MLES[terms.fit.log_likelihood]}
-				},
-				leisr.alignment_info[terms.data.file] + ".LEISR.json");
+				               terms.json.log_likelihood: leisr.alignment_wide_MLES[terms.fit.log_likelihood],
+				               terms.json.parameters: leisr.alignment_wide_MLES[terms.parameters]}
+				    };
+io.SpoolJSON (leisr.json_content, leisr.alignment_info[terms.data.file] + ".LEISR.json");
 
 
 //----------------------------------------------------------------------------------------
@@ -306,7 +301,6 @@ lfunction leisr.handle_a_site (lf, filter_data, pattern_info, model_mapping) {
 		^(utility.getGlobalValue("leisr.site_model_scaler_name")) = 1;
 		Optimize (results, ^lf);
 	}
-	
     return parameters.GetProfileCI (utility.getGlobalValue("leisr.site_model_scaler_name"), lf, 0.95);
 }
 
@@ -329,7 +323,6 @@ lfunction leisr.store_results (node, result, arguments) {
 			io.FormatTableRow (^'leisr.table_screen_output',^'leisr.table_output_options'));
 		(^'leisr.table_output_options')[utility.getGlobalValue("terms.table_options.header")] = FALSE;
 	}
-	
 	
 	utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_site_index_",
 		"
