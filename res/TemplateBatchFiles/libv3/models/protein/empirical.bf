@@ -302,10 +302,10 @@ function models.protein.WAGF.ModelDescription(type) {
  * @param {String} type
  */
 function models.protein.WAGML.ModelDescription(type) {
-    models.protein.WAGF.ModelDescription.model_definition = models.protein.WAG.ModelDescription(type);
-    models.protein.WAGF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
-    models.protein.WAGF.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
-    return models.protein.WAGF.ModelDescription.model_definition;
+    models.protein.WAGML.ModelDescription.model_definition = models.protein.WAG.ModelDescription(type);
+    models.protein.WAGML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.WAGML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.WAGML.ModelDescription.model_definition;
 }
 
 
@@ -1019,6 +1019,8 @@ function models.protein.JTT.frequencies (model, namespace, datafilter) {
     (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
     return model;
 }
+
+
 
 /* Define a dictionary of amino-acid exchangeability rates for the JTT model of protein evolution.  */ 
 models.protein.JTT.Rij = {
