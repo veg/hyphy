@@ -29,7 +29,7 @@ leisr.analysis_description = {
     terms.io.info: "LEISR (Likelihood Estimation of Individual Site Rates) infer relative amino-acid or nucleotide rates from a fixed nucleotide or amino-acid alignment and tree. Relative site-specific substitution rates are
     inferred by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler",
     terms.io.version: "0.1alpha",
-    terms.io.reference: "@TBD. Analysis based on Rate4Site method, : Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
+    terms.io.reference: "Spielman, S.J. and Kosakovsky Pond, S.L. Relative evolutionary rate inference in HyPhy with LEISR. bioRxiv. https://doi.org/10.1101/206011. (2017); Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
     terms.io.authors: "Sergei L Kosakovsky Pond and Stephanie J Spielman",
     terms.io.contact: "{spond,stephanie.spielman}@temple.edu"
 };
