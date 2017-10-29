@@ -35,93 +35,6 @@ leisr.analysis_description = {
 };
 
 io.DisplayAnalysisBanner(leisr.analysis_description);
-
-/***************************************** MODEL SELECTION **********************************************************/
-
-leisr.protein_type    = "Protein";
-leisr.nucleotide_type = "Nucleotide";
-leisr.analysis_type  = io.SelectAnOption ({{leisr.protein_type , "Infer relative rates from a protein (amino-acid) alignment"}, {leisr.nucleotide_type, "Infer relative rates from a nucleotide alignment"}},
-                                                    "Select your analysis type:");
-
-
-if (leisr.analysis_type ==  leisr.protein_type) {
-    leisr.baseline_model  = io.SelectAnOption (models.protein.empirical_models,
-                                                    "Select a protein model:");
-                                                    
-    leisr.use_rate_variation = io.SelectAnOption( {{"Gamma", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, 
-                                                        {"GDD", "Use a four-category general discrete distribution when optimizing branch lengths."}, 
-                                                        {"No", "Do not consider rate variation when optimizing branch lengths."}
-                                                        },
-                                                        "Optimize branch lengths with rate variation?");
-    // "Yes", "No"
-    leisr.plusF  = io.SelectAnOption ({{"Yes", "Use empirical (+F) amino-acid frequencies ."}, {"No", "Use default amino-acid frequencies."}},                 
-                                                        "Use a +F model for initial branch length optimization?");
-    if (leisr.plusF == "Yes"){
-        leisr.generators = models.protein.empirical.plusF_generators;
-    }
-    else {
-        leisr.generators = models.protein.empirical.default_generators;
-    }
-}                                                      
-else {
-
-    leisr.baseline_model  = io.SelectAnOption (models.DNA.models,
-                                                    "Select a nucleotide model:");
-    leisr.use_rate_variation = io.SelectAnOption( {{"Gamma", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, 
-                                                        {"GDD", "Use a four-category general discrete distribution when optimizing branch lengths."}, 
-                                                        {"No", "Do not consider rate variation when optimizing branch lengths."}
-                                                        },
-                                                        "Optimize branch lengths with rate variation?");
-
-    leisr.generators = models.DNA.generators;
-    leisr.plusF = "No";
-}
-
-
-
-
-
-function leisr.Baseline.ModelDescription(type){
-    def = Call( leisr.generators[leisr.baseline_model], type);
-    return def;
-}
-
-function leisr.Baseline.ModelDescription.withGamma(type){
-    def = leisr.Baseline.ModelDescription(type);
-	def [terms.model.rate_variation] = rate_variation.types.Gamma.factory ({terms.rate_variation.bins : 4});
-    return def;
-}
-function leisr.Baseline.ModelDescription.withGDD4(type){
-    def = leisr.Baseline.ModelDescription(type);
-	def [terms.model.rate_variation] = rate_variation.types.GDD.factory ({terms.rate_variation.bins : 4});
-    return def;
-}
-
-
-leisr.baseline_model_name = leisr.baseline_model;
-if (leisr.plusF == "Yes"){
-    leisr.baseline_model_name = leisr.baseline_model_name + "+F";
-}
-
-if (leisr.use_rate_variation == "Gamma"){
-    leisr.baseline_model_name      = leisr.baseline_model_name + " with 4 category Gamma rates";
-    leisr.baseline_model_desc      = "leisr.Baseline.ModelDescription.withGamma";
-}  
-else {
-    if (leisr.use_rate_variation == "GDD"){
-        leisr.baseline_model_name      = leisr.baseline_model_name + " with 4 category GDD rates";
-        leisr.baseline_model_desc      = "leisr.Baseline.ModelDescription.withGDD4";
-    } 
-    else {
-        leisr.baseline_model_name      = leisr.baseline_model_name;
-        leisr.baseline_model_desc      = "leisr.Baseline.ModelDescription";
-    }
-}
-/**************************************************************/
-   
-
-
-
 /*******************************************************************************************************************/
 
 
@@ -148,6 +61,69 @@ leisr.filter_specification = alignments.DefineFiltersForPartitions (leisr.partit
 /*******************************************************************************************************************/
 
 
+/***************************************** MODEL SELECTION **********************************************************/
+
+leisr.protein_type    = "Protein";
+leisr.nucleotide_type = "Nucleotide";
+leisr.analysis_type  = io.SelectAnOption ({{leisr.protein_type , "Infer relative rates from a protein (amino-acid) alignment"}, {leisr.nucleotide_type, "Infer relative rates from a nucleotide alignment"}},
+                                                    "Select your analysis type:");
+
+
+if (leisr.analysis_type ==  leisr.protein_type) {
+    leisr.baseline_model  = io.SelectAnOption (models.protein.empirical_models, "Select a protein model:");                                         
+    leisr.generators = models.protein.empirical.default_generators;
+}                                                      
+else {
+
+    leisr.baseline_model  = io.SelectAnOption (models.DNA.models, "Select a nucleotide model:");
+    leisr.generators = models.DNA.generators;
+}
+
+leisr.use_rate_variation = io.SelectAnOption( {{"Gamma", "Use a four-category discrete gamma distribution when optimizing branch lengths."}, 
+                                                    {"GDD", "Use a four-category general discrete distribution when optimizing branch lengths."}, 
+                                                    {"No", "Do not consider rate variation when optimizing branch lengths."}
+                                                    },
+                                                    "Optimize branch lengths with rate variation?");
+
+
+function leisr.Baseline.ModelDescription(type){
+    def = Call( leisr.generators[leisr.baseline_model], type);
+    return def;
+}
+
+function leisr.Baseline.ModelDescription.withGamma(type){
+    def = leisr.Baseline.ModelDescription(type);
+	def [terms.model.rate_variation] = rate_variation.types.Gamma.factory ({terms.rate_variation.bins : 4});
+    return def;
+}
+function leisr.Baseline.ModelDescription.withGDD4(type){
+    def = leisr.Baseline.ModelDescription(type);
+	def [terms.model.rate_variation] = rate_variation.types.GDD.factory ({terms.rate_variation.bins : 4});
+    return def;
+}
+
+
+leisr.baseline_model_name = leisr.baseline_model;
+if (leisr.analysis_type ==  leisr.protein_type) {
+    leisr.baseline_model_name  = leisr.baseline_model_name + "F";
+}
+if (leisr.use_rate_variation == "Gamma"){
+    leisr.baseline_model_name      = leisr.baseline_model_name + "+4Gamma";
+    leisr.baseline_model_desc      = "leisr.Baseline.ModelDescription.withGamma";
+}  
+else {
+    if (leisr.use_rate_variation == "GDD"){
+        leisr.baseline_model_name      = leisr.baseline_model_name + "+4GDD";
+        leisr.baseline_model_desc      = "leisr.Baseline.ModelDescription.withGDD4";
+    } 
+    else {
+        leisr.baseline_model_name      = leisr.baseline_model_name;
+        leisr.baseline_model_desc      = "leisr.Baseline.ModelDescription";
+    }
+}
+/*******************************************************************************************************************/
+   
+
 
 /***************************************** INFERENCE **********************************************************/
 
@@ -163,7 +139,8 @@ leisr.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           None,
                                                           None);
        
-                                              
+                
+                            
 estimators.fixSubsetOfEstimates(leisr.alignment_wide_MLES, leisr.alignment_wide_MLES[terms.global]);
 
 io.ReportProgressMessageMD ("relative_rates", "overall", ">Fitted an alignment-wide model. **Log-L = " + leisr.alignment_wide_MLES [terms.fit.log_likelihood] + "**.");
@@ -255,21 +232,32 @@ io.ReportProgressMessageMD ("relative_rates", "Stats", "* **95% Range**: ["  + F
 leisr.store_global = utility.Map( 
                         utility.Map (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                         "_value_",
-                        "_value_[terms.fit.MLE]");
-tree_definition   = utility.Map (leisr.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
-leisr.json_content = { terms.json.input : {terms.json.file: leisr.alignment_info[terms.data.file],
-                          terms.json.sequences: leisr.alignment_info[terms.data.sequences],
-                          terms.json.sites:     leisr.alignment_info[terms.data.sites],
-                          terms.json.tree_string: (tree_definition[0])[terms.trees.newick_with_lengths]},
+                        "_value_[terms.fit.MLE]");      
+
+
+leisr.aicc = leisr.getIC(leisr.alignment_wide_MLES[terms.fit.log_likelihood], leisr.alignment_wide_MLES[terms.parameters], leisr.alignment_info[utility.getGlobalValue("terms.data.sites")] * leisr.alignment_info[utility.getGlobalValue("terms.data.sequences")]);
+leisr.json_content = { terms.json.input : 
+                            {terms.json.file: leisr.alignment_info[terms.data.file],
+                                  terms.json.sequences: leisr.alignment_info[terms.data.sequences],
+                                  terms.json.sites:     leisr.alignment_info[terms.data.sites],
+                                  terms.json.tree_string: (tree_definition[0])[terms.trees.newick_with_lengths]
+                            },
                         terms.json.analysis : leisr.analysis_description,       
+				        terms.json.fits:
+				        {
+				            leisr.baseline_model_name:
+                                {
+                                    terms.json.log_likelihood: leisr.alignment_wide_MLES[terms.fit.log_likelihood],
+                                    terms.json.parameters: leisr.alignment_wide_MLES[terms.parameters],
+                                    terms.json.AICc: leisr.aicc,
+                                    terms.json.rate_distribution: leisr.store_global,
+                                    terms.efv_estimate: (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0]
+				                }
+				        },
 				        terms.json.relative_site_rates : leisr.rate_estimates, 
-				        terms.json.global: {terms.json.model: leisr.baseline_model_name,
-				               terms.json.rate_distribution: leisr.store_global,
-				               terms.efv_estimate: (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0],
-				               terms.json.tree_string: (leisr.alignment_wide_MLES[terms.fit.trees])[0],
-				               terms.json.log_likelihood: leisr.alignment_wide_MLES[terms.fit.log_likelihood],
-				               terms.json.parameters: leisr.alignment_wide_MLES[terms.parameters]}
-				    };
+				        terms.json.branch_attributes: leisr.alignment_wide_MLES[terms.branch_length],
+				        terms.json.attribute :{ leisr.baseline_model_name: {terms.json.attribute_type: terms.branch_length}}
+                     };       
 io.SpoolJSON (leisr.json_content, leisr.alignment_info[terms.data.file] + ".LEISR.json");
 
 
@@ -341,4 +329,24 @@ lfunction leisr.store_results (node, result, arguments) {
 }
 
 
+
+lfunction leisr.getIC(logl, params, samples) {
+    return -2 * logl + 2 * samples / (samples - params - 1) * params;
+}
+
+
+
+lfunction leisr.json_store_branch_attribute(json, attribute_name, attribute_type, partition, values) {
+    utility.EnsureKey(json, terms.json.branch_attributes);
+    utility.EnsureKey(json[terms.json.branch_attributes], partition);
+    utility.EnsureKey(json[terms.json.branch_attributes], terms.json.attribute);
+    utility.EnsureKey((json[terms.json.branch_attributes])[terms.json.attribute], attribute_name);
+    ((json[terms.json.branch_attributes])[terms.json.attribute])[attribute_name] = {terms.json.attribute_type : attribute_type};
+
+    utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
+                             "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
+
+    utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
+                             "(((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name]");
+ }
 
