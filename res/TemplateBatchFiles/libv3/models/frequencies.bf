@@ -71,6 +71,44 @@ function frequencies.empirical.protein (model, namespace, datafilter) {
 }
 
 /**
+ * Sets model's equilibrium frequency estimator to ML for protein data
+ * @name frequencies.empirical.protein
+ * @param {Dictionary} model
+ * @param {String} namespace
+ * @param {DataSetFilter} datafilter
+ * @returns {Dictionary} updated model
+ */
+function frequencies.ML.protein (model, namespace, datafilter) {
+    model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
+    // define 20 frequency parameters
+    // initialize to empirical freqs
+    // add to model parameter manifest
+    frequencies.ML.protein.emp = model[terms.efv_estimate];
+    model[terms.efv_estimate] = {20,1};
+    frequencies.ML.protein.variables = {20,1};
+    frequencies.ML.protein.scaler = namespace + ".frequency_scaler";
+    
+    utility.ForEachPair (model[terms.alphabet], "_index", "_letter",
+                         '  
+                            _idx = _index[1];
+                            _freq_parameter = namespace + ".equilibrium_frequency_of." + _letter;
+                            frequencies.ML.protein.variables [_idx] = _freq_parameter;
+                            (model[terms.efv_estimate]) [_idx] = _freq_parameter + "/" + frequencies.ML.protein.scaler;
+                            parameters.DeclareGlobalWithRanges (_freq_parameter, frequencies.ML.protein.emp[_idx], 0, 1);
+                            model.generic.AddGlobal (model, _freq_parameter, terms.characterFrequency (_letter));
+                         '
+                         );
+       
+    // constrain pi_A + ... + pi_A = 1, 
+    
+    parameters.SetConstraint ( frequencies.ML.protein.scaler, Join ("+", frequencies.ML.protein.variables), "global");
+ 
+    model[terms.model.efv_estimate_name] = terms.frequencies.ml;
+    (model[terms.parameters])[terms.model.empirical] = -1; // correct for the restricted sum
+    return model;
+}
+
+/**
  * @name frequencies.empirical.corrected.CF3x4
  * @param {Dictionary} model
  * @param {String} namespace
