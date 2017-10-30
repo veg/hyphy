@@ -1290,8 +1290,7 @@ gard.json[utility.getGlobalValue("terms.json.input")] = {};
 gard.json["timeElapsed"] = startTimer;
 gard.json["rvChoice"] = rvChoice;
 gard.json["rvRates"] = rateClasses;
-
-
+gard.json["potentialBreakpoints"] = Abs(bppMap);
 
 if (Rows(bestIndividualOverall))
 {
