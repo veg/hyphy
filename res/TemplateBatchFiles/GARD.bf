@@ -61,6 +61,37 @@ ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Util
 
 /* ________________________________________________________________________________________________*/
 
+function _reportSubstitutionMatrix (treeName, filterName)
+{
+	
+	ExecuteCommands ("bl = BranchLength  (`treeName`,-1);");
+	ExecuteCommands ("bn = BranchName	   (`treeName`,-1);");
+	ExecuteCommands ("_size = BranchCount(`treeName`) + TipCount (`treeName`) - 1;");
+	
+	for (k = _size; k >= 0 ; k = k - 1)
+	{
+		if (bl[k] > 0 || k == 0)
+		{
+			c = 1;
+			ExecuteCommands ("GetInformation(branchMx,`treeName`." + bn[k] +");");
+			if (bl[k])
+			{
+				normalizer = bl[k];
+			}
+			else
+			{
+				normalizer = 1;
+			}
+			
+      rateMatrix = branchMx * (1/ normalizer);
+			break;
+		}
+	}
+	
+	return rateMatrix;
+
+}
+
 function ComputeDistanceFormula (s1,s2)
 {
 	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DIST);
@@ -1242,6 +1273,15 @@ fprintf	  (stdout, "Performing the final optimization...\n");
 rawOutFile = outputFilePath + "_splits";
 fprintf (rawOutFile,CLEAR_FILE);
 
+// print rate matrix to new JSON file
+rateMatrix = _reportSubstitutionMatrix("givenTree", "filteredData");
+jsonOutFile = outputFilePath + ".json";
+
+gard.json = {
+    "rateMatrix" : rateMatrix
+};
+
+fprintf(jsonOutFile, gard.json, CLOSE_FILE);
 
 
 if (Rows(bestIndividualOverall))
