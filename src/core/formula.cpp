@@ -2243,7 +2243,7 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
 
 //__________________________________________________________________________________
 void _Formula::ConvertFromSimple (_AVLList const& variableIndex) {
-  ConvertToSimple(&variableIndex.dataList);
+  ConvertFromSimple(variableIndex.dataList);
 }
 
 //__________________________________________________________________________________

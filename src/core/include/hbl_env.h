@@ -40,7 +40,8 @@
 #include "parser.h"
 #include "defines.h"
 
-
+#ifndef _HY_ENV
+#define _HY_ENV
 
 namespace hy_env {
  
@@ -91,11 +92,12 @@ namespace hy_env {
      
      */
 
-    hyFloat       EnvVariableGetNumber (_String const& name);
+    hyFloat       EnvVariableGetNumber (_String const& name, hyFloat default_value = HY_INVALID_RETURN_VALUE);
     /**
      Look up the numeric value for a given env variable,
     
      @param name the name of the env variable (in HBL)
+     @param default_value if no value is set, return this
      
      @return current value if set and of the correct type, otherwise default value if available and of the correct type, otherwise invalid return value
      
@@ -187,3 +189,5 @@ namespace hy_env {
   
   
 };
+
+#endif

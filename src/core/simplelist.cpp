@@ -52,6 +52,7 @@
 #include "simplelist.h"
 #include "parser.h"
 #include "mersenne_twister.h"
+#include "function_templates.h"
 
 using namespace hy_global;
 
@@ -1145,19 +1146,6 @@ void  _SimpleList::Permute (long blockLength) {
     unsigned long blockCount = lLength/blockLength;
 
     if (blockLength>1) {
-        /*_SimpleList     result ((unsigned long)(blockCount*blockLength));
-        while (blockCount)
-        {
-            unsigned long sample = (unsigned long)(genrand_real2()*blockCount);
-            sample *= blockLength;
-            for (long j = 0; j<blockLength; j++)
-            {
-                result<<lData[sample];
-                Delete(sample);
-            }
-            blockCount --;
-        }
-        Duplicate(&result); */
 
         for (unsigned long k=0; k<blockCount-1; k=k+1) {
             unsigned long k2 = genrand_real2()*(blockCount-k);
@@ -1166,9 +1154,7 @@ void  _SimpleList::Permute (long blockLength) {
                 k2 *= blockLength;
 
                 for (long j = 0; j<blockLength; j++) {
-                    long t = lData[k2+j];
-                    lData[k2+j] = lData[k*blockLength+j];
-                    lData[k*blockLength+j] = t;
+                    EXCHANGE (lData[k2+j], lData[k*blockLength+j])
                 }
             }
         }
@@ -1178,21 +1164,38 @@ void  _SimpleList::Permute (long blockLength) {
             unsigned long k2 = genrand_real2()*(blockCount-k);
             if (k2) {
                 k2+=k;
-                long t = lData[k2];
-                lData[k2] = lData[k];
-                lData[k] = t;
+                EXCHANGE (lData[k2], lData[k]);
             }
         }
-        /*{
-            while (blockCount)
-            {
-                unsigned long sample = genrand_real2()*blockCount;
-                result<<lData[sample];
-                Delete(sample);
-                blockCount --;
-            }
-        }*/
     }
+}
+
+// Create a permutation of the list's elements
+_SimpleList const  _SimpleList::Sample (unsigned long size) {
+    // TODO SLKP 20171026: this is new, need to check correctness
+    if (size >= lLength) {
+        return *this;
+    }
+    
+    _SimpleList result (size, 0, 0),
+                tracker (size, 0, 0);
+    
+    for (unsigned long k=0; k < size; k++) {
+        unsigned long k2 = k + genrand_real2()*(lLength-k);
+        result.lData[k] = lData[k2];
+        tracker[k] = k2;
+        if (k2 != k) {
+            EXCHANGE (lData[k2], lData[k]);
+        }
+    }
+    
+    // reshuffle moved elements LIFO to ensure correct ordering in *this
+    
+    for (long k = size - 1; k >= 0; k--) {
+        EXCHANGE (lData[k], lData[tracker.get(k)])
+    }
+    
+    return result;
 }
 
 // Create a permutation of the list's elements with possible repetitions

@@ -457,7 +457,14 @@ class _SimpleList:public BaseObj {
         * @return Nothing. Acts on the List object it was called from. 
         */
         void Permute(long);
-    
+
+        /**
+         * TODO: Sample (without replacement)
+         * @param size how many elements to sample
+         * @return resampled list
+         */
+        _SimpleList const Sample (unsigned long size);
+
 
         /**
         * TODO:Permute elements in blocks of given size with possible replacement

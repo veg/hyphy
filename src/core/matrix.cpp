@@ -56,8 +56,7 @@
 #include "function_templates.h"
 #include "mersenne_twister.h"
 #include "global_things.h"
-
-
+#include "string_file_wrapper.h"
 
 
 //#include "profiler.h"
@@ -72,8 +71,6 @@ using namespace hy_global;
 _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
             ANAL_COMP_FLAG              = "ANALYTIC_COMPUTATIONS",
             ANAL_MATRIX_TOLERANCE      = "ANAL_MATRIX_TOLERANCE",
-            USE_JSON_FOR_MATRIX      = "USE_JSON_FOR_MATRIX",
-            PROFILE_MEAN_VAR_MULT      = "PROFILE_MEAN_VAR_MULT",
             CACHE_FORMULA_DEPENDANCY  = "CACHE_FORMULA_DEPENDANCY",
             BRANCH_LENGTH_STENCIL      = "BRANCH_LENGTH_STENCIL",
             AVL_ITERATOR_ORDER          = "INDEXORDER",
@@ -319,7 +316,7 @@ void _Matrix::Initialize (bool) {                            // default construc
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
+_Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* theP) {
   // takes two separate formats
   // 1st : {{i11,...,i1n}{i21,...,i2n}....{in1,...,inn}} // all elements must be explicitly specified
   // 2st : {hor dim, <vert dim>,{hor index, vert index, value or formula}{...}...}
@@ -685,8 +682,7 @@ void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool s
   
   theMatrix->hDim = theHDim;
   theMatrix->vDim = theVDim;
-  theMatrix->bufferPerRow = theMatrix->overflowBuffer =  theMatrix->allocationBlock = 0;
-  
+  theMatrix->SetupSparseMatrixAllocations ();
 }
 
 
@@ -2148,60 +2144,42 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::CheckIfSparseEnough(bool force)
+void    _Matrix::CheckIfSparseEnough(bool force) {
 
 // check if matrix is sparse enough to justify compressed storage
-{
-    long i;
 
-    if (theIndex && (force || lDim>hDim*vDim*::_Matrix::switchThreshold/100))
+    if (theIndex && (force || lDim>hDim*vDim*::_Matrix::switchThreshold/100)) {
         // switch to normal matrix storage - more than half elements are non-zero
-    {
         // -= allocationBlock;
-        if (storageType!=1)
+
+        long square_dimension = vDim*hDim;
+
+        if (!is_numeric()) {
             // pointers
-        {
-            long* tempData;
-
-            if (!(tempData = (long*) MatrixMemAllocate(hDim*vDim*sizeof(hyPointer)))) {
-                HandleApplicationError ( kErrorStringMemoryFail );
-            } else {
-                for (i = 0; i<hDim*vDim; i++) {
-                    tempData[i]=0;
+            hyPointer* tempData = (hyPointer*) MemAllocate (square_dimension*sizeof(hyPointer));
+            InitializeArray(tempData, square_dimension, (hyPointer)nil);
+            
+            for (unsigned long i = 0UL; i<lDim; i++) {
+                if (IsNonEmpty(i)) {
+                    tempData[theIndex[i]]=((hyPointer*)theData)[i];
                 }
-                for (i = 0; i<lDim; i++) {
-                    if (IsNonEmpty(i)) {
-                        tempData[theIndex[i]]=((long*)theData)[i];
-                    }
-                }
-                MatrixMemFree (theData);
-                theData = (hyFloat*)tempData;
             }
-        } else
+            MatrixMemFree (theData);
+            theData = (hyFloat*)tempData;
+        } else {
             //objects
-        {
-            hyFloat* tempData;
-            if (!(tempData =  (hyFloat*)MatrixMemAllocate (sizeof(hyFloat)*hDim*vDim))) {
-                HandleApplicationError ( kErrorStringMemoryFail );
-            } else {
-                for (i = 0; i<hDim*vDim; i++) {
-                    tempData [i] = ZEROOBJECT;
-                }
-                for (i = 0; i<lDim; i++) {
-                    long k = theIndex[i];
-                    if (k!=-1) {
-                        tempData [k] = ((hyFloat*)theData) [i];
-                    }
-                }
-                MatrixMemFree( theData);
-                theData = tempData;
-            }
+            hyFloat* tempData = (hyFloat*) MemAllocate (square_dimension*sizeof(hyFloat));
+            InitializeArray(tempData, square_dimension, 0.0);
 
+            for (unsigned long i = 0UL; i<lDim; i++) {
+                long k = theIndex[i];
+                if (k >= 0) {
+                    tempData [k] = ((hyFloat*)theData) [i];
+                }
+            }
         }
+        lDim = square_dimension;
         MatrixMemFree (theIndex);
-        theIndex = nil;
-        bufferPerRow = overflowBuffer = allocationBlock = 0;
-        lDim = vDim*hDim;
     }
 }
 
@@ -2834,45 +2812,39 @@ void        _Matrix::ConvertToSimpleList (_SimpleList & sl)
 }
 
 //_____________________________________________________________________________________________
-bool        _Matrix::IsAStringMatrix (void)
+bool        _Matrix::IsAStringMatrix (void) const
 // check if a formula matrix contains strings
 {
-    if (storageType == _FORMULA_TYPE) {
-        _PMathObj   formValue = nil;
-        _Formula ** theFormulas = (_Formula**)theData;
-        if (theIndex)
-            for (long i = 0; i<lDim; i++) {
-                if (theIndex[i]!=-1 && !(theFormulas[i]->IsEmpty())) {
-                    formValue = theFormulas[i]->Compute();
-                    if (formValue) {
-                        return formValue->ObjectClass() == STRING;
-                    }
-                }
-            }
-        else
-            for (long i = 0; i<lDim; i++)
-                if (theFormulas[i]!=(_Formula*)ZEROPOINTER && !(theFormulas[i]->IsEmpty())) {
-                    formValue = theFormulas[i]->Compute();
-                    if (formValue) {
-                        return formValue->ObjectClass() == STRING;
-                    }
-                }
+    if (is_expression_based()) {
+        try {
+            return Any ([&] (_Formula * f, unsigned long) -> bool {
+                            if (f) {
+                                if (f->ObjectClass() == STRING)
+                                    return true;
+                                throw (0);
+                            }
+                            return false;
+                        },
+                        [&] (unsigned long i) -> _Formula * {return ((_Formula**)theData)[i];});
+            
+        } catch (int ) {
+        }
 
     }
     return false;
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::FillInList (_List& fillMe, bool doNumeric) {
+void        _Matrix::FillInList (_List& fillMe, bool convert_numbers) const {
 // check if a formula matrix contains strings
-    if (storageType == _FORMULA_TYPE) {
-          for (long r=0; r<hDim; r++)
-              for (long c=0; c<vDim; c++) {
+    if (is_expression_based()) {
+          for (unsigned long r=0UL; r<hDim; r++)
+              for (unsigned long c=0UL; c<vDim; c++) {
                   _Formula * entryFla = GetFormula(r,c);
                   if (entryFla) {
                       _PMathObj computedValue = FetchObjectFromFormulaByType (*entryFla, STRING);
                       if (computedValue) {
-                          fillMe && ((_FString*)computedValue)->theString;
+                          fillMe && ((_FString*)computedValue)->get_str();
                       } else {
                         fillMe.Clear();
                         return;
@@ -2880,19 +2852,19 @@ void        _Matrix::FillInList (_List& fillMe, bool doNumeric) {
                   }
               }
     } else {
-        if (doNumeric && storageType == _NUMERICAL_TYPE) {
-            for (long r=0; r<hDim; r++)
-                for (long c=0; c<vDim; c++) {
+        if (convert_numbers && is_numeric()) {
+            for (unsigned long r=0UL; r<hDim; r++) {
+                for (unsigned long c=0UL; c<vDim; c++) {
                     fillMe.AppendNewInstance (new _String ((*this)(r,c)));
                 }
+            }
         }
     }
 }
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::EvaluateSimple (void)
+_PMathObj   _Matrix::EvaluateSimple (void) {
 // evaluate the matrix  overwriting the old one
-{
     _Matrix * result = new _Matrix (hDim, vDim, bool (theIndex), true);
 
 
@@ -3091,7 +3063,6 @@ void    _Matrix::Resize (long newH)
         } else {
             theData = (hyFloat*) MemAllocate (sizeof (hyFloat)*lDim);
         }
-
     }
 }
 
@@ -3120,24 +3091,14 @@ void    _Matrix::operator = (_Matrix* m)
 
 
 //_____________________________________________________________________________________________
-hyFloat _Matrix::AbsValue (void)
-{
-    if (storageType == 1 && (hDim==1 || vDim == 1)) {
+hyFloat _Matrix::AbsValue (void) const{
+    if (is_numeric() && (is_row() || is_column())) {
         hyFloat norm = 0.;
-        if (theIndex) {
-            for (long k = 0; k<lDim; k++)
-                if (long i = theIndex[k] >= 0) {
-                    norm += theData[i]*theData[i];
-                }
 
-            norm = sqrt(norm);
-        } else {
-            for (long k = 0; k<lDim; k++) {
-                norm += theData[k]*theData[k];
-            }
-            norm = sqrt(norm);
-        }
-        return norm;
+        this->ForEach ([&] (hyFloat&& value, unsigned long, long) -> void {norm += value * value;},
+                 [&] (unsigned long index) -> hyFloat {return theData[index];});
+
+        return sqrt(norm);
     }
 
     return 0.;
@@ -4257,11 +4218,11 @@ hyFloat  _Matrix::MaxRelError  (_Matrix& compMx)
 //_____________________________________________________________________________________________
 
 bool    _Matrix::is_row(void) const {
-    return GetHDim() == 1;
+    return GetHDim() == 1UL;
 }
 
 bool    _Matrix::is_column(void) const {
-    return GetVDim() == 1;
+    return GetVDim() == 1UL;
 }
 
 bool    _Matrix::is_square(void) const {
@@ -4270,6 +4231,10 @@ bool    _Matrix::is_square(void) const {
 
 bool    _Matrix::is_dense (void) const {
     return theIndex == nil;
+}
+
+bool    _Matrix::is_empty (void) const {
+    return GetVDim () == 0UL || GetHDim () == 0UL;
 }
 
 //_____________________________________________________________________________________________
@@ -4669,22 +4634,19 @@ _Matrix*    _Matrix::Exponentiate (void)
 
 //_____________________________________________________________________________________________
 
-long    _Matrix::Hash  (long i, long j)
-// returns element's position in the buffer (-1 if not found)
-{
-    if (!bufferPerRow)
-        // first call, need to set up hashing parameters
-    {
-        bufferPerRow = lDim/hDim;
-        overflowBuffer = hDim*storageIncrement/100;
-        if (!(bufferPerRow = (lDim-overflowBuffer)/hDim)) {
-            bufferPerRow = 1;
-        }
-        overflowBuffer = lDim-bufferPerRow*hDim;
-        allocationBlock = hDim*vDim*storageIncrement/100+1;
-    }
+void     _Matrix::SetupSparseMatrixAllocations (void) {
+    overflowBuffer = hDim*storageIncrement/100;
+    bufferPerRow = MAX (1, (lDim-overflowBuffer)/hDim);
+    overflowBuffer = lDim-bufferPerRow*hDim;
+    allocationBlock = hDim*vDim*storageIncrement/100+1;
+}
 
-    if (!theIndex) {
+//_____________________________________________________________________________________________
+
+long    _Matrix::Hash  (long i, long j) const {
+// returns element's position in the buffer (-1 if not found)
+
+    if (is_dense()) {
         return i*vDim+j;
     }
     // ordinary matrix
@@ -4718,8 +4680,7 @@ long    _Matrix::Hash  (long i, long j)
 }
 
 //_____________________________________________________________________________________________
-hyFloat      _Matrix::operator () (long i, long j)
-{
+hyFloat      _Matrix::operator () (long i, long j) const {
     long lIndex = Hash (i,j);
     if (lIndex<0) {
         return ZEROOBJECT;
@@ -4862,9 +4823,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
     return new _Constant (0.0);
   } else {
     if (p->ObjectClass() == STRING) {
-      
-      
-      _String aFormulaString = *((_FString*)p)->theString;
+       _String aFormulaString (((_FString*)p)->get_str());
       _Formula f (aFormulaString, currentExecutionList ? currentExecutionList->nameSpacePrefix : nil);
       
       if (!f.IsEmpty()) {
@@ -4887,7 +4846,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
           _Formula * conditionalCheck = nil;
           
           if (p2 && p2->ObjectClass() == STRING) {
-            conditionalCheck = new _Formula (*((_FString*)p2)->theString, currentExecutionList ? currentExecutionList->nameSpacePrefix : nil);
+            conditionalCheck = new _Formula (((_FString*)p2)->get_str(), currentExecutionList ? currentExecutionList->nameSpacePrefix : nil);
             if (conditionalCheck->IsEmpty()) {
               delete conditionalCheck;
               conditionalCheck = nil;
@@ -4903,11 +4862,12 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
           _Matrix   * retMatrix = new _Matrix (hDim,vDim,false,true);
           
           long          stackDepth = 0;
-          _SimpleList   vIndex;
+          _SimpleList   vIndexAux;
+          _AVLList      vIndex (&vIndexAux);
           
           if (f.AmISimple (stackDepth,vIndex) && (!conditionalCheck || conditionalCheck->AmISimple(stackDepth,vIndex))) {
             _SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
-            * varValues = new _SimpleFormulaDatum [vIndex.lLength];
+            * varValues = new _SimpleFormulaDatum [vIndex.countitems()];
             
             bool                constantValue = false;
             hyFloat          constantV     = f.Compute()->Value();
@@ -4934,10 +4894,10 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
               long rid []= {cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
               
               for (long k=0; k<3; k++) {
-                rid[k] = vIndex.Find(rid[k]);
+                rid[k] = vIndexAux.Find(rid[k]);
               }
               
-              PopulateArraysForASimpleFormula(vIndex, varValues);
+              PopulateArraysForASimpleFormula(vIndexAux, varValues);
               
               for (long r=0; r<hDim; r++) {
                 
@@ -5012,7 +4972,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
           return retMatrix;
         }
       }
-      ReportWarning (_String("Invalid formula expression for element-wise matrix operations: ") & *((_FString*)p)->theString);
+      ReportWarning (_String("Invalid formula expression for element-wise matrix operations: ") & ((_FString*)p)->get_str());
       return new _Matrix;
     }
   }
@@ -5104,7 +5064,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
 }
 
 //_____________________________________________________________________________________________
-_Formula* _Matrix::GetFormula (long ind1, long ind2) {
+_Formula* _Matrix::GetFormula (long ind1, long ind2) const {
 
     if (hDim == 1) {
         if (ind2<0) {
@@ -6053,162 +6013,154 @@ _PMathObj       _Matrix::PoissonLL (_PMathObj mp)
 
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp)
-{
-    _Matrix                 *m          = nil;
+_PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp) {
+    try {
+        _Matrix                 *m          = nil;
 
-    _String                 errMsg;
-
-    if (storageType!=1 || hDim != 3) {
-        errMsg = "First argument in call to < (PathLogLikelihood) must be a numeric 3xN matrix";
-    } else {
-        errMsg = "Second argument in call to < (PathLogLikelihood) must be a square matrix";
-        if (mp->ObjectClass () == MATRIX) {
-            m = (_Matrix*)mp->Compute();
-            if (m->GetHDim() == m->GetVDim()) {
-                errMsg = kEmptyString;
+        if (! is_numeric() || hDim != 3) {
+            throw ("First argument must be a numeric 3xN matrix");
+        } else {
+            //errMsg = "Second argument in call to < (PathLogLikelihood) must be a square matrix";
+            if (mp->ObjectClass () == MATRIX) {
+                m = (_Matrix*)mp->Compute();
+                if (m->GetHDim() != m->GetVDim()) {
+                    throw ("Second argument must be a square matrix");
+                }
+            } else {
+                throw ("Second argument must be a matrix");
             }
         }
-    }
 
-    if (errMsg.sLength) {
-        HandleApplicationError  (errMsg);
+
+        CheckIfSparseEnough     (true);
+
+        hyFloat              res     = 0.0;
+        long                    maxDim  = m->GetHDim();
+
+        for (unsigned long step = 0UL; step < vDim; step++) {
+            
+            long        i1 = get (0,step),
+                        i2 = get (1,step);
+            hyFloat     t  = get (2, step);
+
+            if (i1<0 || i2 < 0 || i1 >= maxDim || i2 >= maxDim || t<0.0) {
+                throw (_String ("An invalid transition in step ") & (step+1) & " of the chain: " & i1 & " to " & i2 & " in time " & t);
+            }
+
+            _Matrix         rateMx (*m);
+            rateMx *= t;
+            _Matrix   * tMatrix = rateMx.Exponentiate ();
+            t = tMatrix->theData[maxDim*i1+i2];
+            DeleteObject (tMatrix);
+
+            if (t>0.0) {
+                res += log (t);
+            } else {
+                return new _Constant (-1.e300);
+            }
+            return new _Constant (res);
+        }
+    } catch (const _String err) {
+        HandleApplicationError  (err);
         return new _MathObject;
     }
 
-    CheckIfSparseEnough     (true);
-
-    hyFloat              res     = 0.0;
-    long                    maxDim  = m->GetHDim();
-
-    for (long step = 0; step < vDim; step++) {
-        long       i1 = theData[step],
-                   i2 = theData[vDim+step];
-
-        hyFloat t  = theData[2*vDim+step];
-
-        if (i1<0 || i2 < 0 || i1 >= maxDim || i2 >= maxDim || t<0.0) {
-            HandleApplicationError(_String ("An invalid transition in step ") & (step+1) & " of the chain: " & i1 & " to " & i2 & " in time " & t);
-            return new _Constant (0.);
-        }
-
-        _Matrix         rateMx (*m);
-        rateMx *= t;
-        _Matrix   * tMatrix = rateMx.Exponentiate ();
-
-        t = tMatrix->theData[maxDim*i1+i2];
-        DeleteObject (tMatrix);
-
-        if (t>0.0) {
-            res += log (t);
-        } else {
-            return new _Constant (-1.e300);
-        }
-    }
-
-    return new _Constant (res);
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::pFDR (_PMathObj classes)
-{
-    _String         errMsg;
-    long            k,
-                    steps     = 20,
-                    iterCount = 500;
+_PMathObj       _Matrix::pFDR (_PMathObj classes) {
+    try {
+        long            steps     = 20,
+                        iter_count = 500;
 
-    hyFloat      pVal = 0.0,
-                    maxLambda = 0.0;
+        hyFloat         p_value = 0.0,
+                        max_lambda = 0.0;
 
 
-    if (theIndex) {
-        CheckIfSparseEnough (true);
-    }
+        if (theIndex) {
+            CheckIfSparseEnough (true);
+        }
 
-    if (storageType!=1) {
-        errMsg = "Only numeric matrices can be passed to && (pFDR)";
-    } else {
-        if ((GetVDim () != 1 && GetHDim() != 1) || GetVDim()*GetHDim() < 1) {
-            errMsg = "The first argument of && (pFDR) must be an Nx1 matrix.";
-        } else if (classes->ObjectClass () != NUMBER || classes->Value() > 1. || (pVal = classes->Value()) < 0.0) {
-            errMsg = _String ("Invalid baseline p-value (must be in (0,1)):") & _String((_String*)classes->toStr());
+        if (!is_numeric()) {
+            throw "Only numeric matrices can be passed to && (pFDR)";
         } else {
-            for (long i=1; i<lDim; i++) {
-                hyFloat pCount = theData[i];
-                if (pCount < 0.0 || pCount > 1.0) {
-                    errMsg = _String ("Invalid p-value entry in matrix passed to pFDR (must be a positive integer):");
-                }
-                if (pCount > maxLambda) {
-                    maxLambda = pCount;
+            if (!(is_column() || is_row()) || is_empty())   {
+                throw "The first argument of && (pFDR) must be an Nx1/1xN matrix.";
+            } else if (classes->ObjectClass () != NUMBER || classes->Value() > 1. || (p_value = classes->Value()) < 0.0) {
+                throw _String ("Invalid baseline p-value (must be in (0,1)):") & _String((_String*)classes->toStr());
+            } else {
+                for (unsigned long i=0UL; i<lDim; i++) {
+                    hyFloat p_count = theData[i];
+                    if (p_count < 0.0 || p_count > 1.0) {
+                        throw _String ("Invalid p-value entry in matrix passed to pFDR (must be a positive integer):") & p_count;
+                    }
+                    StoreIfGreater(max_lambda, p_count);
                 }
             }
         }
-    }
 
 
-    if (errMsg.sLength) {
-        HandleApplicationError  (errMsg);
-        return new _Constant (0.0);
-    }
+        _Matrix        lamdbaRange (steps,1,false,true),
+                       pFDRs       (steps,1,false,true);
 
-    _Matrix        lamdbaRange (steps,1,false,true),
-                   pFDRs       (steps,1,false,true);
-
-    hyFloat     anLamdba           = 0.0,
-                   minPFDR          = 5.0,
-                   uberPFDR        = 0.0,
-                   uberPFDRUpperLimit = 0.0,
-                   minMSE             = 1.e100,
-                   aStep            = 1.0/steps;
+        hyFloat     anLamdba           = 0.0,
+                       minPFDR          = 5.0,
+                       uberPFDR        = 0.0,
+                       uberPFDRUpperLimit = 0.0,
+                       minMSE             = 1.e100,
+                       aStep            = 1.0/steps;
 
 
-    k = 0;
-    while (anLamdba<1.0) {
-        lamdbaRange.theData[k] = anLamdba;
+        unsigned long k = 0;
+        while (anLamdba<1.0) {
+            lamdbaRange.theData[k] = anLamdba;
 
-        if ((pFDRs.theData[k] = computePFDR (anLamdba, pVal))<minPFDR) {
-            minPFDR = pFDRs.theData[k];
-        }
-
-        k++;
-        anLamdba += aStep;
-    }
-
-    for (k=0; k<steps; k++) {
-        hyFloat mse    = 0.0;
-        _Matrix    ITpDFR (iterCount,1,false,true);
-
-        for (long it = 0; it < iterCount; it = it+1) {
-            _Matrix         sampledPs (lDim,1,false,true);
-            _SimpleList     sample    (lDim,0,1);
-            sample.PermuteWithReplacement (1);
-
-            for (long el = 0; el < lDim; el++) {
-                sampledPs.theData[el] = theData[sample.lData[el]];
+            if ((pFDRs.theData[k] = computePFDR (anLamdba, p_value))<minPFDR) {
+                minPFDR = pFDRs.theData[k];
             }
 
-            ITpDFR.theData[it] = sampledPs.computePFDR (lamdbaRange.theData[k], pVal);
-
-            mse += (ITpDFR.theData[it]-minPFDR)*(ITpDFR.theData[it]-minPFDR);
+            k++;
+            anLamdba += aStep;
         }
 
-        mse /= iterCount;
+        for (unsigned long k=0UL; k<steps; k++) {
+            hyFloat mse    = 0.0;
+            _Matrix    ITpDFR (iter_count,1,false,true);
 
-        if (mse < minMSE) {
-            minMSE = mse;
-            uberPFDR = pFDRs.theData[k];
-            _Constant  zer (0.0);
-            _Matrix* sorted = (_Matrix*)ITpDFR.SortMatrixOnColumn (&zer);
-            uberPFDRUpperLimit = sorted->theData[((long)(0.95*iterCount))];
-            DeleteObject (sorted);
+            for (unsigned long it = 0; it < iter_count; it++) {
+                _Matrix         sampledPs (lDim,1,false,true);
+                _SimpleList     sample    (lDim,0,1);
+                sample.PermuteWithReplacement (1);
+
+                for (long el = 0; el < lDim; el++) {
+                    sampledPs.theData[el] = theData[sample.lData[el]];
+                }
+
+                ITpDFR.theData[it] = sampledPs.computePFDR (lamdbaRange.theData[k], p_value);
+                mse += (ITpDFR.theData[it]-minPFDR)*(ITpDFR.theData[it]-minPFDR);
+            }
+
+            mse /= iter_count;
+
+            if (mse < minMSE) {
+                minMSE = mse;
+                uberPFDR = pFDRs.theData[k];
+                _Constant  zer (0.0);
+                _Matrix* sorted = (_Matrix*)ITpDFR.SortMatrixOnColumn (&zer);
+                uberPFDRUpperLimit = sorted->theData[((long)(0.95*iter_count))];
+                DeleteObject (sorted);
+            }
         }
+
+        _Matrix * resMx = new _Matrix(2,1,false,true);
+        resMx->theData[0] = uberPFDR;
+        resMx->theData[1] = uberPFDRUpperLimit;
+
+        return resMx;
+    } catch (const _String err) {
+        HandleApplicationError  (err);
+        return new _MathObject;
     }
-
-    _Matrix * resMx = new _Matrix(2,1,false,true);
-    resMx->theData[0] = uberPFDR;
-    resMx->theData[1] = uberPFDRUpperLimit;
-
-    return resMx;
 }
 
 //_____________________________________________________________________________________________
@@ -6246,470 +6198,435 @@ hyFloat      _Matrix::computePFDR (hyFloat lambda, hyFloat gamma)
 
 //_____________________________________________________________________________________________
 
-_PMathObj _Matrix::Random (_PMathObj kind)
-{
-    _String     errMsg;
+_PMathObj _Matrix::Random (_PMathObj kind) {
 
-    long myVDim = GetVDim(),
-         myHDim = GetHDim();
+    try {
+        long columns = GetVDim(),
+             rows    = GetHDim();
 
-    if (kind->ObjectClass() == NUMBER) {
-        bool    resample = (kind->Compute()->Value()>0);
+        if (kind->ObjectClass() == NUMBER) {
+            bool    resample = (kind->Compute()->Value()>0);
 
+            _SimpleList     remapped (columns,0,1);
 
-        _SimpleList     remapped (myVDim,0,1);
-
-        if (resample) {
-            remapped.PermuteWithReplacement(1);
-        } else {
-            remapped.Permute(1);
-        }
-
-
-        if (storageType==1) {   // numeric matrix
-            _Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,true);
-
-            if (!theIndex)
-                for (unsigned long vv = 0; vv<lDim; vv+=myVDim)
-                    for (unsigned long k2=0; k2<remapped.lLength; k2++) {
-                        res->theData[vv+k2] = theData[vv+remapped.lData[k2]];
-                    }
-            else {
-                for (unsigned long vv = 0; vv<myHDim; vv++)
-                    for (unsigned long k=0; k<remapped.lLength; k++) {
-                        long ki = remapped.lData[k];
-                        if ((ki = Hash (vv,ki)) >= 0) {
-                            res->Store (vv,k,theData[ki]);
-                        }
-                    }
+            if (resample) {
+                remapped.PermuteWithReplacement(1);
+            } else {
+                remapped.Permute(1);
             }
-            return res;
-        } else {            // formula matrix
-            if (storageType==2) {
-                _Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,false);
 
-                for (unsigned long vv = 0; vv<myHDim; vv++)
-                    for (unsigned long k=0; k<remapped.lLength; k++) {
-                        long ki = remapped.lData[k];
-                        _Formula * ff = GetFormula (vv,ki);
-                        if (ff) {
-                            res->StoreFormula (vv, k, *ff);
+
+            if (is_numeric()) {   // numeric matrix
+                _Matrix * res = new _Matrix (rows, columns,theIndex != nil,true);
+
+                if (is_dense())
+                    for (unsigned long vv = 0; vv<lDim; vv+=columns)
+                        for (unsigned long k2=0; k2<remapped.lLength; k2++) {
+                            res->theData[vv+k2] = theData[vv+remapped.lData[k2]];
                         }
-                    }
+                else {
+                    for (unsigned long vv = 0; vv< rows; vv++)
+                        for (unsigned long k=0; k<remapped.lLength; k++) {
+                            unsigned long ki = remapped.lData[k];
+                            if ((ki = Hash (vv,ki)) >= 0) {
+                                res->Store (vv,k,theData[ki]);
+                            }
+                        }
+                }
                 return res;
-            }
-        }
-    }
+            } else {            // formula matrix
+                if (is_expression_based()) {
+                    _Matrix * res = new _Matrix (rows, columns,theIndex != nil,false);
 
-    else if (kind->ObjectClass() == ASSOCIATIVE_LIST) {
-        //ReportWarning (_String("_Matrix::Random() with associative list as first argument."));
-
-        // Associative list should contain following arguments:
-        //  "PDF" - string corresponding to p.d.f. ("Gamma", "Normal")
-        //  "ARG0" ... "ARGn" - whatever parameter arguments (matrices) are required for the p.d.f.
-        
-        _AssociativeList    * pdfArgs   = (_AssociativeList *)kind;
-        _List               * keys      = pdfArgs->GetKeys();
-        _String             pdfkey      ("PDF"),
-                            * arg0      = (_String *)(*keys)(0);
-        DeleteObject (keys);
-        if (arg0->Equal(&pdfkey)) {
-            _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
-                        arg ("ARG0");
-                        
-            long        pdfCode = _HY_MatrixRandomValidPDFs.GetValueFromString (pdf);
-            
-             switch (pdfCode) {
-                case _HY_MATRIX_RANDOM_DIRICHLET:
-                    return (_Matrix *) DirichletDeviate();
-                case _HY_MATRIX_RANDOM_GAUSSIAN:
-                    return (_Matrix *) GaussianDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-                case _HY_MATRIX_RANDOM_WISHART:
-                    return (_Matrix *) WishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-                case _HY_MATRIX_RANDOM_INVERSE_WISHART:
-                    return (_Matrix *) InverseWishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-                case _HY_MATRIX_RANDOM_MULTINOMIAL:
-                    return (_Matrix *) MultinomialSample ((_Constant *) pdfArgs->GetByKey (arg, NUMBER));
-                default:
-                    errMsg = _String("String argument passed to Random not a supported PDF: '") & pdf & "'";
-            }
-        } else {
-            errMsg = _String("Expecting \"PDF\" key in associative list argument passed to Random(), received: ") & ((_String *)(*keys)(0))->getStr();
-        }
-
-    } else if (kind->ObjectClass () == STRING) {
-        _String key = *((_FString*)kind->Compute())->theString;
-        if (key == _String("LHS"))
-            // latin hypercube sampling: samples are in ROWS
-        {
-            _Matrix * lhc = new _Matrix (myHDim, myVDim, false, true);
-
-            _SimpleList permutation (myHDim,0,1);
-
-            for (long c = 0; c < myVDim; c++) {
-                permutation.Permute (1);
-                for (long r = 0; r < myHDim; r++) {
-                    lhc->theData[r*myVDim + c] = theData[permutation.lData[r]*myVDim + c];
+                    for (unsigned long vv = 0UL; vv< rows; vv++)
+                        for (unsigned long k=0UL; k<remapped.lLength; k++) {
+                            _Formula * ff = GetFormula (vv,remapped.get (k));
+                            if (ff) {
+                                res->StoreFormula (vv, k, *ff);
+                            }
+                        }
+                    return res;
                 }
             }
-
-            return lhc;
         }
-        errMsg = _String ("Invalid string argument passed to matrix Random :") & key;
-    } else {
-        errMsg = _String ("Invalid argument passes to matrix Random (should be a number, an associative list or a string):") & _String((_String*)kind->toStr());
-    }
 
-    // error handling
-    HandleApplicationError (errMsg);
+        else if (kind->ObjectClass() == ASSOCIATIVE_LIST) {
+            //ReportWarning (_String("_Matrix::Random() with associative list as first argument."));
+
+            // Associative list should contain following arguments:
+            //  "PDF" - string corresponding to p.d.f. ("Gamma", "Normal")
+            //  "ARG0" ... "ARGn" - whatever parameter arguments (matrices) are required for the p.d.f.
+            
+            _AssociativeList    * pdfArgs   = (_AssociativeList *)kind;
+            _List               * keys      = pdfArgs->GetKeys();
+            _String             pdfkey      ("PDF"),
+                                * arg0      = (_String *)keys->GetItem(0L);
+            DeleteObject (keys);
+            if (arg0->Equal(&pdfkey)) {
+                _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
+                            arg ("ARG0");
+                
+                long        pdfCode = _HY_MatrixRandomValidPDFs.GetValueFromString (pdf);
+                
+                 switch (pdfCode) {
+                    case _HY_MATRIX_RANDOM_DIRICHLET:
+                        return (_Matrix *) DirichletDeviate();
+                    case _HY_MATRIX_RANDOM_GAUSSIAN:
+                        return (_Matrix *) GaussianDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                    case _HY_MATRIX_RANDOM_WISHART:
+                        return (_Matrix *) WishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                    case _HY_MATRIX_RANDOM_INVERSE_WISHART:
+                        return (_Matrix *) InverseWishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                    case _HY_MATRIX_RANDOM_MULTINOMIAL:
+                        return (_Matrix *) MultinomialSample ((_Constant *) pdfArgs->GetByKey (arg, NUMBER));
+                    default:
+                        throw _String("String argument passed to Random not a supported PDF: ") & pdf.Enquote();
+                }
+            } else {
+                throw _String("Expecting 'PDF' key in associative list argument passed to Random(), received: ") & *arg0;
+            }
+
+        } else if (kind->ObjectClass () == STRING) {
+            _String key = ((_FString*)kind->Compute())->get_str();
+            if (key == _String("LHS")) {
+                // latin hypercube sampling: samples are in ROWS
+                _Matrix * lhc = new _Matrix ( rows, columns, false, true);
+
+                _SimpleList permutation ( rows ,0,1);
+
+                for (unsigned long c = 0; c < columns; c++) {
+                    permutation.Permute (1);
+                    for (long r = 0; r < rows ; r++) {
+                        lhc->set(r,c) = get (permutation.get(r),c);
+                    }
+                }
+
+                return lhc;
+            }
+            throw _String ("Invalid string argument passed to matrix Random :") & key;
+        } else {
+            throw _String ("Invalid argument passes to matrix Random (should be a number, an associative list or a string):") & _String((_String*)kind->toStr());
+        }
+    } catch (_String const err) {
+        HandleApplicationError (err);
+    }
     return new _Matrix (1,1);
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::K_Means (_PMathObj classes)
-{
-    _String         errMsg;
-    _Matrix     *   arg;
-    long            clusterCount,
-                    iterCount,
-                    dataPoints = 0;
+_PMathObj       _Matrix::K_Means (_PMathObj classes) {
+    // K-means clustering on scalar data
+    /*
+     
+     this    : Nx2 matrix {{value1, count1}{value2, count 2}...}}
+     classes : 2x1 matrix {{cluster count}{number of random restarts}}
+     
+     reutn   : 2 x Max (cluster count, 2)  {{cluster mean 1, cluster mean 2, ... , cluster mean N}{total L^2 error, how many restarts hit the min}}
+     
+     */
+    
+    // TODO: 20171026 SLKP revised. check correctness
+    
+     try {
+        _Matrix     *   arg;
+        long            cluster_count,
+                        iter_count,
+                        sample_count = 0L;
 
-    if (theIndex) {
-        CheckIfSparseEnough (true);
-    }
+        if (theIndex) {
+            CheckIfSparseEnough (true);
+        }
 
-    if (storageType!=1) {
-        errMsg = "Only numeric matrices can be passed to <= (K-means)";
-    } else {
-        if (GetVDim () != 2) {
-            errMsg = "The first argument of <= (K-means) must be an Nx2 matrix, with samples in the first columns, and counts in the 2nd.";
-        } else if (classes->ObjectClass () != MATRIX) {
-            errMsg = _String ("Invalid number of clusters is call to K-means (must be >=1):") & _String((_String*)classes->toStr());
+        if (!is_numeric()) {
+            throw "Only numeric matrices can be passed to <= (K-means)";
         } else {
-            arg = (_Matrix*)classes->Compute();
-            if (arg->GetVDim () != 1 || arg->GetHDim () != 2 || (clusterCount=arg->theData[0]) < 1 || (iterCount = arg->theData[1]) < 1) {
-                errMsg = _String ("Invalid second argument is call to K-means (must be a 2x1 matrix of positive integers):") & _String((_String*)classes->toStr());
+            if (GetVDim () != 2) {
+                throw "The first argument of <= (K-means) must be an Nx2 matrix, with samples in the first column, and counts in the 2nd.";
+            } else if (classes->ObjectClass () != MATRIX) {
+                throw _String ("Invalid number of clusters is call to K-means (must be >=1):") & _String((_String*)classes->toStr());
             } else {
-                for (long i=1; i<lDim; i+=2) {
-                    long pCount = theData[i];
-                    if (pCount <= 0) {
-                        errMsg = _String ("Invalid count entry in matrix passed to K-means (must be a positive integer):");
-                    }
-                    dataPoints += pCount;
-                }
-            }
-        }
-    }
-
-
-    if (errMsg.sLength) {
-        HandleApplicationError  (errMsg);
-        return new _Matrix (1,1);
-    }
-
-    _Matrix * res = new _Matrix (2, clusterCount, false, true);
-
-    if (clusterCount == 1) {
-        hyFloat sampleMean    = 0.,
-                   errorEstimate = 0.;
-
-        for (long c1=0, c2=1; c1 < 2*hDim; c1+=2, c2+=2) {
-            sampleMean +=  theData[c1] * theData[c2];
-        }
-
-        sampleMean /= dataPoints;
-
-        {
-            for (long c1=0, c2=1; c1 < 2*hDim; c1+=2, c2+=2) {
-                hyFloat locErr = theData[c1] - sampleMean;
-                //if (locErr > 0.0)
-                errorEstimate += locErr*locErr*theData[c2];
-                //else
-                //errorEstimate -= locErr*theData[c2];
-            }
-        }
-
-        res->theData[0] = sampleMean;
-        res->theData[1] = errorEstimate;
-    } else {
-        _Matrix     clusterBreaks       (clusterCount,1,false,true),
-                    lastClusterBreaks   (clusterCount,1,false,true),
-                    clusterMeans        (clusterCount,2,false,true);
-
-        hyFloat  minError    = 1.e100;
-        long        hitMinError,
-                    toggle      = 0;
-
-        _SimpleList randomMapper    ((unsigned long)dataPoints,0,0),
-                    allowedPoints (hDim+1,1,0);
-
-
-        for (long c1 = 0; c1 < hDim; c1++) {
-            hitMinError = theData[c1*2+1];
-
-            for (long c2 = 0; c2 < hitMinError; c2++) {
-                randomMapper.lData[toggle+c2] = c1;
-            }
-
-            toggle += hitMinError;
-
-        }
-
-        allowedPoints.lData[hDim] = 0;
-
-        hitMinError = 0;
-        toggle      = 0;
-
-        for (long sampleCount = 0; sampleCount < iterCount; sampleCount ++) {
-            _SimpleList       chosenMeans (clusterCount,0,0);
-
-            for (long cc = 0; cc < clusterCount; cc = cc+1) {
-                long sfrom = hDim;
-
-                while (allowedPoints.lData[sfrom] == 0) {
-                    sfrom = randomMapper.lData[(long)(genrand_real2()*dataPoints)];
-                }
-
-                chosenMeans.lData[cc] = sfrom;
-                allowedPoints.lData[sfrom] = 0;
-            }
-
-            chosenMeans.Sort ();
-            {
-                for (long cc = 0; cc < clusterCount; cc = cc+1) {
-                    clusterMeans.theData[toggle+cc] = theData[2*chosenMeans.lData[cc]];
-                    allowedPoints.lData[chosenMeans.lData[cc]] = 1;
-                }
-            }
-
-            hyFloat            lastErrorEstimate = 1.e100,
-                                  errorEstimate = 0.;
-
-            for (long cIters = 0; cIters < 250; cIters = cIters + 1) {
-                if (fabs (lastErrorEstimate-errorEstimate) > 0.0001 || (clusterBreaks-lastClusterBreaks).MaxElement() > 0.0001 ) {
-                    lastClusterBreaks = clusterBreaks;
-                    lastErrorEstimate = errorEstimate;
-
-                    {
-                        long    breakPoint = 0,
-                                k = 0,
-                                kp1 = 1;
-
-                        for (; k<clusterCount-1 && breakPoint < hDim; k=k+1, kp1++) {
-                            hyFloat cm4 = clusterMeans.theData[toggle+k],
-                                       cm2 = clusterMeans.theData[toggle+kp1],
-                                       cm3 = theData[2*breakPoint];
-
-                            while (fabs(cm3-cm4)<fabs(cm3-cm2)) {
-                                breakPoint ++;
-                                if (breakPoint == hDim) {
-                                    break;
-                                }
-                                cm3 = theData[2*breakPoint];
-                            }
-                            clusterBreaks.theData[k] = breakPoint;
-                        }
-                        clusterBreaks.theData[k] = hDim;
-                    }
-
-                    errorEstimate = 0.0;
-
-                    long        currentStart = 0;
-
-                    for (long cm1 = 0; cm1 < clusterCount && currentStart < hDim-1; cm1 = cm1+1) {
-                        hyFloat  cm2 = 0.;
-
-
-                        long        k,
-                                    cm4 = 0;
-
-                        for (k=currentStart; k<clusterBreaks.theData[cm1]; k=k+1) {
-                            cm2 += theData[k*2] * theData[k*2+1];
-                            cm4 += theData[k*2+1];
-                        }
-
-                        long  cm3 = k-currentStart;
-
-                        if (cm3>0) {
-                            cm2 /= cm4;
-
-                            clusterMeans.theData[cm1+toggle] = cm2;
-
-                            for (long k=currentStart; k<clusterBreaks.theData[cm1]; k=k+1) {
-                                hyFloat locError = theData[2*k] - cm2;
-                                //if (locError < 0.0)
-                                //  errorEstimate -= locError*theData[2*k+1];
-                                //else
-                                errorEstimate += locError*locError*theData[2*k+1];
-                            }
-
-                            currentStart = clusterBreaks.theData[cm1];
-                        }
-                    }
+                arg = (_Matrix*)classes->Compute();
+                if (!arg->check_dimension (1,2) || (cluster_count=arg->theData[0]) < 1 || (iter_count = arg->theData[1]) < 1) {
+                    throw _String ("Invalid second argument is call to K-means (must be a 2x1 matrix of positive integers specifying cluster_count and maximum number of random restarts. Had ") & _String((_String*)classes->toStr()).Enquote();
                 } else {
-                    break;
+                    for (unsigned long i=1UL; i<lDim; i+=2UL) {
+                        long pCount = theData[i];
+                        if (pCount <= 0L) {
+                             throw _String ("Invalid count entry in matrix passed to K-means (must be a positive integer):") & pCount;
+                        }
+                        sample_count += pCount;
+                    }
+                }
+            }
+        }
+        
+        if (cluster_count > sample_count) {
+            throw _String ("More clusters requested than available data points");
+        }
+
+        _Matrix * res = new _Matrix (2, cluster_count, false, true);
+
+        if (cluster_count == 1L) {
+            hyFloat sampleMean    = 0.,
+                    errorEstimate = 0.;
+
+            for (unsigned long c1=0UL, c2=1UL; c1 < 2*hDim; c1+=2UL, c2+=2UL) {
+                sampleMean +=  theData[c1] * theData[c2];
+            }
+
+            sampleMean /= sample_count;
+
+            for (unsigned long c1=0UL, c2=1UL; c1 < 2*hDim; c1+=2UL, c2+=2UL) {
+                hyFloat locErr = theData[c1] - sampleMean;
+                errorEstimate += locErr*locErr*theData[c2];
+            }
+
+            res->theData[0] = sampleMean;
+            res->theData[1] = errorEstimate;
+        } else {
+
+            hyFloat  minError    = 1.e100;
+            
+
+            _SimpleList full_copy_list    ((unsigned long)sample_count,0,0);
+
+            for (unsigned long c1 = 0UL, overall = 0UL; c1 < hDim; c1++) {
+                unsigned long copies = get (c1, 1);
+
+                for (unsigned long c2 = 0; c2 < copies; c2++, overall++) {
+                    full_copy_list.lData[overall] = c1;
                 }
             }
 
-            if (minError == 0.0 || fabs((minError-errorEstimate)/minError) < 0.001) {
-                hitMinError ++;
-            } else if (errorEstimate < minError) {
-                hitMinError = 1;
-                toggle      = (toggle+clusterCount)%(2*clusterCount);
-                minError    = errorEstimate;
-            }
-        }
 
-        toggle  = (toggle+clusterCount)%(2*clusterCount);
-        for (long k2 = 0; k2 < clusterCount; k2++) {
-            res->theData[k2] = clusterMeans.theData[toggle+k2];
+            long        hit_min_error;
+            _Matrix     best_cluster_means;
+
+            for (unsigned long sampleCount = 0UL; sampleCount < iter_count; sampleCount ++) {
+                // choose N random cluster centers to start with
+                _SimpleList       chosen_means        = full_copy_list.Sample(cluster_count),
+                                  cluster_assignments (hDim, 0, 0);
+                
+                _Matrix           cluster_means        (cluster_count,2,false,true);
+                
+                
+
+                for (long cc = 0; cc < cluster_count; cc = cc+1) {
+                    cluster_means.set (cc, 0) = get(chosen_means.get(cc), 0);
+                }
+
+                hyFloat            last_error_estimate = 1.e100,
+                                   error_estimate      = 0.;
+                
+                
+                for (unsigned long cIters = 0UL; cIters < hDim * 5; cIters ++) {
+                    
+                        bool moved = false;
+                        // assign each point to the nearest cluster centroid
+                        for (unsigned long data_point = 0UL; data_point < hDim; data_point++) {
+                            
+                            unsigned long best_cluster = cluster_assignments.get (data_point);
+                            
+                            hyFloat         this_value              = get  (data_point, 0),
+                                            current_min_distance    = fabs (this_value-cluster_means.get (cluster_assignments.get (data_point),0));
+                            
+                            for (unsigned long cluster_id = 0UL; cluster_id < cluster_count; cluster_id++) {
+                                if (StoreIfLess (current_min_distance, fabs (this_value-cluster_means.get (cluster_id,0)))) {
+                                    best_cluster = cluster_id;
+                                }
+                            }
+                                    
+                            if (best_cluster != cluster_assignments.get (data_point)) {
+                                moved = true;
+                                cluster_assignments[data_point] = best_cluster;
+                            }
+                        }
+                    
+                        if (moved) {
+                            for (long cc = 0; cc < cluster_count; cc = cc+1) {
+                                cluster_means.set (cc,0) = 0.;
+                                cluster_means.set (cc,1) = 0.;
+                            }
+                            for (unsigned long data_point = 0UL; data_point < hDim; data_point++) {
+                                cluster_means.set (cluster_assignments.get (data_point), 0) += get (data_point,0);
+                                cluster_means.set (cluster_assignments.get (data_point), 1) += get (data_point,1);
+                           }
+                           for (long cc = 0; cc < cluster_count; cc = cc+1) {
+                               if (cluster_means.get (cc, 1) != .0) {
+                                   cluster_means.set (cc,0) /= cluster_means.get (cc,1);
+                               }
+                           }
+                        } else {
+                            break;
+                        }
+                        
+                        
+                }
+
+                if (minError == 0.0 || fabs((minError-error_estimate)/minError) < 0.001) {
+                    hit_min_error ++;
+                } else if (error_estimate < minError) {
+                    hit_min_error = 1;
+                    minError    = error_estimate;
+                    best_cluster_means = cluster_means;
+                }
+            }
+
+              for (long k2 = 0; k2 < cluster_count; k2++) {
+                res->theData[k2] = best_cluster_means.get (k2, 0);
+            }
+            res->theData[cluster_count]   = minError;
+            res->theData[cluster_count+1] = hit_min_error;
         }
-        res->theData[clusterCount]   = minError;
-        res->theData[clusterCount+1] = hitMinError;
+    } catch (_String const err) {
+        HandleApplicationError (err);
     }
 
-    return res;
+   return new _Matrix;
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::ProfileMeanFit (_PMathObj classes)
-{
-    _String         errMsg;
-    _Matrix     *   arg;
-    long            weightClasses;
+_PMathObj       _Matrix::ProfileMeanFit (_PMathObj classes) {
 
-    hyFloat      dataPoints = 0.;
+    // Profile mean fit
+    /*
+     
+     TODO: 20171027 SLKP NEED TO REVIEW WHAT THIS DOES AND IF STILL NEEDED
+     
+     */
+    
+    static const _String kProfileMeanVarMult ("PROFILE_MEAN_VAR_MULT");
 
-    if (theIndex) {
-        CheckIfSparseEnough (true);
-    }
+    try {
+        _Matrix     *   arg;
+        long            weight_classes;
 
-    if (storageType!=1) {
-        errMsg = "Only numeric matrices can be passed to <= (K-means)";
-    } else {
-        if (GetHDim () != 2) {
-            errMsg = "The first argument of ProfileMeanFit must be an 2xN matrix, with samples in the first row, and counts in the 2nd.";
-        } else if (classes->ObjectClass () != MATRIX) {
-            errMsg = _String ("Invalid second argument for ProfileMeanFit (must be a column vector):") & _String((_String*)classes->toStr());
-        } else {
-            arg = (_Matrix*)classes->Compute();
-            if (arg->GetVDim () != 1) {
-                errMsg = _String ("Invalid second argument is call to ProfileMeanFit (must be a column vector):") & _String((_String*)classes->toStr());
-            } else {
-                weightClasses = arg->GetHDim ();
+        hyFloat         data_points = 0.;
 
-                for (long i=vDim; i<lDim; i++) {
-                    long pCount = theData[i];
-                    if (pCount <= 0) {
-                        errMsg = _String ("Invalid count entry in matrix passed to ProfileMeanFit (must be a positive integer):");
-                    }
-                    dataPoints += pCount;
-                }
-            }
+        if (theIndex) {
+            CheckIfSparseEnough (true);
         }
-    }
 
-
-    if (errMsg.sLength) {
-        HandleApplicationError  (errMsg);
-        return new _Matrix (1,1);
-    }
-
-    _Matrix * res           = new _Matrix (4, weightClasses, false, true);
-    //_SimpleList               splitRuns (weightClasses,0,0);
-
-    hyFloat      runningSum      = 0.,
-                    targetSum        = arg->theData[0],
-                    valueSum      = 0.,
-                    logLikelihood   = 0.,
-                    varMult;
-
-    checkParameter  (PROFILE_MEAN_VAR_MULT, varMult, 1.);
-
-
-
-    long            currentIndex    = 0,
-                    currentSlider = 0,
-                    runningSize     = 1,
-                    currentSpan      = theData[vDim+currentIndex],
-                    runningOffset = 0;
-
-    while (currentIndex < vDim - 1) {
-        runningSum = runningSum + theData[vDim+currentIndex]/dataPoints;
-
-        if ((runningSum >= targetSum)||(vDim-currentIndex <= weightClasses - currentSlider)) {
-            res->theData[currentSlider]                 = currentIndex;
-            res->theData[weightClasses+currentSlider]   = runningSize;
-            res->theData[weightClasses*2+currentSlider] =
-                (theData[currentIndex]*theData[vDim+currentIndex]+valueSum)/(currentSpan+theData[vDim+currentIndex]);
-
-            //splitRuns.lData[currentSlider] = currentSpan;
-            runningSize   = 1;
-            valueSum      = 0.;
-            currentSlider ++;
-            targetSum     = targetSum + arg->theData[currentSlider];
-            currentSpan   = 0;
+        if (!is_numeric()) {
+            throw "Only numeric matrices are supported";
         } else {
-            valueSum    +=  theData[currentIndex]*theData[vDim+currentIndex];
-            runningSize ++;
-            currentSpan +=  theData[vDim+currentIndex];
-        }
-        currentIndex++;
-    }
-
-    currentSpan += theData[vDim+currentIndex];
-    valueSum    += theData[currentIndex]*theData[vDim+currentIndex];
-
-    res->theData[currentSlider]                 = currentIndex;
-    res->theData[weightClasses+currentSlider]   = runningSize;
-    res->theData[2*weightClasses+currentSlider] = valueSum/currentSpan;
-    //splitRuns.lData[currentSlider] = currentSpan;
-
-    currentSlider   = 0;
-    runningOffset   = 0;
-
-    _Matrix          REWEIGHTED_MATRIX (vDim,1,false,true);
-
-    while (currentSlider < weightClasses) {
-        long        classSize   = res->theData[weightClasses+currentSlider];
-        hyFloat  classWeight = arg->theData[currentSlider];//splitRuns.lData[currentSlider]/dataPoints;
-
-        if (classWeight > 0.0) {
-            if (classSize == 1) {
-                logLikelihood += theData[vDim+runningOffset] * log (classWeight);
+            if (GetHDim () != 2) {
+                throw "The first argument of ProfileMeanFit must be an 2xN matrix, with samples in the first row, and counts in the 2nd.";
+            } else if (classes->ObjectClass () != MATRIX) {
+                throw  _String("Invalid second argument: must be a matrix. ") & _String((_String*)classes->toStr());
             } else {
-                hyFloat      classMean       = res->theData[2*weightClasses+currentSlider],
-                                //classNorm         = 0.,
-                                classVar        = (fabs(classMean)>0.05)?0.5/(varMult*fabs(classMean)):0.5/(varMult*0.025);
+                arg = (_Matrix*)classes->Compute();
+                if (!arg->is_column() || arg->is_empty()) {
+                    throw _String ("Invalid second argument: must be a column vector. ") & _String((_String*)classes->toStr());
+                } else {
+                    weight_classes = arg->GetHDim ();
 
-                currentIndex    = runningOffset+classSize;
-
-                for (long   reslider = runningOffset; reslider < currentIndex; reslider = reslider+1) {
-                    targetSum = theData[reslider]-classMean;
-                    targetSum = -targetSum*targetSum*classVar;
-                    REWEIGHTED_MATRIX.theData[reslider] = targetSum;
-                    //classNorm += exp(targetSum);
-                }
-
-                classWeight = log (classWeight);
-                {
-                    for (long reslider = runningOffset; reslider < currentIndex; reslider = reslider+1) {
-                        logLikelihood += (REWEIGHTED_MATRIX.theData[reslider]+classWeight)*theData[vDim+reslider];
+                    for (long i=0; i<hDim; i++) {
+                        long p_count = get (1,i);
+                        if (p_count <= 0.) {
+                            throw _String("Invalid count entry in matrix passed to ProfileMeanFit (must be a positive integer): row ") & i & ", value " & p_count ;
+                        }
+                        data_points += p_count;
                     }
                 }
             }
-        } else {
-            if (classSize>0) {
-                logLikelihood = -1e100;
-                break;
-            }
         }
-        runningOffset += classSize;
-        currentSlider++;
-    }
 
-    res->theData[3*weightClasses] = logLikelihood;
-    return res;
+
+        _Matrix * res           = new _Matrix (4, weight_classes, false, true);
+
+        hyFloat      runningSum      = 0.,
+                     targetSum       = arg->theData[0],
+                     valueSum        = 0.,
+                     logLikelihood   = 0.,
+                     var_mult        = hy_env::EnvVariableGetNumber(kProfileMeanVarMult, 1.);
+
+        long            currentIndex    = 0,
+                        currentSlider = 0,
+                        runningSize     = 1,
+                        currentSpan      = theData[vDim+currentIndex],
+                        runningOffset = 0;
+
+        while (currentIndex < vDim - 1) {
+            runningSum = runningSum + theData[vDim+currentIndex]/data_points;
+
+            if ((runningSum >= targetSum)||(vDim-currentIndex <= weight_classes - currentSlider)) {
+                res->theData[currentSlider]                 = currentIndex;
+                res->theData[weight_classes+currentSlider]   = runningSize;
+                res->theData[weight_classes*2+currentSlider] =
+                    (theData[currentIndex]*theData[vDim+currentIndex]+valueSum)/(currentSpan+theData[vDim+currentIndex]);
+
+                //splitRuns.lData[currentSlider] = currentSpan;
+                runningSize   = 1;
+                valueSum      = 0.;
+                currentSlider ++;
+                targetSum     = targetSum + arg->theData[currentSlider];
+                currentSpan   = 0;
+            } else {
+                valueSum    +=  theData[currentIndex]*theData[vDim+currentIndex];
+                runningSize ++;
+                currentSpan +=  theData[vDim+currentIndex];
+            }
+            currentIndex++;
+        }
+
+        currentSpan += theData[vDim+currentIndex];
+        valueSum    += theData[currentIndex]*theData[vDim+currentIndex];
+
+        res->theData[currentSlider]                 = currentIndex;
+        res->theData[weight_classes+currentSlider]   = runningSize;
+        res->theData[2*weight_classes+currentSlider] = valueSum/currentSpan;
+        //splitRuns.lData[currentSlider] = currentSpan;
+
+        currentSlider   = 0;
+        runningOffset   = 0;
+
+        _Matrix          REWEIGHTED_MATRIX (vDim,1,false,true);
+
+        while (currentSlider < weight_classes) {
+            long        classSize   = res->theData[weight_classes+currentSlider];
+            hyFloat  classWeight = arg->theData[currentSlider];//splitRuns.lData[currentSlider]/dataPoints;
+
+            if (classWeight > 0.0) {
+                if (classSize == 1) {
+                    logLikelihood += theData[vDim+runningOffset] * log (classWeight);
+                } else {
+                    hyFloat      classMean       = res->theData[2*weight_classes+currentSlider],
+                                    //classNorm         = 0.,
+                                    classVar        = (fabs(classMean)>0.05)?0.5/(var_mult*fabs(classMean)):0.5/(var_mult*0.025);
+
+                    currentIndex    = runningOffset+classSize;
+
+                    for (long   reslider = runningOffset; reslider < currentIndex; reslider = reslider+1) {
+                        targetSum = theData[reslider]-classMean;
+                        targetSum = -targetSum*targetSum*classVar;
+                        REWEIGHTED_MATRIX.theData[reslider] = targetSum;
+                        //classNorm += exp(targetSum);
+                    }
+
+                    classWeight = log (classWeight);
+                    {
+                        for (long reslider = runningOffset; reslider < currentIndex; reslider = reslider+1) {
+                            logLikelihood += (REWEIGHTED_MATRIX.theData[reslider]+classWeight)*theData[vDim+reslider];
+                        }
+                    }
+                }
+            } else {
+                if (classSize>0) {
+                    logLikelihood = -1e100;
+                    break;
+                }
+            }
+            runningOffset += classSize;
+            currentSlider++;
+        }
+
+        res->theData[3*weight_classes] = logLikelihood;
+        return res;
+    } catch (_String const err) {
+        HandleApplicationError (err);
+    }
+    return new _Matrix;
 }
 
 //_____________________________________________________________________________________________
@@ -6726,7 +6643,7 @@ _PMathObj       _Matrix::AddObj (_PMathObj mp)
 {
     if (_Matrix::ObjectClass()!=mp->ObjectClass()) {
         if (mp->ObjectClass () == STRING) {
-            _Matrix * convMatrix = new _Matrix (*((_FString*)mp)->theString),
+            _Matrix * convMatrix = new _Matrix (((_FString*)mp)->get_str()),
             * res;
             res = (_Matrix*)AddObj (convMatrix);
             DeleteObject (convMatrix);
@@ -7080,270 +6997,161 @@ _Matrix     _Matrix::operator - (_Matrix& m)
     return result;
 }
 
+//_________________________________________________________
+void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned long padding) {
+    
+    StringFileWrapper res (string, file);
+   _String padder (" ", padding);
+    
+    static const _String kUseJSONForMatrix ("USE_JSON_FOR_MATRIX");
+    
+    bool is_numeric_mx = is_numeric ();
+    bool directly_printable  = is_numeric_mx || IsAStringMatrix ();
+    
+    if (directly_printable) {
+        
+        long digs         = -1L;
+        
+        bool doJSON = hy_env::EnvVariableTrue(kUseJSONForMatrix);
+        
+        char openBracket  = doJSON ? '[' : '{',
+             closeBracket = doJSON ? ']' : '}';
+        
+        if (is_numeric_mx) {
+            digs = MIN (print_digit_specification = hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits), 15);
+        }
+        res << padder << openBracket << kStringFileWrapperNewLine;
 
+        if (is_numeric_mx) {
+            
+            _String formatStr = _String("%") &_String(digs+6)&'.'&_String(digs)&'g';
+            
+             char  number_buffer [256];
+ 
+            for (long i = 0L; i<hDim; i++) {
+                if (i) {
+                    res << padder;
+                }
+                res << openBracket;
+
+                for (long j = 0L; j<vDim; j++) {
+                    if (j) {
+                        res << ", ";
+                    }
+                    parameterToCharBuffer ((*this)(i,j), number_buffer, 255, doJSON);
+                    res << number_buffer;
+                }
+                res << closeBracket << kStringFileWrapperNewLine;
+             }
+        } else {
+            for (long i = 0L; i<hDim; i++) {
+                if (i) {
+                    res << padder;
+                }
+                res << openBracket;
+
+                for (long j = 0L; j<vDim; j++) {
+                    if (j) {
+                        res << ", ";
+                    }
+                    res << '"';
+                    
+                    _Formula * f = GetFormula (i,j);
+                    if (f) {
+                        _PMathObj fv = f->Compute();
+                        if (fv) {
+                            res << ((_FString*)fv)->get_str();
+                        }
+                    }
+                    res << '"';
+
+                }
+                res << closeBracket << (doJSON ? ',' : ' ');
+            }
+        }
+        res << padder << closeBracket;
+    } else if (storageType==_POLYNOMIAL_TYPE) {
+        ANALYTIC_COMPUTATION_FLAG  = hy_env::EnvVariableTrue (ANAL_COMP_FLAG);
+        if (!ANALYTIC_COMPUTATION_FLAG) {
+            ((_Matrix*)Compute())->internal_to_str (string, file, padding);
+            return;
+        }
+        for (long i = 0; i<hDim; i++) {
+            res << "\n[";
+            for (long j = 0; j<vDim; j++) {
+                long p = Hash (i,j);
+                if (j) {
+                    res << ",";
+                }
+                if (p>=0) {
+                    _String *sp = (_String*) GetMatrixObject (p)->toStr();
+                     res << *sp;
+                     DeleteObject (sp);
+                } else {
+                    res << "0.";
+                }
+            }
+            res << "]";
+        }
+    } else {
+        _Matrix* eval = (_Matrix*)(storageType==3?EvaluateSimple():Evaluate(false));
+        eval->internal_to_str(string, file, padding);
+        DeleteObject (eval);
+    }
+}
+//_________________________________________________________
+void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
+    internal_to_str(nil, dest, padding);
+}
 //_____________________________________________________________________________________________
 
 BaseRef _Matrix::toStr(unsigned long padding) {
-  
-  _String *result  = new _String (2048L,true),
-          padder  (" ", padding);
-  
-  print_digit_specification = hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
-  
-  char number_buffer [256];
-  
-  //if (vDim<500)
-  {
-    if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
-      bool printStrings = storageType != 1;
- 
-      hyFloat useJSON = 0.0;
-       checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
-      
-      bool doJSON = !CheckEqual(useJSON, 0.0);
-      
-      char openBracket  = doJSON ? '[' : '{',
-      closeBracket = doJSON ? ']' : '}';
-      
-      //(*result) << padder;
-      (*result) << openBracket << '\n';
-    
-      for (long i = 0L; i<hDim; i++) {
-         (*result)<<padder <<openBracket;
-        
-  
-         for (long j = 0L; j<vDim; j++) {
-           if (j) {
-             (*result)<<", ";
-           }
-           
-           if (printStrings) {
-            (*result) << '"';
-            _Formula * f = GetFormula (i,j);
-            _PMathObj fv;
-            if (f && (fv=f->Compute())) {
-              if (fv->ObjectClass() == STRING) {
-                (*result) << ((_FString*)fv)->theString;
-              } else {
-                (*result) << (_String*)fv->toStr(padding);
-              }
-            }
-            (*result) << '"';
-          } else {
-            parameterToCharBuffer ((*this)(i,j), number_buffer, 255, doJSON);
-            (*result)<<number_buffer;
-          }
-        }
-        (*result)<<closeBracket;
-        if (i != hDim -1) {
-          if (doJSON) {
-            (*result) << ',';
-          }
-          (*result)<<'\n';
-        }
-      }
-      (*result) <<'\n'
-                <<padder
-                <<closeBracket;
- 
-    } else if (storageType == 0) {
-      checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
-      if (!ANALYTIC_COMPUTATION_FLAG) {
-        result->Finalize(); DeleteObject (result);
-        return Compute()->toStr(padding);
-      }
-      
-      for (long i = 0; i<hDim; i++) {
-        (*result)<<'\n' <<'[';
-        for (long j = 0; j<vDim; j++) {
-          long p = Hash (i,j);
-          if (GetMatrixObject(p)) {
-            if (p>=0) {
-              result->AppendNewInstance((_String*) GetMatrixObject (p)->toStr());
-              if (j<vDim-1) {
-                (*result)<<',';
-              }
-              (*result)<<' ';
-              continue;
-            }
-          }
-          (*result)<<'0';
-        }
-        (*result)<<']';
-      }
-      (*result)<<'\n' << '\n';
-    } else {
-      result->Finalize(); DeleteObject (result);
-      return ComputeNumeric()->toStr(padding);
-    }
-  }
-  result->Finalize();
-  return result;
+    _StringBuffer * serialized = new _StringBuffer (2048L);
+    internal_to_str (serialized, nil, padding);
+    return serialized;
 }
 
 //_____________________________________________________________________________________________
 
-void     _Matrix::Serialize (_String& res, _String& myID)
-{
-    if (storageType) {
+void     _Matrix::Serialize (_StringBuffer& res, _String& myID) {
+    if (storageType != _POLYNOMIAL_TYPE) {
         res << '\n';
         res <<  myID;
-        if (storageType == 1) {
-            _String * mStr = (_String*)toStr();
+        if (is_numeric()) {
             res << '=';
-            res << *mStr;
+            res.AppendNewInstance((_String*)toStr());
             res << ';';
-            DeleteObject (mStr);
-        } else if (storageType == 2) {
-            _String mHeader = _String ("={") & hDim & ',' & vDim & "};\n";
-            res << mHeader;
-            for (long h=0; h<hDim; h++)
-                for (long v=0; v<vDim; v++) {
+        } else if (is_expression_based()) {
+            res << _String ("={") & hDim & ',' & vDim & "};\n";
+            for (long h=0L; h<hDim; h++) {
+                for (long v=0L; v<vDim; v++) {
                     _Formula *theCell = GetFormula (h,v);
-                    if (theCell&&(!theCell->IsEmpty())) {
-                        _String * fStr = (_String*)theCell->toStr();
-                        res << myID;
-                        res << '[';
-                        res << _String(h);
-                        res << "][";
-                        res << _String(v);
-                        res << "]:=";
-                        res << *fStr;
+                    if (theCell&& !theCell->IsEmpty()) {
+                        res << myID << '[' << _String(h) << "][" << _String(v) << "]:=";
+                        res.AppendNewInstance((_String*)theCell->toStr(kFormulaStringConversionNormal));
                         res << ";\n";
-                        DeleteObject (fStr);
                     }
                 }
-        }
-    }
-}
-
-//_________________________________________________________
-void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
-  
-  _String padder (" ", padding);
-  
-  if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
-    bool printStrings = storageType != 1;
-    long digs         = -1;
-    
-    char number_buffer [256];
-    hyFloat useJSON = 0.0;
-    checkParameter (USE_JSON_FOR_MATRIX, useJSON, 0.0);
-    
-    bool doJSON = !CheckEqual(useJSON, 0.0);
-    
-    char openBracket  = doJSON ? '[' : '{',
-         closeBracket = doJSON ? ']' : '}';
-    
-    if (!printStrings) {
-      digs = print_digit_specification = hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
-    }
-    
-    if (!printStrings && digs != -1) {
-      _String formatStr;
-    
-      if (digs<=0L || digs>15L) {
-        digs = 8L;
-      }
-      formatStr = "%";
-      formatStr = formatStr&_String(digs+6)&'.'&_String(digs)&'g';
-      const char *fs = formatStr.getStr();
-      fprintf (dest, "%c\n", openBracket);
-      for (long i = 0L; i<hDim; i++) {
-        if (i) {
-          fprintf (dest, "%s", padder.sData);
-        }
-        fprintf (dest, "%c", openBracket);
-        for (long j = 0L; j<vDim; j++) {
-          if (j) {
-            fprintf (dest, ", ");
-          }
-          fprintf(dest, fs, (*this)(i,j));
-          if (j%100L == 0L) {
-            fflush(dest);
-          }
-        }
-        fprintf (dest, "%c\n", closeBracket);
-      }
-      fprintf (dest, "%s%c", padder.sData, closeBracket);
-    } else {
-      fprintf (dest, "\n%s%c", padder.sData, openBracket);
-      for (long i = 0; i<hDim; i++) {
-        fprintf (dest, "%s", padder.sData);
-        if (i) {
-          fprintf (dest, "%s", padder.sData);
-        }
-        fprintf (dest, "%c", openBracket);
-
-        for (long j = 0; j<vDim; j++) {
-          if (j) {
-            fprintf (dest,", ");
-          }
-          
-          if (printStrings) {
-            fprintf (dest,"\"");;
-            _Formula * f = GetFormula (i,j);
-            _PMathObj fv;
-            if (f && (fv=f->Compute())) {
-              fprintf (dest,"%s",((_FString*)fv)->theString->sData);
             }
-            fprintf (dest,"\"");
-          } else {
-            parameterToCharBuffer ((*this)(i,j), number_buffer, 255, doJSON);
-            fprintf(dest, "%s", number_buffer);
-          }
         }
-        fprintf (dest, "%c%c\n", closeBracket, doJSON ? ',' : ' ');
-      }
-      fprintf (dest, "%s%c", padder.sData, closeBracket);
     }
-  } else if (storageType==0) {
-    checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
-    if (!ANALYTIC_COMPUTATION_FLAG) {
-      Compute()->toFileStr(dest);
-      return;
-    }
-    for (long i = 0; i<hDim; i++) {
-      fprintf (dest, "\n[");
-      for (long j = 0; j<vDim; j++) {
-        long p = Hash (i,j);
-        if (p>=0) {
-          _String *sp = (_String*) GetMatrixObject (p)->toStr();
-          fprintf(dest, "%s", sp->sData);
-          fprintf (dest, ",");
-          DeleteObject (sp);
-        } else {
-          fprintf(dest, "%g", 0.0);
-        }
-      }
-      fprintf (dest, "]");
-    }
-  } else {
-    _Matrix* eval = (_Matrix*)(storageType==3?EvaluateSimple():Evaluate(false));
-    eval->toFileStr(dest);
-    DeleteObject (eval);
-  }
 }
+
 
 //_____________________________________________________________________________________________
 
-void    SetIncrement (int m)
-{
+void    SetIncrement (int m) {
     _Matrix::storageIncrement = m;
 }
 //_____________________________________________________________________________________________
-void    _Matrix::InitMxVar (_SimpleList& mxVariables, hyFloat glValue)
-{
-    _Constant gv (glValue);
-    for (long k=0; k<mxVariables.countitems(); k++) {
-        _Variable* theV = LocateVar(mxVariables(k));
-        theV->SetValue (&gv);
-    }
-
+void    _Matrix::InitMxVar (_SimpleList& mxVariables, hyFloat glValue) {
+    mxVariables.Each ([&] (long value, unsigned long) -> void {
+        LocateVar(value)->SetValue (new _Constant (glValue), false);
+    });
 }
 //_____________________________________________________________________________________________
-bool    _Matrix::ImportMatrixExp (FILE* theSource)
-{
+bool    _Matrix::ImportMatrixExp (FILE* theSource) {
+    // TODO: SLKP 20171027, need to review and possibly deprecate
     long mDim=0,i,k=0,j,m;
     char buffer[255],fc=0;
     buffer[0]=0;
@@ -7468,6 +7276,8 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource)
 //_____________________________________________________________________________________________
 
 void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
+// TODO: SLKP 20171027, need to review and possibly deprecate
+
 // export the matrix's computational form in the following format
 // matrix dimension followed by a comma
 // a comma separated list of variable names followed by a semicolon
@@ -7496,7 +7306,7 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
     long k, i=0;
     hyFloat* varPool = (hyFloat*)MatrixMemAllocate (mxVariables.countitems()*sizeof(hyFloat));
     for (k=0; k<mxVariables.countitems(); k++) {
-        fprintf (theDump,"%s",LocateVar(mxVariables(k))->GetName()->sData);
+        fprintf (theDump,"%s",LocateVar(mxVariables(k))->GetName()->get_str());
         if (k<mxVariables.countitems()-1) {
             fprintf (theDump,"%c",',');
         } else {
@@ -7584,235 +7394,61 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
     }
     MatrixMemFree (varPool);
     DeleteObject (numExp);
-
-    /*  // scan the maximum number of terms in the polynomial cells
-        for (k=0;k<lDim;k++)
-        {
-            _Polynomial* currentCell = ((_Polynomial**)theData)[k];
-            currentCell->Compute();
-            if (currentCell->ComputationalSize()>maxterms)
-            {
-                maxterms = currentCell->ComputationalSize();
-            }
-        }
-
-        // divide the number of terms in 10 subgroups and compute the absolute error, then try for the maxcap
-        hyFloat  stdCap = 0.0;
-        if (enforcePolyCap)
-            stdCap = topPolyCap;
-        else
-        {
-            hyFloat ub,lb;
-            for (k=0;k<mxVariables.countitems(); k++)
-            {
-                _Variable* theV = LocateVar(mxVariables(k));
-                lb = fabs(theV->GetLowerBound());
-                ub = fabs(theV->GetUpperBound());
-                if (ub>stdCap)
-                    stdCap = ub;
-                if (lb>stdCap)
-                    stdCap = lb;
-            }
-        }
-        if (stdCap>10.0)
-            stdCap = 10.0;
-
-        long  partitionSize = maxterms/10+1, currentSize = maxterms-partitionSize;
-        _Matrix     *polym, *numm, *numm1, *errMx;
-        hyFloat  error =0.0 ,step = stdCap/10, tryCap = stdCap+step, stdError;
-        InitMxVar (mxVariables,stdCap);
-        numm = (_Matrix*)theBase->Evaluate(false);
-        // first run the precision analysis on the max terms setting
-
-        InitMxVar (mxVariables,stdCap);
-        polym = (_Matrix*)Evaluate(false);
-
-        errMx = (_Matrix*)polym->SubObj(&numm->Exponentiate());
-        stdError = errMx->MaxElement();
-        DeleteObject (errMx);
-        DeleteObject (polym);
-        stdError = exp(log(10.0)*long(log(stdError)/log(10.0)));
-
-        while (error<=stdError)
-        {
-            InitMxVar (mxVariables,tryCap);
-            polym = (_Matrix*)Evaluate(false);
-            numm1 = (_Matrix*)theBase->Evaluate(false);
-            _Matrix *errMx = (_Matrix*)polym->SubObj(&numm1->Exponentiate());
-            error = errMx->MaxElement();
-            DeleteObject (errMx);
-            DeleteObject (polym);
-            DeleteObject (numm1);
-            tryCap+=step;
-            if (tryCap>10.0) break;
-        }
-
-        fprintf(theDump,"%d,%g,%g;", maxterms, stdError,tryCap-step);
-
-
-        while (currentSize>0)
-        {
-            SetPolyTermCap (currentSize);
-            InitMxVar (mxVariables,stdCap);
-            polym = (_Matrix*)Evaluate(false);
-            _Matrix *errMx = (_Matrix*)polym->SubObj(&numm->Exponentiate());
-            error = errMx->MaxElement();
-            DeleteObject (errMx);
-            DeleteObject (polym);
-            error = exp(log(10.0)*long(log(error)/log(10.0)));
-            tryCap = stdCap;
-            while (error>stdError)
-            {
-                InitMxVar (mxVariables,tryCap);
-                polym = (_Matrix*)Evaluate(false);
-                numm1 = (_Matrix*)theBase->Evaluate(false);
-                errMx = (_Matrix*)polym->SubObj(&numm1->Exponentiate());
-                error = errMx->MaxElement();
-                DeleteObject (errMx);
-                DeleteObject (polym);
-                DeleteObject (numm1);
-                tryCap-=step;
-                if (tryCap<0) break;
-            }
-            if ((tryCap<0)||(error>stdError)) break;
-            fprintf(theDump,"%d,%g,%g;", currentSize, stdError,tryCap+step);
-            currentSize-=partitionSize;
-        }
-
-        DeleteObject (numm);
-        SetPolyTermCap (0x1fffffff);
-
-        for (k=0;k<lDim;k++)
-        {
-            if (k)
-                fprintf(theDump,",");
-            _Polynomial* currentCell = ((_Polynomial**)theData)[k];
-            fprintf(theDump,"{");
-            _PolynomialData* cD = currentCell->GetTheTerms();
-            for (long l=0; l<cD->GetNoTerms();l++)
-            {
-                if (l)
-                    fprintf(theDump,",%18.16g",cD->GetCoeff(l));
-                else
-                    fprintf(theDump,"%18.16g",cD->GetCoeff(l));
-            }
-            fprintf(theDump,"}");
-            currentCell->toFileStr(theDump);
-        }*/
-
 }
 
 //_____________________________________________________________________________________________
 
-hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
-{
-    if (storageType!=1 || freqs->storageType!=1 || hDim!=vDim) {
+hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf) {
+    // TODO SLKP 20171027 SLKP reviewed and edited; check correctness
+    
+    if (!is_square_numeric() || !freqs->is_numeric()) {
         return 0.0;
     }
 
     hyFloat      result      =   0.0;
-    _Matrix         *nf         =   nil,
-                     *stencil =   branchLengthStencil();
+    _Matrix      *stencil    =   BranchLengthStencil();
 
-    if (freqs->theIndex) {
-        nf = new _Matrix (*freqs);
-        nf->CheckIfSparseEnough (true);
-    } else {
-        nf = freqs;
+    if ( freqs->is_dense() == false ) {
+        freqs->CheckIfSparseEnough(true);
     }
-
-
-    if (theIndex) {
-        hyFloat*   diags = new hyFloat[hDim];
-        for (long k=0; k<hDim; k++) {
-            diags[k] = 0.0;
-        }
-
+    
+    if (stencil) {
         if (mbf) {
-            for (long k=0; k<lDim; k++) {
-                long l=theIndex[k];
-                if (l>=0) {
-                    long i = l%vDim;
-                    long j = l/vDim;
-
-                    if (i!=j && (!stencil || stencil->theData[l] > 0.0)) {
-                        diags[j] += theData[k]*nf->theData[i];
-                    }
+            ForEachCellNumeric ([&] (hyFloat&& value, unsigned long index, unsigned long row, unsigned long column) -> void {
+                if (row != column && stencil->theData[index]) {
+                    result += value * freqs->theData[row] * freqs->theData[column];
                 }
-            }
+            });
         } else {
-            for (long k=0; k<lDim; k++) {
-                long l=theIndex[k];
-                if (l>=0) {
-                    long i = l%vDim;
-                    long j = l/vDim;
-
-                    if (i!=j && (!stencil || stencil->theData[l] > 0.0)) {
-                        diags[j] += theData[k];
-                    }
+            ForEachCellNumeric ([&] (hyFloat&& value, unsigned long index, unsigned long row, unsigned long column) -> void {
+                if (row != column && stencil->theData[index]) {
+                    result += value * freqs->theData[row];
                 }
-            }
+            });
         }
-        {
-            for (long k=0; k<hDim; k++) {
-                result += diags[k]*nf->theData[k];
-            }
-        }
-        delete [] diags;
     } else {
         if (mbf) {
-            for (long k=0; k<hDim; k++) {
-                long i,j;
-
-                hyFloat diag = 0.;
-                for (j=k*vDim,i=0; j<k*(vDim+1); j++,i++)
-                    if (!stencil || stencil->theData[j] > 0.0) {
-                        diag += theData[j]*nf->theData[i];
-                    }
-
-                j++;
-                i++;
-                for (; j<vDim*(k+1); j++,i++)
-                    if (!stencil || stencil->theData[j] > 0.0) {
-                        diag += theData[j]*nf->theData[i];
-                    }
-
-                result += diag * nf->theData[k];
-            }
+            ForEachCellNumeric ([&] (hyFloat&& value, unsigned long index, unsigned long row, unsigned long column) -> void {
+                if (row != column) {
+                    result += value * freqs->theData[row] * freqs->theData[column];
+                }
+            });
         } else {
-            for (long k=0; k<hDim; k++) {
-                long j;
-                hyFloat diag = 0.;
-
-                for (j=k*vDim; j<k*(vDim+1); j++)
-                    if (!stencil || stencil->theData[j] > 0.0) {
-                        diag += theData[j];
-                    }
-
-                j++;
-                for (; j<vDim*(k+1); j++)
-                    if (!stencil || stencil->theData[j] > 0.0) {
-                        diag += theData[j];
-                    }
-
-                result += diag * nf->theData[k];
-            }
+            ForEachCellNumeric ([&] (hyFloat&& value, unsigned long row, unsigned long column) -> void {
+                if (row != column) {
+                    result += value * freqs->theData[row];
+                }
+            });
         }
     }
-
-    if (nf!=freqs) {
-        DeleteObject (nf);
-    }
-
     return result;
 }
 
 //_____________________________________________________________________________________________
-_List*      _Matrix::ComputeRowAndColSums (void)
+_List*      _Matrix::ComputeRowAndColSums (void) {
 // the first entry is the matrix with row sums
 // the second - the entry with column sums
 // the third  - a constant with the total sum
-{
     if ((storageType == 1) && (hDim >= 1) && (vDim >= 1)) {
         _List*      resList = new _List;
         _Matrix     *rowSums     = new _Matrix (hDim,1,false,true),
@@ -7856,16 +7492,9 @@ _List*      _Matrix::ComputeRowAndColSums (void)
             }
         }
 
-        (*resList) << rowSums;
-        (*resList) << columnSums;
-
-        DeleteObject (rowSums);
-        DeleteObject (columnSums);
-
-        {
-            _Constant tempC (totals);
-            (*resList) && & tempC;
-        }
+        (*resList) < rowSums
+                   < columnSums
+                   < new _Constant (totals);
 
         return resList;
 
@@ -8083,8 +7712,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 }
 
 //_____________________________________________________________________________________________
-_Matrix*        _Matrix::MakeTreeFromParent (long specCount)
-{
+_Matrix*        _Matrix::MakeTreeFromParent (long specCount) {
     if (hDim == 0 || vDim == 0) {
         return new _Matrix;
     }
@@ -8326,7 +7954,7 @@ void        _Matrix::SimplexHelper3 (long i1, long k1, long ip, long kp)
 }
 
 //_____________________________________________________________________________________________
-_Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision )
+_Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision ) {
 // this function is adapted from the Num. Recipes in C version; but with 0 indexing
 // hyphy primitives
 // and without goto labels
@@ -8355,186 +7983,184 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision )
 // if an kEmptyString matrix is returned - no feasible solution could be found
 // if a 1x1 matrix is returned - the objective function is unbounded
 
-{
-    _String errMsg;
+    try {
 
-    long n = vDim-2, // number of variables
-         m = hDim-1; // number of constraints
+        long n = vDim-2, // number of variables
+             m = hDim-1; // number of constraints
 
-    if (storageType == 1 && n>0 && m>0) {
-        while (1) // artificial construct used to break out on error
-            // an to avoid goto statements
-        {
-            bool        doMaximize = (*this)(0,n+1) >= 0.0;
-
-            // allocate temporary storage
-            _Matrix     tempMatrix (m+2,n+1,false,true);
-            // first, copy the objective function row
-            for (long i=0; i<=n; i++) {
-                tempMatrix.Store(0,i,doMaximize?(*this)(0,i):-(*this)(0,i));
-            }
-
-            // now, count the number of constraints of each type and reorder things
-
-            long    m1 = 0, // <= constraints
-                    m2 = 0, // >= constraints
-                    m3 = 0; // == constraints
-
+        if (is_numeric() && n>0 && m>0) {
+            while (1) // artificial construct used to break out on error
+                // an to avoid goto statements
             {
-                for (long i=1; i<=m; i++) {
-                    hyFloat t = (*this)(i,n+1);
-                    if (t<0.0) {
-                        m1++;
-                    } else if (t>0.0) {
-                        m2++;
-                    } else {
-                        m3++;
-                    }
-                    if ((*this)(i,0) < 0.0) {
-                        errMsg = "Negative values are not allowed in the first column of the simplex tableau";
-                        break;
+                bool        doMaximize = (*this)(0,n+1) >= 0.0;
+
+                // allocate temporary storage
+                _Matrix     tempMatrix (m+2,n+1,false,true);
+                // first, copy the objective function row
+                for (long i=0; i<=n; i++) {
+                    tempMatrix.Store(0,i,doMaximize?(*this)(0,i):-(*this)(0,i));
+                }
+
+                // now, count the number of constraints of each type and reorder things
+
+                long    m1 = 0, // <= constraints
+                        m2 = 0, // >= constraints
+                        m3 = 0; // == constraints
+
+                {
+                    for (long i=1; i<=m; i++) {
+                        hyFloat t = (*this)(i,n+1);
+                        if (t<0.0) {
+                            m1++;
+                        } else if (t>0.0) {
+                            m2++;
+                        } else {
+                            m3++;
+                        }
+                        if ((*this)(i,0) < 0.0) {
+                            throw ("Negative values are not allowed in the first column of the simplex tableau");
+                         }
                     }
                 }
-            }
 
-            if (errMsg.sLength) {
-                break;
-            }
 
-            // copy coefficients into the temp matrix, sorting the constraints in the <=, >= and == order
-            {
-                for (long i=1, t1=0, t2=0, t3=0; i<=m; i++) {
-                    hyFloat t   = (*this)(i,n+1);
-                    long       idx;
-                    if (t<0.0) {
-                        idx=1+t1++;
-                    } else if (t>0.0) {
-                        idx=1+m1+t2++;
-                    } else {
-                        idx=1+m1+m2+t3++;
+                // copy coefficients into the temp matrix, sorting the constraints in the <=, >= and == order
+                {
+                    for (long i=1, t1=0, t2=0, t3=0; i<=m; i++) {
+                        hyFloat t   = (*this)(i,n+1);
+                        long       idx;
+                        if (t<0.0) {
+                            idx=1+t1++;
+                        } else if (t>0.0) {
+                            idx=1+m1+t2++;
+                        } else {
+                            idx=1+m1+m2+t3++;
+                        }
+                        for (long j=0; j<=n; j++) {
+                            tempMatrix.Store(idx,j,(*this)(i,j));
+                        }
+
                     }
-                    for (long j=0; j<=n; j++) {
-                        tempMatrix.Store(idx,j,(*this)(i,j));
-                    }
-
                 }
-            }
-            // allocate temporary storage
+                // allocate temporary storage
 
-            _SimpleList l1      (n+1,0,1),
-                        l3       (m,0,0),
-                        izrov    (n,0,1),
-                        iposv    (m,n,1);
+                _SimpleList l1      (n+1,0,1),
+                            l3       (m,0,0),
+                            izrov    (n,0,1),
+                            iposv    (m,n,1);
 
-            long        nl1     = n;
+                long        nl1     = n;
 
-            if (m2+m3) { // >= and == constraints exist; origin is not a feasible solution
-                for (long i=0; i<m2; l3.lData[i] = 1,i++) ; // slack variables in the list of 'basis' variables
-                for (long k=0; k<=n; k++) { // compute the auxiliary objective function
-                    hyFloat q = 0.;
-                    for (long k2 = m1+1; k2<=m; k2++) {
-                        q += tempMatrix(k2,k);
+                if (m2+m3) { // >= and == constraints exist; origin is not a feasible solution
+                    for (long i=0; i<m2; l3.lData[i] = 1,i++) ; // slack variables in the list of 'basis' variables
+                    for (long k=0; k<=n; k++) { // compute the auxiliary objective function
+                        hyFloat q = 0.;
+                        for (long k2 = m1+1; k2<=m; k2++) {
+                            q += tempMatrix(k2,k);
+                        }
+                        tempMatrix.Store (m+1,k,-q);
                     }
-                    tempMatrix.Store (m+1,k,-q);
-                }
-                while (1) { // initial artifical construct
-                    long        pivotColumn,
-                                ip;
-                    hyFloat  pivotValue;
+                    while (1) { // initial artifical construct
+                        long        pivotColumn,
+                                    ip;
+                        hyFloat  pivotValue;
 
-                    tempMatrix.SimplexHelper1 (m,l1,nl1,false,pivotColumn, pivotValue);
-                    if (pivotValue <= desiredPrecision && tempMatrix(m+1,0) < -desiredPrecision)
-                        // aux objective is still negative and can't be improved
-                        // no feasible solution
-                    {
-                        return new _Matrix;
-                    }
-                    if (pivotValue <= desiredPrecision && tempMatrix(m+1,0) <= desiredPrecision)
-                        // aux objective is zero and can't be improved
-                        // found a feasible solution; clean up artificial variables and move on to phase 2
-                    {
-                        for (ip = m1+m2; ip < m; ip++) {
-                            if (iposv.lData[ip] == ip + n) {
-                                tempMatrix.SimplexHelper1 (ip,l1,nl1,true,pivotColumn, pivotValue);
-                                if (pivotValue > desiredPrecision) {
-                                    goto one;
+                        tempMatrix.SimplexHelper1 (m,l1,nl1,false,pivotColumn, pivotValue);
+                        if (pivotValue <= desiredPrecision && tempMatrix(m+1,0) < -desiredPrecision)
+                            // aux objective is still negative and can't be improved
+                            // no feasible solution
+                        {
+                            return new _Matrix;
+                        }
+                        if (pivotValue <= desiredPrecision && tempMatrix(m+1,0) <= desiredPrecision)
+                            // aux objective is zero and can't be improved
+                            // found a feasible solution; clean up artificial variables and move on to phase 2
+                        {
+                            for (ip = m1+m2; ip < m; ip++) {
+                                if (iposv.lData[ip] == ip + n) {
+                                    tempMatrix.SimplexHelper1 (ip,l1,nl1,true,pivotColumn, pivotValue);
+                                    if (pivotValue > desiredPrecision) {
+                                        goto one;
+                                    }
+                                }
+                            }
+                            for (long i = m1; i<m1+m2; i++)
+                                if (l3.lData[i-m1] == 1)
+                                    for (long k=0; k<=n; k++) {
+                                        tempMatrix.Store (i+1,k,-tempMatrix(i+1,k));
+                                    }
+
+                            break;
+                        }
+
+                        tempMatrix.SimplexHelper2 (ip,pivotColumn,desiredPrecision);
+                        if (ip<0) {
+                            return new _Matrix (1,1,false,true);    // unbounded function
+                        }
+
+    one:
+                        tempMatrix.SimplexHelper3 (m,n-1,ip,pivotColumn);
+                        if (iposv.lData[ip] >= n+m1+m2) {
+                            long k = 0;
+                            for (k=0; k<nl1; k++)
+                                if (l1.lData[k] == pivotColumn) {
+                                    break;
+                                }
+                            nl1--;
+                            for (long i2=k; i2<nl1; i2++) {
+                                l1.lData[i2] = l1.lData[i2+1];
+                            }
+                        } else {
+                            long k2 = iposv.lData[ip] - m1 - n;
+                            if (k2 >= 0 && l3.lData[k2]) {
+                                l3.lData[k2] = 0;
+                                tempMatrix.theData[(m+1)*tempMatrix.vDim + pivotColumn + 1] ++;
+                                for (long i=0; i<m+2; i++) {
+                                    tempMatrix.theData[i*tempMatrix.vDim + pivotColumn + 1] *= -1.0;
                                 }
                             }
                         }
-                        for (long i = m1; i<m1+m2; i++)
-                            if (l3.lData[i-m1] == 1)
-                                for (long k=0; k<=n; k++) {
-                                    tempMatrix.Store (i+1,k,-tempMatrix(i+1,k));
-                                }
+                        long s = izrov.lData[pivotColumn];
+                        izrov.lData[pivotColumn] = iposv.lData[ip];
+                        iposv.lData[ip] = s;
+                    }// end of phase 1
+                }
 
-                        break;
-                    }
+                while (1) {
+                    long            pivotColumn,
+                                    pivotRow;
+                    hyFloat      pivotValue;
 
-                    tempMatrix.SimplexHelper2 (ip,pivotColumn,desiredPrecision);
-                    if (ip<0) {
-                        return new _Matrix (1,1,false,true);    // unbounded function
-                    }
-
-one:
-                    tempMatrix.SimplexHelper3 (m,n-1,ip,pivotColumn);
-                    if (iposv.lData[ip] >= n+m1+m2) {
-                        long k = 0;
-                        for (k=0; k<nl1; k++)
-                            if (l1.lData[k] == pivotColumn) {
-                                break;
+                    tempMatrix.SimplexHelper1 (-1,l1,nl1,false,pivotColumn,pivotValue);
+                    if (pivotValue < desiredPrecision) { // done!
+                        // produce the final solution
+                        _Matrix * resMatrix = new _Matrix (1,n+1,false,true);
+                        resMatrix->Store(0,0,doMaximize?tempMatrix(0,0):-tempMatrix(0,0));
+                        for (long k=0; k<iposv.lLength; k++)
+                            if (iposv.lData[k]<n) {
+                                resMatrix->Store(0,iposv.lData[k]+1,tempMatrix(k+1,0));
                             }
-                        nl1--;
-                        for (long i2=k; i2<nl1; i2++) {
-                            l1.lData[i2] = l1.lData[i2+1];
-                        }
-                    } else {
-                        long k2 = iposv.lData[ip] - m1 - n;
-                        if (k2 >= 0 && l3.lData[k2]) {
-                            l3.lData[k2] = 0;
-                            tempMatrix.theData[(m+1)*tempMatrix.vDim + pivotColumn + 1] ++;
-                            for (long i=0; i<m+2; i++) {
-                                tempMatrix.theData[i*tempMatrix.vDim + pivotColumn + 1] *= -1.0;
-                            }
-                        }
+                        return resMatrix;
                     }
+                    tempMatrix.SimplexHelper2 (pivotRow,pivotColumn,desiredPrecision);
+                    if (pivotRow<0) {
+                        return new _Matrix (1,1,false,true);
+                    }
+                    tempMatrix.SimplexHelper3 (m-1,n-1,pivotRow,pivotColumn);
                     long s = izrov.lData[pivotColumn];
-                    izrov.lData[pivotColumn] = iposv.lData[ip];
-                    iposv.lData[ip] = s;
-                }// end of phase 1
-            }
-
-            while (1) {
-                long            pivotColumn,
-                                pivotRow;
-                hyFloat      pivotValue;
-
-                tempMatrix.SimplexHelper1 (-1,l1,nl1,false,pivotColumn,pivotValue);
-                if (pivotValue < desiredPrecision) { // done!
-                    // produce the final solution
-                    _Matrix * resMatrix = new _Matrix (1,n+1,false,true);
-                    resMatrix->Store(0,0,doMaximize?tempMatrix(0,0):-tempMatrix(0,0));
-                    for (long k=0; k<iposv.lLength; k++)
-                        if (iposv.lData[k]<n) {
-                            resMatrix->Store(0,iposv.lData[k]+1,tempMatrix(k+1,0));
-                        }
-                    return resMatrix;
+                    izrov.lData[pivotColumn] = iposv.lData[pivotRow];
+                    iposv.lData[pivotRow] = s;
                 }
-                tempMatrix.SimplexHelper2 (pivotRow,pivotColumn,desiredPrecision);
-                if (pivotRow<0) {
-                    return new _Matrix (1,1,false,true);
-                }
-                tempMatrix.SimplexHelper3 (m-1,n-1,pivotRow,pivotColumn);
-                long s = izrov.lData[pivotColumn];
-                izrov.lData[pivotColumn] = iposv.lData[pivotRow];
-                iposv.lData[pivotRow] = s;
-            }
 
+            }
+        } else {
+            throw ("SimplexSolve requires a numeric matrix with > 1 row and > 2 columns");
         }
-    } else {
-        errMsg = "SimplexSolve requires a numeric matrix with > 1 row and > 2 columns";
-    }
 
-    HandleApplicationError (errMsg);
+
+    } catch (_String const err) {
+        HandleApplicationError (err);
+    }
     return new _Matrix;
 }
 
@@ -8569,43 +8195,43 @@ _PMathObj   _Matrix::DirichletDeviate (void)
             distribution defined by contents of this matrix as
             hyperparameters (a > 0).
        ----------------------------------------------------------- */
+    try {
 
-    _String     errMsg;
+        long        dim;
 
-    long        dim;
+        hyFloat  denom   = 0.;
 
-    hyFloat  denom   = 0.;
-
-    _Matrix     res (1, dim = GetHDim()*GetVDim(), false, true);    // row vector
+        _Matrix     res (1, dim = GetHDim()*GetVDim(), false, true);    // row vector
 
 
-    if (storageType != 1) {
-        errMsg = "Only numeric vectors can be passed to <= (DirichletDeviate)";
-    }
+        if (!is_numeric()) {
+            throw ("Only numeric vectors can be passed to DirichletDeviate");
+        }
 
-    if (is_row || is_column ()) {
-        // generate a random deviate from gamma distribution for each hyperparameter
-        for (long i = 0; i < dim; i++) {
-            if (theData[i] < 0) {
-                HandleApplicationError (_String("Dirichlet not defined for negative parameter values."));
-                return new _Matrix (1,1,false,true);
+        if (is_row() || is_column ()) {
+            // generate a random deviate from gamma distribution for each hyperparameter
+            
+            for (long i = 0L; i < dim; i++) {
+                if (theData[i] < 0.) {
+                    throw ("Dirichlet not defined for negative parameter values.");
+                }
+
+                res.Store (0, i, gammaDeviate(theData[i]));
+                denom += res(0,i);
             }
 
-            res.Store (0, i, gammaDeviate(theData[i]));
-            denom += res(0,i);
-        }
+            // normalize by sum
+            for (long i = 0; i < dim; i++) {
+                res.Store (0, i, res(0,i)/denom);
+            }
 
-        // normalize by sum
-        for (long i = 0; i < dim; i++) {
-            res.Store (0, i, res(0,i)/denom);
+            return (_PMathObj) res.makeDynamic();
+        } else {
+            throw ("Argument must be a row- or column-vector.");
         }
-
-        return (_PMathObj) res.makeDynamic();
-    } else {
-        errMsg = "Argument must be a row- or column-vector.";
+    } catch (_String const err) {
+        HandleApplicationError (err);
     }
-
-    HandleApplicationError (errMsg);
     return new _Matrix (1,1,false,true);
 }
 
@@ -8627,163 +8253,119 @@ _PMathObj   _Matrix::GaussianDeviate (_Matrix & cov)
 
     //ReportWarning (_String("Entered _Matrix::GaussianDeviate() with cov = ") & (_String *)(cov.toStr()));
 
-    _String     errMsg;
+    try {
 
-    if (storageType != 1 || GetHDim() > 1) {
-        HandleApplicationError (_String("ERROR in _Matrix::GaussianDeviate(), expecting to be called on numeric row vector matrix, current dimensions: ") & GetHDim() & "x" & GetVDim());
-        return new _Matrix;
-    }
-
-    long kdim = GetVDim();    // number of entries in this _Matrix object as vector of means
-
-    if (cov.GetHDim() == kdim && cov.GetVDim() == kdim) {
-        _Matrix* cov_cd = (_Matrix *) cov.CholeskyDecompose();
-        _Matrix gaussvec (1, kdim, false, true);
-
-        //ReportWarning (_String("\nCholesky decomposition of cov = ") & (_String *) cov_cd->toStr());
-
-        // fill column vector with independent standard normal deviates
-        for (long i = 0; i < kdim; i++) {
-            gaussvec.Store (0, i, gaussDeviate());
+        if (storageType != 1 || GetHDim() > 1) {
+            HandleApplicationError (_String("ERROR in _Matrix::GaussianDeviate(), expecting to be called on numeric row vector matrix, current dimensions: ") & GetHDim() & "x" & GetVDim());
+            return new _Matrix;
         }
 
-        //ReportWarning (_String ("\nvector of gaussian deviates = ") & (_String *) gaussvec.toStr());
+        long kdim = GetVDim();    // number of entries in this _Matrix object as vector of means
 
-        // left multiply vector by Cholesky decomposition of covariance matrix
-        gaussvec *= (_Matrix &) (*cov_cd);
+        if (cov.check_dimension(kdim, kdim)) {
+            _Matrix* cov_cd = (_Matrix *) cov.CholeskyDecompose(),
+                    * gaussvec = new _Matrix (1, kdim, false, true);
 
-        // shift mean
-        for (long i = 0; i < kdim; i++) {
-            gaussvec.Store (0, i, gaussvec(0,i) + theData[i]);
+            //ReportWarning (_String("\nCholesky decomposition of cov = ") & (_String *) cov_cd->toStr());
+
+            // fill column vector with independent standard normal deviates
+            for (long i = 0L; i < kdim; i++) {
+                gaussvec->Store (0, i, gaussDeviate());
+            }
+
+            //ReportWarning (_String ("\nvector of gaussian deviates = ") & (_String *) gaussvec.toStr());
+
+            // left multiply vector by Cholesky decomposition of covariance matrix
+            *gaussvec *= *cov_cd;
+
+            // shift mean
+            for (long i = 0L; i < kdim; i++) {
+                gaussvec->Store (0, i, gaussvec(0,i) + theData[i]);
+            }
+
+            DeleteObject (cov_cd);
+            return gaussvec;
+        } else {
+            throw (_String("Error in _Matrix::GaussianDeviate(), incompatible dimensions in covariance matrix: ") & cov.GetHDim() & "x" & cov.GetVDim());
+
         }
-
-        DeleteObject (cov_cd);
-        return (_PMathObj) gaussvec.makeDynamic();
+    } catch (const _String err) {
+        HandleApplicationError (err);
     }
 
-    HandleApplicationError (_String("Error in _Matrix::GaussianDeviate(), incompatible dimensions in covariance matrix: ") & cov.GetHDim() & "x" & cov.GetVDim());
     return new _Matrix;
 }
 
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
-{
-    _String       errMsg;
-    long          values      = GetHDim();
-    unsigned long samples     = replicates?replicates->Value ():0;
+_PMathObj   _Matrix::MultinomialSample (_Constant *replicates) {
+    
+    try {
+        _List         reference_manager;
+        
+        long          values      = GetHDim();
+        unsigned long samples     = replicates?replicates->Value ():0;
 
-    _Matrix     *eval    = (_Matrix*)Compute (),
-                * sorted = nil,
-                * result = nil;
+        _Matrix     *eval    = (_Matrix*)Compute (),
+                    * sorted = nil,
+                    * result = nil;
 
-    if (samples < 1) {
-        errMsg = "Expected a numerical (>=1) value for the number of replicates";
-    } else if (eval->storageType != 1 || GetVDim() != 2 || values < 2) {
-        errMsg = "Expecting numerical Nx2 (with N>=1) matrix.";
-    } else {
-        _Constant one (1.);
-        sorted = (_Matrix*) eval->SortMatrixOnColumn(&one);
-
-
-        hyFloat      sum = 0.;
-
-        for (long n = 1; n < 2*values; n+=2) {
-            hyFloat v = sorted->theData[n];
-            if (v < 0.) {
-                sum = 0.;
-                break;
-            }
-            sum += v;
-        }
-
-
-
-        if (CheckEqual (sum, 0.)) {
-            errMsg = "The probabilities (second column) cannot add to 0 or be negative";
+        if (samples == 0UL) {
+            throw "Expected a numerical (>=1) value for the number of replicates";
+        } else if ( ! eval->is_numeric() || GetVDim() != 2 || values < 2) {
+            throw "Expecting numerical Nx2 (with N>=1) matrix.";
         } else {
-            sum = 1./sum;
+            _Constant one (1.);
+            sorted = (_Matrix*) eval->SortMatrixOnColumn(&one);
+            reference_manager < sorted;
+            hyFloat      sum = 0.;
 
-            _Matrix     *raw_result  = new _Matrix (1, values, false, true),
-            *normalized  = new _Matrix (1, values, false, true);
-
-            for (long v = 0; v < values; v++) {
-                normalized->theData[values-1-v] = sorted->theData[1+2*v] * sum;
+            for (long n = 1L; n < 2*values; n+=2L) {
+                hyFloat v = sorted->theData[n];
+                if (v < 0.) {
+                    sum = 0.;
+                    break;
+                }
+                sum += v;
             }
+            if (CheckEqual (sum, 0.)) {
+                throw "The probabilities (second column) cannot add to 0 or be negative";
+            } else {
+                sum = 1./sum;
 
-            //BufferToConsole (_String(*(_String*)normalized->toStr()).sData);
-            //NLToConsole ();
+                _Matrix     *raw_result  = new _Matrix (1, values, false, true),
+                *normalized  = new _Matrix (1, values, false, true);
 
-            _String      _HYMultinomialStatus       ("Generating multinomial samples");
-
-
-#if !defined __UNIX__ || defined __HEADLESS__
-            TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
-#if !defined __HEADLESS__
-            SetStatusLine     (kEmptyString,_HYMultinomialStatus, kEmptyString, 0, HY_SL_TASK|HY_SL_PERCENT);
-#else
-            SetStatusLine     (_HYMultinomialStatus);
-#endif
-            hyFloat  seconds_accumulator = .0,
-                        temp;
-#endif
-
-            for (unsigned long it = 0; it < samples; it++) {
-                hyFloat randomValue = genrand_real2(),
-                           sum   = normalized->theData[0];
-                long       index = 0;
-
-                while (sum < randomValue) {
-                    index++;
-                    sum += normalized->theData[index];
+                for (long v = 0; v < values; v++) {
+                    normalized->theData[values-1-v] = sorted->theData[1+2*v] * sum;
                 }
 
-                raw_result->theData[index] += 1.;
-#if !defined __UNIX__ || defined __HEADLESS__
-                if ((it % 1000 == 0) && (temp=TimerDifferenceFunction(true))>1.0) { // time to update
-                    seconds_accumulator += temp;
+ 
+                 hyFloat  seconds_accumulator = .0,
+                            temp;
 
-                    _String statusLine = _HYMultinomialStatus & " " & (hyFloat)(it+1) & "/" & (hyFloat)samples
-                                         & " samples drawn (" & (1.0+it)/seconds_accumulator & "/second)";
-
-#if defined __HEADLESS__
-                    SetStatusLine (statusLine);
-#else
-                    SetStatusLine (kEmptyString,statusLine,kEmptyString,100*(float)it/(samples),HY_SL_TASK|HY_SL_PERCENT);
-#endif
-                    TimerDifferenceFunction (false); // reset timer for the next second
-                    yieldCPUTime (); // let the GUI handle user actions
-
-                    if (terminate_execution) { // user wants to cancel the analysis
-                        break;
-                    }
+                for (unsigned long it = 0UL; it < samples; it++) {
+                     raw_result->theData[DrawFromDiscrete(normalized->theData, values)] += 1.;
                 }
-#endif
+
+                result = new _Matrix (values, 2, false, true);
+
+                for (long v = 0; v < values; v++) {
+                    result->theData[2*v]   = (long)sorted->theData[2*(values-1-v)];
+                    result->theData[2*v+1] = raw_result->theData[v];
+                }
+
+                DeleteObject (raw_result);
+                DeleteObject (sorted);
+                sorted = normalized;
             }
-
-            result = new _Matrix (values, 2, false, true);
-
-            for (long v = 0; v < values; v++) {
-                result->theData[2*v]   = (long)sorted->theData[2*(values-1-v)];
-                result->theData[2*v+1] = raw_result->theData[v];
-            }
-
-            DeleteObject (raw_result);
-            DeleteObject (sorted);
-            sorted = normalized;
         }
     }
-
-
-    DeleteObject (sorted);
-    if (errMsg.sLength) {
-        HandleApplicationError (_String("Error in _Matrix::MultinomialSample(). ") & errMsg);
-        DeleteObject (result);
-        return new _Matrix;
+    catch (_String const err) {
+        HandleApplicationError (err);
     }
-    return result;
+    return new _Matrix;
 }
-
 
 //_____________________________________________________________________________________________
 _PMathObj   _Matrix::InverseWishartDeviate (_Matrix & df)
@@ -8796,44 +8378,43 @@ _PMathObj   _Matrix::InverseWishartDeviate (_Matrix & df)
             a degrees of freedom vector argument.
        --------------------------------------------------- */
 
-    _String     errMsg;
-    long        n       = GetHDim();
+    try {
+        long        n       = GetHDim();
 
 
-    if (storageType != 1 || GetHDim() != GetVDim()) {
-        errMsg = "expecting numerical symmetric matrix.";
+        if (!is_square_numeric()) {
+            throw "Expecting a numerical square matrix.";
+        }
+
+        else if (!df.is_numeric() || !df.check_dimension(n,1)) {
+            throw "Expecting numerical column vector for second argument (degrees of freedom).";
+        } else {
+            // compute Cholesky factor for this matrix inverse, extract the diagonal
+            _List   reference_manager;
+            
+            _Matrix * inv       = (_Matrix *) Inverse();
+            _Matrix * invCD     = (_Matrix *) (inv->CholeskyDecompose());
+            
+            DeleteObject (inv);
+            reference_manager < invCD;
+            
+            return WishartDeviate (df, *invCD);
+        }
+    } catch (const _String err) {
+        HandleApplicationError (err);
     }
-
-    else if (df.MatrixType() != 1 || df.GetHDim() != n || df.GetVDim() > 1) {
-        errMsg = "expecting numerical row vector for second argument (degrees of freedom).";
-    } else {
-        // compute Cholesky factor for this matrix inverse, extract the diagonal
-        _Matrix * inv       = (_Matrix *) Inverse();
-        _Matrix * invCD     = (_Matrix *) (inv->CholeskyDecompose());
-
-        _Matrix decomp ((_Matrix &) *invCD);    // duplication constructor
-
-        DeleteObject (invCD);
-
-        return WishartDeviate (df, decomp);
-    }
-
-
-
-    HandleApplicationError (_String ("ERROR in _Matrix::InverseWishartDeviate, ") & errMsg);
     return new _Matrix;
 }
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::WishartDeviate (_Matrix & df)
-{
+_PMathObj   _Matrix::WishartDeviate (_Matrix & df) {
     _Matrix     diag;   // calls default constructor
     return WishartDeviate (df, diag);
 }
 
+//_____________________________________________________________________________________________
 
-_PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
-{
+_PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
     /* ---------------------------------------------------
      WishartDeviate()
         Generates a random matrix following the Wishart
@@ -8847,78 +8428,61 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
      --------------------------------------------------- */
 
 
-    // debugging
-    //ReportWarning (_String("Entered _Matrix::WishartDeviate() with this matrix: ") & (_String *) this->toStr() & " and df vector " & (_String *) df.toStr());
+    try {
+
+        long        n   = GetHDim();
+
+        _Matrix     rdeviates (n, n, false, true),
+                    rd_transpose;
 
 
-    long        n   = GetHDim();
+        if (!(df.is_row () || df.is_column())) {
+            throw ("Expecting row vector for degrees of freedom argument.");
+        } else if (df.is_column()) {
+            df.Transpose(); // convert column vector to row vector
+        }
 
-    _Matrix     rdeviates (n, n, false, true),
-                rd_transpose;
-
-
-    if (!(df.is_row () || df.is_column())) {
-        HandleApplicationError ("ERROR in _Matrix::WishartDeviate(), expecting row vector for degrees of freedom argument.");
-        return new _Matrix (1,1,false,true);
-    } else if (df.is_column()) {
-        df.Transpose(); // convert column vector to row vector
-    }
-
-
-    if (decomp.GetHDim() == 0) {    // no second argument, perform Cholesky decomposition
-        if (storageType != 1 || GetHDim() != GetVDim()) {
-            HandleApplicationError (_String ("ERROR in _Matrix::WishartDeviate(), expecting square numeric matrix."));
-            return new _Matrix (1,1,false,true);
-        } else {
-            _Matrix     * cholesky = (_Matrix *) CholeskyDecompose();
-
-            if (cholesky->GetHDim() > 0) {
-                // duplicate
-                CreateMatrix (&decomp, cholesky->GetHDim(), cholesky->GetVDim(), false, true, false);
-
-                for (long i = 0; i < cholesky->GetHDim(); i++) {
-                    for (long j = 0; j < cholesky->GetVDim(); j++) {
-                        decomp.Store(i, j, (*cholesky)(i,j));
-                    }
-                }
-
-                DeleteObject (cholesky);
+        if (decomp.is_empty()) {    // no second argument, perform Cholesky decomposition
+            if (!is_square_numeric()) {
+                throw ("Expecting square numeric matrix.");
             } else {
-                return (cholesky);  // kEmptyString _Matrix from error in CholeskyDecompose()
+                _Matrix     * cholesky = (_Matrix *) CholeskyDecompose();
+
+                if (cholesky->GetHDim() > 0) {
+                    decomp = *cholesky;
+                    DeleteObject (cholesky);
+                } else {
+                    return cholesky;  // empty _Matrix from error in CholeskyDecompose()
+                }
             }
         }
-    }
-
-    //ReportWarning (_String("diag=") & (_String *)decomp.toStr());   // column vector
 
 
-    // populate diagonal with square root of i.i.d. chi-square random deviates
-    for (long i = 0; i < n; i++) {
-        rdeviates.Store (i, i, sqrt(chisqDeviate(df(0,i)-i+1)) );
+        // populate diagonal with square root of i.i.d. chi-square random deviates
+        for (unsigned long i = 0UL; i < n; i++) {
+            rdeviates.Store (i, i, sqrt(chisqDeviate(df(0,i)-i+1)) );
 
-        // populate upper triagonal with i.i.d. standard normal N(0,1) deviates
-        for (long j = i+1; j < n; j++) {
-            rdeviates.Store (i, j, gaussDeviate());
+            // populate upper triagonal with i.i.d. standard normal N(0,1) deviates
+            for (unsigned long j = i+1UL; j < n; j++) {
+                rdeviates.Store (i, j, gaussDeviate());
+            }
         }
+
+  
+        // result is obtained from D^T B D, where B = A^T A, ^T is matrix transpose
+        rd_transpose = rdeviates;
+        rd_transpose.Transpose();
+        rd_transpose *= rdeviates;  // A^T A
+        rd_transpose *= decomp; // A^T A D
+
+        decomp.Transpose();
+        decomp *= rd_transpose; // D^T A^T A D
+ 
+        return (_PMathObj) decomp.makeDynamic();
+    } catch (const _String err) {
+        HandleApplicationError(err);
     }
-
-    //ReportWarning (_String("rdeviates(A)=") & (_String *)rdeviates.toStr());
-
-
-    // result is obtained from D^T B D, where B = A^T A, ^T is matrix transpose
-    rd_transpose = (_Matrix &) rdeviates;
-    rd_transpose.Transpose();
-    //ReportWarning (_String("transpose(A)=") & (_String *)rd_transpose.toStr());
-    rd_transpose *= (_Matrix &) rdeviates;  // A^T A
-    //ReportWarning (_String("A^T A=") & (_String *)rd_transpose.toStr());
-    rd_transpose *= (_Matrix &) decomp; // A^T A D
-    //ReportWarning (_String("A^T A D=") & (_String *)rd_transpose.toStr());
-
-    decomp.Transpose();
-    decomp *= (_Matrix &) rd_transpose; // D^T A^T A D
-    //ReportWarning (_String("D^T A^T A D=") & (_String *)decomp.toStr());
-
-    return (_PMathObj) decomp.makeDynamic();
+    return new _Matrix;
 }
 
 

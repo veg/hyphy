@@ -90,9 +90,9 @@ namespace hy_env {
     }
 
     /*********************************************************************************/
-    hyFloat       EnvVariableGetNumber (_String const& name) {
+    hyFloat       EnvVariableGetNumber (_String const& name, hyFloat default_value) {
       _PMathObj current_value = EnvVariableGet (name, NUMBER);
-      return current_value ? current_value -> Value() : HY_INVALID_RETURN_VALUE;
+      return current_value ? current_value -> Value() : default_value;
     }
 
   /*********************************************************************************/

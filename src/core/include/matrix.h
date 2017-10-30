@@ -92,7 +92,7 @@ public:
 
     _Matrix ();                                 // default constructor, doesn't do much
 
-    _Matrix (_String&, bool = false, _VariableContainer const* = nil);
+    _Matrix (_String const&, bool = false, _VariableContainer const* = nil);
     // matrix from a string of the form
     // {{i11,i12,...}{i21,i22,..}{in1,in2..)})
     // or {# rows,<# cols>{i1,j1,expr}{i2,j2,expr}..}
@@ -136,13 +136,16 @@ public:
 
     void    Initialize (bool = false);                  // zeros all matrix structures
 
-    virtual void        Serialize (_String&,_String&);
+    virtual void        Serialize (_StringBuffer&,_String&);
     // write the matrix definition in HBL
 
+    virtual bool        is_empty (void) const;
     virtual bool        is_row (void) const;
     virtual bool        is_column (void) const;
     virtual bool        is_square (void) const;
     virtual bool        is_dense (void) const;
+    virtual bool        is_expression_based (void) const {return storageType == _FORMULA_TYPE;}
+    virtual bool        is_numeric (void) const {return storageType == _NUMERICAL_TYPE;}
 
     _PMathObj           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original
@@ -237,7 +240,7 @@ public:
 
     _List*      ComputeRowAndColSums            (void);
     _Matrix*    MutualInformation               (void);
-    void        FillInList                      (_List&, bool = false);
+    void        FillInList                      (_List&, bool convert_numbers = false) const;
     // SLKP 20101108:
     //               added a boolean flag to allow numeric matrices
     //               to be implicitly converted to strings
@@ -375,7 +378,7 @@ public:
             if the matrix is sparse, only will out the non-void entries
      */
 
-    _Formula*   GetFormula                  (long, long);
+    _Formula*   GetFormula                  (long, long) const;
     _PMathObj   MultByFreqs                 (long);
     _PMathObj   EvaluateSimple              (void);
     _PMathObj   SortMatrixOnColumn          (_PMathObj);
@@ -412,14 +415,14 @@ public:
     // check if the matrix is reversible
     // if given a base frequencies assumes that rate matrix entries will not be multiplied by freq terms
 
-    bool        IsAStringMatrix             (void);
+    bool        IsAStringMatrix             (void) const;
     void        MakeMeSimple                (void);
     void        MakeMeGeneral               (void);
     void        ConvertToSimpleList         (_SimpleList&);
     void        CompressSparseMatrix        (bool, hyFloat*);
     //prepare the transition probs matrix for exponentiation
 
-    long        Hash (long, long);                  // hashing function, which finds matrix
+    long        Hash (long, long) const;                  // hashing function, which finds matrix
     // physical element in local storage buffer
     // returns -1 if insufficient storage
     // returns a negative number
@@ -439,7 +442,7 @@ public:
         return theIndex;
     }
     
-    template <typename CALLBACK, typename EXTRACTOR>  void ForEach (CALLBACK&& cbv, EXTRACTOR&& accessor) {
+    template <typename CALLBACK, typename EXTRACTOR>  void ForEach (CALLBACK&& cbv, EXTRACTOR&& accessor) const {
         if (theIndex) {
             for (unsigned long i=0UL; i<lDim; i++) {
                 if (theIndex[i] >= 0L) {
@@ -453,7 +456,24 @@ public:
         }
     }
 
-    template <typename CALLBACK, typename EXTRACTOR>  bool Any (CALLBACK&& cbv, EXTRACTOR&& accessor) {
+    template <typename CALLBACK> void ForEachCellNumeric (CALLBACK&& cbv) const {
+        if (theIndex) {
+            for (unsigned long i=0UL; i<lDim; i++) {
+                if (long idx = theIndex[i] >= 0L) {
+                    long row = idx / vDim;
+                    cbv (theData[i], idx, row, idx - row*vDim);
+                }
+            }
+        } else {
+            for (unsigned long i=0UL, c = 0UL; i<hDim; i++) {
+                for (unsigned long j=0UL; j<vDim; j++, c++) {
+                    cbv (theData[c], c, i, j);
+                }
+            }
+        }
+    }
+
+    template <typename CALLBACK, typename EXTRACTOR>  bool Any (CALLBACK&& cbv, EXTRACTOR&& accessor) const {
         if (theIndex) {
             for (unsigned long i=0UL; i<lDim; i++) {
                 if (theIndex[i] >= 0L) {
@@ -525,6 +545,8 @@ protected:
 
 private:
 
+    void     internal_to_str (_StringBuffer*, FILE*, unsigned long padding);
+    void     SetupSparseMatrixAllocations (void);
     bool     is_square_numeric   (bool dense = true) const;
     
     hyFloat  computePFDR         (hyFloat, hyFloat);
