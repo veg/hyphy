@@ -1,6 +1,7 @@
 RequireVersion("2.3");
 
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 if (MPI_NODE_COUNT <= 1)
@@ -1313,7 +1314,7 @@ else
 }
 
 
-fprintf(jsonOutFile, CLEAR_FILE, gard.json);
+io.SpoolJSON (gard.json, jsonOutFile);
 
 rawOutFile = outputFilePath + "_ga_details";
 fprintf (rawOutFile,CLEAR_FILE, KEEP_OPEN);
