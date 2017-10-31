@@ -17,6 +17,13 @@ models.protein.empirical.plusF_generators = {"LG": "models.protein.LGF.ModelDesc
                                              "JTT": "models.protein.JTTF.ModelDescription",
                                              "JC69": "models.protein.JC69F.ModelDescription",
                                              "mtMAM": "models.protein.mtMAMF.ModelDescription"};                                           
+
+
+models.protein.empirical.mleF_generators = {"LG": "models.protein.LGML.ModelDescription",
+                                             "WAG": "models.protein.WAGML.ModelDescription",
+                                             "JTT": "models.protein.JTTML.ModelDescription",
+                                             "JC69": "models.protein.JC69ML.ModelDescription",
+                                             "mtMAM": "models.protein.mtMAMML.ModelDescription"};                                           
                                            
 /** @module models.protein.empirical */
 
@@ -341,6 +348,19 @@ function models.protein.LGF.ModelDescription(type) {
 }
 
 
+/**
+ * @name models.protein.LGML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the LG+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.LGML.ModelDescription(type) {
+    models.protein.LGML.ModelDescription.model_definition = models.protein.LG.ModelDescription(type);
+    models.protein.LGML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.LGML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.LGML.ModelDescription.model_definition;
+}
+
 
 /**************************************** JTT functions *************************************/
 
@@ -373,6 +393,19 @@ function models.protein.JTTF.ModelDescription(type) {
 }
 
 
+/**
+ * @name models.protein.JTTML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JTT+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JTTML.ModelDescription(type) {
+    models.protein.JTTML.ModelDescription.model_definition = models.protein.JTT.ModelDescription(type);
+    models.protein.JTTML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.JTTML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.JTTML.ModelDescription.model_definition;
+}
+
 /**************************************** JC69 functions *************************************/
 
 
@@ -400,6 +433,20 @@ function models.protein.JC69F.ModelDescription(type) {
     models.protein.JC69F.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
     models.protein.JC69F.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
     return models.protein.JC69F.ModelDescription.model_definition;
+}
+
+
+/**
+ * @name models.protein.JC69ML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JC69+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JC69ML.ModelDescription(type) {
+    models.protein.JC69ML.ModelDescription.model_definition = models.protein.JC69.ModelDescription(type);
+    models.protein.JC69ML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.JC69ML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.JC69ML.ModelDescription.model_definition;
 }
 
 
@@ -432,6 +479,21 @@ function models.protein.mtMAMF.ModelDescription(type) {
     models.protein.mtMAMF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
     return models.protein.mtMAMF.ModelDescription.model_definition;
 }
+
+
+/**
+ * @name models.protein.mtMAMML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the mtMAM+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.mtMAMML.ModelDescription(type) {
+    models.protein.mtMAMML.ModelDescription.model_definition = models.protein.mtMAM.ModelDescription(type);
+    models.protein.mtMAMML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.mtMAMML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.mtMAMML.ModelDescription.model_definition;
+}
+
 
 
 /*=============================================================================================*/
