@@ -346,9 +346,9 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
               *resolution_arrays [3] = {large_store + tokens.sLength, large_store + tokens.sLength + baseLength,large_store + tokens.sLength + 2*baseLength},
               resolutions_index = 0L;
           
-          for (unsigned long digit1 = 0; digit1 < large_store[0]; digit1 ++) {
-            for (unsigned long digit2 = 0; digit2 < large_store[1]; digit2 ++) {
-              for (unsigned long digit3 = 0; digit3 < large_store[2]; digit3 ++) {
+          for (long digit1 = 0L; digit1 < large_store[0]; digit1 ++) {
+            for (long digit2 = 0L; digit2 < large_store[1]; digit2 ++) {
+              for (long digit3 = 0L; digit3 < large_store[2]; digit3 ++) {
                 receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength * baseLength + resolution_arrays[1][digit2] * baseLength + resolution_arrays[2][digit3];
               }
             }
@@ -360,8 +360,8 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
                  *resolution_arrays [2] = {large_store + tokens.sLength,large_store + tokens.sLength + baseLength},
                  resolutions_index = 0L;
             
-            for (unsigned long digit1 = 0; digit1 < large_store[0]; digit1 ++) {
-              for (unsigned long digit2 = 0; digit2 < large_store[1]; digit2 ++) {
+            for (long digit1 = 0L; digit1 < large_store[0]; digit1 ++) {
+              for (long digit2 = 0L; digit2 < large_store[1]; digit2 ++) {
                 receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength + resolution_arrays[1][digit2];
               }
             }
