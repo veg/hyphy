@@ -2426,7 +2426,7 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
 
      // security checks
     if (horizontalList.empty() || verticalList.lLength<unit) {
-        ReportWarning (_String("Row and/or column partition is emptyString. All the data will be used by default."));
+        ReportWarning (_String("Row and/or column partition is empty. All the data will be used by default."));
         if (horizontalList.empty()) {
             horizontalList.Populate (isFilteredAlready ? firstOne->theNodeMap.lLength : ds->NoOfSpecies(),0,1);
         }
@@ -2865,7 +2865,7 @@ _String*    _DataSetFilter::GetExclusions (void) const {
 //_______________________________________________________________________
 
 unsigned long    _DataSetFilter::GetDimension (bool correct) const {
-    unsigned long result = ComputePower (theData->theTT->baseLength, unitLength);
+    unsigned long result = ComputePower (theData->theTT->LengthOfAlphabet(), unitLength);
     return correct ? result - theExclusions.lLength : result;
 }
 
@@ -6114,7 +6114,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
     }
 
 
-    _Matrix   *  out = new _Matrix (ComputePower (theTT->baseLength, atom),
+    _Matrix   *  out = new _Matrix (ComputePower (theTT->LengthOfAlphabet(), atom),
                                     posSpec?unit/atom:1,
                                     false,
                                     true);
