@@ -1736,7 +1736,7 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
             bool setDef = true;
             if (autoSolveBranchLengths) {
                 long nodeModelID = cNt.GetModelIndex();
-                if (nodeModelID != HY_NO_MODEL) {
+                if (nodeModelID != HY_NO_MODEL && !IsModelOfExplicitForm(nodeModelID)) {
                     _Formula * expressionToSolveFor = nil;
                     long alreadyConverted = convertedMatrixExpressions.Find ((BaseRef)nodeModelID);
                     if (alreadyConverted < 0) {
