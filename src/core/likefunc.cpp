@@ -4234,10 +4234,10 @@ DecideOnDivideBy (this);
                     
                     if (gradientBlocks.lLength) {
                         for (long b = 0; b < gradientBlocks.lLength; b++) {
-                            ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
+                            maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
                         }
                     } else {
-                        ConjugateGradientDescent (prec, bestMSoFar,true,10,nil,maxSoFar);
+                        maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,nil,maxSoFar);
                     }
                     
                     GetAllIndependent   (bestMSoFar);
@@ -4539,7 +4539,7 @@ DecideOnDivideBy (this);
                   if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )) {
                       _Matrix             bestMSoFar;
                       GetAllIndependent   (bestMSoFar);
-                      ConjugateGradientDescent (currentPrecision, bestMSoFar);
+                      maxSoFar = ConjugateGradientDescent (currentPrecision, bestMSoFar);
                       logLHistory.Store(maxSoFar);
                   }
             }
@@ -4556,7 +4556,7 @@ DecideOnDivideBy (this);
         if (optMethod == 7) {
             _Matrix bestMSoFar (indexInd.lLength,1,false,true);
             GetAllIndependent(bestMSoFar);
-            ConjugateGradientDescent (currentPrecision*.01, bestMSoFar);
+            maxSoFar = ConjugateGradientDescent (currentPrecision*.01, bestMSoFar);
         }
 
         DeleteObject (stepHistory);
@@ -5741,7 +5741,7 @@ bool    _LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters, _Parameter check_value) {
+_Parameter    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters, _Parameter check_value) {
 
     _Parameter  gradientStep     = STD_GRAD_STEP,
                 temp,
@@ -5758,7 +5758,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
                     ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
                 }
                 WarnError (errorStr);
-                return;
+                return check_value;
             }
             //return;
         }
@@ -5863,7 +5863,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
             }
 
             if (terminateExecution) {
-                return;
+                return check_value;
             }
         }
     }
@@ -5872,11 +5872,14 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
     if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value) == false) {
         WarnError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") & initial_value & " to " & maxSoFar);
     }
+  
 
     if (vl>1) {
         BufferToConsole("\n");
     }
-
+  
+    return maxSoFar;
+  
 }
 
 //_______________________________________________________________________________________
