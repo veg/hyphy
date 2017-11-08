@@ -39,6 +39,7 @@ namespace terms.fubar {
 };
 
 fubar.json = {
+                    terms.json.analysis:    {},
                     terms.json.input:       {},
                     terms.json.fits :       {},
                     terms.json.timers :     {},
@@ -96,6 +97,8 @@ fubar.analysis_description = {terms.io.info :
           };
 
 io.DisplayAnalysisBanner ( fubar.analysis_description );
+
+fubar.json[terms.json.analysis] = fubar.analysis_description;
 
 namespace fubar {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
