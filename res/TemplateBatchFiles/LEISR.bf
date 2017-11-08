@@ -233,8 +233,8 @@ leisr.store_global = utility.Map(
                         utility.Map (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                         "_value_",
                         "_value_[terms.fit.MLE]");
-
-
+                        
+tree_definition   = utility.Map (leisr.partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
 leisr.aicc = leisr.getIC(leisr.alignment_wide_MLES[terms.fit.log_likelihood], leisr.alignment_wide_MLES[terms.parameters], leisr.alignment_info[utility.getGlobalValue("terms.data.sites")] * leisr.alignment_info[utility.getGlobalValue("terms.data.sequences")]);
 leisr.json_content = { terms.json.input :
                             {terms.json.file: leisr.alignment_info[terms.data.file],
