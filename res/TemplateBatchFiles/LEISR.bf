@@ -229,18 +229,29 @@ io.ReportProgressMessageMD ("relative_rates", "Stats", "* **Std.Dev**: "  + Form
 io.ReportProgressMessageMD ("relative_rates", "Stats", "* **95% Range**: ["  + Format (leisr.stats[terms.math._2.5], 5,2) + "," + Format (leisr.stats[terms.math._97.5], 5,2) + "]");
 
 
+
+/************************************* JSON STORAGE ***********************************/
+
 leisr.store_global = utility.Map(
                         utility.Map (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                         "_value_",
                         "_value_[terms.fit.MLE]");
+                        
 
 
+if (Abs(((leisr.partitions_and_trees["0"])[terms.data.tree])[terms.branch_length]) == 0){
+    store_tree = utility.Map (leisr.partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick]');
+} else {    
+    store_tree = utility.Map (leisr.partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick_with_lengths]');
+}
+                       
 leisr.aicc = leisr.getIC(leisr.alignment_wide_MLES[terms.fit.log_likelihood], leisr.alignment_wide_MLES[terms.parameters], leisr.alignment_info[utility.getGlobalValue("terms.data.sites")] * leisr.alignment_info[utility.getGlobalValue("terms.data.sequences")]);
 leisr.json_content = { terms.json.input :
                             {terms.json.file: leisr.alignment_info[terms.data.file],
                                   terms.json.sequences: leisr.alignment_info[terms.data.sequences],
                                   terms.json.sites:     leisr.alignment_info[terms.data.sites],
-                                  terms.json.tree_string: (tree_definition[0])[terms.trees.newick_with_lengths]
+                                  terms.json.partition_count: leisr.partition_count,
+                                  terms.json.trees: store_tree
                             },
                         terms.json.analysis : leisr.analysis_description,
 				        terms.json.fits:
