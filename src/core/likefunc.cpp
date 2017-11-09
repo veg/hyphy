@@ -56,7 +56,7 @@
 
 using namespace hyphy_global_objects;
 
-  //#define _UBER_VERBOSE_LF_DEBUG 1
+//#define _UBER_VERBOSE_LF_DEBUG 1
 
 //#define    _COMPARATIVE_LF_DEBUG_DUMP
 //#define    _COMPARATIVE_LF_DEBUG_CHECK
@@ -1959,8 +1959,8 @@ _Parameter  _LikelihoodFunction::Compute        (void)
         _Variable *v = LocateVar (indexInd.lData[i]);
         if (v->HasChanged()) {
           fprintf (stderr, "[CHANGED] ");
+          fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
         }
-        fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
     }
 #endif
     if (computeMode == 0 || computeMode == 3) {
@@ -5013,16 +5013,16 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (curVar) {
         if (CheckAndSetIthIndependent(index,middle)) {
-          CheckAndSetIthIndependent(index,left);
+          /*CheckAndSetIthIndependent(index,left);
           _Parameter lc = Compute();
           CheckAndSetIthIndependent(index,right);
           _Parameter rc = Compute();
-          CheckAndSetIthIndependent(index,middle);
+          CheckAndSetIthIndependent(index,middle);*/
            middleValue = Compute();
           
            if (verbosityLevel > 100) {
               char buf [256];
-              snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [%g/%g:%g%g]]", index, middle, middleValue, leftValue,lc, rightValue,rc);
+              snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
               BufferToConsole (buf);
                //exit (0);
             }
@@ -7770,7 +7770,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                     (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
                                                     overallScalingFactors.lData[index],
                                                     blockID * sitesPerP,
-                                                    (1+blockID) * sitesPerP,
+                                                    (1L+blockID) * sitesPerP,
                                                     catID,
                                                     siteRes,
                                                     scc,
@@ -7778,7 +7778,8 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                     branchIndex >= 0 ? branchValues->lData: nil);
               }
          
-          
+
+            
             if (np > 1) {
               _Parameter correction = 0.;
               for (blockID = 0; blockID < np; blockID ++)  {
@@ -7788,12 +7789,34 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 sum = temp_sum;
               }
               
-              
             } else {
               sum = thread_results[0];
-              
             }
           
+            /*#ifdef _UBER_VERBOSE_LF_DEBUG
+            static _Parameter previous_results  [4096];
+            static long previous_scalers [4096];
+            
+                if (likeFuncEvalCallCount > 12050) {
+                    abort ();
+                }
+
+                if (likeFuncEvalCallCount > 12000) {
+                    fprintf (stderr, "Block sum %g\n", sum);
+                    for (long i = 0L; i < sitesPerP - 1; i++) {
+                        fprintf (stderr, "[%ld] site %ld \t %g (%g)  [delta %g]; scaler %ld (%ld)\n", catID, i, siteRes[i], previous_results [catID * sitesPerP + i], fabs(siteRes[i]-previous_results [catID * sitesPerP + i]), scc [i], previous_scalers [catID * sitesPerP + i]);
+                    }
+
+                }
+                if (likeFuncEvalCallCount >= 12000) {
+                    
+                    for (long i = 0L; i < sitesPerP - 1; i++) {
+                         previous_results [catID * sitesPerP + i] = siteRes[i];
+                         previous_scalers [catID * sitesPerP + i] = scc [i];
+                    }
+                }
+            #endif*/
+            
             delete [] thread_results;
             /*
             #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum) if (np>1)
