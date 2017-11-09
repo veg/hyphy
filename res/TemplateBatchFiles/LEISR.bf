@@ -238,8 +238,8 @@ leisr.store_global = utility.Map(
                         "_value_[terms.fit.MLE]");
                         
 
-t = (leisr.partitions_and_trees["0"])[utility.getGlobalValue("terms.data.tree")];
-if (Abs(t[terms.branch_length]) == 0){
+
+if (Abs(((leisr.partitions_and_trees["0"])[terms.data.tree])[terms.branch_length]) == 0){
     store_tree = utility.Map (leisr.partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick]');
 } else {    
     store_tree = utility.Map (leisr.partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick_with_lengths]');
