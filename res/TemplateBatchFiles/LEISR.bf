@@ -152,6 +152,11 @@ io.ReportProgressMessageMD ("relative_rates", "overall", ">Fitted an alignment-w
 
 leisr.table_screen_output  = {{"Site", "Rel. rate (MLE)", "95% profile likelihood CI"}};
 leisr.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width : 16, terms.table_options.align : "center"};
+leisr.table_headers = {{"MLE", "Relative rate estimate at a site"}
+                       {"Lower", "Lower bound of 95% profile likelihood CI"}
+                       {"Upper", "Upper bound of 95% profile likelihood CI"}};
+//console.log(leisr.alignment_info [terms.data.sites]);
+leisr.site_results = {leisr.alignment_info [terms.data.sites], Rows (leisr.table_headers)};      
 
 leisr.site_patterns = alignments.Extract_site_patterns (leisr.filter_names[0]);
 
@@ -229,18 +234,29 @@ io.ReportProgressMessageMD ("relative_rates", "Stats", "* **Std.Dev**: "  + Form
 io.ReportProgressMessageMD ("relative_rates", "Stats", "* **95% Range**: ["  + Format (leisr.stats[terms.math._2.5], 5,2) + "," + Format (leisr.stats[terms.math._97.5], 5,2) + "]");
 
 
+
+/************************************* JSON STORAGE ***********************************/
+
 leisr.store_global = utility.Map(
                         utility.Map (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                         "_value_",
                         "_value_[terms.fit.MLE]");
+            
 
 
+if (Abs(((leisr.partitions_and_trees["0"])[terms.data.tree])[terms.branch_length]) == 0){
+    store_tree = utility.Map (leisr.partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick]');
+} else {    
+    store_tree = utility.Map (leisr.partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick_with_lengths]');
+}
+                       
 leisr.aicc = leisr.getIC(leisr.alignment_wide_MLES[terms.fit.log_likelihood], leisr.alignment_wide_MLES[terms.parameters], leisr.alignment_info[utility.getGlobalValue("terms.data.sites")] * leisr.alignment_info[utility.getGlobalValue("terms.data.sequences")]);
 leisr.json_content = { terms.json.input :
                             {terms.json.file: leisr.alignment_info[terms.data.file],
                                   terms.json.sequences: leisr.alignment_info[terms.data.sequences],
                                   terms.json.sites:     leisr.alignment_info[terms.data.sites],
-                                  terms.json.tree_string: (tree_definition[0])[terms.trees.newick_with_lengths]
+                                  terms.json.partition_count: leisr.partition_count,
+                                  terms.json.trees: store_tree
                             },
                         terms.json.analysis : leisr.analysis_description,
 				        terms.json.fits:
@@ -254,7 +270,8 @@ leisr.json_content = { terms.json.input :
                                     terms.efv_estimate: (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0]
 				                }
 				        },
-				        terms.json.relative_site_rates : leisr.rate_estimates,
+				        terms.json.MLE : {terms.json.headers   : leisr.table_headers,
+                                            terms.json.content : {"0":leisr.site_results}},
 				        terms.json.branch_attributes: leisr.alignment_wide_MLES[terms.branch_length],
 				        terms.json.attribute :{ leisr.baseline_model_name: {terms.json.attribute_type: terms.branch_length}}
                      };
@@ -320,6 +337,12 @@ lfunction leisr.store_results (node, result, arguments) {
 			result_row [2] = Format((`&result`)[terms.lower_bound],6,3) + ' :'  +Format((`&result`)[terms.upper_bound],6,3);
 			fprintf (stdout,
 				io.FormatTableRow (result_row,leisr.table_output_options));
+		
+		    // JSON-related
+		    //console.log(_site_index_);
+		    //leisr.site_results[_site_index_][0] = (leisr.rate_estimates[_site_index_+1])[terms.fit.MLE];
+		    //leisr.site_results[_site_index_][1] = (leisr.rate_estimates[_site_index_+1])[terms.lower_bound];
+		    //leisr.site_results[_site_index_][2] = (leisr.rate_estimates[_site_index_+1])[terms.upper_bound];
 		"
     );
 

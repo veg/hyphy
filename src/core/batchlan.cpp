@@ -901,6 +901,11 @@ void KillLFRecord (long lfID, bool completeKill) {
             }
 
         }
+        // unregister event listeners to release reference counts
+        
+        me->UnregisterListeners();
+        
+
 
         if (lfID<likeFuncList.lLength-1) {
             DeleteObject(likeFuncList(lfID));
