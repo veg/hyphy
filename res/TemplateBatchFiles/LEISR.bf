@@ -241,8 +241,6 @@ leisr.store_global = utility.Map(
                         utility.Map (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                         "_value_",
                         "_value_[terms.fit.MLE]");
-            
-
 
 if (Abs(((leisr.partitions_and_trees["0"])[terms.data.tree])[terms.branch_length]) == 0){
     store_tree = utility.Map (leisr.partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick]');
