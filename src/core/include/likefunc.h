@@ -314,6 +314,7 @@ public:
     */
 
     _AssociativeList*CollectLFAttributes         (void) const;
+    void             UnregisterListeners         (void);
 protected:
   
   

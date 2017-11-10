@@ -753,6 +753,15 @@ void     _LikelihoodFunction::Rebuild (bool rescan_parameters) {
 
 //_______________________________________________________________________________________
 
+void     _LikelihoodFunction::UnregisterListeners (void) {
+    unsigned long partition_count = CountObjects(kLFCountPartitions);
+    for (unsigned long i = 0UL; i < partition_count; i++) {
+        UnregisterChangeListenerForDataFilter(theDataFilters.GetElement(i), this);
+    }
+}
+    
+//_______________________________________________________________________________________
+
 void     _LikelihoodFunction::Clear (void)
 {
     DeleteCaches  ();
@@ -760,10 +769,7 @@ void     _LikelihoodFunction::Clear (void)
     unsigned long partition_count = CountObjects(kLFCountPartitions);
   
     theTrees.Clear();
-  
-    for (unsigned long i = 0UL; i < partition_count; i++) {
-        UnregisterChangeListenerForDataFilter(theDataFilters.GetElement(i), this);
-    }
+    UnregisterListeners ();
   
     theDataFilters.Clear();
     theProbabilities.Clear();
