@@ -20,6 +20,8 @@ LoadFunctionLibrary("libv3/models/DNA/JC69.bf");
 LoadFunctionLibrary("libv3/models/protein.bf");
 LoadFunctionLibrary("libv3/models/protein/empirical.bf");
 
+// for JSON storage compatibility
+LoadFunctionLibrary("SelectionAnalyses/modules/io_functions.ibf");
 
 /*------------------------------------------------------------------------------*/
 
@@ -40,14 +42,14 @@ io.DisplayAnalysisBanner(leisr.analysis_description);
 
 /***************************************** LOAD DATASET **********************************************************/
 SetDialogPrompt ("Specify a multiple sequence alignment file");
-leisr.alignment_info  = alignments.ReadNucleotideDataSet ("leisr.dataset", NOne);
+leisr.alignment_info  = alignments.ReadNucleotideDataSet ("leisr.dataset", None);
 
-name_mapping = leisr.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
-if (None == name_mapping) {
-    name_mapping = {};
-    utility.ForEach (alignments.GetSequenceNames ("leisr.dataset"), "_value_", "`&name_mapping`[_value_] = _value_");
+leisr.name_mapping = leisr.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
+if (None == leisr.name_mapping) {
+    leisr.name_mapping = {};
+    utility.ForEach (alignments.GetSequenceNames ("leisr.dataset"), "_value_", "`&leisr.name_mapping`[_value_] = _value_");
 }
-leisr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (leisr.alignment_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+leisr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (leisr.alignment_info[utility.getGlobalValue("terms.data.partitions")], leisr.name_mapping);
 leisr.partition_count = Abs (leisr.partitions_and_trees);
 
 io.CheckAssertion ("leisr.partition_count==1", "This analysis can only handle a single partition");
@@ -268,10 +270,14 @@ leisr.json_content = { terms.json.input :
 				                }
 				        },
 				        terms.json.MLE : {terms.json.headers   : leisr.table_headers,
-                                            terms.json.content : {"0":leisr.site_results}},
-				        terms.json.branch_attributes: leisr.alignment_wide_MLES[terms.branch_length],
-				        terms.json.attribute :{ leisr.baseline_model_name: {terms.json.attribute_type: terms.branch_length}}
-                     };
+                                            terms.json.content : {"0":leisr.site_results}
+                                        }                   
+ 	                   };                                        
+selection.io.json_store_branch_attribute(leisr.json_content, utility.getGlobalValue ("terms.original_name"), utility.getGlobalValue ("terms.json.node_label"), -1, 0, utility.getGlobalValue ("leisr.name_mapping"));
+selection.io.json_store_branch_attribute(leisr.json_content, utility.getGlobalValue ("leisr.baseline_model_name"), utility.getGlobalValue ("terms.branch_length"), 0, 0, 
+                                         selection.io.extract_branch_info((leisr.alignment_wide_MLES[terms.branch_length])[0], "selection.io.branch.length")
+                                         );
+
 io.SpoolJSON (leisr.json_content, leisr.alignment_info[terms.data.file] + ".LEISR.json");
 
 
@@ -352,20 +358,3 @@ lfunction leisr.store_results (node, result, arguments) {
 lfunction leisr.getIC(logl, params, samples) {
     return -2 * logl + 2 * samples / (samples - params - 1) * params;
 }
-
-
-
-lfunction leisr.json_store_branch_attribute(json, attribute_name, attribute_type, partition, values) {
-    utility.EnsureKey(json, terms.json.branch_attributes);
-    utility.EnsureKey(json[terms.json.branch_attributes], partition);
-    utility.EnsureKey(json[terms.json.branch_attributes], terms.json.attribute);
-    utility.EnsureKey((json[terms.json.branch_attributes])[terms.json.attribute], attribute_name);
-    ((json[terms.json.branch_attributes])[terms.json.attribute])[attribute_name] = {terms.json.attribute_type : attribute_type};
-
-    utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
-                             "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
-
-    utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
-                             "(((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name]");
- }
-
