@@ -155,7 +155,6 @@ leisr.table_output_options = {terms.table_options.header : TRUE, terms.table_opt
 leisr.table_headers = {{"MLE", "Relative rate estimate at a site"}
                        {"Lower", "Lower bound of 95% profile likelihood CI"}
                        {"Upper", "Upper bound of 95% profile likelihood CI"}};
-//console.log(leisr.alignment_info [terms.data.sites]);
 leisr.site_results = {leisr.alignment_info [terms.data.sites], Rows (leisr.table_headers)};      
 
 leisr.site_patterns = alignments.Extract_site_patterns (leisr.filter_names[0]);
@@ -338,9 +337,9 @@ lfunction leisr.store_results (node, result, arguments) {
 		
 		    // JSON-related
 		    //console.log(_site_index_);
-		    //leisr.site_results[_site_index_][0] = (leisr.rate_estimates[_site_index_+1])[terms.fit.MLE];
-		    //leisr.site_results[_site_index_][1] = (leisr.rate_estimates[_site_index_+1])[terms.lower_bound];
-		    //leisr.site_results[_site_index_][2] = (leisr.rate_estimates[_site_index_+1])[terms.upper_bound];
+		    leisr.site_results[_site_index_][0] = (leisr.rate_estimates[_site_index_+1])[terms.fit.MLE];
+		    leisr.site_results[_site_index_][1] = (leisr.rate_estimates[_site_index_+1])[terms.lower_bound];
+		    leisr.site_results[_site_index_][2] = (leisr.rate_estimates[_site_index_+1])[terms.upper_bound];
 		"
     );
 
