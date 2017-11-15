@@ -31,7 +31,7 @@ models.protein.empirical.mleF_generators = {"LG": "models.protein.LGML.ModelDesc
                                              "JTT": "models.protein.JTTML.ModelDescription",
                                              "JC69": "models.protein.JC69ML.ModelDescription",
                                              "mtMAM": "models.protein.mtMAMML.ModelDescription",
-                                             "cpREV": "models.protein.cpREVF.ModelDescription",
+                                             "cpREV": "models.protein.cpREVML.ModelDescription",
                                              "HIVBm": "models.protein.HIVBmML.ModelDescription",
                                              "HIVWm": "models.protein.HIVWmML.ModelDescription",
                                              "AB"   : "models.protein.ABML.ModelDescription"};
