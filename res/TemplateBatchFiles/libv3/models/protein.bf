@@ -14,7 +14,11 @@ models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution
                                    {"WAG", "Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
                                    {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
                                    {"JC69", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."},
-                                   {"mtMAM", "Empirical model of protein evolution for mammalian mitochondrial genomes from Yang N, Nielsen R, and Hasegawa M. (1998). Ref: http://dx.doi.org/10.1093/oxfordjournals.molbev.a025888"}};
+                                   {"mtMAM", "Empirical model of protein evolution for mammalian mitochondrial genomes from Yang N, Nielsen R, and Hasegawa M. (1998). Ref: http://dx.doi.org/10.1093/oxfordjournals.molbev.a025888"},
+                                   {"cpREV", "Empirical model of protein evolution for chloroplast genomes from  from Adachi et al. (2000). Ref: https://www.ncbi.nlm.nih.gov/pubmed/10795826"},
+                                   {"HIVBm", "Empirical model of protein evolution for between-host HIV sequences from Nickle et al. (2007). Ref: https://doi.org/10.1371/journal.pone.0000503"},
+                                   {"HIVWm", "Empirical model of protein evolution for within-host HIV sequences from Nickle et al. (2007). Ref: https://doi.org/10.1371/journal.pone.0000503"}
+                                  };
 
 
 models.protein.dimensions = 20;
