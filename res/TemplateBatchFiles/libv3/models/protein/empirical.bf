@@ -13,7 +13,7 @@ models.protein.empirical.default_generators = {"LG": "models.protein.LG.ModelDes
                                                "mtMAM": "models.protein.mtMAM.ModelDescription",
                                                "cpREV": "models.protein.cpREV.ModelDescription",
                                                "HIVBm": "models.protein.HIVBm.ModelDescription",
-                                               "HIVWm": "models.protein.HIVBm.ModelDescription",                              
+                                               "HIVWm": "models.protein.HIVWm.ModelDescription",                              
                                                "AB"   : "models.protein.AB.ModelDescription"};
                                            
 models.protein.empirical.plusF_generators = {"LG": "models.protein.LGF.ModelDescription",
@@ -23,7 +23,7 @@ models.protein.empirical.plusF_generators = {"LG": "models.protein.LGF.ModelDesc
                                              "mtMAM": "models.protein.mtMAMF.ModelDescription",                                           
                                              "cpREV": "models.protein.cpREVF.ModelDescription",
                                              "HIVBm": "models.protein.HIVBmF.ModelDescription",
-                                             "HIVWm": "models.protein.HIVBmF.ModelDescription",
+                                             "HIVWm": "models.protein.HIVWmF.ModelDescription",
                                              "AB"   : "models.protein.ABF.ModelDescription"};
 
 models.protein.empirical.mleF_generators = {"LG": "models.protein.LGML.ModelDescription",
@@ -33,7 +33,7 @@ models.protein.empirical.mleF_generators = {"LG": "models.protein.LGML.ModelDesc
                                              "mtMAM": "models.protein.mtMAMML.ModelDescription",
                                              "cpREV": "models.protein.cpREVF.ModelDescription",
                                              "HIVBm": "models.protein.HIVBmML.ModelDescription",
-                                             "HIVWm": "models.protein.HIVBmML.ModelDescription",
+                                             "HIVWm": "models.protein.HIVWmML.ModelDescription",
                                              "AB"   : "models.protein.ABML.ModelDescription"};
 /** @module models.protein.empirical */
 
