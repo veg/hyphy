@@ -209,7 +209,16 @@ function parameters.SetValues(set) {
  * @returns nothing
  */
 lfunction parameters.ConstrainMeanOfSet (set, mean, namespace) {
-    unscaled = utility.Map (utility.Values (set), "_name_", "_name_ + '_scaler_variable'");
+    if (Type (set) == "AssociativeList") {
+        unscaled = utility.Map (utility.Values (set), "_name_", "_name_ + '_scaler_variable'");
+    } else {
+        if (Type (set) == "Matrix") {
+         unscaled = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");
+        }
+        else {
+            return;
+        }
+    }
     global_scaler = namespace + ".scaler_variable";
     parameters.SetConstraint (global_scaler, Join ("+", unscaled), "global");
     utility.ForEach (set, "_name_", '
@@ -287,18 +296,18 @@ lfunction parameters.AddMultiplicativeTerm(matrix, term, do_empties) {
  */
 function parameters.StringMatrixToFormulas(id, matrix) {
     __N = Rows(matrix);
+    __M = Columns(matrix);
 
-    ExecuteCommands("`id` = {__N,__N}");
+    ExecuteCommands("`id` = {__N,__M}");
 
     for (__r = 0; __r < __N; __r += 1) {
-        for (__c = 0; __c < __N; __c += 1) {
+        for (__c = 0; __c < __M; __c += 1) {
 
-            if (__r != __c && Abs(matrix[__r][__c])) {
+            if (Abs(matrix[__r][__c])) {
                 ExecuteCommands("`id`[__r][__c] := " + matrix[__r][__c]);
             }
         }
     }
-
 }
 
 /**
@@ -399,6 +408,7 @@ lfunction parameters.GetConstraint(parameter) {
 function parameters.SetConstraint(id, value, global_tag) {
     if (Type(id) == "String") {
         if (Abs(id)) {
+            //console.log ("`global_tag` `id` := " + value);
             ExecuteCommands("`global_tag` `id` := " + value);
         }
     } else {

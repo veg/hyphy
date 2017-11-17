@@ -10,14 +10,31 @@ models.protein.empirical.default_generators = {"LG": "models.protein.LG.ModelDes
                                                "WAG": "models.protein.WAG.ModelDescription",
                                                "JTT": "models.protein.JTT.ModelDescription",
                                                "JC69": "models.protein.JC69.ModelDescription",
-                                               "mtMAM": "models.protein.mtMAM.ModelDescription"};
+                                               "mtMAM": "models.protein.mtMAM.ModelDescription",
+                                               "cpREV": "models.protein.cpREV.ModelDescription",
+                                               "HIVBm": "models.protein.HIVBm.ModelDescription",
+                                               "HIVWm": "models.protein.HIVWm.ModelDescription",                              
+                                               "AB"   : "models.protein.AB.ModelDescription"};
                                            
 models.protein.empirical.plusF_generators = {"LG": "models.protein.LGF.ModelDescription",
                                              "WAG": "models.protein.WAGF.ModelDescription",
                                              "JTT": "models.protein.JTTF.ModelDescription",
                                              "JC69": "models.protein.JC69F.ModelDescription",
-                                             "mtMAM": "models.protein.mtMAMF.ModelDescription"};                                           
-                                           
+                                             "mtMAM": "models.protein.mtMAMF.ModelDescription",                                           
+                                             "cpREV": "models.protein.cpREVF.ModelDescription",
+                                             "HIVBm": "models.protein.HIVBmF.ModelDescription",
+                                             "HIVWm": "models.protein.HIVWmF.ModelDescription",
+                                             "AB"   : "models.protein.ABF.ModelDescription"};
+
+models.protein.empirical.mleF_generators = {"LG": "models.protein.LGML.ModelDescription",
+                                             "WAG": "models.protein.WAGML.ModelDescription",
+                                             "JTT": "models.protein.JTTML.ModelDescription",
+                                             "JC69": "models.protein.JC69ML.ModelDescription",
+                                             "mtMAM": "models.protein.mtMAMML.ModelDescription",
+                                             "cpREV": "models.protein.cpREVML.ModelDescription",
+                                             "HIVBm": "models.protein.HIVBmML.ModelDescription",
+                                             "HIVWm": "models.protein.HIVWmML.ModelDescription",
+                                             "AB"   : "models.protein.ABML.ModelDescription"};
 /** @module models.protein.empirical */
 
 /**
@@ -295,6 +312,19 @@ function models.protein.WAGF.ModelDescription(type) {
     return models.protein.WAGF.ModelDescription.model_definition;
 }
 
+/**
+ * @name models.protein.WAGML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the WAG+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.WAGML.ModelDescription(type) {
+    models.protein.WAGML.ModelDescription.model_definition = models.protein.WAG.ModelDescription(type);
+    models.protein.WAGML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.WAGML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.WAGML.ModelDescription.model_definition;
+}
+
 
 
 
@@ -328,6 +358,19 @@ function models.protein.LGF.ModelDescription(type) {
 }
 
 
+/**
+ * @name models.protein.LGML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the LG+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.LGML.ModelDescription(type) {
+    models.protein.LGML.ModelDescription.model_definition = models.protein.LG.ModelDescription(type);
+    models.protein.LGML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.LGML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.LGML.ModelDescription.model_definition;
+}
+
 
 /**************************************** JTT functions *************************************/
 
@@ -360,6 +403,19 @@ function models.protein.JTTF.ModelDescription(type) {
 }
 
 
+/**
+ * @name models.protein.JTTML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JTT+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JTTML.ModelDescription(type) {
+    models.protein.JTTML.ModelDescription.model_definition = models.protein.JTT.ModelDescription(type);
+    models.protein.JTTML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.JTTML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.JTTML.ModelDescription.model_definition;
+}
+
 /**************************************** JC69 functions *************************************/
 
 
@@ -387,6 +443,20 @@ function models.protein.JC69F.ModelDescription(type) {
     models.protein.JC69F.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
     models.protein.JC69F.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
     return models.protein.JC69F.ModelDescription.model_definition;
+}
+
+
+/**
+ * @name models.protein.JC69ML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JC69+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JC69ML.ModelDescription(type) {
+    models.protein.JC69ML.ModelDescription.model_definition = models.protein.JC69.ModelDescription(type);
+    models.protein.JC69ML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.JC69ML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.JC69ML.ModelDescription.model_definition;
 }
 
 
@@ -419,6 +489,195 @@ function models.protein.mtMAMF.ModelDescription(type) {
     models.protein.mtMAMF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
     return models.protein.mtMAMF.ModelDescription.model_definition;
 }
+
+
+/**
+ * @name models.protein.mtMAMML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the mtMAM+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.mtMAMML.ModelDescription(type) {
+    models.protein.mtMAMML.ModelDescription.model_definition = models.protein.mtMAM.ModelDescription(type);
+    models.protein.mtMAMML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.mtMAMML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.mtMAMML.ModelDescription.model_definition;
+}
+
+
+
+/**************************************** cpREV functions *************************************/
+
+/**
+ * @name models.protein.cpREV.ModelDescription
+ * @description Create the baseline schema (dictionary) for the cpREV model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.cpREV.ModelDescription(type) {
+    models.protein.cpREV.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.cpREV.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.cpREV.Rij;
+    models.protein.cpREV.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.cpREV.frequencies";
+    return models.protein.cpREV.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.cpREVF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the cpREV+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.cpREVF.ModelDescription(type) {
+    models.protein.cpREVF.ModelDescription.model_definition = models.protein.cpREV.ModelDescription(type);
+    models.protein.cpREVF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.cpREVF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.cpREVF.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.cpREVML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the cpREV+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.cpREVML.ModelDescription(type) {
+    models.protein.cpREVML.ModelDescription.model_definition = models.protein.cpREV.ModelDescription(type);
+    models.protein.cpREVML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.cpREVML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.cpREVML.ModelDescription.model_definition;
+}
+
+
+/**************************************** HIVBm functions *************************************/
+
+
+/**
+ * @name models.protein.HIVBm.ModelDescription
+ * @description Create the baseline schema (dictionary) for the HIVBm model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.HIVBm.ModelDescription(type) {
+    models.protein.HIVBm.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.HIVBm.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.HIVBm.Rij;
+    models.protein.HIVBm.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.HIVBm.frequencies";
+    return models.protein.HIVBm.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.HIVBmF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the HIVBm+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.HIVBmF.ModelDescription(type) {
+    models.protein.HIVBmF.ModelDescription.model_definition = models.protein.HIVBm.ModelDescription(type);
+    models.protein.HIVBmF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.HIVBmF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.HIVBmF.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.HIVBmML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the HIVBm+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.HIVBmML.ModelDescription(type) {
+    models.protein.HIVBmML.ModelDescription.model_definition = models.protein.HIVBm.ModelDescription(type);
+    models.protein.HIVBmML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.HIVBmML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.HIVBmML.ModelDescription.model_definition;
+}
+
+
+
+/**************************************** HIVWm functions *************************************/
+
+
+/**
+ * @name models.protein.HIVWm.ModelDescription
+ * @description Create the baseline schema (dictionary) for the HIVWm model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.HIVWm.ModelDescription(type) {
+    models.protein.HIVWm.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.HIVWm.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.HIVWm.Rij;
+    models.protein.HIVWm.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.HIVWm.frequencies";
+    return models.protein.HIVWm.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.HIVWmF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the HIVWm+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.HIVWmF.ModelDescription(type) {
+    models.protein.HIVWmF.ModelDescription.model_definition = models.protein.HIVWm.ModelDescription(type);
+    models.protein.HIVWmF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.HIVWmF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.HIVWmF.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.HIVWmML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the HIVWm+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.HIVWmML.ModelDescription(type) {
+    models.protein.HIVWmML.ModelDescription.model_definition = models.protein.HIVWm.ModelDescription(type);
+    models.protein.HIVWmML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.HIVWmML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.HIVWmML.ModelDescription.model_definition;
+}
+
+
+/**************************************** AB functions *************************************/
+
+
+
+/**
+ * @name models.protein.AB.ModelDescription
+ * @description Create the baseline schema (dictionary) for the AB model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.AB.ModelDescription(type) {
+    models.protein.AB.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.AB.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.AB.Rij;
+    models.protein.AB.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.AB.frequencies";
+    return models.protein.AB.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.ABF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the AB+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.ABF.ModelDescription(type) {
+    models.protein.ABF.ModelDescription.model_definition = models.protein.AB.ModelDescription(type);
+    models.protein.ABF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.ABF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.ABF.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.ABML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the AB+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.ABML.ModelDescription(type) {
+    models.protein.ABML.ModelDescription.model_definition = models.protein.AB.ModelDescription(type);
+    models.protein.ABML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.ABML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.ABML.ModelDescription.model_definition;
+}
+
 
 
 /*=============================================================================================*/
@@ -1006,6 +1265,8 @@ function models.protein.JTT.frequencies (model, namespace, datafilter) {
     (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
     return model;
 }
+
+
 
 /* Define a dictionary of amino-acid exchangeability rates for the JTT model of protein evolution.  */ 
 models.protein.JTT.Rij = {
@@ -1745,8 +2006,1038 @@ models.protein.mtMAM.Rij = {
 };
 
 
+lfunction models.protein.HIVWm.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+      {{0.0377494}
+        {0.0240105}
+        {0.0342034}
+        {0.0618606}
+        {0.0422741}
+        {0.0838496}
+        {0.0156076}
+        {0.0983641}
+        {0.0641682}
+        {0.0577867}
+        {0.0158419}
+        {0.0891129}
+        {0.0458601}
+        {0.0437824}
+        {0.057321}
+        {0.0550846}
+        {0.0813774}
+        {0.0515639}
+        {0.019597}
+        {0.0205847}};
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}
+        
+models.protein.HIVWm.Rij = {
+ "A":{
+   "C":0.167653,
+   "D":4.43521,
+   "E":5.56325,
+   "F":0.597923,
+   "G":1.8685,
+   "H":0.005,
+   "I":0.005,
+   "K":0.592784,
+   "L":0.16024,
+   "M":0.005,
+   "N":0.617509,
+   "P":1.00981,
+   "Q":0.005,
+   "R":0.0744808,
+   "S":8.594200000000001,
+   "T":24.1422,
+   "V":24.8094,
+   "W":0.005,
+   "Y":0.005
+  },
+ "C":{
+   "D":0.005,
+   "E":0.005,
+   "F":0.362959,
+   "G":0.0489798,
+   "H":0.005,
+   "I":0.005,
+   "K":0.005,
+   "L":0.005,
+   "M":0.005,
+   "N":0.0604932,
+   "P":0.005,
+   "Q":0.005,
+   "R":2.86364,
+   "S":1.12195,
+   "T":0.005,
+   "V":0.005,
+   "W":5.49894,
+   "Y":8.34835
+  },
+ "D":{
+   "E":12.1233,
+   "F":0.005,
+   "G":10.3969,
+   "H":2.31779,
+   "I":0.145124,
+   "K":0.894313,
+   "L":0.005,
+   "M":0.005,
+   "N":29.4087,
+   "P":0.005,
+   "Q":0.005,
+   "R":0.0674539,
+   "S":0.427881,
+   "T":0.630395,
+   "V":2.91786,
+   "W":0.005,
+   "Y":2.28154
+  },
+ "E":{
+   "F":0.005,
+   "G":14.7801,
+   "H":0.005,
+   "I":0.0390512,
+   "K":23.9626,
+   "L":0.129839,
+   "M":0.005,
+   "N":0.201526,
+   "P":0.005,
+   "Q":3.20656,
+   "R":0.0251632,
+   "S":0.005,
+   "T":0.458743,
+   "V":2.19952,
+   "W":0.005,
+   "Y":0.005
+  },
+ "F":{
+   "G":0.005,
+   "H":0.005,
+   "I":1.48288,
+   "K":0.005,
+   "L":7.48781,
+   "M":0.005,
+   "N":0.005,
+   "P":0.0342252,
+   "Q":0.005,
+   "R":0.005,
+   "S":4.27939,
+   "T":0.114512,
+   "V":2.28,
+   "W":0.005,
+   "Y":4.12728
+  },
+ "G":{
+   "H":0.005,
+   "I":0.005,
+   "K":0.279425,
+   "L":0.0489798,
+   "M":0.0489798,
+   "N":0.0604932,
+   "P":0.005,
+   "Q":0.0604932,
+   "R":13.4379,
+   "S":6.27966,
+   "T":0.0489798,
+   "V":2.79622,
+   "W":2.8258,
+   "Y":0.005
+  },
+ "H":{
+   "I":0.005,
+   "K":0.22406,
+   "L":1.76382,
+   "M":0.005,
+   "N":8.59876,
+   "P":13.9444,
+   "Q":18.5465,
+   "R":6.84405,
+   "S":0.7251570000000001,
+   "T":0.95956,
+   "V":0.827479,
+   "W":0.005,
+   "Y":47.4889
+  },
+ "I":{
+   "K":0.817481,
+   "L":9.102460000000001,
+   "M":17.3064,
+   "N":0.987028,
+   "P":0.005,
+   "Q":0.0342252,
+   "R":1.34069,
+   "S":0.7400910000000001,
+   "T":9.36345,
+   "V":24.8231,
+   "W":0.005,
+   "Y":0.114512
+  },
+ "K":{
+   "L":0.005,
+   "M":4.09564,
+   "N":10.6655,
+   "P":0.111928,
+   "Q":13.0705,
+   "R":39.8897,
+   "S":0.005,
+   "T":4.04802,
+   "V":0.128065,
+   "W":0.005,
+   "Y":0.005
+  },
+ "L":{
+   "M":11.3839,
+   "N":0.005,
+   "P":9.83095,
+   "Q":2.89048,
+   "R":0.586757,
+   "S":6.14396,
+   "T":0.005,
+   "V":2.95344,
+   "W":1.37031,
+   "Y":0.005
+  },
+ "M":{
+   "N":0.201526,
+   "P":0.005,
+   "Q":0.005,
+   "R":3.28652,
+   "S":0.392575,
+   "T":7.41313,
+   "V":14.7683,
+   "W":0.005,
+   "Y":0.579198
+  },
+ "N":{
+   "P":0.344848,
+   "Q":0.342068,
+   "R":0.16024,
+   "S":14.5699,
+   "T":4.54206,
+   "V":0.0744808,
+   "W":0.005,
+   "Y":5.06475
+  },
+ "P":{
+   "Q":3.04502,
+   "R":0.404723,
+   "S":14.249,
+   "T":4.33701,
+   "V":0.005,
+   "W":0.005,
+   "Y":0.005
+  },
+ "Q":{
+   "R":10.6746,
+   "S":0.16024,
+   "T":0.203091,
+   "V":0.005,
+   "W":0.0443298,
+   "Y":0.005
+  },
+ "R":{
+   "S":8.350239999999999,
+   "T":0.928203,
+   "V":0.279425,
+   "W":5.96564,
+   "Y":0.005
+  },
+ "S":{
+   "T":6.34079,
+   "V":0.862637,
+   "W":1.10156,
+   "Y":0.933142
+  },
+ "T":{
+   "V":0.005,
+   "W":0.005,
+   "Y":0.490608
+  },
+ "V":{
+   "W":0.005,
+   "Y":1.35482
+  },
+ "W":{
+   "Y":0.005
+  }
+};
+
+
+lfunction models.protein.HIVBm.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+      {{   0.060490222}
+        {   0.020075899}
+        {   0.042109048}
+        {   0.071567447}
+        {   0.028809447}
+        {   0.072308239}
+        {   0.022293943}
+        {   0.069730629}
+        {   0.056968211}
+        {   0.098851122}
+        {   0.019768318}
+        {   0.044127815}
+        {   0.046025282}
+        {   0.053606488}
+        {   0.066039665}
+        {    0.05060433}
+        {   0.053636813}
+        {   0.061625237}
+        {   0.033011601}
+        {   0.028350243}};
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}
+          
+models.protein.HIVBm.Rij = {
+ "A":{
+   "C":0.123758,
+   "D":1.45504,
+   "E":1.48135,
+   "F":0.0141269,
+   "G":2.13536,
+   "H":0.0847613,
+   "I":0.005,
+   "K":0.005,
+   "L":0.215256,
+   "M":0.0186643,
+   "N":0.005,
+   "P":2.12217,
+   "Q":0.0551128,
+   "R":0.307507,
+   "S":2.46633,
+   "T":15.9183,
+   "V":7.61428,
+   "W":0.005,
+   "Y":0.005
+  },
+ "C":{
+   "D":0.005,
+   "E":0.005,
+   "F":9.29815,
+   "G":0.897871,
+   "H":0.240073,
+   "I":0.005,
+   "K":0.005,
+   "L":0.129777,
+   "M":0.005,
+   "N":0.08606419999999999,
+   "P":0.005,
+   "Q":0.005,
+   "R":0.351721,
+   "S":4.69314,
+   "T":0.739969,
+   "V":0.420027,
+   "W":2.63277,
+   "Y":7.57932
+  },
+ "D":{
+   "E":10.5872,
+   "F":0.005,
+   "G":2.83806,
+   "H":1.9169,
+   "I":0.0176792,
+   "K":0.005,
+   "L":0.008760479999999999,
+   "M":0.005,
+   "N":17.6612,
+   "P":0.0342658,
+   "Q":0.005,
+   "R":0.005,
+   "S":0.52823,
+   "T":0.274724,
+   "V":1.04793,
+   "W":0.005,
+   "Y":0.6746529999999999
+  },
+ "E":{
+   "F":0.005,
+   "G":3.92775,
+   "H":0.11974,
+   "I":0.00609079,
+   "K":4.61482,
+   "L":0.005,
+   "M":0.175789,
+   "N":0.07926329999999999,
+   "P":0.0120226,
+   "Q":2.5602,
+   "R":0.0749218,
+   "S":0.005,
+   "T":0.289774,
+   "V":1.02847,
+   "W":0.005,
+   "Y":0.07926329999999999
+  },
+ "F":{
+   "G":0.291561,
+   "H":0.145558,
+   "I":3.39836,
+   "K":0.0342658,
+   "L":8.524839999999999,
+   "M":0.188025,
+   "N":0.005,
+   "P":0.005,
+   "Q":0.005,
+   "R":0.005,
+   "S":0.956472,
+   "T":0.0141269,
+   "V":0.723274,
+   "W":0.8293430000000001,
+   "Y":15.34
+  },
+ "G":{
+   "H":0.005,
+   "I":0.005,
+   "K":0.521705,
+   "L":0.005,
+   "M":0.005,
+   "N":0.323401,
+   "P":0.005,
+   "Q":0.0619137,
+   "R":3.65345,
+   "S":4.38041,
+   "T":0.369615,
+   "V":0.953155,
+   "W":1.21674,
+   "Y":0.005
+  },
+ "H":{
+   "I":0.103111,
+   "K":0.005,
+   "L":1.74171,
+   "M":0.005,
+   "N":7.64585,
+   "P":2.45318,
+   "Q":7.05545,
+   "R":9.04044,
+   "S":0.382747,
+   "T":0.7115939999999999,
+   "V":0.005,
+   "W":0.06951789999999999,
+   "Y":18.6943
+  },
+ "I":{
+   "K":0.322319,
+   "L":5.95879,
+   "M":11.2065,
+   "N":0.680565,
+   "P":0.0410593,
+   "Q":0.005,
+   "R":0.677289,
+   "S":1.21803,
+   "T":8.612170000000001,
+   "V":17.7389,
+   "W":0.005,
+   "Y":0.148168
+  },
+ "K":{
+   "L":0.0814995,
+   "M":1.28246,
+   "N":7.90443,
+   "P":0.0313862,
+   "Q":6.54737,
+   "R":20.45,
+   "S":0.504111,
+   "T":4.67142,
+   "V":0.265829,
+   "W":0.005,
+   "Y":0.005
+  },
+ "L":{
+   "M":5.31961,
+   "N":0.005,
+   "P":2.07757,
+   "Q":1.49456,
+   "R":0.701427,
+   "S":0.927656,
+   "T":0.0437673,
+   "V":1.41036,
+   "W":0.748843,
+   "Y":0.111986
+  },
+ "M":{
+   "N":0.005,
+   "P":0.005,
+   "Q":0.303676,
+   "R":2.51394,
+   "S":0.005,
+   "T":4.94026,
+   "V":6.8532,
+   "W":0.089078,
+   "Y":0.005
+  },
+ "N":{
+   "P":0.00739578,
+   "Q":0.672052,
+   "R":0.295543,
+   "S":13.1447,
+   "T":6.88667,
+   "V":0.026656,
+   "W":0.005,
+   "Y":1.76417
+  },
+ "P":{
+   "Q":4.47211,
+   "R":1.28355,
+   "S":5.37762,
+   "T":2.01417,
+   "V":0.005,
+   "W":0.0444506,
+   "Y":0.0304381
+  },
+ "Q":{
+   "R":3.4215,
+   "S":0.116311,
+   "T":0.243589,
+   "V":0.0209153,
+   "W":0.026656,
+   "Y":0.113033
+  },
+ "R":{
+   "S":3.4791,
+   "T":2.86868,
+   "V":0.0812454,
+   "W":0.9913380000000001,
+   "Y":0.00991826
+  },
+ "S":{
+   "T":8.93107,
+   "V":0.0749218,
+   "W":0.0248728,
+   "Y":0.648024
+  },
+ "T":{
+   "V":0.709226,
+   "W":0.005,
+   "Y":0.105652
+  },
+ "V":{
+   "W":0.005,
+   "Y":0.0410593
+  },
+ "W":{
+   "Y":1.28022
+  }
+};
+
+lfunction models.protein.cpREV.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+      {{         0.076}
+        {         0.009}
+        {         0.037}
+        {         0.049}
+        {         0.051}
+        {         0.084}
+        {         0.025}
+        {         0.081}
+        {          0.05}
+        {         0.101}
+        {         0.022}
+        {         0.041}
+        {         0.043}
+        {         0.038}
+        {         0.062}
+        {         0.062}
+        {         0.054}
+        {         0.066}
+        {         0.018}
+        {         0.031}};
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}
+        
+models.protein.cpREV.Rij = {
+ "A":{
+   "C":1.2816975,
+   "D":0.33527215,
+   "E":0.95600458,
+   "F":0.13027718,
+   "G":1.2740342,
+   "H":0.1264455,
+   "I":0.27779692,
+   "K":0.45213844,
+   "L":0.37742065,
+   "M":0.35443056,
+   "N":0.43489587,
+   "P":0.93876201,
+   "Q":0.30078701,
+   "R":0.20116329,
+   "S":4.6746517,
+   "T":2.5672267,
+   "V":1.8545339,
+   "W":0.026821772,
+   "Y":0.10728709
+  },
+ "C":{
+   "D":0.019158408,
+   "E":0.019158408,
+   "F":1.3909005,
+   "G":0.58049978,
+   "H":0.84488581,
+   "I":0.53643544,
+   "K":0.091960361,
+   "L":0.75867297,
+   "M":0.30461869,
+   "N":1.0307224,
+   "P":0.54601464,
+   "Q":0.019158408,
+   "R":1.576737,
+   "S":4.465825,
+   "T":1.1035243,
+   "V":1.1341778,
+   "W":0.8333907699999999,
+   "Y":2.8086227
+  },
+ "D":{
+   "E":7.0713686,
+   "F":0.042148499,
+   "G":0.8257274,
+   "H":0.63414332,
+   "I":0.019158408,
+   "K":0.78932643,
+   "L":0.019158408,
+   "M":0.09004452,
+   "N":8.4967541,
+   "P":0.32569294,
+   "Q":0.7663363399999999,
+   "R":0.082381156,
+   "S":1.1303461,
+   "T":0.50961366,
+   "V":0.14368806,
+   "W":0.034485135,
+   "Y":0.53835128
+  },
+ "E":{
+   "F":0.27779692,
+   "G":0.72610368,
+   "H":0.31036622,
+   "I":0.28354444,
+   "K":5.0367456,
+   "L":0.15709895,
+   "M":0.21649002,
+   "N":2.0212121,
+   "P":0.35443056,
+   "Q":5.9812551,
+   "R":0.29120781,
+   "S":1.0881976,
+   "T":0.70694527,
+   "V":0.38316817,
+   "W":0.12069797,
+   "Y":0.2720494
+  },
+ "F":{
+   "G":0.047896021,
+   "H":0.24331179,
+   "I":0.86979174,
+   "K":0.13794054,
+   "L":2.4292862,
+   "M":0.6264799599999999,
+   "N":0.18583656,
+   "P":0.082381156,
+   "Q":0.019158408,
+   "R":0.10153956,
+   "S":0.93301449,
+   "T":0.28354444,
+   "V":0.60732155,
+   "W":0.89661351,
+   "Y":4.5405428
+  },
+ "G":{
+   "H":0.036400976,
+   "I":0.07663363400000001,
+   "K":0.50386614,
+   "L":0.038316817,
+   "M":0.040232658,
+   "N":1.2510441,
+   "P":0.053643544,
+   "Q":0.25480683,
+   "R":0.46554933,
+   "S":1.323846,
+   "T":0.17625736,
+   "V":0.17434152,
+   "W":0.15709895,
+   "Y":0.019158408
+  },
+ "H":{
+   "I":0.055559384,
+   "K":0.58433146,
+   "L":0.1264455,
+   "M":0.019158408,
+   "N":2.6917564,
+   "P":0.29120781,
+   "Q":2.431202,
+   "R":1.3698262,
+   "S":0.58049978,
+   "T":0.061306907,
+   "V":0.047896021,
+   "W":0.13219302,
+   "Y":3.7761223
+  },
+ "I":{
+   "K":0.66096509,
+   "L":3.3431423,
+   "M":3.39487,
+   "N":0.32186126,
+   "P":0.22415338,
+   "Q":0.17625736,
+   "R":0.26055435,
+   "S":0.41382162,
+   "T":1.9924745,
+   "V":9.190288499999999,
+   "W":0.080465315,
+   "Y":0.17050984
+  },
+ "K":{
+   "L":0.4176533,
+   "M":0.36975728,
+   "N":4.6554933,
+   "P":0.57858393,
+   "Q":6.3471807,
+   "R":8.586798699999999,
+   "S":1.6629499,
+   "T":1.7587419,
+   "V":0.47704437,
+   "W":0.019158408,
+   "Y":0.47321269
+  },
+ "L":{
+   "M":2.588301,
+   "N":0.21649002,
+   "P":0.41956914,
+   "Q":0.54793048,
+   "R":0.38891569,
+   "S":0.98857388,
+   "T":0.29887117,
+   "V":1.6572023,
+   "W":0.30461869,
+   "Y":0.36209392
+  },
+ "M":{
+   "N":0.11686629,
+   "P":0.19158408,
+   "Q":0.38699985,
+   "R":0.23948011,
+   "S":0.1781732,
+   "T":1.2357173,
+   "V":0.9100244,
+   "W":0.16476231,
+   "Y":0.41190578
+  },
+ "N":{
+   "P":0.33144047,
+   "Q":1.4713658,
+   "R":0.68395518,
+   "S":3.9945282,
+   "T":2.6687663,
+   "V":0.15901479,
+   "W":0.07663363400000001,
+   "Y":1.444544
+  },
+ "P":{
+   "Q":0.61881659,
+   "R":0.16667815,
+   "S":2.3028407,
+   "T":0.49811862,
+   "V":0.23373258,
+   "W":0.09387620100000001,
+   "Y":0.18583656
+  },
+ "Q":{
+   "R":3.3431423,
+   "S":0.75867297,
+   "T":0.46171764,
+   "V":0.10345541,
+   "W":0.10153956,
+   "Y":0.74909377
+  },
+ "R":{
+   "S":0.73759872,
+   "T":0.60157402,
+   "V":0.17625736,
+   "W":0.44064339,
+   "Y":0.61881659
+  },
+ "S":{
+   "T":4.1209737,
+   "V":0.31994542,
+   "W":0.13985638,
+   "Y":1.0000689
+  },
+ "T":{
+   "V":1.456039,
+   "W":0.055559384,
+   "Y":0.1360247
+  },
+ "V":{
+   "W":0.019158408,
+   "Y":0.22798506
+  },
+ "W":{
+   "Y":0.66288093
+  }
+};
 
 
 
-
+lfunction models.protein.AB.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+      {{6.541704e-02}
+        {4.708366e-02}
+        {3.168984e-02}
+        {4.688141e-02}
+        {2.150693e-02}
+        {4.240711e-02}
+        {2.842211e-02}
+        {1.005278e-01}
+        {9.812606e-03}
+        {3.424424e-02}
+        {6.222565e-02}
+        {4.844488e-02}
+        {1.760370e-02}
+        {3.478555e-02}
+        {3.962469e-02}
+        {1.280566e-01}
+        {8.199314e-02}
+        {3.393045e-02}
+        {7.586119e-02}
+        {4.948141e-02}};
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}
+        
+models.protein.AB.Rij = {
+ "A":{
+   "C":0.1784266,
+   "D":0.09291290000000001,
+   "E":1.241095,
+   "F":0.008929181,
+   "G":0.1992269,
+   "H":0.9521821,
+   "I":1.851951,
+   "K":5.241316,
+   "L":0.1140412,
+   "M":0.06969101,
+   "N":0.07388355000000001,
+   "P":0.06299270999999999,
+   "Q":0.1130146,
+   "R":1.800713,
+   "S":0.9988358000000001,
+   "T":2.912317,
+   "V":0.07939549,
+   "W":0.1433528,
+   "Y":3.774477
+  },
+ "C":{
+   "D":0.782913,
+   "E":0.05795374,
+   "F":0.1821885,
+   "G":1.923901,
+   "H":0.06273863,
+   "I":1.0894,
+   "K":10.4955,
+   "L":0.3245175,
+   "M":0.3932002,
+   "N":7.54924,
+   "P":0.3362326,
+   "Q":0.08208677,
+   "R":0.3498713,
+   "S":1.926435,
+   "T":1.135258,
+   "V":0.5724286,
+   "W":0.1711315,
+   "Y":0.1366145
+  },
+ "D":{
+   "E":7.185182,
+   "F":1.374268e-06,
+   "G":0.08705989,
+   "H":0.5038373,
+   "I":0.4868901,
+   "K":14.05444,
+   "L":1.762721,
+   "M":0.02769442,
+   "N":6.190318,
+   "P":0.03972173,
+   "Q":0.1955446,
+   "R":0.007342554,
+   "S":7.348346,
+   "T":2.147175,
+   "V":0.0007310937,
+   "W":2.622763,
+   "Y":0.04931206
+  },
+ "E":{
+   "F":0.02340019,
+   "G":0.1843856,
+   "H":7.426619,
+   "I":2.1124,
+   "K":11.26995,
+   "L":0.03916999,
+   "M":0.03020502,
+   "N":0.06622772,
+   "P":0.03357577,
+   "Q":0.1031734,
+   "R":0.1509482,
+   "S":0.5822988,
+   "T":0.1516881,
+   "V":0.01423897,
+   "W":0.9078338,
+   "Y":0.4076074
+  },
+ "F":{
+   "G":1.046446e-08,
+   "H":7.519215e-11,
+   "I":0.05891123,
+   "K":3.963388,
+   "L":0.0006594967,
+   "M":0.006079219,
+   "N":3.722878e-16,
+   "P":0.007213178,
+   "Q":0.1993818,
+   "R":0.004878395,
+   "S":0.2639482,
+   "T":3.225214e-06,
+   "V":0.4440833,
+   "W":0.7741612,
+   "Y":0.02243512
+  },
+ "G":{
+   "H":3.691671,
+   "I":0.0551634,
+   "K":8.908434,
+   "L":6.712736e-06,
+   "M":0.6802781,
+   "N":3.030805,
+   "P":0.001233336,
+   "Q":0.00149661,
+   "R":0.7426909,
+   "S":0.0005906405,
+   "T":0.1202094,
+   "V":4.332983e-05,
+   "W":0.02737091,
+   "Y":0.009047737
+  },
+ "H":{
+   "I":1.38937,
+   "K":7.29808,
+   "L":0.0001029959,
+   "M":0.001283121,
+   "N":3.608816,
+   "P":0.07659566,
+   "Q":0.05288625,
+   "R":0.02889815,
+   "S":0.06776709,
+   "T":0.06016624,
+   "V":0.02252612,
+   "W":0.1240642,
+   "Y":0.5795409
+  },
+ "I":{
+   "K":9.139518000000001,
+   "L":0.03560482,
+   "M":0.02157936,
+   "N":0.055044,
+   "P":0.02187264,
+   "Q":0.1984772,
+   "R":0.07915055999999999,
+   "S":0.9984215,
+   "T":0.07862767,
+   "V":0.1386853,
+   "W":0.2295842,
+   "Y":0.42282
+  },
+ "K":{
+   "L":4.706586,
+   "M":5.879103,
+   "N":1.455741,
+   "P":2.298295,
+   "Q":5.642309,
+   "R":10.49496,
+   "S":5.439116,
+   "T":3.443285,
+   "V":7.01389,
+   "W":20.55414,
+   "Y":6.890244
+  },
+ "L":{
+   "M":1.601123,
+   "N":0.5059793,
+   "P":10.96748,
+   "Q":2.714705,
+   "R":0.05016568,
+   "S":0.6007607,
+   "T":3.087152,
+   "V":0.06318748,
+   "W":0.2903165,
+   "Y":7.926675
+  },
+ "M":{
+   "N":0.02158451,
+   "P":5.647985,
+   "Q":3.390618,
+   "R":1.149931,
+   "S":0.1580539,
+   "T":0.5702792,
+   "V":0.3378544,
+   "W":0.152132,
+   "Y":3.59531
+  },
+ "N":{
+   "P":1.238634,
+   "Q":0.004649035,
+   "R":0.009948993999999999,
+   "S":0.08688405,
+   "T":1.039298,
+   "V":0.008024263,
+   "W":0.07109973,
+   "Y":0.0349344
+  },
+ "P":{
+   "Q":3.94794,
+   "R":0.07417279,
+   "S":0.01861354,
+   "T":1.415612,
+   "V":0.1011149,
+   "W":0.002246759,
+   "Y":4.39672
+  },
+ "Q":{
+   "R":0.3556198,
+   "S":0.9813064,
+   "T":0.03674486,
+   "V":0.2199856,
+   "W":7.074464,
+   "Y":1.643946
+  },
+ "R":{
+   "S":1.284651,
+   "T":0.9057112,
+   "V":0.005516074,
+   "W":0.1992133,
+   "Y":0.2217442
+  },
+ "S":{
+   "T":3.058575,
+   "V":0.1385142,
+   "W":0.8104751,
+   "Y":0.07477041
+  },
+ "T":{
+   "V":0.01412361,
+   "W":0.09984255,
+   "Y":0.2166054
+  },
+ "V":{
+   "W":0.6121284,
+   "Y":0.09663569
+  },
+ "W":{
+   "Y":0.5010635
+  }
+};
 

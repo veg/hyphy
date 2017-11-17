@@ -228,7 +228,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 
     // Set EFV field
-	Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
+	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
 													    id,
 													    data_filter);
 
@@ -240,10 +240,14 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	model.generic.DefineModel.model [terms.id] = id;
 
 
-
 	parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.matrix_id],model.generic.DefineModel.model[terms.model.rate_matrix]);
-	utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
-
+	
+	if (Type ((model.generic.DefineModel.model[terms.efv_estimate])[0]) == "String") {
+	    parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.efv_id],model.generic.DefineModel.model[terms.efv_estimate]);
+	} else {
+	    utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
+	}
+	    	
 
 	model.define_from_components (id, 	model.generic.DefineModel.model [terms.model.matrix_id], model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
 
