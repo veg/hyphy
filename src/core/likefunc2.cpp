@@ -719,18 +719,23 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                         for (long r1 = lowerBound, r2 = lowerBound2; r1 < upperBound; r1++,r2++) {
                             if (siteCorrectors) {
                                 long scv = *siteCorrectors;
-
-                                if (scv < scalers.lData[r1]) { // this class has a _smaller_ scaling factor
-                                    buffer[r1] = currentRateWeight * buffer[r2] + buffer[r1] * acquireScalerMultiplier (scalers.lData[r1] - scv);
+                                
+                                if (currentRateCombo == 0L) { // first entry
+                                    buffer[r1] = currentRateWeight * buffer[r2];
                                     scalers.lData[r1] = scv;
                                 } else {
-                                    if (scv > scalers.lData[r1]) { // this is a _larger_ scaling factor
-                                        buffer[r1] += currentRateWeight * buffer[r2] * acquireScalerMultiplier (scv - scalers.lData[r1]);
-                                    } else { // same scaling factors
-                                        buffer[r1] += currentRateWeight * buffer[r2];
+                                    if (scv < scalers.lData[r1]) { // this class has a _smaller_ scaling factor
+                                        buffer[r1] = currentRateWeight * buffer[r2] + buffer[r1] * acquireScalerMultiplier (scalers.lData[r1] - scv);
+                                        scalers.lData[r1] = scv;
+                                    } else {
+                                        if (scv > scalers.lData[r1]) { // this is a _larger_ scaling factor
+                                            buffer[r1] += currentRateWeight * buffer[r2] * acquireScalerMultiplier (scv - scalers.lData[r1]);
+                                        } else { // same scaling factors
+                                            buffer[r1] += currentRateWeight * buffer[r2];
+                                        }
                                     }
                                 }
-
+                                
                                 siteCorrectors++;
                             } else {
                                 buffer[r1] += currentRateWeight * buffer[r2];
@@ -1231,7 +1236,8 @@ void _LikelihoodFunction::CleanupParameterMapping (void)
     parameterTransformationFunction.Clear();
 }
 
-
+//#define _UBER_VERBOSE_LF_DEBUG 1
+//extern long likeFuncEvalCallCount;
 
 //_______________________________________________________________________________________________
 
@@ -1270,20 +1276,30 @@ _Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Paramet
             WarnError ("Constant-on-partition categories are currently not supported by the evaluation engine");
         } else {
             for (unsigned long patternID = 0UL; patternID < pattern_count; patternID++) {
-                long patternFrequency = index_filter->GetFrequency(patternID);;
+                
+                
+                long patternFrequency = index_filter->GetFrequency(patternID);
                 if (patternFrequency > 1) {
                     logL             += myLog(patternLikelihoods[patternID])*patternFrequency;
                     cumulativeScaler += patternScalers.lData[patternID]*patternFrequency;
-                } else
-                    // all this to avoid a double*long multiplication
-                {
+                } else {
+                    // avoid a double*long multiplication
                     logL             += myLog(patternLikelihoods[patternID]);
                     cumulativeScaler += patternScalers.lData[patternID];
                 }
+#ifdef _UBER_VERBOSE_LF_DEBUG
+        if (likeFuncEvalCallCount > 12000) {
+            fprintf (stderr, "[%ld] %g (scaler %ld)\n", patternID, logL, cumulativeScaler);
+        }
+#endif
             }
         }
     }
-
+#ifdef _UBER_VERBOSE_LF_DEBUG
+    if (likeFuncEvalCallCount > 12050) {
+        abort();
+    }
+#endif
     return logL - cumulativeScaler * _logLFScaler;
 
 }

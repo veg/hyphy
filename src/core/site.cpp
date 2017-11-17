@@ -346,9 +346,9 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
               *resolution_arrays [3] = {large_store + tokens.sLength, large_store + tokens.sLength + baseLength,large_store + tokens.sLength + 2*baseLength},
               resolutions_index = 0L;
           
-          for (unsigned long digit1 = 0; digit1 < large_store[0]; digit1 ++) {
-            for (unsigned long digit2 = 0; digit2 < large_store[1]; digit2 ++) {
-              for (unsigned long digit3 = 0; digit3 < large_store[2]; digit3 ++) {
+          for (long digit1 = 0L; digit1 < large_store[0]; digit1 ++) {
+            for (long digit2 = 0L; digit2 < large_store[1]; digit2 ++) {
+              for (long digit3 = 0L; digit3 < large_store[2]; digit3 ++) {
                 receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength * baseLength + resolution_arrays[1][digit2] * baseLength + resolution_arrays[2][digit3];
               }
             }
@@ -360,8 +360,8 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
                  *resolution_arrays [2] = {large_store + tokens.sLength,large_store + tokens.sLength + baseLength},
                  resolutions_index = 0L;
             
-            for (unsigned long digit1 = 0; digit1 < large_store[0]; digit1 ++) {
-              for (unsigned long digit2 = 0; digit2 < large_store[1]; digit2 ++) {
+            for (long digit1 = 0L; digit1 < large_store[0]; digit1 ++) {
+              for (long digit2 = 0L; digit2 < large_store[1]; digit2 ++) {
                 receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength + resolution_arrays[1][digit2];
               }
             }
@@ -2426,7 +2426,7 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
 
      // security checks
     if (horizontalList.empty() || verticalList.lLength<unit) {
-        ReportWarning (_String("Row and/or column partition is emptyString. All the data will be used by default."));
+        ReportWarning (_String("Row and/or column partition is empty. All the data will be used by default."));
         if (horizontalList.empty()) {
             horizontalList.Populate (isFilteredAlready ? firstOne->theNodeMap.lLength : ds->NoOfSpecies(),0,1);
         }
@@ -2865,7 +2865,7 @@ _String*    _DataSetFilter::GetExclusions (void) const {
 //_______________________________________________________________________
 
 unsigned long    _DataSetFilter::GetDimension (bool correct) const {
-    unsigned long result = ComputePower (theData->theTT->baseLength, unitLength);
+    unsigned long result = ComputePower (theData->theTT->LengthOfAlphabet(), unitLength);
     return correct ? result - theExclusions.lLength : result;
 }
 
@@ -6114,7 +6114,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
     }
 
 
-    _Matrix   *  out = new _Matrix (ComputePower (theTT->baseLength, atom),
+    _Matrix   *  out = new _Matrix (ComputePower (theTT->LengthOfAlphabet(), atom),
                                     posSpec?unit/atom:1,
                                     false,
                                     true);

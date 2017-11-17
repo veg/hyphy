@@ -84,6 +84,9 @@ namespace terms{
 
 
     /* Term functions */
+    function characterFrequency (character) {
+        return "Equilibrium frequency for " + character;
+    }
     function nucleotideRate(fromC, toC) {
         return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
     }
@@ -172,6 +175,7 @@ namespace terms{
         equal      = "Equal frequencies";
         CF3x4      = "Corrected 3x4 frequency estimator";
         _20x1      = "Protein 20x1 estimator";
+        MLE        = "Maximum likelihood frequency estimator";
         predefined = "Based on a training set";
         binary     = "Binary character frequency estimator"; 
     }

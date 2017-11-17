@@ -260,7 +260,6 @@ namespace hyphy_global_objects {
           _data_filter_listeners.Insert ((BaseRef)index, (long)current_listeners, false, false);
         }
         
-        
         if (current_listeners->_SimpleList::Find((long)listener) < 0L) {
           (*current_listeners) << listener;
         }

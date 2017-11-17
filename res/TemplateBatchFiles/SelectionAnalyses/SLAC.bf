@@ -75,12 +75,12 @@ slac.json = {
     /**
         The dictionary of results to be written to JSON at the end of the run
     */
-    
+
 slac.display_orders =   {terms.original_name: -1,
                         terms.json.nucleotide_gtr: 0,
                         terms.json.global_mg94xrev: 1
                        };
-                       
+
 
 selection.io.startTimer (slac.json [terms.json.timers], "Total time", 0);
 
@@ -264,13 +264,13 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
     }
 
     slac.branch_attributes = selection.substitution_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info[terms.code]);
-    
+
     /*
     selection.io.json_store_branch_attribute(slac.json, terms.original_name, terms.json.node_label, 0,
                                              slac.i,
                                              slac.name_mapping);
     */
-    
+
     selection.io.json_store_branch_attribute(slac.json, terms.codon, terms.json.node_label, 0,
                                              slac.i,
                                              slac.branch_attributes[terms.codon]);
@@ -329,7 +329,11 @@ if (slac.samples > 0) {
         slac.table_output_options_samplers[terms.table_options.header] = TRUE;
         slac.sample.results = {};
 
-        slac.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{slac.partitioned_mg_results[terms.likelihood_function]}}});
+        slac.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{slac.partitioned_mg_results[terms.likelihood_function]}},
+                                        "Headers" : {{"libv3/all-terms.bf"}},
+                                        "Variables" : {{"slac.by_site","slac.AVERAGED","slac.RESOLVED","slac.by_branch"}}
+                                        });
+
 
         for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
 

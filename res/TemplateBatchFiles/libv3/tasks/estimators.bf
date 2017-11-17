@@ -371,7 +371,7 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
 
 
 /**
- * @name estimators.ApplyExistingEstimates
+ * @name    
  * @param {String} likelihood_function_id
  * @param {Dictionary} model_descriptions
  * @param {Matrix} initial_values
@@ -614,7 +614,7 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i] = filters[i];
         DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
-    }
+   }
 
     user_model_id = context + ".user_model";
     utility.ExecuteInGlobalNamespace ("`user_model_id` = 0");
