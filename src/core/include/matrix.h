@@ -770,109 +770,7 @@ private:
 
 
 
-/*__________________________________________________________________________________________________________________________________________ */
 
-struct _associative_list_key_value {
-  const char * key;
-  _PMathObj  payload;
-};
-
-class           _AssociativeList: public _MathObject {
-public:
-    _AssociativeList                    (void);
-    virtual ~_AssociativeList           (void) {}
-
-    bool    ParseStringRepresentation   (_String&, _FormulaParsingContext&);
-    /* SLKP 20090803
-
-        Parse the list represented as
-            {"key": value, ...}
-
-        the boolean argument is supplied to request reporting/suppression of error messages
-
-        returns true on successful parse
-
-     */
-
-    virtual BaseRef     toStr           (unsigned long = 0UL);
-    virtual _PMathObj   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
-    // execute this operation with the list of Args
-    virtual BaseRef     makeDynamic     (void) const;
-    virtual _PMathObj   Compute         (void);
-    void                Clear           (void);
-    virtual void        Merge           (_PMathObj);
-    /* 20100907: SLKP
-            A simple function to merge two lists;
-            the combined list will have the key set equal to the union of the two input key sets
-            if there are conflicting values for a given key, an undefined value will be stored in
-            for the corresponding key
-
-
-     */
-
-    virtual void        Duplicate       (BaseRefConst);
-    _PMathObj           MAccess         (_PMathObj);
-
-    _PMathObj           MIterator       (_PMathObj, _PMathObj);
-    /* perform a function call (ID stored in the first argument)
-       having performed [an optional] conditional check on the associated key (either empty for noop or a function ID)
-       Both functional IDs MUST be defined and take TWO and ONE argumens respectively
-
-       returns the number of items processed
-    */
-
-    _PMathObj           GetByKey        (_String const&, long) const;
-    _PMathObj           GetByKey        (_String const&) const;
-    _PMathObj           GetByKey        (long, long) const;
-    void                DeleteByKey     (_PMathObj);
-    _PMathObj           MCoord          (_PMathObj);
-    void                MStore          (_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
-    // SLKP 20100811: see the comment for _Matrix::MStore
-
-    void                MStore          (const _String&  , _PMathObj, bool = true);
-  
-    /* a convenience build-out function to push key-value pairs
-       << adds a reference count to the payload
-    */
-  
-    _AssociativeList &  operator <<     (_associative_list_key_value pair);
-    _AssociativeList &  operator <     (_associative_list_key_value pair);
-  
-    void                MStore          (const _String&  , const _String&);
-    virtual unsigned long        ObjectClass     (void)      {
-        return ASSOCIATIVE_LIST;
-    }
-    _List*              GetKeys         (void) const;
-    void                FillInList      (_List&);
-    unsigned long       Length          (void) const {
-      return avl.countitems();
-    }
-    _String*            Serialize       (unsigned long) ;
-    unsigned   long     countitems      (void) const {
-        return avl.countitems();
-    }
-    
-    /**
-     * Traverse the dictionary, cast each value into a float and return their sum.
-     * Note that matrices and dictionary values will be processed recursively, i.e. "Sum" will be called on them.
-     * All values that cannot be cast to a float will be treated as 0.
-     * @return The sum of all dictionary elements.
-     */
-    _PMathObj           Sum             (void);
-    /**
-     * Traverse the dictionary, and return { "key" : key, "value" : min / max over the list}
-     * All values that cannot be cast to a float will be IGNORED.
-     * If no valid numbers could be found, "key" will be None, and min/max will be an +/-Inf
-     * @return The minimum or maximum numeric value and corresponding key
-     */
-    _PMathObj           ExtremeValue    (bool do_mimimum) const;
-
-    _AVLListXL          avl;
-
-private:
-
-    _List           theData;
-};
 
 /*__________________________________________________________________________________________________________________________________________ */
 
@@ -880,8 +778,6 @@ extern  _Matrix *GlobalFrequenciesMatrix;
 // the matrix of frequencies for the trees to be set by block likelihood evaluator
 extern  long  ANALYTIC_COMPUTATION_FLAG;
 
-void       InsertStringListIntoAVL  (_AssociativeList* , _String const&, _SimpleList const&, _List const&);
-void       InsertVarIDsInList       (_AssociativeList* , _String const&, _SimpleList const&);
 
 #ifdef  _SLKP_USE_AVX_INTRINSICS
     inline const double _avx_sum_4 (__m256d const & x) {

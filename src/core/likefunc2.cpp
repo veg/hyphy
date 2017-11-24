@@ -719,14 +719,19 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                             if (siteCorrectors) {
                                 long scv = *siteCorrectors;
 
-                                if (scv < scalers.lData[r1]) { // this class has a _smaller_ scaling factor
-                                    buffer[r1] = currentRateWeight * buffer[r2] + buffer[r1] * acquireScalerMultiplier (scalers.lData[r1] - scv);
+                                if (currentRateCombo == 0L) { // first entry
+                                    buffer[r1] = currentRateWeight * buffer[r2];
                                     scalers.lData[r1] = scv;
                                 } else {
-                                    if (scv > scalers.lData[r1]) { // this is a _larger_ scaling factor
-                                        buffer[r1] += currentRateWeight * buffer[r2] * acquireScalerMultiplier (scv - scalers.lData[r1]);
-                                    } else { // same scaling factors
-                                        buffer[r1] += currentRateWeight * buffer[r2];
+                                    if (scv < scalers.lData[r1]) { // this class has a _smaller_ scaling factor
+                                        buffer[r1] = currentRateWeight * buffer[r2] + buffer[r1] * acquireScalerMultiplier (scalers.lData[r1] - scv);
+                                        scalers.lData[r1] = scv;
+                                    } else {
+                                        if (scv > scalers.lData[r1]) { // this is a _larger_ scaling factor
+                                            buffer[r1] += currentRateWeight * buffer[r2] * acquireScalerMultiplier (scv - scalers.lData[r1]);
+                                        } else { // same scaling factors
+                                            buffer[r1] += currentRateWeight * buffer[r2];
+                                        }
                                     }
                                 }
 

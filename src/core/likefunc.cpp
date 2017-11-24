@@ -731,10 +731,8 @@ void     _LikelihoodFunction::Clear (void)
     unsigned long partition_count = CountObjects(kLFCountPartitions);
 
     theTrees.Clear();
+    UnregisterListeners ();
 
-    for (unsigned long i = 0UL; i < partition_count; i++) {
-        UnregisterChangeListenerForDataFilter(theDataFilters.GetElement(i), this);
-    }
 
     theDataFilters.Clear();
     theProbabilities.Clear();
@@ -4190,10 +4188,10 @@ DecideOnDivideBy (this);
 
                     if (gradientBlocks.lLength) {
                         for (long b = 0; b < gradientBlocks.lLength; b++) {
-                            ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
+                            maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
                         }
                     } else {
-                        ConjugateGradientDescent (prec, bestMSoFar,true,10,nil,maxSoFar);
+                        maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,nil,maxSoFar);
                     }
 
                     GetAllIndependent   (bestMSoFar);
@@ -4495,7 +4493,7 @@ DecideOnDivideBy (this);
                   if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )) {
                       _Matrix             bestMSoFar;
                       GetAllIndependent   (bestMSoFar);
-                      ConjugateGradientDescent (currentPrecision, bestMSoFar);
+                      maxSoFar = ConjugateGradientDescent (currentPrecision, bestMSoFar);
                       logLHistory.Store(maxSoFar);
                   }
             }
@@ -4512,7 +4510,7 @@ DecideOnDivideBy (this);
         if (optMethod == 7) {
             _Matrix bestMSoFar (indexInd.lLength,1,false,true);
             GetAllIndependent(bestMSoFar);
-            ConjugateGradientDescent (currentPrecision*.01, bestMSoFar);
+            maxSoFar = ConjugateGradientDescent (currentPrecision*.01, bestMSoFar);
         }
 
         DeleteObject (stepHistory);
@@ -4686,6 +4684,15 @@ hyFloat _LikelihoodFunction::SetParametersAndCompute (long index, hyFloat value,
     //return Compute();
 }
 
+//_______________________________________________________________________________________
+
+void     _LikelihoodFunction::UnregisterListeners (void) {
+    unsigned long partition_count = CountObjects(kLFCountPartitions);
+    for (unsigned long i = 0UL; i < partition_count; i++) {
+        UnregisterChangeListenerForDataFilter(theDataFilters.GetElement(i), this);
+    }
+}
+    
 //_______________________________________________________________________________________
 void _LikelihoodFunction::GetAllIndependent (_Matrix & storage) const {
     storage.Clear();
@@ -4956,11 +4963,11 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
 
     if (curVar) {
         if (CheckAndSetIthIndependent(index,middle)) {
-          CheckAndSetIthIndependent(index,left);
+          /*CheckAndSetIthIndependent(index,left);
           hyFloat lc = Compute();
           CheckAndSetIthIndependent(index,right);
           hyFloat rc = Compute();
-          CheckAndSetIthIndependent(index,middle);
+          CheckAndSetIthIndependent(index,middle);*/
            middleValue = Compute();
 
            if (verbosityLevel > 100) {
@@ -5677,7 +5684,7 @@ bool    _LikelihoodFunction::SniffAround (_Matrix& values, hyFloat& bestSoFar, h
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters, hyFloat check_value) {
+hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters, hyFloat check_value) {
 
     hyFloat  gradientStep     = STD_GRAD_STEP,
                 temp,
@@ -5799,7 +5806,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Matri
             }
 
             if (terminate_execution) {
-                return;
+                return check_value;
             }
         }
     }
@@ -5813,6 +5820,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Matri
         BufferToConsole("\n");
     }
 
+    return maxSoFar;
 }
 
 //_______________________________________________________________________________________

@@ -85,6 +85,16 @@ public:
     virtual unsigned long      ObjectClass       (void) {
         return STRING;
     }
+    
+    
+    /**
+        Bind string contents directly to the string argument
+        *this takes over reference management for the argument (which is assumed to be a "free-and-clear" object
+     
+     */
+    
+    void  SetStringContent (_StringBuffer * );
+    
     virtual _PMathObj Compute           (void) {
         return this;
     }

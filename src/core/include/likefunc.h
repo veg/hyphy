@@ -368,7 +368,7 @@ protected:
     void            LocateTheBump         (long,hyFloat , hyFloat& , hyFloat&, hyFloat = -1.);
     void            GradientLocateTheBump (hyFloat, hyFloat&, _Matrix&, _Matrix&);
     void            GradientDescent       (hyFloat& , _Matrix& );
-    void            ConjugateGradientDescent
+    hyFloat            ConjugateGradientDescent
     (hyFloat , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hyFloat check_lf = A_LARGE_NUMBER);
 
     hyFloat      SetParametersAndCompute
@@ -389,7 +389,7 @@ protected:
     static  void            RandomizeList               (_SimpleList&, long);
     static  void            CheckFibonacci              (hyFloat);
 
-
+    void    UnregisterListeners (void);
 
     long            PartitionLengths            (char = 0,  _SimpleList const* = nil);
     /*

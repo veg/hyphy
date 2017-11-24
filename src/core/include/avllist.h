@@ -112,7 +112,7 @@ class _AVLList: public BaseObj {
         BaseRef Retrieve        (long) const;
         long    RetrieveLong    (long) const;
 
-        void Delete(BaseRef,bool=false);
+        void Delete(BaseRefConst,bool=false);
         void ConsistencyCheck(void);
   
         const _List Keys (void) const;

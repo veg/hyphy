@@ -747,6 +747,8 @@ void KillLFRecord (long lfID, bool completeKill) {
             }
 
         }
+        
+        me->UnregisterListeners();
 
         if (lfID<likeFuncList.lLength-1) {
             DeleteObject(likeFuncList(lfID));

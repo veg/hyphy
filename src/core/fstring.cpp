@@ -129,6 +129,12 @@ void _FString::Duplicate (BaseRefConst o) {
 }
 
 //__________________________________________________________________________________
+void _FString::SetStringContent (_StringBuffer * arg){
+    DeleteObject (the_string);
+    the_string = arg;
+ }
+
+//__________________________________________________________________________________
 _PMathObj _FString::Add (_PMathObj p) {
     _StringBuffer  * res;
   
@@ -139,7 +145,6 @@ _PMathObj _FString::Add (_PMathObj p) {
     } else {
       ((*res) << get_str()).AppendNewInstance((_String*)p->toStr());
     }
-  
     return new _FString (res, false);
 }
 
@@ -157,7 +162,7 @@ long _FString::AddOn (_PMathObj p) {
     } else if (p->ObjectClass()==NUMBER) {
         long s = p->Value();
         if (s) {
-            delete the_string;
+            DeleteObject (the_string);
             the_string = new _StringBuffer (s);
             return s;
         }

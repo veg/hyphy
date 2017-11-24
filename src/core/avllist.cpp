@@ -706,7 +706,7 @@ bool  _AVLList::HasData (long idx)
 
 //______________________________________________________________
 
-void  _AVLList::Delete (BaseRef b, bool delMe)
+void  _AVLList::Delete (BaseRefConst b, bool delMe)
 {
 
     if (root == -1) {
