@@ -46,6 +46,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "site.h"
 #include "dataset.h"
 #include "trie.h"
+#include "associative_list.h"
 
 #include <stdio.h>
 

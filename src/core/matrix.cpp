@@ -7414,13 +7414,13 @@ hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf) {
     
     if (stencil) {
         if (mbf) {
-            ForEachCellNumeric ([&] (hyFloat&& value, unsigned long index, unsigned long row, unsigned long column) -> void {
+            ForEachCellNumeric ([&] (hyFloat value, unsigned long index, unsigned long row, unsigned long column) -> void {
                 if (row != column && stencil->theData[index]) {
                     result += value * freqs->theData[row] * freqs->theData[column];
                 }
             });
         } else {
-            ForEachCellNumeric ([&] (hyFloat&& value, unsigned long index, unsigned long row, unsigned long column) -> void {
+            ForEachCellNumeric ([&] (hyFloat value, unsigned long index, unsigned long row, unsigned long column) -> void {
                 if (row != column && stencil->theData[index]) {
                     result += value * freqs->theData[row];
                 }
@@ -7428,13 +7428,13 @@ hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf) {
         }
     } else {
         if (mbf) {
-            ForEachCellNumeric ([&] (hyFloat&& value, unsigned long index, unsigned long row, unsigned long column) -> void {
+            ForEachCellNumeric ([&] (hyFloat value, unsigned long index, unsigned long row, unsigned long column) -> void {
                 if (row != column) {
                     result += value * freqs->theData[row] * freqs->theData[column];
                 }
             });
         } else {
-            ForEachCellNumeric ([&] (hyFloat&& value, unsigned long row, unsigned long column) -> void {
+            ForEachCellNumeric ([&] (hyFloat value, unsigned long index, unsigned long row, unsigned long column) -> void {
                 if (row != column) {
                     result += value * freqs->theData[row];
                 }
@@ -8483,213 +8483,5 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
         HandleApplicationError(err);
     }
     return new _Matrix;
-}
-
-
-
-
-_GrowingVector::_GrowingVector (bool iscol) : _Matrix (64,1,false,true)
-{
-    used = 0UL;
-    isColumn = iscol;
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-void _GrowingVector::Trim (void) {
-  Resize (used);
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-BaseRef     _GrowingVector::makeDynamic (void) const
-{
-    _GrowingVector * result = new _GrowingVector;
-    result->_Matrix::Duplicate (this);
-    result->used = used;
-    result->isColumn = isColumn;
-    return result;
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-long        _GrowingVector::Store (hyFloat toStore) {
-    if (used < hDim) {
-        theData[used++] = toStore;  // increment AFTER argument is sent to function
-        return used-1UL;
-    } else {
-        Resize (used + MAX (used/8,64));    // allocate another block of 64
-        return Store (toStore);
-    }
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-void        _GrowingVector::Delete (unsigned long index) {
-  if (index + 1UL < used) {
-    for (unsigned long i = index+1UL; i < used; i++) {
-      theData[i-1] = theData[i];
-    }
-    --used;
-  }
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-void        _GrowingVector::operator << (const _SimpleList& theSource)
-{
-    for (unsigned long k = 0; k < theSource.lLength; k++) {
-        Store (theSource.lData[k]);
-    }
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-void        _GrowingVector::Clear (void)
-{
-    _Matrix::Clear();
-    ZeroUsed();
-    vDim = 1UL;
-}
-
-//_____________________________________________________________________________________________
-void _GrowingVector::Duplicate (BaseRefConst obj)
-{
-    _Matrix::Duplicate (obj);
-    used = ((_GrowingVector*)obj)->used;
-    isColumn = ((_GrowingVector*)obj)->isColumn;
-}
-
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-// _NTupleStorage
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-_NTupleStorage::_NTupleStorage (unsigned long N, unsigned long K)
-{
-    storageN        = N;
-    storageK        = (K>N)?MIN(N,1):K;
-    unsigned long   matrixDimension = 1;
-
-    // now compute what dimension of the matrix will be required
-    // handle the special cases first
-
-    if (storageK) { // not just the kEmptyString set
-        // populate C_NK_Lookup
-        for (long i2=0; i2<=storageN; i2++) {
-            C_NK_Lookup << 1;    // N choose 0 is always 1 for every N
-        }
-        for (long i=1; i<=storageK; i++) {
-            for (long filler = 0; filler < i; filler++, C_NK_Lookup<<0); // N choose K where K>N is invalid
-            C_NK_Lookup << 1;
-            // K choose K is 1
-            for (long j=i+1; j<=storageN; j=j+1) {
-                // N choose K = N/(N-K) times (N-1) choose K
-                C_NK_Lookup << C_NK_Lookup.lData[C_NK_Lookup.lLength-1] * j/(j-i);
-            }
-        }
-    }
-
-    /*  for (long i=0; i<=storageK; i++)
-        {
-            long offset = i*(storageN+1);
-            for (long j=0; j<=storageN; j++)
-                printf ("(%d,%d) = %d\n", j,i, C_NK_Lookup.lData[offset+j]);
-        }
-    */
-
-    matrixDimension = C_NK_Lookup.lData[C_NK_Lookup.lLength-1];
-    CreateMatrix (this, 1, matrixDimension, false, true);
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-BaseRef _NTupleStorage::makeDynamic (void) const {
-    _NTupleStorage* copy = new _NTupleStorage;
-    copy->_Matrix::Duplicate (this);
-    copy->storageN = storageN;
-    copy->storageK = storageK;
-    copy->C_NK_Lookup.Duplicate (&C_NK_Lookup);
-    return copy;
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-bool    _NTupleStorage::CheckKTuple (_SimpleList& kTuple)
-{
-    if (kTuple.lLength == storageK) {
-        if (storageK) {
-            kTuple.Sort();
-            for (long k=0; k<kTuple.lLength; k++)
-                if (kTuple.lData[k] < 0 || kTuple.lData[k] >= storageN || (k && kTuple.lData[k] == kTuple.lData[k-1])) {
-                    return false;
-                }
-        }
-        return true;
-    }
-    return false;
-}
-
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-unsigned long   _NTupleStorage::Index (_SimpleList& kTuple)
-{
-    unsigned long myIndex = 0;
-    if (storageK)
-        for (long k=kTuple.lLength-1; k >=0; k--) {
-            myIndex += C_NK_Lookup.lData[(k+1)*(1+storageN) + kTuple.lData[k]];
-        }
-    return myIndex;
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-hyFloat  _NTupleStorage::DirectIndex (unsigned long directIndex)
-{
-    return theData[directIndex];
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-unsigned long   _NTupleStorage::Store (hyFloat value, _SimpleList& kTuple)
-{
-    unsigned long myIndex = Index (kTuple);
-    theData[myIndex] = value;
-    return myIndex;
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-hyFloat  _NTupleStorage::Retrieve (_SimpleList& kTuple)
-{
-    unsigned long myIndex = Index (kTuple);
-    return theData[myIndex];
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-void    _NTupleStorage::IndexToTuple (unsigned long directIndex, _SimpleList& kTuple)
-{
-    kTuple.Clear();
-    if (storageK && directIndex < C_NK_Lookup.lData[C_NK_Lookup.lLength-1]) {
-        long currentN = storageN-1;
-        for (long k=storageK; k > 0; k--) {
-            long  i             = currentN,
-                  lookup_offset = k*(storageN+1);
-
-            while (C_NK_Lookup.lData[lookup_offset+i] > directIndex) {
-                //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.lData[lookup_offset+i]);
-                i--;
-            }
-            //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.lData[lookup_offset+i]);
-            kTuple << i;
-            //printf ("Stored %d\n", i);
-
-            currentN     = i-1;
-            directIndex -= C_NK_Lookup.lData[lookup_offset+i];
-        }
-    }
-    kTuple.Flip();
 }
 

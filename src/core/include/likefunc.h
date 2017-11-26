@@ -43,6 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#pragma once
 #include "category.h"
 #include "calcnode.h"
+#include "associative_list.h"
 
 #ifdef __HYALTIVEC__
 #define   A_LARGE_NUMBER          1.e35
@@ -313,6 +314,8 @@ public:
     */
 
     _AssociativeList*CollectLFAttributes         (void) const;
+    void    UnregisterListeners (void);
+
 protected:
 
 
@@ -389,7 +392,6 @@ protected:
     static  void            RandomizeList               (_SimpleList&, long);
     static  void            CheckFibonacci              (hyFloat);
 
-    void    UnregisterListeners (void);
 
     long            PartitionLengths            (char = 0,  _SimpleList const* = nil);
     /*
@@ -536,7 +538,7 @@ protected:
     /* 20110718: SLKP this list holds the index of the parameter interval mapping function
         used during optimization */
 
-    _GrowingVector  computationalResults;
+    _Vector  computationalResults;
 
     _List           optimalOrders,
                     leafSkips,
@@ -782,7 +784,7 @@ extern hyFloat           _lfScalerUpwards,
        _lfScalingFactorThreshold,
        _logLFScaler;
 
-extern  _GrowingVector      _scalerMultipliers,
+extern  _Vector      _scalerMultipliers,
         _scalerDividers;
 
 hyFloat                  acquireScalerMultiplier (long);

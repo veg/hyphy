@@ -168,7 +168,7 @@ _SimpleList     updateNodes,
 hyFloat      *iNodeCache,
                 *theProbs;
 _SimpleList taggedInternals;
-_GrowingVector* lNodeResolutions;
+_Vector* lNodeResolutions;
 float scalar;
 
 void *node_cache, *nodRes_cache, *nodFlag_cache, *scalings_cache, *prob_cache, *freq_cache, *root_cache, *result_cache, *root_scalings, *model;
@@ -204,7 +204,7 @@ int _OCLEvaluator::setupContext(void)
 
     //long nodeResCount = sizeof(lNodeResolutions->theData)/sizeof(lNodeResolutions->theData[0]);
     long nodeFlagCount = flatLeaves.lLength*siteCount;
-    long nodeResCount = lNodeResolutions->GetUsed();
+    long nodeResCount = lNodeResolutions->get_used();
     int roundCharacters = roundUpToNextPowerOfTwo(alphabetDimension);
 //    long nodeCount = flatLeaves.lLength + flatNodes.lLength + 1;
 //    long iNodeCount = flatNodes.lLength + 1;
@@ -1050,7 +1050,7 @@ double _OCLEvaluator::launchmdsocl( _SimpleList& eupdateNodes,
                                     _SimpleList& etheFrequencies,
                                     long* elNodeFlags,
                                     _SimpleList& etaggedInternals,
-                                    _GrowingVector* elNodeResolutions)
+                                    _Vector* elNodeResolutions)
 {
 #ifdef __OCLPOSIX__
     clock_gettime(CLOCK_MONOTONIC, &mainStart);

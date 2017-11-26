@@ -358,7 +358,7 @@ public:
 
     virtual _String *           BestParseTree           (void);
 
-    virtual void                CykTraceback            (long,long,long,long,_AVLListX *,_SimpleList *,_GrowingVector *,_String *);
+    virtual void                CykTraceback            (long,long,long,long,_AVLListX *,_SimpleList *,_Vector *,_String *);
 
 #endif
 

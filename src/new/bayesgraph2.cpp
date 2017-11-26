@@ -50,7 +50,7 @@ extern _String      _HYBgm_IMPUTE_MAXSTEPS,
 
 extern hyFloat   lnGamma (hyFloat),
        gaussDeviate (void),
-       LogSumExpo (_GrowingVector *);
+       LogSumExpo (_Vector *);
 
 
 
@@ -787,8 +787,8 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
 					observed_values;
 	
 	
-    _GrowingVector  * vector_of_scores  = new _GrowingVector(),     // store scores sampled during imputation
-					* reassign_probs    = new _GrowingVector();
+    _Vector  * vector_of_scores  = new _Vector(),     // store scores sampled during imputation
+					* reassign_probs    = new _Vector();
     
 	
 	hyFloat      log_score           = 0,
@@ -1050,7 +1050,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
 	
 	
 	ReportWarning (_String("ImputeDiscreteNodeScore(") & node_id & "<-" & (_String *) parents.toStr() & ":\n");
-	long gv_used = vector_of_scores->GetUsed();
+	long gv_used = vector_of_scores->get_used();
 	for (long i = 0; i < gv_used; i++) {
 		ReportWarning ( _String (",") & (*vector_of_scores)(i,0) );
 		log_score += (*vector_of_scores)(i,0);
@@ -1113,8 +1113,8 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
                     observed_values;
 
 
-    _GrowingVector  * vector_of_scores  = new _GrowingVector(),     // store scores sampled during imputation
-					* reassign_probs    = new _GrowingVector();
+    _Vector  * vector_of_scores  = new _Vector(),     // store scores sampled during imputation
+					* reassign_probs    = new _Vector();
 
     hyFloat      log_score           = 0,
 
@@ -1648,7 +1648,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
 	// end sampler
 
 	
-	long gv_used = vector_of_scores->GetUsed();
+	long gv_used = vector_of_scores->get_used();
 	for (long i = 0; i < gv_used; i++) {
 		//ReportWarning ( _String (",") & (*vector_of_scores)(i,0) );
 		log_score += (*vector_of_scores)(i,0);

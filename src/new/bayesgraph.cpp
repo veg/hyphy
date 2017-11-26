@@ -130,12 +130,12 @@ void        ConsoleBGMStatus (_String statusLine, hyFloat percentDone, _String *
 
 
 //__________________________________________________________________________________________________________
-hyFloat      LogSumExpo (_GrowingVector * log_values)
+hyFloat      LogSumExpo (_Vector * log_values)
 {
     //  Computes the sum of a vector whose values are stored as log-transforms,
     //  such that exponentiating the vector entries would result in numerical underflow.
 
-    long        size            = log_values->GetUsed();
+    long        size            = log_values->get_used();
     hyFloat  sum_exponents   = 0.;
 
 
@@ -657,12 +657,12 @@ hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * mar
        -------------------------------------------------------------- */
 
     hyFloat          log_likel   = 0.;
-    _GrowingVector      *gv1, *gv2;
+    _Vector      *gv1, *gv2;
 
 
     // reset _GrowingVector objects stored in _List object
     for (long i = 0; i < num_nodes * num_nodes; i++) {
-        gv1 = (_GrowingVector *) marginals->lData[i];
+        gv1 = (_Vector *) marginals->lData[i];
         gv1 -> ZeroUsed();
     }
 
@@ -675,7 +675,7 @@ hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * mar
         _Constant       *   orphan_score    = (_Constant *) (score_lists->lData[0]);
 
 
-        gv1 = (_GrowingVector *) marginals->lData[child_node * num_nodes + child_node]; // store denominator in diagonal
+        gv1 = (_Vector *) marginals->lData[child_node * num_nodes + child_node]; // store denominator in diagonal
         gv1->ZeroUsed();
         gv1 -> Store (orphan_score->Value());   // append score - note gv1 does not change within
 
@@ -700,7 +700,7 @@ hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * mar
                 long    par = precedes.lData[i];
 
                 gv1 -> Store ((*single_parent_scores) (par, 0)); // append to denominator
-                gv2 = (_GrowingVector *) marginals->lData[child_node * num_nodes + par]; // update parent-specific numerator
+                gv2 = (_Vector *) marginals->lData[child_node * num_nodes + par]; // update parent-specific numerator
                 gv2 -> Store ((*single_parent_scores) (par, 0));
             }
 
@@ -752,7 +752,7 @@ hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * mar
 
                             for (long i = 0; i < nparents; i++) {
 								// update parent combination-specific numerator
-                                gv2 = (_GrowingVector *) marginals->lData[child_node * num_nodes + precedes.lData[subset.lData[i]]];
+                                gv2 = (_Vector *) marginals->lData[child_node * num_nodes + precedes.lData[subset.lData[i]]];
                                 gv2 -> Store (tuple_score);
                             }
                         } while (not_finished);
@@ -1008,7 +1008,7 @@ void    _BayesianGraphicalModel::InitMarginalVectors (_List * compute_list)
             (edges), whereas diagonal entries are used to store node marginals.
        ------------------------------------------------------------------------------------ */
 
-    _GrowingVector * newstore = new _GrowingVector;
+    _Vector * newstore = new _Vector;
 
     for (long i = 0; i < num_nodes * num_nodes; i++) {
         (*compute_list) && newstore;
@@ -1023,7 +1023,7 @@ void    _BayesianGraphicalModel::InitMarginalVectors (_List * compute_list)
 void    _BayesianGraphicalModel::DumpMarginalVectors (_List * compute_list)
 {
     for (long i = 0; i < compute_list->lLength; i++) {
-        ((_GrowingVector *) compute_list->lData[i]) -> Clear();
+        ((_Vector *) compute_list->lData[i]) -> Clear();
     }
 
     DeleteObject (compute_list);
@@ -2443,7 +2443,7 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 
     _List           * marginals         = new _List ();
 
-    _GrowingVector  * gv;
+    _Vector  * gv;
 
 
     InitMarginalVectors (marginals);    // allocate storage
@@ -2536,7 +2536,7 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 
                 for (long child = 0; child < num_nodes; child++) {
                     // retrieve information from Compute()
-                    gv      = (_GrowingVector *) marginals->lData[child * num_nodes + child];
+                    gv      = (_Vector *) marginals->lData[child * num_nodes + child];
                     denom   = (*gv)(0, 0);  // first entry holds node marginal post pr
 
                     for (long edge, parent = 0; parent < num_nodes; parent++) {
@@ -2545,11 +2545,11 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
                         }
 
                         edge    = child * num_nodes + parent;
-                        gv      = (_GrowingVector *) marginals->lData[edge];
+                        gv      = (_Vector *) marginals->lData[edge];
 
                         // not all _GrowingVector entries in marginals are being used,
                         //      i.e., edges incompatible with order
-                        if (gv->GetUsed() > 0) {
+                        if (gv->get_used() > 0) {
 							// store as transpose so that row = parent and column = child, same as GraphMCMC
                             result->Store (parent*num_nodes+child, 1, (*result)(parent*num_nodes+child, 1) + exp (LogSumExpo(gv) - denom));
                         }

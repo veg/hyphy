@@ -61,8 +61,6 @@ using namespace hy_global;
 #define _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL 1
 
 
-#define     ANCESTRAL_SCALING_MAX 16
-#define     ALMOST_ZERO           0.0
 //#else
 //#define     ALMOST_ZERO  1e-35
 //#endif
@@ -70,9 +68,6 @@ using namespace hy_global;
 
 #define     TREE_V_SHIFT            8.0
 #define     TREE_H_SHIFT            10.0
-
-#define     LIKELIHOOD_SCALER           1.0
-#define     LIKELIHOOD_SCALER_INT       1.0
 
 #define     DEGREES_PER_RADIAN          57.29577951308232286465
 
@@ -1153,7 +1148,7 @@ void    _TheTree::PreTreeConstructor (bool)
 
 void    _TreeTopology::PreTreeConstructor (bool) {
     rooted                  = UNROOTED;
-    compExp                 = new _GrowingVector;
+    compExp                 = new _Vector;
 
     getINodePrefix ();
 }
@@ -1313,7 +1308,7 @@ void    _TreeTopology::PostTreeConstructor (bool dupMe) {
 
       flatTree.Delete (node_index);
       flatCLeaves.Delete (node_index);
-      ((_GrowingVector*)compExp)->Delete (node_index);
+      ((_Vector*)compExp)->Delete (node_index);
 
       node_iterator<long>  tree_iterator (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
       while (node<long>*topTraverser = tree_iterator.Next()) {
@@ -1827,7 +1822,7 @@ bool    _TreeTopology::FinalizeNode (node<long>* nodie, long number , _String no
     flatTree          && & nodeName;
     flatCLeaves       && & node_parameters;
 
-    ((_GrowingVector*)compExp)->Store (ProcessTreeBranchLength(nodeValue));
+    ((_Vector*)compExp)->Store (ProcessTreeBranchLength(nodeValue));
 
     nodeName        = kEmptyString;
     node_parameters = kEmptyString;
@@ -1899,11 +1894,11 @@ void    _TreeTopology::RemoveANode (_PMathObj nodeName) {
 
         //printf ("%s\n", ((_String*)cleanIndices.toStr())->getStr());
 
-        _GrowingVector* blengths = ((_GrowingVector*)compExp);
+        _Vector* blengths = ((_Vector*)compExp);
         long offset = 0L;
         _SimpleList     oldToNew;
 
-        for (long k = 0L; k < blengths->used; k++) {
+        for (long k = 0L; k < blengths->get_used(); k++) {
             if (k == cleanIndices.GetElement(offset)){
                 oldToNew << -1;
                 offset++;
@@ -3888,7 +3883,7 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p) {
 
       if (res < 0L) {
           // get ALL branch lengths
-        _GrowingVector * branch_lengths = new _GrowingVector;
+        _Vector * branch_lengths = new _Vector;
 
         while (node<long>* iterator = ni.Next()) {
           if (!iterator->is_root()){

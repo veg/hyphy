@@ -66,14 +66,14 @@ int launchmdsocl(long siteCount,
                  hyFloat* iNodeCache,
                  long* lNodeFlags,
                  _SimpleList taggedInternals,
-                 _GrowingVector* lNodeResolutions);
+                 _Vector* lNodeResolutions);
 #endif
 
 hyFloat          _lfScalerUpwards          = pow(2.,200.),
                     _lfScalingFactorThreshold = 1./_lfScalerUpwards,
                     _logLFScaler            = 200. *log(2.);
 
-_GrowingVector      _scalerMultipliers,
+_Vector      _scalerMultipliers,
                     _scalerDividers;
 
 //hyFloat          eval_buffer [600];
@@ -185,15 +185,15 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
 hyFloat  acquireScalerMultiplier (long s)
 {
     if (s>0) {
-        if (s >= _scalerMultipliers.used)
-            for (long k = _scalerMultipliers.used; k <= s; k++) {
+        if (s >= _scalerMultipliers.get_used())
+            for (long k = _scalerMultipliers.get_used(); k <= s; k++) {
                 _scalerMultipliers.Store (exp (-_logLFScaler * k));
             }
         return _scalerMultipliers.theData[s];
     }
     s = -s;
-    if (s >= _scalerDividers.used)
-        for (long k = _scalerDividers.used; k <= s; k++) {
+    if (s >= _scalerDividers.get_used())
+        for (long k = _scalerDividers.get_used(); k <= s; k++) {
             _scalerDividers.Store (exp (_logLFScaler * k));
         }
     return _scalerDividers.theData[s];
@@ -414,7 +414,7 @@ hyFloat _TheTree::OCLLikelihoodEvaluator (			_SimpleList&		     updateNodes,
 														_DataSetFilter*		 theFilter,
                                                         hyFloat*			 iNodeCache,
                                                         long	   *			 lNodeFlags,
-                                                        _GrowingVector*		 lNodeResolutions,
+                                                        _Vector*		 lNodeResolutions,
 														_OCLEvaluator& OCLEval)
 {
 
@@ -441,7 +441,7 @@ hyFloat  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          update
         _DataSetFilter*      theFilter,
         hyFloat*          iNodeCache,
         long       *             lNodeFlags,
-        _GrowingVector*      lNodeResolutions)
+        _Vector*      lNodeResolutions)
 {
 // set some useful global variables
     _SimpleList     taggedInternals                 (flatNodes.lLength, 0, 0);
@@ -591,7 +591,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         hyFloat*         iNodeCache,
         long      *         lNodeFlags,
         hyFloat*         scalingAdjustments,
-        _GrowingVector*     lNodeResolutions,
+        _Vector*     lNodeResolutions,
         long&               overallScaler,
         long                siteFrom,
         long                siteTo,
@@ -1132,7 +1132,7 @@ void            _TheTree::ComputeBranchCache    (
     long           *        lNodeFlags,
     hyFloat*         scalingAdjustments,
     long        *           siteCorrectionCounts,
-    _GrowingVector*     lNodeResolutions,
+    _Vector*     lNodeResolutions,
     long&                   overallScaler,
     long                    siteFrom,
     long                    siteTo,
@@ -1825,7 +1825,7 @@ hyFloat      _TheTree::ComputeTwoSequenceLikelihood
     _SimpleList   & siteOrdering,
     _DataSetFilter const* theFilter,
     long      *         lNodeFlags,
-    _GrowingVector* lNodeResolutions,
+    _Vector* lNodeResolutions,
     long                siteFrom,
     long                siteTo,
     long                catID,
@@ -2066,7 +2066,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         hyFloat const* catAssignments,
         long catCount,
         long* lNodeFlags,
-        _GrowingVector * lNodeResolutions,
+        _Vector * lNodeResolutions,
         bool              alsoDoLeaves
                                              )
 

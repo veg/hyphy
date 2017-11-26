@@ -414,7 +414,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
                           catCounter?rateAssignments->theData+siteOffset:nil,
                           catCounter,
                           conditionalTerminalNodeStateFlag[partIndex],
-                          (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(partIndex),
+                          (_Vector*)conditionalTerminalNodeLikelihoodCaches(partIndex),
                           doLeaves
                                                           );
 
@@ -544,9 +544,9 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
     scalers.Populate    (arrayDim,0,0);
 
 #ifdef __HYPHYMPI__
-    _GrowingVector * computedWeights = nil;
+    _Vector * computedWeights = nil;
     if (runMode == _hyphyLFConditionMPIIterate) {
-        computedWeights = new _GrowingVector;
+        computedWeights = new _Vector;
     }
     long                mpiTasksSent = 0;
 #endif
@@ -1360,7 +1360,7 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
 //_______________________________________________________________________________________________
 
 void _LikelihoodFunction::UpdateBlockResult (long index, hyFloat new_value) {
-    while (computationalResults.GetUsed() <= index) {
+    while (computationalResults.get_used() <= index) {
         computationalResults.Store (0.0);
     }
     

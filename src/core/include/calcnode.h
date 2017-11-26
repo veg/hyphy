@@ -44,6 +44,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "classes.h"
 #include "dataset_filter.h"
 #include "dataset_filter_numeric.h"
+#include "associative_list.h"
+#include "vector.h"
 #include "site.h"
 
 
@@ -96,7 +98,7 @@ public:
 							_SimpleList& theFrequencies,
 							long* lNodeFlags,
 							_SimpleList& taggedInternals,
-							_GrowingVector* lNodeResolutions);
+							_Vector* lNodeResolutions);
 	~_OCLEvaluator()
 	{
 		Cleanup(EXIT_SUCCESS);
@@ -619,7 +621,7 @@ public:
 
 
 
-    _List*      RecoverAncestralSequences       (_DataSetFilter const*, _SimpleList const&, _List const&, hyFloat *, hyFloat const*, long, long*, _GrowingVector*, bool = false);
+    _List*      RecoverAncestralSequences       (_DataSetFilter const*, _SimpleList const&, _List const&, hyFloat *, hyFloat const*, long, long*, _Vector*, bool = false);
     void        RecoverNodeSupportStates        (_DataSetFilter const*, long, _Matrix&);
     void        RecoverNodeSupportStates2       (node<long>*,hyFloat*,hyFloat*,long);
     _List*      SampleAncestors                 (_DataSetFilter*, node<long>*);
@@ -748,21 +750,21 @@ public:
             _DataSetFilter*      theFilter,
             hyFloat*          iNodeCache,
             long       *             lNodeFlags,
-            _GrowingVector*      lNodeResolutions);
+            _Vector*      lNodeResolutions);
 
 #ifdef MDSOCL
 			hyFloat OCLLikelihoodEvaluator (			_SimpleList&	     updateNodes, 
                                                         _DataSetFilter*		 theFilter,
                                                         hyFloat*			 iNodeCache,
                                                          long	   *		 lNodeFlags,
-                                                        _GrowingVector*		 lNodeResolutions,
+                                                        _Vector*		 lNodeResolutions,
 														_OCLEvaluator& OCLEval);
 #endif
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
     void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, hyFloat const*, _List&, _SimpleList*, _List&, hyFloat const*, long);
 
-    hyFloat      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, hyFloat*, long*, hyFloat*, _GrowingVector*, long&, long, long, long = -1, hyFloat* = nil, long* = nil, long = -1, long * = nil);
+    hyFloat      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, hyFloat*, long*, hyFloat*, _Vector*, long&, long, long, long = -1, hyFloat* = nil, long* = nil, long = -1, long * = nil);
     long            DetermineNodesForUpdate         (_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true);
     void            ExponentiateMatrices            (_List&, long, long = -1);
     void            FillInConditionals              (_DataSetFilter const*, hyFloat*,  _SimpleList*);
@@ -775,7 +777,7 @@ public:
             long           *        lNodeFlags,
             hyFloat*         scalingAdjustments,
             long*                   siteCorrectionCounts,
-            _GrowingVector*     lNodeResolutions,
+            _Vector*     lNodeResolutions,
             long&                   overallScaler,
             long                    siteFrom,
             long                    siteTo,
@@ -799,7 +801,7 @@ public:
         _SimpleList&            siteOrdering,
         _DataSetFilter const*     theFilter,
         long           *        lNodeFlags,
-        _GrowingVector*     lNodeResolutions,
+        _Vector*     lNodeResolutions,
         long siteFrom,
         long siteTo,
         long catID,

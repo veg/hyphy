@@ -1620,7 +1620,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
             maxPartSize         = MAX (maxPartSize,myWidth);
         }
 
-        _GrowingVector  allScalers (false);
+        _Vector  allScalers (false);
         _SimpleList     scalers;
         // allocate a buffer big enough to store the matrix for each block
 
@@ -1947,7 +1947,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
             if (blockDependancies.lData[partID])
                 // has category variables
             {
-                if ( computationalResults.GetUsed()<=partID || HasBlockChanged(partID))
+                if ( computationalResults.get_used()<=partID || HasBlockChanged(partID))
                     // first time computing or partition requires updating
                 {
                     /* TODO: add HMM and constant on partition test
@@ -3334,7 +3334,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
         if (!theFilter->IsNormalFilter()) {
             siteCorrections < new _SimpleList;
             siteCorrectionsBackup < new _SimpleList;
-            conditionalTerminalNodeLikelihoodCaches< new _GrowingVector;
+            conditionalTerminalNodeLikelihoodCaches< new _Vector;
             continue;
         }
 
@@ -3373,7 +3373,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 
         char  const ** columnBlock      = new char const*[atomSize];
         hyFloat      * translationCache  = new hyFloat [stateSpaceDim];
-        _GrowingVector  * ambigs            = new _GrowingVector();
+        _Vector  * ambigs            = new _Vector();
 
         for (unsigned long siteID = 0UL; siteID < patternCount; siteID ++) {
             siteScalingFactors[i][siteID] = 1.;
@@ -3959,7 +3959,7 @@ DecideOnDivideBy (this);
                     shuffledOrder;
 
         _List               *stepHistory = nil;
-        _GrowingVector      logLHistory;
+        _Vector      logLHistory;
 
         maxSoFar  = lastMaxValue = Compute();
 
@@ -3970,7 +3970,7 @@ DecideOnDivideBy (this);
         if (useAdaptiveStep>0.5) {
             stepHistory = new _List;
             for (unsigned long j=0UL; j<indexInd.lLength; j++) {
-                _GrowingVector      *varHistory = new _GrowingVector;
+                _Vector      *varHistory = new _Vector;
                 varHistory->Store(variableValues[j]);
                 stepHistory->AppendNewInstance(varHistory);
             }
@@ -4055,7 +4055,7 @@ DecideOnDivideBy (this);
                 } else {
                     divFactor           = MIN(16,MAX(stdFactor,oldAverage/averageChange));
 
-                    long       steps    = logLHistory.GetUsed();
+                    long       steps    = logLHistory.get_used();
                     for (long k = 1; k <= MIN(5, steps-1); k++) {
                         diffs[k-1] = logLHistory.theData[steps-k] - logLHistory.theData[steps-k-1];
                         //printf ("%ld : %g\n", k, diffs[k-1]);
@@ -4123,7 +4123,7 @@ DecideOnDivideBy (this);
             if (verbosityLevel>1) {
                 snprintf (buffer, sizeof(buffer),"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
                 BufferToConsole (buffer);
-                if (useAdaptiveStep > 0.5 && logLHistory.GetUsed() > 2) {
+                if (useAdaptiveStep > 0.5 && logLHistory.get_used() > 2) {
                     snprintf (buffer, sizeof(buffer), "\nLast cycle logL change = %g\n", diffs[0]);
                     BufferToConsole (buffer);
                 }
@@ -4196,7 +4196,7 @@ DecideOnDivideBy (this);
 
                     GetAllIndependent   (bestMSoFar);
                     for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
-                        ((_GrowingVector*)(*stepHistory)(k))->Store (bestMSoFar.theData[k]);
+                        ((_Vector*)(*stepHistory)(k))->Store (bestMSoFar.theData[k]);
                     }
 
                     stepScale = 1.;
@@ -4234,16 +4234,16 @@ DecideOnDivideBy (this);
                     continue;
                 }
 
-                _GrowingVector     *vH = nil;
+                _Vector     *vH = nil;
                 hyFloat         precisionStep = 0.,
                                    brackStep;
 
 
                 if (useAdaptiveStep>0.5) {
-                    vH  = (_GrowingVector*)(*stepHistory)(current_index);
+                    vH  = (_Vector*)(*stepHistory)(current_index);
                     //hyFloat    suggestedPrecision  = currentPrecision*(1.+198./(1.+exp(sqrt(loopCounter))));
 
-                    long stepsSoFar = vH->GetUsed();
+                    long stepsSoFar = vH->get_used();
 
                     if (stepsSoFar>1) {
                         hyFloat  lastParameterValue          = vH->theData[stepsSoFar-1],
@@ -7707,7 +7707,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                     inc,
                                                     conditionalTerminalNodeStateFlag[index],
                                                     ssf,
-                                                    (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                                    (_Vector*)conditionalTerminalNodeLikelihoodCaches(index),
                                                     overallScalingFactors.lData[index],
                                                     blockID * sitesPerP,
                                                     (1+blockID) * sitesPerP,
@@ -7782,7 +7782,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                            conditionalTerminalNodeStateFlag[index],
                                            ssf,
                                            scc,
-                                           (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                           (_Vector*)conditionalTerminalNodeLikelihoodCaches(index),
                                            overallScalingFactors.lData[index],
                                            blockID * sitesPerP,
                                            (1+blockID) * sitesPerP,
@@ -7849,7 +7849,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 return t->ComputeTwoSequenceLikelihood (*sl,
                                                         df,
                                                         conditionalTerminalNodeStateFlag[index],
-                                                        (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                                        (_Vector*)conditionalTerminalNodeLikelihoodCaches(index),
                                                         0,
                                                         df->GetPatternCount (),
                                                         catID,

@@ -48,6 +48,7 @@
 #include      "mersenne_twister.h"
 #include      "global_things.h"
 #include      "hy_string_buffer.h"
+#include      "associative_list.h"
 
 #include      "function_templates.h"
 
