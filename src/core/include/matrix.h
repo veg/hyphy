@@ -288,7 +288,6 @@ public:
 
     void        Swap                (_Matrix&);         // fast swap matrix data
     friend      void                SetIncrement (int); // storage parameter access
-    friend      void                CreateMatrix    (_Matrix*, long, long, bool, bool, bool);
     // an auxiliary function which creates an empty
     // matrix of given dimensions and storage class (normal/sparse)
     // and storage type (pointer/array)
@@ -532,6 +531,7 @@ public:
     /*---------------------------------------------------*/
 
     hyFloat   *theData;                            // matrix elements
+    static void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse = false, bool allocateStorage = false, bool isFla = false);
 
 
 protected:
@@ -657,7 +657,6 @@ private:
 
 /*__________________________________________________________________________________________________________________________________________ */
 
-void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse = false, bool allocateStorage = false, bool isFla = false);
 
 /*__________________________________________________________________________________________________________________________________________ */
 

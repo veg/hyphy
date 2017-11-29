@@ -182,7 +182,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
   shifter = theFrequencies.lLength * dimension;
   categoryShifter = shifter * theNodeMap.lLength;
 
-  CreateMatrix(&probabilityVectors, theNodeMap.lLength, shifter * categoryCount,
+  _Matrix::CreateMatrix(&probabilityVectors, theNodeMap.lLength, shifter * categoryCount,
                false, true, false);
   hyFloat *storeHere = probabilityVectors.theData;
 

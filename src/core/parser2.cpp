@@ -55,12 +55,10 @@
 #include "category.h"
 #include "function_templates.h"
 #include "global_things.h"
+#include "global_object_lists.h"
 
 using namespace hy_global;
 
-
-#define  GOLDEN_RATIO 1.618034
-#define MAX_BRENT_ITERATES 100L
 
 extern   _SimpleList BinOps,
          opPrecedence,
@@ -79,7 +77,6 @@ extern    hyFloat    tolerance,
           machineEps;
 
 
-long      verbosityLevel = 0L;
 
 
 _SimpleList simpleOperationCodes,
@@ -87,44 +84,34 @@ _SimpleList simpleOperationCodes,
 
 
 //__________________________________________________________________________________
-hyFloat  AddNumbers  (hyFloat x, hyFloat y)
-{
+hyFloat  AddNumbers  (hyFloat x, hyFloat y) {
     return x+y;
 }
-hyFloat  SubNumbers  (hyFloat x, hyFloat y)
-{
+hyFloat  SubNumbers  (hyFloat x, hyFloat y) {
     return x-y;
 }
-hyFloat  MinusNumber (hyFloat x)
-{
+hyFloat  MinusNumber (hyFloat x) {
     return -x;
 }
-hyFloat  MultNumbers (hyFloat x, hyFloat y)
-{
+hyFloat  MultNumbers (hyFloat x, hyFloat y) {
     return x*y;
 }
-hyFloat  DivNumbers  (hyFloat x, hyFloat y)
-{
+hyFloat  DivNumbers  (hyFloat x, hyFloat y) {
     return x/y;
 }
-hyFloat  LessThan    (hyFloat x, hyFloat y)
-{
+hyFloat  LessThan    (hyFloat x, hyFloat y) {
     return x<y;
 }
-hyFloat  GreaterThan (hyFloat x, hyFloat y)
-{
+hyFloat  GreaterThan (hyFloat x, hyFloat y) {
     return x>y;
 }
-hyFloat  LessThanE   (hyFloat x, hyFloat y)
-{
+hyFloat  LessThanE   (hyFloat x, hyFloat y) {
     return x<=y;
 }
-hyFloat  GreaterThanE(hyFloat x, hyFloat y)
-{
+hyFloat  GreaterThanE(hyFloat x, hyFloat y) {
     return x>=y;
 }
-hyFloat  Power       (hyFloat x, hyFloat y)
-{ 
+hyFloat  Power       (hyFloat x, hyFloat y) {
     if (x==0.0) {
       if (y > 0.0) {
         return 0.0;
@@ -134,24 +121,20 @@ hyFloat  Power       (hyFloat x, hyFloat y)
     }
     return pow(x,y);
 }
-hyFloat  MaxNumbers  (hyFloat x, hyFloat y)
-{
+
+hyFloat  MaxNumbers  (hyFloat x, hyFloat y) {
     return x<y?y:x;
 }
-hyFloat  MinNumbers  (hyFloat x, hyFloat y)
-{
+hyFloat  MinNumbers  (hyFloat x, hyFloat y) {
     return x<y?x:y;
 }
-hyFloat  ExpNumbers  (hyFloat x)
-{
+hyFloat  ExpNumbers  (hyFloat x) {
     return exp(x);
 }
-hyFloat  LogNumbers  (hyFloat x)
-{
+hyFloat  LogNumbers  (hyFloat x) {
     return log(x);
 }
-hyFloat  FastMxAccess(hyPointer m, hyFloat index)
-{
+hyFloat  FastMxAccess(hyPointer m, hyFloat index) {
     return ((hyFloat*)m)[(unsigned long)index];
 }
 
@@ -159,19 +142,16 @@ void  FastMxWrite(hyPointer m, hyFloat index, hyFloat value) {
   ((hyFloat*)m)[(unsigned long)index] = value;
 }
 
-hyFloat  AndNumbers  (hyFloat x, hyFloat y)
-{
+hyFloat  AndNumbers  (hyFloat x, hyFloat y) {
     return x != 0.0 && y != 0.0;
 }
-hyFloat  AbsNumber  (hyFloat x)
-{
+hyFloat  AbsNumber  (hyFloat x) {
     return fabs (x);
 }
 
 //__________________________________________________________________________________
 
-hyFloat  RandomNumber(hyFloat l, hyFloat u)
-{
+hyFloat  RandomNumber(hyFloat l, hyFloat u) {
     hyFloat r = l;
     if (u>l) {
         r =l+(u-l)*genrand_real1();
@@ -182,29 +162,31 @@ hyFloat  RandomNumber(hyFloat l, hyFloat u)
 
 
 //_______________________________________________________________________________________
-hyFloat  EqualNumbers(hyFloat a, hyFloat b)
-{
+hyFloat  EqualNumbers(hyFloat a, hyFloat b) {
     if (a!=0.0) {
         a = (a>b)?(a-b)/a:(b-a)/a;
-        return ((a>0.)?(a<=machineEps):(a>=-machineEps));
+        return a>0. ? a<=machineEps : a>=-machineEps;
     }
-    return (b<=machineEps)&&(b>=-machineEps);
+    return b<=machineEps && b>=-machineEps;
 }
 
 //_______________________________________________________________________________________
-void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDatum* values)
-{
-    for (unsigned long k2 = 0; k2 < vars.lLength; k2++) {
-        _PMathObj varValue = LocateVar (vars.lData[k2])->Compute();
-        if (varValue->ObjectClass() == NUMBER) {
-            values[k2].value = varValue->Value();
-        } else {
-            if (varValue->ObjectClass() == MATRIX) {
-              values[k2].reference = (hyPointer)((_Matrix*)varValue)->theData;
+void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDatum* values) {
+    try {
+        vars.Each ([&] (long var_index, unsigned long array_index) -> void {
+            _PMathObj var_value = LocateVar (var_index)->Compute();
+            if (var_value->ObjectClass() == NUMBER) {
+                values[array_index].value = var_value->Value();
             } else {
-              HandleApplicationError ("Internal error in PopulateArraysForASimpleFormula", true);
+                if (var_value->ObjectClass() == MATRIX) {
+                    values[var_index].reference = (hyPointer)((_Matrix*)var_value)->theData;
+                } else {
+                    throw ("Internal error in PopulateArraysForASimpleFormula");
+                }
             }
-        }
+        });
+    } catch (const _String e) {
+        HandleApplicationError (e, true);
     }
 }
 
@@ -213,7 +195,7 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
 
 void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* context) {
     _FString * t = (_FString*)p->Type();
-    context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' is not implemented/defined for a " & *t->theString);
+    context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' is not implemented/defined for a " & t->get_str());
     DeleteObject (t);
 }
 
@@ -221,17 +203,16 @@ void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* conte
 
 void        WarnWrongNumberOfArguments (_PMathObj p, long opCode, _hyExecutionContext* context, _List * args) {
   _FString * t = (_FString*)p->Type();
-  context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' was called with an incorrect number of arguments (" & (long) (args ? args->lLength : 0L) & ") for " & *t->theString);
+  context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' was called with an incorrect number of arguments (" & (long) (args ? args->lLength : 0L) & ") for " & t->get_str());
   DeleteObject (t);
 }
 
 
-
-
 //__________________________________________________________________________________
 
-long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _VariableContainer* nameSpace, char assignment_type)
-{
+long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _VariableContainer* nameSpace, char assignment_type) {
+    /** TODO SLKP 20171128: this needs review */
+    
     if (assignment_type != kStringDirectReference && reference >= 0) {
         long dereferenced = DereferenceVariable(reference, nameSpace, assignment_type);
         if (dereferenced < 0) {
@@ -434,35 +415,30 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
 }
 
 //__________________________________________________________________________________
+//__________________________________________________________________________________
 
-struct      characterChecker {
-    characterChecker (_String s) {
-        for (long r = 0L; r<256L; r++) {
-            isAllowed [r] = false;
-        }
-        for (long r2 = 0; r2<s.sLength; r2++) {
+struct      _characterChecker {
+    _characterChecker (_String const s) {
+        InitializeArray(isAllowed,256, false);
+        for (unsigned long r2 = 0UL; r2<s.length(); r2++) {
             isAllowed [s.get_uchar (r2)] = true;
         }
     }
     bool     isAllowed [256];
 }
+
 alpha       ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"),
             numeric     (".0123456789eE");
 
-_String     globalToken ("global"),
-            noneToken   ("None");
+_String     const kGlobalToken ("global");
 
-/*
-_String     alpha   ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"),
-            numeric (".0123456789eE");
-*/
 
 #define CONTEXT_TRUNCATION 24
 
 //__________________________________________________________________________________
 long        HandleFormulaParsingError (_String errMsg, _String* saveError, _String& s, long index) {
     if (index >= 0) {
-        errMsg = errMsg & " in the following context: '"&s.Cut(MAX(0,index-CONTEXT_TRUNCATION),index)&"<ERROR HERE>"&s.Cut(index+1,MIN (index+CONTEXT_TRUNCATION, s.sLength-1)) & "'";
+        errMsg = errMsg & " in the following context: '"&s.Cut(MAX(0,index-CONTEXT_TRUNCATION),index)&"<ERROR HERE>"&s.Cut(index+1,MIN (index+CONTEXT_TRUNCATION, s.length()-1)) & "'";
     }
     if (saveError) {
         *saveError = errMsg;
@@ -709,7 +685,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
 
     _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
-    for (long i = 0; i<=s.sLength; i++) {
+    for (long i = 0; i<=s.length(); i++) {
         storage = 0; // no implied ops by default
 
         if (isspace(s.get_char(i))) { // skip spaces and tabs
@@ -719,7 +695,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
         char     lookAtMe = s.get_char(i);
         //printf ("at '%c', the formula looks like this %s\n", lookAtMe, (const char*)_String ((_String*)f->GetList().toStr()));
 
-        if (i==s.sLength || lookAtMe == ')' || lookAtMe == ']' || lookAtMe == ',') {
+        if (i==s.length() || lookAtMe == ')' || lookAtMe == ']' || lookAtMe == ',') {
             // closing ) or ]
             // or a parameter list
                 /* 04252006 if (level == mlevel && s.get_char(i)!=']')*/
@@ -728,7 +704,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
 
             if (lookAtMe != ',') {
-              if (i != s.sLength) {
+              if (i != s.length()) {
                 level--;
               } else {
                 if (level != 0L) {
@@ -771,7 +747,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
             levelData->Clear();
 
-            if (i<s.sLength && lookAtMe !=',' ) {
+            if (i<s.length() && lookAtMe !=',' ) {
                 operations.Delete (level+1);
                 operands.Delete   (level+1);
                 functionCallTags.Pop();
@@ -806,7 +782,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 }
 
                 if (lookAtMe !=']')
-                    if ( BinOps.Find(s.get_char(i+1))==-1 && i<s.sLength-1 && s.get_char(i+1)!=')' && s.get_char(i+1)!=']' && s.get_char(i+1)!='[' && HalfOps.Find(s.get_char(i+1))==-1 && s.get_char(i+1)!=',') {
+                    if ( BinOps.Find(s.get_char(i+1))==-1 && i + 1 <s.length() && s.get_char(i+1)!=')' && s.get_char(i+1)!=']' && s.get_char(i+1)!='[' && HalfOps.Find(s.get_char(i+1))==-1 && s.get_char(i+1)!=',') {
                         storage = s.get_char(i);
                         s.set_char(i,'*');
                     }
@@ -1105,10 +1081,10 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             _String matrixDef   (s,i,j);
             bool has_values = false;
 
-            if (matrixDef.sLength == 2 || (has_values = matrixDef.FindTerminator(1, ":") >= 0L) || matrixDef.FirstNonSpaceIndex(1,-1) == matrixDef.sLength - 1) {
+            if (matrixDef.length() == 2UL || (has_values = matrixDef.FindTerminator(1, ":") >= 0L) || matrixDef.FirstNonSpaceIndex(1,-1) + 1 == matrixDef.length()) {
                 _AssociativeList *theList = new _AssociativeList ();
                 if (has_values) {
-                    matrixDef.Trim (1,matrixDef.sLength-2);
+                    matrixDef.Trim (1,matrixDef.length()-2);
                     if (!theList->ParseStringRepresentation (matrixDef,parsingContext)) {
                         return HandleFormulaParsingError ("Poorly formed associative array construct ", parsingContext.errMsg(), s, i);
                     }
@@ -1166,19 +1142,20 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
           
           char terminator = s.get_char (i);
 
-            _String * literal = new _String (16,true);
+            _StringBuffer * literal = new _StringBuffer (16UL);
             _List * formula_list = nil;
 
-            while (i+j<s.sLength) {
-                char aChar = s.sData[i+j];
+            while (i+j<s.length()) {
+                char aChar = s.char_at(i+j);
                 if (aChar =='\\') {
-                    if (i+j+1<s.sLength) {
-                        if (s.sData[i+j+1]=='"' ||s.sData[i+j+1]=='`' ||  s.sData[i+j+1]=='\'') {
+                    if (i+j+1<s.length()) {
+                        char char_at_index = s.char_at(i+j+1);
+                        if (char_at_index=='"' || char_at_index=='`' ||  char_at_index =='\'') {
                             j++;
-                            (*literal)<<s.sData[i+j++];
+                            (*literal)<<s.char_at(i+j++);
                         } else {
-                            (*literal)<<s.sData[i+j++];
-                            (*literal)<<s.sData[i+j++];
+                            (*literal)<<s.char_at(i+j++);
+                            (*literal)<<s.char_at(i+j++);
                         }
                     }
                     continue;
@@ -1212,7 +1189,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         if (expressionProcessor.IsConstant(true)) {
                           _PMathObj constant_literal = expressionProcessor.Compute (0, nil, nil, nil, STRING);
                           if (constant_literal) {
-                            (*literal) << *((_FString*)constant_literal)->theString;
+                            (*literal) << ((_FString*)constant_literal)->get_str();
                           }
                           else {
                             return HandleFormulaParsingError ("Constant expression inside `` did not evaluate to a string ", parsingContext.errMsg(), s, i);
@@ -1223,8 +1200,8 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                             formula_list = new _List;
                           }
 
-                          literal->Finalize();
-                          if (literal->sLength) {
+                          literal->TrimSpace();
+                          if (literal->nonempty()) {
                             formula_list->AppendNewInstance(new _Operation (new _FString(literal)));
                           } else {
                             DeleteObject (literal);
@@ -1232,7 +1209,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                           if (formula_list->lLength > 1L) {
                             formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
                           }
-                          literal = new _String (16,true);
+                          literal = new _StringBuffer (16UL);
                           (*formula_list) << expressionProcessor.theFormula;
                           if (formula_list->lLength > expressionProcessor.theFormula.lLength) {
                             formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
@@ -1247,17 +1224,17 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                 } else {
                     if (inPlaceID < 0) {
-                        (*literal)<<s.sData[i+j];
+                        (*literal)<<s.get_char(i+j);
                     }
                     j++;
                 }
             }
 
 
-            literal->Finalize();
+            literal->TrimSpace();
 
             if (formula_list) {
-              if (literal->sLength) {
+              if (literal->nonempty()) {
                 formula_list->AppendNewInstance(new _Operation (new _FString(literal)));
                 formula_list->AppendNewInstance(new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
               } else {
@@ -1300,7 +1277,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             impliedMult = (i && numeric.isAllowed [(unsigned char)s.get_char(i-1)]);
 
             long j = 1;
-            while ( i+j<s.sLength && (alpha.isAllowed [(unsigned char)s.get_char(i+j)]|| numeric.isAllowed [(unsigned char)s.get_char(i+j)]) ) {
+            while ( i+j<s.length() && (alpha.isAllowed [(unsigned char)s.get_char(i+j)]|| numeric.isAllowed [(unsigned char)s.get_char(i+j)]) ) {
                 j++;
             }
 
@@ -1308,18 +1285,18 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             curOp =  s.Cut(i,i+j-1L);
             i+=j-1L;
 
-            if (curOp.Equal(&globalToken)) {
+            if (curOp == kGlobalToken) {
                 if (takeVarReference) {
-                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & globalToken, parsingContext.errMsg(), s, i);
+                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & kGlobalToken, parsingContext.errMsg(), s, i);
                 }
                 globalKey = true;
                 continue;
             }
 
             bool noneObject = false;
-            if (curOp.Equal(&noneToken)) {
+            if (curOp == kNoneToken) {
                  if (takeVarReference) {
-                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & noneToken, parsingContext.errMsg(), s, i);
+                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & kNoneToken, parsingContext.errMsg(), s, i);
                 }
                noneObject = true;
                 globalKey  = true;
@@ -1348,7 +1325,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                 // check if this is a function defined in the batch language
 
-                if ((bLang =  noneObject?-1:FindBFFunctionName (curOp, parsingContext.formulaScope()))>=0) {
+                if ((bLang =  noneObject?-1:hyphy_global_objects::FindBFFunctionName (curOp, parsingContext.formulaScope()))>=0) {
                     if (takeVarReference) {
                         return HandleFormulaParsingError ("Cannot make a reference from user-defined function", parsingContext.errMsg(), s, i);
                     }
@@ -1359,7 +1336,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     continue;
                 }
 
-                long curOpl = curOp.sLength;
+                long curOpl = curOp.length();
                 if (curOpl>2 && curOp[curOpl-1]=='_' && curOp[curOpl-2]=='_') { // instant variable refrence
                     _String realVarName (curOp,0,curOpl-3);
 
@@ -1414,14 +1391,14 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
             long j = 1;
 
-            while ( i+j<s.sLength && (numeric.isAllowed [(unsigned char)s.get_char(i+j)] || ((s.get_char(i+j)=='-' || s.get_char(i+j)=='+' )&& tolower(s.get_char(i+j-1))=='e')) ) {
+            while ( i+j<s.length() && (numeric.isAllowed [(unsigned char)s.get_char(i+j)] || ((s.get_char(i+j)=='-' || s.get_char(i+j)=='+' )&& tolower(s.get_char(i+j-1))=='e')) ) {
                 j++;
             }
 
             curOp =  (s.Cut(i,i+j-1));
             i+=j-1;
             levelData->AppendNewInstance (new _Operation (false, curOp));
-            if (i<s.sLength-1 && s.get_char(i+1)=='(') {
+            if (i + 1 <s.length() && s.get_char(i+1)=='(') {
                 storage = s.get_char(i);
                 s.set_char(i,((_String*)BuiltInFunctions(HY_OP_CODE_MUL))->get_char(0));
             } else {
@@ -1454,7 +1431,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
 
             if (levelData->countitems()==0) {
-                if (s[i-curOp.sLength]!=')' && storage!=')' && s[i-curOp.sLength] !=']') {
+                if (s[i-curOp.length()]!=')' && storage!=')' && s[i-curOp.length()] !=']') {
                     if (!twoToken && UnOps.FindKey (s.get_char(i)) >= 0) {
                         twoOrOne = 1;
                     } else {
@@ -1542,14 +1519,14 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 levelOps->AppendNewInstance (new _Operation (curOp,1));
                 continue;
             } else {
-                if (HalfOps.contains(s.get_char(i))) {
+                if (HalfOps.Find(s.get_char(i)) != kNotFound) {
                     twoToken = true;
                     continue;
                 }
                 return HandleFormulaParsingError ("Bad binary operator placement ", parsingContext.errMsg(), s, i);
             }
         } else {
-            if (!HalfOps.contains(s.get_char(i))) {
+            if (HalfOps.Find(s.get_char(i)) == kNotFound) {
                 return HandleFormulaParsingError ("Unexpected symbol ", parsingContext.errMsg(), s, i);
             } else {
                 twoToken = true;
@@ -1561,10 +1538,9 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 }
 //__________________________________________________________________________________
 
-long     VerbosityLevel (void)
-{
-    checkParameter (VerbosityLevelString, verbosityLevel, -1L);
-    return verbosityLevel;
+long     VerbosityLevel (void) {
+    checkParameter (VerbosityLevelString, verbosity_level, -1L);
+    return verbosity_level;
 }
 
 
@@ -1707,7 +1683,7 @@ void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
             }
             (*stIn)<<str;
             (*stIn)<<":=";
-            stIn->AppendNewInstance(thisVar->GetFormulaString());
+            stIn->AppendNewInstance(thisVar->GetFormulaString(kFormulaStringConversionNormal));
             (*stIn)<<';';
             if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
                 str = _String ("\n") & *thisVar->GetName() & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
@@ -1745,7 +1721,7 @@ void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
                 str = _String("\nglobal ") & *thisVar->GetName();
                 glVars<<str;
                 glVars<<":=";
-                glVars<< thisVar->GetFormulaString();
+                glVars<< thisVar->GetFormulaString(kFormulaStringConversionNormal);
                 glVars<<';';
                 if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
                     str = _String ("\n") & *thisVar->GetName() & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';

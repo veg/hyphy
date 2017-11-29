@@ -236,7 +236,7 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
 
     } else {
         numberOfTerms = 0L;
-        if (stuff.Equal (&noneToken))
+        if (stuff == kNoneToken)
             theNumber = new _MathObject;
         else
             theNumber = new _Constant (stuff);

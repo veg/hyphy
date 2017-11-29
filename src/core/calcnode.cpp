@@ -432,18 +432,11 @@ hyFloat  _CalcNode::ProcessTreeBranchLength (_String const& branch_length) {
 
 //_______________________________________________________________________________________________
 
-_CalcNode::~_CalcNode (void)
-{
+_CalcNode::~_CalcNode (void) {
 
-#ifndef __HYALTIVEC__
     if (theProbs) {
         delete [] theProbs;
     }
-#else
-    if (theProbs) {
-        vec_free(theProbs);
-    }
-#endif
     if (compExp && referenceNode < 0) {
         DeleteObject (compExp);
     }

@@ -45,13 +45,11 @@
 #include <math.h>
 #include <limits.h>
 
-#include "batchlan.h"
+#include "matrix.h"
 #include "polynoml.h"
+#include "associative_list.h"
+#include "batchlan.h"
 #include "likefunc.h"
-
-#include "avllist.h"
-#include "avllistx.h"
-#include "avllistxl.h"
 
 #include "function_templates.h"
 #include "mersenne_twister.h"
@@ -72,9 +70,8 @@ _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
             ANAL_COMP_FLAG              = "ANALYTIC_COMPUTATIONS",
             ANAL_MATRIX_TOLERANCE      = "ANAL_MATRIX_TOLERANCE",
             CACHE_FORMULA_DEPENDANCY  = "CACHE_FORMULA_DEPENDANCY",
-            BRANCH_LENGTH_STENCIL      = "BRANCH_LENGTH_STENCIL",
-            AVL_ITERATOR_ORDER          = "INDEXORDER",
-            AVL_ITERATOR_ORDER_VALUE    = "VALUEINDEXORDER";
+            BRANCH_LENGTH_STENCIL      = "BRANCH_LENGTH_STENCIL";
+
 
 int _Matrix::precisionArg = 0;
 int _Matrix::storageIncrement = 16;
@@ -621,68 +618,50 @@ _Matrix::_Matrix (_List const& sl, bool parse_escapes)
 }
 
 //_____________________________________________________________________________________________
-void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse = false, bool allocateStorage = false, bool isFla = false)
-{
-  long i;
-  
-  theMatrix->theValue     = nil;
-  theMatrix->storageType  = allocateStorage;
-  if (theHDim && theVDim) {
-    if (sparse) { // store matrix as sparse
-      theMatrix->lDim = theHDim*theVDim*theMatrix->storageIncrement/100+1; // size of storage in elements
-      if (theMatrix->lDim-1<theHDim)
-        // either the matrix or the allocation block are too small
-        // to sensibly store the matrix as sparse.
-      {
-        CreateMatrix (theMatrix, theHDim, theVDim, false, allocateStorage, isFla);
-        return;
-      }
-      if (!(theMatrix->theIndex = (long*)MatrixMemAllocate(sizeof(long)*theMatrix->lDim))) { // allocate element index storage
-        HandleApplicationError ( kErrorStringMemoryFail , true);
-        return;
-      } else {
-        InitializeArray(theMatrix->theIndex, theMatrix->lDim, -1L);
-      }
-      
+void    _Matrix::CreateMatrix    (_Matrix* populate_me, long rows, long columns,  bool sparse, bool allocateStorage, bool expression_matrix) {
+    
+    populate_me->theValue     = nil;
+    populate_me->storageType  = allocateStorage ? _NUMERICAL_TYPE : _POLYNOMIAL_TYPE;
+    
+    if (rows && columns) {
+        if (sparse) { // store matrix as sparse
+            populate_me->lDim = rows*columns*populate_me->storageIncrement/100+1; // size of storage in elements
+            if (populate_me->lDim-1L<rows) {
+                // either the matrix or the allocation block are too small
+                // to sensibly store the matrix as sparse.
+                CreateMatrix (populate_me, rows, columns, false, allocateStorage, expression_matrix);
+                return;
+            }
+            populate_me->theIndex = (long*)MatrixMemAllocate(sizeof(long)*populate_me->lDim);
+            InitializeArray(populate_me->theIndex, populate_me->lDim, -1L);
+            
+        } else {
+            populate_me->lDim = rows*columns;
+            populate_me->theIndex = nil; // no index storage needed
+        }
+        
+        if (!allocateStorage) {
+            // matrix will store pointers to elements
+            populate_me->theData =(hyFloat*)MatrixMemAllocate(populate_me->lDim*sizeof(void*));
+            if (expression_matrix) {
+                InitializeArray ((_Formula**)populate_me->theData,    populate_me->lDim, (_Formula*)ZEROPOINTER);
+            } else {
+                InitializeArray ((_MathObject**)populate_me->theData, populate_me->lDim, (_PMathObj)ZEROPOINTER);
+            }
+            
+        } else {
+            populate_me->theData =(hyFloat*)MatrixMemAllocate (sizeof(hyFloat)*populate_me->lDim);
+            memset (populate_me->theData, 0, populate_me->lDim*sizeof(hyFloat));
+        }
     } else {
-      theMatrix->lDim = theHDim*theVDim;
-      theMatrix->theIndex = nil; // no index storage needed
+        populate_me->lDim      = 0L;
+        populate_me->theIndex  = nil;
+        populate_me->theData   = nil;
     }
     
-    if (!allocateStorage)
-      // matrix will store pointers to elements
-    {
-      if (!(theMatrix->theData =(hyFloat*)MatrixMemAllocate(theMatrix->lDim*sizeof(void*)))) { // allocate element index storage
-        HandleApplicationError ( kErrorStringMemoryFail );
-        return;
-      } else {
-        if (isFla) {
-          InitializeArray ((_Formula**)theMatrix->theData,    theMatrix->lDim, (_Formula*)ZEROPOINTER);
-        } else {
-          InitializeArray ((_MathObject**)theMatrix->theData, theMatrix->lDim, (_PMathObj)ZEROPOINTER);
-        }
-      }
-      
-    } else {
-      if (!(theMatrix->theData =(hyFloat*)MatrixMemAllocate (sizeof(hyFloat)*theMatrix->lDim))) { // allocate element index storage
-        HandleApplicationError ( kErrorStringMemoryFail );
-        return;
-      }
-      
-      else {
-        // populate with zero data objects
-        memset (theMatrix->theData, 0, theMatrix->lDim*sizeof(hyFloat));
-      }
-    }
-  } else {
-    theMatrix->lDim      = 0;
-    theMatrix->theIndex  = nil;
-    theMatrix->theData   = nil;
-  }
-  
-  theMatrix->hDim = theHDim;
-  theMatrix->vDim = theVDim;
-  theMatrix->SetupSparseMatrixAllocations ();
+    populate_me->hDim = rows;
+    populate_me->vDim = columns;
+    populate_me->SetupSparseMatrixAllocations ();
 }
 
 

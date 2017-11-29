@@ -214,6 +214,5 @@ extern      hyFloat  pi_const, machineEps, tolerance;
 
 
 extern      bool        useGlobalUpdateFlag;
-extern      _String     noneToken;
 
 #endif

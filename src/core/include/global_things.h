@@ -266,7 +266,9 @@ namespace hy_global {
   hy_mpi_node_count;
   
   extern  long     system_CPU_count,
-                   print_digit_specification;
+                   print_digit_specification,
+                   verbosity_level;
+
     
   extern unsigned long matrix_exp_count,
                        taylor_terms_count,
@@ -288,7 +290,8 @@ namespace hy_global {
   kErrorStringMemoryFail,                  // -108
   kErrorStringDatasetRefIndexError,        // -171
   kErrorStringMatrixExportError,           // -200
-  kErrorStringNullOperand                  // -666
+  kErrorStringNullOperand,                  // -666
+  kNoneToken
   ;
   
   extern  _String  hy_base_directory,

@@ -1601,7 +1601,7 @@ void _DataSetFilter::ComputePairwiseDifferences (_Matrix& target, long i, long j
 // 4th   lower diag - count GT,TG
 {
     if ((target.GetHDim()!=1)||(target.GetVDim()!=7)) {
-        CreateMatrix (&target,1,7,false,true,false);
+        _Matrix::CreateMatrix (&target,1,7,false,true,false);
     }
     
     if (!theData->theTT->IsStandardNucleotide()) {

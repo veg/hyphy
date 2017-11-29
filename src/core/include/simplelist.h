@@ -312,6 +312,7 @@ class _SimpleList:public BaseObj {
           return kNotFound;
         }
 
+    
         template <typename MAPPER> void Each (MAPPER&& mapper, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {
             mapper ( ((long*)(lData))[i], i );

@@ -45,11 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "calcnode.h"
 #include "associative_list.h"
 
-#ifdef __HYALTIVEC__
-#define   A_LARGE_NUMBER          1.e35
-#else
 #define   A_LARGE_NUMBER          1.e100
-#endif
 
 #define   DEFAULTPARAMETERLBOUND  0.0
 #define   DEFAULTPARAMETERUBOUND  10000.0

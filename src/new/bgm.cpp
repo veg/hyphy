@@ -118,7 +118,7 @@ void        ConsoleBGMStatus (_String statusLine, hyFloat percentDone, _String *
 
     if (outFile) {
         fprintf (outFile,"%s", reportLine.sData);
-    } else if (verbosityLevel == 1) {
+    } else if (verbosity_level == 1) {
         printf ("\033\015 %s", reportLine.sData);
     }
 

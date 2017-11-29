@@ -3632,7 +3632,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
         _FString * pfs = (_FString*)CheckReceptacle (&optimizationStatusFile, kEmptyString, false)->ComputeMatchingType(STRING);
         progressFileString = pfs ? & pfs->get_str() : nil;
 
-        if (verbosityLevel==1L) {
+        if (verbosity_level==1L) {
             UpdateOptimizationStatus (0,0,0,true,progressFileString);
         }
 #ifdef __HYPHYMPI__
@@ -3799,7 +3799,7 @@ DecideOnDivideBy (this);
             checkParameter (intermediatePrecision,intermediateP,.1);
         }
 
-        if (verbosityLevel>20) {
+        if (verbosity_level>20) {
             snprintf (buffer, sizeof(buffer),"\nGradient Precision %g  Opt Precision = %g", intermediateP, precision);
             BufferToConsole (buffer);
         }
@@ -3878,7 +3878,7 @@ DecideOnDivideBy (this);
                             CleanUpOptimize();
                             return new _Matrix (1,1,false,true);
                         }
-                    if (verbosityLevel>1) {
+                    if (verbosity_level>1) {
                         _String *s = (_String*)LocateVar(indexInd(passOrder[j]))->GetName();
                         BufferToConsole ("\nAt ");
                         StringToConsole (*s);
@@ -3919,7 +3919,7 @@ DecideOnDivideBy (this);
             bestVal = GetIthIndependent(j);
             lastMax = maxSoFar;
             LocateTheBump (j,precision, maxSoFar, bestVal);
-            if (verbosityLevel>1) {
+            if (verbosity_level>1) {
                 snprintf (buffer, sizeof(buffer),"\nControl Pass At Var#%ld with precision %g current Max = %g. Prior value = %g, current value = %g", j, currentPrecision, maxSoFar, bestVal, GetIthIndependent(j));
                 BufferToConsole (buffer);
             }
@@ -4120,7 +4120,7 @@ DecideOnDivideBy (this);
 
             bigLastMax = maxSoFar;
 
-            if (verbosityLevel>1) {
+            if (verbosity_level>1) {
                 snprintf (buffer, sizeof(buffer),"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
                 BufferToConsole (buffer);
                 if (useAdaptiveStep > 0.5 && logLHistory.get_used() > 2) {
@@ -4129,7 +4129,7 @@ DecideOnDivideBy (this);
                 }
             }
 #if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
-            else if (verbosityLevel==1) {
+            else if (verbosity_level==1) {
                 UpdateOptimizationStatus (maxSoFar,-1,1,true,progressFileString);
             }
 #endif
@@ -4161,7 +4161,7 @@ DecideOnDivideBy (this);
 
             if (useAdaptiveStep > 0.5) {
                 stepScale = 1/divFactor;
-                if (verbosityLevel>5) {
+                if (verbosity_level>5) {
                     snprintf (buffer, sizeof(buffer),"\n[BRACKET SHRINKAGE: %g]", divFactor);
                     BufferToConsole (buffer);
                     snprintf (buffer, sizeof(buffer),"\n[Convergence mode = %d]", convergenceMode);
@@ -4284,7 +4284,7 @@ DecideOnDivideBy (this);
                         //if (IsIthParameterGlobal (j))
                         //  precisionStep *= 2.0;
 
-                        if (verbosityLevel>50) {
+                        if (verbosity_level>50) {
                             snprintf (buffer, sizeof(buffer),"\n[BRACKET STEP: current = %g: previous = %g (diff = %g). bracket = %g, prec = %g]",
                                      lastParameterValue,
                                      previousParameterValue,
@@ -4358,7 +4358,7 @@ DecideOnDivideBy (this);
 
                 variableValues[current_index] = ch;
 
-                if (verbosityLevel>1) {
+                if (verbosity_level>1) {
                     snprintf (buffer, sizeof(buffer),"\nindex = %ld\tlog(L) = %14.10g\t param value = %10.6g ( diff = %10.6g, bracket = %10.6g, precision %10.6g) EVALS: %ld (BRACKET), %ld (BRENT) ",
                              current_index,
                              maxSoFar,
@@ -4374,7 +4374,7 @@ DecideOnDivideBy (this);
                     BufferToConsole (CheckEqual(GetIthIndependentBound (current_index, true), cj)? ("[Lower bound]") : (CheckEqual(GetIthIndependentBound (current_index, false),cj) ? "[Upper bound]" : ""));
                 }
 #if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
-                else if (verbosityLevel==1) {
+                else if (verbosity_level==1) {
                     UpdateOptimizationStatus (maxSoFar,-1,1,true,progressFileString);
                 }
 #endif
@@ -4456,14 +4456,14 @@ DecideOnDivideBy (this);
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
                 SetStatusBarValue (percentDone,maxSoFar,(likeFuncEvalCallCount-evalsIn)/TimerDifferenceFunction(true));
 #else
-                if (verbosityLevel==1) {
+                if (verbosity_level==1) {
                     UpdateOptimizationStatus (maxSoFar,percentDone,1,true,progressFileString);
                 }
 #endif
             }
             logLHistory.Store(maxSoFar);
 
-            if (verbosityLevel>5) {
+            if (verbosity_level>5) {
                 snprintf (buffer, sizeof(buffer),"\nAverage Variable Change: %g, percent done: %g, divFactor: %g, oldAverage/averageChange: %g, stayPut: %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
                 BufferToConsole (buffer);
                 snprintf (buffer, sizeof(buffer),"\nDiff: %g, Precision: %16.12g, termFactor: %ld", maxSoFar-lastMaxValue, precision, termFactor);
@@ -4621,7 +4621,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 
 
 #if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
-    if (verbosityLevel==1) {
+    if (verbosity_level==1) {
         UpdateOptimizationStatus (0,0,2,true,progressFileString);
     }
 #endif
@@ -4791,7 +4791,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
         }
     }*/
 
-    if (verbosityLevel > 100) {
+    if (verbosity_level > 100) {
         char buf [512];
         snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) INITIAL BRACKET %15.12g <= %15.12g (current %15.12g) <= %15.12g]", index, middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
         BufferToConsole (buf);
@@ -4807,7 +4807,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
     while (1) {
 
         while (middle-leftStep < lowerBound) {
-            if (verbosityLevel > 100) {
+            if (verbosity_level > 100) {
               char buf [512];
               snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : LB = %g, current try = %g, current evaluated midpoint value = %g (%s)", index, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
               BufferToConsole (buf);
@@ -4819,7 +4819,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     if (go2Bound) {
                         middle = lowerBound==0.0 ? PERTURBATION_OF_ZERO : lowerBound;
                         middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
-                        if (verbosityLevel > 100) {
+                        if (verbosity_level > 100) {
                           char buf [512];
                           snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED middle to %15.12g, LogL = %15.12g]", index, middle, middleValue);
                           BufferToConsole (buf);
@@ -4886,7 +4886,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             rightValue = SetParametersAndCompute (index, right, &currentValues, gradient);
         }
 
-        if (verbosityLevel > 100) {
+        if (verbosity_level > 100) {
             char buf [512];
             snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): BRACKET %g (LogL : %15.12g diff: %15.12g) - %g (logL: %15.12g) - %g (LogL : %15.12g diff: %15.12g)]", index, left, leftValue, leftValue-middleValue, middle, middleValue, right, rightValue, rightValue-middleValue);
             BufferToConsole (buf);
@@ -4970,7 +4970,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
           CheckAndSetIthIndependent(index,middle);*/
            middleValue = Compute();
 
-           if (verbosityLevel > 100) {
+           if (verbosity_level > 100) {
               char buf [256];
               snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [%g/%g:%g%g]]", index, middle, middleValue, leftValue,lc, rightValue,rc);
               BufferToConsole (buf);
@@ -4982,7 +4982,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
     }
 
 
-    if (verbosityLevel > 100) {
+    if (verbosity_level > 100) {
         char buf [256];
         snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET SUCCESSFUL: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
         BufferToConsole (buf);
@@ -5587,7 +5587,7 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  
                     gradient[index]= 0.;
                 }
 
-                /*if (verbosityLevel > 50)
+                /*if (verbosity_level > 50)
                 {
                     printf ("[GRADIENT @ %s, [%g-%g-%g], %g. der = %g]\n", cv->GetName()->sData, lb, currentValue, ub, testStep, gradient[index]);
                 }*/
@@ -5721,7 +5721,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
     _Matrix     unit     (bestVal),
                 gradient (bestVal);
 
-    long        vl = verbosityLevel;
+    long        vl = verbosity_level;
 
     char        buffer[1024];
 
@@ -5842,7 +5842,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
     _Matrix         unit     (bestVal),
                     gradient (bestVal);
 
-    long            vl = verbosityLevel,
+    long            vl = verbosity_level,
                     index;
 
     for (index=0; index<unit.GetHDim(); index++) {
@@ -6161,7 +6161,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
     else {
       reset = true;
-      if (verbosityLevel>1) {
+      if (verbosity_level>1) {
         BufferToConsole ("Line optimization unsuccessful\n");
       }
       if (leftValue>middleValue) {
@@ -6201,9 +6201,9 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
     DetermineLocalUpdatePolicy           ();
 
     /*if (optimizatonHistory && ((_AssociativeList*)this->optimizatonHistory->GetByKey("Phases"))->Length() == 2171) {
-        verbosityLevel = 1000;
+        verbosity_level = 1000;
     } else {
-        verbosityLevel = 1;
+        verbosity_level = 1;
     }*/
 
     unsigned long        inCount = likeFuncEvalCallCount;
@@ -6225,7 +6225,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
 
             bool parabolic_step = false;
 
-            if (verbosityLevel > 50) {
+            if (verbosity_level > 50) {
                 char buf [256];
                 snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) (current max = %15.12g) GOLDEN RATIO INTERVAL CHECK: %g <= %g (%g = %g) <= %g, span = %g]", index, bestVal, left, XM, X, fabs(X-XM), right, right-left);
                 BufferToConsole (buf);
@@ -6273,14 +6273,14 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
             SetIthIndependent (index,U);
             FU = -Compute();
 
-            if (verbosityLevel > 50) {
+            if (verbosity_level > 50) {
                 char buf [256];
                 snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO TRY: param %20.16g, log L %20.16g]", index, U, -FU);
                 BufferToConsole (buf);
             }
 
             if (FU<=FX) { // value at U is the new minimum
-                if (verbosityLevel > 50) {
+                if (verbosity_level > 50) {
                     char buf [256];
                     snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (eval %ld) ACCEPT new try, confirm value %20.16g (delta = %20.16g)", likeFuncEvalCallCount,  GetIthIndependent(index), FU-FX);
                     BufferToConsole (buf);
@@ -6298,7 +6298,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                 X = U;
                 FX = FU;
             } else { // value at X remains the minimum
-                if (verbosityLevel > 50) {
+                if (verbosity_level > 50) {
                     char buf [256];
                     snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (eval %ld) REJECT new try (delta = %20.16g)", likeFuncEvalCallCount, X, FU-FX);
                     BufferToConsole (buf);
@@ -6325,7 +6325,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
 
         }
 
-        if (verbosityLevel > 50) {
+        if (verbosity_level > 50) {
             char buf [256];
             snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %15.12g/%15.12g ]\n\n", index, brentPrec, bestVal, X, -FX, maxSoFar);
             BufferToConsole (buf);
@@ -6334,7 +6334,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
         middle      = X;
 
         if (middleValue<maxSoFar) {
-            if (verbosityLevel > 50) {
+            if (verbosity_level > 50) {
               char buf [256];
               snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) RESETTING THE VALUE (worse log likelihood obtained) ]\n\n", index);
               BufferToConsole (buf);
@@ -6342,14 +6342,14 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
            SetIthIndependent(index,bestVal);
         } else {
             if (!CheckEqual(GetIthIndependent(index),middle)) {
-                if (verbosityLevel > 50) {
+                if (verbosity_level > 50) {
                     char buf [256];
                     snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) moving parameter value (should trigger LL update) %15.12g to %15.12g ]\n\n", index, GetIthIndependent(index), middle);
                     BufferToConsole (buf);
                 }
                 SetIthIndependent (index,middle);
             } else {
-                if (verbosityLevel > 50) {
+                if (verbosity_level > 50) {
                     char buf [256];
                     snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) KEEPS parameter value (no LL update) %15.12g == %15.12g ]\n\n", index, GetIthIndependent(index), middle);
                     BufferToConsole (buf);
@@ -6504,7 +6504,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision)
 
 
         error = functionalEvaluations(0,indexMax)-functionalEvaluations(0,indexMin);
-        if (verbosityLevel>1) {
+        if (verbosity_level>1) {
             char    buffer[64];
             snprintf (buffer, sizeof(buffer),"\n Error = %15.15g", error);
             BufferToConsole (buffer);
@@ -6572,7 +6572,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision)
                         lastBError = error;
 
                     }
-                    if (verbosityLevel>1) {
+                    if (verbosity_level>1) {
                         char    buffer[64];
                         snprintf (buffer, sizeof(buffer),"\nBUMPING... with factor %g", bumpingFactor);
                         BufferToConsole (buffer);

@@ -236,7 +236,7 @@ _PMathObj   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objec
     }
     if (command_id >= 0 || errMsg) {
       if (command_id >= 0) {
-        HandleApplicationError (_String ((_String*)f.toStr()).Enquote() & (" must evaluate to a ") & FetchObjectNameFromType (objectClass) & " in call to "
+        HandleApplicationError (_String ((_String*)f.toStr(kFormulaStringConversionNormal)).Enquote() & (" must evaluate to a ") & FetchObjectNameFromType (objectClass) & " in call to "
                    &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
       }
     }
@@ -481,7 +481,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
             for (; nextVar>=0; nextVar = variableNames.Next (nextVar, recCache)) {
                 _String dependent = *(_String*)variableNames.Retrieve (nextVar);
                 if (dependent.BeginsWith(myName)) {
-                    if (dependent.Find ('.', myName.sLength+1, -1)>=0) {
+                    if (dependent.Find ('.', myName.length()+1, -1)>=0) {
                         _Variable * checkDep = FetchVar (nextVar);
                         if (!checkDep->IsIndependent()) {
                             _PMathObj curValue = checkDep->Compute();
@@ -1189,7 +1189,7 @@ void  FinishDeferredSF (void)
         }
 
         for (long j = 0; j<likeFuncList.lLength; j++)
-            if (((_String*)likeFuncNamesList(j))->sLength) {
+            if (((_String*)likeFuncNamesList(j))->nonempty()) {
                 _LikelihoodFunction * lf = (_LikelihoodFunction*)likeFuncList(j);
                 for (long k = 0; k < deferSetFormula->lLength; k++) {
                     lf->UpdateIndependent(deferSetFormula->lData[k],deferIsConstant.lData[k]);

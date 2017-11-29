@@ -116,7 +116,9 @@ namespace hy_global {
                                       Replace("Oct", "10", true).
                                       Replace("Nov", "11", true).
                                       Replace("Dec", "12", true)
-                                        & _String(__DATE__).Cut (4,5).Replace (" ", "0", true) & "alpha";
+                                        & _String(__DATE__).Cut (4,5).Replace (" ", "0", true) & "alpha",
+    
+                    kNoneToken = "None";
   
     _String
                      hy_base_directory,
@@ -147,7 +149,8 @@ namespace hy_global {
   
     long             system_CPU_count = 1L,
         /** the number of CPUs for OpenMP */
-                     print_digit_specification = 0L;
+                     print_digit_specification = 0L,
+                     verbosity_level = 0L;
   
   
     namespace {
