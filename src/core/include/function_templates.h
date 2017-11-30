@@ -136,8 +136,9 @@ bool ArrayAll(ARG_TYPE const *array, unsigned long dimension,
 }
 
 template <typename LAMBDA> bool ListAny(_SimpleList &list, LAMBDA &&condition) {
-  for (unsigned long i = 0UL; i < list.lLength; i++) {
-    if (condition(list.lData[i], i)) {
+  unsigned long const list_length = list.countitems();
+  for (unsigned long i = 0UL; i < list_length; i++) {
+    if (condition(list.get(i), i)) {
       return true;
     }
   }

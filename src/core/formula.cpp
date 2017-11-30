@@ -251,7 +251,7 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
         return new _Formula (new _Constant (0.0));
     }
 
-    long dx_id = dx->GetIndex();
+    long dx_id = dx->GetAVariable();
 
     _Formula*     res = new _Formula ();
 
@@ -2511,7 +2511,7 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
                 // This change was part of a commit that introduced an optimizer bug (suspected location:
                 // src/core/batchlan2.cpp:2220). This change is suspicious as well (removed and undocumented condition).
                 //if ((((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal())||
-                 //       (((_Variable*)LocateVar(theObj->GetAVariable()))->ObjectClass()!=NUMBER)) {
+                 //       (((_Variable*)LocateVar(theObj->GetIndex()))->ObjectClass()!=NUMBER)) {
                 if (((_Variable*)LocateVar(this_op->GetAVariable()))->IsGlobal()) {
                     continue;
                 }

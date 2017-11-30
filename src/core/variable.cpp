@@ -299,7 +299,7 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
         _Variable* thisVar = FetchVar (i);
         if (!thisVar->IsIndependent()) {
             if (thisVar->CheckFForDependence (theIndex)) {
-                long f = thisVar->GetAVariable();
+                long f = thisVar->GetIndex();
                 if (rec.Find(f)<0) {
                     rec<<f;
                 }
@@ -701,9 +701,11 @@ _PMathObj    _Variable::ComputeReference (_MathObject const * context) const {
 
 //__________________________________________________________________________________
 _String const    _Variable::ContextFreeName(void) const {
-    long location = theName->FindBackwards (".", 0, -1);
-    if (location > 0) {
-       return theName->Cut (location+1,-1); 
+    static const _String kDot (".");
+    
+    long location = theName->FindBackwards (kDot, 0L, kStringEnd);
+    if (location > 0L) {
+       return theName->Cut (location+1L,kStringEnd);
     }  
     return *theName;
 }
@@ -716,6 +718,8 @@ _String const   _Variable::ParentObjectName(void) const {
     }  
     return kEmptyString;
 }
+
+//__________________________________________________________________________________
 
 _String const WrapInNamespace (_String const& name, _String const* context) {
   if (context) {

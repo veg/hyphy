@@ -53,6 +53,7 @@
 #include "time_difference.h"
 #include "global_things.h"
 #include "hy_string_buffer.h"
+#include "tree_iterator.h"
 
 
 
@@ -1221,7 +1222,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                             if (assignment_length < 3) throw 0;
                             _Variable * mx = f->GetIthTerm(0)->RetrieveVar();
                             if (! mx) throw 0;
-                            f->GetIthTerm (0)->SetAVariable(mx->GetAVariable());
+                            f->GetIthTerm (0)->SetAVariable(mx->GetIndex());
                             _Operation * last = f->GetIthTerm(assignment_length-1);
                             if (! (last->TheCode() == HY_OP_CODE_MCOORD && last->GetNoTerms() == 2)) throw 0;
 
@@ -3194,7 +3195,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         if (result) {
             _Matrix   * storage = new _Matrix (1,1,false,true);
             result->SetValue(storage,false);
-            lastMatrixDeclared = result->GetAVariable();
+            lastMatrixDeclared = result->GetIndex();
             if (!storage->ImportMatrixExp(theDump)) {
                 HandleApplicationError("Matrix import failed - the file has an invalid format.");
                 importResult = false;
@@ -3657,7 +3658,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
 }
 //____________________________________________________________________________________
 
-long _ElementaryCommand::ExtractConditions (_String& source, long start_at, _List& receptacle, char delimeter, bool include_empty_conditions) {
+long _ElementaryCommand::ExtractConditions (_String const& source, long start_at, _List& receptacle, char delimeter, bool include_empty_conditions) {
 
     long parentheses_depth = 1L,
          // this is because extaction will work from the first character following a '(', e.g. CreateFilter([start parsing here]....)
@@ -4670,9 +4671,9 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
         tV2 = LocateVar(-freqID-1);
     }
 
-    if (!alreadyDone || alreadyDone->Find ((BaseRef)tV2->GetAVariable()) < 0) {
+    if (!alreadyDone || alreadyDone->Find ((BaseRef)tV2->GetIndex()) < 0) {
         if (alreadyDone) {
-            alreadyDone->Insert ((BaseRef)tV2->GetAVariable());
+            alreadyDone->Insert ((BaseRef)tV2->GetIndex());
         }
         do2 = true;
     }

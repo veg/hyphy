@@ -577,7 +577,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
 {
     _TheTree*       t = GetIthTree(f);
 
-    _TreeIterator   ti (t, _HY_TREE_TRAVERSAL_POSTORDER | _HY_TREE_TRAVERSAL_SKIP_ROOT);
+    _TreeIterator   ti (t, _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
 
     _DataSetFilter  * df = GetIthFilterMutable (f);
     long            dfDim = df->GetDimension(true);
@@ -880,7 +880,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
             HandleApplicationError (_String("Could not locate a tree variable named ")& object_name.Enquote());
             return false;
         } else {
-            theTrees<<treeVar->GetAVariable();
+            theTrees<<treeVar->GetIndex();
         }
 
         // add the matrix of probabilities
@@ -917,8 +917,8 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                 return    false;
             }
 
-            bool  hasSiteMx         = templateFormula.DependsOnVariable(siteWiseVar->GetAVariable()),
-                  hasBlkMx            = templateFormula.DependsOnVariable(blockWiseVar->GetAVariable());
+            bool  hasSiteMx         = templateFormula.DependsOnVariable(siteWiseVar->GetIndex()),
+                  hasBlkMx            = templateFormula.DependsOnVariable(blockWiseVar->GetIndex());
 
             templateKind = _hyphyLFComputationalTemplateNone;
             long            templateFormulaOpCount = templateFormula.NumberOperations();
@@ -930,9 +930,9 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                     {
                         _Operation * firstOp = templateFormula.GetIthTerm (0);
                         if (firstOp->IsAVariable(false)) {
-                            _Variable * hmmVar = LocateVar(firstOp->GetAVariable());
+                            _Variable * hmmVar = LocateVar(firstOp->GetIndex());
                             if (hmmVar->IsCategory() && ((_CategoryVariable*)hmmVar)->IsHiddenMarkov()) {
-                                templateKind = -hmmVar->GetAVariable()-1;
+                                templateKind = -hmmVar->GetIndex()-1;
                                 hasSiteMx    = true;
                             }
                         }
@@ -2661,7 +2661,7 @@ inline hyFloat sqr (hyFloat x)
 
         unsigned  long  inode_count = 0UL;
 
-        _TreeIterator ti (tree, _HY_TREE_TRAVERSAL_PREORDER | _HY_TREE_TRAVERSAL_SKIP_ROOT);
+        _TreeIterator ti (tree, _HY_TREE_TRAVERSAL_PREORDER | fTreeIteratorTraversalSkipRoot);
 
         _SimpleList node_to_index_support ;
         _AVLListX node_to_index (&node_to_index_support);
@@ -2934,7 +2934,7 @@ void        _LikelihoodFunction::SetReferenceNodes (void) {
                     mappedNodes << iterator;
                     mappedTo    << rV;
                 } else {
-                    canMap << iterator->GetAVariable();
+                    canMap << iterator->GetIndex();
                 }
             }
         }
@@ -3040,7 +3040,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                     return ;
                 }
                 varMap << slaveNodeMap.GetXtra(f);
-                map2   << catVar->GetAVariable();
+                map2   << catVar->GetIndex();
                 //printf ("%s->%d\n", searchTerm->sData, slaveNodeMap.GetXtra(f));
             }
 
@@ -3058,7 +3058,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
                 if (f>=0) {
                     varMap << f;
-                    map2   << indepVar->GetAVariable();
+                    map2   << indepVar->GetIndex();
                 }
             }
 
@@ -6928,12 +6928,12 @@ void    _LikelihoodFunction::ScanAllVariables (void)
             haveConstantOnPartition     = haveConstantOnPartition || cvRef->IsConstantOnPartition();
             if (cvRef->IsUncorrelated()) {
                 if (cvRef->IsConstantOnPartition()) {
-                    indexCat >> cvRef->GetAVariable();
+                    indexCat >> cvRef->GetIndex();
                 } else {
-                    cpCat >> cvRef->GetAVariable();
+                    cpCat >> cvRef->GetIndex();
                 }
             } else {
-                covCat >> cvRef->GetAVariable();
+                covCat >> cvRef->GetIndex();
             }
         }
     }

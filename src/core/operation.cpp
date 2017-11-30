@@ -108,7 +108,7 @@ BaseRef _Operation::toStr (unsigned long) {
 
 
     if (theData != -1) {
-        return new _String (_String("Variable ")& *LocateVar(GetAVariable())->GetName());
+        return new _String (_String("Variable ")& *LocateVar(GetIndex())->GetName());
     } else if (theNumber) {
         _FString * type = (_FString*)theNumber->Type();
         _String res = _String("Constant (")& type->get_str() & ")" & _String((_String*)theNumber->toStr());
@@ -197,7 +197,7 @@ bool _Operation::HasChanged (void)
         return theNumber->HasChanged();
     }
     if (theData >= 0) {
-        return LocateVar (GetAVariable())->HasChanged();
+        return LocateVar (GetIndex())->HasChanged();
     }
 
     return false;
@@ -293,7 +293,7 @@ bool _Operation::IsConstant (bool strict)
     if (strict) {
       return false;
     }
-    return LocateVar(GetAVariable())->IsConstant();
+    return LocateVar(GetIndex())->IsConstant();
 
 }
 
@@ -446,19 +446,19 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             displacedValues<<argument_var->varValue;
             argument_var->varFlags |= HY_VARIABLE_CHANGED;
             argument_var->varValue = nthterm;
-            existingIVars<<argument_var->GetAVariable();
+            existingIVars<<argument_var->GetIndex();
           } else {
             _Variable *newV = new _Variable (*argument_k);
             newV->SetValue(nthterm,false);
             nthterm->AddAReference();
-            existingDVars<<argument_var->GetAVariable();
+            existingDVars<<argument_var->GetIndex();
             displacedVars<<argument_var; // 2 references
             argument_var->AddAReference(); // 3 references
-            variablePtrs.Replace (argument_var->GetAVariable(),newV,false); // 2 references
+            variablePtrs.Replace (argument_var->GetIndex(),newV,false); // 2 references
           }
         } else {
 
-          long new_index = argument_var->GetAVariable();
+          long new_index = argument_var->GetIndex();
 
           referenceArgs << argument_var->GetName();
           displacedReferences<<new_index;
@@ -474,7 +474,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
               reference_var =  CheckReceptacle (refArgName, kEmptyString, false, false);
           }
           
-          variableNames.SetXtra (new_index, reference_var->GetAVariable());
+          variableNames.SetXtra (new_index, reference_var->GetIndex());
           DeleteObject (nthterm);
         }
       }

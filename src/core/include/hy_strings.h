@@ -527,7 +527,7 @@ public:
   \endcode
   * @param  rhs : the suffix to concatenate to this
   * @return "AB"
-  * @sa EscapeAndAppend()
+* @sa EscapeAndAppend()
 
    *  Revision history
       - SLKP 20170519 reviewed while porting from v3 branch

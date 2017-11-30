@@ -57,7 +57,6 @@
 using     namespace hy_env;
 
 extern _SimpleList freeSlots;
-extern  hyTreeDefinitionPhase       isDefiningATree;
 
 
 /*bool        terminate_execution  = false;

@@ -275,6 +275,7 @@ namespace hy_global {
                        squarings_count;
     
   
+  extern   hyTreeDefinitionPhase isDefiningATree;
   
   extern  _String  const kHyPhyVersion,
   kEmptyString,

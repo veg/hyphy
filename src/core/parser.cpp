@@ -1141,7 +1141,7 @@ void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAl
 
     if (!doAll) {
         for (i=startVars.lLength-1; i>=0; i--) {
-            if (firstVar->IsModelVar(i)) {
+            if (firstVar->is_model_var(i)) {
                 startVars.Delete(i);
             }
         }

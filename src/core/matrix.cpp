@@ -4870,7 +4870,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
                 }
             } else {
               
-              long rid []= {cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
+              long rid []= {cr->GetIndex(),cc->GetIndex(),cv->GetIndex()};
               
               for (long k=0; k<3; k++) {
                 rid[k] = vIndexAux.Find(rid[k]);
@@ -7158,7 +7158,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
             _String varName (buffer);
 
             _Variable * ppv = CheckReceptacle (&varName, kEmptyString, true);
-            varList << ppv->GetAVariable();
+            varList << ppv->GetIndex();
             i = 0;
         } else {
             buffer[i]=fc;

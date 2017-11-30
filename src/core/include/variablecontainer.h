@@ -52,9 +52,9 @@
 // this class defines a computational (or storage) class which, as a variable, may contain
 // other variables locally.
 
+
 class _Matrix;
-class   _VariableContainer: public _Variable
-{
+class   _VariableContainer: public _Variable {
 
     friend class _Operation;
     friend class _Variable;
@@ -87,8 +87,8 @@ public:
     virtual     void        ScanForDVariables           (_AVLList&,_AVLList&) const;
     virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0) const;
 
-    virtual     bool        IsModelVar                  (long);
-    virtual     bool        IsConstant                  (void);
+    virtual     bool        is_model_var                  (long) const;
+    virtual     bool        IsConstant                  (void) const;
     virtual     BaseRef     makeDynamic                 (void) const;
     virtual     void        Duplicate                   (BaseRefConst);
 
@@ -103,12 +103,12 @@ public:
     void        Clear                       (void);
     virtual     void        ClearConstraints            (void);
 
-    long        CountIndependents           (void);
-    long        CountAll                    (void);
+    long        CountIndependents           (void) const;
+    long        CountAll                    (void) const;
 
-    virtual     _Variable*  GetIthIndependent           (long);
-    virtual     _Variable*  GetIthDependent             (long);
-    virtual     _Variable*  GetIthParameter             (long);
+    virtual     _Variable*  GetIthIndependent           (long) const;
+    virtual     _Variable*  GetIthDependent             (long) const;
+    virtual     _Variable*  GetIthParameter             (long) const;
 
     long        CheckAndAddUserExpression   (_String&, long startWith = 0);
     void        KillUserExpression          (long);
@@ -147,6 +147,37 @@ protected: // data members
                         *gVariables;
 
     void               SortVars (void);
+    
+    void                PushGlobalVariable (long var_ref);
+    void                PushIndVariable (long var_ref, long local_ref);
+    void                PushDepVariable (long var_ref, long local_ref);
+    bool                HasIndVariable  (long var_ref) const;
+    bool                HasDepVariable  (long var_ref) const;
+    void                RemoveLocalVariable (_SimpleList* & array, long array_index);
+    long                InsertVariableInSortedList (_SimpleList * & list, _String const&  var_name, long var_idx, long ref_idx);
+
+    template <typename LAMBDA> void ForEachLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
+        if (array) {
+            unsigned long array_l = array->countitems();
+            for (unsigned long index = 0UL; index < array_l; index += 2UL) {
+                cb (array->get (index), array->get (index+1), index);
+            }
+        }
+    };
+ 
+    template <typename LAMBDA> bool AnyLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
+        if (array) {
+            unsigned long array_l = array->countitems();
+            for (unsigned long index = 0UL; index < array_l; index += 2UL) {
+                if ((cb) (array->get (index), array->get (index+1), index)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    
 
     long                theModel;   // model template for the container
     _VariableContainer  *theParent; // a higher level container, if there is one.

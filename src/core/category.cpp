@@ -184,7 +184,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                 return;
             }
 
-            intervalSplitter = iSplitter->GetAVariable();
+            intervalSplitter = iSplitter->GetIndex();
 
             _AVLList      ivl (&scannedVarsList);
             iSplitter->ScanForVariables (ivl, true);
@@ -262,7 +262,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
             } else {
                 if (scannedVarsList.lLength) {
                     if(scannedVarsList.lLength==1) {
-                        if (scannedVarsList[0]==hy_n_variable->GetAVariable()) {
+                        if (scannedVarsList[0]==hy_n_variable->GetIndex()) {
                               for (unsigned long i=0UL; i<intervals; i++) {
                                 hy_n_variable->SetValue(new _Constant ((hyFloat)i), false);
                                 (*weights)[i]= probabilities.Compute()->Value();
@@ -328,7 +328,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
             scannedVarsList.Union (densityVars,existingVars);
         }
 
-        f = scannedVarsList.Find(hy_x_variable->GetAVariable());
+        f = scannedVarsList.Find(hy_x_variable->GetIndex());
         if (f!=-1) { // no dummy variable
             check = true;
             scannedVarsList.Delete(f);
@@ -355,7 +355,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                     sv.ReorderList();
                     scannedVarsList.Union (densityVars,existingVars);
                 }
-                f = scannedVarsList.BinaryFind(hy_x_variable->GetAVariable());
+                f = scannedVarsList.BinaryFind(hy_x_variable->GetIndex());
                 if (f<0) { // no dummy variable
                     HandleApplicationError (errorMsg & _String("Cumulative distribution must be specified in terms of ") & hy_x_variable->GetName()->Enquote() & ". Had: " &param->Enquote());
                     return;
@@ -945,7 +945,7 @@ void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals, _AVLLi
     }
 
     if (globals) {
-        l.Delete ((BaseRef)(hy_x_variable->GetAVariable()));
+        l.Delete ((BaseRef)(hy_x_variable->GetIndex()));
     }
 
 }
@@ -967,7 +967,7 @@ void      _CategoryVariable::ScanForGVariables (_AVLList& l)
         tempA.ReorderList();
     }
 
-    long xi = hy_x_variable->GetAVariable();
+    long xi = hy_x_variable->GetIndex();
 
     for (long i=0; i<temp.lLength; i++) {
         if (temp.lData[i]!=xi) {

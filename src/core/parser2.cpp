@@ -353,15 +353,15 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
             _Operation * lValue = f->GetIthTerm(0L);
 
             if (lValue && lValue->IsAVariable(false)) {
-             _Variable* mmo = LocateVar(lValue->GetAVariable());
+             _Variable* mmo = LocateVar(lValue->GetIndex());
              if (mmo->ObjectClass () == MATRIX) {
                 mmx = (_Matrix*)(mmo->GetValue());
-                lValue->SetAVariable(-lValue->GetAVariable()-3);
+                lValue->SetAVariable(-lValue->GetIndex()-3);
               } else {
 
                 if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
                   mma = (_AssociativeList*)(mmo->GetValue());
-                  lValue->SetAVariable(-lValue->GetAVariable()-3);
+                  lValue->SetAVariable(-lValue->GetIndex()-3);
                 }
               }
             }
@@ -499,7 +499,7 @@ bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char &
         check = false;
         if (theOp) {
           if (theOp->IsAVariable(false)) {
-            lhs = LocateVar(theOp->GetAVariable());
+            lhs = LocateVar(theOp->GetIndex());
             check = true;
           } else {
             if (theOp->GetANumber() && theOp->GetANumber()->ObjectClass() == STRING) {
@@ -536,7 +536,7 @@ long _parserHelperHandleInlineBoundCases (_String& s, _FormulaParsingContext& pa
     long varID;
 
     if (lhs_variable) {
-        varID = DereferenceVariable(lhs_variable->GetAVariable(), parsingContext.formulaScope(), deref);
+        varID = DereferenceVariable(lhs_variable->GetIndex(), parsingContext.formulaScope(), deref);
     } else {
         varID = DereferenceString(f->Compute(0, parsingContext.formulaScope(), nil, parsingContext.errMsg()), parsingContext.formulaScope(), deref);
     }
@@ -561,7 +561,7 @@ long _parserHelperHandleInlineAssignmentCases (_String& s, _FormulaParsingContex
     long varID;
 
     if (lhs_variable) {
-        varID = DereferenceVariable(lhs_variable->GetAVariable(), parsingContext.formulaScope(), deref);
+        varID = DereferenceVariable(lhs_variable->GetIndex(), parsingContext.formulaScope(), deref);
     } else {
         varID = DereferenceString(f->Compute(0, parsingContext.formulaScope(), nil, parsingContext.errMsg()), parsingContext.formulaScope(), deref);
     }
@@ -871,7 +871,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     if (twoToken && s.get_char(i-1) == '+') { // += gets handled here
                     
                         _Operation* self = new _Operation ();
-                        self->SetAVariable(lhs_variable->GetAVariable());
+                        self->SetAVariable(lhs_variable->GetIndex());
                         newF.theFormula.InsertElement (self,0,false);
                         DeleteObject (self);
                         if (deref != kStringDirectReference) {
@@ -884,7 +884,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     f->Duplicate((_Formula const*)&newF);
                 }
 
-                parsingContext.assignmentRefID()   = lhs_variable->GetAVariable();
+                parsingContext.assignmentRefID()   = lhs_variable->GetIndex();
                 parsingContext.assignmentRefType() = deref;
 
                 return (s.get_char(i-1)==':')?HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT:HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT;
@@ -930,17 +930,17 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                             last0++;
                         } else {
-                            _Variable* mmo = ((_Operation*)f->theFormula(0))->IsAVariable()?LocateVar(((_Operation*)f->theFormula(0))->GetAVariable()):nil;
+                            _Variable* mmo = ((_Operation*)f->theFormula(0))->IsAVariable()?LocateVar(((_Operation*)f->theFormula(0))->GetIndex()):nil;
 
                             if (mmo) {
                               if (mmo->ObjectClass () == MATRIX) {
                                 mmx = (_Matrix*)(mmo->GetValue());
-                                ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                                ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetIndex()-3);
                               } else {
 
                                 if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
                                   mma = (_AssociativeList*)(mmo->GetValue());
-                                  ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                                  ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetIndex()-3);
                                 }
                               }
                             }
@@ -981,7 +981,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         bool isSimple = (s.get_char(i-1) != ':');
                         f2->Duplicate   (&newF);
                         if (last0 == 0) {
-                            ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
+                            ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetIndex()-3);
                         }
                         return isSimple?((s.get_char(i-1) == '+')?HY_FORMULA_FORMULA_VALUE_INCREMENT:HY_FORMULA_FORMULA_VALUE_ASSIGNMENT):HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT;
                     }
@@ -1042,7 +1042,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 } else { // BOUND ASSIGNMENTS
                     f2->Duplicate   (&newF);
 
-                    parsingContext.assignmentRefID()   = lhs->GetAVariable();
+                    parsingContext.assignmentRefID()   = lhs->GetIndex();
                     parsingContext.assignmentRefType() = deref;
 
                     return (s.get_char(i)=='>')?HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT:HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT;

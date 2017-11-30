@@ -63,7 +63,7 @@ _String const _FormulaParsingContext::contextualizeRef (_String& ref) {
 void _FormulaParsingContext::setScope(const _String *scope) {
   if (scope && scope->nonempty()) {
     _VariableContainer vc (*scope);
-    formula_scope = (_VariableContainer*)FetchVar(vc.GetAVariable());
+    formula_scope = (_VariableContainer*)FetchVar(vc.GetIndex());
   } else {
     formula_scope = nil;
   }

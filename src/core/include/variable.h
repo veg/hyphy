@@ -100,16 +100,14 @@ public:
     virtual     bool        IsCategory (void) {
         return false;
     }
-    virtual     long        GetAVariable (void) const{
-        return theIndex;
-    }
+
     virtual unsigned long        ObjectClass (void) {
         return varValue?varValue->ObjectClass():((varFormula&&varFormula->theFormula.lLength)?varFormula->ObjectClass():1);
     }
     void        SetIndex (long i) {
         theIndex = i;
     }
-    long        GetIndex (void) {
+    long        GetIndex (void) const {
         return theIndex;
     }
     virtual void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0) const;

@@ -1329,7 +1329,7 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
 
     for (unsigned long component = 0UL; component < partition_count ; component++) {
         _TheTree * ith_tree = GetIthTree (component);
-        aux_list << ith_tree->GetAVariable();
+        aux_list << ith_tree->GetIndex();
         filter_list    < new _String (*GetIthFilterName      (component));
         frequency_list < new _String (*GetIthFrequenciesName (component));
       

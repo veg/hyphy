@@ -42,8 +42,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //#pragma once
 #include "category.h"
-#include "calcnode.h"
+#include "tree.h"
 #include "associative_list.h"
+#include "matrix.h"
+#include "vector.h"
 
 #define   A_LARGE_NUMBER          1.e100
 

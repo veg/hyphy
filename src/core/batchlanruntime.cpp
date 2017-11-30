@@ -265,7 +265,7 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
         _CheckExpressionForCorrectness (parsed_expression, expression, currentProgram);
          _Variable * target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
 
-        if (!parsed_expression.DependsOnVariable(target_variable->GetAVariable())) {
+        if (!parsed_expression.DependsOnVariable(target_variable->GetIndex())) {
             throw (expression & " does not depend on the variable " & target_variable->GetName()->Enquote());
         }
 
@@ -2707,7 +2707,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
             if (index1 == -3) {
               _StringBuffer local, global;
               _SimpleList var_index;
-              var_index << var->GetAVariable ();
+              var_index << var->GetIndex ();
               if (var->IsIndependent()) {
                   //printf ("ExportIndVariables\n");
                 ExportIndVariables (global, local, &var_index);
