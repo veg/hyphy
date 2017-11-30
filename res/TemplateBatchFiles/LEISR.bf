@@ -266,7 +266,7 @@ leisr.json_content = { terms.json.input :
                                     terms.json.parameters: leisr.alignment_wide_MLES[terms.parameters],
                                     terms.json.AICc: leisr.aicc,
                                     terms.json.rate_distribution: leisr.store_global,
-                                    terms.efv_estimate: (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0]
+                                    terms.json.frequencies: (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0]
 				                }
 				        },
 				        terms.json.MLE : {terms.json.headers   : leisr.table_headers,
