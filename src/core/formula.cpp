@@ -1265,6 +1265,8 @@ long     _Formula::NumberOperations(void) const
     return theFormula.lLength;
 }
 
+//extern long likeFuncEvalCallCount;
+
 //__________________________________________________________________________________
 
 long      _Formula::ExtractMatrixExpArguments (_List* storage) {
@@ -1282,6 +1284,15 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                 _Operation* nextOp  ((_Operation*)(((BaseRef**)theFormula.lData)[i+1]));
 
                 if (! cacheUpdated && nextOp->CanResultsBeCached(thisOp)) {
+                     /*if (likeFuncEvalCallCount == 12733 && i == 13) {
+                         _Matrix * this_matrix = (_Matrix *)LocateVar (thisOp->GetAVariable())->GetValue();
+                         
+                         _String buffer (1024UL, true), id ("TEMP");
+                         this_matrix->Serialize(buffer, id);
+                         buffer.Finalize();
+                         fprintf (stderr, "[_Formula::ExtractMatrixExpArguments] Get model matrix \n step %ld \n  %s \n\n", i, (const char*) buffer );
+                     }*/
+
                     _Stack temp;
                     thisOp->Execute (temp);
 
@@ -1300,6 +1311,7 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                         cacheUpdated = true;
                         cacheID++;
                         if (nextOp->CanResultsBeCached(thisOp, true)) {
+
                             storage->AppendNewInstance(currentArg);
                             count ++;
                         }
@@ -1736,23 +1748,37 @@ void _Formula::ConvertFromSimple (_SimpleList& variableIndex)
     }
 }
 
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+extern long likeFuncEvalCallCount;
+#endif
+
 //__________________________________________________________________________________
 _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues)
 {
     if (!theFormula.lLength) {
         return 0.0;
     }
-
+    
     long stackTop = 0;
-
+    
     for (int i=0; i<theFormula.lLength; i++) {
         _Operation* thisOp = ((_Operation*)(((BaseRef*)theFormula.lData)[i]));
         if (thisOp->theNumber) {
             stack[stackTop++].value = thisOp->theNumber->Value();
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+            if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
+                fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d, pushed constant %g\n", i, stack[stackTop-1].value );
+            }
+#endif
             continue;
         } else {
             if (thisOp->theData>-1) {
                 stack[stackTop++] = varValues[thisOp->theData];
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+                if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
+                    fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d, pushed variable %g\n", i, stack[stackTop-1].value );
+                }
+#endif
             } else {
                 stackTop--;
                 if (thisOp->numberOfTerms==2) {
@@ -1763,44 +1789,55 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
                         return 0.0;
                     }
                     stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].value,stack[stackTop].value);
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+                    if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
+                        fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d (two op function), value %g\n", i, stack[stackTop-1].value );
+                    }
+#endif
+                    
                 } else {
-                  switch (thisOp->numberOfTerms) {
-                    case -2 : {
-                        _Parameter  (*theFunc) (Ptr,_Parameter);
-                        theFunc = (_Parameter(*)(Ptr,_Parameter))thisOp->opCode;
-                        if (stackTop<1L) {
-                            WarnError ("Internal error in _Formula::ComputeSimple - stack underflow.)");
-                            return 0.0;
+                    switch (thisOp->numberOfTerms) {
+                        case -2 : {
+                            _Parameter  (*theFunc) (Ptr,_Parameter);
+                            theFunc = (_Parameter(*)(Ptr,_Parameter))thisOp->opCode;
+                            if (stackTop<1L) {
+                                WarnError ("Internal error in _Formula::ComputeSimple - stack underflow.)");
+                                return 0.0;
+                            }
+                            stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].reference,stack[stackTop].value);
+                            break;
                         }
-                        stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].reference,stack[stackTop].value);
-                        break;
-                      }
-                    case -3 : {
-                      void  (*theFunc) (Ptr,_Parameter,_Parameter);
-                      theFunc = (void(*)(Ptr,_Parameter,_Parameter))thisOp->opCode;
-                      if (stackTop != 2 || i != theFormula.lLength - 1) {
-                        WarnError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)");
-
-                        return 0.0;
-                      }
-                      //stackTop = 0;
-                      // value, reference, index
-                      (*theFunc)(stack[1].reference,stack[2].value, stack[0].value);
-                      break;
+                        case -3 : {
+                            void  (*theFunc) (Ptr,_Parameter,_Parameter);
+                            theFunc = (void(*)(Ptr,_Parameter,_Parameter))thisOp->opCode;
+                            if (stackTop != 2 || i != theFormula.lLength - 1) {
+                                WarnError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)");
+                                
+                                return 0.0;
+                            }
+                            //stackTop = 0;
+                            // value, reference, index
+                            (*theFunc)(stack[1].reference,stack[2].value, stack[0].value);
+                            break;
+                        }
+                        default: {
+                            _Parameter  (*theFunc) (_Parameter);
+                            theFunc = (_Parameter(*)(_Parameter))thisOp->opCode;
+                            stack[stackTop].value = (*theFunc)(stack[stackTop].value);
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+                            if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
+                                fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d (one op function), value %g\n", i, stack[stackTop-1].value );
+                            }
+#endif
+                            ++stackTop;
+                        }
                     }
-                    default: {
-                        _Parameter  (*theFunc) (_Parameter);
-                        theFunc = (_Parameter(*)(_Parameter))thisOp->opCode;
-                        stack[stackTop].value = (*theFunc)(stack[stackTop].value);
-                        ++stackTop;
-                    }
-                  }
-
+                    
                 }
             }
         }
     }
-
+    
     return stack[0].value;
 }
 

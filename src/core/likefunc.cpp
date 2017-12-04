@@ -1960,12 +1960,15 @@ _Parameter  _LikelihoodFunction::Compute        (void)
 
     bool done = false;
 #ifdef _UBER_VERBOSE_LF_DEBUG
-    fprintf (stderr, "\n*** Likelihood function evaluation %ld ***\n", likeFuncEvalCallCount+1);
-    for (unsigned long i=0; i<indexInd.lLength; i++) {
-        _Variable *v = LocateVar (indexInd.lData[i]);
-        if (v->HasChanged()) {
-          fprintf (stderr, "[CHANGED] ");
-          fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
+    
+    if (likeFuncEvalCallCount >= 12731) {
+        fprintf (stderr, "\n*** Likelihood function evaluation %ld ***\n", likeFuncEvalCallCount+1);
+        for (unsigned long i=0; i<indexInd.lLength; i++) {
+            _Variable *v = LocateVar (indexInd.lData[i]);
+            if (v->HasChanged()) {
+              fprintf (stderr, "[CHANGED] ");
+              fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
+            }
         }
     }
 #endif
@@ -2167,6 +2170,12 @@ _Parameter  _LikelihoodFunction::Compute        (void)
         if (isnan (result)) {
             ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
             return -A_LARGE_NUMBER;
+        }
+        
+        if (result >= 0) {
+            char buffer [2048];
+            snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood at evaluation %ld, mode %ld, template %ld", likeFuncEvalCallCount-1, computeMode, templateKind);
+            WarnError (buffer);
         }
         
         ComputeParameterPenalty ();

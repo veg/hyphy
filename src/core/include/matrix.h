@@ -226,9 +226,10 @@ public:
 
     void        AplusBx  (_Matrix&, _Parameter); // A = A + B*x (scalar)
 
-    void        Sqr         (_Parameter* _hprestrict_);
+    _Parameter  Sqr         (_Parameter* _hprestrict_);
     // square the matrix; takes a scratch vector
     // of at least lDim doubles
+    // returns the maximum element-wise difference between X and X^2
 
     _List*      ComputeRowAndColSums            (void);
     _Matrix*    MutualInformation               (void);
