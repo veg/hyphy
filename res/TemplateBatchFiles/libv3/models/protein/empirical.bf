@@ -12,6 +12,7 @@ models.protein.empirical.default_generators = {"LG": "models.protein.LG.ModelDes
                                                "JC69": "models.protein.JC69.ModelDescription",
                                                "mtMAM": "models.protein.mtMAM.ModelDescription",
                                                "mtMet": "models.protein.mtMet.ModelDescription",
+                                               "mtVer": "models.protein.mtVer.ModelDescription",
                                                "cpREV": "models.protein.cpREV.ModelDescription",
                                                "HIVBm": "models.protein.HIVBm.ModelDescription",
                                                "HIVWm": "models.protein.HIVWm.ModelDescription",                              
@@ -23,6 +24,7 @@ models.protein.empirical.plusF_generators = {"LG": "models.protein.LGF.ModelDesc
                                              "JC69": "models.protein.JC69F.ModelDescription",
                                              "mtMAM": "models.protein.mtMAMF.ModelDescription",                                           
                                              "mtMet": "models.protein.mtMetF.ModelDescription",
+                                             "mtVer": "models.protein.mtVerF.ModelDescription",
                                              "cpREV": "models.protein.cpREVF.ModelDescription",
                                              "HIVBm": "models.protein.HIVBmF.ModelDescription",
                                              "HIVWm": "models.protein.HIVWmF.ModelDescription",
@@ -34,6 +36,7 @@ models.protein.empirical.mleF_generators = {"LG": "models.protein.LGML.ModelDesc
                                              "JC69": "models.protein.JC69ML.ModelDescription",
                                              "mtMAM": "models.protein.mtMAMML.ModelDescription",
                                               "mtMet": "models.protein.mtMetML.ModelDescription",
+                                              "mtVer": "models.protein.mtVerML.ModelDescription",
                                              "cpREV": "models.protein.cpREVML.ModelDescription",
                                              "HIVBm": "models.protein.HIVBmML.ModelDescription",
                                              "HIVWm": "models.protein.HIVWmML.ModelDescription",
@@ -725,6 +728,50 @@ function models.protein.mtMetML.ModelDescription(type) {
     models.protein.mtMetML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
     models.protein.mtMetML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
     return models.protein.mtMetML.ModelDescription.model_definition;
+}
+
+
+/**************************************** mtVer functions *************************************/
+
+
+/**
+ * @name models.protein.mtVer.ModelDescription
+ * @description Create the baseline schema (dictionary) for the mtVer model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+ function models.protein.mtVer.ModelDescription(type) {
+    models.protein.mtVer.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.mtVer.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.mtVer.Rij;
+    models.protein.mtVer.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.mtVer.frequencies";
+    return models.protein.mtVer.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.mtVerF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the mtVer+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.mtVerF.ModelDescription(type) {
+    models.protein.mtVerF.ModelDescription.model_definition = models.protein.mtVer.ModelDescription(type);
+    models.protein.mtVerF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.mtVerF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.mtVerF.ModelDescription.model_definition;
+}
+
+
+/**
+ * @name models.protein.mtVerML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the mtVer+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.mtVerML.ModelDescription(type) {
+    models.protein.mtVerML.ModelDescription.model_definition = models.protein.mtVer.ModelDescription(type);
+    models.protein.mtVerML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.mtVerML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.mtVerML.ModelDescription.model_definition;
 }
 
 
@@ -3096,27 +3143,27 @@ models.protein.AB.Rij = {
 
 lfunction models.protein.mtMet.frequencies (model, namespace, datafilter) {
     model[utility.getGlobalValue("terms.efv_estimate")] =
-      {{0.043793200}
-        {0.012957800}
-        {0.057001300}
-        {0.016899000}
-        {0.011330500}
-        {0.018018100}
-        {0.022538500}
-        {0.047050100}
-        {0.017183700}
-        {0.089779400}
-        {0.155226000}
-        {0.039913500}
-        {0.067444300}
-        {0.088448000}
-        {0.037528200}
-        {0.093752200}
-        {0.063579000}
-        {0.022671300}
-        {0.041568200}
-        {0.053317400}
-       };
+       {{0.0437932}
+        { 0.0113305}
+        { 0.016899}
+        { 0.0225385}
+        { 0.088448}
+        { 0.0470501}
+        { 0.0171837}
+        { 0.0897794}
+        { 0.0399135}
+        { 0.155226}
+        { 0.0674443}
+        { 0.0570013}
+        { 0.0375282}
+        { 0.0180181}
+        { 0.0129578}
+        { 0.0937522}
+        { 0.063579}
+        { 0.0533174}
+        { 0.0226713}
+        { 0.0415682}};
+       
     model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
     (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
     return model;
@@ -3310,4 +3357,224 @@ models.protein.mtMet.Rij = {
  'T': {'V': 1.5140596740000001, 'W': 0.014378616, 'Y': 0.091031787000000003},
  'V': {'W': 0.093136256000000001, 'Y': 0.069964540000000006},
  'W': {'Y': 0.48104431600000003},
- 'Y': {}}
+ 'Y': {}};
+ 
+ 
+ 
+ lfunction models.protein.mtVer.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+      {{0.0706288}
+        { 0.00674192}
+        { 0.014849}
+        { 0.0214826}
+        { 0.0495703}
+        { 0.0440199}
+        { 0.0241895}
+        { 0.0908219}
+        { 0.0273258}
+        { 0.172674}
+        { 0.0563431}
+        { 0.0455021}
+        { 0.0542482}
+        { 0.026439}
+        { 0.0138991}
+        { 0.0746629}
+        { 0.109035}
+        { 0.0456223}
+        { 0.0254891}
+        { 0.0264554}};
+       
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}
+
+models.protein.mtVer.Rij = {
+'A': {'C': 0.25818787799999998,
+       'D': 0.15029704599999999,
+       'E': 0.18789077500000001,
+       'F': 0.069418424000000006,
+       'G': 1.1131450629999999,
+       'H': 0.027049021999999999,
+       'I': 0.419106653,
+       'K': 0.020710955999999999,
+       'L': 0.084964207,
+       'M': 0.77609134000000002,
+       'N': 0.031831916000000002,
+       'P': 0.285706397,
+       'Q': 0.027354705,
+       'R': 0.061426074999999997,
+       'S': 2.5390917019999999,
+       'T': 5.4577877580000003,
+       'V': 3.1769759639999999,
+       'W': 0.0083503050000000006,
+       'Y': 0.013142627},
+ 'C': {'D': 0.124361236,
+       'E': 0.030812587999999998,
+       'F': 1.0711043739999999,
+       'G': 0.91074352700000005,
+       'H': 1.4477151909999999,
+       'I': 0.074268457999999996,
+       'K': 0.018885124999999999,
+       'L': 0.182360515,
+       'M': 0.081020095,
+       'N': 0.306981436,
+       'P': 0.023520451000000001,
+       'Q': 0.14052806900000001,
+       'R': 1.1703635489999999,
+       'S': 3.378191969,
+       'T': 0.16280080499999999,
+       'V': 0.37789383399999998,
+       'W': 1.764289698,
+       'Y': 5.1296218290000004},
+ 'D': {'E': 6.6340898380000004,
+       'F': 0.0053709409999999997,
+       'G': 0.96189642399999997,
+       'H': 0.80546838200000004,
+       'I': 0.00267315,
+       'K': 0.020452689999999999,
+       'L': 0.002808236,
+       'M': 0.0061562730000000003,
+       'N': 8.5772524780000001,
+       'P': 0.032172065,
+       'Q': 0.084904706999999996,
+       'R': 0.063019188000000004,
+       'S': 0.376137787,
+       'T': 0.088772981000000001,
+       'V': 0.123720116,
+       'W': 0.024653916000000001,
+       'Y': 0.174581453},
+ 'E': {'F': 0.0015694050000000001,
+       'G': 1.1518345080000001,
+       'H': 0.081983093000000007,
+       'I': 0.0014573329999999999,
+       'K': 2.1130123909999998,
+       'L': 0.0091256640000000003,
+       'M': 0.059893587999999998,
+       'N': 0.33988321399999999,
+       'P': 0.023665106000000002,
+       'Q': 2.0606641699999999,
+       'R': 0.088305718000000005,
+       'S': 0.10479923300000001,
+       'T': 0.097890385999999996,
+       'V': 0.21560053300000001,
+       'W': 0.062084663999999998,
+       'Y': 0.039546236999999998},
+ 'F': {'G': 0.015417345000000001,
+       'H': 0.183163356,
+       'I': 0.51655272600000002,
+       'K': 0.010488183,
+       'L': 2.390574145,
+       'M': 0.14710124199999999,
+       'N': 0.011832201000000001,
+       'P': 0.068701822999999995,
+       'Q': 0.010980482999999999,
+       'R': 0.0023262299999999999,
+       'S': 0.86939155099999998,
+       'T': 0.064760754000000004,
+       'V': 0.344319078,
+       'W': 0.095489234000000006,
+       'Y': 4.0716517750000003},
+ 'G': {'H': 0.01280823,
+       'I': 0.0029803109999999998,
+       'K': 0.110065675,
+       'L': 0.0068902700000000004,
+       'M': 0.034003938999999997,
+       'N': 0.57376472700000003,
+       'P': 0.0015888219999999999,
+       'Q': 0.041354439,
+       'R': 0.28893165700000001,
+       'S': 1.2383013140000001,
+       'T': 0.0076788230000000004,
+       'V': 0.44479428599999998,
+       'W': 0.253335423,
+       'Y': 0.020949592999999999},
+ 'H': {'I': 0.021069514000000001,
+       'K': 0.18206825300000001,
+       'L': 0.147175841,
+       'M': 0.025326733000000001,
+       'N': 2.4725012689999999,
+       'P': 0.67394944099999998,
+       'Q': 4.324671886,
+       'R': 2.1220078999999998,
+       'S': 0.450133322,
+       'T': 0.15115773399999999,
+       'V': 0.0026957690000000002,
+       'W': 0.033143636999999997,
+       'Y': 9.0196159490000003},
+ 'I': {'K': 0.0068528080000000002,
+       'L': 1.4138880599999999,
+       'M': 2.7358049100000001,
+       'N': 0.12218513,
+       'P': 0.01898617,
+       'Q': 0.0048459089999999998,
+       'R': 0.001696908,
+       'S': 0.042952525999999998,
+       'T': 2.411521891,
+       'V': 13.419120277999999,
+       'W': 0.0019286209999999999,
+       'Y': 0.047323608000000003},
+ 'K': {'L': 0.021134276,
+       'M': 0.43579328000000001,
+       'N': 2.4877313349999999,
+       'P': 0.152366262,
+       'Q': 2.0310412649999998,
+       'R': 0.43113726800000002,
+       'S': 0.19358335300000001,
+       'T': 0.40837230699999999,
+       'V': 0.026318790000000002,
+       'W': 0.031311763999999999,
+       'Y': 0.071183277000000003},
+ 'L': {'M': 3.1559412529999999,
+       'N': 0.0051845299999999997,
+       'P': 0.35795371599999998,
+       'Q': 0.25314762299999999,
+       'R': 0.078245354000000003,
+       'S': 0.43506549900000002,
+       'T': 0.18136720100000001,
+       'V': 0.86760021799999998,
+       'W': 0.188124443,
+       'Y': 0.106687168},
+ 'M': {'N': 0.038343725000000002,
+       'P': 0.031301259999999997,
+       'Q': 0.124183971,
+       'R': 0.002391939,
+       'S': 0.14830564900000001,
+       'T': 3.6958740290000001,
+       'V': 4.3789212879999999,
+       'W': 0.059361128999999999,
+       'Y': 0.079180591999999994},
+ 'N': {'P': 0.039069406000000001,
+       'Q': 0.41657637800000002,
+       'R': 0.14905785299999999,
+       'S': 3.7778476159999999,
+       'T': 0.86602816100000002,
+       'V': 0.013012894000000001,
+       'W': 0.0075280260000000002,
+       'Y': 0.85544403400000002},
+ 'P': {'Q': 0.91506864899999996,
+       'R': 0.22110640300000001,
+       'S': 1.922238895,
+       'T': 0.576413595,
+       'V': 0.025284157000000002,
+       'W': 0.019550695,
+       'Y': 0.072344704999999995},
+ 'Q': {'R': 3.1337568619999998,
+       'S': 0.25667158400000001,
+       'T': 0.11897651200000001,
+       'V': 0.0092985359999999996,
+       'W': 0.12273951399999999,
+       'Y': 0.24379326000000001},
+ 'R': {'S': 0.127840652,
+       'T': 0.028428747000000001,
+       'V': 0.034013496999999997,
+       'W': 0.54428200400000004,
+       'Y': 0.145341785},
+ 'S': {'T': 2.9085797630000001,
+       'V': 0.058827342999999997,
+       'W': 0.141663396,
+       'Y': 0.53309474999999995},
+ 'T': {'V': 1.341486679, 'W': 0.003372908, 'Y': 0.086650158000000005},
+ 'V': {'W': 0.045879218999999999, 'Y': 0.027607482999999999},
+ 'W': {'Y': 0.29464986999999998},
+ 'Y': {}};
