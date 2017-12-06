@@ -2172,10 +2172,14 @@ _Parameter  _LikelihoodFunction::Compute        (void)
             return -A_LARGE_NUMBER;
         }
         
-        if (result >= 0) {
-            char buffer [2048];
-            snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood at evaluation %ld, mode %ld, template %ld", likeFuncEvalCallCount-1, computeMode, templateKind);
-            WarnError (buffer);
+        if (result >= 0.) {
+            if (result >= __DBL_EPSILON__ * 1.e4) {
+                char buffer [2048];
+                snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood (%g) at evaluation %ld, mode %ld, template %ld", likeFuncEvalCallCount-1, result, computeMode, templateKind);
+                WarnError (buffer);
+            } else {
+                result = 0.;
+            }
         }
         
         ComputeParameterPenalty ();
@@ -4724,8 +4728,7 @@ inline  bool CheckOneDStep (_Parameter& val, _Parameter lB, _Parameter uB)
 }
 
 //_______________________________________________________________________________________
-bool CheckEqual (_Parameter a, _Parameter b)
-{
+bool CheckEqual (_Parameter a, _Parameter b) {
     if (a!=0.0) {
         a = (a>b)?(a-b)/a:(b-a)/a;
         return a>0.0 ? a<=machineEps : a>=-machineEps;
