@@ -2824,6 +2824,7 @@ void    _DataSetFilter::SetExclusions (_String* theList, bool filter)
         _String* kth_token = (_String*)tokens.GetItem(k);
       
         long posMarker = MapStringToCharIndex(*kth_token);
+        
 
         if (posMarker < 0) {
             ReportWarning (_String("Exclusion request for '") & *kth_token &"' does not represent a unique state and will therefore be ignored.");
