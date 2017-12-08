@@ -335,7 +335,7 @@ _String ReturnFileDialogInput(void)
     
 #ifdef __HEADLESS__
     WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
-    return empty;
+    return nil;
 #endif
 
 #ifdef __MAC__
@@ -398,7 +398,7 @@ _String WriteFileDialogInput(void) {
     
 #ifdef __HEADLESS__
     WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
-    return empty;
+    return nil;
 #else
   #ifdef __MAC__
       resolvedFilePath =  MacSimpleFileSave();
