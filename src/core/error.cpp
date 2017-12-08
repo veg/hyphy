@@ -45,11 +45,6 @@
 #include "function_templates.h"
 
 
-
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __MAC__ || defined __HYPHY_GTK__
-#include "preferences.h"
-#endif
-
 #ifdef __MAC__
 #include <Dialogs.h>
 #include "HYUtils.h"
