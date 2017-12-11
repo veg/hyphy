@@ -96,7 +96,7 @@ if (distanceChoice)
 	pairwiseAlign = 0;
 	
 	GetDataInfo (charInfo, filteredData, "CHARACTERS");
-	ChoiceList (pairwiseAlign, "Peform pairwise alignment prior to comparison",1,SKIP_NONE,
+	ChoiceList (pairwiseAlign, "Perform pairwise alignment prior to comparison",1,SKIP_NONE,
 				"No","Assume that the sequences are already aligned.",
 				"Yes","Align each pair of sequences before computing pairwise distances");
 
