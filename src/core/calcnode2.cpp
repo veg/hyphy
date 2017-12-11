@@ -127,7 +127,7 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
 
 
   /*
-   A1*B1 + A2*B2 + A3*B3 + A4*B4, where A4 = 1-A1-A2-A3 can be done with three multipications
+   A1*B1 + A2*B2 + A3*B3 + A4*B4, where A4 = 1-A1-A2-A3 can be done with three multiplications
    and 3 extra additions, like
 
    A1*(B1-B4) + A2*(B2-B4) + A3*(B3-B4) + B4
