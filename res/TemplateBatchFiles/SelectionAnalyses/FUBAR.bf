@@ -432,7 +432,7 @@ namespace fubar {
                      {"beta-alpha", "Mean posterior beta-alpha"}
                      {"Prob[alpha>beta]", "Posterior probability of negative selection at a site"}
                      {"Prob[alpha<beta]", "Posterior probability of positive selection at a site"}
-                     {"BayesFactor[alpha<beta]", "Empiricial Bayes Factor for positive selection at a site"}
+                     {"BayesFactor[alpha<beta]", "Empirical Bayes Factor for positive selection at a site"}
                      {"PSRF", "Potential scale reduction factor - an MCMC mixing measure"}
                      {"Neff", "Estimated effective sample site for Prob [alpha<beta]"}};
 
