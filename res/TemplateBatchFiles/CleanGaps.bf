@@ -29,7 +29,7 @@ function _standardAnalysisBFHelp (_what)
 	}
 	if (_what == "Version")
 	{
-		retrun "1.00";
+		return "1.00";
 	}
 	if (_what == "Date")
 	{

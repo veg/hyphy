@@ -6300,7 +6300,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes) {
      this    : Nx2 matrix {{value1, count1}{value2, count 2}...}}
      classes : 2x1 matrix {{cluster count}{number of random restarts}}
      
-     reutn   : 2 x Max (cluster count, 2)  {{cluster mean 1, cluster mean 2, ... , cluster mean N}{total L^2 error, how many restarts hit the min}}
+     return   : 2 x Max (cluster count, 2)  {{cluster mean 1, cluster mean 2, ... , cluster mean N}{total L^2 error, how many restarts hit the min}}
      
      */
     

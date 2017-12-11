@@ -189,7 +189,7 @@ _String const
     // TRUE  - return from the current execution list, but keep the program running (e.g. to allow for HBL testing of error handling)
 
     get_data_info_returns_only_the_index            ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
-    // instead of returing {0,0,1,0} for a 'G' character in GetDataInfo (r, filter, species, pattern)
+    // instead of returning {0,0,1,0} for a 'G' character in GetDataInfo (r, filter, species, pattern)
     // return only the index of 'G', e.g. 2 in this case. -1 is returned for ambigs
     false_const                                     ("FALSE"),
         // the FALSE (0.0) constant
