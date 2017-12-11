@@ -1339,8 +1339,8 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                             siteList << theMap.lData[unitLength*site_pattern+si];
                         }
                         
-                        _SimpleList copy_node_oder (theNodeMap);
-                        freqsAtSite     = theData->HarvestFrequencies (unitLength, unitLength, 0, copy_node_oder, siteList);
+                        _SimpleList copy_node_order (theNodeMap);
+                        freqsAtSite     = theData->HarvestFrequencies (unitLength, unitLength, 0, copy_node_order, siteList);
                         if (theExclusions.lLength) {
                             long k = 0,
                             u = GetDimension (false);

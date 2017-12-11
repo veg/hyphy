@@ -717,7 +717,7 @@ public:
     // makes an AVL of with keys storing memory addresses of node<long> tree nodes
     // and values showing the order in either flatLeaves (bool = false) or flatNodes (bool = true)
 
-    void        MapPostOrderToInOderTraversal   (_SimpleList&, bool = true) const;
+    void        MapPostOrderToInOrderTraversal   (_SimpleList&, bool = true) const;
     // 20090306: SLKP
     // 20100511: SLKP
     // construct a post-order -> in-order traveral map for internal nodes

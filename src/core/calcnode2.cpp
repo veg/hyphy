@@ -1176,7 +1176,7 @@ void            _TheTree::ComputeBranchCache    (
         }
     }
 
-    /*printf ("\n\nComputeBranchCache at branch %ld; siteOdering %s\n",
+    /*printf ("\n\nComputeBranchCache at branch %ld; siteOrdering %s\n",
             brID, _String((_String*)siteOrdering.toStr()).sData);
 
     echoNodeList (rootPath,flatLeaves,flatNodes );
@@ -2101,7 +2101,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     _SimpleList     taggedInternals (iNodeCount, 0, 0),
                     postToIn;
 
-    MapPostOrderToInOderTraversal (postToIn);
+    MapPostOrderToInOrderTraversal (postToIn);
     // all nodes except the root
 
     allNodeCount = iNodeCount + leafCount - 1;
