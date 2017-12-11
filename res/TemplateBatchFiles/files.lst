@@ -55,7 +55,7 @@
 "FAA","Fit a multiple fitness class model to amino acid data.","FitnessAAModels.bf";
 "KH","Perform a Kishino-Hasegawa test on two competing phylogenies","KHTest.bf";
 "LZ","Compute Lempel-Ziv complexity and entropy of (possibly unaligned) sequences","LZ_Complexity.bf";
-"MCC","Compare mean within-clade branch length or pairwise divergence between two or more non-nested cladesd in a tree","TestCladeMeans.bf";
+"MCC","Compare mean within-clade branch length or pairwise divergence between two or more non-nested clades in a tree","TestCladeMeans.bf";
 "PHB","Run an example file from our book chapter in 'The Phylogentic Handbook' (2nd edition).","Phylohandbook.bf";
 "RBLE","Use a series of random effects branch-site models to perform robust model-averaged branch length estimation under a codon model with episodic selection.","BranchSiteRELMultiModel.bf";
 "RED","Replace sufficiently close sequence with their MRCA","ReduceDataSetMatrix.bf";
