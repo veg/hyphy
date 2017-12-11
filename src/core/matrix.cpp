@@ -1484,7 +1484,7 @@ _PMathObj   _Matrix::CholeskyDecompose (void) const
 {
     /* ---------------------------------------------------
         CholeskyDecompose()
-            Constrcts lower triangular matrix L such that
+            Constructs lower triangular matrix L such that
             its own transpose can serve as upper part in
             LU decomposition.
             Requires that matrix is symmetric and positive
