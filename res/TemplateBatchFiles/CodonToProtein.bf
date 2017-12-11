@@ -54,7 +54,7 @@ function 	  doTheMapping (dummy)
 				if (Abs(prot) == 0)
 				{
 					/* 
-						see if we can map this presumed ambiguitiy to a single 
+						see if we can map this presumed ambiguity to a single 
 						amino-acid
 					*/
 					GetDataInfo 			(mappedToCodon, _converterfilteredDataC, seqCounter, siteToPatternMap[seqPos$3]);
