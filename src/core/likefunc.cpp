@@ -657,7 +657,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
 
         if (j==tips.lLength) { // all matched
             /*
-                20100913: SLKP need to check that reusing the datafilter will not mess up existing likelihood function dependendancies
+                20100913: SLKP need to check that reusing the datafilter will not mess up existing likelihood function dependencies
             */
 
             _SimpleList * currentMap = (_SimpleList *)df->GetMap();
