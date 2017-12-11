@@ -133,7 +133,7 @@ fprintf (stdout, theLikFun);
 
 /*---------Labels all branches containing branchID with the FG model. This code segment does nothing when the branches are explicitly tagged, and branchMatch doesn't match anything-------------*/
 /*--First populate a list of branches containing branchID. branchID could be regExp text--*/
-branchMatch = "DONTNAMEANYTAXATHISUNLESSYOUREALLYMEANIT"; /*This is a different (old) way to tag foreground branches - All terminal branches with any substring = branchMatch will get tagged. This is untested and explicit tree tagging is preffered*/
+branchMatch = "DONTNAMEANYTAXATHISUNLESSYOUREALLYMEANIT"; /*This is a different (old) way to tag foreground branches - All terminal branches with any substring = branchMatch will get tagged. This is untested and explicit tree tagging is preferred*/
 branchID = branchMatch;
 BOInames = {};
 tips = TipCount(givenTree);
