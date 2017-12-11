@@ -520,7 +520,7 @@ int f10act_(long nrow, long *irow, long ncol, long *icol, double *val, bool *xmi
 /*  Arguments: */
 /*     N      - Length of IR.  (Input) */
 /*     MM     - Number for factorial in numerator.  (Input) */
-/*     IR     - Vector of length N containing the numebers for the */
+/*     IR     - Vector of length N containing the numbers for the */
 /*              denominator of the factorial.  (Input) */
 /*     FACT   - Table of log factorials.  (Input) */
 /*     F9XACT  - The log of the multinomal coefficient.  (Output) */
