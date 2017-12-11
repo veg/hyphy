@@ -4121,7 +4121,7 @@ DecideOnDivideBy (this);
             bigLastMax = maxSoFar;
 
             if (verbosity_level>1) {
-                snprintf (buffer, sizeof(buffer),"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
+                snprintf (buffer, sizeof(buffer),"\n\nOptimization Pass %ld (%ld). LF evaluations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
                 BufferToConsole (buffer);
                 if (useAdaptiveStep > 0.5 && logLHistory.get_used() > 2) {
                     snprintf (buffer, sizeof(buffer), "\nLast cycle logL change = %g\n", diffs[0]);
