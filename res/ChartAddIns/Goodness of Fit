@@ -74,7 +74,7 @@ if (NON_EMPTY_SELECTION)
 					chi2statistic = chi2statistic+(SELECTED_CHART_DATA[0][count]*data_rows-temp)^2/temp;
 				}
 				
-				fprintf (stdout, "\nGoodness of fit statisitc: ", chi2statistic, 
+				fprintf (stdout, "\nGoodness of fit statistic: ", chi2statistic, 
 								 "\np-value: ", 1-CChi2(chi2statistic,data_rows-1), "\n");
 				return 0;
 			}
