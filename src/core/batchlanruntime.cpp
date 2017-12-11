@@ -3030,11 +3030,11 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         
         if (exclusions != kSkipNone) {
             try {
-                _PMathObj exlcusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
-                if (exlcusion_argument->ObjectClass() == NUMBER) {
-                    excluded << exlcusion_argument->Compute ()->Value();
+                _PMathObj exclusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
+                if (exclusion_argument->ObjectClass() == NUMBER) {
+                    excluded << exclusion_argument->Compute ()->Value();
                 } else {
-                    ((_Matrix*)exlcusion_argument)->ConvertToSimpleList (excluded);
+                    ((_Matrix*)exclusion_argument)->ConvertToSimpleList (excluded);
                     excluded.Sort();
                 }
             } catch (_String const & e) {

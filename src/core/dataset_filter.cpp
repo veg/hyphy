@@ -698,8 +698,8 @@ void    _DataSetFilter::SetExclusions (_String const& exclusion_string, bool fil
     
     _AVLList     exclusions (&theExclusions);
   
-    character_list.Tokenize(',').ForEach ([&] (BaseRefConst  exlcusion_character) -> void {
-      _String* kth_token = (_String*)exlcusion_character;
+    character_list.Tokenize(',').ForEach ([&] (BaseRefConst  exclusion_character) -> void {
+      _String* kth_token = (_String*)exclusion_character;
       long character_index = MapStringToCharIndex(*kth_token);
       if (character_index < 0) {
         ReportWarning (_String("Exclusion request for '") & *kth_token &"' does not represent a unique state and will therefore be ignored.");
