@@ -618,19 +618,19 @@ public:
                         computeFlagsO,      // same, but for outside probabilities
 
                         firstArray,         // an NTxT array (stored as a flat vector), where (i,j)-th element is set to one iff
-                        // i-th non terminal can be used to generate a substing beginning with the j-th terminal
+                        // i-th non terminal can be used to generate a substring beginning with the j-th terminal
                         // otherwise the element is 0 (i.e. {i} => j ....)
 
                         lastArray,          // an NTxT array (stored as a flat vector), where (i,j)-th element is set to one iff
-                        // i-th non terminal can be used to generate a substing ending with the j-th terminal
+                        // i-th non terminal can be used to generate a substring ending with the j-th terminal
                         // otherwise the element is 0 (i.e. {i} => .... j)
 
                         precursorArray,     // an NTxT array (stored as a flat vector), where (i,j)-th element is set to one iff
-                        // i-th non terminal can be used to generate an incompletely resolved substing beginning
+                        // i-th non terminal can be used to generate an incompletely resolved substring beginning
                         // with the j-th terminal, followed by the i-th non-terminal (i.e. {start} => ... j {i} ... )
 
                         followArray;        // an NTxT array (stored as a flat vector), where (i,j)-th element is set to one iff
-    // i-th non terminal can be used to generate an incompletely resolved substing ending
+    // i-th non terminal can be used to generate an incompletely resolved substring ending
     // with the i-th non-terminal, followed by the j-th terminal (i.e. {start} => ... {i} j ...)
 
     _Matrix             probabilities;      // This is a matrix array of formulae which describe production rule probabilities
