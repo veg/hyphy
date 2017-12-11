@@ -60,7 +60,7 @@ public:
   StringFileWrapper (_StringBuffer * string, FILE * file);
   /** Create a wrapper around around a string / file pair 
       If both arguments are null, the wrapper will simply "eat" the 
-      bufferring operations (/dev/null equivalent). If both arguments
+      buffering operations (/dev/null equivalent). If both arguments
       are NON-null, string takes precedence.
       
       @param string if not NULL, the wrapper will paste all the arguments
