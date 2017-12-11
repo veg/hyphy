@@ -90,7 +90,7 @@ public:
   _String(void); // v3;
 
   /**
-   * Standard initalization to 0 length and empty data
+   * Standard initialization to 0 length and empty data
    * which creates an empty string
 
    * Revision history

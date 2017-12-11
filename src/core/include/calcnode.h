@@ -63,7 +63,7 @@ public:
     _CalcNode           (_String, _String, int  = 4, _VariableContainer* = nil, _AVLListXL * = nil);
     // construct a node from a string of the form
     // codeBase specifies the number of distinct states (4 for nucleotides, 61 for codons etc)
-    // matrix name, <optional comma separated variable declarations, inititalizations>
+    // matrix name, <optional comma separated variable declarations, initializations>
     // also should be passed the pointer to a container tree
     
     _CalcNode           (_CalcNode* source, _VariableContainer* parentTree);

@@ -63,7 +63,7 @@ _CalcNode::_CalcNode    () {
 //_______________________________________________________________________________________________
 _CalcNode::_CalcNode    (_String name, _String parms, int codeBase, _VariableContainer* theP, _AVLListXL* aCache):_VariableContainer (name, "", theP) {
     // construct a node from a string of the form
-    // matrix name, <optional comma separated variable declarations, inititalizations>
+    // matrix name, <optional comma separated variable declarations, initializations>
     // also should be passed the pointer to a container tree
     InitializeCN (parms, codeBase, theP, aCache);
 }
