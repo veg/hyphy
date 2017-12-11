@@ -512,7 +512,7 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
     /* -------------------------------------------------------------------
         SetStructure()
             Assign pointer to _Matrix object from batchlan:SetParameter()
-            that specificies a network structure.
+            that specifies a network structure.
             Check the structure against constraint matrix and node
             ordering if the latter is set.
             If node order is incompatible, reset the node order.
