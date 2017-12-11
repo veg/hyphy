@@ -98,7 +98,7 @@ namespace terms{
     }
 
 
-    /* Terms accompanying category defintions */
+    /* Terms accompanying category definitions */
     //category = "category" // Defined above under genetic terms. Left here as a comment for future reminders.
     namespace category {
         category_parameters = "category parameters";
