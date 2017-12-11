@@ -211,7 +211,7 @@ estimatedCodonFreqs = BuildCodonFrequencies(nuc3by4);
 /*specify targetAA = 21 if you don't want directional selection. NonSynRateTag allows one to control the
 name of the "nonsyn" rate variable by appending nonSynRateTag to the end. This allows having seperate foreground
 and background nonsyn rates. "customRateString" is NOT a PAUP specifier, but rather a matrix of string valued
-multiplers, derived above in the setup of the nuc model*/
+multipliers, derived above in the setup of the nuc model*/
 /*Part copypasta from MG94customCF3x4.mdl*/
 
 function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,nonSynRateTag)

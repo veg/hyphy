@@ -733,7 +733,7 @@ L9000:
 /*              (Output) */
 /*     IFLAG  - Set to 3 if there are no additional nodes to process. */
 /*              (Output) */
-/*     KYY    - Constant mutlipliers used in forming the hash table key. */
+/*     KYY    - Constant multipliers used in forming the hash table key. */
 /*              (Input) */
 /*     KEY    - Vector of length LDKEY containing the hash table keys. */
 /*              (Input/output) */
@@ -1836,7 +1836,7 @@ int f2xact_(long *nrow, long *ncol, double *table,
         nco = *ncol;
     }
 
-    /*                                  Get multiplers for stack */
+    /*                                  Get multipliers for stack */
     kyy[1] = 1;
     i__1 = nro;
     for (i__ = 2; i__ <= i__1; ++i__) {
