@@ -103,7 +103,7 @@ public:
    * which creates an empty string
 
    * Revision history
-   - SLKP 20170612 iniital implementation
+   - SLKP 20170612 initial implementation
    */
   virtual void Clear(void);
 
