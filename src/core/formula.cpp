@@ -1156,7 +1156,7 @@ bool     _Formula::IsEmpty(void) const {
 //__________________________________________________________________________________
 hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat target_value, hyFloat left, hyFloat right) {
     // find a root of the formulaic expression, using Newton's method, given the derivative and a bracketed root.
-    // will alternate between bisections and Newton iterations based on what is fatser
+    // will alternate between bisections and Newton iterations based on what is faster
     // check that there is indeed a sign change on the interval
   
   auto set_and_compute = [&] (hyFloat x) -> hyFloat {
