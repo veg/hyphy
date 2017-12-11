@@ -8312,7 +8312,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl) {
     }
 
 #ifdef __SORTING_DEBUG
-    printf ("\nTheortical cost lower bound %ld",t->GetLowerBoundOnCost (df));
+    printf ("\nTheoretical cost lower bound %ld",t->GetLowerBoundOnCost (df));
     printf ("\nSave all cost lower bound %ld",t->GetLowerBoundOnCost (df,&sl));
 #endif
 }
