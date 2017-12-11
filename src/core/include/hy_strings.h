@@ -818,7 +818,7 @@ public:
 
    *  Revision history
    - SLKP 20170614; reviewed while porting from the v3 branch
-     [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondtion]
+     [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondition]
 
    */
 
@@ -857,7 +857,7 @@ public:
 
    *  Revision history
     - SLKP 20170614; reviewed while porting from the v3 branch
-      [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondtion]
+      [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondition]
    */
   long FirstSpaceIndex(
       long start = 0, long end = kStringEnd,
@@ -1279,7 +1279,7 @@ private:
   */
 
   template <class CF>
-  long _FindFirstIndexCondtion(long start, long end,
+  long _FindFirstIndexCondition(long start, long end,
                                hy_string_search_direction direction,
                                CF comparison_function) const {
     long requested_range = NormalizeRange(start, end);
