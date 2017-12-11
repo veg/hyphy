@@ -8,7 +8,7 @@ usedVars = Rows(COVARIANCE_PARAMETER);
 
 inflationFactor = prompt_for_a_value ("Inflation factor for profile likelihood bounds", 2.0, 0.0, 1000.0, 0);
 
-fprintf (stdout, "\nObtaining profile likeihood bounds...\n");
+fprintf (stdout, "\nObtaining profile likelihood bounds...\n");
 
 svpc = COVARIANCE_PRECISION;
 COVARIANCE_PRECISION = 0.975;

@@ -10,7 +10,7 @@ while (inflationFactor <= 0)
 	fscanf (stdin,"Number",inflationFactor);
 }
 
-fprintf (stdout, "\nObtaining profile likeihood bounds...\n");
+fprintf (stdout, "\nObtaining profile likelihood bounds...\n");
 
 svpc = COVARIANCE_PRECISION;
 COVARIANCE_PRECISION = 0.95;

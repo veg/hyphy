@@ -2746,7 +2746,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
                 row = (long int) (step / sample_lag) - 1;   // AFYP 2011/3/2 need to shift over other info to maintain 0-index
 
-                // report log likelhood
+                // report log likelihood
                 mcmc_output->Store (row, 0, prob_current_order);
 
 
