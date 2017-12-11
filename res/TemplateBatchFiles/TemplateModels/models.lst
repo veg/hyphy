@@ -47,7 +47,7 @@
 "ECM+F3x4","Kosiol, Holmes & Goldman Empirical Codon model estimated from Pandit alignments with F3x4 frequency estimator","*","codon","ECM+F3x4.mdl";
 "LCAP","Linear Combination of Amino Acid Properties from Conant, Wagner and Stadler (MPE 42:298)","*","codon","LCAP.mdl";
 "MEC","Mixed empirical and mechanistic codon model of Doron-Faigenboim and Pupko (MBE 24:388-397)","*","codon","MEC.mdl";
-"NRM","Non reversible model, constrained to have observed counts as its equilibrium frequencies. 11 parameters (8 rate parameteres + 3 frequency parameters).","4","nucleotide","NRM.mdl";
+"NRM","Non reversible model, constrained to have observed counts as its equilibrium frequencies. 11 parameters (8 rate parameters + 3 frequency parameters).","4","nucleotide","NRM.mdl";
 "NRM+Freqs","Non reversible model, NOT constrained to have observed counts as its equilibrium frequencies. 11 parameters.","4","nucleotide","NRM+Freqs.mdl";
 "TrN","Tamura and Nei 1993. Local or global parameters. Local or global parameters. Possible Rate heterogeneity (and HM spatial correlation).","4","nucleotide","TrN.mdl";
 "HIVBetween","Between patient empirical model for HIV","20","aminoacid","HIVbetween.mdl";
