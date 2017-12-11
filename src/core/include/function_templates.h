@@ -182,7 +182,7 @@ const _SimpleList SplitIntoDigits(ARG_TYPE composition, unsigned long places,
   /**
    Deconstruct a number into 'places' digits according to the supplied radix
 
-   SplitIntoDigits (5,3,2) will return (higher to lower significe digits)
+   SplitIntoDigits (5,3,2) will return (higher to lower significant digits)
    1,0,1 (e.g. 101 in binary)
 
    */
