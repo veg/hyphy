@@ -331,7 +331,7 @@ else
 				"Constant","Constant Rate Model: no rate variation across sites.", /* index 0 */
 				"Proportional","Proportional Variable Rates Model: dS and dN vary along the sequence, but dN = R*dS for every site",
 				"Nonsynonymous","Non-synonymous Variable Rates Model: dS = 1 for every site, while dN is drawn from a given distribution.",
-				"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommened model.",
+				"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommended model.",
 				"Lineage Dual","Lineage Dual Variable Rates Model:  dS and dN are drawn from a bivariate distribution (independent or correlated components), plus each lineage has an adjustment factor for the E[dN]/E[dS]."
 			    );
 			    

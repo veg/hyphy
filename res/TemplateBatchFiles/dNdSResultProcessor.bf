@@ -1289,7 +1289,7 @@ else
 	{
 		ChoiceList (modelChoice,"Rate Variation Models",1,SKIP_NONE,
 					"Nonsynonymous","Non-synonymous Variable Rates Model: dS = 1 for every site, while dN is drawn from a given distribution.",
-					"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommened model.",
+					"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommended model.",
 					"Lineage Dual","Lineage+Dual Variable Rates Model:  dS and dN are drawn from a bivariate distribution (independent or correlated components), plus each lineage has an adjustment factor for the E[dN]/E[dS]."
 				    );
 	
@@ -1303,7 +1303,7 @@ else
 	else
 	{
 		ChoiceList (modelChoice,"Rate Variation Models",1,SKIP_NONE,
-					"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommened model.",
+					"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommended model.",
 					"Lineage Dual","Lineage+Dual Variable Rates Model:  dS and dN are drawn from a bivariate distribution (independent or correlated components), plus each lineage has an adjustment factor for the E[dN]/E[dS]."
 			    );
 	
