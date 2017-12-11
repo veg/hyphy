@@ -74,7 +74,7 @@
 "KPCA","Kernel principal component analysis.","Kernel_PCA.bf";
 
 "","Molecular Clock Tests.","!Molecular Clock";
-"DTMC","Test for the presence of a global molecular clock with DATED sequences. Evolutionary rates and dates for internal nodes are estimated as well. This analysis is effectively an extended version of Andrew Rabmaut's TipDate methodogoly.","DatedTipsMolecularClock.bf";
+"DTMC","Test for the presence of a global molecular clock with DATED sequences. Evolutionary rates and dates for internal nodes are estimated as well. This analysis is effectively an extended version of Andrew Rabmaut's TipDate methodology.","DatedTipsMolecularClock.bf";
 "MCLK","Test for the presence of a global molecular clock on the tree using its root (the resulting clock tree is unrooted, but one of the root branches can be divided in such a way as to enforce the clock).","MolecularClock.bf";
 "LCLK","Test for the presence of a local molecular clock. Every subtree of the given tree is subjected to the clock constraint, while the remainder of the tree is free of the clock constraint.","LocalMolClock.bf";
 "RCLK","Test for the presence of a global molecular clock on the tree. The tree is rooted at every possible branch.","MolClockAllRoots.bf";
