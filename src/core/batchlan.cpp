@@ -1951,7 +1951,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         }
         break;
 
-        case 5: { // data set contruction
+        case 5: { // data set construction
             (*string_form) << assignment (HY_HBL_COMMAND_DATA_SET, "ReadDataFile");
         }
         break;
@@ -2939,7 +2939,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         break;
 
 
-    case 5: // data set contruction
+    case 5: // data set construction
 
         ExecuteCase5 (chain);
         break;
@@ -3060,7 +3060,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         ExecuteCase11 (chain);
         break;
 
-    case 12: // data set contruction by simulation
+    case 12: // data set construction by simulation
 
         ExecuteCase12 (chain);
         break;
