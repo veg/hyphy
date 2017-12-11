@@ -194,7 +194,7 @@ function BuildCodonFrequencies (nucFreqMatrix)
 		{
 			result[h-hshift] = nucFreqMatrix[first][0]*nucFreqMatrix[second][1]*nucFreqMatrix[third][2]; 
 											/* store the frequency for codon h. Notice the substraction of hshift to compensate
-											  for the absense of stop codons. The first codon affected by it is 
+											  for the absence of stop codons. The first codon affected by it is 
 											  TAC (h=49), which gets stored in result[48], because TAA (a stop codon) was skipped. */
 		}
 	}
