@@ -163,7 +163,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
        each row in the matrix corresponds to a tree NODE in the same order as
        they are listed in the tree AVL
 
-       each column correponds to a site
+       each column corresponds to a site
 
        the entries are as follows:
     	   0.._bacFilterDimension-1 an unambigous character
