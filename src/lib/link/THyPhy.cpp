@@ -69,14 +69,14 @@ extern long systemCPUCount;
 _THyPhy * globalInterfaceInstance = nil;
 
 //_________________________________________________________
-// default callback hanlder
+// default callback handler
 bool _tHyPhyDefaultHandler (const char*,int,double)
 {
     return true;
 }
 
 //_________________________________________________________
-// default callback hanlder
+// default callback handler
 //void SetGlobalInterfaceInstance (const _THyPhy* hi)
 //{
 //  globalInterfaceInstance = hi;
