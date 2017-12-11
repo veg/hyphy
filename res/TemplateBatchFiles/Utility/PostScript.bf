@@ -94,7 +94,7 @@ for (_i = 0; _i < Abs(_asciiCharString); _i=_i+1)
 
 /*---------------------------------------------------------
 
-genearete a pattern dictionary for a simple hatching pattern
+generate a pattern dictionary for a simple hatching pattern
 
 ---------------------------------------------------------*/
 

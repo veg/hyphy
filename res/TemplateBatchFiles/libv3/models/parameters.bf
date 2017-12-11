@@ -643,7 +643,7 @@ function parameters.GetProfileCI(id, lf, level) {
 }
 
 /**
- * Geneate an HBL string needed to define a parameter
+ * Generate an HBL string needed to define a parameter
  * @name parameters.ExportParameterDefinition
  * @param {String} id - the name of the parameter to export;
  * @returns {String} the string for an HBL definition of the parameter
