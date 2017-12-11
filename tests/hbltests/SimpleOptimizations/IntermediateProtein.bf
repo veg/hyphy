@@ -374,7 +374,7 @@ BEGIN HYPHY;
 
 /* test preamble */
 
-	_testDescription 		= " fit the JTT model to an Inluenza virus A alignment with 349 sequences and 329 aminoacids";
+	_testDescription 		= " fit the JTT model to an Influenza virus A alignment with 349 sequences and 329 aminoacids";
 	_expectedLL 			=  -6989.162651149;
 	ExecuteAFile 			("../Shared/TestInstrumentation.bf");
 	startTestTimer 			(_testDescription);
