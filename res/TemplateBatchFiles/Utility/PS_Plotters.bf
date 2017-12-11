@@ -178,19 +178,19 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 		{
 			_legendColors [(Rows(uniqueColors))[_dataPoint]]= labels[3+_dataPoint];
 			px = _HYPSGetStringWidth (labels[3+_dataPoint]) * plotDim[2];
-			if (px > legendWitdh)
+			if (px > legendWidth)
 			{
-				legendWitdh = px;
+				legendWidth = px;
 			}
 		}
 		
-		if (legendWitdh)
+		if (legendWidth)
 		{
-			legendWitdh = legendWitdh + 2*plotDim[2];
+			legendWidth = legendWidth + 2*plotDim[2];
 		}		
 	}
 
-	plotSpanX   = plotWidth + 5*plotDim[2] + legendWitdh;
+	plotSpanX   = plotWidth + 5*plotDim[2] + legendWidth;
 	plotSpanY	= plotHeight + 4*plotDim[2];
 	
 	if (doWrappers)
@@ -346,7 +346,7 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
 
 
-	if (legendWitdh)
+	if (legendWidth)
 	{
 		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
 		xLoc = plotOriginX + plotWidth  + 0.5*plotDim[2];
@@ -510,20 +510,20 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	for (_dataPoint = 0; _dataPoint < _yColumns; _dataPoint = _dataPoint + 1)
 	{
 		px = _HYPSGetStringWidth (dataLabels[_dataPoint]) * plotDim[2];
-		if (px > legendWitdh)
+		if (px > legendWidth)
 		{
-			legendWitdh = px;
+			legendWidth = px;
 		}
 	}
 	
-	if (legendWitdh)
+	if (legendWidth)
 	{
-		legendWitdh = legendWitdh + 2*plotDim[2];
+		legendWidth = legendWidth + 2*plotDim[2];
 	}
 
 	plotSpanX	= plotWidth;
 	plotSpanY   = plotHeight;
-	plotWidth   = plotWidth  - 5.5*plotDim[2]-legendWitdh;
+	plotWidth   = plotWidth  - 5.5*plotDim[2]-legendWidth;
 	plotHeight	= plotHeight - 4.5*plotDim[2];
 	
 	if (doWrappers)
@@ -684,7 +684,7 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	psDensityPlot * ("" + (plotOriginX+plotWidth/2)  + " " + (0.5*plotDim[2])  + " (" + labels[1] + ") centertext\n");
 	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) + " (" + labels[2] + ") vcentertext\n");	
 
-	if (legendWitdh)
+	if (legendWidth)
 	{
 		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
 		xLoc = plotOriginX + plotWidth  + 0.5*plotDim[2];
@@ -872,7 +872,7 @@ function CircleGraphPlot	  (edgeWeights&, 			/* a KxK matrix of graph edge weigh
 	psCircleGraphPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
 	psCircleGraphPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
 
-	if (legendWitdh)
+	if (legendWidth)
 	{
 		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
 		xLoc = plotOriginX +  _x * px + 0.5*plotDim[2];
@@ -1293,15 +1293,15 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	for (_dataPoint = 0; _dataPoint < _series; _dataPoint = _dataPoint + 1)
 	{
 		px = _HYPSGetStringWidth (seriesLabels[_dataPoint][0]) * plotDim[2];
-		if (px > legendWitdh)
+		if (px > legendWidth)
 		{
-			legendWitdh = px;
+			legendWidth = px;
 		}
 	}
 	
-	if (legendWitdh)
+	if (legendWidth)
 	{
-		legendWitdh = legendWitdh + 2*plotDim[2];
+		legendWidth = legendWidth + 2*plotDim[2];
 	}
 	
 	if (enforceSym)
@@ -1312,7 +1312,7 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 
 	plotSpanX	= plotWidth;
 	plotSpanY   = plotHeight;
-	plotWidth   = plotWidth  - 5*plotDim[2]-legendWitdh;
+	plotWidth   = plotWidth  - 5*plotDim[2]-legendWidth;
 	plotHeight	= plotHeight - 4*plotDim[2];
 
 
@@ -1451,7 +1451,7 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 		_y = _y + yscaler;
 	}
 
-	if (legendWitdh)
+	if (legendWidth)
 	{
 		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
 		xLoc = plotOriginX + plotWidth   + 0.5*plotDim[2];
