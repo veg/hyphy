@@ -2675,7 +2675,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
                     }
                 }
             }
-            // check for probablilty matrices * fillers
+            // check for probability matrices * fillers
             if ((hDim==vDim)&&(!replace))
                 for (long i = 0; i<hDim; i++) {
                     long k = Hash(i,i);
@@ -2711,7 +2711,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
                     }
                 }
             }
-            // check for probablilty matrices * fillers
+            // check for probability matrices * fillers
 
             if ((hDim==vDim)&&(!replace))
                 for (long i = 0; i<lDim; i+=vDim+1) {
