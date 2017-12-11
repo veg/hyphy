@@ -14,7 +14,7 @@ nucDistanceChoices =
 aaDistanceChoices = 
 {{"PC","Poisson corrected distance (equal character frequencies, all rates equal)."}
  {"PC_RV","Poisson corrected distance with rate variation (equal character frequencies, all rates equal, gamma distributed rate variation from site to site))."}
- {"PC_MH","Distance corrected for mulitple hits used in Clustal-W."}
+ {"PC_MH","Distance corrected for multiple hits used in Clustal-W."}
  {"p_Distance_aa", "Number of observed substituions per site."}
  {"Unaligned_LZ", "Distance measure for unaligned sequences based on Lempel Ziv measure of information content."}
  {"Unaligned_LZ_FR", "Distance measure for unaligned sequences based on Lempel Ziv measure of information content using the best choice forward and reverse string orientations."}

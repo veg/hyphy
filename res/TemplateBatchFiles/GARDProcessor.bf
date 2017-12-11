@@ -156,7 +156,7 @@ lfDef = "";
 lfDef * 128;
 lfDef  * "LikelihoodFunction multiPart  = (";
 
-io.PrintAndUnderline ("Fitting a mutilple tree, multiple partition model", "-");
+io.PrintAndUnderline ("Fitting a multiple tree, multiple partition model", "-");
 
 for (pccounter = 0; pccounter < readPCount; pccounter = pccounter + 1)
 {

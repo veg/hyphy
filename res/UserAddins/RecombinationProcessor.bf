@@ -151,7 +151,7 @@ lfDef = "";
 lfDef * 128;
 lfDef  * "LikelihoodFunction multiPart  = (";
 
-fprintf  (stdout, "\n\nFitting a mutilple tree, multiple partition model\n");
+fprintf  (stdout, "\n\nFitting a multiple tree, multiple partition model\n");
 
 for (pccounter = 0; pccounter < readPCount; pccounter = pccounter + 1)
 {
