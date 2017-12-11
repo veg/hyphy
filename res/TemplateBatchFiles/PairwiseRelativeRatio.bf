@@ -325,7 +325,7 @@ for (counter = 0; counter< fileCount; counter = counter+1)
 		else
 		{
 			pValue = 1;
-			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encoutered. You may want to increase the optimization precision settings to resolve numerical approximation errors");
+			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encountered. You may want to increase the optimization precision settings to resolve numerical approximation errors");
 		}
 		
 		fprintf (stdout," | ",Format (LRT,12,5)," | ", Format (pValue,12,8)," |");	
