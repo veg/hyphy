@@ -275,7 +275,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
 //_______________________________________________________________________
 
 void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _SimpleList& horizontalList, _SimpleList& verticalList, bool isFilteredAlready) {
-    // we must step thru the underlying dataset and recompute the frequenices
+    // we must step thru the underlying dataset and recompute the frequencies
     // we will store the vertical map in theMap
     // and the horizontal map in theNodeMap
     // theFrequencies will be store the new frequencies
