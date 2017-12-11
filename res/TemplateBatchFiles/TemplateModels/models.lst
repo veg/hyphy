@@ -13,7 +13,7 @@
 "rtREV","Matrix optimized for viral pol genes (specifically, reverse transcriptase). Dimmic et al JME (2002)55:65-73,","20","aminoacid","rtREV.mdl";
 "rtREV+F","Matrix optimized for viral pol genes (specifically, reverse transcriptase) with empirical character frequencies. Dimmic et al JME (2002)55:65-73,","20","aminoacid","rtREV_F.mdl";
 "REV","General Reversible model (189+branch lengths parameters!)","20","aminoacid","mtREV.mdl";
-"RedREV","General Reversible model reduced to allow non-zero rates only between a.a. separataed by a single nucleotide substitution","20","aminoacid","reducedREV.mdl";
+"RedREV","General Reversible model reduced to allow non-zero rates only between a.a. separated by a single nucleotide substitution","20","aminoacid","reducedREV.mdl";
 "F81","Felsenstein 81 (F81).Rate heterogeneity (and HM spatial correlation) optional.","4","nucleotide","F81.mdl";
 "F81B","Felsenstein 81 (F81) for binary data. Rate heterogeneity (and HM spatial correlation) optional.","2","binary","F81_binary.mdl";
 "F84","Felsenstein 84. Rate heterogeneity (and HM spatial correlation) optional.","4","nucleotide","F84.mdl";
