@@ -204,7 +204,7 @@ public:
     }
 
     hyFloat          ComputeBranchLength    (void);
-    virtual long        SetDependance   (long);
+    virtual long        SetDependence   (long);
 
     node<long>*         LocateMeInTree  (void) const;
     // return the tree structure node corresponding to this one...

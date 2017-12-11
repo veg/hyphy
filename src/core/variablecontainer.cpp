@@ -554,7 +554,7 @@ void    _VariableContainer:: RemoveLocalVariable (_SimpleList*& array, long arra
 
 
 //__________________________________________________________________________________
-bool      _VariableContainer::RemoveDependance (long varIndex) {
+bool      _VariableContainer::RemoveDependence (long varIndex) {
     if (dVariables) {
         long array_index = dVariables->FindStepping(varIndex,2L);
 
@@ -697,7 +697,7 @@ long    _VariableContainer::InsertVariableInSortedList (_SimpleList * & list, _S
 
 
 //__________________________________________________________________________________
-long      _VariableContainer::SetDependance (long varIndex) {
+long      _VariableContainer::SetDependence (long varIndex) {
     if (iVariables) {
         long f;
 
@@ -730,19 +730,19 @@ long      _VariableContainer::SetDependance (long varIndex) {
 }
 
 //__________________________________________________________________________________
-bool      _VariableContainer::SetMDependance (_SimpleList& mDep)
+bool      _VariableContainer::SetMDependence (_SimpleList& mDep)
 {
   if (iVariables) {
     if (mDep.lLength*2 > iVariables->lLength)
       for (long k=iVariables->lLength-2; k>=0; k-=2) {
         long f = mDep.BinaryFind (iVariables->lData[k]);
         if (f>=0) {
-          SetDependance (-k-1);
+          SetDependence (-k-1);
         }
       }
     else
       for (unsigned long k=0UL; iVariables && k<mDep.lLength; k++) {
-        SetDependance (mDep.lData[k]);
+        SetDependence (mDep.lData[k]);
       }
   }
   

@@ -189,8 +189,8 @@ void    _CalcNode::SetModel (long modelID, _AVLListXL* varCache)
 
 //_______________________________________________________________________________________________
 
-long      _CalcNode::SetDependance (long varIndex) {
-    varIndex = _VariableContainer::SetDependance (varIndex);
+long      _CalcNode::SetDependence (long varIndex) {
+    varIndex = _VariableContainer::SetDependence (varIndex);
     if (varIndex >= 0) {
         _SimpleList checkVars;
         _AVLList    myVars (&checkVars);

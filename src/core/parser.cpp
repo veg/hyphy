@@ -1184,7 +1184,7 @@ void  FinishDeferredSF (void)
         for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
             _Variable* theV = FetchVar(i);
             if (theV->IsContainer()) {
-                ((_VariableContainer*)theV)->SetMDependance (*deferSetFormula);
+                ((_VariableContainer*)theV)->SetMDependence (*deferSetFormula);
             }
         }
 
