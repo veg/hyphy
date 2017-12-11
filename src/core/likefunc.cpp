@@ -3304,7 +3304,7 @@ void    _LikelihoodFunction::CleanupMPIOptimizer (void)
 
 //_______________________________________________________________________________________
 void            _LikelihoodFunction::SetupLFCaches              (void) {
-    // need to decide which data represenation to use,
+    // need to decide which data representation to use,
     // large trees short alignments
     // an acceptable cache size etc
     categID = 0;

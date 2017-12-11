@@ -528,7 +528,7 @@ void _DataSet::Finalize(void) {
 void _DataSet::Compact(long index) {
   if (useHorizontalRep) {
     HandleApplicationError(
-        "Internal Error: _DataSet::Compact called with compact represntation",
+        "Internal Error: _DataSet::Compact called with compact representation",
         true);
     return;
   }

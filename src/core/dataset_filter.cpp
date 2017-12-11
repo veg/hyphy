@@ -630,7 +630,7 @@ _DataSetFilter*  _DataSetFilter::PairFilter (long index1, long index2, _DataSetF
 
 void    _DataSetFilter::MatchStartNEnd (_SimpleList& order, _SimpleList& positions, _SimpleList* parent) const {
     // SLKP 20171002: needs to be documented and reviewed
-    // for example, the return represnetaion will break if one has more than 2^16 species
+    // for example, the return representation will break if one has more than 2^16 species
   
     if (order.empty() == 0) {
         return;
