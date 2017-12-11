@@ -362,7 +362,7 @@ namespace fubar {
         io.ReportProgressBar                  ("PROCESSING", "Samples from chain " + (chain_id + 1));
 
         /* now, for each posterior sample k of grid weights, i.e. (alpha_i, beta_i) -> weight_ik
-           and for each site, s, we compute (up to a factor C), which will be divided out in the Bayes' formula computaion, the
+           and for each site, s, we compute (up to a factor C), which will be divided out in the Bayes' formula computation, the
                 P_ks = \sum_i Prob (site s | (alpha_i, beta_i)) Prob (alpha_i, beta_i) ~ Prob (site s) for sample k
 
             this matrix will have dimension (# samples x # sites)

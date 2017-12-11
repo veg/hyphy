@@ -341,7 +341,7 @@ protected:
     // internal function to scan all the variables in
 
     void            OptimalOrder            (long, _SimpleList&);
-    // determine the optimal order of compuation for a block
+    // determine the optimal order of computation for a block
 
     hyFloat      ComputeBlock            (long, hyFloat* siteResults = nil, long currentRateClass = -1, long = -1, _SimpleList* = nil);
     // 20090224: SLKP
