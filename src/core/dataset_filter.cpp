@@ -539,7 +539,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
         if (patterns_to_be_removed.countitems()) {
           /**
            
-              Deleting all instances of delected patterns; also need to reindex 
+              Deleting all instances of selected patterns; also need to reindex 
               remaining duplicateMap to reference correct remaining indices
               For example, if the original site->pattern map was like this
            
