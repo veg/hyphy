@@ -276,7 +276,7 @@ double  _THyPhyGetDoubleStatus      (void);
 
 extern  _THyPhy*                    globalInterfaceInstance;
 // this object MUST be set to a new instance of _THyPhy
-// in order for the rest of the code to intreface with it properly
+// in order for the rest of the code to interface with it properly
 
 
 #endif
