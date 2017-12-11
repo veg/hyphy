@@ -130,7 +130,7 @@ class _SimpleList:public BaseObj {
         * Retrieve the element in position index if index if positive or
         * length + index if index is negative
         * Example: SimpleList(1,3,5,7).GetElement(1) = 3, SimpleList(1,3,5,7).GetElement(-1) = 7 
-        * @param index The index of the elemnt to retrieve 
+        * @param index The index of the element to retrieve 
         * @return the value of the element at the specified index.
         */
         long GetElement (const long index) const;
