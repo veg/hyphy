@@ -108,7 +108,7 @@ public:
   virtual void Clear(void);
 
   /**
-   * Construct a string representation of a long interger
+   * Construct a string representation of a long integer
    * @param number: the number to convert to a string
 
    * Revision history
