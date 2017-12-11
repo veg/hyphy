@@ -53,7 +53,7 @@ if (IS_TREE_PRESENT_IN_DATA)
 
 DataSetFilter	    all = CreateFilter (ds, 1, "", "");
 
-options				={{"Completely resolved", "Only count completely unambiguious characters (e.g. A,C,G,T for nucleotides) as informative"}
+options				={{"Completely resolved", "Only count completely unambiguous characters (e.g. A,C,G,T for nucleotides) as informative"}
 					  {"Partially resolved",  "Also count partially resolved characters (e.g. R,Y,M,S etc for nucleotides)"}};
 					  
 

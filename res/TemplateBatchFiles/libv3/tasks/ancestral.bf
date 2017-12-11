@@ -166,7 +166,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
        each column corresponds to a site
 
        the entries are as follows:
-    	   0.._bacFilterDimension-1 an unambigous character
+    	   0.._bacFilterDimension-1 an unambiguous character
     	   -1 a deletion/complete ambiguity
     	   less that -1 : -(entry)-2 maps to an AVL storing the state
     					  and the complete character resolution (as an array)
