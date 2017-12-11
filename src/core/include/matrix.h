@@ -587,7 +587,7 @@ private:
     // internal function used in exponentiating sparse matrices
 
     void        Balance             (void);  // perform matrix balancing; i.e. a norm reduction which preserves the eigenvalues
-    // lifted from balanc function in NR
+    // lifted from balance function in NR
 
     void        Schur               (void);  // reduce the matrix to Hessenberg form preserving eigenvalues
     // lifted from elmhes function in NR
