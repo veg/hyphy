@@ -199,7 +199,7 @@ class _SimpleList:public BaseObj {
         */
         void DebugVarList(void);
 
-        // delete the item at a given poisiton
+        // delete the item at a given position
         void Delete(long, bool=true);
 
         virtual void Duplicate(BaseRefConst);
