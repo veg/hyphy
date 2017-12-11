@@ -237,7 +237,7 @@ for (firstSpec = 0; firstSpec < speciesCount; firstSpec = firstSpec+1)
 		else
 		{
 			pValue = 1;
-			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encoutered. You may want to increase the optimization precision settings to resolve numerical apporximation errors");
+			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encoutered. You may want to increase the optimization precision settings to resolve numerical approximation errors");
 		}
 
 		GetString (secondName,ds,secondSpec);

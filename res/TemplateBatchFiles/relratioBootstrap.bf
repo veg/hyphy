@@ -106,7 +106,7 @@ function BootStrapFunction (bsIterates, tabulatedFileName, parametricOrNot)
 		SimLR = 2*(simulatedResults[1][0]+simulatedResults1[1][0]-simulatedResults2[1][0]);
 		if (SimLR<0)
 		{
-			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encoutered. You may want to increase the optimization precision settings to resolve numerical apporximation errors");
+			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encoutered. You may want to increase the optimization precision settings to resolve numerical approximation errors");
 		}
 		if (SimLR<lnLikDiff)
 		{
