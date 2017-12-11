@@ -8039,7 +8039,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision ) {
                         }
                         tempMatrix.Store (m+1,k,-q);
                     }
-                    while (1) { // initial artifical construct
+                    while (1) { // initial artificial construct
                         long        pivotColumn,
                                     ip;
                         hyFloat  pivotValue;
