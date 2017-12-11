@@ -3488,7 +3488,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
         }
 
         if (skipping && ( isalpha(c) || c=='_') && (isalnum(last_char) || last_char =='_')) {
-          // SLKP 20170704: this seems incomplete : need to check more thorougly that this is an ident
+          // SLKP 20170704: this seems incomplete : need to check more thoroughly that this is an ident
           // this is meant to determine that we are at the beginning of a new ident-like
           // token and insert a space
             result<<' ';
