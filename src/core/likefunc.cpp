@@ -8303,7 +8303,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl) {
         long     memOverhead = mstCache->cacheSize.lData[mstCache->cacheSize.lLength-1];
         if (memOverhead) {
             memOverhead *= (t->GetINodeCount()*(sizeof(hyFloat)*t->GetCodeBase()+sizeof(long)+sizeof (char))+t->GetLeafCount()*(sizeof(hyFloat)+sizeof(long)))/1024;
-            snprintf (buffer, sizeof(buffer),"\nIf using full MST heurisitcs: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %ld KB memory overhead",globalLength,(long)strl,strl/(double)globalLength,optl/(double)globalLength,memOverhead);
+            snprintf (buffer, sizeof(buffer),"\nIf using full MST heuristics: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %ld KB memory overhead",globalLength,(long)strl,strl/(double)globalLength,optl/(double)globalLength,memOverhead);
             ReportWarning (buffer);
             if (vLevel>5) {
                 BufferToConsole (buffer);
