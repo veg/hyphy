@@ -1,5 +1,5 @@
 /* This file defines the transition matrix for the Muse-Gaut 94 model x an arbitrary 4x4 rate matrix
-   for nucleotide substituions and multiple non-syn rates for various types of A.A. substitutions.
+   for nucleotide substitutions and multiple non-syn rates for various types of A.A. substitutions.
    
    02/05/2004  by Sergei L. Kosakovsky Pond
 */

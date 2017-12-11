@@ -1,4 +1,4 @@
-ChoiceList  (response,"Subsitution Bias",1,NO_SKIP,
+ChoiceList  (response,"Substitution Bias",1,NO_SKIP,
 			 "None","All nucleotide substitutions have the same probability.",
 			 "Custom","Nucleotide substitutions are weighted by their relative rates.",
 			 "Load","Load a saved matrix of substitution biases");			 
@@ -15,7 +15,7 @@ function promptRate (pString)
 	rateValue = -1;
 	while (rateValue < 0)
 	{
-		fprintf (stdout, "\nEnter the rate for ", pString, " subsitutions (>=0):");
+		fprintf (stdout, "\nEnter the rate for ", pString, " substitutions (>=0):");
 		fscanf (stdin,"String",rateValue);
 	}
 	return rateValue;

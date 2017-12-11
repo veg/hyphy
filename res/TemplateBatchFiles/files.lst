@@ -78,7 +78,7 @@
 "MCLK","Test for the presence of a global molecular clock on the tree using its root (the resulting clock tree is unrooted, but one of the root branches can be divided in such a way as to enforce the clock).","MolecularClock.bf";
 "LCLK","Test for the presence of a local molecular clock. Every subtree of the given tree is subjected to the clock constraint, while the remainder of the tree is free of the clock constraint.","LocalMolClock.bf";
 "RCLK","Test for the presence of a global molecular clock on the tree. The tree is rooted at every possible branch.","MolClockAllRoots.bf";
-"RLXMC","Infer dates of ancestral nodes for a sample of DATED sequences using a rate-distribution genetic algorithm to allow for multiple substituion rates. This is a frequentist alternative to the relaxed clock analyses implemented by Drummond and Rambaut in BEAST. [MPI Enabled]","GADatedClock.bf";
+"RLXMC","Infer dates of ancestral nodes for a sample of DATED sequences using a rate-distribution genetic algorithm to allow for multiple substitution rates. This is a frequentist alternative to the relaxed clock analyses implemented by Drummond and Rambaut in BEAST. [MPI Enabled]","GADatedClock.bf";
 "RLXMCP","Process a .samples file generated with GADatedClock","GADatedClockProcessor.bf";
 
 "","Reconstruct a phylogenetic tree using either distance or ML based heuristic methods.","!Phylogeny Reconstruction";

@@ -415,7 +415,7 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
 }
 
 /*******************************************
-	count subsitutions at a given site;
+	count substitutions at a given site;
 	returns an AVL with
 
 	["CHARS"]  - the 1xN matrix which maps index->character string
@@ -456,7 +456,7 @@ lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
 
 
 /*******************************************
-	count subsitutions at a given site;
+	count substitutions at a given site;
 	along a subset of branches.
 
 	["CHARS"]  - the 1xN matrix which maps index->character string

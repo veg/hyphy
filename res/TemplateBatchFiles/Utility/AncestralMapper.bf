@@ -226,7 +226,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	}
 
 /*******************************************
-	count subsitutions at a given site;
+	count substitutions at a given site;
 	returns an AVL with 
 	
 	["CHARS"]  - the 1xN matrix which maps index->character string
@@ -268,7 +268,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	
 
 /*******************************************
-	count subsitutions at a given site;
+	count substitutions at a given site;
 	along a subset of branches. 
 	
 	["CHARS"]  - the 1xN matrix which maps index->character string

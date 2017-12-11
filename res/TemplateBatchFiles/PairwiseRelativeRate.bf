@@ -97,7 +97,7 @@ if (parameter2Constrain)
 }
 else
 {
-	fprintf (stdout," the expected number of substituions per that branch.");
+	fprintf (stdout," the expected number of substitutions per that branch.");
 }
 
 fprintf (stdout,"\n\n (*)   corresponds to the .05 significance level\n (**)  corresponds to the .01 significance level\n (***) corresponds to the .001 significance level.\n\n");

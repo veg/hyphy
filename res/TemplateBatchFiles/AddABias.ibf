@@ -169,7 +169,7 @@ function runAFit2 (ancClass,mySiteID)
 
 function promptModel (dummy)
 {
-	ChoiceList	     (pickAModel,"Subsitution Model",1,SKIP_NONE, "HIV Within","HIV Within",
+	ChoiceList	     (pickAModel,"Substitution Model",1,SKIP_NONE, "HIV Within","HIV Within",
 							 								      "HIV Between","HIV Between",
 							 								      "JTT","JTT",
 							 								      "Flu H5N1", "Empirical model for H5N1 Influenza",

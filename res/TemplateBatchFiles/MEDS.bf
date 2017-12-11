@@ -243,7 +243,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,n
 				continue; 
 			}
 			nucPosInCodon = 2;
-			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0)) /* differ by one subsitution only */
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0)) /* differ by one substitution only */
 			{
 				if (h$4==v$4) /* third position */
 				{

@@ -8992,7 +8992,7 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
             level    = ti.Depth();
             nextNode = ti.Next();
 
-            // decide if we can use expected substituion measure
+            // decide if we can use expected substitution measure
             bool    useExpectedSubstitutions = longOrShort<3;
  
             while (nextNode) {

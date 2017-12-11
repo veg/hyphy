@@ -39,7 +39,7 @@ function obtainBGMParameters (_lfID)
 	
 	if (nontrivial_sites[0] < 2)
 	{
-		fprintf (stdout, "\nERROR: BGM analysis requires at least 2 sites with non-synonymous susbtitutions\n");
+		fprintf (stdout, "\nERROR: BGM analysis requires at least 2 sites with non-synonymous substitutions\n");
 		return site_map;
 	}
 
@@ -135,10 +135,10 @@ function obtainSubstitutionMatrix (_lfID, sample_flag, site_map, _filterMatrix)
 	
 	for (_k = 0; _k < Abs(site_map); _k = _k+1)
 	{
-		_subsitution_matrix = _countSubstitutionsByBranchSite (_ancestral_id,site_map[_k],_filterMatrix);
+		_substitution_matrix = _countSubstitutionsByBranchSite (_ancestral_id,site_map[_k],_filterMatrix);
 		for (_j = 0; _j < _fd[1]; _j=_j+1)
 		{
-			_theMatrix [_j][_k] = _subsitution_matrix[_j];
+			_theMatrix [_j][_k] = _substitution_matrix[_j];
 		}
 	}
 	
