@@ -64,7 +64,7 @@ if (DISTANCE_PROMPTS)
 		{
 			if (filterCharacters == 2)
 			{
-				ChoiceList (dfileChoice,"Binary charcters based distance formula.",1,SKIP_NONE,binaryDistanceChoices);
+				ChoiceList (dfileChoice,"Binary characters based distance formula.",1,SKIP_NONE,binaryDistanceChoices);
 				if (dfileChoice < 0)
 				{
 					return 0;

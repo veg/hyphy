@@ -917,7 +917,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                     }
                 } else if (buffer.BeginsWith(key12, false)) {
                     if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,buffer))) {
-                        ReportWarning ("NCHAR is not followed by '= number-of-charaters'");
+                        ReportWarning ("NCHAR is not followed by '= number-of-characters'");
                         done = true;
                     } else {
                         done = done||(count>1);

@@ -16,7 +16,7 @@ function _standardAnalysisBFHelp (_what)
 	{
 		_options = {};
 		_options ["Filtering threshold"] = "Minimum percent of informative sequences per site to retain the site";
-		_options ["Informative characters"] = "Define an informative character as either a fully resolved charatcer (e.g. A) or a partial ambiguity (e.g. R)";
+		_options ["Informative characters"] = "Define an informative character as either a fully resolved character (e.g. A) or a partial ambiguity (e.g. R)";
 		return _options
 	}
 	if (_what == "Further")

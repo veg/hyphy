@@ -195,7 +195,7 @@ public:
 
   _String(const wchar_t *wc_string);
   /**
-   * Create a string with the from a single charcater
+   * Create a string with the from a single character
    * @param c   : The source character
    * Revision history
    - SLKP 20170517 reviewed while porting from v3 branch
@@ -499,7 +499,7 @@ public:
    "match zero or more of anything"
 
    @param pattern : the pattern to match
-   @param wildchar : the charcter to treat as a wild char
+   @param wildchar : the character to treat as a wild char
    @param start_this : start matching at this position in "this"
    @param start_pattern : start matching at this position in *pattern*
 
@@ -1110,7 +1110,7 @@ public:
   /**
    * Generate a random string on
    * @param len (>0) The desired length of the string
-   * @param alphabet Which alphabet do the random charcters come from; in nil,
+   * @param alphabet Which alphabet do the random characters come from; in nil,
    then this will be generated from 1-128 ASCII codes
    * @return the random string
    *  Revision history
