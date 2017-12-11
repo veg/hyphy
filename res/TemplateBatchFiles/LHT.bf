@@ -180,7 +180,7 @@ for (replicate=0;replicate<nreplicates;replicate=replicate+1)
 		Optimize (mles,lfsim);
 		lk1=lk1+mles[1][0];
 
-		/*H1: unconstrained difffeent tree for different partition*/
+		/*H1: unconstrained different tree for different partition*/
 		for (i=0; i<ntree; i=i+1)
 		{
 			Tree uniqueTree=NEXUS_FILE_TREE_MATRIX[i][1];
