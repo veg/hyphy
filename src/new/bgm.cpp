@@ -730,18 +730,18 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
 #endif
                 if (num_parents.lData[child] == max_parents.lData[child]) { // child cannot accept any additional edges
                     // move an edge from an existing parent to target parent
-                    _SimpleList     removeable_edges;
+                    _SimpleList     removable_edges;
 
                     // build a list of current parents
                     for (long par = 0; par < num_nodes; par++)
                         if ((*graphMx)(par,child) && !enforced_edges(par,child)) {
-                            removeable_edges << par;
+                            removable_edges << par;
                         }
 
-                    if (removeable_edges.lLength > 0) {
+                    if (removable_edges.lLength > 0) {
                         // shuffle the list and remove the first parent
-                        removeable_edges.Permute(1);
-                        graphMx->Store (removeable_edges.lData[0], child, 0.);
+                        removable_edges.Permute(1);
+                        graphMx->Store (removable_edges.lData[0], child, 0.);
                         graphMx->Store (parent, child, 1.);
                         step++;
                     } else {
@@ -807,15 +807,15 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
 
                     if (num_parents.lData[parent] > max_parents.lData[parent]) {
                         // parent cannot accept any more edges, delete one of the edges at random (including the edge to flip)
-                        _SimpleList     removeable_edges;
+                        _SimpleList     removable_edges;
 
                         for (long par = 0; par < num_nodes; par++)
                             if (  (*graphMx)(par, parent)  &&  !enforced_edges(par, parent)  ) {
-                                removeable_edges << par;
+                                removable_edges << par;
                             }
 
-                        removeable_edges.Permute(1);
-                        graphMx->Store (removeable_edges.lData[0], parent, 0.);
+                        removable_edges.Permute(1);
+                        graphMx->Store (removable_edges.lData[0], parent, 0.);
                         num_parents.lData[parent]--;
                     }
 
@@ -845,15 +845,15 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                         num_parents.lData[bystander]++;
 
                         if (num_parents.lData[bystander] > max_parents.lData[bystander]) {
-                            _SimpleList     removeable_edges;
+                            _SimpleList     removable_edges;
 
                             for (long par = 0; par < num_nodes; par++)
                                 if (  (*graphMx)(par, bystander)  &&  !enforced_edges(par, bystander)  ) {
-                                    removeable_edges << par;
+                                    removable_edges << par;
                                 }
 
-                            removeable_edges.Permute(1);
-                            graphMx->Store (removeable_edges.lData[0], bystander, 0.);
+                            removable_edges.Permute(1);
+                            graphMx->Store (removable_edges.lData[0], bystander, 0.);
                             num_parents.lData[bystander]--;
                         }
                     }
@@ -866,15 +866,15 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                         num_parents.lData[parent]++;
 
                         if (num_parents.lData[parent] > max_parents.lData[parent]) {
-                            _SimpleList     removeable_edges;
+                            _SimpleList     removable_edges;
 
                             for (long par = 0; par < num_nodes; par++)
                                 if (  (*graphMx)(par, parent)  &&  !enforced_edges(par, parent)  ) {
-                                    removeable_edges << par;
+                                    removable_edges << par;
                                 }
 
-                            removeable_edges.Permute(1);
-                            graphMx->Store (removeable_edges.lData[0], parent, 0.);
+                            removable_edges.Permute(1);
+                            graphMx->Store (removable_edges.lData[0], parent, 0.);
                             num_parents.lData[parent]--;
                         }
                     }

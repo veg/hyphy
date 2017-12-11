@@ -2238,23 +2238,23 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
                 if (num_parents.lData[child] == max_parents.lData[child]) {
 					// child is already at maximum number of parents
                     // move an edge from an existing parent to target parent
-                    _SimpleList     removeable_edges;
+                    _SimpleList     removable_edges;
 
                     // build a list of current parents
                     for (long par = 0; par < num_nodes; par++)
 						// par is parent of child AND the edge is NOT enforced
                         if ((*graph)(par,child) && constraint_graph(par,child)<=0) {
-                            removeable_edges << par;
+                            removable_edges << par;
                         }
 
-                    if (removeable_edges.lLength > 0) {
+                    if (removable_edges.lLength > 0) {
                         // shuffle the list and remove the first parent
-						removeable_edges.Permute(1);
-						graph->Store (removeable_edges.lData[0], child, 0.);
+						removable_edges.Permute(1);
+						graph->Store (removable_edges.lData[0], child, 0.);
 						graph->Store (parent, child, 1.);
 						
 						/*
-                        graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], child, 0.);
+                        graph->Store (removable_edges.lData[ (long) (genrand_real2()*removable_edges.lLength) ], child, 0.);
                         graph->Store (parent, child, 1.);
 						 */
                         step++;
@@ -2319,17 +2319,17 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
 
                     if (num_parents.lData[parent] > max_parents.lData[parent]) {
                         // parent cannot accept any more edges, delete one of the edges at random (including the edge to flip)
-                        _SimpleList     removeable_edges;
+                        _SimpleList     removable_edges;
 
                         for (long par = 0; par < num_nodes; par++)
                             if (  (*graph)(par, parent)  &&  constraint_graph(par, parent)<=0  ) {
-                                removeable_edges << par;
+                                removable_edges << par;
                             }
 
-						removeable_edges.Permute(1);
-						graph->Store (removeable_edges.lData[0], parent, 0.);
+						removable_edges.Permute(1);
+						graph->Store (removable_edges.lData[0], parent, 0.);
 						/*
-                        graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], parent, 0.);
+                        graph->Store (removable_edges.lData[ (long) (genrand_real2()*removable_edges.lLength) ], parent, 0.);
 						 */
                         num_parents.lData[parent]--;
                     }
@@ -2362,19 +2362,19 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
                         if (num_parents.lData[bystander] > max_parents.lData[bystander]) {
                             // number of parents for bystander node now exceeds maximum,
                             //  select a random edge to remove - including the edge C->B we just made!
-                            _SimpleList     removeable_edges;
+                            _SimpleList     removable_edges;
 
                             for (long par = 0; par < num_nodes; par++) {
                                 if (  (*graph)(par, bystander)  &&  constraint_graph(par, bystander)<=0  ) {
-                                    removeable_edges << par;
+                                    removable_edges << par;
                                 }
 							}
 							
 							
-                            removeable_edges.Permute(1);
-							graph->Store (removeable_edges.lData[0], bystander, 0.);
+                            removable_edges.Permute(1);
+							graph->Store (removable_edges.lData[0], bystander, 0.);
 							/*
-                            graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], bystander, 0.);
+                            graph->Store (removable_edges.lData[ (long) (genrand_real2()*removable_edges.lLength) ], bystander, 0.);
 							 */
                             num_parents.lData[bystander]--;
                         }
@@ -2390,18 +2390,18 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
 
                         if (num_parents.lData[parent] > max_parents.lData[parent]) {
 							// remove excess edge from X to parent other than bystander
-                            _SimpleList     removeable_edges;
+                            _SimpleList     removable_edges;
 
                             for (long par = 0; par < num_nodes; par++) {
                                 if (  (*graph)(par, parent)  &&  constraint_graph(par, parent)<=0  ) {
-                                    removeable_edges << par;
+                                    removable_edges << par;
                                 }
 							}
 							
-                            removeable_edges.Permute(1);
-							graph->Store (removeable_edges.lData[0], parent, 0.);
+                            removable_edges.Permute(1);
+							graph->Store (removable_edges.lData[0], parent, 0.);
 							/*
-                            graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], parent, 0.);
+                            graph->Store (removable_edges.lData[ (long) (genrand_real2()*removable_edges.lLength) ], parent, 0.);
 							 */
                             num_parents.lData[parent]--;
                         }
