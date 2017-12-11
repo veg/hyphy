@@ -592,7 +592,7 @@ lfunction parameters.helper.dump_matrix(matrix) {
 /**
  * Sets tree lengths to initial values
  * @name parameters.helper.tree_lengths_to_initial_values
- * @param dict - a [0 to N-1] dictrionary of tree objects
+ * @param dict - a [0 to N-1] dictionary of tree objects
  * @param type - codon or nucleotide
  * @returns {Dictionary} dictionary of initial branch lengths
  */
