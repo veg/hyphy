@@ -3227,7 +3227,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                }
              
                if (wrong_selections > maximum_wrong_choices) {
-                throw ("Too many invalid imputs");
+                throw ("Too many invalid inputs");
                }
             }
           
