@@ -13,11 +13,11 @@ if (NON_EMPTY_SELECTION)
 		counter = counter + 1;
 	}
 
-	column_stensil = {different_columns,1};
+	column_stencil = {different_columns,1};
 
 	for (counter=0; counter < different_columns; counter = counter + 1)
 	{
-		column_stensil [counter] = selected_columns[counter];
+		column_stencil [counter] = selected_columns[counter];
 	}
 
 	selected_columns = 0;
@@ -31,7 +31,7 @@ if (NON_EMPTY_SELECTION)
 		first_row			= SELECTED_CHART_ROWS[counter];
 		for (counter2 = 0; counter2 < different_columns; counter2 = counter2 + 1)
 		{		
-			if ((SELECTED_CHART_COLS[counter2+counter]==column_stensil[counter2])&&(SELECTED_CHART_ROWS[counter2+counter]==first_row))
+			if ((SELECTED_CHART_COLS[counter2+counter]==column_stencil[counter2])&&(SELECTED_CHART_ROWS[counter2+counter]==first_row))
 			{
 				continue;
 			}
@@ -104,7 +104,7 @@ if (NON_EMPTY_SELECTION)
 
 			for (counter2 = 1; counter2 <= different_columns; counter2 = counter2+1)
 			{
-				count = column_stensil[counter2-1];
+				count = column_stencil[counter2-1];
 				labels[counter2] = CHART_COLUMN_HEADERS[count];
 			}
 			
