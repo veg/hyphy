@@ -139,7 +139,7 @@ namespace hy_global {
    
    TODO 20170414: does the function ever get called with the FALSE flag? if not, deprecate
    I don't recall what the use case for the FALSE flag was
-   @param all if NOT set, a partial purge is understaken, that clears only user functions and attendant stuctures
+   @param all if NOT set, a partial purge is understaken, that clears only user functions and attendant structures
    
    
    */
