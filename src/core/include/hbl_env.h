@@ -71,7 +71,7 @@ namespace hy_env {
     _PMathObj       EnvVariableGetDefault (_String const& name, unsigned long type);
     /**
          Look up the default value for a given env variable,
-              checking that it is of a paricular type (could be any)
+              checking that it is of a particular type (could be any)
          
          @param name the name of the env variable (in HBL)
          @param type check for return type
@@ -83,7 +83,7 @@ namespace hy_env {
     _PMathObj       EnvVariableGet (_String const& name, unsigned long type);
     /**
      Look up the value for a given env variable,
-     checking that it is of a paricular type (could be any)
+     checking that it is of a particular type (could be any)
      
      @param name the name of the env variable (in HBL)
      @param type check for return type
