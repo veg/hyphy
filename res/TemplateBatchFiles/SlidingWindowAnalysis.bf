@@ -251,7 +251,7 @@ function ReceiveJobs (sendOrNot)
 		}
 	}	
 	
-	fprintf (stdout,"Finshed Segment ",Format(segmentStart,0,0)," - ",Format(segmentEnd,0,0),"\n");
+	fprintf (stdout,"Finished Segment ",Format(segmentStart,0,0)," - ",Format(segmentEnd,0,0),"\n");
 	if (MPI_NODE_COUNT<2)
 	{
 		fprintf (LAST_FILE_PATH,"\n",Format(segmentStart,0,0)," , ",Format(segmentEnd,0,0),",",lf_MLES[1][0]);
