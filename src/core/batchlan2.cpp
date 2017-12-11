@@ -517,7 +517,7 @@ void         InsertStringListIntoAVL    (_AssociativeList* theList , _String con
 //____________________________________________________________________________________
 
 bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _ExecutionList&target)
-// syntax: #profile START|PAUSE|RESUME|indetifier to dump in
+// syntax: #profile START|PAUSE|RESUME|identifier to dump in
 {
 
     _List pieces;
