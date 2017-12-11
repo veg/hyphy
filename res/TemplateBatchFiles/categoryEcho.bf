@@ -1,6 +1,6 @@
 if (categoriesUsed)
 {
-	ChoiceList  (response,"Rate class Information Dislpay",1,NO_SKIP,
+	ChoiceList  (response,"Rate class Information Display",1,NO_SKIP,
 				 "Don't Display","No rate class information is displayed",
 				 "Distribution Info","Only the inferred distributions will be shown",
 				 "Class Assignments 1","A string of class assignments for sites is displayed for each site from left to right.",
