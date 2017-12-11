@@ -1493,9 +1493,9 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
                 long i = whichParts.lData[whichPart];
 
                 if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities) {
-                    long partititonSpan             = BlockLength (i);
+                    long partitionSpan             = BlockLength (i);
                     ComputeSiteLikelihoodsForABlock (i, cache->theData, *scalerCache);
-                    for (long c = 0; c < partititonSpan; c++) {
+                    for (long c = 0; c < partitionSpan; c++) {
                         result->theData[currentOffset+c] = log(cache->theData[c]);
                         if (scalerCache->lData[c]) {
                             result->theData[currentOffset+c] -= scalerCache->lData[c]*_logLFScaler;
@@ -1503,7 +1503,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
 
 
                     }
-                    currentOffset                  += partititonSpan;
+                    currentOffset                  += partitionSpan;
                     continue;
                 }
 

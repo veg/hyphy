@@ -404,7 +404,7 @@ protected:
 
         SLKP: 20090608
 
-            argument 2 provides an optional subcollection of partititons to operate on;
+            argument 2 provides an optional subcollection of partitions to operate on;
                 the default is to operate on all
     */
 
@@ -587,7 +587,7 @@ protected:
                             for all partitions in the likelihood function
 
                         _hyphyLFComputationalTemplateBySite:
-                            all partitons have the same number of sites
+                            all partitions have the same number of sites
                             the template is in terms of SITE_LIKELIHOOD
                             meant to implement model/tree mixture constructs
 
@@ -626,7 +626,7 @@ protected:
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
     /*
-       these variables store conditional likelihoods for every paritition
+       these variables store conditional likelihoods for every partition
        internal node (post-order traversal)
        and leaves;
 

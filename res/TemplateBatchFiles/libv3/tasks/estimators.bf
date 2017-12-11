@@ -58,7 +58,7 @@ lfunction estimators.GetGlobalMLE(results, tag) {
 /**
  * @name estimators.GetBranchEstimates
  * @param {Dictionary} results
- * @param {Number} partiton_index
+ * @param {Number} partition_index
  * @param {String} node_name
  * @returns None
  */

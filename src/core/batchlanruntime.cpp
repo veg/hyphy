@@ -1260,7 +1260,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
   parts&& &newS;
   thisIndex<<-1;
   }
-  // now that the string is conveniently partritioned into blocks
+  // now that the string is conveniently partitioned into blocks
   // we will check the arguments and store references
 
   for (ind1 = 1; ind1<parameters.lLength; ind1++) {

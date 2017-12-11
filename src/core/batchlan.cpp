@@ -2563,7 +2563,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
         _List     theExclusions;
 
         if (parameters.lLength>2) // there is a list of exclusions there
-            // ';'-sep for different partititons
+            // ';'-sep for different partitions
             // ','-sep for states in a given partition
         {
             // SLKP mod 20070622 to allow string expressions as well

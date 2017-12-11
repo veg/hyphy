@@ -615,19 +615,19 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                 }
             }
 
-            long useThisPartitonIndex = currentRateCombo;
+            long useThisPartitionIndex = currentRateCombo;
 
 #ifdef __HYPHYMPI__
             if (runMode == _hyphyLFConditionMPIIterate) {
                 MPI_Status     status;
                 ReportMPIError(MPI_Recv (resTransferMatrix.theData, resTransferMatrix.GetSize(), MPI_DOUBLE, MPI_ANY_SOURCE , HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD,&status),true);
-                useThisPartitonIndex = status.MPI_SOURCE-1;
-                currentRateWeight    = computedWeights->theData[useThisPartitonIndex];
+                useThisPartitionIndex = status.MPI_SOURCE-1;
+                currentRateWeight    = computedWeights->theData[useThisPartitionIndex];
             }
 #endif
 
             // now that the categories are set we can proceed with the computing step
-            long             indexShifter                   = blockLength * useThisPartitonIndex;
+            long             indexShifter                   = blockLength * useThisPartitionIndex;
             long             *siteCorrectors                = ((_SimpleList**)siteCorrections.lData)[index]->lLength?
                     (((_SimpleList**)siteCorrections.lData)[index]->lData) + indexShifter
                     :nil;
@@ -638,11 +638,11 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
             {
                 hyFloat  _hprestrict_ *bufferForThisCategory = buffer + indexShifter;
 
-                ComputeBlock    (index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
+                ComputeBlock    (index, bufferForThisCategory, useThisPartitionIndex, branchIndex, branchValues);
                 if (usedCachedResults) {
                     bool saveFR = forceRecomputation;
                     forceRecomputation = true;
-                    ComputeBlock    (index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
+                    ComputeBlock    (index, bufferForThisCategory, useThisPartitionIndex, branchIndex, branchValues);
                     forceRecomputation = saveFR;
                 }
 
@@ -660,7 +660,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                                 // this class has a _bigger_ scaling factor than at least one other class
                                 // hence it needs to be scaled down (unless it's the first class)
                             {
-                                if (useThisPartitonIndex==0) { //(scalers.lData[r1] == -1)
+                                if (useThisPartitionIndex==0) { //(scalers.lData[r1] == -1)
                                     scalers.lData[r1] = scv;
                                 } else {
                                     bufferForThisCategory[r1] *= acquireScalerMultiplier (scalerDifference);
@@ -699,12 +699,12 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
 #endif
 
-                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitonIndex, branchIndex, branchValues);
+                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitionIndex, branchIndex, branchValues);
 
                     if (runMode != _hyphyLFConditionMPIIterate && usedCachedResults) {
                         bool saveFR = forceRecomputation;
                         forceRecomputation = true;
-                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitonIndex, branchIndex, branchValues);
+                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitionIndex, branchIndex, branchValues);
                         forceRecomputation = saveFR;
                     }
 
@@ -770,7 +770,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                             if (doChange) {
                                 buffer[r1]         = buffer[r2];
-                                buffer[r3]         = useThisPartitonIndex;
+                                buffer[r3]         = useThisPartitionIndex;
                             }
                         }
                     }
