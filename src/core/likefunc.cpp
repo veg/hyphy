@@ -7500,7 +7500,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
         /* step 2: update all the transition matrices that have been marked as modified are
          this is normally done by _TheTree::ExponentiateMatrices
-         determination of WHICH matrices have been modifed is taken care of my the host code and is supplied
+         determination of WHICH matrices have been modified is taken care of my the host code and is supplied
          in the matricesToExponentiate member variable:  */
 
 

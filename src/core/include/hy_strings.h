@@ -781,7 +781,7 @@ public:
   * Find first occurence of the string between "start" and "end" (inclusive)
   * @see Find() for parameter explanation
   *  Revision history
-   - SLKP 20170612; reviewed and modifed to be the same as Find with case
+   - SLKP 20170612; reviewed and modified to be the same as Find with case
   normalization while porting from the v3 branch
   */
     
