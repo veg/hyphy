@@ -382,7 +382,7 @@ protected:
     _String  *   GetIthParameter       (unsigned long i, bool range_check = true) const {
         BaseRef p = parameters.GetItemRangeCheck(i);
         if (!p && range_check) {
-            hy_global::HandleApplicationError("Internal error in ElemenaryCommand::GetIthParameter", true);
+            hy_global::HandleApplicationError("Internal error in ElementaryCommand::GetIthParameter", true);
         }
         return (_String *)p;
     }
