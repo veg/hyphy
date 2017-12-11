@@ -4323,7 +4323,7 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
     ExtractConditions (source,mark1+1,pieces,',');
 
     if (pieces.lLength<2) {
-        HandleApplicationError ("Parameter(s) missing in Model definition. Must have a matrix and a compatible eqiulibrium frequencies vector.");
+        HandleApplicationError ("Parameter(s) missing in Model definition. Must have a matrix and a compatible equilibrium frequencies vector.");
         return false;
     } else {
         if (pieces.lLength>3) {
