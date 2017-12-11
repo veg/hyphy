@@ -248,7 +248,7 @@ public:
     void        MapPostOrderToInOrderTraversal   (_SimpleList&, bool = true) const;
     // 20090306: SLKP
     // 20100511: SLKP
-    // construct a post-order -> in-order traveral map for internal nodes
+    // construct a post-order -> in-order traversal map for internal nodes
     // bool = true (internal nodes), bool = false (leaf nodes)
 
     void        AddBranchToForcedRecomputeList  (long idx)      {

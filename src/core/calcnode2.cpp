@@ -449,7 +449,7 @@ hyFloat  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          update
     // forces the parent to change and preps the parent cache for computations
     // by zeroing everything out
 
-    // flatNodes is the array of indices (post-order traveral) of _internal nodes_
+    // flatNodes is the array of indices (post-order traversal) of _internal nodes_
     // for example ((A,C)N1,D,(B,E)N2)Root will have
     // N1 (index 0), N2 (index 1), Root (index 2) in this array
 

@@ -196,7 +196,7 @@ template <class node_data> class node_iterator {
   private:
     node<node_data>*       iterator_state;
     long                   traversal_level;
-    int                    travseral_kind;
+    int                    traversal_kind;
     void                   push_history_item  (_SimpleList* history);
     void                   pop_history_item   (_SimpleList* history);
   
