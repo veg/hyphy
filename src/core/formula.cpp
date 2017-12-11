@@ -1662,7 +1662,7 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
 }
   //__________________________________________________________________________________
 hyFloat  InterpolateValue (hyFloat* theX, hyFloat* theY, long n, hyFloat *c , hyFloat *d, hyFloat x, hyFloat& err) {
-    // Neville's algoruthm for polynomial interpolation (Numerical Recipes' rawinterp)
+    // Neville's algorithm for polynomial interpolation (Numerical Recipes' rawinterp)
   hyFloat y,
   den,
   dif = 1e10,
