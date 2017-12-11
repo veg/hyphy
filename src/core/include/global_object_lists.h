@@ -127,7 +127,7 @@ namespace hyphy_global_objects {
   /**
    Store a reference to a DataSetFilter object in the global namespace
    
-   @paramename the globally scoped name of this object
+   @paramname the globally scoped name of this object
    @param filter the object to store; this operation will NOT increase a reference count of filter
    @param handle_errors if true, calls error handling functions if something bad happens
    @return the index of the stored object or <0 if the store operation failed
