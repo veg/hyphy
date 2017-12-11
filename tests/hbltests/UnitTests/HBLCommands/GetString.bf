@@ -105,7 +105,7 @@ function runTest ()
 
 	GetString (variableInfo, testVariable, -1);
 
-	assert (Type (variableInfo) == "AssociativeList" && (variableInfo["Global"])[0] == "Z" && (variableInfo["Local"])[0] == "Y", "Retrieve the variables invovled in the constraint");
+	assert (Type (variableInfo) == "AssociativeList" && (variableInfo["Global"])[0] == "Z" && (variableInfo["Local"])[0] == "Y", "Retrieve the variables involved in the constraint");
 
 	//-----------------------------------------------------------------------------------------------------------------
 	// HBL User Function
