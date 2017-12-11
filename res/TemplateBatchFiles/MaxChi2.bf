@@ -84,7 +84,7 @@ if (useFisherExact<0)
 }
 
 minWindowSize  = promptForValue ("Minimum partition size ", 1, filteredData.sites-1,filteredData.sites$3,1);
-iterates	   = promptForValue ("Boostrap sample size ", 1, 100000000 ,1000,1);
+iterates	   = promptForValue ("Bootstrap sample size ", 1, 100000000 ,1000,1);
 reportP	   	   = promptForValue ("p-value threshold ", 0, 1 ,0.05,0);
 
 SetDialogPrompt ("Save results to:");
