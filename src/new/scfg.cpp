@@ -1121,7 +1121,7 @@ inline  long    scfgIndexIntoAnArray            (long start,long end,long nt,lon
                     ...
               x x x ... stringLength
 
-        To find the offest of the (s,e) substring from the 0-th element of this array we compute (L = string length)
+        To find the offset of the (s,e) substring from the 0-th element of this array we compute (L = string length)
 
         (e-s) + sum_{k=0}{s-1} (L-k) = e-s + s/2 (L + L - s + 1) = e - s + (2L - s + 1) s /2 = e + (2L - s - 1)
 
