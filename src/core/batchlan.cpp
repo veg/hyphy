@@ -3661,7 +3661,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
 long _ElementaryCommand::ExtractConditions (_String const& source, long start_at, _List& receptacle, char delimiter, bool include_empty_conditions) {
 
     long parentheses_depth = 1L,
-         // this is because extaction will work from the first character following a '(', e.g. CreateFilter([start parsing here]....)
+         // this is because extraction will work from the first character following a '(', e.g. CreateFilter([start parsing here]....)
          last_delim    = start_at,
          index             = start_at,
          curly_depth       = 0L;
