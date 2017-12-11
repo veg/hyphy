@@ -158,7 +158,7 @@ class _Trie: public _List
 
         long     GetValueFromString (const _String& key);
         /**
-         * A convenience function which calls Find and then GetValue if teh key is found
+         * A convenience function which calls Find and then GetValue if the key is found
          * @param  key      -- the string to search for
          * @return the value associated with the key if found, kNotFound otherwise  
          */

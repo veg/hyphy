@@ -225,7 +225,7 @@ _String const
     message_logging                                 ("MESSAGE_LOGGING"),
         // if set, then diagnostic messages will be logged
     mpi_node_id                                     ("MPI_NODE_ID"),
-        // [MPI only] the ID (0 = master, etc) for teh current process
+        // [MPI only] the ID (0 = master, etc) for the current process
     mpi_node_count                                  ("MPI_NODE_COUNT"),
         // [MPI only] the count of MPI nodes (master + slaves)
     mpi_last_sent_message                           ("MPI_LAST_SENT_MSG"),
