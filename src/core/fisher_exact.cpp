@@ -1,7 +1,7 @@
 /*
 
 This file is a C++ translation of the Mehta-Patel network
-algorithm for computing association p-values on NxM contigency
+algorithm for computing association p-values on NxM contingency
 table
 
 Original source from
