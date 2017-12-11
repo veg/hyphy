@@ -219,7 +219,7 @@ public:
       @param expression : the string to parse
       @param use_exceptions : if true, throw const _String exceptions, otherwise handle errors directly 
       @param requested_type: return nil if the computed value is not of this type
-      @param formula parsing contrext
+      @param formula parsing context
      
       @return expression value or nil; the value needs to be managed by the caller
       Revision history

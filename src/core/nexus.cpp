@@ -81,7 +81,7 @@ bool    ReadNextNexusStatement      (FileState&, FILE* , _String&, long, _String
 long    ReadNextNexusEquate         (FileState&, FILE* , _String&, long, _String&, bool = false, bool = true);
 void    NexusParseEqualStatement    (_String&);
 
-static auto  error_conext = [] (_String const& buffer, long position) -> const _String & {return (buffer.Cut (0,position) & " <=? " & buffer.Cut (position+1,kStringEnd)).Enquote();};
+static auto  error_context = [] (_String const& buffer, long position) -> const _String & {return (buffer.Cut (0,position) & " <=? " & buffer.Cut (position+1,kStringEnd)).Enquote();};
 
 //_________________________________________________________
 
@@ -457,7 +457,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                                 numberThree.Clear();
                                               
                                             } else {
-                                                 ReportWarning (_String("Invalid from-to\\step specification: ") & error_conext (buffer, k));
+                                                 ReportWarning (_String("Invalid from-to\\step specification: ") & error_context (buffer, k));
                                                 okFlag = false;
                                                 break;
                                             }
@@ -496,7 +496,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                       
                                     } else if (ch=='-') {
                                         if (spoolInto2nd||spoolInto3rd) {
-                                            ReportWarning (_String("Misplaced '-' in CHARSET specification: ") & error_conext (buffer, k));
+                                            ReportWarning (_String("Misplaced '-' in CHARSET specification: ") & error_context (buffer, k));
                                             okFlag = false;
                                             break;
                                         }
@@ -748,7 +748,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                     break;
                   }
                   if (!(isalnum(c)||(c=='_'))) {
-                    ReportWarning (_String("Node names should begin with a letter, a number, or an underscore: ") & error_conext (key1, i) );
+                    ReportWarning (_String("Node names should begin with a letter, a number, or an underscore: ") & error_context (key1, i) );
                     i = file_tree_string->length() +2;
                     break;
                   }
