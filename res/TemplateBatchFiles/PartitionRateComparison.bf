@@ -377,7 +377,7 @@ resp2 = 0;
 
 while (resp<2)
 {
-	fprintf (stdout,"Number of synonymous (and single variable rate modles) rate classes (>=2):");
+	fprintf (stdout,"Number of synonymous (and single variable rate models) rate classes (>=2):");
 	fscanf  (stdin, "Number", resp);
 }
 

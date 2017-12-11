@@ -467,7 +467,7 @@ if (chosenModelList[3]+chosenModelList[4]+chosenModelList[1]+chosenModelList[2])
 	}
 
 
-	resp = prompt_for_a_value ("Number of synonymous (and single variable rate modles) rate classes",3,2,32,1);
+	resp = prompt_for_a_value ("Number of synonymous (and single variable rate models) rate classes",3,2,32,1);
 
 	if (chosenModelList[3]+chosenModelList[4])
 	{
