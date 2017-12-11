@@ -64,13 +64,13 @@ if (dataType)
 {
 	while (windowWidth<3 || windowWidth> filteredData.sites*3-3 || windowWidth%3)
 	{
-		fprintf (stdout,"\nEnter the width (in bp, divisble by 3) of the data window [3-",filteredData.sites*3-3,"]:");
+		fprintf (stdout,"\nEnter the width (in bp, divisible by 3) of the data window [3-",filteredData.sites*3-3,"]:");
 		fscanf  (stdin,"Number",windowWidth);
 	}
 	firstTime = filteredData.sites*3-windowWidth;
 	while (windowShift<3 || windowShift> firstTime || windowShift%3)
 	{
-		fprintf (stdout,"\nEnter the stride (in bp, divisble by 3) at each step [3-",firstTime,"]:");
+		fprintf (stdout,"\nEnter the stride (in bp, divisible by 3) at each step [3-",firstTime,"]:");
 		fscanf  (stdin,"Number",windowShift);
 	}
 }
