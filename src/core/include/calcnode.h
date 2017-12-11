@@ -127,7 +127,7 @@ public:
     virtual long        SetDependance   (long);
     
     node<long>*         LocateMeInTree  (void) const;
-    // return the tree structure node corresponing to this one...
+    // return the tree structure node corresponding to this one...
     void                ConvertToSimpleMatrix (void) const;
     void                ConvertFromSimpleMatrix (void);
     _Matrix*            ComputeModelMatrix(bool expMe=false);
