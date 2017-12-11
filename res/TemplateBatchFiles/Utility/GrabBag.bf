@@ -289,7 +289,7 @@ function restoreGlobalParameters (_paramStash)
 }
 
 /*---------------------------------------------------------*/
-/* take a string row/columqn matrix and turn it into an AVL of 
+/* take a string row/column matrix and turn it into an AVL of 
    the form avl["matrix entry"] = 1 for each matrix entry */
    
 function stringMatrixToAVL (_theList&)
