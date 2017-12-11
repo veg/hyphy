@@ -228,7 +228,7 @@ public:
       and maps them onto sites into target (argument 2)
       the third argument is 0 to treat the pointers as hyFloat*
       1 to treat them as long*
-      2 and to treat them as hyFloat* and long*, respetively
+      2 and to treat them as hyFloat* and long*, respectively
       20090929: SLKP
       the fourth argument is used to speficy a padding-size,
           all values from the filter size up to that value are set to 1 (for
