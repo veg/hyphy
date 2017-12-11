@@ -773,7 +773,7 @@ if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
 
 function ReceiveJobs (sendOrNot)
 
-/* This function receieves and processes 
+/* This function receives and processes 
    model results. The parameter is a boolean,
    set to 1 if there are jobs waiting to be sent to
    an MPI node */
