@@ -183,7 +183,7 @@ function attach_corpus (scfg_string)
 	SetDialogPrompt ("Select file containing corpus text");
 	
 	fscanf (PROMPT_FOR_FILE, "Lines", input);
-	corpus = Tranpose(input);
+	corpus = Transpose(input);
 	ExecuteCommands("SetParameter ("+scfg_string+", SCFG_STRING_CORPUS, corpus);");
 	
 	return corpus;
