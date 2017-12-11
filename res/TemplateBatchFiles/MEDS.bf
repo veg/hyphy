@@ -465,7 +465,7 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 			}
 			outputString = outputString + "," + AAlikes[AAcount] + "," + pValues + "," + AAlikesOmegaTs[AAcount] + "," + AAlikesFgNonSyn[AAcount] + "," + AAlikesBgNonSyn[AAcount] + "," + AAlikesSyn[AAcount];
 		}
-		/*Testing for directional vs neutral selection can be done in post-processesing*/
+		/*Testing for directional vs neutral selection can be done in post-processing*/
 		fprintf (outputFile,"\n",outputString);
 		/*Clear constraints to test another site*/
 		ClearConstraints(omegaT)
