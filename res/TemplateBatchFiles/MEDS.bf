@@ -39,7 +39,7 @@ siteShift 		= -1;  /*Used to standardize codon positions. Remember HyPhy indexes
 	model, with nonsynFG unconstrained. An LRT is used to determine whether the unconstrained
 	positive selection model significantly outperformed the null. So far this is only positive
 	selection. The unconstrained positive selection model will be used as the null for tests of
-	directional selection. For each of 20 AAs, fit a seperate model that allows a rate multiplier
+	directional selection. For each of 20 AAs, fit a separate model that allows a rate multiplier
 	favouring substitutions towards that AA. This produces 20 nested models, so a set Bonferroni
 	corrected LRTs can be used to identify evidence of direction selection. This batch file outputs
 	p-values BEFORE Bonferroni correction.
@@ -209,7 +209,7 @@ estimatedCodonFreqs = BuildCodonFrequencies(nuc3by4);
 /*----------------------Defines a function for creating a custom codon model--------------*/
 /*-------Usage: "PopulateModelMatrix ("ModelVarName",Freq3x4,targetAA,customRateString,"nonSynRateTag");"---*/
 /*specify targetAA = 21 if you don't want directional selection. NonSynRateTag allows one to control the
-name of the "nonsyn" rate variable by appending nonSynRateTag to the end. This allows having seperate foreground
+name of the "nonsyn" rate variable by appending nonSynRateTag to the end. This allows having separate foreground
 and background nonsyn rates. "customRateString" is NOT a PAUP specifier, but rather a matrix of string valued
 multipliers, derived above in the setup of the nuc model*/
 /*Part copypasta from MG94customCF3x4.mdl*/
