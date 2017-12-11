@@ -314,7 +314,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
 
     MPI_Status  status;
   
-    // nonagressive polling mode
+    // nonaggressive polling mode
   
     int message_received = 0;
     while (! message_received) {
@@ -322,7 +322,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
       usleep (100);
     }
 
-    // nonagressive polling mode
+    // nonaggressive polling mode
   
     int message_received = 0;
     while (! message_received) {
