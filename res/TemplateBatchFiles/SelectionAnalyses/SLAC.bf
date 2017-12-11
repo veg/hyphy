@@ -505,7 +505,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
            5 dS
            6 dN
            7 dN-dS (scaled)
-           8 P {S <= observed} // posititve sel
+           8 P {S <= observed} // positive sel
            9 P {S >= observed} // negative sel
            10 effective branch length
 
