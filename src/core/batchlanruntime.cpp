@@ -1287,10 +1287,10 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
   }
   }
 
-  // now with this list ready we can recurse down the tree and produce the contsraints
+  // now with this list ready we can recurse down the tree and produce the constraints
   if (RecurseDownTheTree(thisArgs, parameters, theConstraints, parts, thisIndex)) {
   if (theConstraints.lLength) {
-  ReportWarning  (_String("\nReplicateConstraint generated the following contsraints:"));
+  ReportWarning  (_String("\nReplicateConstraint generated the following constraints:"));
   hyFloat      doDeferSet;
   checkParameter (deferConstrainAssignment,doDeferSet,0.0);
   bool            applyNow = CheckEqual(doDeferSet,0.0);
