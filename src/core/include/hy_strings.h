@@ -228,7 +228,7 @@ public:
   _String(FILE *file, long read_this_many = -1L);
 
   /**
-   *  A desctructor which respects reference counts
+   *  A destructor which respects reference counts
    *  Revision history
    - SLKP 20170517 reviewed while porting from v3 branch
    */
