@@ -764,7 +764,7 @@ useAdaptiveVariableStep            ,
 storeRootSupportFlag           ,
 supportMatrixVariable          ,
 optimizationStatusFile         ,
-autoParalellizeLF              ,
+autoParallelizeLF              ,
 addLFSmoothing                 ,
 reduceLFSmoothing              ;
 

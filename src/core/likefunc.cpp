@@ -173,7 +173,7 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 storeRootSupportFlag            ("STORE_ROOT_SUPPORT"),
                                 supportMatrixVariable           ("SUPPORT_MATRIX_LIST"),
                                 optimizationStatusFile          ("SAVE_OPT_STATUS_TO"),
-                                autoParalellizeLF               ("AUTO_PARALLELIZE_OPTIMIZE"),
+                                autoParallelizeLF               ("AUTO_PARALLELIZE_OPTIMIZE"),
                                 lfExtraLFExportCode             ("LF_NEXUS_EXPORT_EXTRA"),
                                 optimizationStringTemplate      ("OPTIMIZATION_PROGRESS_TEMPLATE"),
                                 produceOptimizationLog          ("PRODUCE_OPTIMIZATION_LOG"),
@@ -2964,7 +2964,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
     int                      totalNodeCount = RetrieveMPICount (0);
     hyFloat               aplf = 0.0;
-    checkParameter           (autoParalellizeLF,aplf,0.0);
+    checkParameter           (autoParallelizeLF,aplf,0.0);
     hyphyMPIOptimizerMode  = round(aplf);
 
     if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL)
