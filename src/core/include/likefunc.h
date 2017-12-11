@@ -125,7 +125,7 @@ struct  MSTCache {
 enum _LikelihoodFunctionCountType {
   kLFCountPartitions,
   kLFCountGlobalVariables,
-  kLFCountLocalCariables,
+  kLFCountLocalVariables,
   kLFCountDependentVariables,
   kLFCountCategoryVariables
 } ;

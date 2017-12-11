@@ -8362,7 +8362,7 @@ unsigned long    _LikelihoodFunction::CountObjects (_LikelihoodFunctionCountType
           }
           return res;
       }
-      case kLFCountLocalCariables:
+      case kLFCountLocalVariables:
           return indexInd.lLength - CountObjects (kLFCountGlobalVariables);
       case kLFCountDependentVariables:
           return indexDep.lLength;

@@ -195,7 +195,7 @@ function unconstrainGlobalParameters (_lfName) {
 }
 
 /*---------------------------------------------------------*/
-/* prompt for global variabless in a LF and fix their values */
+/* prompt for global variables in a LF and fix their values */
    
 function promptForGlobalParameters (_lfName)
 {
