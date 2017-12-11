@@ -500,7 +500,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
   
     bool  skip_nfolds = hy_env::EnvVariableTrue(hy_env::skip_omissions);
   
-    if (skip_nfolds || theExc ) { // somthing to do
+    if (skip_nfolds || theExc ) { // something to do
         _SimpleList patterns_to_be_removed;
         if (theExc) {
           hyFloat   *store_vec = new hyFloat [GetDimension(false)];
