@@ -570,7 +570,7 @@ private:
 
     //bool      IsAStringMatrix     (void);
     void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
-    // aux arithmetic rountines
+    // aux arithmetic routines
     bool        AddWithThreshold    (_Matrix&, hyFloat);
     void        RowAndColumnMax     (hyFloat&, hyFloat&, hyFloat* = nil);
     void        Subtract            (_Matrix&, _Matrix&);
