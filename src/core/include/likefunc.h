@@ -100,9 +100,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* interval mapping functions */
 
 #define   _hyphyIntervalMapID                           0x0 // identify
-#define   _hyphyIntervalMapExpit                        0x1 // expit -- maps [-infty,infty) to [0,1]
+#define   _hyphyIntervalMapExpit                        0x1 // expit -- maps [-infinity,infinity) to [0,1]
 // 1/(1+exp[-x])
-#define   _hyphyIntervalMapSqueeze                      0x2 // maps [0,infty) to [0,1)
+#define   _hyphyIntervalMapSqueeze                      0x2 // maps [0,infinity) to [0,1)
 // x / (1+x)
 
 
