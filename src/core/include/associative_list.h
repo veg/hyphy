@@ -144,7 +144,7 @@ public:
      * If no valid numbers could be found, "key" will be None, and min/max will be an +/-Inf
      * @return The minimum or maximum numeric value and corresponding key
      */
-    _PMathObj           ExtremeValue    (bool do_mimimum) const;
+    _PMathObj           ExtremeValue    (bool do_minimum) const;
 
 
 private:

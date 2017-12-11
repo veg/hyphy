@@ -152,7 +152,7 @@ for (rc1 = 0; rc1 < ccc; rc1 = rc1+1)
 	}
 }
 
-fprintf (stdout, Abs(T_MIN), " rate classes for the minumum criterion. P{Prior}=",PR_MIN,"\n");
+fprintf (stdout, Abs(T_MIN), " rate classes for the minimum criterion. P{Prior}=",PR_MIN,"\n");
 fprintf (stdout, Abs(T_AV), " rate classes for the mean criterion. P{Prior}=",PR_AV,"\n");
 fprintf (stdout, Abs(T_MAX), " rate classes for the maximum criterion. P{Prior}=",PR_MAX,"\n");
 
