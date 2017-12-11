@@ -1499,8 +1499,8 @@ ChoiceList (modelTypeL,"Choose a model for leaves",1,SKIP_NONE,
 			"MG94 3x4","Muse-Gaut 94 model with 12(-3) nucleotide frequency parameters (intra-codon position specific).",
 			"GY94 1x4","Goldman-Yang 94 model with 4(-1) nucleotide frequency parameters (intra-codon position independent).",
 			"GY94 3x4","Goldman-Yang 94 model with 12(-3) nucleotide frequency parameters (intra-codon position specific).",
-			"MG94 Custom 1x4", "Muse-Gaut 94 crossed with an arbitrary nucelotide substitution model with 4(-1) nucleotide frequency parameters (intra-codon position independent).",
-			"MG94 Custom 3x4", "Muse-Gaut 94 crossed with an arbitrary nucelotide substitution model with 12(-3) nucleotide frequency parameters (intra-codon position specific)."
+			"MG94 Custom 1x4", "Muse-Gaut 94 crossed with an arbitrary nucleotide substitution model with 4(-1) nucleotide frequency parameters (intra-codon position independent).",
+			"MG94 Custom 3x4", "Muse-Gaut 94 crossed with an arbitrary nucleotide substitution model with 12(-3) nucleotide frequency parameters (intra-codon position specific)."
 );
 		    
 if (modelTypeL<0)
@@ -1565,7 +1565,7 @@ else
 	ChoiceList (modelTypeI,"Choose a model for internal nodes",1,SKIP_NONE,
 				"MG94","Muse-Gaut 94 model.",
 				"GY94","Goldman-Yang 94 model",
-				"MG94 Custom", "Muse-Gaut 94 crossed with an arbitrary nucelotide substitution model.");
+				"MG94 Custom", "Muse-Gaut 94 crossed with an arbitrary nucleotide substitution model.");
 
 	if (modelTypeI<0)
 	{

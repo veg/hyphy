@@ -1,4 +1,4 @@
-SetDialogPrompt ("Please specify a nuleotide data or aminoacid file:");
+SetDialogPrompt ("Please specify a nucleotide data or aminoacid file:");
 
 DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
 DataSetFilter filteredData = CreateFilter (ds,1);

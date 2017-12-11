@@ -90,7 +90,7 @@ public:
     base alphabet characters that map to it, and populate buffer with
     their codes. For example `TokenResolutions ('T', buffer) will
     return 2 and set buffer[0] = 1, buffer[1] = 3, assuming the translation
-    table has the standard IUPAC nucleotdie code
+    table has the standard IUPAC nucleotide code
 
     @param token the character (unique or ambiguous) to translate
     @param buffer store the resolved characters (up to baseLength) here
@@ -108,7 +108,7 @@ public:
    resolutions of characters to base, and populate buffer with their codes. For
    example `TokenResolutions ('ATR', buffer) will return 2 and set buffer[0] =
    12 [0*16+3*4+0], buffer[1] = 14 [0*16+3*4+2], assuming the translation table
-   has the standard IUPAC nucleotdie code. Passing NULL as buffer will result in
+   has the standard IUPAC nucleotide code. Passing NULL as buffer will result in
    returning the code for the resolution (if UNIQUE), otherwise -1.
 
    @param tokens the characters (unique or ambiguous) to translate

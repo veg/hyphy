@@ -252,10 +252,10 @@ if (branchLengths<2)
 				"MG94",	 "Standard Muse-Gaut 94 model.",
 				"MG94xHKY85","MG94 with the transition/transverion ratio parameter kappa.",
 				"MG94xREV","MG94 with 5 additional parameters for each type of nucleotide substitution ratio. (Recommended Rate Matrix)",
-				"MG94xCustom","MG94 crossed with an arbitrary nucelotide reversible model, except F81.",
+				"MG94xCustom","MG94 crossed with an arbitrary nucleotide reversible model, except F81.",
 				"GY94","Goldman-Yang 94 model (similar to MG94xHKY85)",
-				"MG94Multi","MG94 with multiple classes of non-synonymous substitutions in addition to being crossed with an arbitrary nucelotide reversible model, except F81.",
-				"MG94NMulti","MG94 with numerical bias corrections for various amino-acid substitution in addition to being crossed with an arbitrary nucelotide reversible model, except F81."
+				"MG94Multi","MG94 with multiple classes of non-synonymous substitutions in addition to being crossed with an arbitrary nucleotide reversible model, except F81.",
+				"MG94NMulti","MG94 with numerical bias corrections for various amino-acid substitution in addition to being crossed with an arbitrary nucleotide reversible model, except F81."
 			);
 }
 else
@@ -269,7 +269,7 @@ else
 				"MG94",	 "Standard Muse-Gaut 94 model.",
 				"MG94xHKY85","MG94 with the transition/transverion ratio parameter kappa.",
 				"MG94xREV","MG94 with 5 additional parameters for each type of nucleotide substitution ratio. (Recommended Rate Matrix)",
-				"MG94xCustom","MG94 crossed with an arbitrary nucelotide reversible model, except F81.",
+				"MG94xCustom","MG94 crossed with an arbitrary nucleotide reversible model, except F81.",
 				"GY94","Goldman-Yang 94 model (similar to MG94xHKY85)"
    			   );
 }
