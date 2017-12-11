@@ -222,7 +222,7 @@ modelConstraintString = "";
 
 ChoiceList (modelChoice, "Rate Matrix Options",1,SKIP_NONE,
 			"MG94",	 "Standard Muse-Gaut 94 model.",
-			"MG94xHKY85","MG94 with the transition/transverion ratio parameter kappa.",
+			"MG94xHKY85","MG94 with the transition/transversion ratio parameter kappa.",
 			"MG94xREV","MG94 with 5 additional parameters for each type of nucleotide substitution ratio. (Recommended Rate Matrix)",
 			"MG94xCustom","MG94 crossed with an arbitrary nucleotide reversible model, except F81.",
 			/*"MG94xCustomxAA","MG94 crossed with an arbitrary nucleotide reversible model and an arbitrary amino-acid bias profile.",*/

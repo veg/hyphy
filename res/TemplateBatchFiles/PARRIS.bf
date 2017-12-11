@@ -251,7 +251,7 @@ if (MGGYChoice<0)
 
 ChoiceList (nucModelChoice, "Nucleotide Rate Matrix Options",1,SKIP_NONE,
 			"Jukes-Cantor",	 "Single rate type (all substitutions equally likely).",
-			"HKY85","Two rate types (transition/transverion ratio parameter kappa).",
+			"HKY85","Two rate types (transition/transversion ratio parameter kappa).",
 			"REV","Fully reversible model (6 rate types - recommended rate matrix)",
 			"Custom","Arbitrary nucleotide reversible model, except F81."
            );
