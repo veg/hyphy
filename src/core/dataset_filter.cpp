@@ -1708,7 +1708,7 @@ _Matrix * _DataSetFilter::HarvestFrequencies (char unit, char atom, bool posSpec
  // the data will be stored column by column
  // if there is a unique code translation, we then store that code in the symbol vector for faster
  // processing during tree pruning business.
- // use a standard convert to frequencies function to check whether a character has a unique convertion
+ // use a standard convert to frequencies function to check whether a character has a unique conversion
  if (intCellSize==1) // char based storage
  {
  union
