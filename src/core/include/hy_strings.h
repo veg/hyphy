@@ -949,9 +949,9 @@ public:
    *
    * @param &from The starting position of the segment will be stored here
    * @param open The first character to look for. For example, and open bracket
-   '[' or open paranthesis '('
+   '[' or open parenthesis '('
    * @param close The first character to look for. For example, and open bracket
-   ']' or open paranthesis ')'
+   ']' or open parenthesis ')'
    * @param options: a bitmask of options, if fExtractRespectQuote is mixed in
    then do not look withing enquoted parts of the string if set if
    fExtractRespectEscape is mixed in do not consider \char as matches to char

@@ -1262,7 +1262,7 @@ TEST_F(StringTest,BracketTest)
     EXPECT_EQ('e', result[5L]);
 }
 
-TEST_F(StringTest,ParanthTest)
+TEST_F(StringTest,ParenthesisTest)
 {
     //()
     _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");

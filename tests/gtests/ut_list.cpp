@@ -156,7 +156,7 @@ TEST_F(ListTest,_DataConstructorListTest){
 
 }
 
-TEST_F(ListTest,paranthesisTest){
+TEST_F(ListTest,parenthesisTest){
 
     _List str_list = createStrList();
     _String* return_string = (_String*)str_list(4);
