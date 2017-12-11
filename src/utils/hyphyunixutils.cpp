@@ -323,7 +323,7 @@ void mpiOptimizerLoop (int rank, int size)
             //ReportWarning (*theMessage);
             ReadDataSetFile (nil,true,theMessage);
             if (likeFuncNamesList.lLength!=1) {
-                HandleApplicationError ("[MPI] Malformed MPI likelihood function paraller optimizer startup command. Exactly ONE valid LF must be defined.n\n\n");
+                HandleApplicationError ("[MPI] Malformed MPI likelihood function parallel optimizer startup command. Exactly ONE valid LF must be defined.n\n\n");
                 break;
             }
 
