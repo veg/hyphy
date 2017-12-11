@@ -1,4 +1,4 @@
-/* This file defines the transition matrix for the General Non-Reversible model without expicit frequency parameterization
+/* This file defines the transition matrix for the General Non-Reversible model without explicit frequency parameterization
    The file should be used as follows:
       
    01/04/2006  by Sergei L. Kosakovsky Pond

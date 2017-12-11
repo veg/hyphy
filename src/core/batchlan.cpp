@@ -1458,7 +1458,7 @@ void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
                           << pieces->GetItem(2L)
                           << pieces->GetItem(3L);
   
-  if (pieces->countitems() > 5UL) { // expliit list of choices
+  if (pieces->countitems() > 5UL) { // explicit list of choices
     
     if (pieces->countitems() % 2 > 0) {
       DeleteObject(choice_list);

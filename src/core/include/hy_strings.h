@@ -963,7 +963,7 @@ public:
    *
    *  Revision history
      - SLKP 20170614; reviewed while porting from the v2.3 branch; converted the
-   two bool flags to a bit-mask so that the calls can be more explict
+   two bool flags to a bit-mask so that the calls can be more explicit
      - SLKP 20170615; included support for singly quoted literals
   */
 
