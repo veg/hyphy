@@ -8,7 +8,7 @@ Original source from
 
     http://portal.acm.org/citation.cfm?id=214326&jmp=indexterms&dl=GUIDE&dl=ACM
 
-Cleaned up and dapted for C++. Included a bug fix for negative keys
+Cleaned up and adapted for C++. Included a bug fix for negative keys
 in hash tables in f3xact_.
 
 Sergei L. Kosakovsky Pond,
