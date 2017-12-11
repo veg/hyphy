@@ -49,7 +49,7 @@ SubClassNames = {{
 	"Asparagine",
 	"Aspartic Acid",
 	"Cysteine",
-	"Glutamin Acid",
+	"Glutamic Acid",
 	"Glutamine",
 	"Glycine",
 	"Histidine",

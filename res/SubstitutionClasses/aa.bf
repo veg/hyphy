@@ -2,7 +2,7 @@
 0  - A (Alanine)
 1  - C (Cysteine)
 2  - D (Aspartic Acid)
-3  - E (Glutamin Acid)
+3  - E (Glutamic Acid)
 4  - F (Phenylalanine)
 5  - G (Glycine)
 6  - H (Histidine)
