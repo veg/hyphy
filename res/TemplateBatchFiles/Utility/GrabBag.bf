@@ -669,7 +669,7 @@ function _sortStrings (_theList)
 }
 
 /*---------------------------------------------
-construct the frequency vector and a LF mixing componenent for 
+construct the frequency vector and a LF mixing component for 
 a general discrete distribution on numberOfRates rates
 ---------------------------------------------*/
 
