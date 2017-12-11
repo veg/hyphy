@@ -451,7 +451,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
 //_______________________________________________________________________________________________
 
 void            _LikelihoodFunction::PopulateConditionalProbabilities   (long index, char runMode, hyFloat* buffer, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues)
-// this function computes site probabilties for each rate class (or something else that involves iterating over rate classes)
+// this function computes site probabilities for each rate class (or something else that involves iterating over rate classes)
 // see run options below
 
 // run mode can be one of the following

@@ -1998,7 +1998,7 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
             If theStructure is empty graph, initialize order with random permutation.
             If [fixed_order]=TRUE, only explores the subset of graphs compatible with [node_order_arg] if specified.
 
-        Returns pointer to matrix containing:   (1) vector of posterior probabiities
+        Returns pointer to matrix containing:   (1) vector of posterior probabilities
                                                 (2) linearized matrix of edge marginal posteriors
                                                 (3)     "       "   for best graph
                                                 (4)     "       "   for last graph visited in chain

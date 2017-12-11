@@ -351,7 +351,7 @@ public:
     // store various diagnostics about the grammar into the list
 
     virtual _String*            SpawnRandomString       (long = -1, _SimpleList* = nil);
-    // generate a random string using current production probabiltities
+    // generate a random string using current production probabilities
     // the argument is the index of a non-terminal (or -1 for the start)
     // from which to generate a substring (called recursively)
     // the string argument is the storage, created by the first call
