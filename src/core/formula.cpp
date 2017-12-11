@@ -857,7 +857,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
     all_constant = all_constant && left_constant && (n_children==1 || right_constant);
 
     if (op->opCode > HY_OP_CODE_NONE) {
-        if (all_constant) { // this executes the subxpression starting at the current node
+        if (all_constant) { // this executes the subexpression starting at the current node
             _Stack scrap;
             for  (unsigned long k=1UL; k<=n_children; k++) {
                 ((_Operation*)theFormula (top_node->go_down(k)->get_data()))->Execute (scrap);
