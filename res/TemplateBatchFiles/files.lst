@@ -84,10 +84,10 @@
 "","Reconstruct a phylogenetic tree using either distance or ML based heuristic methods.","!Phylogeny Reconstruction";
 "CLST","Apply clustering methods for phylogeny reconstruction (UPGMA,WPGMA,complete or minimal linkage) to nucleotide, protein and codon data, using MLE of pairwise distances with user-selectable models. These methods produce trees with global molecular clock.","ClusterAnalysis.bf";
 "DIST","Generate a pairwise sequence distance matrix in PHYLIP format.","DistanceMatrix.bf";
-"NJ","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of neighbor joining.","NeighborJoining.bf";
+"NJ","Perform a phylogeny reconstruction for nucleotide, protein or codon data with user-selectable models using the method of neighbor joining.","NeighborJoining.bf";
 "NNI","Perform nearest neighbor branch swapping on a given tree, attempting to find a tree with a better likelihood score under the given evolutionary model.","BranchSwap.bf";
-"SA","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of sequential addition.","SequentialAddition.bf";
-"SD","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of star decomposition.","StarDecomposition.bf";
+"SA","Perform a phylogeny reconstruction for nucleotide, protein or codon data with user-selectable models using the method of sequential addition.","SequentialAddition.bf";
+"SD","Perform a phylogeny reconstruction for nucleotide, protein or codon data with user-selectable models using the method of star decomposition.","StarDecomposition.bf";
 "TS","Perform an exhaustive tree space search for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearch.bf";
 "TSC","Perform an exhaustive tree space search (subject to a topology constraint) for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearchConstrained.bf";
 

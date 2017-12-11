@@ -2088,8 +2088,8 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         break;
 
 
-        case 38: { // reconsruct ancestors
-            (*string_form) << assignment (HY_HBL_COMMAND_DATA_SET, "ReconstuctAncestors");
+        case 38: { // reconstruct ancestors
+            (*string_form) << assignment (HY_HBL_COMMAND_DATA_SET, "ReconstructAncestors");
 
         }
         break;
