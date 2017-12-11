@@ -40,7 +40,7 @@ ChoiceList  (cOptions,"Ancestor Counting Options",1,NO_SKIP,
 			/*7*/ "Full site-by-site LRT","Each site has a separate dN AND branch lengths. Experimental and VERY slow.",
 			/*8*/ "Multirate FEL","Fixed effects site-by-site likelihood estimation, where non-synonymous rates are split into several classes",
 			/*9*/ "BGM co-evolution","Use a Bayesian graphical model fitted to site substitution patterns to detect co-evolving sites",
-            /*10*/ "MEME", "Mixed effects model of evolution to search for evidence of episodic selection at indvidual sites [EXPERIMENTAL, March 2011]");
+            /*10*/ "MEME", "Mixed effects model of evolution to search for evidence of episodic selection at individual sites [EXPERIMENTAL, March 2011]");
 
 
 if (cOptions < 0)
