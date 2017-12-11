@@ -651,7 +651,7 @@ for (alignmentIndex = 0; alignmentIndex < alignmentCount; alignmentIndex = align
 	if (sortedScores[0][1] < nullAIC)
 	{
 		individual = sortedScores[0][0];
-		fprintf (stdout, "\n\nBest supported breakpoint is located at position ", bppMap[individual], "\nAIC = ", sortedScores[0][1], " : an imrovement of ", 
+		fprintf (stdout, "\n\nBest supported breakpoint is located at position ", bppMap[individual], "\nAIC = ", sortedScores[0][1], " : an improvement of ", 
 					     nullAIC - sortedScores[0][1], " AIC points\n");
 		resultMatrix [alignmentIndex][0] = bppMap[individual];
 		resultMatrix [alignmentIndex][1] = nullAIC - sortedScores[0][1];
@@ -670,7 +670,7 @@ for (alignmentIndex = 0; alignmentIndex < alignmentCount; alignmentIndex = align
 	if (sortedScores[0][2] < nullAICc)
 	{
 		individual = sortedScores[0][0];
-		fprintf (stdout, "\n\nBest supported breakpoint is located at position ", bppMap[individual], "\nAIC = ", sortedScores[0][2], " : an imrovement of ", 
+		fprintf (stdout, "\n\nBest supported breakpoint is located at position ", bppMap[individual], "\nAIC = ", sortedScores[0][2], " : an improvement of ", 
 					     nullAICc - sortedScores[0][2], " AIC points\n");
 		resultMatrix [alignmentIndex][2] = bppMap[individual];
 		resultMatrix [alignmentIndex][3] = nullAICc - sortedScores[0][1];
@@ -689,7 +689,7 @@ for (alignmentIndex = 0; alignmentIndex < alignmentCount; alignmentIndex = align
 	if (sortedScores[0][3] < nullBIC)
 	{
 		individual = sortedScores[0][0];
-		fprintf (stdout, "\n\nBest supported breakpoint is located at position ", bppMap[individual], "\nAIC = ", sortedScores[0][3], " : an imrovement of ", 
+		fprintf (stdout, "\n\nBest supported breakpoint is located at position ", bppMap[individual], "\nAIC = ", sortedScores[0][3], " : an improvement of ", 
 					     nullBIC - sortedScores[0][3], " AIC points\n");
 		resultMatrix [alignmentIndex][4] = bppMap[individual];
 		resultMatrix [alignmentIndex][5] = nullBIC - sortedScores[0][3];
