@@ -95,7 +95,7 @@ public:
     _PMathObj           MIterator       (_PMathObj, _PMathObj);
     /* perform a function call (ID stored in the first argument)
        having performed [an optional] conditional check on the associated key (either empty for noop or a function ID)
-       Both functional IDs MUST be defined and take TWO and ONE argumens respectively
+       Both functional IDs MUST be defined and take TWO and ONE arguments respectively
 
        returns the number of items processed
     */

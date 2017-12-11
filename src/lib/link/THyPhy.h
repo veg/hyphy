@@ -58,7 +58,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 typedef  bool _ProgressCancelHandler (const char*,int,double);
 /* if  the function returns false, then HyPhy will attempt to terminate the task and return
-     HyPhy will also populate three agruments
+     HyPhy will also populate three arguments
   -- char * : pointer to an (internally handled by HyPhy) string
               that describes what task HyPhy is working on at the moment
   -- int    : integer progress value (as in % done)

@@ -489,7 +489,7 @@ public:
     _AssociativeList*
     SplitsIdentity                      (_PMathObj);
     /* 20090609: SLKP
-        given a tree agrument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
+        given a tree argument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
         and a string (key "CONSENSUS");
         The first cell contains the number of splits in *this
         The second cell contains the number of splits in the argument that are present in *this

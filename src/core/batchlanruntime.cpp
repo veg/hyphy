@@ -1429,7 +1429,7 @@ bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& current_program
     if  (source_object) {
       KillLFRecord (object_index,true);
     } else {
-      ReportWarning(GetIthParameter(i)->Enquote() & " is not a supported agrument type for " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(get_code()));
+      ReportWarning(GetIthParameter(i)->Enquote() & " is not a supported argument type for " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(get_code()));
     }
   }
   return true;
