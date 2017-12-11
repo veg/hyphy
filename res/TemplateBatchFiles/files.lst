@@ -69,7 +69,7 @@
 "MT","Select an evolutionary model for nucleotide data, using the methods of 'ModelTest' - a program by David Posada and Keith Crandall.","ModelTest.bf";
 "NUC","Compare all 203 reversible nucleotide models and perform LRT and AIC model selection.","NucModelCompare.bf";
 "Protein","Compare the fit of several amino-acid substitution models to an alignment using AIC and c-AIC.","AAModelComparison.bf";
-"","Tools for data analysis and pattern extraction based on kernel technqiues.","!Kernel Analysis Tools";
+"","Tools for data analysis and pattern extraction based on kernel techniques.","!Kernel Analysis Tools";
 "KMEANS","GA driven kernel k-means clustering.","Kernel_k_means.bf";
 "KPCA","Kernel principal component analysis.","Kernel_PCA.bf";
 
