@@ -73,7 +73,7 @@ class _Trie: public _List
              */
             
     
-        /* base class will store the lunear representation of this trie */
+        /* base class will store the linear representation of this trie */
         
             /** a linear representation of this trie    
              each node is a _SimpleList that contains N pairs of entries 
