@@ -7488,7 +7488,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
     long          specCount = GetHDim();
 
     if (storageType != 1 ||  specCount!= GetVDim() || specCount < 4) {
-        HandleApplicationError ("NeigborJoin needs a square numeric matrix of dimension >= 4");
+        HandleApplicationError ("NeighborJoin needs a square numeric matrix of dimension >= 4");
         return    new _Matrix;
     }
 
