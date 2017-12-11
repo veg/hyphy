@@ -315,7 +315,7 @@ void    _VariableContainer::InitializeVarCont (_String const& aName, _String& th
     if (aName.nonempty()) {
         /*
             SLKP
-            this entire section may be deprecated, and may actuall
+            this entire section may be deprecated, and may actually
         */
         theName = new _String (aName);
 
