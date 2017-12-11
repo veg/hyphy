@@ -462,7 +462,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     ^"meme.site_alpha" = 1;
     ^"meme.site_beta_plus"  = 1;
     ^"meme.site_beta_nuisance"  = 1;
-
+    
     Optimize (results, ^lf_fel);
 
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
