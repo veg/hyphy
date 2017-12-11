@@ -166,7 +166,7 @@ namespace hy_global {
   
   //_______________________________________________________________________
   
-  /** If the settings request it, write a warning (diagonstic) message to the
+  /** If the settings request it, write a warning (diagnostic) message to the
    .log file
    
    @param message the diagnostic message to report
