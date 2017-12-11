@@ -5074,7 +5074,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
     }
 
     if (cm<1.)
-        // use likelihood profile with the appropriate signifcance level
+        // use likelihood profile with the appropriate significance level
     {
         _Matrix     sigLevels  (i,7,false,true);
 
