@@ -2377,7 +2377,7 @@ _PMathObj _Formula::ConstructPolynomial (void) {
 }
 
 //__________________________________________________________________________________
-bool _Formula::HasChanged (bool ingoreCats) {
+bool _Formula::HasChanged (bool ignoreCats) {
     unsigned long const upper_bound = NumberOperations();
   
     for (unsigned long i=0UL; i<upper_bound; i++) {
@@ -2387,7 +2387,7 @@ bool _Formula::HasChanged (bool ingoreCats) {
         if (this_op->IsAVariable()) {
             data_id = this_op->GetAVariable();
             if (data_id>=0) {
-                if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[data_id]))->HasChanged(ingoreCats)) {
+                if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[data_id]))->HasChanged(ignoreCats)) {
                     return true;
                 }
             } else if (this_op->theNumber->HasChanged()) {
