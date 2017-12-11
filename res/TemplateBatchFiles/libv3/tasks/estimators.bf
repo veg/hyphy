@@ -287,7 +287,7 @@ function estimators.branch_lengths_in_string.map(id, value) {
  * @name estimators.branch_lengths_in_string
  * @param {String} tree_id
  * @param {String} lookup
- * @returns {String} branch lenghts in tree string
+ * @returns {String} branch lengths in tree string
  */
 function estimators.branch_lengths_in_string(tree_id, lookup) {
     estimators.branch_lengths_in_string.lookup = {};

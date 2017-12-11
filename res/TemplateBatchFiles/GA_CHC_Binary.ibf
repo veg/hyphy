@@ -171,7 +171,7 @@ function convertBase (vect1, base1, base2, length1)
 		outVect = multNumbers (digitVect, outVect, convLength, convLength, Columns(digitVect), base1);
 	}
 	/*
-	fprintf (stdout, "Converted a vector (", length1, ") from base ", base2, " to base ", base1," output lentgh ", Columns (output), "\n");
+	fprintf (stdout, "Converted a vector (", length1, ") from base ", base2, " to base ", base1," output length ", Columns (output), "\n");
 	*/
 	return output;
 }

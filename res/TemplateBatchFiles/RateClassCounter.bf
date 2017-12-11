@@ -360,7 +360,7 @@ if (Abs(modelConstraintString))
 	
 ChoiceList (branchLengths,"Estimate Branch Lengths",1,SKIP_NONE,
 			"Every Time","Branch lengths are reestimated for every model.",
-			"Once","Branch lenghts obtained from the single rate model are reused for subsequent models."
+			"Once","Branch lengths obtained from the single rate model are reused for subsequent models."
 	       );
 
 if (branchLengths<0)
