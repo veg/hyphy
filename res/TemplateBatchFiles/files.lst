@@ -89,7 +89,7 @@
 "SA","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of sequential addition.","SequentialAddition.bf";
 "SD","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of star decomposition.","StarDecomposition.bf";
 "TS","Perform an exhaustive tree space search for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearch.bf";
-"TSC","Perform an exhaustive tree space search (subject to a topology contraint) for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearchConstrained.bf";
+"TSC","Perform an exhaustive tree space search (subject to a topology constraint) for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearchConstrained.bf";
 
 "","Perform codon-based positive selection tests.","!Positive Selection";
 "BSREL","Use the random effects branch-site model (2010) to find lineages subject to episodic selection.","BranchSiteREL.bf";
