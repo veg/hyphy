@@ -6548,7 +6548,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision)
             iterationsCount++;
             if (iterationsCount%10==0) {
                 if ((error>lastBError)||(iterationsCount%(30)==0)) {
-                    //perturb the coodinates of simplex vertices to escape a vicios loop
+                    //perturb the coordinates of simplex vertices to escape a vicios loop
                     nBumps++;
                     for (k=0; k<indexInd.lLength; k++) {
 

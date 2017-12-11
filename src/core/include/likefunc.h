@@ -634,7 +634,7 @@ protected:
 
             1st coordinate - the node index (in post-order traversal)
             2nd coordinate - the site (unique pattern) index (left-to-right)
-            3rd coordiante - i-th marginal (for the i-th character; 0-filterCharDimension)
+            3rd coordinate - i-th marginal (for the i-th character; 0-filterCharDimension)
 
             stores the probability for the subtree below this node given that i-th character
             is present at the node

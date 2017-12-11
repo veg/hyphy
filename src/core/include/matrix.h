@@ -160,7 +160,7 @@ public:
 
     void        MStore (long, long, _Formula&, long = -1);
     bool        MResolve (_PMathObj, _PMathObj, long&, long&);
-    // resolve coordiates from two Number arguments
+    // resolve coordinates from two Number arguments
 
     bool        CheckCoordinates ( long&, long&);
     // validate matrix coordinates
