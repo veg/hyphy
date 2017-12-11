@@ -232,7 +232,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                         check = false;
                     }
                 } else
-                    // indepenent category variable
+                    // independent category variable
                 {
                     if (weightMatrix->IsIndependent()) {
                         check=checkWeightMatrix(*weightMatrix);

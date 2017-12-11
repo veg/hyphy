@@ -156,7 +156,7 @@ public:
 
     virtual void        Duplicate (BaseRefConst);         // duplicate an object into this one
 
-    _SimpleList const &GetIndependentVars (void) const; // return a list of all indepenent variables
+    _SimpleList const &GetIndependentVars (void) const; // return a list of all independent variables
     _SimpleList const &GetDependentVars   (void) const; // get all dependent vars of this object
     _SimpleList const &GetCategoryVars    (void) const; // get all category variables
     void        GetGlobalVars      (_SimpleList&) const;
@@ -173,12 +173,12 @@ public:
     const _String*  GetIthIndependentName           (long) const;     // get the name of i-th independent variable
     const _String*  GetIthDependentName           (long) const;     // get the name of i-th independent variable
     hyFloat  GetIthDependent             (long) const;     // get the value of i-th dependent variable
-    void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix
+    void        GetAllIndependent           (_Matrix&) const; // store all independent values in a matrix
     _Variable*  GetIthIndependentVar        (long) const;     // get the variable object of i-th independent variable
     _Variable*  GetIthDependentVar          (long) const;     // get the variable object of i-th dependent variable
     _CategoryVariable*  GetIthCategoryVar           (long) const;     // get the variable object of i-th category variable
     hyFloat  GetIthIndependentBound      (long, bool isLower = true) const;
-    // get the lower / upper bound for the i-th indepdendent variable
+    // get the lower / upper bound for the i-th independent variable
 
     void        SetIthIndependent (long, hyFloat);           // set the value of i-th independent variable
     bool        CheckAndSetIthIndependent (long, hyFloat);   // set the value of i-th independent variable
