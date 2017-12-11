@@ -1214,7 +1214,7 @@ _Variable*  _LikelihoodFunction::GetIthDependentVar (long index) const {
 void    _LikelihoodFunction::SetIthIndependent (long index, hyFloat p) {
     if (parameterValuesAndRanges) {
         parameterValuesAndRanges->Store(index,1,p);
-        p = mapParameterToInverval(p,parameterTransformationFunction.Element(index),true);
+        p = mapParameterToInterval(p,parameterTransformationFunction.Element(index),true);
         parameterValuesAndRanges->Store(index,0,p);
     }
     //printf ("%10.10g\n", p);
@@ -1238,7 +1238,7 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p)
 
     if (parameterValuesAndRanges) {
         parameterValuesAndRanges->Store(index,1,p);
-        p = mapParameterToInverval(p,parameterTransformationFunction.Element(index),true);
+        p = mapParameterToInterval(p,parameterTransformationFunction.Element(index),true);
         parameterValuesAndRanges->Store(index,0,p);
     }
 

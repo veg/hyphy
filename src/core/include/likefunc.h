@@ -787,7 +787,7 @@ extern  _Vector      _scalerMultipliers,
 
 hyFloat                  acquireScalerMultiplier (long);
 hyFloat                  myLog                   (hyFloat);
-hyFloat                  mapParameterToInverval  (hyFloat, char, bool);
+hyFloat                  mapParameterToInterval  (hyFloat, char, bool);
 
 #ifdef  __HYPHYMPI__
 extern                  _Matrix     resTransferMatrix;

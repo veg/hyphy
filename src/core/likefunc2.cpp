@@ -1157,7 +1157,7 @@ void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 
 //_______________________________________________________________________________________________
 
 
-hyFloat mapParameterToInverval (hyFloat in, char type, bool inverse)
+hyFloat mapParameterToInterval (hyFloat in, char type, bool inverse)
 {
     switch (type) {
     case _hyphyIntervalMapExpit:
@@ -1214,9 +1214,9 @@ void _LikelihoodFunction::SetupParameterMapping (void)
 
 
         parameterValuesAndRanges->Store(pIndex,0,thisValue);
-        parameterValuesAndRanges->Store(pIndex,1,mapParameterToInverval(thisValue,parameterTransformationFunction.Element(-1),false));
-        parameterValuesAndRanges->Store(pIndex,2,mapParameterToInverval(thisLB,parameterTransformationFunction.Element(-1),false));
-        parameterValuesAndRanges->Store(pIndex,3,mapParameterToInverval(thisUB,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,1,mapParameterToInterval(thisValue,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,2,mapParameterToInterval(thisLB,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,3,mapParameterToInterval(thisUB,parameterTransformationFunction.Element(-1),false));
     }
 
 }
