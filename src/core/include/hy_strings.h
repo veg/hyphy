@@ -767,7 +767,7 @@ public:
  * Find first occurence of the any of the characters marked in the lookup buffer (0/1) between "start" and "end" (inclusive)
  * Uses a sentinel linear search
  * \n\n \b Example: \code _String ("AABBCC").Find('B')\endcode
- * @param lookup The lookup table whioch marks which characters are value
+ * @param lookup The lookup table which marks which characters are value
  * @param start The 0-based index to start searching from
  * @param end   The 0-based index to search to (inclusive); -1 : end of string
  * @return Returns the index of the first instance of the pattern, kNotFound (<0) if not found. 2 in the example
