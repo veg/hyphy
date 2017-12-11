@@ -461,7 +461,7 @@ public:
 
     /* --------- CORPUS FUNCTIONS ------------------ */
 
-    /* funcitons for managing corpus (group of strings) */
+    /* functions for managing corpus (group of strings) */
     void        AddStringToCorpus() {
         itsCorpus.push_back(itsString);
     }

@@ -402,7 +402,7 @@ if (rateVarModelChoice<0)
     return 0;
 }
 	
-/* For models with dual rate variation, input whether NonSynRate should be independent or a multiplicative funtion of synRate, and whether to model synonymous rate variation at the codon level (syn1) or the nucleotide level (syn3): */
+/* For models with dual rate variation, input whether NonSynRate should be independent or a multiplicative function of synRate, and whether to model synonymous rate variation at the codon level (syn1) or the nucleotide level (syn3): */
 multiplicativeNonSynRate = 0;
 nucSynVar = 0;
 if (rateVarModelChoice >= 3)
