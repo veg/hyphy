@@ -1000,7 +1000,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, un
           
             _Variable *node_variable = LocateVar(node_variable_index);
           
-            if (mode == kFormulaStringConversionSubstiteValues) {
+            if (mode == kFormulaStringConversionSubstituteValues) {
                  if  (hy_x_variable && (node_variable->GetAVariable()==hy_x_variable->GetAVariable())) {
                     result << hy_x_variable->GetName();
                     return;
@@ -1424,7 +1424,7 @@ hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol,
       printf ("%ld: %s\n", i+1, _String((_String*)op_i->toStr()).sData);
     }*/
 
-   _String msg ((_String*)toStr(kFormulaStringConversionSubstiteValues));
+   _String msg ((_String*)toStr(kFormulaStringConversionSubstituteValues));
     msg = msg & "=" & rhs;
     if (it < MAX_BRENT_ITERATES) {
         msg =   msg & " has no (or multiple) roots in ["&_String(a)&","&_String(b)&"]";
@@ -1451,7 +1451,7 @@ hyFloat   _Formula::Newton(_Formula& derivative, hyFloat target_value, hyFloat l
     do {
         right += step;
         if (right>max_right) { // function doesn't seem to have a root
-            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
+            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstituteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
             return    left;
         }
         unknown->SetValue(right);
@@ -1480,7 +1480,7 @@ hyFloat   _Formula::Newton(_Variable* unknown, hyFloat target_value, hyFloat x_m
         return right;
     }
     if (t1*t2>0.0) {
-      ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
+      ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstituteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
       return    left;
     }
     // else all is good we can start the machine
@@ -1544,7 +1544,7 @@ hyFloat   _Formula::Newton( _Variable* unknown, hyFloat target_value,hyFloat x_m
         t2 = Integral(unknown, right-step, right);
         step*=2;
         if (right>=1e10) { // function doesn't seem to have a root
-            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
+            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstituteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
             return    0.0;
         }
     } while ((target_value-t1)*(target_value-t2-t1)>=0);

@@ -62,7 +62,7 @@ union       _SimpleFormulaDatum {
 
 enum _hyFormulaStringConversionMode  {
   kFormulaStringConversionNormal = 0L,
-  kFormulaStringConversionSubstiteValues = 2L,
+  kFormulaStringConversionSubstituteValues = 2L,
   kFormulaStringConversionReportRanges = 3L
 };
 

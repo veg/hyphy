@@ -2248,7 +2248,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
               // printf ("\n*** %s\n", ((_String*)result->toStr())->sData);
 
             if (terminate_execution && !result) {
-                  _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionSubstiteValues);
+                  _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionSubstituteValues);
                   errMsg  = new _String(_String("Failed while evaluating: ") & _String((_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionNormal)) & " which expanded to  " & s);
                   throw (1);
                }
