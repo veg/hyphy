@@ -649,7 +649,7 @@ public:
    Retrieve one by list->lData[i]
    *  Revision history
     -SLKP 20170615 reviewed while porting from v3 branch; previous
-   impelementation would not handle empty string splitter;
+   implementation would not handle empty string splitter;
      ]
    */
   const _List Tokenize(_String const &splitter) const;
@@ -659,7 +659,7 @@ public:
      * @param splitter a look table of characters
      * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
      *  Revision history
-     -SLKP 20170912 initial impementation
+     -SLKP 20170912 initial implementation
      
      */
     const _List  Tokenize (const bool splitter[256]) const;
