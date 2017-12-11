@@ -164,7 +164,7 @@ public:
     void        PushTerm            (BaseRef);
 
     /* 20151008: if the argument is a _List, then treat as a list of _Operations and push them onto this formula (increment reference counters as well)
-                 otherwise assume it's a MathObject and push it to this forumla (+1 reference counter)
+                 otherwise assume it's a MathObject and push it to this formula (+1 reference counter)
                  dynamic_cast is used to determine what type of object this is
 
     */
