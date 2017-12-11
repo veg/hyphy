@@ -457,7 +457,7 @@ lfunction CompareCodonProperties(codon1, codon2, code)
 
     	returns a dictionary with the following keys:
 
-    		"NONSYNONYMOUS" : [BOOLEAN] set to 1 if codon1 <-> codon2 is a non-synynomous substitution, otherwise 0
+    		"NONSYNONYMOUS" : [BOOLEAN] set to 1 if codon1 <-> codon2 is a non-synonymous substitution, otherwise 0
     		"DIFFERENCES"   : [INTEGER 0,1,2,3] set to the number of nucleotide differences
     		"BY_POSITION"	: [BOOLEAN MATRIX] a 1x3 matrix, where the i-th entry is 1 if the corresponding nucleotide position is different between the codons
     		"1"				: [1x2 MATRIX]	   nucleotide substitution in position 1 (from -> to) encoded as an index into "ACGT"
