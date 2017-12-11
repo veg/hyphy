@@ -244,7 +244,7 @@ else
 	fprintf (stdout, "\n\nSUMMARY:\n\n\tLRT = ",LRT1);
 	if (LRT1 < 0)
 	{
-		fprintf (stdout, "\n\nERROR: The LRTs was expeceted to be positive.\nPlease check your trees and alignemt");
+		fprintf (stdout, "\n\nERROR: The LRTs was expeceted to be positive.\nPlease check your trees and alignment");
 		return 0;
 	}
 
