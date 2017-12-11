@@ -80,7 +80,7 @@ function obtainBGMParameters (_lfID)
 	BGM_MCMC_SAMPLES					= Max(1,(BGM_MCMC_DURATION-BGM_MCMC_BURNIN)$BGM_MCMC_SAMPLES);
 
 	ChoiceList  (resample,"Ancestral Resampling",1,NO_SKIP,
-				/*0*/ "No","Base inference on the maximum likelihood ancestal reconstruction only",
+				/*0*/ "No","Base inference on the maximum likelihood ancestral reconstruction only",
 				/*1*/ "Yes","In addition to maximum likelihood ancestral states, sample a number (S) of alternative ancestral reconstructions to assess robustness. Runs S additional BGM analyses [MPI Enabled]");		
 
 	if (resample < 0)

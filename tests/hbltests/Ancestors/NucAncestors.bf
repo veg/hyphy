@@ -68,12 +68,12 @@ expectedSequences=
 
 
 DataSet	 				mlAncestors = ReconstructAncestors (_lf_ID);
-DataSetFilter			_AncestalFilter	= CreateFilter (mlAncestors,1);
-GetDataInfo				(_AncestalFilterChars,_AncestalFilter,"CHARACTERS");
+DataSetFilter			_AncestralFilter	= CreateFilter (mlAncestors,1);
+GetDataInfo				(_AncestralFilterChars,_AncestralFilter,"CHARACTERS");
 
-for (k = 0; k < _AncestalFilter.species; k += 1)
+for (k = 0; k < _AncestralFilter.species; k += 1)
 {
-	GetDataInfo (aSeq, _AncestalFilter, k);
+	GetDataInfo (aSeq, _AncestralFilter, k);
 
 	if 	(aSeq != expectedSequences[k])
 	{
@@ -89,9 +89,9 @@ fprintf (stdout, "[OK: ML SEQUENCE RECONSTRUCTION]\n");
 
 _samplingIterates		= 100;
 
-_characterDimension 	= Columns (_AncestalFilterChars);
+_characterDimension 	= Columns (_AncestralFilterChars);
 
-/* indexed linearly by seq*_AncestalFilter.sites + site -> (seq,site)*/
+/* indexed linearly by seq*_AncestralFilter.sites + site -> (seq,site)*/
 _mlInformation			= {};
 /* [(i,j)] -> integer - most likely ancestor or (-1) for gap */
 
@@ -101,16 +101,16 @@ _sampledInformation		= {};
 _marginalInformation	= {};
 /* [(i,j)] -> {chars,1} - marginal support for each character */
 
-GetString   (_AncestralNodeNames, _AncestalFilter, -1);
-GetDataInfo (_AncestalFilterSiteToPatternMap, _AncestalFilter);
+GetString   (_AncestralNodeNames, _AncestralFilter, -1);
+GetDataInfo (_AncestralFilterSiteToPatternMap, _AncestralFilter);
 
 _idx_3 = 0;
 _utility_Vector1 = {1,_characterDimension}["1"];
 _utility_Vector2 = {1,_characterDimension}["_MATRIX_ELEMENT_COLUMN_"];
 
-for (_idx_1 = 0; _idx_1 < _AncestalFilter.species; _idx_1 += 1) {
-	for (_idx_2 = 0; _idx_2 < _AncestalFilter.sites; _idx_2 += 1) {
-		GetDataInfo (_charInfo, _AncestalFilter, _idx_1, _AncestalFilterSiteToPatternMap[_idx_2]);
+for (_idx_1 = 0; _idx_1 < _AncestralFilter.species; _idx_1 += 1) {
+	for (_idx_2 = 0; _idx_2 < _AncestralFilter.sites; _idx_2 += 1) {
+		GetDataInfo (_charInfo, _AncestralFilter, _idx_1, _AncestralFilterSiteToPatternMap[_idx_2]);
 		_whichChar = (_utility_Vector1*_charInfo)[0];
 		if (_whichChar > 1)
 		{
@@ -166,11 +166,11 @@ _outputCSV = ""; _outputCSV * 2048;
 _outputCSV * "Sequence,Site,ML Joint";
 for (_idx_1 = 0; _idx_1 < _characterDimension; _idx_1 = _idx_1 + 1)
 {
-	_outputCSV * (",Sampled "+ _AncestalFilterChars[_idx_1]);
+	_outputCSV * (",Sampled "+ _AncestralFilterChars[_idx_1]);
 }
 for (_idx_1 = 0; _idx_1 < _characterDimension; _idx_1 = _idx_1 + 1)
 {
-	_outputCSV * (",Marginal "+ _AncestalFilterChars[_idx_1]);
+	_outputCSV * (",Marginal "+ _AncestralFilterChars[_idx_1]);
 }
 
 _idx_3 = 0;
@@ -178,7 +178,7 @@ for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 {
 	for (_idx_2 = 0; _idx_2 < _marginalAncestorsFilter.sites; _idx_2 = _idx_2 + 1)
 	{
-		_outputCSV * ("\n" + _AncestralNodeNames[_idx_1] + "," + (1+_idx_2) + "," + _AncestalFilterChars[_mlInformation[_idx_3]]);
+		_outputCSV * ("\n" + _AncestralNodeNames[_idx_1] + "," + (1+_idx_2) + "," + _AncestralFilterChars[_mlInformation[_idx_3]]);
 
 		_maxValue = 0;
 		_maxIndex = 0;
