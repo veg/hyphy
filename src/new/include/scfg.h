@@ -612,7 +612,7 @@ public:
                         // if this list is not empty, then no computations on the current corpus have
                         // been done yet; after the first computation this (and the next) list are
                         // flushed
-                        // It is allocated with enought space to accomodate the longest
+                        // It is allocated with enough space to accomodate the longest
                         // string
 
                         computeFlagsO,      // same, but for outside probabilities
