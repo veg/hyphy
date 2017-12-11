@@ -905,7 +905,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
                         accumulator = _avx_sum_4(sum256);
                         //NOT sure why copy to doubles and add is faster
-                        // that AVX istructions
+                        // that AVX instructions
 #else // _SLKP_USE_AVX_INTRINSICS
                         for (long c = 0; c < alphabetDimensionmod4; c+=4) {
                         // 4 - unroll the loop
