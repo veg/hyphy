@@ -15,10 +15,10 @@
 "Model inference","[EXPERIMENTAL] Infer a customized amino-acid exchangeability matrix from a training data set of protein alignments.","ProteinAnalyses/ProteinGTRfit.bf";
 
 "","Perform a maximum likelihood analysis on a single file given a single tree.","!Basic Analyses";
-"ACD","Analyse codon data with a variery of standard models using given tree.","AnalyzeCodonData.bf";
-"AD","Analyse nucleotide or aminoacid data with a variery of standard models using given tree.","AnalyzeNucProtData.bf";
-"ADN","Analyse di-nucleotide data with a variery of standard models using given tree.","AnalyzeDiNucData.bf";
-"AFD","Analyse nucleotide data with a variery of standard models using given tree, estimating equilibrium frequencies as parameters","AnalyzeNucDataFreq.bf";
+"ACD","Analyse codon data with a variety of standard models using given tree.","AnalyzeCodonData.bf";
+"AD","Analyse nucleotide or aminoacid data with a variety of standard models using given tree.","AnalyzeNucProtData.bf";
+"ADN","Analyse di-nucleotide data with a variety of standard models using given tree.","AnalyzeDiNucData.bf";
+"AFD","Analyse nucleotide data with a variety of standard models using given tree, estimating equilibrium frequencies as parameters","AnalyzeNucDataFreq.bf";
 
 "","Perform codon-based positive selection tests using the models of Kosakovsky Pond and Muse (2005).","!Codon Selection Analyses";
 "ANA","Run a selection analysis.","dNdSRateAnalysis.bf";
