@@ -1,4 +1,4 @@
-function GaussLaguerreQuardature (n,alf)
+function GaussLaguerreQuadrature (n,alf)
 {
 	GLMatrix = {n,2};
 	
@@ -61,7 +61,7 @@ ffunction		GammaQuadWeight (ind, alph, type)
 	cachedAlpha = alph;
 	if (ind == 0)
 	{
-		cachedValues = GaussLaguerreQuardature (resp, alph-1);
+		cachedValues = GaussLaguerreQuadrature (resp, alph-1);
 	}
 	return cachedValues[ind][type];
 }
