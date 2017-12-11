@@ -254,7 +254,7 @@ TEST_F(SimpleListTest, _MergeTest){
 
 
 //TEST_F(SimpleListTest,AmpersandOpTest){
-//    //TODO: Assignment doesn't work approprately
+//    //TODO: Assignment doesn't work appropriately
 //    _SimpleList sl((long)4,(long)1,(long)2); 
 //    _SimpleList sl2((long)4,(long)11,(long)2); 
 //    _SimpleList sl3(sl & sl2);
