@@ -852,10 +852,10 @@ lfunction fubar.scalers.SetBranchLength (model, value, parameter) {
 //------------------------------------------------------------------------------
 
 lfunction fubar.scalers.Constrain (tree_name, node_name, model_description) {
-    parameters.SetProprtionalConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")],
+    parameters.SetProportionalConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")],
                               (model_description[utility.getGlobalValue ("terms.global")])[utility.getGlobalValue ("terms.fubar.branch_length_scaler.alpha")]);
 
-    parameters.SetProprtionalConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.nonsynonymous_rate")],
+    parameters.SetProportionalConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.nonsynonymous_rate")],
                               (model_description[utility.getGlobalValue ("terms.global")])[utility.getGlobalValue ("terms.fubar.branch_length_scaler.beta")]);
 
 }
