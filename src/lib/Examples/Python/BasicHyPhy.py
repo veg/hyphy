@@ -29,7 +29,7 @@ print ("Testing a trivial HyPhy command. 2+2 = ", hyphyResult.sData)
 # passing the second argument of False or 0 will preserve
 # the execution state 
 
-print ("Consecutive command exection")
+print ("Consecutive command execution")
 hyphyInstance.ExecuteBF ("z:=x+y;",False);
 hyphyInstance.ExecuteBF ("x=3;",False);
 hyphyInstance.ExecuteBF ("y=5;",False);
@@ -49,7 +49,7 @@ hyphyResult = hyphyInstance.ExecuteBF ("ExecuteAFile(\"../HBL/F81.bf\")");
 # retrive the standard output, error and runtime warnings
 
 hyphyOut 		= hyphyInstance.GetStdout()
-#errors will be empty UNLESS there was an exection error
+#errors will be empty UNLESS there was an execution error
 hyphyErrors     = hyphyInstance.GetErrors()
 hyphyWarnings	= hyphyInstance.GetWarnings()
 
