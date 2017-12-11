@@ -487,7 +487,7 @@ class _SimpleList:public BaseObj {
     
     
         /**
-        * Retrive the last value and shorted the list by 1
+        * Retrieve the last value and shorted the list by 1
         * Example: SimpleList(1,3,5,7).Pop() = 7 
         * @return Return last value from the list
         */

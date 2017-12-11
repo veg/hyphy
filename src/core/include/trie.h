@@ -234,7 +234,7 @@ class _Trie: public _List
 
         _String*          RetrieveStringFromPath (const _SimpleList& path, _String const * alphabet);
          /**
-         * Given a traversal path of the trie (and an optional cached alphabet), retrive the _String object spelling the path
+         * Given a traversal path of the trie (and an optional cached alphabet), retrieve the _String object spelling the path
          * @param path -- the traversal path (pairs of node index, character index)
          * @param 
          * @return the number of elements successfully deleted (including those not present)

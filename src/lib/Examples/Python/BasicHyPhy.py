@@ -46,7 +46,7 @@ print ("The value of z is ", hyphyResult.sData)
 print ("Executing the example F81.bf file")
 hyphyResult = hyphyInstance.ExecuteBF ("ExecuteAFile(\"../HBL/F81.bf\")");
 
-# retrive the standard output, error and runtime warnings
+# retrieve the standard output, error and runtime warnings
 
 hyphyOut 		= hyphyInstance.GetStdout()
 #errors will be empty UNLESS there was an execution error
