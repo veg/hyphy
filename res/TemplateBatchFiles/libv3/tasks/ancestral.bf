@@ -502,7 +502,7 @@ function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
 	returns an AVL with
 
 	["CHAR"]  - the root character
-	["INDEX"] - the index of the root character (consisent with the data filter representation),
+	["INDEX"] - the index of the root character (consistent with the data filter representation),
 			  - this value will be negative if the root state is ambiguous (e.g. a gap)
 
 	pass this function the ID of ancestral cache
