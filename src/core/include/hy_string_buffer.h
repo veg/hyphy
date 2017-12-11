@@ -232,7 +232,7 @@ public:
   /**
    * Append all characters in the argument string to the buffer
    * delete the buffer object afterwards (respecting reference counts)
-   * @param buffer append characters from stanard HyPhy _String
+   * @param buffer append characters from standard HyPhy _String
    *  Revision history
    - SLKP 20170614 reviewed while porting from v3 branch
    [CHANGE-NOTE SLKP 20170614 return *this for chaining]

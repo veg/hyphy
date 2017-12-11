@@ -195,7 +195,7 @@ function unconstrainGlobalParameters (_lfName) {
 }
 
 /*---------------------------------------------------------*/
-/* prompt for global variabless in a LF and fix their values */
+/* prompt for global variables in a LF and fix their values */
    
 function promptForGlobalParameters (_lfName)
 {
@@ -289,7 +289,7 @@ function restoreGlobalParameters (_paramStash)
 }
 
 /*---------------------------------------------------------*/
-/* take a string row/columqn matrix and turn it into an AVL of 
+/* take a string row/column matrix and turn it into an AVL of 
    the form avl["matrix entry"] = 1 for each matrix entry */
    
 function stringMatrixToAVL (_theList&)
@@ -669,7 +669,7 @@ function _sortStrings (_theList)
 }
 
 /*---------------------------------------------
-construct the frequency vector and a LF mixing componenent for 
+construct the frequency vector and a LF mixing component for 
 a general discrete distribution on numberOfRates rates
 ---------------------------------------------*/
 

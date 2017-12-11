@@ -60,7 +60,7 @@ public:
 
 class AVLListXIterator {
   /** 
-   * A C++ range compiant iterator for _AVLListX
+   * A C++ range compliant iterator for _AVLListX
    */
   
 private:
@@ -90,21 +90,21 @@ public:
   
   /**
    * Return an iterator pointing to the first element of the list
-   * @return the iterator poiting the to the first element fo the list
+   * @return the iterator pointing the to the first element fo the list
   */
   
   AVLListXIterator& end   (void);
 
   /**
    * Return an iterator pointing past the end of the list
-   * @return the iterator poiting past the end of the list
+   * @return the iterator pointing past the end of the list
    */
 
   AVLListXIterator& operator ++ (void);
 
   /**
    * Return an iterator pointing past the end of the list
-   * @return the iterator poiting past the end of the list
+   * @return the iterator pointing past the end of the list
   */
 
   

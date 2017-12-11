@@ -97,7 +97,7 @@ if (parameter2Constrain)
 }
 else
 {
-	fprintf (stdout," the expected number of substituions per that branch.");
+	fprintf (stdout," the expected number of substitutions per that branch.");
 }
 
 fprintf (stdout,"\n\n (*)   corresponds to the .05 significance level\n (**)  corresponds to the .01 significance level\n (***) corresponds to the .001 significance level.\n\n");
@@ -237,7 +237,7 @@ for (firstSpec = 0; firstSpec < speciesCount; firstSpec = firstSpec+1)
 		else
 		{
 			pValue = 1;
-			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encoutered. You may want to increase the optimization precision settings to resolve numerical apporximation errors");
+			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encountered. You may want to increase the optimization precision settings to resolve numerical approximation errors");
 		}
 
 		GetString (secondName,ds,secondSpec);

@@ -218,7 +218,7 @@ lfunction trees.PartitionTree(avl, l) {
 }
 
 /**
- * Loads an annatotaed tree topology from a newick tree
+ * Loads an annotated tree topology from a newick tree
  * @name trees.LoadAnnotatedTopology
  * @param {String|Bool} look_for_newick_tree - If a string, sanitizes and
  *  returns the string. If TRUE, search the alignment file for a newick tree. If

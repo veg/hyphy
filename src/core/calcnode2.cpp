@@ -127,7 +127,7 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
 
 
   /*
-   A1*B1 + A2*B2 + A3*B3 + A4*B4, where A4 = 1-A1-A2-A3 can be done with three multipications
+   A1*B1 + A2*B2 + A3*B3 + A4*B4, where A4 = 1-A1-A2-A3 can be done with three multiplications
    and 3 extra additions, like
 
    A1*(B1-B4) + A2*(B2-B4) + A3*(B3-B4) + B4
@@ -449,7 +449,7 @@ hyFloat  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          update
     // forces the parent to change and preps the parent cache for computations
     // by zeroing everything out
 
-    // flatNodes is the array of indices (post-order traveral) of _internal nodes_
+    // flatNodes is the array of indices (post-order traversal) of _internal nodes_
     // for example ((A,C)N1,D,(B,E)N2)Root will have
     // N1 (index 0), N2 (index 1), Root (index 2) in this array
 
@@ -531,7 +531,7 @@ hyFloat  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          update
                 } else {
                     childVector = lNodeResolutions->theData + (-siteState-1) * alphabetDimension;
                 }
-                // look up the resolution for the ambugious node -- this will have to be on the device as well
+                // look up the resolution for the ambiguous node -- this will have to be on the device as well
                 // but can be in constant memory
             }
 
@@ -905,7 +905,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
                         accumulator = _avx_sum_4(sum256);
                         //NOT sure why copy to doubles and add is faster
-                        // that AVX istructions
+                        // that AVX instructions
 #else // _SLKP_USE_AVX_INTRINSICS
                         for (long c = 0; c < alphabetDimensionmod4; c+=4) {
                         // 4 - unroll the loop
@@ -1176,7 +1176,7 @@ void            _TheTree::ComputeBranchCache    (
         }
     }
 
-    /*printf ("\n\nComputeBranchCache at branch %ld; siteOdering %s\n",
+    /*printf ("\n\nComputeBranchCache at branch %ld; siteOrdering %s\n",
             brID, _String((_String*)siteOrdering.toStr()).sData);
 
     echoNodeList (rootPath,flatLeaves,flatNodes );
@@ -2101,7 +2101,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     _SimpleList     taggedInternals (iNodeCount, 0, 0),
                     postToIn;
 
-    MapPostOrderToInOderTraversal (postToIn);
+    MapPostOrderToInOrderTraversal (postToIn);
     // all nodes except the root
 
     allNodeCount = iNodeCount + leafCount - 1;

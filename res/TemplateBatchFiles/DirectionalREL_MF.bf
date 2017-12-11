@@ -132,15 +132,15 @@ else
 
 }
 
-siteToPartititon = {totalCodonCount,2};
+siteToPartition = {totalCodonCount,2};
 shifter			 = 0;
 for (k=0; k<fileCount; k=k+1)
 {
 	ExecuteCommands ("mySize = nucData_" + (k+1) + ".sites");
 	for (k2 = 0; k2 < mySize; k2 = k2+1)
 	{
-		siteToPartititon[k2+shifter][0] = k;
-		siteToPartititon[k2+shifter][1] = k2;
+		siteToPartition[k2+shifter][0] = k;
+		siteToPartition[k2+shifter][1] = k2;
 	}
 	shifter = shifter + mySize;
 }
@@ -272,7 +272,7 @@ outputcount						= 0;
 
 for (k=0; k<totalCodonCount; k=k+1)
 {
-	thisSite = _substitutionsBySite (ancCacheID[siteToPartititon[k][0]],siteToPartititon[k][1]);
+	thisSite = _substitutionsBySite (ancCacheID[siteToPartition[k][0]],siteToPartition[k][1]);
 	
 	for (char1 = 0; char1 < 20; char1 = char1+1)
 	{

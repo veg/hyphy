@@ -251,7 +251,7 @@ if (MGGYChoice<0)
 
 ChoiceList (nucModelChoice, "Nucleotide Rate Matrix Options",1,SKIP_NONE,
 			"Jukes-Cantor",	 "Single rate type (all substitutions equally likely).",
-			"HKY85","Two rate types (transition/transverion ratio parameter kappa).",
+			"HKY85","Two rate types (transition/transversion ratio parameter kappa).",
 			"REV","Fully reversible model (6 rate types - recommended rate matrix)",
 			"Custom","Arbitrary nucleotide reversible model, except F81."
            );
@@ -402,7 +402,7 @@ if (rateVarModelChoice<0)
     return 0;
 }
 	
-/* For models with dual rate variation, input whether NonSynRate should be independent or a multiplicative funtion of synRate, and whether to model synonymous rate variation at the codon level (syn1) or the nucleotide level (syn3): */
+/* For models with dual rate variation, input whether NonSynRate should be independent or a multiplicative function of synRate, and whether to model synonymous rate variation at the codon level (syn1) or the nucleotide level (syn3): */
 multiplicativeNonSynRate = 0;
 nucSynVar = 0;
 if (rateVarModelChoice >= 3)
@@ -774,7 +774,7 @@ if (MPI_NODE_COUNT>1)
 
 function ReceiveJobs (sendOrNot)
 
-/* This function receieves and processes 
+/* This function receives and processes 
    model results. The parameter is a boolean,
    set to 1 if there are jobs waiting to be sent to
    an MPI node */

@@ -81,7 +81,7 @@ class _List:public _SimpleList {
 
 
         /**
-        * Stack copy contructor
+        * Stack copy constructor
         * @param l List to be copied
         * @param from Beginning index to copy from 
         * @param to Last index to copy to  
@@ -264,7 +264,7 @@ class _List:public _SimpleList {
         virtual void Clear(bool=true);
 
         /**
-        * Delete the item at a given poisiton
+        * Delete the item at a given position
         * if the bool flag is false, then only remove the reference to the object 
         */
         void Delete(long, bool = true);
@@ -274,7 +274,7 @@ class _List:public _SimpleList {
         virtual void Duplicate(BaseRefConst);
 
         /**
-        * Delete the item at a given poisiton
+        * Delete the item at a given position
         */
         virtual void DeleteList(const _SimpleList&);
 

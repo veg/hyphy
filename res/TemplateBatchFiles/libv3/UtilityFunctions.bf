@@ -864,7 +864,7 @@ lfunction utility.GetListOfLoadedModules (filter) {
 
 /**
  * Execute some commands in the global namespace
- * @param commands {String} : the commands to execture
+ * @param commands {String} : the commands to execute
  * @returns None
  */
 function utility.ExecuteInGlobalNamespace (commands) {
@@ -878,7 +878,7 @@ function utility.ExecuteInGlobalNamespace (commands) {
  * @returns {Dictionary} : {"0" : {{"key_11","key_21",...,"key_k1"}}, "1" : {"key_11","key_21",...,"key_k2"}...}
  * or None if something went wrong
  */
-lfunction utility.CatersianProduct (arguments) {
+lfunction utility.CartesianProduct (arguments) {
     if (Type (arguments) != "AssociativeList") {
         return None;
     }

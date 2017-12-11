@@ -1096,7 +1096,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList & 
     _SimpleList     multipliers (1, 1, 0),  // length constructor, populator
 
                     dparents, cparents,
-                    parents_by_nodetype,    // indexes parents separately in mixed family (discete and CG)
+                    parents_by_nodetype,    // indexes parents separately in mixed family (discrete and CG)
 
                     family_nlevels (family_size, 0, 0),     // for fast look-up
                     family_datatype (family_size, 0, 0),

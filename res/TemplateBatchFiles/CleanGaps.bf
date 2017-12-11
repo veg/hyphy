@@ -16,7 +16,7 @@ function _standardAnalysisBFHelp (_what)
 	{
 		_options = {};
 		_options ["Filtering threshold"] = "Minimum percent of informative sequences per site to retain the site";
-		_options ["Informative characters"] = "Define an informative character as either a fully resolved charatcer (e.g. A) or a partial ambiguity (e.g. R)";
+		_options ["Informative characters"] = "Define an informative character as either a fully resolved character (e.g. A) or a partial ambiguity (e.g. R)";
 		return _options
 	}
 	if (_what == "Further")
@@ -29,7 +29,7 @@ function _standardAnalysisBFHelp (_what)
 	}
 	if (_what == "Version")
 	{
-		retrun "1.00";
+		return "1.00";
 	}
 	if (_what == "Date")
 	{
@@ -53,7 +53,7 @@ if (IS_TREE_PRESENT_IN_DATA)
 
 DataSetFilter	    all = CreateFilter (ds, 1, "", "");
 
-options				={{"Completely resolved", "Only count completely unambiguious characters (e.g. A,C,G,T for nucleotides) as informative"}
+options				={{"Completely resolved", "Only count completely unambiguous characters (e.g. A,C,G,T for nucleotides) as informative"}
 					  {"Partially resolved",  "Also count partially resolved characters (e.g. R,Y,M,S etc for nucleotides)"}};
 					  
 

@@ -37,7 +37,7 @@ genetic_code.singleAALetterToFullName = {
     "K": "Lysine",
     "L": "Leucine",
     "M": "Methionine",
-    "N": "Aspargine",
+    "N": "Asparagine",
     "P": "Proline",
     "Q": "Glutamine",
     "R": "Arginine",

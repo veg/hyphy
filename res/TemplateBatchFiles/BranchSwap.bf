@@ -415,7 +415,7 @@ if (globalOption > 0)
 	}
 }
 
-fprintf (stdout, "\n\n***** ", totalRearrangementsTried, " TREE REARRANGEMENTS WERE EXPOLORED *****\n\n",
+fprintf (stdout, "\n\n***** ", totalRearrangementsTried, " TREE REARRANGEMENTS WERE EXPLORED *****\n\n",
 				 "\n\n***** RELATIVE TREE SUPPORT (WITH UN-INFORMATIVE PRIOR): ", 1/totalSupportWeight, " ******\n\n");
 
 if (phaseCounter>1)

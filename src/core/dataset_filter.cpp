@@ -275,7 +275,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
 //_______________________________________________________________________
 
 void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _SimpleList& horizontalList, _SimpleList& verticalList, bool isFilteredAlready) {
-    // we must step thru the underlying dataset and recompute the frequenices
+    // we must step thru the underlying dataset and recompute the frequencies
     // we will store the vertical map in theMap
     // and the horizontal map in theNodeMap
     // theFrequencies will be store the new frequencies
@@ -496,11 +496,11 @@ long    _DataSetFilter::FindSpeciesName (_List& s, _SimpleList& r) const {
 
 void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
   
-    // TODO SLKP 20171002: test this funcion bacause there were many semantic changes including the ability to handle both exclusion states and n-fold gaps
+    // TODO SLKP 20171002: test this function because there were many semantic changes including the ability to handle both exclusion states and n-fold gaps
   
     bool  skip_nfolds = hy_env::EnvVariableTrue(hy_env::skip_omissions);
   
-    if (skip_nfolds || theExc ) { // somthing to do
+    if (skip_nfolds || theExc ) { // something to do
         _SimpleList patterns_to_be_removed;
         if (theExc) {
           hyFloat   *store_vec = new hyFloat [GetDimension(false)];
@@ -539,7 +539,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
         if (patterns_to_be_removed.countitems()) {
           /**
            
-              Deleting all instances of delected patterns; also need to reindex 
+              Deleting all instances of selected patterns; also need to reindex 
               remaining duplicateMap to reference correct remaining indices
               For example, if the original site->pattern map was like this
            
@@ -630,7 +630,7 @@ _DataSetFilter*  _DataSetFilter::PairFilter (long index1, long index2, _DataSetF
 
 void    _DataSetFilter::MatchStartNEnd (_SimpleList& order, _SimpleList& positions, _SimpleList* parent) const {
     // SLKP 20171002: needs to be documented and reviewed
-    // for example, the return represnetaion will break if one has more than 2^16 species
+    // for example, the return representation will break if one has more than 2^16 species
   
     if (order.empty() == 0) {
         return;
@@ -698,8 +698,8 @@ void    _DataSetFilter::SetExclusions (_String const& exclusion_string, bool fil
     
     _AVLList     exclusions (&theExclusions);
   
-    character_list.Tokenize(',').ForEach ([&] (BaseRefConst  exlcusion_character) -> void {
-      _String* kth_token = (_String*)exlcusion_character;
+    character_list.Tokenize(',').ForEach ([&] (BaseRefConst  exclusion_character) -> void {
+      _String* kth_token = (_String*)exclusion_character;
       long character_index = MapStringToCharIndex(*kth_token);
       if (character_index < 0) {
         ReportWarning (_String("Exclusion request for '") & *kth_token &"' does not represent a unique state and will therefore be ignored.");
@@ -1339,8 +1339,8 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                             siteList << theMap.lData[unitLength*site_pattern+si];
                         }
                         
-                        _SimpleList copy_node_oder (theNodeMap);
-                        freqsAtSite     = theData->HarvestFrequencies (unitLength, unitLength, 0, copy_node_oder, siteList);
+                        _SimpleList copy_node_order (theNodeMap);
+                        freqsAtSite     = theData->HarvestFrequencies (unitLength, unitLength, 0, copy_node_order, siteList);
                         if (theExclusions.lLength) {
                             long k = 0,
                             u = GetDimension (false);
@@ -1708,7 +1708,7 @@ _Matrix * _DataSetFilter::HarvestFrequencies (char unit, char atom, bool posSpec
  // the data will be stored column by column
  // if there is a unique code translation, we then store that code in the symbol vector for faster
  // processing during tree pruning business.
- // use a standard convert to frequencies function to check whether a character has a unique convertion
+ // use a standard convert to frequencies function to check whether a character has a unique conversion
  if (intCellSize==1) // char based storage
  {
  union

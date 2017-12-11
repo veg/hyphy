@@ -101,8 +101,8 @@ slac.table_headers = {{"ES", "Expected synonymous sites"}
                       {"S", "Inferred synonymous substitutions"}
                       {"N", "Inferred non-synonymous substitutions"}
                       {"P[S]", "Expected proportion of synonymous sites"}
-                      {"dS", "Inferred synonymous susbsitution rate"}
-                      {"dN", "Inferred non-synonymous susbsitution rate"}
+                      {"dS", "Inferred synonymous substitution rate"}
+                      {"dN", "Inferred non-synonymous substitution rate"}
                       {"dN-dS", "Scaled by the length of the tested branches"}
                       {"P [dN/dS > 1]", "Binomial probability that S is no greater than the observed value, with P<sub>s</sub> probability of success"}
                       {"P [dN/dS < 1]", "Binomial probability that S is no less than the observed value, with P<sub>s</sub> probability of success"}
@@ -505,7 +505,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
            5 dS
            6 dN
            7 dN-dS (scaled)
-           8 P {S <= observed} // posititve sel
+           8 P {S <= observed} // positive sel
            9 P {S >= observed} // negative sel
            10 effective branch length
 

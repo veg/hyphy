@@ -34,7 +34,7 @@ function add_branching_rule (ntL, ntR1, ntR2, prob_string)
 		append production rule to associative list of
 		form X->YZ, using string arguments ntL->ntR1 ntR2
 		and a string expressing probability as a function 
-		of global varaibles
+		of global variables
 	*/
 	
 	ntL_index = non_terminals[ntL];
@@ -183,7 +183,7 @@ function attach_corpus (scfg_string)
 	SetDialogPrompt ("Select file containing corpus text");
 	
 	fscanf (PROMPT_FOR_FILE, "Lines", input);
-	corpus = Tranpose(input);
+	corpus = Transpose(input);
 	ExecuteCommands("SetParameter ("+scfg_string+", SCFG_STRING_CORPUS, corpus);");
 	
 	return corpus;

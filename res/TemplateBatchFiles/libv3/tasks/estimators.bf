@@ -58,7 +58,7 @@ lfunction estimators.GetGlobalMLE(results, tag) {
 /**
  * @name estimators.GetBranchEstimates
  * @param {Dictionary} results
- * @param {Number} partiton_index
+ * @param {Number} partition_index
  * @param {String} node_name
  * @returns None
  */
@@ -136,8 +136,8 @@ function estimators.copyGlobals(key, value) {
  * @param {Dictionary} value
  * @returns nothing
  */
-function estimators.CopyFrequencies(model_name, model_decription) {
-    (estimators.ExtractMLEs.results[terms.efv_estimate])[model_name] = model_decription[terms.efv_estimate];
+function estimators.CopyFrequencies(model_name, model_description) {
+    (estimators.ExtractMLEs.results[terms.efv_estimate])[model_name] = model_description[terms.efv_estimate];
 }
 
 
@@ -287,7 +287,7 @@ function estimators.branch_lengths_in_string.map(id, value) {
  * @name estimators.branch_lengths_in_string
  * @param {String} tree_id
  * @param {String} lookup
- * @returns {String} branch lenghts in tree string
+ * @returns {String} branch lengths in tree string
  */
 function estimators.branch_lengths_in_string(tree_id, lookup) {
     estimators.branch_lengths_in_string.lookup = {};

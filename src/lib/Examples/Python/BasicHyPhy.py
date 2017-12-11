@@ -29,7 +29,7 @@ print ("Testing a trivial HyPhy command. 2+2 = ", hyphyResult.sData)
 # passing the second argument of False or 0 will preserve
 # the execution state 
 
-print ("Consecutive command exection")
+print ("Consecutive command execution")
 hyphyInstance.ExecuteBF ("z:=x+y;",False);
 hyphyInstance.ExecuteBF ("x=3;",False);
 hyphyInstance.ExecuteBF ("y=5;",False);
@@ -46,10 +46,10 @@ print ("The value of z is ", hyphyResult.sData)
 print ("Executing the example F81.bf file")
 hyphyResult = hyphyInstance.ExecuteBF ("ExecuteAFile(\"../HBL/F81.bf\")");
 
-# retrive the standard output, error and runtime warnings
+# retrieve the standard output, error and runtime warnings
 
 hyphyOut 		= hyphyInstance.GetStdout()
-#errors will be empty UNLESS there was an exection error
+#errors will be empty UNLESS there was an execution error
 hyphyErrors     = hyphyInstance.GetErrors()
 hyphyWarnings	= hyphyInstance.GetWarnings()
 
@@ -64,7 +64,7 @@ del hyphyOut
 del hyphyErrors
 del hyphyWarnings
 
-# A tighter intergration can be achieved by defining a retrieval function 
+# A tighter integration can be achieved by defining a retrieval function 
 # with the reserved name _THyPhyAskFor in the HBL file; it retrieves data
 # by key and returns them in a internal format that can be converted 
 # to one of the basic return types: number, string or matrix

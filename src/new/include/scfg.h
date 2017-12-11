@@ -351,7 +351,7 @@ public:
     // store various diagnostics about the grammar into the list
 
     virtual _String*            SpawnRandomString       (long = -1, _SimpleList* = nil);
-    // generate a random string using current production probabiltities
+    // generate a random string using current production probabilities
     // the argument is the index of a non-terminal (or -1 for the start)
     // from which to generate a substring (called recursively)
     // the string argument is the storage, created by the first call
@@ -461,7 +461,7 @@ public:
 
     /* --------- CORPUS FUNCTIONS ------------------ */
 
-    /* funcitons for managing corpus (group of strings) */
+    /* functions for managing corpus (group of strings) */
     void        AddStringToCorpus() {
         itsCorpus.push_back(itsString);
     }
@@ -612,25 +612,25 @@ public:
                         // if this list is not empty, then no computations on the current corpus have
                         // been done yet; after the first computation this (and the next) list are
                         // flushed
-                        // It is allocated with enought space to accomodate the longest
+                        // It is allocated with enough space to accomodate the longest
                         // string
 
                         computeFlagsO,      // same, but for outside probabilities
 
                         firstArray,         // an NTxT array (stored as a flat vector), where (i,j)-th element is set to one iff
-                        // i-th non terminal can be used to generate a substing beginning with the j-th terminal
+                        // i-th non terminal can be used to generate a substring beginning with the j-th terminal
                         // otherwise the element is 0 (i.e. {i} => j ....)
 
                         lastArray,          // an NTxT array (stored as a flat vector), where (i,j)-th element is set to one iff
-                        // i-th non terminal can be used to generate a substing ending with the j-th terminal
+                        // i-th non terminal can be used to generate a substring ending with the j-th terminal
                         // otherwise the element is 0 (i.e. {i} => .... j)
 
                         precursorArray,     // an NTxT array (stored as a flat vector), where (i,j)-th element is set to one iff
-                        // i-th non terminal can be used to generate an incompletely resolved substing beginning
+                        // i-th non terminal can be used to generate an incompletely resolved substring beginning
                         // with the j-th terminal, followed by the i-th non-terminal (i.e. {start} => ... j {i} ... )
 
                         followArray;        // an NTxT array (stored as a flat vector), where (i,j)-th element is set to one iff
-    // i-th non terminal can be used to generate an incompletely resolved substing ending
+    // i-th non terminal can be used to generate an incompletely resolved substring ending
     // with the i-th non-terminal, followed by the j-th terminal (i.e. {start} => ... {i} j ...)
 
     _Matrix             probabilities;      // This is a matrix array of formulae which describe production rule probabilities

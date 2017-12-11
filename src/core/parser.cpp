@@ -671,14 +671,14 @@ _String const&  AppendContainerName (_String const& inString, _VariableContainer
 }
 
 //__________________________________________________________________________________
-_String const&  AppendContainerName (_String const& inString, _String const* namescp) {
+_String const&  AppendContainerName (_String const& inString, _String const* namespc) {
     static _String returnMe;
 
     if (_hy_application_globals.Find (&inString) >= 0) {
         return inString;
     }
     
-    hy_reference_type reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && !namescp -> empty() ? namescp : nil);
+    hy_reference_type reference_type = inString.ProcessVariableReferenceCases (returnMe, namespc && !namespc -> empty() ? namespc : nil);
     
 
     if (reference_type != kStringInvalidReference) {
@@ -1184,7 +1184,7 @@ void  FinishDeferredSF (void)
         for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
             _Variable* theV = FetchVar(i);
             if (theV->IsContainer()) {
-                ((_VariableContainer*)theV)->SetMDependance (*deferSetFormula);
+                ((_VariableContainer*)theV)->SetMDependence (*deferSetFormula);
             }
         }
 

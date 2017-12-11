@@ -69,7 +69,7 @@ while (SAMPLE_M < 1 || SAMPLE_M > SAMPLE_N)
 varCount = Abs(COVARIANCE_PARAMETER);
 usedVars = Rows(COVARIANCE_PARAMETER);
 
-fprintf (stdout, "\nObtaining profile likeihood bounds...\n");
+fprintf (stdout, "\nObtaining profile likelihood bounds...\n");
 
 svpc = COVARIANCE_PRECISION;
 

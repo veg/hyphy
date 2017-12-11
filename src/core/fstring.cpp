@@ -606,7 +606,7 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
         return NotEqual(arg0);
       case HY_OP_CODE_IDIV: // $ match regexp
         return EqualRegExp(arg0);
-      case HY_OP_CODE_MOD: // % equal case insenstive
+      case HY_OP_CODE_MOD: // % equal case insensitive
         return AreEqualCIS(arg0);
       case HY_OP_CODE_AND: { // && upcase or lowercase
         hyFloat pVal = 0.0;
@@ -709,7 +709,7 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
   switch (opCode) {
     case HY_OP_CODE_NEQ: // !=
     case HY_OP_CODE_IDIV: // $ match regexp
-    case HY_OP_CODE_MOD: // % equal case insenstive
+    case HY_OP_CODE_MOD: // % equal case insensitive
     case HY_OP_CODE_AND:// && upcase or lowercase
     case HY_OP_CODE_DIV: // /
     case HY_OP_CODE_LESS: // <

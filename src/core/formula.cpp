@@ -857,7 +857,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
     all_constant = all_constant && left_constant && (n_children==1 || right_constant);
 
     if (op->opCode > HY_OP_CODE_NONE) {
-        if (all_constant) { // this executes the subxpression starting at the current node
+        if (all_constant) { // this executes the subexpression starting at the current node
             _Stack scrap;
             for  (unsigned long k=1UL; k<=n_children; k++) {
                 ((_Operation*)theFormula (top_node->go_down(k)->get_data()))->Execute (scrap);
@@ -1000,7 +1000,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, un
           
             _Variable *node_variable = LocateVar(node_variable_index);
           
-            if (mode == kFormulaStringConversionSubstiteValues) {
+            if (mode == kFormulaStringConversionSubstituteValues) {
                  if  (hy_x_variable && (node_variable->GetAVariable()==hy_x_variable->GetAVariable())) {
                     result << hy_x_variable->GetName();
                     return;
@@ -1156,7 +1156,7 @@ bool     _Formula::IsEmpty(void) const {
 //__________________________________________________________________________________
 hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat target_value, hyFloat left, hyFloat right) {
     // find a root of the formulaic expression, using Newton's method, given the derivative and a bracketed root.
-    // will alternate between bisections and Newton iterations based on what is fatser
+    // will alternate between bisections and Newton iterations based on what is faster
     // check that there is indeed a sign change on the interval
   
   auto set_and_compute = [&] (hyFloat x) -> hyFloat {
@@ -1424,7 +1424,7 @@ hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol,
       printf ("%ld: %s\n", i+1, _String((_String*)op_i->toStr()).sData);
     }*/
 
-   _String msg ((_String*)toStr(kFormulaStringConversionSubstiteValues));
+   _String msg ((_String*)toStr(kFormulaStringConversionSubstituteValues));
     msg = msg & "=" & rhs;
     if (it < MAX_BRENT_ITERATES) {
         msg =   msg & " has no (or multiple) roots in ["&_String(a)&","&_String(b)&"]";
@@ -1451,7 +1451,7 @@ hyFloat   _Formula::Newton(_Formula& derivative, hyFloat target_value, hyFloat l
     do {
         right += step;
         if (right>max_right) { // function doesn't seem to have a root
-            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
+            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstituteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
             return    left;
         }
         unknown->SetValue(right);
@@ -1480,7 +1480,7 @@ hyFloat   _Formula::Newton(_Variable* unknown, hyFloat target_value, hyFloat x_m
         return right;
     }
     if (t1*t2>0.0) {
-      ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
+      ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstituteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
       return    left;
     }
     // else all is good we can start the machine
@@ -1544,7 +1544,7 @@ hyFloat   _Formula::Newton( _Variable* unknown, hyFloat target_value,hyFloat x_m
         t2 = Integral(unknown, right-step, right);
         step*=2;
         if (right>=1e10) { // function doesn't seem to have a root
-            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
+            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstituteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
             return    0.0;
         }
     } while ((target_value-t1)*(target_value-t2-t1)>=0);
@@ -1555,7 +1555,7 @@ hyFloat   _Formula::Newton( _Variable* unknown, hyFloat target_value,hyFloat x_m
 //__________________________________________________________________________________
 
 hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool infinite) {
-// uses Romberg's intergation method
+// uses Romberg's integration method
     if (infinite) { // tweak "right" here
         hyFloat value = 1.0, step = 1.0, right1= -1.;
         right = left;
@@ -1662,7 +1662,7 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
 }
   //__________________________________________________________________________________
 hyFloat  InterpolateValue (hyFloat* theX, hyFloat* theY, long n, hyFloat *c , hyFloat *d, hyFloat x, hyFloat& err) {
-    // Neville's algoruthm for polynomial interpolation (Numerical Recipes' rawinterp)
+    // Neville's algorithm for polynomial interpolation (Numerical Recipes' rawinterp)
   hyFloat y,
   den,
   dif = 1e10,
@@ -2377,7 +2377,7 @@ _PMathObj _Formula::ConstructPolynomial (void) {
 }
 
 //__________________________________________________________________________________
-bool _Formula::HasChanged (bool ingoreCats) {
+bool _Formula::HasChanged (bool ignoreCats) {
     unsigned long const upper_bound = NumberOperations();
   
     for (unsigned long i=0UL; i<upper_bound; i++) {
@@ -2387,7 +2387,7 @@ bool _Formula::HasChanged (bool ingoreCats) {
         if (this_op->IsAVariable()) {
             data_id = this_op->GetAVariable();
             if (data_id>=0) {
-                if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[data_id]))->HasChanged(ingoreCats)) {
+                if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[data_id]))->HasChanged(ignoreCats)) {
                     return true;
                 }
             } else if (this_op->theNumber->HasChanged()) {

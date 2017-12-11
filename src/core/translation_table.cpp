@@ -143,7 +143,7 @@ char _TranslationTable::AmbigToLetter(long *split,
   }
 
   if (baseSet.length() == 0)
-  // one of the standard alphabers
+  // one of the standard alphabets
   {
     if (baseLength == 4)
     // nucleotides

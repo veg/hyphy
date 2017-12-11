@@ -63,7 +63,7 @@ _CalcNode::_CalcNode    () {
 //_______________________________________________________________________________________________
 _CalcNode::_CalcNode    (_String name, _String parms, int codeBase, _VariableContainer* theP, _AVLListXL* aCache):_VariableContainer (name, "", theP) {
     // construct a node from a string of the form
-    // matrix name, <optional comma separated variable declarations, inititalizations>
+    // matrix name, <optional comma separated variable declarations, initializations>
     // also should be passed the pointer to a container tree
     InitializeCN (parms, codeBase, theP, aCache);
 }
@@ -189,8 +189,8 @@ void    _CalcNode::SetModel (long modelID, _AVLListXL* varCache)
 
 //_______________________________________________________________________________________________
 
-long      _CalcNode::SetDependance (long varIndex) {
-    varIndex = _VariableContainer::SetDependance (varIndex);
+long      _CalcNode::SetDependence (long varIndex) {
+    varIndex = _VariableContainer::SetDependence (varIndex);
     if (varIndex >= 0) {
         _SimpleList checkVars;
         _AVLList    myVars (&checkVars);
@@ -943,7 +943,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
         remapMyCategories.Populate (totalCategories*entriesPerCat,0,0);
         
         _SimpleList     remappedIDs,
-        rateMultiplers (categoryVariables.lLength,1,0),
+        rateMultipliers (categoryVariables.lLength,1,0),
         categoryValues (globalCatCount+1,0,0);
         
         for (long myCatID = 0; myCatID <= catCount; myCatID++) {
@@ -956,7 +956,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
         }
         
         for (long myCatID = catCount-1; myCatID >= 0; myCatID--) {
-            rateMultiplers.lData[myCatID] = rateMultiplers.lData[myCatID+1]*classCounter.lData[remappedIDs.lData[myCatID+1]];
+            rateMultipliers.lData[myCatID] = rateMultipliers.lData[myCatID+1]*classCounter.lData[remappedIDs.lData[myCatID+1]];
         }
         
         for (long currentRateCombo  = 0; currentRateCombo < totalCategories; currentRateCombo++) {
@@ -970,7 +970,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
             long localCatID = 0;
             
             for  (long localVariableID = 0; localVariableID<=catCount; localVariableID++) {
-                localCatID += rateMultiplers.lData[localVariableID] * categoryValues.lData[remappedIDs.lData[localVariableID]];
+                localCatID += rateMultipliers.lData[localVariableID] * categoryValues.lData[remappedIDs.lData[localVariableID]];
             }
             
             long offset = currentRateCombo * entriesPerCat;

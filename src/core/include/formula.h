@@ -62,7 +62,7 @@ union       _SimpleFormulaDatum {
 
 enum _hyFormulaStringConversionMode  {
   kFormulaStringConversionNormal = 0L,
-  kFormulaStringConversionSubstiteValues = 2L,
+  kFormulaStringConversionSubstituteValues = 2L,
   kFormulaStringConversionReportRanges = 3L
 };
 
@@ -164,7 +164,7 @@ public:
     void        PushTerm            (BaseRef);
 
     /* 20151008: if the argument is a _List, then treat as a list of _Operations and push them onto this formula (increment reference counters as well)
-                 otherwise assume it's a MathObject and push it to this forumla (+1 reference counter)
+                 otherwise assume it's a MathObject and push it to this formula (+1 reference counter)
                  dynamic_cast is used to determine what type of object this is
 
     */
@@ -190,8 +190,8 @@ public:
 
     hyFloat  Brent               (_Variable*, hyFloat, hyFloat, hyFloat = 1.e-7, _List* = nil, hyFloat = 0.);
 
-    hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool inifinite = false);
-    hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool inifinite = false);
+    hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool infinite = false);
+    hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool infinite = false);
     _Formula*   Differentiate       (_String const&, bool = true, bool convert_from_tree = true);
     node<long>* InternalDifferentiate
     (node<long>*, long,_SimpleList const &, _Formula  * const *, _Formula&);
@@ -219,7 +219,7 @@ public:
       @param expression : the string to parse
       @param use_exceptions : if true, throw const _String exceptions, otherwise handle errors directly 
       @param requested_type: return nil if the computed value is not of this type
-      @param formula parsing contrext
+      @param formula parsing context
      
       @return expression value or nil; the value needs to be managed by the caller
       Revision history

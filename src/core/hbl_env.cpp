@@ -106,7 +106,7 @@ namespace hy_env {
     }
     /**
         arrange variables alphabetically by C++ ID for easier scanning;
-        defaut  values are stored can be obtained by calling
+        default  values are stored can be obtained by calling
             EnvVariableGetDefault
      
      */
@@ -171,7 +171,7 @@ _String const
         // this is helpful when many x := expr statements are strung together to avoid
         // checking the entire namespace for dependancies
     end_of_file                                     ("END_OF_FILE"),
-        // set by IO operations, like fscanf to indicate whetehr the end of the input stream has
+        // set by IO operations, like fscanf to indicate whether the end of the input stream has
         // been reached
     error_report_format_expression                  ("ERROR_REPORT_FORMAT_EXPRESSION"),
         // if provided, this expression (assumed string valued), will be used to format the error
@@ -189,7 +189,7 @@ _String const
     // TRUE  - return from the current execution list, but keep the program running (e.g. to allow for HBL testing of error handling)
 
     get_data_info_returns_only_the_index            ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
-    // instead of returing {0,0,1,0} for a 'G' character in GetDataInfo (r, filter, species, pattern)
+    // instead of returning {0,0,1,0} for a 'G' character in GetDataInfo (r, filter, species, pattern)
     // return only the index of 'G', e.g. 2 in this case. -1 is returned for ambigs
     false_const                                     ("FALSE"),
         // the FALSE (0.0) constant
@@ -225,7 +225,7 @@ _String const
     message_logging                                 ("MESSAGE_LOGGING"),
         // if set, then diagnostic messages will be logged
     mpi_node_id                                     ("MPI_NODE_ID"),
-        // [MPI only] the ID (0 = master, etc) for teh current process
+        // [MPI only] the ID (0 = master, etc) for the current process
     mpi_node_count                                  ("MPI_NODE_COUNT"),
         // [MPI only] the count of MPI nodes (master + slaves)
     mpi_last_sent_message                           ("MPI_LAST_SENT_MSG"),

@@ -1484,7 +1484,7 @@ _PMathObj   _Matrix::CholeskyDecompose (void) const
 {
     /* ---------------------------------------------------
         CholeskyDecompose()
-            Constrcts lower triangular matrix L such that
+            Constructs lower triangular matrix L such that
             its own transpose can serve as upper part in
             LU decomposition.
             Requires that matrix is symmetric and positive
@@ -2675,7 +2675,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
                     }
                 }
             }
-            // check for probablilty matrices * fillers
+            // check for probability matrices * fillers
             if ((hDim==vDim)&&(!replace))
                 for (long i = 0; i<hDim; i++) {
                     long k = Hash(i,i);
@@ -2711,7 +2711,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
                     }
                 }
             }
-            // check for probablilty matrices * fillers
+            // check for probability matrices * fillers
 
             if ((hDim==vDim)&&(!replace))
                 for (long i = 0; i<lDim; i+=vDim+1) {
@@ -4219,7 +4219,7 @@ bool    _Matrix::is_empty (void) const {
 //_____________________________________________________________________________________________
 
 hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
-// returns matrix's smalles non-zero abs value element
+// returns matrix's smallest non-zero abs value element
 {
     if (storageType == 1) {
         hyFloat min = DBL_MAX;
@@ -4551,7 +4551,7 @@ _Matrix*    _Matrix::Exponentiate (void)
 
         _Matrix tempS (hDim, vDim, false, temp.storageType);
         do {
-            temp.MultbyS        (*this,theIndex!=nil, &tempS, stash);
+            temp.MultByS        (*this,theIndex!=nil, &tempS, stash);
             temp      *= 1.0/i;
             (*result) += temp;
             i         ++;
@@ -6300,7 +6300,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes) {
      this    : Nx2 matrix {{value1, count1}{value2, count 2}...}}
      classes : 2x1 matrix {{cluster count}{number of random restarts}}
      
-     reutn   : 2 x Max (cluster count, 2)  {{cluster mean 1, cluster mean 2, ... , cluster mean N}{total L^2 error, how many restarts hit the min}}
+     return   : 2 x Max (cluster count, 2)  {{cluster mean 1, cluster mean 2, ... , cluster mean N}{total L^2 error, how many restarts hit the min}}
      
      */
     
@@ -6774,7 +6774,7 @@ void        _Matrix::operator *= (_Matrix& m)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage, hyFloat* stash)
+void        _Matrix::MultByS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage, hyFloat* stash)
 {
     _Matrix * result = nil;
     if (!externalStorage) {
@@ -7488,7 +7488,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
     long          specCount = GetHDim();
 
     if (storageType != 1 ||  specCount!= GetVDim() || specCount < 4) {
-        HandleApplicationError ("NeigborJoin needs a square numeric matrix of dimension >= 4");
+        HandleApplicationError ("NeighborJoin needs a square numeric matrix of dimension >= 4");
         return    new _Matrix;
     }
 
@@ -8039,7 +8039,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision ) {
                         }
                         tempMatrix.Store (m+1,k,-q);
                     }
-                    while (1) { // initial artifical construct
+                    while (1) { // initial artificial construct
                         long        pivotColumn,
                                     ip;
                         hyFloat  pivotValue;

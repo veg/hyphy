@@ -417,7 +417,7 @@ while (1)
 }
 
 
-/* 17. Report inferred rate distribition to screen */
+/* 17. Report inferred rate distribution to screen */
 
 if (modelKind == 0)
 {
@@ -459,15 +459,15 @@ for (k=1; k<=rateClasses;k=k+1)
 }
 
 /* convert distribution info to the form expected by OpenWindow */
-disributionInfo = "site_kind";
+distributionInfo = "site_kind";
 
 for (k = 0; k < rateClasses; k=k+1)
 {
-	disributionInfo = disributionInfo + ":" + siteProfile[1][k];
+	distributionInfo = distributionInfo + ":" + siteProfile[1][k];
 }
 for (k = 0; k < rateClasses; k=k+1)
 {
-	disributionInfo = disributionInfo + ":" + siteProfile[0][k];
+	distributionInfo = distributionInfo + ":" + siteProfile[0][k];
 }
 
 OpenWindow (DISTRIBUTIONWINDOW,{{"Conditional probabilities by site"}
@@ -486,7 +486,7 @@ OpenWindow (DISTRIBUTIONWINDOW,{{"Conditional probabilities by site"}
 		{"Times:12:0;Times:10:0;Times:12:2"}
 		{"0;0;13816530;16777215;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
 		{"16,0,0"}
-		{disributionInfo}
+		{distributionInfo}
 		},
 		"600;600;50;50");
 		

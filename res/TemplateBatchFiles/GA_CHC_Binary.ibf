@@ -171,7 +171,7 @@ function convertBase (vect1, base1, base2, length1)
 		outVect = multNumbers (digitVect, outVect, convLength, convLength, Columns(digitVect), base1);
 	}
 	/*
-	fprintf (stdout, "Converted a vector (", length1, ") from base ", base2, " to base ", base1," output lentgh ", Columns (output), "\n");
+	fprintf (stdout, "Converted a vector (", length1, ") from base ", base2, " to base ", base1," output length ", Columns (output), "\n");
 	*/
 	return output;
 }
@@ -584,9 +584,9 @@ for (generation=0; generation<generationCount; generation=generation+1)
 		h = Abs((sortedScores[populationSize-1][0]-sortedScores[0][0])/sortedScores[0][0]);
 		if (verboseFlag)
 		{
-			fprintf (stdout, "Diversity level: ", h, " (hypermutation threshold: ", mutationThreshhold, ")\n");	
+			fprintf (stdout, "Diversity level: ", h, " (hypermutation threshold: ", mutationThreshold, ")\n");	
 		}
-		if (h<mutationThreshhold)
+		if (h<mutationThreshold)
 		{
 			if (verboseFlag)
 			{

@@ -90,8 +90,8 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
             (branch_info[utility.getGlobalValue("terms.amino_acid")])[s] = code_lookup[code];
         }
 
-        utility.ForEach (utility.Keys (branch_info), "slac.substituton_mapper.key",
-                         "(`&result`[slac.substituton_mapper.key])[`&bname`] = `&branch_info`[slac.substituton_mapper.key]");
+        utility.ForEach (utility.Keys (branch_info), "slac.substitution_mapper.key",
+                         "(`&result`[slac.substitution_mapper.key])[`&bname`] = `&branch_info`[slac.substitution_mapper.key]");
 
      }
 

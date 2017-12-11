@@ -62,8 +62,8 @@ GetDataInfo 	(_marginalFilterSiteToPatternMap, filteredData);
 GetString		(_AncestralNodeNames, _marginalAncestorsFilter, -1);
 
 _idx_3 = 0;
-GetDataInfo				(_AncestalFilterChars,_marginalAncestorsFilter,"CHARACTERS");
-_characterDimension 	= Columns (_AncestalFilterChars);
+GetDataInfo				(_AncestralFilterChars,_marginalAncestorsFilter,"CHARACTERS");
+_characterDimension 	= Columns (_AncestralFilterChars);
 
 
 _marginalInformation	= {};

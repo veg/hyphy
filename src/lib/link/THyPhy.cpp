@@ -69,14 +69,14 @@ extern long systemCPUCount;
 _THyPhy * globalInterfaceInstance = nil;
 
 //_________________________________________________________
-// default callback hanlder
+// default callback handler
 bool _tHyPhyDefaultHandler (const char*,int,double)
 {
     return true;
 }
 
 //_________________________________________________________
-// default callback hanlder
+// default callback handler
 //void SetGlobalInterfaceInstance (const _THyPhy* hi)
 //{
 //  globalInterfaceInstance = hi;
@@ -468,10 +468,10 @@ _THyPhyReturnObject* _THyPhy::CastResult (const void* theObject, const int reque
             }
 
             if (hyphyObjClass == MATRIX) {
-                _Matrix * evalutedNumeric =  (_Matrix*)((_Matrix*)(((_PMathObj)theObject)->Compute()))
+                _Matrix * evaluatedNumeric =  (_Matrix*)((_Matrix*)(((_PMathObj)theObject)->Compute()))
                                              ->ComputeNumeric();
 
-                return new _THyPhyMatrix (evalutedNumeric->GetHDim(),evalutedNumeric->GetVDim(),evalutedNumeric->theData);
+                return new _THyPhyMatrix (evaluatedNumeric->GetHDim(),evaluatedNumeric->GetVDim(),evaluatedNumeric->theData);
             }
         }
         }

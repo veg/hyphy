@@ -160,7 +160,7 @@ public:
 
     void        MStore (long, long, _Formula&, long = -1);
     bool        MResolve (_PMathObj, _PMathObj, long&, long&);
-    // resolve coordiates from two Number arguments
+    // resolve coordinates from two Number arguments
 
     bool        CheckCoordinates ( long&, long&);
     // validate matrix coordinates
@@ -570,7 +570,7 @@ private:
 
     //bool      IsAStringMatrix     (void);
     void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
-    // aux arithmetic rountines
+    // aux arithmetic routines
     bool        AddWithThreshold    (_Matrix&, hyFloat);
     void        RowAndColumnMax     (hyFloat&, hyFloat&, hyFloat* = nil);
     void        Subtract            (_Matrix&, _Matrix&);
@@ -583,11 +583,11 @@ private:
     long        HashBack            (long) const;
     // hashing function, which finds matrix
     // physical element given local storage
-    void        MultbyS             (_Matrix&,bool,_Matrix* = nil, hyFloat* = nil);
+    void        MultByS             (_Matrix&,bool,_Matrix* = nil, hyFloat* = nil);
     // internal function used in exponentiating sparse matrices
 
     void        Balance             (void);  // perform matrix balancing; i.e. a norm reduction which preserves the eigenvalues
-    // lifted from balanc function in NR
+    // lifted from balance function in NR
 
     void        Schur               (void);  // reduce the matrix to Hessenberg form preserving eigenvalues
     // lifted from elmhes function in NR

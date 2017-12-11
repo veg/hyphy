@@ -38,7 +38,7 @@ function ReportDistributionString (rc)
                                        
         if (bivariateFitHasMultipleCladeRates > 1)
         {
-            distroString * "\n\tBranch group-pecific dN/dS";
+            distroString * "\n\tBranch group-specific dN/dS";
         
             for (mi2 = 1; mi2 < bivariateFitHasMultipleCladeRates; mi2 += 1)
             {
@@ -187,7 +187,7 @@ if (runType == 0)
 	{
 		ChoiceList (stratDNDS, "dN/dS Stratification",1,SKIP_NONE,
 					"Unconstrained",	 "Do not place constraints on dN/dS classes.",
-					"Split",	 "Assign all dN/dS classes to negative/neutral/positive clases.");
+					"Split",	 "Assign all dN/dS classes to negative/neutral/positive classes.");
 		if (stratDNDS<0)
 		{
 			return 0;

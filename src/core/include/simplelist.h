@@ -71,7 +71,7 @@ class _SimpleList:public BaseObj {
         //length constructor
         _SimpleList(unsigned long);
 
-        // stack copy contructor
+        // stack copy constructor
         _SimpleList(_SimpleList const&,long=0,long=-1);
 
         // data constructor (1 member list)
@@ -130,7 +130,7 @@ class _SimpleList:public BaseObj {
         * Retrieve the element in position index if index if positive or
         * length + index if index is negative
         * Example: SimpleList(1,3,5,7).GetElement(1) = 3, SimpleList(1,3,5,7).GetElement(-1) = 7 
-        * @param index The index of the elemnt to retrieve 
+        * @param index The index of the element to retrieve 
         * @return the value of the element at the specified index.
         */
         long GetElement (const long index) const;
@@ -199,7 +199,7 @@ class _SimpleList:public BaseObj {
         */
         void DebugVarList(void);
 
-        // delete the item at a given poisiton
+        // delete the item at a given position
         void Delete(long, bool=true);
 
         virtual void Duplicate(BaseRefConst);
@@ -250,7 +250,7 @@ class _SimpleList:public BaseObj {
          */
         long CorrectForExclusions (long index, long excluded = -1) const;
 
-        /** Adjust the [sorted] list of indcies argument for skipped elements in the [0-max] range
+        /** Adjust the [sorted] list of indices argument for skipped elements in the [0-max] range
          * so that the arguments is remapped to the range with elements in this
          * list excluded. (*this) list must be sorted
          * Example: SimpleList (2,4,5).SkipCorrect ([2,3],2) = 1 (and the list is now [2])
@@ -487,7 +487,7 @@ class _SimpleList:public BaseObj {
     
     
         /**
-        * Retrive the last value and shorted the list by 1
+        * Retrieve the last value and shorted the list by 1
         * Example: SimpleList(1,3,5,7).Pop() = 7 
         * @return Return last value from the list
         */

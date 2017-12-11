@@ -624,7 +624,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
  case                       | return value                                  | parsingContext.assignment_ref_id value
 
  parse failed               | HY_FORMULA_FAILED                             | undefined
- expresion (no LHS)         | HY_FORMULA_EXPRESSION                         | undefined
+ expression (no LHS)         | HY_FORMULA_EXPRESSION                         | undefined
  z = x/y                    | HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT          | index of the LHS
  *|^(expr) = expr           | HY_FORMULA_REFERENCE_VALUE_ASSIGNMENT         | undefined
  z := x/y                   | HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT        | index of the LHS
@@ -1337,7 +1337,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 }
 
                 long curOpl = curOp.length();
-                if (curOpl>2 && curOp[curOpl-1]=='_' && curOp[curOpl-2]=='_') { // instant variable refrence
+                if (curOpl>2 && curOp[curOpl-1]=='_' && curOp[curOpl-2]=='_') { // instant variable reference
                     _String realVarName (curOp,0,curOpl-3);
 
                     realVarName = parsingContext.contextualizeRef (realVarName);

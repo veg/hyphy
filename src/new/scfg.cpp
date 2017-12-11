@@ -564,7 +564,7 @@ void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities,
         } else {
             ruleProbabilities << expression->theString;
         }
-    } else { // determininstic rule (prob = 1.0)
+    } else { // deterministic rule (prob = 1.0)
         aFormula = new _Formula (new _Constant (1.0), false); // constant 1.0
         ruleProbabilities && & _HYSCFG_NT_KEY_1;
     }
@@ -1121,7 +1121,7 @@ inline  long    scfgIndexIntoAnArray            (long start,long end,long nt,lon
                     ...
               x x x ... stringLength
 
-        To find the offest of the (s,e) substring from the 0-th element of this array we compute (L = string length)
+        To find the offset of the (s,e) substring from the 0-th element of this array we compute (L = string length)
 
         (e-s) + sum_{k=0}{s-1} (L-k) = e-s + s/2 (L + L - s + 1) = e - s + (2L - s + 1) s /2 = e + (2L - s - 1)
 
@@ -1666,7 +1666,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                                          stringProb;
 
 
-                                /*  ^^^ It became necesssary to use this calcalation rather than
+                                /*  ^^^ It became necessary to use this calculation rather than
                                     the short-cut below, because it choked on node-censored grammars. */
 
                                 /*

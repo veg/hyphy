@@ -133,9 +133,9 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
     _String     errorMsg = _String ("While attempting to construct category variable ") & *GetName() & ": ";
 
     _SimpleList scannedVarsList,
-                variableDependanceAllocationsAux;
+                variableDependenceAllocationsAux;
 
-    _AVLListXL  variableDependanceAllocations (&variableDependanceAllocationsAux);
+    _AVLListXL  variableDependenceAllocations (&variableDependenceAllocationsAux);
 
     bool    check,
             covariantVar = false;
@@ -180,7 +180,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                     !CheckEqual (iSplitter->GetMaxX(),1.0) ||
                     theName->Equal(&splitterName) ||
                     (intervals = iSplitter->GetNumberOfIntervals()+1) < 2) {
-                HandleApplicationError (errorMsg & _String("Category variables which specify interval splitting options must be supported on [0,1], and not result in circular dependance"));
+                HandleApplicationError (errorMsg & _String("Category variables which specify interval splitting options must be supported on [0,1], and not result in circular dependence"));
                 return;
             }
 
@@ -232,7 +232,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                         check = false;
                     }
                 } else
-                    // indepenent category variable
+                    // independent category variable
                 {
                     if (weightMatrix->IsIndependent()) {
                         check=checkWeightMatrix(*weightMatrix);
@@ -245,11 +245,11 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                                 thisCell->ScanFForVariables (sv, true);
                                 sv.ReorderList();
                                 for (long v = 0; v < probVars.lLength; v++) {
-                                    long f = variableDependanceAllocations.Find ((BaseRef)probVars.lData[v]);
+                                    long f = variableDependenceAllocations.Find ((BaseRef)probVars.lData[v]);
                                     if (f < 0) {
-                                        f = variableDependanceAllocations.Insert ((BaseRef)probVars.lData[v], (long)(new _SimpleList (intervals,0,0)),false);
+                                        f = variableDependenceAllocations.Insert ((BaseRef)probVars.lData[v], (long)(new _SimpleList (intervals,0,0)),false);
                                     }
-                                    ((_SimpleList*) variableDependanceAllocations.GetXtra (f))->lData[k] = 1;
+                                    ((_SimpleList*) variableDependenceAllocations.GetXtra (f))->lData[k] = 1;
                                 }
                             }
                         }
@@ -460,11 +460,11 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                             thisCell->ScanFForVariables (sv, true);
                             sv.ReorderList();
                             for (long v = 0; v < densityVars.lLength; v++) {
-                                long f = variableDependanceAllocations.Find ((BaseRef)densityVars.lData[v]);
+                                long f = variableDependenceAllocations.Find ((BaseRef)densityVars.lData[v]);
                                 if (f < 0) {
-                                    f = variableDependanceAllocations.Insert ((BaseRef)densityVars.lData[v], (long)(new _SimpleList (intervals,0,0)),false);
+                                    f = variableDependenceAllocations.Insert ((BaseRef)densityVars.lData[v], (long)(new _SimpleList (intervals,0,0)),false);
                                 }
-                                ((_SimpleList*) variableDependanceAllocations.GetXtra (f))->lData[k] = 1;
+                                ((_SimpleList*) variableDependenceAllocations.GetXtra (f))->lData[k] = 1;
                             }
 
                             scannedVarsList.Union (densityVars,existingVars);
@@ -478,7 +478,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
         }
     }
 
-    // disallow category -> category dependance
+    // disallow category -> category dependence
     for (long i=0; i<scannedVarsList.lLength; i++) {
         _Variable * curVar = (_Variable*)variablePtrs (scannedVarsList.lData[i]);
         if (curVar->IsCategory()) {
@@ -492,7 +492,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
     hiddenMarkovModel = HY_NO_MODEL;
 
     parameterList.Duplicate  (&scannedVarsList);
-    // finally go thru all the variables and put them where they belong in dependance containers
+    // finally go thru all the variables and put them where they belong in dependence containers
 
     _SimpleList     exclude;
 
@@ -556,9 +556,9 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
     }
 
     for (long vid = 0; vid < parameterList.lLength; vid ++) {
-        long vf = variableDependanceAllocations.Find ((BaseRef)parameterList.lData[vid]);
+        long vf = variableDependenceAllocations.Find ((BaseRef)parameterList.lData[vid]);
         if (vf >= 0) {
-            affectedClasses << (_SimpleList*)(variableDependanceAllocations.GetXtra (vf));
+            affectedClasses << (_SimpleList*)(variableDependenceAllocations.GetXtra (vf));
         } else if (exclude.Find (parameterList.lData[vid]) >= 0) {
             affectedClasses.AppendNewInstance (new _SimpleList (intervals,0,0));
         } else {

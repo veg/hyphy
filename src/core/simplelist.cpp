@@ -92,7 +92,7 @@ _SimpleList::_SimpleList (unsigned long l)
     memset (lData,0,laLength * sizeof(hyPointer));
 }
 
-//Stack copy contructor
+//Stack copy constructor
 _SimpleList::_SimpleList (_SimpleList const & l, long from, long to) {
   Initialize           (false);
   if (from == 0L && to == -1L) {

@@ -39,7 +39,7 @@ template <class node_data> node_iterator<node_data>::node_iterator(
                                                                    node<node_data>* root, int traverser_kind){
   
   
-  this->travseral_kind = traverser_kind;
+  this->traversal_kind = traverser_kind;
   this->traversal_level      = -1L; // not initialized yet
   this->iterator_state       = root;
 }
@@ -76,14 +76,14 @@ template <class node_data> node<node_data>* node_iterator<node_data>::Next(_Simp
   node<node_data>* test_node;
   
   if (this->iterator_state) {
-    switch (this->travseral_kind) {
+    switch (this->traversal_kind) {
       case _HY_TREE_TRAVERSAL_POSTORDER:
       case _HY_TREE_TRAVERSAL_POSTORDER_RIGHT_FIRST: {
         
         if (this->traversal_level < 0L) {
           this->traversal_level = 0L;
           this->push_history_item (history);
-          while ((test_node = this->iterator_state->go_down(this->travseral_kind == _HY_TREE_TRAVERSAL_POSTORDER ? 1 : iterator_state->get_num_nodes()))) {
+          while ((test_node = this->iterator_state->go_down(this->traversal_kind == _HY_TREE_TRAVERSAL_POSTORDER ? 1 : iterator_state->get_num_nodes()))) {
             this->iterator_state = test_node;
             this->push_history_item (history);
             this->traversal_level++;
@@ -97,13 +97,13 @@ template <class node_data> node<node_data>* node_iterator<node_data>::Next(_Simp
           this->iterator_state = nil;
         } else {
           test_node = this->iterator_state;
-          test_node = this->travseral_kind == _HY_TREE_TRAVERSAL_POSTORDER ? test_node->go_next() : test_node->go_previous();
+          test_node = this->traversal_kind == _HY_TREE_TRAVERSAL_POSTORDER ? test_node->go_next() : test_node->go_previous();
          
           if (test_node) {
             this->pop_history_item (history);
             this->iterator_state=test_node;
             this->push_history_item (history);
-            while ((test_node = this->iterator_state->go_down(this->travseral_kind == _HY_TREE_TRAVERSAL_POSTORDER ? 1 : iterator_state->get_num_nodes()))) {
+            while ((test_node = this->iterator_state->go_down(this->traversal_kind == _HY_TREE_TRAVERSAL_POSTORDER ? 1 : iterator_state->get_num_nodes()))) {
               this->iterator_state = test_node;
               this->push_history_item (history);
               this->traversal_level++;

@@ -347,7 +347,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
                 _Variable* theV = (_Variable*)variablePtrs(i);
                 if (theV->IsContainer()) {
                     _VariableContainer* theVC = (_VariableContainer*)theV;
-                    if (!theVC->RemoveDependance (theIndex)) {
+                    if (!theVC->RemoveDependence (theIndex)) {
                         ReportWarning ((_String("Can't make variable ")&*GetName()&" independent in the context of "&*theVC->GetName()&" because its template variable is not independent."));
                         continue;
                     }
@@ -561,7 +561,7 @@ void  _Variable::SetFormula (_Formula& theF) {
     vA.ReorderList();
 
     if (vars.BinaryFind(theIndex)>=0) {
-        HandleApplicationError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr(kFormulaStringConversionNormal))&" because it would create a circular dependance."));
+        HandleApplicationError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr(kFormulaStringConversionNormal))&" because it would create a circular dependence."));
         if (&theF!=right_hand_side) {
             delete right_hand_side;
         }
@@ -613,7 +613,7 @@ void  _Variable::SetFormula (_Formula& theF) {
                   _Variable* theV = FetchVar(i);
                   if (theV->IsContainer()) {
                       _VariableContainer* theVC = (_VariableContainer*)theV;
-                      if (theVC->SetDependance(theIndex) == -2) {
+                      if (theVC->SetDependence(theIndex) == -2) {
                           ReportWarning ((_String("Can't make variable ")&*GetName()&" dependent in the context of "&*theVC->GetName()&" because its template variable is bound by another relation in the global context."));
                           continue;
                       }

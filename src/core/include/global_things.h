@@ -139,7 +139,7 @@ namespace hy_global {
    
    TODO 20170414: does the function ever get called with the FALSE flag? if not, deprecate
    I don't recall what the use case for the FALSE flag was
-   @param all if NOT set, a partial purge is understaken, that clears only user functions and attendant stuctures
+   @param all if NOT set, a partial purge is understaken, that clears only user functions and attendant structures
    
    
    */
@@ -166,7 +166,7 @@ namespace hy_global {
   
   //_______________________________________________________________________
   
-  /** If the settings request it, write a warning (diagonstic) message to the
+  /** If the settings request it, write a warning (diagnostic) message to the
    .log file
    
    @param message the diagnostic message to report
@@ -212,7 +212,7 @@ namespace hy_global {
    */
   const _String      GetStandardDirectory (const unsigned long which_one);
   
-  /** resolve the path name contained in 'path', accoding to various flag settings
+  /** resolve the path name contained in 'path', according to various flag settings
    
    
    

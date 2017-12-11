@@ -73,7 +73,7 @@ class _Trie: public _List
              */
             
     
-        /* base class will store the lunear representation of this trie */
+        /* base class will store the linear representation of this trie */
         
             /** a linear representation of this trie    
              each node is a _SimpleList that contains N pairs of entries 
@@ -158,7 +158,7 @@ class _Trie: public _List
 
         long     GetValueFromString (const _String& key);
         /**
-         * A convenience function which calls Find and then GetValue if teh key is found
+         * A convenience function which calls Find and then GetValue if the key is found
          * @param  key      -- the string to search for
          * @return the value associated with the key if found, kNotFound otherwise  
          */
@@ -234,7 +234,7 @@ class _Trie: public _List
 
         _String*          RetrieveStringFromPath (const _SimpleList& path, _String const * alphabet);
          /**
-         * Given a traversal path of the trie (and an optional cached alphabet), retrive the _String object spelling the path
+         * Given a traversal path of the trie (and an optional cached alphabet), retrieve the _String object spelling the path
          * @param path -- the traversal path (pairs of node index, character index)
          * @param 
          * @return the number of elements successfully deleted (including those not present)

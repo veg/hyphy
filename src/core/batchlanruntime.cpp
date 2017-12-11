@@ -1260,7 +1260,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
   parts&& &newS;
   thisIndex<<-1;
   }
-  // now that the string is conveniently partritioned into blocks
+  // now that the string is conveniently partitioned into blocks
   // we will check the arguments and store references
 
   for (ind1 = 1; ind1<parameters.lLength; ind1++) {
@@ -1287,10 +1287,10 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
   }
   }
 
-  // now with this list ready we can recurse down the tree and produce the contsraints
+  // now with this list ready we can recurse down the tree and produce the constraints
   if (RecurseDownTheTree(thisArgs, parameters, theConstraints, parts, thisIndex)) {
   if (theConstraints.lLength) {
-  ReportWarning  (_String("\nReplicateConstraint generated the following contsraints:"));
+  ReportWarning  (_String("\nReplicateConstraint generated the following constraints:"));
   hyFloat      doDeferSet;
   checkParameter (deferConstrainAssignment,doDeferSet,0.0);
   bool            applyNow = CheckEqual(doDeferSet,0.0);
@@ -1429,7 +1429,7 @@ bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& current_program
     if  (source_object) {
       KillLFRecord (object_index,true);
     } else {
-      ReportWarning(GetIthParameter(i)->Enquote() & " is not a supported agrument type for " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(get_code()));
+      ReportWarning(GetIthParameter(i)->Enquote() & " is not a supported argument type for " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(get_code()));
     }
   }
   return true;
@@ -3030,11 +3030,11 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         
         if (exclusions != kSkipNone) {
             try {
-                _PMathObj exlcusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
-                if (exlcusion_argument->ObjectClass() == NUMBER) {
-                    excluded << exlcusion_argument->Compute ()->Value();
+                _PMathObj exclusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
+                if (exclusion_argument->ObjectClass() == NUMBER) {
+                    excluded << exclusion_argument->Compute ()->Value();
                 } else {
-                    ((_Matrix*)exlcusion_argument)->ConvertToSimpleList (excluded);
+                    ((_Matrix*)exclusion_argument)->ConvertToSimpleList (excluded);
                     excluded.Sort();
                 }
             } catch (_String const & e) {
@@ -3227,7 +3227,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                }
              
                if (wrong_selections > maximum_wrong_choices) {
-                throw ("Too many invalid imputs");
+                throw ("Too many invalid inputs");
                }
             }
           

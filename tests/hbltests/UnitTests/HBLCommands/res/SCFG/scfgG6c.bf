@@ -25,7 +25,7 @@ global extend = 1.8;		extend :> 0.;	extend :< 100.;
 global stop = 0.01;			stop :> 0.;		stop :< 100.;
 global dS := extend + stop;
 
-/* probability of steming */
+/* probability of stemming */
 global grow_L = 0.01; 	grow_L :> 0.;	grow_L :< 100.;
 global stop_L = 1.99;		stop_L :> 0.;	stop_L :< 100.;
 global dL := grow_L + stop_L;

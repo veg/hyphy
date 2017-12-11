@@ -1,5 +1,5 @@
 /* This file defines the transition matrix for the Muse-Gaut 94 model x an arbitrary 4x4 rate matrix
-   for nucleotide substituions.
+   for nucleotide substitutions.
    
    The file should be used as follows:
    

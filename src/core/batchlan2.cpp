@@ -278,7 +278,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_MPI_SEND,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MPISend(", HY_HBL_COMMAND_MPI_SEND,false),
                                                                 -1,
-                                                                "MPISend(<node id>, <string | likelihood function ID | filename [in conjuction with argument 3]>, [if specified, treat the second argument as a script path, and use the dict supplied here as input options to the script])",
+                                                                "MPISend(<node id>, <string | likelihood function ID | filename [in conjunction with argument 3]>, [if specified, treat the second argument as a script path, and use the dict supplied here as input options to the script])",
                                                                 ',',
                                                                 true,
                                                                 false,
@@ -288,7 +288,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
   _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ConstructCategoryMatrix(", HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,false),
                                                                 -1,
-                                                                "ConstructCategoryMatrix(<receptacle>, <Likelihood Function|Tree>, [optional <COMPLETE|SHORT|WEIGHTS|CLASSES (default = COMPLETE)> , matrix argument with partitions to include (defaut = all)>])",
+                                                                "ConstructCategoryMatrix(<receptacle>, <Likelihood Function|Tree>, [optional <COMPLETE|SHORT|WEIGHTS|CLASSES (default = COMPLETE)> , matrix argument with partitions to include (default = all)>])",
                                                                 ',',
                                                                 true,
                                                                 false,
@@ -517,7 +517,7 @@ void         InsertStringListIntoAVL    (_AssociativeList* theList , _String con
 //____________________________________________________________________________________
 
 bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _ExecutionList&target)
-// syntax: #profile START|PAUSE|RESUME|indetifier to dump in
+// syntax: #profile START|PAUSE|RESUME|identifier to dump in
 {
 
     _List pieces;

@@ -124,7 +124,7 @@ public:
     _CalcNode           (_String, _String, int  = 4, _VariableContainer* = nil, _AVLListXL * = nil);
     // construct a node from a string of the form
     // codeBase specifies the number of distinct states (4 for nucleotides, 61 for codons etc)
-    // matrix name, <optional comma separated variable declarations, inititalizations>
+    // matrix name, <optional comma separated variable declarations, initializations>
     // also should be passed the pointer to a container tree
 
     _CalcNode           (_CalcNode* source, _VariableContainer* parentTree);
@@ -204,10 +204,10 @@ public:
     }
 
     hyFloat          ComputeBranchLength    (void);
-    virtual long        SetDependance   (long);
+    virtual long        SetDependence   (long);
 
     node<long>*         LocateMeInTree  (void) const;
-    // return the tree structure node corresponing to this one...
+    // return the tree structure node corresponding to this one...
     void                ConvertToSimpleMatrix (void) const;
     void                ConvertFromSimpleMatrix (void);
     _Matrix*            ComputeModelMatrix(bool expMe=false);
@@ -474,7 +474,7 @@ public:
         return *currentNode;
     }*/
   
-    const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
+    const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int traversalType) const;
     void            SubTreeString                       (node<long>* root, _StringBuffer &, bool = false, long = -1, _AVLListXL* = nil) const;
 
     _String         CompareTrees                        (_TreeTopology*) const;
@@ -489,7 +489,7 @@ public:
     _AssociativeList*
     SplitsIdentity                      (_PMathObj);
     /* 20090609: SLKP
-        given a tree agrument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
+        given a tree argument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
         and a string (key "CONSENSUS");
         The first cell contains the number of splits in *this
         The second cell contains the number of splits in the argument that are present in *this
@@ -717,10 +717,10 @@ public:
     // makes an AVL of with keys storing memory addresses of node<long> tree nodes
     // and values showing the order in either flatLeaves (bool = false) or flatNodes (bool = true)
 
-    void        MapPostOrderToInOderTraversal   (_SimpleList&, bool = true) const;
+    void        MapPostOrderToInOrderTraversal   (_SimpleList&, bool = true) const;
     // 20090306: SLKP
     // 20100511: SLKP
-    // construct a post-order -> in-order traveral map for internal nodes
+    // construct a post-order -> in-order traversal map for internal nodes
     // bool = true (internal nodes), bool = false (leaf nodes)
 
     void        AddBranchToForcedRecomputeList  (long idx)      {

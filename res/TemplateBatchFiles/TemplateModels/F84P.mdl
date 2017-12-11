@@ -98,7 +98,7 @@ R = 0;
 
 while (R<a)
 {
-	fprintf (stdout, "\nPlease enter the transition/transvertion ratio desired. For this data set R must be at least ",a,". Ratio=?");
+	fprintf (stdout, "\nPlease enter the transition/transversion ratio desired. For this data set R must be at least ",a,". Ratio=?");
 	fscanf (stdin,"Number",R);
 }
 

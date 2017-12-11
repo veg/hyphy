@@ -415,12 +415,12 @@ function parameters.SetConstraint(id, value, global_tag) {
 
 /**
  * constrain x to be x := C * (current value of x)
- * @name parameters.SetProprtionalConstraint
+ * @name parameters.SetProportionalConstraint
  * @param {String} id of parameter(s) to set constraint on
  * @param {String} scaler variable - the ID of the 'C' scaler variable above; could also be an expression
  * @returns nothing
  */
-function parameters.SetProprtionalConstraint(id, scaler) {
+function parameters.SetProportionalConstraint(id, scaler) {
     if (Type(id) == "String") {
         if (Abs(id)) {
             //console.log ("`id` => " + Eval (id));
@@ -592,7 +592,7 @@ lfunction parameters.helper.dump_matrix(matrix) {
 /**
  * Sets tree lengths to initial values
  * @name parameters.helper.tree_lengths_to_initial_values
- * @param dict - a [0 to N-1] dictrionary of tree objects
+ * @param dict - a [0 to N-1] dictionary of tree objects
  * @param type - codon or nucleotide
  * @returns {Dictionary} dictionary of initial branch lengths
  */
@@ -643,7 +643,7 @@ function parameters.GetProfileCI(id, lf, level) {
 }
 
 /**
- * Geneate an HBL string needed to define a parameter
+ * Generate an HBL string needed to define a parameter
  * @name parameters.ExportParameterDefinition
  * @param {String} id - the name of the parameter to export;
  * @returns {String} the string for an HBL definition of the parameter

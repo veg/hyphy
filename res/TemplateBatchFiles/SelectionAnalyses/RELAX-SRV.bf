@@ -136,8 +136,8 @@ RELAX.reference_branches = utility.Filter (relax.tree["model_map"], "_value_", "
 io.ReportProgressMessage ("RELAX", "Selected " + Abs (RELAX.reference_branches) + " branches as the test set: " + Join (",", utility.Keys (RELAX.reference_branches)));
 
 RELAX.has_unclassified = RELAX.groups / RELAX.unclassified;
-RELAX.branch_to_partiton = {};
-utility.ForEachPair (relax.tree ["model_map"], "_key_", "_value_", "if (Abs (_value_)) { RELAX.branch_to_partiton[_key_&&1] = _value_; } else { RELAX.branch_to_partiton[_key_&&1] = RELAX.unclassified;}");
+RELAX.branch_to_partition = {};
+utility.ForEachPair (relax.tree ["model_map"], "_key_", "_value_", "if (Abs (_value_)) { RELAX.branch_to_partition[_key_&&1] = _value_; } else { RELAX.branch_to_partition[_key_&&1] = RELAX.unclassified;}");
 
 RELAX.json ["partition"] = relax.selected_branches;
 RELAX.json ["tree"] = relax.tree ["string"];
@@ -182,7 +182,7 @@ utility.SetEnvVariable ("VERBOSITY_LEVEL", 1);
 if (!RELAX.debug.reload) {
     io.ReportProgressMessageMD ("RELAX", "mg-rev", "Obtaining omega and branch length estimates under the partitioned MG94xGTR model");
     relax.mg_results  = estimators.FitMGREV     (relax.filter_names, relax.trees, relax.codon_data_info ["code"],
-                                                 {"model-type" : terms.local, "partitioned-omega" : {"0" : RELAX.branch_to_partiton}, "proportional-branch-length-scaler": {"0" : "relax.codon_branch_scaler"}},
+                                                 {"model-type" : terms.local, "partitioned-omega" : {"0" : RELAX.branch_to_partition}, "proportional-branch-length-scaler": {"0" : "relax.codon_branch_scaler"}},
                                                  relax.local_mg_results);
     relax.taskTimerStop (1);
 

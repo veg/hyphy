@@ -110,7 +110,7 @@ if (NON_EMPTY_SELECTION)
 				
 				fprintf (stdout, "\nFisher's exact p:", CChi2(C_TABLE,0), "\n");
 
-				OpenWindow (CHARTWINDOW,{{"Contigency Table"}
+				OpenWindow (CHARTWINDOW,{{"Contingency Table"}
 								   {"labels"},
 								   {"C_TABLE"},
 								   {"None"},

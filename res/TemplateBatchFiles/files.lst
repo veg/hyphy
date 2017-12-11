@@ -15,10 +15,10 @@
 "Model inference","[EXPERIMENTAL] Infer a customized amino-acid exchangeability matrix from a training data set of protein alignments.","ProteinAnalyses/ProteinGTRfit.bf";
 
 "","Perform a maximum likelihood analysis on a single file given a single tree.","!Basic Analyses";
-"ACD","Analyse codon data with a variery of standard models using given tree.","AnalyzeCodonData.bf";
-"AD","Analyse nucleotide or aminoacid data with a variery of standard models using given tree.","AnalyzeNucProtData.bf";
-"ADN","Analyse di-nucleotide data with a variery of standard models using given tree.","AnalyzeDiNucData.bf";
-"AFD","Analyse nucleotide data with a variery of standard models using given tree, estimating equilibrium frequencies as parameters","AnalyzeNucDataFreq.bf";
+"ACD","Analyse codon data with a variety of standard models using given tree.","AnalyzeCodonData.bf";
+"AD","Analyse nucleotide or aminoacid data with a variety of standard models using given tree.","AnalyzeNucProtData.bf";
+"ADN","Analyse di-nucleotide data with a variety of standard models using given tree.","AnalyzeDiNucData.bf";
+"AFD","Analyse nucleotide data with a variety of standard models using given tree, estimating equilibrium frequencies as parameters","AnalyzeNucDataFreq.bf";
 
 "","Perform codon-based positive selection tests using the models of Kosakovsky Pond and Muse (2005).","!Codon Selection Analyses";
 "ANA","Run a selection analysis.","dNdSRateAnalysis.bf";
@@ -33,11 +33,11 @@
 "BSEL","Split a tree into two clades (compartments) and a separating branch and test for equality of dN/dS between compartments and for selection along the separating branch using a series of Likelihood Ratio Tests.","SelectionLRT.bf";
 "CORR","Assess the correlation between phylogenetic and compartment segregation using generalized correlation coefficients and permutation tests.","TreeCorrelationCoefficients.bf";
 "FST","Compute various measures of F_ST and (optionally) perform permutation tests.","F_ST.bf";
-"SM","Peform a Slatkin-Maddison test for the number migrations.","SlatkinMaddison.bf";
+"SM","Perform a Slatkin-Maddison test for the number migrations.","SlatkinMaddison.bf";
 "TC","Test whether a group of sequences in a sample cluster together","TestClade.bf";
 
 "","Tools for manipulating sequence files.","!Data File Tools";
-"ALN","Align coding sequences to reference (assuming star topology) using protein translations. The analysis will try to detect appropriare reading frames and fix some frameshifts. Designed with within-patient HIV sequences in mind.","SeqAlignment.bf";
+"ALN","Align coding sequences to reference (assuming star topology) using protein translations. The analysis will try to detect appropriate reading frames and fix some frameshifts. Designed with within-patient HIV sequences in mind.","SeqAlignment.bf";
 "CALN","Align coding sequences to reference (assuming star topology) using a codon-based dynamic programming algorithm (good for fixing multiple frameshifts). Designed with within-patient HIV sequences in mind.","SeqAlignmentCodon.bf";
 "PALN","Align amino-acid sequences to reference (assuming star topology).","SeqAlignmentProt.bf";
 "NALN","Align nucleotide sequences to reference (assuming star topology). Designed with whole-genome HIV sequences in mind.","SeqAlignmentNuc.bf";
@@ -55,7 +55,7 @@
 "FAA","Fit a multiple fitness class model to amino acid data.","FitnessAAModels.bf";
 "KH","Perform a Kishino-Hasegawa test on two competing phylogenies","KHTest.bf";
 "LZ","Compute Lempel-Ziv complexity and entropy of (possibly unaligned) sequences","LZ_Complexity.bf";
-"MCC","Compare mean within-clade branch length or pairwise divergence between two or more non-nested cladesd in a tree","TestCladeMeans.bf";
+"MCC","Compare mean within-clade branch length or pairwise divergence between two or more non-nested clades in a tree","TestCladeMeans.bf";
 "PHB","Run an example file from our book chapter in 'The Phylogentic Handbook' (2nd edition).","Phylohandbook.bf";
 "RBLE","Use a series of random effects branch-site models to perform robust model-averaged branch length estimation under a codon model with episodic selection.","BranchSiteRELMultiModel.bf";
 "RED","Replace sufficiently close sequence with their MRCA","ReduceDataSetMatrix.bf";
@@ -69,27 +69,27 @@
 "MT","Select an evolutionary model for nucleotide data, using the methods of 'ModelTest' - a program by David Posada and Keith Crandall.","ModelTest.bf";
 "NUC","Compare all 203 reversible nucleotide models and perform LRT and AIC model selection.","NucModelCompare.bf";
 "Protein","Compare the fit of several amino-acid substitution models to an alignment using AIC and c-AIC.","AAModelComparison.bf";
-"","Tools for data analysis and pattern extraction based on kernel technqiues.","!Kernel Analysis Tools";
+"","Tools for data analysis and pattern extraction based on kernel techniques.","!Kernel Analysis Tools";
 "KMEANS","GA driven kernel k-means clustering.","Kernel_k_means.bf";
 "KPCA","Kernel principal component analysis.","Kernel_PCA.bf";
 
 "","Molecular Clock Tests.","!Molecular Clock";
-"DTMC","Test for the presence of a global molecular clock with DATED sequences. Evolutionary rates and dates for internal nodes are estimated as well. This analysis is effectively an extended version of Andrew Rabmaut's TipDate methodogoly.","DatedTipsMolecularClock.bf";
+"DTMC","Test for the presence of a global molecular clock with DATED sequences. Evolutionary rates and dates for internal nodes are estimated as well. This analysis is effectively an extended version of Andrew Rabmaut's TipDate methodology.","DatedTipsMolecularClock.bf";
 "MCLK","Test for the presence of a global molecular clock on the tree using its root (the resulting clock tree is unrooted, but one of the root branches can be divided in such a way as to enforce the clock).","MolecularClock.bf";
 "LCLK","Test for the presence of a local molecular clock. Every subtree of the given tree is subjected to the clock constraint, while the remainder of the tree is free of the clock constraint.","LocalMolClock.bf";
 "RCLK","Test for the presence of a global molecular clock on the tree. The tree is rooted at every possible branch.","MolClockAllRoots.bf";
-"RLXMC","Infer dates of ancestral nodes for a sample of DATED sequences using a rate-distribution genetic algorithm to allow for multiple substituion rates. This is a frequentist alternative to the relaxed clock analyses implemented by Drummond and Rambaut in BEAST. [MPI Enabled]","GADatedClock.bf";
+"RLXMC","Infer dates of ancestral nodes for a sample of DATED sequences using a rate-distribution genetic algorithm to allow for multiple substitution rates. This is a frequentist alternative to the relaxed clock analyses implemented by Drummond and Rambaut in BEAST. [MPI Enabled]","GADatedClock.bf";
 "RLXMCP","Process a .samples file generated with GADatedClock","GADatedClockProcessor.bf";
 
 "","Reconstruct a phylogenetic tree using either distance or ML based heuristic methods.","!Phylogeny Reconstruction";
 "CLST","Apply clustering methods for phylogeny reconstruction (UPGMA,WPGMA,complete or minimal linkage) to nucleotide, protein and codon data, using MLE of pairwise distances with user-selectable models. These methods produce trees with global molecular clock.","ClusterAnalysis.bf";
 "DIST","Generate a pairwise sequence distance matrix in PHYLIP format.","DistanceMatrix.bf";
-"NJ","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of neighbor joining.","NeighborJoining.bf";
+"NJ","Perform a phylogeny reconstruction for nucleotide, protein or codon data with user-selectable models using the method of neighbor joining.","NeighborJoining.bf";
 "NNI","Perform nearest neighbor branch swapping on a given tree, attempting to find a tree with a better likelihood score under the given evolutionary model.","BranchSwap.bf";
-"SA","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of sequential addition.","SequentialAddition.bf";
-"SD","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of star decomposition.","StarDecomposition.bf";
+"SA","Perform a phylogeny reconstruction for nucleotide, protein or codon data with user-selectable models using the method of sequential addition.","SequentialAddition.bf";
+"SD","Perform a phylogeny reconstruction for nucleotide, protein or codon data with user-selectable models using the method of star decomposition.","StarDecomposition.bf";
 "TS","Perform an exhaustive tree space search for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearch.bf";
-"TSC","Perform an exhaustive tree space search (subject to a topology contraint) for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearchConstrained.bf";
+"TSC","Perform an exhaustive tree space search (subject to a topology constraint) for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearchConstrained.bf";
 
 "","Perform codon-based positive selection tests.","!Positive Selection";
 "BSREL","Use the random effects branch-site model (2010) to find lineages subject to episodic selection.","BranchSiteREL.bf";
@@ -126,7 +126,7 @@
 
 "","Perform relative ratio tests.","!Relative Ratio";
 "RRT","Use relative ratio test on 2 datasets and a variety of standard models","RelativeRatio.bf";
-"PRRTI","Given a list of files (and optinally genetic code tables), perform relative ratio tests on all possible pair of the data files.","PairwiseRelativeRatio.bf";
+"PRRTI","Given a list of files (and optionally genetic code tables), perform relative ratio tests on all possible pair of the data files.","PairwiseRelativeRatio.bf";
 
 "","Various tools for estimating the distribution of substitution rates.","!Substitution Rates";
 "SR","DNARates like site specific rate estimation. Other model parameters are inferred from the entire alignment.","SiteRates.bf";

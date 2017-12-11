@@ -272,7 +272,7 @@ public:
     // finds & returns the next command block in input
     // chops the input to remove the newly found line
 
-    static  long      ExtractConditions     (_String const& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
+    static  long      ExtractConditions     (_String const& , long , _List&, char delimiter = ';', bool includeEmptyConditions = true);
     // used to extract the loop, if-then conditions
 
     static  bool      ExtractValidateAddHBLCommand (_String& current_stream, const long command_code, _List* pieces, _HBLCommandExtras* command_spec, _ExecutionList& command_list);
@@ -382,7 +382,7 @@ protected:
     _String  *   GetIthParameter       (unsigned long i, bool range_check = true) const {
         BaseRef p = parameters.GetItemRangeCheck(i);
         if (!p && range_check) {
-            hy_global::HandleApplicationError("Internal error in ElemenaryCommand::GetIthParameter", true);
+            hy_global::HandleApplicationError("Internal error in ElementaryCommand::GetIthParameter", true);
         }
         return (_String *)p;
     }

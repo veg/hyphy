@@ -163,10 +163,10 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
        each row in the matrix corresponds to a tree NODE in the same order as
        they are listed in the tree AVL
 
-       each column correponds to a site
+       each column corresponds to a site
 
        the entries are as follows:
-    	   0.._bacFilterDimension-1 an unambigous character
+    	   0.._bacFilterDimension-1 an unambiguous character
     	   -1 a deletion/complete ambiguity
     	   less that -1 : -(entry)-2 maps to an AVL storing the state
     					  and the complete character resolution (as an array)
@@ -415,7 +415,7 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
 }
 
 /*******************************************
-	count subsitutions at a given site;
+	count substitutions at a given site;
 	returns an AVL with
 
 	["CHARS"]  - the 1xN matrix which maps index->character string
@@ -456,7 +456,7 @@ lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
 
 
 /*******************************************
-	count subsitutions at a given site;
+	count substitutions at a given site;
 	along a subset of branches.
 
 	["CHARS"]  - the 1xN matrix which maps index->character string
@@ -502,7 +502,7 @@ function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
 	returns an AVL with
 
 	["CHAR"]  - the root character
-	["INDEX"] - the index of the root character (consisent with the data filter representation),
+	["INDEX"] - the index of the root character (consistent with the data filter representation),
 			  - this value will be negative if the root state is ambiguous (e.g. a gap)
 
 	pass this function the ID of ancestral cache

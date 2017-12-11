@@ -210,7 +210,7 @@ namespace mpi {
             }
 
             if (node == mpi_node_count) {
-                node = aux._handle_receieve (queue);
+                node = aux._handle_receive (queue);
             }
 
 
@@ -245,7 +245,7 @@ namespace mpi {
                 }
 
                 if (node < mpi_node_count) {
-                    node = aux._handle_receieve (queue);
+                    node = aux._handle_receive (queue);
                 }
             } while (node < mpi_node_count);
         }
@@ -258,7 +258,7 @@ namespace mpi {
             return complete_function_dump;
         }
 
-        lfunction _handle_receieve (queue) {
+        lfunction _handle_receive (queue) {
             MPIReceive (-1,from,result);
             Call ((queue [from])[utility.getGlobalValue("terms.mpi.callback")], from, Eval(result), (queue [from])[utility.getGlobalValue("terms.mpi.arguments")]);
             queue [from] = {utility.getGlobalValue("terms.mpi.job_id") : None, utility.getGlobalValue("terms.mpi.callback") : None};

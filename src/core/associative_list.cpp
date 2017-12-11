@@ -519,9 +519,9 @@ void        _AssociativeList::Merge (_PMathObj p) {
 }
 
   //_____________________________________________________________________________________________
-_PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
+_PMathObj        _AssociativeList::ExtremeValue (bool do_minimum) const {
   _String const * best_key = nil;
-  hyFloat best_value = do_mimimum ? INFINITY : -INFINITY;
+  hyFloat best_value = do_minimum ? INFINITY : -INFINITY;
   
   if (avl.countitems()) {
       for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
@@ -529,7 +529,7 @@ _PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
           switch (value->ObjectClass()){
               case NUMBER:
                   hyFloat number = ((_Constant*)value)->Value();
-                  if (do_mimimum) {
+                  if (do_minimum) {
                       if (number < best_value) {
                           best_value = number;
                           best_key   = (_String const*)avl.Retrieve (key_value.get_index());

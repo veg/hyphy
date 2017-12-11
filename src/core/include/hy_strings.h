@@ -90,7 +90,7 @@ public:
   _String(void); // v3;
 
   /**
-   * Standard initalization to 0 length and empty data
+   * Standard initialization to 0 length and empty data
    * which creates an empty string
 
    * Revision history
@@ -103,12 +103,12 @@ public:
    * which creates an empty string
 
    * Revision history
-   - SLKP 20170612 iniital implementation
+   - SLKP 20170612 initial implementation
    */
   virtual void Clear(void);
 
   /**
-   * Construct a string representation of a long interger
+   * Construct a string representation of a long integer
    * @param number: the number to convert to a string
 
    * Revision history
@@ -195,7 +195,7 @@ public:
 
   _String(const wchar_t *wc_string);
   /**
-   * Create a string with the from a single charcater
+   * Create a string with the from a single character
    * @param c   : The source character
    * Revision history
    - SLKP 20170517 reviewed while porting from v3 branch
@@ -228,7 +228,7 @@ public:
   _String(FILE *file, long read_this_many = -1L);
 
   /**
-   *  A desctructor which respects reference counts
+   *  A destructor which respects reference counts
    *  Revision history
    - SLKP 20170517 reviewed while porting from v3 branch
    */
@@ -499,7 +499,7 @@ public:
    "match zero or more of anything"
 
    @param pattern : the pattern to match
-   @param wildchar : the charcter to treat as a wild char
+   @param wildchar : the character to treat as a wild char
    @param start_this : start matching at this position in "this"
    @param start_pattern : start matching at this position in *pattern*
 
@@ -612,7 +612,7 @@ public:
   void Insert(char, long);
 
   /**
-   * Trim the string in place to retain characters beween the two indices
+   * Trim the string in place to retain characters between the two indices
    (0-bases, inclusive)
    * \n\n \b Example: \code _String("AAABBBCCC").Trim(3,5) \endcode
    * @param start The starting index to cut from
@@ -649,7 +649,7 @@ public:
    Retrieve one by list->lData[i]
    *  Revision history
     -SLKP 20170615 reviewed while porting from v3 branch; previous
-   impelementation would not handle empty string splitter;
+   implementation would not handle empty string splitter;
      ]
    */
   const _List Tokenize(_String const &splitter) const;
@@ -659,7 +659,7 @@ public:
      * @param splitter a look table of characters
      * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
      *  Revision history
-     -SLKP 20170912 initial impementation
+     -SLKP 20170912 initial implementation
      
      */
     const _List  Tokenize (const bool splitter[256]) const;
@@ -767,7 +767,7 @@ public:
  * Find first occurence of the any of the characters marked in the lookup buffer (0/1) between "start" and "end" (inclusive)
  * Uses a sentinel linear search
  * \n\n \b Example: \code _String ("AABBCC").Find('B')\endcode
- * @param lookup The lookup table whioch marks which characters are value
+ * @param lookup The lookup table which marks which characters are value
  * @param start The 0-based index to start searching from
  * @param end   The 0-based index to search to (inclusive); -1 : end of string
  * @return Returns the index of the first instance of the pattern, kNotFound (<0) if not found. 2 in the example
@@ -781,7 +781,7 @@ public:
   * Find first occurence of the string between "start" and "end" (inclusive)
   * @see Find() for parameter explanation
   *  Revision history
-   - SLKP 20170612; reviewed and modifed to be the same as Find with case
+   - SLKP 20170612; reviewed and modified to be the same as Find with case
   normalization while porting from the v3 branch
   */
     
@@ -818,7 +818,7 @@ public:
 
    *  Revision history
    - SLKP 20170614; reviewed while porting from the v3 branch
-     [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondtion]
+     [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondition]
 
    */
 
@@ -857,7 +857,7 @@ public:
 
    *  Revision history
     - SLKP 20170614; reviewed while porting from the v3 branch
-      [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondtion]
+      [CHANGE-NOTE SLKP 20170614 changed to a call to _FindFirstIndexCondition]
    */
   long FirstSpaceIndex(
       long start = 0, long end = kStringEnd,
@@ -949,9 +949,9 @@ public:
    *
    * @param &from The starting position of the segment will be stored here
    * @param open The first character to look for. For example, and open bracket
-   '[' or open paranthesis '('
+   '[' or open parenthesis '('
    * @param close The first character to look for. For example, and open bracket
-   ']' or open paranthesis ')'
+   ']' or open parenthesis ')'
    * @param options: a bitmask of options, if fExtractRespectQuote is mixed in
    then do not look withing enquoted parts of the string if set if
    fExtractRespectEscape is mixed in do not consider \char as matches to char
@@ -962,8 +962,8 @@ public:
    expression did not terminate before the end of the string
    *
    *  Revision history
-     - SLKP 20170614; reviewed while porting from the v2.3 branch; convered the
-   two bool flags to a bit-mask so that the calls can be more explict
+     - SLKP 20170614; reviewed while porting from the v2.3 branch; converted the
+   two bool flags to a bit-mask so that the calls can be more explicit
      - SLKP 20170615; included support for singly quoted literals
   */
 
@@ -1110,7 +1110,7 @@ public:
   /**
    * Generate a random string on
    * @param len (>0) The desired length of the string
-   * @param alphabet Which alphabet do the random charcters come from; in nil,
+   * @param alphabet Which alphabet do the random characters come from; in nil,
    then this will be generated from 1-128 ASCII codes
    * @return the random string
    *  Revision history
@@ -1279,7 +1279,7 @@ private:
   */
 
   template <class CF>
-  long _FindFirstIndexCondtion(long start, long end,
+  long _FindFirstIndexCondition(long start, long end,
                                hy_string_search_direction direction,
                                CF comparison_function) const {
     long requested_range = NormalizeRange(start, end);

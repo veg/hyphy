@@ -30,7 +30,7 @@ DiNucClasses = {{"RNAEqualInput","A 16x16 matrix with a single substitution rate
 				{"RNA16A","5 rate parameters. Defined in Savill, Hoyle and Higgs. Genetics 157: 399-411."}
 				{"RNAREV_1","A subset of the general reversible model with 47 rate parameters, which disallows double instantaneous substitutions."}
 				{"RNAREV","A general reversible model with 119 rate parameters."}
-				{"Custom Esimated","Load a custom rate matrix from file. Rates estimated from the data."}
+				{"Custom Estimated","Load a custom rate matrix from file. Rates estimated from the data."}
 				{"Custom Fixed","Load a custom rate matrix from file. Rates are fixed at the values read from the numeric matrix."}};
 					
 				    

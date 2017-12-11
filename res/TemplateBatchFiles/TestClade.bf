@@ -1056,7 +1056,7 @@ while (bootstrapSamples<=0)
 	fscanf  (stdin,"Number", bootstrapSamples);
 }	
 
-SetDialogPrompt ("Spool boostrap trees to:");
+SetDialogPrompt ("Spool bootstrap trees to:");
 fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
 bsTrees = LAST_FILE_PATH;
 for (itCount = 1; itCount <= bootstrapSamples; itCount = itCount+1)

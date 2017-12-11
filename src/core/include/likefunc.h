@@ -75,7 +75,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   _hyphyLFConstructCategoryMatrixPosteriors     3
 #define   _hyphyLFConstructCategoryMatrixSiteProbabilities      4
 
-/* likelihood seialization model */
+/* likelihood serialization model */
 
 #define   _hyphyLFSerializeModeVanilla                  0
 #define   _hyphyLFSerializeModeOptimize                 1
@@ -100,9 +100,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* interval mapping functions */
 
 #define   _hyphyIntervalMapID                           0x0 // identify
-#define   _hyphyIntervalMapExpit                        0x1 // expit -- maps [-infty,infty) to [0,1]
+#define   _hyphyIntervalMapExpit                        0x1 // expit -- maps [-infinity,infinity) to [0,1]
 // 1/(1+exp[-x])
-#define   _hyphyIntervalMapSqueeze                      0x2 // maps [0,infty) to [0,1)
+#define   _hyphyIntervalMapSqueeze                      0x2 // maps [0,infinity) to [0,1)
 // x / (1+x)
 
 
@@ -125,7 +125,7 @@ struct  MSTCache {
 enum _LikelihoodFunctionCountType {
   kLFCountPartitions,
   kLFCountGlobalVariables,
-  kLFCountLocalCariables,
+  kLFCountLocalVariables,
   kLFCountDependentVariables,
   kLFCountCategoryVariables
 } ;
@@ -156,7 +156,7 @@ public:
 
     virtual void        Duplicate (BaseRefConst);         // duplicate an object into this one
 
-    _SimpleList const &GetIndependentVars (void) const; // return a list of all indepenent variables
+    _SimpleList const &GetIndependentVars (void) const; // return a list of all independent variables
     _SimpleList const &GetDependentVars   (void) const; // get all dependent vars of this object
     _SimpleList const &GetCategoryVars    (void) const; // get all category variables
     void        GetGlobalVars      (_SimpleList&) const;
@@ -173,12 +173,12 @@ public:
     const _String*  GetIthIndependentName           (long) const;     // get the name of i-th independent variable
     const _String*  GetIthDependentName           (long) const;     // get the name of i-th independent variable
     hyFloat  GetIthDependent             (long) const;     // get the value of i-th dependent variable
-    void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix
+    void        GetAllIndependent           (_Matrix&) const; // store all independent values in a matrix
     _Variable*  GetIthIndependentVar        (long) const;     // get the variable object of i-th independent variable
     _Variable*  GetIthDependentVar          (long) const;     // get the variable object of i-th dependent variable
     _CategoryVariable*  GetIthCategoryVar           (long) const;     // get the variable object of i-th category variable
     hyFloat  GetIthIndependentBound      (long, bool isLower = true) const;
-    // get the lower / upper bound for the i-th indepdendent variable
+    // get the lower / upper bound for the i-th independent variable
 
     void        SetIthIndependent (long, hyFloat);           // set the value of i-th independent variable
     bool        CheckAndSetIthIndependent (long, hyFloat);   // set the value of i-th independent variable
@@ -341,7 +341,7 @@ protected:
     // internal function to scan all the variables in
 
     void            OptimalOrder            (long, _SimpleList&);
-    // determine the optimal order of compuation for a block
+    // determine the optimal order of computation for a block
 
     hyFloat      ComputeBlock            (long, hyFloat* siteResults = nil, long currentRateClass = -1, long = -1, _SimpleList* = nil);
     // 20090224: SLKP
@@ -404,7 +404,7 @@ protected:
 
         SLKP: 20090608
 
-            argument 2 provides an optional subcollection of partititons to operate on;
+            argument 2 provides an optional subcollection of partitions to operate on;
                 the default is to operate on all
     */
 
@@ -587,7 +587,7 @@ protected:
                             for all partitions in the likelihood function
 
                         _hyphyLFComputationalTemplateBySite:
-                            all partitons have the same number of sites
+                            all partitions have the same number of sites
                             the template is in terms of SITE_LIKELIHOOD
                             meant to implement model/tree mixture constructs
 
@@ -626,7 +626,7 @@ protected:
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
     /*
-       these variables store conditional likelihoods for every paritition
+       these variables store conditional likelihoods for every partition
        internal node (post-order traversal)
        and leaves;
 
@@ -634,7 +634,7 @@ protected:
 
             1st coordinate - the node index (in post-order traversal)
             2nd coordinate - the site (unique pattern) index (left-to-right)
-            3rd coordiante - i-th marginal (for the i-th character; 0-filterCharDimension)
+            3rd coordinate - i-th marginal (for the i-th character; 0-filterCharDimension)
 
             stores the probability for the subtree below this node given that i-th character
             is present at the node
@@ -687,7 +687,7 @@ protected:
                         gradientBlocks
                         ;
 
-    _AssociativeList    *optimizatonHistory;
+    _AssociativeList    *optimizationHistory;
 
 #ifdef  _OPENMP
     long                lfThreadCount;
@@ -764,7 +764,7 @@ useAdaptiveVariableStep            ,
 storeRootSupportFlag           ,
 supportMatrixVariable          ,
 optimizationStatusFile         ,
-autoParalellizeLF              ,
+autoParallelizeLF              ,
 addLFSmoothing                 ,
 reduceLFSmoothing              ;
 
@@ -787,7 +787,7 @@ extern  _Vector      _scalerMultipliers,
 
 hyFloat                  acquireScalerMultiplier (long);
 hyFloat                  myLog                   (hyFloat);
-hyFloat                  mapParameterToInverval  (hyFloat, char, bool);
+hyFloat                  mapParameterToInterval  (hyFloat, char, bool);
 
 #ifdef  __HYPHYMPI__
 extern                  _Matrix     resTransferMatrix;

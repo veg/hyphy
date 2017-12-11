@@ -184,7 +184,7 @@ public:
         return *currentNode;
     }*/
   
-    const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
+    const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int traversalType) const;
     void            SubTreeString                       (node<long>* root, _StringBuffer &, bool = false, long = -1, _AVLListXL* = nil) const;
 
     _String         CompareTrees                        (_TreeTopology*) const;
@@ -199,7 +199,7 @@ public:
     _AssociativeList*
     SplitsIdentity                      (_PMathObj);
     /* 20090609: SLKP
-        given a tree agrument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
+        given a tree argument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
         and a string (key "CONSENSUS");
         The first cell contains the number of splits in *this
         The second cell contains the number of splits in the argument that are present in *this

@@ -119,7 +119,7 @@ bool    DeleteObject (BaseRef object);
  
     @param object the object to "delete"
     
-    @retrun true if object was deleted, otherwise false
+    @return true if object was deleted, otherwise false
  
  */
 

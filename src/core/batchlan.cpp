@@ -314,7 +314,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
 
     MPI_Status  status;
   
-    // nonagressive polling mode
+    // nonaggressive polling mode
   
     int message_received = 0;
     while (! message_received) {
@@ -322,7 +322,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
       usleep (100);
     }
 
-    // nonagressive polling mode
+    // nonaggressive polling mode
   
     int message_received = 0;
     while (! message_received) {
@@ -1458,7 +1458,7 @@ void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
                           << pieces->GetItem(2L)
                           << pieces->GetItem(3L);
   
-  if (pieces->countitems() > 5UL) { // expliit list of choices
+  if (pieces->countitems() > 5UL) { // explicit list of choices
     
     if (pieces->countitems() % 2 > 0) {
       DeleteObject(choice_list);
@@ -1469,9 +1469,9 @@ void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
     
     for (unsigned long k = 4UL; k < pieces->countitems(); k+=2) {
         _String * selector    = new _String (*(_String*)pieces->GetItem(k)),
-                * desription  = new _String (*(_String*)pieces->GetItem(k+1));
-        selector->StripQuotes(); desription->StripQuotes();
-        choices < new _List (selector,desription);
+                * description  = new _String (*(_String*)pieces->GetItem(k+1));
+        selector->StripQuotes(); description->StripQuotes();
+        choices < new _List (selector,description);
     }
     
     choice_list->simpleParameters << 0L;
@@ -1951,7 +1951,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         }
         break;
 
-        case 5: { // data set contruction
+        case 5: { // data set construction
             (*string_form) << assignment (HY_HBL_COMMAND_DATA_SET, "ReadDataFile");
         }
         break;
@@ -2088,8 +2088,8 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         break;
 
 
-        case 38: { // reconsruct ancestors
-            (*string_form) << assignment (HY_HBL_COMMAND_DATA_SET, "ReconstuctAncestors");
+        case 38: { // reconstruct ancestors
+            (*string_form) << assignment (HY_HBL_COMMAND_DATA_SET, "ReconstructAncestors");
 
         }
         break;
@@ -2248,7 +2248,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
               // printf ("\n*** %s\n", ((_String*)result->toStr())->sData);
 
             if (terminate_execution && !result) {
-                  _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionSubstiteValues);
+                  _String       *s = (_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionSubstituteValues);
                   errMsg  = new _String(_String("Failed while evaluating: ") & _String((_String*)((_Formula*)simpleParameters(2))->toStr(kFormulaStringConversionNormal)) & " which expanded to  " & s);
                   throw (1);
                }
@@ -2563,7 +2563,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
         _List     theExclusions;
 
         if (parameters.lLength>2) // there is a list of exclusions there
-            // ';'-sep for different partititons
+            // ';'-sep for different partitions
             // ','-sep for states in a given partition
         {
             // SLKP mod 20070622 to allow string expressions as well
@@ -2939,7 +2939,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         break;
 
 
-    case 5: // data set contruction
+    case 5: // data set construction
 
         ExecuteCase5 (chain);
         break;
@@ -3060,7 +3060,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         ExecuteCase11 (chain);
         break;
 
-    case 12: // data set contruction by simulation
+    case 12: // data set construction by simulation
 
         ExecuteCase12 (chain);
         break;
@@ -3488,7 +3488,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
         }
 
         if (skipping && ( isalpha(c) || c=='_') && (isalnum(last_char) || last_char =='_')) {
-          // SLKP 20170704: this seems incomplete : need to check more thorougly that this is an ident
+          // SLKP 20170704: this seems incomplete : need to check more thoroughly that this is an ident
           // this is meant to determine that we are at the beginning of a new ident-like
           // token and insert a space
             result<<' ';
@@ -3658,10 +3658,10 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
 }
 //____________________________________________________________________________________
 
-long _ElementaryCommand::ExtractConditions (_String const& source, long start_at, _List& receptacle, char delimeter, bool include_empty_conditions) {
+long _ElementaryCommand::ExtractConditions (_String const& source, long start_at, _List& receptacle, char delimiter, bool include_empty_conditions) {
 
     long parentheses_depth = 1L,
-         // this is because extaction will work from the first character following a '(', e.g. CreateFilter([start parsing here]....)
+         // this is because extraction will work from the first character following a '(', e.g. CreateFilter([start parsing here]....)
          last_delim    = start_at,
          index             = start_at,
          curly_depth       = 0L;
@@ -3709,7 +3709,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
             }
             continue;
         }
-        if (c==delimeter) {
+        if (c==delimiter) {
             if (parentheses_depth > 1 || quote_type != normal_text || curly_depth) {
                 continue;
             }
@@ -4116,7 +4116,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
             target&&(&dsc);
             return true;
         } else {
-            HandleErrorWhileParsing ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);",
+            HandleErrorWhileParsing ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAncestors (likelihood function); or DataSet ident = SampleAncestors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);",
                                    source);
         }
     }
@@ -4323,7 +4323,7 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
     ExtractConditions (source,mark1+1,pieces,',');
 
     if (pieces.lLength<2) {
-        HandleApplicationError ("Parameter(s) missing in Model definition. Must have a matrix and a compatible eqiulibrium frequencies vector.");
+        HandleApplicationError ("Parameter(s) missing in Model definition. Must have a matrix and a compatible equilibrium frequencies vector.");
         return false;
     } else {
         if (pieces.lLength>3) {

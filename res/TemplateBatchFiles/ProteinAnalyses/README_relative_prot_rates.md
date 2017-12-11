@@ -7,7 +7,7 @@ _Written by Sergei L Kosakovsky Pond [spond@temple.edu] and Stephanie J Spielman
 
 ### Motivation
 
-This analysis performs a "non-paramteric" estimation of site-level substitution rates in a multiple sequence alignment of protein sequences. This allows one to evaluate levels of substitutional rate heterogeneity and, by extension, conservation. This analysis is based on the ["Rate4Site" method](http://www.tau.ac.il/~itaymay/cp/rate4site.html).
+This analysis performs a "non-parametric" estimation of site-level substitution rates in a multiple sequence alignment of protein sequences. This allows one to evaluate levels of substitutional rate heterogeneity and, by extension, conservation. This analysis is based on the ["Rate4Site" method](http://www.tau.ac.il/~itaymay/cp/rate4site.html).
 
 ### Analysis workflow
 

@@ -362,7 +362,7 @@ namespace fubar {
         io.ReportProgressBar                  ("PROCESSING", "Samples from chain " + (chain_id + 1));
 
         /* now, for each posterior sample k of grid weights, i.e. (alpha_i, beta_i) -> weight_ik
-           and for each site, s, we compute (up to a factor C), which will be divided out in the Bayes' formula computaion, the
+           and for each site, s, we compute (up to a factor C), which will be divided out in the Bayes' formula computation, the
                 P_ks = \sum_i Prob (site s | (alpha_i, beta_i)) Prob (alpha_i, beta_i) ~ Prob (site s) for sample k
 
             this matrix will have dimension (# samples x # sites)
@@ -432,7 +432,7 @@ namespace fubar {
                      {"beta-alpha", "Mean posterior beta-alpha"}
                      {"Prob[alpha>beta]", "Posterior probability of negative selection at a site"}
                      {"Prob[alpha<beta]", "Posterior probability of positive selection at a site"}
-                     {"BayesFactor[alpha<beta]", "Empiricial Bayes Factor for positive selection at a site"}
+                     {"BayesFactor[alpha<beta]", "Empirical Bayes Factor for positive selection at a site"}
                      {"PSRF", "Potential scale reduction factor - an MCMC mixing measure"}
                      {"Neff", "Estimated effective sample site for Prob [alpha<beta]"}};
 
@@ -852,10 +852,10 @@ lfunction fubar.scalers.SetBranchLength (model, value, parameter) {
 //------------------------------------------------------------------------------
 
 lfunction fubar.scalers.Constrain (tree_name, node_name, model_description) {
-    parameters.SetProprtionalConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")],
+    parameters.SetProportionalConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")],
                               (model_description[utility.getGlobalValue ("terms.global")])[utility.getGlobalValue ("terms.fubar.branch_length_scaler.alpha")]);
 
-    parameters.SetProprtionalConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.nonsynonymous_rate")],
+    parameters.SetProportionalConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.nonsynonymous_rate")],
                               (model_description[utility.getGlobalValue ("terms.global")])[utility.getGlobalValue ("terms.fubar.branch_length_scaler.beta")]);
 
 }

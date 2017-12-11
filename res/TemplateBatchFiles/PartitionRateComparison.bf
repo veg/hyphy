@@ -222,10 +222,10 @@ modelConstraintString = "";
 
 ChoiceList (modelChoice, "Rate Matrix Options",1,SKIP_NONE,
 			"MG94",	 "Standard Muse-Gaut 94 model.",
-			"MG94xHKY85","MG94 with the transition/transverion ratio parameter kappa.",
+			"MG94xHKY85","MG94 with the transition/transversion ratio parameter kappa.",
 			"MG94xREV","MG94 with 5 additional parameters for each type of nucleotide substitution ratio. (Recommended Rate Matrix)",
-			"MG94xCustom","MG94 crossed with an arbitrary nucelotide reversible model, except F81.",
-			/*"MG94xCustomxAA","MG94 crossed with an arbitrary nucelotide reversible model and an arbitrary amino-acid bias profile.",*/
+			"MG94xCustom","MG94 crossed with an arbitrary nucleotide reversible model, except F81.",
+			/*"MG94xCustomxAA","MG94 crossed with an arbitrary nucleotide reversible model and an arbitrary amino-acid bias profile.",*/
 			"GY94","Goldman-Yang, 94 model (similar to MG94xHKY85)"
 );
 
@@ -331,7 +331,7 @@ else
 				"Constant","Constant Rate Model: no rate variation across sites.", /* index 0 */
 				"Proportional","Proportional Variable Rates Model: dS and dN vary along the sequence, but dN = R*dS for every site",
 				"Nonsynonymous","Non-synonymous Variable Rates Model: dS = 1 for every site, while dN is drawn from a given distribution.",
-				"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommened model.",
+				"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommended model.",
 				"Lineage Dual","Lineage Dual Variable Rates Model:  dS and dN are drawn from a bivariate distribution (independent or correlated components), plus each lineage has an adjustment factor for the E[dN]/E[dS]."
 			    );
 			    
@@ -377,7 +377,7 @@ resp2 = 0;
 
 while (resp<2)
 {
-	fprintf (stdout,"Number of synonymous (and single variable rate modles) rate classes (>=2):");
+	fprintf (stdout,"Number of synonymous (and single variable rate models) rate classes (>=2):");
 	fscanf  (stdin, "Number", resp);
 }
 
@@ -593,7 +593,7 @@ if (MPI_NODE_COUNT>1)
 
 function ReceiveJobs (sendOrNot)
 
-/* This function receieves and processes 
+/* This function receives and processes 
    model results. The parameter is a boolean,
    set to 1 if there are jobs waiting to be sent to
    an MPI node */

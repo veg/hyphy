@@ -32,15 +32,15 @@ if (rOptions == 1)
 ChoiceList  (cOptions,"Ancestor Counting Options",1,NO_SKIP,
 			/*0*/ "Single Ancestor Counting","Use the most likely ancestor state",
 			/*1*/ "Weighted Ancestor Counting","Weigh the contributions of every possible ancestral state (slow)",
-			/*2*/ "Sample Ancestal States","Generate a sample of ancestral state reconstructions to assess single ancestor reliability",
-			/*3*/ "Process Sampled Ancestal States","Process a previously generated sample of ancestral state reconstructions to assess single ancestor reliability",
+			/*2*/ "Sample Ancestral States","Generate a sample of ancestral state reconstructions to assess single ancestor reliability",
+			/*3*/ "Process Sampled Ancestral States","Process a previously generated sample of ancestral state reconstructions to assess single ancestor reliability",
 			/*4*/ "One rate FEL","Fixed effects site-by-site likelihood estimation. dS is held constant across sites.",
 			/*5*/ "Two rate FEL","Fixed effects site-by-site likelihood estimation. dS adjusted across sites.",
 			/*6*/ "Rate Distribution","Obtain a site-specific distribution of dN and dS, under the assumption that E[dS] = 1. Also obtain an upper bound on rate-variation model likelihood scores.",
 			/*7*/ "Full site-by-site LRT","Each site has a separate dN AND branch lengths. Experimental and VERY slow.",
 			/*8*/ "Multirate FEL","Fixed effects site-by-site likelihood estimation, where non-synonymous rates are split into several classes",
 			/*9*/ "BGM co-evolution","Use a Bayesian graphical model fitted to site substitution patterns to detect co-evolving sites",
-            /*10*/ "MEME", "Mixed effects model of evolution to search for evidence of episodic selection at indvidual sites [EXPERIMENTAL, March 2011]");
+            /*10*/ "MEME", "Mixed effects model of evolution to search for evidence of episodic selection at individual sites [EXPERIMENTAL, March 2011]");
 
 
 if (cOptions < 0)

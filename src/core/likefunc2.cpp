@@ -451,7 +451,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
 //_______________________________________________________________________________________________
 
 void            _LikelihoodFunction::PopulateConditionalProbabilities   (long index, char runMode, hyFloat* buffer, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues)
-// this function computes site probabilties for each rate class (or something else that involves iterating over rate classes)
+// this function computes site probabilities for each rate class (or something else that involves iterating over rate classes)
 // see run options below
 
 // run mode can be one of the following
@@ -486,7 +486,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 {
     _List               *traversalPattern       = (_List*)categoryTraversalTemplate(index),
                          *variables                = (_List*)((*traversalPattern)(0)),
-                          *catWeigths               = nil;
+                          *catWeights               = nil;
 
     _SimpleList         *categoryCounts         = (_SimpleList*)((*traversalPattern)(1)),
                          *categoryOffsets     = (_SimpleList*)((*traversalPattern)(2)),
@@ -525,7 +525,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                 buffer[r] = 0.;
             }
         }
-        catWeigths = new _List;
+        catWeights = new _List;
     } else if (runMode == _hyphyLFConditionProbsMaxProbClass)
         for (long r = 0, r2 = 2*blockLength; r < blockLength; r++, r2++) {
             buffer[r] = 0.0;
@@ -536,7 +536,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
         (catVariable = ((_CategoryVariable**)(variables->lData))[currentCat])->Refresh();
         catVariable->SetIntervalValue(0,true);
         if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate || runMode == _hyphyLFConditionProbsClassWeights) {
-            (*catWeigths) << catVariable->GetWeights();
+            (*catWeights) << catVariable->GetWeights();
         }
     }
 
@@ -589,7 +589,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                 if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights || runMode == _hyphyLFConditionMPIIterate) {
                     for                 (long currentCat        = hmmCatCount; currentCat <= catCount; currentCat++) {
-                        currentRateWeight *= ((_Matrix**)catWeigths->lData)[currentCat]->theData[categoryValues.lData[currentCat]];
+                        currentRateWeight *= ((_Matrix**)catWeights->lData)[currentCat]->theData[categoryValues.lData[currentCat]];
                     }
 
 #ifdef __HYPHYMPI__
@@ -615,19 +615,19 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                 }
             }
 
-            long useThisPartitonIndex = currentRateCombo;
+            long useThisPartitionIndex = currentRateCombo;
 
 #ifdef __HYPHYMPI__
             if (runMode == _hyphyLFConditionMPIIterate) {
                 MPI_Status     status;
                 ReportMPIError(MPI_Recv (resTransferMatrix.theData, resTransferMatrix.GetSize(), MPI_DOUBLE, MPI_ANY_SOURCE , HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD,&status),true);
-                useThisPartitonIndex = status.MPI_SOURCE-1;
-                currentRateWeight    = computedWeights->theData[useThisPartitonIndex];
+                useThisPartitionIndex = status.MPI_SOURCE-1;
+                currentRateWeight    = computedWeights->theData[useThisPartitionIndex];
             }
 #endif
 
             // now that the categories are set we can proceed with the computing step
-            long             indexShifter                   = blockLength * useThisPartitonIndex;
+            long             indexShifter                   = blockLength * useThisPartitionIndex;
             long             *siteCorrectors                = ((_SimpleList**)siteCorrections.lData)[index]->lLength?
                     (((_SimpleList**)siteCorrections.lData)[index]->lData) + indexShifter
                     :nil;
@@ -638,11 +638,11 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
             {
                 hyFloat  _hprestrict_ *bufferForThisCategory = buffer + indexShifter;
 
-                ComputeBlock    (index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
+                ComputeBlock    (index, bufferForThisCategory, useThisPartitionIndex, branchIndex, branchValues);
                 if (usedCachedResults) {
                     bool saveFR = forceRecomputation;
                     forceRecomputation = true;
-                    ComputeBlock    (index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
+                    ComputeBlock    (index, bufferForThisCategory, useThisPartitionIndex, branchIndex, branchValues);
                     forceRecomputation = saveFR;
                 }
 
@@ -660,7 +660,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                                 // this class has a _bigger_ scaling factor than at least one other class
                                 // hence it needs to be scaled down (unless it's the first class)
                             {
-                                if (useThisPartitonIndex==0) { //(scalers.lData[r1] == -1)
+                                if (useThisPartitionIndex==0) { //(scalers.lData[r1] == -1)
                                     scalers.lData[r1] = scv;
                                 } else {
                                     bufferForThisCategory[r1] *= acquireScalerMultiplier (scalerDifference);
@@ -699,12 +699,12 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
 #endif
 
-                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitonIndex, branchIndex, branchValues);
+                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitionIndex, branchIndex, branchValues);
 
                     if (runMode != _hyphyLFConditionMPIIterate && usedCachedResults) {
                         bool saveFR = forceRecomputation;
                         forceRecomputation = true;
-                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitonIndex, branchIndex, branchValues);
+                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitionIndex, branchIndex, branchValues);
                         forceRecomputation = saveFR;
                     }
 
@@ -770,7 +770,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                             if (doChange) {
                                 buffer[r1]         = buffer[r2];
-                                buffer[r3]         = useThisPartitonIndex;
+                                buffer[r3]         = useThisPartitionIndex;
                             }
                         }
                     }
@@ -786,7 +786,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 #ifdef __HYPHYMPI__
     DeleteObject (computedWeights);
 #endif
-    DeleteObject (catWeigths);
+    DeleteObject (catWeights);
 }
 
 //_______________________________________________________________________________________________
@@ -839,7 +839,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                     branchValues,
                     postToIn;
 
-    blockTree->MapPostOrderToInOderTraversal (postToIn, doLeaves == false);
+    blockTree->MapPostOrderToInOrderTraversal (postToIn, doLeaves == false);
     supportValues.Clear                      ();
     CreateMatrix                             (&supportValues,matrixSize,shiftForTheNode,false,true,false);
 
@@ -1157,7 +1157,7 @@ void        _LikelihoodFunction::RunViterbi ( _Matrix & result,                 
 //_______________________________________________________________________________________________
 
 
-hyFloat mapParameterToInverval (hyFloat in, char type, bool inverse)
+hyFloat mapParameterToInterval (hyFloat in, char type, bool inverse)
 {
     switch (type) {
     case _hyphyIntervalMapExpit:
@@ -1214,9 +1214,9 @@ void _LikelihoodFunction::SetupParameterMapping (void)
 
 
         parameterValuesAndRanges->Store(pIndex,0,thisValue);
-        parameterValuesAndRanges->Store(pIndex,1,mapParameterToInverval(thisValue,parameterTransformationFunction.Element(-1),false));
-        parameterValuesAndRanges->Store(pIndex,2,mapParameterToInverval(thisLB,parameterTransformationFunction.Element(-1),false));
-        parameterValuesAndRanges->Store(pIndex,3,mapParameterToInverval(thisUB,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,1,mapParameterToInterval(thisValue,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,2,mapParameterToInterval(thisLB,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,3,mapParameterToInterval(thisUB,parameterTransformationFunction.Element(-1),false));
     }
 
 }

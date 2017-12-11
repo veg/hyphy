@@ -39,7 +39,7 @@ siteShift 		= -1;  /*Used to standardize codon positions. Remember HyPhy indexes
 	model, with nonsynFG unconstrained. An LRT is used to determine whether the unconstrained
 	positive selection model significantly outperformed the null. So far this is only positive
 	selection. The unconstrained positive selection model will be used as the null for tests of
-	directional selection. For each of 20 AAs, fit a seperate model that allows a rate multiplier
+	directional selection. For each of 20 AAs, fit a separate model that allows a rate multiplier
 	favouring substitutions towards that AA. This produces 20 nested models, so a set Bonferroni
 	corrected LRTs can be used to identify evidence of direction selection. This batch file outputs
 	p-values BEFORE Bonferroni correction.
@@ -133,7 +133,7 @@ fprintf (stdout, theLikFun);
 
 /*---------Labels all branches containing branchID with the FG model. This code segment does nothing when the branches are explicitly tagged, and branchMatch doesn't match anything-------------*/
 /*--First populate a list of branches containing branchID. branchID could be regExp text--*/
-branchMatch = "DONTNAMEANYTAXATHISUNLESSYOUREALLYMEANIT"; /*This is a different (old) way to tag foreground branches - All terminal branches with any substring = branchMatch will get tagged. This is untested and explicit tree tagging is preffered*/
+branchMatch = "DONTNAMEANYTAXATHISUNLESSYOUREALLYMEANIT"; /*This is a different (old) way to tag foreground branches - All terminal branches with any substring = branchMatch will get tagged. This is untested and explicit tree tagging is preferred*/
 branchID = branchMatch;
 BOInames = {};
 tips = TipCount(givenTree);
@@ -194,7 +194,7 @@ function BuildCodonFrequencies (nucFreqMatrix)
 		{
 			result[h-hshift] = nucFreqMatrix[first][0]*nucFreqMatrix[second][1]*nucFreqMatrix[third][2]; 
 											/* store the frequency for codon h. Notice the substraction of hshift to compensate
-											  for the absense of stop codons. The first codon affected by it is 
+											  for the absence of stop codons. The first codon affected by it is 
 											  TAC (h=49), which gets stored in result[48], because TAA (a stop codon) was skipped. */
 		}
 	}
@@ -209,9 +209,9 @@ estimatedCodonFreqs = BuildCodonFrequencies(nuc3by4);
 /*----------------------Defines a function for creating a custom codon model--------------*/
 /*-------Usage: "PopulateModelMatrix ("ModelVarName",Freq3x4,targetAA,customRateString,"nonSynRateTag");"---*/
 /*specify targetAA = 21 if you don't want directional selection. NonSynRateTag allows one to control the
-name of the "nonsyn" rate variable by appending nonSynRateTag to the end. This allows having seperate foreground
+name of the "nonsyn" rate variable by appending nonSynRateTag to the end. This allows having separate foreground
 and background nonsyn rates. "customRateString" is NOT a PAUP specifier, but rather a matrix of string valued
-multiplers, derived above in the setup of the nuc model*/
+multipliers, derived above in the setup of the nuc model*/
 /*Part copypasta from MG94customCF3x4.mdl*/
 
 function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,nonSynRateTag)
@@ -243,7 +243,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,n
 				continue; 
 			}
 			nucPosInCodon = 2;
-			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0)) /* differ by one subsitution only */
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0)) /* differ by one substitution only */
 			{
 				if (h$4==v$4) /* third position */
 				{
@@ -452,7 +452,7 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 		outputString = outputString + "," + constrainedRatioNoPos + "," + pValPosVsNoPos + "," + DivFgNonSyn + "," + DivBgNonSyn + "," + DivSyn;
 		
 		/*--Now test for directional selection vs positive selection--*/
-		fprintf (stdout, "\tTesting for directional selection againts null allowing positive selection in foreground", "\n");
+		fprintf (stdout, "\tTesting for directional selection against null allowing positive selection in foreground", "\n");
 		for (AAcount=AAlower; AAcount<AAupper+1; AAcount=AAcount+1)
 		{
 			lrtScore = 2*(AAlikes[AAcount]-constrainedRatioPos);
@@ -465,7 +465,7 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 			}
 			outputString = outputString + "," + AAlikes[AAcount] + "," + pValues + "," + AAlikesOmegaTs[AAcount] + "," + AAlikesFgNonSyn[AAcount] + "," + AAlikesBgNonSyn[AAcount] + "," + AAlikesSyn[AAcount];
 		}
-		/*Testing for directional vs neutral selection can be done in post-processesing*/
+		/*Testing for directional vs neutral selection can be done in post-processing*/
 		fprintf (outputFile,"\n",outputString);
 		/*Clear constraints to test another site*/
 		ClearConstraints(omegaT)

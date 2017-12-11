@@ -96,9 +96,9 @@ public:
 
     bool        HasLocals                   (void);
 
-    virtual     bool        RemoveDependance            (long);
-    virtual     long        SetDependance               (long);
-    bool        SetMDependance              (_SimpleList&);
+    virtual     bool        RemoveDependence            (long);
+    virtual     long        SetDependence               (long);
+    bool        SetMDependence              (_SimpleList&);
 
     void        Clear                       (void);
     virtual     void        ClearConstraints            (void);

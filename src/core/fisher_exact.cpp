@@ -1,14 +1,14 @@
 /*
 
 This file is a C++ translation of the Mehta-Patel network
-algorithm for computing association p-values on NxM contigency
+algorithm for computing association p-values on NxM contingency
 table
 
 Original source from
 
     http://portal.acm.org/citation.cfm?id=214326&jmp=indexterms&dl=GUIDE&dl=ACM
 
-Cleaned up and dapted for C++. Included a bug fix for negative keys
+Cleaned up and adapted for C++. Included a bug fix for negative keys
 in hash tables in f3xact_.
 
 Sergei L. Kosakovsky Pond,
@@ -520,7 +520,7 @@ int f10act_(long nrow, long *irow, long ncol, long *icol, double *val, bool *xmi
 /*  Arguments: */
 /*     N      - Length of IR.  (Input) */
 /*     MM     - Number for factorial in numerator.  (Input) */
-/*     IR     - Vector of length N containing the numebers for the */
+/*     IR     - Vector of length N containing the numbers for the */
 /*              denominator of the factorial.  (Input) */
 /*     FACT   - Table of log factorials.  (Input) */
 /*     F9XACT  - The log of the multinomal coefficient.  (Output) */
@@ -733,7 +733,7 @@ L9000:
 /*              (Output) */
 /*     IFLAG  - Set to 3 if there are no additional nodes to process. */
 /*              (Output) */
-/*     KYY    - Constant mutlipliers used in forming the hash table key. */
+/*     KYY    - Constant multipliers used in forming the hash table key. */
 /*              (Input) */
 /*     KEY    - Vector of length LDKEY containing the hash table keys. */
 /*              (Input/output) */
@@ -1836,7 +1836,7 @@ int f2xact_(long *nrow, long *ncol, double *table,
         nco = *ncol;
     }
 
-    /*                                  Get multiplers for stack */
+    /*                                  Get multipliers for stack */
     kyy[1] = 1;
     i__1 = nro;
     for (i__ = 2; i__ <= i__1; ++i__) {

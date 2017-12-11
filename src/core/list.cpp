@@ -68,7 +68,7 @@ _List::_List (unsigned long l):_SimpleList(l)
 {
 }
 
-// Stack Copy contructor
+// Stack Copy constructor
 _List::_List (const _List& l, long from, long to)
 {
     if (from == 0 && to == -1) { // copy the whole thing

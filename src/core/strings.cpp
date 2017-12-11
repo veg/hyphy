@@ -939,7 +939,7 @@ const _String _String::Replace(const _String& pattern, const _String replace, bo
 //=============================================================
 
 long _String::FirstNonSpaceIndex(long start, long end, hy_string_search_direction direction) const {
-  return _FindFirstIndexCondtion(start, end, direction, [] (char c) -> bool {return !isspace (c);});
+  return _FindFirstIndexCondition(start, end, direction, [] (char c) -> bool {return !isspace (c);});
 }
 
 char _String::FirstNonSpace(long start, long end, hy_string_search_direction direction) const {
@@ -950,7 +950,7 @@ char _String::FirstNonSpace(long start, long end, hy_string_search_direction dir
 //=============================================================
 
 long _String::FirstSpaceIndex(long start, long end, hy_string_search_direction direction) const {
-  return _FindFirstIndexCondtion(start, end, direction, isspace);
+  return _FindFirstIndexCondition(start, end, direction, isspace);
 }
 
 //=============================================================

@@ -58,7 +58,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 typedef  bool _ProgressCancelHandler (const char*,int,double);
 /* if  the function returns false, then HyPhy will attempt to terminate the task and return
-     HyPhy will also populate three agruments
+     HyPhy will also populate three arguments
   -- char * : pointer to an (internally handled by HyPhy) string
               that describes what task HyPhy is working on at the moment
   -- int    : integer progress value (as in % done)
@@ -157,7 +157,7 @@ public:
     // create an instance with a given progress/cancel handler
     // the second argument is a path to the directory that
     // HyPhy will use to find its scripting components
-    // takes care of needed istantiations (if need)
+    // takes care of needed instantiations (if need)
     // the last argument is relevant for multi-threaded builds
     // and specifies the number of threads that HyPhy should try to spawn
 
@@ -225,7 +225,7 @@ public:
     // return the pointer to the current callback handler
 
 
-    // for the following 3 functions, the end user is reponsible
+    // for the following 3 functions, the end user is responsible
     // for disposing of the return structure
 
     _THyPhyString *  GetWarnings (void) {
@@ -276,7 +276,7 @@ double  _THyPhyGetDoubleStatus      (void);
 
 extern  _THyPhy*                    globalInterfaceInstance;
 // this object MUST be set to a new instance of _THyPhy
-// in order for the rest of the code to intreface with it properly
+// in order for the rest of the code to interface with it properly
 
 
 #endif

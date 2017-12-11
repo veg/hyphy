@@ -180,7 +180,7 @@ selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_omega_rati
 
 // define BS-REL models with up to N rate classes
 
-absrel.model_defintions = {};
+absrel.model_definitions = {};
 
 absrel.likelihood_function_id = absrel.base.results [terms.likelihood_function];
 absrel.constrain_everything (absrel.likelihood_function_id);
@@ -199,9 +199,9 @@ absrel.model_object_map = {
     absrel.MG94.model [terms.id] : absrel.MG94.model
 };
 
-absrel.model_defintions [1] = absrel.MG94.model;
+absrel.model_definitions [1] = absrel.MG94.model;
 for (absrel.i = 2; absrel.i <= absrel.max_rate_classes; absrel.i += 1) {
-    absrel.model_defintions [absrel.i] = model.generic.DefineMixtureModel("absrel.BS_REL.ModelDescription",
+    absrel.model_definitions [absrel.i] = model.generic.DefineMixtureModel("absrel.BS_REL.ModelDescription",
             "absrel.model." + absrel.i, {
                 "0": parameters.Quote(terms.local),
                 "1": absrel.codon_data_info[terms.code],
@@ -210,8 +210,8 @@ for (absrel.i = 2; absrel.i <= absrel.max_rate_classes; absrel.i += 1) {
             absrel.filter_names,
             None);
 
-    absrel.model_object_map [(absrel.model_defintions [absrel.i])[terms.id]] = absrel.model_defintions [absrel.i];
-    models.BindGlobalParameters ({"1" : absrel.model_defintions [absrel.i], "0" : absrel.MG94.model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
+    absrel.model_object_map [(absrel.model_definitions [absrel.i])[terms.id]] = absrel.model_definitions [absrel.i];
+    models.BindGlobalParameters ({"1" : absrel.model_definitions [absrel.i], "0" : absrel.MG94.model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 }
 
 io.ReportProgressMessageMD ("absrel", "complexity", "Determining the optimal number of rate classes per branch using a step up procedure");
@@ -249,17 +249,17 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
 
     while (TRUE) {
         absrel.report.row [2] =  Format(absrel.current_rate_count,0,0);
-        model.ApplyToBranch ((absrel.model_defintions [absrel.current_rate_count])[terms.id], absrel.tree_id, absrel.current_branch);
+        model.ApplyToBranch ((absrel.model_definitions [absrel.current_rate_count])[terms.id], absrel.tree_id, absrel.current_branch);
         parameters.SetValues (absrel.current_branch_estimates);
 
-        absrel.initial_guess = absrel.ComputeOnAGrid (absrel.PopulateInitialGrid (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch, absrel.current_branch_estimates), absrel.likelihood_function_id);
+        absrel.initial_guess = absrel.ComputeOnAGrid (absrel.PopulateInitialGrid (absrel.model_definitions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch, absrel.current_branch_estimates), absrel.likelihood_function_id);
 
-        absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
+        absrel.SetBranchConstraints (absrel.model_definitions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
 
         Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id);
         absrel.current_test_score = math.GetIC (absrel.stepup.mles[1][0], absrel.current_parameter_count + 2, absrel.codon_data_info[terms.data.sample_size]);
 
-        absrel.provisional_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
+        absrel.provisional_estimates = absrel.GetBranchEstimates(absrel.model_definitions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
         absrel.dn_ds.distro = absrel.GetRateDistribution (absrel.provisional_estimates);
         if (absrel.dn_ds.distro[absrel.current_rate_count-1][0] < 1000) {
             absrel.report.row [3] = Format (absrel.dn_ds.distro[absrel.current_rate_count-1][0],5,2) + " (" + Format (absrel.dn_ds.distro[absrel.current_rate_count-1][1]*100,5,2) + "%)";
@@ -291,8 +291,8 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     if (absrel.current_test_score >= absrel.current_best_score) { // reset the model
         absrel.current_rate_count = absrel.current_rate_count - 1;
         if ( absrel.current_rate_count >= 2) {
-            model.ApplyToBranch ((absrel.model_defintions [absrel.current_rate_count])[terms.id], absrel.tree_id, absrel.current_branch);
-            absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
+            model.ApplyToBranch ((absrel.model_definitions [absrel.current_rate_count])[terms.id], absrel.tree_id, absrel.current_branch);
+            absrel.SetBranchConstraints (absrel.model_definitions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
         } else {
             model.ApplyToBranch (absrel.MG94.model[terms.id], absrel.tree_id, absrel.current_branch);
         }
@@ -395,7 +395,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     if ((absrel.selected_branches[0])[absrel.current_branch] == terms.tree_attributes.test) {
 
         if (absrel.dn_ds.distro [absrel.branch.complexity[absrel.current_branch]-1][0] > 1) {
-            absrel.branch.ConstrainForTesting (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
+            absrel.branch.ConstrainForTesting (absrel.model_definitions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
             Optimize (absrel.null.mles, ^absrel.likelihood_function_id);
             absrel.branch.test = absrel.ComputeLRT ( absrel.full_model.fit[terms.fit.log_likelihood], absrel.null.mles[1][0]);
             estimators.RestoreLFStateFromSnapshot (absrel.likelihood_function_id, absrel.full_model.mle_set);

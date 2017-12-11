@@ -355,33 +355,33 @@ void  _AVLList::ConsistencyCheck (void)
             nodeStack << curNode;
             curNode = leftChild.lData[curNode];
             if (curNode >= (long)dataList->lLength) {
-                hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                hy_global::HandleApplicationError ("Failed Consistency Check in _AVLList");
                 return;
             }
 
         }
         if (long h = nodeStack.lLength) {
             if (h>3*log (1.+countitems())) {
-                hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                hy_global::HandleApplicationError ("Failed Consistency Check in _AVLList");
                 return;
             }
             h--;
             curNode = nodeStack.lData[h];
             if (lastNode >= 0 && curNode >= 0) {
                 if (dataList->Compare (Retrieve (lastNode), curNode) >= 0) {
-                    hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                    hy_global::HandleApplicationError ("Failed Consistency Check in _AVLList");
                     return;
                 }
                 checkCount++;
             }
             if ((balanceFactor.lData[curNode] < -1)||(balanceFactor.lData[curNode] > 1)) {
-                hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                hy_global::HandleApplicationError ("Failed Consistency Check in _AVLList");
                 return;
             }
             lastNode = curNode;
             curNode = rightChild.lData[curNode];
             if (curNode >= (long)dataList->lLength) {
-                hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+                hy_global::HandleApplicationError ("Failed Consistency Check in _AVLList");
                 return;
             }
             nodeStack.Delete (h, false);
@@ -391,7 +391,7 @@ void  _AVLList::ConsistencyCheck (void)
     }
 
     if (dataList->lLength && (dataList->lLength > checkCount + 1 + emptySlots.lLength)) {
-        hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
+        hy_global::HandleApplicationError ("Failed Consistency Check in _AVLList");
         return;
     }
 
