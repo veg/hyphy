@@ -531,7 +531,7 @@ hyFloat  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          update
                 } else {
                     childVector = lNodeResolutions->theData + (-siteState-1) * alphabetDimension;
                 }
-                // look up the resolution for the ambugious node -- this will have to be on the device as well
+                // look up the resolution for the ambiguous node -- this will have to be on the device as well
                 // but can be in constant memory
             }
 
