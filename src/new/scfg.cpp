@@ -564,7 +564,7 @@ void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities,
         } else {
             ruleProbabilities << expression->theString;
         }
-    } else { // determininstic rule (prob = 1.0)
+    } else { // deterministic rule (prob = 1.0)
         aFormula = new _Formula (new _Constant (1.0), false); // constant 1.0
         ruleProbabilities && & _HYSCFG_NT_KEY_1;
     }
