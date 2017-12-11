@@ -71,7 +71,7 @@ class _SimpleList:public BaseObj {
         //length constructor
         _SimpleList(unsigned long);
 
-        // stack copy contructor
+        // stack copy constructor
         _SimpleList(_SimpleList const&,long=0,long=-1);
 
         // data constructor (1 member list)

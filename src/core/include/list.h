@@ -81,7 +81,7 @@ class _List:public _SimpleList {
 
 
         /**
-        * Stack copy contructor
+        * Stack copy constructor
         * @param l List to be copied
         * @param from Beginning index to copy from 
         * @param to Last index to copy to  

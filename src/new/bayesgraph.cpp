@@ -232,7 +232,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
         // DEBUGGING
         /* wuz: ReportWarning (_String("node_name[") & node & "]=" & (_String *)node_names.lData[node]);
-         20111210 SLKP : _String (_String*) contstructor will actually assume that the argument is 
+         20111210 SLKP : _String (_String*) constructor will actually assume that the argument is 
                        : 'unencumbered' i.e. not a member of _Lists etc
                        : this function call will create a stack copy of node_names.lData[node]
                        : print it to messages.log and then kill the dynamic portion of the object (sData)
