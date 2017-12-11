@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(HyPhy)
 cmake_policy(VERSION 3.0.0)
-cmake_policy(SET CMP0026 OLD)
+cmake_policy(SET CMP0026 NEW)
 
 set(CMAKE_CONFIGURATION_TYPES Release)
 
@@ -277,7 +277,6 @@ install(DIRECTORY res/ DESTINATION lib/hyphy)
 #-------------------------------------------------------------------------------
 add_executable(
     HYPHYMP
-    EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
 
@@ -305,12 +304,6 @@ if(${OPENCL_FOUND})
 
     include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl)
     target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
-
-    install(
-        TARGETS HYPHYOCL
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
 
     add_custom_target(OCL DEPENDS HYPHYOCL)
     set_property(
@@ -345,7 +338,6 @@ if(${MPI_FOUND})
 
     add_executable(
         HYPHYMPI
-        EXCLUDE_FROM_ALL
         ${SRC_COMMON} ${SRC_UNIXMAIN}
     )
 
