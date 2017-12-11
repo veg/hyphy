@@ -250,7 +250,7 @@ class _SimpleList:public BaseObj {
          */
         long CorrectForExclusions (long index, long excluded = -1) const;
 
-        /** Adjust the [sorted] list of indcies argument for skipped elements in the [0-max] range
+        /** Adjust the [sorted] list of indices argument for skipped elements in the [0-max] range
          * so that the arguments is remapped to the range with elements in this
          * list excluded. (*this) list must be sorted
          * Example: SimpleList (2,4,5).SkipCorrect ([2,3],2) = 1 (and the list is now [2])
