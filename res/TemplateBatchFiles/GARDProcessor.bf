@@ -776,7 +776,7 @@ function testLRT (vec1, vec2, itCount)
 		resampled = Random(jvec,1);
 		resMx1[k] = +(resampled[0][-1]);
 		resMx2[k] = +(resampled[1][-1]);
-        SetParameter (STATUS_BAR_STATUS_STRING, "Drawing resampled likelihoods for segments " + pccounter + " and " + pc2 + "("+k+"/"+itCound+" done)",0);
+        SetParameter (STATUS_BAR_STATUS_STRING, "Drawing resampled likelihoods for segments " + pccounter + " and " + pc2 + "("+k+"/"+itCount+" done)",0);
 	}
 	
 	resMx = (resMx1-resMx2)*2;
