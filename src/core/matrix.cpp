@@ -4219,7 +4219,7 @@ bool    _Matrix::is_empty (void) const {
 //_____________________________________________________________________________________________
 
 hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
-// returns matrix's smalles non-zero abs value element
+// returns matrix's smallest non-zero abs value element
 {
     if (storageType == 1) {
         hyFloat min = DBL_MAX;
