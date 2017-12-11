@@ -106,7 +106,7 @@ namespace hy_env {
     }
     /**
         arrange variables alphabetically by C++ ID for easier scanning;
-        defaut  values are stored can be obtained by calling
+        default  values are stored can be obtained by calling
             EnvVariableGetDefault
      
      */
