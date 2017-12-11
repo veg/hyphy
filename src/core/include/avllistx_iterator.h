@@ -60,7 +60,7 @@ public:
 
 class AVLListXIterator {
   /** 
-   * A C++ range compiant iterator for _AVLListX
+   * A C++ range compliant iterator for _AVLListX
    */
   
 private:

@@ -245,7 +245,7 @@ namespace hyphy_global_objects {
   
   AVLListXLIterator  ObjectIndexer (const long type);
   /**
-   Returns a range-compiant object to iterate over the requested object type
+   Returns a range-compliant object to iterate over the requested object type
    
    @param type the type of the object
    
