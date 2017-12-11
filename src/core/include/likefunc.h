@@ -687,7 +687,7 @@ protected:
                         gradientBlocks
                         ;
 
-    _AssociativeList    *optimizatonHistory;
+    _AssociativeList    *optimizationHistory;
 
 #ifdef  _OPENMP
     long                lfThreadCount;

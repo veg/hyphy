@@ -499,7 +499,7 @@ void _LikelihoodFunction::Init (void)
     siteScalingFactors                      = nil;
     branchCaches                            = nil;
     parameterValuesAndRanges                = nil;
-    optimizatonHistory                      = nil;
+    optimizationHistory                      = nil;
 
 #ifdef  _OPENMP
     lfThreadCount       = 1L;
@@ -760,9 +760,9 @@ void     _LikelihoodFunction::Clear (void)
         mstCache = nil;
     }
 
-    if (optimizatonHistory) {
-      DeleteObject(optimizatonHistory);
-      optimizatonHistory = nil;
+    if (optimizationHistory) {
+      DeleteObject(optimizationHistory);
+      optimizationHistory = nil;
     }
 
     treeTraversalMasks.Clear();
@@ -1081,11 +1081,11 @@ void    _LikelihoodFunction::Duplicate (BaseRefConst obj) // duplicate an object
     leafSkips.Duplicate (&lf->leafSkips);
     templateKind        = lf->templateKind;
 
-    if (lf->optimizatonHistory) {
-      optimizatonHistory = new _AssociativeList;
-      optimizatonHistory->Duplicate (lf->optimizatonHistory);
+    if (lf->optimizationHistory) {
+      optimizationHistory = new _AssociativeList;
+      optimizationHistory->Duplicate (lf->optimizationHistory);
     } else {
-      optimizatonHistory  = nil;
+      optimizationHistory  = nil;
     }
 
     if (lf->computingTemplate) {
@@ -3422,7 +3422,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 //_______________________________________________________________________________________
 
 void        _LikelihoodFunction::LoggerLogL (hyFloat logL) {
-  if (optimizatonHistory) {
+  if (optimizationHistory) {
 
     #ifdef  _COMPARATIVE_LF_DEBUG_CHECK
           if (_comparative_lf_debug_matrix && fabs ((*_comparative_lf_debug_matrix)[_comparative_lf_index] - logL) > 0.001) {
@@ -3446,28 +3446,28 @@ void        _LikelihoodFunction::LoggerLogL (hyFloat logL) {
     #endif
 
 
-    *((_GrowingVector*) this->optimizatonHistory->GetByKey("LogL")) << logL
-    << ((_AssociativeList*)this->optimizatonHistory->GetByKey("Phases"))->Length();
+    *((_GrowingVector*) this->optimizationHistory->GetByKey("LogL")) << logL
+    << ((_AssociativeList*)this->optimizationHistory->GetByKey("Phases"))->Length();
   }
 }
 
 //_______________________________________________________________________________________
 
 void        _LikelihoodFunction::LoggerAddGradientPhase (hyFloat precision) {
-  if (optimizatonHistory) {
+  if (optimizationHistory) {
     _AssociativeList* new_phase = new _AssociativeList;
     (*new_phase) < (_associative_list_key_value){"type", new _FString ("Gradient descent")}
                  < (_associative_list_key_value){"precision", new _Constant (precision)};
 
 
-     *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
+     *((_AssociativeList*) this->optimizationHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
   }
 }
 
 //_______________________________________________________________________________________
 
 void        _LikelihoodFunction::LoggerAddCoordinatewisePhase (hyFloat shrinkage, char convergence_mode) {
-  if (optimizatonHistory) {
+  if (optimizationHistory) {
     _String phase_kind;
     switch (convergence_mode) {
       case 0:
@@ -3490,15 +3490,15 @@ void        _LikelihoodFunction::LoggerAddCoordinatewisePhase (hyFloat shrinkage
     < (_associative_list_key_value){"mode", new _FString(phase_kind)};
 
 
-    *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
+    *((_AssociativeList*) this->optimizationHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
   }
 }
 
 //_______________________________________________________________________________________
 
 void        _LikelihoodFunction::LoggerAllVariables (void) {
-  if (optimizatonHistory) {
-    _AssociativeList* variables = ((_AssociativeList*)this->optimizatonHistory->GetByKey("Parameters"));
+  if (optimizationHistory) {
+    _AssociativeList* variables = ((_AssociativeList*)this->optimizationHistory->GetByKey("Parameters"));
     for (unsigned long var_id = 0UL; var_id < indexInd.lLength; var_id++) {
       *((_GrowingVector*) variables->GetByKey(*GetIthIndependentName(var_id))) << GetIthIndependent(var_id);
     }
@@ -3509,7 +3509,7 @@ void        _LikelihoodFunction::LoggerAllVariables (void) {
 
 void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, unsigned long bracket_evals, unsigned long brent_evals) {
 
-  if (optimizatonHistory) {
+  if (optimizationHistory) {
     _AssociativeList* new_phase = new _AssociativeList;
     (*new_phase) < (_associative_list_key_value){"type", new _FString (*GetIthIndependentName(index))}
                 < (_associative_list_key_value){"bracket precision", new _Constant (bracket_precision)}
@@ -3519,10 +3519,10 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
                 < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)}
                 < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)};
 
-    *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
+    *((_AssociativeList*) this->optimizationHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
 
     LoggerLogL (logL);
-    *((_GrowingVector*) (((_AssociativeList*)this->optimizatonHistory->GetByKey("Parameters")))->GetByKey(*GetIthIndependentName(index))) << GetIthIndependent(index);
+    *((_GrowingVector*) (((_AssociativeList*)this->optimizationHistory->GetByKey("Parameters")))->GetByKey(*GetIthIndependentName(index))) << GetIthIndependent(index);
   }
 }
 
@@ -3540,17 +3540,17 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
     RescanAllVariables ();
 
-    if (optimizatonHistory) {
-      DeleteObject (optimizatonHistory);
-      optimizatonHistory = nil;
+    if (optimizationHistory) {
+      DeleteObject (optimizationHistory);
+      optimizationHistory = nil;
     }
 
     bool         keepOptimizationLog;
     checkParameter(produceOptimizationLog, keepOptimizationLog, false);
 
     if (keepOptimizationLog) {
-      optimizatonHistory = new _AssociativeList;
-      (*optimizatonHistory) < (_associative_list_key_value){"LogL", new _GrowingVector}
+      optimizationHistory = new _AssociativeList;
+      (*optimizationHistory) < (_associative_list_key_value){"LogL", new _GrowingVector}
       /*
        2 values per entry:
        logL ; optimization stage (indexed from 0 to max)
@@ -3585,7 +3585,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
         for (unsigned long var_id = 0; var_id < indexInd.lLength; var_id++) {
           (*variable_traces) < (_associative_list_key_value){GetIthIndependentVar(var_id)->GetName()->get_str(), new _GrowingVector};
         }
-        (*optimizatonHistory) < (_associative_list_key_value){"Parameters", variable_traces};
+        (*optimizationHistory) < (_associative_list_key_value){"Parameters", variable_traces};
       }
     }
 
@@ -4540,15 +4540,15 @@ DecideOnDivideBy (this);
 
 
   if (keepOptimizationLog) {
-    ((_GrowingVector*)optimizatonHistory->GetByKey("LogL"))->Trim();
-    _AssociativeList* variable_traces = ((_AssociativeList*)optimizatonHistory->GetByKey("Parameters"));
+    ((_GrowingVector*)optimizationHistory->GetByKey("LogL"))->Trim();
+    _AssociativeList* variable_traces = ((_AssociativeList*)optimizationHistory->GetByKey("Parameters"));
 
     for (unsigned long var_id = 0; var_id < indexInd.lLength; var_id++) {
       ((_GrowingVector*)variable_traces->GetByKey(*GetIthIndependentName(var_id)))->Trim();
     }
-    CheckReceptacleAndStore(AppendContainerName("trace", GetObjectNameByType(HY_BL_LIKELIHOOD_FUNCTION,lockedLFID, false)), "", false, optimizatonHistory, true);
-    DeleteObject (optimizatonHistory);
-    optimizatonHistory = nil;
+    CheckReceptacleAndStore(AppendContainerName("trace", GetObjectNameByType(HY_BL_LIKELIHOOD_FUNCTION,lockedLFID, false)), "", false, optimizationHistory, true);
+    DeleteObject (optimizationHistory);
+    optimizationHistory = nil;
   }
   CleanUpOptimize();
   #if !defined __UNIX__ || defined __HEADLESS__
@@ -5697,8 +5697,8 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
             _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]";
             ReportWarning (errorStr);
             if (check_value - 0.01 > maxSoFar) {
-                if (optimizatonHistory) {
-                    ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
+                if (optimizationHistory) {
+                    ReportWarning (_String ((_String*)optimizationHistory->toStr()));
                 }
                 HandleApplicationError (errorStr);
                 return;
@@ -6200,7 +6200,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
 
     DetermineLocalUpdatePolicy           ();
 
-    /*if (optimizatonHistory && ((_AssociativeList*)this->optimizatonHistory->GetByKey("Phases"))->Length() == 2171) {
+    /*if (optimizationHistory && ((_AssociativeList*)this->optimizationHistory->GetByKey("Phases"))->Length() == 2171) {
         verbosity_level = 1000;
     } else {
         verbosity_level = 1;
