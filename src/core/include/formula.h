@@ -190,8 +190,8 @@ public:
 
     hyFloat  Brent               (_Variable*, hyFloat, hyFloat, hyFloat = 1.e-7, _List* = nil, hyFloat = 0.);
 
-    hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool inifinite = false);
-    hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool inifinite = false);
+    hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool infinite = false);
+    hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool infinite = false);
     _Formula*   Differentiate       (_String const&, bool = true, bool convert_from_tree = true);
     node<long>* InternalDifferentiate
     (node<long>*, long,_SimpleList const &, _Formula  * const *, _Formula&);
