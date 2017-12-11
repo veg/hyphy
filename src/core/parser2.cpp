@@ -1337,7 +1337,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 }
 
                 long curOpl = curOp.length();
-                if (curOpl>2 && curOp[curOpl-1]=='_' && curOp[curOpl-2]=='_') { // instant variable refrence
+                if (curOpl>2 && curOp[curOpl-1]=='_' && curOp[curOpl-2]=='_') { // instant variable reference
                     _String realVarName (curOp,0,curOpl-3);
 
                     realVarName = parsingContext.contextualizeRef (realVarName);
