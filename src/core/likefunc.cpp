@@ -6666,8 +6666,8 @@ void    _LikelihoodFunction::Anneal (hyFloat&)
     checkParameter (_String("SA_DECREASE_RATE"),decreaseRate,1.25);
     checkParameter (_String("SA_STARTING_RATE"),startingRate,1);
     checkParameter (_String("SA_ITERATIONS_PER_DECREASE"),iterationsPerDecrease,500);
-    checkParameter (_String("SA_CONVERGENCE_THERESHOLD"),decisionOnConvergence,100);
-    checkParameter (_String("SA_TERMINATION_THERESHOLD"),terminateAfter,1000000);
+    checkParameter (_String("SA_CONVERGENCE_THRESHOLD"),decisionOnConvergence,100);
+    checkParameter (_String("SA_TERMINATION_THRESHOLD"),terminateAfter,1000000);
 
 
     for (i=0; i<indexInd.lLength; i++)

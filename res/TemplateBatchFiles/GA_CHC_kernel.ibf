@@ -433,9 +433,9 @@ for (generation=0; generation<generationCount; generation=generation+1)
 		h = Abs((sortedScores[populationSize-1][0]-sortedScores[0][0])/sortedScores[0][0]);
 		if (verboseFlag)
 		{
-			fprintf (stdout, "Diversity level: ", h, " (hypermutation threshold: ", mutationThreshhold, ")\n");	
+			fprintf (stdout, "Diversity level: ", h, " (hypermutation threshold: ", mutationThreshold, ")\n");	
 		}
-		if (h<mutationThreshhold)
+		if (h<mutationThreshold)
 		{
 			if (verboseFlag)
 			{
