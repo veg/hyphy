@@ -356,7 +356,7 @@ void mpiOptimizerLoop (int rank, int size)
             theLF->DoneComputing();
             PurgeAll (true);
             InitializeGlobals ();
-            ReportWarning("Reset node state at the end of MPI optimizaer loop");
+            ReportWarning("Reset node state at the end of MPI optimizer loop");
         }
         DeleteObject (theMessage);
         theMessage = MPIRecvString (-1,senderID);
