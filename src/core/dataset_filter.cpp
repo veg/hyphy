@@ -496,7 +496,7 @@ long    _DataSetFilter::FindSpeciesName (_List& s, _SimpleList& r) const {
 
 void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
   
-    // TODO SLKP 20171002: test this funcion bacause there were many semantic changes including the ability to handle both exclusion states and n-fold gaps
+    // TODO SLKP 20171002: test this funcion because there were many semantic changes including the ability to handle both exclusion states and n-fold gaps
   
     bool  skip_nfolds = hy_env::EnvVariableTrue(hy_env::skip_omissions);
   
