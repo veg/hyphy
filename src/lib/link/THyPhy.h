@@ -157,7 +157,7 @@ public:
     // create an instance with a given progress/cancel handler
     // the second argument is a path to the directory that
     // HyPhy will use to find its scripting components
-    // takes care of needed istantiations (if need)
+    // takes care of needed instantiations (if need)
     // the last argument is relevant for multi-threaded builds
     // and specifies the number of threads that HyPhy should try to spawn
 
