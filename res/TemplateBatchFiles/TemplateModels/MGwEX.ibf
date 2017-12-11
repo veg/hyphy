@@ -2,7 +2,7 @@
 
 
 /* ADD NEW RATE CLASS MATRICES HERE */
-AminoAcidClasses = {{"EX.dat","Stoltzfus and Yampolsky exhangeability acceptance/rejection profile"}
+AminoAcidClasses = {{"EX.dat","Stoltzfus and Yampolsky exchangeability acceptance/rejection profile"}
 				     {"Custom","Load a custom profile"}};	
 				    
 /* END ADD NEW RATE CLASS MATRICES HERE */			    
