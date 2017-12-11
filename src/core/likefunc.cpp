@@ -9584,7 +9584,7 @@ bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long par
         return true;
       }
     } else {
-      if (curNode.nodes.length == 1) { // two taxon sumulation
+      if (curNode.nodes.length == 1) { // two taxon simulation
         target << parentState;
       } else if (iNodes) {
         (*iNodes)<<parentState;
