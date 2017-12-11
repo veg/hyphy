@@ -225,7 +225,7 @@ public:
     // return the pointer to the current callback handler
 
 
-    // for the following 3 functions, the end user is reponsible
+    // for the following 3 functions, the end user is responsible
     // for disposing of the return structure
 
     _THyPhyString *  GetWarnings (void) {
