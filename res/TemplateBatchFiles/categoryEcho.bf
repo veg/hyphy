@@ -3,8 +3,8 @@ if (categoriesUsed)
 	ChoiceList  (response,"Rate class Information Dislpay",1,NO_SKIP,
 				 "Don't Display","No rate class information is displayed",
 				 "Distribution Info","Only the inferred distributions will be shown",
-				 "Class Asignments 1","A string of class assignments for sites is displayed for each site from left to right.",
-				 "Class Asignments 2","A list of sites, grouped by rate class, is displayed.",
+				 "Class Assignments 1","A string of class assignments for sites is displayed for each site from left to right.",
+				 "Class Assignments 2","A list of sites, grouped by rate class, is displayed.",
 				 "Complete","A table of partial likelihoods is spooled to a file, along with class assignments for sites.");
 				 
 				 
