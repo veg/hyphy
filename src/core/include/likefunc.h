@@ -75,7 +75,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   _hyphyLFConstructCategoryMatrixPosteriors     3
 #define   _hyphyLFConstructCategoryMatrixSiteProbabilities      4
 
-/* likelihood seialization model */
+/* likelihood serialization model */
 
 #define   _hyphyLFSerializeModeVanilla                  0
 #define   _hyphyLFSerializeModeOptimize                 1
