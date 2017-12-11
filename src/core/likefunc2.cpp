@@ -486,7 +486,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 {
     _List               *traversalPattern       = (_List*)categoryTraversalTemplate(index),
                          *variables                = (_List*)((*traversalPattern)(0)),
-                          *catWeigths               = nil;
+                          *catWeights               = nil;
 
     _SimpleList         *categoryCounts         = (_SimpleList*)((*traversalPattern)(1)),
                          *categoryOffsets     = (_SimpleList*)((*traversalPattern)(2)),
@@ -525,7 +525,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                 buffer[r] = 0.;
             }
         }
-        catWeigths = new _List;
+        catWeights = new _List;
     } else if (runMode == _hyphyLFConditionProbsMaxProbClass)
         for (long r = 0, r2 = 2*blockLength; r < blockLength; r++, r2++) {
             buffer[r] = 0.0;
@@ -536,7 +536,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
         (catVariable = ((_CategoryVariable**)(variables->lData))[currentCat])->Refresh();
         catVariable->SetIntervalValue(0,true);
         if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate || runMode == _hyphyLFConditionProbsClassWeights) {
-            (*catWeigths) << catVariable->GetWeights();
+            (*catWeights) << catVariable->GetWeights();
         }
     }
 
@@ -589,7 +589,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                 if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights || runMode == _hyphyLFConditionMPIIterate) {
                     for                 (long currentCat        = hmmCatCount; currentCat <= catCount; currentCat++) {
-                        currentRateWeight *= ((_Matrix**)catWeigths->lData)[currentCat]->theData[categoryValues.lData[currentCat]];
+                        currentRateWeight *= ((_Matrix**)catWeights->lData)[currentCat]->theData[categoryValues.lData[currentCat]];
                     }
 
 #ifdef __HYPHYMPI__
@@ -786,7 +786,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 #ifdef __HYPHYMPI__
     DeleteObject (computedWeights);
 #endif
-    DeleteObject (catWeigths);
+    DeleteObject (catWeights);
 }
 
 //_______________________________________________________________________________________________
