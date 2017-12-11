@@ -452,7 +452,7 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 		outputString = outputString + "," + constrainedRatioNoPos + "," + pValPosVsNoPos + "," + DivFgNonSyn + "," + DivBgNonSyn + "," + DivSyn;
 		
 		/*--Now test for directional selection vs positive selection--*/
-		fprintf (stdout, "\tTesting for directional selection againts null allowing positive selection in foreground", "\n");
+		fprintf (stdout, "\tTesting for directional selection against null allowing positive selection in foreground", "\n");
 		for (AAcount=AAlower; AAcount<AAupper+1; AAcount=AAcount+1)
 		{
 			lrtScore = 2*(AAlikes[AAcount]-constrainedRatioPos);
