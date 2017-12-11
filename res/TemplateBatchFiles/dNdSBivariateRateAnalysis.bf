@@ -187,7 +187,7 @@ if (runType == 0)
 	{
 		ChoiceList (stratDNDS, "dN/dS Stratification",1,SKIP_NONE,
 					"Unconstrained",	 "Do not place constraints on dN/dS classes.",
-					"Split",	 "Assign all dN/dS classes to negative/neutral/positive clases.");
+					"Split",	 "Assign all dN/dS classes to negative/neutral/positive classes.");
 		if (stratDNDS<0)
 		{
 			return 0;
