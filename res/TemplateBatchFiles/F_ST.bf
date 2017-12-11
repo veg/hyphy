@@ -367,7 +367,7 @@ pi_D = resMx[2]-resMx[1];
 
 F_ST_OBS = {{pi_D/(resMx[1]+pi_D),pi_D/(resMx[1]+resMx[2]),1-resMx[1]/resMx[0], resMx[3]}};
 
-fprintf (stdout, "\n\nPopulation characterisitcs:",
+fprintf (stdout, "\n\nPopulation characteristics:",
 				 "\nMetapopulation diversity (pi_T)       = ", resMx[0],
 				 "\nMean subpopulation diversity (pi_S)   = ", resMx[1],
 				 "\nMean interpopulation diversity (pi_B) = ", resMx[2],
