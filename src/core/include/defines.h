@@ -242,7 +242,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define   HY_BL_ANY                     65535
 
-//!  Batch Lanuage Command Codes 
+//!  Batch Language Command Codes 
 /*!
      20111222 SLKP introduced.
      Define tags to replace ExecuteCaseWhatever
