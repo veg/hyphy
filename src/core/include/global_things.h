@@ -212,7 +212,7 @@ namespace hy_global {
    */
   const _String      GetStandardDirectory (const unsigned long which_one);
   
-  /** resolve the path name contained in 'path', accoding to various flag settings
+  /** resolve the path name contained in 'path', according to various flag settings
    
    
    
