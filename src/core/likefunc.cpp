@@ -6011,7 +6011,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
     bool reset = false;
 
-    if (outcome!=-1) { // successfull bracket
+    if (outcome!=-1) { // successful bracket
                        // set up left, right, middle
 
       if (outcome == -2) {
@@ -6210,7 +6210,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
     int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp);
     unsigned long        bracketCount = likeFuncEvalCallCount - inCount;
 
-    if (outcome != -1) { // successfull bracket
+    if (outcome != -1) { // successful bracket
         hyFloat U,V,W,X=middle,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
         W       = middle;
         V       = middle;
