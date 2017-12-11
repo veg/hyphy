@@ -1555,7 +1555,7 @@ hyFloat   _Formula::Newton( _Variable* unknown, hyFloat target_value,hyFloat x_m
 //__________________________________________________________________________________
 
 hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool infinite) {
-// uses Romberg's intergation method
+// uses Romberg's integration method
     if (infinite) { // tweak "right" here
         hyFloat value = 1.0, step = 1.0, right1= -1.;
         right = left;

@@ -64,7 +64,7 @@ del hyphyOut
 del hyphyErrors
 del hyphyWarnings
 
-# A tighter intergration can be achieved by defining a retrieval function 
+# A tighter integration can be achieved by defining a retrieval function 
 # with the reserved name _THyPhyAskFor in the HBL file; it retrieves data
 # by key and returns them in a internal format that can be converted 
 # to one of the basic return types: number, string or matrix
