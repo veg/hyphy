@@ -412,7 +412,7 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
     if (theValue<=0.0) {
         if (theValue < 0.0) {
             _String     errMsg;
-            errMsg = _String ("IBeta is defined for x betweeen 0 and 1. Had: ") & theValue;
+            errMsg = _String ("IBeta is defined for x between 0 and 1. Had: ") & theValue;
             ReportWarning   (errMsg);
         }
         return new _Constant (0.0);
@@ -421,7 +421,7 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
     if (theValue>=1.0) {
         if (theValue>1.0) {
             _String     errMsg;
-            errMsg = _String ("IBeta is defined for x betweeen 0 and 1. Had: ") & theValue;
+            errMsg = _String ("IBeta is defined for x between 0 and 1. Had: ") & theValue;
             ReportWarning   (errMsg);
         }
         return new _Constant (1.0);

@@ -612,7 +612,7 @@ public:
   void Insert(char, long);
 
   /**
-   * Trim the string in place to retain characters beween the two indices
+   * Trim the string in place to retain characters between the two indices
    (0-bases, inclusive)
    * \n\n \b Example: \code _String("AAABBBCCC").Trim(3,5) \endcode
    * @param start The starting index to cut from
