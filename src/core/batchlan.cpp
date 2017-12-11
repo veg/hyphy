@@ -4116,7 +4116,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
             target&&(&dsc);
             return true;
         } else {
-            HandleErrorWhileParsing ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);",
+            HandleErrorWhileParsing ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAncestors (likelihood function); or DataSet ident = SampleAncestors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);",
                                    source);
         }
     }
