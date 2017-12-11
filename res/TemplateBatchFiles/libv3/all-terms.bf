@@ -358,7 +358,7 @@ namespace terms{
         global_independent            = "Global Independent";
         transition                    = "transition";
         transversion                  = "transversion";
-        transition_transversion_ratio = "Transitition/transversion ratio";
+        transition_transversion_ratio = "Transition/transversion ratio";
         kappa                         = "kappa";
         synonymous_rate               = "synonymous rate";
         nonsynonymous_rate            = "non-synonymous rate";
