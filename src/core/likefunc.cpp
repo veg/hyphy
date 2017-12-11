@@ -7491,7 +7491,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
         t->DetermineNodesForUpdate (changedBranches, // this will receive the list of branch indices (in post-order traversal, with
                                     // child ALWAYS preceding the parent (as in the tree example before)
-                                    &changedModels, // this will receive the list of _CalcNode objects which must be exponentitated
+                                    &changedModels, // this will receive the list of _CalcNode objects which must be exponentiated
                                     -1, -1, true); // don't worry about this now
 
 
