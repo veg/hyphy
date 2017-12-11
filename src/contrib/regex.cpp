@@ -1914,7 +1914,7 @@ handle_interval: {
                        we're all done, the pattern will look like:
                          set_number_at <jump count> <upper bound>
                          set_number_at <succeed_n count> <lower bound>
-                         succeed_n <after jump addr> <succed_n count>
+                         succeed_n <after jump addr> <succeed_n count>
                          <body of loop>
                          jump_n <succeed_n addr> <jump count>
                        (The upper bound and `jump_n' are omitted if
