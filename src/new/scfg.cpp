@@ -1666,7 +1666,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                                          stringProb;
 
 
-                                /*  ^^^ It became necesssary to use this calculation rather than
+                                /*  ^^^ It became necessary to use this calculation rather than
                                     the short-cut below, because it choked on node-censored grammars. */
 
                                 /*
