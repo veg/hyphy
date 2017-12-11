@@ -1469,9 +1469,9 @@ void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
     
     for (unsigned long k = 4UL; k < pieces->countitems(); k+=2) {
         _String * selector    = new _String (*(_String*)pieces->GetItem(k)),
-                * desription  = new _String (*(_String*)pieces->GetItem(k+1));
-        selector->StripQuotes(); desription->StripQuotes();
-        choices < new _List (selector,desription);
+                * description  = new _String (*(_String*)pieces->GetItem(k+1));
+        selector->StripQuotes(); description->StripQuotes();
+        choices < new _List (selector,description);
     }
     
     choice_list->simpleParameters << 0L;

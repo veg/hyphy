@@ -136,8 +136,8 @@ function estimators.copyGlobals(key, value) {
  * @param {Dictionary} value
  * @returns nothing
  */
-function estimators.CopyFrequencies(model_name, model_decription) {
-    (estimators.ExtractMLEs.results[terms.efv_estimate])[model_name] = model_decription[terms.efv_estimate];
+function estimators.CopyFrequencies(model_name, model_description) {
+    (estimators.ExtractMLEs.results[terms.efv_estimate])[model_name] = model_description[terms.efv_estimate];
 }
 
 
