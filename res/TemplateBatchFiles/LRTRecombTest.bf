@@ -162,7 +162,7 @@ if (compType)
 	fprintf (stdout, "\n\nSUMMARY:\n\n\tPARTITION 1 LRT = ",LRT1, "\n\tPARTITION 2 LRT = ", LRT2);
 	if (LRT1 < 0 || LRT2 < 0)
 	{
-		fprintf (stdout, "\n\nERROR: Both LRTs were expeceted to be positive.\nPlease check your trees and partition");
+		fprintf (stdout, "\n\nERROR: Both LRTs were expected to be positive.\nPlease check your trees and partition");
 		return 0;
 	}
 	
@@ -244,7 +244,7 @@ else
 	fprintf (stdout, "\n\nSUMMARY:\n\n\tLRT = ",LRT1);
 	if (LRT1 < 0)
 	{
-		fprintf (stdout, "\n\nERROR: The LRTs was expeceted to be positive.\nPlease check your trees and alignment");
+		fprintf (stdout, "\n\nERROR: The LRTs was expected to be positive.\nPlease check your trees and alignment");
 		return 0;
 	}
 
