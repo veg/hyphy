@@ -864,7 +864,7 @@ lfunction utility.GetListOfLoadedModules (filter) {
 
 /**
  * Execute some commands in the global namespace
- * @param commands {String} : the commands to execture
+ * @param commands {String} : the commands to execute
  * @returns None
  */
 function utility.ExecuteInGlobalNamespace (commands) {
