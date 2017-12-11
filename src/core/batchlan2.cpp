@@ -712,7 +712,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
         dataset = (_DataSet*)dataSetList(dsID);
         dataset -> ProcessPartition (hSpecs,hL,false, nil, nil, chain.GetNameSpace());
         if (code!=6 && vSpecs.sLength==0) {
-            vSpecs = _String("0-")&_String(dataset->NoOfColumns()-1);
+            vSpecs = _String("0-")&_String((long)dataset->NoOfColumns()-1);
         }
         dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
 
