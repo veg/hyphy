@@ -583,7 +583,7 @@ private:
     long        HashBack            (long) const;
     // hashing function, which finds matrix
     // physical element given local storage
-    void        MultbyS             (_Matrix&,bool,_Matrix* = nil, hyFloat* = nil);
+    void        MultByS             (_Matrix&,bool,_Matrix* = nil, hyFloat* = nil);
     // internal function used in exponentiating sparse matrices
 
     void        Balance             (void);  // perform matrix balancing; i.e. a norm reduction which preserves the eigenvalues

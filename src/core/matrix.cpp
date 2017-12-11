@@ -4551,7 +4551,7 @@ _Matrix*    _Matrix::Exponentiate (void)
 
         _Matrix tempS (hDim, vDim, false, temp.storageType);
         do {
-            temp.MultbyS        (*this,theIndex!=nil, &tempS, stash);
+            temp.MultByS        (*this,theIndex!=nil, &tempS, stash);
             temp      *= 1.0/i;
             (*result) += temp;
             i         ++;
@@ -6774,7 +6774,7 @@ void        _Matrix::operator *= (_Matrix& m)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage, hyFloat* stash)
+void        _Matrix::MultByS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage, hyFloat* stash)
 {
     _Matrix * result = nil;
     if (!externalStorage) {
