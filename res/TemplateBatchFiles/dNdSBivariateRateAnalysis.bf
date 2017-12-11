@@ -38,7 +38,7 @@ function ReportDistributionString (rc)
                                        
         if (bivariateFitHasMultipleCladeRates > 1)
         {
-            distroString * "\n\tBranch group-pecific dN/dS";
+            distroString * "\n\tBranch group-specific dN/dS";
         
             for (mi2 = 1; mi2 < bivariateFitHasMultipleCladeRates; mi2 += 1)
             {
