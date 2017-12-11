@@ -70,8 +70,8 @@ ffunction		GammaQuadWeight (ind, alph, type)
 
 ChoiceList (distribution,"Choose Distribution",1,SKIP_NONE,
 			/*0*/"Gamma","Gamma distribution with shape parameter alpha. Mean: alpha, variance: 1/alpha.",
-			/*1*/"Beta","Two-parameter beta distrubution. Mean: betaP/(betaQ+betaP), variance: betaP*betaQ/((betaP+betaQ)^2 (betaP+betaQ+1)).",
-			/*2*/"Normal(x>0)","Two-parameter normal distrubution restriced to x>0. Mean parameter: mu, variance parameter: sigma^2.",
+			/*1*/"Beta","Two-parameter beta distribution. Mean: betaP/(betaQ+betaP), variance: betaP*betaQ/((betaP+betaQ)^2 (betaP+betaQ+1)).",
+			/*2*/"Normal(x>0)","Two-parameter normal distribution restriced to x>0. Mean parameter: mu, variance parameter: sigma^2.",
 			/*3*/"Log normal","Unit mean log normal distribution with parameter sigma. Variance: 1/[exp(sigma^2)-1].",
 			/*4*/"Gamma+Inv","Gamma distribution with shape parameter alpha and a zero rate class for invariable sites with weight P. Mean: (1-P), variance: (1-P)(1+alpha P)/alpha.",
 			/*5*/"Gamma Quadratures","Gamma distribution with shape parameter alpha. Mean: alpha, variance: 1/alpha. Discretized using Gauss-Laguerre quadratures, matching 2N-1 moments, with N = the number of rate classes.",
