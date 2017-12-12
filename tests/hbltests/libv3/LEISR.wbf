@@ -44,3 +44,12 @@ LoadFunctionLibrary("LEISR.bf", {
     "3": "HKY85",
     "4": "No"
 });
+
+LoadFunctionLibrary("LEISR.bf", {
+    "0": PATH_TO_CURRENT_BF + "data/partitioned.nex",
+    "1": "Nucleotide",
+    "2": "HKY85",
+    "3": "Gamma"
+});
+
+
