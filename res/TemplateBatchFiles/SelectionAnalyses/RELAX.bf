@@ -30,7 +30,17 @@ utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 
 /*------------------------------------------------------------------------------*/
 
-relax.json    = { terms.json.input: {},
+relax.analysis_description = {
+                               terms.io.info : "RELAX (a random effects test of selection relaxation) uses a random effects branch-site model framework to test whether a set of 'Test' branches evolves under relaxed selection relative to a set of 'Reference' branches (R), as measured by the relaxation parameter (K).",
+                               terms.io.version : "2.0",
+                               terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
+                               terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
+                               terms.io.contact : "spond@temple.edu",
+                               terms.io.requirements : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"
+                              };
+                              
+relax.json    = { terms.json.analysis: relax.analysis_description,
+                  terms.json.input: {},
                   terms.json.fits : {},
                   terms.json.timers : {},
                   terms.json.test_results : {}
@@ -70,14 +80,7 @@ relax.display_orders = {terms.original_name: -1,
 /*------------------------------------------------------------------------------*/
 
 
-relax.analysis_description = {
-                               terms.io.info : "RELAX (a random effects test of selection relaxation) uses a random effects branch-site model framework to test whether a set of 'Test' branches evolves under relaxed selection relative to a set of 'Reference' branches (R), as measured by the relaxation parameter (K).",
-                               terms.io.version : "2.0",
-                               terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
-                               terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
-                               terms.io.contact : "spond@temple.edu",
-                               terms.io.requirements : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"
-                              };
+
 
 io.DisplayAnalysisBanner ( relax.analysis_description );
 
