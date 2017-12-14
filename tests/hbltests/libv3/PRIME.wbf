@@ -1,0 +1,20 @@
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/convenience/math.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
+LoadFunctionLibrary("libv3/models/protein/matrices/atchley.ibf");
+
+
+// Checks that atchley differences are computed correctly
+function test_atchley_differences() {
+
+    results = models.protein.atchley.differences();
+    assert(utility.KeyExists(results, "I"), "factor I not found");
+    assert(utility.KeyExists(results, "II"), "factor II not found");
+    assert(utility.KeyExists(results, "III"), "factor III not found");
+    assert(utility.KeyExists(results, "IV"), "factor IV not found");
+    assert(utility.KeyExists(results, "V"), "factor V not found");
+
+}
+
+test_atchley_differences();
+

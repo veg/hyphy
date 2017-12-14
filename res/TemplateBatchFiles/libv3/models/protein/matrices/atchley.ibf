@@ -1,0 +1,180 @@
+/**
+ * @name models.protein.atchley.factors
+ * @description Create the baseline schema (dictionary) for the gcpREV model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+models.protein.atchley.factors = {
+ "A":{
+   "I":-0.591,
+   "II":-1.302,
+   "III":-0.733,
+   "IV":1.57,
+   "V":-0.146
+  },
+ "C":{
+   "I":-1.343,
+   "II":0.465,
+   "III":-0.862,
+   "IV":-1.02,
+   "V":-0.255
+  },
+ "D":{
+   "I":1.05,
+   "II":0.302,
+   "III":-3.656,
+   "IV":-0.259,
+   "V":-3.242
+  },
+ "E":{
+   "I":1.357,
+   "II":-1.453,
+   "III":1.477,
+   "IV":0.113,
+   "V":-0.837
+  },
+ "F":{
+   "I":-1.006,
+   "II":-0.59,
+   "III":1.891,
+   "IV":-0.397,
+   "V":0.412
+  },
+ "G":{
+   "I":-0.384,
+   "II":1.652,
+   "III":1.33,
+   "IV":1.045,
+   "V":2.064
+  },
+ "H":{
+   "I":0.336,
+   "II":-0.417,
+   "III":-1.673,
+   "IV":-1.474,
+   "V":-0.078
+  },
+ "I":{
+   "I":-1.239,
+   "II":-0.547,
+   "III":2.131,
+   "IV":0.393,
+   "V":0.8159999999999999
+  },
+ "K":{
+   "I":1.831,
+   "II":-0.5610000000000001,
+   "III":0.533,
+   "IV":-0.277,
+   "V":1.648
+  },
+ "L":{
+   "I":-1.019,
+   "II":-0.987,
+   "III":-1.505,
+   "IV":1.266,
+   "V":-0.912
+  },
+ "M":{
+   "I":-0.663,
+   "II":-1.524,
+   "III":2.219,
+   "IV":-1.005,
+   "V":1.212
+  },
+ "N":{
+   "I":0.945,
+   "II":0.828,
+   "III":1.299,
+   "IV":-0.169,
+   "V":0.9330000000000001
+  },
+ "P":{
+   "I":0.189,
+   "II":2.081,
+   "III":-1.628,
+   "IV":0.421,
+   "V":-1.392
+  },
+ "Q":{
+   "I":0.931,
+   "II":-0.179,
+   "III":-3.005,
+   "IV":-0.503,
+   "V":-1.853
+  },
+ "R":{
+   "I":1.538,
+   "II":-0.055,
+   "III":1.502,
+   "IV":0.44,
+   "V":2.897
+  },
+ "S":{
+   "I":-0.228,
+   "II":1.399,
+   "III":-4.76,
+   "IV":0.67,
+   "V":-2.647
+  },
+ "T":{
+   "I":-0.032,
+   "II":0.326,
+   "III":2.213,
+   "IV":0.908,
+   "V":1.313
+  },
+ "V":{
+   "I":-1.337,
+   "II":-0.279,
+   "III":-0.544,
+   "IV":1.242,
+   "V":-1.262
+  },
+ "W":{
+   "I":-0.595,
+   "II":0.008999999999999999,
+   "III":0.672,
+   "IV":-2.128,
+   "V":-0.184
+  },
+ "Y":{
+   "I":0.26,
+   "II":0.83,
+   "III":3.097,
+   "IV":-0.838,
+   "V":1.512
+  }
+};
+
+/**
+ * @name models.protein.atchley.differences
+ * @description Create amino acid factor differences from atchley table
+ * @returns {Dictionary} differences
+ */
+function models.protein.atchley.differences() {
+
+    result = {};
+    alphabet = {{"A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"}};
+    factor_labels = {{"I", "II", "III", "IV", "V"}};
+
+    dim = utility.Array1D (alphabet);
+    factor_dim = utility.Array1D (factor_labels);
+
+    to_map = models.protein.atchley.factors;
+
+    for (i = 0; i < factor_dim; i +=1 ) {
+        result[factor_labels[i]] = {};
+        for (j = 0; j < dim; j +=1 ) {
+            (result[factor_labels[i]])[alphabet[j]] = {};
+            for (k = 0; k < dim; k +=1 ){
+                ((result[factor_labels[i]])[alphabet[j]])[alphabet[k]] = (to_map[alphabet[j]])[factor_labels[i]] - (to_map[alphabet[k]])[factor_labels[i]];
+            }
+        }
+    }
+
+    return result;
+
+}
+
+;
