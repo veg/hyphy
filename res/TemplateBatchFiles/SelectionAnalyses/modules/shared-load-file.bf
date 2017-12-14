@@ -1,3 +1,5 @@
+utility.SetEnvVariable ("MARKDOWN_OUTPUT", TRUE);
+
 /**
  * Loads file information into a namespace specified by prefix
  * Sets the following variables:
@@ -23,9 +25,6 @@
  * @param prefix {String} : The namespace to prefix all file information variables with
  * @return nothing, the function sets variables within a namespace
  */
-
-utility.SetEnvVariable ("MARKDOWN_OUTPUT", TRUE);
-
 function load_file (prefix) {
 
     settings = None;
@@ -218,13 +217,6 @@ function load_file (prefix) {
     }
 }
 
-
-
-
-
-
-
-
 function doGTR (prefix) {
 
     io.ReportProgressMessageMD (prefix, "nuc-fit", "Obtaining branch lengths and nucleotide substitution biases under the nucleotide GTR model");
@@ -281,22 +273,22 @@ function doGTR (prefix) {
 
 }
 
-
-
-
-
-
-
-
-
 /**
  * @name doPartitionMG
- * Can only be used after including shared-load-file
- * @return
+ * 
+ * Caveat : Can only be used after including shared-load-file
+ * Caveat : Can only be used after calling doGTR in the same namespace
+ * Caveat : Should be called within a namespace
+ * @param {String} prefix - prefix to set variables within
+ * @param {Boolean} keep_lf - Keep LikelihoodFunction object set after completion
+ * @return nothing - objects are set within a namespace
+ * @example
+ * 
+ * 
  */
 function doPartitionedMG (prefix, keep_lf) {
-    io.ReportProgressMessageMD ("`prefix`", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
 
+    io.ReportProgressMessageMD ("`prefix`", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
 
     /**
         Declare per-partition branch length scalers
@@ -305,10 +297,7 @@ function doPartitionedMG (prefix, keep_lf) {
         etc
     */
     scaler_variables = utility.PopulateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
-
     utility.ForEach (scaler_variables, "_value_", "parameters.DeclareGlobal(_value_, None);parameters.SetValue(_value_, 3);");
-
-
 
     partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
         utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"), 

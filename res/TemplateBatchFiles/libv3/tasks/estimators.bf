@@ -262,10 +262,84 @@ function estimators.fixSubsetOfEstimates.helper_condition(key) {
 
 /**
  * @name estimators.fixSubsetOfEstimates
- * @private
- * @param {String} estimates
- * @param {String} variables
- * @returns nothing
+ * Loops through global variables from model fitting results, and assigns 'fix-me' to all parameters that are not constrained.
+ * @param {Dictionary} estimates
+ * @param {Dictionary} variables - Unused. TODO: Remove parameter
+ * @returns {Dictionary} list of variables that were fixed
+ * { 
+ *   "0":"feAEdmai.model.theta_AC",
+ *   "1":"feAEdmai.model.theta_AT",
+ *   "2":"feAEdmai.model.theta_CG",
+ *   "3":"feAEdmai.model.theta_CT",
+ *   "4":"feAEdmai.model.theta_GT"
+ * }
+ * @example
+ * estimates = {
+ *     "global":{
+ *       "Substitution rate from nucleotide A to nucleotide C":{
+ *         "ID":"XsRyZQRU.model.theta_AC",
+ *         "MLE":0.5337092193143175
+ *        },  
+ *       "Substitution rate from nucleotide A to nucleotide G":{
+ *         "ID":"XsRyZQRU.model.theta_AG",
+ *         "MLE":1,
+ *         "constraint":"1"
+ *        },  
+ *       "Substitution rate from nucleotide A to nucleotide T":{
+ *         "ID":"XsRyZQRU.model.theta_AT",
+ *         "MLE":0.2881444489150976
+ *        },  
+ *       "Substitution rate from nucleotide C to nucleotide G":{
+ *         "ID":"XsRyZQRU.model.theta_CG",
+ *         "MLE":0.08954544197996857
+ *        },  
+ *       "Substitution rate from nucleotide C to nucleotide T":{
+ *         "ID":"XsRyZQRU.model.theta_CT",
+ *         "MLE":1.876347796786011
+ *        },  
+ *       "Substitution rate from nucleotide G to nucleotide T":{
+ *         "ID":"XsRyZQRU.model.theta_GT",
+ *         "MLE":0.429887419298468
+ *        }   
+ *      }
+ *    };
+ * estimators.fixSubsetOfEstimates(estimates);
+ * fprintf(stdout, estimates);
+ * {
+ *     "global":{
+ *       "Substitution rate from nucleotide A to nucleotide C":{
+ *         "ID":"XsRyZQRU.model.theta_AC",
+ *         "MLE":0.5337092193143175,
+ *         "fix-me":1
+ *        },  
+ *       "Substitution rate from nucleotide A to nucleotide G":{
+ *         "ID":"XsRyZQRU.model.theta_AG",
+ *         "MLE":1,
+ *         "constraint":"1"
+ *        },  
+ *       "Substitution rate from nucleotide A to nucleotide T":{
+ *         "ID":"XsRyZQRU.model.theta_AT",
+ *         "MLE":0.2881444489150976,
+ *         "fix-me":1
+ *        },  
+ *       "Substitution rate from nucleotide C to nucleotide G":{
+ *         "ID":"XsRyZQRU.model.theta_CG",
+ *         "MLE":0.08954544197996857,
+ *         "fix-me":1
+ *        },  
+ *       "Substitution rate from nucleotide C to nucleotide T":{
+ *         "ID":"XsRyZQRU.model.theta_CT",
+ *         "MLE":1.876347796786011,
+ *         "fix-me":1
+ *        },  
+ *       "Substitution rate from nucleotide G to nucleotide T":{
+ *         "ID":"XsRyZQRU.model.theta_GT",
+ *         "MLE":0.429887419298468,
+ *         "fix-me":1
+ *        }   
+ *      }
+ *    }
+ * 
  */
 function estimators.fixSubsetOfEstimates(estimates, variables) {
     estimators.fixSubsetOfEstimates.fixed = {};
@@ -755,18 +829,23 @@ function estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_result
 
 /**
  * @name estimators.FitMGREV
- * @param {DataFilter} codon_data
- * @param {Tree} tree
+ * Conducts maximum likelihood calculations using the MG94xREV model.
+ * @param {Dictionary} codon_data - list of filter names that are already defined and stored in memory
+ * {
+ *   "0":"prime.filter.default"
+ * }
+ * @param {Dictionary} tree - tree information. Typically comes from load_file operation. 
+ *                                              More information can be found under libv3/tasks/trees.bf
  * @param {String} genetic_code
  * @param {Dictionary} option
- * @param {Dictionary} initial_values
- * @returns MGREV results
+ * @param {Dictionary} initial_values - values that come from an initial estimate. Either results from GTR or other previous model fitting.
+ * @returns {Dictionary} results
+ * @example
+ * 
  */
 lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_values) {
 
-
-
-    //TODO: Where is data_filter being set?
+    // SW20171212 TODO: Be clearer about where data_filter is being set.
     if (Type(data_filter) == "String") {
         return estimators.FitMGREV({
                 {
