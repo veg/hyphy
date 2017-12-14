@@ -1,0 +1,271 @@
+/********* WAG MODEL OF PROTEIN EVOLUTION ************/
+LoadFunctionLibrary("../empirical.bf");
+LoadFunctionLibrary("../../protein.bf");
+LoadFunctionLibrary("../../parameters.bf");
+LoadFunctionLibrary("../../frequencies.bf");
+LoadFunctionLibrary("../../../UtilityFunctions.bf");
+LoadFunctionLibrary("../../../all-terms.bf");
+
+
+
+/**
+ * @name models.protein.WAG.ModelDescription
+ * @description Create the baseline schema (dictionary) for the WAG model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.WAG.ModelDescription(type) {
+    models.protein.WAG.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.WAG.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.WAG.Rij;
+    models.protein.WAG.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.WAG.frequencies";
+    return models.protein.WAG.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.WAGF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the WAG+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.WAGF.ModelDescription(type) {
+    models.protein.WAGF.ModelDescription.model_definition = models.protein.WAG.ModelDescription(type);
+    models.protein.WAGF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.WAGF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.WAGF.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.WAGML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the WAG+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.WAGML.ModelDescription(type) {
+    models.protein.WAGML.ModelDescription.model_definition = models.protein.WAG.ModelDescription(type);
+    models.protein.WAGML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.WAGML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.WAGML.ModelDescription.model_definition;
+}
+
+/* Define a dictionary of amino-acid exchangeability rates for the WAG model of protein evolution. */ 
+models.protein.WAG.Rij = {
+'A': {'C': 1.027040,
+       'D': 0.738998,
+       'E': 1.582850,
+       'F': 0.210494,
+       'G': 1.416720,
+       'H': 0.316954,
+       'I': 0.193335,
+       'K': 0.906265,
+       'L': 0.397915,
+       'M': 0.893496,
+       'N': 0.509848,
+       'P': 1.438550,
+       'Q': 0.908598,
+       'R': 0.551571,
+       'S': 3.370790,
+       'T': 2.121110,
+       'V': 2.006010,
+       'W': 0.113133,
+       'Y': 0.240735},
+ 'C': {'D': 0.0302949,
+       'E': 0.021352,
+       'F': 0.398020,
+       'G': 0.306674,
+       'H': 0.248972,
+       'I': 0.170135,
+       'K': 0.0740339,
+       'L': 0.384287,
+       'M': 0.390482,
+       'N': 0.265256,
+       'P': 0.109404,
+       'Q': 0.0988179,
+       'R': 0.528191,
+       'S': 1.407660,
+       'T': 0.512984,
+       'V': 1.002140,
+       'W': 0.717070,
+       'Y': 0.543833},
+ 'D': {'E': 6.174160,
+       'F': 0.0467304,
+       'G': 0.865584,
+       'H': 0.930676,
+       'I': 0.039437,
+       'K': 0.479855,
+       'L': 0.0848047,
+       'M': 0.103754,
+       'N': 5.429420,
+       'P': 0.423984,
+       'Q': 0.616783,
+       'R': 0.147304,
+       'S': 1.071760,
+       'T': 0.374866,
+       'V': 0.152335,
+       'W': 0.129767,
+       'Y': 0.325711},
+ 'E': {'F': 0.0811339,
+       'G': 0.567717,
+       'H': 0.570025,
+       'I': 0.127395,
+       'K': 2.584430,
+       'L': 0.154263,
+       'M': 0.315124,
+       'N': 0.947198,
+       'P': 0.682355,
+       'Q': 5.469470,
+       'R': 0.439157,
+       'S': 0.704939,
+       'T': 0.822765,
+       'V': 0.588731,
+       'W': 0.156557,
+       'Y': 0.196303},
+ 'F': {'G': 0.049931,
+       'H': 0.679371,
+       'I': 1.059470,
+       'K': 0.088836,
+       'L': 2.115170,
+       'M': 1.190630,
+       'N': 0.0961621,
+       'P': 0.161444,
+       'Q': 0.0999208,
+       'R': 0.102711,
+       'S': 0.545931,
+       'T': 0.171903,
+       'V': 0.649892,
+       'W': 1.529640,
+       'Y': 6.454280},
+ 'G': {'H': 0.249410,
+       'I': 0.0304501,
+       'K': 0.373558,
+       'L': 0.0613037,
+       'M': 0.174100,
+       'N': 1.125560,
+       'P': 0.243570,
+       'Q': 0.330052,
+       'R': 0.584665,
+       'S': 1.341820,
+       'T': 0.225833,
+       'V': 0.187247,
+       'W': 0.336983,
+       'Y': 0.103604},
+ 'H': {'I': 0.138190,
+       'K': 0.890432,
+       'L': 0.499462,
+       'M': 0.404141,
+       'N': 3.956290,
+       'P': 0.696198,
+       'Q': 4.294110,
+       'R': 2.137150,
+       'S': 0.740169,
+       'T': 0.473307,
+       'V': 0.118358,
+       'W': 0.262569,
+       'Y': 3.873440},
+ 'I': {'K': 0.323832,
+       'L': 3.170970,
+       'M': 4.257460,
+       'N': 0.554236,
+       'P': 0.0999288,
+       'Q': 0.113917,
+       'R': 0.186979,
+       'S': 0.319440,
+       'T': 1.458160,
+       'V': 7.821300,
+       'W': 0.212483,
+       'Y': 0.420170},
+ 'K': {'L': 0.257555,
+       'M': 0.934276,
+       'N': 3.012010,
+       'P': 0.556896,
+       'Q': 3.894900,
+       'R': 5.351420,
+       'S': 0.967130,
+       'T': 1.386980,
+       'V': 0.305434,
+       'W': 0.137505,
+       'Y': 0.133264},
+ 'L': {'M': 4.854020,
+       'N': 0.131528,
+       'P': 0.415844,
+       'Q': 0.869489,
+       'R': 0.497671,
+       'S': 0.344739,
+       'T': 0.326622,
+       'V': 1.800340,
+       'W': 0.665309,
+       'Y': 0.398618},
+ 'M': {'N': 0.198221,
+       'P': 0.171329,
+       'Q': 1.545260,
+       'R': 0.683162,
+       'S': 0.493905,
+       'T': 1.516120,
+       'V': 2.058450,
+       'W': 0.515706,
+       'Y': 0.428437},
+ 'N': {'P': 0.195081,
+       'Q': 1.543640,
+       'R': 0.635346,
+       'S': 3.974230,
+       'T': 2.030060,
+       'V': 0.196246,
+       'W': 0.0719167,
+       'Y': 1.086000},
+ 'P': {'Q': 0.933372,
+       'R': 0.679489,
+       'S': 1.613280,
+       'T': 0.795384,
+       'V': 0.314887,
+       'W': 0.139405,
+       'Y': 0.216046},
+ 'Q': {'R': 3.035500,
+       'S': 1.028870,
+       'T': 0.857928,
+       'V': 0.301281,
+       'W': 0.215737,
+       'Y': 0.227710},
+ 'R': {'S': 1.224190,
+       'T': 0.554413,
+       'V': 0.251849,
+       'W': 1.163920,
+       'Y': 0.381533},
+ 'S': {'T': 4.378020, 'V': 0.232739, 'W': 0.523742, 'Y': 0.786993},
+ 'T': {'V': 1.388230, 'W': 0.110864, 'Y': 0.291148},
+ 'V': {'W': 0.365369, 'Y': 0.314730},
+ 'W': {'Y': 2.485390},
+ 'Y': {}};
+
+/**
+ * @name models.protein.WAG.frequencies
+ * @param {Dictionary} Baseline WAG model
+ * @returns {Dictionary} Updated WAG model with empirical frequencies
+ * @description Define the empirical amino acid frequencies associated with the WAG model of protein evolution
+ */
+lfunction models.protein.WAG.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+        {{     0.0866279}
+        {     0.0193078}
+        {     0.0570451}
+        {     0.0580589}
+        {     0.0384319}
+        {     0.0832518}
+        {     0.0244313}
+        {      0.048466}
+        {     0.0620286}
+        {      0.086209}
+        {     0.0195027}
+        {     0.0390894}
+        {     0.0457631}
+        {     0.0367281}
+        {      0.043972}
+        {     0.0695179}
+        {     0.0610127}
+        {     0.0708956}
+        {     0.0143859}
+        {     0.0352742}
+        };
+
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}

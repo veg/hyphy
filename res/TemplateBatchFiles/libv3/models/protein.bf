@@ -10,15 +10,16 @@ models.protein.alphabet = {{"A","C","D","E","F","G","H","I","K","L","M","N","P",
 
 
 /* Available empirical models */
-models.protein.empirical_models = {{"LG",  "Empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067"},
-                                   {"WAG", "Empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
-                                   {"JTT", "Empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
-                                   {"JC69", "Empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."},
-                                   {"mtMAM", "Empirical model of protein evolution for mammalian mitochondrial genomes from Yang N, Nielsen R, and Hasegawa M. (1998). Ref: http://dx.doi.org/10.1093/oxfordjournals.molbev.a025888"},
-                                   {"cpREV", "Empirical model of protein evolution for chloroplast genomes from  from Adachi et al. (2000). Ref: https://www.ncbi.nlm.nih.gov/pubmed/10795826"},
-                                   {"HIVBm", "Empirical model of protein evolution for between-host HIV sequences from Nickle et al. (2007). Ref: https://doi.org/10.1371/journal.pone.0000503"},
-                                   {"HIVWm", "Empirical model of protein evolution for within-host HIV sequences from Nickle et al. (2007). Ref: https://doi.org/10.1371/journal.pone.0000503"},
-                                   {"AB", "Empirical model of protein evolution for antibody sequences from Mirsky et al. (2015). Ref: https://doi.org/10.1093/molbev/msu340"}
+models.protein.empirical_models = {{"LG",  "Generalist empirical model of protein evolution from Le and Gascuel (2008). Ref: https://doi.org/10.1093/molbev/msn067"},
+                                   {"WAG", "Generalist empirical model of protein evolution from Whelan and Goldman (2001). Ref: https://doi.org/10.1093/oxfordjournals.molbev.a003851"},
+                                   {"JTT", "Generalist empirical model of protein evolution from Jones, Taylor, and Thornton (1996). Ref: https://doi.org/10.1093/bioinformatics/8.3.275"},
+                                   {"JC69", "Generalist empirical model of protein evolution with equal exchangeability rates among all amino acids, also known as JC69."},
+                                   {"mtMet", "Specialist empirical model of protein evolution for metazoan mitochondrial genomes from Le, Dang, and Le. (2017). Ref: 10.1186/s12862-017-0987-y"},
+                                   {"mtVer", "Specialist empirical model of protein evolution for vertebrate mitochondrial genomes from Le, Dang, and Le. (2017). Ref: 10.1186/s12862-017-0987-y"},
+                                   {"mtInv", "Specialist empirical model of protein evolution for invertebrate mitochondrial genomes from Le, Dang, and Le. (2017). Ref: 10.1186/s12862-017-0987-y"},
+                                   {"gcpREV", "Specialist empirical model of protein evolution for green plant chloroplast genomes from  from Cox and Foster (2013). Ref: https://doi.org/10.1016/j.ympev.2013.03.030"},
+                                   {"HIVBm", "Specialist empirical model of protein evolution for between-host HIV sequences from Nickle et al. (2007). Ref: https://doi.org/10.1371/journal.pone.0000503"},
+                                   {"HIVWm", "Specialist empirical model of protein evolution for within-host HIV sequences from Nickle et al. (2007). Ref: https://doi.org/10.1371/journal.pone.0000503"}
                                   };
 
 
@@ -37,7 +38,7 @@ function models.protein.generic.Time (option) {
 
 
 
-
+/* Function below relocated to protein/empirical.bf and protein/REV.bf, each.
 /**
  * @name models.protein.generic.DefineQMatrix
  * @param {Dictionary} modelSpec
