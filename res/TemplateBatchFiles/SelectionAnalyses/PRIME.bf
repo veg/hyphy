@@ -93,11 +93,11 @@ namespace prime {
 
 estimators.fixSubsetOfEstimates(prime.gtr_results, prime.gtr_results[terms.global]);
 
+io.ReportProgressMessageMD ("prime", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
+
 namespace prime {
     doPartitionedMG ("prime", FALSE);
 }
-
-io.ReportProgressMessageMD ("prime", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
 prime.final_partitioned_mg_results = estimators.FitMGREV(prime.filter_names, prime.trees, prime.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
@@ -110,4 +110,66 @@ io.ReportProgressMessageMD("prime", "codon-refit", "* Log(L) = " + Format(prime.
 prime.global_dnds = selection.io.extract_global_MLE_re (prime.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 utility.ForEach (prime.global_dnds, "_value_", 'io.ReportProgressMessageMD ("PRIME", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
 
-// TODO: Numbers are slightly different. Verify that the model is slightly different from the original PRIME implementation
+estimators.fixSubsetOfEstimates(prime.final_partitioned_mg_results, prime.final_partitioned_mg_results[terms.global]);
+
+//Store MG94 to JSON
+selection.io.json_store_lf_GTR_MG94 (prime.json,
+                            terms.json.global_mg94xrev,
+                            prime.final_partitioned_mg_results[terms.fit.log_likelihood],
+                            prime.final_partitioned_mg_results[terms.parameters],
+                            prime.sample_size,
+                            utility.ArrayToDict (utility.Map (prime.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}")),
+                            (prime.final_partitioned_mg_results[terms.efv_estimate])["VALUEINDEXORDER"][0],
+                            prime.display_orders[terms.json.global_mg94xrev]);
+
+utility.ForEachPair (prime.filter_specification, "_key_", "_value_",
+    'selection.io.json_store_branch_attribute(prime.json, terms.json.global_mg94xrev, terms.branch_length, prime.display_orders[terms.json.global_mg94xrev],
+                                             _key_,
+                                             selection.io.extract_branch_info((prime.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
+
+
+
+
+selection.io.stopTimer (prime.json [terms.json.timers], "Model fitting");
+
+// define the site-level likelihood function
+
+// TODO: This is where we need to implement the QCAP model
+
+prime.site.mg_rev = model.generic.DefineModel("models.codon.MG_REV.ModelDescription",
+        "prime_mg", {
+            "0": parameters.Quote(terms.local),
+            "1": prime.codon_data_info[terms.code]
+        },
+        prime.filter_names,
+        None);
+
+
+prime.site_model_mapping = {"prime_mg" : prime.site.mg_rev};
+
+/* set up the local constraint model */
+
+// TODO : will need to update
+prime.alpha = model.generic.GetLocalParameter (prime.site.mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
+prime.beta = model.generic.GetLocalParameter (prime.site.mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
+io.CheckAssertion ("None!=prime.alpha && None!=prime.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
+
+selection.io.startTimer (prime.json [terms.json.timers], "prime analysis", 2);
+
+//----------------------------------------------------------------------------------------
+function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
+
+    fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
+
+    node_name = tree_name + "." + node_name;
+
+    ExecuteCommands ("
+        `node_name`.`alpha_parameter` := (`alpha_factor`) * fel.branch_length__;
+        `node_name`.`beta_parameter`  := (`beta_factor`)  * fel.branch_length__;
+    ");
+}
+
+
+
+
+

@@ -43,6 +43,7 @@ fel.analysis_description = {
     terms.io.contact: "spond@temple.edu",
     terms.io.requirements: "in-frame codon alignment and a phylogenetic tree"
 };
+
 io.DisplayAnalysisBanner(fel.analysis_description);
 
 
@@ -55,9 +56,6 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 /*------------------------------------------------------------------------------
     Globals
 */
-
-
-
 fel.site_alpha = "Site relative synonymous rate";
 fel.site_beta = "Site relative non-synonymous rate (tested branches)";
 fel.site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
@@ -111,7 +109,6 @@ namespace fel {
 /* Prompt for one-rate or two-rate analysis */
 fel.srv = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS := 1 at each site)."}},
                                   "Use synonymous rate variation? Strongly recommended YES for selection inference.");
-console.log(fel.srv);
 if (fel.srv == "Yes"){
     fel.srv = TRUE
 } else {
@@ -276,7 +273,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.null"): null};
 }
 
-/* echo to screen calls */
+/a2* echo to screen calls */
 
 fel.report.counts        = {{0,0}};
 

@@ -53,7 +53,6 @@ fubar.display_orders = {terms.original_name: -1,
                         terms.json.nucleotide_gtr: 0
                         };
 
-
 fubar.prompts = {
     "grid" : TRUE,
     "chain" : TRUE
@@ -68,8 +67,6 @@ fubar.run_settings = {
     "concentration" : 0.5,
     "posterior" : 0.9
 };
-
-
 
 /*------------------------------------------------------------------------------*/
 
