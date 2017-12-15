@@ -143,6 +143,7 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
 
             if (regexp.Find(treeString, "^#NEXUS")) {
                 ExecuteCommands(treeString);
+                
                 if (!utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
                     fprintf(stdout, "\n> **This NEXUS file doesn't contain a valid tree block**");
                     return 1;

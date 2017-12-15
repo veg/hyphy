@@ -788,6 +788,9 @@ bool        _CalcNode::NeedNewCategoryExponential(long catID) const
     return false;
 }
 
+//#define _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL 12733
+#//define _UBER_VERBOSE_MX_UPDATE_DUMP 1
+
 //_______________________________________________________________________________________________
 bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags, _List* bufferedOps)
 {
@@ -832,7 +835,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     locVar = LocateVar (iVariables->lData[i]);
                     curVar->SetValue(locVar->Compute());
                     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-                      if (1 || likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
                         fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
                       }
                     #endif
@@ -847,7 +850,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     locVar = LocateVar (dVariables->lData[i]);
                     curVar->SetValue(locVar->Compute());
                     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-                      if (1 || likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
                         fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
                       }
                     #endif
@@ -855,7 +858,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             }
     
     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-      if (1|| likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
+      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
         for (unsigned long i=0; i<gVariables->lLength; i++) {
           _Variable* curVar = LocateVar(gVariables->GetElement(i));
           fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
@@ -893,7 +896,9 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     if (isExplicitForm && bufferedOps) {
         _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel()->Compute (0,nil, bufferedOps);
         #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-            fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting (buffered) category %ld/%ld for node %s\n", categID, totalCategs, GetName()->sData);
+            if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting (buffered) category %ld/%ld for node %s\n", categID, totalCategs, GetName()->sData);
+            }
          #endif
         SetCompExp ((_Matrix*)bufferedExp->makeDynamic(), totalCategs>1?categID:-1);
         return false;

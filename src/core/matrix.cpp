@@ -3003,44 +3003,66 @@ void        _Matrix::FillInList (_List& fillMe, bool doNumeric) {
     }
 }
 
+/*#define __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL 12733
+
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+extern long likeFuncEvalCallCount;
+#endif
+*/
+
 //_____________________________________________________________________________________________
 _PMathObj   _Matrix::EvaluateSimple (void)
 // evaluate the matrix  overwriting the old one
 {
     _Matrix * result = new _Matrix (hDim, vDim, bool (theIndex), true);
     checkPointer (result);
-
-
+    
     if (cmd->varIndex.lLength) {
         for (long i=0; i<cmd->varIndex.lLength; i++) {
             _Variable* curVar = LocateVar(cmd->varIndex.lData[i]);
             if (curVar->ObjectClass () != MATRIX) {
+                
                 if (curVar->IsIndependent()) {
                     cmd->varValues[i].value = LocateVar (cmd->varIndex.lData[i])->Value();
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+                    if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
+                        fprintf (stderr, "[_Matrix::EvaluateSimple] Setting variable %s to %g\n", LocateVar (cmd->varIndex.lData[i])->theName->sData,cmd->varValues[i].value);
+                    }
+#endif
                 } else {
                     cmd->varValues[i].value = LocateVar (cmd->varIndex.lData[i])->Compute()->Value();
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+                    if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
+                        fprintf (stderr, "[_Matrix::EvaluateSimple] Setting constrained variable %s to %g\n", LocateVar (cmd->varIndex.lData[i])->theName->sData,cmd->varValues[i].value);
+                    }
+#endif
                 }
             } else {
                 cmd->varValues[i].reference = (Ptr)((_Matrix*)LocateVar (cmd->varIndex.lData[i])->Compute())->theData;
             }
         }
     }
-
-
+    
+    
     for (long f = 0; f < cmd->formulasToEval.lLength; f++) {
         cmd->formulaValues [f] = ((_Formula*)cmd->formulasToEval.lData[f])->ComputeSimple(cmd->theStack, cmd->varValues);
+#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
+        if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
+            fprintf (stderr, "\n[_Matrix::EvaluateSimple] Computing expression %ld, value %g\n", f, cmd->formulaValues [f] );
+        }
+#endif
         /*if (terminateExecution)
-        {
-            ((_Formula*)cmd->formulasToEval.lData[f])->ConvertFromSimple(cmd->varIndex);
-            _String * s = (_String*)((_Formula*)cmd->formulasToEval.lData[f])->toStr();
-            WarnError (*s);
-            DeleteObject (s);
-            return result;
-        }*/
+         {
+         ((_Formula*)cmd->formulasToEval.lData[f])->ConvertFromSimple(cmd->varIndex);
+         _String * s = (_String*)((_Formula*)cmd->formulasToEval.lData[f])->toStr();
+         WarnError (*s);
+         DeleteObject (s);
+         return result;
+         }*/
     }
-
+    
     long * fidx = cmd->formulaRefs;
-
+    
     if (theIndex) {
         result->lDim = lDim;
         result->bufferPerRow = bufferPerRow;
@@ -3048,31 +3070,31 @@ _PMathObj   _Matrix::EvaluateSimple (void)
         result->allocationBlock = allocationBlock;
         result->theIndex = (long*)MemReallocate((Ptr)result->theIndex,sizeof(long)*lDim);
         result->theData = (_Parameter*)MemReallocate ((Ptr)result->theData,sizeof(_Parameter)*lDim);
-
+        
         /*memcpy (result->theIndex,theIndex,sizeof(long)*lDim);*/
-
-
-
-
+        
+        
+        
+        
         for (long i = 0; i<lDim; i++) {
             long idx = theIndex[i];
-
+            
             if (idx != -1) {
                 result->theData[i] = cmd->formulaValues[fidx[i]];
             }
-
+            
             result->theIndex[i] = idx;
         }
-
+        
         /*for (long i = 0; i<lDim; i++)
-        {
-            if (theIndex[i]!=-1)
-            {
-                formValue = theFormulas[i]->ComputeSimple(cmd->theStack, cmd->varValues);
-                result.theData[i] = formValue;
-            }
-        } */
-
+         {
+         if (theIndex[i]!=-1)
+         {
+         formValue = theFormulas[i]->ComputeSimple(cmd->theStack, cmd->varValues);
+         result.theData[i] = formValue;
+         }
+         } */
+        
         if (hDim==vDim) {
             _Parameter* diagStorage = new _Parameter [hDim];
             checkPointer ((Ptr)diagStorage);
@@ -3096,37 +3118,37 @@ _PMathObj   _Matrix::EvaluateSimple (void)
         }
     } else {
         /*long i;
-        for (i = 0; i<lDim; i++)
-        {
-            if (theFormulas[i]!=(_Formula*)ZEROPOINTER)
-            {
-                formValue = theFormulas[i]->ComputeSimple(cmd->theStack,cmd->varValues);
-                result.theData[i] = formValue;
-                //break;
-            }
-        }       */
-
+         for (i = 0; i<lDim; i++)
+         {
+         if (theFormulas[i]!=(_Formula*)ZEROPOINTER)
+         {
+         formValue = theFormulas[i]->ComputeSimple(cmd->theStack,cmd->varValues);
+         result.theData[i] = formValue;
+         //break;
+         }
+         }       */
+        
         for (long i = 0; i<lDim; i++) {
             if (fidx[i]>= 0) {
                 result->theData[i] = cmd->formulaValues[fidx[i]];
             }
         }
-
+        
         if (hDim==vDim)
             for (long i = 0; i<lDim; i+=vDim+1) {
                 if (fidx[i] < 0) { // mod Aug 2 2005
-                    //if (theFormulas[i]->IsEmpty())
-                    //{
+                                   //if (theFormulas[i]->IsEmpty())
+                                   //{
                     _Parameter st = 0;
                     long k = i/vDim,j;
                     for (j = k*vDim; j<k*vDim+k; j++) {
                         st-=result->theData[j];
                     }
-
+                    
                     for (j = k*vDim+k+1; j<(k+1)*vDim; j++) {
                         st-=result->theData[j];
                     }
-
+                    
                     result->theData[i] = st;
                     //}
                 }
@@ -4637,8 +4659,7 @@ void    _Matrix::CompressSparseMatrix (bool transpose, _Parameter * stash)
 
 //_____________________________________________________________________________________________
 
-_Matrix*    _Matrix::Exponentiate (void)
-{
+_Matrix*    _Matrix::Exponentiate (void) {
     // find the maximal elements of the matrix
     long i,
          power2 = 0;
@@ -4646,6 +4667,9 @@ _Matrix*    _Matrix::Exponentiate (void)
 #ifndef _OPENMP
     matrixExpCount++;
 #endif
+    
+
+
 
     _Parameter max     = 1.0,
                *stash  = new _Parameter[hDim*(1+vDim)];
@@ -4672,7 +4696,7 @@ _Matrix*    _Matrix::Exponentiate (void)
     } else {
         max = 1.;
     }
-
+    
     _Matrix *result = new _Matrix(hDim, vDim , !storageType, storageType),
     temp    (*this);
 
@@ -4776,12 +4800,16 @@ _Matrix*    _Matrix::Exponentiate (void)
         result->Transpose();
     }
 
-
+    
     for (long s = 0; s<power2; s++) {
 #ifndef _OPENMP
         squaringsCount++;
 #endif
-        result->Sqr(stash);
+        _Parameter last_change = result->Sqr(stash);
+        if (last_change < DBL_EPSILON * 1000.) {
+            break;
+        }
+        
     }
     delete [] stash;
 
@@ -5773,19 +5801,21 @@ void        _Matrix::AplusBx (_Matrix& B, _Parameter x)
 //#define _SLKP_USE_SSE_INTRINSICS
 
 //_____________________________________________________________________________________________
-void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
-{
+_Parameter        _Matrix::Sqr (_Parameter* _hprestrict_ stash) {
+    
+    _Parameter diff = 0.0;
+    
     if (hDim!=vDim) {
-        return;
+        return diff;
     }
     // not a square matrix
 
-    if (theIndex|| storageType!=1 )
+    if (theIndex|| storageType!=1 ) {
         // sparse or non-numeric matrix
-    {
         _Matrix temp (hDim, vDim, storageType==0?theIndex!=nil:false, storageType);
         Multiply (temp, *this);
         Swap(temp);
+        return 10000.*DBL_EPSILON;
     } else {
         if (hDim==4)
             // special case for nucleotides
@@ -5888,12 +5918,18 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
            }
         }
         
-        memcpy (theData, stash, lDim * sizeof (_Parameter));
+        
+        //memcpy (theData, stash, lDim * sizeof (_Parameter));
 
-        /*for (long s = 0; s < lDim; s++) {
+        
+        
+        for (long s = 0; s < lDim; s++) {
+            StoreIfGreater(diff, fabs (theData[s] - stash[s]));
             theData[s] = stash[s];
-        }*/
+        }
     }
+    
+    return diff;
 }
 //_____________________________________________________________________________________________
 void        _Matrix::AgreeObjects (_Matrix& m)
