@@ -77,7 +77,7 @@ leisr.analysis_type  = io.SelectAnOption ({{leisr.protein_type , "Infer relative
 
 if (leisr.analysis_type ==  leisr.protein_type) {
     leisr.baseline_model  = io.SelectAnOption (models.protein.empirical_models, "Select a protein model:");
-    leisr.generators = models.protein.empirical.default_generators;
+    leisr.generators = models.protein.empirical.plusF_generators;
 }
 else {
 
