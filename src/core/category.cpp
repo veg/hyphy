@@ -68,7 +68,6 @@ extern     _List        modelNames;
 extern     _SimpleList  modelMatrixIndices,
            modelFrequenciesIndices;
 
-bool       CheckEqual           (_Parameter, _Parameter);
 
 //___________________________________________________________________________________________
 

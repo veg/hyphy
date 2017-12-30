@@ -243,7 +243,7 @@ _String getLibraryPath() {
         _String tryLocal = baseDir & "res" & dirSlash;
         
         struct stat sb;
-                
+        
         if (stat((const char*)tryLocal, &sb) == 0 && S_ISDIR(sb.st_mode)) {
             libDir = tryLocal;
         }

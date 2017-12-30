@@ -777,7 +777,6 @@ reduceLFSmoothing              ;
 
 
 
-bool    CheckEqual                  (_Parameter, _Parameter);
 void    StateCounterResultHandler   (_Formula&, _SimpleList*,long&,long&,long,_Matrix&,_Matrix&);
 
 _LikelihoodFunction*

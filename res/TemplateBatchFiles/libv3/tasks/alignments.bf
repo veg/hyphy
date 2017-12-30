@@ -249,6 +249,38 @@ function alignments.ReadNucleotideAlignment(file_name, dataset_name, datafilter_
 }
 
 /**
+ * Take an input filter, replace all identical sequences with a single copy
+ * Optionally, rename the sequences to indicate copy # by adding ':copies'
+ * @name alignments.CompressDuplicateSequences
+ * @param {String} filter_in - The name of an existing filter
+ * @param {String} filter_out - the name  (to be created) of the filter where the compressed sequences will go)
+ * @param {Bool} rename - if true, rename the sequences
+ * @returns the number of unique sequences
+ */
+lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) {
+    GetDataInfo (duplicate_info, ^filter_in, -2);
+    
+    DataSetFilter ^filter_out = CreateFilter (^filter_in, 1, "", Join (",", duplicate_info["UNIQUE_INDICES"]));
+    
+    if (rename) {
+        utility.ForEachPair (duplicate_info["UNIQUE_INDICES"],
+                             "_idx_",
+                             "_seq_idx_",
+                             '
+                                GetString (_seq_name_, ^`&filter_in`, _seq_idx_);
+                                _seq_name_ += ":" + ((`&duplicate_info`)["UNIQUE_COUNTS"])[_idx_[1]];
+                                SetParameter (^`&filter_in`,_seq_idx_,_seq_name_);
+                              ');
+       
+    } 
+    
+    
+    
+    return duplicate_info["UNIQUE_SEQUENCES"];
+    //DataSetFilter ^filter_out = CreateFilter (filter_in);
+}
+
+/**
  * Defines filters for multiple partitions
  * @name alignments.DefineFiltersForPartitions
  * @param {Matrix} partitions - a row vector of dictionaries with partition information containing "name" and "filter-string" attributes
