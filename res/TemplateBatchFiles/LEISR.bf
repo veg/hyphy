@@ -31,7 +31,7 @@ utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 leisr.analysis_description = {
     terms.io.info: "LEISR (Likelihood Estimation of Individual Site Rates) infer relative amino-acid or nucleotide rates from a fixed nucleotide or amino-acid alignment and tree, with possibility for partitions. Relative site-specific substitution rates are
     inferred by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler.",
-    terms.io.version: "0.3",
+    terms.io.version: "0.4",
     terms.io.reference: "Spielman, S.J. and Kosakovsky Pond, S.L. Relative evolutionary rate inference in HyPhy with LEISR. bioRxiv. https://doi.org/10.1101/206011. (2017); Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
     terms.io.authors: "Sergei L Kosakovsky Pond and Stephanie J Spielman",
     terms.io.contact: "{spond,stephanie.spielman}@temple.edu"
@@ -77,7 +77,7 @@ leisr.analysis_type  = io.SelectAnOption ({{leisr.protein_type , "Infer relative
 
 if (leisr.analysis_type ==  leisr.protein_type) {
     leisr.baseline_model  = io.SelectAnOption (models.protein.empirical_models, "Select a protein model:");
-    leisr.generators = models.protein.empirical.default_generators;
+    leisr.generators = models.protein.empirical.plusF_generators;
 }
 else {
 
