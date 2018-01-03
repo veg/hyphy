@@ -26,7 +26,7 @@ lfunction models.DNA.JC69.ModelDescription(type) {
         utility.getGlobalValue("terms.model.type"): type,
         utility.getGlobalValue("terms.model.get_branch_length"): "",
         utility.getGlobalValue("terms.model.set_branch_length"): "models.generic.SetBranchLength",
-        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.constrain_branch_length",
+        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.ConstrainBranchLength",
         utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.equal",
         utility.getGlobalValue("terms.model.q_ij"): "models.DNA.JC69._generateRate",
         utility.getGlobalValue("terms.model.time"): "models.DNA.generic.Time",

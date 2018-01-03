@@ -30,7 +30,7 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
         },
         utility.getGlobalValue("terms.model.get_branch_length"): "",
         utility.getGlobalValue("terms.model.set_branch_length"): "models.codon.MG_REV.set_branch_length",
-        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.constrain_branch_length",
+        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.ConstrainBranchLength",
         utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.empirical.corrected.CF3x4",
         utility.getGlobalValue("terms.model.q_ij"): "models.codon.MG_REV._GenerateRate",
         utility.getGlobalValue("terms.model.time"): "models.DNA.generic.Time",

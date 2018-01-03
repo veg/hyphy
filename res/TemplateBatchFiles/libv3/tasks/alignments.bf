@@ -179,6 +179,25 @@ lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
 }
 
 /**
+ * Ensure that name mapping is not None by creating a f(x)=x map if needed
+ * @name alignments.EnsureMapping
+ * @param dataset_name - the name of the dataset you wish to use
+ * @param {Dictionary} r - metadata pertaining to the dataset
+ * @param file_name - path to file
+ * @returns {Dictionary} r - metadata pertaining to the dataset
+ */
+ 
+lfunction alignments.EnsureMapping(dataset_name, data) {
+    name_mapping = data[utility.getGlobalValue("terms.data.name_mapping")];
+    if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
+        name_mapping = {};
+        utility.ForEach (alignments.GetSequenceNames (dataset_name), "_value_", "`&name_mapping`[_value_] = _value_");
+        data[utility.getGlobalValue("terms.data.name_mapping")] = name_mapping;
+    }    
+    return data;
+}
+
+/**
  * Read dataset from data
  * @name alignments.ReadNucleotideDataSetString
  * @param {String} dataset_name - the name of the dataset you wish to use
