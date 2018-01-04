@@ -25,7 +25,7 @@ lfunction models.protein.REV.ModelDescription(type) {
         utility.getGlobalValue("terms.model.type"): type,
         utility.getGlobalValue("terms.model.get_branch_length"): "",
         utility.getGlobalValue("terms.model.set_branch_length"): "models.generic.SetBranchLength",
-        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.constrain_branch_length",
+        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.ConstrainBranchLength",
         utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.empirical.protein",
         utility.getGlobalValue("terms.model.q_ij"): "models.protein.REV._GenerateRate",
         utility.getGlobalValue("terms.model.time"): "models.protein.generic.Time",
