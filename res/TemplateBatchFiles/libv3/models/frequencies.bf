@@ -80,7 +80,7 @@ function frequencies.empirical.protein (model, namespace, datafilter) {
  */
 function frequencies.ML.binary (model, namespace, datafilter) {
     model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
-    // define 20 frequency parameters
+    // define 2 frequency parameters
     // initialize to empirical freqs
     // add to model parameter manifest
     frequencies.ML.binary.emp = model[terms.efv_estimate];
