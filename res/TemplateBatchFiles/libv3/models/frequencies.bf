@@ -71,6 +71,44 @@ function frequencies.empirical.protein (model, namespace, datafilter) {
 }
 
 /**
+ * Sets model's equilibrium frequency estimator to ML for binary data
+ * @name frequencies.empirical.binary
+ * @param {Dictionary} model
+ * @param {String} namespace
+ * @param {DataSetFilter} datafilter
+ * @returns {Dictionary} updated model
+ */
+function frequencies.ML.binary (model, namespace, datafilter) {
+    model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
+    // define 20 frequency parameters
+    // initialize to empirical freqs
+    // add to model parameter manifest
+    frequencies.ML.binary.emp = model[terms.efv_estimate];
+    model[terms.efv_estimate] = {2,1};
+    frequencies.ML.binary.variables = {2,1};
+    frequencies.ML.binary.scaler = namespace + ".frequency_scaler";
+    
+    utility.ForEachPair (model[terms.alphabet], "_index", "_letter",
+                         '  
+                            _idx = _index[1];
+                            _freq_parameter = namespace + ".equilibrium_frequency_of." + _letter;
+                            frequencies.ML.binary.variables [_idx] = _freq_parameter;
+                            (model[terms.efv_estimate]) [_idx] = _freq_parameter + "/" + frequencies.ML.binary.scaler;
+                            parameters.DeclareGlobalWithRanges (_freq_parameter, frequencies.ML.binary.emp[_idx], 0, 1);
+                            model.generic.AddGlobal (model, _freq_parameter, terms.characterFrequency (_letter));
+                         '
+                         );
+       
+    // constrain pi_0 + pi_1 = 1, 
+    
+    parameters.SetConstraint ( frequencies.ML.binary.scaler, Join ("+", frequencies.ML.binary.variables), "global");
+ 
+    model[terms.model.efv_estimate_name] = terms.frequencies.ml;
+    (model[terms.parameters])[terms.model.empirical] = -1; // correct for the restricted sum
+    return model;
+}
+
+/**
  * Sets model's equilibrium frequency estimator to ML for protein data
  * @name frequencies.empirical.protein
  * @param {Dictionary} model
