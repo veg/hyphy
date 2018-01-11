@@ -289,7 +289,6 @@ dataSetList,
 likeFuncList;
 
 bool        CheckOneDStep   (_Parameter&,_Parameter,_Parameter);
-bool        CheckEqual      (_Parameter, _Parameter);
 
 _Variable*  siteWiseVar     = nil,
             *  blockWiseVar = nil;
@@ -4728,12 +4727,12 @@ inline  bool CheckOneDStep (_Parameter& val, _Parameter lB, _Parameter uB)
 }
 
 //_______________________________________________________________________________________
-bool CheckEqual (_Parameter a, _Parameter b) {
+bool CheckEqual (_Parameter a, _Parameter b, _Parameter tolerance) {
     if (a!=0.0) {
         a = (a>b)?(a-b)/a:(b-a)/a;
-        return a>0.0 ? a<=machineEps : a>=-machineEps;
+        return a>0.0 ? a<=tolerance : a>=-tolerance;
     }
-    return (b<=machineEps)&&(b>=-machineEps);
+    return (b<=tolerance)&&(b>=-tolerance);
 }
 
 //_______________________________________________________________________________________
@@ -6225,8 +6224,8 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
            brentHistory.Store (-FX-initialValue);*/
         }
         
-        if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue)) {
-          WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & maxSoFar & " / " & initialValue & ".\n");// & _String ((_String*)brentHistory.toStr()));
+        if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 10. * machineEps)) {
+          WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%15.12g") & " / " & _String (initialValue,"%15.12g") & ".\n");// & _String ((_String*)brentHistory.toStr()));
           return;
         }
         

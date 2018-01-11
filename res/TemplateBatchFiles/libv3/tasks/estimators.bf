@@ -239,6 +239,18 @@ function estimators.applyBranchLength(tree, node, model, length) {
 }
 
 /**
+ * @name estimators.constrainBranchLength
+ * @private
+ * @param {String} tree
+ * @param {String} node
+ * @param {String} model
+ * @param {String} length
+ */
+function estimators.constrainBranchLength(tree, node, model, length) {
+    return Call(model[terms.model.constrain_branch_length], model, length, tree + "." + node);
+}
+
+/**
  * @name estimators.fixSubsetOfEstimates.helper
  * @private
  * @param {String} key
@@ -432,6 +444,10 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                                 _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
 
                                 if (Type(_application_type) == "String") {
+                                    if (_application_type == terms.model.branch_length_constrain ) {
+                                        estimators.ApplyExistingEstimates.df_correction += estimators.constrainBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
+                                        continue;
+                                    }
                                     _set_branch_length_to = {};
                                     _set_branch_length_to[terms.branch_length] = _existing_estimate[terms.fit.MLE];
                                     _set_branch_length_to[terms.model.branch_length_scaler] = _application_type;

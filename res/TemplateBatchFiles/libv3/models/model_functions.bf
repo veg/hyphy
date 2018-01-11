@@ -329,6 +329,38 @@ function models.generic.post.definition  (model) {
 }
 
 /**
+ * @name models.generic.ConstrainBranchLength
+ * @param {Model} model
+ * @param {AssociativeList} or {Number} value
+ * @param {String} parameter
+ * @returns the number of constraints generated (0 or 1)
+ */
+function models.generic.ConstrainBranchLength (model, value, parameter) {
+    if (Type (value) == "Number") {
+        if (Abs((model[terms.parameters])[terms.local]) == 1) {
+            if (Type (model [terms.model.branch_length_string]) == "String") {
+                models.generic.ConstrainBranchLength.expression = model [terms.model.branch_length_string];
+                models.generic.ConstrainBranchLength.bl = (Columns ((model[terms.parameters])[terms.local]))[0];
+                models.generic.ConstrainBranchLength.bl.p = parameter + "." + models.generic.ConstrainBranchLength.bl;
+                models.generic.ConstrainBranchLength.substitution = {models.generic.ConstrainBranchLength.bl : 1};
+                models.generic.ConstrainBranchLength.expression = "(" + Simplify (models.generic.ConstrainBranchLength.expression, models.generic.ConstrainBranchLength.substitution) + ")";
+                Eval (models.generic.ConstrainBranchLength.bl.p + ":=" + value + "/" + models.generic.ConstrainBranchLength.expression);
+                messages.log ("models.generic.ConstrainBranchLength: " + models.generic.ConstrainBranchLength.bl.p + ":=" + value + "/" + models.generic.ConstrainBranchLength.expression);
+            } else {
+                messages.log ("models.generic.ConstrainBranchLength: model branch length expression not available");
+            }
+
+        }
+        else {
+            messages.log ("models.generic.ConstrainBranchLength: not exactly one local model parameter");
+        }
+    } else {
+         messages.log ("models.generic.ConstrainBranchLength: unsupported value type " + Type (value) + "\n" + value);    
+    }
+    return 0;
+}
+
+/**
  * @name models.generic.SetBranchLength
  * @param {Model} model
  * @param {AssociativeList} or {Number} value
