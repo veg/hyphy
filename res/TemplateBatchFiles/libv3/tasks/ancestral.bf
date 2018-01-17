@@ -469,11 +469,11 @@ lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
 *******************************************/
 
 function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
             _bacSiteC = {};
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC["CHARS"] = (_ancestralRecoveryCache[_ancID])["CHARS"];
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC["CHARS"] = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC["CHARS"]);
             _bacCounter = Rows(_thisColumn) - 1;
             _bacSiteMx = {
@@ -482,8 +482,8 @@ function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
             };
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1) {
-                if (_branchSubset[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Name"] && 1]) {
-                    _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                if (_branchSubset[((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Name"] && 1]) {
+                    _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                     _myState = _thisColumn[_bacTreeIterator];
                     _pState = _thisColumn[_bacParentID];
                     _expandSubstitutionMap(_pState, _myState, _ancID, "_bacSiteMx");
@@ -511,14 +511,14 @@ function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
 *******************************************/
 
 function _rootState(_ancID, _siteID) {
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
             _bacRootState = {};
-            _bacRootIndex = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[0])["Root"] - 1;
-            _rootStateIndex = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[_bacRootIndex][_siteID];
+            _bacRootIndex = ((_ancID["TREE_AVL"])[0])["Root"] - 1;
+            _rootStateIndex = (_ancID["MATRIX"])[_bacRootIndex][_siteID];
             _bacRootState["INDEX"] = _rootStateIndex;
             if (_rootStateIndex >= 0) {
-                _bacRootState["CHAR"] = ((_ancestralRecoveryCache[_ancID])["CHARS"])[_rootStateIndex];
+                _bacRootState["CHAR"] = (_ancID["CHARS"])[_rootStateIndex];
             } else {
                 _bacRootState["CHAR"] = "-";
             }
@@ -553,22 +553,22 @@ function _mapSNSBySite(_ancID, _siteID, _scaled) {
 /********************************************/
 
 function _mapSubstitutionsBySiteAux(_ancID, _siteID, _scaled, mode) {
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
             TREE_OUTPUT_OPTIONS = {};
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC = (_ancestralRecoveryCache[_ancID])["CHARS"];
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC);
             _bacCounter = Rows(_thisColumn) - 1;
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1) {
-                _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                 _myState = _thisColumn[_bacTreeIterator];
                 _pState = _thisColumn[_bacParentID];
                 _bacStateLabel = "";
 
 
-                _bac_bn = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Name"];
+                _bac_bn = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Name"];
                 TREE_OUTPUT_OPTIONS[_bac_bn] = {};
                 if (mode == 2) {
                     (TREE_OUTPUT_OPTIONS[_bac_bn])["TREE_OUTPUT_BRANCH_THICKNESS"] = 1;
@@ -641,12 +641,12 @@ function _mapSubstitutionsBySiteAux(_ancID, _siteID, _scaled, mode) {
             }
 
             if (mode == 2) {
-                (TREE_OUTPUT_OPTIONS[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Name"]]) = {
+                (TREE_OUTPUT_OPTIONS[((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Name"]]) = {
                     "TREE_OUTPUT_BRANCH_THICKNESS": 1
                 };
             }
 
-            _bacTreeString = PostOrderAVL2StringDL((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled);
+            _bacTreeString = PostOrderAVL2StringDL(_ancID["TREE_AVL"], _scaled);
             Tree _bacTempTree = _bacTreeString;
             _bac_bn = "";
             _bac_bn * 128;
@@ -688,15 +688,15 @@ function _mapCharactersBySiteNewick(_ancID, _siteID, _scaled) {
 }
 
 function _mapSubstitutionsBySiteNewickAux(_ancID, _siteID, _scaled, mode) {
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC = (_ancestralRecoveryCache[_ancID])["CHARS"];
+    if (Abs(_ancID)) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC);
             _bacCounter = Rows(_thisColumn) - 1;
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1) {
-                _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                 _myState = _thisColumn[_bacTreeIterator];
                 _pState = _thisColumn[_bacParentID];
                 _bacStateLabel = "";
@@ -712,10 +712,10 @@ function _mapSubstitutionsBySiteNewickAux(_ancID, _siteID, _scaled, mode) {
                     }
                 }
 
-                (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["SubLabel"] = _bacStateLabel;
+                ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["SubLabel"] = _bacStateLabel;
             }
 
-            return PostOrderAVL2StringAnnotate((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled, "SubLabel");
+            return PostOrderAVL2StringAnnotate(_ancID["TREE_AVL"], _scaled, "SubLabel");
         }
     }
     return "";
@@ -733,9 +733,9 @@ function _filterDimensions(_ancID) {
         1,
         2
     };
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        _sites = Columns((_ancestralRecoveryCache[_ancID])["MATRIX"]);
-        _branches = Rows((_ancestralRecoveryCache[_ancID])["MATRIX"]) - 1;
+    if (Abs_ancID) {
+        _sites = Columns(_ancID["MATRIX"]);
+        _branches = Rows(_ancID["MATRIX"]) - 1;
         _result[0] = _sites;
         _result[1] = _branches;
     }
@@ -756,11 +756,11 @@ function _countSubstitutionsByBranchSite(_ancID, _siteID, _filter) {
         0,
         1
     };
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
             TREE_OUTPUT_OPTIONS = {};
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC = (_ancestralRecoveryCache[_ancID])["CHARS"];
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC);
             _bacCounter = Rows(_thisColumn) - 1;
             _result = {
@@ -769,7 +769,7 @@ function _countSubstitutionsByBranchSite(_ancID, _siteID, _filter) {
             };
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator += 1) {
-                _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                 _myState = _thisColumn[_bacTreeIterator];
                 _pState = _thisColumn[_bacParentID];
                 _bacSiteMx = {
@@ -798,16 +798,16 @@ function _countSubstitutionsByBranchSite(_ancID, _siteID, _filter) {
 
 function _tabulateSubstitutionsAtSiteByBranch(_ancID, _siteID) {
     _result = {};
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC = (_ancestralRecoveryCache[_ancID])["CHARS"];
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC);
             _bacCounter = Rows(_thisColumn) - 1;
 
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1) {
-                _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                 _myState = _thisColumn[_bacTreeIterator];
                 _pState = _thisColumn[_bacParentID];
 
@@ -818,7 +818,7 @@ function _tabulateSubstitutionsAtSiteByBranch(_ancID, _siteID) {
                     haveS = 0;
                     haveNS = 0;
                 }
-                _result[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Name"]] = {
+                _result[((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Name"]] = {
                     {
                         haveS__,
                         haveNS__
@@ -889,7 +889,7 @@ function _convertSubstitutionToCharacters(_state1, _state2, _ancID, _resultMatri
                 };
                 _vec1[_state1] = 1;
             } else {
-                _vec1 = ((_ancestralRecoveryCache[_ancID])["AMBIGS"])[-_state1 - 2];
+                _vec1 = (_ancID["AMBIGS"])[-_state1 - 2];
             }
             if (_state2 >= 0) {
                 _vec2 = {
@@ -898,7 +898,7 @@ function _convertSubstitutionToCharacters(_state1, _state2, _ancID, _resultMatri
                 };
                 _vec2[_state2] = 1;
             } else {
-                _vec2 = ((_ancestralRecoveryCache[_ancID])["AMBIGS"])[-_state2 - 2];
+                _vec2 = (_ancID["AMBIGS"])[-_state2 - 2];
             }
             _vec1 = _vec1 * Transpose(_vec2);
             _vec2 = {

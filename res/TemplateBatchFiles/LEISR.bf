@@ -1,5 +1,6 @@
 RequireVersion("2.3.5");
 
+
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/stats.bf");
@@ -28,9 +29,9 @@ LoadFunctionLibrary("SelectionAnalyses/modules/io_functions.ibf");
 utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 
 leisr.analysis_description = {
-    terms.io.info: "LEISR (Likelihood Estimation of Individual Site Rates) infer relative amino-acid or nucleotide rates from a fixed nucleotide or amino-acid alignment and tree. Relative site-specific substitution rates are
-    inferred by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler",
-    terms.io.version: "0.2",
+    terms.io.info: "LEISR (Likelihood Estimation of Individual Site Rates) infer relative amino-acid or nucleotide rates from a fixed nucleotide or amino-acid alignment and tree, with possibility for partitions. Relative site-specific substitution rates are
+    inferred by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler.",
+    terms.io.version: "0.4",
     terms.io.reference: "Spielman, S.J. and Kosakovsky Pond, S.L. Relative evolutionary rate inference in HyPhy with LEISR. bioRxiv. https://doi.org/10.1101/206011. (2017); Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
     terms.io.authors: "Sergei L Kosakovsky Pond and Stephanie J Spielman",
     terms.io.contact: "{spond,stephanie.spielman}@temple.edu"
@@ -49,17 +50,20 @@ if (None == leisr.name_mapping) {
     leisr.name_mapping = {};
     utility.ForEach (alignments.GetSequenceNames ("leisr.dataset"), "_value_", "`&leisr.name_mapping`[_value_] = _value_");
 }
+
+
 leisr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (leisr.alignment_info[utility.getGlobalValue("terms.data.partitions")], leisr.name_mapping);
 leisr.partition_count = Abs (leisr.partitions_and_trees);
+leisr.filter_specification = alignments.DefineFiltersForPartitions (leisr.partitions_and_trees, "leisr.dataset" , "leisr.filter.", leisr.alignment_info);
 
-io.CheckAssertion ("leisr.partition_count==1", "This analysis can only handle a single partition");
 
 
 io.ReportProgressMessageMD ("relative_rates", "Data", "Input alignment description");
 io.ReportProgressMessageMD ("relative_rates", "Data", "Loaded **" +
                             leisr.alignment_info [terms.data.sequences] + "** sequences, **" +
                             leisr.alignment_info [terms.data.sites] + "** sites, and **" + leisr.partition_count + "** partitions from \`" + leisr.alignment_info [terms.data.file] + "\`");
-leisr.filter_specification = alignments.DefineFiltersForPartitions (leisr.partitions_and_trees, "leisr.dataset" , "leisr.filter.", leisr.alignment_info);
+
+
 /*******************************************************************************************************************/
 
 
@@ -73,7 +77,7 @@ leisr.analysis_type  = io.SelectAnOption ({{leisr.protein_type , "Infer relative
 
 if (leisr.analysis_type ==  leisr.protein_type) {
     leisr.baseline_model  = io.SelectAnOption (models.protein.empirical_models, "Select a protein model:");
-    leisr.generators = models.protein.empirical.default_generators;
+    leisr.generators = models.protein.empirical.plusF_generators;
 }
 else {
 
@@ -139,93 +143,157 @@ leisr.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           leisr.trees,
                                                           leisr.baseline_model_desc,
                                                           None,
-                                                          None);
+                                                          {terms.run_options.retain_lf_object: TRUE});
 
-
+ConstructCategoryMatrix (leisr.site_level_log_likelihoods, ^(leisr.alignment_wide_MLES[terms.likelihood_function]), SITE_LOG_LIKELIHOODS);
+DeleteObject (^(leisr.alignment_wide_MLES[terms.likelihood_function]));
 
 estimators.fixSubsetOfEstimates(leisr.alignment_wide_MLES, leisr.alignment_wide_MLES[terms.global]);
 
-io.ReportProgressMessageMD ("relative_rates", "overall", ">Fitted an alignment-wide model. **Log-L = " + leisr.alignment_wide_MLES [terms.fit.log_likelihood] + "**.");
+io.ReportProgressMessageMD ("relative_rates", "overall", ">Fitted an alignment-wide model. **Log-L = " + leisr.alignment_wide_MLES [terms.fit.log_likelihood] + "**.\n\nTotal tree lengths by partition\n");
+
+utility.ForEachPair (leisr.alignment_wide_MLES[terms.branch_length], "_part_", "_value_", 
+'
+io.ReportProgressMessageMD ("relative_rates", "overall", "" + (1+_part_) + ". " + Format (+(utility.Map (_value_, "_data_",
+    "
+        _data_ [terms.fit.MLE]
+    "
+)),6,3) + " subs/site.");
+'
+);
+
 
 /**
 	Set up the table to display to the screen
 */
 
 
-leisr.table_screen_output  = {{"Site", "Rel. rate (MLE)", "95% profile likelihood CI"}};
-leisr.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width : 16, terms.table_options.align : "center"};
+leisr.table_screen_output  = {{"Site", "Partition", "Rel. rate (MLE)", "95% profile likelihood CI", "Log(L) global", "Log(L) local"}};
+leisr.table_output_options = {terms.table_options.header : TRUE, 
+                              terms.table_options.minimum_column_width : 16, 
+                              terms.table_options.align : "center"};
+
+leisr.table_row_report = {{
+                                "" + (1+((leisr.filter_specification[leisr.report.partition])[terms.data.coverage])[leisr.report.site]),
+                                leisr.report.partition + 1,
+                                    Format(leisr.report.row[0],10,6),
+                                    Format(leisr.report.row[1],6,2) + " : " + Format(leisr.report.row[2],6,2),
+                                    Format (leisr.report.row[3], 6,3),
+                                    Format (leisr.report.row[4], 6,3)
+                                    }};
+
+
 leisr.table_headers = {{"MLE", "Relative rate estimate at a site"}
                        {"Lower", "Lower bound of 95% profile likelihood CI"}
-                       {"Upper", "Upper bound of 95% profile likelihood CI"}};
-leisr.site_results = {leisr.alignment_info [terms.data.sites], Rows (leisr.table_headers)};      
-
-leisr.site_patterns = alignments.Extract_site_patterns (leisr.filter_names[0]);
-
+                       {"Upper", "Upper bound of 95% profile likelihood CI"}
+                       {"LogL global", "Site log likelihood under the global (average rate) model fit"}
+                       {"LogL local", "Site log likelihood under the local (site-specific rate) model fit"}};
+                       
 // set-up model for site-level fitting in the next couple of lines, where rv turned off
 leisr.site_model = model.generic.DefineModel("leisr.Baseline.ModelDescription",
-        "relative_rates_site_model_instance", {
+        "leisr_site_model_instance", {
             "0": parameters.Quote(terms.global),
         },
         leisr.filter_names[0],
         None);
+        
+leisr.site_results = {};  
+leisr.rate_estimates = {}; // For stats
 
 
+     
+for (leisr.partition_index = 0; leisr.partition_index < leisr.partition_count; leisr.partition_index += 1) {
 
-leisr.site_model_mapping = {"relative_rates_site_model_instance" : leisr.site_model};
+    leisr.site_patterns = alignments.Extract_site_patterns ((leisr.filter_specification[leisr.partition_index])[utility.getGlobalValue("terms.data.name")]);
+    leisr.site_model_mapping = {"leisr_site_model_instance" : leisr.site_model};
 
-// leisr.site_tree is created from the information in  leisr.trees[0]
-// and populated with (the default) model
-model.ApplyModelToTree( "leisr.site_tree", leisr.trees[0], {terms.default : leisr.site_model}, None);
 
-// create a site filter; this is an ugly hack for the time being
-// alignments.serialize_site_filter returns HBL code as string in
-// which the function `__make_filter` is defined.
-ExecuteCommands (alignments.serialize_site_filter (
-								   leisr.filter_names[0],
-								   ((leisr.site_patterns[0])[terms.data.sites])[0]));
+    // leisr.site_tree is created from the information in  leisr.trees[leisr.partition_index]
+    // and populated with (the default) model
+    model.ApplyModelToTree( "leisr.site_tree", leisr.trees[leisr.partition_index], {terms.default : leisr.site_model}, None);
 
-__make_filter ("leisr.site_filter");
+    // create a site filter; this is an ugly hack for the time being
+    // alignments.serialize_site_filter returns HBL code as string in
+    // which the function `__make_filter` is defined.
+    ExecuteCommands (alignments.serialize_site_filter
+                                       ((leisr.filter_specification[leisr.partition_index])[utility.getGlobalValue("terms.data.name")],
+                                       ((leisr.site_patterns[0])[utility.getGlobalValue("terms.data.sites")])[0],
+                   ));
+                                       
+    __make_filter ("leisr.site_filter");
 
-LikelihoodFunction leisr.site_likelihood = (leisr.site_filter, leisr.site_tree);
+    LikelihoodFunction leisr.site_likelihood = (leisr.site_filter, leisr.site_tree);
 
-leisr.site_model_scaler_name = "leisr.site_rate_estimate";
-
-leisr.rate_estimates = {};
-
-/**
-	 this will store site estimates, which will then be dumped to JSON
-*/
-
-parameters.DeclareGlobal (leisr.site_model_scaler_name, None);
-
-estimators.ApplyExistingEstimates ("leisr.site_likelihood", leisr.site_model_mapping, leisr.alignment_wide_MLES,
+    leisr.site_model_scaler_name = "leisr.site_rate_estimate";
+    parameters.DeclareGlobal (leisr.site_model_scaler_name, None);
+    
+    
+    /*
+    
+    SLKP 20171210
+    
+        leisr.alignment_wide_MLES will have multiple partitions in general, and applying estimates to a site partition 
+        will ALWAYS copy values from the 0-index global partition to it. 
+         Clearly, this is not the right thing do do. So the solution is to copy the branch lengths from partition 
+        i (>0) to the index zero leisr.alignment_wide_MLES
+        
+        This will invalide the MLE set, but we should be done it with it by now
+        If not, it could be deep copied. 
+    
+    */
+    
+    if (leisr.partition_index) {
+        (leisr.alignment_wide_MLES [terms.branch_length])[0] = (leisr.alignment_wide_MLES [terms.branch_length])[leisr.partition_index];
+    }
+    
+    estimators.ApplyExistingEstimates ("leisr.site_likelihood", leisr.site_model_mapping, leisr.alignment_wide_MLES,
 									 {"0" : leisr.site_model_scaler_name} // proportional scaler
 									);
 
 
-leisr.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"leisr.site_likelihood"}},
-								    terms.mpi.Models : {{"leisr.site_model"}},
-								    terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
-								    terms.mpi.Variables : {{"leisr.site_model_scaler_name"}}
-							 });
 
-/* run the main loop over all unique site pattern combinations */
-utility.ForEachPair (leisr.site_patterns, "_pattern_", "_pattern_info_",
-	'
-		mpi.QueueJob (leisr.queue, "leisr.handle_a_site", {"0" : "leisr.site_likelihood",
-														"1" : alignments.serialize_site_filter
-														   ((leisr.filter_specification[0])[terms.data.name],
-														   (_pattern_info_[terms.data.sites])[0]),
-														"2" : _pattern_info_,
-														"3" : leisr.site_model_mapping
-														},
-														"leisr.store_results");
-	'
-);
+    leisr.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"leisr.site_likelihood"}},
+                                        terms.mpi.Models : {{"leisr.site_model"}},
+                                        terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
+                                        terms.mpi.Variables : {{"leisr.site_model_scaler_name"}}
+                                 });
 
-mpi.QueueComplete (leisr.queue);
+    /* run the main loop over all unique site pattern combinations */
+    utility.ForEachPair (leisr.site_patterns, "_pattern_", "_pattern_info_",
+        '
+            mpi.QueueJob (leisr.queue, "leisr.handle_a_site", {"0" : "leisr.site_likelihood",
+                                                            "1" : alignments.serialize_site_filter
+                                                               ((leisr.filter_specification[leisr.partition_index])[terms.data.name],
+                                                               (_pattern_info_[utility.getGlobalValue("terms.data.sites")])[0]),
+                                                            "2": leisr.partition_index,
+                                                            "3" : _pattern_info_,
+                                                            "4" : leisr.site_model_mapping
+                                                            },
+                                                            "leisr.store_results");
+        '
+    );
 
-leisr.site_rates = utility.Map( utility.Values(utility.Map (leisr.rate_estimates, "_value_", "_value_[terms.fit.MLE]")), "_value_", "0+_value_");
+
+    mpi.QueueComplete (leisr.queue);
+
+    leisr.partition_matrix = {Abs (leisr.site_results[leisr.partition_index]), 5}; // mle, lower, upper = 3
+
+    utility.ForEachPair (leisr.site_results[leisr.partition_index], "_key_", "_value_",
+    '
+        for (leisr.index = 0; leisr.index < 5; leisr.index += 1) {
+            leisr.partition_matrix [0+_key_][leisr.index] = _value_[leisr.index];
+        }
+    '
+    );
+
+    leisr.site_results[leisr.partition_index] = leisr.partition_matrix;   
+
+}
+
+
+
+/* TODO: Update for compatibility with partitioning 
+leisr.site_rates = utility.Map( utility.Values(utility.Map (leisr.site_results, "_value_", "_value_[terms.fit.MLE]")), "_value_", "0+_value_");
 leisr.stats = math.GatherDescriptiveStats(leisr.site_rates);
 
 io.ReportProgressMessageMD ("relative_rates", "Stats", "Rate distribution summary");
@@ -233,11 +301,12 @@ io.ReportProgressMessageMD ("relative_rates", "Stats", "* **Mean**: "  + Format 
 io.ReportProgressMessageMD ("relative_rates", "Stats", "* **Median**: "  + Format (leisr.stats[terms.math.median], 6, 2));
 io.ReportProgressMessageMD ("relative_rates", "Stats", "* **Std.Dev**: "  + Format (leisr.stats[terms.math.stddev], 6, 2));
 io.ReportProgressMessageMD ("relative_rates", "Stats", "* **95% Range**: ["  + Format (leisr.stats[terms.math._2.5], 5,2) + "," + Format (leisr.stats[terms.math._97.5], 5,2) + "]");
-
+*/
 
 
 /************************************* JSON STORAGE ***********************************/
 
+                                 
 leisr.store_global = utility.Map(
                         utility.Map (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                         "_value_",
@@ -266,18 +335,30 @@ leisr.json_content = { terms.json.input :
                                     terms.json.parameters: leisr.alignment_wide_MLES[terms.parameters],
                                     terms.json.AICc: leisr.aicc,
                                     terms.json.rate_distribution: leisr.store_global,
-                                    terms.efv_estimate: (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0]
+                                    terms.json.frequencies: (leisr.alignment_wide_MLES[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0]
 				                }
 				        },
 				        terms.json.MLE : {terms.json.headers   : leisr.table_headers,
-                                            terms.json.content : {"0":leisr.site_results}
+                                            terms.json.content : leisr.site_results
                                         }                   
  	                   };                                        
-selection.io.json_store_branch_attribute(leisr.json_content, utility.getGlobalValue ("terms.original_name"), utility.getGlobalValue ("terms.json.node_label"), -1, 0, utility.getGlobalValue ("leisr.name_mapping"));
-selection.io.json_store_branch_attribute(leisr.json_content, utility.getGlobalValue ("leisr.baseline_model_name"), utility.getGlobalValue ("terms.branch_length"), 0, 0, 
-                                         selection.io.extract_branch_info((leisr.alignment_wide_MLES[terms.branch_length])[0], "selection.io.branch.length")
-                                         );
 
+for (partition_index = 0; partition_index < leisr.partition_count; partition_index += 1) {
+    selection.io.json_store_branch_attribute(leisr.json_content, utility.getGlobalValue ("terms.original_name"), utility.getGlobalValue ("terms.json.node_label"), -1,
+                                         partition_index,
+                                         leisr.name_mapping);
+
+    selection.io.json_store_branch_attribute(leisr.json_content, utility.getGlobalValue ("leisr.baseline_model_name"), utility.getGlobalValue ("terms.branch_length"), 0,
+                                         partition_index,
+                                         selection.io.extract_branch_info((leisr.alignment_wide_MLES[utility.getGlobalValue ("terms.branch_length")])[partition_index], "selection.io.branch.length"));
+
+}
+
+selection.io.json_store_key_value_pair (leisr.json_content, None, utility.getGlobalValue("terms.json.partitions"),
+                                                         leisr.filter_specification);
+                        
+                        
+                        
 io.SpoolJSON (leisr.json_content, leisr.alignment_info[terms.data.file] + ".LEISR.json");
 
 
@@ -290,25 +371,39 @@ io.SpoolJSON (leisr.json_content, leisr.alignment_info[terms.data.file] + ".LEIS
 //----------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------
 
-lfunction leisr.handle_a_site (lf, filter_data, pattern_info, model_mapping) {
+lfunction leisr.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping) {
 
     GetString (lfInfo, ^lf,-1);
     ExecuteCommands (filter_data);
-
     __make_filter ((lfInfo["Datafilters"])[0]);
+    
+    
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
+    parameters.SetValue (^"leisr.site_model_scaler_name", 1);
+    /*
+    
+     SLKP 20171210
+     RESET the global rate value to a default avoid weird optimization issues because of bad starting conditions
+     (e.g. if the previous site was saturated)
+    */
 
+    
     if (pattern_info [utility.getGlobalValue("terms.data.is_constant")]) {
     	// the MLE for a constant site is 0;
     	// only the CI is non-trivial
-		^(utility.getGlobalValue("leisr.site_model_scaler_name")) = 0;
+		parameters.SetValue (^"leisr.site_model_scaler_name", 0);
+		results = {2,1};
+		results[1][0] =  estimators.ComputeLF (lf);
 
     } else {
 
 		^(utility.getGlobalValue("leisr.site_model_scaler_name")) = 1;
 		Optimize (results, ^lf);
 	}
-    return parameters.GetProfileCI (utility.getGlobalValue("leisr.site_model_scaler_name"), lf, 0.95);
+    profile = parameters.GetProfileCI (utility.getGlobalValue("leisr.site_model_scaler_name"), lf, 0.95);
+    profile[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+    
+    return profile;
 }
 
 
@@ -317,9 +412,15 @@ lfunction leisr.handle_a_site (lf, filter_data, pattern_info, model_mapping) {
 //----------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------
 
+function leisr.report.echo (leisr.report.site, leisr.report.partition, leisr.report.row) {
+    fprintf (stdout, io.FormatTableRow (leisr.table_row_report,leisr.table_output_options));
+
+}
+
 
 lfunction leisr.store_results (node, result, arguments) {
-    pattern_info    = arguments [2];
+    partition_index = arguments [2];
+    pattern_info    = arguments [3];
 
 
 	if ((^'leisr.table_output_options')[utility.getGlobalValue("terms.table_options.header")]) {
@@ -330,27 +431,42 @@ lfunction leisr.store_results (node, result, arguments) {
 			io.FormatTableRow (^'leisr.table_screen_output',^'leisr.table_output_options'));
 		(^'leisr.table_output_options')[utility.getGlobalValue("terms.table_options.header")] = FALSE;
 	}
+	
 
+    utility.EnsureKey (^"leisr.site_results", partition_index);
 	utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_site_index_",
 		"
-			leisr.rate_estimates [_site_index_+1] = `&result`;
-			result_row = {1,3};
-			result_row [0] = '' + (_site_index_ + 1);
-			result_row [1] = Format((`&result`)[terms.fit.MLE],6,3);
-			result_row [2] = Format((`&result`)[terms.lower_bound],6,3) + ' :'  +Format((`&result`)[terms.upper_bound],6,3);
-			fprintf (stdout,
-				io.FormatTableRow (result_row,leisr.table_output_options));
-		
+			//leisr.rate_estimates [_site_index_+1] = `&result`;
+						
+			result_row = {1,5};
+			result_row [0] = (`&result`)[terms.fit.MLE];
+			result_row [1] = (`&result`)[terms.lower_bound];
+			result_row [2] = (`&result`)[terms.upper_bound];
+			result_row [3] = leisr.site_level_log_likelihoods[((leisr.filter_specification[`&partition_index`])[terms.data.coverage])[_site_index_]];
+ 			result_row [4] = (`&result`)[terms.fit.log_likelihood];
+			
+            leisr.report.echo (_site_index_, `&partition_index`, result_row);
+			
+            out_result_row = {1,5};
+            out_result_row[0] = (`&result`)[terms.fit.MLE];
+            out_result_row[1] = (`&result`)[terms.lower_bound];
+            out_result_row[2] = (`&result`)[terms.upper_bound];
+            out_result_row[3] = result_row [3];
+            out_result_row[4] = (`&result`)[terms.fit.log_likelihood];
+
+
+		    (leisr.site_results[`&partition_index`])[_site_index_] = out_result_row;
+
+	        /*           		
 		    // JSON-related
-		    //console.log(_site_index_);
 		    leisr.site_results[_site_index_][0] = (leisr.rate_estimates[_site_index_+1])[terms.fit.MLE];
 		    leisr.site_results[_site_index_][1] = (leisr.rate_estimates[_site_index_+1])[terms.lower_bound];
 		    leisr.site_results[_site_index_][2] = (leisr.rate_estimates[_site_index_+1])[terms.upper_bound];
+		   */
 		"
     );
 
-	return rate_statistics;
-
+ 	//return rate_statistics;
 }
 
 

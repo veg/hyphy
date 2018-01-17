@@ -157,7 +157,10 @@ void        ExportCatVariables
 
 void        SplitVariablesIntoClasses
 (_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);
-bool        CheckEqual      (_Parameter,_Parameter);
+
+
+extern      _Parameter machineEps;
+bool        CheckEqual      (_Parameter,_Parameter, _Parameter = machineEps);
 
 extern      _AVLListX       _hyApplicationGlobals;
 

@@ -39,6 +39,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #else
     #include <termios.h>
     #include <signal.h>
+    #include <sys/stat.h>
     #define __HYPHY_HANDLE_TERM_SIGNAL__
 
 #endif
@@ -222,8 +223,12 @@ _String getLibraryPath() {
 
 #else
      pathNames&& &baseDir;
-    _String libDir = baseDir;
+    _String libDir = baseDir,
+    // see if  baseDir/res exists
+
 #endif
+    
+    
 
     // SW20141119: Check environment libpath and override default path if it exists
     // TODO: Move string to globals in v3
@@ -234,6 +239,15 @@ _String getLibraryPath() {
       if(hyphyPath.sLength != 0) {
         libDir = hyphyPath;
       }
+    } else {
+        _String tryLocal = baseDir & "res" & dirSlash;
+        
+        struct stat sb;
+        
+        if (stat((const char*)tryLocal, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+            libDir = tryLocal;
+        }
+
     }
 
     return libDir;

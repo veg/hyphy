@@ -149,6 +149,7 @@ meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme
 }, meme.partitioned_mg_results);
 
 
+//meme.final_partitioned_mg_results = meme.partitioned_mg_results;
 
 
 io.ReportProgressMessageMD("MEME", "codon-refit", "* Log(L) = " + Format(meme.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
@@ -298,21 +299,20 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                      ));
 
     __make_filter ("meme.site_filter");
-
     LikelihoodFunction meme.site_likelihood = (meme.site_filter, meme.site_tree_fel);
 
-    __make_filter ("meme.site_filter_bsrel");
 
 
     estimators.ApplyExistingEstimates ("meme.site_likelihood", meme.site_model_mapping, meme.final_partitioned_mg_results,
                                         terms.globals_only);
+                                        
 
-
+    __make_filter ("meme.site_filter_bsrel");
     LikelihoodFunction meme.site_likelihood_bsrel = (meme.site_filter_bsrel, meme.site_tree_bsrel);
 
 
     estimators.ApplyExistingEstimates ("meme.site_likelihood_bsrel", meme.site_model_mapping, meme.final_partitioned_mg_results,
-                                        "globals only");
+                                        terms.globals_only);
 
     meme.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"meme.site_likelihood","meme.site_likelihood_bsrel"}},
                                    terms.mpi.Models : {{"meme.site.background_fel","meme.site.bsrel"}},
@@ -458,11 +458,15 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     bsrel_tree_id = (lfInfo["Trees"])[0];
 
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
+    utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
+    utility.SetEnvVariable ("VERBOSITY_LEVEL", 500);
 
     ^"meme.site_alpha" = 1;
     ^"meme.site_beta_plus"  = 1;
     ^"meme.site_beta_nuisance"  = 1;
-
+    
+    console.log ("Optimizing FEL for pattern " + pattern_info);
+    io.SpoolLF (lf_fel, "/tmp/meme.debug", "FEL");    
     Optimize (results, ^lf_fel);
 
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
@@ -477,6 +481,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
          /* avoid 0/0 by making the denominator non-zero*/
      }
 
+    console.log ("Optimizing MEME for pattern " + pattern_info);
+    io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
     Optimize (results, ^lf_bsrel);
 
     alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
@@ -554,6 +560,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
 //----------------------------------------------------------------------------------------
 function meme.report.echo (meme.report.site, meme.report.partition, meme.report.row) {
+
     meme.print_row = None;
     if (meme.report.row [6] <= meme.pvalue) {
         meme.print_row = meme.report.positive_site;

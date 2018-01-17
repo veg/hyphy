@@ -1,0 +1,273 @@
+/********* JC69 MODEL OF PROTEIN EVOLUTION ************/
+LoadFunctionLibrary("../empirical.bf");
+LoadFunctionLibrary("../../protein.bf");
+LoadFunctionLibrary("../../parameters.bf");
+LoadFunctionLibrary("../../frequencies.bf");
+LoadFunctionLibrary("../../../UtilityFunctions.bf");
+LoadFunctionLibrary("../../../all-terms.bf");
+
+
+
+/**
+ * @name models.protein.JC69.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JC69 model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JC69.ModelDescription(type) {
+    models.protein.JC69.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.JC69.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.JC69.Rij;
+    models.protein.JC69.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.JC69.frequencies";
+    return models.protein.JC69.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.JC69F.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JC69+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JC69F.ModelDescription(type) {
+    models.protein.JC69F.ModelDescription.model_definition = models.protein.JC69.ModelDescription(type);
+    models.protein.JC69F.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.JC69F.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.JC69F.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.JC69ML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the JC69+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.JC69ML.ModelDescription(type) {
+    models.protein.JC69ML.ModelDescription.model_definition = models.protein.JC69.ModelDescription(type);
+    models.protein.JC69ML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.JC69ML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.JC69ML.ModelDescription.model_definition;
+}
+
+/* Define a dictionary of amino-acid exchangeability rates for the JC69 model of protein evolution. */ 
+models.protein.JC69.Rij = {
+'A': {'C': 1.0,
+       'D': 1.0,
+       'E': 1.0,
+       'F': 1.0,
+       'G': 1.0,
+       'H': 1.0,
+       'I': 1.0,
+       'K': 1.0,
+       'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'C': {'D': 1.0,
+       'E': 1.0,
+       'F': 1.0,
+       'G': 1.0,
+       'H': 1.0,
+       'I': 1.0,
+       'K': 1.0,
+       'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'D': {'E': 1.0,
+       'F': 1.0,
+       'G': 1.0,
+       'H': 1.0,
+       'I': 1.0,
+       'K': 1.0,
+       'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'E': {'F': 1.0,
+       'G': 1.0,
+       'H': 1.0,
+       'I': 1.0,
+       'K': 1.0,
+       'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'F': {'G': 1.0,
+       'H': 1.0,
+       'I': 1.0,
+       'K': 1.0,
+       'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'G': {'H': 1.0,
+       'I': 1.0,
+       'K': 1.0,
+       'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'H': {'I': 1.0,
+       'K': 1.0,
+       'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'I': {'K': 1.0,
+       'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': '10.649107',
+       'W': 1.0,
+       'Y': 1.0},
+ 'K': {'L': 1.0,
+       'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'L': {'M': 1.0,
+       'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'M': {'N': 1.0,
+       'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'N': {'P': 1.0,
+       'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'P': {'Q': 1.0,
+       'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'Q': {'R': 1.0,
+       'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'R': {'S': 1.0,
+       'T': 1.0,
+       'V': 1.0,
+       'W': 1.0,
+       'Y': 1.0},
+ 'S': {'T': 1.0, 'V': 1.0, 'W': 1.0, 'Y': 1.0},
+ 'T': {'V': 1.0, 'W': 1.0, 'Y': 1.0},
+ 'V': {'W': 1.0, 'Y': 1.0},
+ 'W': {'Y': 1.0},
+ 'Y': {}};
+
+
+/**
+ * @name models.protein.JC69.frequencies
+ * @param {Dictionary} Baseline JC69 model
+ * @returns {Dictionary} Updated JC69 model with empirical frequencies
+ * @description Define the empirical amino acid frequencies associated with the JC69 model of protein evolution
+ */
+lfunction models.protein.JC69.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+        {{0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}
+        {0.05}};
+
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}
+
+

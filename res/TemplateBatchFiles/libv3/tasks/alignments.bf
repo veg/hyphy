@@ -179,6 +179,25 @@ lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
 }
 
 /**
+ * Ensure that name mapping is not None by creating a f(x)=x map if needed
+ * @name alignments.EnsureMapping
+ * @param dataset_name - the name of the dataset you wish to use
+ * @param {Dictionary} r - metadata pertaining to the dataset
+ * @param file_name - path to file
+ * @returns {Dictionary} r - metadata pertaining to the dataset
+ */
+ 
+lfunction alignments.EnsureMapping(dataset_name, data) {
+    name_mapping = data[utility.getGlobalValue("terms.data.name_mapping")];
+    if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
+        name_mapping = {};
+        utility.ForEach (alignments.GetSequenceNames (dataset_name), "_value_", "`&name_mapping`[_value_] = _value_");
+        data[utility.getGlobalValue("terms.data.name_mapping")] = name_mapping;
+    }    
+    return data;
+}
+
+/**
  * Read dataset from data
  * @name alignments.ReadNucleotideDataSetString
  * @param {String} dataset_name - the name of the dataset you wish to use
@@ -246,6 +265,38 @@ function alignments.ReadNucleotideAlignment(file_name, dataset_name, datafilter_
     data_info[terms.data.datafilter] = datafilter_name;
 
     return data_info;
+}
+
+/**
+ * Take an input filter, replace all identical sequences with a single copy
+ * Optionally, rename the sequences to indicate copy # by adding ':copies'
+ * @name alignments.CompressDuplicateSequences
+ * @param {String} filter_in - The name of an existing filter
+ * @param {String} filter_out - the name  (to be created) of the filter where the compressed sequences will go)
+ * @param {Bool} rename - if true, rename the sequences
+ * @returns the number of unique sequences
+ */
+lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) {
+    GetDataInfo (duplicate_info, ^filter_in, -2);
+    
+    DataSetFilter ^filter_out = CreateFilter (^filter_in, 1, "", Join (",", duplicate_info["UNIQUE_INDICES"]));
+    
+    if (rename) {
+        utility.ForEachPair (duplicate_info["UNIQUE_INDICES"],
+                             "_idx_",
+                             "_seq_idx_",
+                             '
+                                GetString (_seq_name_, ^`&filter_in`, _seq_idx_);
+                                _seq_name_ += ":" + ((`&duplicate_info`)["UNIQUE_COUNTS"])[_idx_[1]];
+                                SetParameter (^`&filter_in`,_seq_idx_,_seq_name_);
+                              ');
+       
+    } 
+    
+    
+    
+    return duplicate_info["UNIQUE_SEQUENCES"];
+    //DataSetFilter ^filter_out = CreateFilter (filter_in);
 }
 
 /**

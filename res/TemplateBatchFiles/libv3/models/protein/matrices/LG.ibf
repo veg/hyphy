@@ -1,0 +1,273 @@
+/********* LG MODEL OF PROTEIN EVOLUTION ************/
+LoadFunctionLibrary("../empirical.bf");
+LoadFunctionLibrary("../../protein.bf");
+LoadFunctionLibrary("../../parameters.bf");
+LoadFunctionLibrary("../../frequencies.bf");
+LoadFunctionLibrary("../../../UtilityFunctions.bf");
+LoadFunctionLibrary("../../../all-terms.bf");
+
+
+
+/**
+ * @name models.protein.LG.ModelDescription
+ * @description Create the baseline schema (dictionary) for the LG model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.LG.ModelDescription(type) {
+    models.protein.LG.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.LG.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.LG.Rij;
+    models.protein.LG.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.LG.frequencies";
+    return models.protein.LG.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.LGF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the LG+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.LGF.ModelDescription(type) {
+    models.protein.LGF.ModelDescription.model_definition = models.protein.LG.ModelDescription(type);
+    models.protein.LGF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.LGF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.LGF.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.LGML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the LG+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.LGML.ModelDescription(type) {
+    models.protein.LGML.ModelDescription.model_definition = models.protein.LG.ModelDescription(type);
+    models.protein.LGML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.LGML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.LGML.ModelDescription.model_definition;
+}
+
+/* Define a dictionary of amino-acid exchangeability rates for the LG model of protein evolution. */ 
+models.protein.LG.Rij = {
+'A': {'C': 2.489084,
+       'D': 0.395144,
+       'E': 1.038545,
+       'F': 0.253701,
+       'G': 2.066040,
+       'H': 0.358858,
+       'I': 0.149830,
+       'K': 0.536518,
+       'L': 0.395337,
+       'M': 1.124035,
+       'N': 0.276818,
+       'P': 1.177651,
+       'Q': 0.969894,
+       'R': 0.425093,
+       'S': 4.727182,
+       'T': 2.139501,
+       'V': 2.547870,
+       'W': 0.180717,
+       'Y': 0.218959},
+ 'C': {'D': 0.062556,
+       'E': 0.003499,
+       'F': 1.105251,
+       'G': 0.569265,
+       'H': 0.640543,
+       'I': 0.320627,
+       'K': 0.013266,
+       'L': 0.594007,
+       'M': 0.893680,
+       'N': 0.528768,
+       'P': 0.075382,
+       'Q': 0.084808,
+       'R': 0.534551,
+       'S': 2.784478,
+       'T': 1.143480,
+       'V': 1.959291,
+       'W': 0.670128,
+       'Y': 1.165532},
+ 'D': {'E': 5.243870,
+       'F': 0.017416,
+       'G': 0.844926,
+       'H': 0.927114,
+       'I': 0.010690,
+       'K': 0.282959,
+       'L': 0.015076,
+       'M': 0.025548,
+       'N': 5.076149,
+       'P': 0.394456,
+       'Q': 0.523386,
+       'R': 0.123954,
+       'S': 1.240275,
+       'T': 0.425860,
+       'V': 0.037967,
+       'W': 0.029890,
+       'Y': 0.135107},
+ 'E': {'F': 0.018811,
+       'G': 0.348847,
+       'H': 0.423881,
+       'I': 0.044265,
+       'K': 1.807177,
+       'L': 0.069673,
+       'M': 0.173735,
+       'N': 0.541712,
+       'P': 0.419409,
+       'Q': 4.128591,
+       'R': 0.363970,
+       'S': 0.611973,
+       'T': 0.604545,
+       'V': 0.245034,
+       'W': 0.077852,
+       'Y': 0.120037},
+ 'F': {'G': 0.089586,
+       'H': 0.682139,
+       'I': 1.112727,
+       'K': 0.023918,
+       'L': 2.592692,
+       'M': 1.798853,
+       'N': 0.089525,
+       'P': 0.094464,
+       'Q': 0.035855,
+       'R': 0.052722,
+       'S': 0.361819,
+       'T': 0.165001,
+       'V': 0.654683,
+       'W': 2.457121,
+       'Y': 7.803902},
+ 'G': {'H': 0.311484,
+       'I': 0.008705,
+       'K': 0.296636,
+       'L': 0.044261,
+       'M': 0.139538,
+       'N': 1.437645,
+       'P': 0.196961,
+       'Q': 0.267959,
+       'R': 0.390192,
+       'S': 1.739990,
+       'T': 0.129836,
+       'V': 0.076701,
+       'W': 0.268491,
+       'Y': 0.054679},
+ 'H': {'I': 0.108882,
+       'K': 0.697264,
+       'L': 0.366317,
+       'M': 0.442472,
+       'N': 4.509238,
+       'P': 0.508851,
+       'Q': 4.813505,
+       'R': 2.426601,
+       'S': 0.990012,
+       'T': 0.584262,
+       'V': 0.119013,
+       'W': 0.597054,
+       'Y': 5.306834},
+ 'I': {'K': 0.159069,
+       'L': 4.145067,
+       'M': 4.273607,
+       'N': 0.191503,
+       'P': 0.078281,
+       'Q': 0.072854,
+       'R': 0.126991,
+       'S': 0.064105,
+       'T': 1.033739,
+       'V': 10.649107,
+       'W': 0.111660,
+       'Y': 0.232523},
+ 'K': {'L': 0.137500,
+       'M': 0.656604,
+       'N': 2.145078,
+       'P': 0.390322,
+       'Q': 3.234294,
+       'R': 6.326067,
+       'S': 0.748683,
+       'T': 1.136863,
+       'V': 0.185202,
+       'W': 0.049906,
+       'Y': 0.131932},
+ 'L': {'M': 6.312358,
+       'N': 0.068427,
+       'P': 0.249060,
+       'Q': 0.582457,
+       'R': 0.301848,
+       'S': 0.182287,
+       'T': 0.302936,
+       'V': 1.702745,
+       'W': 0.619632,
+       'Y': 0.299648},
+ 'M': {'N': 0.371004,
+       'P': 0.099849,
+       'Q': 1.672569,
+       'R': 0.484133,
+       'S': 0.346960,
+       'T': 2.020366,
+       'V': 1.898718,
+       'W': 0.696175,
+       'Y': 0.481306},
+ 'N': {'P': 0.161787,
+       'Q': 1.695752,
+       'R': 0.751878,
+       'S': 4.008358,
+       'T': 2.000679,
+       'V': 0.083688,
+       'W': 0.045376,
+       'Y': 0.612025},
+ 'P': {'Q': 0.624294,
+       'R': 0.332533,
+       'S': 1.338132,
+       'T': 0.571468,
+       'V': 0.296501,
+       'W': 0.095131,
+       'Y': 0.089613},
+ 'Q': {'R': 2.807908,
+       'S': 1.223828,
+       'T': 1.080136,
+       'V': 0.210332,
+       'W': 0.236199,
+       'Y': 0.257336},
+ 'R': {'S': 0.858151,
+       'T': 0.578987,
+       'V': 0.170887,
+       'W': 0.593607,
+       'Y': 0.314440},
+ 'S': {'T': 6.472279, 'V': 0.098369, 'W': 0.248862, 'Y': 0.400547},
+ 'T': {'V': 2.188158, 'W': 0.140825, 'Y': 0.245841},
+ 'V': {'W': 0.189510, 'Y': 0.249313},
+ 'W': {'Y': 3.151815},
+ 'Y': {}};
+
+
+/**
+ * @name models.protein.LG.frequencies
+ * @param {Dictionary} Baseline LG model
+ * @returns {Dictionary} Updated LG model with empirical frequencies
+ * @description Define the empirical amino acid frequencies associated with the LG model of protein evolution
+ */
+lfunction models.protein.LG.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+        {{0.079066}
+        {0.012937}
+        {0.053052}
+        {0.071586}
+        {0.042302}
+        {0.057337}
+        {0.022355}
+        {0.062157}
+        {0.064600}
+        {0.099081}
+        {0.022951}
+        {0.041977}
+        {0.044040}
+        {0.040767}
+        {0.055941}
+        {0.061197}
+        {0.053287}
+        {0.069147}
+        {0.012066}
+        {0.034155}};
+
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}
+
+
