@@ -53,10 +53,6 @@ For example, this configuration will install hyphy at /opt/hyphy
 
 `cmake -DINSTALL_PREFIX=/opt/hyphy .`
 
-If you are on an OS X platform, you can specify which OS X SDK to use
-
-`cmake -DCMAKE_OSX_SYSROOT=/Developer/SDKs/MacOSX10.9.sdk/ .`
-
 If building on a hetereogenous cluster with some nodes that do not support auto-vectorization
 `cmake -DNOAVX=ON .`.
 

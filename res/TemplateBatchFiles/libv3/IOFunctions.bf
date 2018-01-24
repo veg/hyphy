@@ -663,6 +663,7 @@ lfunction io.ReadDelimitedFile  (path, separator, has_header) {
         fscanf (path, REWIND, "Lines", data);
    } else {
         fscanf (PROMPT_FOR_FILE, REWIND, "Lines", data);
+        path = utility.getGlobalValue("LAST_FILE_PATH");
    }
    result = {utility.getGlobalValue("terms.io.rows") : {}};
    index = 0;
@@ -674,6 +675,7 @@ lfunction io.ReadDelimitedFile  (path, separator, has_header) {
    for (k = index; k < row_count; k+=1) {
         result [utility.getGlobalValue("terms.io.rows")] + regexp.Split (data[k], separator);
    }
+   result[utility.getGlobalValue("terms.json.file")] = path;
    return result;
 }
 
