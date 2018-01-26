@@ -459,7 +459,6 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
     utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
-    utility.SetEnvVariable ("VERBOSITY_LEVEL", 500);
 
     ^"meme.site_alpha" = 1;
     ^"meme.site_beta_plus"  = 1;
