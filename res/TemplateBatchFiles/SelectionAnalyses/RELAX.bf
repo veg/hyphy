@@ -335,7 +335,7 @@ if (relax.has_unclassified) {
 
     relax.model_object_map ["relax.unclassified"] = relax.unclassified.bsrel_model;
     relax.model_map ["relax.unclassified"] = utility.Filter (relax.selected_branches[0], '_value_', '_value_ == relax.unclassified_branches_name');
-    models.BindGlobalParameters ({"0" : relax.unclassified.bsrel_model, "1" : relax.reference.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
+    models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.unclassified.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 }
 
 relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
