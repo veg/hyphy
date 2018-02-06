@@ -537,6 +537,16 @@ lfunction console.log (arg) {
 }
 
 /**
+ * I am tired of having dangling console.log debug statements
+ * @returns nothing
+ */
+lfunction debug.log (arg) {
+    if (utility.GetEnvVariable ("_DEBUG_MESSAGES_ON_")) {
+        fprintf (stdout, arg, "\n");
+    }
+}
+
+/**
  * I am tired of typing fprintf (MESSAGE_LOG, ...)
  * @returns nothing
  */

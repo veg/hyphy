@@ -1269,46 +1269,68 @@ void    _TheTree::PostTreeConstructor (bool dupMe)
 
 void    _TreeTopology::PostTreeConstructor (bool dupMe) {
   
+    auto variable_handler = [&] (void) -> void {
+        BaseRef temp =  variablePtrs(theIndex);
+        variablePtrs[theIndex]=dupMe ? this->makeDynamic() : this;
+        DeleteObject(temp);
+    };
+    
   double acceptRTs = 0.0;
   checkParameter (acceptRootedTrees,acceptRTs, 0.0);
-  
-  if (theRoot->get_num_nodes() == 2) { // rooted tree - check
+    
+  if (theRoot->get_num_nodes() <= 2) { // rooted tree - check
     if (acceptRTs<0.1) {
       int  i = 1;
       long node_index = theRoot->get_data();
-      for (; i<=2; i++) {
-        node<long> *node_temp = theRoot->go_down(i);
-        if (node_temp->get_num_nodes()) { // an internal node - make it a root
-          node_temp->detach_parent();
-          if (i==1) {
+      bool recurse = false;
+    
+      if (theRoot->get_num_nodes() == 2) {
+          for (; i<=2; i++) {
+            node<long> *node_temp = theRoot->go_down(i);
+            if (node_temp->get_num_nodes()) { // an internal node - make it a root
+              node_temp->detach_parent();
+              if (i==1) {
+                node_temp->add_node(*theRoot->go_down(2));
+                delete theRoot;
+                theRoot = node_temp;
+                rooted = ROOTED_LEFT;
+              } else {
+                node_temp->prepend_node(*theRoot->go_down(1));
+                delete theRoot;
+                theRoot = node_temp;
+                rooted = ROOTED_RIGHT;
+              }
+              if (i==1) {
+                ReportWarning (_String("Rooted topology. Removing one branch - the left root child has been promoted to be the new root"));
+              } else {
+                ReportWarning (_String("Rooted topology. Removing one branch - the right root child has been promoted to be the new root"));
+              }
+              break;
+            }
+          }
+          if (i==3) {
+            ReportWarning ((_String("One branch topology supplied - hopefully this IS what you meant to do.")));
+            node<long> *node_temp = theRoot->go_down(1);
+            node_temp->detach_parent();
             node_temp->add_node(*theRoot->go_down(2));
             delete theRoot;
             theRoot = node_temp;
             rooted = ROOTED_LEFT;
-          } else {
-            node_temp->prepend_node(*theRoot->go_down(1));
-            delete theRoot;
-            theRoot = node_temp;
-            rooted = ROOTED_RIGHT;
+            ReportWarning (_String("Rooted tree. Removing one branch - the left root child has been promoted to be the new root"));
+              //PurgeTree();
           }
-          if (i==1) {
-            ReportWarning (_String("Rooted topology. Removing one branch - the left root child has been promoted to be the new root"));
-          } else {
-            ReportWarning (_String("Rooted topology. Removing one branch - the right root child has been promoted to be the new root"));
+      } else {
+          if (theRoot->get_num_nodes() == 0) {
+              ReportWarning ("An empty topology has been constructed");
+              variable_handler ();
+              return;
           }
-          break;
-        }
-      }
-      if (i==3) {
-        ReportWarning ((_String("One branch topology supplied - hopefully this IS what you meant to do.")));
-        node<long> *node_temp = theRoot->go_down(1);
-        node_temp->detach_parent();
-        node_temp->add_node(*theRoot->go_down(2));
-        delete theRoot;
-        theRoot = node_temp;
-        rooted = ROOTED_LEFT;
-        ReportWarning (_String("Rooted tree. Removing one branch - the left root child has been promoted to be the new root"));
-          //PurgeTree();
+          node<long> *node_temp = theRoot->go_down(1);
+          node_temp->detach_parent();
+          delete theRoot;
+          theRoot = node_temp;
+          ReportWarning ("The root has a single child, which is be promoted to the root");
+          recurse = true;
       }
  
       flatTree.Delete (node_index);
@@ -1321,12 +1343,14 @@ void    _TreeTopology::PostTreeConstructor (bool dupMe) {
           topTraverser->init (topTraverser->get_data () - 1);
         }
       }
+        
+      if (recurse) {
+          PostTreeConstructor (dupMe);
+          return;
+      }
     }
   }
-  
-  BaseRef temp =  variablePtrs(theIndex);
-  variablePtrs[theIndex]=dupMe ? this->makeDynamic() : this;
-  DeleteObject(temp);
+  variable_handler ();
 }
 
 
