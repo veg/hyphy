@@ -6,11 +6,10 @@ LoadFunctionLibrary ("../convenience/regexp.bf");
 
 /** @module model */
 /**
- * @name model.ApplyModelToTree
- * @param id
- * @param tree
- * @param model_list
- * @param rules
+ * @name model.GetParameters_RegExp
+ * @param model {String} - model ID
+ * @param re {String} - regular expression 
+ * @return a dictionary of global model parameters that match a regexp
  */
 lfunction model.GetParameters_RegExp(model, re) {
 
@@ -56,10 +55,19 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
                               ");
 
 	    }
-
+	    
+	    /* 
+	    
+	    debug.log (tree);
+	    _t = Eval ("Format (`id`,1,1)");
+	    debug.log (_t);
+	    
+	    */
+	    
 	    model.ApplyModelToTree.ids = Rows (rules);
 	    for (model.ApplyModelToTree.k = 0; model.ApplyModelToTree.k < Abs (rules); model.ApplyModelToTree.k += 1) {
 	        model.ApplyModelToTree.name = model.ApplyModelToTree.ids[model.ApplyModelToTree.k];
+	        //debug.log (model.ApplyModelToTree.name);
 	        if ( model.ApplyModelToTree.name != "DEFAULT") {
                 model.ApplyModelToTree.list = rules[model.ApplyModelToTree.name];
                 if (Type (model.ApplyModelToTree.list) == "AssociativeList") {
@@ -74,7 +82,7 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
                 }
 
                 for (model.ApplyModelToTree.b = 0; model.ApplyModelToTree.b < Columns (model.ApplyModelToTree.list); model.ApplyModelToTree.b += 1) {
-                    //fprintf (stdout, "SetParameter (`id`." + model.ApplyModelToTree.list[model.ApplyModelToTree.b] + ",MODEL," + model.ApplyModelToTree.apply_model + ")", "\n");
+                    //debug.log ( "SetParameter (`id`." + model.ApplyModelToTree.list[model.ApplyModelToTree.b] + ",MODEL," + model.ApplyModelToTree.apply_model + ")");
                     ExecuteCommands ("SetParameter (`id`." + model.ApplyModelToTree.list[model.ApplyModelToTree.b] + ",MODEL," + model.ApplyModelToTree.apply_model + ")");
                 }
             }

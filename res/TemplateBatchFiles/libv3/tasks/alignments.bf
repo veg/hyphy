@@ -393,6 +393,62 @@ lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
 }
 
 /**
+ * @name alignments.TranslateCodonsToAminoAcidsWithAmbigs
+ * Translate a codon sequence to amino-acids using the mapping provided by the
+ * genetic code
+ * @param {String} sequence - the string to translate
+ * @param {Number} offset - start at this position (should be in {0,1,2})
+ * @param {Dictionary} code - genetic code description (e.g. returned by alignments.LoadGeneticCode)
+ * @param {lookup} code - resolution lookup dictionary 
+ * @returns {Dict} list of possible amino-acids (as dicts) at this position
+ */
+
+lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offset, code, lookup) {
+    console.log (sequence);
+    
+    l = Abs (sequence);
+	translation = {};
+    
+    DataSet single_seq                  = ReadFromString (">s\n" + sequence[offset][Abs (sequence)-1]);
+    DataSetFilter single_seq_filter     = CreateFilter   (single_seq, 3, "", "");
+    
+    GetDataInfo (patterns, single_seq_filter);
+    GetDataInfo (alphabet, single_seq_filter, "CHARACTERS");
+    GetDataInfo (single_seq_data, single_seq_filter, 0);
+    code_lookup = code [utility.getGlobalValue("terms.code.ordering")];
+    code_table  = code [utility.getGlobalValue("terms.code")];
+    
+    for (s = 0; s < single_seq_filter.sites; s += 1) {
+        codon = single_seq_data[3*s][3*s+2];
+        if (lookup / codon) {
+            translation[s] = lookup [codon];
+        } else {
+            GetDataInfo (resolutions, single_seq_filter, 0, patterns[s]);
+            resolution_count = +resolutions;
+            my_resolution = {};
+            if (resolution_count == 1) {
+                my_resolution [code_lookup[code_table[(Max (resolutions, 1))[1]]]] = 1;
+            } else {
+                if (resolution_count == 0 || resolution_count == 64) {
+                    my_resolution["-"] = 1;
+                } else {
+                    for (r = 0; r < 64; r += 1) {
+                        if (resolutions[r]) {
+                            my_resolution [code_lookup[code_table[r]]] = 1;
+                        }
+                    }
+                }
+            }
+            lookup [codon] = my_resolution;
+            translation[s] = my_resolution;
+        }
+    }
+    
+    
+	return translation;
+}
+
+/**
  * @name alignments.MapAlignmentToReferenceCoordinates
  * Map a query sequence from the aligned coordinates
  * genetic code

@@ -87,7 +87,7 @@ else
 			treeStringPattern = treeString$"\\(";
 			if (treeStringPattern[0]<0)
 			{
-				fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file. Can't find the opening parenthesis.\nHad:",treeString).
+				fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file. Can't find the opening parenthesis.\nHad:",treeString);
 				return 1;
 			}
 			else
@@ -114,7 +114,7 @@ else
 
 				if (parenCounter)
 				{
-					fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file. Can't match the parentheses.\nHad:",treeString).
+					fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file. Can't match the parentheses.\nHad:",treeString);
 					return 1;
 				}
 
