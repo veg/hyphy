@@ -464,7 +464,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     ^"meme.site_beta_plus"  = 1;
     ^"meme.site_beta_nuisance"  = 1;
     
-    console.log ("Optimizing FEL for pattern " + pattern_info);
+    //console.log ("Optimizing FEL for pattern " + pattern_info);
     io.SpoolLF (lf_fel, "/tmp/meme.debug", "FEL");    
     Optimize (results, ^lf_fel);
 
@@ -480,7 +480,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
          /* avoid 0/0 by making the denominator non-zero*/
      }
 
-    console.log ("Optimizing MEME for pattern " + pattern_info);
+    //console.log ("Optimizing MEME for pattern " + pattern_info);
     io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
     Optimize (results, ^lf_bsrel);
 
