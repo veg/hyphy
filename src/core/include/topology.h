@@ -51,22 +51,52 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS  0.000000001
 
 
-
-
-
-
-
-
-#define kGetNodeStringForTreeName   0x01
-#define kGetNodeStringForTreeModel  0x02
+#define fGetNodeStringForTreeName   0x01
+#define fGetNodeStringForTreeModel  0x02
 
 class _TheTree;
+
+struct _TreeTopologyParseSettings {
+    
+    _TreeTopologyParseSettings (void) {
+        inode_prefix = "Node";
+        auto_convert_lengths = false;
+        accept_user_lengths = true;
+        ingore_user_inode_names = false;
+    }
+    
+    _String inode_prefix;
+    bool    auto_convert_lengths,
+            accept_user_lengths,
+            ingore_user_inode_names;
+};
+
+enum   hyTopologyBranchLengthMode {
+    kTopologyBranchLengthLocalParameter = 0L,
+    kTopologyBranchLengthNone         = -1L,
+    kTopologyBranchLengthExpectedSubs = -3L,
+    kTopologyBranchLengthUserLengths  = -2L
+};
 
 //_______________________________________________________________________________________________
 
 class _TreeTopology: public _CalcNode {
 
 protected:
+    
+    
+    template <class CallBack> node<long>* ConditionalTraverser (CallBack && cb, bool do_root) {
+        node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+        while (node<long>* iterator = ni.Next()) {
+            if (!do_root && iterator->is_root() ) {
+                return nil;
+            }
+            if (cb (iterator, ni)) {
+                return iterator;
+            }
+        }
+        return nil;
+    }
 
     virtual void            PreTreeConstructor                  (bool);
     virtual bool            MainTreeConstructor                 (_String const&,bool = true, _AssociativeList* mapping = nil);
@@ -76,10 +106,11 @@ protected:
     _List*          SplitTreeIntoClustersInt            (node<long>*, _List*, _AVLListX&, long, long) const;
     char            internalTreeCompare                 (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology const*, bool = false) const;
     char            internalNodeCompare                 (node<long>*, node<long>*, _SimpleList&, _SimpleList*, bool, long, node<long>*, _TreeTopology const*, bool = false) const;
-    virtual _PMathObj       FlatRepresentation                  (void);
+    virtual HBLObjectRef       FlatRepresentation                  (void);
     void            FindCOTHelper                       (node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, hyFloat);
     void            FindCOTHelper2                      (node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, hyFloat);
-    void            AddANode                            (_PMathObj);
+    static          const   _TreeTopologyParseSettings  CollectParseSettings (void);
+    void            AddANode                            (HBLObjectRef);
     /*
 
      20091006: SLKP
@@ -93,16 +124,23 @@ protected:
 
      */
 
-    void            RemoveANode                          (_PMathObj);
+    void            RemoveANode                          (HBLObjectRef);
     
     /*
      
         Delete a node from the tree by name
      
      */
+    
   
 
 public:
+    // class constants
+    
+    static const _String kCompareEqualWithReroot,
+                         kCompareEqualWithoutReroot,
+                         kCompareUnequalToplogies,
+                         kCompareUnequalLabelSets;
 
     node<long>      *theRoot;
   
@@ -113,7 +151,7 @@ public:
 
     virtual void            toFileStr                           (FILE*, unsigned long);
     virtual BaseRef         toStr                               (unsigned long = 0UL);
-    void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_StringBuffer&, long  = -1, bool = false) const;
+    void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_StringBuffer&, _TreeTopologyParseSettings const& settings,  hyTopologyBranchLengthMode branch_length_mode, long variable_ref  = -1L, bool = false) const;
 
     _TreeTopology                       (void);
     _TreeTopology                       (_String const, _String const&, bool = true, _AssociativeList* mapping = nil);
@@ -122,29 +160,29 @@ public:
 
     virtual                 ~_TreeTopology                      (void);
 
-    virtual  _FString*      Compare                             (_PMathObj);
+    virtual  _FString*      Compare                             (HBLObjectRefConst) const;
     virtual  BaseRef        makeDynamic                         (void) const;
     node<long>* CopyTreeStructure                   (node<long>*, bool) const;
-    virtual  bool           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _String* = NULL);
+    virtual  bool           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _String*, _TreeTopologyParseSettings const & settings);
 
 
-    virtual _PMathObj       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
-    virtual void            EdgeCount                           (long&, long&);
+    virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual void            EdgeCount                           (long&, long&) const;
     // SLKP 20100827: a utility function to count edges in a tree
     //              : note that the root node WILL be counted as an internal node
     //              : writes [leaf count, internal node count] into the arguments
 
-    virtual _PMathObj       TipCount                            (void);
-    virtual _PMathObj       BranchCount                         (void);
-    virtual _PMathObj       AVLRepresentation                   (_PMathObj);
-    virtual unsigned long   ObjectClass                         (void) {
+    virtual HBLObjectRef       TipCount                            (void);
+    virtual HBLObjectRef       BranchCount                         (void);
+    virtual HBLObjectRef       AVLRepresentation                   (HBLObjectRef);
+    virtual unsigned long   ObjectClass                         (void) const {
         return TOPOLOGY;
     }
     virtual bool IsDegenerate(void) { return theRoot && theRoot->get_num_nodes() == 1L; }
   
  
     virtual _AssociativeList*
-    FindCOT                             (_PMathObj);
+    FindCOT                             (HBLObjectRef);
 
     node<long>      *FindNodeByName                     (_String const*) const;
     /*
@@ -160,18 +198,18 @@ public:
     _List*          MapNodesToModels                    (void);
 
     virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
-    virtual const _String*        GetNodeModel                        (node<long> *) const;
-    virtual void            GetBranchLength                     (node<long> *, _String&, bool = false) const;
+    virtual _String const *GetNodeModel                        (node<long> *) const;
+    virtual _String const GetBranchLengthString                (node<long> *, bool get_expression = false) const;
     // SLKP 20100901:
     //               added a boolean flag to ask to return branch length expression (if true) (returns "" for topologies)
     //               just the numeric value (if false)
 
 
-    virtual hyFloat      GetBranchLength                     (node<long> *) const;
-    virtual void            GetBranchValue                      (node<long> *, _String&) const;
-    virtual void            GetBranchVarValue                   (node<long> *, _String&, long) const;
-    virtual _String const  GetNodeStringForTree                (node<long> *, int flags) const;
-    virtual void            PasteBranchLength                   (node<long> *, _StringBuffer &, long, hyFloat factor = 1.) const;
+    virtual hyFloat         GetBranchLength                     (node<long> *) const;
+    virtual _String const   GetBranchValue                      (node<long> *) const;
+    virtual _String const   GetBranchVarValue                   (node<long> *, long) const;
+    virtual _String const   GetNodeStringForTree                 (node<long> *, int flags) const;
+    virtual void            PasteBranchLength                   (node<long> * node, _StringBuffer & result , hyTopologyBranchLengthMode const mode, long variable_reference , hyFloat factor = 1.) const;
 
     node<long>&     GetRoot                             (void) const {
       return  *theRoot;
@@ -185,19 +223,18 @@ public:
     }*/
   
     const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
-    void            SubTreeString                       (node<long>* root, _StringBuffer &, bool = false, long = -1, _AVLListXL* = nil) const;
+    void            SubTreeString                       (node<long>* root, _StringBuffer & result, _TreeTopologyParseSettings const& settings, bool all_names = false, hyTopologyBranchLengthMode mode = kTopologyBranchLengthNone, long branch_length_variable = -1, _AVLListXL * substitutions  = nil) const;
 
     _String         CompareTrees                        (_TreeTopology*) const;
     const _String         MatchTreePattern                    (_TreeTopology const*) const;
-    virtual _PMathObj       TipName                             (_PMathObj);
-    _PMathObj       TreeBranchName                          (_PMathObj, bool = false, _PMathObj = nil);
-    virtual _PMathObj       BranchLength                        (_PMathObj);
-    virtual _PMathObj       RerootTree                          (_PMathObj);
+    virtual HBLObjectRef       TipName                             (HBLObjectRef);
+    HBLObjectRef       TreeBranchName                          (HBLObjectRef node_ref, bool get_subtree = false, HBLObjectRef mapping_mode = nil);
+    virtual HBLObjectRef       BranchLength                        (HBLObjectRef);
+    virtual HBLObjectRef       RerootTree                          (HBLObjectRef);
     _List*          SplitTreeIntoClusters               (unsigned long, unsigned long) const;
-    void            SetLeafName                         (long, _String*);
-    _String         DetermineBranchLengthMappingMode    (_String*, char&);
+    _String  const       DetermineBranchLengthMappingMode    (_String const*, hyTopologyBranchLengthMode&) const;
     _AssociativeList*
-    SplitsIdentity                      (_PMathObj);
+    SplitsIdentity                      (HBLObjectRef) const;
     /* 20090609: SLKP
         given a tree agrument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
         and a string (key "CONSENSUS");
@@ -211,7 +248,7 @@ public:
         with the consensus string
 
     */
-    bool            ConvertToPSW                        (_AVLListX&,_List*, _SimpleList&,bool = false);
+    bool            ConvertToPSW                        (_AVLListX&,_List*, _SimpleList&,bool = false) const;
     /* 20090612: SLKP
        20100510: Modified the function to also return internal node names in the second AVL
 
@@ -235,13 +272,13 @@ public:
         dictionary supplied by the FIRST argument; false will be returned if this is not the case.
     */
 
-    _String*        ConvertFromPSW                      (_AVLListX&,_SimpleList&);
+    _String*        ConvertFromPSW                      (_AVLListX&,_SimpleList&) const;
     /* 20090612: SLKP
             given a PSW tree traversal order and a labeling legend,
             return the Newick string for the tree
     */
 
-    void            ComputeClusterTable                 (_SimpleList&, _SimpleList&);
+    void            ComputeClusterTable                 (_SimpleList&, _SimpleList&) const;
     /* given the PSW traversal representation (arg 2)
        compute the cluster table (as defined in William HE Day "Optimal Algorithms for Comparing Trees With Labels",
        Page 16) and store in arg 1
@@ -252,7 +289,11 @@ public:
              R = rightmost cluster leaf (in traversal order),
              F = a binary toggle (set to 0 by this procedure)
      */
-
+    
+    
+    /**
+        return the default prefix for generating internal node names (e.g. 'Node')
+    */
 
 
 

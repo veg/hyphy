@@ -112,11 +112,11 @@ public:
 
     // access functions
 
-    long        GetNumberOfIntervals () {
+    long        GetNumberOfIntervals () const {
         return intervals;
     }
 
-    char        GetRepresentationType () {
+    char        GetRepresentationType () const {
         return representation;
     }
 
@@ -223,6 +223,44 @@ private:
 
 
 };
+
+template <typename ACTION> void IntergrateOverAssignments (_SimpleList const& indices, bool refresh, ACTION&& do_this) {
+    
+    long                    current_category = 0L,
+                            total_cat_count  = 1L,
+                            cat_var_count    = indices.countitems();
+    
+    hyFloat                 weight           = 1.;
+    
+    
+    indices.Each ([&] (long cat_var_idx, unsigned long) -> void {
+        _CategoryVariable*      cat_var = (_CategoryVariable*)LocateVar (cat_var_idx);
+        if (refresh) {
+            cat_var->Refresh();
+        }
+        total_cat_count *= cat_var->GetNumberOfIntervals();
+    });
+
+    do {
+        if (indices.nonempty()) {
+            long c = current_category;
+            weight = 1.0;
+            for (long k=cat_var_count-1; k>=0; k--) {
+                _CategoryVariable*      cat_var = (_CategoryVariable*)LocateVar (indices.get (k));
+                
+                long t          = cat_var->GetNumberOfIntervals(),
+                     this_index = c % t;
+                
+                cat_var->SetIntervalValue(this_index);
+                weight *= cat_var->GetIntervalWeight(this_index);
+                c/=t;
+            }
+        }
+
+        do_this (current_category, weight);
+        current_category++;
+    } while (current_category<total_cat_count);
+}
 
 //__________________________________________________________________________________
 

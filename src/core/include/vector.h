@@ -82,6 +82,7 @@ public:
     }
     
     void        Delete (unsigned long index);
+    void        DeleteList (_SimpleList const& );
 
     void    operator <<     (const _SimpleList&);
     _Vector&    operator <<     (hyFloat p) {

@@ -760,7 +760,7 @@ _Polynomial::_Polynomial (hyFloat value) {
 _Polynomial::_Polynomial (_Variable& v)
 // a monic monomial
 {
-    variableIndex<<v.GetIndex();
+    variableIndex<<v.get_index();
     theTerms = new _PolynomialData (1);
     long  vIndex = 1;
     theTerms->AddTerm (&vIndex,1.0);
@@ -824,7 +824,7 @@ void    _Polynomial::Duplicate  (BaseRefConst tp) {
 //__________________________________________________________________________________
 
 
-_PMathObj _Polynomial::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)
+HBLObjectRef _Polynomial::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)
 {
   switch (opCode) { // first check operations without arguments
     case HY_OP_CODE_TYPE: // Type

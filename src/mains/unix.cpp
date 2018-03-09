@@ -45,6 +45,7 @@ using namespace hy_global;
     #include <termios.h>
     #include <signal.h>
     #include <unistd.h>
+    #include <sys/stat.h>
     #define __HYPHY_HANDLE_TERM_SIGNAL__
 
 #endif
@@ -212,11 +213,21 @@ _String getLibraryPath() {
     // TODO: Move string to globals in v3
     // TODO: Move function to helpers location in v3
     char* hyphyEnv = getenv("HYPHY_PATH");
+
     if(hyphyEnv) {
-      _String hyphyPath(hyphyEnv);
-      if(hyphyPath.length() != 0) {
-        libDir = hyphyPath;
-      }
+        _String hyphyPath(hyphyEnv);
+        if(hyphyPath.nonempty()) {
+            libDir = hyphyPath;
+        }
+    } else {
+        _String tryLocal = baseDir & "res" & dirSlash;
+        
+        struct stat sb;
+        
+        if (stat((const char*)tryLocal, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+            libDir = tryLocal;
+        }
+        
     }
 
     return libDir;
@@ -317,7 +328,7 @@ void    ReadInPostFiles(void) {
                     _String* condition = (_String*)thisFile(2);
                     if (condition->nonempty()) {
                         _Formula condCheck (*condition,nil);
-                        _PMathObj condCheckRes = condCheck.Compute();
+                        HBLObjectRef condCheckRes = condCheck.Compute();
                         if ((!condCheckRes)||(condCheckRes->Value()<.5)) {
                             availablePostProcessors.Delete(i);
                             i--;

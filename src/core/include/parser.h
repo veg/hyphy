@@ -60,6 +60,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "variablecontainer.h"
 #include "trie.h"
 #include "hbl_env.h"
+#include "global_things.h"
 
 
 //End parser specific includes
@@ -102,9 +103,9 @@ extern      long            lastMatrixDeclared,
 
 long        LocateVarByName (_String const&);
 inline _Variable*  LocateVar       (long index);
-_PMathObj   FetchObjectFromVariableByType       (_String const*, const unsigned long, long = -1, _String* = nil);
-_PMathObj   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
-_PMathObj   FetchObjectFromFormulaByType         (_Formula&, const unsigned long, long = -1, _String* = nil);
+HBLObjectRef   FetchObjectFromVariableByType       (_String const*, const unsigned long, long = -1, _String* = nil);
+HBLObjectRef   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
+HBLObjectRef   FetchObjectFromFormulaByType         (_Formula&, const unsigned long, long = -1, _String* = nil);
 _String     FetchObjectNameFromType (const unsigned long);
 _String const&    AppendContainerName     (_String const&, _VariableContainer const*);
 _String const&    AppendContainerName     (_String const&, _String const*);
@@ -120,7 +121,7 @@ void        DeleteTreeVariable
 
 void        stashParameter  (_String const& name, hyFloat  newVal, bool);
 void        setParameter    (_String const& name, hyFloat def, _String* = nil);
-void        setParameter    (_String const& name, _PMathObj  def, _String* = nil, bool = true);
+void        setParameter    (_String const& name, HBLObjectRef  def, _String* = nil, bool = true);
 
 long        VerbosityLevel (void);
 void        ReplaceVar      (_Variable*);
@@ -135,10 +136,10 @@ _Variable*  CheckReceptacle
 (_String const*, _String const & , bool = true, bool = false);
 
 bool        CheckReceptacleAndStore
-(_String const*,_String, bool, _PMathObj, bool = true);
+(_String const*,_String, bool, HBLObjectRef, bool = true);
 
 bool        CheckReceptacleAndStore
-(_String,_String, bool, _PMathObj, bool = true);
+(_String,_String, bool, HBLObjectRef, bool = true);
 
 _Variable*  CheckReceptacleCommandIDException
 (_String const* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
@@ -147,7 +148,7 @@ _Variable*  CheckReceptacleCommandID
 (_String const* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
 
 bool        CheckReceptacleCommandIDAndStore
-(_String const* name, const long id, bool checkValid, _PMathObj v, bool dup = true, bool isGlobal = false);
+(_String const* name, const long id, bool checkValid, HBLObjectRef v, bool dup = true, bool isGlobal = false);
 
 void        FinishDeferredSF(void);
 
@@ -161,7 +162,8 @@ void        ExportCatVariables
 
 void        SplitVariablesIntoClasses
 (_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);
-bool        CheckEqual      (hyFloat,hyFloat);
+
+bool        CheckEqual      (hyFloat,hyFloat,hyFloat = hy_global::kMachineEpsilon);
 
 extern      _AVLListX       _hyApplicationGlobals;
 
@@ -207,10 +209,10 @@ hyFloat  TrapezoidLevelKSimple   (_Formula&, _Variable*, hyFloat, hyFloat, long,
 void        PopulateArraysForASimpleFormula
 (_SimpleList&, _SimpleFormulaDatum*);
 
-void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
-void        WarnWrongNumberOfArguments (_PMathObj, long, _hyExecutionContext*, _List *);
+void        WarnNotDefined (HBLObjectRef, long, _hyExecutionContext* );
+void        WarnWrongNumberOfArguments (HBLObjectRef, long, _hyExecutionContext*, _List *);
   
-extern      hyFloat  pi_const, machineEps, tolerance;
+extern      hyFloat  pi_const, tolerance;
 
 
 extern      bool        useGlobalUpdateFlag;

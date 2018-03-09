@@ -53,6 +53,7 @@
 #endif
 
 #include <time.h>
+#include <float.h>
 
 using     namespace hy_env;
 
@@ -86,6 +87,12 @@ namespace hy_global {
     
     FILE            *hy_error_log_file,
                     *hy_message_log_file;
+    
+    hyTreeDefinitionPhase
+                     isDefiningATree = kTreeNotBeingDefined;
+    
+    hyFloat          kMachineEpsilon = 2.*DBL_EPSILON;
+
     
     _String const    kEmptyString,
                      kPromptForFilePlaceholder        ("PROMPT_FOR_FILE"),
@@ -520,7 +527,7 @@ namespace hy_global {
                 EnvVariableSet(error_report_format_expression_stack,  new _Matrix (calls), false);
                 EnvVariableSet(error_report_format_expression_string, new _Matrix (stdins, false), false);
                 
-                _PMathObj expr = expression.Compute();
+                HBLObjectRef expr = expression.Compute();
                 if (!terminate_execution && expr && expr->ObjectClass() == STRING) {
                     (*error_message) << ((_FString*)expr)->get_str();
                     doDefault = false;

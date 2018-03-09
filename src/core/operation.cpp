@@ -108,7 +108,7 @@ BaseRef _Operation::toStr (unsigned long) {
 
 
     if (theData != -1) {
-        return new _String (_String("Variable ")& *LocateVar(GetIndex())->GetName());
+        return new _String (_String("Variable ")& *LocateVar(GetAVariable())->GetName());
     } else if (theNumber) {
         _FString * type = (_FString*)theNumber->Type();
         _String res = _String("Constant (")& type->get_str() & ")" & _String((_String*)theNumber->toStr());
@@ -156,7 +156,7 @@ _Operation::_Operation  (_String const& opc, const long opNo = 2) {
     theNumber     = nil;
 }
 //__________________________________________________________________________________
-_Operation::_Operation  (_PMathObj theObj)
+_Operation::_Operation  (HBLObjectRef theObj)
 // construct the operation by its symbol and, if relevant -
 // number of operands
 {
@@ -197,7 +197,7 @@ bool _Operation::HasChanged (void)
         return theNumber->HasChanged();
     }
     if (theData >= 0) {
-        return LocateVar (GetIndex())->HasChanged();
+        return LocateVar (GetAVariable())->HasChanged();
     }
 
     return false;
@@ -293,7 +293,7 @@ bool _Operation::IsConstant (bool strict)
     if (strict) {
       return false;
     }
-    return LocateVar(GetIndex())->IsConstant();
+    return LocateVar(GetAVariable())->IsConstant();
 
 }
 
@@ -412,7 +412,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         bool            isRefVar = (funcVarTypes->Element (k) == kBLFunctionArgumentReference);
         
         _String         *argument_k = (_String*)funcVarList->Element(k);
-        _PMathObj       nthterm = theScrap.Pop();
+        HBLObjectRef       nthterm = theScrap.Pop();
 
         //printf ("\tArgument %d : %s (%s)\n", k, argument_k->sData, _String((_String*)nthterm->toStr()).sData);
 
@@ -446,19 +446,19 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             displacedValues<<argument_var->varValue;
             argument_var->varFlags |= HY_VARIABLE_CHANGED;
             argument_var->varValue = nthterm;
-            existingIVars<<argument_var->GetIndex();
+            existingIVars<<argument_var->get_index();
           } else {
             _Variable *newV = new _Variable (*argument_k);
             newV->SetValue(nthterm,false);
             nthterm->AddAReference();
-            existingDVars<<argument_var->GetIndex();
+            existingDVars<<argument_var->get_index();
             displacedVars<<argument_var; // 2 references
             argument_var->AddAReference(); // 3 references
-            variablePtrs.Replace (argument_var->GetIndex(),newV,false); // 2 references
+            variablePtrs.Replace (argument_var->get_index(),newV,false); // 2 references
           }
         } else {
 
-          long new_index = argument_var->GetIndex();
+          long new_index = argument_var->get_index();
 
           referenceArgs << argument_var->GetName();
           displacedReferences<<new_index;
@@ -474,7 +474,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
               reference_var =  CheckReceptacle (refArgName, kEmptyString, false, false);
           }
           
-          variableNames.SetXtra (new_index, reference_var->GetIndex());
+          variableNames.SetXtra (new_index, reference_var->get_index());
           DeleteObject (nthterm);
         }
       }
@@ -490,7 +490,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
       }
 
-      _PMathObj ret = function_body->Execute();
+      HBLObjectRef ret = function_body->Execute();
 
       function_body -> stdinRedirect    = nil;
       function_body -> stdinRedirectAux = nil;
@@ -513,14 +513,14 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
       }
 
       for (unsigned long dv = 0UL; dv < displacedVars.lLength; dv++) {
-        variablePtrs.Replace (existingDVars.lData[dv],(_PMathObj)displacedVars(dv), false);
+        variablePtrs.Replace (existingDVars.lData[dv],(HBLObjectRef)displacedVars(dv), false);
       }
 
 
       for (unsigned long dv2 = 0; dv2 < displacedValues.lLength; dv2++) {
         _Variable* theV = LocateVar (existingIVars.lData[dv2]);
         DeleteObject(theV->varValue);
-        theV->varValue = ((_PMathObj)displacedValues(dv2));
+        theV->varValue = ((HBLObjectRef)displacedValues(dv2));
       }
 
       return true;
@@ -533,7 +533,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
 
   }
 
-  _PMathObj arg0 = ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
+  HBLObjectRef arg0 = ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
             temp;
 
   _hyExecutionContext localContext (nameSpace, errMsg);
@@ -542,14 +542,14 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
     _List arguments;
 
     for (long k = numberOfTerms-1; k >= 1; k --) {
-      arguments.AppendNewInstance ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
+      arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
     }
 
     temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
     theScrap.theStack.lLength -= (numberOfTerms);
 
   } else {
-    temp =  ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
+    temp =  ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
     theScrap.theStack.lLength--;
   }
 
@@ -610,7 +610,7 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
     }
 
 
-    _PMathObj arg0 = ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
+    HBLObjectRef arg0 = ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
     temp;
 
     _hyExecutionContext localContext (nameSpace, errMsg);
@@ -619,14 +619,14 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
       _List arguments;
 
       for (long k = numberOfTerms-1; k >= 1; k --) {
-        arguments.AppendNewInstance ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
+        arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
       }
 
       temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
       theScrap.theStack.lLength -= (numberOfTerms);
 
     } else {
-      temp =  ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
+      temp =  ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
       theScrap.theStack.lLength--;
     }
 

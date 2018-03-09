@@ -128,7 +128,7 @@ BaseRef _Variable::toStr(unsigned long padding)
     if (varValue&&varValue->IsPrintable()) {
         return varValue->toStr(padding);
     }
-    _PMathObj vv = Compute();
+    HBLObjectRef vv = Compute();
     if (!vv) {
         return new _String("NAN");
     }
@@ -141,7 +141,7 @@ void _Variable::toFileStr(FILE* f, unsigned long padding)
     if (varValue&&varValue->IsPrintable()) {
         varValue->toFileStr(f, padding);
     } else {
-        _PMathObj vv = Compute();
+        HBLObjectRef vv = Compute();
         if (!vv) {
             fprintf(f,"NAN");
         } else {
@@ -174,7 +174,7 @@ _Variable::_Variable (_String const&s, _String const &f, bool isG)//:  _Formula 
     InsertVar   (this);
     varFormula = new _Formula (f);
     if (varFormula->IsAConstant()) {
-        _PMathObj theP = varFormula->Compute();
+        HBLObjectRef theP = varFormula->Compute();
         if (theP) {
             SetValue (theP);
             delete   (varFormula);
@@ -223,8 +223,8 @@ void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* t
 
   //__________________________________________________________________________________
 
-_PMathObj  _Variable::ComputeMatchingType(long type) {
-  _PMathObj computed_value = Compute();
+HBLObjectRef  _Variable::ComputeMatchingType(long type) {
+  HBLObjectRef computed_value = Compute();
   if (computed_value && (computed_value->ObjectClass() & type) > 0L) {
     return computed_value;
   }
@@ -234,7 +234,7 @@ _PMathObj  _Variable::ComputeMatchingType(long type) {
 
 //__________________________________________________________________________________
 
-_PMathObj  _Variable::Compute (void) // compute or return the value
+HBLObjectRef  _Variable::Compute (void) // compute or return the value
 {
     // call_count++;
   
@@ -265,7 +265,7 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
                 varFlags &= HY_VARIABLE_COMPUTING_CLR;
                 return varValue;
             } else if (varFormula->HasChanged()||!varValue) {
-                _PMathObj new_value = (_PMathObj)varFormula->Compute()->makeDynamic();
+                HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
                 DeleteObject (varValue);
                 varValue = new_value;
                 //printf ("Recomputing value of %s => %g\n", theName->sData, varValue->Value());
@@ -276,7 +276,7 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
               /* if varFormula depends on *this* variable, doing delete-set
                  would cause the expression to reference deleted memory.
                */
-            _PMathObj new_value = (_PMathObj)varFormula->Compute()->makeDynamic();
+            HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
             DeleteObject (varValue);
             varValue = new_value;
         }
@@ -299,7 +299,7 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
         _Variable* thisVar = FetchVar (i);
         if (!thisVar->IsIndependent()) {
             if (thisVar->CheckFForDependence (theIndex)) {
-                long f = thisVar->GetIndex();
+                long f = thisVar->get_index();
                 if (rec.Find(f)<0) {
                     rec<<f;
                 }
@@ -315,7 +315,7 @@ void  _Variable::SetValue (hyFloat new_value) {
 }
 
 //__________________________________________________________________________________
-void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
+void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the var
 {
     //hasBeenChanged = true;
     if (varFlags & HY_VARIABLE_COMPUTING) {
@@ -399,7 +399,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
             DeleteObject(this);
         } else {
             if (dup) {
-                varValue = (_PMathObj)theP->makeDynamic();
+                varValue = (HBLObjectRef)theP->makeDynamic();
             } else {
                 varValue = theP;
             }
@@ -490,7 +490,7 @@ void    _Variable::ClearConstraints (void)
 {
     if (IsCategory ()) {
         _Variable newVar (*GetName(), IsGlobal());
-        newVar.SetValue ((_PMathObj)Compute()->makeDynamic(),false);
+        newVar.SetValue ((HBLObjectRef)Compute()->makeDynamic(),false);
         ReplaceVar ( &newVar);
         /*_Matrix * modelMatrix = (_Matrix*)LocateVar(modelMatrixIndices.lData[1])->GetValue();
         for (long k=0; k<4; k++)
@@ -503,7 +503,7 @@ void    _Variable::ClearConstraints (void)
         */
     } else {
         if (!IsIndependent()) {
-            SetValue ((_PMathObj)Compute()->makeDynamic(),false);
+            SetValue ((HBLObjectRef)Compute()->makeDynamic(),false);
         }
         SetBounds (DEFAULTLOWERBOUND,DEFAULTUPPERBOUND);
     }
@@ -547,9 +547,9 @@ void  _Variable::SetFormula (_Formula& theF) {
     _Formula* right_hand_side = &theF;
 
     if (isAConstant) {
-        _PMathObj theP = theF.Compute();
+        HBLObjectRef theP = theF.Compute();
         if (theP) {
-            right_hand_side = new _Formula ((_PMathObj)theP->makeDynamic(),false);
+            right_hand_side = new _Formula ((HBLObjectRef)theP->makeDynamic(),false);
         } else {
             return;
         }
@@ -692,7 +692,7 @@ void _Variable::MarkDone (void) {
 }
 
 //__________________________________________________________________________________
-_PMathObj    _Variable::ComputeReference (_MathObject const * context) const {
+HBLObjectRef    _Variable::ComputeReference (_MathObject const * context) const {
     _String reference_string (*GetName());
     reference_string = AppendContainerName(reference_string, (_VariableContainer const*)context);
     
@@ -729,7 +729,7 @@ _String const WrapInNamespace (_String const& name, _String const* context) {
 }
 
 //__________________________________________________________________________________
-long    DereferenceString (_PMathObj v, _MathObject const * context, char reference_type){
+long    DereferenceString (HBLObjectRef v, _MathObject const * context, char reference_type){
     if (v && v->ObjectClass () == STRING) {
         _FString * value = (_FString*)v;
         _String referencedVariable = value->get_str();

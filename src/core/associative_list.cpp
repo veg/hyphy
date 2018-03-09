@@ -112,7 +112,7 @@ bool _AssociativeList::ParseStringRepresentation (_String& serialized_form, _For
                 }
                 
                 _Formula value      (*(_String*)key_value_pair(1),theP, doErrors?nil :&errMsg);
-                _PMathObj   valueC  = compute_keys_values ? value.Compute() : new _MathObject;
+                HBLObjectRef   valueC  = compute_keys_values ? value.Compute() : new _MathObject;
               
                 if (valueC) {
                     MStore (key, valueC, compute_keys_values);
@@ -157,12 +157,12 @@ void _AssociativeList::Duplicate (BaseRefConst br) {
 
 //_____________________________________________________________________________________________
 
-_PMathObj _AssociativeList::MCoord (_PMathObj p) {
+HBLObjectRef _AssociativeList::MCoord (HBLObjectRef p) {
     return new _FString ((_String*)p->toStr());
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::MAccess (_PMathObj p) {
+HBLObjectRef _AssociativeList::MAccess (HBLObjectRef p) {
     long        f;
 
     if (p->ObjectClass() == STRING) {
@@ -172,7 +172,7 @@ _PMathObj _AssociativeList::MAccess (_PMathObj p) {
         f = avl.Find (&s);
     }
     if (f>=0L) {
-        _PMathObj res = (_PMathObj)avl.GetXtra (f);
+        HBLObjectRef res = (HBLObjectRef)avl.GetXtra (f);
         res->AddAReference();
         return res;
     } else {
@@ -181,7 +181,7 @@ _PMathObj _AssociativeList::MAccess (_PMathObj p) {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2) {
+HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
     
     const _String     kAVLIteratorOrder          = "INDEXORDER",
                       kAVLIteratorOrderValue     = "VALUEINDEXORDER";
@@ -237,7 +237,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2) {
                                 }
                             }
                             actionFormula.GetIthTerm(0)->SetNumber(&fKey);
-                            actionFormula.GetIthTerm(1)->SetNumber((_PMathObj)filter_key_value.get_object());
+                            actionFormula.GetIthTerm(1)->SetNumber((HBLObjectRef)filter_key_value.get_object());
                             actionFormula.Compute();
                             done ++;
                         }
@@ -254,13 +254,13 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2) {
         } else if (p->ObjectClass () == STRING && p2->ObjectClass () == NUMBER) {
             _String * mode  = (_String*)p->toStr();
             reference_manager < mode;
-            _PMathObj result = nil;
+            HBLObjectRef result = nil;
 
             if (*mode == kAVLIteratorOrder|| *mode == kAVLIteratorOrderValue) {
                 long index = avl.GetByIndex(p2->Compute()->Value());
               
                 if (index >= 0L) {
-                  result = (*mode == kAVLIteratorOrder )? (new _FString(*(_String*)avl.Retrieve(index),false)): ((_PMathObj)avl.GetXtra (index)->makeDynamic());
+                  result = (*mode == kAVLIteratorOrder )? (new _FString(*(_String*)avl.Retrieve(index),false)): ((HBLObjectRef)avl.GetXtra (index)->makeDynamic());
                 } else {
                   throw ("Index out of bounds in call to AVL iterator (by index)");
                 }
@@ -279,8 +279,8 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2) {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (_String const& key, long objType) const {
-    _PMathObj res = GetByKey(key);
+HBLObjectRef _AssociativeList::GetByKey (_String const& key, long objType) const {
+    HBLObjectRef res = GetByKey(key);
     if (res && ((res->ObjectClass() & objType) > 0L)) {
       return res;
     }
@@ -288,12 +288,12 @@ _PMathObj _AssociativeList::GetByKey (_String const& key, long objType) const {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (_String const& key) const {
-    return (_PMathObj)avl.GetDataByKey(&key);
+HBLObjectRef _AssociativeList::GetByKey (_String const& key) const {
+    return (HBLObjectRef)avl.GetDataByKey(&key);
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _AssociativeList::GetByKey (long nKey, long objType) const {
+HBLObjectRef _AssociativeList::GetByKey (long nKey, long objType) const {
     return GetByKey (_String(nKey), objType);
 }
 
@@ -304,7 +304,7 @@ void _AssociativeList::Clear (void) {
 
 
 //_____________________________________________________________________________________________
-void _AssociativeList::DeleteByKey (_PMathObj p) {
+void _AssociativeList::DeleteByKey (HBLObjectRef p) {
     if (p->ObjectClass() == STRING) {
         avl.Delete (&((_FString*)p)->get_str(),true);
     } else {
@@ -324,7 +324,7 @@ void _AssociativeList::DeleteByKey (_PMathObj p) {
 
 
 //_____________________________________________________________________________________________
-void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long opCode) {
+void _AssociativeList::MStore (HBLObjectRef p, HBLObjectRef inObject, bool repl, long opCode) {
     if (!p) {
         return;
     }
@@ -337,7 +337,7 @@ void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long 
             _List arguments;
             arguments << inObject;
           
-            _PMathObj newObject = ((_PMathObj)avl.GetXtra(f))->ExecuteSingleOp(HY_OP_CODE_ADD,&arguments);
+            HBLObjectRef newObject = ((HBLObjectRef)avl.GetXtra(f))->ExecuteSingleOp(HY_OP_CODE_ADD,&arguments);
             if (repl == false) {
                 DeleteObject (inObject);
             } else {
@@ -358,7 +358,7 @@ void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long 
 }
 
 //_____________________________________________________________________________________________
-void _AssociativeList::MStore (const _String& obj, _PMathObj inObject, bool repl) {
+void _AssociativeList::MStore (const _String& obj, HBLObjectRef inObject, bool repl) {
     _FString f (obj);
     MStore (&f,inObject, repl);
 }
@@ -420,7 +420,7 @@ _StringBuffer * _AssociativeList::Serialize (unsigned long padding) const {
             out_string->SanitizeAndAppend (*thisKey);
             (*out_string) << '"';
 
-            _PMathObj anObject = GetByKey (*thisKey);
+            HBLObjectRef anObject = GetByKey (*thisKey);
 
             (*out_string) << ':';
             if (anObject->ObjectClass() == STRING) {
@@ -444,7 +444,7 @@ _StringBuffer * _AssociativeList::Serialize (unsigned long padding) const {
 
 
 //__________________________________________________________________________________
-_PMathObj _AssociativeList::Compute (void) {
+HBLObjectRef _AssociativeList::Compute (void) {
     return this;
 }
 
@@ -474,7 +474,7 @@ void        _AssociativeList::FillInList (_List& fill_me) {
       
       for (long index = 0L; index < my_length; index++) {
         _String key (index);
-        if (_PMathObj value = GetByKey (key)) {
+        if (HBLObjectRef value = GetByKey (key)) {
           fill_me.AppendNewInstance(value->toStr());
         } else {
           throw (1);
@@ -496,7 +496,7 @@ void        _AssociativeList::FillInList (_List& fill_me) {
 
 
 //_____________________________________________________________________________________________
-void        _AssociativeList::Merge (_PMathObj p) {
+void        _AssociativeList::Merge (HBLObjectRef p) {
     //SW20111207: I don't think we should ever have to worry about avl traversing 
     //here as long as the other methods are implemented properly
 
@@ -509,7 +509,7 @@ void        _AssociativeList::Merge (_PMathObj p) {
      _AssociativeList *rhs = (_AssociativeList*) p;
       if (rhs->avl.countitems()) {
           for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&rhs->avl)) {
-              MStore(*(_String*)rhs->avl.Retrieve (key_value.get_index()),(_PMathObj)key_value.get_object(),true);
+              MStore(*(_String*)rhs->avl.Retrieve (key_value.get_index()),(HBLObjectRef)key_value.get_object(),true);
           }
       }
     }
@@ -519,13 +519,13 @@ void        _AssociativeList::Merge (_PMathObj p) {
 }
 
   //_____________________________________________________________________________________________
-_PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
+HBLObjectRef        _AssociativeList::ExtremeValue (bool do_mimimum) const {
   _String const * best_key = nil;
   hyFloat best_value = do_mimimum ? INFINITY : -INFINITY;
   
   if (avl.countitems()) {
       for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
-          _PMathObj value = (_PMathObj)key_value.get_object();
+          HBLObjectRef value = (HBLObjectRef)key_value.get_object();
           switch (value->ObjectClass()){
               case NUMBER:
                   hyFloat number = ((_Constant*)value)->Value();
@@ -554,11 +554,11 @@ _PMathObj        _AssociativeList::ExtremeValue (bool do_mimimum) const {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj        _AssociativeList::Sum (void) {
+HBLObjectRef        _AssociativeList::Sum (void) {
     hyFloat sum = 0.;
         
     for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
-        _PMathObj value = (_PMathObj)key_value.get_object();
+        HBLObjectRef value = (HBLObjectRef)key_value.get_object();
         switch (value->ObjectClass()){
             case NUMBER:
                 sum += ((_Constant*)value)->Value();
@@ -587,14 +587,14 @@ _PMathObj        _AssociativeList::Sum (void) {
 //__________________________________________________________________________________
 
 
-_PMathObj _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)  {
+HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)  {
   
   switch (opCode) {
     case HY_OP_CODE_ABS:
       return new _Constant (Length());
       
     case HY_OP_CODE_EVAL:
-      return (_PMathObj) makeDynamic();
+      return (HBLObjectRef) makeDynamic();
       
     case HY_OP_CODE_COLUMNS: {
       // Columns -- get all unique values (as strings)

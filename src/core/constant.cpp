@@ -59,7 +59,6 @@ _Formula *chi2 = nil,
 
 long randomCount = 0;
 
-extern hyFloat machineEps;
 extern hyFloat tolerance;
 
 long            lastMatrixDeclared = -1,
@@ -135,7 +134,7 @@ BaseRef _Constant::toStr(unsigned long) {
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Add (_PMathObj theObj) {
+HBLObjectRef _Constant::Add (HBLObjectRef theObj) {
     if (theObj->ObjectClass() == STRING) {
         return new _Constant (theValue+((_FString*)theObj)->get_str().to_float());
     } else {
@@ -144,7 +143,7 @@ _PMathObj _Constant::Add (_PMathObj theObj) {
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sub (_PMathObj theObj) {
+HBLObjectRef _Constant::Sub (HBLObjectRef theObj) {
     //if (theObj) return nil;
     return new _Constant (theValue-((_Constant*)theObj)->theValue);
     //else
@@ -153,32 +152,32 @@ _PMathObj _Constant::Sub (_PMathObj theObj) {
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Minus (void)
+HBLObjectRef _Constant::Minus (void)
 {
     return     new  _Constant (-Value());
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sum (void)
+HBLObjectRef _Constant::Sum (void)
 {
     return     new  _Constant (Value());
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Mult (_PMathObj theObj)
+HBLObjectRef _Constant::Mult (HBLObjectRef theObj)
 {
 //  if (!theObj) return nil;
     return new _Constant ((theValue*((_Constant*)theObj)->theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Div (_PMathObj theObj)
+HBLObjectRef _Constant::Div (HBLObjectRef theObj)
 {
 //  if (!theObj) return nil;
     return new _Constant ((theValue/((_Constant*)theObj)->theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::lDiv (_PMathObj theObj) // %
+HBLObjectRef _Constant::lDiv (HBLObjectRef theObj) // %
 {
     if (theObj) {
         long       denom = ((_Constant*)theObj)->theValue;
@@ -188,7 +187,7 @@ _PMathObj _Constant::lDiv (_PMathObj theObj) // %
     }
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::longDiv (_PMathObj theObj) // div
+HBLObjectRef _Constant::longDiv (HBLObjectRef theObj) // div
 {
     if (theObj) {
         long       denom = ((_Constant*)theObj)->theValue;
@@ -198,7 +197,7 @@ _PMathObj _Constant::longDiv (_PMathObj theObj) // div
     }
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Raise (_PMathObj theObj) {
+HBLObjectRef _Constant::Raise (HBLObjectRef theObj) {
   if (!theObj) {
     return nil;
   }
@@ -225,7 +224,7 @@ _PMathObj _Constant::Raise (_PMathObj theObj) {
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Random (_PMathObj upperB)
+HBLObjectRef _Constant::Random (HBLObjectRef upperB)
 {
     if (randomCount == 0L) {
         randomCount++;
@@ -244,48 +243,48 @@ _PMathObj _Constant::Random (_PMathObj upperB)
 }
 
 //__________________________________________________________________________________
-void     _Constant::Assign (_PMathObj theObj)
+void     _Constant::Assign (HBLObjectRef theObj)
 {
     this->~_Constant ();
     theValue = ((_Constant*)theObj)->theValue;
 }
 
 //__________________________________________________________________________________
-bool     _Constant::Equal (_PMathObj theObj)
+bool     _Constant::Equal (HBLObjectRef theObj)
 {
     return theValue==((_Constant*)theObj)->theValue;
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Abs (void)
+HBLObjectRef _Constant::Abs (void)
 {
     return     new _Constant (fabs(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sin (void)
+HBLObjectRef _Constant::Sin (void)
 {
     return     new  _Constant (sin(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Cos (void)
+HBLObjectRef _Constant::Cos (void)
 {
     return     new _Constant  (cos(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Tan (void)
+HBLObjectRef _Constant::Tan (void)
 {
     return     new _Constant  (tan(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Exp (void)
+HBLObjectRef _Constant::Exp (void)
 {
     return     new _Constant  (exp(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
+HBLObjectRef _Constant::FormatNumberString (HBLObjectRef p, HBLObjectRef p2)
 {
     long       a1 = p->Value(),
                a2 = p2->Value();
@@ -327,23 +326,23 @@ _PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
     return     new _FString (new _String (buffer));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Log (void)
+HBLObjectRef _Constant::Log (void)
 {
     return     new _Constant  (log(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Sqrt (void)
+HBLObjectRef _Constant::Sqrt (void)
 {
     return     new _Constant  (sqrt(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Arctan (void)
+HBLObjectRef _Constant::Arctan (void)
 {
     return     new _Constant  (atan(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Gamma (void)
+HBLObjectRef _Constant::Gamma (void)
 {
     hyFloat theV = theValue>=1.0?theValue:2-theValue, result = gammaCoeff[0], temp = theV;
 
@@ -367,7 +366,7 @@ _PMathObj _Constant::Gamma (void)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LnGamma (void)
+HBLObjectRef _Constant::LnGamma (void)
 {
     // obtained from Numerical Recipes in C, p. 214 by afyp, February 7, 2007
     hyFloat  x, y, tmp, ser;
@@ -385,7 +384,7 @@ _PMathObj _Constant::LnGamma (void)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Beta (_PMathObj arg)
+HBLObjectRef _Constant::Beta (HBLObjectRef arg)
 {
     if (arg->ObjectClass()!=NUMBER) {
         HandleApplicationError ("A non-numerical argument passed to Beta(x,y)");
@@ -407,7 +406,7 @@ _PMathObj _Constant::Beta (_PMathObj arg)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
+HBLObjectRef _Constant::IBeta (HBLObjectRef arg1, HBLObjectRef arg2)
 {
     if (theValue<=0.0) {
         if (theValue < 0.0) {
@@ -530,7 +529,7 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
 
 
 //__________________________________________________________________________________
-_PMathObj _Constant::IGamma (_PMathObj arg)
+HBLObjectRef _Constant::IGamma (HBLObjectRef arg)
 {
     if (arg->ObjectClass()!=NUMBER) {
         HandleApplicationError ("A non-numerical argument passed to IGamma(a,x)");
@@ -552,7 +551,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
     {
         hyFloat term = 1.0/theValue, den = theValue+1;
         long count = 0;
-        while ((fabs(term)>=fabs(sum)*machineEps)&&(count<500)) {
+        while ((fabs(term)>=fabs(sum)*kMachineEpsilon)&&(count<500)) {
             sum+=term;
             term*=x/den;
             den += 1.0;
@@ -573,7 +572,7 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
             if (a1!=0.0) {
                 factor=1.0/a1;
                 sum = b1*factor;
-                if (fabs(sum-lastTerm)/sum<machineEps) {
+                if (fabs(sum-lastTerm)/sum<hy_global::kMachineEpsilon) {
                     break;
                 }
                 lastTerm = sum;
@@ -590,28 +589,28 @@ _PMathObj _Constant::IGamma (_PMathObj arg)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Erf (void)
+HBLObjectRef _Constant::Erf (void)
 {
     hyFloat lV = theValue;
     _Constant  half (.5), sq = (lV*lV);
-    _PMathObj  IG = half.IGamma(&sq);
+    HBLObjectRef  IG = half.IGamma(&sq);
     lV = ((_Constant*)IG)->theValue;
     if (theValue<0) {
         lV=-lV;
     }
     ((_Constant*)IG)->SetValue(lV);
-    return (_PMathObj)IG;
+    return (HBLObjectRef)IG;
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::ZCDF (void)
+HBLObjectRef _Constant::ZCDF (void)
 {
     hyFloat lV = theValue;
 
     _Constant  half (.5),
                sq (lV*lV/2);
 
-    _PMathObj  IG = half.IGamma(&sq);
+    HBLObjectRef  IG = half.IGamma(&sq);
     lV = ((_Constant*)IG)->theValue/2;
 
     if (theValue>0) {
@@ -619,11 +618,11 @@ _PMathObj _Constant::ZCDF (void)
     } else {
         ((_Constant*)IG)->SetValue(.5-lV);
     }
-    return (_PMathObj)IG;
+    return (HBLObjectRef)IG;
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Time (void)
+HBLObjectRef _Constant::Time (void)
 {
     _Constant result;
     if (theValue<1.0) {
@@ -632,11 +631,11 @@ _PMathObj _Constant::Time (void)
         time_t tt;
         result.theValue = ((hyFloat)time(&tt));
     }
-    return     (_PMathObj)result.makeDynamic();
+    return     (HBLObjectRef)result.makeDynamic();
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Less (_PMathObj theObj)
+HBLObjectRef _Constant::Less (HBLObjectRef theObj)
 {
     if (theObj) {
         return new _Constant (theValue<((_Constant*)theObj)->theValue);
@@ -646,7 +645,7 @@ _PMathObj _Constant::Less (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Greater (_PMathObj theObj)
+HBLObjectRef _Constant::Greater (HBLObjectRef theObj)
 {
     if (theObj) {
         return new _Constant (theValue>((_Constant*)theObj)->theValue);
@@ -656,7 +655,7 @@ _PMathObj _Constant::Greater (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
+HBLObjectRef _Constant::GammaDist (HBLObjectRef alpha, HBLObjectRef beta)
 {
     hyFloat x = theValue, a = ((_Constant*)alpha)->theValue,
                b = ((_Constant*)beta)->theValue, gd = exp(a * log(b) -b*x +(a-1)*log(x));
@@ -667,7 +666,7 @@ _PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta)
+HBLObjectRef _Constant::CGammaDist (HBLObjectRef alpha, HBLObjectRef beta)
 {
     hyFloat     arg = theValue*((_Constant*)beta)->theValue;
     /*if (arg==0)
@@ -680,7 +679,7 @@ _PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::CChi2 (_PMathObj n)
+HBLObjectRef _Constant::CChi2 (HBLObjectRef n)
 // chi^2 n d.f. probability up to x
 {
     _Constant halfn (((_Constant*)n)->theValue*.5),
@@ -694,7 +693,7 @@ _PMathObj _Constant::CChi2 (_PMathObj n)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::InvChi2 (_PMathObj n)
+HBLObjectRef _Constant::InvChi2 (HBLObjectRef n)
 // chi^2 n d.f. probability up to x
 {
     if (!chi2) {
@@ -708,11 +707,11 @@ _PMathObj _Constant::InvChi2 (_PMathObj n)
     }
     LocateVar(dummyVariable2)->SetValue (&halfn);
     halfn.SetValue(chi2->Newton(*derchi2,theValue,1e-25,1.e100,LocateVar(dummyVariable1))*2);
-    return (_PMathObj)halfn.makeDynamic();
+    return (HBLObjectRef)halfn.makeDynamic();
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LessEq (_PMathObj theObj)
+HBLObjectRef _Constant::LessEq (HBLObjectRef theObj)
 {
     if (theObj) {
         return new _Constant (theValue<=((_Constant*)theObj)->theValue);
@@ -722,7 +721,7 @@ _PMathObj _Constant::LessEq (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::GreaterEq (_PMathObj theObj)
+HBLObjectRef _Constant::GreaterEq (HBLObjectRef theObj)
 {
     if (theObj) {
         return new _Constant (theValue>=((_Constant*)theObj)->theValue);
@@ -731,7 +730,7 @@ _PMathObj _Constant::GreaterEq (_PMathObj theObj)
     }
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::AreEqual (_PMathObj theObj)
+HBLObjectRef _Constant::AreEqual (HBLObjectRef theObj)
 {
     if (!theObj) {
         return nil;
@@ -747,7 +746,7 @@ _PMathObj _Constant::AreEqual (_PMathObj theObj)
     return new _Constant(fabs ((a-b)/a)<tolerance);
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::NotEqual (_PMathObj theObj)
+HBLObjectRef _Constant::NotEqual (HBLObjectRef theObj)
 {
     if (!theObj) {
         return nil;
@@ -762,7 +761,7 @@ _PMathObj _Constant::NotEqual (_PMathObj theObj)
     return new _Constant(fabs ((a-b)/a)>=tolerance);
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::LAnd (_PMathObj theObj)
+HBLObjectRef _Constant::LAnd (HBLObjectRef theObj)
 {
     if (!theObj) {
         return nil;
@@ -770,7 +769,7 @@ _PMathObj _Constant::LAnd (_PMathObj theObj)
     return new _Constant ((long)(theValue)&&(long)(((_Constant*)theObj)->theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::LOr (_PMathObj theObj)
+HBLObjectRef _Constant::LOr (HBLObjectRef theObj)
 {
     if (!theObj) {
         return nil;
@@ -779,31 +778,31 @@ _PMathObj _Constant::LOr (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LNot ()
+HBLObjectRef _Constant::LNot ()
 {
     return new _Constant (CheckEqual(theValue, 0.0));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Min (_PMathObj theObj)
+HBLObjectRef _Constant::Min (HBLObjectRef theObj)
 {
     if (!theObj) {
         return nil;
     }
     if (theValue<((_Constant*)theObj)->theValue) {
-        return (_PMathObj) makeDynamic();
+        return (HBLObjectRef) makeDynamic();
     }
-    return   (_PMathObj) theObj->makeDynamic();
+    return   (HBLObjectRef) theObj->makeDynamic();
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Max (_PMathObj theObj)
+HBLObjectRef _Constant::Max (HBLObjectRef theObj)
 {
     if (!theObj) {
         return nil;
     }
     if (theValue>((_Constant*)theObj)->theValue) {
-        return (_PMathObj) makeDynamic();
+        return (HBLObjectRef) makeDynamic();
     }
-    return   (_PMathObj) theObj->makeDynamic();
+    return   (HBLObjectRef) theObj->makeDynamic();
 }

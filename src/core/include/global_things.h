@@ -304,6 +304,8 @@ namespace hy_global {
   hy_scanf_last_file_path;
   
   extern _Variable * hy_x_variable, * hy_n_variable;
+    
+  extern hyFloat     kMachineEpsilon;
   
   extern regex_t   * hy_float_regex;
   

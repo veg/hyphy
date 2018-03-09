@@ -55,8 +55,8 @@ public:
     _Stack (void);
     virtual ~_Stack (void);
 
-    bool      Push (_PMathObj, bool = true);     // push object onto the stack
-    _PMathObj Pop (bool del = true);            // pop object from the top of the stack
+    bool      Push (HBLObjectRef, bool = true);     // push object onto the stack
+    HBLObjectRef Pop (bool del = true);            // pop object from the top of the stack
     long      StackDepth (void) const;    // returns the depth of the stack
     void      Reset (void);         // clear the stack
 

@@ -74,7 +74,7 @@ public:
 
     _Operation  (bool, _String&, bool isG = false, _VariableContainer const*  = nil, bool take_a_reference = false);
     // store a variable or a constant
-    _Operation  (_PMathObj);
+    _Operation  (HBLObjectRef);
     // store a non-numeric constant
 
     virtual ~_Operation (void);
@@ -134,11 +134,11 @@ public:
 
     long                    StackDepth          (void) const;
 
-    virtual  _PMathObj      GetANumber          (void) {
+    virtual  HBLObjectRef      GetANumber          (void) {
         return theNumber;
     }
 
-    virtual  void           SetNumber           (_PMathObj d) {
+    virtual  void           SetNumber           (HBLObjectRef d) {
         theNumber=d;
     }
 
@@ -163,7 +163,7 @@ protected:
     long        opCode;         // internal operation code
     long        numberOfTerms,  // 1 - unary, 2 - binary, etc
                 theData;
-    _PMathObj   theNumber;
+    HBLObjectRef   theNumber;
 };
 
 #endif

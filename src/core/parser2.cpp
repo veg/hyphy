@@ -74,7 +74,7 @@ extern    _AVLListX     _HY_GetStringGlobalTypes;
 extern    hyFloat    tolerance,
           maxRombergSteps,
           integrationPrecisionFactor,
-          machineEps;
+          kMachineEpsilon;
 
 
 
@@ -165,16 +165,16 @@ hyFloat  RandomNumber(hyFloat l, hyFloat u) {
 hyFloat  EqualNumbers(hyFloat a, hyFloat b) {
     if (a!=0.0) {
         a = (a>b)?(a-b)/a:(b-a)/a;
-        return a>0. ? a<=machineEps : a>=-machineEps;
+        return a>0. ? a<=kMachineEpsilon : a>=-kMachineEpsilon;
     }
-    return b<=machineEps && b>=-machineEps;
+    return b<=kMachineEpsilon && b>=-kMachineEpsilon;
 }
 
 //_______________________________________________________________________________________
 void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDatum* values) {
     try {
         vars.Each ([&] (long var_index, unsigned long array_index) -> void {
-            _PMathObj var_value = LocateVar (var_index)->Compute();
+            HBLObjectRef var_value = LocateVar (var_index)->Compute();
             if (var_value->ObjectClass() == NUMBER) {
                 values[array_index].value = var_value->Value();
             } else {
@@ -193,7 +193,7 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
 
 //__________________________________________________________________________________
 
-void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* context) {
+void        WarnNotDefined (HBLObjectRef p, long opCode, _hyExecutionContext* context) {
     _FString * t = (_FString*)p->Type();
     context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' is not implemented/defined for a " & t->get_str());
     DeleteObject (t);
@@ -201,7 +201,7 @@ void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* conte
 
 //__________________________________________________________________________________
 
-void        WarnWrongNumberOfArguments (_PMathObj p, long opCode, _hyExecutionContext* context, _List * args) {
+void        WarnWrongNumberOfArguments (HBLObjectRef p, long opCode, _hyExecutionContext* context, _List * args) {
   _FString * t = (_FString*)p->Type();
   context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' was called with an incorrect number of arguments (" & (long) (args ? args->lLength : 0L) & ") for " & t->get_str());
   DeleteObject (t);
@@ -224,7 +224,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
 
 
     if (code == HY_FORMULA_EXPRESSION || code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT || code == HY_FORMULA_REFERENCE_VALUE_ASSIGNMENT) {
-        _PMathObj  formulaValue = (code == HY_FORMULA_REFERENCE_VALUE_ASSIGNMENT)?f2->Compute(0, nameSpace):f->Compute(0,nameSpace);
+        HBLObjectRef  formulaValue = (code == HY_FORMULA_REFERENCE_VALUE_ASSIGNMENT)?f2->Compute(0, nameSpace):f->Compute(0,nameSpace);
         if (!formulaValue) {
             return 0;
         }
@@ -275,7 +275,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
             return 0;
         }
 
-        _PMathObj varObj = f2->Compute(0, nameSpace);
+        HBLObjectRef varObj = f2->Compute(0, nameSpace);
         if (varObj->ObjectClass()!=NUMBER) {
             HandleApplicationError ("Not a numeric RHS in a constraint assignment.");
             return 0;
@@ -320,7 +320,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         if (code == HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT) {
             newF.DuplicateReference(f2);
         } else {
-            newF.theFormula.AppendNewInstance(new _Operation((_PMathObj)f2->Compute(0, nameSpace)->makeDynamic()));
+            newF.theFormula.AppendNewInstance(new _Operation((HBLObjectRef)f2->Compute(0, nameSpace)->makeDynamic()));
         }
 
         long stackD = -1L,
@@ -339,7 +339,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         if (last0 > 0) {
             stackD = f->theFormula.lLength;
             f->theFormula.lLength       = last0+1;
-            _PMathObj   lvalue  = f->Compute(0, nameSpace);
+            HBLObjectRef   lvalue  = f->Compute(0, nameSpace);
             f->theFormula.lLength = stackD;
             if (lvalue->ObjectClass () == MATRIX) {
                 mmx = (_Matrix*)lvalue;
@@ -353,21 +353,21 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
             _Operation * lValue = f->GetIthTerm(0L);
 
             if (lValue && lValue->IsAVariable(false)) {
-             _Variable* mmo = LocateVar(lValue->GetIndex());
+             _Variable* mmo = LocateVar(lValue->GetAVariable());
              if (mmo->ObjectClass () == MATRIX) {
                 mmx = (_Matrix*)(mmo->GetValue());
-                lValue->SetAVariable(-lValue->GetIndex()-3);
+                lValue->SetAVariable(-lValue->GetAVariable()-3);
               } else {
 
                 if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
                   mma = (_AssociativeList*)(mmo->GetValue());
-                  lValue->SetAVariable(-lValue->GetIndex()-3);
+                  lValue->SetAVariable(-lValue->GetAVariable()-3);
                 }
               }
             }
         }
 
-        _PMathObj coordMx = nil;
+        HBLObjectRef coordMx = nil;
         if (mma || mmx) {
             long expectedType = mmx?MATRIX:STRING;
             coordMx = f->Compute(last0);
@@ -396,7 +396,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
                 if (!ANALYTIC_COMPUTATION_FLAG) {
                     mmx->MStore (hC, vC, newF, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
                 } else {
-                    _PMathObj newP = newF.ConstructPolynomial();
+                    HBLObjectRef newP = newF.ConstructPolynomial();
                     if (!newP) {
                         HandleApplicationError ("Can't assign non-polynomial entries to polynomial matrices.");
                     } else {
@@ -499,7 +499,7 @@ bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char &
         check = false;
         if (theOp) {
           if (theOp->IsAVariable(false)) {
-            lhs = LocateVar(theOp->GetIndex());
+            lhs = LocateVar(theOp->GetAVariable());
             check = true;
           } else {
             if (theOp->GetANumber() && theOp->GetANumber()->ObjectClass() == STRING) {
@@ -528,7 +528,7 @@ bool        checkLHS (_List* levelOps, _List* levelData, _String& errMsg, char &
 
 //__________________________________________________________________________________
 long _parserHelperHandleInlineBoundCases (_String& s, _FormulaParsingContext& parsingContext, long i, _Variable* lhs_variable, _Formula * f, char deref, _Formula &newF) {
-    _PMathObj varObj = newF.Compute();
+    HBLObjectRef varObj = newF.Compute();
     if (varObj->ObjectClass()!=NUMBER) {
         return HandleFormulaParsingError ("Variable bound must evaluate to a number ", parsingContext.errMsg(), s, i);
     }
@@ -536,7 +536,7 @@ long _parserHelperHandleInlineBoundCases (_String& s, _FormulaParsingContext& pa
     long varID;
 
     if (lhs_variable) {
-        varID = DereferenceVariable(lhs_variable->GetIndex(), parsingContext.formulaScope(), deref);
+        varID = DereferenceVariable(lhs_variable->get_index(), parsingContext.formulaScope(), deref);
     } else {
         varID = DereferenceString(f->Compute(0, parsingContext.formulaScope(), nil, parsingContext.errMsg()), parsingContext.formulaScope(), deref);
     }
@@ -561,7 +561,7 @@ long _parserHelperHandleInlineAssignmentCases (_String& s, _FormulaParsingContex
     long varID;
 
     if (lhs_variable) {
-        varID = DereferenceVariable(lhs_variable->GetIndex(), parsingContext.formulaScope(), deref);
+        varID = DereferenceVariable(lhs_variable->get_index(), parsingContext.formulaScope(), deref);
     } else {
         varID = DereferenceString(f->Compute(0, parsingContext.formulaScope(), nil, parsingContext.errMsg()), parsingContext.formulaScope(), deref);
     }
@@ -571,7 +571,7 @@ long _parserHelperHandleInlineAssignmentCases (_String& s, _FormulaParsingContex
     _Variable * theV = (_Variable*)LocateVar(varID);
     
     if (s.get_char(i-1) != ':') {
-        _PMathObj varObj = newF.Compute();
+        HBLObjectRef varObj = newF.Compute();
         if (!varObj) {
             return HandleFormulaParsingError ("Invalid RHS in an assignment ", parsingContext.errMsg(), s, i);
         }
@@ -871,7 +871,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     if (twoToken && s.get_char(i-1) == '+') { // += gets handled here
                     
                         _Operation* self = new _Operation ();
-                        self->SetAVariable(lhs_variable->GetIndex());
+                        self->SetAVariable(lhs_variable->get_index());
                         newF.theFormula.InsertElement (self,0,false);
                         DeleteObject (self);
                         if (deref != kStringDirectReference) {
@@ -884,7 +884,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     f->Duplicate((_Formula const*)&newF);
                 }
 
-                parsingContext.assignmentRefID()   = lhs_variable->GetIndex();
+                parsingContext.assignmentRefID()   = lhs_variable->get_index();
                 parsingContext.assignmentRefType() = deref;
 
                 return (s.get_char(i-1)==':')?HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT:HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT;
@@ -906,7 +906,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         bool       anError = false;
 
                         if (newF.IsAConstant() || s.get_char(i-1) !=':') {
-                            _PMathObj       currentValue = (_PMathObj)newF.Compute();
+                            HBLObjectRef       currentValue = (HBLObjectRef)newF.Compute();
                             currentValue->AddAReference();
                             newF.theFormula.Clear();
                             newF.theFormula.AppendNewInstance (new _Operation(currentValue));
@@ -919,7 +919,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         if (last0 > 0) {
                             stackD = f->theFormula.lLength;
                             f->theFormula.lLength   = last0+1;
-                            _PMathObj   lvalue      = f->Compute();
+                            HBLObjectRef   lvalue      = f->Compute();
                             f->theFormula.lLength   = stackD;
 
                             if (lvalue->ObjectClass () == MATRIX) {
@@ -930,17 +930,19 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                             last0++;
                         } else {
-                            _Variable* mmo = ((_Operation*)f->theFormula(0))->IsAVariable()?LocateVar(((_Operation*)f->theFormula(0))->GetIndex()):nil;
+                            _Operation * first_op = f->GetIthTerm(0);
+                            
+                            _Variable* mmo = first_op->IsAVariable() ? LocateVar(first_op->GetAVariable()):nil;
 
                             if (mmo) {
                               if (mmo->ObjectClass () == MATRIX) {
                                 mmx = (_Matrix*)(mmo->GetValue());
-                                ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetIndex()-3);
+                                ((_Operation*)f->theFormula(0))->SetAVariable(-first_op->GetAVariable()-3);
                               } else {
 
                                 if (mmo->ObjectClass () == ASSOCIATIVE_LIST) {
                                   mma = (_AssociativeList*)(mmo->GetValue());
-                                  ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetIndex()-3);
+                                  ((_Operation*)f->theFormula(0))->SetAVariable(first_op->GetAVariable()-3);
                                 }
                               }
                             }
@@ -948,7 +950,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                         if (mmx) {
                             _Matrix  *mcoord;
-                            _PMathObj coordMx = f->Compute(last0);
+                            HBLObjectRef coordMx = f->Compute(last0);
 
                             if (!coordMx|| coordMx->ObjectClass()!=MATRIX) {
                                 anError = true;
@@ -960,7 +962,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                                 mmx->MStore (&hC, &vC, newF, (twoToken && s.get_char(i-1) =='+')?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
                             }
                         } else if (mma) {
-                            _PMathObj coordIdx = f->Compute(last0);
+                            HBLObjectRef coordIdx = f->Compute(last0);
 
                             if (!coordIdx|| coordIdx->ObjectClass() != STRING ) {
                                 anError = true;
@@ -981,7 +983,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                         bool isSimple = (s.get_char(i-1) != ':');
                         f2->Duplicate   (&newF);
                         if (last0 == 0) {
-                            ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetIndex()-3);
+                            ((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
                         }
                         return isSimple?((s.get_char(i-1) == '+')?HY_FORMULA_FORMULA_VALUE_INCREMENT:HY_FORMULA_FORMULA_VALUE_ASSIGNMENT):HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT;
                     }
@@ -1042,7 +1044,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 } else { // BOUND ASSIGNMENTS
                     f2->Duplicate   (&newF);
 
-                    parsingContext.assignmentRefID()   = lhs->GetIndex();
+                    parsingContext.assignmentRefID()   = lhs->get_index();
                     parsingContext.assignmentRefType() = deref;
 
                     return (s.get_char(i)=='>')?HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT:HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT;
@@ -1187,7 +1189,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                       
                       
                         if (expressionProcessor.IsConstant(true)) {
-                          _PMathObj constant_literal = expressionProcessor.Compute (0, nil, nil, nil, STRING);
+                          HBLObjectRef constant_literal = expressionProcessor.Compute (0, nil, nil, nil, STRING);
                           if (constant_literal) {
                             (*literal) << ((_FString*)constant_literal)->get_str();
                           }
@@ -1586,7 +1588,7 @@ void  setParameter (_String const & name, hyFloat def, _String* namespc)
 
 //__________________________________________________________________________________
 
-void  setParameter (_String const& name, _PMathObj def, _String* namespc, bool dup)
+void  setParameter (_String const& name, HBLObjectRef def, _String* namespc, bool dup)
 {
     if (namespc) {
         _String namespcd = AppendContainerName(name,namespc);

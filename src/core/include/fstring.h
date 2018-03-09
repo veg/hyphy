@@ -60,29 +60,29 @@ public:
 
     virtual BaseRef   makeDynamic       (void) const;
     virtual void      Duplicate         (BaseRefConst);
-    virtual _PMathObj Add               (_PMathObj);
-    virtual long      AddOn             (_PMathObj);
-    virtual _PMathObj AreEqual          (_PMathObj);
-    virtual _PMathObj AreEqualCIS       (_PMathObj);
-    virtual _PMathObj Less              (_PMathObj);
-    virtual _PMathObj LessEq            (_PMathObj);
-    virtual _PMathObj Greater           (_PMathObj);
-    virtual _PMathObj GreaterEq         (_PMathObj);
-    virtual _PMathObj NotEqual          (_PMathObj);
-    virtual _PMathObj RerootTree        (_PMathObj);
-    virtual _PMathObj EqualAmb          (_PMathObj);
-    virtual _PMathObj EqualRegExp       (_PMathObj,bool = false);
-    virtual _PMathObj ReplaceReqExp     (_PMathObj);
-    virtual _PMathObj CountGlobalObjects(void);
-    virtual _PMathObj FileExists        (void);
-    virtual _PMathObj Call              (_List*,_hyExecutionContext*);
-    virtual _PMathObj Sum               (void);
-    virtual _PMathObj Evaluate          (_hyExecutionContext* context = _hyDefaultExecutionContext);
-    virtual _PMathObj SubstituteAndSimplify
-                                        (_PMathObj arguments);
-    virtual _PMathObj Join              (_PMathObj);
-    virtual _PMathObj Differentiate     (_PMathObj);
-    virtual unsigned long      ObjectClass       (void) {
+    virtual HBLObjectRef Add               (HBLObjectRef);
+    virtual long      AddOn             (HBLObjectRef);
+    virtual HBLObjectRef AreEqual          (HBLObjectRef);
+    virtual HBLObjectRef AreEqualCIS       (HBLObjectRef);
+    virtual HBLObjectRef Less              (HBLObjectRef);
+    virtual HBLObjectRef LessEq            (HBLObjectRef);
+    virtual HBLObjectRef Greater           (HBLObjectRef);
+    virtual HBLObjectRef GreaterEq         (HBLObjectRef);
+    virtual HBLObjectRef NotEqual          (HBLObjectRef);
+    virtual HBLObjectRef RerootTree        (HBLObjectRef);
+    virtual HBLObjectRef EqualAmb          (HBLObjectRef);
+    virtual HBLObjectRef EqualRegExp       (HBLObjectRef,bool = false);
+    virtual HBLObjectRef ReplaceReqExp     (HBLObjectRef);
+    virtual HBLObjectRef CountGlobalObjects(void);
+    virtual HBLObjectRef FileExists        (void);
+    virtual HBLObjectRef Call              (_List*,_hyExecutionContext*);
+    virtual HBLObjectRef Sum               (void);
+    virtual HBLObjectRef Evaluate          (_hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual HBLObjectRef SubstituteAndSimplify
+                                        (HBLObjectRef arguments);
+    virtual HBLObjectRef Join              (HBLObjectRef);
+    virtual HBLObjectRef Differentiate     (HBLObjectRef);
+    virtual unsigned long      ObjectClass       (void) const {
         return STRING;
     }
     
@@ -95,14 +95,14 @@ public:
     
     void  SetStringContent (_StringBuffer * );
     
-    virtual _PMathObj Compute           (void) {
+    virtual HBLObjectRef Compute           (void) {
         return this;
     }
-    _PMathObj         Dereference       (bool ignore_context, _hyExecutionContext* context = _hyDefaultExecutionContext, bool return_variable_ref = false);
+    HBLObjectRef         Dereference       (bool ignore_context, _hyExecutionContext* context = _hyDefaultExecutionContext, bool return_variable_ref = false);
 
-    virtual _PMathObj MapStringToVector (_PMathObj);
-    virtual _PMathObj CharAccess        (_PMathObj,_PMathObj);
-    virtual _PMathObj ExecuteSingleOp   (long opCode, _List* args = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual HBLObjectRef MapStringToVector (HBLObjectRef);
+    virtual HBLObjectRef CharAccess        (HBLObjectRef,HBLObjectRef);
+    virtual HBLObjectRef ExecuteSingleOp   (long opCode, _List* args = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual BaseRef   toStr             (unsigned long = 0UL);
 
     virtual bool      IsVariable        (void) {
@@ -115,7 +115,7 @@ public:
   
     bool              has_data          (void) const {return the_string && the_string->nonempty();}
   
-    hyComparisonType  Compare           (_PMathObj, bool convert_non_strings = true);
+    hyComparisonType  Compare           (HBLObjectRef, bool convert_non_strings = true);
   
     inline _StringBuffer const&    get_str           (void) const {return *the_string;}
 

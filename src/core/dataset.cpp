@@ -697,7 +697,7 @@ void _DataSet::MatchIndices(_Formula &f, _SimpleList &receptacle, bool isVert,
 
   for (long i = 0L; i < limit; i++) {
     v->SetValue(new _Constant((hyFloat)i), nil);
-    _PMathObj res = f.Compute();
+    HBLObjectRef res = f.Compute();
     // fprintf (stderr, "%ld %g\n", i, res->Compute()->Value());
     if (res && !CheckEqual(res->Value(), 0.0)) {
       receptacle << i;

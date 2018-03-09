@@ -69,11 +69,11 @@ public:
     _CalcNode           (_CalcNode* source, _VariableContainer* parentTree);
     
     virtual             ~_CalcNode      (void);
-    virtual             _PMathObj      Compute                             (void) {
+    virtual             HBLObjectRef      Compute                             (void) {
         return this;
     }
     
-    virtual unsigned long        ObjectClass     (void) {
+    virtual unsigned long        ObjectClass     (void) const {
         return TREE_NODE;
     }
     

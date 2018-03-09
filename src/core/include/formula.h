@@ -77,10 +77,10 @@ public:
     
     long     ParseFormula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
     
-    _Formula (_PMathObj, bool isAVar = false);
+    _Formula (HBLObjectRef, bool isAVar = false);
     _Formula (_Formula const & rhs);
     virtual ~_Formula (void);
-    _PMathObj   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
+    HBLObjectRef   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
     // compute the value of the formula
     // 1st argument : execute from this instruction onwards
     // see the commend for ExecuteFormula for the second argument
@@ -159,7 +159,7 @@ public:
     unsigned long Length            (void) const {return theFormula.lLength;}
 
     void        Clear               (void);
-    _PMathObj   GetTheMatrix        (void);
+    HBLObjectRef   GetTheMatrix        (void);
 
     void        PushTerm            (BaseRef);
 
@@ -227,7 +227,7 @@ public:
      
     */
      
-    static      _PMathObj          ParseAndCompute (_String const& expression, bool use_exceptions = false, long requested_type = HY_ANY_OBJECT, _hyExecutionContext * context = nil);
+    static      HBLObjectRef          ParseAndCompute (_String const& expression, bool use_exceptions = false, long requested_type = HY_ANY_OBJECT, _hyExecutionContext * context = nil);
 
 
 protected:
@@ -235,14 +235,14 @@ protected:
     void        SubtreeToString     (_StringBuffer & result, node<long>* top_node, unsigned char op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal);
     void        ConvertToTree       (bool err_msg = true);
     void        ConvertFromTree     (void);
-    bool        CheckSimpleTerm     (_PMathObj);
+    bool        CheckSimpleTerm     (HBLObjectRef);
     node<long>* DuplicateFormula    (node<long>*,_Formula&) const;
 
     _List       theFormula,
                 *resultCache;
 
     _Stack      theStack;
-    _PMathObj   recursion_calls;
+    HBLObjectRef   recursion_calls;
 
     unsigned    long call_count;
 

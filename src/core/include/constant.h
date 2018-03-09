@@ -51,54 +51,54 @@ public:
     _Constant (void);
     ~_Constant (void) {}
 
-    virtual _PMathObj Add           (_PMathObj);
-    virtual _PMathObj Sub           (_PMathObj);
-    virtual _PMathObj Minus         (void) ;
-    virtual _PMathObj Sum           (void) ;
-    virtual _PMathObj Mult          (_PMathObj);
-    virtual _PMathObj Div           (_PMathObj);
-    virtual _PMathObj lDiv          (_PMathObj);
-    virtual _PMathObj longDiv       (_PMathObj);
-    virtual _PMathObj Raise         (_PMathObj);
-    virtual void      Assign        (_PMathObj);
-    virtual bool      Equal         (_PMathObj);
-    virtual _PMathObj Abs           (void);
-    virtual _PMathObj Sin           (void);
-    virtual _PMathObj Cos           (void);
-    virtual _PMathObj Tan           (void);
-    virtual _PMathObj Exp           (void);
-    virtual _PMathObj Log           (void);
-    virtual _PMathObj Sqrt          (void);
-    virtual _PMathObj Time          (void);
-    virtual _PMathObj Arctan        (void);
-    virtual _PMathObj Gamma         (void);
-    virtual _PMathObj LnGamma       (void);         /* <- added by afyp, February 8, 2007 */
-    virtual _PMathObj Beta          (_PMathObj);
-    virtual _PMathObj Min           (_PMathObj);
-    virtual _PMathObj Max           (_PMathObj);
-    virtual _PMathObj GammaDist     (_PMathObj,_PMathObj);
-    virtual _PMathObj CGammaDist    (_PMathObj,_PMathObj);
-    virtual _PMathObj IBeta         (_PMathObj,_PMathObj);
-    virtual _PMathObj IGamma        (_PMathObj);
-    virtual _PMathObj CChi2         (_PMathObj);
-    virtual _PMathObj InvChi2       (_PMathObj);
-    virtual _PMathObj Erf           (void);
-    virtual _PMathObj ZCDF          (void);
-    virtual _PMathObj Less          (_PMathObj);
-    virtual _PMathObj Greater       (_PMathObj);
-    virtual _PMathObj LessEq        (_PMathObj);
-    virtual _PMathObj GreaterEq     (_PMathObj);
-    virtual _PMathObj AreEqual      (_PMathObj);
-    virtual _PMathObj NotEqual      (_PMathObj);
-    virtual _PMathObj LAnd          (_PMathObj);
-    virtual _PMathObj LOr           (_PMathObj);
-    virtual _PMathObj LNot          ();
-    virtual _PMathObj Random        (_PMathObj);
+    virtual HBLObjectRef Add           (HBLObjectRef);
+    virtual HBLObjectRef Sub           (HBLObjectRef);
+    virtual HBLObjectRef Minus         (void) ;
+    virtual HBLObjectRef Sum           (void) ;
+    virtual HBLObjectRef Mult          (HBLObjectRef);
+    virtual HBLObjectRef Div           (HBLObjectRef);
+    virtual HBLObjectRef lDiv          (HBLObjectRef);
+    virtual HBLObjectRef longDiv       (HBLObjectRef);
+    virtual HBLObjectRef Raise         (HBLObjectRef);
+    virtual void      Assign        (HBLObjectRef);
+    virtual bool      Equal         (HBLObjectRef);
+    virtual HBLObjectRef Abs           (void);
+    virtual HBLObjectRef Sin           (void);
+    virtual HBLObjectRef Cos           (void);
+    virtual HBLObjectRef Tan           (void);
+    virtual HBLObjectRef Exp           (void);
+    virtual HBLObjectRef Log           (void);
+    virtual HBLObjectRef Sqrt          (void);
+    virtual HBLObjectRef Time          (void);
+    virtual HBLObjectRef Arctan        (void);
+    virtual HBLObjectRef Gamma         (void);
+    virtual HBLObjectRef LnGamma       (void);         /* <- added by afyp, February 8, 2007 */
+    virtual HBLObjectRef Beta          (HBLObjectRef);
+    virtual HBLObjectRef Min           (HBLObjectRef);
+    virtual HBLObjectRef Max           (HBLObjectRef);
+    virtual HBLObjectRef GammaDist     (HBLObjectRef,HBLObjectRef);
+    virtual HBLObjectRef CGammaDist    (HBLObjectRef,HBLObjectRef);
+    virtual HBLObjectRef IBeta         (HBLObjectRef,HBLObjectRef);
+    virtual HBLObjectRef IGamma        (HBLObjectRef);
+    virtual HBLObjectRef CChi2         (HBLObjectRef);
+    virtual HBLObjectRef InvChi2       (HBLObjectRef);
+    virtual HBLObjectRef Erf           (void);
+    virtual HBLObjectRef ZCDF          (void);
+    virtual HBLObjectRef Less          (HBLObjectRef);
+    virtual HBLObjectRef Greater       (HBLObjectRef);
+    virtual HBLObjectRef LessEq        (HBLObjectRef);
+    virtual HBLObjectRef GreaterEq     (HBLObjectRef);
+    virtual HBLObjectRef AreEqual      (HBLObjectRef);
+    virtual HBLObjectRef NotEqual      (HBLObjectRef);
+    virtual HBLObjectRef LAnd          (HBLObjectRef);
+    virtual HBLObjectRef LOr           (HBLObjectRef);
+    virtual HBLObjectRef LNot          ();
+    virtual HBLObjectRef Random        (HBLObjectRef);
     virtual hyFloat
     Value       (void);
-    virtual _PMathObj FormatNumberString
-    (_PMathObj,_PMathObj);
-    virtual _PMathObj Compute       (void) {
+    virtual HBLObjectRef FormatNumberString
+    (HBLObjectRef,HBLObjectRef);
+    virtual HBLObjectRef Compute       (void) {
         return this;
     };
 
@@ -106,9 +106,11 @@ public:
     virtual   void    Duplicate             (BaseRefConst);
     virtual   BaseRef makeDynamic           (void) const;
     virtual   BaseRef toStr                 (unsigned long = 0UL);
-    virtual   unsigned long    ObjectClass           (void) {
+    
+    virtual   unsigned long    ObjectClass  (void) const {
         return NUMBER;
     }
+    
     virtual   void    SetValue              (hyFloat pl) {
         theValue = pl;
     }

@@ -279,7 +279,7 @@ _MathObject* _MathObject:: _extract_argument (_List * arguments, unsigned long i
 
 
 //SW: This calls the function with the opcode after it's been parsed
-_PMathObj _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
+HBLObjectRef _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
 
     switch (opCode) { // first check operations without arguments
       case HY_OP_CODE_NOT: // !
@@ -296,7 +296,7 @@ _PMathObj _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
       case HY_OP_CODE_ERF: // Erf
         return Erf();
       case HY_OP_CODE_EVAL:
-        return (_PMathObj)Compute()->makeDynamic();
+        return (HBLObjectRef)Compute()->makeDynamic();
       case HY_OP_CODE_EXP: // Exp
         return Exp();
       case HY_OP_CODE_GAMMA: // Gamma
@@ -469,7 +469,7 @@ void _MathObject::Duplicate (BaseRefConst) {
 //__________________________________________________________________________________
 
   //SW: Why do we need a string for the type?
-_PMathObj _MathObject::Type (void) {
+HBLObjectRef _MathObject::Type (void) {
   
   const _FString kNumber ("Number");
   const _FString kMatrix ("Matrix");

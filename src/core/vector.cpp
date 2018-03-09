@@ -93,6 +93,25 @@ void        _Vector::Delete (unsigned long index) {
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
+void        _Vector::DeleteList (_SimpleList const& toDelete) {
+    
+    unsigned long delete_count = toDelete.countitems();
+    
+    if (delete_count) {
+        unsigned long k = 0;
+        for (unsigned long i = 0UL; i<used; i++) {
+            if (k<delete_count && i==toDelete.get(k)) {
+                k++;
+            } else {
+                theData[i-k] = theData[i];
+            }
+        }
+        used -= delete_count;
+    }
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------------*/
+
 void        _Vector::operator << (const _SimpleList& list) {
     list.Each([this] (long value, long) -> void {
         this->Store(value);

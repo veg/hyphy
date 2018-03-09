@@ -841,7 +841,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
     blockTree->MapPostOrderToInOderTraversal (postToIn, doLeaves == false);
     supportValues.Clear                      ();
-    CreateMatrix                             (&supportValues,matrixSize,shiftForTheNode,false,true,false);
+    _Matrix::CreateMatrix                             (&supportValues,matrixSize,shiftForTheNode,false,true,false);
 
     ComputeSiteLikelihoodsForABlock          (index, siteLikelihoods, scalersBaseline);
     // establish a baseline likelihood for each site
@@ -1329,7 +1329,7 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
 
     for (unsigned long component = 0UL; component < partition_count ; component++) {
         _TheTree * ith_tree = GetIthTree (component);
-        aux_list << ith_tree->GetIndex();
+        aux_list << ith_tree->get_index();
         filter_list    < new _String (*GetIthFilterName      (component));
         frequency_list < new _String (*GetIthFrequenciesName (component));
       

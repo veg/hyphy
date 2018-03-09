@@ -42,7 +42,6 @@
 
 #include "baseobj.h"
 #include "defines.h"
-#include "list.h"
 #include "avllistx.h"
 #include "hy_strings.h"
 #include "_hyExecutionContext.h"
@@ -138,7 +137,7 @@ public:
     virtual bool         IsIndependent (void)       {
         return true;
     }
-    virtual unsigned long  ObjectClass (void)       {
+    virtual unsigned long  ObjectClass (void) const       {
         return HY_UNDEFINED;
     }
     // returns a unique ID for this object
@@ -162,7 +161,9 @@ public:
 };
 
 // pointer to a math object
-typedef _MathObject* _PMathObj ;
+typedef _MathObject* HBLObjectRef ;
+typedef _MathObject const * HBLObjectRefConst ;
+
 
 
 #endif

@@ -68,7 +68,7 @@ namespace hy_env {
      */
 
     
-    _PMathObj       EnvVariableGetDefault (_String const& name, unsigned long type);
+    HBLObjectRef       EnvVariableGetDefault (_String const& name, unsigned long type);
     /**
          Look up the default value for a given env variable,
               checking that it is of a paricular type (could be any)
@@ -80,7 +80,7 @@ namespace hy_env {
      
      */
     
-    _PMathObj       EnvVariableGet (_String const& name, unsigned long type);
+    HBLObjectRef       EnvVariableGet (_String const& name, unsigned long type);
     /**
      Look up the value for a given env variable,
      checking that it is of a paricular type (could be any)
@@ -103,7 +103,7 @@ namespace hy_env {
      
      */
 
-    void            EnvVariableSet (_String const& name, _PMathObj value, bool copy );
+    void            EnvVariableSet (_String const& name, HBLObjectRef value, bool copy );
     /**
      Set the value for a env variable (global scope)
      copying the value if requested
@@ -115,7 +115,7 @@ namespace hy_env {
      
      */
 
-    void            EnvVariableSetNamespace (_String const& name, _PMathObj value, _String* nmspace, bool copy );
+    void            EnvVariableSetNamespace (_String const& name, HBLObjectRef value, _String* nmspace, bool copy );
     /**
      Set the value for a env variable (in a given namespace if provided)
      copying the value if requested
@@ -134,6 +134,9 @@ namespace hy_env {
      */
 
     extern const _String
+          accept_rooted_trees,
+          accept_branch_lengths,
+          automatically_convert_branch_lengths,
           always_reload_libraries ,
           assertion_behavior,
           data_file_tree,
@@ -184,7 +187,11 @@ namespace hy_env {
           skip_omissions,
           data_file_gap_width,
           data_file_default_width,
-          data_file_print_format
+          data_file_print_format,
+          branch_length_stencil,
+          kExpectedNumberOfSubstitutions,
+          kStringSuppliedLengths,
+          include_model_spec
     ;
   
   

@@ -50,8 +50,8 @@ namespace hy_env {
     _AVLListXL      _hy_env_default_values (&_hy_env_default_values_aux);
  
     /*********************************************************************************/
-    _PMathObj       EnvVariableGetDefault (_String const& name, unsigned long type) {
-        _PMathObj default_value = (_PMathObj)_hy_env_default_values.GetDataByKey (&name);
+    HBLObjectRef       EnvVariableGetDefault (_String const& name, unsigned long type) {
+        HBLObjectRef default_value = (HBLObjectRef)_hy_env_default_values.GetDataByKey (&name);
         if (default_value) {
             if (type == HY_ANY_OBJECT || (type | default_value->ObjectClass())) {
                 return default_value;
@@ -62,7 +62,7 @@ namespace hy_env {
 
     /*********************************************************************************/
     hyFloat       EnvVariableGetDefaultNumber (_String const& name) {
-        _PMathObj default_value = (_PMathObj)EnvVariableGetDefault (name, NUMBER);
+        HBLObjectRef default_value = (HBLObjectRef)EnvVariableGetDefault (name, NUMBER);
         if (default_value) {
             return default_value->Value();
         }
@@ -71,7 +71,7 @@ namespace hy_env {
 
     /*********************************************************************************/
     bool       EnvVariableTrue (_String const& name) {
-        _PMathObj value = (_PMathObj)EnvVariableGet (name, NUMBER);
+        HBLObjectRef value = (HBLObjectRef)EnvVariableGet (name, NUMBER);
         if (value) {
             return fabs (value->Value()) > 1e-10;
         }
@@ -79,8 +79,8 @@ namespace hy_env {
     }
 
     /*********************************************************************************/
-    _PMathObj       EnvVariableGet (_String const& name, unsigned long type) {
-        _PMathObj current_value = (_PMathObj)FetchObjectFromVariableByType(&name, type);
+    HBLObjectRef       EnvVariableGet (_String const& name, unsigned long type) {
+        HBLObjectRef current_value = (HBLObjectRef)FetchObjectFromVariableByType(&name, type);
         if (current_value) {
             if (type == HY_BL_ANY || (type | current_value->ObjectClass())) {
                 return current_value;
@@ -91,17 +91,17 @@ namespace hy_env {
 
     /*********************************************************************************/
     hyFloat       EnvVariableGetNumber (_String const& name, hyFloat default_value) {
-      _PMathObj current_value = EnvVariableGet (name, NUMBER);
+      HBLObjectRef current_value = EnvVariableGet (name, NUMBER);
       return current_value ? current_value -> Value() : default_value;
     }
 
   /*********************************************************************************/
-    void       EnvVariableSet (_String const& name, _PMathObj value, bool copy) {
+    void       EnvVariableSet (_String const& name, HBLObjectRef value, bool copy) {
         EnvVariableSetNamespace (name, value, nil, copy);
     }
 
     /*********************************************************************************/
-    void       EnvVariableSetNamespace (_String const& name, _PMathObj value, _String* nmspace, bool copy) {
+    void       EnvVariableSetNamespace (_String const& name, HBLObjectRef value, _String* nmspace, bool copy) {
         setParameter(name, value, nmspace, copy);
     }
     /**
@@ -132,20 +132,28 @@ namespace hy_env {
                               .PushPairCopyKey (data_file_print_format, new _Constant (6.0))
                               .PushPairCopyKey (data_file_default_width, new _Constant (50.0))
                               .PushPairCopyKey (data_file_gap_width, new _Constant (10.0))
+                              .PushPairCopyKey (accept_branch_lengths, new _Constant (HY_CONSTANT_TRUE))
       ;
     }
   
 _String const
+    accept_branch_lengths                            ("ACCEPT_BRANCH_LENGTHS"),
+        // if true (default), then branch lengths from Newick strings will be accepted (whenever possible)
+    accept_rooted_trees                             ("ACCEPT_ROOTED_TREES"),
+        // if TRUE, do not perform automatic unrooting for topology/tree constructors
     always_reload_libraries                         ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
         // if TRUE, reparse and re-execute source code for each call to LoadFunctionLibrary,
         // otherwise load function libraries only once
     assertion_behavior                              ("ASSERTION_BEHAVIOR"),
         // if set to TRUE, then assertions that fail skip to the end of the current script
         // otherwise they terminate the program
+    automatically_convert_branch_lengths            ("AUTOMATICALLY_CONVERT_BRANCH_LENGTHS"),
+        // if TRUE, then HyPhy will attempt to solve BL (t) = C for model parameter t, whenever possible
     base_directory                                  ("HYPHY_BASE_DIRECTORY"),
         // is set to the base directory for local path names; can be set via a CL argument (BASEPATH)
     blockwise_matrix                                ("BLOCK_LIKELIHOOD"),
         // this _template_ variable is used to define likelihood function evaluator templates
+    branch_length_stencil                           ("BRANCH_LENGTH_STENCIL"),
     covariance_parameter                            ("COVARIANCE_PARAMETER"),
         // used to control the behavior of CovarianceMatrix
     data_file_default_width                         ("DATA_FILE_DEFAULT_WIDTH"),
@@ -201,13 +209,23 @@ _String const
         if set to `harvest_frequencies_gap_options` to TRUE, then N-fold ambigs will add 1/N to each character count in HarvestFrequencies,
         otherwise N-folds are ignored in counting
      */
+    
+    include_model_spec                              ("INCLUDE_MODEL_SPECS"),
+    /*
+        controls whether or not export / serialization operations (like toStr)
+        will include substitution model specifications
+     */
 
     integration_precision_factor                    ("INTEGRATION_PRECISION_FACTOR"),
     integration_maximum_iterations                  ("INTEGRATION_MAX_ITERATES"),
     // used to control integration in _Formula::Integrate
   
+    kExpectedNumberOfSubstitutions                  ("EXPECTED_NUMBER_OF_SUBSTITUTIONS"),
+        // literal for the expected number of substitions (per unit time)
     kGetStringFromUser                              ("PROMPT_FOR_STRING"),
         // [LEGACY] placeholder for prompting the user for a string value
+    kStringSuppliedLengths                          ("STRING_SUPPLIED_LENGTHS"),
+        // literal for branch lengths from the Newick tree string
     last_file_path                                  ("LAST_FILE_PATH"),
         // is set by various file read/write commands (fscanf, fprintf, dialog prompts)
         // to contain the **absolute** path to the last file interacted with

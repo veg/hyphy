@@ -313,7 +313,7 @@ bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import)
     ReportWarning (_String("Entered ImportCache() with avl: ") & (_String *) cache_import->toStr());
 
     _String         keyString;
-    _PMathObj       valuePtr;
+    HBLObjectRef       valuePtr;
 
     if (scores_cached) {
         ReportWarning (_String("WARNING: Overwriting pre-existing node score cache in bayesgraph2.cpp:ImportCache()"));

@@ -73,13 +73,7 @@ public:
 
 }; // used for tree imaging
 
-//_______________________________________________________________________________________________
 
-class _TheTree; // forward declaration for xlc
-
-
-#define kGetNodeStringForTreeName   0x01
-#define kGetNodeStringForTreeModel  0x02
 
 
 //_______________________________________________________________________________________________
@@ -121,26 +115,26 @@ public:
     //iterate through the leaves (left-to-right)
      */
 
-    virtual  bool           FinalizeNode                (node<long>*, long, _String, _String const&, _String&, _String* = NULL);
+    virtual  bool           FinalizeNode                (node<long>*, long, _String, _String const&, _String&, _String*, _TreeTopologyParseSettings const&);
     virtual  BaseRef        makeDynamic                 (void) const;
 
     virtual  BaseRef        makeDynamicCopy             (_String*);
     node<long>* DuplicateTreeStructure      (node<long>*, _String*, bool);
     virtual  BaseRef        toStr                       (unsigned long = 0UL);
-    virtual unsigned long           ObjectClass                 (void) {
+    virtual unsigned long           ObjectClass                 (void) const {
         return TREE;
     }
 
-    virtual _PMathObj       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
-    virtual  _PMathObj      TEXTreeString               (_PMathObj) const;
-    virtual  _PMathObj      PlainTreeString             (_PMathObj,_PMathObj);
+    virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual  HBLObjectRef      TEXTreeString               (HBLObjectRef) const;
+    virtual  HBLObjectRef      PlainTreeString             (HBLObjectRef,HBLObjectRef);
 
-    virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
-    virtual  void           GetBranchLength             (node<long> *, _String&, bool = false) const;
-    virtual  hyFloat     GetBranchLength             (node<long> *) const ;
-    virtual  void           GetBranchValue              (node<long> *, _String&) const ;
-    virtual  void           GetBranchVarValue           (node<long> *, _String&, long) const ;
-    virtual _String const*        GetNodeModel                (node<long> *) const;
+    virtual _String const   GetNodeName                 (node<long> *, bool = false) const;
+    virtual _String const   GetBranchLengthString       (node<long> *, _String&, bool get_expression = false) const;
+    virtual  hyFloat        GetBranchLength             (node<long> *) const ;
+    virtual  _String const  GetBranchValue              (node<long> *) const ;
+    virtual  _String const  GetBranchVarValue           (node<long> *, long) const ;
+    virtual _String const*  GetNodeModel                (node<long> *) const;
     
     void            InitializeTreeFrequencies   (_Matrix *, bool = false);
 
@@ -372,8 +366,7 @@ protected:
 };
 
 
-extern _String  expectedNumberOfSubs,
-       stringSuppliedLengths,
+extern _String      
        includeModelSpecs,
        treeOutputAVL,
        treeOutputLayout;

@@ -69,8 +69,8 @@ public:
 
     virtual   void          MarkDone (void);
 
-    virtual     _PMathObj   Compute (void);       // compute or return the value
-                _PMathObj   ComputeMatchingType (long);
+    virtual     HBLObjectRef   Compute (void);       // compute or return the value
+                HBLObjectRef   ComputeMatchingType (long);
                 // return a value if the type is matched, otherwise nil
     virtual     bool        IsVariable (void); //
     virtual     bool        IsIndependent (void) {
@@ -79,14 +79,14 @@ public:
                (varValue?varValue->IsIndependent():true);
     }
     virtual     bool        IsConstant (void);
-    void        SetValue (_PMathObj, bool = true); // set the value of the variable
+    void        SetValue (HBLObjectRef, bool = true); // set the value of the variable
     void        SetValue (hyFloat); // set the value of the variable
     void        SetNumericValue (hyFloat);
     void        CheckAndSet (hyFloat, bool = false);
     // set the value of the variable
     // bool flag is used to indicate that out of bounds values should be rejected
 
-    _PMathObj   GetValue (void) {
+    HBLObjectRef   GetValue (void) {
         return varValue;   // get the value of the variable
     }
     void        SetFormula (_Formula&); // set the variable to a new formula
@@ -101,13 +101,13 @@ public:
         return false;
     }
 
-    virtual unsigned long        ObjectClass (void) {
+    virtual unsigned long        ObjectClass (void) const {
         return varValue?varValue->ObjectClass():((varFormula&&varFormula->theFormula.lLength)?varFormula->ObjectClass():1);
     }
     void        SetIndex (long i) {
         theIndex = i;
     }
-    long        GetIndex (void) const {
+    long        get_index (void) const {
         return theIndex;
     }
     virtual void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0) const;
@@ -143,7 +143,7 @@ public:
     }
 
     virtual     void        CompileListOfDependents (_SimpleList&);
-    _PMathObj   ComputeReference        (_MathObject const *) const;
+    HBLObjectRef   ComputeReference        (_MathObject const *) const;
 
 
     friend      void        ResetVariables          (void);
@@ -154,7 +154,7 @@ public:
 
     _String*   theName;
 
-    _PMathObj  varValue;
+    HBLObjectRef  varValue;
 
     long       theIndex; // index of this variable in the global variable pool
 
@@ -170,7 +170,7 @@ public:
 };
 
 long    DereferenceVariable (long index, _MathObject const *  context, char reference_type);
-long    DereferenceString   (_PMathObj, _MathObject const * context, char reference_type);
+long    DereferenceString   (HBLObjectRef, _MathObject const * context, char reference_type);
 _String const WrapInNamespace (_String const&, _String const*);
 
 

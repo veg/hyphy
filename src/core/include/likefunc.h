@@ -213,7 +213,7 @@ public:
 
     long        MaximumDimension            (void);
 
-    virtual _PMathObj   CovarianceMatrix            (_SimpleList* = nil);
+    virtual HBLObjectRef   CovarianceMatrix            (_SimpleList* = nil);
 
     // compute  covariance matrix  based on the Hessian
     // optional list of parameters to estimate the conditional covariance for
@@ -770,7 +770,6 @@ reduceLFSmoothing              ;
 
 
 
-bool    CheckEqual                  (hyFloat, hyFloat);
 void    StateCounterResultHandler   (_Formula&, _SimpleList*,long&,long&,long,_Matrix&,_Matrix&);
 
 _LikelihoodFunction*

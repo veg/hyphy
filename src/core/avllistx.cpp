@@ -164,3 +164,12 @@ void _AVLListX::PopulateFromList (_List& src)
     }
 }
 
+//______________________________________________________________
+
+long _AVLListX::GetDataByKey(BaseRefConst key) const {
+    long f = Find (key);
+    if (f < 0L) {
+        return -1L;
+    }
+    return GetXtra(f);
+}

@@ -284,16 +284,16 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
         for (long i=0L; i<mVars.lLength; i++) {
             _Variable * aVar = (_Variable*)variablePtrs (mVars.lData[i]);
             if (aVar->IsGlobal()) {
-                PushGlobalVariable(aVar->GetIndex());
+                PushGlobalVariable(aVar->get_index());
             } else {
                 varName = fullName&'.'&ContextFreeName();
                 _Variable * spawnedVar = CheckReceptacle(&varName, kEmptyString, false, false);
                 spawnedVar->SetBounds (aVar->GetLowerBound(), aVar->GetUpperBound());
 
                 if (aVar->IsIndependent()) {
-                    PushIndVariable(spawnedVar->GetIndex(), mVars.get(i));
+                    PushIndVariable(spawnedVar->get_index(), mVars.get(i));
                 } else {
-                    PushDepVariable(spawnedVar->GetIndex(), mVars.get(i));
+                    PushDepVariable(spawnedVar->get_index(), mVars.get(i));
                 }
             }
         }
@@ -552,6 +552,18 @@ void    _VariableContainer:: RemoveLocalVariable (_SimpleList*& array, long arra
     }
 }
 
+//__________________________________________________________________________________
+
+void    _VariableContainer:: RemoveGlobalVariable (long array_index) {
+    if (gVariables->countitems() > 1UL) {
+        gVariables->Delete(array_index);
+        gVariables->TrimMemory();
+    } else {
+        delete gVariables;
+        gVariables = nil;
+    }
+}
+
 
 //__________________________________________________________________________________
 bool      _VariableContainer::RemoveDependance (long varIndex) {
@@ -601,7 +613,7 @@ long      _VariableContainer::CheckAndAddUserExpression (_String& parameter_name
     }
 
     _Variable newVar (unused_name);
-    k =  newVar.GetIndex();
+    k =  newVar.get_index();
 
     PushDepVariable(k, -1);
     return k;
@@ -778,6 +790,11 @@ long      _VariableContainer::CountIndependents(void) const {
 }
 
 //__________________________________________________________________________________
+long      _VariableContainer::CountDependents(void) const {
+    return  (dVariables? (dVariables->countitems() >> 1) :0L);
+}
+
+//__________________________________________________________________________________
 bool      _VariableContainer::HasLocals  (void) {
     return  iVariables && iVariables->countitems() > 0UL || dVariables && dVariables->countitems() > 0UL;
 }
@@ -811,6 +828,24 @@ void      _VariableContainer::ClearConstraints(void) {
         LocateVar(dVariables->lData[0])->ClearConstraints();
     }
 }
+
+//__________________________________________________________________________________
+
+void      _VariableContainer::CopyModelParameterValue (long var_idx, long ref_idx, unsigned long) {
+    if (ref_idx >= 0) {
+        _Variable * model_var = LocateVar (ref_idx);
+        if (model_var -> IsIndependent()) {
+            model_var->SetValue (LocateVar (var_idx)->Compute());
+            
+#ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+            if (1 || likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, model_var->GetName()->sData, model_var->Compute()->Value());
+            }
+#endif
+        }
+    }
+}
+
 
 //__________________________________________________________________________________
 
@@ -908,7 +943,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
 
 //__________________________________________________________________________________
 
-bool _VariableContainer::IsConstant (void) const {
+bool _VariableContainer::IsConstant (void) {
     if (iVariables) {
         return false;
     }

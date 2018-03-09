@@ -99,10 +99,10 @@ public:
     void        Duplicate                   (BaseRefConst);
     bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
 
-    _PMathObj   Execute                     (_ExecutionList* parent = nil);
+    HBLObjectRef   Execute                     (_ExecutionList* parent = nil);
         // if parent is specified, copy stdin redirects from it
         // run this execution list
-    _PMathObj   GetResult                   (void) {
+    HBLObjectRef   GetResult                   (void) {
         return result;
     }
     void        ExecuteSimple               (void);             // run a simple compiled list
@@ -172,7 +172,7 @@ public:
     int                             errorHandlingMode; // how does this execution list handle errors
     bool                            errorState;
 
-    _PMathObj                       result;
+    HBLObjectRef                       result;
 
     _VariableContainer*             nameSpacePrefix;
 
@@ -641,7 +641,7 @@ _String ProcessStringArgument        (_String* data);
 const _String _hblCommandAccessor          (_ExecutionList*, long);
 _String _HYGenerateANameSpace             (void);
 
-_PMathObj
+HBLObjectRef
 ProcessAnArgumentByType      (_String const*, _VariableContainer const*, long, _ExecutionList* = nil);
 
 void    _HBL_Init_Const_Arrays       (void);

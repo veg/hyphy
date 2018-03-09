@@ -61,7 +61,7 @@ _Stack::~_Stack (void)
 }
 
 //__________________________________________________________________________________
-bool _Stack::Push (_PMathObj newObj, bool dup)    // push object onto the stack
+bool _Stack::Push (HBLObjectRef newObj, bool dup)    // push object onto the stack
 {
     if (dup)
         theStack<<(newObj);
@@ -71,9 +71,9 @@ bool _Stack::Push (_PMathObj newObj, bool dup)    // push object onto the stack
 }
 
 //__________________________________________________________________________________
-_PMathObj _Stack::Pop (bool del)        // pop object from the top of the stack
+HBLObjectRef _Stack::Pop (bool del)        // pop object from the top of the stack
 {
-    _PMathObj r = (_PMathObj)theStack.lData[theStack.lLength-1];
+    HBLObjectRef r = (HBLObjectRef)theStack.lData[theStack.lLength-1];
     if (del) {
         theStack.lLength--;
     }

@@ -67,6 +67,7 @@ class _AVLListX: public _AVLList {
         virtual void Clear(bool = false);
         virtual void DeleteXtra(long);
         virtual void PopulateFromList(_List&);
+        long         GetDataByKey (BaseRefConst) const;
 
         virtual long InsertData(BaseRef, long, bool);
         virtual long UpdateValue (BaseRef, long, long);

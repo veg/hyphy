@@ -117,7 +117,7 @@ bool    ExpressionCalculator (void) {
   
   if (!terminate_execution) {
     if (retCode == HY_FORMULA_EXPRESSION) {
-      _PMathObj formRes = lhs.Compute();
+      HBLObjectRef formRes = lhs.Compute();
       if (!formRes) {
         BufferToConsole ("NULL\n");
       } else {

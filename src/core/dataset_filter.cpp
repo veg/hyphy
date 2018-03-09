@@ -698,7 +698,7 @@ void    _DataSetFilter::SetExclusions (_String const& exclusion_string, bool fil
     
     _AVLList     exclusions (&theExclusions);
   
-    character_list.Tokenize(',').ForEach ([&] (BaseRefConst  exlcusion_character) -> void {
+    character_list.Tokenize(',').ForEach ([&] (BaseRefConst  exlcusion_character, unsigned long) -> void {
       _String* kth_token = (_String*)exlcusion_character;
       long character_index = MapStringToCharIndex(*kth_token);
       if (character_index < 0) {
@@ -771,7 +771,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
             HandleApplicationError(input.Enquote() & _String(" is an invalid partition specification"));
             return;
         }
-        _PMathObj   fV = fmla.Compute();
+        HBLObjectRef   fV = fmla.Compute();
         if (fV && fV->ObjectClass()==STRING) {
             ProcessPartition (((_FString*)fV)->get_str().Enquote(), target, isVertical, additionalFilter, nil, scope);
         } else {
@@ -981,7 +981,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
 void     _DataSetFilter::SetMap  (_String const &s) {
     theNodeMap.Clear();
     if (s.nonempty()) {
-        s.Tokenize(_String (",")).ForEach([&] (BaseRef piece) -> void {
+        s.Tokenize(_String (",")).ForEach([&] (BaseRef piece, unsigned long) -> void {
             theNodeMap << ((_String*)piece)->to_long();
         });
     }
@@ -2410,7 +2410,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
   
   if (outputFormat != 8) {
       if (hy_env::EnvVariableTrue(hy_env::data_file_tree)) {
-          _PMathObj tree_var = hy_env::EnvVariableGet(hy_env::data_file_tree_string, HY_ANY_OBJECT);
+          HBLObjectRef tree_var = hy_env::EnvVariableGet(hy_env::data_file_tree_string, HY_ANY_OBJECT);
           if (tree_var) {
             _String* treeString = (_String*)(tree_var->Compute())->toStr();
             switch (outputFormat) {

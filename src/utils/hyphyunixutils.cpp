@@ -281,7 +281,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                 // ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 _ExecutionList exL (*theMessage);
                 //ReportWarning (_String ((_String*)batchLanguageFunctionNames.toStr()));
-                _PMathObj res = exL.Execute();
+                HBLObjectRef res = exL.Execute();
                 resStr = res?(_String*)res->toStr():new _String ("0");
             }
 
@@ -378,7 +378,7 @@ void mpiBgmLoop (int rank, int size)
 
     while (theMessage->nonempty()) {
         _ExecutionList  exL (*theMessage);
-        _PMathObj       res = exL.Execute();    // should send this process into CacheNodeScores()
+        HBLObjectRef       res = exL.Execute();    // should send this process into CacheNodeScores()
 
         resStr = res ? (_String*)res->toStr() : new _String ("0");
         ReportWarning (_String ("MPI Node: ") & (long)rank & " executed HBL with result:\n" & resStr);

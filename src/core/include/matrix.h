@@ -147,19 +147,19 @@ public:
     virtual bool        is_expression_based (void) const {return storageType == _FORMULA_TYPE;}
     virtual bool        is_numeric (void) const {return storageType == _NUMERICAL_TYPE;}
 
-    _PMathObj           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
+    HBLObjectRef           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original
 
-    virtual _PMathObj   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual HBLObjectRef   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     // execute this operation with the list of Args
 
-    _PMathObj   MAccess (_PMathObj, _PMathObj);
+    HBLObjectRef   MAccess (HBLObjectRef, HBLObjectRef);
     // implements the M[i][j] operation for formulas
-    _PMathObj   MCoord (_PMathObj, _PMathObj);
+    HBLObjectRef   MCoord (HBLObjectRef, HBLObjectRef);
     // implements the M[i][j] operation for formulas
 
     void        MStore (long, long, _Formula&, long = -1);
-    bool        MResolve (_PMathObj, _PMathObj, long&, long&);
+    bool        MResolve (HBLObjectRef, HBLObjectRef, long&, long&);
     // resolve coordiates from two Number arguments
 
     bool        CheckCoordinates ( long&, long&);
@@ -168,7 +168,7 @@ public:
     bool        ValidateFormulaEntries (bool (long, long, _Formula*));
     // validate matrix coordinates
 
-    void        MStore (_PMathObj, _PMathObj, _Formula&, long = HY_OP_CODE_NONE);
+    void        MStore (HBLObjectRef, HBLObjectRef, _Formula&, long = HY_OP_CODE_NONE);
     // implements the M[i][j]= operation for formulas
     /*
         20100811: the last argument provides an op code (-1 = none)
@@ -178,13 +178,13 @@ public:
         e.g. passing HY_OP_CODE_ADD implements +=
      */
 
-    void        MStore (long, long, _PMathObj);
-    void        MStore (_PMathObj, _PMathObj, _PMathObj);
+    void        MStore (long, long, HBLObjectRef);
+    void        MStore (HBLObjectRef, HBLObjectRef, HBLObjectRef);
     // implements the M[i][j]= operation for objects
-    virtual _PMathObj   Compute (void);         // returns the numeric value of this matrix
+    virtual HBLObjectRef   Compute (void);         // returns the numeric value of this matrix
 
-    virtual _PMathObj   ComputeNumeric (bool = false);  // returns the numeric value of this matrix
-    virtual _PMathObj   RetrieveNumeric (void); // returns the numeric value of this matrix
+    virtual HBLObjectRef   ComputeNumeric (bool = false);  // returns the numeric value of this matrix
+    virtual HBLObjectRef   RetrieveNumeric (void); // returns the numeric value of this matrix
 
     virtual void        ScanForVariables  (_AVLList&, bool inclG = false, _AVLListX* tagger = nil,long weight = 0) const;
     virtual void        ScanForVariables2 (_AVLList&, bool inclG = false, long modelID = -1, bool inclCat = true, _AVLListX* tagger = nil,long weight = 0) const;
@@ -197,24 +197,24 @@ public:
     // used to determine whether the matrix contains references
     // to other unknowns
 
-    virtual unsigned long        ObjectClass (void)      {
+    virtual unsigned long        ObjectClass (void) const      {
         return MATRIX;
     }
 
     void     operator = (_Matrix&);             // assignment operation on matrices
     void     operator = (_Matrix*);             // assignment operation on matrices with temp results
 
-    virtual _PMathObj    Random (_PMathObj);    // reshuffle the matrix
+    virtual HBLObjectRef    Random (HBLObjectRef);    // reshuffle the matrix
 
-    virtual _PMathObj    AddObj (_PMathObj);    // addition operation on matrices
+    virtual HBLObjectRef    AddObj (HBLObjectRef);    // addition operation on matrices
 
-    virtual _PMathObj    SubObj (_PMathObj);    // subtraction operation on matrices
+    virtual HBLObjectRef    SubObj (HBLObjectRef);    // subtraction operation on matrices
 
-    virtual _PMathObj    MultObj (_PMathObj);   // multiplication operation on matrices
+    virtual HBLObjectRef    MultObj (HBLObjectRef);   // multiplication operation on matrices
 
-    virtual _PMathObj    MultElements (_PMathObj, bool elementWiseDivide = false);  // element wise multiplication/division operation on matrices
+    virtual HBLObjectRef    MultElements (HBLObjectRef, bool elementWiseDivide = false);  // element wise multiplication/division operation on matrices
 
-    virtual _PMathObj    Sum          (void);
+    virtual HBLObjectRef    Sum          (void);
 
     _Matrix     operator + (_Matrix&);          // addition operation on matrices
 
@@ -234,9 +234,10 @@ public:
 
     void        AplusBx  (_Matrix&, hyFloat); // A = A + B*x (scalar)
 
-    void        Sqr         (hyFloat* _hprestrict_);
+    hyFloat        Sqr         (hyFloat* _hprestrict_);
     // square the matrix; takes a scratch vector
     // of at least lDim doubles
+    // return the maximum absolute element-wise difference between X and X^2
 
     _List*      ComputeRowAndColSums            (void);
     _Matrix*    MutualInformation               (void);
@@ -258,18 +259,18 @@ public:
     _Matrix*    Exponentiate (void);                // exponent of a matrix
     void        Transpose (void);                   // transpose a matrix
     _Matrix     Gauss   (void);                     // Gaussian Triangularization process
-    _PMathObj   LUDecompose (void) const;
-    _PMathObj   CholeskyDecompose (void) const;
+    HBLObjectRef   LUDecompose (void) const;
+    HBLObjectRef   CholeskyDecompose (void) const;
     // added by afyp July 6, 2009
-    _PMathObj   Eigensystem (void) const;
-    _PMathObj   LUSolve (_PMathObj) const;
-    _PMathObj   Inverse (void);
-    _PMathObj   Abs (void);                     // returns the norm of a matrix
+    HBLObjectRef   Eigensystem (void) const;
+    HBLObjectRef   LUSolve (HBLObjectRef) const;
+    HBLObjectRef   Inverse (void);
+    HBLObjectRef   Abs (void);                     // returns the norm of a matrix
     // if it is a vector - returns the Euclidean length
     // otherwise returns the largest element
 
     hyFloat  AbsValue                        (void) const;
-    virtual     _PMathObj Log                   (void);
+    virtual     HBLObjectRef Log                   (void);
     // return the matrix of logs of every matrix element
     
     void        SwapRows (const long, const long);
@@ -342,7 +343,7 @@ public:
         return storageType != _FORMULA_TYPE;
     }
     
-    virtual     bool        Equal       (_PMathObj);
+    virtual     bool        Equal       (HBLObjectRef);
 
     void        ExportMatrixExp         (_Matrix*, FILE*);
     bool        ImportMatrixExp         (FILE*);
@@ -378,22 +379,22 @@ public:
      */
 
     _Formula*   GetFormula                  (long, long) const;
-    _PMathObj   MultByFreqs                 (long);
-    _PMathObj   EvaluateSimple              (void);
-    _PMathObj   SortMatrixOnColumn          (_PMathObj);
-    _PMathObj   K_Means                     (_PMathObj);
-    _PMathObj   pFDR                        (_PMathObj);    // positive false discovery rate
-    _PMathObj   PoissonLL                   (_PMathObj);    // log likelihood of a vector of poisson samples given a parameter value
+    HBLObjectRef   MultByFreqs                 (long);
+    HBLObjectRef   EvaluateSimple              (void);
+    HBLObjectRef   SortMatrixOnColumn          (HBLObjectRef);
+    HBLObjectRef   K_Means                     (HBLObjectRef);
+    HBLObjectRef   pFDR                        (HBLObjectRef);    // positive false discovery rate
+    HBLObjectRef   PoissonLL                   (HBLObjectRef);    // log likelihood of a vector of poisson samples given a parameter value
 
 
     // added by afyp, July 1, 2009
-    _PMathObj   DirichletDeviate            (void);         // this matrix used for alpha hyperparameters
-    _PMathObj   GaussianDeviate             (_Matrix &);    //  "   "   "   "       mean hyperparameter, additional argument for variance
-    _PMathObj   InverseWishartDeviate       (_Matrix &);    //  "   "   "   "       rho hyperparameter, additional for phi matrix
-    _PMathObj   WishartDeviate              (_Matrix &, _Matrix &),
+    HBLObjectRef   DirichletDeviate            (void);         // this matrix used for alpha hyperparameters
+    HBLObjectRef   GaussianDeviate             (_Matrix &);    //  "   "   "   "       mean hyperparameter, additional argument for variance
+    HBLObjectRef   InverseWishartDeviate       (_Matrix &);    //  "   "   "   "       rho hyperparameter, additional for phi matrix
+    HBLObjectRef   WishartDeviate              (_Matrix &, _Matrix &),
                 WishartDeviate                (_Matrix &);
 
-    _PMathObj   MultinomialSample           (_Constant*);
+    HBLObjectRef   MultinomialSample           (_Constant*);
     /* SLKP 20110208: an internal function to draw the multinomial sample
 
         the matrix _base_ must be 2xN, where each _row_ lists
@@ -497,6 +498,11 @@ public:
 
     void              Resize                (long);     // resize a dense numeric matrix to have more rows
   
+
+    inline            hyFloat    get_direct        (long const index) const {
+        return theData [index];
+    }
+
     inline            hyFloat    get        (long const row, long const column) const {
       return theData [row * vDim + column];
     }
@@ -553,7 +559,7 @@ private:
     void        InitMxVar           (_SimpleList&   , hyFloat);
     bool        ProcessFormulas     (long&, _AVLList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);
 
-    _PMathObj   PathLogLikelihood   (_PMathObj);
+    HBLObjectRef   PathLogLikelihood   (HBLObjectRef);
     /* SLKP: 20100812
 
      This function assumes that 'this' an 3xK matrix, where each column is of the form
@@ -564,7 +570,7 @@ private:
      The return value is the \sum_ j = 0 ^ {K-1} Prob {A_j -> B_j | T_j}
      */
 
-    _PMathObj   ProfileMeanFit      (_PMathObj);
+    HBLObjectRef   ProfileMeanFit      (HBLObjectRef);
 
     _Matrix*    BranchLengthStencil (void) const;
 
@@ -652,7 +658,7 @@ private:
     _CompiledMatrixData*
     cmd;
 
-    _PMathObj   theValue;                       // stores evaluated values of the matrix
+    HBLObjectRef   theValue;                       // stores evaluated values of the matrix
 };
 
 /*__________________________________________________________________________________________________________________________________________ */

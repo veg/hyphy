@@ -383,7 +383,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
 const _String GetStringFromFormula (_String const* data,_VariableContainer* theP) {
 
     _Formula  nameForm (*data,theP);
-    _PMathObj formRes = nameForm.Compute();
+    HBLObjectRef formRes = nameForm.Compute();
 
     if (formRes&& formRes->ObjectClass()==STRING) {
         return ((_FString*)formRes)->get_str();
@@ -401,7 +401,7 @@ hyFloat  _ProcessNumericArgumentWithExceptions (_String& data, _VariableContaine
     _Formula  nameForm (data,theP, &errMsg);
 
     if (errMsg.empty()) {
-        _PMathObj formRes = nameForm.Compute();
+        HBLObjectRef formRes = nameForm.Compute();
         if (formRes&& formRes->ObjectClass()==NUMBER) {
             return formRes->Value();
         } else {
@@ -440,7 +440,7 @@ hyFloat  ProcessNumericArgument (_String* data, _VariableContainer const* theP, 
 
 //____________________________________________________________________________________
 
-_PMathObj   ProcessAnArgumentByType (_String const* expression, _VariableContainer const* theP, long objectType, _ExecutionList* currentProgram)
+HBLObjectRef   ProcessAnArgumentByType (_String const* expression, _VariableContainer const* theP, long objectType, _ExecutionList* currentProgram)
 {
     _String   errMsg;
 
@@ -451,7 +451,7 @@ _PMathObj   ProcessAnArgumentByType (_String const* expression, _VariableContain
         currentProgram->ReportAnExecutionError (errMsg);
     }
     else {
-        _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
+        HBLObjectRef expressionResult = expressionProcessor.Compute(0,theP);
         if (expressionResult && (expressionResult->ObjectClass() & objectType)) {
           expressionResult->AddAReference();
           return expressionResult;
@@ -466,7 +466,7 @@ _PMathObj   ProcessAnArgumentByType (_String const* expression, _VariableContain
 
 const _String ProcessLiteralArgument (_String const* data, _VariableContainer const* theP, _ExecutionList* currentProgram) {
   //NLToConsole(); BufferToConsole("ProcessLiteralArgument:"); StringToConsole(*data); NLToConsole();
-   _PMathObj getString = ProcessAnArgumentByType (data, theP, STRING, currentProgram);
+   HBLObjectRef getString = ProcessAnArgumentByType (data, theP, STRING, currentProgram);
 
     if (getString) {
       _String result (((_FString*)getString)->get_str());
@@ -869,20 +869,20 @@ void KillModelRecord (long mdID)
                     RetrieveModelComponents(k, modelMatrix, freqMatrix, multByFreqs);
 
                     if (modelMatrix) {
-                        saveTheseVariables.Insert((BaseRef)modelMatrix->GetIndex());
+                        saveTheseVariables.Insert((BaseRef)modelMatrix->get_index());
                     }
                     if (freqMatrix) {
-                        saveTheseVariables.Insert((BaseRef)freqMatrix->GetIndex());
+                        saveTheseVariables.Insert((BaseRef)freqMatrix->get_index());
                     }
                 }
             }
         }
 
         RetrieveModelComponents(mdID, modelMatrix, freqMatrix, multByFreqs);
-        if (modelMatrix && saveTheseVariables.Find ((BaseRef)modelMatrix->GetIndex()) < 0) {
+        if (modelMatrix && saveTheseVariables.Find ((BaseRef)modelMatrix->get_index()) < 0) {
             DeleteVariable (*modelMatrix->GetName());
         }
-        if (freqMatrix && saveTheseVariables.Find ((BaseRef)freqMatrix->GetIndex()) < 0) {
+        if (freqMatrix && saveTheseVariables.Find ((BaseRef)freqMatrix->get_index()) < 0) {
             DeleteVariable (*freqMatrix->GetName());
         }
     }
@@ -998,7 +998,7 @@ BaseRef     _ExecutionList::makeDynamic (void) const {
     Res->errorState         = errorState;
 
     if(result) {
-        Res->result = (_PMathObj)result->makeDynamic();
+        Res->result = (HBLObjectRef)result->makeDynamic();
     }
 
     return Res;
@@ -1012,7 +1012,7 @@ void        _ExecutionList::Duplicate   (BaseRefConst source) {
     _ExecutionList const* s = (_ExecutionList const*)source;
 
     if (s->result) {
-        result=(_PMathObj)s->result->makeDynamic();
+        result=(HBLObjectRef)s->result->makeDynamic();
     }
 
     errorHandlingMode  = s->errorHandlingMode;
@@ -1088,7 +1088,7 @@ void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool rec
 
 //____________________________________________________________________________________
 
-_PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
+HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
 
   //setParameter(_hyLastExecutionError, new _MathObject, nil, false);
 
@@ -1222,7 +1222,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                             if (assignment_length < 3) throw 0;
                             _Variable * mx = f->GetIthTerm(0)->RetrieveVar();
                             if (! mx) throw 0;
-                            f->GetIthTerm (0)->SetAVariable(mx->GetIndex());
+                            f->GetIthTerm (0)->SetAVariable(mx->get_index());
                             _Operation * last = f->GetIthTerm(assignment_length-1);
                             if (! (last->TheCode() == HY_OP_CODE_MCOORD && last->GetNoTerms() == 2)) throw 0;
 
@@ -1542,7 +1542,7 @@ void  _ExecutionList::BuildFscanf(_List * pieces, long code) {
     argument_type_spec->StripQuotes();
     _ElementaryCommand::ExtractConditions(*argument_type_spec, 0, argument_types, ',');
 
-    argument_types.ForEach ([&] (BaseRefConst t) -> void {
+    argument_types.ForEach ([&] (BaseRefConst t, unsigned long) -> void {
       long argument_type = _ElementaryCommand :: fscanf_allowed_formats.FindObject(t);
       if (argument_type == kNotFound) {
         throw (((_String*)t)->Enquote() & " is not one of the supported argument types: " & _ElementaryCommand :: fscanf_allowed_formats.Join (", "));
@@ -2236,7 +2236,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
                   return;
               }
           } else {
-              _PMathObj result;
+              HBLObjectRef result;
               if (expression) {
                   //printf ("\n*** Interpreted condition\n");
                 result = expression->Compute();
@@ -2978,7 +2978,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 
         if (treeString.get_char(0)!='(') {
             _Formula  nameForm (treeString,chain.nameSpacePrefix);
-            _PMathObj formRes = nameForm.Compute();
+            HBLObjectRef formRes = nameForm.Compute();
             if (formRes) {
                 if (formRes->ObjectClass () == STRING) {
                     tr = new _TheTree (treeIdent,((_FString*)formRes)->get_str(),false);
@@ -3095,7 +3095,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             }
           }
 
-          _PMathObj ret_val = nil;
+          HBLObjectRef ret_val = nil;
           // important to store the return value in a local variable
           // because chain.result may be overwritten by recursive calls to
           // this function
@@ -3195,7 +3195,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         if (result) {
             _Matrix   * storage = new _Matrix (1,1,false,true);
             result->SetValue(storage,false);
-            lastMatrixDeclared = result->GetIndex();
+            lastMatrixDeclared = result->get_index();
             if (!storage->ImportMatrixExp(theDump)) {
                 HandleApplicationError("Matrix import failed - the file has an invalid format.");
                 importResult = false;
@@ -4671,9 +4671,9 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
         tV2 = LocateVar(-freqID-1);
     }
 
-    if (!alreadyDone || alreadyDone->Find ((BaseRef)tV2->GetIndex()) < 0) {
+    if (!alreadyDone || alreadyDone->Find ((BaseRef)tV2->get_index()) < 0) {
         if (alreadyDone) {
-            alreadyDone->Insert ((BaseRef)tV2->GetIndex());
+            alreadyDone->Insert ((BaseRef)tV2->get_index());
         }
         do2 = true;
     }

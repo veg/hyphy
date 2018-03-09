@@ -133,7 +133,7 @@ class _List:public _SimpleList {
 
         template <typename MAPPER> void ForEach (MAPPER mapper, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {
-            mapper ( ((BaseRef*)(lData))[i] );
+            mapper ( ((BaseRef*)(lData))[i], i );
           }
         }
 

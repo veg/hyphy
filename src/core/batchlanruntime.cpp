@@ -49,6 +49,7 @@
 #include      "global_things.h"
 #include      "hy_string_buffer.h"
 #include      "associative_list.h"
+#include      "tree_iterator.h"
 
 #include      "function_templates.h"
 
@@ -103,12 +104,12 @@ _Variable* _CheckForExistingVariableByType (_String const& name, _ExecutionList&
 
 //____________________________________________________________________________________
 
-_PMathObj   _ProcessAnArgumentByType (_String const& expression, long desired_type, _ExecutionList& program, _List* reference_manager) {
+HBLObjectRef   _ProcessAnArgumentByType (_String const& expression, long desired_type, _ExecutionList& program, _List* reference_manager) {
     // The return value needs to managed by the caller
 
     /* first see if this is a simple expression of the form 'variable_id' */
 
-    _PMathObj simple_var = FetchObjectFromVariableByType (&AppendContainerName (expression, program.nameSpacePrefix), desired_type);
+    HBLObjectRef simple_var = FetchObjectFromVariableByType (&AppendContainerName (expression, program.nameSpacePrefix), desired_type);
     if (simple_var) {
       if (reference_manager)
         *reference_manager << simple_var;
@@ -120,7 +121,7 @@ _PMathObj   _ProcessAnArgumentByType (_String const& expression, long desired_ty
     _Formula  parsed_expression;
     _CheckExpressionForCorrectness (parsed_expression, expression, program, desired_type);
 
-    _PMathObj expression_result = parsed_expression.Compute(0,program.nameSpacePrefix);
+    HBLObjectRef expression_result = parsed_expression.Compute(0,program.nameSpacePrefix);
     if (expression_result && (expression_result->ObjectClass() & desired_type)) {
         if (reference_manager)
           *reference_manager << expression_result;
@@ -136,7 +137,7 @@ _PMathObj   _ProcessAnArgumentByType (_String const& expression, long desired_ty
 //____________________________________________________________________________________
 
 const _String _ProcessALiteralArgument (_String const& expression, _ExecutionList& program) {
-    _PMathObj the_string = _ProcessAnArgumentByType (expression, STRING, program, nil);
+    HBLObjectRef the_string = _ProcessAnArgumentByType (expression, STRING, program, nil);
 
     _String result (((_FString*)the_string)->get_str());
     DeleteObject (the_string);
@@ -194,8 +195,8 @@ bool     _DefaultExceptionHandler (_Variable * receptacle, _String const& error,
 
 //____________________________________________________________________________________
 
-_PMathObj    _EnsurePresenceOfKey    (_AssociativeList * dict, _String const& key, long desired_type) {
-    _PMathObj value = dict->GetByKey (key, desired_type);
+HBLObjectRef    _EnsurePresenceOfKey    (_AssociativeList * dict, _String const& key, long desired_type) {
+    HBLObjectRef value = dict->GetByKey (key, desired_type);
     if (!value) {
         throw (key.Enquote() & " was not a key associated with a " & FetchObjectNameFromType (desired_type) & "-typed value");
     }
@@ -205,7 +206,7 @@ _PMathObj    _EnsurePresenceOfKey    (_AssociativeList * dict, _String const& ke
 //____________________________________________________________________________________
 
 hyFloat    _NumericValueFromKey     (_AssociativeList * dict, _String const& key, hyFloat default_value) {
-    _PMathObj value = dict->GetByKey (key, NUMBER);
+    HBLObjectRef value = dict->GetByKey (key, NUMBER);
     if (!value) {
         return default_value;
     }
@@ -265,7 +266,7 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
         _CheckExpressionForCorrectness (parsed_expression, expression, currentProgram);
          _Variable * target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
 
-        if (!parsed_expression.DependsOnVariable(target_variable->GetIndex())) {
+        if (!parsed_expression.DependsOnVariable(target_variable->get_index())) {
             throw (expression & " does not depend on the variable " & target_variable->GetName()->Enquote());
         }
 
@@ -1130,7 +1131,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
         if (do_optimize) {
             receptacle -> SetValue(source_object->Optimize(),false);
         } else {
-            _PMathObj     covariance_parameters = hy_env::EnvVariableGet(hy_env::covariance_parameter, ASSOCIATIVE_LIST|STRING);
+            HBLObjectRef     covariance_parameters = hy_env::EnvVariableGet(hy_env::covariance_parameter, ASSOCIATIVE_LIST|STRING);
             _SimpleList   *restrictor = nil;
             switch (object_type) {
                 case HY_BL_LIKELIHOOD_FUNCTION:
@@ -1928,7 +1929,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
 
 
         if (object_type == HY_BL_SCFG && set_this_attribute == kSCFGCorpus) {
-          _PMathObj corpus_source = _ProcessAnArgumentByType (set_this_attribute, MATRIX|STRING, current_program, &dynamic_variable_manager);
+          HBLObjectRef corpus_source = _ProcessAnArgumentByType (set_this_attribute, MATRIX|STRING, current_program, &dynamic_variable_manager);
           if (corpus_source->ObjectClass () == STRING) {
             _List   single_string ( new _String (((_FString*)corpus_source)->get_str()));
             _Matrix wrapper (single_string);
@@ -2253,7 +2254,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
         has_redirected_input = true;
 
         _List        *keys = input_arguments->GetKeys();
-        keys->ForEach ([&] (BaseRef item) -> void {
+        keys->ForEach ([&] (BaseRef item, unsigned long) -> void {
           _String * key = (_String*) item;
           if (key) {
             _FString * payload = (_FString *)input_arguments->GetByKey (*key, STRING);
@@ -2468,7 +2469,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
 
       // first, handle special, hardcoded cases
 
-      _PMathObj return_value = nil;
+      HBLObjectRef return_value = nil;
 
       if (*GetIthParameter(1UL) == kVersionString) {
         if (index1 > 1.5) { // console header form
@@ -2707,7 +2708,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
             if (index1 == -3) {
               _StringBuffer local, global;
               _SimpleList var_index;
-              var_index << var->GetIndex ();
+              var_index << var->get_index ();
               if (var->IsIndependent()) {
                   //printf ("ExportIndVariables\n");
                 ExportIndVariables (global, local, &var_index);
@@ -3030,7 +3031,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         
         if (exclusions != kSkipNone) {
             try {
-                _PMathObj exlcusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
+                HBLObjectRef exlcusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
                 if (exlcusion_argument->ObjectClass() == NUMBER) {
                     excluded << exlcusion_argument->Compute ()->Value();
                 } else {

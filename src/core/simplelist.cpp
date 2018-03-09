@@ -103,7 +103,7 @@ _SimpleList::_SimpleList (_SimpleList const & l, long from, long to) {
   if (to > from) {
       long upto = to-from ;
       RequestSpace(upto);
-      for (lLength = 0; lLength < upto; lLength++) {
+      for (lLength = 0UL; lLength < upto; lLength++) {
           lData[lLength] = l.lData[from+lLength];
       }
   }
@@ -146,19 +146,10 @@ Operator Overloads
 */
 
 //Element location functions (0,llength - 1)
-long& _SimpleList::operator [] (const long i)
-{
-    if (lLength == 0) {
-        return lData[0];
-    }
-
-    const unsigned long in = (const unsigned long)i;
-    if (in>lLength-1) {
-        return lData[lLength-1];
-    }
-
-    return lData[in];
+long& _SimpleList::operator [] (const long i) {
+    return lData[i];
 }
+
 //Element location functions (0,llength - 1)
 long _SimpleList::operator () (const unsigned long i) const {
     //if (lLength == 0) return 0;

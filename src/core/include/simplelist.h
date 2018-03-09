@@ -73,7 +73,7 @@ class _SimpleList:public BaseObj {
 
         // stack copy contructor
         _SimpleList(_SimpleList const&,long=0,long=-1);
-
+    
         // data constructor (1 member list)
         _SimpleList(long);
 
@@ -192,6 +192,13 @@ class _SimpleList:public BaseObj {
         bool empty (void) const {return lLength == 0UL;}
 
         /**
+         //Is the list non-empty
+         * Example: SimpleList SimpleList([4, 1, 2]).nonempty() = true
+         * @return True if the list is non-empty
+         */
+        bool nonempty (void) const {return lLength > 0UL;}
+
+        /**
         * SLKP: 20090611
         * Print the names of variables whose indices are
         * contained in the list
@@ -253,7 +260,7 @@ class _SimpleList:public BaseObj {
         /** Adjust the [sorted] list of indcies argument for skipped elements in the [0-max] range
          * so that the arguments is remapped to the range with elements in this
          * list excluded. (*this) list must be sorted
-         * Example: SimpleList (2,4,5).SkipCorrect ([2,3],2) = 1 (and the list is now [2])
+         * Example: SimpleList (2,4,5).CorrectForExclusions ([2,3],2) = 1 (and the list is now [2])
          
          * @param index the list of indices to correct; corrected indices are written here
          * @param count the length of indices
@@ -504,6 +511,38 @@ class _SimpleList:public BaseObj {
         void Populate(long, long, long); 
 
         /**
+         * Populate a SimpleList from another list using a transform
+         * @param source start with this list
+         * @param action (target array [long* __restrict__], source array [long const* __restrict__], index [unsigned long]) -> ()
+         * @return *this. Acts on the _List object it was called from.
+         */
+    
+        template <typename functor> _SimpleList& Populate(_SimpleList const& source, functor action) {
+            this->RequestSpace (source.lLength);
+            for (unsigned long idx = 0UL; idx < source.lLength; idx++) {
+                action (this->lData, source.lData, idx);
+            }
+            this->lLength = source.lLength;
+            return *this;
+        }
+    
+        /**
+         * Some functors for the populator above
+         * Assuming that the list on N elements stores a 1-1 map from [0,N-1] to [0, N-1], invert it
+         * so that if source (x) = y becomes target (y) = x
+         */
+        static void action_invert (long * __restrict__ target, long * __restrict__ source, unsigned long idx) {
+            target [source[idx]] = idx;
+        }
+        /**
+         * Some functors for the populator above
+         * so that if target [x] -> source (target (x))
+         */
+        static void action_compose (long * __restrict__ target, long * __restrict__ source, unsigned long idx) {
+            target [idx] = source [target[idx]];
+        }
+
+        /**
         * TODO
         * Example: SimpleList sl(1,2,3).Flip() = [3,2,1]
         * @return Nothing. Acts on the List object it was called from. 
@@ -513,8 +552,6 @@ class _SimpleList:public BaseObj {
 
         /**
         * Request space for a given # of elements 
-        * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4 
-        * @return true if equal. 
         */
         void RequestSpace(long);
 

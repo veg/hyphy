@@ -68,7 +68,7 @@ _Formula::_Formula (void) {
 
 //__________________________________________________________________________________
 
-_Formula::_Formula (_PMathObj p, bool is_a_var) {
+_Formula::_Formula (HBLObjectRef p, bool is_a_var) {
     theTree     = nil;
     resultCache = nil;
     recursion_calls = nil;
@@ -97,7 +97,7 @@ void _Formula::Duplicate  (_Formula const * f_cast) {
     theStack.theStack.Duplicate(& f_cast->theStack.theStack);
     call_count = f_cast->call_count;
     if (f_cast->recursion_calls) {
-      recursion_calls = (_PMathObj)f_cast->recursion_calls->makeDynamic();
+      recursion_calls = (HBLObjectRef)f_cast->recursion_calls->makeDynamic();
     } else {
       recursion_calls = nil;
     }
@@ -120,7 +120,7 @@ void _Formula::DuplicateReference  (const _Formula* f) {
         _Operation *ith_term = GetIthTerm(i);
         // TODO Document what -2 means and when it is used
         if (ith_term->GetAVariable()==-2) {
-            theFormula.AppendNewInstance(new _Operation ((_PMathObj)LocateVar (-ith_term->GetNoTerms()-1)->Compute()->makeDynamic()));
+            theFormula.AppendNewInstance(new _Operation ((HBLObjectRef)LocateVar (-ith_term->GetNoTerms()-1)->Compute()->makeDynamic()));
         } else {
             theFormula && ith_term;
         }
@@ -129,7 +129,7 @@ void _Formula::DuplicateReference  (const _Formula* f) {
 
   //__________________________________________________________________________________
 
-_PMathObj _Formula::ParseAndCompute (_String const& expression, bool use_exceptions, long type, _hyExecutionContext * context) {
+HBLObjectRef _Formula::ParseAndCompute (_String const& expression, bool use_exceptions, long type, _hyExecutionContext * context) {
   
   _String error_message;
   _Formula f;
@@ -159,7 +159,7 @@ _PMathObj _Formula::ParseAndCompute (_String const& expression, bool use_excepti
     }
   }
   
-  _PMathObj result = f.Compute();
+  HBLObjectRef result = f.Compute();
   result->AddAReference();
   return result;
 }
@@ -251,7 +251,7 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
         return new _Formula (new _Constant (0.0));
     }
 
-    long dx_id = dx->GetAVariable();
+    long dx_id = dx->get_index();
 
     _Formula*     res = new _Formula ();
 
@@ -837,7 +837,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
     long        prune_this_child = -1;
 
     hyFloat     evaluated_to      = 0.0;
-    _PMathObj   replace_with      = nil;
+    HBLObjectRef   replace_with      = nil;
 
 
     //printf ("InternalSimplify %x\n", startNode);
@@ -863,11 +863,11 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
                 ((_Operation*)theFormula (top_node->go_down(k)->get_data()))->Execute (scrap);
             }
             op->Execute (scrap);
-            replace_with = (_PMathObj)scrap.Pop();//->makeDynamic();
+            replace_with = (HBLObjectRef)scrap.Pop();//->makeDynamic();
         } else {
             if (left_constant||right_constant) {
 
-                _PMathObj constant_value = ((_Operation*)theFormula (top_node->go_down(left_constant?1:2)->get_data()))->GetANumber();
+                HBLObjectRef constant_value = ((_Operation*)theFormula (top_node->go_down(left_constant?1:2)->get_data()))->GetANumber();
 
 
                 if (constant_value->ObjectClass() == NUMBER) {
@@ -1001,13 +1001,13 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, un
             _Variable *node_variable = LocateVar(node_variable_index);
           
             if (mode == kFormulaStringConversionSubstiteValues) {
-                 if  (hy_x_variable && (node_variable->GetAVariable()==hy_x_variable->GetAVariable())) {
+                 if  (hy_x_variable && (node_variable->get_index()==hy_x_variable->get_index())) {
                     result << hy_x_variable->GetName();
                     return;
                 }
             }
 
-            _PMathObj replace_with = node_variable->Compute();
+            HBLObjectRef replace_with = node_variable->Compute();
 
             if (replace_with->ObjectClass () == NUMBER) {
                 if (mode == kFormulaStringConversionReportRanges) {
@@ -1135,7 +1135,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, un
         return;
     }
   
-    _PMathObj op_data = this_node_op->GetANumber();
+    HBLObjectRef op_data = this_node_op->GetANumber();
     _String* conv = (_String*)op_data->toStr();
     if (op_data->ObjectClass()==STRING) {
         (result <<'"').AppendNewInstance (conv) << '"';
@@ -1188,7 +1188,7 @@ hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat tar
 
   root_guess = (right+left) * .5;
 
-  for (unsigned long iterCount  = 0L; fabs(right-left)/MAX(left,right) > machineEps*10. && iterCount < 200UL; iterCount++) {
+  for (unsigned long iterCount  = 0L; fabs(right-left)/MAX(left,right) > kMachineEpsilon*10. && iterCount < 200UL; iterCount++) {
     func_root_guess = set_and_compute (root_guess);
     if (func_root_guess == 0.) {
       return root_guess;
@@ -1203,7 +1203,7 @@ hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat tar
     } else {
       newCorrection = -func_root_guess/df_dx;
 
-      if (fabs(newCorrection/func_root_guess)<machineEps*2. || fabs(newCorrection)<machineEps*2.) { // correction too small - the root has been found
+      if (fabs(newCorrection/func_root_guess)<kMachineEpsilon*2. || fabs(newCorrection)<kMachineEpsilon*2.) { // correction too small - the root has been found
           return root_guess;
       }
 
@@ -1365,7 +1365,7 @@ hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol,
                 fc    = fa;
             }
 
-            tol1 = 2.*fabs(b)*machineEps+.5*tol;
+            tol1 = 2.*fabs(b)*kMachineEpsilon+.5*tol;
 
             xm = .5*(c-b);
 
@@ -1559,7 +1559,7 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
     if (infinite) { // tweak "right" here
         hyFloat value = 1.0, step = 1.0, right1= -1.;
         right = left;
-        while (value>machineEps) {
+        while (value>kMachineEpsilon) {
             right+=step;
             dx->SetValue(right);
             value = fabs(Compute()->Value());
@@ -1572,7 +1572,7 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
                 return 0.0;
             }
         }
-        if (right1<right-machineEps) {
+        if (right1<right-kMachineEpsilon) {
             return Integral(dx,left,right1,false)+Integral(dx,right1,right,false);
         } else {
             return Integral(dx,left,right1,false);
@@ -1613,7 +1613,7 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
         vvals = new _SimpleFormulaDatum [fvidx.countitems()];
         ConvertToSimple (fvidx);
         fvidx.ReorderList();
-        long dx_index = dx->GetAVariable();
+        long dx_index = dx->get_index();
         for (long vi = 0; vi < fvidx_aux.countitems(); vi++) {
             _Variable* variable_in_expression = LocateVar (fvidx_aux.Element(vi));
             if (variable_in_expression->CheckFForDependence (dx_index,true)) {
@@ -1844,7 +1844,7 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                   this_op->Execute (temp);
 
                   _Matrix *currentArg  = (_Matrix*)temp.Pop(true),
-                          *cachedArg   = (_Matrix*)((_PMathObj)(*resultCache)(cacheID)),
+                          *cachedArg   = (_Matrix*)((HBLObjectRef)(*resultCache)(cacheID)),
                           *diff        = nil;
 
                   if (cachedArg->ObjectClass() == MATRIX) {
@@ -1878,7 +1878,7 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
 //__________________________________________________________________________________
 _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* theContext) {
     _Variable * result = nil;
-    _PMathObj computedValue = Compute (0, theContext->GetContext(), nil, theContext->GetErrorBuffer());
+    HBLObjectRef computedValue = Compute (0, theContext->GetContext(), nil, theContext->GetErrorBuffer());
     if (computedValue && computedValue->ObjectClass() == STRING) {
         result =  (_Variable*)((_FString*)computedValue)->Dereference(ignore_context, theContext, true);
     }
@@ -1893,7 +1893,7 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
   //unsigned long ticker = 0UL;
 
 //__________________________________________________________________________________
-_PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
+HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
 // compute the value of the formula
 // TODO SLKP 20170925 Needs code review
 {
@@ -1942,7 +1942,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                         }
 
                         _Matrix *currentArg  = (_Matrix*)scrap_here->Pop(false),
-                                *cachedArg   = (_Matrix*)((_PMathObj)(*resultCache)(cacheID)),
+                                *cachedArg   = (_Matrix*)((HBLObjectRef)(*resultCache)(cacheID)),
                                 *diff        = nil;
 
                         if (cachedArg->ObjectClass() == MATRIX) {
@@ -1954,12 +1954,12 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                         if (no_difference || (additionalCacheArguments && !additionalCacheArguments->empty() && nextOp->CanResultsBeCached(thisOp,true))) {
                             DeleteObject  (scrap_here->Pop  ());
                             if (no_difference) {
-                                scrap_here->Push ((_PMathObj)(*resultCache)(cacheID+1));
+                                scrap_here->Push ((HBLObjectRef)(*resultCache)(cacheID+1));
                             } else {
 
-                                scrap_here->Push ((_PMathObj)additionalCacheArguments->GetItem (0));
+                                scrap_here->Push ((HBLObjectRef)additionalCacheArguments->GetItem (0));
                                 resultCache->Replace(cacheID,scrap_here->Pop(false),true);
-                                resultCache->Replace(cacheID+1,(_PMathObj)additionalCacheArguments->GetItem (0),false);
+                                resultCache->Replace(cacheID+1,(HBLObjectRef)additionalCacheArguments->GetItem (0),false);
                                 additionalCacheArguments->Delete (0, false);
                                 //printf ("_Formula::Compute additional arguments %ld\n", additionalCacheArguments->lLength);
                            }
@@ -2017,7 +2017,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
     }
 
 
-    _PMathObj return_value = scrap_here->Pop(false);
+    HBLObjectRef return_value = scrap_here->Pop(false);
 
     if (theFormula.lLength) {
          DeleteObject (recursion_calls);
@@ -2034,7 +2034,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
 }
 
 //__________________________________________________________________________________
-bool _Formula::CheckSimpleTerm (_PMathObj thisObj) {
+bool _Formula::CheckSimpleTerm (HBLObjectRef thisObj) {
     if (thisObj) {
         long oc = thisObj->ObjectClass();
         if (oc != NUMBER) {
@@ -2175,7 +2175,7 @@ bool _Formula::AmISimple (long& stack_depth, _AVLList& variable_index) {
             if (this_op->theData >= 0) {
                 _Variable* this_var = LocateVar (this_op->theData);
                 if (this_var->ObjectClass()!=NUMBER) {
-                    _PMathObj cv = this_var->GetValue();
+                    HBLObjectRef cv = this_var->GetValue();
                     if (!CheckSimpleTerm (cv)) {
                         return false;
                     }
@@ -2360,7 +2360,7 @@ bool _Formula::EqualFormula (_Formula* f) {
 }
 
 //__________________________________________________________________________________
-_PMathObj _Formula::ConstructPolynomial (void) {
+HBLObjectRef _Formula::ConstructPolynomial (void) {
     theStack.Reset();
     bool wellDone = true;
     _String errMsg;
@@ -2614,10 +2614,10 @@ void  _Formula::LocalizeFormula (_Formula& ref, _String& parentName, _SimpleList
       _Variable * localized_var = CheckReceptacle (&localized_name, kEmptyString, false, false);
       
       if (theV->IsIndependent()) {
-        iv<<localized_var->GetAVariable();
+        iv<<localized_var->get_index();
         iiv<<vIndex;
       } else {
-        dv<<localized_var->GetAVariable();
+        dv<<localized_var->get_index();
         idv<<vIndex;
         
       }
@@ -2701,10 +2701,10 @@ void _Formula::SimplifyConstants (void){
 }
 
 //__________________________________________________________________________________
-_PMathObj _Formula::GetTheMatrix (void) {
+HBLObjectRef _Formula::GetTheMatrix (void) {
     if (theFormula.countitems()==1) {
         _Operation* firstOp = ItemAt (0);
-        _PMathObj   ret = firstOp->GetANumber();
+        HBLObjectRef   ret = firstOp->GetANumber();
         if (ret&&(ret->ObjectClass()==MATRIX)) {
             return ret;
         } else {
@@ -2723,10 +2723,10 @@ _PMathObj _Formula::GetTheMatrix (void) {
 //__________________________________________________________________________________
 long _Formula::ObjectClass (void) {
     if (theStack.StackDepth()) {
-        return ((_PMathObj)theStack.theStack.lData[0])->ObjectClass();
+        return ((HBLObjectRef)theStack.theStack.lData[0])->ObjectClass();
     }
 
-    _PMathObj res =   Compute();
+    HBLObjectRef res =   Compute();
 
     if (res) {
         return res->ObjectClass();

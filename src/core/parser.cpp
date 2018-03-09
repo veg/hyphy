@@ -103,7 +103,7 @@ long_max = (hyFloat)LONG_MAX;
  
 //Used in formula, and constant
 
-hyFloat  machineEps = 2.*DBL_EPSILON,
+hyFloat  kMachineEpsilon = 2.*DBL_EPSILON,
             tolerance  = DBL_EPSILON;
 
 
@@ -228,8 +228,8 @@ _String*   FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, co
 }
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objectClass, long command_id, _String *errMsg) {
-  _PMathObj v = f.Compute();
+HBLObjectRef   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objectClass, long command_id, _String *errMsg) {
+  HBLObjectRef v = f.Compute();
   if (v) {
     if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
       return v;
@@ -245,7 +245,7 @@ _PMathObj   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objec
 }
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg) {
+HBLObjectRef   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg) {
     if (id) {
         _Variable * v = FetchVar (LocateVarByName (*id));
         if (v && (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass)) {
@@ -265,7 +265,7 @@ _PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned lon
 
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg) {
+HBLObjectRef   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg) {
     _Variable * v = FetchVar (idx);
     if (v) {
         if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
@@ -389,7 +389,7 @@ void DeleteVariable (long dv, bool deleteself)
                 _Variable * thisVar = FetchVar(k);
 
                 if (thisVar->CheckFForDependence (vidx,false)) {
-                    _PMathObj curValue = thisVar->Compute();
+                    HBLObjectRef curValue = thisVar->Compute();
                     curValue->AddAReference(); // TODO this could be a leak 01/05/2004.
                     thisVar->SetValue (curValue);
                     DeleteObject (curValue);
@@ -457,7 +457,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
                 _Variable * thisVar = FetchVar(k);
 
                 if (thisVar->CheckFForDependence (vidx,false)) {
-                    _PMathObj curValue = thisVar->Compute();
+                    HBLObjectRef curValue = thisVar->Compute();
                     curValue->AddAReference();
                     thisVar->SetValue (curValue);
                     DeleteObject (curValue);
@@ -484,7 +484,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
                     if (dependent.Find ('.', myName.length()+1, -1)>=0) {
                         _Variable * checkDep = FetchVar (nextVar);
                         if (!checkDep->IsIndependent()) {
-                            _PMathObj curValue = checkDep->Compute();
+                            HBLObjectRef curValue = checkDep->Compute();
                             curValue->AddAReference();
                             checkDep->SetValue (curValue);
                             DeleteObject (curValue);
@@ -590,7 +590,7 @@ _Variable* CheckReceptacleCommandID (_String const* name, const long id, bool ch
 }
 
 //__________________________________________________________________________________
-bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool checkValid, _PMathObj v, bool dup, bool isGlobal)
+bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool checkValid, HBLObjectRef v, bool dup, bool isGlobal)
 {
     _Variable *theV = CheckReceptacleCommandID (name, id, checkValid, isGlobal);
     if (theV) {
@@ -605,7 +605,7 @@ bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool 
 
 
 //__________________________________________________________________________________
-bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid, _PMathObj v, bool dup) {
+bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid, HBLObjectRef v, bool dup) {
     _Variable * theV = CheckReceptacle(name, fID, checkValid);
     if (theV) {
         theV->SetValue (v, dup);
@@ -618,7 +618,7 @@ bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid,
 }
 
 //__________________________________________________________________________________
-bool CheckReceptacleAndStore (_String name, _String fID, bool checkValid, _PMathObj v, bool dup)
+bool CheckReceptacleAndStore (_String name, _String fID, bool checkValid, HBLObjectRef v, bool dup)
 {
     return CheckReceptacleAndStore (&name, fID, checkValid, v, dup);
 }

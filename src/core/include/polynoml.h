@@ -147,7 +147,7 @@ public:
     _MathObject*            IsANumber           (bool = false);
     virtual  bool           IsObjectEmpty       (void);
 
-    virtual unsigned long            ObjectClass (void) {
+    virtual unsigned long            ObjectClass (void) const {
         return POLYNOMIAL;
     }
     virtual hyFloat      Value (void) {

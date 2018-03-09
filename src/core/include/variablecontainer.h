@@ -88,7 +88,7 @@ public:
     virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0) const;
 
     virtual     bool        is_model_var                  (long) const;
-    virtual     bool        IsConstant                  (void) const;
+    virtual     bool        IsConstant                  (void);
     virtual     BaseRef     makeDynamic                 (void) const;
     virtual     void        Duplicate                   (BaseRefConst);
 
@@ -104,6 +104,7 @@ public:
     virtual     void        ClearConstraints            (void);
 
     long        CountIndependents           (void) const;
+    long        CountDependents           (void) const;
     long        CountAll                    (void) const;
 
     virtual     _Variable*  GetIthIndependent           (long) const;
@@ -120,7 +121,7 @@ public:
     bool        HasExplicitFormModel        (void) const;
     _Formula*   GetExplicitFormModel        (void) const;
 
-    long        GetModelIndex               (void) {
+    long        GetModelIndex               (void) const {
         return theModel;
     }
     
@@ -153,9 +154,12 @@ protected: // data members
     void                PushDepVariable (long var_ref, long local_ref);
     bool                HasIndVariable  (long var_ref) const;
     bool                HasDepVariable  (long var_ref) const;
-    void                RemoveLocalVariable (_SimpleList* & array, long array_index);
+    void                RemoveLocalVariable  (_SimpleList* & array, long array_index);
+    void                RemoveGlobalVariable (long array_index);
     long                InsertVariableInSortedList (_SimpleList * & list, _String const&  var_name, long var_idx, long ref_idx);
 
+    static              void                CopyModelParameterValue (long var_idx, long ref_index, unsigned long);
+    
     template <typename LAMBDA> void ForEachLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
         if (array) {
             unsigned long array_l = array->countitems();

@@ -950,8 +950,10 @@ public:
    * @param &from The starting position of the segment will be stored here
    * @param open The first character to look for. For example, and open bracket
    '[' or open paranthesis '('
+     Can also be any object that supports char == object checks
    * @param close The first character to look for. For example, and open bracket
    ']' or open paranthesis ')'
+     Can also be any object that supports char == object checks
    * @param options: a bitmask of options, if fExtractRespectQuote is mixed in
    then do not look withing enquoted parts of the string if set if
    fExtractRespectEscape is mixed in do not consider \char as matches to char
@@ -965,9 +967,10 @@ public:
      - SLKP 20170614; reviewed while porting from the v2.3 branch; convered the
    two bool flags to a bit-mask so that the calls can be more explict
      - SLKP 20170615; included support for singly quoted literals
+     - SLKP 20171211: added support for generic callbacks to check whether or not the final character has been found
   */
 
-  long ExtractEnclosedExpression(long &, char, char, int) const;
+  template <class DELIM> long ExtractEnclosedExpression(long &, DELIM, DELIM, int) const;
 
   /**
    * Starting at a 0-based index [argument 1],

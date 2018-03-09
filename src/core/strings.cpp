@@ -1019,7 +1019,7 @@ bool _String::BeginsWithAndIsNotAnIdent (_String const& pattern) const {
 //=============================================================
 
 
-long _String::ExtractEnclosedExpression (long& from, char open, char close, int options) const {
+template <class DELIM> long _String::ExtractEnclosedExpression (long& from, DELIM open, DELIM close, int options) const {
   long   current_position = from,
          current_level    = 0L;
   
@@ -1043,16 +1043,16 @@ long _String::ExtractEnclosedExpression (long& from, char open, char close, int 
             quote_state = '\0';
           }
         }
-      } else if (this_char == open && quote_state == '\0') {
+      } else if (open == this_char && quote_state == '\0') {
         // handle the case when close and open are the same
-        if (current_level == 1L && open == close && from < current_position) {
+        if (current_level == 1L && close == this_char && from < current_position) {
           return current_position;
         }
         current_level++;
         if (current_level == 1L) {
           from = current_position;
         }
-      } else if (this_char == close && quote_state == '\0') {
+      } else if (close == this_char && quote_state == '\0') {
         current_level--;
         if (current_level == 0L && from < current_position) {
           return current_position;

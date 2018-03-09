@@ -69,8 +69,7 @@ using namespace hy_global;
 _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
             ANAL_COMP_FLAG              = "ANALYTIC_COMPUTATIONS",
             ANAL_MATRIX_TOLERANCE      = "ANAL_MATRIX_TOLERANCE",
-            CACHE_FORMULA_DEPENDANCY  = "CACHE_FORMULA_DEPENDANCY",
-            BRANCH_LENGTH_STENCIL      = "BRANCH_LENGTH_STENCIL";
+            CACHE_FORMULA_DEPENDANCY  = "CACHE_FORMULA_DEPENDANCY";
 
 
 int _Matrix::precisionArg = 0;
@@ -646,7 +645,7 @@ void    _Matrix::CreateMatrix    (_Matrix* populate_me, long rows, long columns,
             if (expression_matrix) {
                 InitializeArray ((_Formula**)populate_me->theData,    populate_me->lDim, (_Formula*)ZEROPOINTER);
             } else {
-                InitializeArray ((_MathObject**)populate_me->theData, populate_me->lDim, (_PMathObj)ZEROPOINTER);
+                InitializeArray ((_MathObject**)populate_me->theData, populate_me->lDim, (HBLObjectRef)ZEROPOINTER);
             }
             
         } else {
@@ -1158,7 +1157,7 @@ bool        _Matrix::ValidateFormulaEntries (bool callback (long, long, _Formula
 
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::Eigensystem (void) const {
+HBLObjectRef   _Matrix::Eigensystem (void) const {
     // find the eigenvectors of a symmetric matrix using Jacobi rotations
     // The original matrix is preserved.
     // returns an associative list with a sorted vector of eigenvalues and
@@ -1323,7 +1322,7 @@ _PMathObj   _Matrix::Eigensystem (void) const {
 }
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::LUDecompose (void) const {
+HBLObjectRef   _Matrix::LUDecompose (void) const {
     // perform the LU decomposition using Crout's algorithm with partial pivoting
     // The original matrix is preserved.
     // after performing this decomposition, the routine LUSolve can be called with an arbitrary vector
@@ -1428,7 +1427,7 @@ _PMathObj   _Matrix::LUDecompose (void) const {
     return result;
 }
 //__________________________________________________________________________________
-_PMathObj   _Matrix::LUSolve (_PMathObj p) const {
+HBLObjectRef   _Matrix::LUSolve (HBLObjectRef p) const {
 // takes a matrix in LU decomposed state and a vector of row permutation returned by LU
 // returns a vector of solutions
 
@@ -1480,7 +1479,7 @@ _PMathObj   _Matrix::LUSolve (_PMathObj p) const {
 
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::CholeskyDecompose (void) const
+HBLObjectRef   _Matrix::CholeskyDecompose (void) const
 {
     /* ---------------------------------------------------
         CholeskyDecompose()
@@ -1535,7 +1534,7 @@ _PMathObj   _Matrix::CholeskyDecompose (void) const
 
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::Log (void) {
+HBLObjectRef   _Matrix::Log (void) {
     if (storageType==_NUMERICAL_TYPE) {
         _Matrix* res = new _Matrix (*this);
       
@@ -1549,7 +1548,7 @@ _PMathObj   _Matrix::Log (void) {
 }
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::Inverse (void) {
+HBLObjectRef   _Matrix::Inverse (void) {
     if (is_square_numeric(false)) {
         return    new _MathObject;
     }
@@ -1583,9 +1582,9 @@ _PMathObj   _Matrix::Inverse (void) {
 }
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::MultByFreqs (long freqID) {
+HBLObjectRef   _Matrix::MultByFreqs (long freqID) {
 // multiply this transition probs matrix by frequencies
-    _PMathObj value = ComputeNumeric(true);
+    HBLObjectRef value = ComputeNumeric(true);
 
     if (freqID>=0) {
         _Matrix* freq_matrix = nil;
@@ -1677,7 +1676,7 @@ _PMathObj   _Matrix::MultByFreqs (long freqID) {
 
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::Compute (void) {
+HBLObjectRef   _Matrix::Compute (void) {
   //if ((storageType != 1)&&(storageType != 2))
   if (storageType != _NUMERICAL_TYPE) {
     if (storageType == _POLYNOMIAL_TYPE) {
@@ -1705,7 +1704,7 @@ _PMathObj   _Matrix::Compute (void) {
 }
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::ComputeNumeric (bool copy) {
+HBLObjectRef   _Matrix::ComputeNumeric (bool copy) {
     if (storageType != _NUMERICAL_TYPE) {
         if (storageType == 0 && ANALYTIC_COMPUTATION_FLAG) {
             return this;
@@ -1734,7 +1733,7 @@ _PMathObj   _Matrix::ComputeNumeric (bool copy) {
 }
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::RetrieveNumeric (void) {
+HBLObjectRef   _Matrix::RetrieveNumeric (void) {
     if (storageType != _NUMERICAL_TYPE) {
         if (theValue) {
             return theValue;
@@ -1746,14 +1745,14 @@ _PMathObj   _Matrix::RetrieveNumeric (void) {
 }
 
 //__________________________________________________________________________________
-_PMathObj   _Matrix::Sum (void) {
+HBLObjectRef   _Matrix::Sum (void) {
     return new _Constant (MaxElement (1));
 }
 
 //__________________________________________________________________________________
 
 
-_PMathObj _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)  {
+HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)  {
 
   
     switch (opCode) { // first check operations without arguments
@@ -1766,7 +1765,7 @@ _PMathObj _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionC
       case HY_OP_CODE_EIGENSYSTEM: //Eigensystem
         return Eigensystem();
       case HY_OP_CODE_EVAL: //Eval
-        return (_PMathObj)ComputeNumeric()->makeDynamic();
+        return (HBLObjectRef)ComputeNumeric()->makeDynamic();
       case HY_OP_CODE_EXP: //Exp
         return Exponentiate();
       case HY_OP_CODE_LUDECOMPOSE: // LUDecompose
@@ -1800,7 +1799,7 @@ _PMathObj _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionC
       if (arg0) {
         return SubObj(arg0);
       } else {
-        return (_PMathObj)((*this)*(-1.0)).makeDynamic();
+        return (HBLObjectRef)((*this)*(-1.0)).makeDynamic();
       }
       break;
   }
@@ -2022,7 +2021,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                          *crp = (_Polynomial *)cr->ConstructPolynomial();
 
                             if (rcp && crp) {
-                                _PMathObj     tr = nil,
+                                HBLObjectRef     tr = nil,
                                               tc = nil;
 
                                 if (freqs->storageType == 2) {
@@ -2465,7 +2464,8 @@ bool        _Matrix::ProcessFormulas (long& stackLength, _AVLList& varList,   _S
 
 //_____________________________________________________________________________________________
 _Matrix*        _Matrix::BranchLengthStencil (void) const {
-    _Matrix * stencil = (_Matrix*)FetchObjectFromVariableByType (&BRANCH_LENGTH_STENCIL,MATRIX);
+    
+    _Matrix * stencil = (_Matrix*)hy_env::EnvVariableGet(hy_env::branch_length_stencil, MATRIX);
     if (stencil) {
         if (stencil->storageType == _NUMERICAL_TYPE && stencil->hDim==stencil->vDim && stencil->hDim == hDim) {
             stencil->CheckIfSparseEnough (true);
@@ -2654,13 +2654,13 @@ void        _Matrix::MakeMeGeneral (void) {
     }
 }
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::Evaluate (bool replace)
+HBLObjectRef   _Matrix::Evaluate (bool replace)
 // evaluate the matrix  overwriting (or not) the old one
 {
     _Matrix result (hDim, vDim, bool (theIndex), true);
 
     if (storageType == 2) {
-        _PMathObj formValue = nil;
+        HBLObjectRef formValue = nil;
         _Formula ** theFormulas = (_Formula**)theData;
         if (theIndex) {
             for (long i = 0; i<lDim; i++) {
@@ -2732,7 +2732,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
         }
     }
     if (storageType == 0) {
-        _PMathObj polValue = nil;
+        HBLObjectRef polValue = nil;
         _MathObject ** thePoly = (_MathObject**)theData;
         if (theIndex) {
             for (long i = 0; i<lDim; i++) {
@@ -2764,7 +2764,7 @@ _PMathObj   _Matrix::Evaluate (bool replace)
     if (replace) {
         *this = result;
     } else {
-        return (_PMathObj)result.makeDynamic();
+        return (HBLObjectRef)result.makeDynamic();
     }
     return nil;
 }
@@ -2821,7 +2821,7 @@ void        _Matrix::FillInList (_List& fillMe, bool convert_numbers) const {
               for (unsigned long c=0UL; c<vDim; c++) {
                   _Formula * entryFla = GetFormula(r,c);
                   if (entryFla) {
-                      _PMathObj computedValue = FetchObjectFromFormulaByType (*entryFla, STRING);
+                      HBLObjectRef computedValue = FetchObjectFromFormulaByType (*entryFla, STRING);
                       if (computedValue) {
                           fillMe && ((_FString*)computedValue)->get_str();
                       } else {
@@ -2842,7 +2842,7 @@ void        _Matrix::FillInList (_List& fillMe, bool convert_numbers) const {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::EvaluateSimple (void) {
+HBLObjectRef   _Matrix::EvaluateSimple (void) {
 // evaluate the matrix  overwriting the old one
     _Matrix * result = new _Matrix (hDim, vDim, bool (theIndex), true);
 
@@ -3084,7 +3084,7 @@ hyFloat _Matrix::AbsValue (void) const{
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _Matrix::Abs (void)
+HBLObjectRef _Matrix::Abs (void)
 {
     if (storageType == 1 && (hDim==1 || vDim == 1)) {
         return new _Constant (AbsValue());
@@ -3259,7 +3259,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                     storage.CheckIfSparseEnough(true);    // force to non-sparse storage
                 }
                 if (!theIndex) { // * this is not sparse
-                    _PMathObj tempP;
+                    HBLObjectRef tempP;
                     DuplicateMatrix(&storage,this);
                     if (subtract) {
                         for (i = 0; i<secondArg.lDim; i++) {
@@ -3285,7 +3285,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                         }
                     }
                 } else { // *this is sparse
-                    _PMathObj tempP;
+                    HBLObjectRef tempP;
                     long h;
                     if (subtract) {
                         for (i = 0; i<secondArg.lDim; i++) {
@@ -3436,7 +3436,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 // storage is assumed to NOT be *this
 
 {
-    _PMathObj tempP, tempP2;
+    HBLObjectRef tempP, tempP2;
 
     if ( !theIndex && !secondArg.theIndex)
         // simplest case of two non-sparse matrices - multiply in a straightforward way
@@ -4332,7 +4332,7 @@ void    _Matrix::Transpose (void)
                         if (storageType==2) {
                             ((_Formula**)theData)[i*vDim+j] = GetFormula(j,i);
                         } else {
-                            ((_PMathObj*)theData)[i*vDim+j] = GetMatrixObject(j*vDim+i);
+                            ((HBLObjectRef*)theData)[i*vDim+j] = GetMatrixObject(j*vDim+i);
                         }
 
                         ((hyPointer*)theData)[j*vDim+i] = z;
@@ -4365,7 +4365,7 @@ void    _Matrix::Transpose (void)
                                 if (storageType==2) {
                                     StoreFormula(l,k,*(_Formula*)z,false,false);
                                 } else {
-                                    StoreObject(l*vDim+k,(_PMathObj)z);
+                                    StoreObject(l*vDim+k,(HBLObjectRef)z);
                                 }
                             }
                         }
@@ -4384,8 +4384,8 @@ void    _Matrix::Transpose (void)
                             result.StoreFormula(j,i,*GetFormula(i,j),true,false);
                         } else {
                             z =   (hyPointer)GetMatrixObject (i*vDim+j);
-                            result.StoreObject(j*hDim+i,(_PMathObj)z);
-                            ((_PMathObj)z)->AddAReference();
+                            result.StoreObject(j*hDim+i,(HBLObjectRef)z);
+                            ((HBLObjectRef)z)->AddAReference();
                         }
                     }
             } else {
@@ -4398,8 +4398,8 @@ void    _Matrix::Transpose (void)
                             result.StoreFormula(c,r,*GetFormula(r,c),true,false);
                         } else {
                             z =   (hyPointer)GetMatrixObject (i);
-                            result.StoreObject(c*hDim+r,(_PMathObj)z);
-                            ((_PMathObj)z)->AddAReference();
+                            result.StoreObject(c*hDim+r,(HBLObjectRef)z);
+                            ((HBLObjectRef)z)->AddAReference();
                         }
                     }
             }
@@ -4604,7 +4604,9 @@ _Matrix*    _Matrix::Exponentiate (void)
 #ifndef _OPENMP
         squarings_count++;
 #endif
-        result->Sqr(stash);
+        if (result->Sqr(stash) < DBL_EPSILON * 1.e3) {
+            break;
+        }
     }
     delete [] stash;
 
@@ -4691,7 +4693,7 @@ _Matrix*        _Matrix::ExtractElementsByEnumeration (_SimpleList*h, _SimpleLis
 
 
 //_____________________________________________________________________________________________
-_PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
+HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
   if (!p) {
     HandleApplicationError ( kErrorStringInvalidMatrixIndex );
     return new _Constant (0.0);
@@ -4870,7 +4872,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
                 }
             } else {
               
-              long rid []= {cr->GetIndex(),cc->GetIndex(),cv->GetIndex()};
+              long rid []= {cr->get_index(),cc->get_index(),cv->get_index()};
               
               for (long k=0; k<3; k++) {
                 rid[k] = vIndexAux.Find(rid[k]);
@@ -4926,7 +4928,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
               for (long c=0; c<vDim; c++) {
                 cc->CheckAndSet (c);
                 cv->CheckAndSet ((*this)(r,c));
-                _PMathObj fv;
+                HBLObjectRef fv;
                 
                 if (conditionalCheck) {
                   fv = conditionalCheck->Compute();
@@ -5002,7 +5004,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
       if (!theIndex) {
         _Formula * entryFla = (((_Formula**)theData)[ind1*vDim+ind2]);
         if (entryFla) {
-          return (_PMathObj)entryFla->Compute()->makeDynamic();
+          return (HBLObjectRef)entryFla->Compute()->makeDynamic();
         } else {
           return new _Constant (0.0);
         }
@@ -5011,7 +5013,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2) {
         if (p<0) {
           return new _Constant (0.0);
         } else {
-          return (_PMathObj)(((_Formula**)theData)[p])->Compute()->makeDynamic();
+          return (HBLObjectRef)(((_Formula**)theData)[p])->Compute()->makeDynamic();
         }
       }
     } else {
@@ -5086,7 +5088,7 @@ _Formula* _Matrix::GetFormula (long ind1, long ind2) const {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj _Matrix::MCoord (_PMathObj p, _PMathObj p2)
+HBLObjectRef _Matrix::MCoord (HBLObjectRef p, HBLObjectRef p2)
 {
     long ind1 = -1L,
          ind2 = -1L;
@@ -5128,7 +5130,7 @@ _PMathObj _Matrix::MCoord (_PMathObj p, _PMathObj p2)
 }
 
 //_____________________________________________________________________________________________
-bool _Matrix::MResolve (_PMathObj p, _PMathObj p2, long& ind1, long& ind2)
+bool _Matrix::MResolve (HBLObjectRef p, HBLObjectRef p2, long& ind1, long& ind2)
 {
     ind1 = -1;
     ind2 = -1;
@@ -5196,7 +5198,7 @@ void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode)
                 Convert2Formulas();
                 StoreFormula (ind1,ind2,f);
             } else {
-                _PMathObj res = f.Compute();
+                HBLObjectRef res = f.Compute();
                 hyFloat toStore = res->Value();
                 if (opCode == HY_OP_CODE_ADD) {
                     toStore += (*this)(ind1,ind2);
@@ -5208,7 +5210,7 @@ void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode)
 }
 
 //_____________________________________________________________________________________________
-void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f, long opCode)
+void _Matrix::MStore (HBLObjectRef p, HBLObjectRef p2, _Formula& f, long opCode)
 {
     long      ind1, ind2;
     if (MResolve (p,p2, ind1,ind2)) {
@@ -5217,7 +5219,7 @@ void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f, long opCode)
 }
 
 //_____________________________________________________________________________________________
-void _Matrix::MStore (_PMathObj p, _PMathObj p2, _PMathObj poly)
+void _Matrix::MStore (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef poly)
 {
     long      ind1, ind2;
     if (MResolve (p,p2, ind1,ind2)) {
@@ -5226,7 +5228,7 @@ void _Matrix::MStore (_PMathObj p, _PMathObj p2, _PMathObj poly)
 
 }
 //_____________________________________________________________________________________________
-void _Matrix::MStore (long ind1, long ind2, _PMathObj poly)
+void _Matrix::MStore (long ind1, long ind2, HBLObjectRef poly)
 {
     if (ind2>=0) { // element storage
         if (storageType == 0) { // formulas
@@ -5389,7 +5391,7 @@ void        _Matrix::Swap (_Matrix& m)
                  t;
 
     hyFloat   *tData;
-    _PMathObj    tObj;
+    HBLObjectRef    tObj;
     _CompiledMatrixData *tCmd;
 
     SWAP(theData,m.theData,tData);
@@ -5417,10 +5419,11 @@ void        _Matrix::AplusBx (_Matrix& B, hyFloat x)
 //#define _SLKP_USE_SSE_INTRINSICS
 
 //_____________________________________________________________________________________________
-void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
-{
+hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
+    
+    hyFloat diff = 0.;
     if (hDim!=vDim) {
-        return;
+        return diff;
     }
     // not a square matrix
 
@@ -5430,6 +5433,7 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
         _Matrix temp (hDim, vDim, storageType==0?theIndex!=nil:false, storageType);
         Multiply (temp, *this);
         Swap(temp);
+        return DBL_EPSILON * 1.e4;
     } else {
         if (hDim==4)
             // special case for nucleotides
@@ -5532,12 +5536,14 @@ void        _Matrix::Sqr (hyFloat* _hprestrict_ stash)
            }
         }
         
-        memcpy (theData, stash, lDim * sizeof (hyFloat));
+        //memcpy (theData, stash, lDim * sizeof (hyFloat));
 
-        /*for (long s = 0; s < lDim; s++) {
+        for (long s = 0; s < lDim; s++) {
+            StoreIfGreater(diff, fabs (theData[s] - stash[s]));
             theData[s] = stash[s];
-        }*/
+        }
     }
+    return diff;
 }
 //_____________________________________________________________________________________________
 void        _Matrix::AgreeObjects (_Matrix& m)
@@ -5590,9 +5596,9 @@ void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
     if (theIndex) { // sparse
         for (i=0; i<lDim; i++) {
             if (IsNonEmpty(i)) {
-                _PMathObj polyCell = ((_Formula**)theData)[i]->ConstructPolynomial();
+                HBLObjectRef polyCell = ((_Formula**)theData)[i]->ConstructPolynomial();
                 if (polyCell) { // valid polynomial conversion
-                    tempStorage[i] = (_PMathObj)polyCell;
+                    tempStorage[i] = (HBLObjectRef)polyCell;
                     polyCell->AddAReference();
                 } else {
                     conversionFlag = false;
@@ -5630,9 +5636,9 @@ void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
             if (f->IsEmpty()) {
                 continue;
             }
-            _PMathObj polyCell = f->ConstructPolynomial();
+            HBLObjectRef polyCell = f->ConstructPolynomial();
             if (polyCell) { // valid polynomial conversion
-                tempStorage[i] = (_PMathObj)polyCell;
+                tempStorage[i] = (HBLObjectRef)polyCell;
                 polyCell->AddAReference();
             } else {
                 conversionFlag = false;
@@ -5840,7 +5846,7 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
+HBLObjectRef       _Matrix::SortMatrixOnColumn (HBLObjectRef mp)
 {
     if (storageType!=1) {
         HandleApplicationError  ("Only numeric matrices can be sorted");
@@ -5929,7 +5935,7 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::PoissonLL (_PMathObj mp)
+HBLObjectRef       _Matrix::PoissonLL (HBLObjectRef mp)
 {
     if (storageType!=1) {
         HandleApplicationError ("Only numeric matrices can be passed to Poisson Log-Likelihood");
@@ -5992,7 +5998,7 @@ _PMathObj       _Matrix::PoissonLL (_PMathObj mp)
 
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp) {
+HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp) {
     try {
         _Matrix                 *m          = nil;
 
@@ -6047,7 +6053,7 @@ _PMathObj       _Matrix::PathLogLikelihood (_PMathObj mp) {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::pFDR (_PMathObj classes) {
+HBLObjectRef       _Matrix::pFDR (HBLObjectRef classes) {
     try {
         long            steps     = 20,
                         iter_count = 500;
@@ -6177,7 +6183,7 @@ hyFloat      _Matrix::computePFDR (hyFloat lambda, hyFloat gamma)
 
 //_____________________________________________________________________________________________
 
-_PMathObj _Matrix::Random (_PMathObj kind) {
+HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
 
     try {
         long columns = GetVDim(),
@@ -6293,7 +6299,7 @@ _PMathObj _Matrix::Random (_PMathObj kind) {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::K_Means (_PMathObj classes) {
+HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes) {
     // K-means clustering on scalar data
     /*
      
@@ -6465,7 +6471,7 @@ _PMathObj       _Matrix::K_Means (_PMathObj classes) {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::ProfileMeanFit (_PMathObj classes) {
+HBLObjectRef       _Matrix::ProfileMeanFit (HBLObjectRef classes) {
 
     // Profile mean fit
     /*
@@ -6618,7 +6624,7 @@ void            _Matrix::PopulateConstantMatrix (const hyFloat v)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::AddObj (_PMathObj mp)
+HBLObjectRef       _Matrix::AddObj (HBLObjectRef mp)
 {
     if (_Matrix::ObjectClass()!=mp->ObjectClass()) {
         if (mp->ObjectClass () == STRING) {
@@ -6690,7 +6696,7 @@ void       _Matrix::NonZeroEntries (_SimpleList& target) {
 }
 
 //_____________________________________________________________________________________________
-bool       _Matrix::Equal(_PMathObj mp)
+bool       _Matrix::Equal(HBLObjectRef mp)
 {
     if (mp->ObjectClass()!=ObjectClass()) {
         return false;
@@ -6729,7 +6735,7 @@ bool       _Matrix::Equal(_PMathObj mp)
 
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::SubObj (_PMathObj mp)
+HBLObjectRef       _Matrix::SubObj (HBLObjectRef mp)
 {
     if (mp->ObjectClass()!=ObjectClass()) {
         HandleApplicationError ( kErrorStringIncompatibleOperands );
@@ -6809,7 +6815,7 @@ void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalSt
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::MultObj (_PMathObj mp)
+HBLObjectRef       _Matrix::MultObj (HBLObjectRef mp)
 {
   
   if (mp->ObjectClass()!=ObjectClass()) {
@@ -6818,7 +6824,7 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
       return new _Matrix (1,1);
     } else {
       hyFloat theV = mp->Value();
-      return (_PMathObj)((*this)*theV).makeDynamic();
+      return (HBLObjectRef)((*this)*theV).makeDynamic();
     }
   }
   
@@ -6834,7 +6840,7 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::MultElements (_PMathObj mp, bool elementWiseDivide) {
+HBLObjectRef       _Matrix::MultElements (HBLObjectRef mp, bool elementWiseDivide) {
 
     if (mp->ObjectClass()!=ObjectClass()) {
         HandleApplicationError ( kErrorStringIncompatibleOperands );
@@ -7037,7 +7043,7 @@ void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned l
                     
                     _Formula * f = GetFormula (i,j);
                     if (f) {
-                        _PMathObj fv = f->Compute();
+                        HBLObjectRef fv = f->Compute();
                         if (fv) {
                             res << ((_FString*)fv)->get_str();
                         }
@@ -7158,7 +7164,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
             _String varName (buffer);
 
             _Variable * ppv = CheckReceptacle (&varName, kEmptyString, true);
-            varList << ppv->GetIndex();
+            varList << ppv->get_index();
             i = 0;
         } else {
             buffer[i]=fc;
@@ -8166,7 +8172,7 @@ void    _Matrix::CopyABlock (_Matrix * source, long startRow, long startColumn, 
 
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::DirichletDeviate (void)
+HBLObjectRef   _Matrix::DirichletDeviate (void)
 {
     /* -----------------------------------------------------------
         DirichletDeviate()
@@ -8204,7 +8210,7 @@ _PMathObj   _Matrix::DirichletDeviate (void)
                 res.Store (0, i, res(0,i)/denom);
             }
 
-            return (_PMathObj) res.makeDynamic();
+            return (HBLObjectRef) res.makeDynamic();
         } else {
             throw ("Argument must be a row- or column-vector.");
         }
@@ -8217,7 +8223,7 @@ _PMathObj   _Matrix::DirichletDeviate (void)
 
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::GaussianDeviate (_Matrix & cov)
+HBLObjectRef   _Matrix::GaussianDeviate (_Matrix & cov)
 {
     /* ------------------------------------------------------
         GaussianDeviate()
@@ -8277,7 +8283,7 @@ _PMathObj   _Matrix::GaussianDeviate (_Matrix & cov)
 
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::MultinomialSample (_Constant *replicates) {
+HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
     
     try {
         _List         reference_manager;
@@ -8347,7 +8353,7 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates) {
 }
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::InverseWishartDeviate (_Matrix & df)
+HBLObjectRef   _Matrix::InverseWishartDeviate (_Matrix & df)
 {
     /* ---------------------------------------------------
         InverseWishartDeviate()
@@ -8386,14 +8392,14 @@ _PMathObj   _Matrix::InverseWishartDeviate (_Matrix & df)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj   _Matrix::WishartDeviate (_Matrix & df) {
+HBLObjectRef   _Matrix::WishartDeviate (_Matrix & df) {
     _Matrix     diag;   // calls default constructor
     return WishartDeviate (df, diag);
 }
 
 //_____________________________________________________________________________________________
 
-_PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
+HBLObjectRef   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
     /* ---------------------------------------------------
      WishartDeviate()
         Generates a random matrix following the Wishart
@@ -8457,7 +8463,7 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
         decomp.Transpose();
         decomp *= rd_transpose; // D^T A^T A D
  
-        return (_PMathObj) decomp.makeDynamic();
+        return (HBLObjectRef) decomp.makeDynamic();
     } catch (const _String err) {
         HandleApplicationError(err);
     }

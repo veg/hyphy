@@ -427,7 +427,7 @@ void _StringBuffer::AppendVariableValueAVL (_String const* id, _SimpleList const
               << tiv->GetName()
               << "\"]=";
       
-      _PMathObj varValue = tiv->Compute();
+      HBLObjectRef varValue = tiv->Compute();
       switch (varValue->ObjectClass()) {
         case NUMBER:
           (*this) << _String (varValue->Value());

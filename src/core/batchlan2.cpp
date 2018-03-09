@@ -695,7 +695,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
         dataset = (_DataSet*)dataSetList(dsID);
         dataset -> ProcessPartition (hSpecs,hL,false, nil, nil, chain.GetNameSpace());
         if (code!=6 && vSpecs.empty()==0) {
-            vSpecs = _String("0-")&_String(dataset->NoOfColumns()-1);
+            vSpecs = _String("0-")&_String((long)dataset->NoOfColumns()-1);
         }
         dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
 
@@ -777,7 +777,7 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
             } else {
                 _String   flaData (*treeSpec);
                 _Formula  nameForm (flaData,chain.nameSpacePrefix);
-                _PMathObj formRes = nameForm.Compute();
+                HBLObjectRef formRes = nameForm.Compute();
                 if (formRes&&formRes->ObjectClass () == STRING)
                     tr = new _TreeTopology (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix),
                                             ((_FString*)formRes)->get_str(),
@@ -1003,7 +1003,7 @@ void      _ElementaryCommand::ExecuteCase61 (_ExecutionList& chain)
 {
     chain.currentCommand++;
 
-    _PMathObj           avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix),ASSOCIATIVE_LIST),
+    HBLObjectRef           avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix),ASSOCIATIVE_LIST),
                         avl2  = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix),ASSOCIATIVE_LIST),
                         start   = parameters.lLength>3?FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix),NUMBER):nil;
 
@@ -1090,7 +1090,7 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 	ReportWarning (_String("ExecuteCase64()"));
     chain.currentCommand++;
 
-    _PMathObj   avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
+    HBLObjectRef   avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 
     if (! (avl1)) {
         HandleApplicationError (_String ("Argument (") & *(_String*)parameters(1) & " in call to BGM = ... must evaluate to associative array");
