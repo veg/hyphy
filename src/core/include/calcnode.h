@@ -43,6 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "variablecontainer.h"
 #include "hy_strings.h"
 #include "parser.h"
+#include "category.h"
 
 #define UNROOTED                        0
 #define ROOTED_LEFT                     1
@@ -143,6 +144,10 @@ public:
     }
     
     _String*            GetBranchSpec (void);
+  
+    _CategoryVariable*  get_ith_category (long i) const {
+      return (_CategoryVariable*)LocateVar(categoryVariables.get (i));
+    }
     
     _VariableContainer*           ParentTree      (void);
     

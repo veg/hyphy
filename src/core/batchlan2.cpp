@@ -1295,28 +1295,7 @@ void    RetrieveModelComponents (long mid, _Variable*& mm, _Variable*& fv, bool 
     mbf = (fvi>=0);
 }
 
-//____________________________________________________________________________________
 
-bool    IsModelReversible (long mid)
-{
-    _Matrix *m = nil,
-             *f = nil;
-    bool    mbf;
-    RetrieveModelComponents (mid, m, f, mbf);
-    if (m&&f) {
-        return m->IsReversible(mbf?nil:f);
-    }
-    return false;
-}
-
-//____________________________________________________________________________________
-
-bool    IsModelOfExplicitForm (long modelID) {
-    if (modelID != HY_NO_MODEL) {
-        return modelTypeList.lData[modelID] != 0;
-    }
-    return false;
-}
 
 //____________________________________________________________________________________
 

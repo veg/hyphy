@@ -127,7 +127,7 @@ public:
     
     _String const*    GetModelName                (void) const;
     
-    long        GetModelDimension           (void);
+    long              GetModelDimension           (void);
     /* 20100316 SLKP
         return the dimension of the model; needed to handle the case
         of explicit model exponentials

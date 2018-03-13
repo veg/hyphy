@@ -256,6 +256,18 @@ namespace hyphy_global_objects {
   
   const   _String* GetObjectNameByType       (const long type, const long index, bool correct_for_empties = true);
   
+  bool    IsModelReversible                 (long model_index);
+  /** is the model reversible?
+    @param model_index : model index
+   
+    @return T/F
+   */
+  bool    IsModelOfExplicitForm             (long model_index);
+  /** is the model specified in a form that doesn't require exponentiation
+   @param model_index : model index
+   @return T/F
+   */
+
   
   const   _String  GenerateUniqueObjectIDByType (_String const & base, const long type);
   /**

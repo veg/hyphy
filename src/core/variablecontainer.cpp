@@ -414,6 +414,7 @@ _Variable* _VariableContainer::GetIthIndependent (long index) const {
     }
 }
 
+
 //__________________________________________________________________________________
 
 _Variable* _VariableContainer::GetIthDependent (long index) const {

@@ -97,29 +97,11 @@ public:
     virtual void            MarkDone                    (void);
     bool            HasChanged2                 (void);
 
-    /*
-    _CalcNode*      DepthWiseTraversal          (bool = false);
-    //performs a post-order traversal
-    _CalcNode*      DepthWiseTraversalRight     (bool = false);
-    //performs a post-order tree traversal going right first
-    _CalcNode*      DepthWiseTraversalLevel     (long&, bool = false);
-    //performs a post-order tree traversal
-    //storing current node depth
-    _CalcNode*      StepWiseTraversal           (bool = false);
-    //performs a pre-order  tree traversal
-    _CalcNode*      StepWiseTraversalLevel      (long&, bool = false);
-    //performs a pre-order wise tree traversal
-    //storing current node depth
-
-    _CalcNode*      LeafWiseTraversal           (bool = false);
-    //iterate through the leaves (left-to-right)
-     */
-
     virtual  bool           FinalizeNode                (node<long>*, long, _String, _String const&, _String&, _String*, _TreeTopologyParseSettings const&);
     virtual  BaseRef        makeDynamic                 (void) const;
 
-    virtual  BaseRef        makeDynamicCopy             (_String*);
-    node<long>* DuplicateTreeStructure      (node<long>*, _String*, bool);
+    virtual  BaseRef        makeDynamicCopy             (_String const*) const;
+    node<long>* DuplicateTreeStructure      (node<long>*, _String const*, bool) const;
     virtual  BaseRef        toStr                       (unsigned long = 0UL);
     virtual unsigned long           ObjectClass                 (void) const {
         return TREE;
@@ -130,7 +112,8 @@ public:
     virtual  HBLObjectRef      PlainTreeString             (HBLObjectRef,HBLObjectRef);
 
     virtual _String const   GetNodeName                 (node<long> *, bool = false) const;
-    virtual _String const   GetBranchLengthString       (node<long> *, _String&, bool get_expression = false) const;
+  
+    virtual _String const   GetBranchLengthString       (node<long> *, bool get_expression = false) const;
     virtual  hyFloat        GetBranchLength             (node<long> *) const ;
     virtual  _String const  GetBranchValue              (node<long> *) const ;
     virtual  _String const  GetBranchVarValue           (node<long> *, long) const ;
@@ -208,7 +191,6 @@ public:
 
     bool        AllBranchesHaveModels           (long) const;
     void        ScanSubtreeVars                 (_List&, char, _CalcNode*) const;
-    void        BuildINodeDependancies          (void);
     void        AllocateResultsCache            (long);
     long        CountTreeCategories             (void);
     void        CompileListOfModels             (_SimpleList&);
@@ -333,17 +315,13 @@ public:
     // --------------------------
 
 
-    long      * nodeStates;
-    char      * nodeMarkers;
-
-    hyFloat* rootIChildrenCache,
-                * marginalLikelihoodCache;
-
     _AVLListXL* aCache;
 
     long        categoryCount;
 
 protected:
+  
+    void        delete_associated_calcnode (node<long>*) const;
 
     bool        IntPopulateLeaves   (_DataSetFilter const*, long) const;
 

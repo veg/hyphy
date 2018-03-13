@@ -368,6 +368,28 @@ namespace hyphy_global_objects {
   
   //____________________________________________________________________________________
   
+  bool    IsModelReversible (long mid) {
+    _Matrix *m = nil,
+    *f = nil;
+    bool    mbf;
+    RetrieveModelComponents (mid, m, f, mbf);
+    if (m&&f) {
+      return m->IsReversible(mbf?nil:f);
+    }
+    return false;
+  }
+  
+  //____________________________________________________________________________________
+  
+  bool    IsModelOfExplicitForm (long modelID) {
+    if (modelID != HY_NO_MODEL) {
+      return modelTypeList.lData[modelID] != 0;
+    }
+    return false;
+  }
+  
+  //____________________________________________________________________________________
+  
   _String const  GenerateUniqueObjectIDByType (_String const & base, const long type) {
     _AVLList   * names = nil;
     _List*       legacy_list = nil;

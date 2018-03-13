@@ -90,6 +90,10 @@ public:
         return varValue;   // get the value of the variable
     }
     void        SetFormula (_Formula&); // set the variable to a new formula
+  
+    const     _Formula * get_constraint (void) const {
+      return varFormula;
+    }
 
     virtual     bool        HasChanged      (bool = false);
     virtual     void        PreMarkChanged  ();

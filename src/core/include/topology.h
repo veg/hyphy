@@ -63,12 +63,28 @@ struct _TreeTopologyParseSettings {
         auto_convert_lengths = false;
         accept_user_lengths = true;
         ingore_user_inode_names = false;
+        parser_cache = nil;
     }
-    
+  
+    ~_TreeTopologyParseSettings () {
+      if (parser_cache) {
+        parser_cache->dataList->ClearFormulasInList();
+        DeleteObject (parser_cache->dataList);
+        DeleteObject (parser_cache);
+      }
+    }
+  
+    void AllocateCache (void) {
+      DeleteObject (parser_cache);
+      parser_cache = new _AVLListX (new _SimpleList);
+    }
+  
     _String inode_prefix;
     bool    auto_convert_lengths,
             accept_user_lengths,
             ingore_user_inode_names;
+  
+    _AVLListX * parser_cache;
 };
 
 enum   hyTopologyBranchLengthMode {
@@ -99,7 +115,7 @@ protected:
     }
 
     virtual void            PreTreeConstructor                  (bool);
-    virtual bool            MainTreeConstructor                 (_String const&,bool = true, _AssociativeList* mapping = nil);
+    virtual bool            MainTreeConstructor                 (_String const&, _TreeTopologyParseSettings & settings, bool = true, _AssociativeList* mapping = nil);
     virtual void            PostTreeConstructor                 (bool);
     node<long>*     prepTree4Comparison                 (_List&, _SimpleList&, node<long>* = nil) const;
     void            destroyCompTree                     (node<long>*) const;
@@ -208,7 +224,7 @@ public:
     virtual hyFloat         GetBranchLength                     (node<long> *) const;
     virtual _String const   GetBranchValue                      (node<long> *) const;
     virtual _String const   GetBranchVarValue                   (node<long> *, long) const;
-    virtual _String const   GetNodeStringForTree                 (node<long> *, int flags) const;
+    virtual _String const   GetNodeStringForTree                (node<long> *, int flags) const;
     virtual void            PasteBranchLength                   (node<long> * node, _StringBuffer & result , hyTopologyBranchLengthMode const mode, long variable_reference , hyFloat factor = 1.) const;
 
     node<long>&     GetRoot                             (void) const {

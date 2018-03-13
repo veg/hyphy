@@ -233,7 +233,7 @@ template <typename ACTION> void IntergrateOverAssignments (_SimpleList const& in
     hyFloat                 weight           = 1.;
     
     
-    indices.Each ([&] (long cat_var_idx, unsigned long) -> void {
+    indices.Each ( [&] (long cat_var_idx, unsigned long) -> void {
         _CategoryVariable*      cat_var = (_CategoryVariable*)LocateVar (cat_var_idx);
         if (refresh) {
             cat_var->Refresh();

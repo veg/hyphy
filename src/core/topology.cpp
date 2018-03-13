@@ -55,91 +55,6 @@ const _String _TreeTopology::kCompareEqualWithReroot          = "Equal with rero
               _TreeTopology::kCompareUnequalLabelSets         = "Unequal label sets.";
 
 
-/*
-char        takeBranchLengths       = 0,
-            autoSolveBranchLengths  = 0;
-
-hyFloat  ignoringInternalNames   = 0.0;
-
-hyFloat  treeLayoutVert,
-            scalingLogConstant    = log (1.e300);
-
-_SimpleList convertedMatrixExpressionsL;
-_AVLListX   convertedMatrixExpressions (&convertedMatrixExpressionsL);
-
-_String     expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
-            stringSuppliedLengths = "STRING_SUPPLIED_LENGTHS",
-            noInternalLabels      = "NO_INTERNAL_LABELS",
-            includeModelSpecs      = "INCLUDE_MODEL_SPECS",
-            acceptRootedTrees    = "ACCEPT_ROOTED_TREES",
-            internalNodePrefix     = "INTERNAL_NODE_PREFIX",
- 
-            cotNode               = "COT_NODE",
-            cotSplit             = "COT_SPLIT",
-            cotBranchLength         = "COT_BRANCH_LENGTH",
-            cotDistance              = "COT_DISTANCE",
-            cotCDF                 = "COT_CDF",
-            cotSamples           = "COT_SAMPLES",
-            cotSampler            = "COT_SAMPLER",
-            cotToNode              = "COT_TO_NODE",
-            treeOutputAVL          = "TREE_OUTPUT_OPTIONS",
-            treeOutputBackground  = "TREE_OUTPUT_BACKGROUND",
-            treeOutputRightMargin = "TREE_OUTPUT_RIGHT_MARGIN",
-            treeOutputEmbed       = "TREE_OUTPUT_EMBED",
-            treeOutputXtraMargin  = "TREE_OUTPUT_XTRA_MARGIN",
-            treeOutputSplit        = "TREE_OUTPUT_BRANCH_SPLIT",
-            treeOutputNotchesColor= "TREE_OUTPUT_BRANCH_NOTCHES_COLOR",
-            treeOutputNotches   = "TREE_OUTPUT_BRANCH_NOTCHES",
-            treeOutputLabel       = "TREE_OUTPUT_BRANCH_LABEL",
-            treeOutputTLabel   = "TREE_OUTPUT_BRANCH_TLABEL",
-            treeOutputColor         = "TREE_OUTPUT_BRANCH_COLOR",
-            treeOutputThickness      = "TREE_OUTPUT_BRANCH_THICKNESS",
-            treeOutputLinecap    = "TREE_OUTPUT_BRANCH_LINECAP",
-            treeOutputDash         = "TREE_OUTPUT_BRANCH_DASH",
-            treeOutputOLabel   = "TREE_OUTPUT_OVER_BRANCH",
-            treeOutputSymbols   = "TREE_OUTPUT_SYMBOLS",
-            treeOutputSymbolSize  = "TREE_OUTPUT_SYMBOL_SIZE",
-            treeOutputExtraPS     = "TREE_OUTPUT_EXTRA_POSTSCRIPT",
-            treeOutputPrefixPS      = "TREE_OUTPUT_PREFIX_POSTSCRIPT",
-            treeOutputLayout   = "TREE_OUTPUT_LAYOUT",
-            treeOutputNNPlaceH      = "__NODE_NAME__",
-            treeOutputFSPlaceH     = "__FONT_SIZE__",
-            eqWithReroot        = "Equal with reroot at ",
-            eqWithoutReroot       = "Equal without rerooting",
-            iNodePrefix;
-
-hyFloat  _timesCharWidths[256]= { // Hardcoded relative widths of all 255 characters in the Times font, for the use of PSTreeString
-    0,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0,0.25098,0.721569,0.721569,0.721569,0,0.721569,0.721569,
-    0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0,0.721569,0.721569,
-    0.25098,0.333333,0.407843,0.501961,0.501961,0.831373,0.776471,0.180392,0.333333,0.333333,0.501961,0.564706,0.25098,0.333333,0.25098,0.278431,
-    0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.278431,0.278431,0.564706,0.564706,0.564706,0.443137,
-    0.921569,0.721569,0.666667,0.666667,0.721569,0.611765,0.556863,0.721569,0.721569,0.333333,0.388235,0.721569,0.611765,0.890196,0.721569,0.721569,
-    0.556863,0.721569,0.666667,0.556863,0.611765,0.721569,0.721569,0.945098,0.721569,0.721569,0.611765,0.333333,0.278431,0.333333,0.470588,0.501961,
-    0.333333,0.443137,0.501961,0.443137,0.501961,0.443137,0.333333,0.501961,0.501961,0.278431,0.278431,0.501961,0.278431,0.776471,0.501961,0.501961,
-    0.501961,0.501961,0.333333,0.388235,0.278431,0.501961,0.501961,0.721569,0.501961,0.501961,0.443137,0.478431,0.2,0.478431,0.541176,0.721569,
-    0.721569,0.721569,0.666667,0.611765,0.721569,0.721569,0.721569,0.443137,0.443137,0.443137,0.443137,0.443137,0.443137,0.443137,0.443137,0.443137,
-    0.443137,0.443137,0.278431,0.278431,0.278431,0.278431,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,0.501961,
-    0.501961,0.4,0.501961,0.501961,0.501961,0.34902,0.454902,0.501961,0.760784,0.760784,0.980392,0.333333,0.333333,0.54902,0.890196,0.721569,
-    0.713725,0.54902,0.54902,0.54902,0.501961,0.576471,0.494118,0.713725,0.823529,0.54902,0.27451,0.27451,0.309804,0.768627,0.666667,0.501961,
-    0.443137,0.333333,0.564706,0.54902,0.501961,0.54902,0.611765,0.501961,0.501961,1,0.25098,0.721569,0.721569,0.721569,0.890196,0.721569,
-    0.501961,1,0.443137,0.443137,0.333333,0.333333,0.54902,0.494118,0.501961,0.721569,0.168627,0.745098,0.333333,0.333333,0.556863,0.556863,
-    0.501961,0.25098,0.333333,0.443137,1,0.721569,0.611765,0.721569,0.611765,0.611765,0.333333,0.333333,0.333333,0.333333,0.721569,0.721569,
-    0.788235,0.721569,0.721569,0.721569,0.721569,0.278431,0.333333,0.333333,0.333333,0.333333,0.333333,0.333333,0.333333,0.333333,0.333333,0.333333
-},
-_maxTimesCharWidth = 0.980392;
-
-
-
-//__________________________________________________________________________________
-
-#define MIN_TEX_HEIGHT   50
-#define MIN_TEX_WIDTH    50
-#define MAX_TEX_WIDTH    160
-#define MAX_TEX_HEIGHT   150
-#define WIDTH_PER_BRANCH 10
-*/
-
-
 //_______________________________________________________________________________________________
 
 _TreeTopology::_TreeTopology () {
@@ -158,7 +73,6 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), kEmptyS
         ConditionalTraverser (
               [&] (node<long>* iterator, node_iterator<long> const& ni) -> bool {
                   _String              nodeVS   (top->GetBranchValue (iterator)),
-                                       nodeName (top->GetNodeName    (iterator)),
                                        *nodeSpec = map_node_to_calcnode(iterator)->GetBranchSpec();
                   
                   FinalizeNode (iterator, 0, top->GetNodeName    (iterator), *nodeSpec, nodeVS, NULL, parse_settings);
@@ -178,7 +92,9 @@ _TreeTopology::_TreeTopology    (_String const name, _String const & parms, bool
 // builds a tree from a string
 {
     PreTreeConstructor   (dupMe);
-    if (MainTreeConstructor  (parms, false, mapping)) {
+    _TreeTopologyParseSettings parse_settings = CollectParseSettings();
+  
+    if (MainTreeConstructor  (parms, parse_settings, false, mapping)) {
         PostTreeConstructor  (dupMe);
     } else {
         DeleteObject     (compExp);
@@ -210,94 +126,6 @@ void    _TreeTopology::PreTreeConstructor (bool) {
     rooted                  = UNROOTED;
     compExp                 = new _Vector;
 }
-
-/*
- void    _TreeTopology::PostTreeConstructor (bool dupMe) {
- 
- auto variable_handler = [&] (void) -> void {
- BaseRef temp =  variablePtrs(theIndex);
- variablePtrs[theIndex]=dupMe ? this->makeDynamic() : this;
- DeleteObject(temp);
- };
- 
- double acceptRTs = 0.0;
- checkParameter (acceptRootedTrees,acceptRTs, 0.0);
- 
- if (theRoot->get_num_nodes() <= 2) { // rooted tree - check
- if (acceptRTs<0.1) {
- int  i = 1;
- long node_index = theRoot->get_data();
- bool recurse = false;
- 
- if (theRoot->get_num_nodes() == 2) {
- for (; i<=2; i++) {
- node<long> *node_temp = theRoot->go_down(i);
- if (node_temp->get_num_nodes()) { // an internal node - make it a root
- node_temp->detach_parent();
- if (i==1) {
- node_temp->add_node(*theRoot->go_down(2));
- delete theRoot;
- theRoot = node_temp;
- rooted = ROOTED_LEFT;
- } else {
- node_temp->prepend_node(*theRoot->go_down(1));
- delete theRoot;
- theRoot = node_temp;
- rooted = ROOTED_RIGHT;
- }
- if (i==1) {
- ReportWarning (_String("Rooted topology. Removing one branch - the left root child has been promoted to be the new root"));
- } else {
- ReportWarning (_String("Rooted topology. Removing one branch - the right root child has been promoted to be the new root"));
- }
- break;
- }
- }
- if (i==3) {
- ReportWarning ((_String("One branch topology supplied - hopefully this IS what you meant to do.")));
- node<long> *node_temp = theRoot->go_down(1);
- node_temp->detach_parent();
- node_temp->add_node(*theRoot->go_down(2));
- delete theRoot;
- theRoot = node_temp;
- rooted = ROOTED_LEFT;
- ReportWarning (_String("Rooted tree. Removing one branch - the left root child has been promoted to be the new root"));
- //PurgeTree();
- }
- } else {
- if (theRoot->get_num_nodes() == 0) {
- ReportWarning ("An empty topology has been constructed");
- variable_handler ();
- return;
- }
- node<long> *node_temp = theRoot->go_down(1);
- node_temp->detach_parent();
- delete theRoot;
- theRoot = node_temp;
- ReportWarning ("The root has a single child, which is be promoted to the root");
- recurse = true;
- }
- 
- flatTree.Delete (node_index);
- flatCLeaves.Delete (node_index);
- ((_GrowingVector*)compExp)->Delete (node_index);
- 
- node_iterator<long>  tree_iterator (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
- while (node<long>*topTraverser = tree_iterator.Next()) {
- if (topTraverser->get_data () > node_index) {
- topTraverser->init (topTraverser->get_data () - 1);
- }
- }
- 
- if (recurse) {
- PostTreeConstructor (dupMe);
- return;
- }
- }
- }
- variable_handler ();
- }
- */
 
 //_______________________________________________________________________________________________
 
@@ -371,6 +199,11 @@ void    _TreeTopology::PostTreeConstructor (bool make_copy) {
                     topTraverser->init (topTraverser->get_data () - 1);
                 }
             }
+          
+            if (recurse) {
+              PostTreeConstructor (make_copy);
+              return;
+            }
         }
     }
     variable_handler ();
@@ -421,7 +254,7 @@ const _TreeTopologyParseSettings    _TreeTopology::CollectParseSettings (void) {
 }
 
 //_______________________________________________________________________________________________
-bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNames, _AssociativeList* mapping) {
+bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopologyParseSettings & parse_settings, bool checkNames, _AssociativeList* mapping) {
     
     /** TODO SLKP 20171211 this parser needs to be checked
      It admits invalid strings like
@@ -435,8 +268,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, bool checkNam
     nodeCount=0,
     lastNode;
     
-    _TreeTopologyParseSettings parse_settings = CollectParseSettings();
-    
+  
     _SimpleList nodeStack,
     nodeNumbers;
     
@@ -1017,7 +849,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                 case HY_OP_CODE_LEQ: { // MatchPattern (<=)
                     
                     if (arg0->ObjectClass()!=TREE && arg0->ObjectClass()!=TOPOLOGY) {
-                        throw _String ("Invalid (not a tree/topology) 2nd argument is call to <= for trees/topologies.");
+                        throw _String ("Invalid (not a tree/topology) 2nd argument is call to <= (MatchPattern) for trees/topologies.");
                     }
                     _String  res (((_TreeTopology*)arg0)->MatchTreePattern (this));
                     return new _Constant (!res.BeginsWith("Unequal"));
@@ -1038,7 +870,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                     return AVLRepresentation (arg0);
                 case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument
                     if (arg0->ObjectClass()!=NUMBER) {
-                        throw _String ("Invalid (not a number) 2nd argument is call to $ for trees.");
+                        throw _String ("Invalid (not a number) 2nd argument is call to $ (split)for trees.");
                     }
                     
                     _List ref_manager;
@@ -1049,8 +881,8 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                     
                     long        size   = cc->Value()/arg0->Value();
                     
-                    if  (size<=4 || size>cc->Value() * 0.5) {
-                        throw _String("Poor choice of the 2nd numeric agrument in to $ for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
+                    if  (size<=4 || size * 2 >cc->Value()) {
+                        throw _String("Poor choice of the 2nd numeric agrument in to $ (split) for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
                     }
                     
                     long        checkSize = 1L,
@@ -3431,7 +3263,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (HBLObjectRef p)  const {
                         quad2 << workSpace.Pop() << workSpace.Pop() << workSpace.Pop() << workSpace.Pop();
                         w -= quad2.get (3);
                         quad.lData[0] = Minimum (quad2.get(0),quad.get(0));
-                        quad.lData[1] = Maximum (quad2.get(1),quad.get(1);
+                        quad.lData[1] = Maximum (quad2.get(1),quad.get(1));
                         quad.lData[2] += quad2.get(2);
                         quad.lData[3] += quad2.get(3);
                     }
@@ -3503,7 +3335,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (HBLObjectRef p)  const {
         
     }
     
-    DeleteObject (bc);
+    //DeleteObject (bc);
     
     _AssociativeList * resultList = new _AssociativeList;
     resultList->MStore ("CLUSTERS", result, false);
