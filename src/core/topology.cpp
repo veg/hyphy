@@ -1719,6 +1719,8 @@ char     _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _Si
 //__________________________________________________________________________________
 
 const _String  _TheTree::FindMaxCommonSubTree (_TheTree const*  compareTo, long& sizeVar, _List* forest) const{
+    // TODO SLKP 20180313 possibly deprecate?
+  
     _List           myLeaves,
                     otherLeaves,
                     sharedLeaves;
@@ -1729,7 +1731,7 @@ const _String  _TheTree::FindMaxCommonSubTree (_TheTree const*  compareTo, long&
                     sharedLeavesIDin2;
 
     node<long>      *myCT,
-         *otherCT;
+                    *otherCT;
 
     _String         rerootAt;
 
@@ -1738,7 +1740,7 @@ const _String  _TheTree::FindMaxCommonSubTree (_TheTree const*  compareTo, long&
 
     sharedLeaves.Intersect (otherLeaves,myLeaves,&sharedLeavesIDin1,&sharedLeavesIDin2);
 
-    if (sharedLeaves.lLength>1) { // more than one common leaf
+    if (sharedLeaves.countitems () > 1UL) { // more than one common leaf
         // now we need to map shared leaves to a common indexing space
 
         _SimpleList    reindexer ((unsigned long)otherLeaves.lLength),
@@ -2619,7 +2621,18 @@ _String  const    _TreeTopology::DetermineBranchLengthMappingMode (_String const
 //_______________________________________________________________________________________________
 
 node<long>* _TreeTopology::prepTree4Comparison (_List& leafNames, _SimpleList& mapping, node<long>* topNode) const {
-    
+  
+    /**
+        Creates a tree structure which facilitates comparison to other trees
+     
+        The in_object of each node is a numeric list of indices of all the leaves that are at or below this node
+        The indices are in post-order traversal order
+     
+        `leafNames` stores lexicographically sorted leaf names
+        `mapping` stores the mapping between the original post-order index of a leaf and it's location in `leafNames`
+     
+     */
+  
     node<long>* res     = topNode?topNode->duplicate_tree():theRoot->duplicate_tree();
     
     node_iterator<long> ni (res, _HY_TREE_TRAVERSAL_POSTORDER);
