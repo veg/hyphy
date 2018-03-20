@@ -259,6 +259,22 @@ function parameters.Quote(arg) {
 }
 
 /**
+ * @name parameters.AppendMultiplicativeTerm
+ * @param {String} expression - the matrix to modify
+ * @param {String} term - the multiplier to append
+ * @returns {String} (expression) * (term)
+ */
+lfunction parameters.AppendMultiplicativeTerm (expression, term) {
+    if (Type (expression) == "String") {
+        if (Abs (expression)) {
+            return "(" + expression + ")*(" + term + ")";
+        }
+        return term;
+    }
+    return expression;
+}
+
+/**
  * @name parameters.AddMultiplicativeTerm
  * @param {Matrix} matrix - matrix to scale
  * @param {Number} term - scalar to multiply matrix by

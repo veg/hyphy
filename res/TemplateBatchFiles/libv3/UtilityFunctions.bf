@@ -79,6 +79,11 @@ function utility.getGlobalValue (val) {
     return ^val;
 }
 
+function utility.setGlobalValue (id, val) {
+    Eval (id);
+    ^id = val;
+}
+
 /**
  * @name utility.ToggleEnvVariable
  * @param var
@@ -659,7 +664,6 @@ lfunction utility.UniqueValues (object) {
  * @returns nothing
  */
 lfunction utility.EnsureKey (dict, key) {
-
     if (Type (dict[key]) != "AssociativeList") {
         dict[key] = {};
     }

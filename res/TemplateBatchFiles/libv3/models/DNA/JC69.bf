@@ -43,7 +43,7 @@ lfunction models.DNA.JC69.ModelDescription(type) {
  * @param {String} model_type
  * @returns models.DNA.JC69._generateRate.p
  */
-function models.DNA.JC69._generateRate(fromChar, toChar, namespace, model_type) {
+function models.DNA.JC69._generateRate(fromChar, toChar, namespace, model_type, model) {
     models.DNA.JC69._generateRate.p = {};
     models.DNA.JC69._generateRate.p[model_type] = {};
 

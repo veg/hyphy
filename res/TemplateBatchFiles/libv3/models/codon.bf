@@ -78,7 +78,7 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
                                           __alphabet[_colChar],
                                           namespace,
                                           __modelType,
-                                          __table);
+                                          modelSpec);
 
 
 		 	if (None != __rate_variation) {

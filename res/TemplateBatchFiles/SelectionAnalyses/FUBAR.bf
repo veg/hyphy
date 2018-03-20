@@ -102,7 +102,9 @@ fubar.json[terms.json.analysis] = fubar.analysis_description;
 
 namespace fubar {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
+    LoadFunctionLibrary ("modules/grid_compute.ibf");
     load_file ({utility.getGlobalValue("terms.prefix"): "fubar", utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "selection.io.SelectAllBranches"}});
+
 }
 
 
@@ -870,73 +872,7 @@ lfunction fubar.scalers.Unconstrain (tree_name, node_name, model_description) {
     parameters.RemoveConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.nonsynonymous_rate")]);
 }
 
-//------------------------------------------------------------------------------
 
-lfunction fubar.ComputeOnGrid (lf_id, grid, handler, callback) {
-    jobs = mpi.PartitionIntoBlocks(grid);
-
-    scores = {};
-
-    queue  = mpi.CreateQueue ({^"terms.mpi.LikelihoodFunctions": {{lf_id}},
-                               ^"terms.mpi.Headers" : utility.GetListOfLoadedModules ("libv3/")});
-
-    for (i = 1; i < Abs (jobs); i += 1) {
-        mpi.QueueJob (queue, handler, {"0" : lf_id,
-                                       "1" : jobs [i],
-                                       "2" : &scores}, callback);
-    }
-
-    Call (callback, -1, Call (handler, lf_id, jobs[0], &scores), {"0" : lf_id, "1" : jobs [0], "2" : &scores});
-
-    mpi.QueueComplete (queue);
-
-    return scores;
-
-}
-
-//------------------------------------------------------------------------------
-
-
-lfunction fubar.pass1.result_handler (node, result, arguments) {
-    utility.Extend (^(arguments[2]), result);
-}
-
-//------------------------------------------------------------------------------
-
-lfunction fubar.pass1.evaluator (lf_id, tasks, scores) {
-    LFCompute (^lf_id, LF_START_COMPUTE);
-
-    results = {};
-    task_ids = utility.Keys (tasks);
-    task_count = Abs (tasks);
-    for (i = 0; i < task_count; i+=1) {
-        parameters.SetValues (tasks[task_ids[i]]);
-        LFCompute (^lf_id, ll);
-        results [task_ids[i]] = ll;
-    }
-
-     LFCompute (^lf_id, LF_DONE_COMPUTE);
-
-    return results;
-}
-
-lfunction fubar.pass2.evaluator (lf_id, tasks, scores) {
-
-    results = {};
-    task_ids = utility.Keys (tasks);
-    task_count = Abs (tasks);
-    for (i = 0; i < task_count; i+=1) {
-        parameters.SetValues (tasks[task_ids[i]]);
-        ConstructCategoryMatrix(site_likelihoods,^lf_id,SITE_LOG_LIKELIHOODS);
-        results [task_ids[i]] = site_likelihoods ["Max(_MATRIX_ELEMENT_VALUE_,-1e200)"];
-        // to avoid returning -inf
-    }
-
-
-    return results;
-
-
-}
 
 //------------------------------------------------------------------------------------------------//
 

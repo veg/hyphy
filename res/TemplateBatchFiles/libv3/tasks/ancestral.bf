@@ -300,7 +300,6 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
 
 
 /**
- * Prepare a substitution matrix for use by BGM
  * @name ancestral.ComputeSubstitutionCounts
  * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
  * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
@@ -415,43 +414,84 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
 }
 
 /*******************************************
-	count subsitutions at a given site;
-	returns an AVL with
+ **
+ * @name ancestral.ComputeSubstitutionBySite
+ * tabulates all substitutions occurring at a specified site, possibly restricted to a 
+ * subset of branches
+ 
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Number} site - the 0-based index of a site
 
-	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
-				 with counts of substitutions at the site
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
 
-	pass this function the ID of ancestral cache
-	and the index of the site to recover
+ * @returns
+        {
+         "Branches" :  {Matrix Nx1} names of selected branches,
+         "Substitutions"   :  {Dictionary} of substitution counts;
+                              will look like 
+                              
+        }
 
-*******************************************/
+        N = number of selected branches
+ */
+ 
+/*******************************************/
 
-lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
-    if (Abs(_ancestral_cache)) {
-        if (_siteID >= 0 && _siteID < (_ancestral_cache["DIMENSIONS"])["SITES"]) {
-            _bacSiteC = {};
-            _thisColumn = (_ancestral_cache["MATRIX"])[-1][_siteID];
-            _bacSiteC["CHARS"] = _ancestral_cache["CHARS"];
-            _bacSiteDim = (_ancestral_cache["DIMENSIONS"])["CHARS"];
-            _bacCounter = (_ancestral_cache["DIMENSIONS"])["BRANCHES"] - 1;
-            _bacSiteMx = {
-                _bacSiteDim,
-                _bacSiteDim
-            };
 
-            for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator += 1) {
-                _bacParentID = ((_ancestral_cache["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
-                _myState = _thisColumn[_bacTreeIterator];
-                _pState = _thisColumn[_bacParentID];
-                ancestral._expandSubstitutionMap(_pState, _myState, _ancestral_cache["AMBIGS"], _bacSiteMx);
+lfunction ancestral.ComputeSubstitutionBySite (ancestral_data, site, branch_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+    coordinates = {{k-1, parent-1}};
+
+    for (k = 1; k < Abs(ancestral_data["TREE_AVL"]); k+=1) {
+        parent = ((ancestral_data["TREE_AVL"])[k])["Parent"];
+
+        if (parent) {
+            node_name = ((ancestral_data["TREE_AVL"])[k])["Name"];
+            if (None != branch_filter) {
+                if (Type (branch_filter) == "AssociativeList") {
+                    if ((branch_filter  / node_name) == FALSE) {
+                        continue;
+                    }
+                } else {
+                    if (Call (branch_filter, node_name) == FALSE) {
+                        continue;
+                    }
+                }
             }
-
-            _bacSiteC["COUNTS"] = _bacSiteMx;
-            return _bacSiteC;
+            selected_branches + Eval (coordinates);
+            selected_branch_names + node_name;
         }
     }
-    return {};
+
+    branches = Abs (selected_branches);
+
+    result   = {};
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        parent = (selected_branches[b])[1];
+        own_state    = (ancestral_data["MATRIX"])[self][site];
+        parent_state = (ancestral_data["MATRIX"])[parent][site];          
+        
+        if  ((own_state != parent_state) && (own_state != -1) && (parent_state != -1)) {
+            own_state = (ancestral_data["CHARS"])[own_state];
+            parent_state = (ancestral_data["CHARS"])[parent_state];
+            utility.EnsureKey (result, parent_state);
+            (result[parent_state])[own_state] += 1;
+        }
+    }
+
+
+    return  {
+             "Branches"  : selected_branch_names,
+             "Substitutions"     : result
+            };
+
 }
 
 

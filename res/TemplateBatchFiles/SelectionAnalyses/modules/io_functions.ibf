@@ -292,7 +292,6 @@ lfunction selection.io.adjust_partition_string (string, sites) {
 
 function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
 
-
     if (None == dict_key) {
         json[key] = value;
     } else {

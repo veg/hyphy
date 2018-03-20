@@ -638,7 +638,6 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
             "0": "terms.global"
         }, filters, None);
 
-
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i + 1] = "`context`.tree_" + i;
         model.ApplyModelToTree(lf_components[2 * i + 1], tree[i], {

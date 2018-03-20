@@ -16,6 +16,7 @@ namespace terms{
     codons                  = "codons";
     codon                   = "codon";
     sense_codons            = "sense";
+    nucleotide              = "nucleotide";
     stop_codons             = "stop";
     translation_table       = "translation-table";
     synonymous_sub_count    = "synonymous substitution count";
@@ -236,9 +237,10 @@ namespace terms{
         global_mg94xrev       = "Global MG94xREV";
         mg94xrev_sep_rates    = "MG94xREV with separate rates for branch sets";
         nucleotide_gtr        = "Nucleotide GTR";
+        baseline              = "Baseline";
         frequencies           = "Equilibrium frequencies";
         model                 = "model"; // TODO: change string to "model name"
-       // global                = "Global model fit"; // Defined at the top of file
+       // global              = "Global model fit"; // Defined at the top of file
         attribute             = "attributes";
         display_order         = "display order";
         attribute_type        = "attribute type";
@@ -444,6 +446,7 @@ namespace terms{
         model_map = "model_map";
         partitioned = "partitioned";
         model_list = "model_list";
+        rooted = "rooted";
 
         //node_name = "Name";
         //children = "Children";

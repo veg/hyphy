@@ -336,6 +336,30 @@ lfunction trees.branch_names(tree, respect_case) {
     return result;
 }
 
+
+/**
+ * @name trees.RootTree
+ * @param {Dict} tree_info
+ * @param {String} root on this node (or prompt if empty)
+ * @returns a {Dictionary} (same as ExtractTreeInfo) for the rerooted tree
+ */
+ 
+lfunction trees.RootTree(tree_info, root_on) {
+    if (Type (root_on) != "String") {
+        root_on = io.SelectAnOption (tree_info[^"terms.trees.partitioned"],
+                                     "Select a root");
+    }
+    
+    
+    io.CheckAssertion("`&tree_info`[^'terms.trees.partitioned']/`&root_on`", "Not a valid root choice '" + root_on + "'");
+
+    Topology T = tree_info[^"terms.trees.newick_with_lengths"];
+    utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", TRUE);
+    tree_info = trees.ExtractTreeInfo(RerootTree (T, root_on));
+    utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", None);
+    return tree_info;
+}
+
 /**
  * @name trees.ExtractTreeInfo
  * @param {String} tree_string
@@ -347,41 +371,45 @@ lfunction trees.branch_names(tree, respect_case) {
  * - internal leaves
  * - list of models
  */
-function trees.ExtractTreeInfo(tree_string) {
+lfunction trees.ExtractTreeInfo(tree_string) {
 
     Topology T = tree_string;
 
-    trees.LoadAnnotatedTopology.branch_lengths = BranchLength(T, -1);
-    trees.LoadAnnotatedTopology.branch_names = BranchName(T, -1);
+    branch_lengths = BranchLength(T, -1);
+    branch_names   = BranchName(T, -1);
+    branch_count   = utility.Array1D (branch_names) - 1;
 
-    trees.LoadAnnotatedTopology.bls = {};
-
-    for (trees.LoadAnnotatedTopology.k = 0; trees.LoadAnnotatedTopology.k < Columns(trees.LoadAnnotatedTopology.branch_names) - 1; trees.LoadAnnotatedTopology.k += 1) {
-        if (trees.LoadAnnotatedTopology.branch_lengths[trees.LoadAnnotatedTopology.k] >= 0.) {
-            trees.LoadAnnotatedTopology.bls[trees.LoadAnnotatedTopology.branch_names[trees.LoadAnnotatedTopology.k]] =
-                trees.LoadAnnotatedTopology.branch_lengths[trees.LoadAnnotatedTopology.k];
+    bls = {};
+    
+    for (k = 0; k < branch_count; k+=1) {
+        if (branch_lengths[k] >= 0.) {
+            bls [branch_names[k]] = branch_lengths[k];
         }
     }
 
     GetInformation(modelMap, T);
 
     leaves_internals = {};
+    flat_tree = T ^ 0;
+    trees.PartitionTree(flat_tree, leaves_internals);
 
-    trees.PartitionTree(T ^ 0, leaves_internals);
-
-    utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", 1);
+    utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", TRUE);
     T.str = "" + T;
     utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", None);
+    
+    rooted = utility.Array1D ((flat_tree[(flat_tree[0])["Root"]])["Children"]) == 2;
 
-
+    DeleteObject (flat_tree, branch_lengths, branch_names, branch_count);
+    
     return {
-        terms.trees.newick: Format(T, 1, 0),
-        terms.trees.newick_with_lengths: Format(T, 1, 1),
-        terms.branch_length: trees.LoadAnnotatedTopology.bls,
-        terms.trees.newick_annotated: T.str,
-        terms.trees.model_map: modelMap,
-        terms.trees.partitioned: leaves_internals,
-        terms.trees.model_list: Columns(modelMap)
+        ^"terms.trees.newick": Format(T, 1, 0),
+        ^"terms.trees.newick_with_lengths": Format(T, 1, 1),
+        ^"terms.branch_length": bls,
+        ^"terms.trees.newick_annotated": T.str,
+        ^"terms.trees.model_map": modelMap,
+        ^"terms.trees.partitioned": leaves_internals,
+        ^"terms.trees.model_list": Columns(modelMap),
+        ^"terms.trees.rooted" : rooted
     };
 }
 

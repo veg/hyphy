@@ -40,8 +40,10 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
 }
 
 
-lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, _tt) {
-    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"), "beta", utility.getGlobalValue("terms.parameters.nonsynonymous_rate"), "omega", utility.getGlobalValue("terms.parameters.omega_ratio"));
+lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, model) {
+    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, 
+    model[utility.getGlobalValue("terms.translation_table")],
+    "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"), "beta", utility.getGlobalValue("terms.parameters.nonsynonymous_rate"), "omega", utility.getGlobalValue("terms.parameters.omega_ratio"));
 }
 
 /**

@@ -60,7 +60,8 @@ function models.binary.generic.DefineQMatrix (modelSpec, namespace) {
 			__rp = Call (__rate_function, __alphabet[_rowChar],
 															__alphabet[_colChar],
 															 namespace,
-															__modelType);
+															__modelType,
+															modelSpec);
 
 
 		 	if (None != __rate_variation) {
