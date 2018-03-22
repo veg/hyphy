@@ -568,10 +568,6 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     //assert (0);
 
-    utility.SetEnvVariable ("VERBOSITY_LEVEL", 100);
-
-    io.SpoolLF (&likelihoodFunction, "/tmp/hyphy.debug", "start");
-
    	Optimize (mles, likelihoodFunction);
 
     //Export (lf,likelihoodFunction);
@@ -605,7 +601,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     return results;
 }
 
-lfunction estimators.CreateLFObject (context, data_filter, tree, model_template, initial_values, run_options) {
+lfunction estimators.CreateLFObject (context, data_filter, tree, model_template, initial_values, run_options, model_objects) {
     if (Type(data_filter) == "String") {
         return estimators.FitSingleModel_Ext ({
             {
@@ -654,10 +650,13 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
 
     df = 0;
     if (Type(initial_values) == "AssociativeList") {
-        utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-            df = estimators.ApplyExistingEstimates(lfid, {
+        if (None == model_objects) {
+            model_objects = {
                 (^user_model_id)[utility.getGlobalValue ("terms.id")]: ^(user_model_id)
-            }, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+            };
+        }
+        utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
+            df = estimators.ApplyExistingEstimates(lfid, model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
     return df;
@@ -678,7 +677,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     this_namespace = (&_);
     this_namespace = this_namespace[0][Abs (this_namespace)-3];
 
-    df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options);
+    df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options, None);
 
    	Optimize(mles, likelihoodFunction);
 

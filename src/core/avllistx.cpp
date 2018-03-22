@@ -160,6 +160,17 @@ void _AVLListX::DeleteXtra (long i)
 
 //______________________________________________________________
 
+long _AVLListX::FindAndGetXtra(BaseRefConst key, long default_value)
+{
+  long f = Find (key);
+  if (f >= 0) {
+    return GetXtra(f);
+  }
+  return default_value;
+}
+
+//______________________________________________________________
+
 void _AVLListX::PopulateFromList (_List& src)
 {
     Clear(false);
