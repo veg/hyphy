@@ -508,6 +508,64 @@ lfunction estimators.FitExistingLF (lf_id, model_objects) {
 }
 
 /**
+ * Makes a likelihood function object with the desired parameters
+ * @name estimators.FitLF
+ * @param {Matrix} data_filters_list  - a vector of {DataFilter}s
+ * @param {Matrix} tree_list  - a vector of {Tree}s
+ * @param model_map
+ * @param initial_values
+ * @returns LF results
+ */
+
+lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial_values, model_objects, run_options) {
+
+     if (Type(data_filter) == "String") {
+            return estimators.FitLF ({
+                {
+                    data_filter__
+                }
+            }, {
+                "0": tree
+            },
+            {
+                "0" : model_map
+            },
+            initial_values, model_objects, run_options);
+        }
+
+        components = utility.Array1D(data_filter);
+
+
+        lf_components = {
+            2 * components,
+            1
+        };
+
+
+        for (i = 0; i < components; i += 1) {
+            lf_components[2 * i] = data_filter[i];
+            lf_components[2 * i + 1] = &tree_id + "_" + i;
+             model.ApplyModelToTree(lf_components[2*i + 1], tree[i], None, model_map[i]);
+        }
+
+
+        utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
+
+        df = 0;
+
+        if (Type(initial_values) == "AssociativeList") {
+            utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
+                df = estimators.ApplyExistingEstimates(lf_id, model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+        }
+
+        if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
+            df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
+        }
+
+        return estimators.ExtractMLEs( lf_id , model_objects);
+}
+
+/**
  * Fits a LikelihoodFunction
  * @name estimators.FitLF
  * @param {Matrix} data_filters_list  - a vector of {DataFilter}s
