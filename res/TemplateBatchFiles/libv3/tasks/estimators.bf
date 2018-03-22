@@ -383,7 +383,7 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
 
 
 /**
- * @name    
+ * @name
  * @param {String} likelihood_function_id
  * @param {Dictionary} model_descriptions
  * @param {Matrix} initial_values
@@ -568,7 +568,9 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     //assert (0);
 
-    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+    utility.SetEnvVariable ("VERBOSITY_LEVEL", 100);
+
+    io.SpoolLF (&likelihoodFunction, "/tmp/hyphy.debug", "start");
 
    	Optimize (mles, likelihoodFunction);
 

@@ -386,10 +386,11 @@ function utility.ForEach (object, lambda_name, transform) {
 
     if (Type (object) == "AssociativeList") {
         utility.ForEach.keys = Rows (object);
+        utility.ForEach.size = Abs (object);
 
         ^(lambda_name) := object [utility.ForEach.keys[utility.ForEach.k]];
 
-        for (utility.ForEach.k = 0; utility.ForEach.k < Abs (object); utility.ForEach.k += 1) {
+        for (utility.ForEach.k = 0; utility.ForEach.k < utility.ForEach.size; utility.ForEach.k += 1) {
             ExecuteCommands (transform, enclosing_namespace);
         }
         return;
