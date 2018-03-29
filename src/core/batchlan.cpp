@@ -74,6 +74,7 @@ pathNames,
 theModelList,
 batchLanguageFunctions,
 batchLanguageFunctionNames,
+_batchLanugageFunctionNamesIndexed,
 batchLanguageFunctionParameterLists,
 batchLanguageFunctionParameterTypes,
 compiledFormulaeParameters,
@@ -81,6 +82,7 @@ modelNames,
 executionStack,
 loadedLibraryPathsBackend;
 
+_AVLListX batchLanguageFunctionNamesIndexed (&_batchLanugageFunctionNamesIndexed);
 
 #ifdef __MAC__
 _String volumeName;
@@ -593,6 +595,10 @@ void ClearBFFunctionLists (long start_here) {
   if (start_here > 0L && start_here < batchLanguageFunctionNames.countitems()) {
 
     _SimpleList delete_me (batchLanguageFunctionNames.countitems()-start_here, start_here, 1L);
+    
+    for (unsigned long k = 0UL; k < delete_me.countitems(); k++) {
+      batchLanguageFunctionNamesIndexed.Delete (batchLanguageFunctionNames.GetItem (delete_me.get (k)));
+    }
 
     batchLanguageFunctionNames.DeleteList           (delete_me);
     batchLanguageFunctions.DeleteList               (delete_me);
@@ -624,7 +630,7 @@ long    FindBFFunctionName (_String const&s, _VariableContainer const* theP) {
 
         while (1) {
             _String test_id = prefix & '.' & s;
-            long idx = batchLanguageFunctionNames.FindObject (&test_id);
+            long idx = batchLanguageFunctionNamesIndexed.GetDataByKey(&test_id);
             if (idx >= 0) {
                 //s = test_id;
                 return idx;
@@ -639,7 +645,7 @@ long    FindBFFunctionName (_String const&s, _VariableContainer const* theP) {
     }
 
     //ReportWarning (_String ("Looking for ") & s.Enquote() & " in global context");
-   return batchLanguageFunctionNames.FindObject (&s);
+   return batchLanguageFunctionNamesIndexed.GetDataByKey (&s);
 }
 
 
@@ -1172,7 +1178,7 @@ long        _ExecutionList::ExecuteAndClean     (long g, _String* fName)        
     Execute ();
 
     if (fName && !terminate_execution) {
-        f = batchLanguageFunctionNames.FindObject (fName);
+        f = batchLanguageFunctionNames.GetDataByKey (fName);
     }
 
     terminate_execution      = false;
@@ -4529,6 +4535,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
         batchLanguageFunctionClassification.lData[mark1] = isLFunction ? kBLFunctionLocal :( isFFunction? kBLFunctionSkipUpdate :  kBLFunctionAlwaysUpdate);
       } else {
           batchLanguageFunctions.AppendNewInstance(functionBody);
+          batchLanguageFunctionNamesIndexed.Insert (new _String (*funcID), batchLanguageFunctions.countitems() - 1, false, true);
           batchLanguageFunctionNames.AppendNewInstance(funcID);
           batchLanguageFunctionParameterLists &&(&arguments);
           batchLanguageFunctionParameterTypes &&(&argument_types);
