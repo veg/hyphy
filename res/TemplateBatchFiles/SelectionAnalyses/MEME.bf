@@ -40,7 +40,7 @@ meme.analysis_description = {
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    terms.io.version: "2.00",
+    terms.io.version: "2.0.1",
     terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
     terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
     terms.io.contact: "spond@temple.edu",
@@ -85,6 +85,8 @@ meme.display_orders =   {terms.original_name: -1,
                         terms.json.nucleotide_gtr: 0,
                         terms.json.global_mg94xrev: 1
                        };
+
+
 
 
 selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
@@ -305,7 +307,7 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
 
     estimators.ApplyExistingEstimates ("meme.site_likelihood", meme.site_model_mapping, meme.final_partitioned_mg_results,
                                         terms.globals_only);
-                                        
+
 
     __make_filter ("meme.site_filter_bsrel");
     LikelihoodFunction meme.site_likelihood_bsrel = (meme.site_filter_bsrel, meme.site_tree_bsrel);
@@ -463,9 +465,9 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     ^"meme.site_alpha" = 1;
     ^"meme.site_beta_plus"  = 1;
     ^"meme.site_beta_nuisance"  = 1;
-    
+
     //console.log ("Optimizing FEL for pattern " + pattern_info);
-    io.SpoolLF (lf_fel, "/tmp/meme.debug", "FEL");    
+    io.SpoolLF (lf_fel, "/tmp/meme.debug", "FEL");
     Optimize (results, ^lf_fel);
 
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
@@ -515,9 +517,6 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                 _node_name_res_ = meme.compute_branch_EBF (^"`&lf_bsrel`", ^"`&bsrel_tree_id`", _node_name_, ^"`&baseline`");
                 (^"`&branch_ebf`")[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.empirical_bayes_factor")];
                 (^"`&branch_posterior`")[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.posterior")];
-            } else {
-                (^"`&branch_ebf`")[_node_name_] = None;
-                (^"`&branch_posterior`")[_node_name_] = None;
             }
         '
         );
@@ -539,13 +538,11 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
             if ((meme.selected_branches [^"`&partition_index`"])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
                 (^"`&branch_ebf`")[_node_name_] = 1.0;
                 (^"`&branch_posterior`")[_node_name_] = 0.0;
-            } else {
-                (^"`&branch_ebf`")[_node_name_] = None;
-                (^"`&branch_posterior`")[_node_name_] = None;
             }
         '
         );
     }
+
 
     return {"fel" : fel,
             utility.getGlobalValue("terms.alternative") : alternative,
@@ -615,9 +612,9 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [5] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [6] = lrt [utility.getGlobalValue("terms.p_value")];
 
-        filtered_ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
-        filtered_ebf = utility.Filter (filtered_ebf, "_value_", "_value_");
-        filtered_ebf = utility.Filter (filtered_ebf, "_value_", "_value_>=100");
+        all_ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
+
+        filtered_ebf = utility.Filter (utility.Filter (all_ebf, "_value_", "None!=_value_"), "_value_", "_value_>=100");
 
         if(None != filtered_ebf) {
             result_row [7] = utility.Array1D(filtered_ebf);
@@ -636,16 +633,33 @@ lfunction meme.store_results (node, result, arguments) {
             ');
 
         result_row [8] = sum;
+    } else {
+        all_ebf = None;
     }
 
     utility.EnsureKey (^"meme.site_results", partition_index);
 
+    sites_mapping_to_pattern = pattern_info[utility.getGlobalValue("terms.data.sites")];
+    sites_mapping_to_pattern.count = utility.Array1D (sites_mapping_to_pattern);
+
+    for (i = 0; i < sites_mapping_to_pattern.count; i+=1) {
+        site_index = sites_mapping_to_pattern[i];
+        ((^"meme.site_results")[partition_index])[site_index] = result_row;
+        meme.report.echo (site_index, partition_index, result_row);
+        if (None != all_ebf) {
+            direct_index = 1+(((^"meme.filter_specification")[partition_index])[utility.getGlobalValue ("terms.data.coverage")])[site_index];
+            selection.io.json_store_branch_attribute(^"meme.json", "EBF site " + direct_index + " (partition " + (1+partition_index) + ")", utility.getGlobalValue ("terms.json.branch_label"), site_index + utility.Array1D (^"meme.display_orders"),
+                                                 partition_index,all_ebf);
+        }
+    }
+
+    /*
     utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_value_",
         '
             (meme.site_results[`&partition_index`])[_value_] = `&result_row`;
             meme.report.echo (_value_, `&partition_index`, `&result_row`);
         '
-    );
+    );*/
 
 
     //assert (0);
