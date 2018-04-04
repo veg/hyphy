@@ -717,3 +717,11 @@ lfunction io.SelectAnOption  (options, description) {
     assert (None != selection, "Selection canceled");
     return None;
 }
+
+/**
+ * @name io.ReportExecutionError
+ * @param error_msg
+ */
+function io.ReportAnExecutionError (error_msg) {
+    assert (0, "Fatal execution error `error_msg`");
+}
