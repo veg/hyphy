@@ -143,7 +143,7 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
 
             if (regexp.Find(treeString, "^#NEXUS")) {
                 ExecuteCommands(treeString);
-                
+
                 if (!utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
                     fprintf(stdout, "\n> **This NEXUS file doesn't contain a valid tree block**");
                     return 1;
@@ -343,14 +343,14 @@ lfunction trees.branch_names(tree, respect_case) {
  * @param {String} root on this node (or prompt if empty)
  * @returns a {Dictionary} (same as ExtractTreeInfo) for the rerooted tree
  */
- 
+
 lfunction trees.RootTree(tree_info, root_on) {
     if (Type (root_on) != "String") {
         root_on = io.SelectAnOption (tree_info[^"terms.trees.partitioned"],
                                      "Select a root");
     }
-    
-    
+
+
     io.CheckAssertion("`&tree_info`[^'terms.trees.partitioned']/`&root_on`", "Not a valid root choice '" + root_on + "'");
 
     Topology T = tree_info[^"terms.trees.newick_with_lengths"];
@@ -380,7 +380,7 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     branch_count   = utility.Array1D (branch_names) - 1;
 
     bls = {};
-    
+
     for (k = 0; k < branch_count; k+=1) {
         if (branch_lengths[k] >= 0.) {
             bls [branch_names[k]] = branch_lengths[k];
@@ -396,11 +396,11 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", TRUE);
     T.str = "" + T;
     utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", None);
-    
+
     rooted = utility.Array1D ((flat_tree[(flat_tree[0])["Root"]])["Children"]) == 2;
 
     DeleteObject (flat_tree, branch_lengths, branch_names, branch_count);
-    
+
     return {
         ^"terms.trees.newick": Format(T, 1, 0),
         ^"terms.trees.newick_with_lengths": Format(T, 1, 1),
@@ -411,6 +411,17 @@ lfunction trees.ExtractTreeInfo(tree_string) {
         ^"terms.trees.model_list": Columns(modelMap),
         ^"terms.trees.rooted" : rooted
     };
+}
+
+/**
+ * @name trees.HasBranchLengths
+ * @param {Dictionary} tree information object (e.g. as returned by LoadAnnotatedTopology)
+ * @returns a {Boolean} to indicate whether the tree has a valid branch length array
+ */
+
+lfunction trees.HasBranchLengths (tree_info) {
+
+    return utility.Array1D (tree_info [^"terms.trees.partitioned"]) == utility.Array1D (tree_info [^"terms.branch_length"]);
 }
 
 /**

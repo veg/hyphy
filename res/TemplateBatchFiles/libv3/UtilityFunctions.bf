@@ -328,17 +328,14 @@ function utility.Filter (object, lambda_name, condition) {
  * @param {String} lambda_name - function to discern whether element is filtered.
  * @returns first matched object or none
  */
-function utility.First (object, lambda_name, condition) {
-
+function utility.First (object_utility_first, lambda_name, condition) {
 
     Eval ("`lambda_name` = None");
 
-     if (Type (object) == "AssociativeList") {
-        utility.Filter.keys = Rows (object);
-        ^(lambda_name) := object [utility.Filter.keys[utility.Filter.k]];
-        for (utility.Filter.k = 0; utility.Filter.k < Abs (object); utility.Filter.k += 1) {
-
-
+     if (Type (object_utility_first) == "AssociativeList") {
+        utility.First.keys = Rows (object_utility_first);
+        ^(lambda_name) := object_utility_first [utility.First.keys[utility.First.k]];
+        for (utility.First.k = 0; utility.First.k < Abs (object); utility.First.k += 1) {
             if (Eval (condition)) {
                 return ^(lambda_name);
             }
@@ -346,12 +343,12 @@ function utility.First (object, lambda_name, condition) {
         return None;
     }
 
-    if (Type (object) == "Matrix") {
-        utility.Filter.rows = Rows (object);
-        utility.Filter.columns = Columns (object);
-        ^(lambda_name) := object [utility.Filter.r][utility.Filter.c];
-        for (utility.Filter.r = 0; utility.Filter.r < utility.Filter.rows; utility.Filter.r += 1) {
-            for (utility.Filter.c = 0; utility.Filter.c < utility.Filter.columns; utility.Filter.c += 1) {
+    if (Type (object_utility_first) == "Matrix") {
+        utility.First.rows = Rows (object_utility_first);
+        utility.First.columns = Columns (object_utility_first);
+        ^(lambda_name) := object_utility_first [utility.First.r][utility.First.c];
+        for (utility.First.r = 0; utility.First.r < utility.First.rows; utility.First.r += 1) {
+            for (utility.First.c = 0; utility.First.c < utility.First.columns; utility.First.c += 1) {
                 if (Eval (condition)) {
                     return ^(lambda_name);
                 }
