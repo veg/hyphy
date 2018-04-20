@@ -1013,7 +1013,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
  * @returns MGREV results
  */
 lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_values) {
-    return estimators.FitCodonModel (codon_date, tree, genetic_code, "models.codon.MG_REV.ModelDescription", option, initial_value);
+    return estimators.FitCodonModel (codon_data, tree, "models.codon.MG_REV.ModelDescription", genetic_code, option, initial_value);
 }
 
 /**
