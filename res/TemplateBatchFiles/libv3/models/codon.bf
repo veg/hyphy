@@ -55,7 +55,7 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 	__rate_variation = model.generic.get_rate_variation (modelSpec);
 
 	__global_cache = {};
-	
+
 
 	if (None != __rate_variation) {
 
@@ -70,9 +70,6 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 	for (_rowChar = 0; _rowChar < __dimension; _rowChar +=1 ){
 		for (_colChar = _rowChar + 1; _colChar < __dimension; _colChar += 1) {
 
-            if (None == models.codon.diff (__alphabet[_rowChar], __alphabet[_colChar])) {
-                continue;
-            }
 
             __rp = Call (__rate_function, __alphabet[_rowChar],
                                           __alphabet[_colChar],
@@ -80,6 +77,9 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
                                           __modelType,
                                           modelSpec);
 
+            if (Abs (__rp) == 0) { // null rate
+                continue;
+            }
 
 		 	if (None != __rate_variation) {
 				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier],
@@ -159,5 +159,24 @@ lfunction models.codon.diff (a,b) {
     if (r [utility.getGlobalValue("terms.diff.position")] == None) {
         return None;
     }
+    return r;
+}
+
+
+/** return complete differences between two codons **/
+
+lfunction models.codon.diff.complete (a,b) {
+    r = {};
+
+    for (i = 0; i < 3; i += 1) {
+        if (a[i] != b[i]) {
+            r + {
+                utility.getGlobalValue("terms.diff.from") : a[i],
+                utility.getGlobalValue("terms.diff.to") : b[i],
+                utility.getGlobalValue("terms.diff.position") : i
+            };
+        }
+    }
+
     return r;
 }

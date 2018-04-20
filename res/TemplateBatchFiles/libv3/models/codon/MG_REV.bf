@@ -41,7 +41,7 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
 
 
 lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, model) {
-    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, 
+    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type,
     model[utility.getGlobalValue("terms.translation_table")],
     "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"), "beta", utility.getGlobalValue("terms.parameters.nonsynonymous_rate"), "omega", utility.getGlobalValue("terms.parameters.omega_ratio"));
 }
@@ -72,7 +72,7 @@ lfunction models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace
         }
 
         nuc_rate = parameters.ApplyNameSpace(nuc_rate, namespace);
-        (_GenerateRate.p[utility.getGlobalValue("terms.global")])[terms.nucleotideRate(_GenerateRate.diff[utility.getGlobalValue("terms.diff.from")], _GenerateRate.diff[utility.getGlobalValue("terms.diff.to")])] = nuc_rate;
+        (_GenerateRate.p[utility.getGlobalValue("terms.global")])[terms.nucleotideRateReversible(_GenerateRate.diff[utility.getGlobalValue("terms.diff.from")], _GenerateRate.diff[utility.getGlobalValue("terms.diff.to")])] = nuc_rate;
 
         if (_tt[fromChar] != _tt[toChar]) {
             if (model_type == utility.getGlobalValue("terms.global")) {

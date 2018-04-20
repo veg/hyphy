@@ -91,11 +91,19 @@ namespace terms{
     function nucleotideRate(fromC, toC) {
         return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
     }
+
+    function nucleotideRateReversible (fromC, toC) {
+        if (fromC < toC) {
+            return nucleotideRate (fromC, toC);
+        }
+        return nucleotideRate (toC, fromC);
+    }
+
     function aminoacidRate(fromA, toA) {
         return "Substitution rate from amino-acid " + fromA + " to amino-acid " + toA;
     }
     function binaryRate(fromX, toX) {
-        return "Substitution rate from character " + fromX + " to character " + toX;    
+        return "Substitution rate from character " + fromX + " to character " + toX;
     }
     function timeParameter() {
         return "Evolutionary time parameter";
@@ -178,7 +186,7 @@ namespace terms{
         _20x1      = "Protein 20x1 estimator";
         MLE        = "Maximum likelihood frequency estimator";
         predefined = "Based on a training set";
-        binary     = "Binary character frequency estimator"; 
+        binary     = "Binary character frequency estimator";
     }
 
     /* Terms accompanying tasks/genetic_code.bf */
@@ -373,11 +381,14 @@ namespace terms{
         synonymous_rate               = "synonymous rate";
         nonsynonymous_rate            = "non-synonymous rate";
         omega_ratio                   = "non-synonymous/synonymous rate ratio";
+        multiple_hit_rate             = "rate at which multiple nucleotides are changed instantly within a single codon";
+
         one                           = "1";
         theta                         = "theta";
         default_time                  = "t";
         omegas                        = "omegas";
         omega                         = "omega";
+        delta                         = "delta";
         weights                       = "weights";
         weight                        = "weight";
         rates                         = "rates";

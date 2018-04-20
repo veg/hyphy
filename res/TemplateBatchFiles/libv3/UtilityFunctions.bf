@@ -387,6 +387,8 @@ function utility.ForEach (object, lambda_name, transform) {
     Eval ("`lambda_name` = None");
 
     if (Type (object) == "AssociativeList") {
+
+
         utility.ForEach.keys = Rows (object);
         utility.ForEach.size = Abs (object);
 
@@ -407,7 +409,6 @@ function utility.ForEach (object, lambda_name, transform) {
             for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
                 for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
                     ExecuteCommands (transform, enclosing_namespace);
-
                 }
             }
         }
@@ -570,7 +571,6 @@ function utility.PopulateDict (from, to, value, lambda) {
 function utility.ForEachPair(object, key_name, value_name, transform) {
 
     io.CheckAssertion ("!utility.ForEachPair.warn_non_rentrant", "utility.ForEachPair is non re-entrant");
-
     utility.ForEachPair.warn_non_rentrant = TRUE;
 
     Eval ("`key_name` = None");

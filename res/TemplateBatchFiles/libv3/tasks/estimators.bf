@@ -827,8 +827,9 @@ function estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_result
     return fit_results;
 }
 
+
 /**
- * @name estimators.FitMGREV
+ * @name estimators.FitCodonModel
  * @param {DataFilter} codon_data
  * @param {Tree} tree
  * @param {String} genetic_code
@@ -836,7 +837,8 @@ function estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_result
  * @param {Dictionary} initial_values
  * @returns MGREV results
  */
-lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_values) {
+lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, option, initial_values) {
+
 
 
 
@@ -873,14 +875,13 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     name_space = & model_MGREV;
 
-    mg_rev = model.generic.DefineModel("models.codon.MG_REV.ModelDescription",
+    mg_rev = model.generic.DefineModel(generator,
         name_space, {
             "0": parameters.Quote(option[utility.getGlobalValue("terms.run_options.model_type")]),
             "1": genetic_code
         },
         codon_data,
         None);
-
 
 
 
@@ -966,6 +967,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
         df += estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_id_to_object, initial_values, option[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
+
     //Export (lfe, likelihoodFunction);
     //console.log (lfe);
 
@@ -978,6 +980,7 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
 
     results = estimators.ExtractMLEs( & likelihoodFunction, model_id_to_object);
 
+    //console.log (mles);
 
     results[utility.getGlobalValue("terms.fit.log_likelihood")] = mles[1][0];
     results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + (mg_rev [utility.getGlobalValue("terms.parameters")]) [utility.getGlobalValue("terms.model.empirical")] + df;
@@ -994,6 +997,23 @@ lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_va
     }
 
     return results;
+}
+
+
+
+
+
+/**
+ * @name estimators.FitMGREV
+ * @param {DataFilter} codon_data
+ * @param {Tree} tree
+ * @param {String} genetic_code
+ * @param {Dictionary} option
+ * @param {Dictionary} initial_values
+ * @returns MGREV results
+ */
+lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_values) {
+    return estimators.FitCodonModel (codon_date, tree, genetic_code, "models.codon.MG_REV.ModelDescription", option, initial_value);
 }
 
 /**
