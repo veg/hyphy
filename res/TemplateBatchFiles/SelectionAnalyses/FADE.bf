@@ -286,7 +286,7 @@ lfunction fade.biased.model.generator (type, residue) {
 fade.alphabet       = "ACDEFGHIKLMNPQRSTVWY";
 fade.grid.matrix    = fade.DefineGrid (fade.run_settings["grid size"]);
 
-console.log (fade.grid.matrix);
+//console.log (fade.grid.matrix);
 
 for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
     fade.bias.residue = fade.alphabet[fade.residue];
@@ -349,7 +349,14 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
                         "fade.pass1.result_handler");
 
 
-    console.log (fade.conditionals.raw);
+    fubar.cache[terms.fubar.cache.mcmc] = fubar.RunMCMC  (
+                                                         fubar.run_settings,
+                                                         fade.cache[terms.fubar.cache.grid],
+                                                         fade.cache[terms.fubar.cache.conditionals],
+                                                         "fade.pass1.result_handler",
+                                                         "fade"
+                                                        );
+    io.WriteCacheToFile (fubar.path.cache, fubar.cache);
     
     return 0;
 }

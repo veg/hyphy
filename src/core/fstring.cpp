@@ -611,9 +611,9 @@ _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* contex
         return FetchVar (LocateVarByName(referencedVariable));
     }
     _PMathObj result = FetchObjectFromVariableByType(&referencedVariable, HY_ANY_OBJECT); 
-    //printf ("\n\nDereferencing %s in this context %x\n\n", referencedVariable.sData, context);
+    //printf ("\n\nDereferencing %s in this context '%s'\n\n", referencedVariable.sData, context && context->GetContext() ? context->GetContext()->GetName()->getStr() : "");
     if (!result) {
-        _String errM = _String("Failed to dereference '") & referencedVariable & "'";
+        _String errM = _String("Failed to dereference ") & referencedVariable.Enquote('\'');
         if (context) {
             context->ReportError(errM);
         } else {

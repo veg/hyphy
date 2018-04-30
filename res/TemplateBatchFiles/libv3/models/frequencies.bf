@@ -185,20 +185,16 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
         for (_rowChar = 0; _rowChar < __dimension; _rowChar += 1) {
             for (_colChar = _rowChar + 1; _colChar < __dimension; _colChar += 1) {
 
-                //__diff = models.codon.diff(__alphabet[_rowChar], __alphabet[_colChar]);
-
-
-                if (Abs (((model[terms.model.rate_matrix])[__components[__component_id]]) [_colChar][_rowChar])) {
-
-                    __diff = models.codon.diff.complete (__alphabet[_rowChar], __alphabet[_colChar]);
-
-                    for (__component_id = 0; __component_id < __component_count; __component_id += 1) {
+                //__diff = models.codon.diff(__alphabet[_rowChar], __alphabet[_colChar]); 
+                for (__component_id = 0; __component_id < __component_count; __component_id += 1) {
+                    if (Abs (((model[terms.model.rate_matrix])[__components[__component_id]]) [_colChar][_rowChar])) {
+                        __diff = models.codon.diff.complete (__alphabet[_rowChar], __alphabet[_colChar]);
                          for (__diff_id = 0; __diff_id < Abs (__diff); __diff_id += 1) {
                              ((model[terms.model.rate_matrix])[__components[__component_id]]) [_rowChar][_colChar] += "*" + (__estimates[(__diff[__diff_id])["to"]])[(__diff[__diff_id])["position"]];
                              ((model[terms.model.rate_matrix])[__components[__component_id]]) [_colChar][_rowChar] += "*" + (__estimates[(__diff[__diff_id])["from"]])[(__diff[__diff_id])["position"]];
                          }
                     }
-                 }
+                }
             }
         }
     } else {

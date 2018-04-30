@@ -527,7 +527,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
   _hyExecutionContext localContext (nameSpace, errMsg);
 
   if (numberOfTerms > 1) {
-    _List arguments;
+    _List arguments ((unsigned long)(numberOfTerms-1));
 
     for (long k = numberOfTerms-1; k >= 1; k --) {
       arguments.AppendNewInstance ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
@@ -542,7 +542,6 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
   }
 
   DeleteObject (arg0);
-
 
   if (temp) {
     theScrap.theStack.Place(temp);
