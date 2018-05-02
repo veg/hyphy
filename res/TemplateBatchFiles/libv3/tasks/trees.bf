@@ -354,10 +354,11 @@ lfunction trees.RootTree(tree_info, root_on) {
     io.CheckAssertion("`&tree_info`[^'terms.trees.partitioned']/`&root_on`", "Not a valid root choice '" + root_on + "'");
 
     Topology T = tree_info[^"terms.trees.newick_with_lengths"];
+
     utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", TRUE);
     tree_info = trees.ExtractTreeInfo(RerootTree (T, root_on));
     utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", None);
-    
+
     return {
         ^"terms.trees.root"   : root_on,
         ^"terms.data.tree"    : tree_info

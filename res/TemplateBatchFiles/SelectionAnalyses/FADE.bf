@@ -1,7 +1,7 @@
 RequireVersion ("2.3.11");
 
 
-LoadFunctionLibrary     ("libv3/all-terms.bf"); 
+LoadFunctionLibrary     ("libv3/all-terms.bf");
 LoadFunctionLibrary     ("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary     ("libv3/IOFunctions.bf");
 LoadFunctionLibrary     ("libv3/tasks/estimators.bf");
@@ -18,7 +18,9 @@ LoadFunctionLibrary     ("libv3/tasks/mpi.bf");
 LoadFunctionLibrary     ("libv3/stats.bf");
 
 
+
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
+utility.SetEnvVariable ("ACCEPT_ROOTED_TREES", TRUE);
 
 namespace terms.fade {
     grid        = "grid";
@@ -43,13 +45,13 @@ namespace terms.fade {
         grid_points = "grid points";
         branches    = "branches";
     }
-   
+
     namespace methods {
         MH  = "Metropolis-Hastings";
         VB0 = "Variational Bayes";
         CG  = "Collapsed Gibbs";
     }
-   
+
 };
 
 fade.display_orders = {
@@ -75,20 +77,20 @@ fade.run_settings = {
     "bayes factor" : 100
 };
 
-fade.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
+fade.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 12, terms.table_options.align : "center"};
 
 
-fade.analysis_description = {terms.io.info : 
+fade.analysis_description = {terms.io.info :
 
-                            "FADE (FUBAR Approach to Directional Evolution) is a rapid method to test whether or not a subset of sites in a protein alignment 
-                            evolve towards a particular residue along a subset of branches at accelerated rates compared to reference model. 
-                            FADE uses a random effects model and latent Dirichlet allocation (LDA) - inspired approximation methods to fit the model.",
+                            "FADE (FUBAR Approach to Directional Evolution) is a fast method to test whether or not a subset of sites in a protein alignment
+                            evolve towards a particular residue along a subset of branches at accelerated rates compared to reference model.
+                            FADE uses a random effects model and latent Dirichlet allocation (LDA) - inspired approximation methods to allocate sites to rate classes.",
 
                            terms.io.version : "0.1",
                            terms.io.reference : "TBD",
                            terms.io.authors : "Sergei L Kosakovsky Pond",
                            terms.io.contact : "spond@temple.edu",
-                           terms.io.requirements : "A protein alignment and a _rooted_ phylogenetic tree (optionally annotated with {})"
+                           terms.io.requirements : "A protein alignment and a phylogenetic tree (optionally annotated with {})"
                           };
 
 
@@ -124,7 +126,7 @@ selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.
 selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.sequences, fade.alignment_info [terms.data.sequences]);
 selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.sites, fade.alignment_info [terms.data.sites]);
 selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.partition_count,fade.partition_count);
-               
+
 
 fade.path.base = (fade.json [terms.json.input])[terms.json.file];
 fade.path.cache = fade.path.base + ".FADE.cache";
@@ -138,7 +140,7 @@ fade.alignment_sample_size = fade.alignment_info[terms.data.sequences] * fade.al
 
 alignments.EnsureMapping ("fade.dataset", fade.alignment_info);
 
-fade.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (fade.alignment_info[utility.getGlobalValue("terms.data.partitions")], 
+fade.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (fade.alignment_info[utility.getGlobalValue("terms.data.partitions")],
                                                                               fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")]
                                                                              );
 fade.partition_count = Abs (fade.partitions_and_trees);
@@ -156,7 +158,7 @@ if (utility.Has (fade.cache, terms.fade.cache.root, "AssociativeList")) {
 
 fade.prompted_for_roots = FALSE;
 
-utility.ForEachPair (fade.partitions_and_trees, "index", "_partition_",  
+utility.ForEachPair (fade.partitions_and_trees, "index", "_partition_",
                 "
                     if ((_partition_[terms.data.tree])[terms.trees.rooted] == FALSE) {
                         if (utility.Has (fade.roots,index,'String')) {
@@ -170,10 +172,9 @@ utility.ForEachPair (fade.partitions_and_trees, "index", "_partition_",
                     }
                 "
                 );
-                
 
 
-fade.name_mapping = fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")]; 
+fade.name_mapping = fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
 
 
 if (utility.Has (fade.cache, terms.fade.cache.settings, "AssociativeList")) {
@@ -186,14 +187,14 @@ if (utility.Has (fade.cache, terms.fade.cache.settings, "AssociativeList")) {
     fade.RunPrompts (fade.prompts);
     fade.cache [terms.fade.cache.settings] = fade.run_settings;
     io.WriteCacheToFile (fade.path.cache, fade.cache);
-}  
+}
 
 fade.cache [terms.fade.cache.root] = fade.roots;
 
 if (fade.prompted_for_roots) {
     io.WriteCacheToFile (fade.path.cache, fade.cache);
 }
-                
+
 // ===========  DEFINE TEST BRANCH SETS AND STORE TREE INFO   ====================== //
 
 if (utility.Has (fade.cache, terms.fade.cache.branches, "AssociativeList")) {
@@ -214,13 +215,20 @@ if (utility.Has (fade.cache, terms.fade.cache.model, "String") && utility.Has (f
     fade.RunPrompts (fade.prompts);
     io.WriteCacheToFile (fade.path.cache, fade.cache);
 }
-    
+
 if (utility.Has (fade.cache, terms.fade.cache.baseline, "AssociativeList")) {
     io.ReportProgressMessageMD  ("FADE", "baseline", "Loaded baseline model fit from cache");
     fade.baseline_fit = fade.cache [terms.fade.cache.baseline];
 } else {
     selection.io.startTimer (fade.json [terms.json.timers], "Baseline Fit", 1);
-    io.ReportProgressMessageMD  ("FADE", "baseline", "Fitting the baseline model to obtain relative branch lengths and rate estimates");
+    io.ReportProgressMessageMD  ("FADE", "baseline", "Fitting the baseline (`fade.baseline_model`) model to obtain relative branch lengths and rate estimates");
+
+    lfunction fade.generator.MLE (type) {
+        model = Call (^"fade.generator", type);
+        //model [utility.getGlobalValue("terms.model.frequency_estimator")] =
+        return model;
+    }
+
     fade.baseline_fit = estimators.FitSingleModel_Ext (
                                                           fade.filter_names,
                                                           fade.trees,
@@ -228,9 +236,12 @@ if (utility.Has (fade.cache, terms.fade.cache.baseline, "AssociativeList")) {
                                                           parameters.helper.tree_lengths_to_initial_values (fade.trees, None),
                                                           {terms.run_options.retain_lf_object: TRUE}
                                                    );
-    fade.cache [terms.fade.cache.baseline] =  fade.baseline_fit;                                           
+    fade.cache [terms.fade.cache.baseline] =  fade.baseline_fit;
     io.WriteCacheToFile (fade.path.cache, fade.cache);
     selection.io.stopTimer (fade.json [terms.json.timers], "Baseline Fit");
+
+
+    fprintf (stdout, ^(fade.baseline_fit[terms.likelihood_function]), "\n");
 
 }
 
@@ -242,13 +253,13 @@ if (utility.Has (fade.run_settings, "method", "String")) {
 }
 
 
-// ===========  FIT BASELINE MODEL       
+// ===========  FIT BASELINE MODEL
 
-   
+
 
 
 io.ReportProgressMessageMD ("FADE", "baseline", ">Fitted an alignment-wide model. " + selection.io.report_fit (fade.baseline_fit, 0, fade.alignment_sample_size ) +  "\n\nTotal tree lengths by partition\n");
-utility.ForEachPair (fade.baseline_fit[terms.branch_length], "_part_", "_value_", 
+utility.ForEachPair (fade.baseline_fit[terms.branch_length], "_part_", "_value_",
 '
     io.ReportProgressMessageMD ("FADE", "baseline", "" + (1+_part_) + ". " + Format (+(utility.Map (_value_, "_data_",
     "
@@ -274,32 +285,29 @@ utility.ForEachPair (fade.filter_specification, "_key_", "_value_",
 // ===========  PERFORM ANCESTRAL RECONSTRUCTION AND COUNT CHARACTERS
 // TBD
 
-if (utility.Has (fade.cache, fade.cache.substitutions, "AssociativeList") == FALSE) {
-    utility.EnsureKey (fade.cache, fade.cache.substitutions);
+if (utility.Has (fade.cache, terms.fade.cache.substitutions, "AssociativeList") == FALSE) {
+    utility.EnsureKey (fade.cache, terms.fade.cache.substitutions);
+    utility.EnsureKey (fade.cache, terms.fade.cache.composition);
 
     for (fade.i = 0; fade.i < fade.partition_count; fade.i += 1) {
         fade.ancestral_cache = ancestral.build (fade.baseline_fit[terms.likelihood_function], fade.i, None);
         fade.branch_filter = utility.Filter (fade.selected_branches[fade.i], "_class_", "_class_ == terms.tree_attributes.test");
         fade.partition_sites = utility.Array1D ((fade.filter_specification[fade.i])[terms.data.coverage]);
-    
+
         fade.partition_substitutions = {};
-     
+        fade.partition_composition = {};
+
         for (fade.site = 0; fade.site < fade.partition_sites; fade.site += 1) {
             fade.partition_substitutions [fade.site] = (ancestral.ComputeSubstitutionBySite (fade.ancestral_cache, fade.site, fade.branch_filter))[terms.substitutions];
+            fade.partition_composition [fade.site] = (ancestral.ComputeSiteComposition (fade.ancestral_cache, fade.site, fade.branch_filter))[terms.data.composition];
         }
-    
+
         DeleteObject (fade.ancestral_cache);
-        (fade.cache [fade.cache.substitutions])[fade.i] = fade.partition_substitutions;
+        (fade.cache [terms.fade.cache.substitutions])[fade.i] = fade.partition_substitutions;
+        (fade.cache [terms.fade.cache.composition])[fade.i] = fade.partition_composition;
     }
     io.WriteCacheToFile (fade.path.cache, fade.cache);
-} 
- 
-return 0;
-
-
-
-
-
+}
 
 lfunction fade.rate.modifier (fromChar, toChar, namespace, model_type, model) {
     baseline = Call (^"fade.baseline_model.rate", fromChar,toChar, namespace, model_type, model);
@@ -308,19 +316,19 @@ lfunction fade.rate.modifier (fromChar, toChar, namespace, model_type, model) {
     selection.io.json_store_key_value_pair (baseline, model_type, utility.getGlobalValue("terms.fade.rate"), utility.getGlobalValue("fade.parameter.rate"));
     baseline [utility.getGlobalValue("terms.model.rate_entry")] = parameters.AppendMultiplicativeTerm (baseline [utility.getGlobalValue("terms.model.rate_entry")], utility.getGlobalValue("fade.parameter.rate"));
     if (toChar == model["fade.residue_bias"]) {
-        baseline [utility.getGlobalValue("terms.model.rate_entry")] = 
+        baseline [utility.getGlobalValue("terms.model.rate_entry")] =
             parameters.AppendMultiplicativeTerm ( baseline [utility.getGlobalValue("terms.model.rate_entry")],
                                                   "`utility.getGlobalValue("fade.parameter.bias")`/(1-Exp (-`utility.getGlobalValue("fade.parameter.bias")`))");
      } else {
         if (fromChar == model["fade.residue_bias"]) {
             parameters.AppendMultiplicativeTerm ( baseline [utility.getGlobalValue("terms.model.rate_entry")],
-                                                  "`utility.getGlobalValue("fade.parameter.bias")`/(Exp (`utility.getGlobalValue("fade.parameter.bias")`-1))");            
+                                                  "`utility.getGlobalValue("fade.parameter.bias")`/(Exp (`utility.getGlobalValue("fade.parameter.bias")`-1))");
         }
     }
     return baseline;
 }
 
-lfunction fade.biased.model.generator (type, residue) { 
+lfunction fade.biased.model.generator (type, residue) {
     model = Call (^"fade.generator", type);
     utility.setGlobalValue("fade.baseline_model.rate", model[utility.getGlobalValue ("terms.model.q_ij")]);
     model[utility.getGlobalValue ("terms.model.q_ij")] = "fade.rate.modifier";
@@ -333,7 +341,12 @@ lfunction fade.biased.model.generator (type, residue) {
 //============================================================================================================
 
 fade.alphabet       = "ACDEFGHIKLMNPQRSTVWY";
-fade.cache[terms.fade.cache.grid]    = fade.DefineGrid (fade.run_settings["grid size"]);
+
+if (utility.Has (fade.cache, terms.fade.cache.grid, "Matrix") == FALSE) {
+    fade.cache[terms.fade.cache.grid]    = fade.DefineGrid (fade.run_settings["grid size"]);
+    io.WriteCacheToFile (fade.path.cache, fade.cache);
+}
+
 
 fade.sites_found_summary = {};
 
@@ -346,16 +359,57 @@ if (utility.Has (fade.cache, terms.fade.cache.posterior, "AssociativeList") == F
 }
 
 fade.site_results = {};
-fade.report.posteriors = {};
+//fade.report.posteriors = {};
+
+namespace fade {
+
+    site.composition.string := fade.CompositionString (((cache [^"terms.fade.cache.composition"])[partition_index])[s]);
+    site.substitution.string := fade.SubstitutionHistory (((cache [^"terms.fade.cache.substitutions"])[partition_index])[s]);
+
+    if (run_settings["method"] == ^"terms.fade.methods.MH") {
+        table_headers = {{"rate", "Mean posterior relative rate at a site"}
+                         {"bias", "Mean posterior bias parameter at a site"}
+                         {"Prob[bias>0]", "Posterior probability of substitution bias towards `bias.residue`"}
+                         {"BayesFactor[bias>0]", "Empiricial Bayes Factor for substitution bias towards `bias.residue`"}
+                         {"PSRF", "Potential scale reduction factor - an MCMC mixing measure"}
+                         {"Neff", "Estimated effective sample site for Prob [bias>0]"}};
+
+        table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "N.eff", "Bayes Factor"}};
+        report.biased_site = {{"" + (1+filter_info[s]),
+                                        partition_index + 1,
+                                        bias.residue,
+                                        Format(partition_results[s][0],8,2),
+                                        Format(partition_results[s][1],8,2),
+                                        Format(partition_results[s][5],8,2),
+                                        Format(partition_results[s][3],8,2)}};
+    } else {
+        table_headers = {{"rate", "Mean posterior relative rate at a site"}
+                         {"bias", "Mean posterior bias parameter at a site"}
+                         {"Prob[bias>0]", "Posterior probability of substitution bias"}
+                         {"BayesFactor[bias>0]", "Empiricial Bayes Factor for substitution bias"}
+                         };
+
+         table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "Bayes Factor", "Aminoacid composition at site", "Substitution history on selected branches"}};
+         report.biased_site = {{"" + (1+filter_info[s]),
+                                        partition_index + 1,
+                                        bias.residue,
+                                        Format(partition_results[s][0],8,2),
+                                        Format(partition_results[s][1],8,2),
+                                        Format(partition_results[s][3],8,2),
+                                        site.composition.string,
+                                        site.substitution.string
+                                        }};
+    }
+}
 
 
 for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
     fade.bias.residue = fade.alphabet[fade.residue];
-    
+
     if (utility.Has (fade.cache [terms.fade.cache.conditionals], fade.bias.residue, "AssociativeList")) {
         fade.conditionals =  (fade.cache [terms.fade.cache.conditionals])[fade.bias.residue];
         io.ReportProgressBar    ("fade", "[`fade.bias.residue`] Loaded the phylogenetic likelihood function on the grid");
-    } else {  
+    } else {
         io.ReportProgressBar    ("fade", "[`fade.bias.residue`] Computing the phylogenetic likelihood function on the grid");
         fade.model.baseline = model.generic.DefineModel(fade.generator,
             "fade.baseline_model", {
@@ -371,7 +425,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
             },
             fade.filter_names,
             None);
-        
+
 
         fade.parameter.scalers = {
             terms.fade.bias : fade.parameter.bias,
@@ -395,8 +449,8 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
                     "fade.baseline_model" : utility.Filter (fade.selected_branches[_index_], "_value_", "_value_ == terms.tree_attributes.background"),
                     "fade.biased_model" : utility.Filter (fade.selected_branches[_index_], "_value_", "_value_ == terms.tree_attributes.test"),
                 };
-            
-            
+
+
                 fade.lf.components [2*(0+_index_)] = _filter_;
                 fade.lf.components [2*(0+_index_) + 1] = fade.trees.names[_index_];
                 model.ApplyModelToTree(fade.trees.names [_index_], fade.trees[_index_], None, fade.model_assignment);
@@ -407,22 +461,22 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
         LikelihoodFunction fade.lf = (fade.lf.components);
         estimators.ApplyExistingEstimates  ("fade.lf", fade.model_id_to_object, fade.baseline_fit, None);
-  
+
         fade.conditionals.raw = fade.ComputeOnGrid  ("fade.lf",
                              fade.grid.MatrixToDict (fade.cache[terms.fade.cache.grid]),
                             "fade.pass2.evaluator",
                             "fade.pass1.result_handler");
 
-    
-    
+
+
         (fade.cache [terms.fade.cache.conditionals])[fade.bias.residue] = fade.ConvertToConditionals (fade.conditionals.raw);
-        io.WriteCacheToFile (fade.path.cache, fade.cache);  
-   } 
-    
+        io.WriteCacheToFile (fade.path.cache, fade.cache);
+   }
+
 
     if (fade.run_settings["method"] == ^"terms.fade.methods.VB0") {
-        
-        
+
+
         if (utility.Has (fade.cache [terms.fade.cache.posterior], fade.bias.residue, "Matrix")) {
             io.ReportProgressBar    ("fade", "[`fade.bias.residue`] Loaded posterior means for grid loadings");
         } else {
@@ -431,54 +485,22 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
                                                               fade.cache[terms.fade.cache.grid],
                                                               (fade.cache [terms.fade.cache.conditionals])[fade.bias.residue],
                                                                None
-                                                              );   
-            io.WriteCacheToFile (fade.path.cache, fade.cache);  
+                                                              );
         }
-        
+
     }
 
     io.ClearProgressBar ();
-    
+
     namespace fade {
         sites   = (json [utility.getGlobalValue ("terms.json.input")])[utility.getGlobalValue ("terms.json.sites")];
         grid_points = Rows (cache['grid']);
         bias_present_stencil = {grid_points,sites} ["(cache['grid'])[_MATRIX_ELEMENT_ROW_][1]>0."];
-            
+
         rates  = Transpose ((cache['grid'])[-1][0]);
         biases = Transpose ((cache['grid'])[-1][1]);
 
-        if (run_settings["method"] == ^"terms.fade.methods.MH") {
-            table_headers = {{"rate", "Mean posterior relative rate at a site"}
-                             {"bias", "Mean posterior bias parameter at a site"}
-                             {"Prob[bias>0]", "Posterior probability of substitution bias towards `bias.residue`"}
-                             {"BayesFactor[bias>0]", "Empiricial Bayes Factor for substitution bias towards `bias.residue`"}
-                             {"PSRF", "Potential scale reduction factor - an MCMC mixing measure"}
-                             {"Neff", "Estimated effective sample site for Prob [bias>0]"}};
-        
-            table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "N.eff", "Bayes Factor for dir. selection"}};
-            report.biased_site = {{"" + (1+filter_info[s]),
-                                            partition_index + 1,
-                                            bias.residue,
-                                            Format(partition_results[s][0],10,3),
-                                            Format(partition_results[s][1],10,3),
-                                            Format(partition_results[s][5],10,3),
-                                            Format(partition_results[s][3],6,4)}};        
-        } else {
-            table_headers = {{"rate", "Mean posterior relative rate at a site"}
-                             {"bias", "Mean posterior bias parameter at a site"}
-                             {"Prob[bias>0]", "Posterior probability of substitution bias towards `bias.residue`"}
-                             {"BayesFactor[bias>0]", "Empiricial Bayes Factor for substitution bias towards `bias.residue`"}
-                             };
-        
-             table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "Bayes Factor for dir. selection"}};
-             report.biased_site = {{"" + (1+filter_info[s]),
-                                            partition_index + 1,
-                                            bias.residue,
-                                            Format(partition_results[s][0],10,3),
-                                            Format(partition_results[s][1],10,3),
-                                            Format(partition_results[s][3],6,4)}};        
-        }
-    
+
         if (run_settings["method"] != ^"terms.fade.methods.VB0") {
             samples = run_settings["samples"];
             chains  = run_settings["chains"];
@@ -522,7 +544,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
                 */
 
                 grid_samples = ((cache[utility.getGlobalValue("terms.fubar.cache.mcmc")])[chain_id])["weights"];
-            
+
                 if (run_settings["method"] == ^"terms.fubar.methods.MH") {
                      logL_samples = ((cache[utility.getGlobalValue("terms.fubar.cache.mcmc")])[chain_id])["likelihoods"];
                 }
@@ -567,15 +589,15 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
             }
             io.ClearProgressBar                   ();
             posterior_mean_over_grid                = {grid_points,1}["(+results.samples[-1][_MATRIX_ELEMENT_ROW_])/samples"];
-        
+
         } else {
              posterior_mean_over_grid                 = (cache[^"terms.fade.cache.posterior"])[bias.residue];
              posterior_mean_over_grid_T               = Transpose (posterior_mean_over_grid);
              cache[terms.fubar.cache.posterior]       = posterior_mean_over_grid;
              prior_weight_bias                        = +posterior_mean_over_grid ["_MATRIX_ELEMENT_VALUE_*((cache['grid'])[_MATRIX_ELEMENT_ROW_][1]>0.)"];
- 
+
              P_ks = posterior_mean_over_grid_T * ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"];
-         
+
 
              posterior_mean_rates     =             (posterior_mean_over_grid_T $ rates *
                                                               ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
@@ -598,7 +620,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
         s = 0; // reset to ensure good re-entrant behavior
 
         report.sites_found = {};
-        report.posteriors[bias.residue] = {};
+        //report.posteriors[bias.residue] = {};
         site_results[bias.residue] = {};
 
         chain_iterator = utility.Range (chains, 0, 1);
@@ -607,15 +629,20 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
             filter_info = (filter_specification [partition_index])[utility.getGlobalValue ("terms.data.coverage")];
             sites_in_partition = utility.Array1D (filter_info);
 
-            partition_results    = {sites_in_partition, 8};
             partition_posteriors = {};
+            if (run_settings["method"] != utility.getGlobalValue ("terms.fade.methods.MH")) {
+                partition_results    = {sites_in_partition, 4};
+                partition_results[0][0] = ""; // convert to string
+            } else {
+                partition_results    = {sites_in_partition, 6};
+           }
 
             for (s = 0; s < sites_in_partition; s += 1) {
-        
+
                 pp = posterior_mean_over_grid $ (((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"])[-1][i];
                 partition_posteriors [s] = Transpose (pp * (1/(+pp)));
 
-                if (run_settings["method"] != utility.getGlobalValue ("terms.fade.methods.VB0")) {            
+                if (run_settings["method"] != utility.getGlobalValue ("terms.fade.methods.VB0")) {
                     partition_results[s][0] = fubar.ComputeRandNeff (
                         utility.Map (chain_iterator, "_value_", "((`&posterior_mean_rates`)[_value_])[-1][`&i`]")
                     )[0];
@@ -628,22 +655,23 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
                     );
                     partition_results[s][2] = biased_posterior[0];
                     partition_results[s][3] = stats.BayesFactor (prior_weight_bias, biased_posterior[0]) ;
-                
+
                     if (run_settings["method"] == utility.getGlobalValue ("terms.fade.methods.MH")) {
                         partition_results[s][4] = biased_posterior[1];
                         partition_results[s][5] = biased_posterior[2];
                     }
-                
+
                 } else {
-                    if (run_settings["method"] == utility.getGlobalValue ("terms.fade.methods.VB0")) { 
+
+                    if (run_settings["method"] == utility.getGlobalValue ("terms.fade.methods.VB0")) {
                         partition_results [s][0] = posterior_mean_rates[i];
                         partition_results [s][1] = posterior_mean_biases[i];
                         partition_results [s][2] = biased_ks[i];
                         partition_results [s][3] = stats.BayesFactor (prior_weight_bias, biased_ks[i]);
                    }
                 }
-           
-                                   
+
+
                 if (partition_results[s][3] >= run_settings["bayes factor"]) {
                     if (Abs(report.sites_found) == 0 && table_output_options[^"terms.table_options.header"]) {
                         fprintf (stdout, io.FormatTableRow (table_screen_output,table_output_options));
@@ -655,11 +683,12 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
                 i+=1;
             }
-            s = 0; // for re-entrancy
             (site_results[bias.residue]) [partition_index] = partition_results;
-            (report.posteriors[bias.residue]) [partition_index] = partition_posteriors;
+            //(report.posteriors[bias.residue]) [partition_index] = partition_posteriors;
+            s = 0; // for re-entrancy
         }
 
+        partition_index = 0;
         sites_found = Abs(report.sites_found);
         sites_found_summary [bias.residue] = Abs(report.sites_found);
 
@@ -668,20 +697,22 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
 
 
-// ===========  DEFINE A BIASED MODEL ========
+// ===========  ANALYSIS SUMMARY ========
 
-fade.json [fade.fubar.cache.settings] = fade.run_settings;
-fade.json [fade.fit.MLE] = {terms.json.headers   : fade.table_headers,
+fade.json [fade.terms.cache.settings] = fade.run_settings;
+fade.json [terms.fit.MLE] = {terms.json.headers   : fade.table_headers,
                                terms.json.content : fade.site_results };
-fade.json [terms.fade.posterior] = fade.report.posteriors;
+//fade.json [terms.fade.posterior] = fade.report.posteriors;
 
 console.log ("----\n## FADE analysis summary. Evidence for directional selection evaluated using empirical Bayes factor threshold of " + fade.run_settings["bayes factor"]);
-utility.ForEachPair (fade.sites_found_summary, "_residue_", "_count_", 
-'   
+
+
+utility.ForEachPair (fade.sites_found_summary, "_residue_", "_count_",
+'
     if (_count_ == 0) {
         console.log ("* No sites are evolving directionally towards " + _residue_);
     } else {
-        console.log ("* `_count_` sites are evolving directionally towards " + _residue_);
+        console.log ("* " + _count_ + " " + io.SingularOrPlural (_count_, "site is", "sites are") + " evolving directionally towards " + _residue_);
     }
 
 ');
@@ -695,7 +726,7 @@ io.SpoolJSON (fade.json, fade.alignment_info[terms.json.json]);
 //----------------------------------------------------------------------------
 
 function     fade.RunPrompts (prompts) {
-    if (prompts["branches"]) {        
+    if (prompts["branches"]) {
         fade.selected_branches = selection.io.defineBranchSets ( fade.partitions_and_trees );
         fade.cache [terms.fade.cache.branches] = fade.selected_branches;
         prompts["branches"] = FALSE;
@@ -705,9 +736,9 @@ function     fade.RunPrompts (prompts) {
         fade.run_settings["grid size"] = io.PromptUser ("> Number of grid points per dimension (total number is D^2)",fade.run_settings["grid size"],5,50,TRUE);
         prompts["grid"] = FALSE;
     }
-        
-        
-                
+
+
+
     if (prompts["model"]) {
         utility.Extend (models.protein.empirical_models, {"GTR" : "General time reversible model (189 estimated parameters)."});
         fade.baseline_model         = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
@@ -716,24 +747,24 @@ function     fade.RunPrompts (prompts) {
         fade.cache[terms.fade.cache.model_generator] = fade.generator;
         prompts["model"] = FALSE;
     }
-    
-    
-     if (prompts["method"]) { 
+
+
+     if (prompts["method"]) {
         fade.run_settings["method"] = io.SelectAnOption  ({
                                                                 terms.fade.methods.MH : "Full Metropolis-Hastings MCMC algorithm (slowest, original 2013 paper implementation)",
                                                                 terms.fade.methods.CG : "Collapsed Gibbs sampler (intermediate speed)",
-                                                                terms.fade.methods.VB0 : "0-th order Variational Bayes approximations (fastest, recommended default)" 
+                                                                terms.fade.methods.VB0 : "0-th order Variational Bayes approximations (fastest, recommended default)"
                                                             }, "Posterior estimation method");
         prompts["method"] = FALSE;
      }
-    
+
     if (prompts["chain"]) {
         if (fade.run_settings["method"] ==  terms.fade.methods.MH) {
             fade.run_settings["chains"] = io.PromptUser ("> Number of MCMC chains to run",fubar.run_settings["chains"],2,20,TRUE);
         } else {
             fade.run_settings["chains"] = 1;
         }
-        if (fade.run_settings["method"] !=  terms.fade.methods.VB0) {        
+        if (fade.run_settings["method"] !=  terms.fade.methods.VB0) {
             fade.run_settings["chain-length"] = io.PromptUser ("> The length of each chain",fubar.run_settings["chain-length"],5e3,5e7,TRUE);
             fade.run_settings["burn-in"] = io.PromptUser ("> Use this many samples as burn-in",fade.run_settings["chain-length"]$2,fade.run_settings["chain-length"]$20,fade.run_settings["chain-length"]*95$100,TRUE);
             fade.run_settings["samples"] = io.PromptUser ("> How many samples should be drawn from each chain",fade.run_settings["samples"],50,fade.run_settings["chain-length"]-fade.run_settings["burn-in"],TRUE);
@@ -746,12 +777,14 @@ function     fade.RunPrompts (prompts) {
 //------------------------------------------------------------------------------------------------//
 
 lfunction fade.DefineGrid (one_d_points) {
+    // only one point for rate = 0, because bias is not identifiable if rate = 0
 
     one_d_points    = Max (one_d_points, 5);
 
     alphaBetaGrid = {one_d_points^2,2}; // (alpha, beta) pair
-    
-    oneDGrid      = {one_d_points,1};
+
+    oneDGridRate      = {one_d_points,1};
+    oneDGridBias      = {one_d_points,1};
 
     below1_frac         = 0.7;
     below1  = ((one_d_points)*below1_frac+0.5)$1;
@@ -760,30 +793,84 @@ lfunction fade.DefineGrid (one_d_points) {
     if (below1 + above1 != one_d_points) {
         above1 = one_d_points - below1;
     }
-    
-    _neg_step = 1/below1;
+
+    _neg_step = 1/(below1);
+    _neg_stepP1 = 1/(below1+1);
+
     for (_k = 0; _k < below1; _k += 1) {
-        oneDGrid [_k][0] =  _neg_step * _k;
+        oneDGridBias [_k][0] =  _neg_step * (_k);
+        oneDGridRate [_k][0] =  _neg_stepP1 * (_k + 1);
     }
-    
-    oneDGrid [below1-1][0] = 1;
-    
+
+    oneDGridRate [below1-1][0] = 1;
+    oneDGridBias [below1-1][0] = 1;
+
     _pos_step = 49^(1/3)/above1;
     for (_k = 1; _k <= above1; _k += 1) {
-        oneDGrid [below1+_k-1][0] = 1+(_pos_step*_k)^3;
+        oneDGridBias [below1+_k-1][0] = 1+(_pos_step*_k)^3;
+        oneDGridRate [below1+_k-1][0] = 1+(_pos_step*_k)^3;
     }
 
     _p = 0;
+
     for (_r = 0; _r < one_d_points; _r += 1) {
         for (_c = 0; _c < one_d_points; _c += 1) {
-           alphaBetaGrid[_p][0] = oneDGrid[_r];
-           alphaBetaGrid[_p][1] = oneDGrid[_c];
+           alphaBetaGrid[_p][0] = oneDGridRate[_r];
+           alphaBetaGrid[_p][1] = oneDGridBias[_c];
            _p += 1;
         }
     }
+    alphaBetaGrid[0][0] = 0; alphaBetaGrid[0][1] = 0;
+    alphaBetaGrid[1][1] = 0;
 
     return alphaBetaGrid;
 }
+
+//------------------------------------------------------------------------------------------------//
+
+lfunction fade.SubstitutionHistory (subs) {
+    result = "";
+    result * 128;
+    keys = utility.sortStrings (utility.Keys (subs));
+
+    for (i = 0; i < Abs (subs); i+=1) {
+        source  = keys[i];
+        targets  = subs[source];
+        if (i > 0) {
+            result * ", ";
+        }
+        result * (source + "->");
+        keys2 =  utility.sortStrings (utility.Keys (targets));
+        for (k = 0; k < Abs (targets); k+=1) {
+           result * (keys2[k] + "(" + Abs(targets[keys2[k]]) + ")");
+        }
+    }
+
+    result * 0;
+    return result;
+
+}
+
+//------------------------------------------------------------------------------------------------//
+
+lfunction fade.CompositionString (composition) {
+    result = "";
+    result * 128;
+    keys = utility.sortStrings (utility.Keys (composition));
+
+    for (i = 0; i < Abs (composition); i+=1) {
+        residue  = keys[i];
+        if (i) {
+            result * ",";
+        }
+        result * (residue + composition [residue]);
+    }
+
+    result * 0;
+    return result;
+
+}
+
 
 //------------------------------------------------------------------------------------------------//
 

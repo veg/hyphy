@@ -142,6 +142,7 @@ namespace terms{
         sequences      = "sequences";
         sequence       = "sequence";
         sample_size    = "sample size";
+        composition    = "composition";
         file           = "file";
         cache          = "cache";
         name           = "name";
@@ -461,7 +462,7 @@ namespace terms{
         rooted = "rooted";
         root   = "root";
         branches = "branches";
-        
+
         //node_name = "Name";
         //children = "Children";
         //parent = "Parent";
