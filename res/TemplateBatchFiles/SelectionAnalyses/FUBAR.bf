@@ -282,36 +282,7 @@ if (utility.Has (fubar.cache, terms.fubar.cache.grid, "Matrix") && utility.Has (
                         "fubar.pass1.result_handler");
 
 
-    fubar.total_grid_points         = Abs (fubar.conditionals.raw);
-    fubar.site_count                = utility.Array1D (fubar.conditionals.raw[0]);
-
-    fubar.conditionals.matrix       = {fubar.total_grid_points, fubar.site_count};
-    fubar.conditionals.scalers      = {1,fubar.site_count};
-
-
-    utility.ForEachPair (fubar.conditionals.raw, "_point_", "_conditionals_",
-        '
-            fubar.index = 0 + _point_;
-            for (_r = 0; _r < fubar.site_count ; _r += 1) {
-                fubar.conditionals.matrix [fubar.index][_r] = _conditionals_[_r];
-            }
-        '
-    );
-
-    for (fubar.s = 0; fubar.s < fubar.site_count; fubar.s += 1) {
-        fubar.this_site = fubar.conditionals.matrix[-1][fubar.s];
-        fubar.best_log_l = Min (fubar.this_site*(-1), 0);
-        fubar.this_site = (fubar.this_site + fubar.best_log_l)["Exp(_MATRIX_ELEMENT_VALUE_)"];
-        fubar.normalizer = +fubar.this_site;
-        fubar.this_site  = (fubar.this_site)*(1/fubar.normalizer);
-        fubar.conditionals.scalers[fubar.s] = - fubar.best_log_l + Log(fubar.normalizer);
-        for (fubar.g = 0; fubar.g < fubar.total_grid_points  ; fubar.g += 1) {
-            fubar.conditionals.matrix [fubar.g][fubar.s] = fubar.this_site [fubar.g];
-        }
-    }
-
-    fubar.cache[terms.fubar.cache.conditionals] = {"conditionals" : fubar.conditionals.matrix,
-                              "scalers" : fubar.conditionals.scalers };
+    fubar.cache[terms.fubar.cache.conditionals] = fubar.ConvertToConditionals (fubar.conditionals.raw);
 
     fubar.cache[terms.fubar.cache.grid] = fubar.grid.matrix;
     fubar.cache - terms.fubar.cache.mcmc; // overwrite old MCMC cache

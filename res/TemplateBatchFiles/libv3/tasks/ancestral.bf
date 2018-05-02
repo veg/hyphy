@@ -429,10 +429,32 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
 
  * @returns
         {
-         "Branches" :  {Matrix Nx1} names of selected branches,
-         "Substitutions"   :  {Dictionary} of substitution counts;
-                              will look like 
-                              
+         terms.trees.branches :  {Matrix Nx1} names of selected branches,
+         terms.substitutions   :  {Dictionary} of substitution counts;
+                              will look like "FROM" -> "TO" -> List of branches where this type of substitution occured
+         terms.substitutions:{
+               "N":{
+                 "H":{
+                   "0":"COW"
+                  }
+                },
+               "K":{
+                 "N":{
+                   "0":"Node5"
+                  },
+                 "T":{
+                   "0":"HORSE"
+                  }
+                },
+               "R":{
+                 "K":{
+                   "0":"Node3"
+                  },
+                 "P":{
+                   "0":"MOUSE"
+                  }
+                }
+              }               
         }
 
         N = number of selected branches
@@ -471,6 +493,7 @@ lfunction ancestral.ComputeSubstitutionBySite (ancestral_data, site, branch_filt
     branches = Abs (selected_branches);
 
     result   = {};
+    
 
     for (b = 0; b < branches; b += 1) {
         self   = (selected_branches[b])[0];
@@ -482,14 +505,119 @@ lfunction ancestral.ComputeSubstitutionBySite (ancestral_data, site, branch_filt
             own_state = (ancestral_data["CHARS"])[own_state];
             parent_state = (ancestral_data["CHARS"])[parent_state];
             utility.EnsureKey (result, parent_state);
-            (result[parent_state])[own_state] += 1;
+            utility.EnsureKey (result[parent_state], own_state);
+            ((result[parent_state])[own_state]) + selected_branch_names[b];
         }
     }
 
 
     return  {
-             "Branches"  : selected_branch_names,
-             "Substitutions"     : result
+             ^"terms.trees.branches"  : selected_branch_names,
+             ^"terms.substitutions"   : result
+            };
+
+}
+
+/*******************************************
+ **
+ * @name ancestral.ComputeSiteComposition
+ * computes the counts of individual characters (including ancestral states)
+ * at a specific site, possibly filtered to a subset of branches
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Number} site - the 0-based index of a site
+
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
+
+ * @returns
+        {
+         "Branches" :  {Matrix Nx1} names of selected branches,
+         "Substitutions"   :  {Dictionary} of substitution counts;
+                              will look like "FROM" -> "TO" -> List of branches where this type of substitution occured
+           "Substitutions":{
+               "N":{
+                 "H":{
+                   "0":"COW"
+                  }
+                },
+               "K":{
+                 "N":{
+                   "0":"Node5"
+                  },
+                 "T":{
+                   "0":"HORSE"
+                  }
+                },
+               "R":{
+                 "K":{
+                   "0":"Node3"
+                  },
+                 "P":{
+                   "0":"MOUSE"
+                  }
+                }
+              }               
+        }
+
+        N = number of selected branches
+ */
+ 
+/*******************************************/
+
+
+lfunction ancestral.ComputeSiteComposition (ancestral_data, site, branch_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+    coordinates = {{k-1, parent-1}};
+
+    for (k = 1; k < Abs(ancestral_data["TREE_AVL"]); k+=1) {
+        parent = ((ancestral_data["TREE_AVL"])[k])["Parent"];
+
+        if (parent) {
+            node_name = ((ancestral_data["TREE_AVL"])[k])["Name"];
+            if (None != branch_filter) {
+                if (Type (branch_filter) == "AssociativeList") {
+                    if ((branch_filter  / node_name) == FALSE) {
+                        continue;
+                    }
+                } else {
+                    if (Call (branch_filter, node_name) == FALSE) {
+                        continue;
+                    }
+                }
+            }
+            selected_branches + Eval (coordinates);
+            selected_branch_names + node_name;
+        }
+    }
+
+    branches = Abs (selected_branches);
+
+    result   = {};
+    
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        parent = (selected_branches[b])[1];
+        own_state    = (ancestral_data["MATRIX"])[self][site];
+        parent_state = (ancestral_data["MATRIX"])[parent][site];          
+        
+        if  ((own_state != parent_state) && (own_state != -1) && (parent_state != -1)) {
+            own_state = (ancestral_data["CHARS"])[own_state];
+            parent_state = (ancestral_data["CHARS"])[parent_state];
+            utility.EnsureKey (result, parent_state);
+            utility.EnsureKey (result[parent_state], own_state);
+            ((result[parent_state])[own_state]) + selected_branch_names[b];
+        }
+    }
+
+
+    return  {
+             ^"terms.trees.branches"  : selected_branch_names,
+             ^"terms.substitutions"   : result
             };
 
 }

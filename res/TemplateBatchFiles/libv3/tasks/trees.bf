@@ -357,7 +357,11 @@ lfunction trees.RootTree(tree_info, root_on) {
     utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", TRUE);
     tree_info = trees.ExtractTreeInfo(RerootTree (T, root_on));
     utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", None);
-    return tree_info;
+    
+    return {
+        ^"terms.trees.root"   : root_on,
+        ^"terms.data.tree"    : tree_info
+    };
 }
 
 /**

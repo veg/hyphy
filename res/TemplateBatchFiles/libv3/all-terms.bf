@@ -33,6 +33,7 @@ namespace terms{
     number_precision    = "number-precision";
     three_way           = "three-way";
     reduced             = "reduced";
+    substitutions       = "substitutions";
 
     parameters     = "parameters";
     local          = "local";
@@ -458,7 +459,9 @@ namespace terms{
         partitioned = "partitioned";
         model_list = "model_list";
         rooted = "rooted";
-
+        root   = "root";
+        branches = "branches";
+        
         //node_name = "Name";
         //children = "Children";
         //parent = "Parent";

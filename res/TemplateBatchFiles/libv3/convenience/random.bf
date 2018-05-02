@@ -408,6 +408,6 @@ lfunction random.gamma_fast (alpha) {
 lfunction random.dirichlet (alpha) {
     // alpha is the vector of > 0 concentration parameters     
     
-    return Random (alpha, {"PDF" : "Dirichlet"});
+    return Transpose (Random (alpha, {"PDF" : "Dirichlet"}));
     
 }
