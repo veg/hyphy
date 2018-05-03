@@ -259,7 +259,7 @@ random.LogFactorial.precomp = {{ 0.000000000000000,
              1145.100113817496100,
              1150.633503306223700,
              1156.170837573242400}};
-             
+
 lfunction random.LogFactorial(n) {
      if (n > 254) {
          x = n + 1;
@@ -367,23 +367,23 @@ lfunction random.binomial (p, N) {
 
     return x - 1;
  }
- 
+
  /*-------------------------------------------------*/
 
 lfunction random.gamma_fast (alpha) {
-    // the rejection sampling algorithm with squeeze from 
+    // the rejection sampling algorithm with squeeze from
     // "A Simple Method for Generating Gamma Variables"
     // ACM Transactions on Mathematical Software, Vol. 26, No. 3, September 2000, Pages 363–372.
-    
-    
+
+
     if (alpha < 1) {
         // use the trick that Gamma (alpha) ~ Gamma (alpha+1) * Uniform (1/alpha)
         return random.gamma_fast (alpha+1) * Random (0,1) ^ (1/alpha);
     } else {
-        
+
         d = alpha - 1/3;
         c = 1/Sqrt (9*d);
-        
+
         while (TRUE) {
             x = random.normal.standard ();
             v = (1+c*x);
@@ -406,8 +406,8 @@ lfunction random.gamma_fast (alpha) {
  /*-------------------------------------------------*/
 
 lfunction random.dirichlet (alpha) {
-    // alpha is the vector of > 0 concentration parameters     
-    
-    return Transpose (Random (alpha, {"PDF" : "Dirichlet"}));
-    
+    // alpha is the vector of > 0 concentration parameters
+
+     return Transpose (Random (alpha, {"PDF" : "Dirichlet"}));
+
 }

@@ -1,4 +1,4 @@
-RequireVersion("2.26");
+RequireVersion("2.3.11");
 
 LoadFunctionLibrary("../UtilityFunctions.bf");
 

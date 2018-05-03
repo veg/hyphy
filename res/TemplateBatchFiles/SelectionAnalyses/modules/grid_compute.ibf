@@ -63,7 +63,7 @@ lfunction pass2.evaluator (lf_id, tasks, scores) {
             console.log (site_likelihoods);
         }*/
         results [task_ids[i]] = site_likelihoods ["Max(_MATRIX_ELEMENT_VALUE_,-1e200)"];
-       
+
         // to avoid returning -inf
     }
 
@@ -241,26 +241,29 @@ lfunction ExecuteMCMC (grid, conditionals, ignored, settings, arguments){
 
 lfunction     RunCollapsedGibbs (settings, grid, conditionals, methodname) {
 
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "Running a collapsed Gibbs sampler to sample the posterior of rate weights");
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "* Using the following settings");
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Steps            : " + settings["chain-length"]);
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Burn-in steps    : " + settings["burn-in"]);
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Samples.         : " + settings["samples"]);
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Dirichlet alpha  : " + settings["concentration"]);  
-    
+    if (None != methodname) {
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "Running a collapsed Gibbs sampler to sample the posterior of rate weights");
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "* Using the following settings");
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Steps            : " + settings["chain-length"]);
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Burn-in steps    : " + settings["burn-in"]);
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Samples.         : " + settings["samples"]);
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Dirichlet alpha  : " + settings["concentration"]);
+    }
 
-    points             = Rows(grid); // # of grid points 
+
+    points             = Rows(grid); // # of grid points
     sites              = Columns(conditionals["conditionals"]);  // GRID_POINTS / SITES
     unit_row           = {1,points} ["1"];
     unit_column        = {sites,1} ["1"];
-    
+
+
     current_sampling_weights    = {points, sites};  // each COLUMN vector is a 1 sum vector of probabilities for drawing category J for this site
                                                     // initially just uninformed prior weighted by likelihoods
                                                     // "conditionals" are already normalized to sum to 1 for each site
-                                                    
-    
+
+
     grid_weights    = conditionals["conditionals"] * unit_column;
-   
+
     tolerance                   = 1e-8; // convergence tolerance
     step                        = 0;
     max_steps                   = 100000;
@@ -272,18 +275,19 @@ lfunction     RunCollapsedGibbs (settings, grid, conditionals, methodname) {
     sample_count           = settings["samples"];
     sampled_weights        = {sample_count,points};
     current_sample         = random.dirichlet ({points, 1} ['settings["concentration"]']);
-    sample_index                = 0;
+    sample_index           = 0;
     current_sampling_weights_norm   = {sites, 1};
-    
-    do {    
-        step += 1;
-        
 
-        current_sampling_weights = current_sample $ conditionals["conditionals"]; 
+    do {
+        step += 1;
+
+
+        current_sampling_weights = current_sample $ conditionals["conditionals"];
             // [rates x sites] element (i,j) => Prob (site j | category i) x Prob (category i), not normalized
-        current_sampling_weights_norm = unit_row * current_sampling_weights;                
-            // normalization weights for each _site_ 
+        current_sampling_weights_norm = unit_row * current_sampling_weights;
+            // normalization weights for each _site_
         current_sample           = random.dirichlet ((current_sampling_weights / current_sampling_weights_norm) * unit_column + (settings["concentration"]));
+
 
         if (step > settings["burn-in"]) {
             if ((step - settings["burn-in"] + 1) % sample == 0) {
@@ -297,42 +301,42 @@ lfunction     RunCollapsedGibbs (settings, grid, conditionals, methodname) {
             logLString = " (burning in)";
         }
 
-        if ((step) % (Max (1000, 5*sample)) == 0) {       
+        if ((step) % (Max (1000, 5*sample)) == 0) {
              io.ReportProgressBar ("mcmc", "Grid weight sampling step " + Format (step, 10, 0) + logLString);
         }
-        
-        
+
+
     } while (step < settings["chain-length"]);
-    
+
     io.ClearProgressBar                   ();
 
     return {"0" : {"weights" : sampled_weights}};
-    
+
 }
 
 //----------------------------------------------------------------------------
 
 
 lfunction     RunVariationalBayes (settings, grid, conditionals, methodname) {
-    
+
     if (None != methodname) {
         io.ReportProgressMessageMD                  (methodname, "mcmc", "Running an iterative zeroth order variational Bayes procedure to estimate the posterior mean of rate weights");
         io.ReportProgressMessageMD                  (methodname, "mcmc", "* Using the following settings");
-        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Dirichlet alpha  : " + settings["concentration"]);  
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Dirichlet alpha  : " + settings["concentration"]);
     }
-    
-    points             = Rows(grid); // # of grid points 
+
+    points             = Rows(grid); // # of grid points
     sites              = Columns(conditionals["conditionals"]);  // GRID_POINTS / SITES
     unit_row           = {1,points} ["1"];
     unit_column        = {sites,1} ["1"];
-    
+
     current_sampling_weights    = {points, sites};  // each COLUMN vector is a 1 sum vector of probabilities for drawing category J for this site
                                                     // initially just uninformed prior weighted by likelihoods
                                                     // "conditionals" are already normalized to sum to 1 for each site
-                                                    
-    
+
+
     grid_weights    = conditionals["conditionals"] * unit_column;
-   
+
     tolerance                   = 1e-8; // convergence tolerance
     step                        = 0;
     max_steps                   = 100000;
@@ -346,28 +350,28 @@ lfunction     RunVariationalBayes (settings, grid, conditionals, methodname) {
         diagonal_sites[k][k] := 1/current_sampling_weights_norm [k__];
     }
 
-    do {    
+    do {
         last_grid_weights = grid_weights;
-        
+
         step         += 1;
-        current_sampling_weights = last_grid_weights $ conditionals["conditionals"]; 
+        current_sampling_weights = last_grid_weights $ conditionals["conditionals"];
             // [rates x sites] element (i,j) => Prob (site j | category i) x Prob (category i), not normalized
 
         current_sampling_weights_norm = unit_row * current_sampling_weights;
-                
-            // normalization weights for each _site_ 
-        grid_weights           = (current_sampling_weights / current_sampling_weights_norm) * unit_column + settings["concentration"];            
+
+            // normalization weights for each _site_
+        grid_weights           = (current_sampling_weights / current_sampling_weights_norm) * unit_column + settings["concentration"];
         grid_weights           = grid_weights * (1/ (+grid_weights));
-                   
+
         current_error = Abs (grid_weights-last_grid_weights);
-        
+
         io.ReportProgressBar ("mcmc", "Posterior mean estimation step " + Format (step, 10, 0) + ", error = " + Format (current_error, 10, 7));
     } while (current_error > tolerance && step < max_steps);
-    
+
     io.ClearProgressBar                   ();
-    
+
     return grid_weights;
-    
+
 }
 
 //----------------------------------------------------------------------------
@@ -390,8 +394,8 @@ lfunction   ConvertToConditionals (raw_scores) {
 
     for (s = 0; s < site_count; s += 1) {
         this_site = conditionals.matrix[-1][s];
-        
-        
+
+
         best_log_l = Min (this_site*(-1), 0);
         this_site = (this_site + best_log_l)["Exp(_MATRIX_ELEMENT_VALUE_)"];
         normalizer = +this_site;
@@ -402,7 +406,7 @@ lfunction   ConvertToConditionals (raw_scores) {
             conditionals.matrix [g][s] = this_site [g];
         }
     }
-    
+
     return {"conditionals" : conditionals.matrix,
             "scalers" : conditionals.scalers };
 }

@@ -34,7 +34,7 @@ function load_file (prefix) {
         settings = prefix[utility.getGlobalValue("terms.settings")];
         prefix = prefix [utility.getGlobalValue("terms.prefix")];
     }
-    
+
 
     codon_data_info = alignments.PromptForGeneticCodeAndAlignment(prefix+".codon_data", prefix+".codon_filter");
 
@@ -166,7 +166,7 @@ function load_file (prefix) {
     (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.partition_count")] = partition_count;
 
     // The trees should go into input as well and they should be w/ their branch lengths but ONLY if they have any.
- 
+
 
 
      filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, "`prefix`.codon_data" , "`prefix`.filter.", codon_data_info);
@@ -217,18 +217,18 @@ function store_tree_information () {
 
 
     t = (partitions_and_trees["0"])[utility.getGlobalValue("terms.data.tree")];
-    abs_branch_lengths = Abs(t[utility.getGlobalValue("terms.branch_length")]);  
-    
+    abs_branch_lengths = Abs(t[utility.getGlobalValue("terms.branch_length")]);
+
     if (abs_branch_lengths == 0){
         selection.io.json_store_key_value_pair (json,
                                              utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
                                              utility.Map (partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick]')
-                                             );    
-    } else {    
+                                             );
+    } else {
         selection.io.json_store_key_value_pair (json,
                                              utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
                                              utility.Map (partitions_and_trees, "_pt_", '(_pt_[terms.data.tree])[terms.trees.newick_with_lengths]')
-                                             ); 
+                                             );
     }
 
 
@@ -239,12 +239,12 @@ function store_tree_information () {
 
      /* Store original name mapping */
      for (partition_index = 0; partition_index < partition_count; partition_index += 1) {
-     
+
         selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.original_name"), utility.getGlobalValue ("terms.json.node_label"), display_orders[utility.getGlobalValue ("terms.original_name")],
                                          partition_index,
                                          name_mapping);
     }
-    
+
 
 }
 
@@ -277,7 +277,7 @@ function doGTR (prefix) {
 
 
     /* Store nucleotide fit */
-    gtr_rates = utility.Map( 
+    gtr_rates = utility.Map(
                     utility.Map (gtr_results[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                     "_value_",
                     "_value_[terms.fit.MLE]");
@@ -287,11 +287,11 @@ function doGTR (prefix) {
                                 gtr_results[utility.getGlobalValue ("terms.fit.log_likelihood")],
                                 gtr_results[utility.getGlobalValue ("terms.parameters")] ,
                                 codon_data_info[utility.getGlobalValue ("terms.data.sample_size")],
-                                gtr_rates, 
+                                gtr_rates,
                                 efv,
                                 display_orders[utility.getGlobalValue ("terms.json.nucleotide_gtr")]);
 
-    
+
     /* TODO: Why does this not work here? */
     /*
     utility.ForEachPair (filter_specification, "_key_", "_value_",
@@ -299,7 +299,7 @@ function doGTR (prefix) {
                                          _key_,
                                          selection.io.extract_branch_info((gtr_results[utility.getGlobalValue ("terms.branch_length")])[_key_], "selection.io.branch.length"));');
     */
-    
+
     /* Store branch lengths */
     for (partition_index = 0; partition_index < Abs(filter_specification); partition_index += 1) {
         selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.json.nucleotide_gtr"), utility.getGlobalValue ("terms.branch_length"), display_orders[terms.json.nucleotide_gtr],
@@ -339,7 +339,7 @@ function doPartitionedMG (prefix, keep_lf) {
 
 
     partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
-        utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"), 
+        utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"),
         utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,
         utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
         utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
