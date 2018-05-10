@@ -1,0 +1,8 @@
+LoadFunctionLibrary("SelectionAnalyses/FUBAR.bf", {
+    "0": "Universal",
+    "1": PATH_TO_CURRENT_BF + "data/partitioned.nex",
+    "2": "20",
+    "3": "Variational Bayes",
+    "4": "0.5"
+});
+

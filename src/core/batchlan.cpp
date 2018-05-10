@@ -115,6 +115,7 @@ using namespace hyphy_global_objects;
 //____________________________________________________________________________________
 // global variables
 
+
 _List
 dataSetList,
 dataSetNamesList,
@@ -125,6 +126,7 @@ theModelList,
 allowedFormats,
 batchLanguageFunctions,
 batchLanguageFunctionNames,
+_batchLanguageFunctionNamesIndexed,
 batchLanguageFunctionParameterLists,
 batchLanguageFunctionParameterTypes,
 compiledFormulaeParameters,
@@ -134,6 +136,7 @@ standardLibraryPaths,
 standardLibraryExtensions,
 loadedLibraryPathsBackend;
 
+_AVLListX batchLanguageFunctionNamesIndexed (&_batchLanguageFunctionNamesIndexed);
 
 #ifdef __MAC__
 _String volumeName;
@@ -741,11 +744,18 @@ void ClearBFFunctionLists (long start_here) {
     
     _SimpleList delete_me (batchLanguageFunctionNames.countitems()-start_here, start_here, 1L);
     
+    for (long k = 0; k < delete_me.countitems(); k++) {
+      batchLanguageFunctionNamesIndexed.Delete (batchLanguageFunctionNames.GetItem (delete_me.Get (k)));
+    }
+    
     batchLanguageFunctionNames.DeleteList           (delete_me);
     batchLanguageFunctions.DeleteList               (delete_me);
     batchLanguageFunctionClassification.DeleteList  (delete_me);
     batchLanguageFunctionParameterLists.DeleteList  (delete_me);
     batchLanguageFunctionParameterTypes.DeleteList  (delete_me);
+    
+    
+    
   } /*else {
     batchLanguageFunctionNames.Clear();
     batchLanguageFunctions.Clear();
@@ -777,10 +787,11 @@ long    FindBFFunctionName (_String const&s, _VariableContainer const* theP) {
 
         while (1) {
             _String test_id = prefix & '.' & s;
-            long idx = batchLanguageFunctionNames.FindObject (&test_id);
+            long idx = batchLanguageFunctionNamesIndexed.Find (&test_id);
             if (idx >= 0) {
+                return batchLanguageFunctionNamesIndexed.GetXtra(idx);
                 //s = test_id;
-                return idx;
+                //return idx;
             }
             long cut_at = prefix.FindBackwards ('.', 0, -1);
             if (cut_at > 0) {
@@ -791,8 +802,9 @@ long    FindBFFunctionName (_String const&s, _VariableContainer const* theP) {
         };
     }
 
+  
     //ReportWarning (_String ("Looking for ") & s.Enquote() & " in global context");
-   return batchLanguageFunctionNames.FindObject (&s);
+    return batchLanguageFunctionNamesIndexed.FindAndGetXtra(&s,-1);
 }
 
 
@@ -1329,7 +1341,10 @@ long        _ExecutionList::ExecuteAndClean     (long g, _String* fName)        
     Execute ();
 
     if (fName && !terminateExecution) {
-        f = batchLanguageFunctionNames.FindObject (fName);
+        f = batchLanguageFunctionNamesIndexed.Find (fName);
+        if (f >= 0) {
+          f = batchLanguageFunctionNamesIndexed.GetXtra (f);
+        }
     }
 
     terminateExecution      = false;
@@ -7692,6 +7707,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       } else {
           batchLanguageFunctions.AppendNewInstance(functionBody);
           batchLanguageFunctionNames.AppendNewInstance(funcID);
+          batchLanguageFunctionNamesIndexed.Insert (new _String(*funcID), batchLanguageFunctions.countitems()-1, false, true);
           batchLanguageFunctionParameterLists &&(&arguments);
           batchLanguageFunctionParameterTypes &&(&argument_types);
           batchLanguageFunctionClassification <<(isLFunction ? BL_FUNCTION_LOCAL :( isFFunction? BL_FUNCTION_SKIP_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE));

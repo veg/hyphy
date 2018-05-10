@@ -750,9 +750,32 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgra
     currentProgram.currentCommand++;
     _String theVersion = ProcessLiteralArgument ((_String*)parameters (0),currentProgram.nameSpacePrefix);
 
-    if (__HYPHY__VERSION__.toNum() < theVersion.toNum()) {
-        currentProgram.ReportAnExecutionError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
-        return false;
+    _List local_version    = __HYPHY__VERSION__.Tokenize ("."),
+          required_version = theVersion.Tokenize(".");
+  
+    try {
+    
+      unsigned long const  upper_bound = MIN (local_version.countitems(), required_version.countitems());
+    
+    
+      for (unsigned long i = 0UL; i < upper_bound; i++) {
+        _Parameter local_number = ((_String*)local_version.GetItem(i))->toNum();
+        _Parameter required_number = ((_String*)required_version.GetItem(i))->toNum();
+        
+        if (local_number > required_number) {
+          return true;
+        }
+        if (local_number < required_number) {
+          throw (0);
+        }
+      }
+    
+      if (required_version.countitems() > upper_bound) {
+          return true;
+      }
+    } catch (int ) {
+      currentProgram.ReportAnExecutionError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
+      return false;
     }
     return true;
 }

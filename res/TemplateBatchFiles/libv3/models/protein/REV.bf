@@ -34,7 +34,7 @@ lfunction models.protein.REV.ModelDescription(type) {
     };
 }
 
-lfunction models.protein.REV._GenerateRate(fromChar, toChar, namespace, model_type) {
+lfunction models.protein.REV._GenerateRate(fromChar, toChar, namespace, model_type, model) {
     models.protein.REV._generateRate.p = {};
     models.protein.REV._generateRate.p[model_type] = {};
 
@@ -142,7 +142,8 @@ function models.protein.REV.DefineQMatrix (modelSpec, namespace) {
 			__rp = Call (__rate_function, __alphabet[_rowChar],
 															  __alphabet[_colChar],
 															   namespace,
-															  __modelType);
+															  __modelType,
+															  modelSpec);
   
 
 		 	if (None != __rate_variation) {

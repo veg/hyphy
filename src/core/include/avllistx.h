@@ -72,6 +72,8 @@ class _AVLListX: public _AVLList {
 
         void        SetXtra(long,long);
         long        GetXtra(long) const;
+  
+        long        FindAndGetXtra (BaseRefConst, long not_found_value = -1);
 
 };
 

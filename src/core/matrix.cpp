@@ -7292,89 +7292,125 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::MultElements (_PMathObj mp, bool elementWiseDivide)
-{
+_PMathObj       _Matrix::MultElements (_PMathObj mp, bool elementWiseDivide) {
 
+    
+    
+    
     if (mp->ObjectClass()!=ObjectClass()) {
         warnError(-101);
         return new _Matrix (1,1);
     }
 
     _Matrix* m = (_Matrix*)mp;
+    
+    
+    bool by_column = false;
+    // if the second argument has dimension 1xcolumns of the first matrix, then
+    // result [i][j] is assigned this [i][j] * / argument [0][j]
+    // in other words, divide or multiply each column
+    
+    bool by_row    = false;
+    // if the first argument has dimension rows of the second matrix x 1 then
+    // result [i][j] is assigned argument [i][j] * / this [i][0]
+    // in other words, divide or multiply each row
+    
 
-    if ((GetHDim()!=m->GetHDim()) || (GetVDim()!=m->GetVDim())) {
-        WarnError ("Element-wise multiplication/division requires matrixes of the same dimension.");
-        return new _Matrix (1,1);
+    if ( GetHDim()!=m->GetHDim()  || GetVDim()!=m->GetVDim()) {
+        if (GetVDim() == m->GetVDim() && m->GetHDim () == 1) {
+            by_column = true;
+        } else {
+            if (GetHDim() == m->GetHDim() && GetVDim () == 1) {
+                by_row = true;
+            } else {
+                WarnError ("Element-wise multiplication/division requires matrixes of the same dimension, or (NxM) $ (1xM) or (Nx1) $ (NxM) matrices ");
+                return new _Matrix (1,1);
+            }
+        }
     }
 
-    if ((storageType!=1)||(m->storageType != 1)) {
+    if (storageType!=1 || m->storageType != 1) {
         WarnError ("Element-wise multiplication/division only works on numeric matrices");
         return new _Matrix (1,1);
     }
 
-    _Matrix*      result = new _Matrix (hDim, vDim, false, true);
-    checkPointer  (result);
-
-    if (elementWiseDivide) {
-        if (theIndex) {
-            if (m->theIndex) {
-                for (long k=0; k<lDim; k++) {
-                    long    i = theIndex[k];
-                    if (i>=0) {
-                        result->theData [i] = theData[k] / (*m)(i/vDim, i%vDim);
+    _Matrix*      result = new _Matrix (GetHDim(), m->GetVDim(), false, true);
+    
+    if (theIndex || m->theIndex) {
+        auto operation = elementWiseDivide ? DivNumbers : MultNumbers;
+        
+        long index = 0L;
+        if (by_row) {
+            for (long row = 0; row < hDim; row++) {
+                for (long column = 0; column < m->vDim; column++, index++) {
+                    result->theData[index] = operation ( (*this)(row,0), (*m)(row,column));
+                }
+            }
+        } else {
+            if (by_column) {
+                for (long row = 0; row < hDim; row++) {
+                    for (long column = 0; column < m->vDim; column++, index++) {
+                        result->theData[index] = operation ( (*this)(row,column), (*m)(0,column));
+                    }
+                }
+            }
+            else {
+                for (long row = 0; row < hDim; row++) {
+                    for (long column = 0; column < m->vDim; column++, index++) {
+                        result->theData[index] = operation ( (*this)(row,column), (*m)(row,column));
+                    }
+                }
+            }
+        }
+    } else {
+        if (elementWiseDivide) {
+            long index = 0L;
+            if (by_row) {
+                for (long row = 0; row < hDim; row++) {
+                    for (long column = 0; column < m->vDim; column++, index++) {
+                        result->theData[index] = theData[row] / m->theData [index];
                     }
                 }
             } else {
-                for (long k=0; k<lDim; k++) {
-                    long    i = theIndex[k];
-                    if (i>=0) {
-                        result->theData [i] = theData[k] / m->theData[i];
+                if (by_column) {
+                    for (long row = 0; row < hDim; row++) {
+                        for (long column = 0; column < m->vDim; column++, index++) {
+                            result->theData[index] = theData[index] / m->theData [column];
+                        }
+                    }
+                }
+                else {
+                    for (long row = 0; row < hDim; row++) {
+                        for (long column = 0; column < m->vDim; column++, index++) {
+                            result->theData[index] = theData[index] / m->theData [index];
+                        }
                     }
                 }
             }
         } else {
-            if (m->theIndex) {
-                for (long k=0; k<m->lDim; k++) {
-                    long    i = m->theIndex[k];
-                    if (i>=0) {
-                        result->theData [i] = theData[i] / m->theData[k];
-                    }
-                }
-            } else
-                for (long k=0; k<lDim; k++) {
-                    result->theData [k] = theData[k] / m->theData[k];
-                }
-        }    
-    }
-    else {
-        if (theIndex) {
-            if (m->theIndex) {
-                for (long k=0; k<lDim; k++) {
-                    long    i = theIndex[k];
-                    if (i>=0) {
-                        result->theData [i] = theData[k] * (*m)(i/vDim, i%vDim);
+            long index = 0L;
+            if (by_row) {
+                for (long row = 0; row < hDim; row++) {
+                    for (long column = 0; column < m->vDim; column++, index++) {
+                        result->theData[index] = theData[row] * m->theData [index];
                     }
                 }
             } else {
-                for (long k=0; k<lDim; k++) {
-                    long    i = theIndex[k];
-                    if (i>=0) {
-                        result->theData [i] = theData[k] * m->theData[i];
+                if (by_column) {
+                    for (long row = 0; row < hDim; row++) {
+                        for (long column = 0; column < m->vDim; column++, index++) {
+                            result->theData[index] = theData[index] * m->theData [column];
+                        }
+                    }
+                }
+                else {
+                    for (long row = 0; row < hDim; row++) {
+                        for (long column = 0; column < m->vDim; column++, index++) {
+                            result->theData[index] =theData[index] * m->theData [index];
+                        }
                     }
                 }
             }
-        } else {
-            if (m->theIndex) {
-                for (long k=0; k<m->lDim; k++) {
-                    long    i = m->theIndex[k];
-                    if (i>=0) {
-                        result->theData [i] = theData[i] * m->theData[k];
-                    }
-                }
-            } else
-                for (long k=0; k<lDim; k++) {
-                    result->theData [k] = theData[k] * m->theData[k];
-                }
         }
     }
 

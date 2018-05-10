@@ -43,7 +43,7 @@ lfunction models.DNA.GTR.ModelDescription(type) {
  * @param {String} model_type
  * @returns models.DNA.GTR._generateRate.p
  */
-function models.DNA.GTR._generateRate(fromChar, toChar, namespace, model_type) {
+function models.DNA.GTR._generateRate(fromChar, toChar, namespace, model_type, model) {
     models.DNA.GTR._generateRate.p = {};
     models.DNA.GTR._generateRate.p[model_type] = {};
 

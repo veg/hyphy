@@ -58,15 +58,14 @@ LoadFunctionLibrary("matrices/HIV.ibf");
  * @param {String} model_type
  * @return list of parameters
  */
-lfunction models.protein.empirical._GenerateRate(rateDict, fromChar, toChar, namespace, model_type) {
-
-
+lfunction models.protein.empirical._GenerateRate(fromChar, toChar, namespace, model_type, model) {
     models.protein.empirical._GenerateRate.p = {};
     models.protein.empirical._GenerateRate.p  [model_type]       = {};
+    
     if (fromChar < toChar) {
-        models.protein.empirical._GenerateRate.p  [utility.getGlobalValue("terms.model.rate_entry")] = "" + (rateDict[fromChar])[toChar];
+        models.protein.empirical._GenerateRate.p  [utility.getGlobalValue("terms.model.rate_entry")] = "" + ((model[utility.getGlobalValue ("terms.model.empirical_rates")])[fromChar])[toChar];
     } else {
-        models.protein.empirical._GenerateRate.p  [utility.getGlobalValue("terms.model.rate_entry")] = "" + (rateDict[toChar])[fromChar];
+        models.protein.empirical._GenerateRate.p  [utility.getGlobalValue("terms.model.rate_entry")] = "" + ((model[utility.getGlobalValue ("terms.model.empirical_rates")])[toChar])[fromChar];
     }
     return models.protein.empirical._GenerateRate.p;
 }
@@ -212,13 +211,15 @@ function models.protein.empirical.DefineQMatrix (modelSpec, namespace) {
 	} 
 
 	for (_rowChar = 0; _rowChar < models.protein.dimensions; _rowChar +=1 ){
-		for (_colChar = _rowChar + 1; _colChar < models.protein.dimensions; _colChar += 1) {
-		    
-		    // NOTE the extra argument for protein models.
-			__rp = Call (__rate_function, __empirical_rates, __alphabet[_rowChar],
+		for (_colChar = 0; _colChar < models.protein.dimensions; _colChar += 1) {		    
+            if (_rowChar == _colChar) {
+                continue;
+            }
+			__rp = Call (__rate_function, __alphabet[_rowChar],
 															  __alphabet[_colChar],
 															   namespace,
-															  __modelType);
+															  __modelType,
+															  modelSpec);
   
 
 		 	if (None != __rate_variation) {

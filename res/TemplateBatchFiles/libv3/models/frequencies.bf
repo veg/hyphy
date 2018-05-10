@@ -28,8 +28,8 @@ function frequencies.empirical.binary(model, namespace, datafilter) {
  * @returns {Dictionary} updated model
  */
 function frequencies.equal(model, namespace, datafilter) {
-    
-    
+
+
     __N = utility.Array1D(model[terms.alphabet]);
     model[terms.efv_estimate] = {
         __N,
@@ -52,6 +52,44 @@ function frequencies.empirical.nucleotide(model, namespace, datafilter) {
     model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
     model[terms.model.efv_estimate_name] = terms.frequencies._4x1;
     (model[terms.parameters])[terms.model.empirical] = 3;
+    return model;
+}
+
+/**
+ * Sets model's equilibrium frequency estimator to ML for binary data
+ * @name frequencies.empirical.binary
+ * @param {Dictionary} model
+ * @param {String} namespace
+ * @param {DataSetFilter} datafilter
+ * @returns {Dictionary} updated model
+ */
+function frequencies.ML.binary (model, namespace, datafilter) {
+    model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
+    // define 2 frequency parameters
+    // initialize to empirical freqs
+    // add to model parameter manifest
+    frequencies.ML.binary.emp = model[terms.efv_estimate];
+    model[terms.efv_estimate] = {2,1};
+    frequencies.ML.binary.variables = {2,1};
+    frequencies.ML.binary.scaler = namespace + ".frequency_scaler";
+
+    utility.ForEachPair (model[terms.alphabet], "_index", "_letter",
+                         '
+                            _idx = _index[1];
+                            _freq_parameter = namespace + ".equilibrium_frequency_of." + _letter;
+                            frequencies.ML.binary.variables [_idx] = _freq_parameter;
+                            (model[terms.efv_estimate]) [_idx] = _freq_parameter + "/" + frequencies.ML.binary.scaler;
+                            parameters.DeclareGlobalWithRanges (_freq_parameter, frequencies.ML.binary.emp[_idx], 0, 1);
+                            model.generic.AddGlobal (model, _freq_parameter, terms.characterFrequency (_letter));
+                         '
+                         );
+
+    // constrain pi_0 + pi_1 = 1,
+
+    parameters.SetConstraint ( frequencies.ML.binary.scaler, Join ("+", frequencies.ML.binary.variables), "global");
+
+    model[terms.model.efv_estimate_name] = terms.frequencies.ml;
+    (model[terms.parameters])[terms.model.empirical] = -1; // correct for the restricted sum
     return model;
 }
 
@@ -79,33 +117,7 @@ function frequencies.empirical.protein (model, namespace, datafilter) {
  * @returns {Dictionary} updated model
  */
 function frequencies.ML.protein (model, namespace, datafilter) {
-    model = frequencies._aux.empirical.singlechar(model, namespace, datafilter);
-    // define 20 frequency parameters
-    // initialize to empirical freqs
-    // add to model parameter manifest
-    frequencies.ML.protein.emp = model[terms.efv_estimate];
-    model[terms.efv_estimate] = {20,1};
-    frequencies.ML.protein.variables = {20,1};
-    frequencies.ML.protein.scaler = namespace + ".frequency_scaler";
-    
-    utility.ForEachPair (model[terms.alphabet], "_index", "_letter",
-                         '  
-                            _idx = _index[1];
-                            _freq_parameter = namespace + ".equilibrium_frequency_of." + _letter;
-                            frequencies.ML.protein.variables [_idx] = _freq_parameter;
-                            (model[terms.efv_estimate]) [_idx] = _freq_parameter + "/" + frequencies.ML.protein.scaler;
-                            parameters.DeclareGlobalWithRanges (_freq_parameter, frequencies.ML.protein.emp[_idx], 0, 1);
-                            model.generic.AddGlobal (model, _freq_parameter, terms.characterFrequency (_letter));
-                         '
-                         );
-       
-    // constrain pi_A + ... + pi_A = 1, 
-    
-    parameters.SetConstraint ( frequencies.ML.protein.scaler, Join ("+", frequencies.ML.protein.variables), "global");
- 
-    model[terms.model.efv_estimate_name] = terms.frequencies.ml;
-    (model[terms.parameters])[terms.model.empirical] = -1; // correct for the restricted sum
-    return model;
+    return frequencies.mle (model, namespace, datafilter);
 }
 
 /**
@@ -147,23 +159,28 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
         for (_rowChar = 0; _rowChar < __dimension; _rowChar += 1) {
             for (_colChar = _rowChar + 1; _colChar < __dimension; _colChar += 1) {
 
-                __diff = models.codon.diff(__alphabet[_rowChar], __alphabet[_colChar]);
-                if (None != __diff) {
-                    for (__component_id = 0; __component_id < __component_count; __component_id += 1) {
-                         ((model[terms.model.rate_matrix])[__components[__component_id]]) [_rowChar][_colChar] += "*" + (__estimates[__diff["to"]])[__diff["position"]];
-                         ((model[terms.model.rate_matrix])[__components[__component_id]]) [_colChar][_rowChar] += "*" + (__estimates[__diff["from"]])[__diff["position"]];
+                //__diff = models.codon.diff(__alphabet[_rowChar], __alphabet[_colChar]);
+                for (__component_id = 0; __component_id < __component_count; __component_id += 1) {
+                    if (Abs (((model[terms.model.rate_matrix])[__components[__component_id]]) [_colChar][_rowChar])) {
+                        __diff = models.codon.diff.complete (__alphabet[_rowChar], __alphabet[_colChar]);
+                         for (__diff_id = 0; __diff_id < Abs (__diff); __diff_id += 1) {
+                             ((model[terms.model.rate_matrix])[__components[__component_id]]) [_rowChar][_colChar] += "*" + (__estimates[(__diff[__diff_id])["to"]])[(__diff[__diff_id])["position"]];
+                             ((model[terms.model.rate_matrix])[__components[__component_id]]) [_colChar][_rowChar] += "*" + (__estimates[(__diff[__diff_id])["from"]])[(__diff[__diff_id])["position"]];
+                         }
                     }
-                 }
+                }
             }
         }
     } else {
         for (_rowChar = 0; _rowChar < __dimension; _rowChar += 1) {
             for (_colChar = _rowChar + 1; _colChar < __dimension; _colChar += 1) {
 
-                __diff = models.codon.diff(__alphabet[_rowChar], __alphabet[_colChar]);
-                if (None != __diff) {
-                    (model[terms.model.rate_matrix])[_rowChar][_colChar] += "*" + (__estimates[__diff["to"]])[__diff["position"]];
-                    (model[terms.model.rate_matrix])[_colChar][_rowChar] += "*" + (__estimates[__diff["from"]])[__diff["position"]];
+                if (Abs ((model[terms.model.rate_matrix])[_colChar][_rowChar])) {
+                    __diff = models.codon.diff.complete (__alphabet[_rowChar], __alphabet[_colChar]);
+                    for (__diff_id = 0; __diff_id < Abs (__diff); __diff_id += 1) {
+                        (model[terms.model.rate_matrix])[_rowChar][_colChar] += "*" + (__estimates[(__diff[__diff_id])["to"]])[(__diff[__diff_id])["position"]];
+                        (model[terms.model.rate_matrix])[_colChar][_rowChar] += "*" + (__estimates[(__diff[__diff_id])["from"]])[(__diff[__diff_id])["position"]];
+                    }
                 }
             }
         }
@@ -182,8 +199,38 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
  * @param namespace
  * @param datafilter
  */
-function frequencies.mle(model, namespace, datafilter) {
-    assert(0, "frequencies.mle is TBD");
+lfunction frequencies.mle(model, namespace, datafilter) {
+    frequencies._aux.empirical.singlechar(model, namespace, datafilter); // gather empirical frequencies
+
+    alphabet       = model[utility.getGlobalValue ("terms.alphabet")];
+    alphabet_size  = utility.Array1D (alphabet);
+    empirical       = model[utility.getGlobalValue ("terms.efv_estimate")];
+
+    model[utility.getGlobalValue ("terms.efv_estimate")] = {alphabet_size,1};
+
+    ML.variables = {alphabet_size,1};
+    ML.scaler    = namespace + ".frequency_scaler";
+
+    utility.ForEachPair (model[utility.getGlobalValue ("terms.alphabet")], "_index", "_letter",
+                         '
+                            _idx = _index[1];
+                            _freq_parameter = `&namespace` + ".equilibrium_frequency_of." + _letter;
+                            (`&ML.variables`) [_idx] = _freq_parameter;
+                            (`&model`[terms.efv_estimate]) [_idx] = _freq_parameter + "/" + `&ML.scaler`;
+                            parameters.DeclareGlobalWithRanges (_freq_parameter, `&empirical`[_idx], 0, 1);
+                            model.generic.AddGlobal (`&model`, _freq_parameter, terms.characterFrequency (_letter));
+                         '
+                         );
+
+    // constrain pi_A + ... + pi_A = 1,
+
+    parameters.SetConstraint ( ML.scaler, Join ("+", ML.variables), "global");
+
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue ("terms.frequencies.MLE");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = -1; // correct for the restricted sum
+
+    return model;
+
 }
 
 //--- AUX FUNCTIONS FROM THIS POINT ON ---//

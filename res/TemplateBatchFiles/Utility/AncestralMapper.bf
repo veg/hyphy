@@ -1,13 +1,13 @@
-RequireVersion ("2.0020100914");
+RequireVersion ("2.1");
 
 _ancestralRecoveryCache       = {};
 
 /*******************************************
-	call _buildAncestralCache function with the likelihood function ID 
+	call _buildAncestralCache function with the likelihood function ID
 	and a 0-based partition index to produce an
-	internal structure storing internal states at 
+	internal structure storing internal states at
 	nodes;
-	
+
 	returns an integer index to reference
 	the opaque structure for subsequent operations
 
@@ -44,26 +44,26 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	{
 		return -1;
 	}
-	
+
 	_bac_treeID     = (_bac_lfInfo["Trees"])		[_lfComponentID];
 	_bac_filterID 	= (_bac_lfInfo["Datafilters"])	[_lfComponentID];
 
-/* 2; construct a temporary likelihood function with 
+/* 2; construct a temporary likelihood function with
    the tree and the filter; and an AVL representation of the tree */
-   
+
     if (doSample)
     {
 		_ancestorCall = "SampleAncestors";
-    }  
+    }
 	else
 	{
-		_ancestorCall = "ReconstructAncestors";	
+		_ancestorCall = "ReconstructAncestors";
 	}
-	   
+
 	ExecuteCommands ("_bac_tree_avl = " + _bac_treeID + "^0;"+
 					 "DataSet _bac_ancDS = " + _ancestorCall + " ("+_lfID+",{{"+_lfComponentID+"}});"+
 					 "GetString (_bacSequenceNames,"+ _bac_filterID +",-1);");
-					 
+
 /* 3; obtain ID->string mapping for the datafilter;
 	  also deduce how many chars/state there are */
 
@@ -73,40 +73,40 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	_bacFilterDimension 		=   Columns (_bacCharHandles);
 	_bacCharsPerState 			=   _bacCharProperties["ATOM_SIZE"];
 	DataSetFilter	_bacAF		=   CreateFilter (_bac_ancDS,_bacCharsPerState,"","",_bacCharProperties["EXCLUSIONS"]);
-	GetString						(_bacAncestralNames,_bacAF,-1);		
+	GetString						(_bacAncestralNames,_bacAF,-1);
 	GetDataInfo						(_bacAncestralPatternMap,_bacAF);
-	
+
 /* now start building a matrix of mapped states;
-   
-   each row in the matrix corresponds to a tree NODE in the same order as 
-   they are listed in the tree AVL 
-   
+
+   each row in the matrix corresponds to a tree NODE in the same order as
+   they are listed in the tree AVL
+
    each column correponds to a site
-   
+
    the entries are as follows:
 	   0.._bacFilterDimension-1 an unambigous character
 	   -1 a deletion/complete ambiguity
 	   less that -1 : -(entry)-2 maps to an AVL storing the state
 					  and the complete character resolution (as an array)
  */
-	 
+
 	 _bacBranchCount		 	  = Abs(_bac_tree_avl)-1;
 	 _bacMatrixOfResolutions 	  = {_bacBranchCount,_bacAF.sites};
 	 _bacHandledResolutions  	  = {};
 	 _bacHandledResolutionsChars  = {};
 	 _bacHandledResolutionsAmbig  = {};
-	 
- /* map where sequences are in the filter vs where they are in the 
+
+ /* map where sequences are in the filter vs where they are in the
 	tree structure */
-	    
+
 	 _bacMapTreeNodeToDF = {};
 	 _bacTreeAVLOrder 	 = {};
-	 
+
 	 for (_bacCounter = 1; _bacCounter < _bacBranchCount+1; _bacCounter = _bacCounter + 1)
 	 {
 	 	_bacTreeAVLOrder[(_bac_tree_avl[_bacCounter])["Name"]&&1] = _bacCounter;
 	 }
-	 
+
 	 _bacFilterSequenceCount = Columns(_bacSequenceNames);
 	 for (_bacCounter = 0; _bacCounter < _bacFilterSequenceCount; _bacCounter = _bacCounter + 1)
 	 {
@@ -116,9 +116,9 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	 {
 	 	_bacMapTreeNodeToDF[_bacTreeAVLOrder[_bacAncestralNames[_bacCounter]&&1]-1] = _bacCounter+_bacFilterSequenceCount;
 	 }
-	 
+
  /* make some auxiliary variables */
- 
+
  	_bacUnitRow     	= {1,Columns(_bacCharHandles)}["1"];
  	_bacSequenceRow     = {1,Columns(_bacCharHandles)}["_MATRIX_ELEMENT_COLUMN_"];
 
@@ -126,12 +126,12 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	 for (_bacBranchCounter = 1; _bacBranchCounter <= _bacBranchCount; _bacBranchCounter = _bacBranchCounter + 1)
 	 {
 	 	_bacRowIndex = _bacMapTreeNodeToDF[_bacBranchCounter-1];
-		if (_bacRowIndex < _bacFilterSequenceCount) 
+		if (_bacRowIndex < _bacFilterSequenceCount)
 		/* an extant sequence */
 		{
 			ExecuteCommands ("GetDataInfo (_bacSequenceString,`_bac_filterID`,_bacRowIndex)");
 		}
-		else 
+		else
 		/* an ancestral sequence */
 		{
 			GetDataInfo (_bacSequenceString,_bacAF,_bacRowIndex-_bacFilterSequenceCount);
@@ -155,11 +155,11 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	 			else
 	 			/* handle the resolution */
 	 			{
-					if (_bacRowIndex < _bacFilterSequenceCount) 
+					if (_bacRowIndex < _bacFilterSequenceCount)
 					{
 						ExecuteCommands ("GetDataInfo (_bacCharState,`_bac_filterID`,_bacRowIndex,_bacFilterPatternMap[_bacSiteCounter])");
 					}
-					else 
+					else
 					{
 						GetDataInfo (_bacCharState,_bacAF,_bacRowIndex-_bacFilterSequenceCount,_bacAncestralPatternMap[_bacSiteCounter]);
 					}
@@ -187,33 +187,33 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	 		}
 		}
 	 }
-	 
+
 	 _bacAncestralCache = {};
 	 _bacAncestralCache ["CHARS"]     	  = _bacCharHandles;
 	 _bacAncestralCache ["MATRIX"]    	  = _bacMatrixOfResolutions;
 	 _bacAncestralCache ["TREE_AVL"]  	  = _bac_tree_avl;
 	 _bacAncestralCache ["AMBIGS"]    	  = _bacHandledResolutionsAmbig;
 	 _bacAncestralCache ["AMBIGS_REV"]    = _bacReverseAmbigMap;
-	
+
 	 /* reverse map integer codes into ambig maps */
 
 	 _bacCurrentState 		= Rows (_bacHandledResolutionsAmbig);
 	 _bacResolutionCount	= Abs  (_bacHandledResolutionsAmbig);
 	 _bacReverseAmbigMap	= {};
-	 
+
 	 for (_bacCounter = 0; _bacCounter < _bacResolutionCount; _bacCounter = _bacCounter + 1)
 	 {
 	 	_bacReverseAmbigMap[(_bacAncestralCache ["AMBIGS"])[_bacCurrentState[_bacCounter]]] = _bacCurrentState[_bacCounter];
 	 }
-	 
-	 
+
+
 	 _ancestralRecoveryCache[_bacCacheInstanceCounter] = _bacAncestralCache;
 	 _bacCacheInstanceCounter = _bacCacheInstanceCounter + 1;
 	 return _bacCacheInstanceCounter-1;
 }
 
 /*******************************************
-	call this function the index returned by 
+	call this function the index returned by
 	_buildAncestralCache when the ancestral
 	reconstruction is no longer needed
 
@@ -227,12 +227,12 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 
 /*******************************************
 	count subsitutions at a given site;
-	returns an AVL with 
-	
+	returns an AVL with
+
 	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix 
+	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
 				 with counts of substitutions at the site
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -250,7 +250,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				_bacSiteDim 		= Columns (_bacSiteC ["CHARS"]);
 				_bacCounter 		= Rows (_thisColumn)-1;
 				_bacSiteMx			= {_bacSiteDim,_bacSiteDim};
-				
+
 				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
 				{
 					_bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
@@ -258,23 +258,23 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 					_pState		 = _thisColumn[_bacParentID];
 					_expandSubstitutionMap (_pState,_myState,_ancID,"_bacSiteMx");
 				}
-				
+
 				_bacSiteC ["COUNTS"] = _bacSiteMx;
 				return _bacSiteC;
 			}
 		}
 		return {};
 	}
-	
+
 
 /*******************************************
 	count subsitutions at a given site;
-	along a subset of branches. 
-	
+	along a subset of branches.
+
 	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix 
+	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
 				 with counts of substitutions at the site
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -292,7 +292,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				_bacSiteDim 		= Columns (_bacSiteC ["CHARS"]);
 				_bacCounter 		= Rows (_thisColumn)-1;
 				_bacSiteMx			= {_bacSiteDim,_bacSiteDim};
-				
+
 				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
 				{
 					if (_branchSubset[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"] && 1])
@@ -303,22 +303,22 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 						_expandSubstitutionMap (_pState,_myState,_ancID,"_bacSiteMx");
 					}
 				}
-				
+
 				_bacSiteC ["COUNTS"] = _bacSiteMx;
 				return _bacSiteC;
 			}
 		}
 		return {};
-	}	
+	}
 
 /*******************************************
 	returns the reconstructed root state for a given site;
-	returns an AVL with 
-	
+	returns an AVL with
+
 	["CHAR"]  - the root character
 	["INDEX"] - the index of the root character (consisent with the data filter representation),
 			  - this value will be negative if the root state is ambiguous (e.g. a gap)
-	
+
 	pass this function the ID of ancestral cache
 	and the index of the site to recover
 
@@ -340,16 +340,16 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				}
 				else
 				{
-					_bacRootState["CHAR"] = "-";	
+					_bacRootState["CHAR"] = "-";
 				}
 				return _bacRootState;
 			}
 		}
 		return {};
-	}	
-	
+	}
+
 /*******************************************
-	map all site substitutions or character states to a tree; 
+	map all site substitutions or character states to a tree;
 	'_scaled' != 0 will use branch lengths to draw the tree
 	returns PostScript code for the image
 
@@ -374,7 +374,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	}
 
 	/********************************************/
-	
+
 	function _mapSubstitutionsBySiteAux (_ancID, _siteID, _scaled, mode)
 	{
 		if (Abs (_ancestralRecoveryCache[_ancID]))
@@ -386,15 +386,15 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				_bacSiteC 		    = (_ancestralRecoveryCache[_ancID])["CHARS"];
 				_bacSiteDim 		= Columns (_bacSiteC);
 				_bacCounter 		= Rows (_thisColumn)-1;
-				
+
 				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
 				{
 					_bacParentID   = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
 					_myState	   = _thisColumn[_bacTreeIterator];
 					_pState		   = _thisColumn[_bacParentID];
 					_bacStateLabel = "";
-					
-					
+
+
 					_bac_bn = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"];
 					TREE_OUTPUT_OPTIONS [_bac_bn] = {};
                     if (mode == 2)
@@ -413,11 +413,11 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 						else
 						{
 							_bacStateLabel = _bacSiteC[_myState];
-							
+
 						}
 					}
-					
-					
+
+
 					if (Abs(_bacStateLabel))
 					{
 						if (mode == 0)
@@ -430,7 +430,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 						{
 							if (mode == 1)
 							{
-								(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_TLABEL"] = _bacStateLabel;	
+								(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_TLABEL"] = _bacStateLabel;
 							}
 							else
 							{
@@ -446,24 +446,24 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 										}
 										else
 										{
-											(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{1,0,0}};										
+											(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{1,0,0}};
 										}
 									}
 									else
 									{
 										if (haveS >= 1)
 										{
-											(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{0,0,1}};																				
+											(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{0,0,1}};
 										}
 									}
-									
+
 									(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_THICKNESS"] = 1 + haveS + haveNS;
 								}
 							}
 						}
 					}
 				}
-				
+
                 if (mode == 2)
                 {
                     (TREE_OUTPUT_OPTIONS[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"]]) = {"TREE_OUTPUT_BRANCH_THICKNESS" : 1};
@@ -474,17 +474,17 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				_bac_bn = "";
 				_bac_bn * 128;
 				_bac_bn * "/drawletter {5 5 rmoveto 1 copy false charpath pathbbox 2 index 3 sub sub exch 3 index 3 sub sub exch  0.85 setgray 4 copy rectfill 0 setgray  3 index 3 index currentlinewidth 0.5 setlinewidth 7 3 roll rectstroke setlinewidth exch 1.5 add exch 1.5 add moveto show} def\n";
-				
+
 				if (_scaled)
 				{
-					_bac_bn * (PSTreeString (_bacTempTree,"STRING_SUPPLIED_LENGTHS",{{-1,-1}}));				
+					_bac_bn * (PSTreeString (_bacTempTree,"STRING_SUPPLIED_LENGTHS",{{-1,-1}}));
 				}
 				else
 				{
 					_bac_bn * (PSTreeString (_bacTempTree,"",{{-1,-1}}));
 				}
 				_bac_bn * 0;
-				
+
 				return _bac_bn;
 			}
 		}
@@ -492,7 +492,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	}
 
 /*******************************************
-	map all site substitutions (or character states) to a tree; 
+	map all site substitutions (or character states) to a tree;
 	'_scaled' != 0 will use branch lengths to draw the tree
 	returns Newick code for the annotated tree
 
@@ -517,15 +517,15 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				_bacSiteC 		    = (_ancestralRecoveryCache[_ancID])["CHARS"];
 				_bacSiteDim 		= Columns (_bacSiteC);
 				_bacCounter 		= Rows (_thisColumn)-1;
-				
+
 				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
 				{
 					_bacParentID   = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
 					_myState	   = _thisColumn[_bacTreeIterator];
 					_pState		   = _thisColumn[_bacParentID];
 					_bacStateLabel = "";
-					
-					
+
+
 					if (_myState >= 0)
 					{
 						if (mode == 0)
@@ -540,21 +540,21 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 							_bacStateLabel = _bacSiteC[_myState];
 						}
 					}
-					
+
 					(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["SubLabel"] = _bacStateLabel;
 				}
-				
+
 				return 	 PostOrderAVL2StringAnnotate ((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled, "SubLabel");
 			}
 		}
 		return "";
 	}
 
-	
+
 /*******************************************
-	
+
 	_filterDimensions returns a {{sites,branches}} matrix
-	
+
 *******************************************/
 
 	function _filterDimensions (_ancID)
@@ -571,8 +571,8 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	}
 
 /*******************************************
-	
-	_countSubstitutionsByBranchSite returns a 
+
+	_countSubstitutionsByBranchSite returns a
 	binary vector (one entry per branch) which
 	contains '1' if the branch has substitutions
 	defined by '_filter' (a CxC matrix)
@@ -599,7 +599,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 					_expandSubstitutionMap (_pState,_myState,_ancID,"_bacSiteMx");
 					_result[_bacTreeIterator] = (+(_bacSiteMx$_filter))>=1;
 				}
-				
+
 			}
 		}
 		return _result;
@@ -608,7 +608,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 
 
 /*******************************************
-	
+
 	_tabulateSubstitutionsAtSiteByBranch returns
 	a dictionary with keys = branch names and
 	values = counts of synonymous and non-synonymous
@@ -634,7 +634,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 					_bacParentID   = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
 					_myState	   = _thisColumn[_bacTreeIterator];
 					_pState		   = _thisColumn[_bacParentID];
-					
+
 					if (_pState >= 0 && _myState >=0) {
 					    haveS 	= _OBSERVED_S_	[_pState][_myState];
 					    haveNS	= _OBSERVED_NS_	[_pState][_myState];
@@ -644,15 +644,15 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 					}
 					_result [(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"]] = {{haveS__,haveNS__}};
                 }
-				
+
 			}
 		}
 		return _result;
 	}
-	
-	
+
+
 /*******************************************/
-	
+
 	function _expandSubstitutionMap (_state1, _state2, _ancID, _resultMatrix&)
 	{
 		if (_state1 >= 0 && _state2 >= 0)
@@ -689,15 +689,15 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				_vec2 = (Transpose(_vec2)*_vec1*_vec2)[0];
 				_resultMatrix = _resultMatrix + _vec1 * (1/_vec2); /* 1/K(=all possible pairwise resolutions) to each possible resolution */
 			}
-			
+
 		}
 		return 0;
 	}
-	
+
 /*******************************************
 
 *******************************************/
-	
+
 	function _convertSubstitutionToCharacters (_state1, _state2, _ancID, _resultMatrix&)
 	{
 		if (_state1 >= 0 && _state2 >= 0)
@@ -734,7 +734,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				_vec2 = (Transpose(_vec2)*_vec1*_vec2)[0];
 				_resultMatrix = _resultMatrix + _vec1 * (1/_vec2); /* 1/K(=all possible pairwise resolutions*/ to each possible resolution */
 			}
-			
+
 		}
 		return 0;
-	}	
+	}

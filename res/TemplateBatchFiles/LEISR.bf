@@ -144,6 +144,12 @@ leisr.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           leisr.baseline_model_desc,
                                                           None,
                                                           {terms.run_options.retain_lf_object: TRUE});
+                                                          
+/* reconstruct ancestral states */
+
+leisr.ancestral_data = ancestral.build (leisr.alignment_wide_MLES[terms.likelihood_function], 0, FALSE);
+console.log (leisr.ancestral_data);                                                   
+return 0;
 
 ConstructCategoryMatrix (leisr.site_level_log_likelihoods, ^(leisr.alignment_wide_MLES[terms.likelihood_function]), SITE_LOG_LIKELIHOODS);
 DeleteObject (^(leisr.alignment_wide_MLES[terms.likelihood_function]));

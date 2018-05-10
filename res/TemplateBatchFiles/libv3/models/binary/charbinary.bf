@@ -34,7 +34,7 @@ lfunction models.binary.ModelDescription(type) {
     };
 }
 
-lfunction models.binary._GenerateRate(fromChar, toChar, namespace, model_type) {
+lfunction models.binary._GenerateRate(fromChar, toChar, namespace, model_type, model) {
     models.binary._generateRate.p = {}; 
     models.binary._generateRate.p[model_type] = {};
 

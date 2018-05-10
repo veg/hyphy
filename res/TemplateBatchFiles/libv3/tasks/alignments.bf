@@ -179,6 +179,44 @@ lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
 }
 
 /**
+ * Read a protein dataset from file_name
+ * @name alignments.ReadNucleotideDataSet
+ * @param dataset_name - the name of the dataset you wish to use
+ * @param file_name - path to file
+ * @returns {Dictionary} r - metadata pertaining to the dataset
+ */
+lfunction alignments.ReadProteinDataSet(dataset_name, file_name) {
+    result = alignments.ReadNucleotideDataSet (dataset_name, file_name);
+    
+    /* check that the alignment has protein data */
+    DataSetFilter throwaway = CreateFilter (^dataset_name, 1);
+    GetDataInfo (alphabet, throwaway, "CHARACTERS");
+    DeleteObject (throwaway);
+    io.CheckAssertion("alignments.AlphabetType(`&alphabet`)==utility.getGlobalValue ('terms.amino_acid')", 
+                      "The input alignment must contain protein data");
+                      
+    return result;
+}
+
+/**
+ * Categorize an alphabet for an alignment 
+ * @name alignments.AlphabetType
+ * @param alphabet - the alphabet vector, e.g. fetched by GetDataInfo (alphabet, ..., "CHARACTERS");
+ * @returns {String} one of standard alphabet types or None if unknown
+ */
+lfunction alignments.AlphabetType (alphabet) {
+    alphabet = Join ("", alphabet);
+    if (alphabet == "ACGT") {
+        return utility.getGlobalValue ("terms.nucleotide");
+    } else {
+        if (alphabet == "ACDEFGHIKLMNPQRSTVWY") {
+            return utility.getGlobalValue ("terms.amino_acid");
+        }
+    }
+    return None;
+}   
+
+/**
  * Ensure that name mapping is not None by creating a f(x)=x map if needed
  * @name alignments.EnsureMapping
  * @param dataset_name - the name of the dataset you wish to use

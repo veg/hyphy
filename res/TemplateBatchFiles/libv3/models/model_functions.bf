@@ -34,9 +34,7 @@ lfunction model.GetParameters_RegExp(model, re) {
  * @param rules
  */
 function model.ApplyModelToTree (id, tree, model_list, rules) {
-
-
-
+    
 	if (Type (rules) == "AssociativeList") {
 	    // this has the form
 	    // model id : list of branches to apply the model (as a string COLUMN matrix with branch names,
