@@ -1,4 +1,4 @@
-RequireVersion ("0.9920061122");
+RequireVersion ("0.99.20061122");
 
 #include "SequentialAddition.ibf";
 

@@ -1,4 +1,4 @@
-RequireVersion ("0.9920070118");
+RequireVersion ("0.99.20070118");
 
 MESSAGE_LOGGING 		   = 0;
 VERBOSITY_LEVEL 		   = -1;

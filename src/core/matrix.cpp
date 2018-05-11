@@ -1725,8 +1725,7 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo)
 
 //_____________________________________________________________________________________________
 
-bool    _Matrix::IsReversible(_Matrix* freqs)
-{
+bool    _Matrix::IsReversible(_Matrix* freqs) {
     if (hDim != vDim || (freqs && freqs->hDim * freqs->vDim != hDim)
             || (storageType != 1 && storageType != 2) ||
             (freqs && freqs->storageType != 1 && freqs->storageType != 2)) {

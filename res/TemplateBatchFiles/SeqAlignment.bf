@@ -1,4 +1,4 @@
-RequireVersion ("2.0020100903");
+RequireVersion ("2.00.20100903");
 ExecuteAFile   ("Utility/GrabBag.bf");
 
 #include		"SeqAlignShared.ibf";

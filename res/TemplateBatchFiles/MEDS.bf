@@ -1,4 +1,4 @@
-RequireVersion ("2.0020101201");
+RequireVersion ("2.00.20101201");
 
 /*----------Branch-Site Directional Selection Analysis---------*/
 /*Usage: Takes an alignment and a tree (with foreground branches tagged with "{FG}"), a nucleotide model

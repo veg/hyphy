@@ -1,4 +1,4 @@
-RequireVersion ("0.9920060817");
+RequireVersion ("0.99.20060817");
 
 
 s_rateMin    = 0.01;

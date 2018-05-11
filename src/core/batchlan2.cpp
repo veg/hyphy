@@ -2167,21 +2167,14 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 
 //____________________________________________________________________________________
 
-void    RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mbf)
-{
-    if (mid >=0 && mid < modelTypeList.lLength) {
-        if (modelTypeList.lData[mid] == 0) {
-            mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.lData[mid],MATRIX);
-        } else {
-            mm = nil;
-        }
-
-        long fvi = modelFrequenciesIndices.lData[mid];
-        fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
-        mbf = (fvi>=0);
-    } else {
-        mm = fv = nil;
-        mbf = false;
+void    RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mbf) {
+    _Variable* mmx, *fmx;
+    RetrieveModelComponents (mid, mmx, fmx, mbf);
+    if (mmx && mmx->ObjectClass() == MATRIX) {
+        mm = (_Matrix*)mmx->GetValue();
+    }
+    if (fmx && fmx->ObjectClass() == MATRIX) {
+        fv = (_Matrix*)fmx->GetValue();
     }
 }
 
