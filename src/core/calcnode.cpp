@@ -5932,7 +5932,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _String&res, _Parame
         res << "0 0 0 setrgbcolor\n";
     }
 
-    if (iterator->is_root() == false && layout == 1) {
+    if (!iterator->is_root() && layout == 1) {
         res <<  (_String (-iterator->in_object.h) & ' ' & _String (-iterator->in_object.v) & " translate\n");
     }
 }
