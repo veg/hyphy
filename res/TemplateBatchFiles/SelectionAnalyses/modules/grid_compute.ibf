@@ -238,6 +238,36 @@ lfunction ExecuteMCMC (grid, conditionals, ignored, settings, arguments){
 
 //----------------------------------------------------------------------------
 
+lfunction ComputeRandNeff (samples) {
+
+    chain_count  = Abs (samples);
+    within_var   = {chain_count,1};
+    within_means = {chain_count, 1};
+
+
+    chain_length = utility.Array1D (samples[0]);
+
+    for (id = 0;  id < chain_count; id += 1) {
+        chain_mean = (+(samples[id]))/chain_length;
+        chain_var  = +((samples[id])["(_MATRIX_ELEMENT_VALUE_-chain_mean)^2"]);
+        within_var   [id] = chain_var/(chain_length-1);
+        within_means [id] = chain_mean;
+    }
+
+    overall_mean = (+within_means)/chain_count;
+
+    if (chain_count > 1) {
+        B           = (+within_means["(_MATRIX_ELEMENT_VALUE_-overall_mean)^2"])*chain_length / (chain_count-1);
+        W           = (+within_var)/chain_count;
+        VarEst      = (chain_length-1)/chain_length *W + B/chain_length;
+        return      {{overall_mean, Sqrt(VarEst/W), VarEst/B*chain_count*chain_length, B, W, VarEst}};
+    } else {
+        return      {{overall_mean, 0, 0, 0, 0, 0}};
+    }
+}
+
+//----------------------------------------------------------------------------
+
 
 lfunction     RunCollapsedGibbs (settings, grid, conditionals, methodname) {
 
@@ -430,7 +460,7 @@ lfunction     RunMCMC (settings, grid, conditionals, callback, methodname) {
     chains = {};
 
     for (i = 1; i < Abs (jobs); i += 1) {
-        mpi.QueueJob (queue, "fubar.ExecuteMCMC", {"0" : grid,
+        mpi.QueueJob (queue, "ExecuteMCMC", {"0" : grid,
                                                    "1" : conditionals,
                                                    "3" : settings,
                                                    "4" : jobs[i],
@@ -438,7 +468,7 @@ lfunction     RunMCMC (settings, grid, conditionals, callback, methodname) {
                                                    callback);
     }
 
-    utility.Extend (chains, fubar.ExecuteMCMC (grid, conditionals, &chains, settings, jobs[0]));
+    utility.Extend (chains, ExecuteMCMC (grid, conditionals, &chains, settings, jobs[0]));
 
     mpi.QueueComplete (queue);
 

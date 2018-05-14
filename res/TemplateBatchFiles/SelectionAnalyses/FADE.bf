@@ -519,11 +519,11 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
         }
     } else {
         if (fade.run_settings["method"] == terms.fade.methods.MH) {
-            fubar.cache[terms.fubar.cache.mcmc] = fubar.RunMCMC  (fubar.run_settings,
-                                                                  fubar.cache[terms.fubar.cache.grid],
-                                                                  fubar.cache[terms.fubar.cache.conditionals],
-                                                                  "fubar.pass1.result_handler",
-                                                                  "fubar"
+            fade.cache[terms.fade.cache.mcmc] = fade.RunMCMC  (fade.run_settings,
+                                                                  fade.cache[terms.fade.cache.grid],
+                                                                  (fade.cache [terms.fade.cache.conditionals])[fade.bias.residue],
+                                                                  "fade.pass1.result_handler",
+                                                                  None
                                                                   );
         } else {
             if (utility.Has (fade.cache [terms.fade.cache.mcmc], fade.bias.residue, "AssociativeList")) {
@@ -559,7 +559,6 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
             results.log_L   = {1,samples};
             results.samples = {samples,grid_points};
 
-
             per_chain      = samples $ chains;
 
 
@@ -567,51 +566,37 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
             to   = per_chain;
 
 
-            positive_ks                 = {};
-            negative_ks                 = {};
-            denominators                = {};
-            posteriors                  = {};
+            posterior_mean_rates                 = {};
+            posterior_mean_biases                = {};
+            denominators                         = {};
+            posteriors                           = {};
+            biased_ks                            = {};
+
 
             for (chain_id = 0; chain_id < chains; chain_id += 1) {
                 io.ReportProgressBar                  ("PROCESSING", "Samples from chain " + (chain_id + 1));
 
 
                 grid_samples = (((cache[utility.getGlobalValue("terms.fade.cache.mcmc")])[bias.residue])[chain_id])["weights"];
+                grid_samples_T = Transpose (grid_samples);
                 P_ks = grid_samples *
                        ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"];
 
                 denominators[chain_id] = P_ks;
 
-                /*
-                    the next two matrices store posterior calculations for
 
-                    positive_ks = P {dN > dS @ site s for grid sample k}
-                    negative_ks = P {dN < dS @ site s for grid sample k}
-                */
+                posterior_mean_rates[chain_id]      =            (grid_samples $ rates *
+                                                                 ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
 
-
-                if (run_settings["method"] == ^"terms.fubar.methods.MH") {
-                     logL_samples = ((cache[utility.getGlobalValue("terms.fubar.cache.mcmc")])[chain_id])["likelihoods"];
-                }
-
-                positive_ks [chain_id] = grid_samples *
-                              (positive_selection_stencil $ (cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"]) / P_ks;
-
-                negative_ks [chain_id] = grid_samples *
-                              (negative_selection_stencil $ (cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"]) / P_ks;
+                posterior_mean_biases[chain_id]     =            (grid_samples $ biases *
+                                                                 ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
 
 
-                /*
-                    the next two matrices compute posterior mean alpha and beta values for site s and grid sample k
+                biased_ks[chain_id]  = grid_samples *
+                               (bias_present_stencil $ ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
 
-                */
-
-                posterior_mean_alpha [chain_id]     =            (grid_samples * diag_alpha *
-                                                              (cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"]) / P_ks;
-                posterior_mean_beta [chain_id]      =            (grid_samples * diag_beta *
-                                                              (cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"]) / P_ks;
-
-                if (run_settings["method"] == ^"terms.fubar.methods.MH") {
+                if (run_settings["method"] == ^"terms.fade.methods.MH") {
+                    logL_samples = (((cache[utility.getGlobalValue("terms.fade.cache.mcmc")])[bias.residue])[chain_id])["likelihoods"];
                     draw_from_this_chain                =         Random ({1,samples}["_MATRIX_ELEMENT_COLUMN_"], 0);
 
                     for (i = from; i < to; i += 1) {
@@ -638,8 +623,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
         } else {
              posterior_mean_over_grid                 = (cache[^"terms.fade.cache.posterior"])[bias.residue];
              posterior_mean_over_grid_T               = Transpose (posterior_mean_over_grid);
-             cache[terms.fubar.cache.posterior]       = posterior_mean_over_grid;
-             prior_weight_bias                        = +posterior_mean_over_grid ["_MATRIX_ELEMENT_VALUE_*((cache['grid'])[_MATRIX_ELEMENT_ROW_][1]>0.)"];
+             cache[terms.fade.cache.posterior]       = posterior_mean_over_grid;
 
              P_ks = posterior_mean_over_grid_T * ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"];
 
@@ -654,10 +638,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
        }
 
-        /* compute the posterior mean of point loadings */
-
-
-
+        prior_weight_bias                        = +posterior_mean_over_grid ["_MATRIX_ELEMENT_VALUE_*((cache['grid'])[_MATRIX_ELEMENT_ROW_][1]>0.)"];
 
         headers.printed = FALSE;
 
@@ -689,16 +670,17 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
                 partition_posteriors [s] = Transpose (pp * (1/(+pp)));
 
                 if (run_settings["method"] != utility.getGlobalValue ("terms.fade.methods.VB0")) {
-                    partition_results[s][0] = fubar.ComputeRandNeff (
+                    partition_results[s][0] = fade.ComputeRandNeff (
                         utility.Map (chain_iterator, "_value_", "((`&posterior_mean_rates`)[_value_])[-1][`&i`]")
                     )[0];
-                    partition_results[s][1] = fubar.ComputeRandNeff (
+                    partition_results[s][1] = fade.ComputeRandNeff (
                         utility.Map (chain_iterator, "_value_", "((`&posterior_mean_biases`)[_value_])[-1][`&i`]")
                     )[0];
 
-                    biased_posterior = fubar.ComputeRandNeff (
+                    biased_posterior = fade.ComputeRandNeff (
                         utility.Map (chain_iterator, "_value_", "((`&biased_ks`)[_value_])[-1][`&i`]")
                     );
+
                     partition_results[s][2] = biased_posterior[0];
                     partition_results[s][3] = stats.BayesFactor (prior_weight_bias, biased_posterior[0]) ;
 

@@ -39,7 +39,7 @@ namespace terms.fubar {
         beta = "fubar beta scaler";
         alpha = "fubar alpha scaler";
     }
-    
+
     namespace methods {
         MH  = "Metropolis-Hastings";
         VB0 = "Variational Bayes";
@@ -89,7 +89,7 @@ fubar.analysis_description = {terms.io.info :
     analysis of a coding sequence alignment to determine whether some
     sites have been subject to pervasive purifying or diversifying
     selection.
-    
+
     v2.1 introduces two more methods for estimating the posterior distribution of grid weights:
     collapsed Gibbs MCMC (faster) and 0-th order Variation Bayes approximation (fastest).
 
@@ -151,9 +151,9 @@ selection.io.startTimer (fubar.json [terms.json.timers], "Nucleotide Fit", 1);
 if (utility.Has (fubar.cache, terms.fubar.cache.gtr, "AssociativeList")) {
      fubar.gtr_results = fubar.cache[terms.fubar.cache.gtr];
      io.ReportProgressMessageMD("fubar", "nuc-fit", "_Loaded cached GTR fit_ " + selection.io.report_fit (fubar.gtr_results, 0, fubar.codon_data_info[terms.data.sample_size]));
-    
+
     /* Add nucleotide fit to the JSON */
-    gtr_rates = utility.Map( 
+    gtr_rates = utility.Map(
                     utility.Map (fubar.gtr_results[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                     "_value_",
                     "_value_[terms.fit.MLE]");
@@ -163,7 +163,7 @@ if (utility.Has (fubar.cache, terms.fubar.cache.gtr, "AssociativeList")) {
                                 fubar.gtr_results[utility.getGlobalValue ("terms.fit.log_likelihood")],
                                 fubar.gtr_results[utility.getGlobalValue ("terms.parameters")] ,
                                 fubar.codon_data_info[utility.getGlobalValue ("terms.data.sample_size")],
-                                gtr_rates, 
+                                gtr_rates,
                                 efv,
                                 fubar.display_orders[utility.getGlobalValue ("terms.json.nucleotide_gtr")]);
 
@@ -171,7 +171,7 @@ if (utility.Has (fubar.cache, terms.fubar.cache.gtr, "AssociativeList")) {
         'selection.io.json_store_branch_attribute(fubar.json, terms.json.nucleotide_gtr, terms.branch_length, fubar.display_orders[terms.json.nucleotide_gtr],
                                          _key_,
                                          selection.io.extract_branch_info((fubar.gtr_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
-  
+
 
 }
 else {
@@ -323,7 +323,7 @@ if (fubar.run_settings["method"] != terms.fubar.methods.VB0) {
                                                                   fubar.cache[terms.fubar.cache.grid],
                                                                   fubar.cache[terms.fubar.cache.conditionals],
                                                                   "fubar"
-                                                                  );        
+                                                                  );
         }
         io.WriteCacheToFile (fubar.path.cache, fubar.cache);
     }
@@ -336,7 +336,7 @@ if (fubar.run_settings["method"] != terms.fubar.methods.VB0) {
                                                               fubar.cache[terms.fubar.cache.grid],
                                                               fubar.cache[terms.fubar.cache.conditionals],
                                                               "fubar"
-                                                              );   
+                                                              );
         io.WriteCacheToFile (fubar.path.cache, fubar.cache);
     }
 }
@@ -367,14 +367,14 @@ namespace fubar {
                          {"BayesFactor[alpha<beta]", "Empiricial Bayes Factor for positive selection at a site"}
                          {"PSRF", "Potential scale reduction factor - an MCMC mixing measure"}
                          {"Neff", "Estimated effective sample site for Prob [alpha<beta]"}};
-        
+
         table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "N.eff", "Posterior prob for positive selection"}};
         report.positive_site = {{"" + (1+filter_info[s]),
                                         partition_index + 1,
                                         Format(partition_results[s][0],10,3),
                                         Format(partition_results[s][1],10,3),
                                         Format(partition_results[s][7],10,3),
-                                        "Pos. posterior = " + Format(partition_results[s][4],6,4)}};        
+                                        "Pos. posterior = " + Format(partition_results[s][4],6,4)}};
     } else {
         table_headers = {{"alpha", "Mean posterior synonymous substitution rate at a site"}
                          {"beta", "Mean posterior non-synonymous substitution rate at a site"}
@@ -382,15 +382,15 @@ namespace fubar {
                          {"Prob[alpha>beta]", "Posterior probability of negative selection at a site"}
                          {"Prob[alpha<beta]", "Posterior probability of positive selection at a site"}
                          {"BayesFactor[alpha<beta]", "Empiricial Bayes Factor for positive selection at a site"}};
-        
+
          table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "Posterior prob for positive selection"}};
          report.positive_site = {{"" + (1+filter_info[s]),
                                         partition_index + 1,
                                         Format(partition_results[s][0],10,3),
                                         Format(partition_results[s][1],10,3),
-                                        "Pos. posterior = " + Format(partition_results[s][4],6,4)}};        
+                                        "Pos. posterior = " + Format(partition_results[s][4],6,4)}};
     }
-    
+
     if (run_settings["method"] != ^"terms.fubar.methods.VB0") {
         samples = run_settings["samples"];
         chains  = run_settings["chains"];
@@ -435,7 +435,7 @@ namespace fubar {
             */
 
             grid_samples = ((cache[utility.getGlobalValue("terms.fubar.cache.mcmc")])[chain_id])["weights"];
-            
+
             if (run_settings["method"] == ^"terms.fubar.methods.MH") {
                  logL_samples = ((cache[utility.getGlobalValue("terms.fubar.cache.mcmc")])[chain_id])["likelihoods"];
             }
@@ -480,16 +480,16 @@ namespace fubar {
         }
         io.ClearProgressBar                   ();
         posterior_mean_over_grid                = {grid_points,1}["(+results.samples[-1][_MATRIX_ELEMENT_ROW_])/samples"];
-        
+
     } else {
         posterior_mean_over_grid                 = cache[^"terms.fubar.cache.posterior"];
         posterior_mean_over_grid_T               = Transpose (posterior_mean_over_grid);
         cache[terms.fubar.cache.posterior]       = posterior_mean_over_grid;
- 
- 
+
+
          P_ks = posterior_mean_over_grid_T * (cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"];
-         
- 
+
+
          posterior_mean_alpha     =             (posterior_mean_over_grid_T * diag_alpha *
                                                           (cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"]) / P_ks;
          posterior_mean_beta       =            (posterior_mean_over_grid_T * diag_beta *
@@ -527,14 +527,14 @@ namespace fubar {
 
         partition_results    = {sites_in_partition, 8};
         partition_posteriors = {};
-      
+
 
         for (s = 0; s < sites_in_partition; s += 1) {
-        
+
             pp = posterior_mean_over_grid $ ((cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"])[-1][i];
             partition_posteriors [s] = Transpose (pp * (1/(+pp)));
 
-            if (run_settings["method"] != utility.getGlobalValue ("terms.fubar.methods.VB0")) {            
+            if (run_settings["method"] != utility.getGlobalValue ("terms.fubar.methods.VB0")) {
                 partition_results[s][0] = fubar.ComputeRandNeff (
                     utility.Map (chain_iterator, "_value_", "((`&posterior_mean_alpha`)[_value_])[-1][`&i`]")
                 )[0];
@@ -549,29 +549,29 @@ namespace fubar {
                     utility.Map (chain_iterator, "_value_", "((`&positive_ks`)[_value_])[-1][`&i`]")
                 );
                 partition_results[s][4] = pos_selection[0];
-                
+
                 if (run_settings["method"] == utility.getGlobalValue ("terms.fubar.methods.MH")) {
                     partition_results[s][6] = pos_selection[1];
                     partition_results[s][7] = pos_selection[2];
                 }
-                
+
             } else {
-                if (run_settings["method"] == utility.getGlobalValue ("terms.fubar.methods.VB0")) { 
+                if (run_settings["method"] == utility.getGlobalValue ("terms.fubar.methods.VB0")) {
                     partition_results [s][0] = posterior_mean_alpha[i];
                     partition_results [s][1] = posterior_mean_beta[i];
                     partition_results [s][3] = negative_ks[i];
                     partition_results [s][4] = positive_ks[i];
                }
             }
-           
-            
+
+
             partition_results[s][2] = partition_results[s][1] - partition_results[s][0];
             if (weight_non_positive > 0 && weight_non_positive < 1) {
                 partition_results [s][5] = partition_results[s][4] / (1-partition_results[s][4]) / (1-weight_non_positive) * weight_non_positive;
             } else {
                 partition_results[s][5] = 1;
             }
-                       
+
             if (partition_results[s][4] >= run_settings["posterior"]) {
                 if (Abs(report.sites_found) == 0) {
                     fprintf (stdout, io.FormatTableRow (table_screen_output,table_output_options));
@@ -656,34 +656,6 @@ lfunction fubar.ComputeENFP_CI (p_i,sig_level) {
     return {{lb__, _idx__}}
 }
 
-//----------------------------------------------------------------------------
-
-lfunction fubar.ComputeRandNeff (samples) {
-    chain_count  = Abs (samples);
-    within_var   = {chain_count,1};
-    within_means = {chain_count, 1};
-
-
-    chain_length = utility.Array1D (samples[0]);
-
-    for (id = 0;  id < chain_count; id += 1) {
-        chain_mean = (+(samples[id]))/chain_length;
-        chain_var  = +((samples[id])["(_MATRIX_ELEMENT_VALUE_-chain_mean)^2"]);
-        within_var   [id] = chain_var/(chain_length-1);
-        within_means [id] = chain_mean;
-    }
-
-    overall_mean = (+within_means)/chain_count;
-    
-    if (chain_count > 1) {    
-        B           = (+within_means["(_MATRIX_ELEMENT_VALUE_-overall_mean)^2"])*chain_length / (chain_count-1);
-        W           = (+within_var)/chain_count;
-        VarEst      = (chain_length-1)/chain_length *W + B/chain_length;
-        return      {{overall_mean, Sqrt(VarEst/W), VarEst/B*chain_count*chain_length, B, W, VarEst}};
-    } else {
-        return      {{overall_mean, 0, 0, 0, 0, 0}};    
-    }
-}
 
 
 
@@ -694,23 +666,23 @@ function     fubar.RunPrompts (prompts) {
         fubar.run_settings["grid size"] = io.PromptUser ("> Number of grid points per dimension (total number is D^2)",fubar.run_settings["grid size"],5,50,TRUE);
         prompts["grid"] = FALSE;
     }
-    
-    if (prompts["method"]) { 
+
+    if (prompts["method"]) {
         fubar.run_settings["method"] = io.SelectAnOption  ({
                                                                 terms.fubar.methods.MH : "Full Metropolis-Hastings MCMC algorithm (slowest, original 2013 paper implementation)",
                                                                 terms.fubar.methods.CG : "Collapsed Gibbs sampler (intermediate speed)",
-                                                                terms.fubar.methods.VB0 : "0-th order Variational Bayes approximations (fastest, recommended default)" 
+                                                                terms.fubar.methods.VB0 : "0-th order Variational Bayes approximations (fastest, recommended default)"
                                                             }, "Posterior estimation method");
         prompts["method"] = FALSE;
      }
-    
+
     if (prompts["chain"]) {
         if (fubar.run_settings["method"] ==  terms.fubar.methods.MH) {
             fubar.run_settings["chains"] = io.PromptUser ("> Number of MCMC chains to run",fubar.run_settings["chains"],2,20,TRUE);
         } else {
             fubar.run_settings["chains"] = 1;
         }
-        if (fubar.run_settings["method"] !=  terms.fubar.methods.VB0) {        
+        if (fubar.run_settings["method"] !=  terms.fubar.methods.VB0) {
             fubar.run_settings["chain-length"] = io.PromptUser ("> The length of each chain",fubar.run_settings["chain-length"],5e3,5e7,TRUE);
             fubar.run_settings["burn-in"] = io.PromptUser ("> Use this many samples as burn-in",fubar.run_settings["chain-length"]$2,fubar.run_settings["chain-length"]$20,fubar.run_settings["chain-length"]*95$100,TRUE);
             fubar.run_settings["samples"] = io.PromptUser ("> How many samples should be drawn from each chain",fubar.run_settings["samples"],50,fubar.run_settings["chain-length"]-fubar.run_settings["burn-in"],TRUE);
