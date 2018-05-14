@@ -886,7 +886,8 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
 
     if (fa*fb<0.0) {
         fc = fb;
-
+        c = b;
+      
         for (it = 0; it < MAX_BRENT_ITERATES; it++) {
             if (fb*fc>0.0) {
                 fc = fa;
@@ -925,7 +926,8 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
                 if (p>0.0) {
                     q = -q;
                 }
-
+                p = fabs (p);
+              
                 if (p<0.0) {
                     p = -p;
                 }
@@ -948,7 +950,11 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             if (fabs(d)>tol1) {
                 b+=d;
             } else {
-                b+=fabs(tol1)*(1.*2.*(xm>=.0));
+              if (xm > 0.) {
+                b += fabs (tol1);
+              } else {
+                b -= fabs (tol1);
+              }
             }
 
             unknown->SetValue(b);
