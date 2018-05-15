@@ -132,7 +132,7 @@ lfunction ExecuteMCMC (grid, conditionals, ignored, settings, arguments){
         current_site_log_sum                    = +(current_site_likelihoods["Log(_MATRIX_ELEMENT_VALUE_)"]);
         current_log_likelihood = {1,2};
         current_log_likelihood [0] = +(((weights *(conditionals["conditionals"]))["Log(_MATRIX_ELEMENT_VALUE_)"])+conditionals["scalers"]);
-        current_log_likelihood [1] = fubar.LogDrichletDensity (weights, settings["concentration"]);
+        current_log_likelihood [1] = LogDrichletDensity (weights, settings["concentration"]);
 
 
         individual_grid_point_contribs = {};
@@ -445,14 +445,15 @@ lfunction   ConvertToConditionals (raw_scores) {
 
 
 lfunction     RunMCMC (settings, grid, conditionals, callback, methodname) {
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "Running MCMC chains to obtain a posterior sample of rate weights");
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "* Using the following settings");
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Number of chains : " + settings["chains"]);
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Steps/chain      : " + settings["chain-length"]);
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Burn-in steps    : " + settings["burn-in"]);
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Samples/chain    : " + settings["samples"]);
-    io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Dirichlet alpha  : " + settings["concentration"]);
-
+    if (None != methodname) {
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "Running MCMC chains to obtain a posterior sample of rate weights");
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "* Using the following settings");
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Number of chains : " + settings["chains"]);
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Steps/chain      : " + settings["chain-length"]);
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Burn-in steps    : " + settings["burn-in"]);
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Samples/chain    : " + settings["samples"]);
+        io.ReportProgressMessageMD                  (methodname, "mcmc", "\t* Dirichlet alpha  : " + settings["concentration"]);
+    }
 
     jobs = mpi.PartitionIntoBlocks(utility.Range (settings["chains"], 0, 1));
 

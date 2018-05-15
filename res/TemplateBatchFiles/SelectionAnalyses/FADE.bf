@@ -31,6 +31,7 @@ namespace terms.fade {
 
     namespace json {
         site_annotations = "site annotations";
+        headers = "headers";
     }
 
     namespace cache {
@@ -135,7 +136,9 @@ selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.
 
 fade.path.base = (fade.json [terms.json.input])[terms.json.file];
 fade.path.cache = fade.path.base + ".FADE.cache";
+io.ReportProgressBar  ("init", "Loading existing cache files");
 fade.cache = io.LoadCacheFromFile (fade.path.cache);
+io.ClearProgressBar                   (); 
 
 console.log ( "> FADE will write cache and result files to _`fade.path.base`.FADE.cache_ and _`fade.path.base`.FADE.json_, respectively \n\n");
 
@@ -266,7 +269,7 @@ if (utility.Has (fade.run_settings, "method", "String")) {
 io.ReportProgressMessageMD ("FADE", "baseline", ">Fitted an alignment-wide model. " + selection.io.report_fit (fade.baseline_fit, 0, fade.alignment_sample_size ) +  "\n\nTotal tree lengths by partition\n");
 utility.ForEachPair (fade.baseline_fit[terms.branch_length], "_part_", "_value_",
 '
-    io.ReportProgressMessageMD ("FADE", "baseline", "" + (1+_part_) + ". " + Format (+(utility.Map (_value_, "_data_",
+    io.ReportProgressMessageMD ("FADE", "baseline", "Partition " + (1+_part_) + ". " + Format (+(utility.Map (_value_, "_data_",
     "
         _data_ [terms.fit.MLE]
     "))
@@ -374,6 +377,11 @@ namespace fade {
     site.composition.string := fade.CompositionString (((cache [^"terms.fade.cache.composition"])[partition_index])[s]);
     site.substitution.string := fade.SubstitutionHistory (((cache [^"terms.fade.cache.substitutions"])[partition_index])[s]);
 
+    site_annotation_headers = {
+                                    "Composition" : "Aminoacid composition of site",
+                                    "Substitutions" : "Substitution history on selected branches"
+                                  };
+
     if (run_settings["method"] == ^"terms.fade.methods.MH") {
         table_headers = {{"rate", "Mean posterior relative rate at a site"}
                          {"bias", "Mean posterior bias parameter at a site"}
@@ -382,14 +390,16 @@ namespace fade {
                          {"PSRF", "Potential scale reduction factor - an MCMC mixing measure"}
                          {"Neff", "Estimated effective sample site for Prob [bias>0]"}};
 
-        table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "N.eff", "Bayes Factor"}};
+        table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "N.eff", "Bayes Factor",site_annotation_headers["Composition"], site_annotation_headers["Substitutions"]}};
         report.biased_site = {{"" + (1+filter_info[s]),
                                         partition_index + 1,
                                         bias.residue,
                                         Format(partition_results[s][0],8,2),
                                         Format(partition_results[s][1],8,2),
                                         Format(partition_results[s][5],8,2),
-                                        Format(partition_results[s][3],8,2)}};
+                                        Format(partition_results[s][3],8,2),
+                                        site.composition.string,
+                                        site.substitution.string}};
     } else {
         table_headers = {{"rate", "Mean posterior relative rate at a site"}
                          {"bias", "Mean posterior bias parameter at a site"}
@@ -397,13 +407,9 @@ namespace fade {
                          {"BayesFactor[bias>0]", "Empiricial Bayes Factor for substitution bias"}
                          };
 
-        site_annotation_headers = {
-                                        {"Composition", "Amino-acid composition on tested branches"}
-                                        {"Substitutions", "Inferred substitutions along tested branches"}
-                                  };
+ 
 
-
-         table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "Bayes Factor", "Aminoacid composition at site", "Substitution history on selected branches"}};
+         table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "Bayes Factor", site_annotation_headers["Composition"], site_annotation_headers["Substitutions"]}};
          report.biased_site = {{"" + (1+filter_info[s]),
                                         partition_index + 1,
                                         bias.residue,
@@ -436,7 +442,10 @@ namespace fade {
 
 
 for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
+
+
     fade.bias.residue = fade.alphabet[fade.residue];
+    selection.io.startTimer (fade.json [terms.json.timers], "Residue `fade.bias.residue` analysis", 2 + fade.residue);
 
     if (utility.Has (fade.cache [terms.fade.cache.conditionals], fade.bias.residue, "AssociativeList")) {
         fade.conditionals =  (fade.cache [terms.fade.cache.conditionals])[fade.bias.residue];
@@ -519,12 +528,16 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
         }
     } else {
         if (fade.run_settings["method"] == terms.fade.methods.MH) {
-            fade.cache[terms.fade.cache.mcmc] = fade.RunMCMC  (fade.run_settings,
+          if (utility.Has (fade.cache [terms.fade.cache.mcmc], fade.bias.residue, "AssociativeList")) {
+                io.ReportProgressBar    ("fade", "[`fade.bias.residue`] Loaded posterior sample for grid loadings");
+          } else {
+                (fade.cache[terms.fade.cache.mcmc])[fade.bias.residue] = fade.RunMCMC  (fade.run_settings,
                                                                   fade.cache[terms.fade.cache.grid],
                                                                   (fade.cache [terms.fade.cache.conditionals])[fade.bias.residue],
                                                                   "fade.pass1.result_handler",
-                                                                  None
-                                                                  );
+                                                                  None);
+                 io.WriteCacheToFile (fade.path.cache, fade.cache);
+          }                                                        
         } else {
             if (utility.Has (fade.cache [terms.fade.cache.mcmc], fade.bias.residue, "AssociativeList")) {
                 io.ReportProgressBar    ("fade", "[`fade.bias.residue`] Loaded posterior sample for grid loadings");
@@ -657,9 +670,9 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
             partition_posteriors = {};
             if (run_settings["method"] != utility.getGlobalValue ("terms.fade.methods.MH")) {
-                partition_results    = {sites_in_partition, 6};
+                partition_results    = {sites_in_partition, 4};
             } else {
-                partition_results    = {sites_in_partition, 8};
+                partition_results    = {sites_in_partition, 6};
            }
 
 
@@ -702,7 +715,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
                 if (partition_results[s][3] >= run_settings["bayes factor"]) {
                     if (Abs(report.sites_found) == 0 && table_output_options[^"terms.table_options.header"]) {
-                        fprintf (stdout, io.FormatTableRow (table_screen_output,table_output_options));
+                        fprintf (stdout, "\n", io.FormatTableRow (table_screen_output,table_output_options));
                         table_output_options[^"terms.table_options.header"] = FALSE;
                     }
                     fprintf (stdout, io.FormatTableRow (report.biased_site,table_output_options));
@@ -722,6 +735,8 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
         sites_found_summary [bias.residue] = Abs(report.sites_found);
 
      }
+     selection.io.stopTimer (fade.json [terms.json.timers], "Residue `fade.bias.residue` analysis");
+
 }
 
 
@@ -729,7 +744,10 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 // ===========  ANALYSIS SUMMARY ========
 
 fade.json [terms.fade.cache.settings] = fade.run_settings;
-fade.json [terms.fade.json.site_annotations] = fade.site_annotations;
+fade.json [terms.fade.json.site_annotations] = {
+    terms.fade.json.headers : fade.site_annotation_headers,
+    terms.fade.json.site_annotations : fade.site_annotations 
+};
 fade.json [terms.fit.MLE] = {terms.json.headers   : fade.table_headers,
                                terms.json.content : fade.site_results };
 

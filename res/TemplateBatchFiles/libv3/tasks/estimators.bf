@@ -551,6 +551,8 @@ lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial
 
         utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
 
+        
+    
         df = 0;
 
         if (Type(initial_values) == "AssociativeList") {
@@ -611,7 +613,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
 
-
+ 
     df = 0;
 
     if (Type(initial_values) == "AssociativeList") {
@@ -623,13 +625,12 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
     }
 
-
     //assert (0);
 
    	Optimize (mles, likelihoodFunction);
 
-    //Export (lf,likelihoodFunction);
-    //console.log (lf);
+    Export (lf,likelihoodFunction);
+    console.log (lf);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);

@@ -158,7 +158,8 @@ bool    usePostProcessors = false,
         pipeMode         = false,
         dropIntoDebugMode = false,
         logInputMode   = false,
-        needExtraNL    = false;
+        needExtraNL    = false,
+        hasTerminalStdout = true;
 
 char    prefFileName[] = ".hyphyinit";
 
@@ -619,19 +620,19 @@ void    SetStatusLine               (_String s) {
 }
 
 //__________________________________________________________________________________
-void    SetStatusLineUser   (_String const s)
-{
-    setvbuf(stderr, NULL, _IONBF, 0);
-    BufferToConsole("\33[2K\r", stderr);
-    StringToConsole(s, stderr);
-    needExtraNL = true;
+void    SetStatusLineUser   (_String const s) {
+    if (hasTerminalStdout) {
+        setvbuf(stderr, NULL, _IONBF, 0);
+        BufferToConsole("\33[2K\r", stderr);
+        StringToConsole(s, stderr);
+        needExtraNL = true;
+    }
 }
 
 //__________________________________________________________________________________
 
 #ifndef __UNITTEST__
-int main (int argc, char* argv[])
-{
+int main (int argc, char* argv[]) {
     mainArgCount = argc - 1;
 
 #ifdef _COMPARATIVE_LF_DEBUG_DUMP
@@ -674,6 +675,8 @@ int main (int argc, char* argv[])
          signal (SIGINT, SIG_IGN);
 #endif
   
+    hasTerminalStdout = isatty (fileno(stdout));
+    
     char    curWd[4096],
             dirSlash = GetPlatformDirectoryChar();
     getcwd (curWd,4096);
