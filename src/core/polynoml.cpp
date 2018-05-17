@@ -2741,9 +2741,7 @@ BaseObj* _Polynomial::toStr (unsigned long padding) {
             
             result<<(_String*)_varNames(k);
             if (*cT>1) {
-              result<<'^';
-              _String st (*cT);
-              result<< *cT;
+              result<<'^' << _String (*cT);
             }
           }
         }

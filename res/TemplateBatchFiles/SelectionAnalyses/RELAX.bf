@@ -201,6 +201,7 @@ if (relax.model_set == "All") { // run all the models
             "_value_[terms.fit.MLE]"));
 
     relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
+        
     parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
 
     relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
@@ -258,6 +259,7 @@ if (relax.model_set == "All") { // run all the models
 
 io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model to test K != 1");
 
+
 selection.io.startTimer (relax.json [terms.json.timers], "RELAX alternative model fitting", 3);
 
 relax.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
@@ -280,11 +282,16 @@ relax.reference.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS
         relax.filter_names,
         None);
 
+
+
+
 relax.bound_weights = models.BindGlobalParameters ({"0" : relax.reference.bsrel_model, "1" : relax.test.bsrel_model}, terms.mixture.mixture_aux_weight + ".+");
 models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.reference.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 
+
 parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
 model.generic.AddGlobal (relax.test.bsrel_model, relax.relaxation_parameter, terms.relax.k);
+
 
 for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
     parameters.SetRange (model.generic.GetGlobalParameter (relax.reference.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
@@ -339,11 +346,10 @@ if (relax.has_unclassified) {
     models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.unclassified.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 }
 
+
+
 relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
-
 io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
-
-
 relax.fitted.K = estimators.GetGlobalMLE (relax.alternative_model.fit,terms.relax.k);
 io.ReportProgressMessageMD("RELAX", "alt", "* Relaxation/intensification parameter (K) = " + Format(relax.fitted.K,8,2));
 io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **test** branches");
@@ -418,6 +424,18 @@ selection.io.json_store_branch_attribute(relax.json, relax.null_name, terms.bran
 
 console.log ("----\n## Test for relaxation (or intensification) of selection [RELAX]");
 console.log ( "Likelihood ratio test **p = " + Format (relax.LRT[terms.p_value], 8, 4) + "**.");
+
+/*
+parameters.RemoveConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.relax.k));
+relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.null_model.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
+io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
+relax.fitted.K = estimators.GetGlobalMLE (relax.alternative_model.fit,terms.relax.k);
+io.ReportProgressMessageMD("RELAX", "alt", "* Relaxation/intensification parameter (K) = " + Format(relax.fitted.K,8,2));
+io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **test** branches");
+relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.test.bsrel_model)) % 0;
+selection.io.report_dnds (relax.inferred_distribution);
+*/
+
 
 if (relax.LRT[terms.p_value] <= relax.p_threshold) {
     if (relax.fitted.K > 1) {
@@ -551,6 +569,7 @@ lfunction relax.DistributionGuess (mean) {
 
 lfunction relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, omega, omega_term) {
 
+
     p = {};
     diff = models.codon.diff(fromChar, toChar);
 
@@ -594,7 +613,7 @@ lfunction relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _
 
 //------------------------------------------------------------------------------
 
-lfunction relax.BS_REL._DefineQ(bs_rel, namespace) {
+lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
     rate_matrices = {};
 
     bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
@@ -607,8 +626,8 @@ lfunction relax.BS_REL._DefineQ(bs_rel, namespace) {
     for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
        key = "component_" + component;
        ExecuteCommands ("
-        function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
-           return relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _tt,
+        function rate_generator (fromChar, toChar, namespace, model_type, model) {
+           return relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')], 
                 'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                 'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                 'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));

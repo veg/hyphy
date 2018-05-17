@@ -1,4 +1,4 @@
-RequireVersion ("2.0020100101");
+RequireVersion ("2.00.20100101");
 
 ChoiceList (runType,"Run Type",1,SKIP_NONE,
                     "New run","Start a new run",

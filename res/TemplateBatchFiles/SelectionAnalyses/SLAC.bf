@@ -70,7 +70,7 @@ slac.pvalue = 0.1;
 slac.json = {
     terms.json.analysis: slac.analysis_description,
     terms.json.fits: {},
-    terms.json.timers: {},
+    terms.json.timers: {}
 };
     /**
         The dictionary of results to be written to JSON at the end of the run

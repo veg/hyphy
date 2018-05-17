@@ -292,7 +292,6 @@ lfunction selection.io.adjust_partition_string (string, sites) {
 
 function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
 
-
     if (None == dict_key) {
         json[key] = value;
     } else {
@@ -315,7 +314,10 @@ function selection.io.json_store_branch_attribute(json, attribute_name, attribut
                              "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
 
     utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
-                             "(((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name]");
+                             "  if (values / selection.io.json_store_branch_attribute.branch_name) {
+                                    (((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name];
+                                }
+                              ");
  }
 
 

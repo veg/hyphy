@@ -1,4 +1,4 @@
-RequireVersion("2.30");
+RequireVersion("2.3.0");
 
 LoadFunctionLibrary("libv3/convenience/matrix.bf");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");

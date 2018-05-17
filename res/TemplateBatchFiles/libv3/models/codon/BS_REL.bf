@@ -21,9 +21,7 @@ LoadFunctionLibrary("../../convenience/math.bf");
 lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
 
     components = math.Int (components);
-
     io.CheckAssertion ("`&components` >= 2 && `&components` <= 10", "must have between 2 and 10 components in call to models.codon.BS_REL.ModelDescription");
-
     codons = models.codon.MapCode(code);
 
     return {
@@ -80,7 +78,6 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
     bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")] = {};
 
 
-
     _aux = parameters.GenerateSequentialNames ("bsrel_mixture_aux", bs_rel[utility.getGlobalValue("terms.model.components")] - 1, "_");
     _wts = parameters.helper.stick_breaking (_aux, None);
     mixture = {};
@@ -89,8 +86,8 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
     for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
        key = "component_" + component;
        ExecuteCommands ("
-        function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
-            return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt,
+        function rate_generator (fromChar, toChar, namespace, model_type, model) {
+            return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
                 'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                 'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                 'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
@@ -162,7 +159,6 @@ lfunction models.codon.BS_REL.ExtractMixtureDistributionFromFit (bs_rel, fit) {
 
 lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
 
-
     rate_matrices = {};
 
     bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
@@ -176,8 +172,8 @@ lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
     for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
        key = "component_" + component;
        ExecuteCommands ("
-        function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
-           return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt,
+        function rate_generator (fromChar, toChar, namespace, model_type, model) {
+               return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
                 'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                 'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                 'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));

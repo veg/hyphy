@@ -1,4 +1,4 @@
-RequireVersion ("2.12");
+RequireVersion ("2.1.2");
 
 ExecuteAFile ("qndhelper1_mf.ibf");
 LoadFunctionLibrary ("GrabBag.bf");

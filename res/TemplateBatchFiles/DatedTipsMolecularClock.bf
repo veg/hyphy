@@ -1,4 +1,4 @@
-RequireVersion ("2.0020110101");
+RequireVersion ("2.00.20110101");
 VERBOSITY_LEVEL = -1;
 
 

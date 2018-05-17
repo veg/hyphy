@@ -1,4 +1,4 @@
-RequireVersion ("0.9920060830");
+RequireVersion ("0.99.20060830");
 
 SetDialogPrompt ("Please select the index file:");
 fscanf 			(PROMPT_FOR_FILE,"Lines",inLines);

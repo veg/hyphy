@@ -1,4 +1,4 @@
-RequireVersion ("2.220141023");
+RequireVersion ("2.2.2.0141023");
 
 
 console.log("ERROR: THIS BATCHFILE WILL NOT RUN PROPERLY WITH UPDATED TERMS BASE. QUITTING.");

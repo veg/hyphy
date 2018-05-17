@@ -24,3 +24,21 @@ lfunction stats.Quantile(column, p) {
 
     return column[h_floor] + (h - h_floor) * (column[h_floor + 1] - column[h_floor]);
 }
+
+/**
+ * Compute a simple Bayes factor given priors and posteriors
+ * @name stats.BayesFactor
+ * @param {Number} prior - prior for event E
+ * @param {Number} posterior - posterior for event E
+ * @returns {Number} the BF
+ */
+
+lfunction stats.BayesFactor(prior, posterior) {
+    if (prior == 1) { // infinite prior odds
+        if (posterior == 1) {
+            return 1;
+        } 
+        return 0;
+    }
+    return posterior * (1-prior) / (1-posterior) / prior;
+}

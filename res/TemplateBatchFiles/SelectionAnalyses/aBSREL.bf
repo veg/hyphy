@@ -725,8 +725,8 @@ lfunction absrel.BS_REL._DefineQ(bs_rel, namespace) {
     for (component = 1; component <= component_count; component += 1) {
        key = "component_" + component;
        ExecuteCommands ("
-        function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
-           return absrel.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _tt,
+        function rate_generator (fromChar, toChar, namespace, model_type, model) {
+           return absrel.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
                 'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                 'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                 'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));

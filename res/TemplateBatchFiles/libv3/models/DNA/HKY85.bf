@@ -51,7 +51,7 @@ function models.DNA.HKY85.is_transition(fromChar, toChar) {
  * @param {String} model_type
  * @return models.DNA.HKY85._GenerateRate.p
  */
-function models.DNA.HKY85._GenerateRate(fromChar, toChar, namespace, model_type) {
+function models.DNA.HKY85._GenerateRate(fromChar, toChar, namespace, model_type, model) {
     models.DNA.HKY85._GenerateRate.p = {};
     models.DNA.HKY85._GenerateRate.p[model_type] = {};
 

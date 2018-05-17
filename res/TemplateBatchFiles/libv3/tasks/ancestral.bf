@@ -1,4 +1,4 @@
-RequireVersion("2.26");
+RequireVersion("2.3.11");
 
 LoadFunctionLibrary("../UtilityFunctions.bf");
 
@@ -89,8 +89,8 @@ ancestral._bacCacheInstanceCounter = 0;
  * Builds ancestral states
  * @name ancestral.build
  * @param {Number} _lfID - the likelihood function ID
- * @param {Number} _lfComponentID - 
- * @param {options} options - 
+ * @param {Number} _lfComponentID -
+ * @param {options} options -
  * @returns an integer index to reference
  * the opaque structure for subsequent operations
  * @example
@@ -105,8 +105,8 @@ function ancestral.build (_lfID, _lfComponentID, options) {
  * @name ancestral._buildAncestralCacheInternal
  * @private
  * @param {Number} _lfID - the likelihood function ID
- * @param {Number} _lfComponentID - 
- * @param {options} options - 
+ * @param {Number} _lfComponentID -
+ * @param {options} options -
  * @returns an integer index to reference
  * the opaque structure for subsequent operations
  */
@@ -297,10 +297,41 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     };
 }
 
-
-
+/*******************************************/
 /**
- * Prepare a substitution matrix for use by BGM
+ * @name ancestral.ComputeSubstitutionCounts
+   branch filter helper function
+*/
+
+lfunction ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names) {
+    coordinates = {{k-1, parent-1}};
+
+    for (k = 1; k < Abs(ancestral_data["TREE_AVL"]); k+=1) {
+        parent = ((ancestral_data["TREE_AVL"])[k])["Parent"];
+
+        if (parent) {
+            node_name = ((ancestral_data["TREE_AVL"])[k])["Name"];
+            if (None != branch_filter) {
+                if (Type (branch_filter) == "AssociativeList") {
+                    if (branch_filter / node_name == FALSE) {
+                        continue;
+                    }
+                } else {
+                    if (Call (branch_filter, node_name) == FALSE) {
+                        continue;
+                    }
+                }
+            }
+            selected_branches + Eval (coordinates);
+            selected_branch_names + node_name;
+        }
+    }
+
+    return Abs (selected_branches);
+}
+
+/*******************************************/
+/**
  * @name ancestral.ComputeSubstitutionCounts
  * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
  * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
@@ -327,39 +358,15 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         S = number of sites passing filter
 
  */
- 
- 
 
-/*******************************************/
+
+
 
 lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, substitution_filter, site_filter) {
     selected_branches       = {};
     selected_branch_names   = {};
 
-    coordinates = {{k-1, parent-1}};
-
-    for (k = 1; k < Abs(ancestral_data["TREE_AVL"]); k+=1) {
-        parent = ((ancestral_data["TREE_AVL"])[k])["Parent"];
-
-        if (parent) {
-            node_name = ((ancestral_data["TREE_AVL"])[k])["Name"];
-            if (None != branch_filter) {
-                if (Type (branch_filter) == "AssociativeList") {
-                    if (branch_filter [node_name] != TRUE) {
-                        continue;
-                    }
-                } else {
-                    if (Call (branch_filter, node_name) == FALSE) {
-                        continue;
-                    }
-                }
-            }
-            selected_branches + Eval (coordinates);
-            selected_branch_names + node_name;
-        }
-    }
-
-    branches = Abs (selected_branches);
+    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);;
 
     sites  = (ancestral_data["DIMENSIONS"])["SITES"];
     counts = {branches,sites};
@@ -415,43 +422,148 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
 }
 
 /*******************************************
-	count subsitutions at a given site;
-	returns an AVL with
+ **
+ * @name ancestral.ComputeSubstitutionBySite
+ * tabulates all substitutions occurring at a specified site, possibly restricted to a
+ * subset of branches
 
-	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
-				 with counts of substitutions at the site
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Number} site - the 0-based index of a site
 
-	pass this function the ID of ancestral cache
-	and the index of the site to recover
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
 
-*******************************************/
+ * @returns
+        {
+         terms.trees.branches :  {Matrix Nx1} names of selected branches,
+         terms.substitutions   :  {Dictionary} of substitution counts;
+                              will look like "FROM" -> "TO" -> List of branches where this type of substitution occured
+         terms.substitutions:{
+               "N":{
+                 "H":{
+                   "0":"COW"
+                  }
+                },
+               "K":{
+                 "N":{
+                   "0":"Node5"
+                  },
+                 "T":{
+                   "0":"HORSE"
+                  }
+                },
+               "R":{
+                 "K":{
+                   "0":"Node3"
+                  },
+                 "P":{
+                   "0":"MOUSE"
+                  }
+                }
+              }
+        }
 
-lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
-    if (Abs(_ancestral_cache)) {
-        if (_siteID >= 0 && _siteID < (_ancestral_cache["DIMENSIONS"])["SITES"]) {
-            _bacSiteC = {};
-            _thisColumn = (_ancestral_cache["MATRIX"])[-1][_siteID];
-            _bacSiteC["CHARS"] = _ancestral_cache["CHARS"];
-            _bacSiteDim = (_ancestral_cache["DIMENSIONS"])["CHARS"];
-            _bacCounter = (_ancestral_cache["DIMENSIONS"])["BRANCHES"] - 1;
-            _bacSiteMx = {
-                _bacSiteDim,
-                _bacSiteDim
-            };
+        N = number of selected branches
+ */
 
-            for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator += 1) {
-                _bacParentID = ((_ancestral_cache["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
-                _myState = _thisColumn[_bacTreeIterator];
-                _pState = _thisColumn[_bacParentID];
-                ancestral._expandSubstitutionMap(_pState, _myState, _ancestral_cache["AMBIGS"], _bacSiteMx);
-            }
+/*******************************************/
 
-            _bacSiteC["COUNTS"] = _bacSiteMx;
-            return _bacSiteC;
+
+lfunction ancestral.ComputeSubstitutionBySite (ancestral_data, site, branch_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+    branches = ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);
+
+    result   = {};
+
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        parent = (selected_branches[b])[1];
+        own_state    = (ancestral_data["MATRIX"])[self][site];
+        parent_state = (ancestral_data["MATRIX"])[parent][site];
+
+        if  ((own_state != parent_state) && (own_state != -1) && (parent_state != -1)) {
+            own_state = (ancestral_data["CHARS"])[own_state];
+            parent_state = (ancestral_data["CHARS"])[parent_state];
+            utility.EnsureKey (result, parent_state);
+            utility.EnsureKey (result[parent_state], own_state);
+            ((result[parent_state])[own_state]) + selected_branch_names[b];
         }
     }
-    return {};
+
+
+    return  {
+             ^"terms.trees.branches"  : selected_branch_names,
+             ^"terms.substitutions"   : result
+            };
+
+}
+
+/*******************************************
+ **
+ * @name ancestral.ComputeSiteComposition
+ * computes the counts of individual characters (including ancestral states)
+ * at a specific site, possibly filtered to a subset of branches
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Number} site - the 0-based index of a site
+
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
+
+ * @returns
+        {
+         terms.trees.branches :  {Matrix Nx1} names of selected branches,
+         terms.data.composition   :  {Dictionary} of character counts;
+                              will look like
+
+        }
+
+        N = number of selected branches
+ */
+
+/*******************************************/
+
+
+lfunction ancestral.ComputeSiteComposition (ancestral_data, site, branch_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+
+    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);
+
+    result   = {};
+
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        own_state    = (ancestral_data["MATRIX"])[self][site];
+
+        if (own_state >= 0) {
+            own_state    = (ancestral_data["CHARS"])[own_state];
+            result [own_state] += 1;
+        } else {
+            if (own_state < (-1)) {
+                resolution = (ancestral_data["AMBIGS"])[-own_state - 2];
+                resolution = (resolution["(_MATRIX_ELEMENT_ROW_+1)*_MATRIX_ELEMENT_VALUE_"])[resolution];
+                count = 1/utility.Array1D (resolution);
+                utility.ForEach (resolution, "_value_", "`&result`[(`&ancestral_data`['CHARS'])[_value_-1]] += `&count`;");
+            }
+        }
+
+    }
+
+
+    return  {
+             ^"terms.trees.branches"  : selected_branch_names,
+             ^"terms.data.composition"   : result
+            };
+
 }
 
 

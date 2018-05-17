@@ -79,6 +79,11 @@ function utility.getGlobalValue (val) {
     return ^val;
 }
 
+function utility.setGlobalValue (id, val) {
+    Eval (id);
+    ^id = val;
+}
+
 /**
  * @name utility.ToggleEnvVariable
  * @param var
@@ -323,17 +328,14 @@ function utility.Filter (object, lambda_name, condition) {
  * @param {String} lambda_name - function to discern whether element is filtered.
  * @returns first matched object or none
  */
-function utility.First (object, lambda_name, condition) {
-
+function utility.First (object_utility_first, lambda_name, condition) {
 
     Eval ("`lambda_name` = None");
 
-     if (Type (object) == "AssociativeList") {
-        utility.Filter.keys = Rows (object);
-        ^(lambda_name) := object [utility.Filter.keys[utility.Filter.k]];
-        for (utility.Filter.k = 0; utility.Filter.k < Abs (object); utility.Filter.k += 1) {
-
-
+     if (Type (object_utility_first) == "AssociativeList") {
+        utility.First.keys = Rows (object_utility_first);
+        ^(lambda_name) := object_utility_first [utility.First.keys[utility.First.k]];
+        for (utility.First.k = 0; utility.First.k < Abs (object); utility.First.k += 1) {
             if (Eval (condition)) {
                 return ^(lambda_name);
             }
@@ -341,12 +343,12 @@ function utility.First (object, lambda_name, condition) {
         return None;
     }
 
-    if (Type (object) == "Matrix") {
-        utility.Filter.rows = Rows (object);
-        utility.Filter.columns = Columns (object);
-        ^(lambda_name) := object [utility.Filter.r][utility.Filter.c];
-        for (utility.Filter.r = 0; utility.Filter.r < utility.Filter.rows; utility.Filter.r += 1) {
-            for (utility.Filter.c = 0; utility.Filter.c < utility.Filter.columns; utility.Filter.c += 1) {
+    if (Type (object_utility_first) == "Matrix") {
+        utility.First.rows = Rows (object_utility_first);
+        utility.First.columns = Columns (object_utility_first);
+        ^(lambda_name) := object_utility_first [utility.First.r][utility.First.c];
+        for (utility.First.r = 0; utility.First.r < utility.First.rows; utility.First.r += 1) {
+            for (utility.First.c = 0; utility.First.c < utility.First.columns; utility.First.c += 1) {
                 if (Eval (condition)) {
                     return ^(lambda_name);
                 }
@@ -385,11 +387,14 @@ function utility.ForEach (object, lambda_name, transform) {
     Eval ("`lambda_name` = None");
 
     if (Type (object) == "AssociativeList") {
+
+
         utility.ForEach.keys = Rows (object);
+        utility.ForEach.size = Abs (object);
 
         ^(lambda_name) := object [utility.ForEach.keys[utility.ForEach.k]];
 
-        for (utility.ForEach.k = 0; utility.ForEach.k < Abs (object); utility.ForEach.k += 1) {
+        for (utility.ForEach.k = 0; utility.ForEach.k < utility.ForEach.size; utility.ForEach.k += 1) {
             ExecuteCommands (transform, enclosing_namespace);
         }
         return;
@@ -404,7 +409,6 @@ function utility.ForEach (object, lambda_name, transform) {
             for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
                 for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
                     ExecuteCommands (transform, enclosing_namespace);
-
                 }
             }
         }
@@ -567,7 +571,6 @@ function utility.PopulateDict (from, to, value, lambda) {
 function utility.ForEachPair(object, key_name, value_name, transform) {
 
     io.CheckAssertion ("!utility.ForEachPair.warn_non_rentrant", "utility.ForEachPair is non re-entrant");
-
     utility.ForEachPair.warn_non_rentrant = TRUE;
 
     Eval ("`key_name` = None");
@@ -659,7 +662,6 @@ lfunction utility.UniqueValues (object) {
  * @returns nothing
  */
 lfunction utility.EnsureKey (dict, key) {
-
     if (Type (dict[key]) != "AssociativeList") {
         dict[key] = {};
     }
@@ -959,4 +961,26 @@ function utility.sortStrings (_theList)
 	return _gb_sortedStrings;
 }
 
+/*
+function utility.FinishAndPrintProfile () {
+#profile _hyphy_profile_dump;
 
+    stats  			= _hyphy_profile_dump["STATS"];
+    _profile_summer = ({1,Rows(stats)}["1"]) * stats;
+    _instructions   = _hyphy_profile_dump["INSTRUCTION"];
+    _indices	    = _hyphy_profile_dump["INSTRUCTION INDEX"];
+
+    fprintf (stdout, "\nTotal run time (seconds)      : ", Format(_profile_summer[1],15,6),
+                     "\nTotal number of steps         : ", Format(_profile_summer[0],15,0), "\n\n");
+
+    to_sort        =  stats["-_MATRIX_ELEMENT_VALUE_*_MATRIX_ELEMENT_COLUMN_+(_MATRIX_ELEMENT_COLUMN_==0)*_MATRIX_ELEMENT_ROW_"] % 1;
+
+    for (k=0; k<Columns(_instructions); k=k+1)
+    {
+        k2 = to_sort[k][0];
+        fprintf (stdout, Format (_indices[k2],6,0), " : ", _instructions[k2], "\n\tCall count: ", stats[k2][0],
+                                                       "\n\tTime (seconds): ", stats[k2][1], "\n");
+    }
+    return 0;
+}
+*/

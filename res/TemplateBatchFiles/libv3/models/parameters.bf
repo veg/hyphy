@@ -259,6 +259,22 @@ function parameters.Quote(arg) {
 }
 
 /**
+ * @name parameters.AppendMultiplicativeTerm
+ * @param {String} expression - the matrix to modify
+ * @param {String} term - the multiplier to append
+ * @returns {String} (expression) * (term)
+ */
+lfunction parameters.AppendMultiplicativeTerm (expression, term) {
+    if (Type (expression) == "String") {
+        if (Abs (expression)) {
+            return "(" + expression + ")*(" + term + ")";
+        }
+        return term;
+    }
+    return expression;
+}
+
+/**
  * @name parameters.AddMultiplicativeTerm
  * @param {Matrix} matrix - matrix to scale
  * @param {Number} term - scalar to multiply matrix by
@@ -352,17 +368,18 @@ lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
  * @param ranges
  * @returns nothing
  */
-function parameters.SetRange(id, ranges) {
+function parameters.SetRange(id, ranges) {    
+    
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {
-                //console.log (id + "=>" + ranges);
                 if (Abs(ranges[terms.lower_bound])) {
                     ExecuteCommands("`id` :> " + ranges[terms.lower_bound]);
-                }
+                 }
                 if (Abs(ranges[terms.upper_bound])) {
                     ExecuteCommands("`id` :< " + ranges[terms.upper_bound]);
                 }
+                return 0;
             }
         }
     } else {
@@ -371,8 +388,11 @@ function parameters.SetRange(id, ranges) {
             for (parameters.SetRange.k = 0; parameters.SetRange.k < parameters.SetRange.var_count; parameters.SetRange.k += 1) {
                 parameters.SetRange(id[parameters.SetRange.k], ranges);
             }
+            return 0;
         }
     }
+    io.ReportAnExecutionError ("An invalid combination of parameters was passed to parameters.SetRange. ID = " + id + ", range = " + ranges);
+
 }
 
 /**
@@ -523,7 +543,9 @@ lfunction parameters.SetStickBreakingDistribution (parameters, values) {
     rate_count = Rows (values);
     left_over  = 1;
 
+
     for (i = 0; i < rate_count; i += 1) {
+        
         parameters.SetValue ((parameters["rates"])[i], values[i][0]);
         if (i < rate_count - 1) {
             break_here = values[i][1] / left_over;

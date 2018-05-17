@@ -16,6 +16,7 @@ namespace terms{
     codons                  = "codons";
     codon                   = "codon";
     sense_codons            = "sense";
+    nucleotide              = "nucleotide";
     stop_codons             = "stop";
     translation_table       = "translation-table";
     synonymous_sub_count    = "synonymous substitution count";
@@ -32,6 +33,7 @@ namespace terms{
     number_precision    = "number-precision";
     three_way           = "three-way";
     reduced             = "reduced";
+    substitutions       = "substitutions";
 
     parameters     = "parameters";
     local          = "local";
@@ -90,11 +92,19 @@ namespace terms{
     function nucleotideRate(fromC, toC) {
         return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
     }
+
+    function nucleotideRateReversible (fromC, toC) {
+        if (fromC < toC) {
+            return nucleotideRate (fromC, toC);
+        }
+        return nucleotideRate (toC, fromC);
+    }
+
     function aminoacidRate(fromA, toA) {
         return "Substitution rate from amino-acid " + fromA + " to amino-acid " + toA;
     }
     function binaryRate(fromX, toX) {
-        return "Substitution rate from character " + fromX + " to character " + toX;    
+        return "Substitution rate from character " + fromX + " to character " + toX;
     }
     function timeParameter() {
         return "Evolutionary time parameter";
@@ -132,6 +142,7 @@ namespace terms{
         sequences      = "sequences";
         sequence       = "sequence";
         sample_size    = "sample size";
+        composition    = "composition";
         file           = "file";
         cache          = "cache";
         name           = "name";
@@ -177,7 +188,7 @@ namespace terms{
         _20x1      = "Protein 20x1 estimator";
         MLE        = "Maximum likelihood frequency estimator";
         predefined = "Based on a training set";
-        binary     = "Binary character frequency estimator"; 
+        binary     = "Binary character frequency estimator";
     }
 
     /* Terms accompanying tasks/genetic_code.bf */
@@ -236,9 +247,10 @@ namespace terms{
         global_mg94xrev       = "Global MG94xREV";
         mg94xrev_sep_rates    = "MG94xREV with separate rates for branch sets";
         nucleotide_gtr        = "Nucleotide GTR";
+        baseline              = "Baseline";
         frequencies           = "Equilibrium frequencies";
         model                 = "model"; // TODO: change string to "model name"
-       // global                = "Global model fit"; // Defined at the top of file
+       // global              = "Global model fit"; // Defined at the top of file
         attribute             = "attributes";
         display_order         = "display order";
         attribute_type        = "attribute type";
@@ -371,11 +383,14 @@ namespace terms{
         synonymous_rate               = "synonymous rate";
         nonsynonymous_rate            = "non-synonymous rate";
         omega_ratio                   = "non-synonymous/synonymous rate ratio";
+        multiple_hit_rate             = "rate at which multiple nucleotides are changed instantly within a single codon";
+
         one                           = "1";
         theta                         = "theta";
         default_time                  = "t";
         omegas                        = "omegas";
         omega                         = "omega";
+        delta                         = "delta";
         weights                       = "weights";
         weight                        = "weight";
         rates                         = "rates";
@@ -444,6 +459,9 @@ namespace terms{
         model_map = "model_map";
         partitioned = "partitioned";
         model_list = "model_list";
+        rooted = "rooted";
+        root   = "root";
+        branches = "branches";
 
         //node_name = "Name";
         //children = "Children";
