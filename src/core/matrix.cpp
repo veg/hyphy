@@ -2075,8 +2075,7 @@ _Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Convert2Formulas (void)
-{
+void    _Matrix::Convert2Formulas (void) {
     if (storageType == 1) {
         storageType = 2;
         _Formula** tempData = (_Formula**)MatrixMemAllocate (sizeof(void*)*lDim);
@@ -5585,7 +5584,7 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
             ((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
         }
     } else {
-        if (copyF && ((_Formula**)theData)[lIndex]!=(_Formula*)ZEROPOINTER) {
+        if (((_Formula**)theData)[lIndex]!=(_Formula*)ZEROPOINTER) {
             delete ((_Formula**)theData)[lIndex];
         }
         ((_Formula**)theData)[lIndex] = copyF?(_Formula*)f.makeDynamic():&f;
