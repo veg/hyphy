@@ -1143,7 +1143,7 @@ void    _TheTree::PreTreeConstructor (bool)
 
     aCache                  = new _AVLListXL (new _SimpleList);
 
-    convertedMatrixExpressionsL.ClearFormulasInList();
+    convertedMatrixExpressions.ClearFormulasInList();
     convertedMatrixExpressions.Clear();
 
     getINodePrefix();
@@ -1170,7 +1170,7 @@ void    _TheTree::PostTreeConstructor (bool dupMe)
     DeleteObject (aCache);
     aCache = nil;
 
-    convertedMatrixExpressionsL.ClearFormulasInList();
+    convertedMatrixExpressions.ClearFormulasInList();
     convertedMatrixExpressions.Clear();
 
     while (theRoot->get_num_nodes() == 1) { // dumb tree w/ an extra top level node
@@ -1778,8 +1778,8 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
                             for (unsigned long cc = 0; cc < cNt.categoryVariables.lLength; cc++) {
                                 _CategoryVariable * thisCC = (_CategoryVariable *)LocateVar(cNt.categoryVariables.lData[cc]);
                                 thisCC -> SetValue (new _Constant(thisCC->Mean()), false);
-
                             }
+                            convertedMatrixExpressions.Insert ((BaseRef)nodeModelID, (long)expressionToSolveFor, false, false);
                         }
                         DeleteObject (result);
                     } else {
