@@ -174,7 +174,7 @@ for (fade.block_id = 0; fade.block_id < Abs (fade.site_classes); fade.block_id +
     io.ReportProgressBar  ("simulation", "Generating data for selection regime " + (fade.block_id+1) );
     fade.this_block = fade.site_classes[fade.block_id];
     if (utility.Has (  fade.this_block, fade.parameter.bias, "Number")) {
-        fade.bias.residue = fade.parameter.bias;
+        fade.bias.residue = fade.this_block[fade.parameter.bias];
 
         fade.model.biased = model.generic.DefineModel("fade.biased.model.generator",
                     "fade.biased_model", {
