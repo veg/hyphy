@@ -61,7 +61,7 @@ LoadFunctionLibrary("matrices/HIV.ibf");
 lfunction models.protein.empirical._GenerateRate(fromChar, toChar, namespace, model_type, model) {
     models.protein.empirical._GenerateRate.p = {};
     models.protein.empirical._GenerateRate.p  [model_type]       = {};
-    
+
     if (fromChar < toChar) {
         models.protein.empirical._GenerateRate.p  [utility.getGlobalValue("terms.model.rate_entry")] = "" + ((model[utility.getGlobalValue ("terms.model.empirical_rates")])[fromChar])[toChar];
     } else {
@@ -78,10 +78,12 @@ lfunction models.protein.empirical._GenerateRate(fromChar, toChar, namespace, mo
 lfunction models.protein.empirical._DefineQ(model_dict, namespace) {
 
     // Call frequencies here. Will be repeated in model.generic.DefineModel, but we are ok with that.
-    frequencies._aux.empirical.singlechar(model_dict, namespace, model_dict[utility.getGlobalValue("terms.model.data")]);
 
-    models.protein.empirical._NormalizeEmpiricalRates(model_dict, namespace); 
-    models.protein.empirical.DefineQMatrix (model_dict, namespace);    
+    if (utility.Has (model_dict, utility.getGlobalValue("terms.model.data"), "String")) {
+        frequencies._aux.empirical.singlechar(model_dict, namespace, model_dict[utility.getGlobalValue("terms.model.data")]);
+        models.protein.empirical._NormalizeEmpiricalRates(model_dict, namespace);
+    }
+    models.protein.empirical.DefineQMatrix (model_dict, namespace);
     return model_dict;
 }
 
@@ -92,7 +94,7 @@ lfunction models.protein.empirical._DefineQ(model_dict, namespace) {
  */
 lfunction models.protein.empirical._NormalizeEmpiricalRates(model_dict, namespace) {
 
-    
+
     alphabet  = model_dict[utility.getGlobalValue("terms.alphabet")];
     dim       = utility.Array1D (alphabet);
     raw_rates = model_dict[utility.getGlobalValue("terms.model.empirical_rates")];
@@ -107,10 +109,10 @@ lfunction models.protein.empirical._NormalizeEmpiricalRates(model_dict, namespac
     for (i = 0; i < dim; i +=1 ){
         for (j = i+1; j < dim; j += 1){
             if ( i!=j ){
-                 
-                
+
+
                 rate = (raw_rates[alphabet[i]])[alphabet[j]];
-                
+
                 Q[i][j] = rate * EFV[j];
                 Q[j][i] = rate * EFV[i];
 
@@ -132,22 +134,22 @@ lfunction models.protein.empirical._NormalizeEmpiricalRates(model_dict, namespac
         norm += Q[i][i] * EFV[i];
     }
     norm = -1*norm;
-    
+
     // perform normalization
     for (i = 0; i < dim; i +=1 ){
         for ( j = 0; j < dim; j += 1){
             Q[i][j] = Q[i][j] / norm;
         }
-    }   
+    }
     // Now convert it BACK TO hyphy dictionary with frequencies divided out. //
     // ************** This sets the new empirical rates. ************** //
-    
+
     new_empirical_rates  = {};
     for (l1 = 0; l1 < dim - 1; l1 += 1) {
         new_empirical_rates[alphabet[l1]] = {};
 
         for (l2 = l1 + 1; l2 < dim; l2 += 1) {
-            
+
             if (EFV[l2] == 0){
                 nof_rate = 0.;
             }
@@ -195,9 +197,9 @@ function models.protein.empirical.DefineQMatrix (modelSpec, namespace) {
     // ADDED FOR EMPIRICAL MODELS
     __empirical_rates = modelSpec[terms.model.empirical_rates];
 
-    
-    
-    
+
+
+
 	__global_cache = {};
 
 	if (None != __rate_variation) {
@@ -205,13 +207,13 @@ function models.protein.empirical.DefineQMatrix (modelSpec, namespace) {
 
 		__rp = Call (__rate_variation[terms.rate_variation.distribution], __rate_variation[terms.rate_variation.options], namespace);
 		__rate_variation [terms.id] = (__rp[terms.category])[terms.id];
-				
+
 		parameters.DeclareCategory   (__rp[terms.category]);
         parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
-	} 
+	}
 
 	for (_rowChar = 0; _rowChar < models.protein.dimensions; _rowChar +=1 ){
-		for (_colChar = 0; _colChar < models.protein.dimensions; _colChar += 1) {		    
+		for (_colChar = 0; _colChar < models.protein.dimensions; _colChar += 1) {
             if (_rowChar == _colChar) {
                 continue;
             }
@@ -220,10 +222,10 @@ function models.protein.empirical.DefineQMatrix (modelSpec, namespace) {
 															   namespace,
 															  __modelType,
 															  modelSpec);
-  
+
 
 		 	if (None != __rate_variation) {
-				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier], 
+				__rp = Call (__rate_variation[terms.rate_variation.rate_modifier],
 							 __rp,
 							 __alphabet[_rowChar],
 							 __alphabet[_colChar],
@@ -264,7 +266,7 @@ models.protein.empirical.default_generators = {"LG": "models.protein.LG.ModelDes
                                                "gcpREV": "models.protein.gcpREV.ModelDescription",
                                                "HIVBm": "models.protein.HIVBm.ModelDescription",
                                                "HIVWm": "models.protein.HIVWm.ModelDescription"};
-                                           
+
 models.protein.empirical.plusF_generators = {"LG": "models.protein.LGF.ModelDescription",
                                              "WAG": "models.protein.WAGF.ModelDescription",
                                              "JTT": "models.protein.JTTF.ModelDescription",
@@ -274,7 +276,7 @@ models.protein.empirical.plusF_generators = {"LG": "models.protein.LGF.ModelDesc
                                              "gcpREV": "models.protein.gcpREVF.ModelDescription",
                                              "HIVBm": "models.protein.HIVBmF.ModelDescription",
                                              "HIVWm": "models.protein.HIVWmF.ModelDescription"};
-                                             
+
 models.protein.empirical.mleF_generators = {"LG": "models.protein.LGML.ModelDescription",
                                              "WAG": "models.protein.WAGML.ModelDescription",
                                              "JTT": "models.protein.JTTML.ModelDescription",

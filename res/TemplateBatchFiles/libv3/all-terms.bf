@@ -22,6 +22,7 @@ namespace terms{
     synonymous_sub_count    = "synonymous substitution count";
     nonsynonymous_sub_count = "nonsynonymous substitution count";
     original_name           = "original name";
+    replicates              = "replicates";
 
     category            = "category";
     mixture             = "mixture";

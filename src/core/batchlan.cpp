@@ -5469,6 +5469,8 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                 }
 
                 if (baseSet.sLength == alphabetMatrix->GetVDim ()) {
+                  
+                  
                     long unitSize = ((_FString*)alphabetMatrix->GetFormula(1,0)->Compute())->theString->toNum();
 
                     if (unitSize >= 1) {
