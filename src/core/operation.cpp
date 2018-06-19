@@ -624,6 +624,7 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
       theScrap.theStack.Place(temp);
       return true;
     } else {
+      DeleteObject (temp);
       return false;
     }
 

@@ -108,7 +108,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     if(${GCC_VERSION} VERSION_LESS 6.0)
       set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
     else(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -g")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -g -fsanitize=address -fsanitize=leak")
     endif(${GCC_VERSION} VERSION_LESS 6.0)
 
     if(NOAVX)
