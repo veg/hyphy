@@ -158,6 +158,27 @@ lfunction alignments.GetIthSequence (dataset_name, index) {
 }
 
 /**
+ * Get all sequences as "id" : "sequence" dictionary
+ * @name alignments.GetAllSequences
+ * @param {String} dataset_name - name of dataset to get sequence names from
+ * @returns {Dict} { id -> sequence}
+ */
+
+lfunction alignments.GetAllSequences (dataset_name) {
+
+    GetString   (seq_id, ^dataset_name, -1);
+    result = {};
+
+    utility.ForEachPair (seq_id, "_index_", "_name_",
+    '
+         GetDataInfo (`&seq_string`, ^`&dataset_name`, _index_[1]);
+        `&result`[_name_] = `&seq_string`;
+    ');
+
+    return result;
+}
+
+/**
  * Read Nucleotide dataset from file_name
  * @name alignments.ReadNucleotideDataSet
  * @param dataset_name - the name of the dataset you wish to use
