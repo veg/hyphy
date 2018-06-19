@@ -551,7 +551,7 @@ lfunction debug.log (arg) {
  * @returns nothing
  */
 lfunction messages.log (arg) {
-    fprintf (MESSAGE_LOG, arg, "\n");
+    fprintf (MESSAGE_LOG, "\n", arg);
 }
 
 

@@ -158,6 +158,27 @@ lfunction alignments.GetIthSequence (dataset_name, index) {
 }
 
 /**
+ * Get all sequences as "id" : "sequence" dictionary
+ * @name alignments.GetAllSequences
+ * @param {String} dataset_name - name of dataset to get sequence names from
+ * @returns {Dict} { id -> sequence}
+ */
+
+lfunction alignments.GetAllSequences (dataset_name) {
+
+    GetString   (seq_id, ^dataset_name, -1);
+    result = {};
+
+    utility.ForEachPair (seq_id, "_index_", "_name_",
+    '
+         GetDataInfo (`&seq_string`, ^`&dataset_name`, _index_[1]);
+        `&result`[_name_] = `&seq_string`;
+    ');
+
+    return result;
+}
+
+/**
  * Read Nucleotide dataset from file_name
  * @name alignments.ReadNucleotideDataSet
  * @param dataset_name - the name of the dataset you wish to use
@@ -187,19 +208,19 @@ lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
  */
 lfunction alignments.ReadProteinDataSet(dataset_name, file_name) {
     result = alignments.ReadNucleotideDataSet (dataset_name, file_name);
-    
+
     /* check that the alignment has protein data */
     DataSetFilter throwaway = CreateFilter (^dataset_name, 1);
     GetDataInfo (alphabet, throwaway, "CHARACTERS");
     DeleteObject (throwaway);
-    io.CheckAssertion("alignments.AlphabetType(`&alphabet`)==utility.getGlobalValue ('terms.amino_acid')", 
+    io.CheckAssertion("alignments.AlphabetType(`&alphabet`)==utility.getGlobalValue ('terms.amino_acid')",
                       "The input alignment must contain protein data");
-                      
+
     return result;
 }
 
 /**
- * Categorize an alphabet for an alignment 
+ * Categorize an alphabet for an alignment
  * @name alignments.AlphabetType
  * @param alphabet - the alphabet vector, e.g. fetched by GetDataInfo (alphabet, ..., "CHARACTERS");
  * @returns {String} one of standard alphabet types or None if unknown
@@ -214,7 +235,7 @@ lfunction alignments.AlphabetType (alphabet) {
         }
     }
     return None;
-}   
+}
 
 /**
  * Ensure that name mapping is not None by creating a f(x)=x map if needed
@@ -224,14 +245,14 @@ lfunction alignments.AlphabetType (alphabet) {
  * @param file_name - path to file
  * @returns {Dictionary} r - metadata pertaining to the dataset
  */
- 
+
 lfunction alignments.EnsureMapping(dataset_name, data) {
     name_mapping = data[utility.getGlobalValue("terms.data.name_mapping")];
     if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
         name_mapping = {};
         utility.ForEach (alignments.GetSequenceNames (dataset_name), "_value_", "`&name_mapping`[_value_] = _value_");
         data[utility.getGlobalValue("terms.data.name_mapping")] = name_mapping;
-    }    
+    }
     return data;
 }
 
@@ -316,9 +337,9 @@ function alignments.ReadNucleotideAlignment(file_name, dataset_name, datafilter_
  */
 lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) {
     GetDataInfo (duplicate_info, ^filter_in, -2);
-    
+
     DataSetFilter ^filter_out = CreateFilter (^filter_in, 1, "", Join (",", duplicate_info["UNIQUE_INDICES"]));
-    
+
     if (rename) {
         utility.ForEachPair (duplicate_info["UNIQUE_INDICES"],
                              "_idx_",
@@ -328,11 +349,11 @@ lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) 
                                 _seq_name_ += ":" + ((`&duplicate_info`)["UNIQUE_COUNTS"])[_idx_[1]];
                                 SetParameter (^`&filter_in`,_seq_idx_,_seq_name_);
                               ');
-       
-    } 
-    
-    
-    
+
+    }
+
+
+
     return duplicate_info["UNIQUE_SEQUENCES"];
     //DataSetFilter ^filter_out = CreateFilter (filter_in);
 }
@@ -354,10 +375,10 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
             this_filter[utility.getGlobalValue("terms.data.name")] = prefix + (partitions[i])[utility.getGlobalValue("terms.data.name")];
             DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ source_data, 3, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")], , data_info[utility.getGlobalValue("terms.stop_codons")]);
             diff = test.sites - 3 * ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".sites");
-            
+
             //TODO: BELOW, IS THE "names" CORRECT OR SHOULD IT BE "name"????? SJS can't locate another time when the plural is used through libv3.
             io.CheckAssertion("`&diff` == 0", "Partition " + (filters["names"])[i] + " is either has stop codons or is not in frame");
-            
+
             this_filter[utility.getGlobalValue("terms.data.coverage")] = utility.DictToArray(utility.Map(utility.Filter( ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".site_map"), "_value_", "_value_%3==0"), "_value_", "_value_$3"));
             filters + this_filter;
         }
@@ -437,25 +458,25 @@ lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
  * @param {String} sequence - the string to translate
  * @param {Number} offset - start at this position (should be in {0,1,2})
  * @param {Dictionary} code - genetic code description (e.g. returned by alignments.LoadGeneticCode)
- * @param {lookup} code - resolution lookup dictionary 
+ * @param {lookup} code - resolution lookup dictionary
  * @returns {Dict} list of possible amino-acids (as dicts) at this position
  */
 
 lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offset, code, lookup) {
-    console.log (sequence);
-    
+    //console.log (sequence);
+
     l = Abs (sequence);
 	translation = {};
-    
+
     DataSet single_seq                  = ReadFromString (">s\n" + sequence[offset][Abs (sequence)-1]);
     DataSetFilter single_seq_filter     = CreateFilter   (single_seq, 3, "", "");
-    
+
     GetDataInfo (patterns, single_seq_filter);
     GetDataInfo (alphabet, single_seq_filter, "CHARACTERS");
     GetDataInfo (single_seq_data, single_seq_filter, 0);
     code_lookup = code [utility.getGlobalValue("terms.code.ordering")];
     code_table  = code [utility.getGlobalValue("terms.code")];
-    
+
     for (s = 0; s < single_seq_filter.sites; s += 1) {
         codon = single_seq_data[3*s][3*s+2];
         if (lookup / codon) {
@@ -481,8 +502,8 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
             translation[s] = my_resolution;
         }
     }
-    
-    
+
+
 	return translation;
 }
 
