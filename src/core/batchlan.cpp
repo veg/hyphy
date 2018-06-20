@@ -1266,9 +1266,13 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     callPoints << currentCommand;
     executionStack       << this;
 
+    _AVLListXL * stash1 = nil;
+    _List* stash2 = nil; // recursion
+  
+  
     if (parent && stdinRedirect == nil) {
-      stdinRedirect    = parent->stdinRedirect;
-      stdinRedirectAux = parent->stdinRedirectAux;
+      stash1  = stdinRedirect    = parent->stdinRedirect;
+      stash2  =  stdinRedirectAux = parent->stdinRedirectAux;
       parent->stdinRedirect->AddAReference();
       parent->stdinRedirectAux->AddAReference();
     } else {
@@ -1330,8 +1334,8 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     if (parent) {
       stdinRedirect = nil;
       stdinRedirectAux = nil;
-      parent->stdinRedirect->RemoveAReference();
-      parent->stdinRedirectAux->RemoveAReference();
+      stash1->RemoveAReference();
+      stash2->RemoveAReference();
     }
 
     return result;
@@ -3390,14 +3394,16 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
               chain.ReportAnExecutionError("Encountered an error while parsing HBL", false, true);
           } else {
 
-              bool references_added = false;
+            _AVLListXL * stash1 = nil;
+            _List* stash2 = nil;
             
             if (inArg && inArgAux) {
               exc.stdinRedirectAux = inArgAux;
               exc.stdinRedirect    = inArg;
             } else {
               if (chain.stdinRedirect) {
-                references_added = true;
+                stash1 = chain.stdinRedirect;
+                stash2 = chain.stdinRedirectAux; // for recursion calls
                 chain.stdinRedirect->AddAReference();
                 chain.stdinRedirectAux->AddAReference();
               }
@@ -3412,9 +3418,9 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
                   exc.Execute();
               }
 
-              if (references_added) {
-                chain.stdinRedirect->RemoveAReference();
-                chain.stdinRedirectAux->RemoveAReference();
+              if (stash1) {
+                stash1->RemoveAReference();
+                stash2->RemoveAReference();
               }
             
               exc.stdinRedirectAux = nil;
